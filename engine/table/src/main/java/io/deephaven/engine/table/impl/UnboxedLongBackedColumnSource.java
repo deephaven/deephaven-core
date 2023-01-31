@@ -7,16 +7,18 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.time.DateTime;
 import org.jetbrains.annotations.NotNull;
 
+import java.time.Instant;
+
 /**
- * Reinterpret result for many {@link ColumnSource} implementations that internally represent {@link DateTime} values as
- * {@code long} values.
+ * Reinterpret result for many {@link ColumnSource} implementations that internally represent time values, such as
+ * {@link DateTime} and {@link Instant}, as {@code long} values.
  */
-public class UnboxedDateTimeColumnSource extends AbstractColumnSource<Long>
+public class UnboxedLongBackedColumnSource<T> extends AbstractColumnSource<Long>
         implements MutableColumnSourceGetDefaults.ForLong {
 
-    private final ColumnSource<DateTime> alternateColumnSource;
+    private final ColumnSource<T> alternateColumnSource;
 
-    public UnboxedDateTimeColumnSource(ColumnSource<DateTime> alternateColumnSource) {
+    public UnboxedLongBackedColumnSource(ColumnSource<T> alternateColumnSource) {
         super(long.class);
         this.alternateColumnSource = alternateColumnSource;
     }
@@ -39,14 +41,18 @@ public class UnboxedDateTimeColumnSource extends AbstractColumnSource<Long>
     @Override
     public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(
             @NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {
-        return alternateDataType == DateTime.class;
+        return alternateDataType == alternateColumnSource.getType()
+                || alternateColumnSource.allowsReinterpret(alternateDataType);
     }
 
     @Override
     public <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(
             @NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) throws IllegalArgumentException {
-        // noinspection unchecked
-        return (ColumnSource<ALTERNATE_DATA_TYPE>) alternateColumnSource;
+        if (alternateDataType == alternateColumnSource.getType()) {
+            // noinspection unchecked
+            return (ColumnSource<ALTERNATE_DATA_TYPE>) alternateColumnSource;
+        }
+        return alternateColumnSource.reinterpret(alternateDataType);
     }
 
     @Override

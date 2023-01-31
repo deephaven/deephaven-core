@@ -423,8 +423,8 @@ public class TableUpdateValidator implements QueryTable.Operation {
             chunkEquals.equal(expected, actual, equalValuesDest());
             MutableInt off = new MutableInt();
             toValidate.forAllRowKeys((i) -> {
-                off.increment();
-                if (equalValuesDest().get(off.intValue() - 1)) {
+                final int rowOffset = off.getAndIncrement();
+                if (equalValuesDest().get(rowOffset)) {
                     return;
                 }
 
@@ -432,9 +432,8 @@ public class TableUpdateValidator implements QueryTable.Operation {
                     Object eValue = expectedSource.get(i);
                     Object aValue = usePrev ? source.getPrev(i) : source.get(i);
                     String chunkEValue = ChunkUtils.extractKeyStringFromChunk(expectedSource.getChunkType(), expected,
-                            off.intValue() - 1);
-                    String chunkAValue =
-                            ChunkUtils.extractKeyStringFromChunk(source.getChunkType(), actual, off.intValue() - 1);
+                            rowOffset);
+                    String chunkAValue = ChunkUtils.extractKeyStringFromChunk(source.getChunkType(), actual, rowOffset);
                     return what + (usePrev ? " (previous)" : "") +
                             " columnName=" + name + " k=" + i +
                             " (from source) expected=" + eValue + " actual=" + aValue +

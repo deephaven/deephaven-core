@@ -7,9 +7,9 @@ import gnu.trove.list.array.TIntArrayList;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ChunkType;
-import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.WritableSourceWithPrepareForParallelPopulation;
@@ -17,7 +17,6 @@ import io.deephaven.engine.table.impl.util.copy.CopyKernel;
 import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.util.SoftRecycler;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
-import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
@@ -45,7 +44,7 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T>
         super(type, componentType);
     }
 
-    private static class FillContext implements ColumnSource.FillContext {
+    static class FillContext implements ColumnSource.FillContext {
         final CopyKernel copyKernel;
 
         FillContext(ChunkType chunkType) {
@@ -59,68 +58,13 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T>
     }
 
     @Override
-    public FillContext makeFillContext(final int chunkCapacity, final SharedContext sharedContext) {
+    public ChunkSource.FillContext makeFillContext(final int chunkCapacity, final SharedContext sharedContext) {
         return makeFillContext(getChunkType());
     }
 
     @NotNull
     FillContext makeFillContext(ChunkType chunkType) {
         return new FillContext(chunkType);
-    }
-
-    private interface CopyFromBlockFunctor {
-        void copy(int blockNo, int srcOffset, int length);
-    }
-
-    @Override
-    public void fillPrevChunk(
-            @NotNull final ColumnSource.FillContext context,
-            @NotNull final WritableChunk<? super Values> destination,
-            @NotNull final RowSequence rowSequence) {
-        if (prevFlusher == null) {
-            fillChunk(context, destination, rowSequence);
-            return;
-        }
-
-        if (rowSequence.getAverageRunLengthEstimate() < USE_RANGES_AVERAGE_RUN_LENGTH) {
-            fillSparsePrevChunk(destination, rowSequence);
-            return;
-        }
-
-        final FillContext effectiveContext = (FillContext) context;
-        final MutableInt destOffset = new MutableInt(0);
-
-        CopyFromBlockFunctor lambda = (blockNo, srcOffset, length) -> {
-            final long[] inUse = prevInUse[blockNo];
-            if (inUse != null) {
-                effectiveContext.copyKernel.conditionalCopy(destination, getBlock(blockNo), getPrevBlock(blockNo),
-                        inUse, srcOffset, destOffset.intValue(), length);
-            } else {
-                destination.copyFromArray(getBlock(blockNo), srcOffset, destOffset.intValue(), length);
-            }
-            destOffset.add(length);
-        };
-
-        rowSequence.forAllRowKeyRanges((final long from, final long to) -> {
-            final int fromBlock = getBlockNo(from);
-            final int toBlock = getBlockNo(to);
-            final int fromOffsetInBlock = (int) (from & INDEX_MASK);
-            if (fromBlock == toBlock) {
-                final int sz = LongSizedDataStructure.intSize("int cast", to - from + 1);
-                lambda.copy(fromBlock, fromOffsetInBlock, sz);
-            } else {
-                final int sz = BLOCK_SIZE - fromOffsetInBlock;
-                lambda.copy(fromBlock, fromOffsetInBlock, sz);
-
-                for (int blockNo = fromBlock + 1; blockNo < toBlock; ++blockNo) {
-                    lambda.copy(blockNo, 0, BLOCK_SIZE);
-                }
-
-                int restSz = (int) (to & INDEX_MASK) + 1;
-                lambda.copy(toBlock, 0, restSz);
-            }
-        });
-        destination.setSize(destOffset.intValue());
     }
 
     /**

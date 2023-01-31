@@ -122,7 +122,7 @@ public class ReplicateDupCompactKernel {
 
         lines = ReplicateSortKernel.fixupNanComparisons(lines, type, ascending);
 
-        lines = simpleFixup(lines, "eq", "lhs == rhs", type + "Comparisons.eq(lhs, rhs)");
+        lines = simpleFixup(lines, "equality", "lhs == rhs", type + "Comparisons.eq(lhs, rhs)");
 
         FileUtils.writeLines(file, lines);
     }

@@ -153,9 +153,11 @@ public class ColumnPreviewManager {
         // String
         // BigInt, BigDecimal
         // DateTime
-        return type.isPrimitive() || io.deephaven.util.type.TypeUtils.isBoxedType(type)
+        return type.isPrimitive()
+                || io.deephaven.util.type.TypeUtils.isBoxedType(type)
                 || io.deephaven.util.type.TypeUtils.isString(type)
-                || io.deephaven.util.type.TypeUtils.isBigNumeric(type) || TypeUtils.isDateTime(type)
+                || io.deephaven.util.type.TypeUtils.isBigNumeric(type)
+                || TypeUtils.isDateTime(type)
                 || isOnWhiteList(type);
     }
 

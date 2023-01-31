@@ -10,6 +10,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -512,14 +513,15 @@ public class TypeUtils {
     }
 
     /**
-     * Whether the class is a DateTime or Date.
+     * Whether the class is a Date, DateTime, or Instant.
      *
      * @param type The class.
-     * @return true if the type is a DateTime or {@link Date}.
+     * @return true if the type is a {@link Date}, DateTime or {@link Instant}.
      */
     public static boolean isDateTime(Class<?> type) {
-        return Date.class.isAssignableFrom(type) || type.getAnnotation(IsDateTime.class) != null
-                && type.getAnnotation(IsDateTime.class).value();
+        return Date.class.isAssignableFrom(type)
+                || Instant.class.isAssignableFrom(type)
+                || (type.getAnnotation(IsDateTime.class) != null && type.getAnnotation(IsDateTime.class).value());
     }
 
     /**

@@ -8,6 +8,7 @@
  */
 package io.deephaven.engine.table.impl.sources;
 
+import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.impl.DefaultGetContext;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
@@ -45,7 +46,8 @@ import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.*;
  *
  * (C-haracter is deliberately spelled that way in order to prevent Replicate from altering this very comment).
  */
-public class IntegerSparseArraySource extends SparseArrayColumnSource<Integer> implements MutableColumnSourceGetDefaults.ForInt {
+public class IntegerSparseArraySource extends SparseArrayColumnSource<Integer>
+        implements MutableColumnSourceGetDefaults.ForInt /* MIXIN_IMPLS */ {
     // region recyclers
     private static final SoftRecycler<int[]> recycler = new SoftRecycler<>(DEFAULT_RECYCLER_CAPACITY,
             () -> new int[BLOCK_SIZE], null);
@@ -408,7 +410,7 @@ public class IntegerSparseArraySource extends SparseArrayColumnSource<Integer> i
     }
 
     @Override
-    public void prepareForParallelPopulation(RowSet changedRows) {
+    public void prepareForParallelPopulation(final RowSet changedRows) {
         final long currentStep = LogicalClock.DEFAULT.currentStep();
         if (prepareForParallelPopulationClockCycle == currentStep) {
             throw new IllegalStateException("May not call prepareForParallelPopulation twice on one clock cycle!");
@@ -483,8 +485,13 @@ public class IntegerSparseArraySource extends SparseArrayColumnSource<Integer> i
 
     // region fillByRanges
     @Override
-    void fillByRanges(@NotNull WritableChunk<? super Values> dest, @NotNull RowSequence rowSequence) {
+    /* TYPE_MIXIN */ void fillByRanges(
+            @NotNull final WritableChunk<? super Values> dest,
+            @NotNull final RowSequence rowSequence
+            /* CONVERTER */) {
+        // region chunkDecl
         final WritableIntChunk<? super Values> chunk = dest.asWritableIntChunk();
+        // endregion chunkDecl
         final FillByContext<int[]> ctx = new FillByContext<>();
         rowSequence.forAllRowKeyRanges((long firstKey, final long lastKey) -> {
             if (firstKey > ctx.maxKeyInCurrentBlock) {
@@ -520,8 +527,13 @@ public class IntegerSparseArraySource extends SparseArrayColumnSource<Integer> i
 
     // region fillByKeys
     @Override
-    void fillByKeys(@NotNull WritableChunk<? super Values> dest, @NotNull RowSequence rowSequence) {
+    /* TYPE_MIXIN */ void fillByKeys(
+            @NotNull final WritableChunk<? super Values> dest,
+            @NotNull final RowSequence rowSequence
+            /* CONVERTER */) {
+        // region chunkDecl
         final WritableIntChunk<? super Values> chunk = dest.asWritableIntChunk();
+        // endregion chunkDecl
         final FillByContext<int[]> ctx = new FillByContext<>();
         rowSequence.forEachRowKey((final long v) -> {
             if (v > ctx.maxKeyInCurrentBlock) {
@@ -531,7 +543,9 @@ public class IntegerSparseArraySource extends SparseArrayColumnSource<Integer> i
             if (ctx.block == null) {
                 chunk.fillWithNullValue(ctx.offset, 1);
             } else {
+                // region conversion
                 chunk.set(ctx.offset, ctx.block[(int) (v & INDEX_MASK)]);
+                // endregion conversion
             }
             ++ctx.offset;
             return true;
@@ -542,12 +556,17 @@ public class IntegerSparseArraySource extends SparseArrayColumnSource<Integer> i
 
     // region fillByUnRowSequence
     @Override
-    void fillByUnRowSequence(@NotNull WritableChunk<? super Values> dest, @NotNull LongChunk<? extends RowKeys> keys) {
-        final WritableIntChunk<? super Values> intChunk = dest.asWritableIntChunk();
+    /* TYPE_MIXIN */ void fillByUnRowSequence(
+            @NotNull final WritableChunk<? super Values> dest,
+            @NotNull final LongChunk<? extends RowKeys> keys
+            /* CONVERTER */) {
+        // region chunkDecl
+        final WritableIntChunk<? super Values> chunk = dest.asWritableIntChunk();
+        // endregion chunkDecl
         for (int ii = 0; ii < keys.size(); ) {
             final long firstKey = keys.get(ii);
             if (firstKey == RowSequence.NULL_ROW_KEY) {
-                intChunk.set(ii++, NULL_INT);
+                chunk.set(ii++, NULL_INT);
                 continue;
             }
             final long masked = firstKey & ~INDEX_MASK;
@@ -563,25 +582,32 @@ public class IntegerSparseArraySource extends SparseArrayColumnSource<Integer> i
             }
             final int [] block = blocks.getInnermostBlockByKeyOrNull(firstKey);
             if (block == null) {
-                intChunk.fillWithNullValue(ii, lastII - ii + 1);
+                chunk.fillWithNullValue(ii, lastII - ii + 1);
                 ii = lastII + 1;
                 continue;
             }
             while (ii <= lastII) {
                 final int indexWithinBlock = (int) (keys.get(ii) & INDEX_MASK);
-                intChunk.set(ii++, block[indexWithinBlock]);
+                // region conversion
+                chunk.set(ii++, block[indexWithinBlock]);
+                // endregion conversion
             }
         }
         dest.setSize(keys.size());
     }
 
     @Override
-    void fillPrevByUnRowSequence(@NotNull WritableChunk<? super Values> dest, @NotNull LongChunk<? extends RowKeys> keys) {
-        final WritableIntChunk<? super Values> intChunk = dest.asWritableIntChunk();
+    /* TYPE_MIXIN */ void fillPrevByUnRowSequence(
+            @NotNull final WritableChunk<? super Values> dest,
+            @NotNull final LongChunk<? extends RowKeys> keys
+            /* CONVERTER */) {
+        // region chunkDecl
+        final WritableIntChunk<? super Values> chunk = dest.asWritableIntChunk();
+        // endregion chunkDecl
         for (int ii = 0; ii < keys.size(); ) {
             final long firstKey = keys.get(ii);
             if (firstKey == RowSequence.NULL_ROW_KEY) {
-                intChunk.set(ii++, NULL_INT);
+                chunk.set(ii++, NULL_INT);
                 continue;
             }
             final long masked = firstKey & ~INDEX_MASK;
@@ -598,7 +624,7 @@ public class IntegerSparseArraySource extends SparseArrayColumnSource<Integer> i
 
             final int [] block = blocks.getInnermostBlockByKeyOrNull(firstKey);
             if (block == null) {
-                intChunk.fillWithNullValue(ii, lastII - ii + 1);
+                chunk.fillWithNullValue(ii, lastII - ii + 1);
                 ii = lastII + 1;
                 continue;
             }
@@ -611,7 +637,9 @@ public class IntegerSparseArraySource extends SparseArrayColumnSource<Integer> i
                 final long maskWithinInUse = 1L << (indexWithinBlock & IN_USE_MASK);
 
                 final int[] blockToUse = (prevInUse != null && (prevInUse[indexWithinInUse] & maskWithinInUse) != 0) ? prevBlock : block;
-                intChunk.set(ii++, blockToUse == null ? NULL_INT : blockToUse[indexWithinBlock]);
+                // region conversion
+                chunk.set(ii++, blockToUse == null ? NULL_INT : blockToUse[indexWithinBlock]);
+                // endregion conversion
             }
         }
         dest.setSize(keys.size());
@@ -620,11 +648,16 @@ public class IntegerSparseArraySource extends SparseArrayColumnSource<Integer> i
 
     // region fillFromChunkByRanges
     @Override
-    void fillFromChunkByRanges(@NotNull RowSequence rowSequence, Chunk<? extends Values> src) {
+    /* TYPE_MIXIN */ void fillFromChunkByRanges(
+            @NotNull final RowSequence rowSequence,
+            @NotNull final Chunk<? extends Values> src
+            /* CONVERTER */) {
         if (rowSequence.isEmpty()) {
             return;
         }
+        // region chunkDecl
         final IntChunk<? extends Values> chunk = src.asIntChunk();
+        // endregion chunkDecl
         final LongChunk<OrderedRowKeyRanges> ranges = rowSequence.asRowKeyRangesChunk();
 
         final boolean trackPrevious = shouldTrackPrevious();
@@ -696,11 +729,16 @@ public class IntegerSparseArraySource extends SparseArrayColumnSource<Integer> i
 
     // region fillFromChunkByKeys
     @Override
-    void fillFromChunkByKeys(@NotNull RowSequence rowSequence, Chunk<? extends Values> src) {
+    /* TYPE_MIXIN */ void fillFromChunkByKeys(
+            @NotNull final RowSequence rowSequence,
+            @NotNull final Chunk<? extends Values> src
+            /* CONVERTER */) {
         if (rowSequence.isEmpty()) {
             return;
         }
+        // region chunkDecl
         final IntChunk<? extends Values> chunk = src.asIntChunk();
+        // endregion chunkDecl
         final LongChunk<OrderedRowKeys> keys = rowSequence.asRowKeyChunk();
 
         final boolean trackPrevious = shouldTrackPrevious();;
@@ -745,7 +783,9 @@ public class IntegerSparseArraySource extends SparseArrayColumnSource<Integer> i
                         inUse[indexWithinInUse] |= maskWithinInUse;
                     }
                 }
+                // region conversion
                 block[indexWithinBlock] = chunk.get(ii);
+                // endregion conversion
                 ++ii;
             }
         }
@@ -754,7 +794,7 @@ public class IntegerSparseArraySource extends SparseArrayColumnSource<Integer> i
 
     // region nullByRanges
     @Override
-    void nullByRanges(@NotNull RowSequence rowSequence) {
+    void nullByRanges(@NotNull final RowSequence rowSequence) {
         if (rowSequence.isEmpty()) {
             return;
         }
@@ -826,7 +866,7 @@ public class IntegerSparseArraySource extends SparseArrayColumnSource<Integer> i
 
     // region nullByKeys
     @Override
-    void nullByKeys(@NotNull RowSequence rowSequence) {
+    void nullByKeys(@NotNull final RowSequence rowSequence) {
         if (rowSequence.isEmpty()) {
             return;
         }
@@ -885,11 +925,17 @@ public class IntegerSparseArraySource extends SparseArrayColumnSource<Integer> i
 
     // region fillFromChunkUnordered
     @Override
-    public void fillFromChunkUnordered(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src, @NotNull LongChunk<RowKeys> keys) {
+    public /* TYPE_MIXIN */ void fillFromChunkUnordered(
+            @NotNull final FillFromContext context,
+            @NotNull final Chunk<? extends Values> src,
+            @NotNull final LongChunk<RowKeys> keys
+            /* CONVERTER */) {
         if (keys.size() == 0) {
             return;
         }
+        // region chunkDecl
         final IntChunk<? extends Values> chunk = src.asIntChunk();
+        // endregion chunkDecl
 
         final boolean trackPrevious = shouldTrackPrevious();;
 
@@ -930,7 +976,9 @@ public class IntegerSparseArraySource extends SparseArrayColumnSource<Integer> i
                         inUse[indexWithinInUse] |= maskWithinInUse;
                     }
                 }
+                // region conversion
                 block[indexWithinBlock] = chunk.get(ii);
+                // endregion conversion
                 ++ii;
             } while (ii < keys.size() && (key = keys.get(ii)) >= minKeyInCurrentBlock && key <= maxKeyInCurrentBlock);
         }
@@ -938,7 +986,10 @@ public class IntegerSparseArraySource extends SparseArrayColumnSource<Integer> i
     // endregion fillFromChunkUnordered
 
     @Override
-    public void fillPrevChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Values> dest, @NotNull RowSequence rowSequence) {
+    public void fillPrevChunk(
+            @NotNull final FillContext context,
+            @NotNull final WritableChunk<? super Values> dest,
+            @NotNull final RowSequence rowSequence) {
         if (prevFlusher == null) {
             fillChunk(context, dest, rowSequence);
             return;
@@ -948,7 +999,7 @@ public class IntegerSparseArraySource extends SparseArrayColumnSource<Integer> i
 
     // region getChunk
     @Override
-    public IntChunk<Values> getChunk(@NotNull GetContext context, @NotNull RowSequence rowSequence) {
+    public IntChunk<Values> getChunk(@NotNull final GetContext context, @NotNull final RowSequence rowSequence) {
         if (rowSequence.isEmpty()) {
             return IntChunk.getEmptyChunk();
         }
@@ -967,7 +1018,7 @@ public class IntegerSparseArraySource extends SparseArrayColumnSource<Integer> i
 
     // region getPrevChunk
     @Override
-    public IntChunk<Values> getPrevChunk(@NotNull GetContext context, @NotNull RowSequence rowSequence) {
+    public IntChunk<Values> getPrevChunk(@NotNull final GetContext context, @NotNull final RowSequence rowSequence) {
         if (prevFlusher == null) {
             return getChunk(context, rowSequence);
         }

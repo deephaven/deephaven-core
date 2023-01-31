@@ -23,6 +23,8 @@ import org.jetbrains.annotations.Nullable;
 
 import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.*;
 
+import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Collection;
 
@@ -329,6 +331,8 @@ public abstract class SparseArrayColumnSource<T>
             result = new BooleanSparseArraySource();
         } else if (type == DateTime.class) {
             result = new DateTimeSparseArraySource();
+        } else if (type == Instant.class) {
+            result = new InstantSparseArraySource();
         } else {
             if (componentType != null) {
                 result = new ObjectSparseArraySource<>(type, componentType);

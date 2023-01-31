@@ -24,6 +24,7 @@ import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.ColumnSource;
 
 import java.lang.reflect.Array;
+import java.time.Instant;
 import java.util.Optional;
 
 /**
@@ -150,6 +151,7 @@ public class ColumnHolder<T> {
         }
         if (!arrayData.getClass().getComponentType().isAssignableFrom(dataType)
                 && !(dataType == DateTime.class && arrayData.getClass().getComponentType() == long.class)
+                && !(dataType == Instant.class && arrayData.getClass().getComponentType() == long.class)
                 && !(dataType == Boolean.class && arrayData.getClass().getComponentType() == byte.class)) {
             throw new IllegalArgumentException(
                     "Incompatible data type: " + dataType + " can not be stored in array of type "

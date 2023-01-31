@@ -3,16 +3,15 @@
  */
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
-import io.deephaven.time.DateTime;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
-public class UnboxedDateTimeWritableSource extends UnboxedDateTimeColumnSource implements WritableColumnSource<Long> {
-    private final WritableColumnSource<DateTime> alternateWritableSource;
+public class UnboxedDateTimeWritableSource<T> extends UnboxedLongBackedColumnSource<T>
+        implements WritableColumnSource<Long> {
+    private final WritableColumnSource<T> alternateWritableSource;
 
-    public UnboxedDateTimeWritableSource(WritableColumnSource<DateTime> alternateWritableSource) {
+    public UnboxedDateTimeWritableSource(WritableColumnSource<T> alternateWritableSource) {
         super(alternateWritableSource);
         this.alternateWritableSource = alternateWritableSource;
     }

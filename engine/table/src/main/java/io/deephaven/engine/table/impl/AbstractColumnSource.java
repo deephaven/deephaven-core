@@ -15,6 +15,7 @@ import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.chunkfillers.ChunkFiller;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkMatchFilterFactory;
+import io.deephaven.engine.table.impl.sources.UnboxedLongBackedColumnSource;
 import io.deephaven.time.DateTime;
 import io.deephaven.vector.*;
 import io.deephaven.hash.KeyedObjectHashSet;
@@ -290,8 +291,7 @@ public abstract class AbstractColumnSource<T> implements
         Assert.eq(getType(), "getType()", DateTime.class);
         Assert.eq(alternateDataType, "alternateDataType", long.class);
         // noinspection unchecked
-        return (ColumnSource<ALTERNATE_DATA_TYPE>) new UnboxedDateTimeWritableSource(
-                (WritableColumnSource<DateTime>) this);
+        return (ColumnSource<ALTERNATE_DATA_TYPE>) new UnboxedLongBackedColumnSource<>(this);
     }
 
     public static abstract class DefaultedMutable<DATA_TYPE> extends AbstractColumnSource<DATA_TYPE>

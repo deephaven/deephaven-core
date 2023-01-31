@@ -415,6 +415,8 @@ public abstract class ArrayBackedColumnSource<T>
             result = new BooleanArraySource();
         } else if (dataType == DateTime.class) {
             result = new DateTimeArraySource();
+        } else if (dataType == Instant.class) {
+            result = new InstantArraySource();
         } else {
             if (componentType != null) {
                 result = new ObjectArraySource<>(dataType, componentType);
@@ -523,38 +525,6 @@ public abstract class ArrayBackedColumnSource<T>
     abstract Object getBlock(int blockIndex);
 
     abstract Object getPrevBlock(int blockIndex);
-
-    @Override
-    public void fillChunk(@NotNull final FillContext context, @NotNull final WritableChunk<? super Values> destination,
-            @NotNull final RowSequence rowSequence) {
-        if (rowSequence.getAverageRunLengthEstimate() < USE_RANGES_AVERAGE_RUN_LENGTH) {
-            fillSparseChunk(destination, rowSequence);
-            return;
-        }
-        MutableInt destOffset = new MutableInt(0);
-        rowSequence.forAllRowKeyRanges((final long from, final long to) -> {
-            final int fromBlock = getBlockNo(from);
-            final int toBlock = getBlockNo(to);
-            final int fromOffsetInBlock = (int) (from & INDEX_MASK);
-            if (fromBlock == toBlock) {
-                final int sz = LongSizedDataStructure.intSize("int cast", to - from + 1);
-                destination.copyFromArray(getBlock(fromBlock), fromOffsetInBlock, destOffset.intValue(), sz);
-                destOffset.add(sz);
-            } else {
-                final int sz = BLOCK_SIZE - fromOffsetInBlock;
-                destination.copyFromArray(getBlock(fromBlock), fromOffsetInBlock, destOffset.intValue(), sz);
-                destOffset.add(sz);
-                for (int blockNo = fromBlock + 1; blockNo < toBlock; ++blockNo) {
-                    destination.copyFromArray(getBlock(blockNo), 0, destOffset.intValue(), BLOCK_SIZE);
-                    destOffset.add(BLOCK_SIZE);
-                }
-                int restSz = (int) (to & INDEX_MASK) + 1;
-                destination.copyFromArray(getBlock(toBlock), 0, destOffset.intValue(), restSz);
-                destOffset.add(restSz);
-            }
-        });
-        destination.setSize(destOffset.intValue());
-    }
 
     @Override
     public void fillChunkUnordered(@NotNull final FillContext context,

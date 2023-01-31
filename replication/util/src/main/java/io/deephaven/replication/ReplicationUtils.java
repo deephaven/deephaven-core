@@ -32,8 +32,8 @@ public class ReplicationUtils {
             final Function<Matcher, List<String>> replacer) {
         final List<String> newLines = new ArrayList<>();
 
-        final Pattern startPattern = Pattern.compile("// region " + region);
-        final Pattern endPattern = Pattern.compile("// endregion " + region);
+        final Pattern startPattern = constructRegionStartPattern(region);
+        final Pattern endPattern = constructRegionEndPattern(region);
 
         final Pattern replacePattern = Pattern.compile(searchPattern);
 
@@ -73,7 +73,7 @@ public class ReplicationUtils {
 
     /**
      * Take a list of lines; and apply a given fixup expressed as a code region and replacements
-     * 
+     *
      * @param lines the input lines
      * @param region the name of the region started by "// region &lt;name&gt;" and ended by "// endregion &lt;name&gt;"
      * @param replacements an array with an even number of elements, even elements are a thing to replace, the next
@@ -84,8 +84,8 @@ public class ReplicationUtils {
     public static List<String> simpleFixup(List<String> lines, final String region, final String... replacements) {
         final List<String> newLines = new ArrayList<>();
 
-        final Pattern startPattern = Pattern.compile("// region " + region);
-        final Pattern endPattern = Pattern.compile("// endregion " + region);
+        final Pattern startPattern = constructRegionStartPattern(region);
+        final Pattern endPattern = constructRegionEndPattern(region);
 
         boolean inRegion = false;
         for (String line : lines) {
@@ -146,8 +146,8 @@ public class ReplicationUtils {
     public static List<String> insertRegion(List<String> lines, final String region, List<String> extraLines) {
         final List<String> newLines = new ArrayList<>();
 
-        final Pattern startPattern = Pattern.compile("// region " + region);
-        final Pattern endPattern = Pattern.compile("// endregion " + region);
+        final Pattern startPattern = constructRegionStartPattern(region);
+        final Pattern endPattern = constructRegionEndPattern(region);
 
         boolean inRegion = false;
         for (String line : lines) {
@@ -199,11 +199,29 @@ public class ReplicationUtils {
      */
     @NotNull
     public static List<String> replaceRegion(List<String> lines, final String region, List<String> replacement) {
+        return replaceRegion(lines, region, l -> replacement);
+    }
+
+    /**
+     * Locates the region demarked by "// region &lt;name&gt;" and ended by "// endregion &lt;name&gt;" and replaces the
+     * text with the contents of replacement.
+     *
+     * @param lines the lines to process
+     * @param region the name of the region
+     * @param replacement the lines to insert
+     * @return a new list of lines
+     */
+    @NotNull
+    public static List<String> replaceRegion(
+            List<String> lines,
+            final String region,
+            Function<List<String>, List<String>> replacement) {
         final List<String> newLines = new ArrayList<>();
 
-        final Pattern startPattern = Pattern.compile("//\\s*region " + region);
-        final Pattern endPattern = Pattern.compile("//\\s*endregion " + region);
+        final Pattern startPattern = constructRegionStartPattern(region);
+        final Pattern endPattern = constructRegionEndPattern(region);
 
+        final List<String> currentRegion = new ArrayList<>();
         boolean inRegion = false;
         for (String line : lines) {
             if (startPattern.matcher(line).find()) {
@@ -211,17 +229,18 @@ public class ReplicationUtils {
                     throw new IllegalStateException();
                 }
                 newLines.add(line);
-                newLines.addAll(replacement);
                 inRegion = true;
-            }
-            if (endPattern.matcher(line).find()) {
+            } else if (endPattern.matcher(line).find()) {
                 if (!inRegion) {
                     throw new IllegalStateException();
                 }
                 inRegion = false;
-            }
-            if (!inRegion) {
+                newLines.addAll(replacement.apply(currentRegion));
                 newLines.add(line);
+            } else if (!inRegion) {
+                newLines.add(line);
+            } else {
+                currentRegion.add(line);
             }
         }
 
@@ -230,6 +249,16 @@ public class ReplicationUtils {
         }
 
         return newLines;
+    }
+
+    @NotNull
+    private static Pattern constructRegionStartPattern(String region) {
+        return Pattern.compile("//\\s*region " + region + "(?=\\s|$)");
+    }
+
+    @NotNull
+    private static Pattern constructRegionEndPattern(String region) {
+        return Pattern.compile("//\\s*endregion " + region + "(?=\\s|$)");
     }
 
     public static List<String> globalReplacements(int skip, List<String> lines, String... replacements) {
@@ -306,7 +335,7 @@ public class ReplicationUtils {
         return newLines;
     }
 
-    static private String doLineReplacements(String x, String... replacements) {
+    private static String doLineReplacements(String x, String... replacements) {
         if (replacements.length % 2 != 0) {
             throw new IllegalStateException("Replacmement length is not even!");
         }
