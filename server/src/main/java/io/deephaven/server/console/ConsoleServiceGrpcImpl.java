@@ -376,31 +376,45 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
 
         @Override
         public void run() {
-            if (!guard.compareAndSet(false, true)) {
-                return;
-            }
-            try {
-                sendInternal();
-            } finally {
-                guard.set(false);
-            }
-            if (done) {
-                return;
-            }
-            if (client.isReady()) {
-                // When !client.isReady(), onReady() is going to be called and will handle the schedule.
-                // Note: it's important that client.isReady() is checked _outside_ of the guard block (otherwise, the
-                // onReady() call could execute and schedule before the current thread exits the guard block, and we'd
-                // fail to successfully reschedule).
-                scheduler.runAfterDelay(SUBSCRIBE_TO_LOGS_SEND_MILLIS, this);
+            while (true) {
+                if (!guard.compareAndSet(false, true)) {
+                    return;
+                }
+                boolean queueIsKnownEmpty;
+                try {
+                    queueIsKnownEmpty = sendInternal();
+                } finally {
+                    guard.set(false);
+                }
+                if (done) {
+                    return;
+                }
+                if (!client.isReady()) {
+                    // When !client.isReady(), onReady() is going to be called and will handle the reschedule.
+                    // Note: it's important that client.isReady() is checked _outside_ of the guard block (otherwise,
+                    // the onReady() call could execute and schedule before the current thread exits the guard block,
+                    // and we'd fail to successfully reschedule).
+                    return;
+                }
+                if (queueIsKnownEmpty) {
+                    scheduler.runAfterDelay(SUBSCRIBE_TO_LOGS_SEND_MILLIS, this);
+                    return;
+                }
+                // Continue sending until we are done, the client isn't ready, or we know the queue is empty.
             }
         }
 
-        private void sendInternal() {
-            LogSubscriptionData payload;
-            while (!done && client.isReady() && (payload = dequeue()) != null) {
+        private boolean sendInternal() {
+            while (!done && client.isReady()) {
+                LogSubscriptionData payload = dequeue();
+                if (payload == null) {
+                    // we know the queue is empty
+                    return true;
+                }
                 GrpcUtil.safelyOnNext(client, payload);
             }
+            // we don't know if the queue is empty
+            return false;
         }
 
         // ------------------------------------------------------------------------------------------------------------
