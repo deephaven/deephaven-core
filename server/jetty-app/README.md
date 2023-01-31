@@ -2,7 +2,8 @@
 
 ## Native development
 
-This document is oriented towards local development. If you are interested in running a native production release, please see
+This document is oriented towards getting a server up for local development.
+If you are interested in running a native production release, please see
 [https://deephaven.io/core/docs/how-to-guides/configuration/native-application/](https://deephaven.io/core/docs/how-to-guides/configuration/native-application/).
 
 ### TLDR Groovy
