@@ -19,11 +19,16 @@ import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.*;
+import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.table.impl.sources.sparse.SparseConstants;
 import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.engine.updategraph.DynamicNode;
+import io.deephaven.engine.updategraph.TerminalNotification;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.util.SafeCloseable;
@@ -33,6 +38,7 @@ import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.IOException;
 import java.lang.ref.SoftReference;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -199,6 +205,7 @@ public abstract class UpdateBy {
                 .toArray();
         inputCacheNeeded = cacheableSourceIndices.length > 0;
 
+        //noinspection unchecked
         inputSourceCaches = new SoftReference[inputSources.length];
 
         buckets =
@@ -342,15 +349,15 @@ public abstract class UpdateBy {
             return logOutput.append("UpdateBy.PhasedUpdateProcessor");
         }
 
-        private void onError(Exception error) {
+        private void onError(@NotNull final Exception error) {
             if (waitForResult != null) {
-                // signal to the future that an exception has occurred
+                // Use the Future to signal that an exception has occurred. Cleanup will be done by the waiting thread.
                 waitForResult.completeExceptionally(error);
             } else {
+                // This error was delivered as part of update processing, we need to ensure that cleanup happens and
+                // a notification is dispatched downstream.
                 cleanUpAfterError();
-                result().forceReferenceCountToZero();
-                // this is part of an update, need to notify downstream
-                result().notifyListenersOnError(error, null);
+                deliverUpdateError(error, listener.getEntry(), false);
             }
         }
 
@@ -477,7 +484,7 @@ public abstract class UpdateBy {
                     0, taskCount,
                     (ctx, idx) -> {
                         // advance to the first key of this block
-                        ctx.rsIt.advance(inputRowSet.get(idx * PARALLEL_CACHE_BATCH_SIZE));
+                        ctx.rsIt.advance(inputRowSet.get((long)idx * PARALLEL_CACHE_BATCH_SIZE));
                         int remaining = PARALLEL_CACHE_BATCH_SIZE;
                         while (ctx.rsIt.hasMore() && remaining > 0) {
                             final RowSequence chunkOk = ctx.rsIt
@@ -617,12 +624,7 @@ public abstract class UpdateBy {
          */
         private void cleanUpAndNotify(final Runnable resumeAction) {
             // create the downstream before calling finalize() on the buckets (which releases resources)
-            final TableUpdate downstream;
-            if (!initialStep) {
-                downstream = computeDownstreamUpdate();
-            } else {
-                downstream = null;
-            }
+            final TableUpdate downstream = initialStep ? null : computeDownstreamUpdate();
 
             // allow the helpers to release their resources
             for (UpdateByBucketHelper bucket : dirtyBuckets) {
@@ -641,10 +643,31 @@ public abstract class UpdateBy {
                 }
             }
 
+            // release remaining resources
             SafeCloseable.closeArray(changedRows, toClear);
-
             upstream.release();
 
+            // accumulate performance data
+            final BasePerformanceEntry accumulated = jobScheduler.getAccumulatedPerformance();
+            if (accumulated != null) {
+                if (initialStep) {
+                    final QueryPerformanceNugget outerNugget = QueryPerformanceRecorder.getInstance().getOuterNugget();
+                    if (outerNugget != null) {
+                        outerNugget.addBaseEntry(accumulated);
+                    }
+                } else {
+                    UpdateGraphProcessor.DEFAULT.addNotification(new TerminalNotification() {
+                        @Override
+                        public void run() {
+                            synchronized (accumulated) {
+                                listener.getEntry().accumulate(accumulated);
+                            }
+                        }
+                    });
+                }
+            }
+
+            // continue
             resumeAction.run();
         }
 
@@ -794,18 +817,60 @@ public abstract class UpdateBy {
     }
 
     /**
+     * Disconnect result from the {@link UpdateGraphProcessor}, deliver downstream failure notifications, and
+     * cleanup if needed.
+     *
+     * @param error The {@link Throwable} to deliver, either from upstream or update processing
+     * @param sourceEntry The {@link TableListener.Entry} to associate with failure messages
+     * @param bucketCleanupNeeded Whether to clean up the buckets; unnecessary if the caller has already done this
+     */
+    void deliverUpdateError(
+            @NotNull final Throwable error,
+            @Nullable final TableListener.Entry sourceEntry,
+            final boolean bucketCleanupNeeded) {
+
+        final QueryTable result = result();
+        if (!result.forceReferenceCountToZero()) {
+            // No work to do here, another invocation is responsible for delivering failures.
+            return;
+        }
+
+        if (bucketCleanupNeeded) {
+            buckets.stream().filter(UpdateByBucketHelper::isDirty).forEach(UpdateByBucketHelper::finalizeUpdate);
+        }
+
+        result.notifyListenersOnError(error, sourceEntry);
+
+        // Secondary notification to client error monitoring
+        try {
+            if (SystemicObjectTracker.isSystemic(result)) {
+                AsyncClientErrorNotifier.reportError(error);
+            }
+        } catch (IOException e) {
+            throw new UncheckedTableException(
+                    "Exception while delivering async client error notification for " + sourceEntry, error);
+        }
+    }
+
+    /**
      * The Listener that is called when all input tables (source and constituent) are satisfied. This listener will
      * initiate UpdateBy operator processing in parallel by bucket
      */
-    class UpdateByListener extends InstrumentedTableUpdateListenerAdapter {
-        public UpdateByListener(@Nullable String description) {
-            super(description, UpdateBy.this.source, false);
+    protected class UpdateByListener extends InstrumentedTableUpdateListenerAdapter {
+
+        private UpdateByListener() {
+            super(UpdateBy.this + "-SourceListener", UpdateBy.this.source, false);
         }
 
         @Override
-        public void onUpdate(final TableUpdate upstream) {
+        public void onUpdate(@NotNull final TableUpdate upstream) {
             final PhasedUpdateProcessor sm = new PhasedUpdateProcessor(upstream.acquire(), false);
             sm.processUpdate();
+        }
+
+        @Override
+        public void onFailureInternal(@NotNull final Throwable originalException, @Nullable final Entry sourceEntry) {
+            deliverUpdateError(originalException, sourceEntry, true);
         }
 
         @Override
@@ -814,8 +879,8 @@ public abstract class UpdateBy {
         }
     }
 
-    public UpdateByListener newUpdateByListener(@NotNull final String description) {
-        return new UpdateByListener(description);
+    public UpdateByListener newUpdateByListener() {
+        return new UpdateByListener();
     }
 
     protected abstract QueryTable result();
@@ -886,8 +951,7 @@ public abstract class UpdateBy {
 
         String timestampColumnName = null;
         // create an initial set of all source columns
-        final Set<String> persistentColumnSet = new LinkedHashSet<>();
-        persistentColumnSet.addAll(source.getColumnSourceMap().keySet());
+        final Set<String> persistentColumnSet = new LinkedHashSet<>(source.getColumnSourceMap().keySet());
 
         final Set<String> problems = new LinkedHashSet<>();
         final Map<String, ColumnSource<?>> opResultSources = new LinkedHashMap<>();
@@ -1000,7 +1064,6 @@ public abstract class UpdateBy {
             descriptionBuilder.append(")");
             return LivenessScopeStack.computeEnclosed(() -> {
                 final ZeroKeyUpdateByManager zkm = new ZeroKeyUpdateByManager(
-                        descriptionBuilder.toString(),
                         opArr,
                         windowArr,
                         inputSourceArr,

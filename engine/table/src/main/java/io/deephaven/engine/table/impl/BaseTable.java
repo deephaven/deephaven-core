@@ -820,10 +820,10 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
 
         @ReferentialIntegrity
         private final Table parent;
-        private final BaseTable dependent;
+        private final BaseTable<?> dependent;
         private final boolean canReuseModifiedColumnSet;
 
-        public ListenerImpl(String description, Table parent, BaseTable dependent) {
+        public ListenerImpl(String description, Table parent, BaseTable<?> dependent) {
             super(description);
             this.parent = parent;
             this.dependent = dependent;
@@ -876,7 +876,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
             return parent;
         }
 
-        protected BaseTable getDependent() {
+        protected BaseTable<?> getDependent() {
             return dependent;
         }
     }

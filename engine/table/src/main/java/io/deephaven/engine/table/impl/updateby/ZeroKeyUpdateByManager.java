@@ -23,7 +23,6 @@ public class ZeroKeyUpdateByManager extends UpdateBy {
     /**
      * Perform an updateBy without any key columns.
      *
-     * @param description the operation description
      * @param operators the operations to perform
      * @param windows the unique windows for this UpdateBy
      * @param inputSources the primitive input sources
@@ -34,7 +33,6 @@ public class ZeroKeyUpdateByManager extends UpdateBy {
      * @param control the control object.
      */
     protected ZeroKeyUpdateByManager(
-            @NotNull final String description,
             @NotNull UpdateByOperator[] operators,
             @NotNull UpdateByWindow[] windows,
             @NotNull ColumnSource<?>[] inputSources,
@@ -45,12 +43,13 @@ public class ZeroKeyUpdateByManager extends UpdateBy {
             @Nullable WritableRowRedirection rowRedirection,
             @NotNull UpdateByControl control) {
         super(source, operators, windows, inputSources, timestampColumnName, rowRedirection, control);
+        final String bucketDescription = this + "-bucket-[]";
 
         if (source.isRefreshing()) {
             result = new QueryTable(source.getRowSet(), resultSources);
 
             // this is a refreshing source, we will need a listener
-            listener = newUpdateByListener(description);
+            listener = newUpdateByListener();
             source.addUpdateListener(listener);
             // result will depend on listener
             result.addParentReference(listener);
@@ -62,8 +61,8 @@ public class ZeroKeyUpdateByManager extends UpdateBy {
             }
 
             // create an updateby bucket instance directly from the source table
-            zeroKeyUpdateBy = new UpdateByBucketHelper(description, source, operators, windows, inputSources,
-                    resultSources, timestampColumnName, rowRedirection, control);
+            zeroKeyUpdateBy = new UpdateByBucketHelper(bucketDescription, source, windows, inputSources,
+                    resultSources, timestampColumnName, control, (oe, se) -> deliverUpdateError(oe, se, true));
             buckets.offer(zeroKeyUpdateBy);
 
             // make the source->result transformer
@@ -72,8 +71,10 @@ public class ZeroKeyUpdateByManager extends UpdateBy {
             // result will depend on zeroKeyUpdateBy
             result.addParentReference(zeroKeyUpdateBy.result);
         } else {
-            zeroKeyUpdateBy = new UpdateByBucketHelper(description, source, operators, windows, inputSources,
-                    resultSources, timestampColumnName, rowRedirection, control);
+            zeroKeyUpdateBy = new UpdateByBucketHelper(bucketDescription, source, windows, inputSources,
+                    resultSources, timestampColumnName, control, (oe, se) -> {
+                        throw new IllegalStateException("Update failure from static zero key updateBy");
+                    });
             result = zeroKeyUpdateBy.result;
             buckets.offer(zeroKeyUpdateBy);
         }

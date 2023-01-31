@@ -2,12 +2,11 @@ package io.deephaven.engine.table.impl.updateby;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.updateby.UpdateByControl;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.ModifiedColumnSet;
-import io.deephaven.engine.table.PartitionedTable;
-import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
@@ -15,19 +14,19 @@ import io.deephaven.engine.updategraph.LogicalClock;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * An implementation of {@link UpdateBy} dedicated to bucketed computation.
  */
 class BucketedPartitionedUpdateByManager extends UpdateBy {
+
     /** The output table for this UpdateBy operation */
     final QueryTable result;
 
-    /** The partitioned table used for identifying buckets */
-    final Table transformedTable;
+    /** Listener to the partitioned table used for identifying buckets */
+    final TransformFailureListener transformFailureListener;
 
     /**
      * Perform a bucketed updateBy using {@code byColumns} as the keys
@@ -60,12 +59,12 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
         // this table will always have the rowset of the source
         result = new QueryTable(source.getRowSet(), resultSources);
 
-        String[] byColumnNames = byColumns.stream().map(ColumnName::name).toArray(String[]::new);
+        final String[] byColumnNames = byColumns.stream().map(ColumnName::name).toArray(String[]::new);
 
         final PartitionedTable pt;
         if (source.isRefreshing()) {
             // this is a refreshing source, we will need a listener
-            listener = newUpdateByListener(description);
+            listener = newUpdateByListener();
             source.addUpdateListener(listener);
             // result will depend on listener
             result.addParentReference(listener);
@@ -84,16 +83,20 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
         }
 
         final PartitionedTable transformed = pt.transform(t -> {
+            final long firstSourceRowKey = t.getRowSet().firstRowKey();
+            final String bucketDescription = BucketedPartitionedUpdateByManager.this + "-bucket-" +
+                    Arrays.stream(byColumnNames)
+                            .map(bcn -> Objects.toString(t.getColumnSource(bcn).get(firstSourceRowKey)))
+                            .collect(Collectors.joining(", ", "[", "]"));
             UpdateByBucketHelper bucket = new UpdateByBucketHelper(
-                    description,
+                    bucketDescription,
                     (QueryTable) t,
-                    operators,
                     windows,
                     inputSources,
                     resultSources,
                     timestampColumnName,
-                    rowRedirection,
-                    control);
+                    control,
+                    (oe, se) -> deliverUpdateError(oe, se, true));
 
             bucket.parentUpdateBy = this;
             bucket.createdStep = LogicalClock.DEFAULT.currentStep();
@@ -107,12 +110,12 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
         });
 
         if (source.isRefreshing()) {
-            transformedTable = transformed.table();
-
-            // result also depends on the transformedTable
-            result.addParentReference(transformedTable);
+            final Table transformedTable = transformed.table();
+            transformFailureListener = new TransformFailureListener(transformedTable);
+            transformedTable.addUpdateListener(transformFailureListener);
+            result.addParentReference(transformFailureListener);
         } else {
-            transformedTable = null;
+            transformFailureListener = null;
         }
 
         // make a dummy update to generate the initial row keys
@@ -135,7 +138,29 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
 
     @Override
     protected boolean upstreamSatisfied(final long step) {
-        // For bucketed, need to verify the source and the transformed table is satisfied.
-        return source.satisfied(step) && transformedTable.satisfied(step);
+        // For bucketed, need to verify the source and the transformed table listener are satisfied.
+        return source.satisfied(step) && transformFailureListener.satisfied(step);
+    }
+
+    private final class TransformFailureListener extends InstrumentedTableUpdateListenerAdapter {
+
+        private TransformFailureListener(@NotNull final Table transformed) {
+            super(BucketedPartitionedUpdateByManager.this + "-TransformFailureListener", transformed, false);
+        }
+
+        @Override
+        public void onUpdate(@NotNull final TableUpdate upstream) {
+            // No-op: We react to bucket creation inside the transform function, no need to do anything here.
+            // Validation: We expect only adds, because the partitioned table was created by partitionedAggBy with
+            // preserveEmpty==true
+            Assert.assertion(upstream.removed().isEmpty(), "upstream.removed().isEmpty()");
+            Assert.assertion(upstream.modified().isEmpty(), "upstream.modified().isEmpty()");
+            Assert.assertion(upstream.shifted().empty(), "upstream.shifted().empty()");
+        }
+
+        @Override
+        public void onFailureInternal(@NotNull final Throwable originalException, @Nullable final Entry sourceEntry) {
+            deliverUpdateError(originalException, sourceEntry, true);
+        }
     }
 }
