@@ -725,6 +725,21 @@ public class JsTreeTable extends HasEventHandling {
         return columnsBitset;
     }
 
+    private void expandOrCollapseAll(double action) {
+        keyTableData = new Object[keyColumns.length + 2][1];
+        int i = keyColumns.length;
+        Js.<JsArray<Double>>cast(keyTableData[i++]).setAt(0, (double) 0);
+        Js.<JsArray<Double>>cast(keyTableData[i++]).setAt(0, action);
+        if (keyTable != null) {
+            keyTable.then(t -> {
+                t.close();
+                return null;
+            });
+            keyTable = null;
+        }
+        replaceSubscription(RebuildStep.HIERARCHICAL_TABLE_VIEW);
+    }
+
     @JsMethod
     public void expand(Object row, @JsOptional Boolean expandDescendants) {
         setExpanded(row, true, expandDescendants);
@@ -769,35 +784,12 @@ public class JsTreeTable extends HasEventHandling {
 
     @JsMethod
     public void expandAll() {
-        keyTableData = new Object[keyColumns.length + 2][1]; 
-        int i = keyColumns.length;
-        Js.<JsArray<Double>>cast(keyTableData[i++]).setAt(0, (double) 0);
-        Js.<JsArray<Double>>cast(keyTableData[i++]).setAt(0, ACTION_EXPAND_WITH_DESCENDENTS); 
-
-        if (keyTable != null) {
-            keyTable.then(t -> {
-                t.close();
-                return null;
-            });
-            keyTable = null;
-        }
-        replaceSubscription(RebuildStep.HIERARCHICAL_TABLE_VIEW);
+        expandOrCollapseAll(ACTION_EXPAND_WITH_DESCENDENTS);
     }
 
     @JsMethod
     public void collapseAll() {
-        keyTableData = new Object[keyColumns.length + 2][1]; 
-        int i = keyColumns.length;
-        Js.<JsArray<Double>>cast(keyTableData[i++]).setAt(0, (double) 0);
-        Js.<JsArray<Double>>cast(keyTableData[i++]).setAt(0, ACTION_COLLAPSE); 
-        if (keyTable != null) {
-            keyTable.then(t -> {
-                t.close();
-                return null;
-            });
-            keyTable = null;
-        }
-        replaceSubscription(RebuildStep.HIERARCHICAL_TABLE_VIEW);
+        expandOrCollapseAll(ACTION_EXPAND);
     }
 
     @JsMethod
