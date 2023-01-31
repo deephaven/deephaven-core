@@ -55,7 +55,7 @@ public abstract class RollingSumSpec extends UpdateBySpecBase {
         final long size = revWindowScale.timescaleUnits() + fwdWindowScale.timescaleUnits();
         if (size < 0) {
             throw new IllegalArgumentException("UpdateBy rolling window size must be non-negative");
-        } else if (!revWindowScale.isTimeBased() && size >= MAX_ARRAY_SIZE) {
+        } else if (!revWindowScale.isTimeBased() && size > MAX_ARRAY_SIZE) {
             throw new IllegalArgumentException(
                     "UpdateBy rolling window size may not exceed MAX_ARRAY_SIZE (" + MAX_ARRAY_SIZE + ")");
         }

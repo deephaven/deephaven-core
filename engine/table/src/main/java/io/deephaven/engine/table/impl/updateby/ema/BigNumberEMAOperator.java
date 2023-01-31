@@ -51,6 +51,7 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
         public void reset() {
             curVal = null;
             lastStamp = NULL_LONG;
+            lastDt = NULL_LONG;
         }
     }
 
@@ -78,10 +79,15 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
         this.control = control;
         this.valueSource = valueSource;
 
-        opAlpha = BigDecimal.valueOf(Math.exp(-1.0 / (double) timeScaleUnits));
-        opOneMinusAlpha =
-                timestampColumnName == null ? BigDecimal.ONE.subtract(opAlpha, control.bigValueContextOrDefault())
-                        : null;
+        if (timestampColumnName == null) {
+            // tick-based, pre-compute alpha and oneMinusAlpha
+            opAlpha = computeAlpha(-1, timeScaleUnits);
+            opOneMinusAlpha = computeOneMinusAlpha(opAlpha);
+        } else {
+            // time-based, must compute alpha and oneMinusAlpha for each time delta
+            opAlpha = null;
+            opOneMinusAlpha = null;
+        }
     }
 
     @Override
@@ -91,14 +97,8 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
         super.initializeUpdate(updateContext, firstUnmodifiedKey, firstUnmodifiedTimestamp);
 
         final Context ctx = (Context) updateContext;
-        // If we set the last state to null, then we know it was a reset state and the timestamp must also
-        // have been reset.
-        if (ctx.curVal == null || (firstUnmodifiedKey == NULL_ROW_KEY)) {
-            ctx.lastStamp = NULL_LONG;
-        } else {
-            // rely on the caller to validate this is a valid timestamp (or NULL_LONG when appropriate)
-            ctx.lastStamp = firstUnmodifiedTimestamp;
-        }
+        // rely on the caller to validate this is a valid timestamp (or NULL_LONG when appropriate)
+        ctx.lastStamp = firstUnmodifiedTimestamp;
     }
 
     void handleBadData(@NotNull final Context ctx, final boolean isNull) {
@@ -113,5 +113,13 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
         if (doReset) {
             ctx.reset();
         }
+    }
+
+    BigDecimal computeAlpha(final long dt, final long timeScaleUnits) {
+        return BigDecimal.valueOf(Math.exp(dt / (double) timeScaleUnits));
+    }
+
+    BigDecimal computeOneMinusAlpha(final BigDecimal alpha) {
+        return BigDecimal.ONE.subtract(alpha, control.bigValueContextOrDefault());
     }
 }

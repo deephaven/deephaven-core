@@ -49,6 +49,7 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
             @NotNull final UpdateByWindow[] windows,
             @NotNull final ColumnSource<?>[] inputSources,
             @NotNull final QueryTable source,
+            final String[] persistentColumns,
             @NotNull final Map<String, ? extends ColumnSource<?>> resultSources,
             @NotNull final Collection<? extends ColumnName> byColumns,
             @Nullable final String timestampColumnName,
@@ -76,8 +77,8 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
             }
             pt = source.partitionedAggBy(List.of(), true, null, byColumnNames);
 
-            // make the source->result transformer
-            transformer = source.newModifiedColumnSetTransformer(result, source.getDefinition().getColumnNamesArray());
+            // make the source->result transformer from only the columns in the source that are present in result
+            transformer = source.newModifiedColumnSetTransformer(result, persistentColumns);
         } else {
             pt = source.partitionedAggBy(List.of(), true, null, byColumnNames);
         }

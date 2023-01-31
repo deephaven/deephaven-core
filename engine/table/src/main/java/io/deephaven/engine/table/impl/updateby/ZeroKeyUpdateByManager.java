@@ -39,6 +39,7 @@ public class ZeroKeyUpdateByManager extends UpdateBy {
             @NotNull UpdateByWindow[] windows,
             @NotNull ColumnSource<?>[] inputSources,
             @NotNull QueryTable source,
+            final String[] persistentColumns,
             @NotNull final Map<String, ? extends ColumnSource<?>> resultSources,
             @Nullable String timestampColumnName,
             @Nullable WritableRowRedirection rowRedirection,
@@ -66,7 +67,7 @@ public class ZeroKeyUpdateByManager extends UpdateBy {
             buckets.offer(zeroKeyUpdateBy);
 
             // make the source->result transformer
-            transformer = source.newModifiedColumnSetTransformer(result, source.getDefinition().getColumnNamesArray());
+            transformer = source.newModifiedColumnSetTransformer(result, persistentColumns);
 
             // result will depend on zeroKeyUpdateBy
             result.addParentReference(zeroKeyUpdateBy.result);

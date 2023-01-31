@@ -71,11 +71,10 @@ public class BigIntegerEMAOperator extends BigNumberEMAOperator<BigInteger> {
                             if (dt != 0) {
                                 // alpha is dynamic based on time, but only recalculated when needed
                                 if (dt != lastDt) {
-                                    alpha = BigDecimal.valueOf(Math.exp(-dt / (double) reverseWindowScaleUnits));
-                                    oneMinusAlpha = BigDecimal.ONE.subtract(alpha, control.bigValueContextOrDefault());
+                                    alpha = computeAlpha(-dt, reverseWindowScaleUnits);
+                                    oneMinusAlpha = computeOneMinusAlpha(alpha);
                                     lastDt = dt;
                                 }
-
                                 curVal = curVal.multiply(alpha, control.bigValueContextOrDefault())
                                         .add(decimalInput.multiply(oneMinusAlpha, control.bigValueContextOrDefault()),
                                                 control.bigValueContextOrDefault());
