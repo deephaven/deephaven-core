@@ -4,7 +4,7 @@
 
 import unittest
 
-from deephaven import time_table, empty_table
+from deephaven import time_table, empty_table, DHError
 from deephaven.ugp import exclusive_lock
 from deephaven.experimental import time_window
 from tests.testbase import BaseTestCase
@@ -24,34 +24,44 @@ class ExperimentalTestCase(BaseTestCase):
     def test_full_outer_join(self):
         with self.subTest("full outer join with matching keys"):
             t1 = time_table("00:00:00.001").update(["a = i", "b = i * 2"])
-            t2 = time_table("00:00:00.001").update(["a = i", "c = i * 2"])
+            t2 = empty_table(100).update(["c = i", "d = i * 2"])
             self.wait_ticking_table_update(t1, row_count=100, timeout=5)
-            self.wait_ticking_table_update(t2, row_count=100, timeout=5)
-            rt = full_outer_join(t1, t2, on="a", joins="c")
-            self.assertEqual(4, len(rt.columns))
+            rt = full_outer_join(t1, t2, on="a = c")
             self.assertTrue(rt.is_refreshing)
             self.wait_ticking_table_update(rt, row_count=100, timeout=5)
+            self.assertEqual(len(rt.columns), len(t1.columns) + len(t2.columns))
 
         with self.subTest("full outer join with no matching keys"):
-            t1 = empty_table(2).update("X = i")
-            rt = full_outer_join(self.test_table, t1, on=[])
+            t1 = empty_table(2).update(["X = i", "a = i"])
+            rt = full_outer_join(self.test_table, t1, joins=["Y = a"])
             self.assertEqual(rt.size, t1.size * self.test_table.size)
+            self.assertEqual(len(rt.columns), 1 + len(self.test_table.columns))
+
+        with self.subTest("Conflicting column names"):
+            with self.assertRaises(DHError) as cm:
+                rt = full_outer_join(self.test_table, t1)
+            self.assertRegex(str(cm.exception), r"Conflicting column names")
 
     def test_left_outer_join(self):
         with self.subTest("left outer join with matching keys"):
             t1 = time_table("00:00:00.001").update(["a = i", "b = i * 2"])
-            t2 = time_table("00:00:00.001").update(["a = i", "c = i * 2"])
+            t2 = empty_table(100).update(["c = i", "d = i * 2"])
             self.wait_ticking_table_update(t1, row_count=100, timeout=5)
-            self.wait_ticking_table_update(t2, row_count=100, timeout=5)
-            rt = left_outer_join(t1, t2, on="a", joins="c")
-            self.assertEqual(4, len(rt.columns))
+            rt = left_outer_join(t1, t2, on="a = c")
             self.assertTrue(rt.is_refreshing)
             self.wait_ticking_table_update(rt, row_count=100, timeout=5)
+            self.assertEqual(len(rt.columns), len(t1.columns) + len(t2.columns))
 
         with self.subTest("left outer join with no matching keys"):
-            t1 = empty_table(2).update("X = i")
-            rt = left_outer_join(self.test_table, t1, on=[])
+            t1 = empty_table(2).update(["X = i", "a = i"])
+            rt = left_outer_join(self.test_table, t1, joins=["Y = a"])
             self.assertEqual(rt.size, t1.size * self.test_table.size)
+            self.assertEqual(len(rt.columns), 1 + len(self.test_table.columns))
+
+        with self.subTest("Conflicting column names"):
+            with self.assertRaises(DHError) as cm:
+                rt = left_outer_join(self.test_table, t1)
+            self.assertRegex(str(cm.exception), r"Conflicting column names")
 
     def test_time_window(self):
         with exclusive_lock():
