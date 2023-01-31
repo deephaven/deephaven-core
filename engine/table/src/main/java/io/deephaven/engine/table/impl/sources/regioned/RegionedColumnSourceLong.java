@@ -8,6 +8,18 @@
  */
 package io.deephaven.engine.table.impl.sources.regioned;
 
+import java.time.Instant;
+import java.time.ZonedDateTime;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
+
+import io.deephaven.time.DateTime;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.impl.sources.LocalDateWrapperSource;
+import io.deephaven.engine.table.impl.sources.LocalTimeWrapperSource;
+import io.deephaven.engine.table.impl.sources.ConvertableTimeSource;
+
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.impl.locations.ColumnLocation;
@@ -24,7 +36,7 @@ import static io.deephaven.util.type.TypeUtils.unbox;
  */
 abstract class RegionedColumnSourceLong<ATTR extends Values>
         extends RegionedColumnSourceArray<Long, ATTR, ColumnRegionLong<ATTR>>
-        implements ColumnSourceGetDefaults.ForLong {
+        implements ColumnSourceGetDefaults.ForLong ,ConvertableTimeSource  {
 
     RegionedColumnSourceLong(@NotNull final ColumnRegionLong<ATTR> nullRegion,
                              @NotNull final MakeDeferred<ATTR, ColumnRegionLong<ATTR>> makeDeferred) {
@@ -48,35 +60,69 @@ abstract class RegionedColumnSourceLong<ATTR extends Values>
         }
     }
 
+    // region reinterpretation
+    @Override
+    public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(@NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {
+        if(super.allowsReinterpret(alternateDataType)) {
+            return true;
+        }
+
+        return alternateDataType == Instant.class ||
+                alternateDataType == DateTime.class;
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    protected <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(@NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {
+        if(alternateDataType == Instant.class) {
+            return (ColumnSource<ALTERNATE_DATA_TYPE>) toInstant();
+        } else if(alternateDataType == DateTime.class) {
+            return (ColumnSource<ALTERNATE_DATA_TYPE>) toDateTime();
+        }
+
+        return super.doReinterpret(alternateDataType);
+    }
+
+    @Override
+    public boolean supportsTimeConversion() {
+        return true;
+    }
+
+    public ColumnSource<Instant> toInstant() {
+        //noinspection unchecked
+        return new RegionedColumnSourceInstant((RegionedColumnSourceLong<Values>) this);
+    }
+
+    public ColumnSource<DateTime> toDateTime() {
+        //noinspection unchecked
+        return new RegionedColumnSourceDateTime((RegionedColumnSourceLong<Values>) this);
+    }
+
+    @Override
+    public ColumnSource<ZonedDateTime> toZonedDateTime(ZoneId zone) {
+        //noinspection unchecked
+        return new RegionedColumnSourceZonedDateTime(zone, (RegionedColumnSourceLong<Values>) this);
+    }
+
+    @Override
+    public ColumnSource<LocalTime> toLocalTime(ZoneId zone) {
+        return new LocalTimeWrapperSource(toZonedDateTime(zone), zone);
+    }
+
+    @Override
+    public ColumnSource<LocalDate> toLocalDate(ZoneId zone) {
+        return new LocalDateWrapperSource(toZonedDateTime(zone), zone);
+    }
+
+    @Override
+    public ColumnSource<Long> toEpochNano() {
+        return this;
+    }
+    // endregion reinterpretation
+
     static final class AsValues extends RegionedColumnSourceLong<Values> implements MakeRegionDefault {
         AsValues() {
             super(ColumnRegionLong.createNull(PARAMETERS.regionMask), DeferredColumnRegionLong::new);
-        }
-    }
-
-    /**
-     * These are used by {@link RegionedColumnSourceReferencing} subclass who want a native long type.  This class does
-     * <em>not</em> hold an array of regions, but rather derives from {@link RegionedColumnSourceBase}, accessing its
-     * regions by looking into the delegate instance's region array.
-     */
-    @SuppressWarnings("unused")
-    static abstract class NativeType<DATA_TYPE, ATTR extends Values>
-            extends RegionedColumnSourceReferencing.NativeColumnSource<DATA_TYPE, ATTR, Long, ColumnRegionLong<ATTR>>
-            implements ColumnSourceGetDefaults.ForLong {
-
-        NativeType(@NotNull final RegionedColumnSourceBase<DATA_TYPE, ATTR, ColumnRegionReferencing<ATTR, ColumnRegionLong<ATTR>>> outerColumnSource) {
-            super(Long.class, outerColumnSource);
-        }
-
-        @Override
-        public long getLong(final long rowKey) {
-            return (rowKey == RowSequence.NULL_ROW_KEY ? getNullRegion() : lookupRegion(rowKey)).getLong(rowKey);
-        }
-
-        static final class AsValues<DATA_TYPE> extends NativeType<DATA_TYPE, Values> implements MakeRegionDefault {
-            AsValues(@NotNull final RegionedColumnSourceBase<DATA_TYPE, Values, ColumnRegionReferencing<Values, ColumnRegionLong<Values>>> outerColumnSource) {
-                super(outerColumnSource);
-            }
         }
     }
 
