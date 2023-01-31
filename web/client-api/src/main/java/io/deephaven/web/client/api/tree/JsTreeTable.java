@@ -725,11 +725,7 @@ public class JsTreeTable extends HasEventHandling {
         return columnsBitset;
     }
 
-    private void expandOrCollapseAll(double action) {
-        keyTableData = new Object[keyColumns.length + 2][1];
-        int i = keyColumns.length;
-        Js.<JsArray<Double>>cast(keyTableData[i++]).setAt(0, (double) 0);
-        Js.<JsArray<Double>>cast(keyTableData[i++]).setAt(0, action);
+    private void replaceKeyTable() {
         if (keyTable != null) {
             keyTable.then(t -> {
                 t.close();
@@ -739,6 +735,16 @@ public class JsTreeTable extends HasEventHandling {
         }
         replaceSubscription(RebuildStep.HIERARCHICAL_TABLE_VIEW);
     }
+
+    private void replaceKeyTableData(double action) {
+        keyTableData = new Object[keyColumns.length + 2][1];
+        int i = keyColumns.length;
+        Js.<JsArray<Double>>cast(keyTableData[i++]).setAt(0, (double) 0);
+        Js.<JsArray<Double>>cast(keyTableData[i++]).setAt(0, action);
+        replaceKeyTable();
+    }
+
+
 
     @JsMethod
     public void expand(Object row, @JsOptional Boolean expandDescendants) {
@@ -772,24 +778,17 @@ public class JsTreeTable extends HasEventHandling {
         }
 
         r.appendKeyData(keyTableData, action);
-        if (keyTable != null) {
-            keyTable.then(t -> {
-                t.close();
-                return null;
-            });
-            keyTable = null;
-        }
-        replaceSubscription(RebuildStep.HIERARCHICAL_TABLE_VIEW);
+        replaceKeyTable();
     }
 
     @JsMethod
     public void expandAll() {
-        expandOrCollapseAll(ACTION_EXPAND_WITH_DESCENDENTS);
+        replaceKeyTableData(ACTION_EXPAND_WITH_DESCENDENTS);
     }
 
     @JsMethod
     public void collapseAll() {
-        expandOrCollapseAll(ACTION_EXPAND);
+        replaceKeyTableData(ACTION_EXPAND);
     }
 
     @JsMethod

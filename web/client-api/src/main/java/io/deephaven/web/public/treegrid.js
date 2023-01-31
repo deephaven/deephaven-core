@@ -2,9 +2,7 @@
  * Simple es6 class encapsulating some basic rendering for a tree table in a grid, allowing
  * expanding and collapsing nodes, and filtering and sorting columns.
  */
-let console = window.console;
 
-console.log("hello");
 class TreeGrid {
   constructor(treeTable) {
     this.treeTable = treeTable;
@@ -45,7 +43,7 @@ class TreeGrid {
       if (cellElt.classList.contains('expanded')) {
         this.treeTable.collapse(rowNumber);
       } else {
-        this.treeTable.expand(rowNumber, false);
+        this.treeTable.expand(rowNumber);
       }
     }
   }
