@@ -7,17 +7,13 @@ import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
-import io.deephaven.engine.table.ChunkSource;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.ModifiedColumnSet;
-import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.ssa.LongSegmentedSortedArray;
-import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.util.SafeCloseableArray;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedNode;
@@ -26,6 +22,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Map;
+import java.util.function.BiConsumer;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
@@ -35,30 +32,28 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
  */
 class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucketHelper> {
     private static final int SSA_LEAF_SIZE = 4096;
-    protected final ColumnSource<?>[] inputSources;
-    // some columns will have multiple inputs, such as time-based and Weighted computations
-    final UpdateByOperator[] operators;
-    final UpdateByWindow[] windows;
-    final QueryTable source;
-    final RowRedirection rowRedirection;
-    final UpdateByControl control;
+    private final ColumnSource<?>[] inputSources;
+    private final UpdateByWindow[] windows;
+    private final QueryTable source;
+    private final UpdateByControl control;
+    private final BiConsumer<Throwable, TableListener.Entry> failureNotifier;
     final QueryTable result;
 
     /** An array of {@link UpdateByWindow.UpdateByWindowBucketContext}s for each window */
     final UpdateByWindow.UpdateByWindowBucketContext[] windowContexts;
 
     /** store timestamp data in an SSA (if needed) */
-    final String timestampColumnName;
-    final LongSegmentedSortedArray timestampSsa;
-    final ColumnSource<?> timestampColumnSource;
-    final ModifiedColumnSet timestampColumnSet;
+    private final String timestampColumnName;
+    private final LongSegmentedSortedArray timestampSsa;
+    private final ColumnSource<?> timestampColumnSource;
+    private final ModifiedColumnSet timestampColumnSet;
 
     /** Indicates this bucket needs to be processed (at least one window and operator are dirty) */
-    boolean isDirty;
+    private boolean isDirty;
     /** This rowset will store row keys where the timestamp is not null (will mirror the SSA contents) */
-    TrackingRowSet timestampValidRowSet;
+    private TrackingRowSet timestampValidRowSet;
     /** Track how many rows in this bucket have NULL timestamps */
-    long nullTimestampCount;
+    private long nullTimestampCount;
 
     // TODO: remove these data collection entries when bug-hunt complete
     public UpdateCommitter<UpdateByBucketHelper> committer;
@@ -69,32 +64,30 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
     /**
      * Perform updateBy operations on a single bucket of data (either zero-key or already limited through partitioning)
      *
-     * @param description descibes this bucket helper
-     * @param source the source table
-     * @param operators, the operations to perform
-     * @param inputSources the source input sources
-     * @param resultSources the result sources
+     * @param description         describes this bucket helper
+     * @param source              the source table
+     * @param inputSources        the source input sources
+     * @param resultSources       the result sources
      * @param timestampColumnName the timestamp column used for time-based operations
-     * @param rowRedirection the row redirection for operator output columns
-     * @param control the control object.
+     * @param control             the control object.
      */
 
-    protected UpdateByBucketHelper(@NotNull final String description,
+    protected UpdateByBucketHelper(
+            @NotNull final String description,
             @NotNull final QueryTable source,
-            @NotNull final UpdateByOperator[] operators,
             @NotNull final UpdateByWindow[] windows,
             @NotNull final ColumnSource<?>[] inputSources,
             @NotNull final Map<String, ? extends ColumnSource<?>> resultSources,
             @Nullable String timestampColumnName,
-            @Nullable final RowRedirection rowRedirection,
-            @NotNull final UpdateByControl control) {
+            @NotNull final UpdateByControl control,
+            @NotNull final BiConsumer<Throwable, TableListener.Entry> failureNotifier) {
 
         this.source = source;
-        this.operators = operators;
+        // some columns will have multiple inputs, such as time-based and Weighted computations
         this.windows = windows;
         this.inputSources = inputSources;
-        this.rowRedirection = rowRedirection;
         this.control = control;
+        this.failureNotifier = failureNotifier;
 
         result = new QueryTable(source.getRowSet(), resultSources);
 
@@ -391,9 +384,9 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
      * prepares this bucket for processing. This includes determination of `isDirty` status and the computation of
      * `affected` and `influencer` row sets for this processing cycle.
      */
-    class UpdateByBucketHelperListener extends InstrumentedTableUpdateListenerAdapter {
-        public UpdateByBucketHelperListener(@Nullable String description,
-                @NotNull final QueryTable source) {
+    private class UpdateByBucketHelperListener extends InstrumentedTableUpdateListenerAdapter {
+
+        private UpdateByBucketHelperListener(@Nullable final String description, @NotNull final QueryTable source) {
             super(description, source, false);
         }
 
@@ -410,6 +403,11 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
                         }
                     });
             UpdateByBucketHelper.this.committer.maybeActivate();
+        }
+
+        @Override
+        public void onFailure(@NotNull final Throwable originalException, @Nullable final Entry sourceEntry) {
+            failureNotifier.accept(originalException, sourceEntry);
         }
     }
 }
