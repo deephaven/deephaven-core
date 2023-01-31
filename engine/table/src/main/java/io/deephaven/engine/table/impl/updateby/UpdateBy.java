@@ -205,7 +205,7 @@ public abstract class UpdateBy {
                 .toArray();
         inputCacheNeeded = cacheableSourceIndices.length > 0;
 
-        //noinspection unchecked
+        // noinspection unchecked
         inputSourceCaches = new SoftReference[inputSources.length];
 
         buckets =
@@ -484,7 +484,7 @@ public abstract class UpdateBy {
                     0, taskCount,
                     (ctx, idx) -> {
                         // advance to the first key of this block
-                        ctx.rsIt.advance(inputRowSet.get((long)idx * PARALLEL_CACHE_BATCH_SIZE));
+                        ctx.rsIt.advance(inputRowSet.get((long) idx * PARALLEL_CACHE_BATCH_SIZE));
                         int remaining = PARALLEL_CACHE_BATCH_SIZE;
                         while (ctx.rsIt.hasMore() && remaining > 0) {
                             final RowSequence chunkOk = ctx.rsIt
@@ -817,8 +817,8 @@ public abstract class UpdateBy {
     }
 
     /**
-     * Disconnect result from the {@link UpdateGraphProcessor}, deliver downstream failure notifications, and
-     * cleanup if needed.
+     * Disconnect result from the {@link UpdateGraphProcessor}, deliver downstream failure notifications, and cleanup if
+     * needed.
      *
      * @param error The {@link Throwable} to deliver, either from upstream or update processing
      * @param sourceEntry The {@link TableListener.Entry} to associate with failure messages

@@ -61,8 +61,8 @@ public class ZeroKeyUpdateByManager extends UpdateBy {
             }
 
             // create an updateby bucket instance directly from the source table
-            zeroKeyUpdateBy = new UpdateByBucketHelper(bucketDescription, source, windows, inputSources,
-                    resultSources, timestampColumnName, control, (oe, se) -> deliverUpdateError(oe, se, true));
+            zeroKeyUpdateBy = new UpdateByBucketHelper(bucketDescription, source, windows, resultSources,
+                    timestampColumnName, control, (oe, se) -> deliverUpdateError(oe, se, true));
             buckets.offer(zeroKeyUpdateBy);
 
             // make the source->result transformer
@@ -71,8 +71,8 @@ public class ZeroKeyUpdateByManager extends UpdateBy {
             // result will depend on zeroKeyUpdateBy
             result.addParentReference(zeroKeyUpdateBy.result);
         } else {
-            zeroKeyUpdateBy = new UpdateByBucketHelper(bucketDescription, source, windows, inputSources,
-                    resultSources, timestampColumnName, control, (oe, se) -> {
+            zeroKeyUpdateBy = new UpdateByBucketHelper(bucketDescription, source, windows, resultSources,
+                    timestampColumnName, control, (oe, se) -> {
                         throw new IllegalStateException("Update failure from static zero key updateBy");
                     });
             result = zeroKeyUpdateBy.result;

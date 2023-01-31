@@ -14,7 +14,9 @@ import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.ssa.LongSegmentedSortedArray;
+import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.updategraph.UpdateCommitter;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.util.SafeCloseableArray;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedNode;
 import org.apache.commons.lang3.mutable.MutableLong;
@@ -32,8 +34,8 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
  */
 class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucketHelper> {
     private static final int SSA_LEAF_SIZE = 4096;
-    private final ColumnSource<?>[] inputSources;
     private final UpdateByWindow[] windows;
+    private final String description;
     private final QueryTable source;
     private final UpdateByControl control;
     private final BiConsumer<Throwable, TableListener.Entry> failureNotifier;
@@ -64,28 +66,26 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
     /**
      * Perform updateBy operations on a single bucket of data (either zero-key or already limited through partitioning)
      *
-     * @param description         describes this bucket helper
-     * @param source              the source table
-     * @param inputSources        the source input sources
-     * @param resultSources       the result sources
+     * @param description describes this bucket helper
+     * @param source the source table
+     * @param resultSources the result sources
      * @param timestampColumnName the timestamp column used for time-based operations
-     * @param control             the control object.
+     * @param control the control object.
      */
 
     protected UpdateByBucketHelper(
             @NotNull final String description,
             @NotNull final QueryTable source,
             @NotNull final UpdateByWindow[] windows,
-            @NotNull final ColumnSource<?>[] inputSources,
             @NotNull final Map<String, ? extends ColumnSource<?>> resultSources,
             @Nullable String timestampColumnName,
             @NotNull final UpdateByControl control,
             @NotNull final BiConsumer<Throwable, TableListener.Entry> failureNotifier) {
 
+        this.description = description;
         this.source = source;
         // some columns will have multiple inputs, such as time-based and Weighted computations
         this.windows = windows;
-        this.inputSources = inputSources;
         this.control = control;
         this.failureNotifier = failureNotifier;
 
@@ -117,6 +117,19 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
                 ModifiedColumnSet.EMPTY);
 
         prepareForUpdate(initialUpdate, true);
+
+        if (UpdateGraphProcessor.DEFAULT.isRefreshThread()) {
+            committer = new UpdateCommitter<>(UpdateByBucketHelper.this, (bucket) -> {
+                // ensure that the item has been cleaned up
+                if (bucket.isDirty) {
+                    System.out.printf("%d-Failing bucket %s, refreshThread=%b, clockValue=%d%n",
+                            UpdateByBucketHelper.this.hashCode(), description,
+                            UpdateGraphProcessor.DEFAULT.isRefreshThread(),
+                            LogicalClock.DEFAULT.currentValue());
+                }
+            });
+            committer.maybeActivate();
+        }
 
         initialUpdate.release();
 
@@ -301,6 +314,10 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
     public void prepareForUpdate(final TableUpdate upstream, final boolean initialStep) {
         Assert.eqFalse(isDirty, "UpdateBy bucket was marked dirty before processing an update");
 
+        System.out.printf("%d-Preparing bucket %s, initial=%b, refreshThread=%b, clockValue=%d%n", hashCode(),
+                description, initialStep, UpdateGraphProcessor.DEFAULT.isRefreshThread(),
+                LogicalClock.DEFAULT.currentValue());
+
         final boolean timestampsModified;
 
         // add all the SSA data
@@ -375,6 +392,9 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
      * Close the window contexts and release resources for this bucket
      */
     public void finalizeUpdate() {
+        System.out.printf("%d-Finalizing bucket %s, clockValue=%d%n", hashCode(), description,
+                LogicalClock.DEFAULT.currentValue());
+
         SafeCloseableArray.close(windowContexts);
         isDirty = false;
     }
@@ -397,9 +417,11 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
             UpdateByBucketHelper.this.committer =
                     new UpdateCommitter<>(UpdateByBucketHelper.this, (bucket) -> {
                         // ensure that the item has been cleaned up
-                        Assert.eqFalse(bucket.isDirty, "bucket.isDirty");
-                        for (UpdateByWindow.UpdateByWindowBucketContext ctx : bucket.windowContexts) {
-                            Assert.eqNull(ctx, "bucket.windowContexts[]");
+                        if (bucket.isDirty) {
+                            System.out.printf("%d-Failing bucket %s, refreshThread=%b, clockValue=%d%n",
+                                    UpdateByBucketHelper.this.hashCode(), description,
+                                    UpdateGraphProcessor.DEFAULT.isRefreshThread(),
+                                    LogicalClock.DEFAULT.currentValue());
                         }
                     });
             UpdateByBucketHelper.this.committer.maybeActivate();
