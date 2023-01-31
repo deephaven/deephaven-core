@@ -160,7 +160,8 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
         return source.satisfied(step) && transformFailureListener.satisfied(step);
     }
 
-    private void onBucketFailure(@NotNull final Throwable originalException,
+    private void onBucketFailure(
+            @NotNull final Throwable originalException,
             @Nullable final TableListener.Entry sourceEntry) {
         if (bucketFailureThrowable != null) {
             return;
@@ -169,8 +170,8 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
             if (bucketFailureThrowable != null) {
                 return;
             }
-            bucketFailureThrowable = originalException;
             bucketFailureSourceEntry = sourceEntry;
+            bucketFailureThrowable = originalException;
         }
     }
 
