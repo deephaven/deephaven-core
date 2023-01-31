@@ -19,7 +19,8 @@ public class BasicSqlConfig {
             Configuration.getInstance().getProperty("authentication.basic.sql.jdbc.connection");
     public static final Properties JDBC_CONNECTION_PROPS =
             Configuration.getInstance().getProperties("authentication.basic.sql.jdbc");
-    public static final String USER_TABLE = "users";
+    public static final String SCHEMA = "deephaven_username_password_auth";
+    public static final String USER_TABLE = SCHEMA + ".users";
     public static final String USER_NAME_COLUMN = "username";
     public static final String USER_PASSWORD_COLUMN = "password_hash";
     public static final String USER_ROUNDS_COLUMN = "rounds";

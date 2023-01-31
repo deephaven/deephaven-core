@@ -70,4 +70,10 @@ public class BasicSqlAuthenticationHandler implements BasicAuthMarshaller.Handle
             return Optional.empty();
         }
     }
+
+    public static void main(String[] args) {
+        for (String arg : args) {
+            System.out.println(BCrypt.hashpw(arg, BCrypt.gensalt(BasicSqlConfig.BCRYPT_LOG_ROUNDS)));
+        }
+    }
 }

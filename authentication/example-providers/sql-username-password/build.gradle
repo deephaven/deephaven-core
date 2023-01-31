@@ -1,6 +1,6 @@
-plugins {
+configurations {
+    pwGen
 }
-
 dependencies {
     implementation('org.postgresql:postgresql:42.4.0') {
         because 'Postgres driver to connect to a running DB to query for user information'
@@ -8,8 +8,22 @@ dependencies {
     implementation('org.mindrot:jbcrypt:0.4') {
         because 'bcrypt is used in this example to ensure passwords are never stored or queried in plain text'
     }
+
+    pwGen project(':log-to-stream')
+    Classpaths.inheritLogbackClassic(project, 'pwGen')
 }
 
 shadowJar {
     relocate 'org', 'io.deephaven.authentication.sql.rebased'
+}
+
+tasks.register('generatePassword', JavaExec) {
+    classpath(configurations.shadow.files)
+    classpath(configurations.pwGen.files)
+    classpath(sourceSets.main.runtimeClasspath)
+    mainClass = 'io.deephaven.authentication.sql.BasicSqlAuthenticationHandler'
+    doFirst {
+        println configurations.shadow.files
+        println classpath.files
+    }
 }
