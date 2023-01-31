@@ -49,7 +49,7 @@ abstract class UpdateByWindow {
         /** Were any timestamps modified in the current update? */
         protected final boolean timestampsModified;
         /** An array of context objects for each underlying operator */
-        protected final UpdateByOperator.UpdateContext[] opContexts;
+        protected final UpdateByOperator.Context[] opContexts;
         /** Whether this is the creation phase of this window */
         protected final boolean initialStep;
 
@@ -87,7 +87,7 @@ abstract class UpdateByWindow {
             this.timestampValidRowSet = timestampValidRowSet;
             this.timestampsModified = timestampsModified;
 
-            this.opContexts = new UpdateByOperator.UpdateContext[operators.length];
+            this.opContexts = new UpdateByOperator.Context[operators.length];
 
             this.workingChunkSize = chunkSize;
             this.initialStep = initialStep;
@@ -145,8 +145,7 @@ abstract class UpdateByWindow {
         }
 
         // return the correct type of UpdateByWindow
-        final boolean windowed = operators[0] instanceof UpdateByWindowedOperator;
-        if (!windowed) {
+        if (!operators[0].isWindowed) {
             return new UpdateByWindowCumulative(operators,
                     operatorSourceSlots,
                     timestampColumnName);
@@ -377,7 +376,7 @@ abstract class UpdateByWindow {
      * Returns a hash code given a particular operator
      */
     static int hashCodeFromOperator(final UpdateByOperator op) {
-        return hashCode(op instanceof UpdateByWindowedOperator,
+        return hashCode(op.isWindowed,
                 op.getInputColumnNames(),
                 op.getTimestampColumnName(),
                 op.getPrevWindowUnits(),
@@ -393,13 +392,10 @@ abstract class UpdateByWindow {
             return false;
         }
 
-        final boolean aWindowed = opA instanceof UpdateByWindowedOperator;
-        final boolean bWindowed = opB instanceof UpdateByWindowedOperator;
-
         // equivalent if both are cumulative, not equivalent if only one is cumulative
-        if (!aWindowed && !bWindowed) {
+        if (!opA.isWindowed && !opB.isWindowed) {
             return true;
-        } else if (aWindowed != bWindowed) {
+        } else if (opA.isWindowed != opB.isWindowed) {
             return false;
         }
 

@@ -8,6 +8,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.locations.TableDataException;
+import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseObjectUpdateByOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
@@ -15,7 +16,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.math.BigDecimal;
 
-import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator<BigDecimal> {
@@ -60,28 +60,29 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
      *
      * @param pair the {@link MatchPair} that defines the input/output for this operation
      * @param affectingColumns the names of the columns that affect this ema
+     * @param rowRedirection the {@link RowRedirection} to use for dense output sources
      * @param control defines how to handle {@code null} input values.
      * @param timestampColumnName the name of the column containing timestamps for time-based calcuations
-     * @param timeScaleUnits the smoothing window for the EMA. If no {@code timestampColumnName} is provided, this is
+     * @param windowScaleUnits the smoothing window for the EMA. If no {@code timestampColumnName} is provided, this is
      *        measured in ticks, otherwise it is measured in nanoseconds
-     * @param rowRedirection the {@link RowRedirection} to use for dense output sources
      * @param valueSource a reference to the input column source for this operation
      */
     public BigNumberEMAOperator(@NotNull final MatchPair pair,
             @NotNull final String[] affectingColumns,
+            @Nullable final RowRedirection rowRedirection,
             @NotNull final OperationControl control,
             @Nullable final String timestampColumnName,
-            final long timeScaleUnits,
-            @Nullable final RowRedirection rowRedirection,
+            final long windowScaleUnits,
             final ColumnSource<?> valueSource) {
-        super(pair, affectingColumns, rowRedirection, timestampColumnName, timeScaleUnits, BigDecimal.class);
+        super(pair, affectingColumns, rowRedirection, timestampColumnName, windowScaleUnits, 0, false,
+                BigDecimal.class);
 
         this.control = control;
         this.valueSource = valueSource;
 
         if (timestampColumnName == null) {
             // tick-based, pre-compute alpha and oneMinusAlpha
-            opAlpha = computeAlpha(-1, timeScaleUnits);
+            opAlpha = computeAlpha(-1, windowScaleUnits);
             opOneMinusAlpha = computeOneMinusAlpha(opAlpha);
         } else {
             // time-based, must compute alpha and oneMinusAlpha for each time delta
@@ -91,10 +92,10 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
     }
 
     @Override
-    public void initializeUpdate(@NotNull final UpdateContext updateContext,
+    public void initializeCumulative(@NotNull final UpdateByOperator.Context updateContext,
             final long firstUnmodifiedKey,
             final long firstUnmodifiedTimestamp) {
-        super.initializeUpdate(updateContext, firstUnmodifiedKey, firstUnmodifiedTimestamp);
+        super.initializeCumulative(updateContext, firstUnmodifiedKey, firstUnmodifiedTimestamp);
 
         final Context ctx = (Context) updateContext;
         // rely on the caller to validate this is a valid timestamp (or NULL_LONG when appropriate)

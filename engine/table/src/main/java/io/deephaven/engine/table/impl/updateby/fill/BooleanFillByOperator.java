@@ -17,6 +17,7 @@ import io.deephaven.chunk.ByteChunk;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseByteUpdateByOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
@@ -56,14 +57,14 @@ public class BooleanFillByOperator extends BaseByteUpdateByOperator {
                               // region extra-constructor-args
                               // endregion extra-constructor-args
                               ) {
-        super(fillPair, new String[] { fillPair.rightColumn }, rowRedirection);
+        super(fillPair, new String[] { fillPair.rightColumn }, rowRedirection, false);
         // region constructor
         // endregion constructor
     }
 
     @NotNull
     @Override
-    public UpdateContext makeUpdateContext(final int chunkSize, final int chunkCount) {
+    public UpdateByOperator.Context makeUpdateContext(final int chunkSize, final int chunkCount) {
         return new Context(chunkSize, chunkCount);
     }
 

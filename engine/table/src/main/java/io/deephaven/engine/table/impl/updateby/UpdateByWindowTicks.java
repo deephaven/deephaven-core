@@ -283,9 +283,9 @@ class UpdateByWindowTicks extends UpdateByWindow {
         Assert.neqNull(context.inputSources, "assignInputSources() must be called before processRow()");
 
         for (int opIdx : context.dirtyOperatorIndices) {
-            UpdateByWindowedOperator winOp = (UpdateByWindowedOperator) operators[opIdx];
+            UpdateByOperator winOp = operators[opIdx];
             // call the specialized version of `intializeUpdate()` for these operators
-            winOp.initializeUpdate(ctx.opContexts[opIdx]);
+            winOp.initializeRolling(ctx.opContexts[opIdx]);
         }
 
         try (final RowSequence.Iterator it = ctx.affectedRows.getRowSequenceIterator();
@@ -338,8 +338,7 @@ class UpdateByWindowTicks extends UpdateByWindow {
 
                 Arrays.fill(ctx.inputSourceChunks, null);
                 for (int opIdx : context.dirtyOperatorIndices) {
-                    UpdateByWindowedOperator.Context opCtx =
-                            (UpdateByWindowedOperator.Context) context.opContexts[opIdx];
+                    UpdateByOperator.Context opCtx = context.opContexts[opIdx];
                     // prep the chunk array needed by the accumulate call
                     final int[] srcIndices = operatorInputSourceSlots[opIdx];
                     for (int ii = 0; ii < srcIndices.length; ii++) {
@@ -350,7 +349,7 @@ class UpdateByWindowTicks extends UpdateByWindow {
                     }
 
                     // make the specialized call for windowed operators
-                    ((UpdateByWindowedOperator.Context) ctx.opContexts[opIdx]).accumulate(
+                    ctx.opContexts[opIdx].accumulateRolling(
                             chunkRs,
                             opCtx.chunkArr,
                             pushChunk,

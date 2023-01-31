@@ -105,8 +105,8 @@ class UpdateByWindowCumulative extends UpdateByWindow {
         if (initialStep) {
             // always at the beginning of the RowSet at creation phase
             for (int opIdx : context.dirtyOperatorIndices) {
-                UpdateByCumulativeOperator cumOp = (UpdateByCumulativeOperator) operators[opIdx];
-                cumOp.initializeUpdate(context.opContexts[opIdx], NULL_ROW_KEY, NULL_LONG);
+                UpdateByOperator cumOp = operators[opIdx];
+                cumOp.initializeCumulative(context.opContexts[opIdx], NULL_ROW_KEY, NULL_LONG);
             }
         } else {
             // find the key before the first affected row
@@ -115,15 +115,14 @@ class UpdateByWindowCumulative extends UpdateByWindow {
 
             // and preload that data for these operators
             for (int opIdx : context.dirtyOperatorIndices) {
-                UpdateByCumulativeOperator cumOp = (UpdateByCumulativeOperator) operators[opIdx];
+                UpdateByOperator cumOp = operators[opIdx];
                 if (cumOp.getTimestampColumnName() == null || keyBefore == NULL_ROW_KEY) {
                     // this operator doesn't care about timestamps or we know we are at the beginning of the rowset
-                    cumOp.initializeUpdate(context.opContexts[opIdx], keyBefore, NULL_LONG);
+                    cumOp.initializeCumulative(context.opContexts[opIdx], keyBefore, NULL_LONG);
                 } else {
                     // this operator cares about timestamps, so make sure it is starting from a valid value and
                     // valid timestamp by looking backward until the conditions are met
-                    UpdateByCumulativeOperator.Context cumOpContext =
-                            (UpdateByCumulativeOperator.Context) context.opContexts[opIdx];
+                    UpdateByOperator.Context cumOpContext = context.opContexts[opIdx];
                     long potentialResetTimestamp = context.timestampColumnSource.getLong(keyBefore);
 
                     if (potentialResetTimestamp == NULL_LONG || !cumOpContext.isValueValid(keyBefore)) {
@@ -141,7 +140,7 @@ class UpdateByWindowCumulative extends UpdateByWindow {
                         }
                     }
                     // call the specialized version of `intializeUpdate()` for these operators
-                    cumOp.initializeUpdate(context.opContexts[opIdx], keyBefore, potentialResetTimestamp);
+                    cumOp.initializeCumulative(context.opContexts[opIdx], keyBefore, potentialResetTimestamp);
                 }
             }
         }
@@ -160,8 +159,7 @@ class UpdateByWindowCumulative extends UpdateByWindow {
                         : context.timestampColumnSource.getChunk(tsGetCtx, rs).asLongChunk();
 
                 for (int opIdx : context.dirtyOperatorIndices) {
-                    UpdateByCumulativeOperator.Context opCtx =
-                            (UpdateByCumulativeOperator.Context) context.opContexts[opIdx];
+                    UpdateByOperator.Context opCtx = context.opContexts[opIdx];
                     // prep the chunk array needed by the accumulate call
                     final int[] srcIndices = operatorInputSourceSlots[opIdx];
                     for (int ii = 0; ii < srcIndices.length; ii++) {
@@ -172,7 +170,7 @@ class UpdateByWindowCumulative extends UpdateByWindow {
                     }
 
                     // make the specialized call for cumulative operators
-                    ((UpdateByCumulativeOperator.Context) context.opContexts[opIdx]).accumulate(
+                    context.opContexts[opIdx].accumulateCumulative(
                             rs,
                             opCtx.chunkArr,
                             tsChunk,

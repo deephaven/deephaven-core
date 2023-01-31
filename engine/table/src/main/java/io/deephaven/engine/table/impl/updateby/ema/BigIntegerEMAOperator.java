@@ -7,6 +7,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -23,10 +24,10 @@ public class BigIntegerEMAOperator extends BigNumberEMAOperator<BigInteger> {
         }
 
         @Override
-        public void accumulate(RowSequence inputKeys,
-                               Chunk<? extends Values>[] valueChunkArr,
-                               LongChunk<? extends Values> tsChunk,
-                               int len) {
+        public void accumulateCumulative(RowSequence inputKeys,
+                                         Chunk<? extends Values>[] valueChunkArr,
+                                         LongChunk<? extends Values> tsChunk,
+                                         int len) {
             setValuesChunk(valueChunkArr[0]);
 
             // chunk processing
@@ -101,25 +102,25 @@ public class BigIntegerEMAOperator extends BigNumberEMAOperator<BigInteger> {
      *
      * @param pair                the {@link MatchPair} that defines the input/output for this operation
      * @param affectingColumns    the names of the columns that affect this ema
+     * @param rowRedirection      the {@link RowRedirection} to use for dense output sources
      * @param control             defines how to handle {@code null} input values.
      * @param timestampColumnName the name of the column containing timestamps for time-based calcuations
-     * @param timeScaleUnits      the smoothing window for the EMA. If no {@code timestampColumnName} is provided, this is measured in ticks, otherwise it is measured in nanoseconds
-     * @param rowRedirection      the {@link RowRedirection} to use for dense output sources
+     * @param windowScaleUnits      the smoothing window for the EMA. If no {@code timestampColumnName} is provided, this is measured in ticks, otherwise it is measured in nanoseconds
      * @param valueSource         a reference to the input column source for this operation
      */
     public BigIntegerEMAOperator(@NotNull final MatchPair pair,
                                  @NotNull final String[] affectingColumns,
+                                 @Nullable final RowRedirection rowRedirection,
                                  @NotNull final OperationControl control,
                                  @Nullable final String timestampColumnName,
-                                 final long timeScaleUnits,
-                                 @Nullable final RowRedirection rowRedirection,
+                                 final long windowScaleUnits,
                                  final ColumnSource<?> valueSource) {
-        super(pair, affectingColumns, control, timestampColumnName, timeScaleUnits, rowRedirection, valueSource);
+        super(pair, affectingColumns, rowRedirection, control, timestampColumnName, windowScaleUnits, valueSource);
     }
 
     @NotNull
     @Override
-    public UpdateContext makeUpdateContext(final int chunkSize, final int chunkCount) {
+    public UpdateByOperator.Context makeUpdateContext(final int chunkSize, final int chunkCount) {
         return new Context(chunkSize, chunkCount);
     }
 }

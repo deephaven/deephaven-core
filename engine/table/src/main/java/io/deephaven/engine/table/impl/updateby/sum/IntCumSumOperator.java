@@ -10,6 +10,7 @@ import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseLongUpdateByOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
@@ -54,14 +55,14 @@ public class IntCumSumOperator extends BaseLongUpdateByOperator {
                                // region extra-constructor-args
                                // endregion extra-constructor-args
     ) {
-        super(pair, new String[] { pair.rightColumn }, rowRedirection);
+        super(pair, new String[] { pair.rightColumn }, rowRedirection, false);
         // region constructor
         // endregion constructor
     }
 
     @NotNull
     @Override
-    public UpdateContext makeUpdateContext(final int chunkSize, final int chunkCount) {
+    public UpdateByOperator.Context makeUpdateContext(final int chunkSize, final int chunkCount) {
         return new Context(chunkSize, chunkCount);
     }
 }

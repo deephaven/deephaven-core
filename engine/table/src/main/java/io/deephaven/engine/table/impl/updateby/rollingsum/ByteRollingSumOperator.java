@@ -11,20 +11,21 @@ import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ByteChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.MatchPair;
-import io.deephaven.engine.table.impl.updateby.internal.BaseWindowedLongUpdateByOperator;
+import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
+import io.deephaven.engine.table.impl.updateby.internal.BaseLongUpdateByOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static io.deephaven.util.QueryConstants.*;
 
-public class ByteRollingSumOperator extends BaseWindowedLongUpdateByOperator {
+public class ByteRollingSumOperator extends BaseLongUpdateByOperator {
     private static final int RING_BUFFER_INITIAL_CAPACITY = 512;
     // region extra-fields
     final byte nullValue;
     // endregion extra-fields
 
-    protected class Context extends BaseWindowedLongUpdateByOperator.Context {
+    protected class Context extends BaseLongUpdateByOperator.Context {
         protected ByteChunk<? extends Values> byteInfluencerValuesChunk;
         protected ByteRingBuffer byteWindowValues;
 
@@ -95,21 +96,21 @@ public class ByteRollingSumOperator extends BaseWindowedLongUpdateByOperator {
 
     @NotNull
     @Override
-    public UpdateContext makeUpdateContext(final int chunkSize, final int chunkCount) {
+    public UpdateByOperator.Context makeUpdateContext(final int chunkSize, final int chunkCount) {
         return new Context(chunkSize, chunkCount);
     }
 
     public ByteRollingSumOperator(@NotNull final MatchPair pair,
                                    @NotNull final String[] affectingColumns,
+                                   @Nullable final RowRedirection rowRedirection,
                                    @Nullable final String timestampColumnName,
                                    final long reverseWindowScaleUnits,
-                                   final long forwardWindowScaleUnits,
-                                   @Nullable final RowRedirection rowRedirection
+                                   final long forwardWindowScaleUnits
                                    // region extra-constructor-args
                                ,final byte nullValue
                                    // endregion extra-constructor-args
     ) {
-        super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, rowRedirection);
+        super(pair, affectingColumns, rowRedirection, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true);
         // region constructor
         this.nullValue = nullValue;
         // endregion constructor

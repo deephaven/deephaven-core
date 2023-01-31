@@ -5,7 +5,8 @@ import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.FloatChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.MatchPair;
-import io.deephaven.engine.table.impl.updateby.internal.BaseWindowedFloatUpdateByOperator;
+import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
+import io.deephaven.engine.table.impl.updateby.internal.BaseFloatUpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.PairwiseFloatRingBuffer;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
@@ -13,12 +14,12 @@ import org.jetbrains.annotations.Nullable;
 
 import static io.deephaven.util.QueryConstants.NULL_FLOAT;
 
-public class FloatRollingSumOperator extends BaseWindowedFloatUpdateByOperator {
+public class FloatRollingSumOperator extends BaseFloatUpdateByOperator {
     private static final int PAIRWISE_BUFFER_INITIAL_SIZE = 64;
     // region extra-fields
     // endregion extra-fields
 
-    protected class Context extends BaseWindowedFloatUpdateByOperator.Context {
+    protected class Context extends BaseFloatUpdateByOperator.Context {
         protected FloatChunk<? extends Values> floatInfluencerValuesChunk;
         protected PairwiseFloatRingBuffer floatPairwiseSum;
 
@@ -84,20 +85,20 @@ public class FloatRollingSumOperator extends BaseWindowedFloatUpdateByOperator {
 
     @NotNull
     @Override
-    public UpdateContext makeUpdateContext(final int chunkSize, final int chunkCount) {
+    public UpdateByOperator.Context makeUpdateContext(final int chunkSize, final int chunkCount) {
         return new Context(chunkSize, chunkCount);
     }
 
     public FloatRollingSumOperator(@NotNull final MatchPair pair,
                                    @NotNull final String[] affectingColumns,
+                                   @Nullable final RowRedirection rowRedirection,
                                    @Nullable final String timestampColumnName,
                                    final long reverseWindowScaleUnits,
-                                   final long forwardWindowScaleUnits,
-                                   @Nullable final RowRedirection rowRedirection
+                                   final long forwardWindowScaleUnits
                                    // region extra-constructor-args
                                    // endregion extra-constructor-args
     ) {
-        super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, rowRedirection);
+        super(pair, affectingColumns, rowRedirection, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true);
         // region constructor
         // endregion constructor
     }

@@ -34,8 +34,8 @@ public class ReplicateUpdateBy {
         String objectResult = ReplicatePrimitiveCode.charToObject(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/fill/CharFillByOperator.java");
         fixupStandardObject(objectResult, "ObjectFillByOperator", false,
-                "super\\(fillPair, new String\\[\\] \\{ fillPair.rightColumn \\}, rowRedirection\\);",
-                "super(fillPair, new String[] { fillPair.rightColumn }, rowRedirection, colType);",
+                "super\\(fillPair, new String\\[\\] \\{ fillPair.rightColumn \\}, rowRedirection, false\\);",
+                "super(fillPair, new String[] { fillPair.rightColumn }, rowRedirection, false, colType);",
                 " BaseObjectUpdateByOperator", " BaseObjectUpdateByOperator<T>",
                 "public ObjectChunk<Object,", "public ObjectChunk<T,");
 
@@ -65,8 +65,8 @@ public class ReplicateUpdateBy {
         objectResult = ReplicatePrimitiveCode.charToObject(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/internal/BaseCharUpdateByOperator.java");
         fixupStandardObject(objectResult, "BaseObjectUpdateByOperator", true,
-                "this\\(pair, affectingColumns, rowRedirection, null, 0\\);",
-                "this(pair, affectingColumns, rowRedirection, null, 0, colType);");
+                "this\\(pair, affectingColumns, rowRedirection, null, 0, 0, isWindowed\\);",
+                "this(pair, affectingColumns, rowRedirection, null, 0, 0, isWindowed, colType);");
 
         replicateNumericOperator(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/sum/ShortCumSumOperator.java",
@@ -95,23 +95,6 @@ public class ReplicateUpdateBy {
         replicateNumericOperator(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/ema/ShortEMAOperator.java",
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/ema/FloatEMAOperator.java");
-
-        // Replicate the rolling versions of UpdateByOperations
-        files = ReplicatePrimitiveCode.charToAllButBoolean(
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/internal/BaseWindowedCharUpdateByOperator.java",
-                exemptions);
-        for (final String f : files) {
-            if (f.contains("Int")) {
-                fixupInteger(f);
-            }
-
-            if (f.contains("Byte")) {
-                fixupByteBase(f);
-            }
-        }
-        objectResult = ReplicatePrimitiveCode.charToObject(
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/internal/BaseWindowedCharUpdateByOperator.java");
-        fixupStandardObject(objectResult, "BaseWindowedObjectUpdateByOperator", true);
 
         replicateNumericOperator(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingsum/ShortRollingSumOperator.java",

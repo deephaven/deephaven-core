@@ -229,29 +229,29 @@ public class UpdateByOperatorFactory {
             final OperationControl control = ema.controlOrDefault();
 
             if (csType == byte.class || csType == Byte.class) {
-                return new ByteEMAOperator(pair, affectingColumns, control,
-                        ema.timeScale().timestampCol(), timeScaleUnits, rowRedirection, columnSource);
+                return new ByteEMAOperator(pair, affectingColumns, rowRedirection, control,
+                        ema.timeScale().timestampCol(), timeScaleUnits, columnSource);
             } else if (csType == short.class || csType == Short.class) {
-                return new ShortEMAOperator(pair, affectingColumns, control,
-                        ema.timeScale().timestampCol(), timeScaleUnits, rowRedirection, columnSource);
+                return new ShortEMAOperator(pair, affectingColumns, rowRedirection, control,
+                        ema.timeScale().timestampCol(), timeScaleUnits, columnSource);
             } else if (csType == int.class || csType == Integer.class) {
-                return new IntEMAOperator(pair, affectingColumns, control,
-                        ema.timeScale().timestampCol(), timeScaleUnits, rowRedirection, columnSource);
+                return new IntEMAOperator(pair, affectingColumns, rowRedirection, control,
+                        ema.timeScale().timestampCol(), timeScaleUnits, columnSource);
             } else if (csType == long.class || csType == Long.class) {
-                return new LongEMAOperator(pair, affectingColumns, control,
-                        ema.timeScale().timestampCol(), timeScaleUnits, rowRedirection, columnSource);
+                return new LongEMAOperator(pair, affectingColumns, rowRedirection, control,
+                        ema.timeScale().timestampCol(), timeScaleUnits, columnSource);
             } else if (csType == float.class || csType == Float.class) {
-                return new FloatEMAOperator(pair, affectingColumns, control,
-                        ema.timeScale().timestampCol(), timeScaleUnits, rowRedirection, columnSource);
+                return new FloatEMAOperator(pair, affectingColumns, rowRedirection, control,
+                        ema.timeScale().timestampCol(), timeScaleUnits, columnSource);
             } else if (csType == double.class || csType == Double.class) {
-                return new DoubleEMAOperator(pair, affectingColumns, control,
-                        ema.timeScale().timestampCol(), timeScaleUnits, rowRedirection, columnSource);
+                return new DoubleEMAOperator(pair, affectingColumns, rowRedirection, control,
+                        ema.timeScale().timestampCol(), timeScaleUnits, columnSource);
             } else if (csType == BigDecimal.class) {
-                return new BigDecimalEMAOperator(pair, affectingColumns, control,
-                        ema.timeScale().timestampCol(), timeScaleUnits, rowRedirection, columnSource);
+                return new BigDecimalEMAOperator(pair, affectingColumns, rowRedirection, control,
+                        ema.timeScale().timestampCol(), timeScaleUnits, columnSource);
             } else if (csType == BigInteger.class) {
-                return new BigIntegerEMAOperator(pair, affectingColumns, control,
-                        ema.timeScale().timestampCol(), timeScaleUnits, rowRedirection, columnSource);
+                return new BigIntegerEMAOperator(pair, affectingColumns, rowRedirection, control,
+                        ema.timeScale().timestampCol(), timeScaleUnits, columnSource);
             }
 
             throw new IllegalArgumentException("Can not perform EMA on type " + csType);
@@ -297,7 +297,7 @@ public class UpdateByOperatorFactory {
                 return new DoubleCumMinMaxOperator(fc, isMax, rowRedirection);
             } else if (Comparable.class.isAssignableFrom(csType)) {
                 // noinspection rawtypes
-                return new ComparableCumMinMaxOperator(csType, fc, isMax, rowRedirection);
+                return new ComparableCumMinMaxOperator(fc, isMax, rowRedirection, csType);
             }
 
             throw new IllegalArgumentException("Can not perform Cumulative Min/Max on type " + csType);
@@ -370,32 +370,41 @@ public class UpdateByOperatorFactory {
             final long fwdTimeScaleUnits = rs.fwdTimeScale().timescaleUnits();
 
             if (csType == Boolean.class || csType == boolean.class) {
-                return new ByteRollingSumOperator(pair, affectingColumns, rs.revTimeScale().timestampCol(),
-                        prevTimeScaleUnits, fwdTimeScaleUnits, rowRedirection, NULL_BOOLEAN_AS_BYTE);
+                return new ByteRollingSumOperator(pair, affectingColumns, rowRedirection,
+                        rs.revTimeScale().timestampCol(),
+                        prevTimeScaleUnits, fwdTimeScaleUnits, NULL_BOOLEAN_AS_BYTE);
             } else if (csType == byte.class || csType == Byte.class) {
-                return new ByteRollingSumOperator(pair, affectingColumns, rs.revTimeScale().timestampCol(),
-                        prevTimeScaleUnits, fwdTimeScaleUnits, rowRedirection, NULL_BYTE);
+                return new ByteRollingSumOperator(pair, affectingColumns, rowRedirection,
+                        rs.revTimeScale().timestampCol(),
+                        prevTimeScaleUnits, fwdTimeScaleUnits, NULL_BYTE);
             } else if (csType == short.class || csType == Short.class) {
-                return new ShortRollingSumOperator(pair, affectingColumns, rs.revTimeScale().timestampCol(),
-                        prevTimeScaleUnits, fwdTimeScaleUnits, rowRedirection);
+                return new ShortRollingSumOperator(pair, affectingColumns, rowRedirection,
+                        rs.revTimeScale().timestampCol(),
+                        prevTimeScaleUnits, fwdTimeScaleUnits);
             } else if (csType == int.class || csType == Integer.class) {
-                return new IntRollingSumOperator(pair, affectingColumns, rs.revTimeScale().timestampCol(),
-                        prevTimeScaleUnits, fwdTimeScaleUnits, rowRedirection);
+                return new IntRollingSumOperator(pair, affectingColumns, rowRedirection,
+                        rs.revTimeScale().timestampCol(),
+                        prevTimeScaleUnits, fwdTimeScaleUnits);
             } else if (csType == long.class || csType == Long.class) {
-                return new LongRollingSumOperator(pair, affectingColumns, rs.revTimeScale().timestampCol(),
-                        prevTimeScaleUnits, fwdTimeScaleUnits, rowRedirection);
+                return new LongRollingSumOperator(pair, affectingColumns, rowRedirection,
+                        rs.revTimeScale().timestampCol(),
+                        prevTimeScaleUnits, fwdTimeScaleUnits);
             } else if (csType == float.class || csType == Float.class) {
-                return new FloatRollingSumOperator(pair, affectingColumns, rs.revTimeScale().timestampCol(),
-                        prevTimeScaleUnits, fwdTimeScaleUnits, rowRedirection);
+                return new FloatRollingSumOperator(pair, affectingColumns, rowRedirection,
+                        rs.revTimeScale().timestampCol(),
+                        prevTimeScaleUnits, fwdTimeScaleUnits);
             } else if (csType == double.class || csType == Double.class) {
-                return new DoubleRollingSumOperator(pair, affectingColumns, rs.revTimeScale().timestampCol(),
-                        prevTimeScaleUnits, fwdTimeScaleUnits, rowRedirection);
+                return new DoubleRollingSumOperator(pair, affectingColumns, rowRedirection,
+                        rs.revTimeScale().timestampCol(),
+                        prevTimeScaleUnits, fwdTimeScaleUnits);
             } else if (csType == BigDecimal.class) {
-                return new BigDecimalRollingSumOperator(pair, affectingColumns, rs.revTimeScale().timestampCol(),
-                        prevTimeScaleUnits, fwdTimeScaleUnits, rowRedirection, control.mathContextOrDefault());
+                return new BigDecimalRollingSumOperator(pair, affectingColumns, rowRedirection,
+                        rs.revTimeScale().timestampCol(),
+                        prevTimeScaleUnits, fwdTimeScaleUnits, control.mathContextOrDefault());
             } else if (csType == BigInteger.class) {
-                return new BigIntegerRollingSumOperator(pair, affectingColumns, rs.revTimeScale().timestampCol(),
-                        prevTimeScaleUnits, fwdTimeScaleUnits, rowRedirection);
+                return new BigIntegerRollingSumOperator(pair, affectingColumns, rowRedirection,
+                        rs.revTimeScale().timestampCol(),
+                        prevTimeScaleUnits, fwdTimeScaleUnits);
             }
 
             throw new IllegalArgumentException("Can not perform RollingSum on type " + csType);

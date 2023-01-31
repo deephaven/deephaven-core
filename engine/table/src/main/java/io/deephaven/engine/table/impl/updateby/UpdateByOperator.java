@@ -24,12 +24,12 @@ import java.util.Map;
  * interface, the pattern of calls will be as follows.
  *
  * <ol>
- * <li>{@link UpdateByCumulativeOperator#initializeUpdate(UpdateContext, long, long)} for cumulative operators or
- * {@link UpdateByWindowedOperator#initializeUpdate(UpdateContext)} for windowed operators</li>
- * <li>{@link UpdateByCumulativeOperator.Context#accumulate(RowSequence, Chunk[], LongChunk, int)} for cumulative
- * operators or {@link UpdateByWindowedOperator.Context#accumulate(RowSequence, Chunk[], IntChunk, IntChunk, int)} for
+ * <li>{@link UpdateByOperator#initializeCumulative(Context, long, long)} for cumulative operators or
+ * {@link UpdateByOperator#initializeRolling(Context)} (Context)} for windowed operators</li>
+ * <li>{@link UpdateByOperator.Context#accumulateCumulative(RowSequence, Chunk[], LongChunk, int)} for cumulative
+ * operators or {@link UpdateByOperator.Context#accumulateRolling(RowSequence, Chunk[], IntChunk, IntChunk, int)} for
  * windowed operators</li>
- * <li>{@link #finishUpdate(UpdateContext)}</li>
+ * <li>{@link #finishUpdate(UpdateByOperator.Context)}</li>
  * </ol>
  */
 public abstract class UpdateByOperator {
@@ -43,6 +43,8 @@ public abstract class UpdateByOperator {
     protected final long forwardWindowScaleUnits;
     protected final String timestampColumnName;
 
+    protected final boolean isWindowed;
+
     /**
      * The input modifiedColumnSet for this operator
      */
@@ -55,9 +57,23 @@ public abstract class UpdateByOperator {
     /**
      * A context item for use with updateBy operators
      */
-    public interface UpdateContext extends SafeCloseable {
+    public abstract class Context implements SafeCloseable {
+        protected final Chunk<? extends Values>[] chunkArr;
+        protected int nullCount = 0;
 
-        void setValuesChunk(@NotNull Chunk<? extends Values> valuesChunk);
+        public Context(int chunkCount) {
+            chunkArr = new Chunk[chunkCount];
+        }
+
+        public boolean isValueValid(long atKey) {
+            throw new UnsupportedOperationException(
+                    "isValueValid() must be overridden by time-aware cumulative operators");
+        }
+
+        @Override
+        public void close() {}
+
+        protected abstract void setValuesChunk(@NotNull Chunk<? extends Values> valuesChunk);
 
         /**
          * Add values to the operators current data set
@@ -68,7 +84,7 @@ public abstract class UpdateByOperator {
          *        of the operator to pull the data from the chunk and use it properly
          * @param count the number of items to push from the chunk
          */
-        void push(long key, int pos, int count);
+        protected abstract void push(long key, int pos, int count);
 
         /**
          * Remove values from the operators current data set. This is only valid for windowed operators as cumulative
@@ -76,41 +92,67 @@ public abstract class UpdateByOperator {
          *
          * @param count the number of items to pop from the data set
          */
-        void pop(int count);
+        protected void pop(int count) {
+            throw new UnsupportedOperationException("pop() must be overriden by rolling operators");
+        }
+
+        public abstract void accumulateCumulative(RowSequence inputKeys,
+                Chunk<? extends Values>[] valueChunkArr,
+                LongChunk<? extends Values> tsChunk,
+                int len);
+
+        public abstract void accumulateRolling(RowSequence inputKeys,
+                Chunk<? extends Values> influencerValueChunkArr[],
+                IntChunk<? extends Values> pushChunk,
+                IntChunk<? extends Values> popChunk,
+                int len);
 
         /**
          * Write the current value for this row to the output chunk
          */
-        void writeToOutputChunk(int outIdx);
+        protected abstract void writeToOutputChunk(int outIdx);
+
+
+        /**
+         * Write the output chunk to the output column
+         */
+        protected abstract void writeToOutputColumn(@NotNull final RowSequence inputKeys);
 
         /**
          * Reset the operator data values to a known state. This may occur during initialization or when a windowed
          * operator has an empty window
          */
-
         @OverridingMethodsMustInvokeSuper
-        void reset();
-
-        /**
-         * Write the output chunk to the output column
-         */
-        void writeToOutputColumn(@NotNull final RowSequence inputKeys);
+        protected abstract void reset();
     }
 
 
     protected UpdateByOperator(@NotNull final MatchPair pair,
             @NotNull final String[] affectingColumns,
+            @Nullable final RowRedirection rowRedirection,
             @Nullable final String timestampColumnName,
             final long reverseWindowScaleUnits,
             final long forwardWindowScaleUnits,
-            @Nullable final RowRedirection rowRedirection) {
+            final boolean isWindowed) {
         this.pair = pair;
         this.affectingColumns = affectingColumns;
         this.rowRedirection = rowRedirection;
         this.timestampColumnName = timestampColumnName;
         this.reverseWindowScaleUnits = reverseWindowScaleUnits;
         this.forwardWindowScaleUnits = forwardWindowScaleUnits;
+        this.isWindowed = isWindowed;
     }
+
+    /**
+     * Initialize the bucket context for a cumulative operator
+     */
+    public void initializeCumulative(@NotNull final Context context, final long firstUnmodifiedKey,
+            long firstUnmodifiedTimestamp) {}
+
+    /**
+     * Initialize the bucket context for s windowed operator
+     */
+    public void initializeRolling(@NotNull final Context context) {}
 
     /**
      * Get the names of the input column(s) for this operator.
@@ -175,27 +217,37 @@ public abstract class UpdateByOperator {
     protected abstract Map<String, ColumnSource<?>> getOutputColumns();
 
     /**
+     * Whether this operator supports windows (is rolling operator)
+     *
+     * @return true if the operator is windowed, false if cumulative
+     */
+    @NotNull
+    protected boolean getIsWindowed() {
+        return isWindowed;
+    }
+
+    /**
      * Indicate that the operation should start tracking previous values for ticking updates.
      */
     protected abstract void startTrackingPrev();
 
     /**
-     * Make an {@link UpdateContext} suitable for use with updates.
+     * Make an {@link Context} suitable for use with updates.
      *
      * @param chunkSize The expected size of chunks that will be provided during the update,
      * @param chunkCount The number of chunks that will be provided during the update,
      * @return a new context
      */
     @NotNull
-    public abstract UpdateContext makeUpdateContext(final int chunkSize, final int chunkCount);
+    public abstract Context makeUpdateContext(final int chunkSize, final int chunkCount);
 
     /**
      * Perform any bookkeeping required at the end of a single part of the update. This is always preceded with a call
-     * to {@code #initializeUpdate(UpdateContext)} (specialized for each type of operator)
+     * to {@code #initializeUpdate(Context)} (specialized for each type of operator)
      *
      * @param context the context object
      */
-    protected void finishUpdate(@NotNull final UpdateContext context) {}
+    protected void finishUpdate(@NotNull final Context context) {}
 
     /**
      * Apply a shift to the operation.

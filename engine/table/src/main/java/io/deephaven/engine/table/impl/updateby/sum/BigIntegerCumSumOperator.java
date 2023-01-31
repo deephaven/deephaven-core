@@ -5,6 +5,7 @@ import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseObjectUpdateByOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
@@ -45,12 +46,12 @@ public final class BigIntegerCumSumOperator extends BaseObjectUpdateByOperator<B
 
     public BigIntegerCumSumOperator(@NotNull final MatchPair inputPair,
                                     @Nullable final RowRedirection rowRedirection) {
-        super(inputPair, new String[] {inputPair.rightColumn}, rowRedirection, BigInteger.class);
+        super(inputPair, new String[] {inputPair.rightColumn}, rowRedirection, false, BigInteger.class);
     }
 
     @NotNull
     @Override
-    public UpdateContext makeUpdateContext(final int chunkSize, final int chunkCount) {
+    public UpdateByOperator.Context makeUpdateContext(final int chunkSize, final int chunkCount) {
         return new Context(chunkSize, chunkCount);
     }
 }

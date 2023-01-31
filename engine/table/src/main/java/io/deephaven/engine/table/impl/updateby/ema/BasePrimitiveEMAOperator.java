@@ -6,13 +6,12 @@ import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.locations.TableDataException;
+import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseDoubleUpdateByOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
-import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperator {
@@ -21,8 +20,6 @@ public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperato
     protected double oneMinusAlpha;
 
     public abstract class Context extends BaseDoubleUpdateByOperator.Context {
-        public LongChunk<? extends Values> timestampValueChunk;
-
         long lastStamp = NULL_LONG;
 
         Context(final int chunkSize, final int chunkCount) {
@@ -41,32 +38,32 @@ public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperato
      *
      * @param pair the {@link MatchPair} that defines the input/output for this operation
      * @param affectingColumns the names of the columns that affect this ema
+     * @param rowRedirection the row redirection to use for the EMA output columns
      * @param control the control parameters for EMA
      * @param timestampColumnName an optional timestamp column. If this is null, it will be assumed time is measured in
      *        integer ticks.
-     * @param timeScaleUnits the smoothing window for the EMA. If no {@code timestampColumnName} is provided, this is
+     * @param windowScaleUnits the smoothing window for the EMA. If no {@code timestampColumnName} is provided, this is
      *        measured in ticks, otherwise it is measured in nanoseconds.
-     * @param rowRedirection the row redirection to use for the EMA output columns
      */
     public BasePrimitiveEMAOperator(@NotNull final MatchPair pair,
             @NotNull final String[] affectingColumns,
+            @Nullable final RowRedirection rowRedirection,
             @NotNull final OperationControl control,
             @Nullable final String timestampColumnName,
-            final long timeScaleUnits,
-            @Nullable final RowRedirection rowRedirection) {
-        super(pair, affectingColumns, rowRedirection, timestampColumnName, timeScaleUnits);
+            final long windowScaleUnits) {
+        super(pair, affectingColumns, rowRedirection, timestampColumnName, windowScaleUnits, 0, false);
         this.control = control;
 
-        alpha = Math.exp(-1.0 / (double) timeScaleUnits);
+        alpha = Math.exp(-1.0 / (double) windowScaleUnits);
         oneMinusAlpha = 1 - alpha;
 
     }
 
     @Override
-    public void initializeUpdate(@NotNull final UpdateContext updateContext,
+    public void initializeCumulative(@NotNull final UpdateByOperator.Context updateContext,
             final long firstUnmodifiedKey,
             final long firstUnmodifiedTimestamp) {
-        super.initializeUpdate(updateContext, firstUnmodifiedKey, firstUnmodifiedTimestamp);
+        super.initializeCumulative(updateContext, firstUnmodifiedKey, firstUnmodifiedTimestamp);
 
         final Context ctx = (Context) updateContext;
         // rely on the caller to validate this is a valid timestamp (or NULL_LONG when appropriate)

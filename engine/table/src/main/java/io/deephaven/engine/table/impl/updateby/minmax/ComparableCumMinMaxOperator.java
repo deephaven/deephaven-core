@@ -9,11 +9,11 @@ import org.jetbrains.annotations.Nullable;
 public final class ComparableCumMinMaxOperator<T extends Comparable<T>> extends BaseObjectBinaryOperator<T> {
     private final boolean isMax;
 
-    public ComparableCumMinMaxOperator(final Class<T> colType,
-            @NotNull final MatchPair inputPair,
+    public ComparableCumMinMaxOperator(@NotNull final MatchPair inputPair,
             final boolean isMax,
-            @Nullable final RowRedirection rowRedirection) {
-        super(colType, inputPair, new String[] {inputPair.rightColumn}, rowRedirection);
+            @Nullable final RowRedirection rowRedirection,
+            final Class<T> colType) {
+        super(inputPair, new String[] {inputPair.rightColumn}, rowRedirection, false, colType);
         this.isMax = isMax;
     }
 

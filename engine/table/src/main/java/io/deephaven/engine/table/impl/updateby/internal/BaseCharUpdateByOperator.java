@@ -1,6 +1,7 @@
 package io.deephaven.engine.table.impl.updateby.internal;
 
 import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableCharChunk;
 import io.deephaven.chunk.attributes.Values;
@@ -8,7 +9,6 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.sources.*;
-import io.deephaven.engine.table.impl.updateby.UpdateByCumulativeOperator;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
@@ -20,14 +20,14 @@ import java.util.Map;
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 import static io.deephaven.util.QueryConstants.*;
 
-public abstract class BaseCharUpdateByOperator extends UpdateByCumulativeOperator {
+public abstract class BaseCharUpdateByOperator extends UpdateByOperator {
     protected final WritableColumnSource<Character> outputSource;
     protected final WritableColumnSource<Character> maybeInnerSource;
 
     // region extra-fields
     // endregion extra-fields
 
-    protected abstract class Context extends UpdateByCumulativeOperator.Context {
+    protected abstract class Context extends UpdateByOperator.Context {
         public final ChunkSink.FillFromContext outputFillContext;
         public final WritableCharChunk<Values> outputValues;
 
@@ -40,10 +40,10 @@ public abstract class BaseCharUpdateByOperator extends UpdateByCumulativeOperato
         }
 
         @Override
-        public void accumulate(RowSequence inputKeys,
-                               Chunk<? extends Values>[] valueChunkArr,
-                               LongChunk<? extends Values> tsChunk,
-                               int len) {
+        public void accumulateCumulative(RowSequence inputKeys,
+                                         Chunk<? extends Values>[] valueChunkArr,
+                                         LongChunk<? extends Values> tsChunk,
+                                         int len) {
 
             setValuesChunk(valueChunkArr[0]);
 
@@ -58,19 +58,54 @@ public abstract class BaseCharUpdateByOperator extends UpdateByCumulativeOperato
         }
 
         @Override
-        public void close() {
-            super.close();
-            outputValues.close();
-            outputFillContext.close();
+        public void accumulateRolling(RowSequence inputKeys,
+                                      Chunk<? extends Values>[] influencerValueChunkArr,
+                                      IntChunk<? extends Values> pushChunk,
+                                      IntChunk<? extends Values> popChunk,
+                                      int len) {
+
+            setValuesChunk(influencerValueChunkArr[0]);
+            int pushIndex = 0;
+
+            // chunk processing
+            for (int ii = 0; ii < len; ii++) {
+                final int pushCount = pushChunk.get(ii);
+                final int popCount = popChunk.get(ii);
+
+                if (pushCount == NULL_INT) {
+                    writeNullToOutputChunk(ii);
+                    continue;
+                }
+
+                // pop for this row
+                if (popCount > 0) {
+                    pop(popCount);
+                }
+
+                // push for this row
+                if (pushCount > 0) {
+                    push(NULL_ROW_KEY, pushIndex, pushCount);
+                    pushIndex += pushCount;
+                }
+
+                // write the results to the output chunk
+                writeToOutputChunk(ii);
+            }
+
+            // chunk output to column
+            writeToOutputColumn(inputKeys);
         }
 
         @Override
         public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {}
 
-
         @Override
         public void writeToOutputChunk(int outIdx) {
             outputValues.set(outIdx, curVal);
+        }
+
+        void writeNullToOutputChunk(int outIdx) {
+            outputValues.set(outIdx, NULL_CHAR);
         }
 
         @Override
@@ -82,6 +117,13 @@ public abstract class BaseCharUpdateByOperator extends UpdateByCumulativeOperato
         public void reset() {
             curVal = NULL_CHAR;
         }
+
+        @Override
+        public void close() {
+            super.close();
+            outputValues.close();
+            outputFillContext.close();
+        }
     }
 
     /**
@@ -94,11 +136,12 @@ public abstract class BaseCharUpdateByOperator extends UpdateByCumulativeOperato
      */
     public BaseCharUpdateByOperator(@NotNull final MatchPair pair,
                                     @NotNull final String[] affectingColumns,
-                                    @Nullable final RowRedirection rowRedirection
+                                    @Nullable final RowRedirection rowRedirection,
+                                    final boolean isWindowed
                                     // region extra-constructor-args
                                     // endregion extra-constructor-args
     ) {
-        this(pair, affectingColumns, rowRedirection, null, 0);
+        this(pair, affectingColumns, rowRedirection, null, 0, 0, isWindowed);
     }
 
     /**
@@ -110,18 +153,20 @@ public abstract class BaseCharUpdateByOperator extends UpdateByCumulativeOperato
      * @param rowRedirection the {@link RowRedirection} for the output column
      * @param timestampColumnName an optional timestamp column. If this is null, it will be assumed time is measured in
      *        integer ticks.
-     * @param timeScaleUnits the smoothing window for the operator. If no {@code timestampColumnName} is provided, this
+     * @param reverseWindowScaleUnits the smoothing window for the operator. If no {@code timestampColumnName} is provided, this
      *                       is measured in ticks, otherwise it is measured in nanoseconds.
      */
     public BaseCharUpdateByOperator(@NotNull final MatchPair pair,
                                     @NotNull final String[] affectingColumns,
                                     @Nullable final RowRedirection rowRedirection,
                                     @Nullable final String timestampColumnName,
-                                    final long timeScaleUnits
+                                    final long reverseWindowScaleUnits,
+                                    final long forwardWindowScaleUnits,
+                                    final boolean isWindowed
                                     // region extra-constructor-args
                                     // endregion extra-constructor-args
                                     ) {
-        super(pair, affectingColumns, rowRedirection, timestampColumnName, timeScaleUnits);
+        super(pair, affectingColumns, rowRedirection, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, isWindowed);
         if(rowRedirection != null) {
             // region create-dense
             this.maybeInnerSource = new CharacterArraySource();
@@ -143,7 +188,7 @@ public abstract class BaseCharUpdateByOperator extends UpdateByCumulativeOperato
     // endregion extra-methods
 
     @Override
-    public void initializeUpdate(@NotNull UpdateContext context, long firstUnmodifiedKey, long firstUnmodifiedTimestamp) {
+    public void initializeCumulative(@NotNull UpdateByOperator.Context context, long firstUnmodifiedKey, long firstUnmodifiedTimestamp) {
         Context ctx = (Context) context;
         if (firstUnmodifiedKey != NULL_ROW_KEY) {
             ctx.curVal = outputSource.getChar(firstUnmodifiedKey);

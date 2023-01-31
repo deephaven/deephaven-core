@@ -1,13 +1,12 @@
 package io.deephaven.engine.table.impl.updateby.rollingsum;
 
-import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.base.RingBuffer;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
-import io.deephaven.engine.table.impl.updateby.internal.BaseWindowedObjectUpdateByOperator;
+import io.deephaven.engine.table.impl.updateby.internal.BaseObjectUpdateByOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -15,12 +14,12 @@ import org.jetbrains.annotations.Nullable;
 import java.math.BigDecimal;
 import java.math.MathContext;
 
-public final class BigDecimalRollingSumOperator extends BaseWindowedObjectUpdateByOperator<BigDecimal> {
+public final class BigDecimalRollingSumOperator extends BaseObjectUpdateByOperator<BigDecimal> {
     private static final int RING_BUFFER_INITIAL_CAPACITY = 512;
     @NotNull
     private final MathContext mathContext;
 
-    protected class Context extends BaseWindowedObjectUpdateByOperator<BigDecimal>.Context {
+    protected class Context extends BaseObjectUpdateByOperator<BigDecimal>.Context {
         protected ObjectChunk<BigDecimal, ? extends Values> objectInfluencerValuesChunk;
         protected RingBuffer<BigDecimal> objectWindowValues;
 
@@ -88,19 +87,19 @@ public final class BigDecimalRollingSumOperator extends BaseWindowedObjectUpdate
 
     @NotNull
     @Override
-    public UpdateByOperator.UpdateContext makeUpdateContext(final int chunkSize, final int chunkCount) {
+    public UpdateByOperator.Context makeUpdateContext(final int chunkSize, final int chunkCount) {
         return new Context(chunkSize, chunkCount);
     }
 
     public BigDecimalRollingSumOperator(@NotNull final MatchPair pair,
             @NotNull final String[] affectingColumns,
+            @Nullable final RowRedirection rowRedirection,
             @Nullable final String timestampColumnName,
             final long reverseWindowScaleUnits,
             final long forwardWindowScaleUnits,
-            @Nullable final RowRedirection rowRedirection,
             @NotNull final MathContext mathContext) {
-        super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits,
-                rowRedirection, BigDecimal.class);
+        super(pair, affectingColumns, rowRedirection, timestampColumnName, reverseWindowScaleUnits,
+                forwardWindowScaleUnits, true, BigDecimal.class);
         this.mathContext = mathContext;
     }
 }
