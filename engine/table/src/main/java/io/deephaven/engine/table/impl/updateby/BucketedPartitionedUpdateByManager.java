@@ -10,7 +10,6 @@ import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
-import io.deephaven.engine.updategraph.LogicalClock;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -23,15 +22,26 @@ import java.util.stream.Collectors;
 class BucketedPartitionedUpdateByManager extends UpdateBy {
 
     /** The output table for this UpdateBy operation */
-    final QueryTable result;
+    private final QueryTable result;
+
+    /** Listener to react to upstream changes to refreshing source tables */
+    private final UpdateByListener sourceListener;
+
+    /** ColumnSet transformer from source to downstream */
+    private final ModifiedColumnSet.Transformer mcsTransformer;
+
+    /** Pending failure encountered in a bucket update. */
+    private volatile Throwable bucketFailureThrowable;
+
+    /** Entry associated with {@link #bucketFailureThrowable}. */
+    private TableListener.Entry bucketFailureSourceEntry;
 
     /** Listener to the partitioned table used for identifying buckets */
-    final TransformFailureListener transformFailureListener;
+    private final TransformFailureListener transformFailureListener;
 
     /**
      * Perform a bucketed updateBy using {@code byColumns} as the keys
      *
-     * @param description the operation description
      * @param operators the operations to perform
      * @param windows the unique windows for this UpdateBy
      * @param inputSources the primitive input sources
@@ -44,7 +54,6 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
      * @param control the control object.
      */
     protected BucketedPartitionedUpdateByManager(
-            @NotNull final String description,
             @NotNull final UpdateByOperator[] operators,
             @NotNull final UpdateByWindow[] windows,
             @NotNull final ColumnSource<?>[] inputSources,
@@ -65,10 +74,10 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
         final PartitionedTable pt;
         if (source.isRefreshing()) {
             // this is a refreshing source, we will need a listener
-            listener = newUpdateByListener();
-            source.addUpdateListener(listener);
+            sourceListener = newUpdateByListener();
+            source.addUpdateListener(sourceListener);
             // result will depend on listener
-            result.addParentReference(listener);
+            result.addParentReference(sourceListener);
 
             // create input and output modified column sets
             for (UpdateByOperator op : operators) {
@@ -78,8 +87,10 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
             pt = source.partitionedAggBy(List.of(), true, null, byColumnNames);
 
             // make the source->result transformer from only the columns in the source that are present in result
-            transformer = source.newModifiedColumnSetTransformer(result, preservedColumns);
+            mcsTransformer = source.newModifiedColumnSetTransformer(result, preservedColumns);
         } else {
+            sourceListener = null;
+            mcsTransformer = null;
             pt = source.partitionedAggBy(List.of(), true, null, byColumnNames);
         }
 
@@ -96,10 +107,7 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
                     resultSources,
                     timestampColumnName,
                     control,
-                    (oe, se) -> deliverUpdateError(oe, se, true));
-
-            bucket.parentUpdateBy = this;
-            bucket.createdStep = LogicalClock.DEFAULT.currentStep();
+                    this::onBucketFailure);
 
             // add this to the bucket list
             synchronized (buckets) {
@@ -137,9 +145,43 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
     }
 
     @Override
+    protected UpdateByListener sourceListener() {
+        return sourceListener;
+    }
+
+    @Override
+    protected ModifiedColumnSet.Transformer mcsTransformer() {
+        return mcsTransformer;
+    }
+
+    @Override
     protected boolean upstreamSatisfied(final long step) {
         // For bucketed, need to verify the source and the transformed table listener are satisfied.
         return source.satisfied(step) && transformFailureListener.satisfied(step);
+    }
+
+    private void onBucketFailure(@NotNull final Throwable originalException,
+            @Nullable final TableListener.Entry sourceEntry) {
+        if (bucketFailureThrowable != null) {
+            return;
+        }
+        synchronized (this) {
+            if (bucketFailureThrowable != null) {
+                return;
+            }
+            bucketFailureThrowable = originalException;
+            bucketFailureSourceEntry = sourceEntry;
+        }
+    }
+
+    @Override
+    protected boolean maybeDeliverPendingFailure() {
+        final Throwable localBucketFailureThrowable = bucketFailureThrowable;
+        if (localBucketFailureThrowable != null) {
+            deliverUpdateError(localBucketFailureThrowable, bucketFailureSourceEntry, true);
+            return true;
+        }
+        return false;
     }
 
     private final class TransformFailureListener extends InstrumentedTableUpdateListenerAdapter {
@@ -152,7 +194,7 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
         public void onUpdate(@NotNull final TableUpdate upstream) {
             // No-op: We react to bucket creation inside the transform function, no need to do anything here.
             // Validation: We expect only adds, because the partitioned table was created by partitionedAggBy with
-            // preserveEmpty==true
+            // preserveEmpty==true.
             Assert.assertion(upstream.removed().isEmpty(), "upstream.removed().isEmpty()");
             Assert.assertion(upstream.modified().isEmpty(), "upstream.modified().isEmpty()");
             Assert.assertion(upstream.shifted().empty(), "upstream.shifted().empty()");
