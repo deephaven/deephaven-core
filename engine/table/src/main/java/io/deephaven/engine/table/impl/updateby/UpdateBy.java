@@ -951,7 +951,7 @@ public abstract class UpdateBy {
 
         String timestampColumnName = null;
         // create an initial set of all source columns
-        final Set<String> persistentColumnSet = new LinkedHashSet<>(source.getColumnSourceMap().keySet());
+        final Set<String> preservedColumnSet = new LinkedHashSet<>(source.getColumnSourceMap().keySet());
 
         final Set<String> problems = new LinkedHashSet<>();
         final Map<String, ColumnSource<?>> opResultSources = new LinkedHashMap<>();
@@ -961,7 +961,7 @@ public abstract class UpdateBy {
                     problems.add(name);
                 }
                 // remove overridden source columns
-                persistentColumnSet.remove(name);
+                preservedColumnSet.remove(name);
             });
             // verify zero or one timestamp column names
             if (op.getTimestampColumnName() != null) {
@@ -983,7 +983,7 @@ public abstract class UpdateBy {
         }
 
         // These are the source columns that exist unchanged in the result
-        final String[] persistentColumns = persistentColumnSet.toArray(String[]::new);
+        final String[] preservedColumns = preservedColumnSet.toArray(String[]::new);
 
         // We will divide the operators into similar windows for efficient processing.
         final KeyedObjectHashMap<UpdateByOperator, List<UpdateByOperator>> windowMap =
@@ -1068,7 +1068,7 @@ public abstract class UpdateBy {
                         windowArr,
                         inputSourceArr,
                         source,
-                        persistentColumns,
+                        preservedColumns,
                         resultSources,
                         fTimestampColumnName,
                         rowRedirection,
@@ -1105,7 +1105,7 @@ public abstract class UpdateBy {
                     windowArr,
                     inputSourceArr,
                     source,
-                    persistentColumns,
+                    preservedColumns,
                     resultSources,
                     byColumns,
                     fTimestampColumnName,

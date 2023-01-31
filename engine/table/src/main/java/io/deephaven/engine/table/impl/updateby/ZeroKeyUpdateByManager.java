@@ -26,6 +26,7 @@ public class ZeroKeyUpdateByManager extends UpdateBy {
      * @param operators the operations to perform
      * @param windows the unique windows for this UpdateBy
      * @param inputSources the primitive input sources
+     * @param preservedColumns columns from the source table that are unchanged in the result table
      * @param source the source table
      * @param resultSources the result sources
      * @param timestampColumnName the column to use for all time-aware operators
@@ -33,15 +34,15 @@ public class ZeroKeyUpdateByManager extends UpdateBy {
      * @param control the control object.
      */
     protected ZeroKeyUpdateByManager(
-            @NotNull UpdateByOperator[] operators,
-            @NotNull UpdateByWindow[] windows,
-            @NotNull ColumnSource<?>[] inputSources,
-            @NotNull QueryTable source,
-            final String[] persistentColumns,
+            @NotNull final UpdateByOperator[] operators,
+            @NotNull final UpdateByWindow[] windows,
+            @NotNull final ColumnSource<?>[] inputSources,
+            @NotNull final QueryTable source,
+            @NotNull final String[] preservedColumns,
             @NotNull final Map<String, ? extends ColumnSource<?>> resultSources,
-            @Nullable String timestampColumnName,
-            @Nullable WritableRowRedirection rowRedirection,
-            @NotNull UpdateByControl control) {
+            @Nullable final String timestampColumnName,
+            @Nullable final WritableRowRedirection rowRedirection,
+            @NotNull final UpdateByControl control) {
         super(source, operators, windows, inputSources, timestampColumnName, rowRedirection, control);
         final String bucketDescription = this + "-bucket-[]";
 
@@ -66,7 +67,7 @@ public class ZeroKeyUpdateByManager extends UpdateBy {
             buckets.offer(zeroKeyUpdateBy);
 
             // make the source->result transformer
-            transformer = source.newModifiedColumnSetTransformer(result, persistentColumns);
+            transformer = source.newModifiedColumnSetTransformer(result, preservedColumns);
 
             // result will depend on zeroKeyUpdateBy
             result.addParentReference(zeroKeyUpdateBy.result);

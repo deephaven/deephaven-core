@@ -52,6 +52,8 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
             curVal = null;
             lastStamp = NULL_LONG;
             lastDt = NULL_LONG;
+            alpha = null;
+            oneMinusAlpha = null;
         }
     }
 
