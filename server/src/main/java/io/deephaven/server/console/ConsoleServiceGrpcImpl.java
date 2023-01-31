@@ -390,7 +390,10 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                 return;
             }
             if (client.isReady()) {
-                // When !client.isReady(), onReady() is going to be called and will handle the schedule
+                // When !client.isReady(), onReady() is going to be called and will handle the schedule.
+                // Note: it's important that client.isReady() is checked _outside_ of the guard block (otherwise, the
+                // onReady() call could execute and schedule before the current thread exits the guard block, and we'd
+                // fail to successfully reschedule).
                 scheduler.runAfterDelay(SUBSCRIBE_TO_LOGS_SEND_MILLIS, this);
             }
         }
