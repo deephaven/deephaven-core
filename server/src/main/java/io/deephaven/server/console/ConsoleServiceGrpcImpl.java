@@ -379,14 +379,12 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
             if (!guard.compareAndSet(false, true)) {
                 return;
             }
-            final boolean isDone;
             try {
-                isDone = sendInternal();
+                sendInternal();
             } finally {
                 guard.set(false);
             }
-            if (isDone) {
-                // No need to reschedule, this RPC is done
+            if (done) {
                 return;
             }
             if (client.isReady()) {
@@ -398,13 +396,11 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
             }
         }
 
-        private boolean sendInternal() {
-            boolean isDone;
+        private void sendInternal() {
             LogSubscriptionData payload;
-            while (!(isDone = done) && client.isReady() && (payload = dequeue()) != null) {
+            while (!done && client.isReady() && (payload = dequeue()) != null) {
                 GrpcUtil.safelyOnNext(client, payload);
             }
-            return isDone;
         }
 
         // ------------------------------------------------------------------------------------------------------------
