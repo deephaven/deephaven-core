@@ -1,6 +1,9 @@
 #
 #     Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
+
+#
+#
 """This module allows users to perform SQL-style left outer and full outer joins on tables."""
 
 from typing import Union, Sequence
@@ -15,22 +18,21 @@ from deephaven.ugp import auto_locking_ctx
 _JOuterJoinTools = jpy.get_type("io.deephaven.engine.util.OuterJoinTools")
 
 
-def full_outer_join(table1: Table, table2: Table, on: Union[str, Sequence[str]],
+def full_outer_join(l_table: Table, r_table: Table, on: Union[str, Sequence[str]],
                     joins: Union[str, Sequence[str]] = None) -> Table:
-    """Returns a table that has one column for each of table1 columns, and one column corresponding to each of table2
-    columns listed in 'joins' (or all the columns whose names don't overlap with the name of a column from table1 if
-    'joins' is None or empty). The returned table will have one row for each matching set of keys between the first
-    and second tables, plus one row for any first table key set that doesn't match the second table and one row for
-    each key set from the second table that doesn't match the first table. Columns from either table for which there
-    was no match in the other table will have null values.
+    """The full_outer_join function creates a new table containing rows that have matching values in both tables.
+    If there are multiple matches between a row from the left able and rows from the right table, all matching
+    combinations will be included. Additionally, non-matching rows from both tables will also be included in the new
+    table. If no columns to match (on) are specified, then every combination of left and right table rows is included.
 
     Args:
-        table1 (Table): the input table 1
-        table2 (Table): the input table 2
+        l_table (Table): the left table
+        r_table (Table): the right table
         on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or an equal expression,
             i.e. "col_a = col_b" for different column names
-        joins (Union[str, Sequence[str]], optional): the column(s) to be added from table2 to the result
-            table, can be renaming expressions, i.e. "new_col = col"; default is None
+        joins (Union[str, Sequence[str]], optional): the column(s) to be added from right table to the result
+            table, can be renaming expressions, i.e. "new_col = col"; default is None, meaning all the columns from
+            the right table except ones with the same names as in the left table
 
     Returns:
         a new Table
@@ -41,23 +43,31 @@ def full_outer_join(table1: Table, table2: Table, on: Union[str, Sequence[str]],
     try:
         on = to_sequence(on)
         joins = to_sequence(joins)
-        with auto_locking_ctx(table1, table2):
+        with auto_locking_ctx(l_table, r_table):
             if joins:
-                return Table(j_table=_JOuterJoinTools.fullOuterJoin(table1.j_table, table2.j_table,
+                return Table(j_table=_JOuterJoinTools.fullOuterJoin(l_table.j_table, r_table.j_table,
                                                                     ",".join(on), ",".join(joins)))
             else:
-                return Table(j_table=_JOuterJoinTools.fullOuterJoin(table1.j_table, table1.j_table, ",".join(on)))
+                return Table(j_table=_JOuterJoinTools.fullOuterJoin(l_table.j_table, l_table.j_table, ",".join(on)))
     except Exception as e:
         raise DHError(e, message="failed to perform full-outer-join on tables.") from e
 
 
 def left_outer_join(l_table: Table, r_table: Table, on: Union[str, Sequence[str]],
                     joins: Union[str, Sequence[str]] = None) -> Table:
-    """Returns a table that has one column for each of the left table columns, and one column corresponding to each
-    of the right table columns listed in 'joins' (or all the columns whose names don't overlap with the name of a
-    column from the left table if 'joins' is None or empty. The returned table will have one row for each matching
-    set of keys between the left table and right table plus one row for any left table key set that doesn't match the
-    right table. Columns from the right table for which there was no match will have null values.
+    """The full_outer_join function creates a new table containing rows that have matching values in both tables.
+    If there are multiple matches between a row from the left able and rows from the right table, all matching
+    combinations will be included. Additionally, non-matching rows from the left tables will also be included in the new
+    table. If no columns to match (on) are specified, then every combination of left and right table rows is included.
+
+    Args:
+        l_table (Table): the left table
+        r_table (Table): the right table
+        on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or an equal expression,
+            i.e. "col_a = col_b" for different column names
+        joins (Union[str, Sequence[str]], optional): the column(s) to be added from right table to the result
+            table, can be renaming expressions, i.e. "new_col = col"; default is None, meaning all the columns from
+            the right table except ones with the same names as in the left table
 
     Args:
         l_table (Table): the left table
