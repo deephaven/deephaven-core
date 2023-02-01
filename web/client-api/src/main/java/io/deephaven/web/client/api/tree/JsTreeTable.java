@@ -248,13 +248,13 @@ public class JsTreeTable extends HasEventHandling {
                 return depthColumn[offsetInSnapshot];
             }
 
-            public void appendKeyData(Object[][] keyTableData, boolean expanded) {
+            public void appendKeyData(Object[][] keyTableData, double action) {
                 int i;
                 for (i = 0; i < keyColumns.length; i++) {
                     Js.<JsArray<Any>>cast(keyTableData[i]).push(keyColumns.getAt(i).get(this));
                 }
                 Js.<JsArray<Double>>cast(keyTableData[i++]).push((double) depth());
-                Js.<JsArray<Double>>cast(keyTableData[i++]).push(expanded ? ACTION_EXPAND : ACTION_COLLAPSE);
+                Js.<JsArray<Double>>cast(keyTableData[i++]).push(action);
             }
         }
     }
@@ -293,7 +293,7 @@ public class JsTreeTable extends HasEventHandling {
 
     // Tracking for the current/next key table contents. Note that the key table doesn't necessarily
     // only include key columns, but all HierarchicalTable.isExpandByColumn columns.
-    private final Object[][] keyTableData;
+    private Object[][] keyTableData;
     private Promise<JsTable> keyTable;
 
     private TicketAndPromise viewTicket;
@@ -725,19 +725,48 @@ public class JsTreeTable extends HasEventHandling {
         return columnsBitset;
     }
 
+    private void replaceKeyTable() {
+        if (keyTable != null) {
+            keyTable.then(t -> {
+                t.close();
+                return null;
+            });
+            keyTable = null;
+        }
+        replaceSubscription(RebuildStep.HIERARCHICAL_TABLE_VIEW);
+    }
+
+    private void replaceKeyTableData(double action) {
+        keyTableData = new Object[keyColumns.length + 2][1];
+        int i = keyColumns.length;
+        Js.<JsArray<Double>>cast(keyTableData[i++]).setAt(0, (double) 0);
+        Js.<JsArray<Double>>cast(keyTableData[i++]).setAt(0, action);
+        replaceKeyTable();
+    }
+
+
+
     @JsMethod
-    public void expand(Object row) {
-        setExpanded(row, true);
+    public void expand(Object row, @JsOptional Boolean expandDescendants) {
+        setExpanded(row, true, expandDescendants);
     }
 
     @JsMethod
     public void collapse(Object row) {
-        setExpanded(row, false);
+        setExpanded(row, false, false);
     }
 
     @JsMethod
-    public void setExpanded(Object row, boolean isExpanded) {
+    public void setExpanded(Object row, boolean isExpanded, @JsOptional Boolean expandDescendants) {
         // TODO check row number is within bounds
+        final double action;
+        if (!isExpanded) {
+            action = ACTION_COLLAPSE;
+        } else if (expandDescendants == Boolean.TRUE) {
+            action = ACTION_EXPAND_WITH_DESCENDENTS;
+        } else {
+            action = ACTION_EXPAND;
+        }
 
         final TreeRow r;
         if (row instanceof Double) {
@@ -748,15 +777,18 @@ public class JsTreeTable extends HasEventHandling {
             throw new IllegalArgumentException("row parameter must be an index or a row");
         }
 
-        r.appendKeyData(keyTableData, isExpanded);
-        if (keyTable != null) {
-            keyTable.then(t -> {
-                t.close();
-                return null;
-            });
-            keyTable = null;
-        }
-        replaceSubscription(RebuildStep.HIERARCHICAL_TABLE_VIEW);
+        r.appendKeyData(keyTableData, action);
+        replaceKeyTable();
+    }
+
+    @JsMethod
+    public void expandAll() {
+        replaceKeyTableData(ACTION_EXPAND_WITH_DESCENDENTS);
+    }
+
+    @JsMethod
+    public void collapseAll() {
+        replaceKeyTableData(ACTION_EXPAND);
     }
 
     @JsMethod
