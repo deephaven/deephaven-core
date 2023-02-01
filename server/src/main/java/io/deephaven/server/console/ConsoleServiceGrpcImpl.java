@@ -23,24 +23,7 @@ import io.deephaven.proto.backplane.grpc.FieldInfo;
 import io.deephaven.proto.backplane.grpc.FieldsChangeUpdate;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.backplane.grpc.TypedTicket;
-import io.deephaven.proto.backplane.script.grpc.AutoCompleteRequest;
-import io.deephaven.proto.backplane.script.grpc.AutoCompleteResponse;
-import io.deephaven.proto.backplane.script.grpc.BindTableToVariableRequest;
-import io.deephaven.proto.backplane.script.grpc.BindTableToVariableResponse;
-import io.deephaven.proto.backplane.script.grpc.CancelCommandRequest;
-import io.deephaven.proto.backplane.script.grpc.CancelCommandResponse;
-import io.deephaven.proto.backplane.script.grpc.ConsoleServiceGrpc;
-import io.deephaven.proto.backplane.script.grpc.ExecuteCommandRequest;
-import io.deephaven.proto.backplane.script.grpc.ExecuteCommandResponse;
-import io.deephaven.proto.backplane.script.grpc.GetCompletionItemsResponse;
-import io.deephaven.proto.backplane.script.grpc.GetConsoleTypesRequest;
-import io.deephaven.proto.backplane.script.grpc.GetConsoleTypesResponse;
-import io.deephaven.proto.backplane.script.grpc.GetHeapInfoRequest;
-import io.deephaven.proto.backplane.script.grpc.GetHeapInfoResponse;
-import io.deephaven.proto.backplane.script.grpc.LogSubscriptionData;
-import io.deephaven.proto.backplane.script.grpc.LogSubscriptionRequest;
-import io.deephaven.proto.backplane.script.grpc.StartConsoleRequest;
-import io.deephaven.proto.backplane.script.grpc.StartConsoleResponse;
+import io.deephaven.proto.backplane.script.grpc.*;
 import io.deephaven.server.console.completer.JavaAutoCompleteObserver;
 import io.deephaven.server.console.completer.PythonAutoCompleteObserver;
 import io.deephaven.server.session.SessionCloseableObserver;
@@ -402,9 +385,9 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                 if (!guard.compareAndSet(false, true)) {
                     return;
                 }
-                boolean queueIsKnownEmpty;
+                boolean bufferIsKnownEmpty;
                 try {
-                    queueIsKnownEmpty = false;
+                    bufferIsKnownEmpty = false;
                     while (true) {
                         if (done) {
                             return;
@@ -419,7 +402,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                         }
                         final LogSubscriptionData payload = dequeue();
                         if (payload == null) {
-                            queueIsKnownEmpty = true;
+                            bufferIsKnownEmpty = true;
                             break;
                         }
                         GrpcUtil.safelyOnNext(client, payload);
@@ -434,12 +417,12 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                     // and we'd fail to successfully reschedule).
                     return;
                 }
-                if (queueIsKnownEmpty) {
+                if (bufferIsKnownEmpty) {
                     // TODO(deephaven-core#3396): Add io.deephaven.server.util.Scheduler fixed delay support
                     scheduler.runAfterDelay(SUBSCRIBE_TO_LOGS_SEND_MILLIS, this);
                     return;
                 }
-                // Continue sending until the client is full or we know the queue is empty (or done, or tooSlow).
+                // Continue sending until the client's buffer is full or our buffer is empty (or done, or tooSlow).
             }
         }
 

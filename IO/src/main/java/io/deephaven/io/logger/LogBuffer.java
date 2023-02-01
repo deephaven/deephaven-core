@@ -39,8 +39,8 @@ public class LogBuffer implements LogBufferRecordListener {
     // -----------------------------------------------------------------------------------------------------------------
 
     public synchronized LogBufferRecord recordInternal(@NotNull final LogBufferRecord record) {
-        // A listener may choose to unsubscribe while consuming record, so this needs to be a collection that concurrent
-        // removals.
+        // A listener may choose to unsubscribe while consuming a record, so this needs to be a collection that supports
+        // concurrent removals.
         for (final LogBufferRecordListener listener : listeners) {
             listener.record(record);
         }
