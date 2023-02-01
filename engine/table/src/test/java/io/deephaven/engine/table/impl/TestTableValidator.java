@@ -36,7 +36,7 @@ public class TestTableValidator extends RefreshingTableTestCase {
             final EvalNugget[] en = new EvalNugget[] {
                     new EvalNugget() {
                         public Table e() {
-                            return queryTable;
+                            return queryTable.copy();
                         }
                     },
             };
