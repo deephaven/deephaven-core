@@ -68,7 +68,7 @@ public class UpdateBySpecBuilderTest {
                     .build();
         }
 
-        // TODO: add this properly
+        // TODO: add this correctly (DHC #3392)
         @Override
         public UpdateByColumn.UpdateBySpec visit(RollingSumSpec p) {
             return null;
