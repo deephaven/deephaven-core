@@ -83,6 +83,15 @@ if (hasProperty('psk')) {
     extraJvmArgs += ['-DAuthHandlers=io.deephaven.authentication.psk.PskAuthenticationHandler']
     dependencies.implementation(project(':authentication:example-providers:psk'))
 }
+if (hasProperty('sql-username-password')) {
+    extraJvmArgs += [
+            '-DAuthHandlers=io.deephaven.authentication.sql.BasicSqlAuthenticationHandler',
+            '-Dauthentication.basic.sql.jdbc.connection=jdbc:postgresql://localhost:5432/postgres',
+            '-Dauthentication.basic.sql.jdbc.user=postgres',
+            '-Dauthentication.basic.sql.jdbc.password=password',
+    ]
+    dependencies.implementation(project(':authentication:example-providers:sql-username-password'))
+}
 
 tasks.withType(JavaExec).configureEach {
     // This appends to the existing jvm args, so that java-open-nio still takes effect

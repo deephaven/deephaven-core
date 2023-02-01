@@ -17,13 +17,13 @@ shadowJar {
     relocate 'org', 'io.deephaven.authentication.sql.rebased'
 }
 
+// Usage:
+// ./gradlew :authentication:example-providers:sql-username-password:generatePassword --args=password
 tasks.register('generatePassword', JavaExec) {
     classpath(configurations.shadow.files)
     classpath(configurations.pwGen.files)
     classpath(sourceSets.main.runtimeClasspath)
     mainClass = 'io.deephaven.authentication.sql.BasicSqlAuthenticationHandler'
-    doFirst {
-        println configurations.shadow.files
-        println classpath.files
-    }
+    systemProperty 'Configuration.rootFile', 'lib-tests.prop'
+    systemProperty 'authentication.basic.sql.jdbc.connection', 'not used'
 }

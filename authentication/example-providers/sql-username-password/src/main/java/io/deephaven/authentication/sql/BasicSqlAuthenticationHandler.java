@@ -34,14 +34,15 @@ public class BasicSqlAuthenticationHandler implements BasicAuthMarshaller.Handle
             connection.setAutoCommit(false);
             try (PreparedStatement statement =
                     connection.prepareStatement(SELECT_USER, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_UPDATABLE)) {
+                statement.setString(1, username);
                 ResultSet resultSet = statement.executeQuery();
                 if (!resultSet.next()) {
                     // No user found, might not have meant to be a query to find this user
                     return Optional.empty();
                 }
 
-                String foundHash = resultSet.getString(0);
-                int foundRounds = resultSet.getInt(1);
+                String foundHash = resultSet.getString(1);
+                int foundRounds = resultSet.getInt(2);
                 if (resultSet.next()) {
                     logger.error().append("Duplicate rows found for user! ").append(username).endl();
                     return Optional.empty();
