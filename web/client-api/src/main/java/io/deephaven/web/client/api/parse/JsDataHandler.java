@@ -73,6 +73,7 @@ public enum JsDataHandler {
             for (int i = 0; i < data.length; i++) {
                 if (data[i] == null) {
                     nullCount++;
+                    positions.setAt(i, (double) lastOffset);
                     continue;
                 }
                 validity.set(i);
