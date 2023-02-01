@@ -1110,8 +1110,8 @@ public abstract class UpdateBy {
                     String.join(", ", problems) + "}");
         }
 
-        // TODO: test whether the source is static and that UpdateBy call uses only cumulative operators.  In this
-        //  case, we can use an optimized manager and a single pass through the column sources (DHC #3393)
+        // TODO: test whether the source is static and that UpdateBy call uses only cumulative operators. In this
+        // case, we can use an optimized manager and a single pass through the column sources (DHC #3393)
 
         return LivenessScopeStack.computeEnclosed(() -> {
             final BucketedPartitionedUpdateByManager bm = new BucketedPartitionedUpdateByManager(
