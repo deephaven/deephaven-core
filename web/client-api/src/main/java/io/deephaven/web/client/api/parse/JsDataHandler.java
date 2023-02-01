@@ -85,7 +85,7 @@ public enum JsDataHandler {
             positions.setAt(data.length, (double) lastOffset);
 
             // validity, positions, payload
-            addBuffer.apply(makeValidityBuffer(nullCount, validity));
+            addBuffer.apply(makeValidityBuffer(nullCount, data.length, validity));
             addBuffer.apply(new Uint8Array(positions.buffer));
             addBuffer.apply(payload);
 
@@ -197,7 +197,7 @@ public enum JsDataHandler {
             }
 
             // validity, then payload
-            addBuffer.apply(makeValidityBuffer(nullCount, validity));
+            addBuffer.apply(makeValidityBuffer(nullCount, data.length, validity));
             addBuffer.apply(new Uint8Array(payload.buffer));
 
             addNode.apply(new Node(data.length, nullCount));
@@ -267,7 +267,7 @@ public enum JsDataHandler {
             }
 
             // validity, then payload
-            addBuffer.apply(makeValidityBuffer(nullCount, validity));
+            addBuffer.apply(makeValidityBuffer(nullCount, data.length, validity));
             addBuffer.apply(new Uint8Array(payload.buffer));
 
             addNode.apply(new Node(data.length, nullCount));
@@ -386,7 +386,7 @@ public enum JsDataHandler {
             }
 
             // validity, then payload
-            addBuffer.apply(makeValidityBuffer(nullCount, validity));
+            addBuffer.apply(makeValidityBuffer(nullCount, data.length, validity));
             addBuffer.apply(new Uint8Array(Js.<TypedArray>uncheckedCast(payload).buffer));
 
             addNode.apply(new Node(data.length, nullCount));
@@ -452,7 +452,7 @@ public enum JsDataHandler {
         }
 
         // validity, then payload
-        addBuffer.apply(makeValidityBuffer(nullCount, validity));
+        addBuffer.apply(makeValidityBuffer(nullCount, data.length, validity));
         addBuffer.apply(new Uint8Array(Js.<TypedArray>uncheckedCast(payload).buffer));
 
         addNode.apply(new Node(data.length, nullCount));
@@ -544,10 +544,11 @@ public enum JsDataHandler {
         }
     }
 
-    private static Uint8Array makeValidityBuffer(int nullCount, BitSet nulls) {
+    private static Uint8Array makeValidityBuffer(int nullCount, int elementCount, BitSet nulls) {
         if (nullCount != 0) {
             byte[] nullsAsByteArray = nulls.toByteArray();
-            Uint8Array nullsAsTypedArray = makeBuffer(nullsAsByteArray.length);
+            int expectedByteLength = (elementCount + 7) / 8;
+            Uint8Array nullsAsTypedArray = makeBuffer(expectedByteLength);
             nullsAsTypedArray.set(Js.<double[]>uncheckedCast(nullsAsByteArray));
             return nullsAsTypedArray;
         } else {
