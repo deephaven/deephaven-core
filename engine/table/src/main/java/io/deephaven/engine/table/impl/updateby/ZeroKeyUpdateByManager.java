@@ -14,8 +14,15 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Map;
 
 public class ZeroKeyUpdateByManager extends UpdateBy {
+
     /** The output table for this UpdateBy operation */
-    final QueryTable result;
+    private final QueryTable result;
+
+    /** Listener to react to upstream changes to refreshing source tables */
+    private final UpdateByListener sourceListener;
+
+    /** ColumnSet transformer from source to downstream */
+    private final ModifiedColumnSet.Transformer mcsTransformer;
 
     // this manager has only one bucket, managed by this object
     final UpdateByBucketHelper zeroKeyUpdateBy;
@@ -50,10 +57,10 @@ public class ZeroKeyUpdateByManager extends UpdateBy {
             result = new QueryTable(source.getRowSet(), resultSources);
 
             // this is a refreshing source, we will need a listener
-            listener = newUpdateByListener();
-            source.addUpdateListener(listener);
+            sourceListener = newUpdateByListener();
+            source.addUpdateListener(sourceListener);
             // result will depend on listener
-            result.addParentReference(listener);
+            result.addParentReference(sourceListener);
 
             // create input and output modified column sets
             for (UpdateByOperator op : operators) {
@@ -67,7 +74,7 @@ public class ZeroKeyUpdateByManager extends UpdateBy {
             buckets.offer(zeroKeyUpdateBy);
 
             // make the source->result transformer
-            transformer = source.newModifiedColumnSetTransformer(result, preservedColumns);
+            mcsTransformer = source.newModifiedColumnSetTransformer(result, preservedColumns);
 
             // result will depend on zeroKeyUpdateBy
             result.addParentReference(zeroKeyUpdateBy.result);
@@ -78,6 +85,8 @@ public class ZeroKeyUpdateByManager extends UpdateBy {
                     });
             result = zeroKeyUpdateBy.result;
             buckets.offer(zeroKeyUpdateBy);
+            sourceListener = null;
+            mcsTransformer = null;
         }
 
         // make a dummy update to generate the initial row keys
@@ -99,8 +108,23 @@ public class ZeroKeyUpdateByManager extends UpdateBy {
     }
 
     @Override
+    protected UpdateByListener sourceListener() {
+        return sourceListener;
+    }
+
+    @Override
+    protected ModifiedColumnSet.Transformer mcsTransformer() {
+        return mcsTransformer;
+    }
+
+    @Override
     protected boolean upstreamSatisfied(final long step) {
         // for Zero-Key, verify the source and the single bucket are satisfied
         return source.satisfied(step) && zeroKeyUpdateBy.result.satisfied(step);
+    }
+
+    @Override
+    protected boolean maybeDeliverPendingFailure() {
+        return false;
     }
 }
