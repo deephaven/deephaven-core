@@ -1,10 +1,9 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.ide.client;
+package io.deephaven.web.client.ide;
 
 import elemental2.promise.Promise;
-import io.deephaven.ide.shared.IdeSession;
 import io.deephaven.web.client.fu.CancellablePromise;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsType;
@@ -20,13 +19,10 @@ public class IdeClient {
         return IdeClient.getExistingSession(websocketUrl, authToken, serviceId, language);
     }
 
+    @Deprecated
     public static CancellablePromise<IdeSession> getExistingSession(String websocketUrl, String authToken,
             String serviceId, String language) {
-        IdeConnectionOptions options = new IdeConnectionOptions();
-        options.authToken = authToken;
-        options.serviceId = serviceId;
-
-        IdeConnection ideConnection = new IdeConnection(websocketUrl, options);
+        IdeConnection ideConnection = new IdeConnection(websocketUrl, true);
         return ideConnection.startSession(language);
     }
 }

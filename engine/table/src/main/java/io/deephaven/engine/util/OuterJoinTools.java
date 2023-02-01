@@ -104,7 +104,8 @@ public class OuterJoinTools {
                 .collect(Collectors.toSet());
 
         // note that right sourced columns must be applied first to avoid any clashing column names
-        final SelectColumn[] rightColumns = Streams.concat(rightSourcedColumns,
+        final SelectColumn[] rightColumns = Streams.concat(
+                identityMatchColumns.stream().map(SourceColumn::new), rightSourcedColumns,
                 table1.getColumnSourceMap().entrySet().stream()
                         .filter(entry -> !identityMatchColumns.contains(entry.getKey()))
                         .map(entry -> new NullSelectColumn<>(
