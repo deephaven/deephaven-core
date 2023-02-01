@@ -136,6 +136,8 @@ public class DeephavenApiServerModule {
             report(executorType, error);
         } else if (task instanceof Future<?>) {
             try {
+                // Note: this paradigm is not compatible with
+                // TODO(deephaven-core#3396): Add io.deephaven.server.util.Scheduler fixed delay support
                 ((Future<?>) task).get();
             } catch (final InterruptedException ignored) {
                 // noinspection ResultOfMethodCallIgnored

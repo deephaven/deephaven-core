@@ -4,7 +4,7 @@
 package io.deephaven.server.console;
 
 import com.google.rpc.Code;
-import io.deephaven.base.RingBuffer;
+import io.deephaven.base.LockFreeArrayQueue;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.util.RuntimeMemory;
@@ -23,7 +23,24 @@ import io.deephaven.proto.backplane.grpc.FieldInfo;
 import io.deephaven.proto.backplane.grpc.FieldsChangeUpdate;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.backplane.grpc.TypedTicket;
-import io.deephaven.proto.backplane.script.grpc.*;
+import io.deephaven.proto.backplane.script.grpc.AutoCompleteRequest;
+import io.deephaven.proto.backplane.script.grpc.AutoCompleteResponse;
+import io.deephaven.proto.backplane.script.grpc.BindTableToVariableRequest;
+import io.deephaven.proto.backplane.script.grpc.BindTableToVariableResponse;
+import io.deephaven.proto.backplane.script.grpc.CancelCommandRequest;
+import io.deephaven.proto.backplane.script.grpc.CancelCommandResponse;
+import io.deephaven.proto.backplane.script.grpc.ConsoleServiceGrpc;
+import io.deephaven.proto.backplane.script.grpc.ExecuteCommandRequest;
+import io.deephaven.proto.backplane.script.grpc.ExecuteCommandResponse;
+import io.deephaven.proto.backplane.script.grpc.GetCompletionItemsResponse;
+import io.deephaven.proto.backplane.script.grpc.GetConsoleTypesRequest;
+import io.deephaven.proto.backplane.script.grpc.GetConsoleTypesResponse;
+import io.deephaven.proto.backplane.script.grpc.GetHeapInfoRequest;
+import io.deephaven.proto.backplane.script.grpc.GetHeapInfoResponse;
+import io.deephaven.proto.backplane.script.grpc.LogSubscriptionData;
+import io.deephaven.proto.backplane.script.grpc.LogSubscriptionRequest;
+import io.deephaven.proto.backplane.script.grpc.StartConsoleRequest;
+import io.deephaven.proto.backplane.script.grpc.StartConsoleResponse;
 import io.deephaven.server.console.completer.JavaAutoCompleteObserver;
 import io.deephaven.server.console.completer.PythonAutoCompleteObserver;
 import io.deephaven.server.session.SessionCloseableObserver;
@@ -60,10 +77,10 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
             Configuration.getInstance().getBooleanWithDefault("deephaven.console.autocomplete.quiet", true);
 
     public static final long SUBSCRIBE_TO_LOGS_SEND_MILLIS =
-            Configuration.getInstance().getLongWithDefault("deephaven.console.subscribeToLogs.send_millis", 100);
+            Configuration.getInstance().getLongWithDefault("deephaven.console.subscribeToLogs.sendMillis", 100);
 
     public static final int SUBSCRIBE_TO_LOGS_BUFFER_SIZE =
-            Configuration.getInstance().getIntegerWithDefault("deephaven.console.subscribeToLogs.buffer_size", 32768);
+            Configuration.getInstance().getIntegerWithDefault("deephaven.console.subscribeToLogs.bufferSize", 32768);
 
     private final TicketRouter ticketRouter;
     private final SessionService sessionService;
@@ -319,18 +336,23 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
     private final class LogsClient implements LogBufferRecordListener, Runnable {
         private final LogSubscriptionRequest request;
         private final ServerCallStreamObserver<LogSubscriptionData> client;
-        private final RingBuffer<LogSubscriptionData> buffer;
+        private final LockFreeArrayQueue<LogSubscriptionData> buffer;
         private final AtomicBoolean guard;
         private volatile boolean done;
+        private volatile boolean tooSlow;
 
         public LogsClient(
                 final LogSubscriptionRequest request,
                 final ServerCallStreamObserver<LogSubscriptionData> client) {
             this.request = Objects.requireNonNull(request);
             this.client = Objects.requireNonNull(client);
-            this.buffer = new RingBuffer<>(SUBSCRIBE_TO_LOGS_BUFFER_SIZE);
+            // Our buffer capacity should always be greater than the capacity of the logBuffer; otherwise, the initial
+            // act of subscribeToLogs could fully fill up this buffer (immediately causing the tooSlow case).
+            //
+            // Ideally, the buffer should be sized based on the maximum expected logging rate and the behavior of the
+            // clients subscribing to logs.
+            this.buffer = LockFreeArrayQueue.of(Math.max(SUBSCRIBE_TO_LOGS_BUFFER_SIZE, logBuffer.capacity() * 2));
             this.guard = new AtomicBoolean(false);
-            this.done = false;
             this.client.setOnReadyHandler(this::onReady);
             this.client.setOnCancelHandler(this::onCancel);
             this.client.setOnCloseHandler(this::onClose);
@@ -376,18 +398,34 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
 
         @Override
         public void run() {
-            while (true) {
+            while (!done) {
                 if (!guard.compareAndSet(false, true)) {
                     return;
                 }
                 boolean queueIsKnownEmpty;
                 try {
-                    queueIsKnownEmpty = sendInternal();
+                    queueIsKnownEmpty = false;
+                    while (true) {
+                        if (done) {
+                            return;
+                        }
+                        if (tooSlow) {
+                            // The client can't keep up (and/or, an unreasonable amount of data is being logged).
+                            GrpcUtil.safelyError(client, Code.RESOURCE_EXHAUSTED, "Too slow");
+                            return;
+                        }
+                        if (!client.isReady()) {
+                            break;
+                        }
+                        final LogSubscriptionData payload = dequeue();
+                        if (payload == null) {
+                            queueIsKnownEmpty = true;
+                            break;
+                        }
+                        GrpcUtil.safelyOnNext(client, payload);
+                    }
                 } finally {
                     guard.set(false);
-                }
-                if (done) {
-                    return;
                 }
                 if (!client.isReady()) {
                     // When !client.isReady(), onReady() is going to be called and will handle the reschedule.
@@ -397,24 +435,12 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                     return;
                 }
                 if (queueIsKnownEmpty) {
+                    // TODO(deephaven-core#3396): Add io.deephaven.server.util.Scheduler fixed delay support
                     scheduler.runAfterDelay(SUBSCRIBE_TO_LOGS_SEND_MILLIS, this);
                     return;
                 }
-                // Continue sending until we are done, the client isn't ready, or we know the queue is empty.
+                // Continue sending until the client is full or we know the queue is empty (or done, or tooSlow).
             }
-        }
-
-        private boolean sendInternal() {
-            while (!done && client.isReady()) {
-                LogSubscriptionData payload = dequeue();
-                if (payload == null) {
-                    // we know the queue is empty
-                    return true;
-                }
-                GrpcUtil.safelyOnNext(client, payload);
-            }
-            // we don't know if the queue is empty
-            return false;
         }
 
         // ------------------------------------------------------------------------------------------------------------
@@ -437,25 +463,25 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
         // Buffer implementation
         // ------------------------------------------------------------------------------------------------------------
         // The implementation needs to support single-producer / single-consumer concurrency. The current implementation
-        // uses a synchronized block around io.deephaven.base.RingBuffer. This is simple and likely sufficient. If we
-        // find the implementation lacking for high volume logging, we _could_ use io.deephaven.base.LockFreeArrayQueue
-        // or ArrayBlockingQueue; this would have different semantics though since they are queues, and not ring
-        // buffers (we may not care about semantics for overloaded cases - if you are missing logging data, it may not
-        // matter _what_ logging data you are missing).
+        // uses a io.deephaven.base.LockFreeArrayQueue, and chooses to close clients who are too slow to keep up.
         //
-        // https://github.com/devinrsmith/JAtomicRingBuffer, or similar SPSC ring buffers, may be relevant if we need a
-        // ring buffer with higher concurrent performance.
+        // If desired, the implementation could be changed so that slow clients are allowed to stay connected, but start
+        // missing logging data (either, they miss the latest data [queue-based impl], or they miss older data
+        // [ringbuffer-based impl]).
 
         private void enqueue(LogSubscriptionData payload) {
-            synchronized (buffer) {
-                buffer.addOverwrite(payload);
+            if (!buffer.enqueue(payload)) {
+                // Just like we don't want to do onNext(payload) on this thread, we'll have the scheduler handle the
+                // tooSlow error.
+                tooSlow = true;
+                // Note: the unsubscribe here will happen on the LogBufferRecordListener#record() caller's thread
+                logBuffer.unsubscribe(this);
+                scheduler.runImmediately(this);
             }
         }
 
         private LogSubscriptionData dequeue() {
-            synchronized (buffer) {
-                return buffer.poll();
-            }
+            return buffer.dequeue();
         }
     }
 }
