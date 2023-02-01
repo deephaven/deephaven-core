@@ -147,12 +147,11 @@ public abstract class BaseByteUpdateByOperator extends UpdateByOperator {
      */
     public BaseByteUpdateByOperator(@NotNull final MatchPair pair,
                                     @NotNull final String[] affectingColumns,
-                                    @Nullable final RowRedirection rowRedirection,
-                                    final boolean isWindowed
+                                    @Nullable final RowRedirection rowRedirection
                                     // region extra-constructor-args
                                     // endregion extra-constructor-args
     ) {
-        this(pair, affectingColumns, rowRedirection, null, 0, 0, isWindowed);
+        this(pair, affectingColumns, rowRedirection, null, 0, 0, false);
     }
 
     /**
@@ -164,7 +163,9 @@ public abstract class BaseByteUpdateByOperator extends UpdateByOperator {
      * @param rowRedirection the {@link RowRedirection} for the output column
      * @param timestampColumnName an optional timestamp column. If this is null, it will be assumed time is measured in
      *        integer ticks.
-     * @param reverseWindowScaleUnits the smoothing window for the operator. If no {@code timestampColumnName} is provided, this
+     * @param reverseWindowScaleUnits the reverse window for the operator. If no {@code timestampColumnName} is provided, this
+     *                       is measured in ticks, otherwise it is measured in nanoseconds.
+     * @param forwardWindowScaleUnits the forward window for the operator. If no {@code timestampColumnName} is provided, this
      *                       is measured in ticks, otherwise it is measured in nanoseconds.
      */
     public BaseByteUpdateByOperator(@NotNull final MatchPair pair,

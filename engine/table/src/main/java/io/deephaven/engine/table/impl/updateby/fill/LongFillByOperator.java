@@ -59,7 +59,7 @@ public class LongFillByOperator extends BaseLongUpdateByOperator {
                               ,@NotNull final Class<?> type
                               // endregion extra-constructor-args
                               ) {
-        super(fillPair, new String[] { fillPair.rightColumn }, rowRedirection, false);
+        super(fillPair, new String[] { fillPair.rightColumn }, rowRedirection);
         // region constructor
         this.type = type;
         // endregion constructor

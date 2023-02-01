@@ -57,12 +57,6 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
     /** Track how many rows in this bucket have NULL timestamps */
     private long nullTimestampCount;
 
-    // TODO: remove these data collection entries when bug-hunt complete
-    public UpdateCommitter<UpdateByBucketHelper> committer;
-    public UpdateBy parentUpdateBy;
-    public long createdStep;
-    public UpdateBy.PhasedUpdateProcessor pup;
-
     /**
      * Perform updateBy operations on a single bucket of data (either zero-key or already limited through partitioning)
      *
@@ -78,7 +72,7 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
             @NotNull final QueryTable source,
             @NotNull final UpdateByWindow[] windows,
             @NotNull final Map<String, ? extends ColumnSource<?>> resultSources,
-            @Nullable String timestampColumnName,
+            @Nullable final String timestampColumnName,
             @NotNull final UpdateByControl control,
             @NotNull final BiConsumer<Throwable, TableListener.Entry> failureNotifier) {
 
@@ -117,19 +111,6 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
                 ModifiedColumnSet.EMPTY);
 
         prepareForUpdate(initialUpdate, true);
-
-        if (UpdateGraphProcessor.DEFAULT.isRefreshThread()) {
-            committer = new UpdateCommitter<>(UpdateByBucketHelper.this, (bucket) -> {
-                // ensure that the item has been cleaned up
-                if (bucket.isDirty) {
-                    System.out.printf("%d-Failing bucket %s, refreshThread=%b, clockValue=%d%n",
-                            UpdateByBucketHelper.this.hashCode(), description,
-                            UpdateGraphProcessor.DEFAULT.isRefreshThread(),
-                            LogicalClock.DEFAULT.currentValue());
-                }
-            });
-            committer.maybeActivate();
-        }
 
         initialUpdate.release();
 
@@ -312,11 +293,7 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
      * @param initialStep Whether this update is part of the initial creation of the bucket
      */
     public void prepareForUpdate(final TableUpdate upstream, final boolean initialStep) {
-        Assert.eqFalse(isDirty, "UpdateBy bucket was marked dirty before processing an update");
-
-        System.out.printf("%d-Preparing bucket %s, initial=%b, refreshThread=%b, clockValue=%d%n", hashCode(),
-                description, initialStep, UpdateGraphProcessor.DEFAULT.isRefreshThread(),
-                LogicalClock.DEFAULT.currentValue());
+        Assert.eqFalse(isDirty, "UpdateByBucketHelper.isDirty");
 
         final boolean timestampsModified;
 
@@ -392,9 +369,6 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
      * Close the window contexts and release resources for this bucket
      */
     public void finalizeUpdate() {
-        System.out.printf("%d-Finalizing bucket %s, clockValue=%d%n", hashCode(), description,
-                LogicalClock.DEFAULT.currentValue());
-
         SafeCloseableArray.close(windowContexts);
         isDirty = false;
     }
@@ -413,18 +387,6 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
         @Override
         public void onUpdate(TableUpdate upstream) {
             prepareForUpdate(upstream, false);
-
-            UpdateByBucketHelper.this.committer =
-                    new UpdateCommitter<>(UpdateByBucketHelper.this, (bucket) -> {
-                        // ensure that the item has been cleaned up
-                        if (bucket.isDirty) {
-                            System.out.printf("%d-Failing bucket %s, refreshThread=%b, clockValue=%d%n",
-                                    UpdateByBucketHelper.this.hashCode(), description,
-                                    UpdateGraphProcessor.DEFAULT.isRefreshThread(),
-                                    LogicalClock.DEFAULT.currentValue());
-                        }
-                    });
-            UpdateByBucketHelper.this.committer.maybeActivate();
         }
 
         @Override

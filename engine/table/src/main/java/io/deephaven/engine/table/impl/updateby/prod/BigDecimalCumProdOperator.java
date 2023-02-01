@@ -50,7 +50,7 @@ public final class BigDecimalCumProdOperator extends BaseObjectUpdateByOperator<
     public BigDecimalCumProdOperator(@NotNull final MatchPair inputPair,
             @Nullable final RowRedirection rowRedirection,
             @NotNull final MathContext mathContext) {
-        super(inputPair, new String[] {inputPair.rightColumn}, rowRedirection, false, BigDecimal.class);
+        super(inputPair, new String[] {inputPair.rightColumn}, rowRedirection, BigDecimal.class);
         this.mathContext = mathContext;
     }
 

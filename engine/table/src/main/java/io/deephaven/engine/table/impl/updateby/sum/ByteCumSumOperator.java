@@ -57,7 +57,7 @@ public class ByteCumSumOperator extends BaseLongUpdateByOperator {
                                ,final byte nullValue
                                // endregion extra-constructor-args
     ) {
-        super(pair, new String[] { pair.rightColumn }, rowRedirection, false);
+        super(pair, new String[] { pair.rightColumn }, rowRedirection);
         // region constructor
         this.nullValue = nullValue;
         // endregion constructor

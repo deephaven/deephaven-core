@@ -43,7 +43,7 @@ public abstract class UpdateByOperator {
     protected final long forwardWindowScaleUnits;
     protected final String timestampColumnName;
 
-    protected final boolean isWindowed;
+    final boolean isWindowed;
 
     /**
      * The input modifiedColumnSet for this operator
@@ -57,7 +57,7 @@ public abstract class UpdateByOperator {
     /**
      * A context item for use with updateBy operators
      */
-    public abstract class Context implements SafeCloseable {
+    public abstract static class Context implements SafeCloseable {
         protected final Chunk<? extends Values>[] chunkArr;
         protected int nullCount = 0;
 
@@ -102,7 +102,7 @@ public abstract class UpdateByOperator {
                 int len);
 
         public abstract void accumulateRolling(RowSequence inputKeys,
-                Chunk<? extends Values> influencerValueChunkArr[],
+                Chunk<? extends Values>[] influencerValueChunkArr,
                 IntChunk<? extends Values> pushChunk,
                 IntChunk<? extends Values> popChunk,
                 int len);
@@ -150,7 +150,7 @@ public abstract class UpdateByOperator {
             long firstUnmodifiedTimestamp) {}
 
     /**
-     * Initialize the bucket context for s windowed operator
+     * Initialize the bucket context for a windowed operator
      */
     public void initializeRolling(@NotNull final Context context) {}
 
@@ -215,16 +215,6 @@ public abstract class UpdateByOperator {
      */
     @NotNull
     protected abstract Map<String, ColumnSource<?>> getOutputColumns();
-
-    /**
-     * Whether this operator supports windows (is rolling operator)
-     *
-     * @return true if the operator is windowed, false if cumulative
-     */
-    @NotNull
-    protected boolean getIsWindowed() {
-        return isWindowed;
-    }
 
     /**
      * Indicate that the operation should start tracking previous values for ticking updates.

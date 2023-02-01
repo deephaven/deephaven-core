@@ -46,7 +46,7 @@ public final class BigIntegerCumSumOperator extends BaseObjectUpdateByOperator<B
 
     public BigIntegerCumSumOperator(@NotNull final MatchPair inputPair,
                                     @Nullable final RowRedirection rowRedirection) {
-        super(inputPair, new String[] {inputPair.rightColumn}, rowRedirection, false, BigInteger.class);
+        super(inputPair, new String[] {inputPair.rightColumn}, rowRedirection, BigInteger.class);
     }
 
     @NotNull

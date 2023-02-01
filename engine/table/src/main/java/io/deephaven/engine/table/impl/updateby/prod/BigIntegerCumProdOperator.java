@@ -45,7 +45,7 @@ public final class BigIntegerCumProdOperator extends BaseObjectUpdateByOperator<
 
     public BigIntegerCumProdOperator(@NotNull final MatchPair inputPair,
                                      @Nullable final RowRedirection rowRedirection) {
-        super(inputPair, new String[] {inputPair.rightColumn}, rowRedirection, false, BigInteger.class);
+        super(inputPair, new String[] {inputPair.rightColumn}, rowRedirection, BigInteger.class);
     }
 
     @NotNull

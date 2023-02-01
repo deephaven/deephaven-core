@@ -98,9 +98,6 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
                     control,
                     (oe, se) -> deliverUpdateError(oe, se, true));
 
-            bucket.parentUpdateBy = this;
-            bucket.createdStep = LogicalClock.DEFAULT.currentStep();
-
             // add this to the bucket list
             synchronized (buckets) {
                 buckets.offer(bucket);

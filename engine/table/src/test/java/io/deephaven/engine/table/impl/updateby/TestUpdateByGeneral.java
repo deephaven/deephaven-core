@@ -36,7 +36,6 @@ public class TestUpdateByGeneral extends BaseUpdateByTest {
     public void testMixedAppendOnlyZeroKey() {
         for (int size = 10; size <= 10000; size *= 10) {
             for (int seed = 10; seed < 20; seed++) {
-                System.out.println("Stating test: size " + size + ", seed " + seed);
                 doTestTicking(seed > 15, false, true, 20, size, seed);
             }
         }
@@ -46,7 +45,6 @@ public class TestUpdateByGeneral extends BaseUpdateByTest {
     public void testMixedAppendOnlyBucketed() {
         for (int size = 10; size <= 10000; size *= 10) {
             for (int seed = 10; seed < 20; seed++) {
-                System.out.println("Stating test: size " + size + ", seed " + seed);
                 doTestTicking(seed > 15, true, true, 20, size, seed);
             }
         }
@@ -56,7 +54,6 @@ public class TestUpdateByGeneral extends BaseUpdateByTest {
     public void testMixedGeneralZeroKey() {
         for (int size = 10; size <= 10000; size *= 10) {
             for (int seed = 10; seed < 20; seed++) {
-                System.out.println("Stating test: size " + size + ", seed " + seed);
                 doTestTicking(seed > 15, false, false, 20, size, seed);
             }
         }
@@ -66,7 +63,6 @@ public class TestUpdateByGeneral extends BaseUpdateByTest {
     public void testMixedGeneralBucketed() {
         for (int size = 10; size <= 10000; size *= 10) {
             for (int seed = 10; seed < 20; seed++) {
-                System.out.println("Stating test: size " + size + ", seed " + seed);
                 doTestTicking(seed > 15, true, false, 20, size, seed);
             }
         }
@@ -134,7 +130,6 @@ public class TestUpdateByGeneral extends BaseUpdateByTest {
         };
 
         for (int step = 0; step < steps; step++) {
-            System.out.println("   beginning step " + step);
             try {
                 if (appendOnly) {
                     UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {

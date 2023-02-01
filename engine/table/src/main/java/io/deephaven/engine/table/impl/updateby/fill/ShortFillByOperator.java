@@ -50,7 +50,7 @@ public class ShortFillByOperator extends BaseShortUpdateByOperator {
                               // region extra-constructor-args
                               // endregion extra-constructor-args
                               ) {
-        super(fillPair, new String[] { fillPair.rightColumn }, rowRedirection, false);
+        super(fillPair, new String[] { fillPair.rightColumn }, rowRedirection);
         // region constructor
         // endregion constructor
     }

@@ -52,7 +52,7 @@ public class LongCumProdOperator extends BaseLongUpdateByOperator {
                                // region extra-constructor-args
                                // endregion extra-constructor-args
     ) {
-        super(pair, new String[] { pair.rightColumn }, rowRedirection, false);
+        super(pair, new String[] { pair.rightColumn }, rowRedirection);
         // region constructor
         // endregion constructor
     }

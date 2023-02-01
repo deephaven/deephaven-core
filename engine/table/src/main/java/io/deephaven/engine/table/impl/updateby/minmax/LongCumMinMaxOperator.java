@@ -68,7 +68,7 @@ public class LongCumMinMaxOperator extends BaseLongUpdateByOperator {
                               ,@NotNull final Class<?> type
                                 // endregion extra-constructor-args
     ) {
-        super(pair, new String[] { pair.rightColumn }, rowRedirection, false);
+        super(pair, new String[] { pair.rightColumn }, rowRedirection);
         this.isMax = isMax;
         // region constructor
         this.type = type;

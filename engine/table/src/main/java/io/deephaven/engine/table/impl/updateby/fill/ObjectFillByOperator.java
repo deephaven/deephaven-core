@@ -52,7 +52,7 @@ public class ObjectFillByOperator<T> extends BaseObjectUpdateByOperator<T> {
                                       , final Class<T> colType
                               // endregion extra-constructor-args
                               ) {
-        super(fillPair, new String[] { fillPair.rightColumn }, rowRedirection, false, colType);
+        super(fillPair, new String[] { fillPair.rightColumn }, rowRedirection, colType);
         // region constructor
         // endregion constructor
     }

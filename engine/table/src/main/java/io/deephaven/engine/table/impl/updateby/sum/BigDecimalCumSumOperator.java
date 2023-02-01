@@ -52,7 +52,7 @@ public final class BigDecimalCumSumOperator extends BaseObjectUpdateByOperator<B
     public BigDecimalCumSumOperator(@NotNull final MatchPair inputPair,
             @Nullable final RowRedirection rowRedirection,
             @NotNull final MathContext mathContext) {
-        super(inputPair, new String[] {inputPair.rightColumn}, rowRedirection, false, BigDecimal.class);
+        super(inputPair, new String[] {inputPair.rightColumn}, rowRedirection, BigDecimal.class);
         this.mathContext = mathContext;
     }
 

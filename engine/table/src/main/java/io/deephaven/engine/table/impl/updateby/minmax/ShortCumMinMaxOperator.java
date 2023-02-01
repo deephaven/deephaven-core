@@ -54,7 +54,7 @@ public class ShortCumMinMaxOperator extends BaseShortUpdateByOperator {
                                 // region extra-constructor-args
                                 // endregion extra-constructor-args
     ) {
-        super(pair, new String[] { pair.rightColumn }, rowRedirection, false);
+        super(pair, new String[] { pair.rightColumn }, rowRedirection);
         this.isMax = isMax;
         // region constructor
         // endregion constructor
