@@ -171,7 +171,7 @@ public abstract class EvalNugget implements EvalNuggetInterface {
 
     @Override
     public void releaseRecomputed() {
-        if (recomputedTable != null) {
+        if (recomputedTable != null && recomputedTable != originalValue) {
             if (recomputedTable.tryRetainReference()) {
                 recomputedTable.dropReference();
                 throw new IllegalStateException("Recomputed table " + recomputedTable + " is still live upon release");
