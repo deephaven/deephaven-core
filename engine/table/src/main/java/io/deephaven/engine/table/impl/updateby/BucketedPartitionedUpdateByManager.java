@@ -42,7 +42,6 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
     /**
      * Perform a bucketed updateBy using {@code byColumns} as the keys
      *
-     * @param description the operation description
      * @param operators the operations to perform
      * @param windows the unique windows for this UpdateBy
      * @param inputSources the primitive input sources
@@ -55,7 +54,6 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
      * @param control the control object.
      */
     protected BucketedPartitionedUpdateByManager(
-            @NotNull final String description,
             @NotNull final UpdateByOperator[] operators,
             @NotNull final UpdateByWindow[] windows,
             @NotNull final ColumnSource<?>[] inputSources,
