@@ -6,15 +6,22 @@ import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.UpdateErrorReporter;
+import io.deephaven.engine.table.impl.util.AsyncClientErrorNotifier;
 import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.table.impl.TableDefaults;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.generator.TestDataGenerator;
 import io.deephaven.engine.testutil.generator.SortedDateTimeGenerator;
+import io.deephaven.engine.updategraph.TerminalNotification;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.test.types.OutOfBandTest;
+import io.deephaven.util.ExceptionDetails;
+import junit.framework.TestCase;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -30,7 +37,20 @@ import static io.deephaven.time.DateTimeUtils.MINUTE;
 import static io.deephaven.time.DateTimeUtils.convertDateTime;
 
 @Category(OutOfBandTest.class)
-public class TestUpdateByGeneral extends BaseUpdateByTest {
+public class TestUpdateByGeneral extends BaseUpdateByTest implements UpdateErrorReporter {
+
+    private UpdateErrorReporter oldReporter;
+
+    @Before
+    public void setUp() throws Exception {
+        oldReporter = AsyncClientErrorNotifier.setReporter(this);
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        AsyncClientErrorNotifier.setReporter(oldReporter);
+        oldReporter = null;
+    }
 
     @Test
     public void testMixedAppendOnlyZeroKey() {
@@ -185,5 +205,16 @@ public class TestUpdateByGeneral extends BaseUpdateByTest {
         });
 
         TableTools.show(result);
+    }
+
+    @Override
+    public void reportUpdateError(Throwable t) {
+        UpdateGraphProcessor.DEFAULT.addNotification(new TerminalNotification() {
+            @Override
+            public void run() {
+                System.err.println("Received error notification: " + new ExceptionDetails(t).getFullStackTrace());
+                TestCase.fail(t.getMessage());
+            }
+        });
     }
 }

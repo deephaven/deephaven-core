@@ -7,6 +7,7 @@ import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ResettableWritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
@@ -26,6 +27,7 @@ import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.table.impl.sources.sparse.SparseConstants;
 import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.engine.updategraph.DynamicNode;
+import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.updategraph.TerminalNotification;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
@@ -85,12 +87,6 @@ public abstract class UpdateBy {
     protected final SoftReference<WritableColumnSource<?>>[] inputSourceCaches;
     /** For easy iteration, create a list of the source indices that need to be cached */
     protected final int[] cacheableSourceIndices;
-
-    /** ColumnSet transformer from source to downstream */
-    protected ModifiedColumnSet.Transformer transformer;
-
-    /** Listener to react to upstream changes to refreshing source tables */
-    protected UpdateByListener listener;
 
     /** Store every bucket in this list for processing */
     protected final IntrusiveDoublyLinkedQueue<UpdateByBucketHelper> buckets;
@@ -301,10 +297,6 @@ public abstract class UpdateBy {
             this.upstream = upstream;
             this.initialStep = initialStep;
 
-            // TODO: remove this
-            for (UpdateByBucketHelper bucket : buckets) {
-                bucket.pup = this;
-            }
             // determine which buckets we'll examine during this update
             dirtyBuckets = buckets.stream().filter(UpdateByBucketHelper::isDirty).toArray(UpdateByBucketHelper[]::new);
             // which windows are dirty and need to be computed this cycle
@@ -357,7 +349,7 @@ public abstract class UpdateBy {
                 // This error was delivered as part of update processing, we need to ensure that cleanup happens and
                 // a notification is dispatched downstream.
                 cleanUpAfterError();
-                deliverUpdateError(error, listener.getEntry(), false);
+                deliverUpdateError(error, sourceListener().getEntry(), false);
             }
         }
 
@@ -410,6 +402,7 @@ public abstract class UpdateBy {
                                         }
                                         if (rows != null) {
                                             // if not null, then insert this window's rowset
+                                            // noinspection SynchronizationOnLocalVariableOrMethodParameter
                                             synchronized (rows) {
                                                 rows.insert(win.getInfluencerRows(winCtx));
                                             }
@@ -660,7 +653,7 @@ public abstract class UpdateBy {
                         @Override
                         public void run() {
                             synchronized (accumulated) {
-                                listener.getEntry().accumulate(accumulated);
+                                sourceListener().getEntry().accumulate(accumulated);
                             }
                         }
                     });
@@ -705,7 +698,7 @@ public abstract class UpdateBy {
             downstream.modified = modifiedRowSet;
 
             if (upstream.modified().isNonempty()) {
-                transformer.transform(upstream.modifiedColumnSet(), downstream.modifiedColumnSet);
+                mcsTransformer().transform(upstream.modifiedColumnSet(), downstream.modifiedColumnSet);
             }
 
             for (UpdateByBucketHelper bucket : dirtyBuckets) {
@@ -864,6 +857,19 @@ public abstract class UpdateBy {
 
         @Override
         public void onUpdate(@NotNull final TableUpdate upstream) {
+            // If we have a bucket update failure to deliver, deliver it
+            if (maybeDeliverPendingFailure()) {
+                return;
+            }
+
+            // If we delivered a failure in bucketing or bucket creation, short-circuit update delivery
+            final QueryTable result = result();
+            if (result.isFailed()) {
+                Assert.eq(result.getLastNotificationStep(), "result.getLastNotificationStep()",
+                        LogicalClock.DEFAULT.currentStep(), "LogicalClock.DEFAULT.currentStep()");
+                return;
+            }
+
             final PhasedUpdateProcessor sm = new PhasedUpdateProcessor(upstream.acquire(), false);
             sm.processUpdate();
         }
@@ -885,7 +891,13 @@ public abstract class UpdateBy {
 
     protected abstract QueryTable result();
 
+    protected abstract UpdateByListener sourceListener();
+
+    protected abstract ModifiedColumnSet.Transformer mcsTransformer();
+
     protected abstract boolean upstreamSatisfied(final long step);
+
+    protected abstract boolean maybeDeliverPendingFailure();
 
     // region UpdateBy implementation
 
@@ -1081,7 +1093,7 @@ public abstract class UpdateBy {
                     }
                     ops.forEach(UpdateByOperator::startTrackingPrev);
                 }
-                return zkm.result;
+                return zkm.result();
             }, source::isRefreshing, DynamicNode::isRefreshing);
         }
 
@@ -1100,7 +1112,6 @@ public abstract class UpdateBy {
 
         return LivenessScopeStack.computeEnclosed(() -> {
             final BucketedPartitionedUpdateByManager bm = new BucketedPartitionedUpdateByManager(
-                    descriptionBuilder.toString(),
                     opArr,
                     windowArr,
                     inputSourceArr,
@@ -1119,7 +1130,7 @@ public abstract class UpdateBy {
                 }
                 ops.forEach(UpdateByOperator::startTrackingPrev);
             }
-            return bm.result;
+            return bm.result();
         }, source::isRefreshing, DynamicNode::isRefreshing);
     }
     // endregion

@@ -14,9 +14,6 @@ import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.ssa.LongSegmentedSortedArray;
-import io.deephaven.engine.updategraph.LogicalClock;
-import io.deephaven.engine.updategraph.UpdateCommitter;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.util.SafeCloseableArray;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedNode;
 import org.apache.commons.lang3.mutable.MutableLong;
@@ -75,7 +72,6 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
             @Nullable final String timestampColumnName,
             @NotNull final UpdateByControl control,
             @NotNull final BiConsumer<Throwable, TableListener.Entry> failureNotifier) {
-
         this.description = description;
         this.source = source;
         // some columns will have multiple inputs, such as time-based and Weighted computations
@@ -293,8 +289,7 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
      * @param initialStep Whether this update is part of the initial creation of the bucket
      */
     public void prepareForUpdate(final TableUpdate upstream, final boolean initialStep) {
-        Assert.eqFalse(isDirty, "UpdateByBucketHelper.isDirty");
-
+        Assert.eqFalse(isDirty, "UpdateBy bucket was marked dirty before processing an update");
         final boolean timestampsModified;
 
         // add all the SSA data
@@ -390,7 +385,7 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
         }
 
         @Override
-        public void onFailure(@NotNull final Throwable originalException, @Nullable final Entry sourceEntry) {
+        public void onFailureInternal(@NotNull final Throwable originalException, @Nullable final Entry sourceEntry) {
             failureNotifier.accept(originalException, sourceEntry);
         }
     }
