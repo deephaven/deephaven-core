@@ -25,6 +25,9 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.plugin.type.ObjectTypeLookup;
 import io.deephaven.util.annotations.VisibleForTesting;
+import io.github.classgraph.ClassGraph;
+import io.github.classgraph.ClassInfo;
+import io.github.classgraph.ScanResult;
 import org.codehaus.groovy.control.CompilationUnit;
 import org.codehaus.groovy.control.Phases;
 import org.codehaus.groovy.tools.GroovyClass;
@@ -393,9 +396,8 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
             }
         } else {
             if (isWildcard) {
-                okToImport = classExists(body) || (Package.getPackage(body) != null); // Note: this might not find a
-                                                                                      // valid package that has never
-                                                                                      // been loaded
+                okToImport = classExists(body) || (Package.getPackage(body) != null) || visibleToClassGraph(body);
+
                 if (!okToImport) {
                     if (ALLOW_UNKNOWN_GROOVY_PACKAGE_IMPORTS) {
                         // Check for proper form of a package. Pass a package star import that is plausible. Groovy is
@@ -404,7 +406,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
                                 "(\\p{javaJavaIdentifierStart}\\p{javaJavaIdentifierPart}*\\.)+\\p{javaJavaIdentifierStart}\\p{javaJavaIdentifierPart}*";
                         if (body.matches(javaIdentifierPattern)) {
                             log.info().append("Package or class \"").append(body)
-                                    .append("\" could not be verified. If this is a package, it could mean that no class from that package has been seen by the classloader.")
+                                    .append("\" could not be verified.")
                                     .endl();
                             okToImport = true;
                         } else {
@@ -414,7 +416,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
                         }
                     } else {
                         log.warn().append("Package or class \"").append(body)
-                                .append("\" could not be verified. If this is a package, it could mean that no class from that package has been seen by the classloader.")
+                                .append("\" could not be verified.")
                                 .endl();
                     }
                 }
@@ -432,6 +434,15 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         } else {
             log.error().append("Invalid import: \"").append(importString).append("\"").endl();
             return null;
+        }
+    }
+
+    private static boolean visibleToClassGraph(String packageImport) {
+        try (ScanResult scanResult = new ClassGraph().enableAllInfo().acceptPackages(packageImport).scan()) {
+            final Optional<ClassInfo> firstClassFound = scanResult.getAllClasses().stream().findFirst();
+            // force load the class so that the jvm is aware of the package
+            firstClassFound.ifPresent(ClassInfo::loadClass);
+            return firstClassFound.isPresent();
         }
     }
 
