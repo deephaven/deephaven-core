@@ -62,8 +62,10 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
     public static final long SUBSCRIBE_TO_LOGS_SEND_MILLIS =
             Configuration.getInstance().getLongWithDefault("deephaven.console.subscribeToLogs.sendMillis", 100);
 
+    public static final String SUBSCRIBE_TO_LOGS_BUFFER_SIZE_PROP = "deephaven.console.subscribeToLogs.bufferSize";
+
     public static final int SUBSCRIBE_TO_LOGS_BUFFER_SIZE =
-            Configuration.getInstance().getIntegerWithDefault("deephaven.console.subscribeToLogs.bufferSize", 32768);
+            Configuration.getInstance().getIntegerWithDefault(SUBSCRIBE_TO_LOGS_BUFFER_SIZE_PROP, 32768);
 
     private final TicketRouter ticketRouter;
     private final SessionService sessionService;
@@ -379,6 +381,14 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
 
         // ------------------------------------------------------------------------------------------------------------
 
+        // Our implementation relies on backpressure from the gRPC network stack; and an application-level, per-stream,
+        // buffer. Our application buffer gives us capacity for handling logging bursts that exceed the achievable
+        // bandwidth between server and client. Ultimately, the achievable bandwidth is a function of the gRPC
+        // networking stack. Unfortunately, there are not many knobs that gRPC java currently exposes for tuning these
+        // parts of the stack.
+        // See https://github.com/grpc/proposal/pull/135, A25: make backpressure threshold configurable
+        // See https://github.com/grpc/grpc-java/issues/5433, Allow configuring onReady threshold
+
         @Override
         public void run() {
             while (!done) {
@@ -393,8 +403,9 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                             return;
                         }
                         if (tooSlow) {
-                            // The client can't keep up (and/or, an unreasonable amount of data is being logged).
-                            GrpcUtil.safelyError(client, Code.RESOURCE_EXHAUSTED, "Too slow");
+                            GrpcUtil.safelyError(client, Code.RESOURCE_EXHAUSTED, String.format(
+                                    "Too slow: the client or network may be too slow to keep up with the logging rates, or there may be logging bursts that exceed the available buffer size. The buffer size can be configured through the server property '%s'.",
+                                    SUBSCRIBE_TO_LOGS_BUFFER_SIZE_PROP));
                             return;
                         }
                         if (!client.isReady()) {
