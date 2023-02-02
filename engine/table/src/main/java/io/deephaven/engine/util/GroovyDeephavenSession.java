@@ -438,7 +438,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
     }
 
     private static boolean visibleToClassGraph(String packageImport) {
-        try (ScanResult scanResult = new ClassGraph().enableAllInfo().acceptPackages(packageImport).scan()) {
+        try (ScanResult scanResult = new ClassGraph().enableClassInfo().acceptPackages(packageImport).scan()) {
             final Optional<ClassInfo> firstClassFound = scanResult.getAllClasses().stream().findFirst();
             // force load the class so that the jvm is aware of the package
             firstClassFound.ifPresent(ClassInfo::loadClass);
