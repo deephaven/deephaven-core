@@ -3,6 +3,7 @@ package io.deephaven.engine.table.impl.updateby;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.*;
@@ -10,6 +11,7 @@ import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
+import io.deephaven.engine.updategraph.DynamicNode;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -71,7 +73,32 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
 
         final String[] byColumnNames = byColumns.stream().map(ColumnName::name).toArray(String[]::new);
 
-        final PartitionedTable pt;
+        final Table transformedTable = LivenessScopeStack.computeEnclosed(() -> {
+            final PartitionedTable partitioned = source.partitionedAggBy(List.of(), true, null, byColumnNames);
+            final PartitionedTable transformed = partitioned.transform(t -> {
+                final long firstSourceRowKey = t.getRowSet().firstRowKey();
+                final String bucketDescription = BucketedPartitionedUpdateByManager.this + "-bucket-" +
+                        Arrays.stream(byColumnNames)
+                                .map(bcn -> Objects.toString(t.getColumnSource(bcn).get(firstSourceRowKey)))
+                                .collect(Collectors.joining(", ", "[", "]"));
+                UpdateByBucketHelper bucket = new UpdateByBucketHelper(
+                        bucketDescription,
+                        (QueryTable) t,
+                        windows,
+                        resultSources,
+                        timestampColumnName,
+                        control,
+                        this::onBucketFailure);
+                // add this to the bucket list
+                synchronized (buckets) {
+                    buckets.offer(bucket);
+                }
+                // return the table
+                return bucket.result;
+            });
+            return transformed.table();
+        }, source::isRefreshing, DynamicNode::isRefreshing);
+
         if (source.isRefreshing()) {
             // this is a refreshing source, we will need a listener
             sourceListener = newUpdateByListener();
@@ -84,45 +111,17 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
                 op.createInputModifiedColumnSet(source);
                 op.createOutputModifiedColumnSet(result);
             }
-            pt = source.partitionedAggBy(List.of(), true, null, byColumnNames);
 
             // make the source->result transformer from only the columns in the source that are present in result
             mcsTransformer = source.newModifiedColumnSetTransformer(result, preservedColumns);
-        } else {
-            sourceListener = null;
-            mcsTransformer = null;
-            pt = source.partitionedAggBy(List.of(), true, null, byColumnNames);
-        }
 
-        final PartitionedTable transformed = pt.transform(t -> {
-            final long firstSourceRowKey = t.getRowSet().firstRowKey();
-            final String bucketDescription = BucketedPartitionedUpdateByManager.this + "-bucket-" +
-                    Arrays.stream(byColumnNames)
-                            .map(bcn -> Objects.toString(t.getColumnSource(bcn).get(firstSourceRowKey)))
-                            .collect(Collectors.joining(", ", "[", "]"));
-            UpdateByBucketHelper bucket = new UpdateByBucketHelper(
-                    bucketDescription,
-                    (QueryTable) t,
-                    windows,
-                    resultSources,
-                    timestampColumnName,
-                    control,
-                    this::onBucketFailure);
-
-            // add this to the bucket list
-            synchronized (buckets) {
-                buckets.offer(bucket);
-            }
-            // return the table
-            return bucket.result;
-        });
-
-        if (source.isRefreshing()) {
-            final Table transformedTable = transformed.table();
+            // we also need to monitor for failures in bucketing or transformation
             transformFailureListener = new TransformFailureListener(transformedTable);
             transformedTable.addUpdateListener(transformFailureListener);
             result.addParentReference(transformFailureListener);
         } else {
+            sourceListener = null;
+            mcsTransformer = null;
             transformFailureListener = null;
         }
 
