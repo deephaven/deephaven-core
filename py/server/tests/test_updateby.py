@@ -110,7 +110,7 @@ class UpdateByTestCase(BaseTestCase):
             rolling_sum_time(ts_col="Timestamp", cols=["rsum_b = b", "rsum_e = e"], rev_time=10_000_000_000,
                              fwd_time=-10_000_000_00),
             rolling_sum_time(ts_col="Timestamp", cols=["rsum_b = b", "rsum_e = e"], rev_time="00:00:30",
-                             fwd_time="-00:00:30"),
+                             fwd_time="-00:00:20"),
         ]
 
         for op in ops:
