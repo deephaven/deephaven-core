@@ -1,18 +1,20 @@
-package io.deephaven.engine.table.impl;
+package io.deephaven.engine.table.impl.updateby;
 
 import io.deephaven.api.agg.Pair;
 import io.deephaven.api.updateby.ColumnUpdateOperation;
-import io.deephaven.api.updateby.UpdateByOperation;
+import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.api.updateby.UpdateByControl;
+import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.api.updateby.spec.*;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.TableDefaults;
 import io.deephaven.engine.table.impl.updateby.ema.*;
 import io.deephaven.engine.table.impl.updateby.fill.*;
-import io.deephaven.engine.table.impl.updateby.internal.LongRecordingUpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.minmax.*;
 import io.deephaven.engine.table.impl.updateby.prod.*;
+import io.deephaven.engine.table.impl.updateby.rollingsum.*;
 import io.deephaven.engine.table.impl.updateby.sum.*;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import io.deephaven.time.DateTime;
@@ -21,10 +23,8 @@ import org.jetbrains.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static io.deephaven.util.BooleanUtils.NULL_BOOLEAN_AS_BYTE;
 import static io.deephaven.util.QueryConstants.NULL_BYTE;
@@ -152,22 +152,13 @@ public class UpdateByOperatorFactory {
 
         @Override
         public Void visit(@NotNull final EmaSpec ema) {
-            final LongRecordingUpdateByOperator timeStampRecorder;
             final boolean isTimeBased = ema.timeScale().isTimeBased();
             final String timestampCol = ema.timeScale().timestampCol();
-
-            if (isTimeBased) {
-                timeStampRecorder = makeLongRecordingOperator(source, timestampCol);
-                ops.add(timeStampRecorder);
-            } else {
-                timeStampRecorder = null;
-            }
 
             Arrays.stream(pairs)
                     .filter(p -> !isTimeBased || !p.rightColumn().equals(timestampCol))
                     .map(fc -> makeEmaOperator(fc,
                             source,
-                            timeStampRecorder,
                             ema))
                     .forEach(ops::add);
             return null;
@@ -205,69 +196,65 @@ public class UpdateByOperatorFactory {
             return null;
         }
 
-        @SuppressWarnings("unchecked")
+        @Override
+        public Void visit(@NotNull final RollingSumSpec rs) {
+            final boolean isTimeBased = rs.revTimeScale().isTimeBased();
+            final String timestampCol = rs.revTimeScale().timestampCol();
+
+            Arrays.stream(pairs)
+                    .filter(p -> !isTimeBased || !p.rightColumn().equals(timestampCol))
+                    .map(fc -> makeRollingSumOperator(fc,
+                            source,
+                            rs))
+                    .forEach(ops::add);
+            return null;
+        }
+
         private UpdateByOperator makeEmaOperator(@NotNull final MatchPair pair,
                 @NotNull final TableDefaults source,
-                @Nullable final LongRecordingUpdateByOperator recorder,
                 @NotNull final EmaSpec ema) {
             // noinspection rawtypes
             final ColumnSource columnSource = source.getColumnSource(pair.rightColumn);
             final Class<?> csType = columnSource.getType();
 
             final String[] affectingColumns;
-            if (recorder == null) {
+            if (ema.timeScale().timestampCol() == null) {
                 affectingColumns = new String[] {pair.rightColumn};
             } else {
                 affectingColumns = new String[] {ema.timeScale().timestampCol(), pair.rightColumn};
             }
 
-            // use the correct units from the EmaSpec (depending on was Time or Tick based)
+            // use the correct units from the EmaSpec (depending on if Time or Tick based)
             final long timeScaleUnits = ema.timeScale().timescaleUnits();
+            final OperationControl control = ema.controlOrDefault();
 
             if (csType == byte.class || csType == Byte.class) {
-                return new ByteEMAOperator(pair, affectingColumns, ema.controlOrDefault(), recorder, timeScaleUnits,
-                        columnSource, rowRedirection);
+                return new ByteEMAOperator(pair, affectingColumns, rowRedirection, control,
+                        ema.timeScale().timestampCol(), timeScaleUnits, columnSource);
             } else if (csType == short.class || csType == Short.class) {
-                return new ShortEMAOperator(pair, affectingColumns, ema.controlOrDefault(), recorder, timeScaleUnits,
-                        columnSource, rowRedirection);
+                return new ShortEMAOperator(pair, affectingColumns, rowRedirection, control,
+                        ema.timeScale().timestampCol(), timeScaleUnits, columnSource);
             } else if (csType == int.class || csType == Integer.class) {
-                return new IntEMAOperator(pair, affectingColumns, ema.controlOrDefault(), recorder, timeScaleUnits,
-                        columnSource, rowRedirection);
+                return new IntEMAOperator(pair, affectingColumns, rowRedirection, control,
+                        ema.timeScale().timestampCol(), timeScaleUnits, columnSource);
             } else if (csType == long.class || csType == Long.class) {
-                return new LongEMAOperator(pair, affectingColumns, ema.controlOrDefault(), recorder, timeScaleUnits,
-                        columnSource, rowRedirection);
+                return new LongEMAOperator(pair, affectingColumns, rowRedirection, control,
+                        ema.timeScale().timestampCol(), timeScaleUnits, columnSource);
             } else if (csType == float.class || csType == Float.class) {
-                return new FloatEMAOperator(pair, affectingColumns, ema.controlOrDefault(), recorder, timeScaleUnits,
-                        columnSource, rowRedirection);
+                return new FloatEMAOperator(pair, affectingColumns, rowRedirection, control,
+                        ema.timeScale().timestampCol(), timeScaleUnits, columnSource);
             } else if (csType == double.class || csType == Double.class) {
-                return new DoubleEMAOperator(pair, affectingColumns, ema.controlOrDefault(), recorder,
-                        timeScaleUnits, columnSource, rowRedirection);
+                return new DoubleEMAOperator(pair, affectingColumns, rowRedirection, control,
+                        ema.timeScale().timestampCol(), timeScaleUnits, columnSource);
             } else if (csType == BigDecimal.class) {
-                return new BigDecimalEMAOperator(pair, affectingColumns, ema.controlOrDefault(), recorder,
-                        timeScaleUnits, columnSource, rowRedirection);
+                return new BigDecimalEMAOperator(pair, affectingColumns, rowRedirection, control,
+                        ema.timeScale().timestampCol(), timeScaleUnits, columnSource);
             } else if (csType == BigInteger.class) {
-                return new BigIntegerEMAOperator(pair, affectingColumns, ema.controlOrDefault(), recorder,
-                        timeScaleUnits, columnSource, rowRedirection);
+                return new BigIntegerEMAOperator(pair, affectingColumns, rowRedirection, control,
+                        ema.timeScale().timestampCol(), timeScaleUnits, columnSource);
             }
 
             throw new IllegalArgumentException("Can not perform EMA on type " + csType);
-        }
-
-        private LongRecordingUpdateByOperator makeLongRecordingOperator(TableDefaults source, String colName) {
-            final ColumnSource<?> columnSource = source.getColumnSource(colName);
-            final Class<?> colType = columnSource.getType();
-            if (colType != long.class &&
-                    colType != Long.class &&
-                    colType != DateTime.class &&
-                    colType != Instant.class &&
-                    !columnSource.allowsReinterpret(long.class)) {
-                throw new IllegalArgumentException("Column " + colName + " cannot be interpreted as a long");
-            }
-
-            final String[] inputColumns = Stream.concat(Stream.of(colName),
-                    Arrays.stream(pairs).map(MatchPair::rightColumn)).toArray(String[]::new);
-
-            return new LongRecordingUpdateByOperator(colName, inputColumns, columnSource);
         }
 
         private UpdateByOperator makeCumProdOperator(MatchPair fc, TableDefaults source) {
@@ -309,8 +296,8 @@ public class UpdateByOperatorFactory {
             } else if (csType == double.class || csType == Double.class) {
                 return new DoubleCumMinMaxOperator(fc, isMax, rowRedirection);
             } else if (Comparable.class.isAssignableFrom(csType)) {
-                // noinspection unchecked,rawtypes
-                return new ComparableCumMinMaxOperator(csType, fc, isMax, rowRedirection);
+                // noinspection rawtypes
+                return new ComparableCumMinMaxOperator(fc, isMax, rowRedirection, csType);
             }
 
             throw new IllegalArgumentException("Can not perform Cumulative Min/Max on type " + csType);
@@ -363,6 +350,64 @@ public class UpdateByOperatorFactory {
             } else {
                 return new ObjectFillByOperator<>(fc, rowRedirection, csType);
             }
+        }
+
+        private UpdateByOperator makeRollingSumOperator(@NotNull final MatchPair pair,
+                @NotNull final TableDefaults source,
+                @NotNull final RollingSumSpec rs) {
+            // noinspection rawtypes
+            final ColumnSource columnSource = source.getColumnSource(pair.rightColumn);
+            final Class<?> csType = columnSource.getType();
+
+            final String[] affectingColumns;
+            if (rs.revTimeScale().timestampCol() == null) {
+                affectingColumns = new String[] {pair.rightColumn};
+            } else {
+                affectingColumns = new String[] {rs.revTimeScale().timestampCol(), pair.rightColumn};
+            }
+
+            final long prevTimeScaleUnits = rs.revTimeScale().timescaleUnits();
+            final long fwdTimeScaleUnits = rs.fwdTimeScale().timescaleUnits();
+
+            if (csType == Boolean.class || csType == boolean.class) {
+                return new ByteRollingSumOperator(pair, affectingColumns, rowRedirection,
+                        rs.revTimeScale().timestampCol(),
+                        prevTimeScaleUnits, fwdTimeScaleUnits, NULL_BOOLEAN_AS_BYTE);
+            } else if (csType == byte.class || csType == Byte.class) {
+                return new ByteRollingSumOperator(pair, affectingColumns, rowRedirection,
+                        rs.revTimeScale().timestampCol(),
+                        prevTimeScaleUnits, fwdTimeScaleUnits, NULL_BYTE);
+            } else if (csType == short.class || csType == Short.class) {
+                return new ShortRollingSumOperator(pair, affectingColumns, rowRedirection,
+                        rs.revTimeScale().timestampCol(),
+                        prevTimeScaleUnits, fwdTimeScaleUnits);
+            } else if (csType == int.class || csType == Integer.class) {
+                return new IntRollingSumOperator(pair, affectingColumns, rowRedirection,
+                        rs.revTimeScale().timestampCol(),
+                        prevTimeScaleUnits, fwdTimeScaleUnits);
+            } else if (csType == long.class || csType == Long.class) {
+                return new LongRollingSumOperator(pair, affectingColumns, rowRedirection,
+                        rs.revTimeScale().timestampCol(),
+                        prevTimeScaleUnits, fwdTimeScaleUnits);
+            } else if (csType == float.class || csType == Float.class) {
+                return new FloatRollingSumOperator(pair, affectingColumns, rowRedirection,
+                        rs.revTimeScale().timestampCol(),
+                        prevTimeScaleUnits, fwdTimeScaleUnits);
+            } else if (csType == double.class || csType == Double.class) {
+                return new DoubleRollingSumOperator(pair, affectingColumns, rowRedirection,
+                        rs.revTimeScale().timestampCol(),
+                        prevTimeScaleUnits, fwdTimeScaleUnits);
+            } else if (csType == BigDecimal.class) {
+                return new BigDecimalRollingSumOperator(pair, affectingColumns, rowRedirection,
+                        rs.revTimeScale().timestampCol(),
+                        prevTimeScaleUnits, fwdTimeScaleUnits, control.mathContextOrDefault());
+            } else if (csType == BigInteger.class) {
+                return new BigIntegerRollingSumOperator(pair, affectingColumns, rowRedirection,
+                        rs.revTimeScale().timestampCol(),
+                        prevTimeScaleUnits, fwdTimeScaleUnits);
+            }
+
+            throw new IllegalArgumentException("Can not perform RollingSum on type " + csType);
         }
     }
 }

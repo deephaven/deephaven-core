@@ -1664,7 +1664,8 @@ class Table(JObjectWrapper):
         try:
             ops = to_sequence(ops)
             by = to_sequence(by)
-            return Table(j_table=self.j_table.updateBy(j_array_list(ops), *by))
+            with auto_locking_ctx(self):
+                return Table(j_table=self.j_table.updateBy(j_array_list(ops), *by))
         except Exception as e:
             raise DHError(e, "table update-by operation failed.") from e
 

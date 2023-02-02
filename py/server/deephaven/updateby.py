@@ -60,20 +60,12 @@ class OperationControl(JObjectWrapper):
 
     def __init__(self, on_null: BadDataBehavior = BadDataBehavior.SKIP,
                  on_nan: BadDataBehavior = BadDataBehavior.SKIP,
-                 on_null_time: BadDataBehavior = BadDataBehavior.SKIP,
-                 on_negative_deltatime: BadDataBehavior = BadDataBehavior.THROW,
-                 on_zero_deltatime: BadDataBehavior = BadDataBehavior.SKIP,
                  big_value_context: MathContext = MathContext.DECIMAL128):
         """Initializes an OperationControl for use with certain UpdateByOperation, such as EMAs.
 
         Args:
             on_null (BadDataBehavior): the behavior for when null values are encountered, default is SKIP
             on_nan (BadDataBehavior): the behavior for when NaN values are encountered, default is SKIP
-            on_null_time (BadDataBehavior): the behavior for when null timestamps are encountered, default is SKIP
-            on_negative_deltatime (BadDataBehavior): the behavior for when negative sample-to-sample time differences
-                are encountered, default is THROW
-            on_zero_deltatime (BadDataBehavior): the behavior for when zero sample-to-sample-time differences are
-                encountered, default is SKIP
             big_value_context (MathContext): the context to use when processing arbitrary precision numeric values
                 (Java BigDecimal/BigInteger), default is DECIMAL128.
 
@@ -84,9 +76,6 @@ class OperationControl(JObjectWrapper):
             j_builder = _JOperationControl.builder()
             self.j_op_control = (j_builder.onNullValue(on_null.value)
                                  .onNanValue(on_nan.value)
-                                 .onNullTime(on_null_time.value)
-                                 .onNegativeDeltaTime(on_negative_deltatime.value)
-                                 .onZeroDeltaTime(on_zero_deltatime.value)
                                  .bigValueContext(big_value_context.value).build())
         except Exception as e:
             raise DHError(e, "failed to build an OperationControl object.") from e

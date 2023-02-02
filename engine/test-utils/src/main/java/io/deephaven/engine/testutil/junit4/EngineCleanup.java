@@ -45,10 +45,8 @@ public class EngineCleanup extends QueryTableTestBase implements TestRule {
             @Override
             public void evaluate() throws Throwable {
                 setUp();
-                try {
+                try (final AutoCloseable ignored = () -> tearDown()) {
                     statement.evaluate();
-                } finally {
-                    tearDown();
                 }
             }
         };

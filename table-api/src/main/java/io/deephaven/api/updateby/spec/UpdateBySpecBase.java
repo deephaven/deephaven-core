@@ -44,4 +44,19 @@ public abstract class UpdateBySpecBase implements UpdateBySpec {
                 .addAllColumns(pairs)
                 .build();
     }
+
+    /**
+     * Returns {@code true} if the input class is a primitive or boxed numeric type
+     * 
+     * @param inputType the input class to test
+     */
+    static boolean applicableToNumeric(Class<?> inputType) {
+        return
+        // is primitive numeric?
+        inputType == double.class || inputType == float.class
+                || inputType == int.class || inputType == long.class || inputType == short.class
+                || inputType == byte.class
+                // is boxed numeric?
+                || Number.class.isAssignableFrom(inputType);
+    }
 }

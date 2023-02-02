@@ -1,19 +1,30 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.base;
+/*
+ * ---------------------------------------------------------------------------------------------------------------------
+ * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharRingBufferTest and regenerate
+ * ---------------------------------------------------------------------------------------------------------------------
+ */
+package io.deephaven.base.ringbuffer;
 
+import io.deephaven.base.ArrayUtil;
+import io.deephaven.base.verify.AssertionFailure;
 import junit.framework.TestCase;
 
 import java.util.NoSuchElementException;
 
-public class LongRingBufferTest extends TestCase {
+import static org.junit.Assert.assertThrows;
 
-    private void assertEmpty(LongRingBuffer rb) {
+public class FloatRingBufferTest extends TestCase {
+
+    final float SENTINEL = Float.MIN_VALUE;
+
+    private void assertEmpty(FloatRingBuffer rb) {
         assertTrue(rb.isEmpty());
         assertEquals(0, rb.size());
 
-        assertEquals(Long.MIN_VALUE, rb.peek(Long.MIN_VALUE));
+        assertEquals(SENTINEL, rb.peek(SENTINEL));
         try {
             rb.element();
             fail("queue should be empty");
@@ -21,7 +32,7 @@ public class LongRingBufferTest extends TestCase {
             // expected
         }
 
-        assertEquals(Long.MIN_VALUE, rb.poll(Long.MIN_VALUE));
+        assertEquals(SENTINEL, rb.poll(SENTINEL));
         try {
             rb.remove();
             fail("queue should be empty");
@@ -30,16 +41,16 @@ public class LongRingBufferTest extends TestCase {
         }
     }
 
-    private void assertFull(LongRingBuffer rb) {
+    private void assertFull(FloatRingBuffer rb) {
         assertFalse(rb.isEmpty());
         assertEquals(rb.capacity(), rb.size());
     }
 
-    private void assertNotEmpty(LongRingBuffer rb, int expectedSize, long expectedHead) {
+    private void assertNotEmpty(FloatRingBuffer rb, int expectedSize, float expectedHead) {
         assertFalse(rb.isEmpty());
         assertEquals(expectedSize, rb.size());
 
-        assertTrue(expectedHead == rb.peek(Long.MIN_VALUE));
+        assertTrue(expectedHead == rb.peek(SENTINEL));
         try {
             assertTrue(expectedHead == rb.element());
         } catch (NoSuchElementException x) {
@@ -47,22 +58,22 @@ public class LongRingBufferTest extends TestCase {
         }
     }
 
-    private void assertAdd(LongRingBuffer rb, long newHead, int expectedSize, long expectedHead) {
+    private void assertAdd(FloatRingBuffer rb, float newHead, int expectedSize, float expectedHead) {
         assertTrue(rb.add(newHead));
         assertNotEmpty(rb, expectedSize, expectedHead);
     }
 
-    private void assertOffer(LongRingBuffer rb, long newHead, int expectedSize, long expectedHead) {
+    private void assertOffer(FloatRingBuffer rb, float newHead, int expectedSize, float expectedHead) {
         assertTrue(rb.offer(newHead));
         assertNotEmpty(rb, expectedSize, expectedHead);
     }
 
-    private void assertPoll(LongRingBuffer rb, int expectedSize, long expectedHead) {
+    private void assertPoll(FloatRingBuffer rb, int expectedSize, float expectedHead) {
         assertNotEmpty(rb, expectedSize, expectedHead);
-        assertTrue(expectedHead == rb.poll(Long.MIN_VALUE));
+        assertTrue(expectedHead == rb.poll(SENTINEL));
     }
 
-    private void assertRemove(LongRingBuffer rb, int expectedSize, long expectedHead) {
+    private void assertRemove(FloatRingBuffer rb, int expectedSize, float expectedHead) {
         assertNotEmpty(rb, expectedSize, expectedHead);
         try {
             assertTrue(expectedHead == rb.remove());
@@ -71,35 +82,66 @@ public class LongRingBufferTest extends TestCase {
         }
     }
 
-    long A = 'A';
-    long B = 'B';
-    long C = 'C';
-    long D = 'D';
-    long E = 'E';
-    long F = 'F';
+    private void assertContents(FloatRingBuffer rb, float... expectedData) {
+        final float[] data = rb.getAll();
+        assertEquals(data.length, expectedData.length);
+        for (int ii = 0; ii < data.length; ii++) {
+            assertEquals(data[ii], expectedData[ii]);
+        }
+    }
+
+    private void assertArrayEquals(float[] data, float... expectedData) {
+        assertEquals(data.length, expectedData.length);
+        for (int ii = 0; ii < data.length; ii++) {
+            assertEquals(data[ii], expectedData[ii]);
+        }
+    }
+
+    float A = 'A';
+    float B = 'B';
+    float C = 'C';
+    float D = 'D';
+    float E = 'E';
+    float F = 'F';
 
     public void testAddRemove() {
 
-        LongRingBuffer rb = new LongRingBuffer(3);
+        FloatRingBuffer rb = new FloatRingBuffer(3);
 
         assertEmpty(rb);
 
         assertAdd(rb, A, 1, A);
         assertAdd(rb, B, 2, A);
         assertAdd(rb, C, 3, A);
-        assertFull(rb);
+        assertContents(rb, A, B, C);
 
         assertRemove(rb, 3, A);
+        assertContents(rb, B, C);
+
         assertRemove(rb, 2, B);
+        assertContents(rb, C);
+
         assertRemove(rb, 1, C);
+        assertContents(rb, new float[0]);
+
         assertEmpty(rb);
 
         assertAdd(rb, A, 1, A);
         assertAdd(rb, B, 2, A);
+        assertContents(rb, A, B);
+
         assertRemove(rb, 2, A);
+        assertContents(rb, B);
+
         assertAdd(rb, C, 2, B);
+        assertContents(rb, B, C);
+
         assertRemove(rb, 2, B);
+        assertContents(rb, C);
+
         assertRemove(rb, 1, C);
+        assertContents(rb, new float[0]);
+
         assertEmpty(rb);
 
         assertAdd(rb, A, 1, A);
@@ -125,11 +167,12 @@ public class LongRingBufferTest extends TestCase {
         assertAdd(rb, A, 1, A);
         assertAdd(rb, B, 2, A);
         assertAdd(rb, C, 3, A);
-        assertFull(rb);
+        assertContents(rb, A, B, C);
 
         assertAdd(rb, D, 4, A);
         assertAdd(rb, E, 5, A);
         assertAdd(rb, F, 6, A);
+        assertContents(rb, A, B, C, D, E, F);
 
         assertRemove(rb, 6, A);
         assertRemove(rb, 5, B);
@@ -137,19 +180,18 @@ public class LongRingBufferTest extends TestCase {
         assertRemove(rb, 3, D);
         assertRemove(rb, 2, E);
         assertRemove(rb, 1, F);
+        assertContents(rb, new float[0]);
         assertEmpty(rb);
     }
 
     public void testOfferPoll() {
-        LongRingBuffer rb = new LongRingBuffer(3);
+        FloatRingBuffer rb = new FloatRingBuffer(3);
 
         assertEmpty(rb);
 
         assertOffer(rb, A, 1, A);
         assertOffer(rb, B, 2, A);
         assertOffer(rb, C, 3, A);
-
-        assertFull(rb);
 
         assertPoll(rb, 3, A);
         assertPoll(rb, 2, B);
@@ -187,10 +229,9 @@ public class LongRingBufferTest extends TestCase {
         assertOffer(rb, A, 1, A);
         assertOffer(rb, B, 2, A);
         assertOffer(rb, C, 3, A);
-        assertFull(rb);
+        assertOffer(rb, D, 4, A);
 
-        assertAdd(rb, D, 4, A); // need one add to grow it
-        assertOffer(rb, E, 5, A); // NOTE: assumes capacity grows by at least a factor of two
+        assertAdd(rb, E, 5, A); // need one add to grow it from 4 to 8
         assertOffer(rb, F, 6, A);
 
         assertPoll(rb, 6, A);
@@ -203,19 +244,21 @@ public class LongRingBufferTest extends TestCase {
     }
 
     public void testGrowSimple() {
-        LongRingBuffer rb = new LongRingBuffer(5);
+        FloatRingBuffer rb = new FloatRingBuffer(4);
 
         assertAdd(rb, A, 1, A);
         assertAdd(rb, B, 2, A);
         assertAdd(rb, C, 3, A);
         assertAdd(rb, D, 4, A);
-        assertAdd(rb, E, 5, A);
         assertFull(rb);
 
-        // this will grow; the elements are in a single contiguous block
-        assertAdd(rb, F, 6, A);
+        // remove one so head != 0
+        assertRemove(rb, 4, A);
 
-        assertRemove(rb, 6, A);
+        assertAdd(rb, E, 4, B);
+        // this will grow; the elements are in a single contiguous block
+        assertAdd(rb, F, 5, B);
+
         assertRemove(rb, 5, B);
         assertRemove(rb, 4, C);
         assertRemove(rb, 3, D);
@@ -225,7 +268,7 @@ public class LongRingBufferTest extends TestCase {
     }
 
     public void testGrowComplex() {
-        LongRingBuffer rb = new LongRingBuffer(5);
+        FloatRingBuffer rb = new FloatRingBuffer(5);
 
         assertAdd(rb, A, 1, A);
         assertAdd(rb, B, 2, A);
@@ -240,7 +283,6 @@ public class LongRingBufferTest extends TestCase {
         assertAdd(rb, C, 3, A);
         assertAdd(rb, D, 4, A);
         assertAdd(rb, E, 5, A);
-        assertFull(rb);
 
         // this will grow; the elements are in two blocks
         assertAdd(rb, F, 6, A);
@@ -255,15 +297,14 @@ public class LongRingBufferTest extends TestCase {
     }
 
     public void testIterator() {
-        LongRingBuffer rb = new LongRingBuffer(3);
+        FloatRingBuffer rb = new FloatRingBuffer(3);
 
-        LongRingBuffer.Iterator iter = rb.iterator();
+        FloatRingBuffer.Iterator iter = rb.iterator();
         assertFalse(iter.hasNext());
 
         assertAdd(rb, A, 1, A);
         assertAdd(rb, B, 2, A);
         assertAdd(rb, C, 3, A);
-        assertFull(rb);
 
         iter = rb.iterator();
         assertTrue(iter.hasNext());
@@ -306,10 +347,15 @@ public class LongRingBufferTest extends TestCase {
         assertTrue(iter.hasNext());
         assertEquals(F, iter.next());
         assertFalse(iter.hasNext());
+
+        final FloatRingBuffer.Iterator iterFinal = rb.iterator();
+
+        assertThrows(UnsupportedOperationException.class,
+                () -> iterFinal.remove());
     }
 
     public void testBack() {
-        LongRingBuffer rb = new LongRingBuffer(5);
+        FloatRingBuffer rb = new FloatRingBuffer(5);
 
         assertAdd(rb, A, 1, A);
         assertEquals(rb.back(), A);
@@ -320,7 +366,7 @@ public class LongRingBufferTest extends TestCase {
     }
 
     public void testBackWhenEmpty() {
-        LongRingBuffer rb = new LongRingBuffer(5);
+        FloatRingBuffer rb = new FloatRingBuffer(5);
         try {
             rb.back();
             fail("expected a NoSuchElement exception");
@@ -330,7 +376,7 @@ public class LongRingBufferTest extends TestCase {
     }
 
     public void testBackTailIsZero() {
-        LongRingBuffer rb = new LongRingBuffer(5);
+        FloatRingBuffer rb = new FloatRingBuffer(5, false);
 
         assertAdd(rb, A, 1, A);
         assertAdd(rb, B, 2, A);
@@ -345,21 +391,166 @@ public class LongRingBufferTest extends TestCase {
     }
 
     public void testLargeAmounts() {
-        LongRingBuffer rb = new LongRingBuffer(3);
+        FloatRingBuffer rb = new FloatRingBuffer(3);
 
         for (int i = 0; i < 100; i++)
-            rb.add(i);
+            rb.add((float) i);
 
         for (int i = 100; i < 200; i++) {
-            rb.add(i);
-            assertEquals(i - 100 + 1, rb.front(1));
-            assertEquals(i - 100, rb.poll(Long.MIN_VALUE));
+            rb.add((float) i);
+            assertEquals((float) (i - 100 + 1), rb.front(1));
+            assertEquals((float) (i - 100), rb.poll(SENTINEL));
         }
 
         for (int i = 200; i < 300; i++) {
             if (i < 299)
-                assertEquals(i - 100 + 1, rb.front(1));
-            assertEquals(i - 100, rb.poll(Long.MIN_VALUE));
+                assertEquals((float) (i - 100 + 1), rb.front(1));
+            assertEquals((float) (i - 100), rb.poll(SENTINEL));
         }
+    }
+
+    public void testAddExceptionWhenFull() {
+        FloatRingBuffer rb = new FloatRingBuffer(3, false);
+        assert (rb.add(A));
+        assert (rb.add(B));
+        assert (rb.add(C));
+
+        // this should throw
+        assertThrows(UnsupportedOperationException.class,
+                () -> rb.add(D));
+    }
+
+    public void testAddOverwriteAndOffer() {
+        FloatRingBuffer rb = new FloatRingBuffer(3, false);
+        assert (3 == rb.remaining());
+
+        assert (F == rb.addOverwrite(A, F));
+        assert (2 == rb.remaining());
+
+        assert (F == rb.addOverwrite(B, F));
+        assert (1 == rb.remaining());
+
+        assert (F == rb.addOverwrite(C, F));
+        assert (0 == rb.remaining());
+        assert (rb.isFull());
+
+        // now full, should return first value
+        assert (A == rb.addOverwrite(D, F));
+        assert (B == rb.addOverwrite(E, F));
+        assert (rb.isFull());
+
+        // offer() testing
+        assert (false == rb.offer(F));
+        assert (C == rb.remove());
+        assert (true == rb.offer(F));
+
+        // peek testing
+        assert (D == rb.front());
+        assert (E == rb.front(1));
+        assert (F == rb.front(2));
+        // this should throw
+        assertThrows(NoSuchElementException.class,
+                () -> rb.front(99));
+
+        assert (F == rb.peekBack(A));
+
+        // clear() testing
+        rb.clear();
+        assert (rb.isEmpty());
+
+        assert (A == rb.peekBack(A));
+    }
+
+
+    public void testMultipleRemove() {
+        FloatRingBuffer rb = new FloatRingBuffer(10, false);
+
+        // this should throw
+        assertThrows(NoSuchElementException.class,
+                () -> rb.remove());
+
+        // this should throw
+        assertThrows(NoSuchElementException.class,
+                () -> rb.remove(1));
+
+        rb.add(A);
+        rb.add(B);
+
+        float[] values = rb.remove(2);
+        assertArrayEquals(values, A, B);
+        assertEmpty(rb);
+
+        rb.add(C);
+        rb.add(D);
+        rb.add(E);
+        rb.add(F);
+
+        values = rb.remove(2);
+        assertArrayEquals(values, C, D);
+
+        values = rb.remove(2);
+        assertArrayEquals(values, E, F);
+        assertEmpty(rb);
+
+        rb.add(A);
+        rb.add(B);
+        rb.add(C);
+        rb.add(D);
+        rb.add(E);
+        rb.add(F);
+
+        values = rb.remove(6);
+        assertArrayEquals(values, A, B, C, D, E, F);
+        assertEmpty(rb);
+    }
+
+    public void testAddRemoveUnsafe() {
+        FloatRingBuffer rbNoGrow = new FloatRingBuffer(3, false);
+
+        // this should throw
+        assertThrows(UnsupportedOperationException.class,
+                () -> rbNoGrow.ensureRemaining(10));
+
+        rbNoGrow.ensureRemaining(3);
+        rbNoGrow.addUnsafe(A);
+        rbNoGrow.addUnsafe(B);
+        rbNoGrow.addUnsafe(C);
+
+        assertContents(rbNoGrow, A, B, C);
+
+        assertEquals(rbNoGrow.removeUnsafe(), A);
+        assertContents(rbNoGrow, B, C);
+
+        assertEquals(rbNoGrow.removeUnsafe(), B);
+        assertContents(rbNoGrow, C);
+
+        assertEquals(rbNoGrow.removeUnsafe(), C);
+        assertEmpty(rbNoGrow);
+
+
+        FloatRingBuffer rbGrow = new FloatRingBuffer(3, true);
+
+        for (int size = 10; size < 1_000_000; size *= 10) {
+            rbGrow.ensureRemaining(size);
+            assert (rbGrow.remaining() >= size);
+            for (int i = 0; i < size; i++) {
+                rbGrow.addUnsafe(A);
+            }
+        }
+    }
+
+    public void testOverflow() {
+        FloatRingBuffer rbA = new FloatRingBuffer(0);
+        // this should throw
+        assertThrows(AssertionFailure.class,
+                () -> rbA.ensureRemaining(ArrayUtil.MAX_ARRAY_SIZE + 1));
+
+        FloatRingBuffer rbB = new FloatRingBuffer(100);
+        for (int i = 0; i < 100; i++) {
+            rbB.addUnsafe(A);
+        }
+        // this should throw
+        assertThrows(AssertionFailure.class,
+                () -> rbB.ensureRemaining(ArrayUtil.MAX_ARRAY_SIZE - 100 + 1));
     }
 }

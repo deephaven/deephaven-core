@@ -25,10 +25,7 @@ class UpdateByTestCase(BaseTestCase):
 
     def test_ema(self):
         op_ctrl = OperationControl(on_null=BadDataBehavior.THROW,
-                                   on_null_time=BadDataBehavior.POISON,
                                    on_nan=BadDataBehavior.RESET,
-                                   on_zero_deltatime=BadDataBehavior.SKIP,
-                                   on_negative_deltatime=BadDataBehavior.SKIP,
                                    big_value_context=MathContext.UNLIMITED)
 
         ema_ops = [ema_tick_decay(time_scale_ticks=100, cols="ema_a = a"),
@@ -41,11 +38,12 @@ class UpdateByTestCase(BaseTestCase):
         for ema_op in ema_ops:
             with self.subTest(ema_op):
                 for t in (self.static_table, self.ticking_table):
-                    ema_table = t.update_by(ops=ema_op, by="b")
-                    self.assertTrue(ema_table.is_refreshing is t.is_refreshing)
-                    self.assertEqual(len(ema_table.columns), 1 + len(t.columns))
                     with ugp.exclusive_lock():
-                        self.assertEqual(ema_table.size, t.size)
+                        ema_table = t.update_by(ops=ema_op, by="b")
+                        self.assertTrue(ema_table.is_refreshing is t.is_refreshing)
+                        self.assertEqual(len(ema_table.columns), 1 + len(t.columns))
+                        with ugp.exclusive_lock():
+                            self.assertEqual(ema_table.size, t.size)
 
     def test_simple_ops(self):
         op_builders = [cum_sum, cum_prod, cum_min, cum_max, forward_fill]
@@ -54,10 +52,10 @@ class UpdateByTestCase(BaseTestCase):
         for op_builder in op_builders:
             with self.subTest(op_builder):
                 for t in (self.static_table, self.ticking_table):
-                    updateby_table = t.update_by(ops=op_builder(pairs), by="e")
-                    self.assertTrue(updateby_table.is_refreshing is t.is_refreshing)
-                    self.assertEqual(len(updateby_table.columns), 2 + len(t.columns))
                     with ugp.exclusive_lock():
+                        updateby_table = t.update_by(ops=op_builder(pairs), by="e")
+                        self.assertTrue(updateby_table.is_refreshing is t.is_refreshing)
+                        self.assertEqual(len(updateby_table.columns), 2 + len(t.columns))
                         self.assertEqual(updateby_table.size, t.size)
 
     def test_simple_ops_proxy(self):
@@ -87,10 +85,7 @@ class UpdateByTestCase(BaseTestCase):
 
     def test_ema_proxy(self):
         op_ctrl = OperationControl(on_null=BadDataBehavior.THROW,
-                                   on_null_time=BadDataBehavior.POISON,
                                    on_nan=BadDataBehavior.RESET,
-                                   on_zero_deltatime=BadDataBehavior.SKIP,
-                                   on_negative_deltatime=BadDataBehavior.SKIP,
                                    big_value_context=MathContext.UNLIMITED)
 
         ema_ops = [ema_tick_decay(time_scale_ticks=100, cols="ema_a = a"),
