@@ -11,7 +11,7 @@ import io.deephaven.time.DateTimeUtils;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Array-backed ColumnSource for DBDateTimes. Allows reinterpret as long.
+ * Array-backed ColumnSource for DateTimes. Allows reinterpret as long.
  */
 public class DateTimeSparseArraySource extends NanosBasedTimeSparseArraySource<DateTime>
         implements MutableColumnSourceGetDefaults.ForLongAsDateTime, DefaultChunkSource<Values>, ConvertableTimeSource {

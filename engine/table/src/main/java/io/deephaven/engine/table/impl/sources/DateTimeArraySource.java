@@ -10,7 +10,7 @@ import io.deephaven.time.DateTimeUtils;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Array-backed {@link ColumnSource} for DBDateTimes. Allows reinterpretation to long and {@link java.time.Instant}.
+ * Array-backed {@link ColumnSource} for DateTimes. Allows reinterpretation to long and {@link java.time.Instant}.
  */
 public class DateTimeArraySource extends NanosBasedTimeArraySource<DateTime>
         implements MutableColumnSourceGetDefaults.ForLongAsDateTime, ConvertableTimeSource {

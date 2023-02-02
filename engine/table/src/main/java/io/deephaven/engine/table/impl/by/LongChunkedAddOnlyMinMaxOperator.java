@@ -36,7 +36,7 @@ import java.util.Map;
 class LongChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationOperator {
     private final LongArraySource resultColumn;
     // region actualResult
-    private final ArrayBackedColumnSource<?> actualResult;
+    private final ColumnSource<?> actualResult;
     // endregion actualResult
     private final boolean minimum;
     private final String name;

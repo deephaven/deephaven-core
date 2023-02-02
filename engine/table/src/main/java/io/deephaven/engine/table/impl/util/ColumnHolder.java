@@ -214,7 +214,7 @@ public class ColumnHolder<T> {
      * @param name column name
      * @param grouped true if the column is grouped; false otherwise
      * @param chunkData column data (long integers representing nanos since the epoch)
-     * @return a DBDateTime column holder implemented with longs for storage
+     * @return a DateTime column holder implemented with longs for storage
      */
     public static ColumnHolder<DateTime> getDateTimeColumnHolder(String name, boolean grouped,
             Chunk<Values> chunkData) {

@@ -30,7 +30,7 @@ import java.time.ZonedDateTime;
  *
  * <pre>
  * baseTable = db.i("Market", "Trades")
- *               .where("Date &#62; 2021-10-01")
+ *               .where("Date > 2021-10-01")
  *
  * startTime = LocalTime.of(10,30,00)
  * endTime = LocalTime.of(16,30,00)
@@ -268,7 +268,7 @@ public class TableTimeConversions {
     }
     // endregion
 
-    // region to DbDateTime
+    // region to DateTime
     /**
      * Convert the specified column in the table to a {@link DateTime} column. The column may be specified as a single
      * value "Column" or a pair "NewColumn = OriginalColumn"

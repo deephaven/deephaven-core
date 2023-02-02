@@ -24,7 +24,6 @@ import org.jetbrains.annotations.Nullable;
 import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.*;
 
 import java.time.Instant;
-import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Collection;
 

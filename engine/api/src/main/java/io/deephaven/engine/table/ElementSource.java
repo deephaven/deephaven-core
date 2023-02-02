@@ -8,13 +8,14 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * A source of element data within a table.
- * 
+ *
  * @param <T> the type of underlying data.
  */
 public interface ElementSource<T> {
 
     /**
-     * Get the value from the source. This may return boxed values for basic types.
+     * Get the value from the source. This may return boxed values for basic types. RowKeys that are not present are
+     * undefined.
      *
      * @param rowKey the location in key space to get the value from.
      * @return the value at the rowKey, potentially null.
@@ -23,7 +24,7 @@ public interface ElementSource<T> {
     T get(long rowKey);
 
     /**
-     * Get the value at the rowKey as a Boolean.
+     * Get the value at the rowKey as a Boolean. RowKeys that are not present are undefined.
      *
      * @param rowKey the location in key space to get the value from.
      * @return the boolean at the rowKey, potentially null.
@@ -32,7 +33,7 @@ public interface ElementSource<T> {
     Boolean getBoolean(long rowKey);
 
     /**
-     * Get the value at the rowKey as a byte.
+     * Get the value at the rowKey as a byte. RowKeys that are not present are undefined.
      *
      * @param rowKey the location in key space to get the value from.
      * @return the boolean at the rowKey, null values are represented by {@link QueryConstants#NULL_BYTE}
@@ -40,7 +41,7 @@ public interface ElementSource<T> {
     byte getByte(long rowKey);
 
     /**
-     * Get the value at the rowKey as a char.
+     * Get the value at the rowKey as a char. RowKeys that are not present are undefined.
      *
      * @param rowKey the location in key space to get the value from.
      * @return the char at the rowKey, null values are represented by {@link QueryConstants#NULL_CHAR}
@@ -48,7 +49,7 @@ public interface ElementSource<T> {
     char getChar(long rowKey);
 
     /**
-     * Get the value at the rowKey as a double.
+     * Get the value at the rowKey as a double. RowKeys that are not present are undefined.
      *
      * @param rowKey the location in key space to get the value from.
      * @return the double at the rowKey, null values are represented by {@link QueryConstants#NULL_DOUBLE}
@@ -56,7 +57,7 @@ public interface ElementSource<T> {
     double getDouble(long rowKey);
 
     /**
-     * Get the value at the rowKey as a float.
+     * Get the value at the rowKey as a float. RowKeys that are not present are undefined.
      *
      * @param rowKey the location in key space to get the value from.
      * @return the float at the rowKey, null values are represented by {@link QueryConstants#NULL_FLOAT}
@@ -64,7 +65,7 @@ public interface ElementSource<T> {
     float getFloat(long rowKey);
 
     /**
-     * Get the value at the rowKey as an int.
+     * Get the value at the rowKey as an int. RowKeys that are not present are undefined.
      *
      * @param rowKey the location in key space to get the value from.
      * @return the int at the rowKey, null values are represented by {@link QueryConstants#NULL_INT}
@@ -72,7 +73,7 @@ public interface ElementSource<T> {
     int getInt(long rowKey);
 
     /**
-     * Get the value at the rowKey as a long.
+     * Get the value at the rowKey as a long. RowKeys that are not present are undefined.
      *
      * @param rowKey the location in key space to get the value from.
      * @return the long at the rowKey, null values are represented by {@link QueryConstants#NULL_LONG}
@@ -80,7 +81,7 @@ public interface ElementSource<T> {
     long getLong(long rowKey);
 
     /**
-     * Get the value at the rowKey as a short.
+     * Get the value at the rowKey as a short. RowKeys that are not present are undefined.
      *
      * @param rowKey the location in key space to get the value from.
      * @return the short at the rowKey, null values are represented by {@link QueryConstants#NULL_SHORT}
@@ -92,25 +93,27 @@ public interface ElementSource<T> {
      * {@link io.deephaven.engine.updategraph.UpdateGraphProcessor UGP}
      * {@link io.deephaven.engine.updategraph.LogicalClock.State#Updating update} cycle to process changes in data.
      * During {@link io.deephaven.engine.updategraph.LogicalClock.State#Idle normal} operation previous values will be
-     * identical to {@link #get(long) current} values.
+     * identical to {@link #get(long) current} values. RowKeys that were not present are undefined.
      *
      * @param rowKey the location in key space to get the value from.
-     * @return the previous value at the rowKey, or null.
+     * @return the previous value at the rowKey, potentially null.
      */
     @Nullable
     T getPrev(long rowKey);
 
     /**
-     * Get the previous value at the rowKey as a Boolean. See {@link #getPrev(long)} for more details.
+     * Get the previous value at the rowKey as a Boolean. See {@link #getPrev(long)} for more details. RowKeys that were
+     * not present are undefined.
      *
      * @param rowKey the location in key space to get the previous value from.
-     * @return the previous boolean at the rowKey, or null.
+     * @return the previous boolean at the rowKey, potentially null.
      */
     @Nullable
     Boolean getPrevBoolean(long rowKey);
 
     /**
-     * Get the previous value at the rowKey as a byte. See {@link #getPrev(long)} for more details.
+     * Get the previous value at the rowKey as a byte. See {@link #getPrev(long)} for more details. RowKeys that were
+     * not present are undefined.
      *
      * @param rowKey the location in key space to get the previous value from.
      * @return the previous boolean at the rowKey, null values are represented by {@link QueryConstants#NULL_BYTE}
@@ -118,7 +121,8 @@ public interface ElementSource<T> {
     byte getPrevByte(long rowKey);
 
     /**
-     * Get the previous value at the rowKey as a char. See {@link #getPrev(long)} for more details.
+     * Get the previous value at the rowKey as a char. See {@link #getPrev(long)} for more details. RowKeys that were
+     * not present are undefined.
      *
      * @param rowKey ohe location in key space to get the previous value from.
      * @return the previous char at the rowKey, null values are represented by {@link QueryConstants#NULL_CHAR}
@@ -126,7 +130,8 @@ public interface ElementSource<T> {
     char getPrevChar(long rowKey);
 
     /**
-     * Get the previous value at the rowKey as a double. See {@link #getPrev(long)} for more details.
+     * Get the previous value at the rowKey as a double. See {@link #getPrev(long)} for more details. RowKeys that were
+     * not present are undefined.
      *
      * @param rowKey the location in key space to get the previous value from.
      * @return the previous double at the rowKey, null values are represented by {@link QueryConstants#NULL_DOUBLE}
@@ -134,7 +139,8 @@ public interface ElementSource<T> {
     double getPrevDouble(long rowKey);
 
     /**
-     * Get the previous value at the rowKey as a float. See {@link #getPrev(long)} for more details.
+     * Get the previous value at the rowKey as a float. See {@link #getPrev(long)} for more details. RowKeys that were
+     * not present are undefined.
      *
      * @param rowKey the location in key space to get the previous value from.
      * @return the previous float at the rowKey, null values are represented by {@link QueryConstants#NULL_FLOAT}
@@ -142,7 +148,8 @@ public interface ElementSource<T> {
     float getPrevFloat(long rowKey);
 
     /**
-     * Get the previous value at the rowKey as an int. See {@link #getPrev(long)} for more details.
+     * Get the previous value at the rowKey as an int. See {@link #getPrev(long)} for more details. RowKeys that were
+     * not present are undefined.
      *
      * @param rowKey the location in key space to get the previous value from.
      * @return the previous int at the rowKey, null values are represented by {@link QueryConstants#NULL_INT}
@@ -158,7 +165,8 @@ public interface ElementSource<T> {
     long getPrevLong(long rowKey);
 
     /**
-     * Get the previous value at the rowKey as a short. See {@link #getPrev(long)} for more details.
+     * Get the previous value at the rowKey as a short. See {@link #getPrev(long)} for more details. RowKeys that were
+     * not present are undefined.
      *
      * @param rowKey the location in key space to get the previous value from.
      * @return the previous short at the rowKey, null values are represented by {@link QueryConstants#NULL_SHORT}

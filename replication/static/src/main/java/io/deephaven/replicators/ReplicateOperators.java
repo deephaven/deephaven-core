@@ -82,7 +82,7 @@ public class ReplicateOperators {
         List<String> lines = ReplicationUtils
                 .fixupChunkAttributes(FileUtils.readLines(longAddOnlyMinMaxFile, Charset.defaultCharset()));
         lines = ReplicationUtils.replaceRegion(lines, "actualResult", Collections.singletonList(
-                "    private final ArrayBackedColumnSource<?> actualResult;"));
+                "    private final ColumnSource<?> actualResult;"));
         lines = ReplicationUtils.replaceRegion(lines, "extra constructor params",
                 Collections.singletonList("            Class<?> type,"));
         lines = ReplicationUtils.addImport(lines,
