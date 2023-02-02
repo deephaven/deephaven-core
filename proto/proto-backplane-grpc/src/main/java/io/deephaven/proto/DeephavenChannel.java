@@ -1,121 +1,58 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
 package io.deephaven.proto;
 
-import io.deephaven.proto.backplane.grpc.ApplicationServiceGrpc;
 import io.deephaven.proto.backplane.grpc.ApplicationServiceGrpc.ApplicationServiceBlockingStub;
 import io.deephaven.proto.backplane.grpc.ApplicationServiceGrpc.ApplicationServiceFutureStub;
 import io.deephaven.proto.backplane.grpc.ApplicationServiceGrpc.ApplicationServiceStub;
-import io.deephaven.proto.backplane.grpc.InputTableServiceGrpc;
 import io.deephaven.proto.backplane.grpc.InputTableServiceGrpc.InputTableServiceBlockingStub;
 import io.deephaven.proto.backplane.grpc.InputTableServiceGrpc.InputTableServiceFutureStub;
 import io.deephaven.proto.backplane.grpc.InputTableServiceGrpc.InputTableServiceStub;
-import io.deephaven.proto.backplane.grpc.ObjectServiceGrpc;
 import io.deephaven.proto.backplane.grpc.ObjectServiceGrpc.ObjectServiceBlockingStub;
 import io.deephaven.proto.backplane.grpc.ObjectServiceGrpc.ObjectServiceFutureStub;
 import io.deephaven.proto.backplane.grpc.ObjectServiceGrpc.ObjectServiceStub;
-import io.deephaven.proto.backplane.grpc.SessionServiceGrpc;
 import io.deephaven.proto.backplane.grpc.SessionServiceGrpc.SessionServiceBlockingStub;
 import io.deephaven.proto.backplane.grpc.SessionServiceGrpc.SessionServiceFutureStub;
 import io.deephaven.proto.backplane.grpc.SessionServiceGrpc.SessionServiceStub;
-import io.deephaven.proto.backplane.grpc.TableServiceGrpc;
 import io.deephaven.proto.backplane.grpc.TableServiceGrpc.TableServiceBlockingStub;
 import io.deephaven.proto.backplane.grpc.TableServiceGrpc.TableServiceFutureStub;
 import io.deephaven.proto.backplane.grpc.TableServiceGrpc.TableServiceStub;
-import io.deephaven.proto.backplane.script.grpc.ConsoleServiceGrpc;
 import io.deephaven.proto.backplane.script.grpc.ConsoleServiceGrpc.ConsoleServiceBlockingStub;
 import io.deephaven.proto.backplane.script.grpc.ConsoleServiceGrpc.ConsoleServiceFutureStub;
 import io.deephaven.proto.backplane.script.grpc.ConsoleServiceGrpc.ConsoleServiceStub;
-import io.grpc.Channel;
 
-import javax.inject.Inject;
-import java.util.Objects;
+public interface DeephavenChannel {
+    SessionServiceStub session();
 
-/**
- * A Deephaven service helper for a {@link Channel channel}.
- */
-public class DeephavenChannel {
-    private final Channel channel;
+    TableServiceStub table();
 
-    @Inject
-    public DeephavenChannel(Channel channel) {
-        this.channel = Objects.requireNonNull(channel);
-    }
+    ConsoleServiceStub console();
 
-    public Channel channel() {
-        return channel;
-    }
+    ObjectServiceStub object();
 
-    public SessionServiceStub session() {
-        return SessionServiceGrpc.newStub(channel);
-    }
+    ApplicationServiceStub application();
 
-    public TableServiceStub table() {
-        return TableServiceGrpc.newStub(channel);
-    }
+    InputTableServiceStub inputTable();
 
-    public ConsoleServiceStub console() {
-        return ConsoleServiceGrpc.newStub(channel);
-    }
+    SessionServiceBlockingStub sessionBlocking();
 
-    public ObjectServiceStub object() {
-        return ObjectServiceGrpc.newStub(channel);
-    }
+    TableServiceBlockingStub tableBlocking();
 
-    public ApplicationServiceStub application() {
-        return ApplicationServiceGrpc.newStub(channel);
-    }
+    ConsoleServiceBlockingStub consoleBlocking();
 
-    public InputTableServiceStub inputTable() {
-        return InputTableServiceGrpc.newStub(channel);
-    }
+    ObjectServiceBlockingStub objectBlocking();
 
-    public SessionServiceBlockingStub sessionBlocking() {
-        return SessionServiceGrpc.newBlockingStub(channel);
-    }
+    ApplicationServiceBlockingStub applicationBlocking();
 
-    public TableServiceBlockingStub tableBlocking() {
-        return TableServiceGrpc.newBlockingStub(channel);
-    }
+    InputTableServiceBlockingStub inputTableBlocking();
 
-    public ConsoleServiceBlockingStub consoleBlocking() {
-        return ConsoleServiceGrpc.newBlockingStub(channel);
-    }
+    SessionServiceFutureStub sessionFuture();
 
-    public ObjectServiceBlockingStub objectBlocking() {
-        return ObjectServiceGrpc.newBlockingStub(channel);
-    }
+    TableServiceFutureStub tableFuture();
 
-    public ApplicationServiceBlockingStub applicationBlocking() {
-        return ApplicationServiceGrpc.newBlockingStub(channel);
-    }
+    ConsoleServiceFutureStub consoleFuture();
 
-    public InputTableServiceBlockingStub inputTableBlocking() {
-        return InputTableServiceGrpc.newBlockingStub(channel);
-    }
+    ObjectServiceFutureStub objectFuture();
 
-    public SessionServiceFutureStub sessionFuture() {
-        return SessionServiceGrpc.newFutureStub(channel);
-    }
+    ApplicationServiceFutureStub applicationFuture();
 
-    public TableServiceFutureStub tableFuture() {
-        return TableServiceGrpc.newFutureStub(channel);
-    }
-
-    public ConsoleServiceFutureStub consoleFuture() {
-        return ConsoleServiceGrpc.newFutureStub(channel);
-    }
-
-    public ObjectServiceFutureStub objectFuture() {
-        return ObjectServiceGrpc.newFutureStub(channel);
-    }
-
-    public ApplicationServiceFutureStub applicationFuture() {
-        return ApplicationServiceGrpc.newFutureStub(channel);
-    }
-
-    public InputTableServiceFutureStub inputTableFuture() {
-        return InputTableServiceGrpc.newFutureStub(channel);
-    }
+    InputTableServiceFutureStub inputTableFuture();
 }
