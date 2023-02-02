@@ -8,6 +8,7 @@ import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.time.DateTime;
 import io.deephaven.engine.table.impl.by.IterativeChunkedAggregationOperator;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
@@ -27,7 +28,7 @@ import java.util.function.Supplier;
 public class SsmChunkedMinMaxOperator implements IterativeChunkedAggregationOperator {
     private static final int NODE_SIZE =
             Configuration.getInstance().getIntegerWithDefault("SsmChunkedMinMaxOperator.nodeSize", 4096);
-    private final ArrayBackedColumnSource resultColumn;
+    private final WritableColumnSource resultColumn;
     private final ObjectArraySource<SegmentedSortedMultiSet> ssms;
     private final String name;
     private final CompactKernel compactAndCountKernel;
@@ -58,7 +59,7 @@ public class SsmChunkedMinMaxOperator implements IterativeChunkedAggregationOper
     }
 
     private static SetResult makeSetResult(ChunkType chunkType, Class<?> type, boolean minimum,
-            ArrayBackedColumnSource resultColumn) {
+            WritableColumnSource resultColumn) {
         if (type == DateTime.class) {
             return new DateTimeSetResult(minimum, resultColumn);
         } else if (type == Boolean.class) {
@@ -391,7 +392,7 @@ public class SsmChunkedMinMaxOperator implements IterativeChunkedAggregationOper
     }
 
     private class SecondaryOperator implements IterativeChunkedAggregationOperator {
-        private final ArrayBackedColumnSource resultColumn;
+        private final WritableColumnSource resultColumn;
         private final String resultName;
         private final SetResult setResult;
 

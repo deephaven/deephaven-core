@@ -585,7 +585,7 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
             throw new UnsupportedOperationException("Can't call startTrackingPrevValues() twice");
         }
         deltaCapacity = INITIAL_DELTA_CAPACITY;
-        final ArrayBackedColumnSource<T> delta =
+        final WritableColumnSource<T> delta =
                 ArrayBackedColumnSource.getMemoryColumnSource(deltaCapacity, getType(), null);
         this.delta = delta;
         deltaCapacityEnsurer = delta::ensureCapacity;

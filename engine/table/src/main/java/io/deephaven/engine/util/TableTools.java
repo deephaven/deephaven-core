@@ -373,7 +373,7 @@ public class TableTools {
      * @return a Deephaven ColumnSource object
      */
     public static <T> ColumnSource<T> colSource(Class<T> clazz, Collection<T> values) {
-        ArrayBackedColumnSource<T> result = ArrayBackedColumnSource.getMemoryColumnSource(values.size(), clazz);
+        WritableColumnSource<T> result = ArrayBackedColumnSource.getMemoryColumnSource(values.size(), clazz);
         int resultIndex = 0;
         for (T value : values) {
             result.set(resultIndex++, value);
@@ -390,7 +390,7 @@ public class TableTools {
      */
     @SuppressWarnings("unchecked")
     public static <T> ColumnSource<T> objColSource(T... values) {
-        ArrayBackedColumnSource<T> result = (ArrayBackedColumnSource<T>) ArrayBackedColumnSource
+        WritableColumnSource<T> result = (WritableColumnSource<T>) ArrayBackedColumnSource
                 .getMemoryColumnSource(values.length, values.getClass().getComponentType());
         for (int i = 0; i < values.length; i++) {
             result.set(i, values[i]);
@@ -405,7 +405,7 @@ public class TableTools {
      * @return a Deephaven ColumnSource object
      */
     public static ColumnSource<Long> colSource(long... values) {
-        ArrayBackedColumnSource<Long> result =
+        WritableColumnSource<Long> result =
                 ArrayBackedColumnSource.getMemoryColumnSource(values.length, long.class);
         for (int i = 0; i < values.length; i++) {
             result.set(i, values[i]);
@@ -420,7 +420,7 @@ public class TableTools {
      * @return a Deephaven ColumnSource object
      */
     public static ColumnSource<Integer> colSource(int... values) {
-        ArrayBackedColumnSource<Integer> result =
+        WritableColumnSource<Integer> result =
                 ArrayBackedColumnSource.getMemoryColumnSource(values.length, int.class);
         for (int i = 0; i < values.length; i++) {
             result.set(i, values[i]);
@@ -435,7 +435,7 @@ public class TableTools {
      * @return a Deephaven ColumnSource object
      */
     public static ColumnSource<Short> colSource(short... values) {
-        ArrayBackedColumnSource<Short> result =
+        WritableColumnSource<Short> result =
                 ArrayBackedColumnSource.getMemoryColumnSource(values.length, short.class);
         for (int i = 0; i < values.length; i++) {
             result.set(i, values[i]);
@@ -450,7 +450,7 @@ public class TableTools {
      * @return a Deephaven ColumnSource object
      */
     public static ColumnSource<Byte> colSource(byte... values) {
-        ArrayBackedColumnSource<Byte> result =
+        WritableColumnSource<Byte> result =
                 ArrayBackedColumnSource.getMemoryColumnSource(values.length, byte.class);
         for (int i = 0; i < values.length; i++) {
             result.set(i, values[i]);
@@ -465,7 +465,7 @@ public class TableTools {
      * @return a Deephaven ColumnSource object
      */
     public static ColumnSource<Character> colSource(char... values) {
-        ArrayBackedColumnSource<Character> result =
+        WritableColumnSource<Character> result =
                 ArrayBackedColumnSource.getMemoryColumnSource(values.length, char.class);
         for (int i = 0; i < values.length; i++) {
             result.set(i, values[i]);
@@ -480,7 +480,7 @@ public class TableTools {
      * @return a Deephaven ColumnSource object
      */
     public static ColumnSource<Double> colSource(double... values) {
-        ArrayBackedColumnSource<Double> result =
+        WritableColumnSource<Double> result =
                 ArrayBackedColumnSource.getMemoryColumnSource(values.length, double.class);
         for (int i = 0; i < values.length; i++) {
             result.set(i, values[i]);
@@ -495,7 +495,7 @@ public class TableTools {
      * @return a Deephaven ColumnSource object
      */
     public static ColumnSource<Float> colSource(float... values) {
-        ArrayBackedColumnSource<Float> result =
+        WritableColumnSource<Float> result =
                 ArrayBackedColumnSource.getMemoryColumnSource(values.length, float.class);
         for (int i = 0; i < values.length; i++) {
             result.set(i, values[i]);

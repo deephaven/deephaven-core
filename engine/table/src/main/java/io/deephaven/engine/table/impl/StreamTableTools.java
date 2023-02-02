@@ -52,7 +52,7 @@ public class StreamTableTools {
 
             ConstructSnapshot.callDataSnapshotFunction("streamToAppendOnlyTable", swapListener.makeSnapshotControl(),
                     (boolean usePrev, long beforeClockValue) -> {
-                        final Map<String, ArrayBackedColumnSource<?>> columns = new LinkedHashMap<>();
+                        final Map<String, WritableColumnSource<?>> columns = new LinkedHashMap<>();
                         final Map<String, ? extends ColumnSource<?>> columnSourceMap =
                                 baseStreamTable.getColumnSourceMap();
                         final int columnCount = columnSourceMap.size();
@@ -62,7 +62,7 @@ public class StreamTableTools {
                         for (Map.Entry<String, ? extends ColumnSource<?>> nameColumnSourceEntry : columnSourceMap
                                 .entrySet()) {
                             final ColumnSource<?> existingColumn = nameColumnSourceEntry.getValue();
-                            final ArrayBackedColumnSource<?> newColumn = ArrayBackedColumnSource.getMemoryColumnSource(
+                            final WritableColumnSource<?> newColumn = ArrayBackedColumnSource.getMemoryColumnSource(
                                     0, existingColumn.getType(), existingColumn.getComponentType());
                             columns.put(nameColumnSourceEntry.getKey(), newColumn);
                             // for the source columns, we would like to read primitives instead of objects in cases

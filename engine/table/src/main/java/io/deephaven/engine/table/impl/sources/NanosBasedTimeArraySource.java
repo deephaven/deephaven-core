@@ -6,7 +6,6 @@ package io.deephaven.engine.table.impl.sources;
 import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
-import io.deephaven.chunk.ResettableWritableChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
@@ -15,14 +14,16 @@ import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
+import io.deephaven.engine.table.WritableSourceWithPrepareForParallelPopulation;
+import io.deephaven.engine.table.impl.util.ShiftData;
 import io.deephaven.time.DateTime;
-import io.deephaven.util.SoftRecycler;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.*;
 
-public abstract class NanosBasedTimeArraySource<TIME_TYPE> extends ArraySourceHelper<TIME_TYPE, long[]>
-        implements WritableColumnSource<TIME_TYPE>, ConvertableTimeSource {
+public abstract class NanosBasedTimeArraySource<TIME_TYPE> extends AbstractDeferredGroupingColumnSource<TIME_TYPE>
+        implements FillUnordered<Values>, ShiftData.ShiftCallback, WritableColumnSource<TIME_TYPE>,
+        InMemoryColumnSource, WritableSourceWithPrepareForParallelPopulation, ConvertableTimeSource {
 
     protected final LongArraySource nanoSource;
 
@@ -92,58 +93,8 @@ public abstract class NanosBasedTimeArraySource<TIME_TYPE> extends ArraySourceHe
     }
 
     @Override
-    long[] allocateNullFilledBlock(int size) {
-        return nanoSource.allocateNullFilledBlock(size);
-    }
-
-    @Override
-    long[] allocateBlock(int size) {
-        return nanoSource.allocateBlock(size);
-    }
-
-    @Override
-    void resetBlocks(long[][] newBlocks, long[][] newPrev) {
-        nanoSource.resetBlocks(newBlocks, newPrev);
-    }
-
-    @Override
-    long[][] getPrevBlocks() {
-        return nanoSource.getPrevBlocks();
-    }
-
-    @Override
-    SoftRecycler<long[]> getRecycler() {
-        return nanoSource.getRecycler();
-    }
-
-    @Override
     public void ensureCapacity(long size, boolean nullFill) {
         nanoSource.ensureCapacity(size, nullFill);
-    }
-
-    @Override
-    Object getBlock(int blockIndex) {
-        return nanoSource.getBlock(blockIndex);
-    }
-
-    @Override
-    Object getPrevBlock(int blockIndex) {
-        return nanoSource.getPrevBlock(blockIndex);
-    }
-
-    @Override
-    public boolean exposesChunkedBackingStore() {
-        return false;
-    }
-
-    @Override
-    public long resetWritableChunkToBackingStore(@NotNull ResettableWritableChunk<?> chunk, long position) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public long resetWritableChunkToBackingStoreSlice(@NotNull ResettableWritableChunk<?> chunk, long position) {
-        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -182,41 +133,24 @@ public abstract class NanosBasedTimeArraySource<TIME_TYPE> extends ArraySourceHe
     }
 
     @Override
-    protected void fillSparseChunk(
-            @NotNull final WritableChunk<? super Values> destGeneric,
-            @NotNull final RowSequence indices) {
-        nanoSource.fillSparseChunk(destGeneric, indices, this::makeValue);
+    public boolean providesFillUnordered() {
+        return true;
     }
 
     @Override
-    protected void fillSparsePrevChunk(
-            @NotNull final WritableChunk<? super Values> destGeneric,
-            @NotNull final RowSequence indices) {
-        nanoSource.fillSparsePrevChunk(destGeneric, indices, this::makeValue);
+    public void fillChunkUnordered(
+            @NotNull final FillContext context,
+            @NotNull final WritableChunk<? super Values> dest,
+            @NotNull final LongChunk<? extends RowKeys> keys) {
+        nanoSource.fillSparseChunkUnordered(dest, keys, this::makeValue);
     }
 
     @Override
-    protected void fillSparseChunkUnordered(
-            @NotNull final WritableChunk<? super Values> destGeneric,
-            @NotNull final LongChunk<? extends RowKeys> indices) {
-        nanoSource.fillSparseChunkUnordered(destGeneric, indices, this::makeValue);
-    }
-
-    @Override
-    protected void fillSparsePrevChunkUnordered(
-            @NotNull final WritableChunk<? super Values> destGeneric,
-            @NotNull final LongChunk<? extends RowKeys> indices) {
-        nanoSource.fillSparsePrevChunkUnordered(destGeneric, indices, this::makeValue);
-    }
-
-    @Override
-    public void fillFromChunkByRanges(@NotNull RowSequence rowSequence, Chunk<? extends Values> src) {
-        nanoSource.fillFromChunkByRanges(rowSequence, src, this::toNanos);
-    }
-
-    @Override
-    public void fillFromChunkByKeys(@NotNull RowSequence rowSequence, Chunk<? extends Values> src) {
-        nanoSource.fillFromChunkByKeys(rowSequence, src, this::toNanos);
+    public void fillPrevChunkUnordered(
+            @NotNull final FillContext context,
+            @NotNull final WritableChunk<? super Values> dest,
+            @NotNull final LongChunk<? extends RowKeys> keys) {
+        nanoSource.fillSparsePrevChunkUnordered(dest, keys, this::makeValue);
     }
 
     @Override

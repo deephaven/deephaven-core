@@ -1873,9 +1873,9 @@ public class QueryTable extends BaseTable<QueryTable> {
         checkInitiateOperation();
 
         // resultColumns initially contains the trigger columns, then we insert the base columns into it
-        final Map<String, ArrayBackedColumnSource<?>> resultColumns = SnapshotUtils
+        final Map<String, WritableColumnSource<?>> resultColumns = SnapshotUtils
                 .createColumnSourceMap(this.getColumnSourceMap(), ArrayBackedColumnSource::getMemoryColumnSource);
-        final Map<String, ArrayBackedColumnSource<?>> baseColumns = SnapshotUtils.createColumnSourceMap(
+        final Map<String, WritableColumnSource<?>> baseColumns = SnapshotUtils.createColumnSourceMap(
                 baseTable.getColumnSourceMap(), ArrayBackedColumnSource::getMemoryColumnSource);
         resultColumns.putAll(baseColumns);
 
@@ -1962,7 +1962,7 @@ public class QueryTable extends BaseTable<QueryTable> {
         }
 
         // Establish the "base" columns using the same names and types as the table being snapshotted
-        final Map<String, ArrayBackedColumnSource<?>> baseColumns =
+        final Map<String, WritableColumnSource<?>> baseColumns =
                 SnapshotUtils.createColumnSourceMap(baseTable.getColumnSourceMap(),
                         ArrayBackedColumnSource::getMemoryColumnSource);
 
