@@ -3,6 +3,8 @@
  */
 package io.deephaven.client.impl;
 
+import io.deephaven.proto.DeephavenChannel;
+
 import java.util.concurrent.CompletableFuture;
 
 public interface SessionFactory {
@@ -10,4 +12,6 @@ public interface SessionFactory {
     Session newSession();
 
     CompletableFuture<? extends Session> newSessionFuture();
+
+    DeephavenChannel channel();
 }
