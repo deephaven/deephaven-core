@@ -315,16 +315,16 @@ def rolling_sum_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[i
      
     Here are some examples of window values:
         rev_time = 0, fwd_time = 0 - contains rows that exactly match the current row timestamp
-        rev_time = 600_000_000_000, fwd_time = 0 - contains rows from 10m earlier through the current row timestamp (
+        rev_time = "00:10:00", fwd_time = "0" - contains rows from 10m earlier through the current row timestamp (
             inclusive)
         rev_time = 0, fwd_time = 600_000_000_000 - contains rows from the current row through 10m following the
             current row timestamp (inclusive)
-        rev_time = 600_000_000_000, fwd_time = 600_000_000_000 - contains rows from 10m earlier through 10m following
+        rev_time = "00:10:00", fwd_time = "00:10:00" - contains rows from 10m earlier through 10m following
             the current row timestamp (inclusive)
-        rev_time = 600_000_000_000, fwd_time = -30_000_000_000 - contains rows from 10m earlier through 5m before the
+        rev_time = "00:10:00", fwd_time = "-00:05:00" - contains rows from 10m earlier through 5m before the
             current * row timestamp (inclusive), this is a purely backwards looking window
-        rev_time = -300_000_000_000, fwd_time = 600_000_000_000} - contains rows from 5m following through 10m
-            following the  current row timestamp (inclusive), this is a purely forwards looking window
+        rev_time = "-00:05:00", fwd_time = "00:10:00"} - contains rows from 5m following through 10m
+            following the current row timestamp (inclusive), this is a purely forwards looking window
     
     Args:
         ts_col (str):

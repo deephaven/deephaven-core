@@ -107,8 +107,10 @@ class UpdateByTestCase(BaseTestCase):
             rolling_sum_tick(cols=["rsum_a = a", "rsum_d = d"], rev_ticks=10),
             rolling_sum_tick(cols=["rsum_a = a", "rsum_d = d"], rev_ticks=10, fwd_ticks=10),
             rolling_sum_time(ts_col="Timestamp", cols=["rsum_b = b", "rsum_e = e"], rev_time="00:00:10"),
-            rolling_sum_time(ts_col="Timestamp", cols=["rsum_b = b", "rsum_e = e"], rev_time="00:00:10",
+            rolling_sum_time(ts_col="Timestamp", cols=["rsum_b = b", "rsum_e = e"], rev_time=10_000_000_000,
                              fwd_time=-10_000_000_00),
+            rolling_sum_time(ts_col="Timestamp", cols=["rsum_b = b", "rsum_e = e"], rev_time="00:00:30",
+                             fwd_time="-00:00:30"),
         ]
 
         for op in ops:
