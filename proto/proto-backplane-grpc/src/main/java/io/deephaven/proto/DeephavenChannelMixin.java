@@ -76,7 +76,7 @@ public abstract class DeephavenChannelMixin implements DeephavenChannel {
 
     @Override
     public final ConsoleServiceBlockingStub consoleBlocking() {
-        return delegate.consoleBlocking();
+        return mixin(delegate.consoleBlocking());
     }
 
     @Override
