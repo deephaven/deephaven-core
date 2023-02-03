@@ -273,7 +273,6 @@ public class DynamicTableWriter implements TableWriter {
                     "Incompatible logRowPermissive call: " + values.keySet() + " != " + factoryMap.keySet());
         }
         for (final Map.Entry<String, Object> value : values.entrySet()) {
-            // noinspection unchecked
             getSetter(value.getKey()).setPermissive(value.getValue());
         }
         writeRow();
@@ -295,7 +294,6 @@ public class DynamicTableWriter implements TableWriter {
                             + factoryMap.size());
         }
         for (int ii = 0; ii < values.length; ++ii) {
-            // noinspection unchecked
             getSetter(ii).setPermissive(values[ii]);
         }
         writeRow();
@@ -440,7 +438,7 @@ public class DynamicTableWriter implements TableWriter {
     }
 
     public interface PermissiveRowSetter<T> extends RowSetter<T> {
-        void setPermissive(T value);
+        void setPermissive(Object value);
     }
 
     private static abstract class RowSetterImpl<T> implements PermissiveRowSetter<T> {
@@ -471,8 +469,9 @@ public class DynamicTableWriter implements TableWriter {
         }
 
         @Override
-        public void setPermissive(T value) {
-            set(value);
+        public void setPermissive(Object value) {
+            // noinspection unchecked
+            set((T) value);
         }
 
         @Override
@@ -552,7 +551,7 @@ public class DynamicTableWriter implements TableWriter {
         }
 
         @Override
-        public void setPermissive(Byte value) {
+        public void setPermissive(Object value) {
             setByte(value == null ? QueryConstants.NULL_BYTE : ((Number) value).byteValue());
         }
 
@@ -603,7 +602,7 @@ public class DynamicTableWriter implements TableWriter {
         }
 
         @Override
-        public void setPermissive(Integer value) {
+        public void setPermissive(Object value) {
             setInt(value == null ? QueryConstants.NULL_INT : ((Number) value).intValue());
         }
 
@@ -631,7 +630,7 @@ public class DynamicTableWriter implements TableWriter {
         }
 
         @Override
-        public void setPermissive(Double value) {
+        public void setPermissive(Object value) {
             setDouble(value == null ? QueryConstants.NULL_DOUBLE : ((Number) value).doubleValue());
         }
 
@@ -659,7 +658,7 @@ public class DynamicTableWriter implements TableWriter {
         }
 
         @Override
-        public void setPermissive(Float value) {
+        public void setPermissive(Object value) {
             setFloat(value == null ? QueryConstants.NULL_FLOAT : ((Number) value).floatValue());
         }
 
@@ -687,7 +686,7 @@ public class DynamicTableWriter implements TableWriter {
         }
 
         @Override
-        public void setPermissive(Long value) {
+        public void setPermissive(Object value) {
             setLong(value == null ? QueryConstants.NULL_LONG : ((Number) value).longValue());
         }
 
@@ -715,7 +714,7 @@ public class DynamicTableWriter implements TableWriter {
         }
 
         @Override
-        public void setPermissive(Short value) {
+        public void setPermissive(Object value) {
             setShort(value == null ? QueryConstants.NULL_SHORT : ((Number) value).shortValue());
         }
 
