@@ -154,7 +154,7 @@ public class IntrusiveArraySet<T> implements Set<T> {
         int destinationSlot = 0;
 
         for (Object c : collection) {
-            //noinspection unchecked
+            // noinspection unchecked
             final int slot = adapter.getSlot((T) c);
             // check if it exists in our set
             if (slot >= 0 && slot < size && storage[slot] == c) {
@@ -169,7 +169,7 @@ public class IntrusiveArraySet<T> implements Set<T> {
 
                 // swap c and destination slot
                 storage[slot] = storage[destinationSlot];
-                //noinspection unchecked
+                // noinspection unchecked
                 storage[destinationSlot] = (T) c;
 
                 adapter.setSlot(storage[destinationSlot], destinationSlot);
