@@ -106,13 +106,13 @@ $ git push -u upstream release/vX.Y.Z
 The release will proceed with [GitHub Actions](https://github.com/deephaven/deephaven-core/actions/workflows/publish-ci.yml).
 The specific action can be found based off of the name of the release branch: [?query=branch%3Arelease%2FvX.Y.Z](https://github.com/deephaven/deephaven-core/actions/workflows/publish-ci.yml?query=branch%3Arelease%2FvX.Y.Z).
 
-The "Publish" step creates the artifacts and publishes the jars to a Maven Central staging repository.
+The "Publish" step creates the artifacts and publishes the jars to a [Maven Central staging repository](https://s01.oss.sonatype.org).
 
 The "Upload Applications" step uploads the Deephahven server application as a *temporary* GitHub action artifact.
 
-The "Publish deephaven-core to PyPi" uploads the deephaven-core wheel to PyPi.
+The "Publish deephaven-core to PyPi" uploads the deephaven-core wheel to [PyPi](https://pypi.org/project/deephaven-core/).
 
-The "Publish deephaven-server to PyPi" uploads the deephaven-server wheel to PyPi.
+The "Publish deephaven-server to PyPi" uploads the deephaven-server wheel to [PyPi](https://pypi.org/project/deephaven-server/).
 
 Once the workflow job is done, ensure all publication sources have the new artifacts.
 
