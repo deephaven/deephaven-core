@@ -793,6 +793,11 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
         private final long rowKeyInParentUnsorted;
 
         /**
+         * This LinkedDirective's slot in its parent's {@link #children}.
+         */
+        private int slotInParent = -1;
+
+        /**
          * The action to take for this directive. Will be {@link VisitAction#Undefined undefined} on construction; this
          * is used to determine whether a directive was newly-created by a "compute if absent". Set to
          * {@link VisitAction#Linkage} if this directive is created in order to provide connectivity to another, and
@@ -848,8 +853,24 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
             return action;
         }
 
-        private LinkedDirective addChild(@NotNull final LinkedDirective childDirective) {
-            (children == null ? children = new ArrayList<>() : children).add(childDirective);
+        private LinkedDirective addOrReplaceChild(
+                @NotNull final LinkedDirective childDirective,
+                @Nullable final LinkedDirective removedChildDirective) {
+            if (children == null) {
+                Assert.eqNull(removedChildDirective, "removedChildDirective");
+                children = new ArrayList<>();
+            }
+            if (removedChildDirective == null) {
+                childDirective.slotInParent = children.size();
+                children.add(childDirective);
+            } else {
+                Assert.eq(children.get(removedChildDirective.slotInParent),
+                        "children.get(removedChildDirective.slotInParent)",
+                        removedChildDirective, "removedChildDirective");
+                Assert.eq(removedChildDirective.action, "removedChildDirective.action", Linkage, "Linkage");
+                childDirective.slotInParent = removedChildDirective.slotInParent;
+                children.set(childDirective.slotInParent, childDirective);
+            }
             return this;
         }
 
@@ -1058,7 +1079,8 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
                 // with different filtering or different input data (e.g. in the case of a saved key table).
                 continue;
             }
-            removeOldChildren(linkedDirectives.put(nodeKey, linked), linkedDirectives);
+            LinkedDirective removed = linkedDirectives.put(nodeKey, linked);
+            removeOldChildren(removed, linkedDirectives);
             linked.setAction(fromKeyTable.getAction());
             // Find ancestors iteratively until we hit the root or a node directive that already exists
             boolean needToFindAncestors = true;
@@ -1071,7 +1093,9 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
                     needToFindAncestors = false;
                 } else if (parentNodeKeyFound) {
                     nodeKey = parentNodeKeyHolder.getValue();
-                    linked = linkedDirectives.putIfAbsent(nodeKey, linkedDirectiveFactory).addChild(linked);
+                    linked = linkedDirectives.putIfAbsent(nodeKey, linkedDirectiveFactory)
+                            .addOrReplaceChild(linked, removed);
+                    removed = null;
                     if (linkedDirectiveInvalid(linked)) {
                         failIfConcurrentAttemptInconsistent();
                         log.error().append("Could not find node for parent key=").append(NODE_KEY_FORMATTER, nodeKey)
