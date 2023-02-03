@@ -428,7 +428,7 @@ public class BarrageUtil {
                 type.setValue(defaultType);
             } else if (type.getValue() == boolean.class) {
                 // check existing barrage clients that might be sending int8 instead of bool
-                //TODO widen this check for better assurances
+                // TODO (deephaven-core#3404) widen this check for better assurances
                 Class<?> defaultType = getDefaultType(getArrowType.apply(i), result, i);
                 Assert.eq(type.getValue(), "deephaven column type", defaultType, "arrow inferred type");
             }
