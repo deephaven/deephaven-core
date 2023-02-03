@@ -9,6 +9,7 @@ import com.google.protobuf.ByteStringAccess;
 import com.google.rpc.Code;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.ClassUtil;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
@@ -293,7 +294,7 @@ public class BarrageUtil {
                 throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, exMsg +
                         " of intType(signed=" + intType.getIsSigned() + ", bitWidth=" + intType.getBitWidth() + ")");
             case Bool:
-                return java.lang.Boolean.class;
+                return boolean.class;
             case Duration:
                 final ArrowType.Duration durationType = (ArrowType.Duration) arrowType;
                 final TimeUnit durationUnit = durationType.getUnit();
@@ -425,6 +426,11 @@ public class BarrageUtil {
             if (type.getValue() == null) {
                 Class<?> defaultType = getDefaultType(getArrowType.apply(i), result, i);
                 type.setValue(defaultType);
+            } else if (type.getValue() == boolean.class) {
+                // check existing barrage clients that might be sending int8 instead of bool
+                // TODO (deephaven-core#3403) widen this check for better assurances
+                Class<?> defaultType = getDefaultType(getArrowType.apply(i), result, i);
+                Assert.eq(type.getValue(), "deephaven column type", defaultType, "arrow inferred type");
             }
             columns[i] = ColumnDefinition.fromGenericType(name, type.getValue(), componentType.getValue());
         }
