@@ -867,7 +867,7 @@ class Table(JObjectWrapper):
 
     def natural_join(self, table: Table, on: Union[str, Sequence[str]],
                      joins: Union[str, Sequence[str]] = None) -> Table:
-        """The natural_join method creates a new table containing all of the rows and columns of this table,
+        """The natural_join method creates a new table containing all the rows and columns of this table,
         plus additional columns containing data from the right table. For columns appended to the left table (joins),
         row values equal the row values from the right table where the key values in the left and right tables are
         equal. If there is no matching key in the right table, appended row values are NULL.
@@ -903,7 +903,7 @@ class Table(JObjectWrapper):
             raise DHError(e, "table natural_join operation failed.") from e
 
     def exact_join(self, table: Table, on: Union[str, Sequence[str]], joins: Union[str, Sequence[str]] = None) -> Table:
-        """The exact_join method creates a new table containing all of the rows and columns of this table plus
+        """The exact_join method creates a new table containing all the rows and columns of this table plus
         additional columns containing data from the right table. For columns appended to the left table (joins),
         row values equal the row values from the right table where the key values in the left and right tables are
         equal.
@@ -975,7 +975,7 @@ class Table(JObjectWrapper):
 
     def aj(self, table: Table, on: Union[str, Sequence[str]], joins: Union[str, Sequence[str]] = None,
            match_rule: AsOfMatchRule = AsOfMatchRule.LESS_THAN_EQUAL) -> Table:
-        """The aj (as-of join) method creates a new table containing all of the rows and columns of the left table,
+        """The aj (as-of join) method creates a new table containing all the rows and columns of the left table,
         plus additional columns containing data from the right table. For columns appended to the left table (joins),
         row values equal the row values from the right table where the keys from the left table most closely match
         the keys from the right table without going over. If there is no matching key in the right table, appended row
@@ -1664,7 +1664,8 @@ class Table(JObjectWrapper):
         try:
             ops = to_sequence(ops)
             by = to_sequence(by)
-            return Table(j_table=self.j_table.updateBy(j_array_list(ops), *by))
+            with auto_locking_ctx(self):
+                return Table(j_table=self.j_table.updateBy(j_array_list(ops), *by))
         except Exception as e:
             raise DHError(e, "table update-by operation failed.") from e
 

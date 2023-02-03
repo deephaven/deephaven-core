@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl.sources;
 
+import io.deephaven.base.ArrayUtil;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.sources.immutable.*;
@@ -22,7 +23,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public interface InMemoryColumnSource {
     // We would like to use jdk.internal.util.ArraysSupport.MAX_ARRAY_LENGTH, but it is not exported
-    int TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD = Integer.MAX_VALUE - 8;
+    int TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD = ArrayUtil.MAX_ARRAY_SIZE;
 
     /**
      * Create an immutable in-memory column source that is capable of holding longSize elements.

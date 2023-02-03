@@ -8,21 +8,19 @@
  */
 package io.deephaven.engine.table.impl.sources;
 
+import gnu.trove.list.array.TIntArrayList;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
-import io.deephaven.util.compare.DoubleComparisons;
-import io.deephaven.chunk.*;
-import io.deephaven.chunk.ResettableWritableChunk;
-import io.deephaven.chunk.WritableDoubleChunk;
-import io.deephaven.chunk.WritableChunk;
-import io.deephaven.chunk.LongChunk;
-import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
+import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.util.SoftRecycler;
+import io.deephaven.util.compare.DoubleComparisons;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
@@ -61,6 +59,66 @@ public class DoubleArraySource extends ArraySourceHelper<Double, double[]> imple
     @Override
     public void ensureCapacity(long capacity, boolean nullFill) {
         ensureCapacity(capacity, blocks, prevBlocks, nullFill);
+    }
+
+    /**
+     * This version of `prepareForParallelPopulation` will internally call {@link #ensureCapacity(long, boolean)} to
+     * make sure there is room for the incoming values.
+     *
+     * @param changedRows row set in the dense table
+     */
+    @Override
+    public void prepareForParallelPopulation(RowSet changedRows) {
+        final long currentStep = LogicalClock.DEFAULT.currentStep();
+        if (ensurePreviousClockCycle == currentStep) {
+            throw new IllegalStateException("May not call ensurePrevious twice on one clock cycle!");
+        }
+        ensurePreviousClockCycle = currentStep;
+
+        if (changedRows.isEmpty()) {
+            return;
+        }
+
+        // ensure that this source will have sufficient capacity to store these indices, does not need to be
+        // null-filled as the values will be immediately written
+        ensureCapacity(changedRows.lastRowKey() + 1, false);
+
+        if (prevFlusher != null) {
+            prevFlusher.maybeActivate();
+        } else {
+            // we are not tracking this source yet so we have nothing to do for the previous values
+            return;
+        }
+
+        try (final RowSequence.Iterator it = changedRows.getRowSequenceIterator()) {
+            do {
+                final long firstKey = it.peekNextKey();
+
+                final int block = (int) (firstKey >> LOG_BLOCK_SIZE);
+
+                final long[] inUse;
+                if (prevBlocks[block] == null) {
+                    prevBlocks[block] = recycler.borrowItem();
+                    prevInUse[block] = inUse = inUseRecycler.borrowItem();
+                    if (prevAllocated == null) {
+                        prevAllocated = new TIntArrayList();
+                    }
+                    prevAllocated.add(block);
+                } else {
+                    inUse = prevInUse[block];
+                }
+
+                final long maxKeyInCurrentBlock = firstKey | INDEX_MASK;
+
+                it.getNextRowSequenceThrough(maxKeyInCurrentBlock).forAllRowKeys(key -> {
+                    final int nextIndexWithinBlock = (int) (key & INDEX_MASK);
+                    final int nextIndexWithinInUse = nextIndexWithinBlock >> LOG_INUSE_BITSET_SIZE;
+                    final long nextMaskWithinInUse = 1L << nextIndexWithinBlock;
+                    prevBlocks[block][nextIndexWithinBlock] = blocks[block][nextIndexWithinBlock];
+                    inUse[nextIndexWithinInUse] |= nextMaskWithinInUse;
+                });
+            } while (it.hasMore());
+        }
     }
 
     @Override
@@ -247,14 +305,14 @@ public class DoubleArraySource extends ArraySourceHelper<Double, double[]> imple
     }
 
     @Override
-    protected void fillSparseChunk(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final RowSequence indices) {
-        if (indices.size() == 0) {
+    protected void fillSparseChunk(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final RowSequence rows) {
+        if (rows.size() == 0) {
             destGeneric.setSize(0);
             return;
         }
         final WritableDoubleChunk<? super Values> dest = destGeneric.asWritableDoubleChunk();
         final FillSparseChunkContext<double[]> ctx = new FillSparseChunkContext<>();
-        indices.forAllRowKeys((final long v) -> {
+        rows.forAllRowKeys((final long v) -> {
             if (v >= ctx.capForCurrentBlock) {
                 ctx.currentBlockNo = getBlockNo(v);
                 ctx.capForCurrentBlock = (ctx.currentBlockNo + 1L) << LOG_BLOCK_SIZE;
@@ -266,21 +324,21 @@ public class DoubleArraySource extends ArraySourceHelper<Double, double[]> imple
     }
 
     @Override
-    protected void fillSparsePrevChunk(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final RowSequence indices) {
-        final long sz = indices.size();
+    protected void fillSparsePrevChunk(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final RowSequence rows) {
+        final long sz = rows.size();
         if (sz == 0) {
             destGeneric.setSize(0);
             return;
         }
 
         if (prevFlusher == null) {
-            fillSparseChunk(destGeneric, indices);
+            fillSparseChunk(destGeneric, rows);
             return;
         }
 
         final WritableDoubleChunk<? super Values> dest = destGeneric.asWritableDoubleChunk();
         final FillSparseChunkContext<double[]> ctx = new FillSparseChunkContext<>();
-        indices.forAllRowKeys((final long v) -> {
+        rows.forAllRowKeys((final long v) -> {
             if (v >= ctx.capForCurrentBlock) {
                 ctx.currentBlockNo = getBlockNo(v);
                 ctx.capForCurrentBlock = (ctx.currentBlockNo + 1L) << LOG_BLOCK_SIZE;
@@ -299,11 +357,11 @@ public class DoubleArraySource extends ArraySourceHelper<Double, double[]> imple
     }
 
     @Override
-    protected void fillSparseChunkUnordered(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final LongChunk<? extends RowKeys> indices) {
+    protected void fillSparseChunkUnordered(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final LongChunk<? extends RowKeys> rows) {
         final WritableDoubleChunk<? super Values> dest = destGeneric.asWritableDoubleChunk();
-        final int sz = indices.size();
+        final int sz = rows.size();
         for (int ii = 0; ii < sz; ++ii) {
-            final long fromIndex = indices.get(ii);
+            final long fromIndex = rows.get(ii);
             if (fromIndex == RowSequence.NULL_ROW_KEY) {
                 dest.set(ii, NULL_DOUBLE);
                 continue;
@@ -320,11 +378,11 @@ public class DoubleArraySource extends ArraySourceHelper<Double, double[]> imple
     }
 
     @Override
-    protected void fillSparsePrevChunkUnordered(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final LongChunk<? extends RowKeys> indices) {
+    protected void fillSparsePrevChunkUnordered(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final LongChunk<? extends RowKeys> rows) {
         final WritableDoubleChunk<? super Values> dest = destGeneric.asWritableDoubleChunk();
-        final int sz = indices.size();
+        final int sz = rows.size();
         for (int ii = 0; ii < sz; ++ii) {
-            final long fromIndex = indices.get(ii);
+            final long fromIndex = rows.get(ii);
             if (fromIndex == RowSequence.NULL_ROW_KEY) {
                 dest.set(ii, NULL_DOUBLE);
                 continue;
@@ -348,9 +406,9 @@ public class DoubleArraySource extends ArraySourceHelper<Double, double[]> imple
         final DoubleChunk<? extends Values> chunk = src.asDoubleChunk();
         final LongChunk<OrderedRowKeyRanges> ranges = rowSequence.asRowKeyRangesChunk();
 
-        final boolean hasPrev = prevFlusher != null;
+        final boolean trackPrevious = prevFlusher != null && ensurePreviousClockCycle != LogicalClock.DEFAULT.currentStep();
 
-        if (hasPrev) {
+        if (trackPrevious) {
             prevFlusher.maybeActivate();
         }
 
@@ -376,7 +434,7 @@ public class DoubleArraySource extends ArraySourceHelper<Double, double[]> imple
                 knownUnaliasedBlock = inner;
 
                 // This 'if' with its constant condition should be very friendly to the branch predictor.
-                if (hasPrev) {
+                if (trackPrevious) {
                     // this should be vectorized
                     for (int jj = 0; jj < length; ++jj) {
                         if (shouldRecordPrevious(firstKey + jj, prevBlocks, recycler)) {
@@ -423,9 +481,9 @@ public class DoubleArraySource extends ArraySourceHelper<Double, double[]> imple
         final DoubleChunk<? extends Values> chunk = src.asDoubleChunk();
         final LongChunk<OrderedRowKeys> keys = rowSequence.asRowKeyChunk();
 
-        final boolean hasPrev = prevFlusher != null;
+        final boolean trackPrevious = prevFlusher != null && ensurePreviousClockCycle != LogicalClock.DEFAULT.currentStep();
 
-        if (hasPrev) {
+        if (trackPrevious) {
             prevFlusher.maybeActivate();
         }
 
@@ -448,7 +506,7 @@ public class DoubleArraySource extends ArraySourceHelper<Double, double[]> imple
                 final long key = keys.get(ii);
                 final int indexWithinBlock = (int) (key & INDEX_MASK);
 
-                if (hasPrev) {
+                if (trackPrevious) {
                     if (shouldRecordPrevious(key, prevBlocks, recycler)) {
                         prevBlocks[block][indexWithinBlock] = inner[indexWithinBlock];
                     }
@@ -466,9 +524,9 @@ public class DoubleArraySource extends ArraySourceHelper<Double, double[]> imple
         }
         final DoubleChunk<? extends Values> chunk = src.asDoubleChunk();
 
-        final boolean hasPrev = prevFlusher != null;
+        final boolean trackPrevious = prevFlusher != null && ensurePreviousClockCycle != LogicalClock.DEFAULT.currentStep();
 
-        if (hasPrev) {
+        if (trackPrevious) {
             prevFlusher.maybeActivate();
         }
 
@@ -488,7 +546,7 @@ public class DoubleArraySource extends ArraySourceHelper<Double, double[]> imple
             do {
                 final int indexWithinBlock = (int) (key & INDEX_MASK);
 
-                if (hasPrev) {
+                if (trackPrevious) {
                     if (shouldRecordPrevious(key, prevBlocks, recycler)) {
                         prevBlocks[block][indexWithinBlock] = inner[indexWithinBlock];
                     }

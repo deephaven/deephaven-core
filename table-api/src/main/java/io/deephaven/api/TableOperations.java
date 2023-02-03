@@ -683,7 +683,6 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * @param operation the operation to apply to the table.
      * @return a table with the same rowset, with the specified operation applied to the entire table
      */
-    @ConcurrentMethod
     TOPS updateBy(UpdateByOperation operation);
 
     /**
@@ -695,7 +694,6 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * @param operations the operations to apply to the table.
      * @return a table with the same rowset, with the specified operations applied to the entire table.
      */
-    @ConcurrentMethod
     TOPS updateBy(Collection<? extends UpdateByOperation> operations);
 
     /**
@@ -708,7 +706,6 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * @param operations the operations to apply to the table.
      * @return a table with the same rowset, with the specified operations applied to the entire table
      */
-    @ConcurrentMethod
     TOPS updateBy(UpdateByControl control, Collection<? extends UpdateByOperation> operations);
 
     /**
@@ -722,7 +719,6 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * @return a table with the same rowSet, with the specified operation applied to each group defined by the
      *         {@code byColumns}
      */
-    @ConcurrentMethod
     TOPS updateBy(UpdateByOperation operation, final String... byColumns);
 
     /**
@@ -736,7 +732,6 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * @return a table with the same rowSet, with the specified operations applied to each group defined by the
      *         {@code byColumns}
      */
-    @ConcurrentMethod
     TOPS updateBy(Collection<? extends UpdateByOperation> operations, final String... byColumns);
 
     /**
@@ -750,7 +745,6 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * @return a table with the same rowSet, with the specified operations applied to each group defined by the
      *         {@code byColumns}
      */
-    @ConcurrentMethod
     TOPS updateBy(Collection<? extends UpdateByOperation> operations, Collection<? extends ColumnName> byColumns);
 
     /**
@@ -765,7 +759,6 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * @return a table with the same rowSet, with the specified operations applied to each group defined by the
      *         {@code byColumns}
      */
-    @ConcurrentMethod
     TOPS updateBy(UpdateByControl control, Collection<? extends UpdateByOperation> operations,
             Collection<? extends ColumnName> byColumns);
 

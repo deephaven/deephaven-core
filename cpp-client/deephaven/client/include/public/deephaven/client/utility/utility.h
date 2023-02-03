@@ -3,18 +3,18 @@
  */
 #pragma once
 
+#include <cstring>
 #include <iostream>
 #include <memory>
 #include <string>
 #include <vector>
-#include <arrow/type.h>
 
 namespace deephaven::client::utility {
 template<typename Dest, typename Src>
 inline Dest bit_cast(const Src &item) {
   static_assert(sizeof(Src) == sizeof(Dest), "Src and Dest are not the same size");
   Dest dest;
-  memcpy(static_cast<void *>(&dest), static_cast<const void *>(&item), sizeof(Dest));
+  std::memcpy(static_cast<void *>(&dest), static_cast<const void *>(&item), sizeof(Dest));
   return dest;
 }
 
@@ -224,6 +224,8 @@ DESTP verboseCast(const DebugInfo &debugInfo, SRCP ptr) {
   throw std::runtime_error(message);
 }
 
+std::string getWhat(std::exception_ptr eptr);
+
 namespace internal {
 void trueOrThrowHelper(const DebugInfo &debugInfo);
 }  // namespace internal
@@ -234,35 +236,4 @@ inline void trueOrThrow(const DebugInfo &debugInfo, bool value) {
   }
   internal::trueOrThrowHelper(debugInfo);
 }
-
-/**
- * If result's status is OK, do nothing. Otherwise throw a runtime error with an informative message.
- * @param debugInfo A DebugInfo object, typically as provided by DEEPHAVEN_EXPR_MESSAGE.
- * @param result an arrow::Result
- */
-template<typename T>
-void okOrThrow(const DebugInfo &debugInfo, const arrow::Result<T> &result) {
-  okOrThrow(debugInfo, result.status());
-}
-
-/**
- * If status is OK, do nothing. Otherwise throw a runtime error with an informative message.
- * @param debugInfo A DebugInfo object, typically as provided by DEEPHAVEN_EXPR_MESSAGE.
- * @param status the arrow::Status
- */
-void okOrThrow(const DebugInfo &debugInfo, const arrow::Status &status);
-
-/**
- * If result's internal status is OK, return result's contained value.
- * Otherwise throw a runtime error with an informative message.
- * @param debugInfo A DebugInfo object, typically as provided by DEEPHAVEN_EXPR_MESSAGE.
- * @param result The arrow::Result
- */
-template<typename T>
-T valueOrThrow(const DebugInfo &debugInfo, arrow::Result<T> result) {
-  okOrThrow(debugInfo, result.status());
-  return result.ValueUnsafe();
-}
-
-
 }  // namespace deephaven::client::utility

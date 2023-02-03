@@ -32,7 +32,7 @@ def sphinxDockerfile = tasks.register('sphinxDockerfile', Dockerfile) {
     from 'deephaven/server-netty:local-build'
 
     copyFile "./wheel", "/wheel"
-    copyFile "./lib", '${VIRTUAL_ENV}/lib/python3.7/site-packages/'
+    copyFile "./lib", '${VIRTUAL_ENV}/lib/python3.10/site-packages/'
 
     environmentVariable 'DEEPHAVEN_CLASSPATH', "/opt/deephaven/server/lib/*.jar"
     environmentVariable 'DEEPHAVEN_WORKSPACE', '/tmp/workspace'
@@ -41,7 +41,7 @@ def sphinxDockerfile = tasks.register('sphinxDockerfile', Dockerfile) {
 
     runCommand '''set -eux; \\
                   mkdir /tmp/workspace; \\
-                  python -m pip install sphinx==4.0.3 sphinx-autodoc-typehints==1.12.0 pyarrow==7.0.0 protobuf==3.20.1 grpcio==1.46.0 bitstring==3.1.9 /wheel/*.whl breathe==4.31.0 furo==2021.9.8
+                  python -m pip install sphinx sphinx-autodoc-typehints pyarrow protobuf grpcio bitstring /wheel/*.whl breathe furo
                   '''
 }
 

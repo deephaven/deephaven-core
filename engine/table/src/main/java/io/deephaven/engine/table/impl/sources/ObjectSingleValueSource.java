@@ -69,13 +69,6 @@ public class ObjectSingleValueSource<T> extends SingleValueColumnSource<T> imple
     }
 
     @Override
-    public final void setNull(long key) {
-        // region null set
-        set(null);
-        // endregion null set
-    }
-
-    @Override
     public final T get(long rowKey) {
         if (rowKey == RowSequence.NULL_ROW_KEY) {
             return null;

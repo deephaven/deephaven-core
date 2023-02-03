@@ -24,6 +24,7 @@ import io.deephaven.engine.table.impl.sources.sparse.LongOneOrN;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.util.SoftRecycler;
 import gnu.trove.list.array.TLongArrayList;
+import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
@@ -131,14 +132,9 @@ public class IntegerSparseArraySource extends SparseArrayColumnSource<Integer> i
         final RowSet.SearchIterator it = (shiftDelta > 0) ? keysToShift.reverseIterator() : keysToShift.searchIterator();
         it.forEachLong((i) -> {
             set(i + shiftDelta, getInt(i));
-            set(i, NULL_INT);
+            setNull(i);
             return true;
         });
-    }
-
-    @Override
-    public void remove(RowSet toRemove) {
-        toRemove.forEachRowKey((i) -> { set(i, NULL_INT); return true; });
     }
 
     // region boxed methods
@@ -285,6 +281,11 @@ public class IntegerSparseArraySource extends SparseArrayColumnSource<Integer> i
 
         final IntOneOrN.Block0 localPrevBlocks = prevBlocks;
         final LongOneOrN.Block0 localPrevInUse = prevInUse;
+
+        if (localPrevBlocks == null) {
+            assert prevInUse == null;
+            return;
+        }
 
         // there is no reason to allow these to be used anymore; instead we just null them out so that any
         // getPrev calls will immediately return get().
@@ -621,7 +622,7 @@ public class IntegerSparseArraySource extends SparseArrayColumnSource<Integer> i
     // region fillFromChunkByRanges
     @Override
     void fillFromChunkByRanges(@NotNull RowSequence rowSequence, Chunk<? extends Values> src) {
-        if (rowSequence.size() == 0) {
+        if (rowSequence.isEmpty()) {
             return;
         }
         final IntChunk<? extends Values> chunk = src.asIntChunk();
@@ -690,7 +691,7 @@ public class IntegerSparseArraySource extends SparseArrayColumnSource<Integer> i
     // region fillFromChunkByKeys
     @Override
     void fillFromChunkByKeys(@NotNull RowSequence rowSequence, Chunk<? extends Values> src) {
-        if (rowSequence.size() == 0) {
+        if (rowSequence.isEmpty()) {
             return;
         }
         final IntChunk<? extends Values> chunk = src.asIntChunk();
@@ -744,6 +745,137 @@ public class IntegerSparseArraySource extends SparseArrayColumnSource<Integer> i
         }
     }
     // endregion fillFromChunkByKeys
+
+    // region nullByRanges
+    @Override
+    void nullByRanges(@NotNull RowSequence rowSequence) {
+        if (rowSequence.isEmpty()) {
+            return;
+        }
+
+        final boolean hasPrev = prevFlusher != null;
+
+        if (hasPrev) {
+            prevFlusher.maybeActivate();
+        }
+
+        try (RowSequence.Iterator okIt = rowSequence.getRowSequenceIterator()) {
+            while (okIt.hasMore()) {
+                final long firstKey = okIt.peekNextKey();
+                final long maxKeyInCurrentBlock = firstKey | INDEX_MASK;
+                final RowSequence blockOk = okIt.getNextRowSequenceThrough(maxKeyInCurrentBlock);
+
+                final int block0 = (int) (firstKey >> BLOCK0_SHIFT) & BLOCK0_MASK;
+                final int block1 = (int) (firstKey >> BLOCK1_SHIFT) & BLOCK1_MASK;
+                final int block2 = (int) (firstKey >> BLOCK2_SHIFT) & BLOCK2_MASK;
+                final int [] block = blocks.getInnermostBlockByKeyOrNull(firstKey);
+
+                if (block == null) {
+                    continue;
+                }
+
+                blockOk.forAllRowKeyRanges((s, e) -> {
+                    final int length = (int)((e - s) + 1);
+
+                    final int sIndexWithinBlock = (int) (s & INDEX_MASK);
+                    // This 'if' with its constant condition should be very friendly to the branch predictor.
+                    if (hasPrev) {
+                        boolean prevRequired = false;
+                        for (int jj = 0; jj < length; ++jj) {
+                            final int indexWithinBlock = sIndexWithinBlock + jj;
+                            if (block[indexWithinBlock] != NULL_INT) {
+                                prevRequired = true;
+                                break;
+                            }
+                        }
+
+                        if (prevRequired) {
+                            final int[] prevBlock = ensurePrevBlock(firstKey, block0, block1, block2);
+                            final long[] inUse = prevInUse.get(block0).get(block1).get(block2);
+
+                            assert inUse != null;
+                            assert prevBlock != null;
+
+                            for (int jj = 0; jj < length; ++jj) {
+                                final int indexWithinBlock = sIndexWithinBlock + jj;
+                                final int indexWithinInUse = indexWithinBlock >> LOG_INUSE_BITSET_SIZE;
+                                final long maskWithinInUse = 1L << (indexWithinBlock & IN_USE_MASK);
+
+                                if ((inUse[indexWithinInUse] & maskWithinInUse) == 0) {
+                                    prevBlock[indexWithinBlock] = block[indexWithinBlock];
+                                    inUse[indexWithinInUse] |= maskWithinInUse;
+                                }
+                            }
+
+                            Arrays.fill(block, sIndexWithinBlock, sIndexWithinBlock + length, NULL_INT);
+                        }
+                    } else {
+                        Arrays.fill(block, sIndexWithinBlock, sIndexWithinBlock + length, NULL_INT);
+                    }
+                });
+            }
+        }
+    }
+    // endregion nullByRanges
+
+    // region nullByKeys
+    @Override
+    void nullByKeys(@NotNull RowSequence rowSequence) {
+        if (rowSequence.isEmpty()) {
+            return;
+        }
+
+        final boolean hasPrev = prevFlusher != null;
+
+        if (hasPrev) {
+            prevFlusher.maybeActivate();
+        }
+
+        try (RowSequence.Iterator okIt = rowSequence.getRowSequenceIterator()) {
+            while (okIt.hasMore()) {
+                final long firstKey = okIt.peekNextKey();
+                final long maxKeyInCurrentBlock = firstKey | INDEX_MASK;
+                final RowSequence blockOk = okIt.getNextRowSequenceThrough(maxKeyInCurrentBlock);
+
+                final int block0 = (int) (firstKey >> BLOCK0_SHIFT) & BLOCK0_MASK;
+                final int block1 = (int) (firstKey >> BLOCK1_SHIFT) & BLOCK1_MASK;
+                final int block2 = (int) (firstKey >> BLOCK2_SHIFT) & BLOCK2_MASK;
+                final int[] block = blocks.getInnermostBlockByKeyOrNull(firstKey);
+                if (block == null) {
+                    continue;
+                }
+
+                MutableObject<int[]> prevBlock = new MutableObject<>();
+                MutableObject<long[]> inUse = new MutableObject<>();
+
+                blockOk.forAllRowKeys(key -> {
+
+                    final int indexWithinBlock = (int) (key & INDEX_MASK);
+                    // This 'if' with its constant condition should be very friendly to the branch predictor.
+                    if (hasPrev) {
+
+                        final int oldValue = block[indexWithinBlock];
+                        if (oldValue != NULL_INT) {
+                            if (prevBlock.getValue() == null) {
+                                prevBlock.setValue(ensurePrevBlock(firstKey, block0, block1, block2));
+                                inUse.setValue(prevInUse.get(block0).get(block1).get(block2));
+                            }
+
+                            final int indexWithinInUse = indexWithinBlock >> LOG_INUSE_BITSET_SIZE;
+                            final long maskWithinInUse = 1L << (indexWithinBlock & IN_USE_MASK);
+
+                            if ((inUse.getValue()[indexWithinInUse] & maskWithinInUse) == 0) {
+                                prevBlock.getValue()[indexWithinBlock] = oldValue;
+                                inUse.getValue()[indexWithinInUse] |= maskWithinInUse;
+                            }
+                        }
+                    }
+                    block[indexWithinBlock] = NULL_INT;
+                });
+            }
+        }
+    }
+    // endregion nullByKeys
 
     // region fillFromChunkUnordered
     @Override
@@ -811,7 +943,7 @@ public class IntegerSparseArraySource extends SparseArrayColumnSource<Integer> i
     // region getChunk
     @Override
     public IntChunk<Values> getChunk(@NotNull GetContext context, @NotNull RowSequence rowSequence) {
-        if (rowSequence.size() == 0) {
+        if (rowSequence.isEmpty()) {
             return IntChunk.getEmptyChunk();
         }
         final long firstKey = rowSequence.firstRowKey();

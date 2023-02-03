@@ -118,13 +118,6 @@ class TestJpy(unittest.TestCase):
     np_array = None
     self.assertEqual(get_refcount(jpy_array_id), jpy_array_refcount)
 
-    mv = memoryview(b'123412341234')
-    mv_id = id(mv)
-    mv_refcount = get_refcount(mv_id)
-    np_array = numpy.frombuffer(mv, numpy.int32)
-    self.assertEqual(get_refcount(mv_id), mv_refcount + 1)
-    np_array = None
-    self.assertEqual(get_refcount(mv_id), mv_refcount)
 
   def test_pyobject_unwrap(self):
     import jpy

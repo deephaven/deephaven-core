@@ -28,11 +28,12 @@ FROM $BASE
 COPY --from=install / /
 VOLUME /data
 VOLUME /cache
-HEALTHCHECK --interval=3s --retries=3 --timeout=11s CMD /bin/grpc_health_probe -addr=localhost:10000 -connect-timeout=10s || exit 1
+HEALTHCHECK --interval=3s --retries=3 --timeout=11s CMD /opt/grpc_health_probe/grpc_health_probe -addr=localhost:10000 -connect-timeout=10s || exit 1
 ENV \
     DEEPHAVEN_CACHE_DIR="/cache" \
     DEEPHAVEN_CONFIG_DIR="/opt/deephaven/config" \
-    DEEPHAVEN_DATA_DIR="/data"
+    DEEPHAVEN_DATA_DIR="/data" \
+    EXTRA_CLASSPATH="/apps/libs/*"
 ENTRYPOINT [ "/opt/deephaven/server/bin/start" ]
 ARG DEEPHAVEN_VERSION
 ARG SERVER

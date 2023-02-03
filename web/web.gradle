@@ -8,7 +8,7 @@ configurations {
 
 dependencies {
     js project(path: ':web-client-ui', configuration: 'js')
-    js project(path: ':web-client-ide', configuration: 'js')
+    js project(path: ':web-client-api', configuration: 'js')
 }
 
 /**

@@ -8,7 +8,7 @@ import elemental2.core.JsSet;
 import elemental2.dom.CustomEventInit;
 import elemental2.dom.DomGlobal;
 import elemental2.promise.Promise;
-import io.deephaven.ide.shared.IdeSession;
+import io.deephaven.web.client.ide.IdeSession;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.*;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
 import io.deephaven.web.client.api.barrage.stream.ResponseStreamWrapper;
@@ -27,7 +27,6 @@ import jsinterop.base.JsPropertyMap;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Supplier;
 
 import static io.deephaven.web.shared.fu.PromiseLike.CANCELLATION_MESSAGE;
 
@@ -36,32 +35,6 @@ import static io.deephaven.web.shared.fu.PromiseLike.CANCELLATION_MESSAGE;
  * instance, which manages the connection to the API server.
  */
 public abstract class QueryConnectable<Self extends QueryConnectable<Self>> extends HasEventHandling {
-    public interface AuthTokenPromiseSupplier extends Supplier<Promise<ConnectToken>> {
-        default AuthTokenPromiseSupplier withInitialToken(ConnectToken initialToken) {
-            AuthTokenPromiseSupplier original = this;
-            return new AuthTokenPromiseSupplier() {
-                boolean usedInitialToken = false;
-
-                @Override
-                public Promise<ConnectToken> get() {
-                    if (!usedInitialToken) {
-                        usedInitialToken = true;
-                        return Promise.resolve(initialToken);
-                    }
-                    return original.get();
-                }
-            };
-        }
-
-        static AuthTokenPromiseSupplier oneShot(ConnectToken initialToken) {
-            // noinspection unchecked
-            return ((AuthTokenPromiseSupplier) () -> (Promise) Promise
-                    .reject("Only one token provided, cannot reconnect"))
-                            .withInitialToken(initialToken);
-        }
-    }
-
-    protected final JsLazy<WorkerConnection> connection;
 
     @JsProperty(namespace = "dh.QueryInfo") // "legacy" location
     public static final String EVENT_TABLE_OPENED = "tableopened";
@@ -78,14 +51,18 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>> exte
     private final List<IdeSession> sessions = new ArrayList<>();
     private final JsSet<Ticket> cancelled = new JsSet<>();
 
+    protected final JsLazy<WorkerConnection> connection;
+
     private boolean connected;
     private boolean closed;
     private boolean hasDisconnected;
     private boolean notifiedConnectionError = false;
 
-    public QueryConnectable(Supplier<Promise<ConnectToken>> authTokenPromiseSupplier) {
-        this.connection = JsLazy.of(() -> new WorkerConnection(this, authTokenPromiseSupplier));
+    public QueryConnectable() {
+        this.connection = JsLazy.of(() -> new WorkerConnection(this));
     }
+
+    public abstract Promise<ConnectToken> getConnectToken();
 
     public void notifyConnectionError(ResponseStreamWrapper.Status status) {
         if (notifiedConnectionError) {
@@ -93,7 +70,7 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>> exte
         }
         notifiedConnectionError = true;
 
-        CustomEventInit event = CustomEventInit.create();
+        CustomEventInit<JsPropertyMap<Object>> event = CustomEventInit.create();
         event.setDetail(JsPropertyMap.of(
                 "status", status.getCode(),
                 "details", status.getDetails(),
@@ -112,7 +89,7 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>> exte
             return Promise.resolve((Void) null);
         }
         if (closed) {
-            return (Promise) Promise.reject("Connection already closed");
+            return Promise.reject("Connection already closed");
         }
 
         return new Promise<>((resolve, reject) -> addEventListenerOneShot(

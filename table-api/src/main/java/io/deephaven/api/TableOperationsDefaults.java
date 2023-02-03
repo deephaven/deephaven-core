@@ -304,39 +304,33 @@ public interface TableOperationsDefaults<TOPS extends TableOperations<TOPS, TABL
     // -------------------------------------------------------------------------------------------
 
     @Override
-    @ConcurrentMethod
     default TOPS updateBy(final UpdateByOperation operation) {
         return updateBy(UpdateByControl.defaultInstance(), Collections.singletonList(operation),
                 Collections.emptyList());
     }
 
     @Override
-    @ConcurrentMethod
     default TOPS updateBy(final Collection<? extends UpdateByOperation> operations) {
         return updateBy(UpdateByControl.defaultInstance(), operations, Collections.emptyList());
     }
 
     @Override
-    @ConcurrentMethod
     default TOPS updateBy(final UpdateByControl control, final Collection<? extends UpdateByOperation> operations) {
         return updateBy(control, operations, Collections.emptyList());
     }
 
     @Override
-    @ConcurrentMethod
     default TOPS updateBy(final UpdateByOperation operation, final String... byColumns) {
         return updateBy(UpdateByControl.defaultInstance(), Collections.singletonList(operation),
                 ColumnName.from(byColumns));
     }
 
     @Override
-    @ConcurrentMethod
     default TOPS updateBy(final Collection<? extends UpdateByOperation> operations, final String... byColumns) {
         return updateBy(UpdateByControl.defaultInstance(), operations, ColumnName.from(byColumns));
     }
 
     @Override
-    @ConcurrentMethod
     default TOPS updateBy(Collection<? extends UpdateByOperation> operations,
             Collection<? extends ColumnName> byColumns) {
         return updateBy(UpdateByControl.defaultInstance(), operations, byColumns);

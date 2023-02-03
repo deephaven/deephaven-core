@@ -5,11 +5,15 @@
 #include <exception>
 #include <iostream>
 #include <sstream>
+#include <arrow/array.h>
+#include <arrow/flight/client.h>
 #include "deephaven/client/client.h"
+#include "deephaven/client/utility/arrow_util.h"
 
 using deephaven::client::Client;
 using deephaven::client::TableHandle;
 using deephaven::client::TableHandleManager;
+using deephaven::client::utility::okOrThrow;
 
 namespace {
 void mainMenu();

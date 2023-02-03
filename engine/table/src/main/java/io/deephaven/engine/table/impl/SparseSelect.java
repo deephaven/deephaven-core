@@ -195,7 +195,7 @@ public class SparseSelect {
                                 if (sparseObjectSources.length > 0) {
                                     try (final RowSet removedOnly = upstream.removed().minus(upstream.added())) {
                                         for (final ObjectSparseArraySource<?> objectSparseArraySource : sparseObjectSources) {
-                                            objectSparseArraySource.remove(removedOnly);
+                                            objectSparseArraySource.setNull(removedOnly);
                                         }
                                     }
                                 }

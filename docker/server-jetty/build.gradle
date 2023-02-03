@@ -10,7 +10,6 @@ def targetArch = Architecture.targetArchitecture(project)
 
 def baseMapAmd64 = [
         'server-base': 'server-jetty',
-        'all-ai-base': 'server-all-ai-jetty',
 ]
 
 // Only the server image is supported on arm64
