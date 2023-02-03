@@ -34,18 +34,20 @@
             checkLoginIframe:false,
         })
             .success(authenticated => {
-            if (authenticated) {
-                log('auth with keycloak successful, authenticating to deephaven...');
-                client.login({type:'io.deephaven.authentication.oidc.OidcAuthenticationHandler', token:keycloak.token})
-                    .then(
-                        success => log("Success!"),
-                        failure => log("Failed authenticating with deephaven")
-                    );
-            } else {
-                keycloak.login({});
-            }
-        })
-            .error(error => log("Error logging in: " + error));
+                log('Keycloak api authenticated')
+                if (authenticated) {
+                    log('auth with keycloak successful, authenticating to deephaven...');
+                    client.login({type:'io.deephaven.authentication.oidc.OidcAuthenticationHandler', token:keycloak.token})
+                        .then(
+                            success => log("Success!"),
+                            failure => log("Failed authenticating with deephaven")
+                        );
+                } else {
+                    log('User isn\'t logged in, redirecting to IDP in two seconds...');
+                    setTimeout(()=>keycloak.login({}), 2000);
+                }
+            })
+                .error(error => log("Error logging in: " + error));
     }
 </script>
 </body>

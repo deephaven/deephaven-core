@@ -45,6 +45,11 @@ if (!hasProperty('excludeClockImpl')) {
     extraJvmArgs += ['--add-exports', 'java.base/jdk.internal.misc=ALL-UNNAMED']
 }
 
+def authHandlers = []
+if (hasProperty('anonymous')) {
+    authHandlers += ['io.deephaven.auth.AnonymousAuthenticationHandler']
+}
+
 if (hasProperty('devCerts') || hasProperty('devMTLS')) {
     extraJvmArgs += [
             '-Dhttp.port=8443',
@@ -57,8 +62,8 @@ if (hasProperty('devCerts') || hasProperty('devMTLS')) {
                 '-Dssl.trust.type=certs',
                 '-Dssl.trust.path=../dev-certs/ca.crt',
                 '-Dssl.clientAuthentication=NEEDED',
-                '-DAuthHandlers=io.deephaven.authentication.mtls.MTlsAuthenticationHandler',
         ]
+        authHandlers += ['io.deephaven.authentication.mtls.MTlsAuthenticationHandler']
         dependencies.implementation(project(':authentication:example-providers:mtls'))
     }
 }
@@ -80,12 +85,12 @@ if (hasProperty('quiet')) {
 }
 
 if (hasProperty('psk')) {
-    extraJvmArgs += ['-DAuthHandlers=io.deephaven.authentication.psk.PskAuthenticationHandler']
+    authHandlers += ['io.deephaven.authentication.psk.PskAuthenticationHandler']
     dependencies.implementation(project(':authentication:example-providers:psk'))
 }
 if (hasProperty('sql-username-password')) {
+    authHandlers += ['io.deephaven.authentication.sql.BasicSqlAuthenticationHandler']
     extraJvmArgs += [
-            '-DAuthHandlers=io.deephaven.authentication.sql.BasicSqlAuthenticationHandler',
             '-Dauthentication.basic.sql.jdbc.connection=jdbc:postgresql://localhost:5432/postgres',
             '-Dauthentication.basic.sql.jdbc.user=postgres',
             '-Dauthentication.basic.sql.jdbc.password=password',
@@ -93,10 +98,12 @@ if (hasProperty('sql-username-password')) {
     dependencies.implementation(project(':authentication:example-providers:sql-username-password'))
 }
 if (hasProperty('oidc')) {
-    extraJvmArgs += [
-            '-DAuthHandlers=io.deephaven.authentication.oidc.OidcAuthenticationHandler',
-    ]
+    authHandlers += ['io.deephaven.authentication.oidc.OidcAuthenticationHandler']
     dependencies.implementation(project(':authentication:example-providers:oidc'))
+}
+
+if (!authHandlers.isEmpty()) {
+    extraJvmArgs += ["-DAuthHandlers=${authHandlers.join(',')}"]
 }
 
 tasks.withType(JavaExec).configureEach {
