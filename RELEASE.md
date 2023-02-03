@@ -156,6 +156,9 @@ If any late-breaking issues are found during the release process, but the Maven 
 When ready, the staging repository will need to be "Closed" and then "Released".
 Once the staging repository has been "Released", there is no going back.
 
+The jars will be visible after release at [https://repo1.maven.org/maven2/io/deephaven/](https://repo1.maven.org/maven2/io/deephaven/).
+Sometimes it takes a little bit of time for the jars to appear.
+
 ### 6. Tag upstream
 
 The `vX.Y.Z` tag is primarily meant for an immutable reference point in the future.
