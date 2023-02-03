@@ -240,7 +240,8 @@ Ping team, ping community, ping friends - the latest Deephaven has been released
 ## External dependencies
 
 There are a few external dependencies that Deephaven manages, but they have separate release lifecycles that don't directly impact the release of the other artifacts mentioned earlier.
-* [deephaven/web-client-ui](https://github.com/deephaven/web-client-ui)
+* [deephaven/barrage](https://github.com/deephaven/barrage)
 * [deephaven/deephaven-csv](https://github.com/deephaven/deephaven-csv)
+* [deephaven/web-client-ui](https://github.com/deephaven/web-client-ui)
 * [jpy-consortium/jpy](https://github.com/jpy-consortium/jpy)
 
