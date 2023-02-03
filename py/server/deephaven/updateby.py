@@ -105,7 +105,8 @@ def ema_tick_decay(time_scale_ticks: int, cols: Union[str, List[str]],
 
     Args:
         time_scale_ticks (int): the decay rate in ticks
-        cols (Union[str, List[str]]): the column(s) to be operated on, can be renaming expressions, i.e. "new_col = col"
+        cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
+            i.e. "new_col = col"; when empty, update_by perform the ema operation on all columns.
         op_control (OperationControl): defines how special cases should behave, when None, the default OperationControl
             settings as specified in :meth:`~OperationControl.__init__` will be used
 
@@ -140,7 +141,8 @@ def ema_time_decay(ts_col: str, time_scale: Union[int, str], cols: Union[str, Li
 
         time_scale (Union[int, str]): the decay rate, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "00:00:00.001"
-        cols (Union[str, List[str]]): the column(s) to be operated on, can be renaming expressions, i.e. "new_col = col"
+        cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
+            i.e. "new_col = col"; when empty, update_by perform the ema operation on all columns.
         op_control (OperationControl): defines how special cases should behave,  when None, the default OperationControl
             settings as specified in :meth:`~OperationControl.__init__` will be used
 
@@ -270,7 +272,7 @@ def forward_fill(cols: Union[str, List[str]]) -> UpdateByOperation:
 
 def rolling_sum_tick(cols: Union[str, List[str]], rev_ticks: int, fwd_ticks: int = 0) -> UpdateByOperation:
     """Creates a rolling sum UpdateByOperation for the supplied column names, using ticks as the windowing unit. Ticks 
-    are row counts and you may specify the reverse and forward window in number of rows to include. The current row 
+    are row counts, and you may specify the reverse and forward window in number of rows to include. The current row
     is considered to belong to the reverse window but not the forward window. Also, negative values are allowed and 
     can be used to generate completely forward or completely reverse windows. 
 
@@ -289,7 +291,7 @@ def rolling_sum_tick(cols: Union[str, List[str]], rev_ticks: int, fwd_ticks: int
 
     Args:
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
-            i.e. "new_col = col"; when empty, update_by perform the forward fill operation on all columns.
+            i.e. "new_col = col"; when empty, update_by perform the rolling sum operation on all columns.
         rev_ticks (int): the look-behind window size (in rows/ticks)
         fwd_ticks (int): the look-forward window size (int rows/ticks), default is 0
 
@@ -308,28 +310,29 @@ def rolling_sum_tick(cols: Union[str, List[str]], rev_ticks: int, fwd_ticks: int
 
 def rolling_sum_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[int, str],
                      fwd_time: Union[int, str] = 0) -> UpdateByOperation:
-    """Creates a rolling sum UpdateByOperation for the supplied column names, using time as the windowing unit. This 
-    function accepts nanoseconds as the reverse and forward window parameters. Negative values are allowed and can be 
-    used to generate completely forward or completely reverse windows. A row containing a null in the timestamp 
-    column belongs to no window and will not have a value computed or be considered in the windows of other rows. 
+    """Creates a rolling sum UpdateByOperation for the supplied column names, using time as the windowing unit. This
+    function accepts nanoseconds or time strings as the reverse and forward window parameters. Negative values are
+    allowed and can be used to generate completely forward or completely reverse windows. A row containing a null in
+    the timestamp column belongs to no window and will not have a value computed or be considered in the windows of
+    other rows.
      
     Here are some examples of window values:
         rev_time = 0, fwd_time = 0 - contains rows that exactly match the current row timestamp
-        rev_time = "00:10:00", fwd_time = "0" - contains rows from 10m earlier through the current row timestamp (
+        rev_time = "00:10:00", fwd_time = "0" - contains rows from 10m before through the current row timestamp (
             inclusive)
         rev_time = 0, fwd_time = 600_000_000_000 - contains rows from the current row through 10m following the
             current row timestamp (inclusive)
-        rev_time = "00:10:00", fwd_time = "00:10:00" - contains rows from 10m earlier through 10m following
+        rev_time = "00:10:00", fwd_time = "00:10:00" - contains rows from 10m before through 10m following
             the current row timestamp (inclusive)
-        rev_time = "00:10:00", fwd_time = "-00:05:00" - contains rows from 10m earlier through 5m before the
-            current * row timestamp (inclusive), this is a purely backwards looking window
+        rev_time = "00:10:00", fwd_time = "-00:05:00" - contains rows from 10m before through 5m before the
+            current row timestamp (inclusive), this is a purely backwards looking window
         rev_time = "-00:05:00", fwd_time = "00:10:00"} - contains rows from 5m following through 10m
             following the current row timestamp (inclusive), this is a purely forwards looking window
     
     Args:
         ts_col (str):
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
-            i.e. "new_col = col"; when empty, update_by perform the forward fill operation on all columns.
+            i.e. "new_col = col"; when empty, update_by perform the rolling sum operation on all columns.
         rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
             interval string, e.g. "00:00:00.001"
         fwd_time (int): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
