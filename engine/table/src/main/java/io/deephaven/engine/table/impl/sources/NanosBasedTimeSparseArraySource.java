@@ -12,8 +12,9 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.impl.DefaultChunkSource;
-import io.deephaven.engine.table.impl.chunkfillers.ChunkFiller;
+import io.deephaven.engine.table.WritableColumnSource;
+import io.deephaven.engine.table.WritableSourceWithPrepareForParallelPopulation;
+import io.deephaven.engine.table.impl.util.ShiftData;
 import io.deephaven.time.DateTime;
 import org.jetbrains.annotations.NotNull;
 
@@ -26,8 +27,10 @@ import java.time.ZonedDateTime;
 /**
  * Array-backed ColumnSource for TIME_TYPEs. Allows reinterpret as long.
  */
-public abstract class NanosBasedTimeSparseArraySource<TIME_TYPE> extends SparseArrayColumnSource<TIME_TYPE>
-        implements DefaultChunkSource<Values>, ConvertableTimeSource {
+public abstract class NanosBasedTimeSparseArraySource<TIME_TYPE> extends AbstractDeferredGroupingColumnSource<TIME_TYPE>
+        implements FillUnordered<Values>, WritableColumnSource<TIME_TYPE>, InMemoryColumnSource,
+        PossiblyImmutableColumnSource, WritableSourceWithPrepareForParallelPopulation, ShiftData.RowSetShiftCallback,
+        ConvertableTimeSource {
 
     protected final LongSparseArraySource nanoSource;
 
@@ -102,6 +105,12 @@ public abstract class NanosBasedTimeSparseArraySource<TIME_TYPE> extends SparseA
     public void startTrackingPrevValues() {
         nanoSource.startTrackingPrevValues();
     }
+
+    @Override
+    public void setImmutable() {
+        nanoSource.setImmutable();
+    }
+
     // endregion
 
     // region Chunking
@@ -116,25 +125,33 @@ public abstract class NanosBasedTimeSparseArraySource<TIME_TYPE> extends SparseA
     }
 
     @Override
-    void fillByUnRowSequence(@NotNull WritableChunk<? super Values> dest,
+    public boolean providesFillUnordered() {
+        return true;
+    }
+
+    @Override
+    public void fillChunkUnordered(
+            @NotNull final FillContext context,
+            @NotNull final WritableChunk<? super Values> dest,
             @NotNull LongChunk<? extends RowKeys> keys) {
         nanoSource.fillByUnRowSequence(dest, keys, this::makeValue);
     }
 
     @Override
-    void fillPrevByUnRowSequence(@NotNull WritableChunk<? super Values> dest,
+    public void fillPrevChunkUnordered(
+            @NotNull final FillContext context,
+            @NotNull final WritableChunk<? super Values> dest,
             @NotNull LongChunk<? extends RowKeys> keys) {
         nanoSource.fillPrevByUnRowSequence(dest, keys, this::makeValue);
     }
 
-    @Override
-    public void fillFromChunkByRanges(@NotNull RowSequence rowSequence, Chunk<? extends Values> src) {
-        nanoSource.fillFromChunkByRanges(rowSequence, src, this::toNanos);
-    }
-
-    @Override
-    public void fillFromChunkByKeys(@NotNull RowSequence rowSequence, Chunk<? extends Values> src) {
-        nanoSource.fillFromChunkByKeys(rowSequence, src, this::toNanos);
+    public void fillFromChunk(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src,
+                              @NotNull RowSequence rowSequence) {
+        if (rowSequence.getAverageRunLengthEstimate() < USE_RANGES_AVERAGE_RUN_LENGTH) {
+            nanoSource.fillFromChunkByKeys(rowSequence, src, this::toNanos);
+        } else {
+            nanoSource.fillFromChunkByRanges(rowSequence, src, this::toNanos);
+        }
     }
 
     @Override
@@ -144,23 +161,18 @@ public abstract class NanosBasedTimeSparseArraySource<TIME_TYPE> extends SparseA
     }
 
     @Override
-    void fillByRanges(@NotNull WritableChunk<? super Values> dest, @NotNull RowSequence rowSequence) {
-        nanoSource.fillByRanges(dest, rowSequence, this::makeValue);
+    public void fillChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Values> dest,
+                          @NotNull RowSequence rowSequence) {
+        if (rowSequence.getAverageRunLengthEstimate() < USE_RANGES_AVERAGE_RUN_LENGTH) {
+            nanoSource.fillByKeys(dest, rowSequence, this::makeValue);
+        } else {
+            nanoSource.fillByRanges(dest, rowSequence, this::makeValue);
+        }
     }
 
     @Override
-    void fillByKeys(@NotNull WritableChunk<? super Values> dest, @NotNull RowSequence rowSequence) {
-        nanoSource.fillByKeys(dest, rowSequence, this::makeValue);
-    }
-
-    @Override
-    void nullByRanges(@NotNull RowSequence rowSequence) {
-        nanoSource.nullByRanges(rowSequence);
-    }
-
-    @Override
-    void nullByKeys(@NotNull RowSequence rowSequence) {
-        nanoSource.nullByKeys(rowSequence);
+    public void setNull(RowSequence rowSequence) {
+        nanoSource.setNull(rowSequence);
     }
     // endregion
 

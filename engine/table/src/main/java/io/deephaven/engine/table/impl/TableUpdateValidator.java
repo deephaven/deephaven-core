@@ -316,7 +316,7 @@ public class TableUpdateValidator implements QueryTable.Operation {
         final ModifiedColumnSet modifiedColumnSet;
 
         final ColumnSource<?> source;
-        final SparseArrayColumnSource<?> expectedSource;
+        final WritableColumnSource<?> expectedSource;
 
         final ChunkEquals chunkEquals;
 
@@ -336,6 +336,8 @@ public class TableUpdateValidator implements QueryTable.Operation {
             this.isPrimitive = source.getType().isPrimitive();
             this.expectedSource =
                     SparseArrayColumnSource.getSparseMemoryColumnSource(source.getType(), source.getComponentType());
+            Assert.eqTrue(this.expectedSource instanceof ShiftData.RowSetShiftCallback,
+                    "expectedSource instanceof ShiftData.RowSetShiftCallback");
 
             this.chunkEquals = ChunkEquals.makeEqual(source.getChunkType());
         }
@@ -384,7 +386,8 @@ public class TableUpdateValidator implements QueryTable.Operation {
 
         @Override
         public void shift(final long beginRange, final long endRange, final long shiftDelta) {
-            expectedSource.shift(rowSet.subSetByKeyRange(beginRange, endRange), shiftDelta);
+            ((ShiftData.RowSetShiftCallback)expectedSource).shift(
+                    rowSet.subSetByKeyRange(beginRange, endRange), shiftDelta);
         }
 
         public void remove(final RowSet toRemove) {
