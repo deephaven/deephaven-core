@@ -6,8 +6,6 @@ package io.deephaven.io.logger;
 import io.deephaven.base.RingBuffer;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 public class LogBuffer implements LogBufferRecordListener {

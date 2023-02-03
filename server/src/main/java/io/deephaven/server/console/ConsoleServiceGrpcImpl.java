@@ -137,6 +137,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
     @Override
     public void subscribeToLogs(LogSubscriptionRequest request, StreamObserver<LogSubscriptionData> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
+            sessionService.getCurrentSession();
             if (REMOTE_CONSOLE_DISABLED) {
                 GrpcUtil.safelyError(responseObserver, Code.FAILED_PRECONDITION, "Remote console disabled");
                 return;
