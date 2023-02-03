@@ -175,7 +175,7 @@ $ git push upstream vX.Y.Z
 
 Create a new [GitHub release](https://github.com/deephaven/deephaven-core/releases/new) and use the `vX.Y.Z` tag as reference.
 
-The convention is to have the Release title of the form `vX.Y.Z` and to autogenerate the release notes in comparison to the previous release tag.
+The convention is to have the Release title of the form `vX.Y.Z` and to autogenerate the release notes in comparison to the previous release tag. Question: should we always generate release notes based off of the previous minor release, instead of patch? Our git release workflow suggests we may want to do it always minor to minor.
 
 Upload the Deephaven server application, deephaven-core wheel, and SBOM artifacts.
 
