@@ -22,10 +22,9 @@ public class ConsoleServiceTest extends DeephavenApiServerSingleAuthenticatedBas
 
     private static class Observer implements ClientResponseObserver<LogSubscriptionRequest, LogSubscriptionData> {
         private final CountDownLatch latch;
+        private final CountDownLatch done;
         private ClientCallStreamObserver<?> stream;
         private Throwable error;
-        private CountDownLatch done;
-        private int count;
 
         public Observer(int expected) {
             latch = new CountDownLatch(expected);
@@ -39,8 +38,10 @@ public class ConsoleServiceTest extends DeephavenApiServerSingleAuthenticatedBas
 
         @Override
         public void onNext(LogSubscriptionData value) {
+            if (latch.getCount() == 0) {
+                throw new IllegalStateException("Expected latch count exceeded");
+            }
             latch.countDown();
-            ++count;
         }
 
         @Override
@@ -67,7 +68,6 @@ public class ConsoleServiceTest extends DeephavenApiServerSingleAuthenticatedBas
         assertThat(observer.latch.await(3, TimeUnit.SECONDS)).isTrue();
         observer.stream.cancel("done", null);
         assertThat(observer.done.await(3, TimeUnit.SECONDS)).isTrue();
-        assertThat(observer.count).isEqualTo(2);
         assertThat(observer.error).isInstanceOf(StatusRuntimeException.class);
         assertThat(observer.error).hasMessage("CANCELLED: done");
     }
@@ -84,7 +84,6 @@ public class ConsoleServiceTest extends DeephavenApiServerSingleAuthenticatedBas
         assertThat(observer.latch.await(3, TimeUnit.SECONDS)).isTrue();
         observer.stream.cancel("done", null);
         assertThat(observer.done.await(3, TimeUnit.SECONDS)).isTrue();
-        assertThat(observer.count).isEqualTo(2);
         assertThat(observer.error).isInstanceOf(StatusRuntimeException.class);
         assertThat(observer.error).hasMessage("CANCELLED: done");
     }
