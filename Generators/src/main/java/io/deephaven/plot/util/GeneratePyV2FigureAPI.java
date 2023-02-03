@@ -959,8 +959,6 @@ public class GeneratePyV2FigureAPI {
                 }
 
                 sb.append("\n");
-
-
             }
 
             if (needsMskCheck) {
