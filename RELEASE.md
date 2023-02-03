@@ -104,7 +104,7 @@ $ git push -u upstream release/vX.Y.Z
 ### 4. Monitor release
 
 The release will proceed with [GitHub Actions](https://github.com/deephaven/deephaven-core/actions/workflows/publish-ci.yml).
-The specific action can be found based off of the name of the release branch: [?query=branch%3Arelease%2Fv0.20.1](https://github.com/deephaven/deephaven-core/actions/workflows/publish-ci.yml?query=branch%3Arelease%2FvX.Y.Z).
+The specific action can be found based off of the name of the release branch: [?query=branch%3Arelease%2FvX.Y.Z](https://github.com/deephaven/deephaven-core/actions/workflows/publish-ci.yml?query=branch%3Arelease%2FvX.Y.Z).
 
 The "Publish" step creates the artifacts and publishes the jars to a Maven Central staging repository.
 
@@ -183,7 +183,7 @@ Hit the GitHub "Publish release" button.
 The go client release consists of simply tagging and pushing to upstream:
 
 ```shell
-$ git tag -a -m "[Release] Deephaven Go Client 0.20.1" go/vX.Y.Z release/vX.Y.Z 
+$ git tag -a -m "[Release] Deephaven Go Client X.Y.Z" go/vX.Y.Z release/vX.Y.Z 
 $ git show go/vX.Y.Z
 $ git push upstream go/vX.Y.Z
 ```
