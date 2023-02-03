@@ -24,7 +24,7 @@ public class ConsoleServiceTest extends DeephavenApiServerSingleAuthenticatedBas
         private final CountDownLatch latch;
         private final CountDownLatch done;
         private ClientCallStreamObserver<?> stream;
-        private Throwable error;
+        private volatile Throwable error;
 
         public Observer(int expected) {
             latch = new CountDownLatch(expected);
