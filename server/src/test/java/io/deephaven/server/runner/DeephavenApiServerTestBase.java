@@ -120,6 +120,10 @@ public abstract class DeephavenApiServerTestBase {
         return server;
     }
 
+    public LogBuffer logBuffer() {
+        return logBuffer;
+    }
+
     /**
      * The session token expiration
      *
