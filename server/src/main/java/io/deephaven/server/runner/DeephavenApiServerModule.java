@@ -29,6 +29,7 @@ import io.deephaven.server.uri.UriModule;
 import io.deephaven.server.util.Scheduler;
 import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.util.thread.NamingThreadFactory;
+import io.deephaven.util.thread.ThreadInitializationFactory;
 import io.grpc.BindableService;
 import io.grpc.ServerInterceptor;
 import org.jetbrains.annotations.NotNull;
@@ -83,16 +84,10 @@ public class DeephavenApiServerModule {
     @Provides
     @Singleton
     public ScriptSession provideScriptSession(Map<String, Provider<ScriptSession>> scriptTypes) {
-        final String DEEPHAVEN_CONSOLE_TYPE = "deephaven.console.type";
-        boolean configuredConsole = Configuration.getInstance().hasProperty(DEEPHAVEN_CONSOLE_TYPE);
+        // Check which script language is configured
+        String scriptSessionType = Configuration.getInstance().getProperty("deephaven.console.type");
 
-        if (!configuredConsole && scriptTypes.size() == 1) {
-            // if there is only one; use it
-            return scriptTypes.values().iterator().next().get();
-        }
-
-        // otherwise, assume we want python...
-        String scriptSessionType = Configuration.getInstance().getStringWithDefault(DEEPHAVEN_CONSOLE_TYPE, "python");
+        // Emit an error if the selected language isn't provided
         if (!scriptTypes.containsKey(scriptSessionType)) {
             throw new IllegalArgumentException("Console type not found: " + scriptSessionType);
         }
@@ -157,15 +152,15 @@ public class DeephavenApiServerModule {
 
     private static class ThreadFactory extends NamingThreadFactory {
         public ThreadFactory(final String name) {
-            super(DeephavenApiServer.class, name, true);
+            super(DeephavenApiServer.class, name);
         }
 
         @Override
         public Thread newThread(final @NotNull Runnable r) {
-            return super.newThread(() -> {
+            return super.newThread(ThreadInitializationFactory.wrapRunnable(() -> {
                 MultiChunkPool.enableDedicatedPoolForThisThread();
                 r.run();
-            });
+            }));
         }
     }
 }

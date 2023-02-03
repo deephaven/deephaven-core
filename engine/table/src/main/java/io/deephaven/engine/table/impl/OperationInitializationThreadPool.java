@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.chunk.util.pools.MultiChunkPool;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.util.thread.NamingThreadFactory;
+import io.deephaven.util.thread.ThreadInitializationFactory;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.ExecutorService;
@@ -39,11 +40,11 @@ public class OperationInitializationThreadPool {
                         true) {
                     @Override
                     public Thread newThread(@NotNull Runnable r) {
-                        return super.newThread(() -> {
+                        return super.newThread(ThreadInitializationFactory.wrapRunnable(() -> {
                             isInitializationThread.set(true);
                             MultiChunkPool.enableDedicatedPoolForThisThread();
                             r.run();
-                        });
+                        }));
                     }
                 };
         executorService = Executors.newFixedThreadPool(NUM_THREADS, threadFactory);
