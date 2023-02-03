@@ -386,7 +386,7 @@ public class TableUpdateValidator implements QueryTable.Operation {
 
         @Override
         public void shift(final long beginRange, final long endRange, final long shiftDelta) {
-            ((ShiftData.RowSetShiftCallback)expectedSource).shift(
+            ((ShiftData.RowSetShiftCallback) expectedSource).shift(
                     rowSet.subSetByKeyRange(beginRange, endRange), shiftDelta);
         }
 

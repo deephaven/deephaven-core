@@ -159,7 +159,7 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
         deltaCapacityEnsurer = baselineCapacityEnsurer;
 
         if (sparseBaseline instanceof SparseArrayColumnSource) {
-            preferredChunkSize = ((SparseArrayColumnSource<T>)sparseBaseline).getPreferredChunkSize();
+            preferredChunkSize = ((SparseArrayColumnSource<T>) sparseBaseline).getPreferredChunkSize();
         } else {
             preferredChunkSize = DEFAULT_PREFERRED_CHUNK_SIZE;
         }

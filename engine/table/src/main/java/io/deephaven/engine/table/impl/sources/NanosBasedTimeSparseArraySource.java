@@ -146,7 +146,7 @@ public abstract class NanosBasedTimeSparseArraySource<TIME_TYPE> extends Abstrac
     }
 
     public void fillFromChunk(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src,
-                              @NotNull RowSequence rowSequence) {
+            @NotNull RowSequence rowSequence) {
         if (rowSequence.getAverageRunLengthEstimate() < USE_RANGES_AVERAGE_RUN_LENGTH) {
             nanoSource.fillFromChunkByKeys(rowSequence, src, this::toNanos);
         } else {
@@ -162,7 +162,7 @@ public abstract class NanosBasedTimeSparseArraySource<TIME_TYPE> extends Abstrac
 
     @Override
     public void fillChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Values> dest,
-                          @NotNull RowSequence rowSequence) {
+            @NotNull RowSequence rowSequence) {
         if (rowSequence.getAverageRunLengthEstimate() < USE_RANGES_AVERAGE_RUN_LENGTH) {
             nanoSource.fillByKeys(dest, rowSequence, this::makeValue);
         } else {
