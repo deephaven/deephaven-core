@@ -92,6 +92,12 @@ if (hasProperty('sql-username-password')) {
     ]
     dependencies.implementation(project(':authentication:example-providers:sql-username-password'))
 }
+if (hasProperty('oidc')) {
+    extraJvmArgs += [
+            '-DAuthHandlers=io.deephaven.authentication.oidc.OidcAuthenticationHandler',
+    ]
+    dependencies.implementation(project(':authentication:example-providers:oidc'))
+}
 
 tasks.withType(JavaExec).configureEach {
     // This appends to the existing jvm args, so that java-open-nio still takes effect

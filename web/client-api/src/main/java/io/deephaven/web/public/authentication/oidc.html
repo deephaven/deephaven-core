@@ -1,0 +1,52 @@
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+    <title>Deephaven Web API OpenID Connect authentication</title>
+    <script src="../dh-internal.js" type="text/javascript"></script>
+    <script src="../dh-core.js" type="text/javascript"></script>
+
+    <script src="http://localhost:6060/js/keycloak.js"></script>
+</head>
+<body>
+<p>
+    This page tests login with KeyCloak, configured as an OpenID Connect server.
+</p>
+<label for="url">Keycloak URL</label><input id="url" type="text" width="200">
+<button id="go">Go</button>
+<div id="log"></div>
+<script>
+    function log(msg) {
+        document.getElementById('log').append(msg, document.createElement('br'));
+    }
+    document.getElementById('go').onclick = event => {
+        var client = new dh.CoreClient(window.location.protocol + "//" + window.location.host);
+        //TODO query for auth options
+
+        //TODO inject keycloak.js and wait for it
+
+        var keycloak = new Keycloak({
+            "realm": "deephaven_core",
+            "url": "http://localhost:6060",
+            "clientId":"deephaven",
+        });
+        keycloak.init({
+            pkceMethod:'S256',
+            checkLoginIframe:false,
+        })
+            .success(authenticated => {
+            if (authenticated) {
+                log('auth with keycloak successful, authenticating to deephaven...');
+                client.login({type:'io.deephaven.authentication.oidc.OidcAuthenticationHandler', token:keycloak.token})
+                    .then(
+                        success => log("Success!"),
+                        failure => log("Failed authenticating with deephaven")
+                    );
+            } else {
+                keycloak.login({});
+            }
+        })
+            .error(error => log("Error logging in: " + error));
+    }
+</script>
+</body>
+</html>
