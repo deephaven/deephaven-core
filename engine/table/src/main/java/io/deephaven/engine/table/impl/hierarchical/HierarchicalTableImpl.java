@@ -867,7 +867,7 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
                 Assert.eq(children.get(removedChildDirective.slotInParent),
                         "children.get(removedChildDirective.slotInParent)",
                         removedChildDirective, "removedChildDirective");
-                Assert.eq(removedChildDirective.action, "removedChildDirective.action", Linkage, "Linkage");
+                Assert.eq(removedChildDirective.action, "removedChildDirective.action", Linkage);
                 childDirective.slotInParent = removedChildDirective.slotInParent;
                 children.set(childDirective.slotInParent, childDirective);
             }
