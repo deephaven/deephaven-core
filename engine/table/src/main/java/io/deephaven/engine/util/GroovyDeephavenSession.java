@@ -273,10 +273,9 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         return e;
     }
 
-    private static String classForNameString(String className) throws ClassNotFoundException {
+    private static Class<?> loadClass(String className) throws ClassNotFoundException {
         try {
-            Class.forName(className);
-            return className;
+            return Class.forName(className, false, GroovyDeephavenSession.class.getClassLoader());
         } catch (ClassNotFoundException e) {
             if (className.contains(".")) {
                 // handle inner class cases
@@ -285,7 +284,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
                 String tail = className.substring(index + 1);
                 String newClassName = head + "$" + tail;
 
-                return classForNameString(newClassName);
+                return loadClass(newClassName);
             } else {
                 throw e;
             }
@@ -294,7 +293,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
 
     private static boolean classExists(String className) {
         try {
-            classForNameString(className);
+            loadClass(className);
             return true;
         } catch (ClassNotFoundException e) {
             return false;
@@ -303,7 +302,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
 
     private static boolean functionExists(String className, String functionName) {
         try {
-            Method[] ms = Class.forName(classForNameString(className)).getMethods();
+            Method[] ms = loadClass(className).getMethods();
 
             for (Method m : ms) {
                 if (m.getName().equals(functionName)) {
@@ -319,7 +318,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
 
     private static boolean fieldExists(String className, String fieldName) {
         try {
-            Field[] fs = Class.forName(classForNameString(className)).getFields();
+            Field[] fs = loadClass(className).getFields();
 
             for (Field f : fs) {
                 if (f.getName().equals(fieldName)) {
@@ -396,7 +395,8 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
             }
         } else {
             if (isWildcard) {
-                okToImport = classExists(body) || (Package.getPackage(body) != null) || visibleToClassGraph(body);
+                okToImport = classExists(body) || (Package.getPackage(body) != null)
+                        || packageIsVisibleToClassGraph(body);
 
                 if (!okToImport) {
                     if (ALLOW_UNKNOWN_GROOVY_PACKAGE_IMPORTS) {
@@ -437,7 +437,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         }
     }
 
-    private static boolean visibleToClassGraph(String packageImport) {
+    private static boolean packageIsVisibleToClassGraph(String packageImport) {
         try (ScanResult scanResult = new ClassGraph().enableClassInfo().acceptPackages(packageImport).scan()) {
             final Optional<ClassInfo> firstClassFound = scanResult.getAllClasses().stream().findFirst();
             // force load the class so that the jvm is aware of the package
