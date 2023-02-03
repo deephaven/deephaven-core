@@ -6,7 +6,7 @@ import unittest
 
 from deephaven import read_csv, time_table, ugp
 from deephaven.updateby import ema_tick_decay, BadDataBehavior, MathContext, OperationControl, ema_time_decay, cum_sum, \
-    cum_prod, cum_min, cum_max, forward_fill
+    cum_prod, cum_min, cum_max, forward_fill, rolling_sum_tick, rolling_sum_time
 from tests.testbase import BaseTestCase
 
 
@@ -28,22 +28,21 @@ class UpdateByTestCase(BaseTestCase):
                                    on_nan=BadDataBehavior.RESET,
                                    big_value_context=MathContext.UNLIMITED)
 
-        ema_ops = [ema_tick_decay(time_scale_ticks=100, cols="ema_a = a"),
-                   ema_tick_decay(time_scale_ticks=100, cols="ema_a = a", op_control=op_ctrl),
-                   ema_time_decay(ts_col="Timestamp", time_scale=10, cols="ema_a = a"),
-                   ema_time_decay(ts_col="Timestamp", time_scale="00:00:00.001", cols="ema_c = c",
-                                  op_control=op_ctrl),
-                   ]
+        ops = [ema_tick_decay(time_scale_ticks=100, cols="ema_a = a"),
+               ema_tick_decay(time_scale_ticks=100, cols="ema_a = a", op_control=op_ctrl),
+               ema_time_decay(ts_col="Timestamp", time_scale=10, cols="ema_a = a"),
+               ema_time_decay(ts_col="Timestamp", time_scale="00:00:00.001", cols="ema_c = c",
+                              op_control=op_ctrl),
+               ]
 
-        for ema_op in ema_ops:
-            with self.subTest(ema_op):
+        for op in ops:
+            with self.subTest(op):
                 for t in (self.static_table, self.ticking_table):
+                    rt = t.update_by(ops=op, by="b")
+                    self.assertTrue(rt.is_refreshing is t.is_refreshing)
+                    self.assertEqual(len(rt.columns), 1 + len(t.columns))
                     with ugp.exclusive_lock():
-                        ema_table = t.update_by(ops=ema_op, by="b")
-                        self.assertTrue(ema_table.is_refreshing is t.is_refreshing)
-                        self.assertEqual(len(ema_table.columns), 1 + len(t.columns))
-                        with ugp.exclusive_lock():
-                            self.assertEqual(ema_table.size, t.size)
+                        self.assertEqual(rt.size, t.size)
 
     def test_simple_ops(self):
         op_builders = [cum_sum, cum_prod, cum_min, cum_max, forward_fill]
@@ -52,11 +51,11 @@ class UpdateByTestCase(BaseTestCase):
         for op_builder in op_builders:
             with self.subTest(op_builder):
                 for t in (self.static_table, self.ticking_table):
+                    rt = t.update_by(ops=op_builder(pairs), by="e")
+                    self.assertTrue(rt.is_refreshing is t.is_refreshing)
+                    self.assertEqual(len(rt.columns), 2 + len(t.columns))
                     with ugp.exclusive_lock():
-                        updateby_table = t.update_by(ops=op_builder(pairs), by="e")
-                        self.assertTrue(updateby_table.is_refreshing is t.is_refreshing)
-                        self.assertEqual(len(updateby_table.columns), 2 + len(t.columns))
-                        self.assertEqual(updateby_table.size, t.size)
+                        self.assertEqual(rt.size, t.size)
 
     def test_simple_ops_proxy(self):
         op_builders = [cum_sum, cum_prod, cum_min, cum_max, forward_fill]
@@ -68,51 +67,83 @@ class UpdateByTestCase(BaseTestCase):
         for op_builder in op_builders:
             with self.subTest(op_builder):
                 for pt_proxy in pt_proxies:
-                    if pt_proxy.is_refreshing:
-                        ugp.auto_locking = True
-                    updateby_proxy = pt_proxy.update_by(ops=op_builder(pairs), by="e")
+                    rt_proxy = pt_proxy.update_by(ops=op_builder(pairs), by="e")
 
-                    self.assertTrue(updateby_proxy.is_refreshing is pt_proxy.is_refreshing)
-                    self.assertEqual(len(updateby_proxy.target.constituent_table_columns),
+                    self.assertTrue(rt_proxy.is_refreshing is pt_proxy.is_refreshing)
+                    self.assertEqual(len(rt_proxy.target.constituent_table_columns),
                                      2 + len(pt_proxy.target.constituent_table_columns))
 
-                    for ct, ub_ct in zip(pt_proxy.target.constituent_tables, updateby_proxy.target.constituent_tables):
+                    for ct, rct in zip(pt_proxy.target.constituent_tables, rt_proxy.target.constituent_tables):
                         with ugp.exclusive_lock():
-                            self.assertEqual(ct.size, ub_ct.size)
-
-                    if pt_proxy.is_refreshing:
-                        ugp.auto_locking = False
+                            self.assertEqual(ct.size, rct.size)
 
     def test_ema_proxy(self):
         op_ctrl = OperationControl(on_null=BadDataBehavior.THROW,
                                    on_nan=BadDataBehavior.RESET,
                                    big_value_context=MathContext.UNLIMITED)
 
-        ema_ops = [ema_tick_decay(time_scale_ticks=100, cols="ema_a = a"),
-                          ema_tick_decay(time_scale_ticks=100, cols="ema_a = a", op_control=op_ctrl),
-                          ema_time_decay(ts_col="Timestamp", time_scale=10, cols="ema_a = a"),
-                          ema_time_decay(ts_col="Timestamp", time_scale=100, cols="ema_c = c",
-                                         op_control=op_ctrl),
-                          ]
+        ops = [ema_tick_decay(time_scale_ticks=100, cols="ema_a = a"),
+               ema_tick_decay(time_scale_ticks=100, cols="ema_a = a", op_control=op_ctrl),
+               ema_time_decay(ts_col="Timestamp", time_scale=10, cols="ema_a = a"),
+               ema_time_decay(ts_col="Timestamp", time_scale=100, cols="ema_c = c",
+                              op_control=op_ctrl),
+               ]
         pt_proxies = [self.static_table.partition_by("b").proxy(),
                       self.ticking_table.partition_by("b").proxy(),
                       ]
 
-        for ema_op in ema_ops:
-            with self.subTest(ema_op):
+        for op in ops:
+            with self.subTest(op):
                 for pt_proxy in pt_proxies:
-                    if pt_proxy.is_refreshing:
-                        ugp.auto_locking = True
-
-                    ema_proxy = pt_proxy.update_by(ema_op, by="e")
-                    for ct, ema_ct in zip(pt_proxy.target.constituent_tables, ema_proxy.target.constituent_tables):
-                        self.assertTrue(ema_ct.is_refreshing is ct.is_refreshing)
-                        self.assertEqual(len(ema_ct.columns), 1 + len(ct.columns))
+                    rt_proxy = pt_proxy.update_by(op, by="e")
+                    for ct, rct in zip(pt_proxy.target.constituent_tables, rt_proxy.target.constituent_tables):
+                        self.assertTrue(rct.is_refreshing is ct.is_refreshing)
+                        self.assertEqual(len(rct.columns), 1 + len(ct.columns))
                         with ugp.exclusive_lock():
-                            self.assertEqual(ct.size, ema_ct.size)
+                            self.assertEqual(ct.size, rct.size)
 
-                    if pt_proxy.is_refreshing:
-                        ugp.auto_locking = True
+    def test_rolling_sum(self):
+        ops = [
+            rolling_sum_tick(cols=["rsum_a = a", "rsum_d = d"], rev_ticks=10),
+            rolling_sum_tick(cols=["rsum_a = a", "rsum_d = d"], rev_ticks=10, fwd_ticks=10),
+            rolling_sum_time(ts_col="Timestamp", cols=["rsum_b = b", "rsum_e = e"], rev_time="00:00:10"),
+            rolling_sum_time(ts_col="Timestamp", cols=["rsum_b = b", "rsum_e = e"], rev_time=10_000_000_000,
+                             fwd_time=-10_000_000_00),
+            rolling_sum_time(ts_col="Timestamp", cols=["rsum_b = b", "rsum_e = e"], rev_time="00:00:30",
+                             fwd_time="-00:00:20"),
+        ]
+
+        for op in ops:
+            with self.subTest(op):
+                for t in (self.static_table, self.ticking_table):
+                    rt = t.update_by(ops=op, by="c")
+                    self.assertTrue(rt.is_refreshing is t.is_refreshing)
+                    self.assertEqual(len(rt.columns), 2 + len(t.columns))
+                    with ugp.exclusive_lock():
+                        self.assertEqual(rt.size, t.size)
+
+    def test_rolling_sum_proxy(self):
+        ops = [
+            rolling_sum_tick(cols=["rsum_a = a", "rsum_d = d"], rev_ticks=10),
+            rolling_sum_tick(cols=["rsum_a = a", "rsum_d = d"], rev_ticks=10, fwd_ticks=10),
+            rolling_sum_time(ts_col="Timestamp", cols=["rsum_b = b", "rsum_e = e"], rev_time="00:00:10"),
+            rolling_sum_time(ts_col="Timestamp", cols=["rsum_b = b", "rsum_e = e"], rev_time="00:00:10",
+                             fwd_time=-10_000_000_00),
+        ]
+
+        pt_proxies = [self.static_table.partition_by("b").proxy(),
+                      self.ticking_table.partition_by("b").proxy(),
+                      ]
+
+        for op in ops:
+            with self.subTest(op):
+                for pt_proxy in pt_proxies:
+                    rt_proxy = pt_proxy.update_by(op, by="c")
+                    for ct, rct in zip(pt_proxy.target.constituent_tables, rt_proxy.target.constituent_tables):
+                        self.assertTrue(rct.is_refreshing is ct.is_refreshing)
+                        self.assertEqual(len(rct.columns), 2 + len(ct.columns))
+                        with ugp.exclusive_lock():
+                            self.assertEqual(ct.size, rct.size)
 
 
 if __name__ == '__main__':
