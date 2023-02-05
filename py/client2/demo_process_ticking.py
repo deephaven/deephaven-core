@@ -1,48 +1,44 @@
 import deephaven_client as dh
-import array as array
 import numpy as np
 
 class CallbackHandler:
     def __init__(self):
-        self.int64Sum_ = 0
+        self._int64_sum = 0
 
-    def onTick(self, update : dh.TickingUpdate):
+    def on_tick(self, update: dh.TickingUpdate):
         current = update.current
-        addedRows = update.addedRows
+        col_index = current.get_column_index("Int64Value", True)
 
-        int64Index = current.getColumnIndex("Int64Value", True)
+        self._process_deltas(update.before_removes, col_index, update.removed_rows, -1)
+        self._process_deltas(update.after_adds, col_index, update.added_rows, 1)
 
-        self.processDeltas(update.beforeRemoves, int64Index, update.removedRows, -1)
-        self.processDeltas(update.afterAdds, int64Index, update.addedRows, 1)
+        num_modifies = 0
+        if (col_index < len(update.modified_rows)):
+            row_sequence = update.modified_rows[col_index]
+            self._process_deltas(update.before_modifies, col_index, row_sequence, -1)
+            self._process_deltas(update.after_modifies, col_index, row_sequence, 1)
+            num_modifies += row_sequence.size
 
-        numModifies = 0
-        if (int64Index < len(update.modifiedRows)):
-            rowSequence = update.modifiedRows[int64Index]
-            self.processDeltas(update.beforeModifies, int64Index, rowSequence, -1)
-            self.processDeltas(update.afterModifies, int64Index, rowSequence, 1)
-            numModifies += rowSequence.size
+        print(f"int64Sum is {self._int64_sum}, num adds={update.added_rows.size}, "
+              f"num removes={update.removed_rows.size}, num modifies={num_modifies}")
 
-        print(f"int64Sum is {self.int64Sum_}, num adds={update.addedRows.size}, "
-              f"num removes={update.removedRows.size}, num modifies={numModifies}")
-
-    def onError(self, error: str):
+    def on_error(self, error: str):
         print(f"Error happened: {error}")
         
-    def processDeltas(self, table: dh.Table, int64Index: int,
-                      rows: dh.RowSequence, parity: int):
-        int64Col = table.getColumn(int64Index)
-        chunkSize = 65536
-        int64Chunk = np.zeros(chunkSize, dtype=np.int64)
+    def _process_deltas(self, table: dh.Table, col_index: int,
+                        rows: dh.RowSequence, parity: int):
+        data_col = table.getColumn(col_index)
+        chunk_size = 65536
+        chunk = np.zeros(chunk_size, dtype=np.int64)
 
         while not rows.empty:
-            theseRows = rows.take(chunkSize)
-            theseRowsSize = theseRows.size
-            rows = rows.drop(chunkSize)
+            these_rows = rows.take(chunk_size)
+            rows = rows.drop(chunk_size)
 
-            int64Col.fillChunk(theseRows, int64Chunk, None)
+            data_col.fill_chunk(these_rows, chunk, None)
 
-            for i in range(theseRowsSize):
-                self.int64Sum_ += int64Chunk.data[i] * parity
+            for i in range(these_rows.size):
+                self._int64_sum += chunk.data[i] * parity
 
 # run this on the IDE
 # from deephaven import time_table
@@ -50,8 +46,8 @@ class CallbackHandler:
 # sum3m = demo3m.view(["Int64Value"]).sum_by()
 
 client = dh.Client.connect("localhost:10000")
-manager = client.getManager()
-handle = manager.fetchTable("demo3m")
+manager = client.get_manager()
+handle = manager.fetch_table("demo3m")
 subHandle = handle.subscribe(CallbackHandler())
 
 line = input("Press enter to quit: ")
