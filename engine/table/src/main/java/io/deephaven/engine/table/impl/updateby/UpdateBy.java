@@ -201,6 +201,7 @@ public abstract class UpdateBy {
                 .toArray();
         inputCacheNeeded = cacheableSourceIndices.length > 0;
 
+        // noinspection unchecked
         inputSourceCaches = new SoftReference[inputSources.length];
 
         buckets =
