@@ -2,7 +2,6 @@ package io.deephaven.engine.table.impl.updateby;
 
 import gnu.trove.set.hash.TIntHashSet;
 import io.deephaven.chunk.Chunk;
-import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
@@ -267,7 +266,7 @@ abstract class UpdateByWindow {
      *
      * @param context the window context that will manage the results.
      */
-    boolean isWindowDirty(final UpdateByWindowBucketContext context) {
+    boolean isWindowBucketDirty(final UpdateByWindowBucketContext context) {
         return context.isDirty;
     }
 

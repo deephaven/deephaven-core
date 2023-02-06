@@ -201,7 +201,6 @@ public abstract class UpdateBy {
                 .toArray();
         inputCacheNeeded = cacheableSourceIndices.length > 0;
 
-        // noinspection unchecked
         inputSourceCaches = new SoftReference[inputSources.length];
 
         buckets =
@@ -317,7 +316,11 @@ public abstract class UpdateBy {
                 inputSourceReferenceCounts = null;
             }
 
+
             if (initialStep) {
+                // Set all windows as dirty and need computation
+                Arrays.fill(dirtyWindows, true);
+                // Create the proper JobScheduler for the following parallel tasks
                 if (OperationInitializationThreadPool.NUM_THREADS > 1
                         && !OperationInitializationThreadPool.isInitializationThread()) {
                     jobScheduler = new OperationInitializationPoolJobScheduler();
@@ -326,12 +329,19 @@ public abstract class UpdateBy {
                 }
                 waitForResult = new CompletableFuture<>();
             } else {
+                // Determine which windows need to be computed.
+                for (int winIdx = 0; winIdx < windows.length; winIdx++) {
+                    final int fWinIdx = winIdx;
+                    // look in the dirty buckets for the windows that need to be computed
+                    dirtyWindows[fWinIdx] = Arrays.stream(dirtyBuckets)
+                            .anyMatch(bucket -> windows[fWinIdx].isWindowBucketDirty(bucket.windowContexts[fWinIdx]));
+                }
+                // Create the proper JobScheduler for the following parallel tasks
                 if (UpdateGraphProcessor.DEFAULT.getUpdateThreads() > 1) {
                     jobScheduler = new UpdateGraphProcessorJobScheduler();
                 } else {
                     jobScheduler = ImmediateJobScheduler.INSTANCE;
                 }
-
                 waitForResult = null;
             }
         }
@@ -358,18 +368,6 @@ public abstract class UpdateBy {
          * {@code completedAction} when the work is complete
          */
         private void computeCachedColumnRowsets(final Runnable resumeAction) {
-            // Determine which windows need to be computed.
-            if (initialStep) {
-                Arrays.fill(dirtyWindows, true);
-            } else {
-                for (int winIdx = 0; winIdx < windows.length; winIdx++) {
-                    final int fWinIdx = winIdx;
-                    // look in the dirty buckets for the windows that need to be computed
-                    dirtyWindows[fWinIdx] = Arrays.stream(dirtyBuckets)
-                            .anyMatch(bucket -> windows[fWinIdx].isWindowDirty(bucket.windowContexts[fWinIdx]));
-                }
-            }
-
             // We have nothing to cache, so we can exit early.
             if (!inputCacheNeeded) {
                 resumeAction.run();
@@ -397,16 +395,18 @@ public abstract class UpdateBy {
                     (context, idx) -> {
                         final int srcIdx = cacheableSourceIndices[idx];
                         for (int winIdx = 0; winIdx < windows.length; winIdx++) {
-                            UpdateByWindow win = windows[winIdx];
-                            if (win.isSourceInUse(srcIdx)) {
+                            if (dirtyWindows[winIdx] && windows[winIdx].isSourceInUse(srcIdx)) {
+                                UpdateByWindow win = windows[winIdx];
                                 boolean srcNeeded = false;
                                 for (UpdateByBucketHelper bucket : dirtyBuckets) {
-                                    UpdateByWindow.UpdateByWindowBucketContext winCtx = bucket.windowContexts[winIdx];
+                                    UpdateByWindow.UpdateByWindowBucketContext winBucketCtx =
+                                            bucket.windowContexts[winIdx];
 
-                                    if (win.isWindowDirty(winCtx)) {
+                                    if (win.isWindowBucketDirty(winBucketCtx)) {
                                         WritableRowSet rows = inputSourceRowSets.get(srcIdx);
                                         if (rows == null) {
-                                            final WritableRowSet influencerCopy = win.getInfluencerRows(winCtx).copy();
+                                            final WritableRowSet influencerCopy =
+                                                    win.getInfluencerRows(winBucketCtx).copy();
                                             if (!inputSourceRowSets.compareAndSet(srcIdx, null, influencerCopy)) {
                                                 influencerCopy.close();
                                                 rows = inputSourceRowSets.get(srcIdx);
@@ -416,7 +416,7 @@ public abstract class UpdateBy {
                                             // if not null, then insert this window's rowset
                                             // noinspection SynchronizationOnLocalVariableOrMethodParameter
                                             synchronized (rows) {
-                                                rows.insert(win.getInfluencerRows(winCtx));
+                                                rows.insert(win.getInfluencerRows(winBucketCtx));
                                             }
                                         }
                                         // at least one dirty bucket will need this source
@@ -575,7 +575,7 @@ public abstract class UpdateBy {
                                 // using redirection)
                                 try (final WritableRowSet windowRowSet = changedRows.copy()) {
                                     for (UpdateByBucketHelper bucket : dirtyBuckets) {
-                                        if (win.isWindowDirty(bucket.windowContexts[winIdx])) {
+                                        if (win.isWindowBucketDirty(bucket.windowContexts[winIdx])) {
                                             windowRowSet.insert(win.getAffectedRows(bucket.windowContexts[winIdx]));
                                         }
                                     }
@@ -717,7 +717,7 @@ public abstract class UpdateBy {
                     UpdateByWindow win = windows[winIdx];
                     UpdateByWindow.UpdateByWindowBucketContext winCtx = bucket.windowContexts[winIdx];
 
-                    if (win.isWindowDirty(winCtx)) {
+                    if (win.isWindowBucketDirty(winCtx)) {
                         // add the window modified rows to this set
                         modifiedRowSet.insert(win.getAffectedRows(winCtx));
                         // add the modified output column sets to the downstream set
