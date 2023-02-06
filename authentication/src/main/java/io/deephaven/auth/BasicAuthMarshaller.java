@@ -65,12 +65,10 @@ public class BasicAuthMarshaller implements AuthenticationRequestHandler {
 
     @Override
     public void initialize(String targetUrl) {
-        log.warn().endl().endl().endl().endl().endl();
-        log.warn().append("================================================================================").endl();
-        log.warn().append("Basic Authentication is enabled.").endl();
-        log.warn().append("       Listening on ").append(targetUrl).endl();
-        log.warn().append("================================================================================").endl();
-        log.warn().endl().endl().endl().endl().endl();
+        log.info().append("================================================================================").endl();
+        log.info().append("Basic Authentication is enabled.").endl();
+        log.info().append("       Listening on ").append(targetUrl).endl();
+        log.info().append("================================================================================").endl();
     }
 
     @Override

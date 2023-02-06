@@ -28,10 +28,24 @@
         document.getElementById('log').append(msg, document.createElement('br'));
     }
 
-    document.getElementById('go').onclick = e => {
+    document.getElementById('go').onclick = async e => {
         var client = new dh.CoreClient(window.location.protocol + "//" + window.location.host);
-        // Check that we have some basic auth handler
-        //TODO
+        var authConfigValues = await client.getAuthConfigValues();
+        function getConfig(key) {
+            return authConfigValues.filter(config => config[0] === key).map(config => config[1])[0];
+        }
+        if (getConfig('AuthHandlers') == null) {
+            log('AuthHandlers wasn\'t provided by the server, assuming the basic handler is available.');
+        } else {
+            var authHandlers = getConfig('AuthHandlers').split(',').map(str => str.trim());
+            if (authHandlers.includes('io.deephaven.authentication.sql.BasicSqlAuthenticationHandler')) {
+                log('Server supports the example basic handler.')
+            } else {
+                log('Server does not have the expected example basic handler enabled, giving up');
+                log('Supported list: ' + authHandlers)
+                return;
+            }
+        }
 
         // pass the username and password to login
         var username = document.getElementById('username').value;

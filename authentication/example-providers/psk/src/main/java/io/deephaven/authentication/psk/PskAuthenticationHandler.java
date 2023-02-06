@@ -64,6 +64,7 @@ public class PskAuthenticationHandler implements AuthenticationRequestHandler {
 
     @Override
     public void initialize(String targetUrl) {
+        // Noisily log this, so the user can find the link to click easily
         logger.warn().endl().endl().endl().endl().endl();
         logger.warn().append("================================================================================").endl();
         logger.warn().append("Superuser access through pre-shared key is enabled - use ").append(PSK)

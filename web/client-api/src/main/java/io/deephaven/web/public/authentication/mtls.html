@@ -18,7 +18,7 @@
     See <a href="https://github.com/deephaven/deephaven-core/tree/main/server/jetty-app#configuration--ssl">https://github.com/deephaven/deephaven-core/tree/main/server/jetty-app#configuration--ssl</a> for instructions on passing a CA or trust store to a Deephaven server so it can validate users to be trusted. Note that the server must be configured to be accessed with SSL to work at all, otherwise the client's certificate will not be presented. If you are building the project from source, you can run <code>./gradlew :jetty-server-app:run -PdevMTLS</code> (likely with <code>-Pgroovy</code> unless you have a local venv with deephaven wheels installed as well).
 </p>
 <p>
-    The client code on this page will attempt to authenticate to the server with the client's certificate, logging messages below regarding progress.
+    The client code on this page will attempt to authenticate to the server with the client's certificate, logging messages below regarding progress. Click "Go" below to get started.
 </p>
 <button id="go">Go</button>
 <div id="log"></div>
@@ -35,13 +35,23 @@
             var client = new dh.CoreClient(window.location.protocol + "//" + window.location.host);
             var authConfigValues = await client.getAuthConfigValues();
             function getConfig(key) {
-                return authConfigValues.filter(config => config[0] === key).map(config => config[1])[0]
+                return authConfigValues.filter(config => config[0] === key).map(config => config[1])[0];
             }
-            var authHandlers = getConfig('AuthHandlers').split(',').map(str => str.trim());
-
+            if (getConfig('AuthHandlers') == null) {
+                log("AuthHandlers wasn't provided by the server, assuming mtls handler is available");
+            } else {
+                var authHandlers = getConfig('AuthHandlers').split(',').map(str => str.trim());
+                if (authHandlers.includes('io.deephaven.authentication.mtls.MTlsAuthenticationHandler')) {
+                    log('Server supports the example mTLS handler');
+                } else {
+                    log('Server does not have the expected sample mTLS enabled, giving up');
+                    log('Supported list: ' + authHandlers)
+                    return;
+                }
+            }
 
             // authenticate only using the type 'mtls', there is no token to be specified
-            client.login({type: 'mtls'}).then(
+            client.login({type: 'io.deephaven.authentication.mtls.MTlsAuthenticationHandler'}).then(
                 success => log("Success!"),
                 failure => log(failure)
             );

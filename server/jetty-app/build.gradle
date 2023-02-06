@@ -88,6 +88,10 @@ if (hasProperty('quiet')) {
 if (hasProperty('psk')) {
     authHandlers += ['io.deephaven.authentication.psk.PskAuthenticationHandler']
     dependencies.implementation(project(':authentication:example-providers:psk'))
+    if (project.getProperty('psk')) {
+        // if there is a non-empty value assigned, use that for the key
+        extraJvmArgs += ["-Dauthentication.psk=${getProperty('psk')}"]
+    }
 }
 if (hasProperty('sql-username-password')) {
     authHandlers += ['io.deephaven.authentication.sql.BasicSqlAuthenticationHandler']
