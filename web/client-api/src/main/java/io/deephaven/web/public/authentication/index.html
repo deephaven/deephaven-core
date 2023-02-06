@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <title>Deephaven JS API Authentication samples</title>
+    <script src="../dh-internal.js" type="text/javascript"></script>
+    <script src="../dh-core.js" type="text/javascript"></script>
 </head>
 <body>
 <p>
@@ -14,5 +16,35 @@
     <li><a href="mtls.html">Example demonstrating mTLS login</a></li>
     <li><a href="oidc.html">Example demonstrating OpenID Connect with Keycloak</a></li>
 </ul>
+
+<h3>Authentication details reported by the server:</h3>
+<table>
+    <thead>
+        <tr>
+            <td>Name</td>
+            <td>Value</td>
+        </tr>
+    </thead>
+    <tbody id="details"></tbody>
+</table>
+<script>
+    var client = new dh.CoreClient(window.location.protocol + "//" + window.location.host);
+    var details = document.getElementById('details');
+    client.getAuthConfigValues().then(values => {
+        for (var config of values) {
+            var tr = document.createElement('tr');
+            for (var str of config) {
+                var cell = document.createElement('td');
+                cell.textContent = str;
+                tr.append(cell);
+            }
+            details.append(tr);
+        }
+    }, error => {
+        details.parentElement.remove();
+        document.body.append("An error occurred loading the config values: ", error);
+        console.error(error);
+    });
+</script>
 </body>
 </html>
