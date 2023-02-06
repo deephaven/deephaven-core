@@ -19,7 +19,7 @@ public class MTlsAuthenticationHandler implements AuthenticationRequestHandler {
     @Override
     public String getAuthType() {
         // We still need a handshake to create the session, so return a name here that clients can specify. Alternatively, clients could still have an appropriate mtls cert, but use a different means to authenticate.
-        return "mtls";
+        return getClass().getName();
     }
 
     @Override

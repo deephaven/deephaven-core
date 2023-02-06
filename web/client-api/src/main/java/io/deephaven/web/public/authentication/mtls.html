@@ -26,14 +26,19 @@
     function log(msg) {
         document.getElementById('log').append(msg, document.createElement('br'));
     }
-    document.getElementById('go').onclick = event => {
+
+    document.getElementById('go').onclick = async event => {
         // First, check if the page was loaded using SSL
         if (window.location.protocol !== 'https:') {
             log("Error, page wasn't loaded using SSL. Is the server configured correctly, or does the URL need to be changed?")
         } else {
             var client = new dh.CoreClient(window.location.protocol + "//" + window.location.host);
-            // Next, check if the server reports the default mtls handler being enabled - if not, this isn't an error, we can try anyway
-            //TODO
+            var authConfigValues = await client.getAuthConfigValues();
+            function getConfig(key) {
+                return authConfigValues.filter(config => config[0] === key).map(config => config[1])[0]
+            }
+            var authHandlers = getConfig('AuthHandlers').split(',').map(str => str.trim());
+
 
             // authenticate only using the type 'mtls', there is no token to be specified
             client.login({type: 'mtls'}).then(

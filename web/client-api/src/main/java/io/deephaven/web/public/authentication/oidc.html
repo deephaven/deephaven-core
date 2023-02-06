@@ -4,35 +4,62 @@
     <title>Deephaven Web API OpenID Connect authentication</title>
     <script src="../dh-internal.js" type="text/javascript"></script>
     <script src="../dh-core.js" type="text/javascript"></script>
-
-    <script src="http://localhost:6060/js/keycloak.js"></script>
 </head>
 <body>
 <p>
-    This page tests login with KeyCloak, configured as an OpenID Connect server.
+    This page tests login with KeyCloak, configured as an OpenID Connect server. The example authentication handler uses
+    the <a href="https://www.pac4j.org/">Pac4J Java Security Framework</a> with custom integration to let it work with
+    Flight v2 authentication.
 </p>
-<label for="url">Keycloak URL</label><input id="url" type="text" width="200">
+<p>
+    The configuration is somewhat complex, mostly to ensure that the Deephaven client and server agree about which
+    server they will be connecting to and how.
+</p>
 <button id="go">Go</button>
 <div id="log"></div>
 <script>
     function log(msg) {
         document.getElementById('log').append(msg, document.createElement('br'));
     }
-    document.getElementById('go').onclick = event => {
+    document.getElementById('go').onclick = async event => {
         var client = new dh.CoreClient(window.location.protocol + "//" + window.location.host);
-        //TODO query for auth options
+        var authConfigValues = await client.getAuthConfigValues();
+        function getConfig(key) {
+            return authConfigValues.filter(config => config[0] === key).map(config => config[1])[0]
+        }
+        var authHandlers = getConfig('AuthHandlers').split(',').map(str => str.trim());
+        if (authHandlers == null) {
+            log('AuthHandlers wasn\'t provided by the server, assuming the oidc handler is available.');
+        } else {
+            authHandlers.shift();
+            if (authHandlers.includes('io.deephaven.authentication.oidc.OidcAuthenticationHandler')) {
+                log('Server supports the example OpenID Connect handler.')
+            } else {
+                log('Server does not have the expected example OidcAuthenticationHandler enabled, giving up');
+                log('Supported list: ' + authHandlers)
+                return;
+            }
+        }
+        var url = getConfig('authentication.oidc.keycloak.url');
+        if (url == null) {
+            log('Auth server URL not specified by server, can\'t continue');
+            return;
+        }
+        var realm = getConfig('authentication.oidc.keycloak.realm');
+        var clientId = getConfig('authentication.oidc.keycloak.clientId');
 
-        //TODO inject keycloak.js and wait for it
-
-        var keycloak = new Keycloak({
-            "realm": "deephaven_core",
-            "url": "http://localhost:6060",
-            "clientId":"deephaven",
+        // load the keycloak.js from the specify server, and wait for it to load
+        var scriptTag = document.createElement('script');
+        scriptTag.src = url + "/js/keycloak.js";
+        await new Promise((resolve, reject) => {
+            document.head.append(scriptTag);
+            scriptTag.onload = resolve;
+            scriptTag.onerror = reject;
         });
-        keycloak.init({
-            pkceMethod:'S256',
-            checkLoginIframe:false,
-        })
+        log('Keycloak JS adapter loaded');
+
+        var keycloak = new Keycloak({realm, url, clientId,});
+        keycloak.init({pkceMethod:'S256', checkLoginIframe:false,})
             .success(authenticated => {
                 log('Keycloak api authenticated')
                 if (authenticated) {

@@ -3,38 +3,55 @@ package io.deephaven.authentication.oidc;
 import io.deephaven.auth.AuthContext;
 import io.deephaven.auth.AuthenticationException;
 import io.deephaven.auth.AuthenticationRequestHandler;
+import io.deephaven.configuration.Configuration;
 import org.pac4j.core.client.Client;
 import org.pac4j.core.config.Config;
-import org.pac4j.core.context.Cookie;
 import org.pac4j.core.context.WebContext;
-import org.pac4j.core.context.session.SessionStore;
-import org.pac4j.core.credentials.Credentials;
 import org.pac4j.core.engine.DefaultSecurityLogic;
-import org.pac4j.core.engine.SecurityGrantedAccessAdapter;
-import org.pac4j.core.profile.ProfileManager;
-import org.pac4j.core.profile.UserProfile;
-import org.pac4j.http.client.direct.HeaderClient;
 import org.pac4j.oidc.client.KeycloakOidcClient;
 import org.pac4j.oidc.config.KeycloakOidcConfiguration;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Map;
 import java.util.Optional;
 
-import static io.deephaven.authentication.oidc.FlightTokenClient.FLIGHT_TOKEN_ATTRIBUTE_NAME;
-
 /**
- * Functionally behaves as a pac4j DirectClient, but can lean on a profile creator as BearerClient does
+ * Functionally behaves as a pac4j DirectClient, but can lean on a profile creator as HeaderClient does.
+ *
+ * At this time, this is specific to Keycloak, as it is an easy IDP to quickly set up, and it can delegate to
+ * other IDPs.
  */
 public class OidcAuthenticationHandler implements AuthenticationRequestHandler {
-    private Config cfg;
+    // Technically a general OIDC client only needs a discovery url, but this is helpful not only for
+    private static final String KEYCLOAK_BASE_URL = Configuration.getInstance().getProperty("authentication.oidc.keycloak.url");
+    private static final String KEYCLOAK_REALM = Configuration.getInstance().getProperty("authentication.oidc.keycloak.realm");
+    private static final String KEYCLOAK_CLIENT_ID = Configuration.getInstance().getProperty("authentication.oidc.keycloak.clientId");
+
+    private Config pac4jConfig;
+
+    @Override
+    public void initialize(String targetUrl) {
+        // Configure Pac4j's keycloak client. Note that these actually just a plain openid configuration and client, with some simplified setup
+        KeycloakOidcConfiguration config = new KeycloakOidcConfiguration();
+        config.setClientId(KEYCLOAK_CLIENT_ID);
+        config.setRealm(KEYCLOAK_REALM);
+        config.setBaseUri(KEYCLOAK_BASE_URL);
+        config.setScope("openid email profile");
+
+        KeycloakOidcClient client = new KeycloakOidcClient(config);
+        client.setName("deephaven-app-client");
+        client.setConfiguration(config);
+        client.setCallbackUrl("unused");
+        client.init();
+
+        FlightTokenClient flightTokenClient = new FlightTokenClient(client.getProfileCreator());
+
+        pac4jConfig = new Config("/unused", flightTokenClient);
+    }
 
     @Override
     public String getAuthType() {
-        return OidcAuthenticationHandler.class.getName();
+        return getClass().getName();
     }
 
     @Override
@@ -50,143 +67,21 @@ public class OidcAuthenticationHandler implements AuthenticationRequestHandler {
     private Optional<AuthContext> validate(String stringToken) {
         DefaultSecurityLogic logic = new DefaultSecurityLogic();
 
-        logic.setProfileManagerFactory(DeephavenProfileManager::new);
-        WebContext context = new WebContext() {
-            @Override
-            public Optional<String> getRequestParameter(String name) {
-                return Optional.empty();
-            }
-
-            @Override
-            public Map<String, String[]> getRequestParameters() {
-                return Collections.emptyMap();
-            }
-
-            @Override
-            public Optional getRequestAttribute(String name) {
-                if (name.equals(FLIGHT_TOKEN_ATTRIBUTE_NAME)) {
-                    return Optional.of(stringToken);
-                }
-                return Optional.empty();
-            }
-
-            @Override
-            public void setRequestAttribute(String name, Object value) {
-
-            }
-
-            @Override
-            public Optional<String> getRequestHeader(String name) {
-                return Optional.empty();
-            }
-
-            @Override
-            public String getRequestMethod() {
-                return null;
-            }
-
-            @Override
-            public String getRemoteAddr() {
-                return null;
-            }
-
-            @Override
-            public void setResponseHeader(String name, String value) {
-
-            }
-
-            @Override
-            public Optional<String> getResponseHeader(String name) {
-                return Optional.empty();
-            }
-
-            @Override
-            public void setResponseContentType(String content) {
-
-            }
-
-            @Override
-            public String getServerName() {
-                return null;
-            }
-
-            @Override
-            public int getServerPort() {
-                return 0;
-            }
-
-            @Override
-            public String getScheme() {
-                return null;
-            }
-
-            @Override
-            public boolean isSecure() {
-                return false;
-            }
-
-            @Override
-            public String getFullRequestURL() {
-                return null;
-            }
-
-            @Override
-            public Collection<Cookie> getRequestCookies() {
-                return Collections.emptySet();
-            }
-
-            @Override
-            public void addResponseCookie(Cookie cookie) {
-
-            }
-
-            @Override
-            public String getPath() {
-                return null;
-            }
-        };
-        SessionStore sessionStore = null;
-//        logic.perform(context, sessionStore, cfg, new AccessGrantedOutcome(), (action, ctx) -> null, "", "", "", false);
+//        logic.setProfileManagerFactory(DeephavenProfileManager::new);
+        WebContext context = new FlightTokenWebContext(stringToken);
 
 
-        Client client = cfg.getClients().getClients().get(0);
-        return client.getCredentials(context, sessionStore)
-                .map(credentials -> client.getUserProfile(credentials, context, sessionStore))
+        // Inlined the contents of DefaultSecurityLogic that we care about, as we only have one direct client to try
+        Client client = pac4jConfig.getClients().getClients().get(0);
+        return client.getCredentials(context, null)
+                .map(credentials -> client.getUserProfile(credentials, context, null))
                 .map(profile -> new AuthContext.SuperUser());
     }
 
-    public static class AccessGrantedOutcome implements SecurityGrantedAccessAdapter {
-
-        @Override
-        public Object adapt(WebContext context, SessionStore sessionStore, Collection<UserProfile> profiles, Object... parameters) throws Exception {
-            return null;
-        }
-    }
-
-    public static class DeephavenProfileManager extends ProfileManager {
-
-        public DeephavenProfileManager(WebContext context, SessionStore sessionStore) {
-            super(context, sessionStore);
-        }
-
-    }
-
-    @Override
-    public void initialize(String targetUrl) {
-        KeycloakOidcConfiguration config = new KeycloakOidcConfiguration();
-        config.setClientId("app");
-        config.setRealm("deephaven_core");
-        config.setBaseUri("http://localhost:6060"); // TODO parameterize this
-        config.setScope("openid email profile");
-
-        KeycloakOidcClient client = new KeycloakOidcClient(config);
-        client.setName("recipe-app-client");
-        client.setConfiguration(config);
-        client.setCallbackUrl("unused");
-        client.init();
-
-        FlightTokenClient flightTokenClient = new FlightTokenClient(client.getProfileCreator());
-
-        cfg = new Config("/unused", flightTokenClient);
-    }
+//    public static class DeephavenProfileManager extends ProfileManager {
+//        public DeephavenProfileManager(WebContext context, SessionStore sessionStore) {
+//            super(context, sessionStore);
+//        }
+//
+//    }
 }
