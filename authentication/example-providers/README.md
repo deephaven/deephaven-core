@@ -9,7 +9,7 @@ conflicts to manage.
 Allows a key (and user details) to be set via configuration, or a fresh one will be configured on startup. The login
 link and details will be logged on startup. 
 
-### [mTLS](mTLS)
+### [Mutual TLS (mTLS)](mTLS)
 With a Mutual-TLS certificate on the client signed by an appropriate trusted Certificate Authority, the user's details
 can be read from the certificate and used on the server.
 
