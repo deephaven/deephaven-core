@@ -231,7 +231,7 @@ abstract class UpdateByWindow {
     void assignInputSources(final UpdateByWindowBucketContext context, final ColumnSource<?>[] inputSources) {
         context.inputSources = inputSources;
         context.inputSourceGetContexts = new ChunkSource.GetContext[inputSources.length];
-        context.inputSourceChunks = new WritableChunk[inputSources.length];
+        context.inputSourceChunks = new Chunk[inputSources.length];
 
         for (int srcIdx : context.dirtySourceIndices) {
             context.inputSourceGetContexts[srcIdx] =
