@@ -40,14 +40,14 @@ class SubscribeToLogs extends SessionExampleBase {
 
     @Override
     protected void execute(SessionFactory sessionFactory) throws Exception {
-        try (final Session _session = sessionFactory.newSession()) {
+        try (final Session session = sessionFactory.newSession()) {
             final Builder builder = LogSubscriptionRequest.newBuilder();
             if (levels != null) {
                 for (String level : levels) {
                     builder.addLevels(level);
                 }
             }
-            final Iterator<LogSubscriptionData> logs = sessionFactory
+            final Iterator<LogSubscriptionData> logs = session
                     .channel()
                     .consoleBlocking()
                     .subscribeToLogs(builder.build());

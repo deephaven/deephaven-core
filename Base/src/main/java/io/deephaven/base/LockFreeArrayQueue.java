@@ -57,6 +57,23 @@ public class LockFreeArrayQueue<T> implements ConcurrentQueue<T>, ProducerConsum
         return 1 << LOG2CAP_MAX;
     }
 
+    /**
+     * Creates a lock free array queue of at least capacity {@code desiredSize}.
+     *
+     * @param desiredSize the desired size
+     * @return the queue with at least {@code desiredSize} capacity
+     * @param <T> the object type
+     */
+    public static <T> LockFreeArrayQueue<T> of(int desiredSize) {
+        final int maxAllowedCapacity = getMaxAllowedCapacity();
+        if (desiredSize > maxAllowedCapacity) {
+            throw new IllegalArgumentException(
+                    String.format("desiredSize > maxAllowedCapacity: %d > %d", desiredSize, maxAllowedCapacity));
+        }
+        final int log2cap = MathUtil.ceilLog2(desiredSize);
+        return new LockFreeArrayQueue<>(Math.max(LOG2CAP_MIN, log2cap));
+    }
+
     // Basic characteristics:
     // a slot that contains NULL0 or NULL1 is empty, otherwise it is occupied
     // ((head + 1) % cap) is the next slot to be dequeued

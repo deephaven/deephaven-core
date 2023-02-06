@@ -15,14 +15,8 @@ public abstract class CumProdSpec extends UpdateBySpecBase {
 
     @Override
     public final boolean applicableTo(Class<?> inputType) {
-        return
-        // is primitive numeric?
-        inputType.equals(double.class) || inputType.equals(float.class)
-                || inputType.equals(int.class) || inputType.equals(long.class) || inputType.equals(short.class)
-                || inputType.equals(byte.class)
-
-                // is boxed numeric?
-                || Number.class.isAssignableFrom(inputType);
+        // is primitive or boxed numeric?
+        return applicableToNumeric(inputType);
     }
 
     @Override

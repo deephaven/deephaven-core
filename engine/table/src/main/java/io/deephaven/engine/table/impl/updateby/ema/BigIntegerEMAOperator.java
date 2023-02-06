@@ -1,12 +1,13 @@
 package io.deephaven.engine.table.impl.updateby.ema;
 
 import io.deephaven.api.updateby.OperationControl;
-import io.deephaven.chunk.ObjectChunk;
-import io.deephaven.chunk.WritableObjectChunk;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchPair;
-import io.deephaven.engine.table.impl.updateby.internal.LongRecordingUpdateByOperator;
+import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -17,94 +18,109 @@ import java.math.BigInteger;
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 public class BigIntegerEMAOperator extends BigNumberEMAOperator<BigInteger> {
+    public class Context extends BigNumberEMAOperator<BigInteger>.Context {
+        protected Context(final int chunkSize, final int chunkCount) {
+            super(chunkSize, chunkCount);
+        }
+
+        @Override
+        public void accumulateCumulative(RowSequence inputKeys,
+                                         Chunk<? extends Values>[] valueChunkArr,
+                                         LongChunk<? extends Values> tsChunk,
+                                         int len) {
+            setValuesChunk(valueChunkArr[0]);
+
+            // chunk processing
+            if (timestampColumnName == null) {
+                // compute with ticks
+                for (int ii = 0; ii < len; ii++) {
+                    // read the value from the values chunk
+                    final BigInteger input = objectValueChunk.get(ii);
+                    if (input == null) {
+                        handleBadData(this, true);
+                    } else {
+                        final BigDecimal decimalInput = new BigDecimal(input, control.bigValueContextOrDefault());
+                        if (curVal == null) {
+                            curVal = decimalInput;
+                        } else {
+                            curVal = curVal.multiply(opAlpha, control.bigValueContextOrDefault())
+                                    .add(decimalInput.multiply(opOneMinusAlpha, control.bigValueContextOrDefault()),
+                                            control.bigValueContextOrDefault());
+                        }
+                    }
+                    outputValues.set(ii, curVal);
+                }
+            } else {
+                // compute with time
+                for (int ii = 0; ii < len; ii++) {
+                    // read the value from the values chunk
+                    final BigInteger input = objectValueChunk.get(ii);
+                    final long timestamp = tsChunk.get(ii);
+                    final boolean isNull = input == null;
+                    final boolean isNullTime = timestamp == NULL_LONG;
+                    if (isNull) {
+                        handleBadData(this, true);
+                    } else if (isNullTime) {
+                        // no change to curVal and lastStamp
+                    } else {
+                        final BigDecimal decimalInput = new BigDecimal(input, control.bigValueContextOrDefault());
+                        if (curVal == null) {
+                            curVal = decimalInput;
+                            lastStamp = timestamp;
+                        } else {
+                            final long dt = timestamp - lastStamp;
+                            if (dt != 0) {
+                                // alpha is dynamic based on time, but only recalculated when needed
+                                if (dt != lastDt) {
+                                    alpha = computeAlpha(-dt, reverseWindowScaleUnits);
+                                    oneMinusAlpha = computeOneMinusAlpha(alpha);
+                                    lastDt = dt;
+                                }
+                                curVal = curVal.multiply(alpha, control.bigValueContextOrDefault())
+                                        .add(decimalInput.multiply(oneMinusAlpha, control.bigValueContextOrDefault()),
+                                                control.bigValueContextOrDefault());
+                                lastStamp = timestamp;
+                            }
+                        }
+                    }
+                    outputValues.set(ii, curVal);
+                }
+            }
+
+            // chunk output to column
+            writeToOutputColumn(inputKeys);
+        }
+
+        @Override
+        public void push(long key, int pos, int count) {
+            throw new IllegalStateException("EMAOperator#push() is not used");
+        }
+    }
+    
     /**
-     * An operator that computes an EMA from an int column using an exponential decay function.
+     * An operator that computes an EMA from a BigInteger column using an exponential decay function.
      *
-     * @param pair the {@link MatchPair} that defines the input/output for this operation
-     * @param affectingColumns the names of the columns that affect this ema
-     * @param control        defines how to handle {@code null} input values.
-     * @param timeRecorder   an optional recorder for a timestamp column.  If this is null, it will be assumed time is
-     *                       measured in integer ticks.
-     * @param timeScaleUnits the smoothing window for the EMA. If no {@code timeRecorder} is provided, this is measured
-     *                       in ticks, otherwise it is measured in nanoseconds
-     * @param valueSource the input column source.  Used when determining reset positions for reprocessing
+     * @param pair                the {@link MatchPair} that defines the input/output for this operation
+     * @param affectingColumns    the names of the columns that affect this ema
+     * @param rowRedirection      the {@link RowRedirection} to use for dense output sources
+     * @param control             defines how to handle {@code null} input values.
+     * @param timestampColumnName the name of the column containing timestamps for time-based calcuations
+     * @param windowScaleUnits      the smoothing window for the EMA. If no {@code timestampColumnName} is provided, this is measured in ticks, otherwise it is measured in nanoseconds
+     * @param valueSource         a reference to the input column source for this operation
      */
     public BigIntegerEMAOperator(@NotNull final MatchPair pair,
                                  @NotNull final String[] affectingColumns,
+                                 @Nullable final RowRedirection rowRedirection,
                                  @NotNull final OperationControl control,
-                                 @Nullable final LongRecordingUpdateByOperator timeRecorder,
-                                 final long timeScaleUnits,
-                                 @NotNull final ColumnSource<BigInteger> valueSource,
-                                 @Nullable final RowRedirection rowRedirection
-                                 // region extra-constructor-args
-                                 // endregion extra-constructor-args
-                                 ) {
-        super(pair, affectingColumns, control, timeRecorder, timeScaleUnits, valueSource, rowRedirection);
-        // region constructor
-        // endregion constructor
+                                 @Nullable final String timestampColumnName,
+                                 final long windowScaleUnits,
+                                 final ColumnSource<?> valueSource) {
+        super(pair, affectingColumns, rowRedirection, control, timestampColumnName, windowScaleUnits, valueSource);
     }
 
+    @NotNull
     @Override
-    void computeWithTicks(final EmaContext ctx,
-                          final ObjectChunk<BigInteger, Values> valueChunk,
-                          final int chunkStart,
-                          final int chunkEnd) {
-        final WritableObjectChunk<BigDecimal, Values> localOutputChunk = ctx.outputValues.get();
-        for (int ii = chunkStart; ii < chunkEnd; ii++) {
-            final BigInteger input = valueChunk.get(ii);
-            if(input == null) {
-                handleBadData(ctx, true, false);
-            } else {
-                final BigDecimal decimalInput = new BigDecimal(input, control.bigValueContextOrDefault());
-                if(ctx.curVal == null) {
-                    ctx.curVal = decimalInput;
-                } else {
-                    ctx.curVal = ctx.curVal.multiply(ctx.alpha, control.bigValueContextOrDefault())
-                            .add(decimalInput.multiply(
-                                            BigDecimal.ONE.subtract(ctx.alpha, control.bigValueContextOrDefault()),
-                                            control.bigValueContextOrDefault()),
-                                    control.bigValueContextOrDefault());
-                }
-            }
-
-            localOutputChunk.set(ii, ctx.curVal);
-        }
-    }
-
-    @Override
-    void computeWithTime(final EmaContext ctx,
-                         final ObjectChunk<BigInteger, Values> valueChunk,
-                         final int chunkStart,
-                         final int chunkEnd) {
-        final WritableObjectChunk<BigDecimal, Values> localOutputChunk = ctx.outputValues.get();
-        for (int ii = chunkStart; ii < chunkEnd; ii++) {
-            final BigInteger input = valueChunk.get(ii);
-            //noinspection ConstantConditions
-            final long timestamp = timeRecorder.getLong(ii);
-            final boolean isNull = input == null;
-            final boolean isNullTime = timestamp == NULL_LONG;
-            if(isNull || isNullTime) {
-                handleBadData(ctx, isNull, isNullTime);
-            } else {
-                final BigDecimal decimalInput = new BigDecimal(input, control.bigValueContextOrDefault());
-                if(ctx.curVal == null) {
-                    ctx.curVal = decimalInput;
-                    ctx.lastStamp = timestamp;
-                } else {
-                    final long dt = timestamp - ctx.lastStamp;
-                    if(dt <= 0) {
-                        handleBadTime(ctx, dt);
-                    } else {
-                        ctx.alpha = BigDecimal.valueOf(Math.exp(-dt / timeScaleUnits));
-                        ctx.curVal = ctx.curVal.multiply(ctx.alpha, control.bigValueContextOrDefault())
-                                .add(decimalInput.multiply(BigDecimal.ONE.subtract(ctx.alpha, control.bigValueContextOrDefault()), control.bigValueContextOrDefault()),
-                                        control.bigValueContextOrDefault());
-                        ctx.lastStamp = timestamp;
-                    }
-                }
-            }
-
-            localOutputChunk.set(ii, ctx.curVal);
-        }
+    public UpdateByOperator.Context makeUpdateContext(final int chunkSize, final int chunkCount) {
+        return new Context(chunkSize, chunkCount);
     }
 }

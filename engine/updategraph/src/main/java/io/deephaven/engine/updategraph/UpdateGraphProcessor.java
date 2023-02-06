@@ -33,6 +33,9 @@ import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedQueue;
 import io.deephaven.util.locks.AwareFunctionalLock;
 import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.util.thread.NamingThreadFactory;
+import io.deephaven.util.thread.ThreadDump;
+import io.deephaven.util.thread.ThreadInitializationFactory;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -262,17 +265,14 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
         notificationProcessor = makeNotificationProcessor();
         jvmIntrospectionContext = new JvmIntrospectionContext();
 
-        refreshThread = new Thread("UpdateGraphProcessor." + name() + ".refreshThread") {
-            @Override
-            public void run() {
-                configureRefreshThread();
-                // noinspection InfiniteLoopStatement
-                while (true) {
-                    Assert.eqFalse(ALLOW_UNIT_TEST_MODE, "ALLOW_UNIT_TEST_MODE");
-                    refreshTablesAndFlushNotifications();
-                }
+        refreshThread = new Thread(ThreadInitializationFactory.wrapRunnable(() -> {
+            configureRefreshThread();
+            // noinspection InfiniteLoopStatement
+            while (true) {
+                Assert.eqFalse(ALLOW_UNIT_TEST_MODE, "ALLOW_UNIT_TEST_MODE");
+                refreshTablesAndFlushNotifications();
             }
-        };
+        }), "UpdateGraphProcessor." + name() + ".refreshThread");
         refreshThread.setDaemon(true);
 
         final int updateThreads =
@@ -1800,10 +1800,10 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
 
         @Override
         public Thread newThread(@NotNull final Runnable r) {
-            return super.newThread(() -> {
+            return super.newThread(ThreadInitializationFactory.wrapRunnable(() -> {
                 configureRefreshThread();
                 r.run();
-            });
+            }));
         }
     }
 
@@ -1835,7 +1835,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
     private class UnitTestRefreshThreadFactory extends NamingThreadFactory {
 
         private UnitTestRefreshThreadFactory() {
-            super(UpdateGraphProcessor.class, "unitTestRefresh", true);
+            super(UpdateGraphProcessor.class, "unitTestRefresh");
         }
 
         @Override

@@ -12,6 +12,8 @@ import io.deephaven.uri.DeephavenUri;
 import io.grpc.ManagedChannel;
 import picocli.CommandLine.Option;
 
+import java.util.Map;
+
 public class ConnectOptions {
 
     public static final String DEFAULT_HOST = "localhost";
@@ -46,6 +48,9 @@ public class ConnectOptions {
     @Option(names = {"--ssl"}, description = "The optional ssl config file.", converter = SSLConverter.class)
     SSLConfig ssl;
 
+    @Option(names = {"--header"})
+    Map<String, String> headers;
+
     private ClientConfig config() {
         final Builder builder = ClientConfig.builder().target(target);
         if (userAgent != null) {
@@ -56,6 +61,9 @@ public class ConnectOptions {
         }
         if (ssl != null) {
             builder.ssl(ssl);
+        }
+        if (headers != null) {
+            builder.putAllExtraHeaders(headers);
         }
         return builder.build();
     }

@@ -5,26 +5,53 @@ import io.deephaven.api.updateby.BadDataBehavior;
 import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.UpdateErrorReporter;
+import io.deephaven.engine.table.impl.util.AsyncClientErrorNotifier;
 import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.table.impl.TableDefaults;
 import io.deephaven.api.updateby.UpdateByControl;
+import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.generator.TestDataGenerator;
 import io.deephaven.engine.testutil.generator.SortedDateTimeGenerator;
+import io.deephaven.engine.updategraph.TerminalNotification;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.test.types.ParallelTest;
+import io.deephaven.engine.util.TableDiff;
+import io.deephaven.engine.util.TableTools;
+import io.deephaven.test.types.OutOfBandTest;
+import io.deephaven.util.ExceptionDetails;
+import junit.framework.TestCase;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
+import java.time.Duration;
 import java.util.*;
 
 import static io.deephaven.engine.testutil.GenerateTableUpdates.generateAppends;
+import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.simulateShiftAwareStep;
-import static io.deephaven.engine.testutil.TstUtils.validate;
+import static io.deephaven.engine.util.TableTools.col;
+import static io.deephaven.engine.util.TableTools.intCol;
 import static io.deephaven.time.DateTimeUtils.MINUTE;
 import static io.deephaven.time.DateTimeUtils.convertDateTime;
 
-@Category(ParallelTest.class)
-public class TestUpdateByGeneral extends BaseUpdateByTest {
+@Category(OutOfBandTest.class)
+public class TestUpdateByGeneral extends BaseUpdateByTest implements UpdateErrorReporter {
+
+    private UpdateErrorReporter oldReporter;
+
+    @Before
+    public void setUp() throws Exception {
+        oldReporter = AsyncClientErrorNotifier.setReporter(this);
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        AsyncClientErrorNotifier.setReporter(oldReporter);
+        oldReporter = null;
+    }
 
     @Test
     public void testMixedAppendOnlyZeroKey() {
@@ -79,8 +106,6 @@ public class TestUpdateByGeneral extends BaseUpdateByTest {
 
         final EvalNugget[] nuggets = new EvalNugget[] {
                 new EvalNugget() {
-                    Table base;
-
                     @Override
                     protected Table e() {
                         TableDefaults base = result.t;
@@ -91,6 +116,25 @@ public class TestUpdateByGeneral extends BaseUpdateByTest {
                         final String[] columnNamesArray = base.getDefinition().getColumnNamesArray();
                         final Collection<? extends UpdateByOperation> clauses = List.of(
                                 UpdateByOperation.Fill(),
+                                UpdateByOperation.RollingSum(100, 0,
+                                        makeOpColNames(columnNamesArray, "_rollsumticksrev", "Sym", "ts", "boolCol")),
+                                UpdateByOperation.RollingSum("ts", Duration.ofMinutes(15), Duration.ofMinutes(0),
+                                        makeOpColNames(columnNamesArray, "_rollsumtimerev", "Sym", "ts", "boolCol")),
+                                UpdateByOperation.RollingSum(0, 100,
+                                        makeOpColNames(columnNamesArray, "_rollsumticksfwd", "Sym", "ts", "boolCol")),
+                                UpdateByOperation.RollingSum(-50, 100,
+                                        makeOpColNames(columnNamesArray, "_rollsumticksfwdex", "Sym", "ts", "boolCol")),
+                                UpdateByOperation.RollingSum("ts", Duration.ofMinutes(0), Duration.ofMinutes(15),
+                                        makeOpColNames(columnNamesArray, "_rollsumtimefwd", "Sym", "ts", "boolCol")),
+                                UpdateByOperation.RollingSum("ts", Duration.ofMinutes(-10), Duration.ofMinutes(15),
+                                        makeOpColNames(columnNamesArray, "_rollsumtimefwdex", "Sym", "ts", "boolCol")),
+                                UpdateByOperation.RollingSum(50, 50,
+                                        makeOpColNames(columnNamesArray, "_rollsumticksfwdrev", "Sym", "ts",
+                                                "boolCol")),
+                                UpdateByOperation.RollingSum("ts", Duration.ofMinutes(5), Duration.ofMinutes(5),
+                                        makeOpColNames(columnNamesArray, "_rollsumtimebothfwdrev", "Sym", "ts",
+                                                "boolCol")),
+
                                 UpdateByOperation.Ema(skipControl, "ts", 10 * MINUTE,
                                         makeOpColNames(columnNamesArray, "_ema", "Sym", "ts", "boolCol")),
                                 UpdateByOperation.CumSum(makeOpColNames(columnNamesArray, "_sum", "Sym", "ts")),
@@ -130,5 +174,97 @@ public class TestUpdateByGeneral extends BaseUpdateByTest {
                 .filter(cn -> !omissions.contains(cn))
                 .map(cn -> cn + suffix + "=" + cn)
                 .toArray(String[]::new);
+    }
+
+    @Test
+    public void testNewBuckets() {
+        final QueryTable table = TstUtils.testRefreshingTable(
+                i(2, 4, 6).toTracking(),
+                col("Key", "A", "B", "A"),
+                intCol("Int", 2, 4, 6));
+        final QueryTable result = (QueryTable) table.updateBy(
+                List.of(UpdateByOperation.Fill("Filled=Int"), UpdateByOperation.RollingSum(2, "Sum=Int")), "Key");
+
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            TstUtils.addToTable(table, i(8), col("Key", "B"), intCol("Int", 8)); // Add to "B" bucket
+            table.notifyListeners(i(8), i(), i());
+        });
+
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            TstUtils.addToTable(table, i(9), col("Key", "C"), intCol("Int", 10)); // New "C" bucket in isolation
+            table.notifyListeners(i(9), i(), i());
+        });
+
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            TstUtils.addToTable(table, i(8), col("Key", "C"), intCol("Int", 11)); // Row from "B" bucket to "C" bucket
+            table.notifyListeners(i(), i(), i(8));
+        });
+
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            TstUtils.addToTable(table, i(10, 11), col("Key", "D", "C"), intCol("Int", 10, 11)); // New "D" bucket
+            table.notifyListeners(i(10, 11), i(), i());
+        });
+
+        TableTools.show(result);
+    }
+
+    @Test
+    public void testInMemoryColumn() {
+        final CreateResult result = createTestTable(1000, true, false, false, 0xFEEDFACE,
+                new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
+                        convertDateTime("2022-03-09T09:00:00.000 NY"),
+                        convertDateTime("2022-03-09T16:30:00.000 NY"))});
+
+        final OperationControl skipControl = OperationControl.builder()
+                .onNullValue(BadDataBehavior.SKIP)
+                .onNanValue(BadDataBehavior.SKIP).build();
+
+        final String[] columnNamesArray = result.t.getDefinition().getColumnNamesArray();
+        final Collection<? extends UpdateByOperation> clauses = List.of(
+                UpdateByOperation.Fill(),
+                UpdateByOperation.RollingSum(100, 0,
+                        makeOpColNames(columnNamesArray, "_rollsumticksrev", "Sym", "ts", "boolCol")),
+                UpdateByOperation.RollingSum("ts", Duration.ofMinutes(15), Duration.ofMinutes(0),
+                        makeOpColNames(columnNamesArray, "_rollsumtimerev", "Sym", "ts", "boolCol")),
+                UpdateByOperation.RollingSum(0, 100,
+                        makeOpColNames(columnNamesArray, "_rollsumticksfwd", "Sym", "ts", "boolCol")),
+                UpdateByOperation.RollingSum(-50, 100,
+                        makeOpColNames(columnNamesArray, "_rollsumticksfwdex", "Sym", "ts", "boolCol")),
+                UpdateByOperation.RollingSum("ts", Duration.ofMinutes(0), Duration.ofMinutes(15),
+                        makeOpColNames(columnNamesArray, "_rollsumtimefwd", "Sym", "ts", "boolCol")),
+                UpdateByOperation.RollingSum("ts", Duration.ofMinutes(-10), Duration.ofMinutes(15),
+                        makeOpColNames(columnNamesArray, "_rollsumtimefwdex", "Sym", "ts", "boolCol")),
+                UpdateByOperation.RollingSum(50, 50,
+                        makeOpColNames(columnNamesArray, "_rollsumticksfwdrev", "Sym", "ts",
+                                "boolCol")),
+                UpdateByOperation.RollingSum("ts", Duration.ofMinutes(5), Duration.ofMinutes(5),
+                        makeOpColNames(columnNamesArray, "_rollsumtimebothfwdrev", "Sym", "ts",
+                                "boolCol")),
+
+                UpdateByOperation.Ema(skipControl, "ts", 10 * MINUTE,
+                        makeOpColNames(columnNamesArray, "_ema", "Sym", "ts", "boolCol")),
+                UpdateByOperation.CumSum(makeOpColNames(columnNamesArray, "_sum", "Sym", "ts")),
+                UpdateByOperation.CumMin(makeOpColNames(columnNamesArray, "_min", "boolCol")),
+                UpdateByOperation.CumMax(makeOpColNames(columnNamesArray, "_max", "boolCol")),
+                UpdateByOperation
+                        .CumProd(makeOpColNames(columnNamesArray, "_prod", "Sym", "ts", "boolCol")));
+        final UpdateByControl control = UpdateByControl.builder().useRedirection(false).build();
+
+        final Table table = result.t.updateBy(control, clauses, ColumnName.from("Sym"));
+        final Table memoryTable = result.t.select().updateBy(control, clauses, ColumnName.from("Sym"));
+
+        TstUtils.assertTableEquals("msg", table, memoryTable, TableDiff.DiffItems.DoublesExact);
+    }
+
+
+    @Override
+    public void reportUpdateError(Throwable t) {
+        UpdateGraphProcessor.DEFAULT.addNotification(new TerminalNotification() {
+            @Override
+            public void run() {
+                System.err.println("Received error notification: " + new ExceptionDetails(t).getFullStackTrace());
+                TestCase.fail(t.getMessage());
+            }
+        });
     }
 }
