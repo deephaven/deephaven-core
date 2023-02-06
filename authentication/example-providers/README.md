@@ -17,6 +17,7 @@ can be read from the certificate and used on the server.
 Assumes a PostgreSQL database will be running (and JDBC connection string provided in configuration) with a table
 for users and their credentials, along with a table for allowed roles.
 
-### [SAML 2.0](saml)
-Given appropriate configuration for an existing Identity Provider (IDP), Deephaven behaves as a Service Provider (SP)
-and lets the the user authenticate to gain access to the system.
+### [OpenID Connect via Keycloak](oidc)
+Delegates authentication to an OpenID Connect server (in this example using [Keycloak](https://keycloak.org/)), with
+the client first redirecting the user to authenticate and obtain a token, and the client validating that token for use
+in Deephaven.

@@ -353,8 +353,6 @@ include ':authorization'
 include(':authentication:example-providers')
 include(':authentication:example-providers:mtls')
 include(':authentication:example-providers:psk')
-include(':authentication:example-providers:saml')
-include(':authentication:example-providers:oauth')
 include(':authentication:example-providers:sql-username-password')
 include(':authentication:example-providers:oidc')
 
