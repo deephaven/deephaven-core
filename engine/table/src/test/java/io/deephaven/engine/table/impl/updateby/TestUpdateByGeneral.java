@@ -16,6 +16,7 @@ import io.deephaven.engine.testutil.generator.TestDataGenerator;
 import io.deephaven.engine.testutil.generator.SortedDateTimeGenerator;
 import io.deephaven.engine.updategraph.TerminalNotification;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.util.TableDiff;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.ExceptionDetails;
@@ -206,6 +207,55 @@ public class TestUpdateByGeneral extends BaseUpdateByTest implements UpdateError
 
         TableTools.show(result);
     }
+
+    @Test
+    public void testInMemoryColumn() {
+        final CreateResult result = createTestTable(1000, true, false, false, 0xFEEDFACE,
+                new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
+                        convertDateTime("2022-03-09T09:00:00.000 NY"),
+                        convertDateTime("2022-03-09T16:30:00.000 NY"))});
+
+        final OperationControl skipControl = OperationControl.builder()
+                .onNullValue(BadDataBehavior.SKIP)
+                .onNanValue(BadDataBehavior.SKIP).build();
+
+        final String[] columnNamesArray = result.t.getDefinition().getColumnNamesArray();
+        final Collection<? extends UpdateByOperation> clauses = List.of(
+                UpdateByOperation.Fill(),
+                UpdateByOperation.RollingSum(100, 0,
+                        makeOpColNames(columnNamesArray, "_rollsumticksrev", "Sym", "ts", "boolCol")),
+                UpdateByOperation.RollingSum("ts", Duration.ofMinutes(15), Duration.ofMinutes(0),
+                        makeOpColNames(columnNamesArray, "_rollsumtimerev", "Sym", "ts", "boolCol")),
+                UpdateByOperation.RollingSum(0, 100,
+                        makeOpColNames(columnNamesArray, "_rollsumticksfwd", "Sym", "ts", "boolCol")),
+                UpdateByOperation.RollingSum(-50, 100,
+                        makeOpColNames(columnNamesArray, "_rollsumticksfwdex", "Sym", "ts", "boolCol")),
+                UpdateByOperation.RollingSum("ts", Duration.ofMinutes(0), Duration.ofMinutes(15),
+                        makeOpColNames(columnNamesArray, "_rollsumtimefwd", "Sym", "ts", "boolCol")),
+                UpdateByOperation.RollingSum("ts", Duration.ofMinutes(-10), Duration.ofMinutes(15),
+                        makeOpColNames(columnNamesArray, "_rollsumtimefwdex", "Sym", "ts", "boolCol")),
+                UpdateByOperation.RollingSum(50, 50,
+                        makeOpColNames(columnNamesArray, "_rollsumticksfwdrev", "Sym", "ts",
+                                "boolCol")),
+                UpdateByOperation.RollingSum("ts", Duration.ofMinutes(5), Duration.ofMinutes(5),
+                        makeOpColNames(columnNamesArray, "_rollsumtimebothfwdrev", "Sym", "ts",
+                                "boolCol")),
+
+                UpdateByOperation.Ema(skipControl, "ts", 10 * MINUTE,
+                        makeOpColNames(columnNamesArray, "_ema", "Sym", "ts", "boolCol")),
+                UpdateByOperation.CumSum(makeOpColNames(columnNamesArray, "_sum", "Sym", "ts")),
+                UpdateByOperation.CumMin(makeOpColNames(columnNamesArray, "_min", "boolCol")),
+                UpdateByOperation.CumMax(makeOpColNames(columnNamesArray, "_max", "boolCol")),
+                UpdateByOperation
+                        .CumProd(makeOpColNames(columnNamesArray, "_prod", "Sym", "ts", "boolCol")));
+        final UpdateByControl control = UpdateByControl.builder().useRedirection(false).build();
+
+        final Table table = result.t.updateBy(control, clauses, ColumnName.from("Sym"));
+        final Table memoryTable = result.t.select().updateBy(control, clauses, ColumnName.from("Sym"));
+
+        TstUtils.assertTableEquals("msg", table, memoryTable, TableDiff.DiffItems.DoublesExact);
+    }
+
 
     @Override
     public void reportUpdateError(Throwable t) {

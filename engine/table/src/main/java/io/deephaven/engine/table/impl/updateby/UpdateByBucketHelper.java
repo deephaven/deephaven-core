@@ -319,7 +319,7 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
             // compute the affected/influenced operators and rowsets within this window
             windows[winIdx].computeAffectedRowsAndOperators(windowContexts[winIdx], upstream);
 
-            isDirty |= windows[winIdx].isWindowDirty(windowContexts[winIdx]);
+            isDirty |= windows[winIdx].isWindowBucketDirty(windowContexts[winIdx]);
         }
 
         if (!isDirty) {
@@ -354,7 +354,7 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
      * @param initialStep indicates whether this is part of the creation phase
      */
     public void processWindow(final int winIdx, final boolean initialStep) {
-        if (!windows[winIdx].isWindowDirty(windowContexts[winIdx])) {
+        if (!windows[winIdx].isWindowBucketDirty(windowContexts[winIdx])) {
             return; // no work to do for this bucket window
         }
         windows[winIdx].processRows(windowContexts[winIdx], initialStep);
