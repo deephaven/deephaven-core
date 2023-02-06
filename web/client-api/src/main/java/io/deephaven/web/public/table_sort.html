@@ -27,7 +27,7 @@
       (async () => {
         var client = new CoreClient(window.location.protocol + "//" + window.location.host);
         await client.login({type:CoreClient.LOGIN_TYPE_ANONYMOUS});
-        connection = client.getAsIdeConnection();
+        connection = await client.getAsIdeConnection();
 
         var types = await connection.getConsoleTypes();
 
