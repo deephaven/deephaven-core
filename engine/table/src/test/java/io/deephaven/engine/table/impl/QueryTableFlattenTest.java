@@ -8,33 +8,35 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.testutil.*;
+import io.deephaven.engine.testutil.generator.IntGenerator;
+import io.deephaven.engine.testutil.generator.SetGenerator;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.util.TableTools;
 import junit.framework.TestCase;
 import org.junit.Assert;
-import org.junit.Test;
 
 import java.io.IOException;
 import java.util.Random;
 
+import static io.deephaven.engine.util.TableTools.col;
 import static io.deephaven.engine.util.TableTools.longCol;
 import static io.deephaven.engine.util.TableTools.showWithRowSet;
-import static io.deephaven.engine.table.impl.TstUtils.*;
+import static io.deephaven.engine.testutil.TstUtils.*;
 
 public class QueryTableFlattenTest extends QueryTableTestBase {
 
     private void testFlatten(int size) {
         final Random random = new Random(0);
-        final TstUtils.ColumnInfo columnInfo[];
+        final ColumnInfo<?, ?>[] columnInfo;
         final QueryTable queryTable = getTable(size, random,
                 columnInfo = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol"},
-                        new TstUtils.SetGenerator<>("a", "b", "c", "d"),
-                        new TstUtils.IntGenerator(10, 100, 0.1),
-                        new TstUtils.SetGenerator<>(10.1, 20.1, 30.1)));
+                        new SetGenerator<>("a", "b", "c", "d"),
+                        new IntGenerator(10, 100, 0.1),
+                        new SetGenerator<>(10.1, 20.1, 30.1)));
         if (printTableUpdates) {
             showWithRowSet(queryTable);
         }
-        final EvalNuggetInterface en[] = new EvalNuggetInterface[] {
+        final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                 new FlatChecker(queryTable.flatten()),
                 new TableComparator(queryTable, queryTable.flatten()),
                 new EvalNugget() {
@@ -60,7 +62,6 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
         }
     }
 
-    @Test
     public void testFlatten() {
         final int[] sizes = {10, 20, 30};
         for (int size : sizes) {
@@ -68,7 +69,6 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
         }
     }
 
-    @Test
     public void testLegacyFlatten3() {
         final long[] data = new long[10];
         data[0] = 12;
@@ -84,7 +84,7 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
         final QueryTable queryTable =
                 TstUtils.testRefreshingTable(i(data).toTracking(), longCol("intCol", data));
 
-        final TestHelper helper = new TestHelper<>(queryTable.flatten(), SimpleShiftObliviousListener::new);
+        final TestHelper<?> helper = new TestHelper<>(queryTable.flatten(), SimpleShiftObliviousListener::new);
 
         helper.modAndValidate(() -> {
             addToTable(queryTable, i(70, 71, 78, 81), longCol("intCol", 70, 71, 78, 81));
@@ -92,85 +92,78 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
         }, indexByRange(10, 13), i(), indexByRange(2, 9));
     }
 
-    @Test
     public void testLegacyFlattenModifications() {
         QueryTableTest.testLegacyFlattenModifications(arg -> (QueryTable) arg.flatten());
     }
 
-    @Test
     public void testRemoveWithLowMod() {
         Integer[] data = new Integer[10];
         for (int ii = 0; ii < data.length; ++ii) {
             data[ii] = ii * 10;
         }
         final QueryTable queryTable = TstUtils.testRefreshingTable(indexByRange(0, 9).toTracking(),
-                c("intCol", data));
+                col("intCol", data));
 
-        final TestHelper helper = new TestHelper<>(queryTable.flatten(), SimpleListener::new);
+        final TestHelper<?> helper = new TestHelper<>(queryTable.flatten(), SimpleListener::new);
 
         helper.modAndValidate(() -> {
-            addToTable(queryTable, i(0), c("intCol", 1));
+            addToTable(queryTable, i(0), col("intCol", 1));
             TstUtils.removeRows(queryTable, i(2));
             queryTable.notifyListeners(i(), i(2), i(0));
         }, i(), i(2), i(0), shiftDataByValues(3, 9, -1));
     }
 
-    @Test
     public void testLegacyRemoveWithLowMod() {
         Integer[] data = new Integer[10];
         for (int ii = 0; ii < data.length; ++ii) {
             data[ii] = ii * 10;
         }
         final QueryTable queryTable = TstUtils.testRefreshingTable(indexByRange(0, 9).toTracking(),
-                c("intCol", data));
+                col("intCol", data));
 
-        final TestHelper helper = new TestHelper<>(queryTable.flatten(), SimpleShiftObliviousListener::new);
+        final TestHelper<?> helper = new TestHelper<>(queryTable.flatten(), SimpleShiftObliviousListener::new);
 
         helper.modAndValidate(() -> {
-            addToTable(queryTable, i(0), c("intCol", 1));
+            addToTable(queryTable, i(0), col("intCol", 1));
             TstUtils.removeRows(queryTable, i(2));
             queryTable.notifyListeners(i(), i(2), i(0));
         }, i(), i(9), i(0, 2, 3, 4, 5, 6, 7, 8));
     }
 
-    @Test
     public void testRemoveWithHighMod() {
         Integer[] data = new Integer[10];
         for (int ii = 0; ii < data.length; ++ii) {
             data[ii] = ii * 10;
         }
         final QueryTable queryTable = TstUtils.testRefreshingTable(indexByRange(0, 9).toTracking(),
-                c("intCol", data));
+                col("intCol", data));
 
-        final TestHelper helper = new TestHelper<>(queryTable.flatten(), SimpleListener::new);
+        final TestHelper<?> helper = new TestHelper<>(queryTable.flatten(), SimpleListener::new);
 
         helper.modAndValidate(() -> {
-            addToTable(queryTable, i(8), c("intCol", 1));
+            addToTable(queryTable, i(8), col("intCol", 1));
             TstUtils.removeRows(queryTable, i(2));
             queryTable.notifyListeners(i(), i(2), i(8));
         }, i(), i(2), i(7), shiftDataByValues(3, 9, -1));
     }
 
-
-    @Test
     public void testLegacyRemoveWithHighMod() {
         Integer[] data = new Integer[10];
         for (int ii = 0; ii < data.length; ++ii) {
             data[ii] = ii * 10;
         }
         final QueryTable queryTable = TstUtils.testRefreshingTable(indexByRange(0, 9).toTracking(),
-                c("intCol", data));
+                col("intCol", data));
 
-        final TestHelper helper = new TestHelper<>(queryTable.flatten(), SimpleShiftObliviousListener::new);
+        final TestHelper<?> helper = new TestHelper<>(queryTable.flatten(), SimpleShiftObliviousListener::new);
 
         helper.modAndValidate(() -> {
-            addToTable(queryTable, i(8), c("intCol", 1));
+            addToTable(queryTable, i(8), col("intCol", 1));
             TstUtils.removeRows(queryTable, i(2));
             queryTable.notifyListeners(i(), i(2), i(8));
         }, i(), i(9), i(2, 3, 4, 5, 6, 7, 8));
     }
 
-    @Test
     public void testFlatten3() {
         final long[] data = new long[10];
         data[0] = 12;
@@ -186,7 +179,7 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
         final QueryTable queryTable =
                 TstUtils.testRefreshingTable(i(data).toTracking(), longCol("intCol", data));
 
-        final TestHelper helper = new TestHelper<>(queryTable.flatten(), SimpleListener::new);
+        final TestHelper<?> helper = new TestHelper<>(queryTable.flatten(), SimpleListener::new);
 
         helper.modAndValidate(() -> {
             addToTable(queryTable, i(70, 71, 78, 81), longCol("intCol", 70, 71, 78, 81));
@@ -195,26 +188,25 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
         }, i(4, 5, 8, 9), i(), i(2, 3, 6, 10, 13), shiftDataByValues(4, 5, 2, 6, 9, 4));
     }
 
-    @Test
     public void testFlattenModifications() {
         final QueryTable queryTable = TstUtils.testRefreshingTable(i(1, 2, 4, 6).toTracking(),
-                c("intCol", 10, 20, 40, 60));
+                col("intCol", 10, 20, 40, 60));
 
-        final TestHelper helper = new TestHelper<>(queryTable.flatten(), SimpleListener::new);
+        final TestHelper<?> helper = new TestHelper<>(queryTable.flatten(), SimpleListener::new);
 
         helper.modAndValidate(() -> {
-            addToTable(queryTable, i(3), c("intCol", 30));
+            addToTable(queryTable, i(3), col("intCol", 30));
             TstUtils.removeRows(queryTable, i(2));
             queryTable.notifyListeners(i(3), i(2), i());
         }, i(1), i(1), i(), shiftDataByValues());
 
         helper.modAndValidate(() -> {
-            addToTable(queryTable, i(3), c("intCol", 30));
+            addToTable(queryTable, i(3), col("intCol", 30));
             queryTable.notifyListeners(i(), i(), i(3));
         }, i(), i(), i(1), shiftDataByValues());
 
         helper.modAndValidate(() -> {
-            addToTable(queryTable, i(3, 5), c("intCol", 30, 50));
+            addToTable(queryTable, i(3, 5), col("intCol", 30, 50));
             queryTable.notifyListeners(i(5), i(), i(3));
         }, i(3), i(), i(1), shiftDataByValues(3, 3, 1));
     }
@@ -234,9 +226,9 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
             this.sourceTable = (QueryTable) sourceTable;
             listener = factory.newListener(this.sourceTable);
             if (listener instanceof ShiftObliviousListener) {
-                this.sourceTable.listenForUpdates((ShiftObliviousListener) listener);
+                this.sourceTable.addUpdateListener((ShiftObliviousListener) listener);
             } else if (listener instanceof SimpleListener) {
-                this.sourceTable.listenForUpdates((TableUpdateListener) listener);
+                this.sourceTable.addUpdateListener((TableUpdateListener) listener);
             } else {
                 throw new IllegalArgumentException("Listener type unsupported: " + listener.getClass().getName());
             }
@@ -253,7 +245,7 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
                             TestCase.fail(originalException.getMessage());
                         }
                     };
-            validatorTable.listenForUpdates(validatorTableListener);
+            validatorTable.addUpdateListener(validatorTableListener);
 
             showWithRowSet(sourceTable);
         }
@@ -314,7 +306,7 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
      * Makes sure that the row set of our table is actually contiguous.
      */
     protected static class FlatChecker implements EvalNuggetInterface {
-        private Table t1;
+        private final Table t1;
 
         FlatChecker(Table t1) {
             this.t1 = t1;
@@ -335,15 +327,16 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
 
     public void testFlattenFollowedBySumBy() {
         // TODO: Write a test that just makes a RedirectedColumnSource with a wrapper, and fill/query it.
-        final QueryTable upstream = TstUtils.testRefreshingTable(ir(0, 100_000).toTracking());
+        final QueryTable upstream = TstUtils.testRefreshingTable(RowSetFactory.fromRange(0, 100_000).toTracking());
         final Table input = upstream.updateView("A=ii", "B=ii % 1000", "C=ii % 2 == 0");
         final Table odds = input.where("!C");
         final Table expected = odds.sumBy("B");
         final Table actual = odds.flatten().sumBy("B");
         assertTableEquals(expected, actual);
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            addToTable(upstream, ir(100_001, 200_000));
-            upstream.notifyListeners(ir(100_001, 200_000), i(), ir(0, 100_000));
+            addToTable(upstream, RowSetFactory.fromRange(100_001, 200_000));
+            upstream.notifyListeners(RowSetFactory.fromRange(100_001, 200_000), i(),
+                    RowSetFactory.fromRange(0, 100_000));
         });
         assertTableEquals(expected, actual);
     }

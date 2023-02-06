@@ -1,0 +1,25 @@
+plugins {
+    id 'java-library'
+    id 'io.deephaven.project.register'
+}
+
+description 'Engine Test Utils: Test Utilities for Deephaven Tables'
+
+dependencies {
+    api project(":engine-table")
+    api project(":engine-rowset")
+
+    implementation project(':Configuration')
+    implementation project(':engine-tuple')
+    implementation project(':base-test-utils')
+    implementation project(':engine-rowset-test-utils')
+
+    implementation depCommonsLang3
+    implementation depTrove3
+
+    implementation 'it.unimi.dsi:fastutil:8.5.11'
+
+    Classpaths.inheritJUnitClassic(project, 'implementation')
+    Classpaths.inheritJUnitPlatform(project, 'implementation')
+    Classpaths.inheritAssertJ(project, 'implementation')
+}

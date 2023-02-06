@@ -195,7 +195,7 @@ public class InitialSnapshotTable extends QueryTable {
             writableSources[ci] = ArrayBackedColumnSource.getMemoryColumnSource(
                     0, column.getDataType(), column.getComponentType());
             finalColumns.put(column.getName(),
-                    new WritableRedirectedColumnSource<>(rowRedirection, writableSources[ci], 0));
+                    WritableRedirectedColumnSource.maybeRedirect(rowRedirection, writableSources[ci], 0));
         }
         // This table does not run, so we don't need to tell our row redirection or column source to start
         // tracking

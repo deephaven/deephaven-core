@@ -44,76 +44,20 @@ jobs:
         if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
         run: |
           semver=$(echo ${{ github.ref }} | tail -c +21)
-          echo "::set-output name=semver::$semver"
+          echo "semver=$semver" >> $GITHUB_OUTPUT
 
       - name: Docker meta server
         id: docker_meta_server
         uses: docker/metadata-action@v3
         with:
           images: |
-            ghcr.io/${{ github.repository_owner }}/server
+            ghcr.io/${{ github.repository_owner }}/server-netty
           flavor: |
             latest=false
           tags: |
             type=edge,branch=main
             type=raw,priority=950,enable=${{ startsWith(github.ref, 'refs/heads/release/v') }},value=${{ steps.semver.outputs.semver }}
-            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.16.') }},value=latest
-            type=ref,event=branch
-
-      - name: Docker meta server nltk
-        id: docker_meta_server_nltk
-        uses: docker/metadata-action@v3
-        with:
-          images: |
-            ghcr.io/${{ github.repository_owner }}/server-nltk
-          flavor: |
-            latest=false
-          tags: |
-            type=edge,branch=main
-            type=raw,priority=950,enable=${{ startsWith(github.ref, 'refs/heads/release/v') }},value=${{ steps.semver.outputs.semver }}
-            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.16.') }},value=latest
-            type=ref,event=branch
-
-      - name: Docker meta server pytorch
-        id: docker_meta_server_pytorch
-        uses: docker/metadata-action@v3
-        with:
-          images: |
-            ghcr.io/${{ github.repository_owner }}/server-pytorch
-          flavor: |
-            latest=false
-          tags: |
-            type=edge,branch=main
-            type=raw,priority=950,enable=${{ startsWith(github.ref, 'refs/heads/release/v') }},value=${{ steps.semver.outputs.semver }}
-            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.16.') }},value=latest
-            type=ref,event=branch
-
-      - name: Docker meta server sklearn
-        id: docker_meta_server_sklearn
-        uses: docker/metadata-action@v3
-        with:
-          images: |
-            ghcr.io/${{ github.repository_owner }}/server-sklearn
-          flavor: |
-            latest=false
-          tags: |
-            type=edge,branch=main
-            type=raw,priority=950,enable=${{ startsWith(github.ref, 'refs/heads/release/v') }},value=${{ steps.semver.outputs.semver }}
-            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.16.') }},value=latest
-            type=ref,event=branch
-
-      - name: Docker meta server tensorflow
-        id: docker_meta_server_tensorflow
-        uses: docker/metadata-action@v3
-        with:
-          images: |
-            ghcr.io/${{ github.repository_owner }}/server-tensorflow
-          flavor: |
-            latest=false
-          tags: |
-            type=edge,branch=main
-            type=raw,priority=950,enable=${{ startsWith(github.ref, 'refs/heads/release/v') }},value=${{ steps.semver.outputs.semver }}
-            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.16.') }},value=latest
+            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.19.') }},value=latest
             type=ref,event=branch
 
       - name: Docker meta server slim
@@ -121,13 +65,13 @@ jobs:
         uses: docker/metadata-action@v3
         with:
           images: |
-            ghcr.io/${{ github.repository_owner }}/server-slim
+            ghcr.io/${{ github.repository_owner }}/server-slim-netty
           flavor: |
             latest=false
           tags: |
             type=edge,branch=main
             type=raw,priority=950,enable=${{ startsWith(github.ref, 'refs/heads/release/v') }},value=${{ steps.semver.outputs.semver }}
-            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.16.') }},value=latest
+            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.19.') }},value=latest
             type=ref,event=branch
 
       - name: Set up Docker Buildx
@@ -155,7 +99,7 @@ jobs:
       - name: Get Deephaven Version
         id: deephaven_version
         run: |
-          echo "::set-output name=deephaven_version::$(cat build/version)"
+          echo "deephaven_version=$(cat build/version)" >> $GITHUB_OUTPUT
 
       # TODO: switch to new GitHub cache backend when available
       # https://github.com/docker/build-push-action/blob/master/docs/advanced/cache.md#github-cache
@@ -165,60 +109,12 @@ jobs:
         with:
           build-args: |
             BASE=deephaven/server-base:local-build
-            SERVER=server
+            SERVER=server-netty
             DEEPHAVEN_VERSION=${{ steps.deephaven_version.outputs.deephaven_version }}
           tags: ${{ steps.docker_meta_server.outputs.tags }}
           builder: ${{ steps.buildx.outputs.name }}
           context: ./docker/server/build/context/
-          push: ${{ github.event_name != 'pull_request' }}
-
-      - name: Docker build server nltk
-        uses: docker/build-push-action@v2
-        with:
-          build-args: |
-            BASE=deephaven/nltk-base:local-build
-            SERVER=server-nltk
-            DEEPHAVEN_VERSION=${{ steps.deephaven_version.outputs.deephaven_version }}
-          tags: ${{ steps.docker_meta_server_nltk.outputs.tags }}
-          builder: ${{ steps.buildx.outputs.name }}
-          context: ./docker/server/build/context/
-          push: ${{ github.event_name != 'pull_request' }}
-
-      - name: Docker build server pytorch
-        uses: docker/build-push-action@v2
-        with:
-          build-args: |
-            BASE=deephaven/pytorch-base:local-build
-            SERVER=server-pytorch
-            DEEPHAVEN_VERSION=${{ steps.deephaven_version.outputs.deephaven_version }}
-          tags: ${{ steps.docker_meta_server_pytorch.outputs.tags }}
-          builder: ${{ steps.buildx.outputs.name }}
-          context: ./docker/server/build/context/
-          push: ${{ github.event_name != 'pull_request' }}
-
-      - name: Docker build server sklearn
-        uses: docker/build-push-action@v2
-        with:
-          build-args: |
-            BASE=deephaven/sklearn-base:local-build
-            SERVER=server-sklearn
-            DEEPHAVEN_VERSION=${{ steps.deephaven_version.outputs.deephaven_version }}
-          tags: ${{ steps.docker_meta_server_sklearn.outputs.tags }}
-          builder: ${{ steps.buildx.outputs.name }}
-          context: ./docker/server/build/context/
-          push: ${{ github.event_name != 'pull_request' }}
-
-      - name: Docker build server tensorflow
-        uses: docker/build-push-action@v2
-        with:
-          build-args: |
-            BASE=deephaven/tensorflow-base:local-build
-            SERVER=server-tensorflow
-            DEEPHAVEN_VERSION=${{ steps.deephaven_version.outputs.deephaven_version }}
-          tags: ${{ steps.docker_meta_server_tensorflow.outputs.tags }}
-          builder: ${{ steps.buildx.outputs.name }}
-          context: ./docker/server/build/context/
-          push: ${{ github.event_name != 'pull_request' }}
+          push: false
 
       # Note: server-slim does not need BASE/SERVER build-args like the other server images
       - name: Docker build server slim
@@ -229,19 +125,14 @@ jobs:
           tags: ${{ steps.docker_meta_server_slim.outputs.tags }}
           builder: ${{ steps.buildx.outputs.name }}
           context: ./docker/server-slim/build/context/
-          push: ${{ github.event_name != 'pull_request' }}
+          push: false
 
       - name: Tag upstream images
         if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
         run: |
-          ./docker/registry/python-dev-base/build/crane/retag.sh
           ./docker/registry/protoc-base/build/crane/retag.sh
           ./docker/registry/slim-base/build/crane/retag.sh
           ./docker/registry/server-base/build/crane/retag.sh
-          ./docker/registry/nltk-base/build/crane/retag.sh
-          ./docker/registry/pytorch-base/build/crane/retag.sh
-          ./docker/registry/sklearn-base/build/crane/retag.sh
-          ./docker/registry/tensorflow-base/build/crane/retag.sh
 
   grpc-proxy:
     runs-on: ubuntu-22.04
@@ -278,7 +169,7 @@ jobs:
         if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
         run: |
           semver=$(echo ${{ github.ref }} | tail -c +21)
-          echo "::set-output name=semver::$semver"
+          echo "semver=$semver" >> $GITHUB_OUTPUT
 
       - name: Docker meta
         id: docker_meta
@@ -290,7 +181,7 @@ jobs:
           tags: |
             type=edge,branch=main
             type=raw,priority=950,enable=${{ startsWith(github.ref, 'refs/heads/release/v') }},value=${{ steps.semver.outputs.semver }}
-            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.15.') }},value=latest
+            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.19.') }},value=latest
             type=ref,event=branch
 
       - name: Set up Docker Buildx
@@ -318,7 +209,7 @@ jobs:
       - name: Get Deephaven Version
         id: deephaven_version
         run: |
-          echo "::set-output name=deephaven_version::$(cat build/version)"
+          echo "deephaven_version=$(cat build/version)" >> $GITHUB_OUTPUT
 
       - name: Docker build
         uses: docker/build-push-action@v2
@@ -328,7 +219,7 @@ jobs:
           tags: ${{ steps.docker_meta.outputs.tags }}
           builder: ${{ steps.buildx.outputs.name }}
           context: ./grpc-proxy/build/docker/
-          push: ${{ github.event_name != 'pull_request' }}
+          push: false
 
   envoy:
     runs-on: ubuntu-22.04
@@ -365,7 +256,7 @@ jobs:
         if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
         run: |
           semver=$(echo ${{ github.ref }} | tail -c +21)
-          echo "::set-output name=semver::$semver"
+          echo "semver=$semver" >> $GITHUB_OUTPUT
 
       - name: Docker meta
         id: docker_meta
@@ -377,7 +268,7 @@ jobs:
           tags: |
             type=edge,branch=main
             type=raw,priority=950,enable=${{ startsWith(github.ref, 'refs/heads/release/v') }},value=${{ steps.semver.outputs.semver }}
-            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.15.') }},value=latest
+            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.19.') }},value=latest
             type=ref,event=branch
 
       - name: Set up Docker Buildx
@@ -405,7 +296,7 @@ jobs:
       - name: Get Deephaven Version
         id: deephaven_version
         run: |
-          echo "::set-output name=deephaven_version::$(cat build/version)"
+          echo "deephaven_version=$(cat build/version)" >> $GITHUB_OUTPUT
 
       - name: Build
         uses: docker/build-push-action@v2
@@ -415,7 +306,7 @@ jobs:
           tags: ${{ steps.docker_meta.outputs.tags }}
           builder: ${{ steps.buildx.outputs.name }}
           context: ./envoy/build/docker/
-          push: ${{ github.event_name != 'pull_request' }}
+          push: false
 
   web:
     runs-on: ubuntu-22.04
@@ -428,7 +319,7 @@ jobs:
         if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
         run: |
           semver=$(echo ${{ github.ref }} | tail -c +21)
-          echo "::set-output name=semver::$semver"
+          echo "semver=$semver" >> $GITHUB_OUTPUT
 
       - name: Docker meta
         id: docker_meta
@@ -440,7 +331,7 @@ jobs:
           tags: |
             type=edge,branch=main
             type=raw,priority=950,enable=${{ startsWith(github.ref, 'refs/heads/release/v') }},value=${{ steps.semver.outputs.semver }}
-            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.15.') }},value=latest
+            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.19.') }},value=latest
             type=ref,event=branch
 
       - name: Setup JDK 11
@@ -496,7 +387,7 @@ jobs:
       - name: Get Deephaven Version
         id: deephaven_version
         run: |
-          echo "::set-output name=deephaven_version::$(cat build/version)"
+          echo "deephaven_version=$(cat build/version)" >> $GITHUB_OUTPUT
 
       - name: Docker build
         uses: docker/build-push-action@v2
@@ -506,12 +397,12 @@ jobs:
           tags: ${{ steps.docker_meta.outputs.tags }}
           builder: ${{ steps.buildx.outputs.name }}
           context: ./docker/web/build/docker/
-          push: ${{ github.event_name != 'pull_request' }}
+          push: false
 
       - name: Tag upstream images
         if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
         run: |
-          ./docker/registry/nginx-base/build/crane/retag.sh
+          ./docker/registry/nginx-noroot-base/build/crane/retag.sh
 
   web-plugin-packager:
     runs-on: ubuntu-22.04
@@ -524,7 +415,7 @@ jobs:
         if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
         run: |
           semver=$(echo ${{ github.ref }} | tail -c +21)
-          echo "::set-output name=semver::$semver"
+          echo "semver=$semver" >> $GITHUB_OUTPUT
 
       - name: Docker meta
         id: docker_meta
@@ -536,7 +427,7 @@ jobs:
           tags: |
             type=edge,branch=main
             type=raw,priority=950,enable=${{ startsWith(github.ref, 'refs/heads/release/v') }},value=${{ steps.semver.outputs.semver }}
-            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.15.') }},value=latest
+            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.19.') }},value=latest
             type=ref,event=branch
 
       - name: Setup JDK 11
@@ -581,7 +472,7 @@ jobs:
       - name: Get Deephaven Version
         id: deephaven_version
         run: |
-          echo "::set-output name=deephaven_version::$(cat build/version)"
+          echo "deephaven_version=$(cat build/version)" >> $GITHUB_OUTPUT
 
       - name: Docker build
         uses: docker/build-push-action@v2
@@ -591,7 +482,7 @@ jobs:
           tags: ${{ steps.docker_meta.outputs.tags }}
           builder: ${{ steps.buildx.outputs.name }}
           context: ./docker/web-plugin-packager/build/context/
-          push: ${{ github.event_name != 'pull_request' }}
+          push: false
 
 ### Notes about `driver: docker`
 ###

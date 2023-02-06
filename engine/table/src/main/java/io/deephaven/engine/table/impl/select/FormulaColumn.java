@@ -3,9 +3,6 @@
  */
 package io.deephaven.engine.table.impl.select;
 
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.WritableColumnSource;
-
 public interface FormulaColumn extends SelectColumn {
 
     static FormulaColumn createFormulaColumn(String columnName, String formulaString,
@@ -22,5 +19,12 @@ public interface FormulaColumn extends SelectColumn {
 
     static FormulaColumn createFormulaColumn(String columnName, String formulaString) {
         return createFormulaColumn(columnName, formulaString, FormulaParserConfiguration.parser);
+    }
+
+    /**
+     * @return true if all rows have a single constant value
+     */
+    default boolean hasConstantValue() {
+        return false;
     }
 }

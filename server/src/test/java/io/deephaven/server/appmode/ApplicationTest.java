@@ -6,12 +6,12 @@ package io.deephaven.server.appmode;
 import io.deephaven.appmode.ApplicationState;
 import io.deephaven.appmode.Field;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.AbstractScriptSession;
 import io.deephaven.engine.util.GroovyDeephavenSession;
 import io.deephaven.integrations.python.PythonDeephavenSession;
 import io.deephaven.engine.util.PythonEvaluatorJpy;
 import io.deephaven.plugin.type.ObjectTypeLookup.NoOp;
-import io.deephaven.test.junit4.EngineCleanup;
 import org.junit.After;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -49,7 +49,7 @@ public class ApplicationTest {
 
     @Test
     public void app01() throws IOException {
-        session = new GroovyDeephavenSession(NoOp.INSTANCE, null, GroovyDeephavenSession.RunScripts.none(), false);
+        session = new GroovyDeephavenSession(NoOp.INSTANCE, null, GroovyDeephavenSession.RunScripts.none());
         ApplicationState app = ApplicationFactory.create(ApplicationConfigs.testAppDir(), ApplicationConfigs.app01(),
                 session, new NoopStateListener());
         assertThat(app.name()).isEqualTo("My Groovy Application");
@@ -61,7 +61,7 @@ public class ApplicationTest {
     @Test
     @Ignore("TODO: deephaven-core#1741 python test needs to run in a container")
     public void app02() throws IOException, InterruptedException, TimeoutException {
-        session = new PythonDeephavenSession(NoOp.INSTANCE, null, false, false, PythonEvaluatorJpy.withGlobalCopy());
+        session = new PythonDeephavenSession(NoOp.INSTANCE, null, false, PythonEvaluatorJpy.withGlobalCopy());
         ApplicationState app = ApplicationFactory.create(ApplicationConfigs.testAppDir(), ApplicationConfigs.app02(),
                 session, new NoopStateListener());
         assertThat(app.name()).isEqualTo("My Python Application");

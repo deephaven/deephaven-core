@@ -10,15 +10,17 @@ import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
 import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.qst.table.EmptyTable;
-import io.deephaven.test.junit4.EngineCleanup;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import junit.framework.ComparisonFailure;
 import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -36,15 +38,20 @@ import java.util.stream.LongStream;
 public class StreamTableOperationsTest {
 
     @Rule
-    public EngineCleanup base = new EngineCleanup();
+    public final EngineCleanup framework = new EngineCleanup();
 
     private static final long INPUT_SIZE = 100_000L;
     private static final long MAX_RANDOM_ITERATION_SIZE = 10_000;
 
-    private final Table source = TableCreatorImpl.create(EmptyTable.of(INPUT_SIZE)
-            .update("Sym = Long.toString(ii % 1000) + `_Sym`")
-            .update("Price = ii / 100 - (ii % 100)")
-            .update("Size = (long) (ii / 50 - (ii % 50))"));
+    private Table source;
+
+    @Before
+    public void setUp() {
+        source = TableCreatorImpl.create(EmptyTable.of(INPUT_SIZE)
+                .update("Sym = Long.toString(ii % 1000) + `_Sym`")
+                .update("Price = ii / 100 - (ii % 100)")
+                .update("Size = (long) (ii / 50 - (ii % 50))"));
+    }
 
     /**
      * Execute a table operator.
@@ -72,7 +79,7 @@ public class StreamTableOperationsTest {
                     new WrappedRowSetWritableRowRedirection(streamInternalRowSet);
             streamSources = source.getColumnSourceMap().entrySet().stream().collect(Collectors.toMap(
                     Map.Entry::getKey,
-                    (entry -> new RedirectedColumnSource<>(streamRedirections, entry.getValue())),
+                    (entry -> RedirectedColumnSource.maybeRedirect(streamRedirections, entry.getValue())),
                     Assert::neverInvoked,
                     LinkedHashMap::new));
         }

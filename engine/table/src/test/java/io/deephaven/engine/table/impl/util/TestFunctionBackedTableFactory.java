@@ -4,26 +4,30 @@
 package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.testutil.ColumnInfo;
+import io.deephaven.engine.testutil.generator.IntGenerator;
+import io.deephaven.engine.testutil.generator.SetGenerator;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
+import io.deephaven.engine.testutil.EvalNugget;
+import io.deephaven.engine.testutil.EvalNuggetInterface;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableDiff;
 import io.deephaven.engine.table.impl.*;
-import org.junit.Assert;
 
 import java.util.*;
 
-import static io.deephaven.engine.table.impl.TstUtils.*;
-import static io.deephaven.engine.util.TableTools.diff;
+import static io.deephaven.engine.testutil.TstUtils.*;
 
 public class TestFunctionBackedTableFactory extends RefreshingTableTestCase {
     public void testIterative() {
         Random random = new Random(0);
-        TstUtils.ColumnInfo columnInfo[];
+        ColumnInfo<?, ?>[] columnInfo;
         int size = 50;
         final QueryTable queryTable = getTable(size, random,
                 columnInfo = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol"},
-                        new TstUtils.SetGenerator<>("a", "b", "c", "d", "e"),
-                        new TstUtils.IntGenerator(10, 100),
-                        new TstUtils.SetGenerator<>(10.1, 20.1, 30.1)));
+                        new SetGenerator<>("a", "b", "c", "d", "e"),
+                        new IntGenerator(10, 100),
+                        new SetGenerator<>(10.1, 20.1, 30.1)));
 
         final Table functionBacked = FunctionGeneratedTableFactory.create(() -> queryTable, queryTable);
 

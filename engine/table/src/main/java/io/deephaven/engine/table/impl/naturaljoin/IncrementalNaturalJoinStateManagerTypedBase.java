@@ -24,13 +24,14 @@ import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 
+import static io.deephaven.engine.table.impl.JoinControl.CHUNK_SIZE;
+import static io.deephaven.engine.table.impl.JoinControl.MAX_TABLE_SIZE;
 import static io.deephaven.engine.table.impl.util.TypedHasherUtil.getKeyChunks;
 import static io.deephaven.engine.table.impl.util.TypedHasherUtil.getPrevKeyChunks;
 
 public abstract class IncrementalNaturalJoinStateManagerTypedBase extends StaticNaturalJoinStateManager
         implements IncrementalNaturalJoinStateManager, BothIncrementalNaturalJoinStateManager {
-    public static final int CHUNK_SIZE = 4096;
-    private static final long MAX_TABLE_SIZE = 1 << 30; // maximum array size
+
     public static final long EMPTY_RIGHT_STATE = QueryConstants.NULL_LONG;
 
     // the number of slots in our table
@@ -177,7 +178,12 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
 
                 getKeyChunks(buildSources, bc.getContexts, sourceKeyChunks, chunkOk);
 
+                final long oldEntries = numEntries;
                 buildHandler.doBuild(chunkOk, sourceKeyChunks);
+                final long entriesAdded = numEntries - oldEntries;
+                // if we actually added anything, then take away from the "equity" we've built up rehashing, otherwise
+                // don't penalize this build call with additional rehashing
+                bc.rehashCredits.subtract(entriesAdded);
 
                 bc.resetSharedContexts();
             }
@@ -356,7 +362,7 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
     }
 
     @Override
-    public long getRightIndex(long slot) {
+    public long getRightIndex(int slot) {
         final long rightRowKey;
         if ((slot & AlternatingColumnSource.ALTERNATE_SWITCH_MASK) == mainInsertMask) {
             // slot needs to represent whether we are in the main or alternate using main insert mask!
@@ -371,7 +377,7 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
     }
 
     @Override
-    public RowSet getLeftIndex(long slot) {
+    public RowSet getLeftIndex(int slot) {
         if ((slot & AlternatingColumnSource.ALTERNATE_SWITCH_MASK) == mainInsertMask) {
             return mainLeftRowSet.getUnsafe(slot & AlternatingColumnSource.ALTERNATE_INNER_MASK);
         } else {
@@ -380,7 +386,7 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
     }
 
     @Override
-    public String keyString(long slot) {
+    public String keyString(int slot) {
         final long firstLeftRowKey;
         if ((slot & AlternatingColumnSource.ALTERNATE_SWITCH_MASK) == mainInsertMask) {
             firstLeftRowKey =

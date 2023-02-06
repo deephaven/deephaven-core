@@ -13,8 +13,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.*;
 import java.util.stream.Stream;
 
-import static io.deephaven.engine.table.impl.TableWithDefaults.ZERO_LENGTH_TABLE_ARRAY;
-
 /**
  * Helper for coalescing and de-unioning tables prior to a merge. Only for engine-internal usage.
  */
@@ -71,7 +69,7 @@ public class TableToolsMergeHelper {
 
                 QueryTable viewedTable = new QueryTable(component.getRowSet(), componentSources);
                 if (component.isRefreshing()) {
-                    component.listenForUpdates(
+                    component.addUpdateListener(
                             new BaseTable.ListenerImpl("union view", component, viewedTable));
                 }
                 result.add(viewedTable);

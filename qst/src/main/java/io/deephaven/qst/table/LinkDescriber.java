@@ -81,15 +81,14 @@ public class LinkDescriber extends TableVisitorGeneric {
     }
 
     @Override
-    public void visit(WhereNotInTable whereNotInTable) {
-        consumer.link(whereNotInTable.left(), "left");
-        consumer.link(whereNotInTable.right(), "right");
+    public void visit(SnapshotTable snapshotTable) {
+        consumer.link(snapshotTable.base(), "base");
     }
 
     @Override
-    public void visit(SnapshotTable snapshotTable) {
-        consumer.link(snapshotTable.base(), "base");
-        consumer.link(snapshotTable.trigger(), "trigger");
+    public void visit(SnapshotWhenTable snapshotWhenTable) {
+        consumer.link(snapshotWhenTable.base(), "base");
+        consumer.link(snapshotWhenTable.trigger(), "trigger");
     }
 
     @Override

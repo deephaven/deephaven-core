@@ -7,15 +7,19 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils;
 import io.deephaven.engine.util.TableTools;
 
-import static io.deephaven.engine.table.impl.TstUtils.assertTableEquals;
+import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static io.deephaven.engine.util.TableTools.*;
 
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
 public class TestBigDecimalColumns {
+    @Rule
+    public final EngineCleanup base = new EngineCleanup();
 
     private static BigDecimal atScale(final double v, final int scale) {
         return BigDecimal.valueOf(v).setScale(scale, RoundingMode.HALF_UP);

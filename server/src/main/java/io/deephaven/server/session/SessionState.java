@@ -33,9 +33,10 @@ import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.flight.util.FlightExportTicketHelper;
 import io.deephaven.proto.util.ExportTicketHelper;
 import io.deephaven.server.util.Scheduler;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.VisibleForTesting;
-import io.deephaven.util.auth.AuthContext;
+import io.deephaven.auth.AuthContext;
 import io.deephaven.util.datastructures.SimpleReferenceManager;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
@@ -44,6 +45,7 @@ import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
+import javax.inject.Provider;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -56,8 +58,9 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
-import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyExecute;
-import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyExecuteLocked;
+import static io.deephaven.base.log.LogOutput.MILLIS_FROM_EPOCH_FORMATTER;
+import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyComplete;
+import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyError;
 
 /**
  * SessionState manages all exports for a single session.
@@ -100,6 +103,20 @@ public class SessionState {
         return new ExportObject<>(export);
     }
 
+    /**
+     * Wrap an exception in an ExportObject to make it conform to the session export API. The export behaves as if it
+     * has already failed.
+     *
+     * @param caughtException the exception to propagate
+     * @param <T> the type of the object
+     * @return a sessionless export object
+     */
+    public static <T> ExportObject<T> wrapAsFailedExport(final Exception caughtException) {
+        ExportObject<T> exportObject = new ExportObject<>(null);
+        exportObject.caughtException = caughtException;
+        return exportObject;
+    }
+
     private static final Logger log = LoggerFactory.getLogger(SessionState.class);
 
     private final String logPrefix;
@@ -129,12 +146,17 @@ public class SessionState {
     private final SimpleReferenceManager<Closeable, WeakSimpleReference<Closeable>> onCloseCallbacks =
             new SimpleReferenceManager<>(WeakSimpleReference::new, false);
 
+    private final ExecutionContext executionContext;
+
     @AssistedInject
-    public SessionState(final Scheduler scheduler, @Assisted final AuthContext authContext) {
+    public SessionState(final Scheduler scheduler,
+            final Provider<ExecutionContext> executionContextProvider,
+            @Assisted final AuthContext authContext) {
         this.sessionId = UuidCreator.toString(UuidCreator.getRandomBased());
         this.logPrefix = "SessionState{" + sessionId + "}: ";
         this.scheduler = scheduler;
         this.authContext = authContext;
+        this.executionContext = executionContextProvider.get().withAuthContext(authContext);
         log.info().append(logPrefix).append("session initialized").endl();
     }
 
@@ -155,7 +177,7 @@ public class SessionState {
 
         log.info().append(logPrefix)
                 .append("token initialized to '").append(expiration.token.toString())
-                .append("' which expires at ").append(expiration.deadline.toString())
+                .append("' which expires at ").append(MILLIS_FROM_EPOCH_FORMATTER, expiration.deadlineMillis)
                 .append(".").endl();
     }
 
@@ -184,7 +206,7 @@ public class SessionState {
 
         log.info().append(logPrefix)
                 .append("token rotating to '").append(expiration.token.toString())
-                .append("' which expires at ").append(expiration.deadline.toString())
+                .append("' which expires at ").append(MILLIS_FROM_EPOCH_FORMATTER, expiration.deadlineMillis)
                 .append(".").endl();
     }
 
@@ -203,7 +225,7 @@ public class SessionState {
      */
     public boolean isExpired() {
         final SessionService.TokenExpiration currToken = expiration;
-        return currToken == null || currToken.deadline.compareTo(scheduler.currentTime()) <= 0;
+        return currToken == null || currToken.deadlineMillis <= scheduler.currentTimeMillis();
     }
 
     /**
@@ -480,8 +502,7 @@ public class SessionState {
      * @param <T> Is context sensitive depending on the export.
      *
      * @apiNote ExportId may be 0, if this is a task that has exported dependencies, but does not export anything
-     *          itself.
-     * @apiNote Non-exports do not publish state changes.
+     *          itself. Non-exports do not publish state changes.
      */
     public final static class ExportObject<T> extends LivenessArtifact {
         private final int exportId;
@@ -492,6 +513,9 @@ public class SessionState {
         private volatile T result;
         private volatile ExportNotification.State state = ExportNotification.State.UNKNOWN;
         private volatile int exportListenerVersion = 0;
+
+        /** Indicates whether this export has already been well defined. This prevents export object reuse. */
+        private boolean hasHadWorkSet = false;
 
         /** This indicates whether or not this export should use the serial execution queue. */
         private boolean requiresSerialQueue;
@@ -516,21 +540,21 @@ public class SessionState {
         /** used to identify and propagate error details */
         private String errorId;
         private String dependentHandle;
+        private Exception caughtException;
 
         /**
          * @param exportId the export id for this export
          */
         private ExportObject(final SessionState session, final int exportId) {
+            super(true);
             this.session = session;
             this.exportId = exportId;
             this.logIdentity =
                     isNonExport() ? Integer.toHexString(System.identityHashCode(this)) : Long.toString(exportId);
             setState(ExportNotification.State.UNKNOWN);
 
-            // non-exports stay alive until they have been exported
-            if (isNonExport()) {
-                retainReference();
-            }
+            // we retain a reference until a non-export becomes EXPORTED or a regular export becomes RELEASED
+            retainReference();
         }
 
         /**
@@ -540,12 +564,20 @@ public class SessionState {
          * @param result the object to wrap in an export
          */
         private ExportObject(final T result) {
+            super(true);
             this.session = null;
             this.exportId = NON_EXPORT_ID;
-            this.state = ExportNotification.State.EXPORTED;
             this.result = result;
             this.dependentCount = 0;
+            this.hasHadWorkSet = true;
             this.logIdentity = Integer.toHexString(System.identityHashCode(this)) + "-sessionless";
+
+            if (result == null) {
+                assignErrorId();
+                state = ExportNotification.State.FAILED;
+            } else {
+                state = ExportNotification.State.EXPORTED;
+            }
 
             if (result instanceof LivenessReferent && DynamicNode.notDynamicOrIsRefreshing(result)) {
                 manage((LivenessReferent) result);
@@ -568,7 +600,7 @@ public class SessionState {
 
             this.parents = parents;
             dependentCount = parents.size();
-            parents.stream().filter(Objects::nonNull).forEach(this::manage);
+            parents.stream().filter(Objects::nonNull).forEach(this::tryManage);
 
             if (log.isDebugEnabled()) {
                 final Exception e = new RuntimeException();
@@ -591,9 +623,10 @@ public class SessionState {
          */
         private synchronized void setWork(final Callable<T> exportMain, final ExportErrorHandler errorHandler,
                 final boolean requiresSerialQueue) {
-            if (this.exportMain != null) {
-                throw new IllegalStateException("work can only be set once on an exportable object");
+            if (hasHadWorkSet) {
+                throw new IllegalStateException("export object can only be defined once");
             }
+            hasHadWorkSet = true;
             this.requiresSerialQueue = requiresSerialQueue;
 
             if (isExportStateTerminal(this.state)) {
@@ -724,21 +757,26 @@ public class SessionState {
                 exportListenerVersion = session.exportListenerVersion;
                 session.exportListeners.forEach(listener -> listener.notify(notification));
             } else {
-                log.debug().append(session.logPrefix).append("non-export '").append(logIdentity)
-                        .append("' is ExportState.").append(state.name()).endl();
+                log.debug().append(session == null ? "Session " : session.logPrefix)
+                        .append("non-export '").append(logIdentity).append("' is ExportState.")
+                        .append(state.name()).endl();
             }
 
             if (isExportStateFailure(state) && errorHandler != null) {
                 if (errorId == null) {
                     assignErrorId();
                 }
-                safelyExecute(() -> errorHandler.onError(state, errorId, dependentHandle));
+                try {
+                    errorHandler.onError(state, errorId, caughtException, dependentHandle);
+                } catch (final Exception err) {
+                    log.error().append("Unexpected error while reporting state failure: ").append(err).endl();
+                }
             }
 
             if (state == ExportNotification.State.EXPORTED || isExportStateTerminal(state)) {
                 children.forEach(child -> child.onResolveOne(this));
                 children = Collections.emptyList();
-                parents.stream().filter(Objects::nonNull).forEach(this::unmanage);
+                parents.stream().filter(Objects::nonNull).forEach(this::tryUnmanage);
                 parents = Collections.emptyList();
                 exportMain = null;
                 errorHandler = null;
@@ -764,6 +802,9 @@ public class SessionState {
             if (parent != null && isExportStateTerminal(parent.state)) {
                 synchronized (this) {
                     errorId = parent.errorId;
+                    if (parent.caughtException instanceof StatusRuntimeException) {
+                        caughtException = parent.caughtException;
+                    }
                     ExportNotification.State terminalState = ExportNotification.State.DEPENDENCY_FAILED;
 
                     if (errorId == null) {
@@ -786,7 +827,10 @@ public class SessionState {
 
                         assignErrorId();
                         dependentHandle = parent.logIdentity;
-                        log.error().append("Internal Error '").append(errorId).append("' ").append(errorDetails).endl();
+                        if (!(caughtException instanceof StatusRuntimeException)) {
+                            log.error().append("Internal Error '").append(errorId).append("' ").append(errorDetails)
+                                    .endl();
+                        }
                     }
 
                     setState(terminalState);
@@ -833,11 +877,11 @@ public class SessionState {
                 }
                 setState(ExportNotification.State.RUNNING);
             }
-            Exception exception = null;
             boolean shouldLog = false;
             int evaluationNumber = -1;
             QueryProcessingResults queryProcessingResults = null;
-            try (final AutoCloseable ignored = LivenessScopeStack.open()) {
+            try (final SafeCloseable ignored1 = LivenessScopeStack.open();
+                    final SafeCloseable ignored2 = session.executionContext.open()) {
                 queryProcessingResults = new QueryProcessingResults(
                         QueryPerformanceRecorder.getInstance());
 
@@ -849,21 +893,23 @@ public class SessionState {
                     shouldLog = QueryPerformanceRecorder.getInstance().endQuery();
                 }
             } catch (final Exception err) {
-                exception = err;
+                caughtException = err;
                 synchronized (this) {
                     if (!isExportStateTerminal(state)) {
                         assignErrorId();
-                        log.error().append("Internal Error '").append(errorId).append("' ").append(err).endl();
+                        if (!(caughtException instanceof StatusRuntimeException)) {
+                            log.error().append("Internal Error '").append(errorId).append("' ").append(err).endl();
+                        }
                         setState(ExportNotification.State.FAILED);
                     }
                 }
             } finally {
-                if (exception != null && queryProcessingResults != null) {
-                    queryProcessingResults.setException(exception.toString());
+                if (caughtException != null && queryProcessingResults != null) {
+                    queryProcessingResults.setException(caughtException.toString());
                 }
                 QueryPerformanceRecorder.resetInstance();
             }
-            if ((shouldLog || exception != null) && queryProcessingResults != null) {
+            if ((shouldLog || caughtException != null) && queryProcessingResults != null) {
                 final MemoryTableLoggers memLoggers = MemoryTableLoggers.getInstance();
                 final QueryPerformanceLogLogger qplLogger = memLoggers.getQplLogger();
                 final QueryOperationPerformanceLogLogger qoplLogger = memLoggers.getQoplLogger();
@@ -966,6 +1012,10 @@ public class SessionState {
         protected synchronized void destroy() {
             super.destroy();
             result = null;
+            // keep SREs since error propagation won't reference a real errorId on the server
+            if (!(caughtException instanceof StatusRuntimeException)) {
+                caughtException = null;
+            }
         }
 
         /**
@@ -1118,7 +1168,7 @@ public class SessionState {
                 isClosed = true;
             }
 
-            safelyExecuteLocked(listener, listener::onCompleted);
+            safelyComplete(listener);
         }
     }
 
@@ -1132,7 +1182,9 @@ public class SessionState {
          * @param dependentExportId an identifier for the export id of the dependent that caused the failure if
          *        applicable
          */
-        void onError(final ExportNotification.State resultState, @Nullable final String errorContext,
+        void onError(final ExportNotification.State resultState,
+                final String errorContext,
+                @Nullable final Exception cause,
                 @Nullable final String dependentExportId);
     }
     @FunctionalInterface
@@ -1161,17 +1213,6 @@ public class SessionState {
             } else {
                 // noinspection unchecked
                 this.export = (ExportObject<T>) exportMap.putIfAbsent(exportId, EXPORT_OBJECT_VALUE_FACTORY);
-                switch (this.export.getState()) {
-                    case UNKNOWN:
-                        return;
-                    case RELEASED:
-                    case CANCELLED:
-                        throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
-                                "export already released/cancelled id: " + exportId);
-                    default:
-                        throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
-                                "cannot re-export to existing exportId: " + exportId);
-                }
             }
         }
 
@@ -1239,12 +1280,22 @@ public class SessionState {
          * @return this builder
          */
         public ExportBuilder<T> onErrorHandler(final ExportErrorGrpcHandler errorHandler) {
-            return onError(((resultState, errorContext, dependentExportId) -> {
+            return onError(((resultState, errorContext, cause, dependentExportId) -> {
+                if (cause instanceof StatusRuntimeException) {
+                    errorHandler.onError((StatusRuntimeException) cause);
+                    return;
+                }
+
                 final String dependentStr = dependentExportId == null ? ""
                         : (" (related parent export id: " + dependentExportId + ")");
-                errorHandler.onError(GrpcUtil.statusRuntimeException(
-                        Code.FAILED_PRECONDITION,
-                        "Details Logged w/ID '" + errorContext + "'" + dependentStr));
+                if (cause == null) {
+                    errorHandler.onError(GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
+                            "Export in state " + resultState + dependentStr));
+                } else {
+                    errorHandler.onError(GrpcUtil.statusRuntimeException(
+                            Code.FAILED_PRECONDITION,
+                            "Details Logged w/ID '" + errorContext + "'" + dependentStr));
+                }
             }));
         }
 
@@ -1261,9 +1312,7 @@ public class SessionState {
          */
         public ExportBuilder<T> onError(StreamObserver<?> streamObserver) {
             return onErrorHandler(statusRuntimeException -> {
-                synchronized (streamObserver) {
-                    streamObserver.onError(statusRuntimeException);
-                }
+                safelyError(streamObserver, statusRuntimeException);
             });
         }
 
@@ -1332,9 +1381,7 @@ public class SessionState {
                         throw GrpcUtil.statusRuntimeException(Code.UNAUTHENTICATED, "session has expired");
                     }
 
-                    final ExportObject<Object> retval = new ExportObject<>(SessionState.this, key);
-                    retval.retainReference();
-                    return retval;
+                    return new ExportObject<>(SessionState.this, key);
                 }
             };
 }

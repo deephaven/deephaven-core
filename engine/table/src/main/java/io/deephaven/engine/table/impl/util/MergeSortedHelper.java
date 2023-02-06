@@ -279,11 +279,6 @@ public class MergeSortedHelper {
         }
 
         @Override
-        public boolean preventsParallelism() {
-            return innerSources.stream().anyMatch(ColumnSource::preventsParallelism);
-        }
-
-        @Override
         public boolean isStateless() {
             return innerSources.stream().allMatch(ColumnSource::isStateless);
         }

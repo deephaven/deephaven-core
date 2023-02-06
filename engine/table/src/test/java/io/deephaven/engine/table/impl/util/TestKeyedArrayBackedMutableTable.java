@@ -13,7 +13,7 @@ import io.deephaven.engine.util.config.InputTableStatusListener;
 import io.deephaven.engine.util.config.MutableInputTable;
 import io.deephaven.engine.table.impl.FailureListener;
 import io.deephaven.engine.table.impl.TableUpdateValidator;
-import io.deephaven.test.junit4.EngineCleanup;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.util.FunctionalInterfaces;
 import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
@@ -27,7 +27,7 @@ import java.util.concurrent.CountDownLatch;
 
 import static io.deephaven.engine.util.TableTools.showWithRowSet;
 import static io.deephaven.engine.util.TableTools.stringCol;
-import static io.deephaven.engine.table.impl.TstUtils.assertTableEquals;
+import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 
 public class TestKeyedArrayBackedMutableTable {
 
@@ -43,7 +43,7 @@ public class TestKeyedArrayBackedMutableTable {
         final TableUpdateValidator validator = TableUpdateValidator.make("kabut", kabut);
         final Table validatorResult = validator.getResultTable();
         final FailureListener failureListener = new FailureListener();
-        validatorResult.listenForUpdates(failureListener);
+        validatorResult.addUpdateListener(failureListener);
 
         assertTableEquals(input, kabut);
 
@@ -101,7 +101,7 @@ public class TestKeyedArrayBackedMutableTable {
         final TableUpdateValidator validator = TableUpdateValidator.make("aoabmt", aoabmt);
         final Table validatorResult = validator.getResultTable();
         final FailureListener failureListener = new FailureListener();
-        validatorResult.listenForUpdates(failureListener);
+        validatorResult.addUpdateListener(failureListener);
 
         assertTableEquals(input, aoabmt);
 
@@ -125,7 +125,7 @@ public class TestKeyedArrayBackedMutableTable {
         final TableUpdateValidator validator = TableUpdateValidator.make("kabut", kabut);
         final Table validatorResult = validator.getResultTable();
         final FailureListener failureListener = new FailureListener();
-        validatorResult.listenForUpdates(failureListener);
+        validatorResult.addUpdateListener(failureListener);
 
         assertTableEquals(input, kabut);
 
@@ -149,7 +149,7 @@ public class TestKeyedArrayBackedMutableTable {
         final TableUpdateValidator validator = TableUpdateValidator.make("kabut", kabut);
         final Table validatorResult = validator.getResultTable();
         final FailureListener failureListener = new FailureListener();
-        validatorResult.listenForUpdates(failureListener);
+        validatorResult.addUpdateListener(failureListener);
 
         assertTableEquals(input, kabut);
 
@@ -191,7 +191,7 @@ public class TestKeyedArrayBackedMutableTable {
         final TableUpdateValidator validator = TableUpdateValidator.make("kabut", kabut);
         final Table validatorResult = validator.getResultTable();
         final FailureListener failureListener = new FailureListener();
-        validatorResult.listenForUpdates(failureListener);
+        validatorResult.addUpdateListener(failureListener);
 
         assertTableEquals(input, kabut);
 
@@ -221,7 +221,7 @@ public class TestKeyedArrayBackedMutableTable {
         final TableUpdateValidator validator = TableUpdateValidator.make("kabut", kabut);
         final Table validatorResult = validator.getResultTable();
         final FailureListener failureListener = new FailureListener();
-        validatorResult.listenForUpdates(failureListener);
+        validatorResult.addUpdateListener(failureListener);
 
         assertTableEquals(input, kabut);
 

@@ -1,14 +1,15 @@
 package io.deephaven.lang.completion
 
-import io.deephaven.engine.table.ColumnDefinition
+import io.deephaven.engine.context.TestExecutionContext
+import io.deephaven.engine.table.Table
 import io.deephaven.engine.table.TableDefinition
 import io.deephaven.engine.util.VariableProvider
 import io.deephaven.internal.log.LoggerFactory
 import io.deephaven.io.logger.Logger
+import io.deephaven.lang.parse.CompletionParser
 import io.deephaven.proto.backplane.script.grpc.ChangeDocumentRequest.TextDocumentContentChangeEvent
 import io.deephaven.proto.backplane.script.grpc.CompletionItem
-import io.deephaven.engine.table.Table
-import io.deephaven.lang.parse.CompletionParser
+import io.deephaven.util.SafeCloseable
 import spock.lang.Specification
 import spock.lang.Unroll
 
@@ -31,6 +32,16 @@ class ChunkerCompletionHandlerTest extends Specification implements ChunkerCompl
         result.setText(text)
         result.setRangeLength(0)
         return result.build()
+    }
+
+    private SafeCloseable executionContext;
+
+    void setup() {
+        executionContext = TestExecutionContext.createForUnitTests().open();
+    }
+
+    void cleanup() {
+        executionContext.close();
     }
 
     @Override
@@ -149,8 +160,8 @@ b = 2
 c = 3
 """
         String src2 = "t = "
-        p.update(uri, "0", [ makeChange(0, 0, src1) ])
-        p.update(uri, "1", [ makeChange(3, 0, src2) ])
+        p.update(uri, 0, [ makeChange(0, 0, src1) ])
+        p.update(uri, 1, [ makeChange(3, 0, src2) ])
         doc = p.finish(uri)
 
         VariableProvider variables = Mock(VariableProvider) {

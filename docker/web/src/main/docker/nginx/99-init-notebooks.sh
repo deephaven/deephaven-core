@@ -3,8 +3,8 @@ set -o errexit
 set -o pipefail
 set -o nounset
 
-mkdir -p /data/notebooks
-chown nginx /data/notebooks
+test -d /data/notebooks || sudo -n -u root /bin/mkdir -p /data/notebooks
+test "nginx" == "$(stat -c %U /data/notebooks)" || sudo -n -u root /bin/chown nginx.nginx /data/notebooks
 
-mkdir -p /data/layouts
-chown nginx /data/layouts
+test -d /data/layouts || sudo -n -u root /bin/mkdir -p /data/layouts
+test "nginx" == "$(stat -c %U /data/layouts)" || sudo -n -u root /bin/chown nginx.nginx /data/layouts

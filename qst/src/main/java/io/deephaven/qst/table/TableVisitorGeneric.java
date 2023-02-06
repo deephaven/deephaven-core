@@ -53,6 +53,11 @@ public abstract class TableVisitorGeneric implements TableSpec.Visitor {
     }
 
     @Override
+    public void visit(SnapshotWhenTable snapshotWhenTable) {
+        accept(snapshotWhenTable);
+    }
+
+    @Override
     public void visit(WhereTable whereTable) {
         accept(whereTable);
     }
@@ -60,11 +65,6 @@ public abstract class TableVisitorGeneric implements TableSpec.Visitor {
     @Override
     public void visit(WhereInTable whereInTable) {
         accept(whereInTable);
-    }
-
-    @Override
-    public void visit(WhereNotInTable whereNotInTable) {
-        accept(whereNotInTable);
     }
 
     @Override
@@ -118,13 +118,13 @@ public abstract class TableVisitorGeneric implements TableSpec.Visitor {
     }
 
     @Override
-    public void visit(AggregateAllByTable aggAllByTable) {
-        accept(aggAllByTable);
+    public void visit(AggregateAllTable aggregateAllTable) {
+        accept(aggregateAllTable);
     }
 
     @Override
-    public void visit(AggregationTable aggregationTable) {
-        accept(aggregationTable);
+    public void visit(AggregateTable aggregateTable) {
+        accept(aggregateTable);
     }
 
     @Override
@@ -143,12 +143,12 @@ public abstract class TableVisitorGeneric implements TableSpec.Visitor {
     }
 
     @Override
-    public void visit(CountByTable countByTable) {
-        accept(countByTable);
+    public void visit(UpdateByTable updateByTable) {
+        accept(updateByTable);
     }
 
     @Override
-    public void visit(UpdateByTable updateByTable) {
-        accept(updateByTable);
+    public void visit(UngroupTable ungroupTable) {
+        accept(ungroupTable);
     }
 }

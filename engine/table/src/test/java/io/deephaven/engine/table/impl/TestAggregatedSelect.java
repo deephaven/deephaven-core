@@ -4,10 +4,12 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.FileUtils;
+import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.DataColumn;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.vector.Vector;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.engine.util.TableTools;
@@ -28,9 +30,11 @@ public class TestAggregatedSelect extends TestCase {
     }
 
     private static File tableDirectory;
+    private SafeCloseable executionContext;
 
     @Before
     public void setUp() {
+        executionContext = TestExecutionContext.createForUnitTests().open();
         try {
             tableDirectory = Files.createTempDirectory("TestAggregatedSelect").toFile();
         } catch (IOException e) {
@@ -40,6 +44,7 @@ public class TestAggregatedSelect extends TestCase {
 
     @After
     public void tearDown() {
+        executionContext.close();
         FileUtils.deleteRecursivelyOnNFS(tableDirectory);
     }
 

@@ -5,6 +5,8 @@ plugins {
 
 dependencies {
 
+    api project(':clock')
+
     implementation depTrove3
     compileOnlyApi depAnnotations
     implementation depCommonsLang3
@@ -13,6 +15,7 @@ dependencies {
 
     Classpaths.inheritJUnitClassic(project, 'testImplementation')
     Classpaths.inheritJMock(project, 'testImplementation')
+    testImplementation project(":base-test-utils")
 }
 
 sourceSets {

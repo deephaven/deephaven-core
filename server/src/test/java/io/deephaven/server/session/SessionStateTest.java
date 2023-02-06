@@ -5,18 +5,19 @@ package io.deephaven.server.session;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.AssertionFailure;
+import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.proto.util.ExportTicketHelper;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
-import io.deephaven.engine.liveness.LivenessStateException;
 import io.deephaven.server.util.TestControlledScheduler;
 import io.deephaven.proto.backplane.grpc.ExportNotification;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.util.SafeCloseable;
-import io.deephaven.util.auth.AuthContext;
+import io.deephaven.auth.AuthContext;
+import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import org.apache.commons.lang3.mutable.MutableBoolean;
@@ -31,6 +32,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 
 import static io.deephaven.proto.backplane.grpc.ExportNotification.State.CANCELLED;
@@ -58,9 +60,9 @@ public class SessionStateTest {
         livenessScope = new LivenessScope();
         LivenessScopeStack.push(livenessScope);
         scheduler = new TestControlledScheduler();
-        session = new SessionState(scheduler, AUTH_CONTEXT);
+        session = new SessionState(scheduler, TestExecutionContext::createForUnitTests, AUTH_CONTEXT);
         session.initializeExpiration(new SessionService.TokenExpiration(UUID.randomUUID(),
-                DateTimeUtils.nanosToTime(Long.MAX_VALUE), session));
+                DateTimeUtils.nanosToTime(Long.MAX_VALUE).getMillis(), session));
         nextExportId = 1;
     }
 
@@ -77,7 +79,7 @@ public class SessionStateTest {
     public void testDestroyOnExportRelease() {
         final CountingLivenessReferent export = new CountingLivenessReferent();
         final SessionState.ExportObject<Object> exportObj;
-        try (final SafeCloseable scope = LivenessScopeStack.open()) {
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
             exportObj = session.newExport(nextExportId++).submit(() -> export);
         }
 
@@ -103,7 +105,7 @@ public class SessionStateTest {
     public void testServerExportDestroyOnExportRelease() {
         final CountingLivenessReferent export = new CountingLivenessReferent();
         final SessionState.ExportObject<Object> exportObj;
-        try (final SafeCloseable scope = LivenessScopeStack.open()) {
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
             exportObj = session.newServerSideExport(export);
         }
 
@@ -123,7 +125,7 @@ public class SessionStateTest {
     public void testDestroyOnSessionRelease() {
         final CountingLivenessReferent export = new CountingLivenessReferent();
         final SessionState.ExportObject<Object> exportObj;
-        try (final SafeCloseable scope = LivenessScopeStack.open()) {
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
             exportObj = session.newExport(nextExportId++).submit(() -> export);
         }
 
@@ -150,7 +152,7 @@ public class SessionStateTest {
     public void testServerExportDestroyOnSessionRelease() {
         final CountingLivenessReferent export = new CountingLivenessReferent();
         final SessionState.ExportObject<Object> exportObj;
-        try (final SafeCloseable scope = LivenessScopeStack.open()) {
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
             exportObj = session.newServerSideExport(export);
         }
 
@@ -218,9 +220,9 @@ public class SessionStateTest {
         exportObj.cancel();
         Assert.eq(exportObj.getState(), "exportObj.getState()", ExportNotification.State.CANCELLED);
 
+        // We should be able to cancel prior to definition without error.
         final MutableBoolean submitted = new MutableBoolean();
-        expectException(StatusRuntimeException.class,
-                () -> session.newExport(nextExportId++).submit(submitted::setTrue));
+        session.newExport(nextExportId++).submit(submitted::setTrue);
         scheduler.runUntilQueueEmpty();
 
         Assert.eq(exportObj.getState(), "exportObj.getState()", ExportNotification.State.CANCELLED);
@@ -267,7 +269,7 @@ public class SessionStateTest {
     public void testCancelPostExport() {
         final MutableObject<LivenessArtifact> export = new MutableObject<>();
         final SessionState.ExportObject<Object> exportObj;
-        try (final SafeCloseable scope = LivenessScopeStack.open()) {
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
             exportObj = session.newExport(nextExportId++).submit(() -> {
                 export.setValue(new PublicLivenessArtifact());
                 return export.getValue();
@@ -399,7 +401,7 @@ public class SessionStateTest {
         final CountingLivenessReferent export = new CountingLivenessReferent();
 
         final SessionState.ExportObject<CountingLivenessReferent> e1;
-        try (final SafeCloseable scope = LivenessScopeStack.open()) {
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
             e1 = session.<CountingLivenessReferent>newExport(nextExportId++)
                     .submit(() -> export);
         }
@@ -425,7 +427,7 @@ public class SessionStateTest {
         final CountingLivenessReferent export = new CountingLivenessReferent();
 
         final SessionState.ExportObject<CountingLivenessReferent> e1;
-        try (final SafeCloseable scope = LivenessScopeStack.open()) {
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
             e1 = session.<CountingLivenessReferent>newExport(nextExportId++)
                     .submit(() -> export);
         }
@@ -436,12 +438,12 @@ public class SessionStateTest {
         Assert.eq(e1.getState(), "e1.getState()", ExportNotification.State.RELEASED);
 
         final MutableBoolean errored = new MutableBoolean();
-        expectException(LivenessStateException.class, () -> {
-            final SessionState.ExportObject<Object> e2 = session.newExport(nextExportId++)
-                    .require(e1)
-                    .onErrorHandler(err -> errored.setTrue())
-                    .submit(() -> Assert.gt(e1.get().refCount, "e1.get().refCount", 0));
-        });
+        final SessionState.ExportObject<?> e2 = session.newExport(nextExportId++)
+                .require(e1)
+                .onErrorHandler(err -> errored.setTrue())
+                .submit((Callable<Object>) Assert::statementNeverExecuted);
+        Assert.eqTrue(errored.booleanValue(), "errored.booleanValue()");
+        Assert.eq(e2.getState(), "e2.getState()", ExportNotification.State.DEPENDENCY_RELEASED);
     }
 
     @Test
@@ -593,7 +595,7 @@ public class SessionStateTest {
     public void testDependencyReleasedBeforeExport() {
         final CountingLivenessReferent e1 = new CountingLivenessReferent();
         final SessionState.ExportObject<Object> e1obj;
-        try (final SafeCloseable scope = LivenessScopeStack.open()) {
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
             e1obj = session.newExport(nextExportId++).submit(() -> e1);
         }
         scheduler.runUntilQueueEmpty();
@@ -634,10 +636,10 @@ public class SessionStateTest {
 
     @Test
     public void testVerifyExpirationSession() {
-        final SessionState session = new SessionState(scheduler, AUTH_CONTEXT);
-        final SessionService.TokenExpiration expiration =
-                new SessionService.TokenExpiration(UUID.randomUUID(), DateTimeUtils.nanosToTime(Long.MAX_VALUE),
-                        session);
+        final SessionState session =
+                new SessionState(scheduler, TestExecutionContext::createForUnitTests, AUTH_CONTEXT);
+        final SessionService.TokenExpiration expiration = new SessionService.TokenExpiration(UUID.randomUUID(),
+                DateTimeUtils.nanosToTime(Long.MAX_VALUE).getMillis(), session);
         expectException(IllegalArgumentException.class, () -> this.session.initializeExpiration(expiration));
         expectException(IllegalArgumentException.class, () -> this.session.updateExpiration(expiration));
     }
@@ -653,7 +655,7 @@ public class SessionStateTest {
     @Test
     public void testExpiredByTime() {
         session.updateExpiration(
-                new SessionService.TokenExpiration(UUID.randomUUID(), scheduler.currentTime(), session));
+                new SessionService.TokenExpiration(UUID.randomUUID(), scheduler.currentTimeMillis(), session));
         Assert.eqNull(session.getExpiration(), "session.getExpiration()"); // already expired
         expectException(StatusRuntimeException.class, () -> session.newServerSideExport(new Object()));
         expectException(StatusRuntimeException.class, () -> session.nonExport());
@@ -744,7 +746,7 @@ public class SessionStateTest {
     @Test
     public void testExportListenerOnCompleteOnRemoval() {
         final QueueingExportListener listener = new QueueingExportListener();
-        try (final SafeCloseable scope = LivenessScopeStack.open()) {
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
             session.addExportListener(listener);
         }
         Assert.eqFalse(listener.isComplete, "listener.isComplete");
@@ -755,7 +757,7 @@ public class SessionStateTest {
     @Test
     public void testExportListenerOnCompleteOnSessionExpire() {
         final QueueingExportListener listener = new QueueingExportListener();
-        try (final SafeCloseable scope = LivenessScopeStack.open()) {
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
             session.addExportListener(listener);
         }
         Assert.eqFalse(listener.isComplete, "listener.isComplete");
@@ -862,7 +864,7 @@ public class SessionStateTest {
         final QueueingExportListener listener = new QueueingExportListener();
         session.addExportListener(listener);
 
-        final SessionState.ExportObject<SessionState> e1 = session.<SessionState>getExport(nextExportId++);
+        final SessionState.ExportObject<SessionState> e1 = session.getExport(nextExportId++);
         final SessionState.ExportObject<SessionState> e4 =
                 session.<SessionState>newExport(nextExportId++).submit(() -> session); // exported
         final SessionState.ExportObject<SessionState> e5 =
@@ -1028,7 +1030,6 @@ public class SessionStateTest {
 
     @Test
     public void testExportListenerTerminalDuringSeqSent() {
-        final ArrayList<ExportNotification> notifications = new ArrayList<>();
         final SessionState.ExportBuilder<SessionState> b1 = session.newExport(nextExportId++);
         final SessionState.ExportBuilder<SessionState> b2 = session.newExport(nextExportId++);
         final SessionState.ExportBuilder<SessionState> b3 = session.newExport(nextExportId++);
@@ -1247,6 +1248,99 @@ public class SessionStateTest {
         Assert.eq(clr.refCount, "clr.refCount", 0);
     }
 
+    @Test
+    public void testCascadingStatusRuntimeFailureDeliversToErrorHandler() {
+        final SessionState.ExportObject<Object> e1 = session.newExport(nextExportId++)
+                .submit(() -> {
+                    throw Status.DATA_LOSS.asRuntimeException();
+                });
+
+        final MutableBoolean submitRan = new MutableBoolean();
+        final MutableObject<Throwable> caughtErr = new MutableObject<>();
+        final StreamObserver<?> observer = new StreamObserver<>() {
+            @Override
+            public void onNext(Object value) {
+                throw new RuntimeException("this should not reach test framework");
+            }
+
+            @Override
+            public void onError(Throwable t) {
+                caughtErr.setValue(t);
+            }
+
+            @Override
+            public void onCompleted() {
+                throw new RuntimeException("this should not reach test framework");
+            }
+        };
+        session.newExport(nextExportId++)
+                .onError(observer)
+                .require(e1)
+                .submit(submitRan::setTrue);
+
+        scheduler.runUntilQueueEmpty();
+        Assert.eqFalse(submitRan.booleanValue(), "submitRan.booleanValue()");
+        Assert.eqTrue(caughtErr.getValue() instanceof StatusRuntimeException,
+                "caughtErr.getValue() instanceof StatusRuntimeException");
+
+        final StatusRuntimeException sre = (StatusRuntimeException) caughtErr.getValue();
+        Assert.eq(sre.getStatus(), "sre.getStatus()", Status.DATA_LOSS, "Status.DATA_LOSS");
+    }
+
+    @Test
+    public void testCascadingStatusRuntimeFailureDeliversToErrorHandlerAlreadyFailed() {
+        final SessionState.ExportObject<Object> e1 = SessionState.wrapAsFailedExport(
+                Status.DATA_LOSS.asRuntimeException());
+
+        final MutableBoolean submitRan = new MutableBoolean();
+        final MutableObject<Throwable> caughtErr = new MutableObject<>();
+        final StreamObserver<?> observer = new StreamObserver<>() {
+            @Override
+            public void onNext(Object value) {
+                throw new RuntimeException("this should not reach test framework");
+            }
+
+            @Override
+            public void onError(Throwable t) {
+                caughtErr.setValue(t);
+            }
+
+            @Override
+            public void onCompleted() {
+                throw new RuntimeException("this should not reach test framework");
+            }
+        };
+        session.newExport(nextExportId++)
+                .onError(observer)
+                .require(e1)
+                .submit(submitRan::setTrue);
+
+        scheduler.runUntilQueueEmpty();
+        Assert.eqFalse(submitRan.booleanValue(), "submitRan.booleanValue()");
+        Assert.eqTrue(caughtErr.getValue() instanceof StatusRuntimeException,
+                "caughtErr.getValue() instanceof StatusRuntimeException");
+
+        final StatusRuntimeException sre = (StatusRuntimeException) caughtErr.getValue();
+        Assert.eq(sre.getStatus(), "sre.getStatus()", Status.DATA_LOSS, "Status.DATA_LOSS");
+    }
+
+    @Test
+    public void testDestroyedExportObjectDependencyFailsNotThrows() {
+        final SessionState.ExportObject<?> failedExport;
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            failedExport = SessionState.wrapAsFailedExport(new RuntimeException());
+        }
+        Assert.eqFalse(failedExport.tryIncrementReferenceCount(), "failedExport.tryIncrementReferenceCount()");
+        final MutableBoolean errored = new MutableBoolean();
+        final SessionState.ExportObject<?> result =
+                session.newExport(nextExportId++)
+                        .onErrorHandler(err -> errored.setTrue())
+                        .require(failedExport)
+                        .submit(failedExport::get);
+        Assert.eqTrue(errored.booleanValue(), "errored.booleanValue()");
+        Assert.eq(result.getState(), "result.getState()", DEPENDENCY_FAILED);
+    }
+
     private static long getExportId(final ExportNotification notification) {
         return ticketToExportId(notification.getTicket(), "test");
     }
@@ -1352,5 +1446,5 @@ public class SessionStateTest {
         public WeakReference<? extends LivenessReferent> getWeakReference() {
             return new WeakReference<>(this);
         }
-    };
+    }
 }

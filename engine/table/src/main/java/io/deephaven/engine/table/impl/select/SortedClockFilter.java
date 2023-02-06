@@ -78,7 +78,7 @@ public class SortedClockFilter extends ClockFilter {
             return null;
         }
         final RowSetBuilderRandom addedBuilder =
-                range.consumeKeysAndAppendAdded(nanosColumnSource, clock.currentTimeMicros() * 1000L, null);
+                range.consumeKeysAndAppendAdded(nanosColumnSource, clock.currentTimeNanos(), null);
         return addedBuilder == null ? null : addedBuilder.build();
     }
 }

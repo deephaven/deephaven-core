@@ -12,6 +12,7 @@ import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.util.BooleanUtils;
 import static io.deephaven.util.BooleanUtils.NULL_BOOLEAN_AS_BYTE;
+import io.deephaven.engine.table.WritableSourceWithPrepareForParallelPopulation;
 
 import io.deephaven.engine.table.impl.DefaultGetContext;
 import io.deephaven.chunk.*;
@@ -29,6 +30,7 @@ import io.deephaven.engine.table.impl.sources.sparse.LongOneOrN;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.util.SoftRecycler;
 import gnu.trove.list.array.TLongArrayList;
+import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
@@ -136,14 +138,9 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
         final RowSet.SearchIterator it = (shiftDelta > 0) ? keysToShift.reverseIterator() : keysToShift.searchIterator();
         it.forEachLong((i) -> {
             set(i + shiftDelta, getBoolean(i));
-            set(i, NULL_BOOLEAN);
+            setNull(i);
             return true;
         });
-    }
-
-    @Override
-    public void remove(RowSet toRemove) {
-        toRemove.forEachRowKey((i) -> { set(i, NULL_BOOLEAN); return true; });
     }
 
     // region boxed methods
@@ -291,6 +288,11 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
         final ByteOneOrN.Block0 localPrevBlocks = prevBlocks;
         final LongOneOrN.Block0 localPrevInUse = prevInUse;
 
+        if (localPrevBlocks == null) {
+            assert prevInUse == null;
+            return;
+        }
+
         // there is no reason to allow these to be used anymore; instead we just null them out so that any
         // getPrev calls will immediately return get().
         prevInUse = null;
@@ -413,7 +415,7 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
     }
 
     @Override
-    public void ensurePrevious(RowSet changedRows) {
+    public void prepareForParallelPopulation(RowSet changedRows) {
         final long currentStep = LogicalClock.DEFAULT.currentStep();
         if (ensurePreviousClockCycle == currentStep) {
             throw new IllegalStateException("May not call ensurePrevious twice on one clock cycle!");
@@ -424,15 +426,13 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
             return;
         }
 
-        if (prevFlusher == null) {
-            return;
+        if (prevFlusher != null) {
+            prevFlusher.maybeActivate();
         }
-        prevFlusher.maybeActivate();
 
-        try (final RowSet.Iterator it = changedRows.iterator()) {
-            long key = it.nextLong();
-            while (true) {
-                final long firstKey = key;
+        try (final RowSequence.Iterator it = changedRows.getRowSequenceIterator()) {
+            do {
+                final long firstKey = it.peekNextKey();
                 final long maxKeyInCurrentBlock = firstKey | INDEX_MASK;
 
                 final int block0 = (int) (firstKey >> BLOCK0_SHIFT) & BLOCK0_MASK;
@@ -440,23 +440,24 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
                 final int block2 = (int) (firstKey >> BLOCK2_SHIFT) & BLOCK2_MASK;
                 final byte[] block = ensureBlock(block0, block1, block2);
 
+                if (prevFlusher == null) {
+                    it.advance(maxKeyInCurrentBlock + 1);
+                    continue;
+                }
+
                 final byte[] prevBlock = ensurePrevBlock(firstKey, block0, block1, block2);
                 final long[] inUse = prevInUse.get(block0).get(block1).get(block2);
                 assert inUse != null;
 
-                do {
+                it.getNextRowSequenceThrough(maxKeyInCurrentBlock).forAllRowKeys(key -> {
                     final int indexWithinBlock = (int) (key & INDEX_MASK);
                     final int indexWithinInUse = indexWithinBlock >> LOG_INUSE_BITSET_SIZE;
                     final long maskWithinInUse = 1L << (indexWithinBlock & IN_USE_MASK);
 
                     prevBlock[indexWithinBlock] = block[indexWithinBlock];
                     inUse[indexWithinInUse] |= maskWithinInUse;
-                } while (it.hasNext() && (key = it.nextLong()) <= maxKeyInCurrentBlock);
-                if (key <= maxKeyInCurrentBlock) {
-                    // we did not advance the iterator so should break
-                    break;
-                }
-            }
+                });
+            } while (it.hasMore());
         }
     }
 
@@ -629,7 +630,7 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
     // region fillFromChunkByRanges
     @Override
     void fillFromChunkByRanges(@NotNull RowSequence rowSequence, Chunk<? extends Values> src) {
-        if (rowSequence.size() == 0) {
+        if (rowSequence.isEmpty()) {
             return;
         }
         final ObjectChunk<Boolean, ? extends Values> chunk = src.asObjectChunk();
@@ -700,7 +701,7 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
     // region fillFromChunkByKeys
     @Override
     void fillFromChunkByKeys(@NotNull RowSequence rowSequence, Chunk<? extends Values> src) {
-        if (rowSequence.size() == 0) {
+        if (rowSequence.isEmpty()) {
             return;
         }
         final ObjectChunk<Boolean, ? extends Values> chunk = src.asObjectChunk();
@@ -754,6 +755,137 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
         }
     }
     // endregion fillFromChunkByKeys
+
+    // region nullByRanges
+    @Override
+    void nullByRanges(@NotNull RowSequence rowSequence) {
+        if (rowSequence.isEmpty()) {
+            return;
+        }
+
+        final boolean hasPrev = prevFlusher != null;
+
+        if (hasPrev) {
+            prevFlusher.maybeActivate();
+        }
+
+        try (RowSequence.Iterator okIt = rowSequence.getRowSequenceIterator()) {
+            while (okIt.hasMore()) {
+                final long firstKey = okIt.peekNextKey();
+                final long maxKeyInCurrentBlock = firstKey | INDEX_MASK;
+                final RowSequence blockOk = okIt.getNextRowSequenceThrough(maxKeyInCurrentBlock);
+
+                final int block0 = (int) (firstKey >> BLOCK0_SHIFT) & BLOCK0_MASK;
+                final int block1 = (int) (firstKey >> BLOCK1_SHIFT) & BLOCK1_MASK;
+                final int block2 = (int) (firstKey >> BLOCK2_SHIFT) & BLOCK2_MASK;
+                final byte [] block = blocks.getInnermostBlockByKeyOrNull(firstKey);
+
+                if (block == null) {
+                    continue;
+                }
+
+                blockOk.forAllRowKeyRanges((s, e) -> {
+                    final int length = (int)((e - s) + 1);
+
+                    final int sIndexWithinBlock = (int) (s & INDEX_MASK);
+                    // This 'if' with its constant condition should be very friendly to the branch predictor.
+                    if (hasPrev) {
+                        boolean prevRequired = false;
+                        for (int jj = 0; jj < length; ++jj) {
+                            final int indexWithinBlock = sIndexWithinBlock + jj;
+                            if (block[indexWithinBlock] != NULL_BOOLEAN_AS_BYTE) {
+                                prevRequired = true;
+                                break;
+                            }
+                        }
+
+                        if (prevRequired) {
+                            final byte[] prevBlock = ensurePrevBlock(firstKey, block0, block1, block2);
+                            final long[] inUse = prevInUse.get(block0).get(block1).get(block2);
+
+                            assert inUse != null;
+                            assert prevBlock != null;
+
+                            for (int jj = 0; jj < length; ++jj) {
+                                final int indexWithinBlock = sIndexWithinBlock + jj;
+                                final int indexWithinInUse = indexWithinBlock >> LOG_INUSE_BITSET_SIZE;
+                                final long maskWithinInUse = 1L << (indexWithinBlock & IN_USE_MASK);
+
+                                if ((inUse[indexWithinInUse] & maskWithinInUse) == 0) {
+                                    prevBlock[indexWithinBlock] = block[indexWithinBlock];
+                                    inUse[indexWithinInUse] |= maskWithinInUse;
+                                }
+                            }
+
+                            Arrays.fill(block, sIndexWithinBlock, sIndexWithinBlock + length, NULL_BOOLEAN_AS_BYTE);
+                        }
+                    } else {
+                        Arrays.fill(block, sIndexWithinBlock, sIndexWithinBlock + length, NULL_BOOLEAN_AS_BYTE);
+                    }
+                });
+            }
+        }
+    }
+    // endregion nullByRanges
+
+    // region nullByKeys
+    @Override
+    void nullByKeys(@NotNull RowSequence rowSequence) {
+        if (rowSequence.isEmpty()) {
+            return;
+        }
+
+        final boolean hasPrev = prevFlusher != null;
+
+        if (hasPrev) {
+            prevFlusher.maybeActivate();
+        }
+
+        try (RowSequence.Iterator okIt = rowSequence.getRowSequenceIterator()) {
+            while (okIt.hasMore()) {
+                final long firstKey = okIt.peekNextKey();
+                final long maxKeyInCurrentBlock = firstKey | INDEX_MASK;
+                final RowSequence blockOk = okIt.getNextRowSequenceThrough(maxKeyInCurrentBlock);
+
+                final int block0 = (int) (firstKey >> BLOCK0_SHIFT) & BLOCK0_MASK;
+                final int block1 = (int) (firstKey >> BLOCK1_SHIFT) & BLOCK1_MASK;
+                final int block2 = (int) (firstKey >> BLOCK2_SHIFT) & BLOCK2_MASK;
+                final byte[] block = blocks.getInnermostBlockByKeyOrNull(firstKey);
+                if (block == null) {
+                    continue;
+                }
+
+                MutableObject<byte[]> prevBlock = new MutableObject<>();
+                MutableObject<long[]> inUse = new MutableObject<>();
+
+                blockOk.forAllRowKeys(key -> {
+
+                    final int indexWithinBlock = (int) (key & INDEX_MASK);
+                    // This 'if' with its constant condition should be very friendly to the branch predictor.
+                    if (hasPrev) {
+
+                        final byte oldValue = block[indexWithinBlock];
+                        if (oldValue != NULL_BOOLEAN_AS_BYTE) {
+                            if (prevBlock.getValue() == null) {
+                                prevBlock.setValue(ensurePrevBlock(firstKey, block0, block1, block2));
+                                inUse.setValue(prevInUse.get(block0).get(block1).get(block2));
+                            }
+
+                            final int indexWithinInUse = indexWithinBlock >> LOG_INUSE_BITSET_SIZE;
+                            final long maskWithinInUse = 1L << (indexWithinBlock & IN_USE_MASK);
+
+                            if ((inUse.getValue()[indexWithinInUse] & maskWithinInUse) == 0) {
+                                prevBlock.getValue()[indexWithinBlock] = oldValue;
+                                inUse.getValue()[indexWithinInUse] |= maskWithinInUse;
+                            }
+                        }
+                    }
+                    block[indexWithinBlock] = NULL_BOOLEAN_AS_BYTE;
+                });
+            }
+        }
+    }
+    // endregion nullByKeys
 
     // region fillFromChunkUnordered
     @Override
@@ -844,7 +976,7 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
         return (ColumnSource<ALTERNATE_DATA_TYPE>) new BooleanSparseArraySource.ReinterpretedAsByte(this);
     }
 
-    public static class ReinterpretedAsByte extends AbstractColumnSource<Byte> implements MutableColumnSourceGetDefaults.ForByte, FillUnordered, WritableColumnSource<Byte> {
+    public static class ReinterpretedAsByte extends AbstractColumnSource<Byte> implements MutableColumnSourceGetDefaults.ForByte, FillUnordered<Values>, WritableColumnSource<Byte>, WritableSourceWithPrepareForParallelPopulation {
         private final BooleanSparseArraySource wrapped;
 
         private ReinterpretedAsByte(BooleanSparseArraySource wrapped) {
@@ -1050,9 +1182,9 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
             final ByteChunk<? extends Values> chunk = src.asByteChunk();
             final LongChunk<OrderedRowKeys> keys = RowSequence.asRowKeyChunk();
 
-            final boolean hasPrev = wrapped.prevFlusher != null;
+            final boolean trackPrevious = wrapped.prevFlusher != null && wrapped.ensurePreviousClockCycle != LogicalClock.DEFAULT.currentStep();
 
-            if (hasPrev) {
+            if (trackPrevious) {
                 wrapped.prevFlusher.maybeActivate();
             }
 
@@ -1074,13 +1206,13 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
                 }
 
                 // This conditional with its constant condition should be very friendly to the branch predictor.
-                final byte[] prevBlock = hasPrev ? wrapped.ensurePrevBlock(firstRowKey, block0, block1, block2) : null;
-                final long[] inUse = hasPrev ? wrapped.prevInUse.get(block0).get(block1).get(block2) : null;
+                final byte[] prevBlock = trackPrevious ? wrapped.ensurePrevBlock(firstRowKey, block0, block1, block2) : null;
+                final long[] inUse = trackPrevious ? wrapped.prevInUse.get(block0).get(block1).get(block2) : null;
 
                 while (ii <= lastII) {
                     final int indexWithinBlock = (int) (keys.get(ii) & INDEX_MASK);
                     // This 'if' with its constant condition should be very friendly to the branch predictor.
-                    if (hasPrev) {
+                    if (trackPrevious) {
                         assert inUse != null;
                         assert prevBlock != null;
 
@@ -1096,6 +1228,11 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
                     ++ii;
                 }
             }
+        }
+
+        @Override
+        public void prepareForParallelPopulation(RowSet rowSet) {
+           wrapped.prepareForParallelPopulation(rowSet);
         }
     }
     // endregion reinterpretation

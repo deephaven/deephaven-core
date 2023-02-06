@@ -32,7 +32,7 @@ import java.util.stream.StreamSupport;
  * A source table that can filter partitions before coalescing. Refer to {@link TableLocationKey} for an explanation of
  * partitioning.
  */
-public class PartitionAwareSourceTable extends SourceTable {
+public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceTable> {
 
     private final Map<String, ColumnDefinition<?>> partitioningColumnDefinitions;
     private final WhereFilter[] partitioningColumnFilters;
@@ -109,7 +109,7 @@ public class PartitionAwareSourceTable extends SourceTable {
         }
 
         @Override
-        public TableAndRemainingFilters getWithWhere(WhereFilter... whereFilters) {
+        protected TableAndRemainingFilters getWithWhere(WhereFilter... whereFilters) {
             ArrayList<WhereFilter> partitionFilters = new ArrayList<>();
             ArrayList<WhereFilter> groupFilters = new ArrayList<>();
             ArrayList<WhereFilter> otherFilters = new ArrayList<>();
@@ -119,7 +119,7 @@ public class PartitionAwareSourceTable extends SourceTable {
                     groupingColumns.stream().map(ColumnDefinition::getName).collect(Collectors.toSet());
 
             for (WhereFilter filter : whereFilters) {
-                filter.init(table.definition);
+                // note: our filters are already initialized
                 List<String> columns = filter.getColumns();
                 if (filter instanceof ReindexingFilter) {
                     otherFilters.add(filter);
@@ -164,6 +164,15 @@ public class PartitionAwareSourceTable extends SourceTable {
             }
             return table.selectDistinct(selectColumns);
         }
+    }
+
+    @Override
+    protected PartitionAwareSourceTable copy() {
+        final PartitionAwareSourceTable result =
+                newInstance(definition, description, componentFactory, locationProvider,
+                        updateSourceRegistrar, partitioningColumnDefinitions, partitioningColumnFilters);
+        LiveAttributeMap.copyAttributes(this, result, ak -> true);
+        return result;
     }
 
     @Override
@@ -349,8 +358,8 @@ public class PartitionAwareSourceTable extends SourceTable {
         // Needs lazy region allocation.
     }
 
-    private boolean isValidAgainstColumnPartitionTable(@NotNull final List<String> columnNames,
-            @NotNull final List<String> columnArrayNames) {
+    private boolean isValidAgainstColumnPartitionTable(@NotNull final Collection<String> columnNames,
+            @NotNull final Collection<String> columnArrayNames) {
         if (columnArrayNames.size() > 0) {
             return false;
         }

@@ -24,6 +24,7 @@ class CustomClass:
 
 class NumpyTestCase(BaseTestCase):
     def setUp(self):
+        super().setUp()
         j_array_list1 = j_array_list([1, -1])
         j_array_list2 = j_array_list([2, -2])
         input_cols = [
@@ -65,6 +66,7 @@ class NumpyTestCase(BaseTestCase):
 
     def tearDown(self) -> None:
         self.test_table = None
+        super().tearDown()
 
     def test_to_numpy(self):
         for col in self.test_table.columns:
@@ -122,6 +124,11 @@ class NumpyTestCase(BaseTestCase):
                 np_array = to_numpy(self.test_table, [col.name])
                 test_table = to_table(np_array, [col.name])
                 self.assertEqual(test_table.size, self.test_table.size)
+                if col.data_type == dtypes.JObject:
+                    # to_table treats any non-primitive/string data as Python object
+                    self.assertEqual(test_table.columns[0].data_type, dtypes.PyObject)
+                else:
+                    self.assertEqual(test_table.columns[0].data_type, col.data_type)
 
         with self.subTest("test multi-columns to numpy"):
             input_cols = [

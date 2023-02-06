@@ -106,7 +106,7 @@ public abstract class BaseIncrementalReleaseFilter extends WhereFilterLivenessAr
      * Callback that is executed when all of our expected rows have been released.
      */
     void onReleaseAll() {
-        releaseAllNanos = DateTimeUtils.currentTime().getNanos();
+        releaseAllNanos = System.nanoTime();
         if (firstReleaseNanos == QueryConstants.NULL_LONG) {
             // there was no processing to do
             firstReleaseNanos = releaseAllNanos;
@@ -162,7 +162,7 @@ public abstract class BaseIncrementalReleaseFilter extends WhereFilterLivenessAr
 
     /**
      * How many nanos between the first release event and the final release event?
-     * 
+     *
      * @return nano duration of this filter, or NULL_LONG if the filter is not completed
      */
     @ScriptApi
@@ -210,7 +210,10 @@ public abstract class BaseIncrementalReleaseFilter extends WhereFilterLivenessAr
     }
 
     @Override
-    abstract public BaseIncrementalReleaseFilter copy();
+    public BaseIncrementalReleaseFilter copy() {
+        throw new UnsupportedOperationException(getClass().getName() + " does not support automatic copy() due to " +
+                "usage incompatibilities (internally-created instances cannot be start()ed)");
+    }
 
     @Override
     public boolean isRefreshing() {
@@ -223,7 +226,7 @@ public abstract class BaseIncrementalReleaseFilter extends WhereFilterLivenessAr
             throw new IllegalStateException();
         }
         if (firstReleaseNanos == QueryConstants.NULL_LONG) {
-            firstReleaseNanos = DateTimeUtils.currentTime().getNanos();
+            firstReleaseNanos = System.nanoTime();
         }
         releaseMoreEntries = true;
         listener.requestRecompute();

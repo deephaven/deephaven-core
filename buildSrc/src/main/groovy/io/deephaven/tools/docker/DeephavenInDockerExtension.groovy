@@ -45,7 +45,7 @@ public abstract class DeephavenInDockerExtension {
         // irritating configuration order of operations to work out here, so just leaving
         // these as constants until we decide they aren't any more
         deephavenServerProject = ':docker-server'
-        serverTask = 'buildDocker-server'
+        serverTask = 'buildDocker-server-netty'
         def serverProject = project.evaluationDependsOn(deephavenServerProject)
 
         def createDeephavenGrpcApiNetwork = project.tasks.register('createDeephavenGrpcApiNetwork', DockerCreateNetwork) { task ->

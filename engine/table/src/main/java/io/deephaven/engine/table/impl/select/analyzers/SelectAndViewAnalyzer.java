@@ -3,43 +3,48 @@
  */
 package io.deephaven.engine.table.impl.select.analyzers;
 
-import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.ColumnDefinition;
-import io.deephaven.engine.table.TableUpdate;
-import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.liveness.LivenessNode;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.OperationInitializationThreadPool;
-import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
+import io.deephaven.engine.table.impl.select.FormulaColumn;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.SourceColumn;
 import io.deephaven.engine.table.impl.select.SwitchColumn;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
+import io.deephaven.engine.table.impl.sources.SingleValueColumnSource;
 import io.deephaven.engine.table.impl.sources.WritableRedirectedColumnSource;
+import io.deephaven.engine.table.impl.util.InverseWrappedRowSetWritableRowRedirection;
+import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
-import io.deephaven.engine.updategraph.AbstractNotification;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseablePair;
-import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.vector.Vector;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
     public enum Mode {
-        VIEW_LAZY, VIEW_EAGER, SELECT_STATIC, SELECT_REFRESHING, SELECT_REDIRECTED_REFRESHING
+        VIEW_LAZY, VIEW_EAGER, SELECT_STATIC, SELECT_REFRESHING, SELECT_REDIRECTED_REFRESHING, SELECT_REDIRECTED_STATIC
+    }
+
+    public static void initializeSelectColumns(
+            final Map<String, ColumnDefinition<?>> parentColumnMap,
+            final SelectColumn[] selectColumns) {
+        final Map<String, ColumnDefinition<?>> targetColumnMap = new HashMap<>(parentColumnMap);
+        for (SelectColumn column : selectColumns) {
+            column.initDef(targetColumnMap);
+            final ColumnDefinition<?> columnDefinition =
+                    ColumnDefinition.fromGenericType(column.getName(), column.getReturnedType());
+            targetColumnMap.put(column.getName(), columnDefinition);
+        }
     }
 
     public static SelectAndViewAnalyzer create(Mode mode, Map<String, ColumnSource<?>> columnSources,
@@ -55,7 +60,9 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
         SelectAndViewAnalyzer analyzer = createBaseLayer(columnSources, publishTheseSources);
         final Map<String, ColumnDefinition<?>> columnDefinitions = new LinkedHashMap<>();
         final WritableRowRedirection rowRedirection;
-        if (mode == Mode.SELECT_REDIRECTED_REFRESHING && rowSet.size() < Integer.MAX_VALUE) {
+        if (mode == Mode.SELECT_REDIRECTED_STATIC) {
+            rowRedirection = new InverseWrappedRowSetWritableRowRedirection(rowSet);
+        } else if (mode == Mode.SELECT_REDIRECTED_REFRESHING && rowSet.size() < Integer.MAX_VALUE) {
             rowRedirection = WritableRowRedirection.FACTORY.createRowRedirection(rowSet.intSize());
             analyzer = analyzer.createRedirectionLayer(rowSet, rowRedirection);
         } else {
@@ -96,6 +103,15 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
                     Stream.concat(sc.getColumns().stream(), sc.getColumnArrays().stream());
             final String[] distinctDeps = allDependencies.distinct().toArray(String[]::new);
             final ModifiedColumnSet mcsBuilder = new ModifiedColumnSet(parentMcs);
+
+            if (hasConstantValue(sc)) {
+                final WritableColumnSource<?> constViewSource =
+                        SingleValueColumnSource.getSingleValueColumnSource(sc.getReturnedType());
+                analyzer = analyzer.createLayerForConstantView(
+                        sc.getName(), sc, constViewSource, distinctDeps, mcsBuilder, flattenedResult,
+                        flatResult && flattenedResult);
+                continue;
+            }
 
             if (shouldPreserve(sc)) {
                 if (numberOfInternallyFlattenedColumns > 0) {
@@ -138,6 +154,15 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
                     }
                     break;
                 }
+                case SELECT_REDIRECTED_STATIC: {
+                    final WritableColumnSource<?> underlyingSource = sc.newDestInstance(rowSet.size());
+                    final WritableColumnSource<?> scs = WritableRedirectedColumnSource.maybeRedirect(
+                            rowRedirection, underlyingSource, rowSet.size());
+                    analyzer =
+                            analyzer.createLayerForSelect(rowSet, sc.getName(), sc, scs, underlyingSource, distinctDeps,
+                                    mcsBuilder, true, false, false);
+                    break;
+                }
                 case SELECT_REDIRECTED_REFRESHING:
                 case SELECT_REFRESHING: {
                     // We need to call newDestInstance because only newDestInstance has the knowledge to endow our
@@ -147,7 +172,8 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
                     WritableColumnSource<?> underlyingSource = null;
                     if (rowRedirection != null) {
                         underlyingSource = scs;
-                        scs = new WritableRedirectedColumnSource<>(rowRedirection, underlyingSource, rowSet.intSize());
+                        scs = WritableRedirectedColumnSource.maybeRedirect(
+                                rowRedirection, underlyingSource, rowSet.intSize());
                     }
                     analyzer =
                             analyzer.createLayerForSelect(rowSet, sc.getName(), sc, scs, underlyingSource, distinctDeps,
@@ -159,6 +185,18 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
             }
         }
         return analyzer;
+    }
+
+    private static boolean hasConstantValue(final SelectColumn sc) {
+        if (sc instanceof FormulaColumn) {
+            return ((FormulaColumn) sc).hasConstantValue();
+        } else if (sc instanceof SwitchColumn) {
+            final SelectColumn realColumn = ((SwitchColumn) sc).getRealColumn();
+            if (realColumn instanceof FormulaColumn) {
+                return ((FormulaColumn) realColumn).hasConstantValue();
+            }
+        }
+        return false;
     }
 
     private static boolean shouldPreserve(final SelectColumn sc) {
@@ -221,10 +259,17 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
 
     private SelectAndViewAnalyzer createLayerForSelect(RowSet parentRowset, String name, SelectColumn sc,
             WritableColumnSource<?> cs, WritableColumnSource<?> underlyingSource,
-            String[] parentColumnDependencies, ModifiedColumnSet mcsBuilder, boolean isRedirected, boolean flatten,
-            boolean alreadyFlattened) {
+            String[] parentColumnDependencies, ModifiedColumnSet mcsBuilder, boolean isRedirected,
+            boolean flattenResult, boolean alreadyFlattened) {
         return new SelectColumnLayer(parentRowset, this, name, sc, cs, underlyingSource, parentColumnDependencies,
-                mcsBuilder, isRedirected, flatten, alreadyFlattened);
+                mcsBuilder, isRedirected, flattenResult, alreadyFlattened);
+    }
+
+    private SelectAndViewAnalyzer createLayerForConstantView(String name, SelectColumn sc, WritableColumnSource<?> cs,
+            String[] parentColumnDependencies, ModifiedColumnSet mcsBuilder, boolean flattenResult,
+            boolean alreadyFlattened) {
+        return new ConstantColumnLayer(this, name, sc, cs, parentColumnDependencies, mcsBuilder, flattenResult,
+                alreadyFlattened);
     }
 
     private SelectAndViewAnalyzer createLayerForView(String name, SelectColumn sc, ColumnSource<?> cs,
@@ -487,146 +532,6 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
          * Called when all of the required columns are completed.
          */
         protected abstract void onAllRequiredColumnsCompleted();
-    }
-
-    /**
-     * An interface for submitting jobs to be executed and accumulating their performance of all the tasks performed off
-     * thread.
-     */
-    public interface JobScheduler {
-        /**
-         * Cause runnable to be executed.
-         *
-         * @param runnable the runnable to execute
-         * @param description a description for logging
-         * @param onError a routine to call if an exception occurs while running runnable
-         */
-        void submit(Runnable runnable, final LogOutputAppendable description, final Consumer<Exception> onError);
-
-        /**
-         * The performance statistics of all runnables that have been completed off-thread, or null if it was executed
-         * in the current thread.
-         */
-        BasePerformanceEntry getAccumulatedPerformance();
-
-        /**
-         * How many threads exist in the job scheduler? The job submitters can use this value to determine how many
-         * sub-jobs to split work into.
-         */
-        int threadCount();
-    }
-
-    public static class UpdateGraphProcessorJobScheduler implements SelectAndViewAnalyzer.JobScheduler {
-        final BasePerformanceEntry accumulatedBaseEntry = new BasePerformanceEntry();
-
-        @Override
-        public void submit(final Runnable runnable, final LogOutputAppendable description,
-                final Consumer<Exception> onError) {
-            UpdateGraphProcessor.DEFAULT.addNotification(new AbstractNotification(false) {
-                @Override
-                public boolean canExecute(long step) {
-                    return true;
-                }
-
-                @Override
-                public void run() {
-                    final BasePerformanceEntry baseEntry = new BasePerformanceEntry();
-                    baseEntry.onBaseEntryStart();
-                    try {
-                        runnable.run();
-                    } catch (Exception e) {
-                        onError.accept(e);
-                    } catch (Error e) {
-                        ProcessEnvironment.getGlobalFatalErrorReporter().report("SelectAndView Error", e);
-                        throw e;
-                    } finally {
-                        baseEntry.onBaseEntryEnd();
-                        synchronized (accumulatedBaseEntry) {
-                            accumulatedBaseEntry.accumulate(baseEntry);
-                        }
-                    }
-                }
-
-                @Override
-                public LogOutput append(LogOutput output) {
-                    return output.append("{Notification(").append(System.identityHashCode(this)).append(" for ")
-                            .append(description).append("}");
-                }
-            });
-        }
-
-        @Override
-        public BasePerformanceEntry getAccumulatedPerformance() {
-            return accumulatedBaseEntry;
-        }
-
-        @Override
-        public int threadCount() {
-            return UpdateGraphProcessor.DEFAULT.getUpdateThreads();
-        }
-    }
-
-    public static class OperationInitializationPoolJobScheduler implements SelectAndViewAnalyzer.JobScheduler {
-        final BasePerformanceEntry accumulatedBaseEntry = new BasePerformanceEntry();
-
-        @Override
-        public void submit(final Runnable runnable, final LogOutputAppendable description,
-                final Consumer<Exception> onError) {
-            OperationInitializationThreadPool.executorService.submit(() -> {
-                final BasePerformanceEntry basePerformanceEntry = new BasePerformanceEntry();
-                basePerformanceEntry.onBaseEntryStart();
-                try {
-                    runnable.run();
-                } catch (Exception e) {
-                    onError.accept(e);
-                } catch (Error e) {
-                    ProcessEnvironment.getGlobalFatalErrorReporter().report("SelectAndView Error", e);
-                    throw e;
-                } finally {
-                    basePerformanceEntry.onBaseEntryEnd();
-                    synchronized (accumulatedBaseEntry) {
-                        accumulatedBaseEntry.accumulate(basePerformanceEntry);
-                    }
-                }
-            });
-        }
-
-        @Override
-        public BasePerformanceEntry getAccumulatedPerformance() {
-            return accumulatedBaseEntry;
-        }
-
-        @Override
-        public int threadCount() {
-            return OperationInitializationThreadPool.NUM_THREADS;
-        }
-    }
-
-    public static class ImmediateJobScheduler implements SelectAndViewAnalyzer.JobScheduler {
-        public static final ImmediateJobScheduler INSTANCE = new ImmediateJobScheduler();
-
-        @Override
-        public void submit(final Runnable runnable, final LogOutputAppendable description,
-                final Consumer<Exception> onError) {
-            try {
-                runnable.run();
-            } catch (Exception e) {
-                onError.accept(e);
-            } catch (Error e) {
-                ProcessEnvironment.getGlobalFatalErrorReporter().report("SelectAndView Error", e);
-                throw e;
-            }
-        }
-
-        @Override
-        public BasePerformanceEntry getAccumulatedPerformance() {
-            return null;
-        }
-
-        @Override
-        public int threadCount() {
-            return 1;
-        }
     }
 
     /**

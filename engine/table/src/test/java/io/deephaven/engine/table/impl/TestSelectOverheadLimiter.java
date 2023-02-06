@@ -5,6 +5,13 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.testutil.ColumnInfo;
+import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.testutil.generator.IntGenerator;
+import io.deephaven.engine.testutil.generator.SetGenerator;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
+import io.deephaven.engine.testutil.EvalNugget;
+import io.deephaven.engine.testutil.EvalNuggetInterface;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.liveness.LivenessScopeStack;
@@ -18,7 +25,7 @@ import io.deephaven.util.SafeCloseable;
 import java.util.Random;
 import org.junit.experimental.categories.Category;
 
-import static io.deephaven.engine.table.impl.TstUtils.*;
+import static io.deephaven.engine.testutil.TstUtils.*;
 
 @Category(OutOfBandTest.class)
 public class TestSelectOverheadLimiter extends RefreshingTableTestCase {
@@ -121,12 +128,12 @@ public class TestSelectOverheadLimiter extends RefreshingTableTestCase {
         final Random random = new Random(seed);
         final int size = 10;
 
-        final TstUtils.ColumnInfo[] columnInfo = new TstUtils.ColumnInfo[3];
-        columnInfo[0] = new TstUtils.ColumnInfo<>(new TstUtils.SetGenerator<>("a", "b", "c", "d", "e"), "Sym",
-                TstUtils.ColumnInfo.ColAttributes.Immutable);
-        columnInfo[1] = new TstUtils.ColumnInfo<>(new TstUtils.IntGenerator(10, 20), "intCol",
-                TstUtils.ColumnInfo.ColAttributes.Immutable);
-        columnInfo[2] = new TstUtils.ColumnInfo<>(new TstUtils.SetGenerator<>(10.1, 20.1, 30.1), "doubleCol");
+        final ColumnInfo<?, ?>[] columnInfo = new ColumnInfo[3];
+        columnInfo[0] = new ColumnInfo<>(new SetGenerator<>("a", "b", "c", "d", "e"), "Sym",
+                ColumnInfo.ColAttributes.Immutable);
+        columnInfo[1] = new ColumnInfo<>(new IntGenerator(10, 20), "intCol",
+                ColumnInfo.ColAttributes.Immutable);
+        columnInfo[2] = new ColumnInfo<>(new SetGenerator<>(10.1, 20.1, 30.1), "doubleCol");
 
         final QueryTable queryTable = getTable(size, random, columnInfo);
         final Table simpleTable = TableTools.newTable(TableTools.col("Sym", "a"), TableTools.intCol("intCol", 30),

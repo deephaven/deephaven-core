@@ -4,6 +4,8 @@ plugins {
 }
 
 dependencies {
+    api project(':authentication')
+    api project(':authorization')
     api project(':server')
     api(project(':Integrations')) {
         because 'downstream dagger compile'
@@ -16,6 +18,7 @@ dependencies {
     Classpaths.inheritGrpcPlatform(project)
     Classpaths.inheritJetty11Platform(project)
 
+    api 'jakarta.servlet:jakarta.servlet-api:5.0.0'
     implementation 'org.eclipse.jetty:jetty-servlet'
     implementation 'org.eclipse.jetty:jetty-webapp'
     implementation 'org.eclipse.jetty.http2:http2-server'
@@ -24,7 +27,9 @@ dependencies {
     runtimeOnly 'org.eclipse.jetty:jetty-alpn-java-server'
 
 //    implementation 'io.grpc:grpc-servlet-jakarta'
-    implementation project(':grpc-java:grpc-servlet-jakarta')
+    api(project(':grpc-java:grpc-servlet-jakarta')) {
+        because 'downstream dagger compile'
+    }
     implementation project(':grpc-java:grpc-servlet-websocket-jakarta')
     implementation 'org.eclipse.jetty.websocket:websocket-jakarta-server'
 
@@ -32,7 +37,10 @@ dependencies {
     implementation project(':ssl-kickstart')
     Classpaths.inheritSSLContext(project, 'sslcontext-kickstart-for-jetty')
 
+    implementation project(':grpc-java:grpc-mtls')
+
     testImplementation project(':server-test')
+    testImplementation TestTools.projectDependency(project, ':server')
 
     testRuntimeOnly project(':log-to-slf4j')
     Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')

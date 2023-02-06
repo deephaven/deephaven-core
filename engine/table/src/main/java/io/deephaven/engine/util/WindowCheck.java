@@ -4,19 +4,27 @@
 package io.deephaven.engine.util;
 
 import io.deephaven.base.Pair;
+import io.deephaven.base.clock.Clock;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.WritableObjectChunk;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ModifiedColumnSet;
+import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
+import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.time.DateTime;
-import io.deephaven.time.TimeProvider;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.ColumnSource;
@@ -24,6 +32,8 @@ import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.base.RAPriQueue;
 import gnu.trove.map.hash.TLongObjectHashMap;
+import io.deephaven.util.QueryConstants;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 
@@ -60,7 +70,7 @@ public class WindowCheck {
     }
 
     private static class WindowListenerRecorder extends ListenerRecorder {
-        private WindowListenerRecorder(Table parent, BaseTable dependent) {
+        private WindowListenerRecorder(Table parent, BaseTable<?> dependent) {
             super("WindowCheck", parent, dependent);
         }
     }
@@ -72,17 +82,17 @@ public class WindowCheck {
      * @param addToMonitor should we add this to the UpdateGraphProcessor
      * @return a pair of the result table and the TimeWindowListener that drives it
      */
-    static Pair<Table, TimeWindowListener> addTimeWindowInternal(TimeProvider timeProvider, QueryTable table,
+    static Pair<Table, TimeWindowListener> addTimeWindowInternal(Clock clock, QueryTable table,
             String timestampColumn, long windowNanos, String inWindowColumn, boolean addToMonitor) {
         UpdateGraphProcessor.DEFAULT.checkInitiateTableOperation();
         final Map<String, ColumnSource<?>> resultColumns = new LinkedHashMap<>(table.getColumnSourceMap());
 
         final InWindowColumnSource inWindowColumnSource;
-        if (timeProvider == null) {
+        if (clock == null) {
             inWindowColumnSource = new InWindowColumnSource(table, timestampColumn, windowNanos);
         } else {
             inWindowColumnSource =
-                    new InWindowColumnSourceWithTimeProvider(timeProvider, table, timestampColumn, windowNanos);
+                    new InWindowColumnSourceWithClock(clock, table, timestampColumn, windowNanos);
         }
         inWindowColumnSource.init();
         resultColumns.put(inWindowColumn, inWindowColumnSource);
@@ -92,8 +102,8 @@ public class WindowCheck {
         final TimeWindowListener timeWindowListener =
                 new TimeWindowListener(inWindowColumn, inWindowColumnSource, recorder, table, result);
         recorder.setMergedListener(timeWindowListener);
-        table.listenForUpdates(recorder);
-        table.getRowSet().forAllRowKeys(timeWindowListener::addIndex);
+        table.addUpdateListener(recorder);
+        timeWindowListener.addRowSequence(table.getRowSet());
         result.addParentReference(timeWindowListener);
         result.manage(table);
         if (addToMonitor) {
@@ -114,7 +124,7 @@ public class WindowCheck {
         /** a priority queue of InWindow entries, with the least recent timestamps getting pulled out first. */
         private final RAPriQueue<Entry> priorityQueue;
         /** a map from table indices to our entries. */
-        private final TLongObjectHashMap<Entry> indexToEntry;
+        private final TLongObjectHashMap<Entry> rowKeyToEntry;
         private final ModifiedColumnSet.Transformer mcsTransformer;
         private final ModifiedColumnSet mcsNewColumns;
         private final ModifiedColumnSet reusableModifiedColumnSet;
@@ -130,10 +140,10 @@ public class WindowCheck {
             /** the timestamp */
             long nanos;
             /** the row key within the source (and result) table */
-            long index;
+            long rowKey;
 
-            Entry(long index, long timestamp) {
-                this.index = Require.geqZero(index, "rowSet");
+            Entry(long rowKey, long timestamp) {
+                this.rowKey = Require.geqZero(rowKey, "rowKey");
                 this.nanos = timestamp;
             }
 
@@ -141,7 +151,7 @@ public class WindowCheck {
             public String toString() {
                 return "Entry{" +
                         "nanos=" + nanos +
-                        ", rowSet=" + index +
+                        ", rowKey=" + rowKey +
                         '}';
             }
         }
@@ -160,7 +170,9 @@ public class WindowCheck {
             this.recorder = recorder;
             this.inWindowColumnSource = inWindowColumnSource;
             this.result = result;
-            this.priorityQueue = new RAPriQueue<>(1 + source.intSize("WindowCheck"), new RAPriQueue.Adapter<Entry>() {
+            // if most things have already passed out of the window, there is no point in allocating a large priority
+            // queue; we'll just depend on exponential doubling to get us there if need be
+            this.priorityQueue = new RAPriQueue<>(4096, new RAPriQueue.Adapter<>() {
                 @Override
                 public boolean less(Entry a, Entry b) {
                     return a.nanos < b.nanos;
@@ -177,7 +189,7 @@ public class WindowCheck {
                 }
             }, Entry.class);
 
-            this.indexToEntry = new TLongObjectHashMap<>();
+            this.rowKeyToEntry = new TLongObjectHashMap<>();
 
             this.mcsTransformer = source.newModifiedColumnSetTransformer(result,
                     source.getColumnSourceMap().keySet().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
@@ -202,10 +214,10 @@ public class WindowCheck {
                                 delta < 0 ? subRowSet.searchIterator() : subRowSet.reverseIterator();
                         while (it.hasNext()) {
                             final long idx = it.nextLong();
-                            final Entry entry = indexToEntry.remove(idx);
+                            final Entry entry = rowKeyToEntry.remove(idx);
                             if (entry != null) {
-                                entry.index = idx + delta;
-                                indexToEntry.put(idx + delta, entry);
+                                entry.rowKey = idx + delta;
+                                rowKeyToEntry.put(idx + delta, entry);
                             }
                         }
                     });
@@ -216,15 +228,15 @@ public class WindowCheck {
 
                 // figure out for all the modified row keys if the timestamp or row key changed
                 upstream.forAllModified((oldIndex, newIndex) -> {
-                    final DateTime currentTimestamp = inWindowColumnSource.timeStampSource.get(newIndex);
-                    final DateTime prevTimestamp = inWindowColumnSource.timeStampSource.getPrev(oldIndex);
-                    if (!Objects.equals(currentTimestamp, prevTimestamp)) {
-                        updateIndex(newIndex, currentTimestamp);
+                    final long currentTimestamp = inWindowColumnSource.timeStampSource.getLong(newIndex);
+                    final long prevTimestamp = inWindowColumnSource.timeStampSource.getPrevLong(oldIndex);
+                    if (currentTimestamp != prevTimestamp) {
+                        updateRow(newIndex, currentTimestamp);
                     }
                 });
 
                 // now add the new timestamps
-                upstream.added().forAllRowKeys(this::addIndex);
+                addRowSequence(upstream.added());
 
                 final WritableRowSet downstreamModified = upstream.modified().copy();
                 try (final RowSet modifiedByTime = recomputeModified()) {
@@ -261,12 +273,12 @@ public class WindowCheck {
         }
 
         /**
-         * Handles modified indices. If they are outside of the window, they need to be removed from the queue. If they
+         * Handles modified rowSets. If they are outside of the window, they need to be removed from the queue. If they
          * are inside the window, they need to be (re)inserted into the queue.
          */
-        private void updateIndex(final long index, DateTime currentTimestamp) {
-            Entry entry = indexToEntry.remove(index);
-            if (currentTimestamp == null) {
+        private void updateRow(final long rowKey, long currentTimestamp) {
+            Entry entry = rowKeyToEntry.remove(rowKey);
+            if (currentTimestamp == QueryConstants.NULL_LONG) {
                 if (entry != null) {
                     priorityQueue.remove(entry);
                 }
@@ -274,11 +286,11 @@ public class WindowCheck {
             }
             if (inWindowColumnSource.computeInWindow(currentTimestamp, inWindowColumnSource.currentTime)) {
                 if (entry == null) {
-                    entry = new Entry(index, 0);
+                    entry = new Entry(rowKey, 0);
                 }
-                entry.nanos = currentTimestamp.getNanos();
+                entry.nanos = currentTimestamp;
                 priorityQueue.enter(entry);
-                indexToEntry.put(entry.index, entry);
+                rowKeyToEntry.put(entry.rowKey, entry);
             } else if (entry != null) {
                 priorityQueue.remove(entry);
             }
@@ -287,17 +299,31 @@ public class WindowCheck {
         /**
          * If the value of the timestamp is within the window, insert it into the queue and map.
          *
-         * @param index the row key inserted into the table
+         * @param rowSequence the row sequence to insert into the table
          */
-        private void addIndex(long index) {
-            final DateTime currentTimestamp = inWindowColumnSource.timeStampSource.get(index);
-            if (currentTimestamp == null) {
-                return;
-            }
-            if (inWindowColumnSource.computeInWindow(currentTimestamp, inWindowColumnSource.currentTime)) {
-                final Entry el = new Entry(index, currentTimestamp.getNanos());
-                priorityQueue.enter(el);
-                indexToEntry.put(el.index, el);
+        private void addRowSequence(RowSequence rowSequence) {
+            final int chunkSize = (int) Math.min(rowSequence.size(), 4096);
+            try (final ChunkSource.GetContext getContext =
+                    inWindowColumnSource.timeStampSource.makeGetContext(chunkSize);
+                    final RowSequence.Iterator okit = rowSequence.getRowSequenceIterator()) {
+                while (okit.hasMore()) {
+                    final RowSequence chunkOk = okit.getNextRowSequenceWithLength(chunkSize);
+                    final LongChunk<OrderedRowKeys> keyIndices = chunkOk.asRowKeyChunk();
+                    final LongChunk<? extends Values> timestampValues =
+                            inWindowColumnSource.timeStampSource.getChunk(getContext, chunkOk).asLongChunk();
+                    for (int ii = 0; ii < keyIndices.size(); ++ii) {
+                        final long currentTimestamp = timestampValues.get(ii);
+                        if (currentTimestamp == QueryConstants.NULL_LONG) {
+                            continue;
+                        }
+                        if (inWindowColumnSource.computeInWindowUnsafe(
+                                currentTimestamp, inWindowColumnSource.currentTime)) {
+                            final Entry el = new Entry(keyIndices.get(ii), currentTimestamp);
+                            priorityQueue.enter(el);
+                            rowKeyToEntry.put(el.rowKey, el);
+                        }
+                    }
+                }
             }
         }
 
@@ -308,7 +334,7 @@ public class WindowCheck {
          */
         private void removeIndex(final RowSet rowSet) {
             rowSet.forAllRowKeys((final long key) -> {
-                final Entry e = indexToEntry.remove(key);
+                final Entry e = rowKeyToEntry.remove(key);
                 if (e != null) {
                     priorityQueue.remove(e);
                 }
@@ -335,14 +361,14 @@ public class WindowCheck {
                     break;
                 }
 
-                if (inWindowColumnSource.computeInWindow(entry.nanos, inWindowColumnSource.currentTime)) {
+                if (inWindowColumnSource.computeInWindowUnsafe(entry.nanos, inWindowColumnSource.currentTime)) {
                     break;
                 } else {
                     // take it out of the queue, and mark it as modified
                     final Entry taken = priorityQueue.removeTop();
                     Assert.equals(entry, "entry", taken, "taken");
-                    builder.addKey(entry.index);
-                    indexToEntry.remove(entry.index);
+                    builder.addKey(entry.rowKey);
+                    rowKeyToEntry.remove(entry.rowKey);
                 }
             }
 
@@ -355,7 +381,7 @@ public class WindowCheck {
 
             final Entry[] entries = new Entry[priorityQueue.size()];
             priorityQueue.dump(entries, 0);
-            Arrays.stream(entries).mapToLong(entry -> entry.index).forEach(builder::addKey);
+            Arrays.stream(entries).mapToLong(entry -> entry.rowKey).forEach(builder::addKey);
 
             final RowSet inQueue = builder.build();
             Assert.eq(inQueue.size(), "inQueue.size()", priorityQueue.size(), "priorityQueue.size()");
@@ -374,25 +400,24 @@ public class WindowCheck {
         }
     }
 
-    private static class InWindowColumnSourceWithTimeProvider extends InWindowColumnSource {
-        final private TimeProvider timeProvider;
+    private static class InWindowColumnSourceWithClock extends InWindowColumnSource {
+        final private Clock clock;
 
-        InWindowColumnSourceWithTimeProvider(TimeProvider timeProvider, Table table, String timestampColumn,
-                long windowNanos) {
+        InWindowColumnSourceWithClock(Clock clock, Table table, String timestampColumn, long windowNanos) {
             super(table, timestampColumn, windowNanos);
-            this.timeProvider = Require.neqNull(timeProvider, "timeProvider");
+            this.clock = Require.neqNull(clock, "clock");
         }
 
         @Override
         long getTimeNanos() {
-            return timeProvider.currentTime().getNanos();
+            return clock.currentTimeNanos();
         }
     }
 
     private static class InWindowColumnSource extends AbstractColumnSource<Boolean>
             implements MutableColumnSourceGetDefaults.ForBoolean {
         private final long windowNanos;
-        private final ColumnSource<DateTime> timeStampSource;
+        private final ColumnSource<Long> timeStampSource;
 
         private long prevTime = 0;
         private long currentTime = 0;
@@ -403,10 +428,11 @@ public class WindowCheck {
             super(Boolean.class);
             this.windowNanos = windowNanos;
 
-            this.timeStampSource = table.getColumnSource(timestampColumn, DateTime.class);
+            final ColumnSource<DateTime> timeStampSource = table.getColumnSource(timestampColumn);
             if (!DateTime.class.isAssignableFrom(timeStampSource.getType())) {
                 throw new IllegalArgumentException(timestampColumn + " is not of type DateTime!");
             }
+            this.timeStampSource = ReinterpretUtils.dateTimeToLongSource(timeStampSource);
         }
 
         /**
@@ -418,35 +444,32 @@ public class WindowCheck {
         }
 
         long getTimeNanos() {
-            return DateTimeUtils.currentTime().getNanos();
+            return DateTimeUtils.currentClock().currentTimeNanos();
         }
 
         @Override
         public Boolean get(long rowKey) {
-            final DateTime tableTimeStamp = timeStampSource.get(rowKey);
+            final long tableTimeStamp = timeStampSource.getLong(rowKey);
             return computeInWindow(tableTimeStamp, currentTime);
         }
 
         @Override
         public Boolean getPrev(long rowKey) {
-            final long currentStep = LogicalClock.DEFAULT.currentStep();
-
-            final long time = (clockStep < currentStep || clockStep == initialStep) ? currentTime : prevTime;
+            final long time = timeStampForPrev();
 
             // get the previous value from the underlying column source
-            final DateTime tableTimeStamp = timeStampSource.getPrev(rowKey);
+            final long tableTimeStamp = timeStampSource.getPrevLong(rowKey);
             return computeInWindow(tableTimeStamp, time);
         }
 
-        private Boolean computeInWindow(DateTime tableTimeStamp, long time) {
-            if (tableTimeStamp == null) {
+        private Boolean computeInWindow(long tableNanos, long time) {
+            if (tableNanos == QueryConstants.NULL_LONG) {
                 return null;
             }
-            final long tableNanos = tableTimeStamp.getNanos();
-            return computeInWindow(tableNanos, time);
+            return (time - tableNanos) < windowNanos;
         }
 
-        private boolean computeInWindow(long tableNanos, long time) {
+        private boolean computeInWindowUnsafe(long tableNanos, long time) {
             return (time - tableNanos) < windowNanos;
         }
 
@@ -462,13 +485,60 @@ public class WindowCheck {
         }
 
         @Override
-        public boolean preventsParallelism() {
-            return timeStampSource.preventsParallelism();
+        public boolean isStateless() {
+            return timeStampSource.isStateless();
+        }
+
+        private class InWindowFillContext implements ChunkSource.FillContext {
+            private final GetContext innerContext;
+
+            private InWindowFillContext(int size) {
+                this.innerContext = timeStampSource.makeGetContext(size);
+            }
+
+            @Override
+            public void close() {
+                innerContext.close();
+            }
         }
 
         @Override
-        public boolean isStateless() {
-            return timeStampSource.isStateless();
+        public InWindowFillContext makeFillContext(int chunkCapacity, SharedContext sharedContext) {
+            return new InWindowFillContext(chunkCapacity);
+        }
+
+        @Override
+        public void fillChunk(
+                @NotNull FillContext context,
+                @NotNull WritableChunk<? super Values> destination,
+                @NotNull RowSequence rowSequence) {
+            final WritableObjectChunk<Boolean, ? super Values> booleanObjectChunk = destination.asWritableObjectChunk();
+            final LongChunk<? extends Values> timeChunk = timeStampSource.getChunk(
+                    ((InWindowFillContext) context).innerContext, rowSequence).asLongChunk();
+            destination.setSize(timeChunk.size());
+            for (int ii = 0; ii < timeChunk.size(); ++ii) {
+                booleanObjectChunk.set(ii, computeInWindow(timeChunk.get(ii), currentTime));
+            }
+        }
+
+        @Override
+        public void fillPrevChunk(
+                @NotNull FillContext context,
+                @NotNull WritableChunk<? super Values> destination,
+                @NotNull RowSequence rowSequence) {
+            final long time = timeStampForPrev();
+            final WritableObjectChunk<Boolean, ? super Values> booleanObjectChunk = destination.asWritableObjectChunk();
+            final LongChunk<? extends Values> timeChunk = timeStampSource.getPrevChunk(
+                    ((InWindowFillContext) context).innerContext, rowSequence).asLongChunk();
+            destination.setSize(timeChunk.size());
+            for (int ii = 0; ii < timeChunk.size(); ++ii) {
+                booleanObjectChunk.set(ii, computeInWindow(timeChunk.get(ii), time));
+            }
+        }
+
+        private long timeStampForPrev() {
+            final long currentStep = LogicalClock.DEFAULT.currentStep();
+            return (clockStep < currentStep || clockStep == initialStep) ? currentTime : prevTime;
         }
     }
 }

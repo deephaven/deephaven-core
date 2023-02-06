@@ -18,11 +18,8 @@ import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.internal.log.LoggerFactory;
-import io.deephaven.io.logger.Logger;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.TestUseOnly;
-import io.deephaven.util.process.ProcessEnvironment;
 import org.apache.commons.lang3.mutable.Mutable;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
@@ -32,7 +29,7 @@ import java.util.Collection;
 /**
  * Basic uncoalesced table that only adds keys.
  */
-public abstract class SourceTable extends RedefinableTable {
+public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> extends RedefinableTable<IMPL_TYPE> {
 
     /**
      * Component factory. Mostly held for redefinitions.
@@ -172,7 +169,6 @@ public abstract class SourceTable extends RedefinableTable {
                     () -> {
                         Assert.eqNull(rowSet, "rowSet");
                         rowSet = refreshLocationSizes().toTracking();
-                        setAttribute(EMPTY_SOURCE_TABLE_ATTRIBUTE, rowSet.isEmpty());
                         if (!isRefreshing()) {
                             return;
                         }
@@ -213,13 +209,9 @@ public abstract class SourceTable extends RedefinableTable {
                     // We don't want to start polling size changes until the initial RowSet has been computed.
                     return;
                 }
-                final boolean wasEmpty = rowSet.isEmpty();
                 final RowSet added = refreshLocationSizes();
                 if (added.size() == 0) {
                     return;
-                }
-                if (wasEmpty) {
-                    setAttribute(EMPTY_SOURCE_TABLE_ATTRIBUTE, false);
                 }
                 rowSet.insert(added);
                 notifyListeners(added, RowSetFactory.empty(), RowSetFactory.empty());
@@ -260,7 +252,7 @@ public abstract class SourceTable extends RedefinableTable {
 
                     @Override
                     public void subscribeForUpdates() {
-                        listenForUpdatesUncoalesced(this);
+                        addUpdateListenerUncoalesced(this);
                     }
                 });
 
@@ -268,6 +260,9 @@ public abstract class SourceTable extends RedefinableTable {
         initializeWithSnapshot("SourceTable.coalesce", swapListener, (usePrev, beforeClockValue) -> {
             final QueryTable resultTable = new QueryTable(definition, rowSet, columnSourceManager.getColumnSources());
             copyAttributes(resultTable, CopyAttributeOperation.Coalesce);
+            if (rowSet.isEmpty()) {
+                resultTable.setAttribute(INITIALLY_EMPTY_COALESCED_SOURCE_TABLE_ATTRIBUTE, true);
+            }
 
             if (swapListener != null) {
                 final ListenerImpl listener =
@@ -281,7 +276,6 @@ public abstract class SourceTable extends RedefinableTable {
                             }
                         };
                 swapListener.setListenerAndResult(listener, resultTable);
-                resultTable.addParentReference(swapListener);
             }
 
             result.setValue(resultTable);
@@ -293,9 +287,9 @@ public abstract class SourceTable extends RedefinableTable {
 
     protected static class QueryTableReference extends DeferredViewTable.TableReference {
 
-        protected final SourceTable table;
+        protected final SourceTable<?> table;
 
-        QueryTableReference(SourceTable table) {
+        QueryTableReference(SourceTable<?> table) {
             super(table);
             this.table = table;
         }

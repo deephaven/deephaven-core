@@ -1,0 +1,39 @@
+name: Create documentation ticket
+
+on:
+  pull_request_target:
+    branches:
+      - main
+    types:
+      - closed
+
+jobs:
+  create-docs-ticket:
+    # Only on merged PRs that contain the DocumentationNeeded flag
+    if: github.event.pull_request.merged && contains(github.event.pull_request.labels.*.name, 'DocumentationNeeded')
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Create Issues
+        id: create-issues
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.DOCS_ISSUES_PAT }}
+          script: |
+            const script = require('.github/workflows/create-docs-issues.js');
+            await script({github, context});
+
+      - name: Slack Failure Message
+        uses: slackapi/slack-github-action@v1.15.0
+        id: slack-failure-message
+        if: failure() && github.ref == 'refs/heads/main' && github.repository_owner == 'deephaven'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL_DEVREL }}
+        with:
+          payload: |
+            {
+              "repository": "${{ github.repository }}",
+              "message": "${{ github.workflow }}/${{ github.job }} failure",
+              "link": "${{ github.event.pull_request.html_url }}"
+            }

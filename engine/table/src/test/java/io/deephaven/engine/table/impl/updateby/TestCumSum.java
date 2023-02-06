@@ -5,6 +5,9 @@ import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.*;
+import io.deephaven.engine.testutil.GenerateTableUpdates;
+import io.deephaven.engine.testutil.EvalNugget;
+import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.function.Numeric;
 import io.deephaven.test.types.OutOfBandTest;
@@ -19,10 +22,10 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
-import static io.deephaven.engine.table.impl.GenerateTableUpdates.generateAppends;
-import static io.deephaven.engine.table.impl.RefreshingTableTestCase.simulateShiftAwareStep;
-import static io.deephaven.engine.table.impl.TstUtils.assertTableEquals;
-import static io.deephaven.engine.table.impl.TstUtils.testTable;
+import static io.deephaven.engine.testutil.GenerateTableUpdates.generateAppends;
+import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.simulateShiftAwareStep;
+import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
+import static io.deephaven.engine.testutil.TstUtils.testTable;
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.function.Basic.isNull;
 import static io.deephaven.util.QueryConstants.*;
@@ -50,12 +53,12 @@ public class TestCumSum extends BaseUpdateByTest {
 
     @Test
     public void testNullOnBucketChange() throws IOException {
-        final TableWithDefaults t = testTable(stringCol("Sym", "A", "A", "B", "B"),
+        final TableDefaults t = testTable(stringCol("Sym", "A", "A", "B", "B"),
                 byteCol("ByteVal", (byte) 1, (byte) 2, NULL_BYTE, (byte) 3),
                 shortCol("ShortVal", (short) 1, (short) 2, NULL_SHORT, (short) 3),
                 intCol("IntVal", 1, 2, NULL_INT, 3));
 
-        final TableWithDefaults expected = testTable(stringCol("Sym", "A", "A", "B", "B"),
+        final TableDefaults expected = testTable(stringCol("Sym", "A", "A", "B", "B"),
                 byteCol("ByteVal", (byte) 1, (byte) 2, NULL_BYTE, (byte) 3),
                 shortCol("ShortVal", (short) 1, (short) 2, NULL_SHORT, (short) 3),
                 intCol("IntVal", 1, 2, NULL_INT, 3),
@@ -141,7 +144,7 @@ public class TestCumSum extends BaseUpdateByTest {
 
     @Test
     public void testZeroKeyGeneralTicking() {
-        final CreateResult result = createTestTable(10000, false, false, true, 0x31313131);
+        final CreateResult result = createTestTable(100, false, false, true, 0x31313131);
         final QueryTable t = result.t;
 
         final EvalNugget[] nuggets = new EvalNugget[] {
@@ -163,7 +166,7 @@ public class TestCumSum extends BaseUpdateByTest {
 
     @Test
     public void testBucketedGeneralTicking() {
-        final CreateResult result = createTestTable(10000, true, false, true, 0x31313131);
+        final CreateResult result = createTestTable(100, true, false, true, 0x31313131);
         final QueryTable t = result.t;
 
         final EvalNugget[] nuggets = new EvalNugget[] {

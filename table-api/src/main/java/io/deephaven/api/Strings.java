@@ -14,6 +14,7 @@ import io.deephaven.api.filter.FilterNot;
 import io.deephaven.api.filter.FilterOr;
 import io.deephaven.api.value.Value;
 
+import java.util.Collection;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -93,6 +94,10 @@ public class Strings {
             return of(addition.newColumn());
         }
         return String.format("%s=%s", of(addition.newColumn()), of(addition.existingColumn()));
+    }
+
+    public static String of(Collection<? extends JoinAddition> additions) {
+        return additions.stream().map(Strings::of).collect(Collectors.joining(",", "[", "]"));
     }
 
     public static String of(Selectable selectable) {

@@ -4,19 +4,19 @@
 package io.deephaven.plot.datasets.errorbar;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.plot.BaseFigureImpl;
 import io.deephaven.plot.ChartImpl;
 import io.deephaven.plot.datasets.xyerrorbar.XYErrorBarDataSeriesInternal;
 import io.deephaven.plot.datasets.xyerrorbar.XYErrorBarDataSeriesTableArray;
 import io.deephaven.plot.util.tables.TableHandle;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.util.TableTools;
-import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.TstUtils;
 
-import static io.deephaven.engine.table.impl.TstUtils.*;
-import static io.deephaven.engine.table.impl.TstUtils.i;
+import static io.deephaven.engine.testutil.TstUtils.*;
+import static io.deephaven.engine.util.TableTools.col;
 
 public class XYErrorBarDataSeriesTableArrayTest extends BaseArrayTestCase {
 
@@ -86,7 +86,7 @@ public class XYErrorBarDataSeriesTableArrayTest extends BaseArrayTestCase {
         final ChartImpl chart = figure.newChart();
 
         final QueryTable refreshingTable = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
-                c("x", 1, 2, 3), c("y", 1, 2, 3), c("yLow", 0, 1, 2), c("yHigh", 11, 22, 33));
+                col("x", 1, 2, 3), col("y", 1, 2, 3), col("yLow", 0, 1, 2), col("yHigh", 11, 22, 33));
 
         final TableHandle h = new TableHandle(refreshingTable, "x", "y", "yLow", "yHigh");
         final XYErrorBarDataSeriesTableArray series = new XYErrorBarDataSeriesTableArray(chart.newAxes(), 1, "Test", h,
@@ -96,7 +96,7 @@ public class XYErrorBarDataSeriesTableArrayTest extends BaseArrayTestCase {
         assertEquals(series.getX(4), Double.NaN);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            addToTable(refreshingTable, i(7, 9), c("x", 4, 5), c("y", 4, 5), c("yLow", 3, 4), c("yHigh", 5, 6));
+            addToTable(refreshingTable, i(7, 9), col("x", 4, 5), col("y", 4, 5), col("yLow", 3, 4), col("yHigh", 5, 6));
             refreshingTable.notifyListeners(i(7, 9), i(), i());
         });
 

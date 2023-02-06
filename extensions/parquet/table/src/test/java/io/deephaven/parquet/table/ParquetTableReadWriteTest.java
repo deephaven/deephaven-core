@@ -5,20 +5,23 @@ package io.deephaven.parquet.table;
 
 import io.deephaven.api.Selectable;
 import io.deephaven.base.FileUtils;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
+import io.deephaven.engine.util.BigDecimalUtils;
 import io.deephaven.stringset.ArrayStringSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.lang.QueryLibrary;
 import io.deephaven.stringset.StringSet;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.TstUtils;
 import io.deephaven.test.types.OutOfBandTest;
 import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
@@ -34,8 +37,12 @@ import static org.junit.Assert.*;
 public class ParquetTableReadWriteTest {
 
     private static final String ROOT_FILENAME = ParquetTableReadWriteTest.class.getName() + "_root";
+    public static final int LARGE_TABLE_SIZE = 2_000_000;
 
     private static File rootFile;
+
+    @Rule
+    public final EngineCleanup framework = new EngineCleanup();
 
     @Before
     public void setUp() {
@@ -53,10 +60,11 @@ public class ParquetTableReadWriteTest {
     }
 
     private static Table getTableFlat(int size, boolean includeSerializable) {
-        QueryLibrary.importClass(SomeSillyTest.class);
+        ExecutionContext.getContext().getQueryLibrary().importClass(SomeSillyTest.class);
         ArrayList<String> columns =
                 new ArrayList<>(Arrays.asList("someStringColumn = i % 10 == 0?null:(`` + (i % 101))",
                         "nonNullString = `` + (i % 60)",
+                        "nullString = (String) null",
                         "nonNullPolyString = `` + (i % 600)",
                         "someIntColumn = i",
                         "someLongColumn = ii",
@@ -68,7 +76,20 @@ public class ParquetTableReadWriteTest {
                         "someCharColumn = (char)i",
                         "someTime = DateTime.now() + i",
                         "someKey = `` + (int)(i /100)",
-                        "nullKey = i < -1?`123`:null"));
+                        "nullKey = i < -1?`123`:null",
+                        "bdColumn = java.math.BigDecimal.valueOf(ii).stripTrailingZeros()",
+                        "biColumn = java.math.BigInteger.valueOf(ii)",
+                        "nullKey = i < -1?`123`:null",
+                        "nullIntColumn = (int)null",
+                        "nullLongColumn = (long)null",
+                        "nullDoubleColumn = (double)null",
+                        "nullFloatColumn = (float)null",
+                        "nullBoolColumn = (Boolean)null",
+                        "nullShortColumn = (short)null",
+                        "nullByteColumn = (byte)null",
+                        "nullCharColumn = (char)null",
+                        "nullTime = (DateTime)null",
+                        "nullString = (String)null"));
         if (includeSerializable) {
             columns.add("someSerializable = new SomeSillyTest(i)");
         }
@@ -77,7 +98,7 @@ public class ParquetTableReadWriteTest {
     }
 
     private static Table getOneColumnTableFlat(int size) {
-        QueryLibrary.importClass(SomeSillyTest.class);
+        ExecutionContext.getContext().getQueryLibrary().importClass(SomeSillyTest.class);
         return TableTools.emptyTable(size).select(
                 // "someBoolColumn = i % 3 == 0?true:i%3 == 1?false:null"
                 "someIntColumn = i % 3 == 0 ? null:i");
@@ -85,8 +106,8 @@ public class ParquetTableReadWriteTest {
 
     private static Table getGroupedOneColumnTable(int size) {
         Table t = getOneColumnTableFlat(size);
-        QueryLibrary.importClass(ArrayStringSet.class);
-        QueryLibrary.importClass(StringSet.class);
+        ExecutionContext.getContext().getQueryLibrary().importClass(ArrayStringSet.class);
+        ExecutionContext.getContext().getQueryLibrary().importClass(StringSet.class);
         Table result = t.updateView("groupKey = i % 100 + (int)(i/10)").groupBy("groupKey");
         result = result.select(result.getDefinition().getColumnNames().stream()
                 .map(name -> name.equals("groupKey") ? name
@@ -121,7 +142,7 @@ public class ParquetTableReadWriteTest {
     }
 
     private static Table getEmptyArray(int size) {
-        QueryLibrary.importClass(SomeSillyTest.class);
+        ExecutionContext.getContext().getQueryLibrary().importClass(SomeSillyTest.class);
         return TableTools.emptyTable(size).select(
                 "someEmptyString = new String[0]",
                 "someEmptyInt = new int[0]",
@@ -131,8 +152,8 @@ public class ParquetTableReadWriteTest {
 
     private static Table getGroupedTable(int size, boolean includeSerializable) {
         Table t = getTableFlat(size, includeSerializable);
-        QueryLibrary.importClass(ArrayStringSet.class);
-        QueryLibrary.importClass(StringSet.class);
+        ExecutionContext.getContext().getQueryLibrary().importClass(ArrayStringSet.class);
+        ExecutionContext.getContext().getQueryLibrary().importClass(StringSet.class);
         Table result = t.updateView("groupKey = i % 100 + (int)(i/10)").groupBy("groupKey");
         result = result.select(result.getDefinition().getColumnNames().stream()
                 .map(name -> name.equals("groupKey") ? name
@@ -143,6 +164,8 @@ public class ParquetTableReadWriteTest {
                 "someStringSet = (StringSet)new ArrayStringSet( ((Object)nonNullString) == null?new String[0]:(String[])nonNullString.toArray())");
         result = result.update(
                 "largeStringSet = (StringSet)new ArrayStringSet(((Object)nonNullPolyString) == null?new String[0]:(String[])nonNullPolyString.toArray())");
+        result = result.update(
+                "nullStringSet = (StringSet)null");
         result = result.update(
                 "someStringColumn = (String[])(((Object)someStringColumn) == null?null:someStringColumn.toArray())",
                 "nonNullString = (String[])(((Object)nonNullString) == null?null:nonNullString.toArray())",
@@ -157,7 +180,7 @@ public class ParquetTableReadWriteTest {
         final File dest = new File(rootFile, "ParquetTest_" + tableName + "_test.parquet");
         ParquetTools.writeTable(tableToSave, dest);
         final Table fromDisk = ParquetTools.readTable(dest);
-        TstUtils.assertTableEquals(tableToSave, fromDisk);
+        TstUtils.assertTableEquals(maybeFixBigDecimal(tableToSave), fromDisk);
     }
 
     private void groupedTable(String tableName, int size, boolean includeSerializable) {
@@ -200,7 +223,7 @@ public class ParquetTableReadWriteTest {
     public void flatParquetFormat() {
         flatTable("emptyFlatParquet", 0, true);
         flatTable("smallFlatParquet", 20, true);
-        flatTable("largeFlatParquet", 4000000, false);
+        flatTable("largeFlatParquet", LARGE_TABLE_SIZE, false);
     }
 
     @Test
@@ -208,9 +231,9 @@ public class ParquetTableReadWriteTest {
         testEmptyArrayStore("smallEmpty", 20);
         groupedOneColumnTable("smallAggOneColumn", 20);
         groupedTable("smallAggParquet", 20, true);
-        testEmptyArrayStore("largeEmpty", 4000000);
-        groupedOneColumnTable("largeAggOneColumn", 4000000);
-        groupedTable("largeAggParquet", 4000000, false);
+        testEmptyArrayStore("largeEmpty", LARGE_TABLE_SIZE);
+        groupedOneColumnTable("largeAggOneColumn", LARGE_TABLE_SIZE);
+        groupedTable("largeAggParquet", LARGE_TABLE_SIZE, false);
     }
 
     @Test
@@ -246,7 +269,7 @@ public class ParquetTableReadWriteTest {
 
     @Test
     public void groupingByBigInt() {
-        QueryLibrary.importClass(BigInteger.class);
+        ExecutionContext.getContext().getQueryLibrary().importClass(BigInteger.class);
         final TableDefinition definition = TableDefinition.of(
                 ColumnDefinition.ofInt("someInt"),
                 ColumnDefinition.fromGenericType("someBigInt", BigInteger.class).withGrouping());
@@ -269,7 +292,7 @@ public class ParquetTableReadWriteTest {
             ParquetTools.writeTable(table1, path);
             assertTrue(new File(path).length() > 0);
             final Table table2 = ParquetTools.readTable(path);
-            TstUtils.assertTableEquals(table1, table2);
+            TstUtils.assertTableEquals(maybeFixBigDecimal(table1), table2);
         } finally {
             ParquetInstructions.setDefaultCompressionCodecName(currentCodec);
         }
@@ -306,5 +329,26 @@ public class ParquetTableReadWriteTest {
         // while Snappy is covered by other tests, this is a very fast test to quickly confirm that it works in the same
         // way as the other similar codec tests.
         compressionCodecTestHelper("SNAPPY");
+    }
+
+    /**
+     * Encoding bigDecimal is tricky -- the writer will try to pick the precision and scale automatically. Because of
+     * that tableTools.assertTableEquals will fail because, even though the numbers are identical, the representation
+     * may not be so we have to coerce the expected values to the same precision and scale value. We know how it should
+     * be doing it, so we can use the same pattern of encoding/decoding with the codec.
+     *
+     * @param toFix
+     * @return
+     */
+    private Table maybeFixBigDecimal(Table toFix) {
+        final BigDecimalUtils.PrecisionAndScale pas = BigDecimalUtils.computePrecisionAndScale(toFix, "bdColumn");
+        final BigDecimalParquetBytesCodec codec = new BigDecimalParquetBytesCodec(pas.precision, pas.scale, -1);
+
+        ExecutionContext.getContext()
+                .getQueryScope()
+                .putParam("__codec", codec);
+        return toFix
+                .updateView("bdColE = __codec.encode(bdColumn)", "bdColumn=__codec.decode(bdColE, 0, bdColE.length)")
+                .dropColumns("bdColE");
     }
 }

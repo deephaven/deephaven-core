@@ -32,23 +32,23 @@ import java.util.stream.Collectors;
 
 /**
  * Return the rows with the highest commonly available ID from multiple tables.
- *
+ * <p>
  * The Deephaven system does not provide cross table (or partition) transactions. However, you may have a producer that
  * generates more than one table, which you would like to then use in a coordinated fashion. The Deephaven system
  * preserves order within one partition, but the relative order of tables can not be guaranteed. The tailers, DIS, and
  * other infrastructure process each partition independently to provide maximum throughput; and thus a row that logged
  * later may appear in your query before another row that was logged earlier within a different partition.
- *
+ * <p>
  * If you tag each row with a long column that can be used to correlate the two tables, the SyncTableFilter can release
  * only rows with matching values in all the input tables. For example, if you have input tables "a" "b" and "c", with a
  * key of "USym", if "a" has rows for SPY with IDs of 1, 2, and 3, but "b" and "c" only have rows for "2", the filter
  * will pass through the rows with ID 2. When both "b" and "c" have SPY rows for 3, then the rows for ID 2 are removed
  * and the rows for ID 3 are added to the result tables.
- *
+ * <p>
  * The SyncTableFilter is configured through the Builder inner class. Tables are added to the builder, providing a name
  * for each table. The return value is a map of the results with each filtered input table accessible according to the
  * name provided to the builder.
- *
+ * <p>
  * For each key, only pass through the rows that have the minimum value of an ID across all tables. The IDs must be
  * monotonically increasing for each key. Your underlying tables must make use of transactions such that all rows for a
  * given ID appear in a input table at once. Please consult your Deephaven representative before deploying a query that
@@ -62,7 +62,7 @@ public class SyncTableFilter {
     private final QueryTable[] results;
     private final TrackingWritableRowSet[] resultRowSet;
 
-    private final TupleSource[] keySources;
+    private final TupleSource<?>[] keySources;
     private final List<ColumnSource<Long>> idSources;
     private final List<Map<Object, KeyState>> objectToState;
     private final TObjectLongMap<Object> minimumid;
@@ -121,12 +121,12 @@ public class SyncTableFilter {
         this.minimumid = new TObjectLongHashMap<>(0, 0.5f, QueryConstants.NULL_LONG);
         this.recorders = new ArrayList<>(tableCount);
 
-        ColumnSource[] keySourcePrototype = null;
+        ColumnSource<?>[] keySourcePrototype = null;
         final MergedListener mergedListener = new MergedSyncListener(null);
 
         for (int ii = 0; ii < tableCount; ++ii) {
             final SyncTableDescription std = tables.get(ii);
-            final ColumnSource[] sources =
+            final ColumnSource<?>[] sources =
                     Arrays.stream(std.keyColumns).map(std.table::getColumnSource).toArray(ColumnSource[]::new);
             if (ii == 0) {
                 keySourcePrototype = sources;
@@ -153,7 +153,7 @@ public class SyncTableFilter {
 
             final ListenerRecorder listenerRecorder =
                     new ListenerRecorder("SyncTableFilter(" + std.name + ")", std.table, results[ii]);
-            std.table.listenForUpdates(listenerRecorder);
+            std.table.addUpdateListener(listenerRecorder);
             recorders.add(listenerRecorder);
 
             consumeRows(ii, std.table.getRowSet());
@@ -253,16 +253,35 @@ public class SyncTableFilter {
         }
 
         @Override
-        protected void propagateErrorDownstream(
-                @NotNull final Throwable error, @Nullable final TableListener.Entry entry) {
-            for (QueryTable result : results) {
-                result.notifyListenersOnError(error, entry);
-            }
+        protected boolean systemicResult() {
+            return Arrays.stream(results).anyMatch(SystemicObjectTracker::isSystemic);
         }
 
         @Override
-        protected boolean systemicResult() {
-            return Arrays.stream(results).anyMatch(SystemicObjectTracker::isSystemic);
+        protected void propagateErrorDownstream(
+                final boolean fromProcess, @NotNull final Throwable error, @Nullable final TableListener.Entry entry) {
+            if (fromProcess) {
+                final long currentStep = LogicalClock.DEFAULT.currentStep();
+                final Collection<BaseTable> resultsNeedingDelayedNotification = new ArrayList<>();
+                for (final QueryTable result : results) {
+                    if (result.getLastNotificationStep() == currentStep) {
+                        // If the result managed to send its notification, we should not send our own on this cycle.
+                        if (!result.isFailed()) {
+                            // If the result isn't failed, we need to mark it as such on the next cycle.
+                            resultsNeedingDelayedNotification.add(result);
+                        }
+                    } else {
+                        result.notifyListenersOnError(error, entry);
+                    }
+                }
+                if (!resultsNeedingDelayedNotification.isEmpty()) {
+                    scheduleDelayedErrorNotifier(error, entry, resultsNeedingDelayedNotification);
+                }
+            } else {
+                for (final QueryTable result : results) {
+                    result.notifyListenersOnError(error, entry);
+                }
+            }
         }
     }
 

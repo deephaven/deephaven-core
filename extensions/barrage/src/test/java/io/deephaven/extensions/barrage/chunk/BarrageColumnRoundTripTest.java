@@ -8,7 +8,7 @@ import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.table.impl.RefreshingTableTestCase;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -24,6 +24,7 @@ import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.WritableShortChunk;
 import io.deephaven.extensions.barrage.util.BarrageProtoUtil;
+import io.deephaven.util.BooleanUtils;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.vector.LongVector;
 import io.deephaven.vector.LongVectorDirect;
@@ -63,6 +64,32 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
             }, (utO, utC, subset, offset) -> {
                 final WritableCharChunk<Values> original = utO.asWritableCharChunk();
                 final WritableCharChunk<Values> computed = utC.asWritableCharChunk();
+                if (subset == null) {
+                    for (int i = 0; i < original.size(); ++i) {
+                        Assert.equals(original.get(i), "original.get(i)",
+                                computed.get(offset + i), "computed.get(i)");
+                    }
+                } else {
+                    final MutableInt off = new MutableInt();
+                    subset.forAllRowKeys(key -> Assert.equals(original.get((int) key), "original.get(key)",
+                            computed.get(offset + off.getAndIncrement()),
+                            "computed.get(offset + off.getAndIncrement())"));
+                }
+            });
+        }
+    }
+
+    public void testBooleanChunkSerialization() throws IOException {
+        final Random random = new Random(0);
+        for (final BarrageSubscriptionOptions opts : options) {
+            testRoundTripSerialization(opts, boolean.class, (utO) -> {
+                final WritableByteChunk<Values> chunk = utO.asWritableByteChunk();
+                for (int i = 0; i < chunk.size(); ++i) {
+                    chunk.set(i, BooleanUtils.booleanAsByte(i % 7 == 0 ? null : random.nextBoolean()));
+                }
+            }, (utO, utC, subset, offset) -> {
+                final WritableByteChunk<Values> original = utO.asWritableByteChunk();
+                final WritableByteChunk<Values> computed = utC.asWritableByteChunk();
                 if (subset == null) {
                     for (int i = 0; i < original.size(); ++i) {
                         Assert.equals(original.get(i), "original.get(i)",
@@ -502,14 +529,19 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
     private static <T> void testRoundTripSerialization(
             final BarrageSubscriptionOptions options, final Class<T> type,
             final Consumer<WritableChunk<Values>> initData, final Validator validator) throws IOException {
-        final ChunkType chunkType = ChunkType.fromElementType(type);
+        final ChunkType chunkType;
+        if (type == Boolean.class || type == boolean.class) {
+            chunkType = ChunkType.Byte;
+        } else {
+            chunkType = ChunkType.fromElementType(type);
+        }
 
         final WritableChunk<Values> data = chunkType.makeWritableChunk(4096);
 
         initData.accept(data);
 
         try (ChunkInputStreamGenerator generator =
-                ChunkInputStreamGenerator.makeInputStreamGenerator(chunkType, type, type.getComponentType(), data)) {
+                ChunkInputStreamGenerator.makeInputStreamGenerator(chunkType, type, type.getComponentType(), data, 0)) {
 
             // full sub logic
             try (final BarrageProtoUtil.ExposedByteArrayOutputStream baos =

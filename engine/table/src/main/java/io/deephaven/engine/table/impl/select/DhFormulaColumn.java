@@ -3,51 +3,48 @@
  */
 package io.deephaven.engine.table.impl.select;
 
+import io.deephaven.chunk.ChunkType;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.compilertools.CompilerTools;
+import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.QueryCompiler;
+import io.deephaven.engine.context.QueryScopeParam;
 import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
-import io.deephaven.engine.util.PythonScope;
-import io.deephaven.engine.util.PythonScopeJpyImpl;
-import io.deephaven.time.DateTime;
-import io.deephaven.vector.ObjectVector;
-import io.deephaven.engine.table.lang.QueryLibrary;
-import io.deephaven.engine.table.lang.QueryScopeParam;
-import io.deephaven.engine.table.lang.QueryScope;
-import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
-import io.deephaven.engine.util.PythonScopeJpyImpl.NumbaCallableWrapper;
-import io.deephaven.engine.util.caching.C14nUtil;
 import io.deephaven.engine.table.impl.select.codegen.FormulaAnalyzer;
 import io.deephaven.engine.table.impl.select.codegen.JavaKernelBuilder;
 import io.deephaven.engine.table.impl.select.codegen.RichType;
 import io.deephaven.engine.table.impl.select.formula.FormulaFactory;
 import io.deephaven.engine.table.impl.select.formula.FormulaKernelFactory;
 import io.deephaven.engine.table.impl.select.formula.FormulaSourceDescriptor;
+import io.deephaven.engine.table.impl.select.python.ArgumentsChunked;
 import io.deephaven.engine.table.impl.select.python.DeephavenCompatibleFunction;
 import io.deephaven.engine.table.impl.select.python.FormulaColumnPython;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.chunk.ChunkType;
 import io.deephaven.engine.table.impl.util.codegen.CodeGenerator;
 import io.deephaven.engine.table.impl.util.codegen.TypeAnalyzer;
-import io.deephaven.vector.Vector;
+import io.deephaven.engine.util.PyCallableWrapper;
+import io.deephaven.engine.util.caching.C14nUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.time.DateTime;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.type.TypeUtils;
+import io.deephaven.vector.ObjectVector;
+import io.deephaven.vector.Vector;
 import org.apache.commons.text.StringEscapeUtils;
 import org.jetbrains.annotations.NotNull;
-import org.jpy.PyDictWrapper;
-import org.jpy.PyListWrapper;
 import org.jpy.PyObject;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.security.AccessController;
-import java.security.PrivilegedActionException;
-import java.security.PrivilegedExceptionAction;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -65,8 +62,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
             Configuration.getInstance().getBooleanWithDefault("FormulaColumn.useKernelFormulasProperty", false);
 
     private FormulaAnalyzer.Result analyzedFormula;
-    private String timeInstanceVariables;
-    private Map<String, Class<?>> timeNewVariables = null;
+    private boolean hasConstantValue;
 
     public FormulaColumnPython getFormulaColumnPython() {
         return formulaColumnPython;
@@ -83,7 +79,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
      * @param formulaString the formula string to be parsed by the QueryLanguageParser
      */
     DhFormulaColumn(String columnName, String formulaString) {
-        super(columnName, formulaString, useKernelFormulasProperty);
+        super(columnName, formulaString);
     }
 
     /**
@@ -111,22 +107,22 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
         }
     }
 
-    private static String columnSourceGetMethodReturnType(ColumnSource<?> cs) {
+    private static String columnSourceGetMethodReturnType(ColumnDefinition<?> cd) {
         final StringBuilder sb = new StringBuilder();
-        Class<?> columnType = cs.getType();
+        Class<?> columnType = cd.getDataType();
         if (columnType == boolean.class) {
             columnType = Boolean.class;
         }
         sb.append(columnType.getCanonicalName());
-        final Class<?> componentType = cs.getComponentType();
+        final Class<?> componentType = cd.getComponentType();
         if (componentType != null && !componentType.isPrimitive() && columnType.getTypeParameters().length == 1) {
             sb.append("<").append(componentType.getCanonicalName()).append(">");
         }
         return sb.toString();
     }
 
-    private static Map<String, RichType> makeNameToRichTypeDict(final String[] names,
-            final Map<String, ? extends ColumnSource<?>> columnSources) {
+    private static Map<String, RichType> makeNameToRichTypeDict(
+            final String[] names, final Map<String, ? extends ColumnDefinition<?>> columnDefinitions) {
         final Map<String, RichType> result = new HashMap<>();
         for (final String s : names) {
             final RichType richType;
@@ -135,8 +131,8 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
             } else if (s.equals("ii") || s.equals("k")) {
                 richType = RichType.createNonGeneric(long.class);
             } else {
-                final ColumnSource<?> cs = columnSources.get(s);
-                Class<?> columnType = cs.getType();
+                final ColumnDefinition<?> cs = columnDefinitions.get(s);
+                Class<?> columnType = cs.getDataType();
                 if (columnType == boolean.class) {
                     columnType = Boolean.class;
                 }
@@ -154,11 +150,11 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
     }
 
     private static Map<String, Class<?>> makeNameToTypeDict(final String[] names,
-            final Map<String, ? extends ColumnSource<?>> columnSources) {
+            final Map<String, ? extends ColumnDefinition<?>> columnDefinitions) {
         final Map<String, Class<?>> result = new HashMap<>();
         for (final String s : names) {
-            final ColumnSource<?> cs = columnSources.get(s);
-            result.put(s, cs.getType());
+            final ColumnDefinition<?> cd = columnDefinitions.get(s);
+            result.put(s, cd.getDataType());
         }
         return result;
     }
@@ -183,13 +179,20 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
 
     @Override
     public List<String> initDef(Map<String, ColumnDefinition<?>> columnDefinitionMap) {
+        if (formulaFactory != null) {
+            validateColumnDefinition(columnDefinitionMap);
+            return formulaColumnPython != null ? formulaColumnPython.usedColumns : usedColumns;
+        }
+
         try {
-            analyzedFormula = FormulaAnalyzer.analyze(formulaString, columnDefinitionMap, timeNewVariables);
             final DateTimeUtils.Result timeConversionResult = DateTimeUtils.convertExpression(formulaString);
             final QueryLanguageParser.Result result = FormulaAnalyzer.getCompiledFormula(columnDefinitionMap,
-                    timeConversionResult, timeNewVariables);
+                    timeConversionResult);
+            analyzedFormula = FormulaAnalyzer.analyze(formulaString, columnDefinitionMap,
+                    timeConversionResult, result);
+            hasConstantValue = result.isConstantValueExpression();
 
-            log.debug().append("Expression (after language conversion) : ").append(result.getConvertedExpression())
+            log.debug().append("Expression (after language conversion) : ").append(analyzedFormula.cookedFormulaString)
                     .endl();
 
             applyUsedVariables(columnDefinitionMap, result.getVariablesUsed());
@@ -197,51 +200,53 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
             if (returnedType == boolean.class) {
                 returnedType = Boolean.class;
             }
-            // The first time we do an initDef, we allow the formulaString to be transformed by DateTimeUtils,
-            // possibly with the side effect of creating 'timeInstanceVariables' and 'timeNewVariables'.
-            // However, we should not do this on subsequent calls because the answer is not expected to
-            // change further, and we don't want to overwrite our 'timeInstanceVariables'.
-            if (timeNewVariables == null) {
-                formulaString = result.getConvertedExpression();
-                timeInstanceVariables = timeConversionResult.getInstanceVariablesString();
-                timeNewVariables = timeConversionResult.getNewVariables();
-            }
+            formulaString = result.getConvertedExpression();
+
+            // check if this is a column to be created with a Python vectorizable function
+            checkAndInitializeVectorization(columnDefinitionMap);
         } catch (Exception e) {
             throw new FormulaCompilationException("Formula compilation error for: " + formulaString, e);
         }
 
-        // check if this is a column to be created with a numba vectorized function
-        for (QueryScopeParam<?> param : params) {
-            final Object value = param.getValue();
-            if (value != null && value.getClass() == NumbaCallableWrapper.class) {
-                NumbaCallableWrapper numbaCallableWrapper = (NumbaCallableWrapper) value;
-                formulaColumnPython = FormulaColumnPython.create(this.columnName,
-                        DeephavenCompatibleFunction.create(numbaCallableWrapper.getPyObject(),
-                                numbaCallableWrapper.getReturnType(), this.analyzedFormula.sourceDescriptor.sources,
-                                true));
-                formulaColumnPython.initDef(columnDefinitionMap);
-                return formulaColumnPython.usedColumns;
-            }
-        }
+        formulaFactory = useKernelFormulasProperty
+                ? createKernelFormulaFactory(getFormulaKernelFactory())
+                : createFormulaFactory();
+        return formulaColumnPython != null ? formulaColumnPython.usedColumns : usedColumns;
+    }
 
-        return usedColumns;
+    private void checkAndInitializeVectorization(Map<String, ColumnDefinition<?>> columnDefinitionMap) {
+        PyCallableWrapper[] cws = Arrays.stream(params).filter(p -> p.getValue() instanceof PyCallableWrapper)
+                .map(p -> p.getValue()).toArray(PyCallableWrapper[]::new);
+        if (cws.length != 1) {
+            return;
+        }
+        PyCallableWrapper pyCallableWrapper = cws[0];
+
+        // could be already vectorized or to-be-vectorized,
+        if (pyCallableWrapper.isVectorizable()) {
+            ArgumentsChunked argumentsChunked = pyCallableWrapper
+                    .buildArgumentsChunked(Arrays.asList(this.analyzedFormula.sourceDescriptor.sources));
+            PyObject vectorized = pyCallableWrapper.vectorizedCallable();
+            formulaColumnPython = FormulaColumnPython.create(this.columnName,
+                    DeephavenCompatibleFunction.create(vectorized,
+                            pyCallableWrapper.getReturnType(), this.analyzedFormula.sourceDescriptor.sources,
+                            argumentsChunked,
+                            true));
+            formulaColumnPython.initDef(columnDefinitionMap);
+        }
     }
 
     @NotNull
     String generateClassBody() {
-        if (params == null) {
-            params = QueryScope.getScope().getParams(userParams);
-        }
-
         final TypeAnalyzer ta = TypeAnalyzer.create(returnedType);
 
         final CodeGenerator g = CodeGenerator.create(
-                CodeGenerator.create(QueryLibrary.getImportStrings().toArray()), "",
+                CodeGenerator.create(ExecutionContext.getContext().getQueryLibrary().getImportStrings().toArray()), "",
                 "public class $CLASSNAME$ extends [[FORMULA_CLASS_NAME]]", CodeGenerator.block(
                         generateFormulaFactoryLambda(), "",
                         CodeGenerator.repeated("instanceVar", "private final [[TYPE]] [[NAME]];"),
                         "private final Map<Object, Object> [[LAZY_RESULT_CACHE_NAME]];",
-                        timeInstanceVariables, "",
+                        analyzedFormula.timeInstanceVariables, "",
                         generateConstructor(), "",
                         generateAppropriateGetMethod(ta, false), "",
                         generateAppropriateGetMethod(ta, true), "",
@@ -318,7 +323,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
                     fc.replace("COLUMN_ARRAY_NAME", ac.name);
                     fc.replace("COLUMN_NAME", ac.bareName);
 
-                    final String vtp = getVectorType(ac.columnSource.getType()).getCanonicalName().replace(
+                    final String vtp = getVectorType(ac.columnDefinition.getDataType()).getCanonicalName().replace(
                             "io.deephaven.vector",
                             "io.deephaven.engine.table.impl.vector");
                     fc.replace("VECTOR_TYPE_PREFIX", vtp);
@@ -350,7 +355,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
         g.replace("ARGS", makeCommaSeparatedList(args));
         g.replace("FORMULA_STRING", ta.wrapWithCastIfNecessary(formulaString));
         g.replace("COLUMN_NAME", StringEscapeUtils.escapeJava(columnName));
-        final String joinedFormulaString = CompilerTools.createEscapedJoinedString(formulaString);
+        final String joinedFormulaString = QueryCompiler.createEscapedJoinedString(formulaString);
         g.replace("JOINED_FORMULA_STRING", joinedFormulaString);
         g.replace("EXCEPTION_TYPE", EVALUATION_EXCEPTION_CLASSNAME);
         return g.freeze();
@@ -528,7 +533,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
                     final CodeGenerator getChunks = g.instantiateNewRepeated("getChunks");
                     getChunks.replace("COL_SOURCE_NAME", cs.name);
                     getChunks.replace("GET_CURR_OR_PREV_CHUNK", usePrev ? "getPrevChunk" : "getChunk");
-                    final TypeAnalyzer tm = TypeAnalyzer.create(cs.columnSource.getType());
+                    final TypeAnalyzer tm = TypeAnalyzer.create(cs.columnDefinition.getDataType());
                     getChunks.replace("CHUNK_TYPE", tm.readChunkVariableType);
                     getChunks.replace("AS_CHUNK_METHOD", tm.asReadChunkMethodName);
                     return "__chunk__col__" + cs.name;
@@ -590,7 +595,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
         final List<String> chunkArgs = visitFormulaParameters(null,
                 cs -> {
                     final String name = "__chunk__col__" + cs.name;
-                    final TypeAnalyzer t2 = TypeAnalyzer.create(cs.columnSource.getType());
+                    final TypeAnalyzer t2 = TypeAnalyzer.create(cs.columnDefinition.getDataType());
                     return t2.readChunkVariableType + " " + name;
                 },
                 null,
@@ -651,26 +656,26 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
 
         if (columnSourceLambda != null) {
             for (String usedColumn : usedColumns) {
-                final ColumnSource<?> cs = columnSources.get(usedColumn);
-                final String columnSourceGetType = columnSourceGetMethodReturnType(cs);
-                final Class<?> csType = cs.getType();
+                final ColumnDefinition<?> cd = columnDefinitions.get(usedColumn);
+                final String columnSourceGetType = columnSourceGetMethodReturnType(cd);
+                final Class<?> csType = cd.getDataType();
                 final String csTypeString = COLUMN_SOURCE_CLASSNAME + '<'
-                        + io.deephaven.util.type.TypeUtils.getBoxedType(cs.getType()).getCanonicalName() + '>';
+                        + io.deephaven.util.type.TypeUtils.getBoxedType(csType).getCanonicalName() + '>';
                 final ColumnSourceParameter csp = new ColumnSourceParameter(usedColumn, csType, columnSourceGetType,
-                        cs, csTypeString);
+                        cd, csTypeString);
                 addIfNotNull(results, columnSourceLambda.apply(csp));
             }
         }
 
         if (columnArrayLambda != null) {
             for (String uca : usedColumnArrays) {
-                final ColumnSource<?> cs = columnSources.get(uca);
-                final Class<?> dataType = cs.getType();
+                final ColumnDefinition<?> cd = columnDefinitions.get(uca);
+                final Class<?> dataType = cd.getDataType();
                 final Class<?> vectorType = getVectorType(dataType);
                 final String vectorTypeAsString = vectorType.getCanonicalName() +
                         (TypeUtils.isConvertibleToPrimitive(dataType) ? "" : "<" + dataType.getCanonicalName() + ">");
                 final ColumnArrayParameter cap = new ColumnArrayParameter(uca + COLUMN_SUFFIX, uca,
-                        dataType, vectorType, vectorTypeAsString, cs);
+                        dataType, vectorType, vectorTypeAsString, cd);
                 addIfNotNull(results, columnArrayLambda.apply(cap));
             }
         }
@@ -698,8 +703,8 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
     private JavaKernelBuilder.Result invokeKernelBuilder() {
         final FormulaAnalyzer.Result af = analyzedFormula;
         final FormulaSourceDescriptor sd = af.sourceDescriptor;
-        final Map<String, RichType> columnDict = makeNameToRichTypeDict(sd.sources, columnSources);
-        final Map<String, Class<?>> arrayDict = makeNameToTypeDict(sd.arrays, columnSources);
+        final Map<String, RichType> columnDict = makeNameToRichTypeDict(sd.sources, columnDefinitions);
+        final Map<String, Class<?>> arrayDict = makeNameToTypeDict(sd.arrays, columnDefinitions);
         final Map<String, Class<?>> allParamDict = new HashMap<>();
         for (final QueryScopeParam<?> param : params) {
             allParamDict.put(param.getName(), QueryScopeParamTypeUtil.getDeclaredClass(param.getValue()));
@@ -722,10 +727,23 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
 
     @Override
     public SelectColumn copy() {
-        return new DhFormulaColumn(columnName, formulaString);
+        final DhFormulaColumn copy = new DhFormulaColumn(columnName, formulaString);
+        if (formulaFactory != null) {
+            copy.analyzedFormula = analyzedFormula;
+            copy.hasConstantValue = hasConstantValue;
+            copy.returnedType = returnedType;
+            copy.formulaColumnPython = formulaColumnPython;
+            onCopy(copy);
+        }
+        return copy;
     }
 
-    protected FormulaFactory createFormulaFactory() {
+    @Override
+    public boolean hasConstantValue() {
+        return hasConstantValue;
+    }
+
+    private FormulaFactory createFormulaFactory() {
         final String classBody = generateClassBody();
         final String what = "Compile regular formula: " + formulaString;
         final Class<?> clazz = compileFormula(what, classBody, "Formula");
@@ -752,25 +770,21 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
             visitFormulaParameters(null,
                     csp -> {
                         addParamClass.accept(csp.type);
-                        addParamClass.accept(csp.columnSource.getComponentType());
+                        addParamClass.accept(csp.columnDefinition.getComponentType());
                         return null;
                     },
                     cap -> {
                         addParamClass.accept(cap.dataType);
-                        addParamClass.accept(cap.columnSource.getComponentType());
+                        addParamClass.accept(cap.columnDefinition.getComponentType());
                         return null;
                     },
                     p -> {
                         addParamClass.accept(p.type);
                         return null;
                     });
-            return AccessController
-                    .doPrivileged(
-                            (PrivilegedExceptionAction<Class<?>>) () -> CompilerTools.compile(className, classBody,
-                                    CompilerTools.FORMULA_PREFIX,
-                                    QueryScopeParamTypeUtil.expandParameterClasses(paramClasses)));
-        } catch (PrivilegedActionException pae) {
-            throw new FormulaCompilationException("Formula compilation error for: " + what, pae.getException());
+            final QueryCompiler compiler = ExecutionContext.getContext().getQueryCompiler();
+            return compiler.compile(className, classBody, QueryCompiler.FORMULA_PREFIX,
+                    QueryScopeParamTypeUtil.expandParameterClasses(paramClasses));
         }
     }
 
@@ -790,26 +804,26 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
         final String name;
         final Class<?> type;
         final String typeString;
-        final ColumnSource<?> columnSource;
+        final ColumnDefinition<?> columnDefinition;
         final String columnSourceGetTypeString;
 
-        public ColumnSourceParameter(String name, Class<?> type, String typeString, ColumnSource<?> columnSource,
-                String columnSourceGetTypeString) {
+        public ColumnSourceParameter(String name, Class<?> type, String typeString,
+                ColumnDefinition<?> columnDefinition, String columnSourceGetTypeString) {
             this.name = name;
             this.type = type;
             this.typeString = typeString;
-            this.columnSource = columnSource;
+            this.columnDefinition = columnDefinition;
             this.columnSourceGetTypeString = columnSourceGetTypeString;
         }
 
         String makeGetExpression(boolean usePrev) {
-            return String.format("%s.%s(k)", name, getGetterName(columnSource.getType(), usePrev));
+            return String.format("%s.%s(k)", name, getGetterName(columnDefinition.getDataType(), usePrev));
         }
     }
 
     /**
      * Is this parameter immutable, and thus would contribute no state to the formula?
-     *
+     * <p>
      * If any query scope parameter is not a primitive, String, or known immutable class; then it may be a mutable
      * object that results in undefined results when the column is not evaluated strictly in order.
      *
@@ -829,35 +843,8 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
         return TypeUtils.isBoxedType(type);
     }
 
-    /**
-     * Is this parameter possibly a Python type?
-     *
-     * Immutable types are not Python, known Python wrappers are Python, and anything else from a PythonScope is Python.
-     *
-     * @return true if this query scope parameter may be a Python type
-     */
-    private static boolean isPythonType(QueryScopeParam<?> param) {
-        if (isImmutableType(param)) {
-            return false;
-        }
-
-        // we want to catch PyObjects, and CallableWrappers even if they were hand inserted into a scope
-        final Object value = param.getValue();
-        if (value instanceof PyObject || value instanceof PythonScopeJpyImpl.CallableWrapper
-                || value instanceof PyListWrapper || value instanceof PyDictWrapper) {
-            return true;
-        }
-
-        // beyond the immutable types, we must assume that anything coming from Python is python
-        return QueryScope.getScope() instanceof PythonScope;
-    }
-
     private boolean isUsedColumnStateless(String columnName) {
         return columnSources.get(columnName).isStateless();
-    }
-
-    private boolean usedColumnUsesPython(String columnName) {
-        return columnSources.get(columnName).preventsParallelism();
     }
 
     @Override
@@ -867,14 +854,4 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
                 && usedColumnArrays.stream().allMatch(this::isUsedColumnStateless);
     }
 
-    /**
-     * Does this formula column use Python (which would cause us to hang the GIL if we evaluate it off thread?)
-     *
-     * @return true if this column has the potential to hang the gil
-     */
-    public boolean preventsParallelization() {
-        return Arrays.stream(params).anyMatch(DhFormulaColumn::isPythonType)
-                || usedColumns.stream().anyMatch(this::usedColumnUsesPython)
-                || usedColumnArrays.stream().anyMatch(this::usedColumnUsesPython);
-    }
 }

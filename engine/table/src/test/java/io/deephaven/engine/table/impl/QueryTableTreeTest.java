@@ -3,52 +3,50 @@
  */
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.api.Selectable;
 import io.deephaven.api.agg.Aggregation;
-import io.deephaven.base.Function;
-import io.deephaven.base.verify.Require;
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.datastructures.util.SmartKey;
-import io.deephaven.engine.rowset.RowSetShiftData;
-import io.deephaven.engine.table.*;
-import io.deephaven.time.DateTimeUtils;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.engine.liveness.SingletonLivenessManager;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.hierarchical.TreeTable;
+import io.deephaven.engine.table.impl.hierarchical.TreeTableFilter;
+import io.deephaven.engine.testutil.ColumnInfo;
+import io.deephaven.engine.testutil.EvalNuggetInterface;
+import io.deephaven.engine.testutil.QueryTableTestBase;
+import io.deephaven.engine.testutil.generator.*;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.io.log.LogLevel;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.io.logger.StreamLoggerImpl;
-import io.deephaven.engine.util.TableDiff;
-import io.deephaven.engine.util.TableTools;
-import io.deephaven.engine.util.TableToolsShowControl;
-import io.deephaven.engine.liveness.LivenessScopeStack;
-import io.deephaven.engine.liveness.SingletonLivenessManager;
 import io.deephaven.test.types.OutOfBandTest;
-import io.deephaven.util.SafeCloseable;
-import io.deephaven.util.annotations.ReflexiveUse;
-import junit.framework.TestCase;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.mutable.MutableInt;
-import org.junit.Assert;
 
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
+import java.util.function.Function;
+import java.util.function.UnaryOperator;
 
-import org.junit.Test;
+import io.deephaven.time.DateTimeUtils;
+import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.annotations.ReflexiveUse;
+import junit.framework.TestCase;
+import org.apache.commons.lang3.mutable.MutableInt;
+import org.junit.Assert;
 import org.junit.experimental.categories.Category;
 
-import static io.deephaven.engine.util.TableTools.*;
-import static io.deephaven.engine.table.impl.TstUtils.*;
-import static io.deephaven.util.QueryConstants.*;
 import static io.deephaven.api.agg.Aggregation.*;
+import static io.deephaven.engine.testutil.TstUtils.*;
+import static io.deephaven.engine.util.TableTools.*;
+import static io.deephaven.util.QueryConstants.*;
 
 /**
  * Test of Tree Tables and rollups.
@@ -56,24 +54,8 @@ import static io.deephaven.api.agg.Aggregation.*;
 @Category(OutOfBandTest.class)
 public class QueryTableTreeTest extends QueryTableTestBase {
 
-    public void testTreeTableNotImplemented() {
-        // TODO (https://github.com/deephaven/deephaven-core/issues/64): Delete this, uncomment and fix the rest
-        try {
-            emptyTable(10).treeTable("ABC", "DEF");
-            fail("Expected exception");
-        } catch (UnsupportedOperationException expected) {
-        }
-    }
-
-    public void testRollupNotImplemented() {
-        // TODO (https://github.com/deephaven/deephaven-core/issues/65): Delete this, uncomment and fix the rest
-        try {
-            emptyTable(10).rollup(List.of(), "ABC", "DEF");
-            fail("Expected exception");
-        } catch (UnsupportedOperationException expected) {
-        }
-    }
-
+    public void testNothing() {}
+    //
     // private final ExecutorService pool = Executors.newFixedThreadPool(1);
     //
     // public void testMemoize() {
@@ -87,7 +69,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     // new SetGenerator<>("AAPL", "TSLA", "VXX", "SPY")));
     //
     // final Table prepared = table.update("ID=IDPair.getId()", "Parent=IDPair.getParent()").dropColumns("IDPair");
-    // final Table tree = prepared.treeTable("ID", "Parent");
+    // final Table tree = prepared.tree("ID", "Parent");
     //
     // final boolean old = QueryTable.setMemoizeResults(true);
     // try {
@@ -101,21 +83,21 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     // }
     // }
     //
-    // private void testMemoize(Table source, Function.Unary<Table, Table> op) {
-    // final Table result = op.call(source);
-    // final Table result2 = op.call(source);
+    // private void testMemoize(Table source, UnaryOperator<Table> op) {
+    // final Table result = op.apply(source);
+    // final Table result2 = op.apply(source);
     // Assert.assertSame(result, result2);
     // }
     //
-    // private void testNoMemoize(Table source, Function.Unary<Table, Table> op1, Function.Unary<Table, Table> op2) {
-    // final Table result = op1.call(source);
-    // final Table result2 = op2.call(source);
+    // private void testNoMemoize(Table source, UnaryOperator<Table> op1, UnaryOperator<Table> op2) {
+    // final Table result = op1.apply(source);
+    // final Table result2 = op2.apply(source);
     // Assert.assertNotSame(result, result2);
     // }
     //
-    // private void testNoMemoize(Table source, Function.Unary<Table, Table> op) {
-    // final Table result = op.call(source);
-    // final Table result2 = op.call(source);
+    // private void testNoMemoize(Table source, UnaryOperator<Table> op) {
+    // final Table result = op.apply(source);
+    // final Table result2 = op.apply(source);
     // Assert.assertNotSame(result, result2);
     // }
     //
@@ -125,7 +107,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     //
     // final Table treed =
     // UpdateGraphProcessor.DEFAULT.exclusiveLock()
-    // .computeLocked(() -> source.treeTable("Sentinel", "Parent"));
+    // .computeLocked(() -> source.tree("Sentinel", "Parent"));
     // final String hierarchicalColumnName = getHierarchicalColumnName(treed);
     // TableTools.showWithRowSet(treed);
     //
@@ -159,17 +141,17 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     //
     // try {
     //
-    // final QueryTable source = TstUtils.testRefreshingTable(
+    // final QueryTable source = testRefreshingTable(
     // RowSetFactory.flat(10).toTracking(),
     // col("Sentinel", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
     // col("Parent", NULL_INT, NULL_INT, 1, 1, 2, 3, 5, 5, 3, 2),
     // col("Extra", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j"));
-    // final QueryTable source2 = TstUtils.testRefreshingTable(
+    // final QueryTable source2 = testRefreshingTable(
     // RowSetFactory.flat(11).toTracking(),
     // col("Sentinel", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11),
     // col("Parent", NULL_INT, NULL_INT, 1, 1, 2, 3, 5, 5, 3, 2, NULL_INT),
     // col("Extra", "aa", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k"));
-    // final QueryTable source3 = TstUtils.testRefreshingTable(
+    // final QueryTable source3 = testRefreshingTable(
     // RowSetFactory.flat(12).toTracking(),
     // col("Sentinel", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12),
     // col("Parent", NULL_INT, NULL_INT, 1, 1, 2, 3, 5, 5, 3, 2, NULL_INT, 11),
@@ -179,12 +161,12 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     // final Table rootExpected2 = source2.where("isNull(Parent)");
     // final Table rootExpected3 = source3.where("isNull(Parent)");
     //
-    // final Supplier<Table> doTree = () -> source.treeTable("Sentinel", "Parent");
+    // final Supplier<Table> doTree = () -> source.tree("Sentinel", "Parent");
     // final Table expect = UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(doTree::get);
     // final Table expectOriginal = UpdateGraphProcessor.DEFAULT.exclusiveLock()
-    // .computeLocked(() -> makeStatic(source).treeTable("Sentinel", "Parent"));
+    // .computeLocked(() -> makeStatic(source).tree("Sentinel", "Parent"));
     // final Table expect2 = UpdateGraphProcessor.DEFAULT.exclusiveLock()
-    // .computeLocked(() -> source2.treeTable("Sentinel", "Parent"));
+    // .computeLocked(() -> source2.tree("Sentinel", "Parent"));
     //
     // final String hierarchicalColumnName = getHierarchicalColumnName(expect);
     //
@@ -198,8 +180,8 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     // System.out.println("ORIGINAL TREED1");
     // dumpRollup(treed1, hierarchicalColumnName);
     //
-    // TstUtils.addToTable(source, i(0, 11), c("Sentinel", 1, 11), c("Parent", NULL_INT, NULL_INT),
-    // c("Extra", "aa", "k"));
+    // addToTable(source, i(0, 11), col("Sentinel", 1, 11), col("Parent", NULL_INT, NULL_INT),
+    // col("Extra", "aa", "k"));
     //
     // final Table treed2 = pool.submit(doTree::get).get();
     //
@@ -273,17 +255,17 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     // final Table backwards1 =
     // pool.submit(() -> TreeTableFilter.rawFilterTree(treed1, "!isNull(Extra)").sortDescending("Extra"))
     // .get();
-    // final Table backwardsTree1a = pool.submit(() -> backwards1.treeTable("Sentinel", "Parent")).get();
+    // final Table backwardsTree1a = pool.submit(() -> backwards1.tree("Sentinel", "Parent")).get();
     //
     // final Table treed4 = pool.submit(doTree::get).get();
     //
-    // TstUtils.addToTable(source, i(12), c("Sentinel", 12), c("Parent", 11), c("Extra", "l"));
+    // addToTable(source, i(12), col("Sentinel", 12), col("Parent", 11), col("Extra", "l"));
     //
     // final Table backwards2 =
     // pool.submit(() -> TreeTableFilter.rawFilterTree(treed1, "!isNull(Extra)").sortDescending("Extra"))
     // .get();
-    // final Table backwardsTree1b = pool.submit(() -> backwards1.treeTable("Sentinel", "Parent")).get();
-    // final Table backwardsTree2a = pool.submit(() -> backwards2.treeTable("Sentinel", "Parent")).get();
+    // final Table backwardsTree1b = pool.submit(() -> backwards1.tree("Sentinel", "Parent")).get();
+    // final Table backwardsTree2a = pool.submit(() -> backwards2.tree("Sentinel", "Parent")).get();
     //
     // final Table treed5 = pool.submit(doTree::get).get();
     //
@@ -301,12 +283,12 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     // final Table treed6 = pool.submit(doTree::get).get();
     // UpdateGraphProcessor.DEFAULT.flushAllNormalNotificationsForUnitTests();
     //
-    // final Table backwardsTree1c = pool.submit(() -> backwards1.treeTable("Sentinel", "Parent")).get();
-    // final Table backwardsTree2b = pool.submit(() -> backwards2.treeTable("Sentinel", "Parent")).get();
+    // final Table backwardsTree1c = pool.submit(() -> backwards1.tree("Sentinel", "Parent")).get();
+    // final Table backwardsTree2b = pool.submit(() -> backwards2.tree("Sentinel", "Parent")).get();
     // final Table backwards3 =
     // pool.submit(() -> TreeTableFilter.rawFilterTree(treed1, "!isNull(Extra)").sortDescending("Extra"))
     // .get();
-    // final Table backwardsTree3 = pool.submit(() -> backwards3.treeTable("Sentinel", "Parent")).get();
+    // final Table backwardsTree3 = pool.submit(() -> backwards3.tree("Sentinel", "Parent")).get();
     //
     // final Table root1a = map1.get(null);
     // final Table root2a = map2.get(null);
@@ -337,7 +319,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     // }
     //
     // final Table backwardsExpected = UpdateGraphProcessor.DEFAULT.exclusiveLock()
-    // .computeLocked(() -> source.sortDescending("Extra").treeTable("Sentinel", "Parent"));
+    // .computeLocked(() -> source.sortDescending("Extra").tree("Sentinel", "Parent"));
     // ii = 1;
     // for (Table treed : Arrays.asList(backwardsTree1a, backwardsTree1b, backwardsTree1c, backwardsTree2a,
     // backwardsTree2b, backwardsTree3)) {
@@ -355,20 +337,20 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     //
     // try {
     //
-    // final QueryTable source = TstUtils.testRefreshingTable(
+    // final QueryTable source = testRefreshingTable(
     // RowSetFactory.flat(10).toTracking(),
     // col("Sentinel", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
     // col("Parent", NULL_INT, NULL_INT, 1, 1, 2, 3, 5, 5, 3, 2),
     // col("Extra", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j"));
-    // final QueryTable source2 = TstUtils.testRefreshingTable(
+    // final QueryTable source2 = testRefreshingTable(
     // RowSetFactory.flat(11).toTracking(),
     // col("Sentinel", 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12),
     // col("Parent", NULL_INT, 1, 1, 2, 3, 5, 5, 3, 2, NULL_INT, 11),
     // col("Extra", "bb", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l"));
     //
-    // final java.util.function.Function<Table, Table> doSort = t -> t.sortDescending("Extra");
-    // final java.util.function.Function<Table, Table> doTree = t -> t.treeTable("Sentinel", "Parent");
-    // final java.util.function.Function<Table, Table> doSortAndTree = doSort.andThen(doTree);
+    // final Function<Table, Table> doSort = t -> t.sortDescending("Extra");
+    // final Function<Table, Table> doTree = t -> t.tree("Sentinel", "Parent");
+    // final Function<Table, Table> doSortAndTree = doSort.andThen(doTree);
     //
     // final Table expect =
     // UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(() -> doSortAndTree.apply(source));
@@ -391,9 +373,9 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     // doCompareWithChildrenForTrees("testConcurrentInstantiation", treed1, expect, 0, 10, hierarchicalColumnName,
     // CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
     //
-    // TstUtils.removeRows(source, i(0));
-    // TstUtils.addToTable(source, i(1, 11, 12), c("Sentinel", 2, 11, 12), c("Parent", NULL_INT, NULL_INT, 11),
-    // c("Extra", "bb", "k", "l"));
+    // removeRows(source, i(0));
+    // addToTable(source, i(1, 11, 12), col("Sentinel", 2, 11, 12), col("Parent", NULL_INT, NULL_INT, 11),
+    // col("Extra", "bb", "k", "l"));
     //
     // final Table treed2a = pool.submit(() -> doSortAndTree.apply(source)).get();
     // final Table treed2b = pool.submit(() -> doTree.apply(sorted0)).get();
@@ -489,7 +471,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     //
     // final Table treed =
     // UpdateGraphProcessor.DEFAULT.exclusiveLock()
-    // .computeLocked(() -> source.treeTable("Sentinel", "Parent"));
+    // .computeLocked(() -> source.tree("Sentinel", "Parent"));
     // TableTools.showWithRowSet(treed);
     //
     // final String hierarchicalColumnName = getHierarchicalColumnName(treed);
@@ -508,13 +490,13 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     // }
     //
     // public void testTreeTableSimpleFilter() {
-    // final QueryTable source = TstUtils.testRefreshingTable(RowSetFactory.flat(10).toTracking(),
+    // final QueryTable source = testRefreshingTable(RowSetFactory.flat(10).toTracking(),
     // col("Sentinel", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
     // col("Parent", NULL_INT, NULL_INT, 1, 1, 2, 3, 5, 5, 3, 6));
     //
     // final Table treed =
     // UpdateGraphProcessor.DEFAULT.exclusiveLock()
-    // .computeLocked(() -> source.treeTable("Sentinel", "Parent"));
+    // .computeLocked(() -> source.tree("Sentinel", "Parent"));
     // TableTools.showWithRowSet(treed);
     //
     // final String hierarchicalColumnName = getHierarchicalColumnName(treed);
@@ -601,11 +583,11 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     // }
     //
     // public void testOrphanPromoterSimple() {
-    // final QueryTable source = TstUtils.testRefreshingTable(RowSetFactory.flat(4).toTracking(),
+    // final QueryTable source = testRefreshingTable(RowSetFactory.flat(4).toTracking(),
     // col("Sentinel", 1, 2, 3, 4), col("Parent", NULL_INT, NULL_INT, 1, 5));
     //
-    // final Table treed = UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(() -> TreeTableOrphanPromoter
-    // .promoteOrphans(source, "Sentinel", "Parent").treeTable("Sentinel", "Parent"));
+    // final Table treed = UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(() -> TreeTable
+    // .promoteOrphans(source, "Sentinel", "Parent").tree("Sentinel", "Parent"));
     // TableTools.showWithRowSet(treed);
     // assertEquals(3, treed.size());
     //
@@ -651,7 +633,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     // }
     //
     // public void testTreeTableEdgeCases() {
-    // final QueryTable source = TstUtils.testRefreshingTable(RowSetFactory.flat(4).toTracking(),
+    // final QueryTable source = testRefreshingTable(RowSetFactory.flat(4).toTracking(),
     // col("Sentinel", 0, 1, 2, 3),
     // col("Filter", 0, 0, 0, 0),
     // col("Parent", NULL_INT, NULL_INT, NULL_INT, NULL_INT));
@@ -661,48 +643,48 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     // @Override
     // protected Table e() {
     // return UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(() -> {
-    // final Table treed = source.treeTable("Sentinel", "Parent");
+    // final Table treed = source.tree("Sentinel", "Parent");
     // return TreeTableFilter.rawFilterTree(treed, "Filter in 1");
     // });
     // }
     // },
     // };
     //
-    // TstUtils.validate(en);
+    // validate(en);
     // Assert.assertEquals(0, en[0].originalValue.size());
     //
     // // modify child to have parent
     // UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-    // TstUtils.addToTable(source, i(0), c("Sentinel", 0), c("Filter", 1), c("Parent", 1));
+    // addToTable(source, i(0), col("Sentinel", 0), col("Filter", 1), col("Parent", 1));
     // source.notifyListeners(i(), i(), i(0));
     // });
     // Assert.assertEquals(i(0, 1), en[0].originalValue.getRowSet());
     //
     // // modify parent to have grandparent
     // UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-    // TstUtils.addToTable(source, i(1), c("Sentinel", 1), c("Filter", 0), c("Parent", 2));
+    // addToTable(source, i(1), col("Sentinel", 1), col("Filter", 0), col("Parent", 2));
     // source.notifyListeners(i(), i(), i(1));
     // });
     // Assert.assertEquals(i(0, 1, 2), en[0].originalValue.getRowSet());
     //
     // // modify parent's id to orphan child
     // UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-    // TstUtils.addToTable(source, i(1), c("Sentinel", -1), c("Filter", 0), c("Parent", 2));
+    // addToTable(source, i(1), col("Sentinel", -1), col("Filter", 0), col("Parent", 2));
     // source.notifyListeners(i(), i(), i(1));
     // });
     // Assert.assertEquals(i(0), en[0].originalValue.getRowSet());
     //
     // // revert parent's id and adopt child
     // UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-    // TstUtils.addToTable(source, i(1), c("Sentinel", 1), c("Filter", 0), c("Parent", 2));
+    // addToTable(source, i(1), col("Sentinel", 1), col("Filter", 0), col("Parent", 2));
     // source.notifyListeners(i(), i(), i(1));
     // });
     // Assert.assertEquals(i(0, 1, 2), en[0].originalValue.getRowSet());
     //
     // // remove child, resurrect parent
     // UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-    // TstUtils.removeRows(source, i(0));
-    // TstUtils.addToTable(source, i(3), c("Sentinel", 3), c("Filter", 1), c("Parent", 1));
+    // removeRows(source, i(0));
+    // addToTable(source, i(3), col("Sentinel", 3), col("Filter", 1), col("Parent", 1));
     // source.notifyListeners(i(), i(0), i(3));
     // });
     // Assert.assertEquals(i(1, 2, 3), en[0].originalValue.getRowSet());
@@ -734,7 +716,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     // }
     // }
     //
-    // public static class ParentChildGenerator implements TstUtils.Generator<IdParentPair, IdParentPair> {
+    // public static class ParentChildGenerator implements TestDataGenerator<IdParentPair, IdParentPair> {
     // final double rootFraction;
     // final double createAsOrphanFraction;
     //
@@ -929,8 +911,8 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     // msg, originalValue, recomputed, false, false, levels, maxLevels, hierarchicalColumnName, sortColumns);
     // }
     //
-    // static private void doCompareWithChildren(Function.Unary<TableMap, Table> actualMapSource,
-    // Function.Unary<TableMap, Table> expectedMapSource,
+    // static private void doCompareWithChildren(Function<TableMap, Table> actualMapSource,
+    // Function<TableMap, Table> expectedMapSource,
     // String msg,
     // Table actualValueIn,
     // Table expectedValueIn,
@@ -959,8 +941,8 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     // final ColumnSource actualChildren = columnOrPrev(actualValue, hierarchicalColumnName, actualPrev);
     // final ColumnSource expectedChildren = columnOrPrev(expectedValue, hierarchicalColumnName, expectedPrev);
     //
-    // final TableMap actualMap = actualMapSource.call(actualValue);
-    // final TableMap expectedMap = expectedMapSource.call(expectedValue);
+    // final TableMap actualMap = actualMapSource.apply(actualValue);
+    // final TableMap expectedMap = expectedMapSource.apply(expectedValue);
     //
     // final RowSet actualRowSet = indexOrPrev(actualValue, actualPrev);
     // final RowSet expectedRowSet = indexOrPrev(expectedValue, expectedPrev);
@@ -1013,7 +995,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     // final Random random = new Random(seed);
     // final ParentChildGenerator parentChildGenerator = new ParentChildGenerator(0.25, 0);
     //
-    // final TstUtils.ColumnInfo[] columnInfo = initColumnInfos(new String[] {"IDPair", "Sentinel", "Sym"},
+    // final ColumnInfo[] columnInfo = initColumnInfos(new String[] {"IDPair", "Sentinel", "Sym"},
     // parentChildGenerator,
     // new IntGenerator(0, 1_000_000_000),
     // new SetGenerator<>("AAPL", "TSLA", "VXX", "SPY"));
@@ -1046,31 +1028,31 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     // @Override
     // protected Table e() {
     // return UpdateGraphProcessor.DEFAULT.exclusiveLock()
-    // .computeLocked(() -> prepared.treeTable("ID", "Parent"));
+    // .computeLocked(() -> prepared.tree("ID", "Parent"));
     // }
     // },
     // new TreeTableEvalNugget(prepared) {
     // @Override
     // protected Table e() {
     // return UpdateGraphProcessor.DEFAULT.exclusiveLock()
-    // .computeLocked(() -> prepared.sort("Sym").treeTable("ID", "Parent"));
+    // .computeLocked(() -> prepared.sort("Sym").tree("ID", "Parent"));
     // }
     // },
     // new TreeTableEvalNugget(prepared) {
     // @Override
     // protected Table e() {
     // return UpdateGraphProcessor.DEFAULT.exclusiveLock()
-    // .computeLocked(() -> prepared.sort("Sentinel").treeTable("ID", "Parent"));
+    // .computeLocked(() -> prepared.sort("Sentinel").tree("ID", "Parent"));
     // }
     // },
     // new TreeTableEvalNugget(prepared) {
     // @Override
     // protected Table e() {
-    // return TreeTableFilter.filterTree(prepared.treeTable("ID", "Parent"), "Sentinel % 2 == 1");
+    // return TreeTableFilter.filterTree(prepared.tree("ID", "Parent"), "Sentinel % 2 == 1");
     // }
     // },
     // EvalNugget.from(
-    // () -> TreeTableFilter.rawFilterTree(prepared.treeTable("ID", "Parent"), "Sentinel % 2 == 1")),
+    // () -> TreeTableFilter.rawFilterTree(prepared.tree("ID", "Parent"), "Sentinel % 2 == 1")),
     // };
     //
     // final int maxSteps = numSteps.intValue();
@@ -1096,8 +1078,8 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     // final QueryTable table = getTable(size, random,
     // columnInfo = initColumnInfos(new String[] {"IDPair", "Sentinel", "Sym"},
     // parentChildGenerator,
-    // new TstUtils.IntGenerator(0, 1_000_000_000),
-    // new TstUtils.SetGenerator<>("AAPL", "TSLA", "VXX", "SPY")));
+    // new IntGenerator(0, 1_000_000_000),
+    // new SetGenerator<>("AAPL", "TSLA", "VXX", "SPY")));
     //
     // final Table prepared = table.update("ID=IDPair.getId()", "Parent=IDPair.getParent()").dropColumns("IDPair");
     //
@@ -1115,13 +1097,13 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     // @Override
     // protected Table e() {
     // return UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(
-    // () -> TreeTableOrphanPromoter.promoteOrphans((QueryTable) prepared, "ID", "Parent"));
+    // () -> TreeTable.promoteOrphans((QueryTable) prepared, "ID", "Parent"));
     // }
     // },
     // new EvalNugget() {
     // @Override
     // protected Table e() {
-    // return UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(() -> TreeTableOrphanPromoter
+    // return UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(() -> TreeTable
     // .promoteOrphans((QueryTable) prepared.where("Sentinel % 2 == 0"), "ID", "Parent"));
     // }
     // },
@@ -1129,8 +1111,8 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     // @Override
     // protected Table e() {
     // return UpdateGraphProcessor.DEFAULT.exclusiveLock()
-    // .computeLocked(() -> TreeTableOrphanPromoter.promoteOrphans((QueryTable) prepared
-    // .where("Sentinel % 2 == 0"), "ID", "Parent").treeTable("ID", "Parent"));
+    // .computeLocked(() -> TreeTable.promoteOrphans((QueryTable) prepared
+    // .where("Sentinel % 2 == 0"), "ID", "Parent").tree("ID", "Parent"));
     // }
     // },
     // };
@@ -1334,16 +1316,16 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     // initColumnInfos(
     // new String[] {"USym", "Group", "IntCol", "DoubleCol", "DoubleNanCol", "FloatNullCol",
     // "StringCol", "BoolCol", "BigIntCol", "BigDecCol"},
-    // new TstUtils.SetGenerator<>("AAPL", "TSLA", "VXX", "SPY"),
-    // new TstUtils.SetGenerator<>("Terran", "Vulcan", "Klingon", "Romulan"),
-    // new TstUtils.IntGenerator(0, 1_000_000),
-    // new TstUtils.DoubleGenerator(-100, 100),
-    // new TstUtils.DoubleGenerator(-100, 100, 0.0, 0.1),
-    // new TstUtils.FloatGenerator(-100, 100, 0.1, 0.0),
-    // new TstUtils.SetGenerator<>("A", "B", "C", "D"),
-    // new TstUtils.BooleanGenerator(.5, .1),
-    // new TstUtils.BigIntegerGenerator(BigInteger.ZERO, BigInteger.valueOf(100), 0.1),
-    // new TstUtils.BigDecimalGenerator(BigInteger.valueOf(-1000), BigInteger.valueOf(1000), 5, 0.1)));
+    // new SetGenerator<>("AAPL", "TSLA", "VXX", "SPY"),
+    // new SetGenerator<>("Terran", "Vulcan", "Klingon", "Romulan"),
+    // new IntGenerator(0, 1_000_000),
+    // new DoubleGenerator(-100, 100),
+    // new DoubleGenerator(-100, 100, 0.0, 0.1),
+    // new FloatGenerator(-100, 100, 0.1, 0.0),
+    // new SetGenerator<>("A", "B", "C", "D"),
+    // new BooleanGenerator(.5, .1),
+    // new BigIntegerGenerator(BigInteger.ZERO, BigInteger.valueOf(100), 0.1),
+    // new BigDecimalGenerator(BigInteger.valueOf(-1000), BigInteger.valueOf(1000), 5, 0.1)));
     //
     // System.out.println("Source Data:");
     // TableTools.showWithRowSet(table);
@@ -1384,10 +1366,10 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     // final int size = 10;
     // final QueryTable table = getTable(size, random,
     // initColumnInfos(new String[] {"USym", "Group", "IntCol", "DoubleCol"},
-    // new TstUtils.SetGenerator<>("AAPL", "TSLA", "VXX", "SPY"),
-    // new TstUtils.SetGenerator<>("Terran", "Vulcan", "Klingon", "Romulan"),
-    // new TstUtils.IntGenerator(0, 1_000_000),
-    // new TstUtils.DoubleGenerator(-100, 100)));
+    // new SetGenerator<>("AAPL", "TSLA", "VXX", "SPY"),
+    // new SetGenerator<>("Terran", "Vulcan", "Klingon", "Romulan"),
+    // new IntGenerator(0, 1_000_000),
+    // new DoubleGenerator(-100, 100)));
     //
     // final SafeCloseable scopeCloseable = LivenessScopeStack.open();
     //
@@ -1431,16 +1413,16 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     // final int size = 10;
     // final QueryTable table = getTable(size, random,
     // initColumnInfos(new String[] {"USym", "Group", "IntCol", "DoubleCol", "ParentCol"},
-    // new TstUtils.SetGenerator<>("AAPL", "TSLA", "VXX", "SPY"),
-    // new TstUtils.SetGenerator<>("Terran", "Vulcan", "Klingon", "Romulan"),
-    // new TstUtils.IntGenerator(1, 1_000_000),
-    // new TstUtils.DoubleGenerator(-100, 100),
-    // new TstUtils.IntGenerator(0, 0, 1.0)));
+    // new SetGenerator<>("AAPL", "TSLA", "VXX", "SPY"),
+    // new SetGenerator<>("Terran", "Vulcan", "Klingon", "Romulan"),
+    // new IntGenerator(1, 1_000_000),
+    // new DoubleGenerator(-100, 100),
+    // new IntGenerator(0, 0, 1.0)));
     //
     // final SafeCloseable scopeCloseable = LivenessScopeStack.open();
     //
-    // final Table promoted = TreeTableOrphanPromoter.promoteOrphans(table, "IntCol", "ParentCol");
-    // final Table treed = promoted.treeTable("IntCol", "ParentCol");
+    // final Table promoted = TreeTable.promoteOrphans(table, "IntCol", "ParentCol");
+    // final Table treed = promoted.tree("IntCol", "ParentCol");
     //
     // final SingletonLivenessManager treeManager = new SingletonLivenessManager(treed);
     //
@@ -1458,7 +1440,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     // UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
     // final long key = table.getRowSet().firstRowKey();
     // table.getRowSet().writableCast().remove(key);
-    // TstUtils.removeRows(table, i(key));
+    // removeRows(table, i(key));
     // table.notifyListeners(i(), i(key), i());
     // });
     //
@@ -1473,7 +1455,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     // }
     //
     // public void testRollupScope2() {
-    // final QueryTable table = TstUtils.testRefreshingTable(i().toTracking(),
+    // final QueryTable table = testRefreshingTable(i().toTracking(),
     // col("USym", CollectionUtil.ZERO_LENGTH_STRING_ARRAY),
     // col("Group", CollectionUtil.ZERO_LENGTH_STRING_ARRAY),
     // intCol("IntCol"), doubleCol("DoubleCol"));
@@ -1534,11 +1516,11 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     // final int size = 10;
     // final QueryTable table = getTable(size, random,
     // initColumnInfos(new String[] {"USym", "Group", "IntCol", "DoubleCol", "StringCol"},
-    // new TstUtils.SetGenerator<>("AAPL", "TSLA", "VXX", "SPY"),
-    // new TstUtils.SetGenerator<>("Terran", "Vulcan", "Klingon", "Romulan"),
-    // new TstUtils.IntGenerator(0, 1_000_000),
-    // new TstUtils.DoubleGenerator(-100, 100),
-    // new TstUtils.SetGenerator<>("A", "B", "C", "D")));
+    // new SetGenerator<>("AAPL", "TSLA", "VXX", "SPY"),
+    // new SetGenerator<>("Terran", "Vulcan", "Klingon", "Romulan"),
+    // new IntGenerator(0, 1_000_000),
+    // new DoubleGenerator(-100, 100),
+    // new SetGenerator<>("A", "B", "C", "D")));
     //
     // final Table rollup = UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(
     // () -> table.rollup(List.of(AggSum("DoubleCol"), AggFirst("StringCol")), "USym", "Group", "IntCol"));
@@ -1583,7 +1565,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     //
     // private void testIncrementalSimple(Aggregation aggregation) {
     // final QueryTable table =
-    // TstUtils.testRefreshingTable(RowSetFactory.flat(6).toTracking(),
+    // testRefreshingTable(RowSetFactory.flat(6).toTracking(),
     // col("G1", "A", "A", "A", "B", "B", "B"),
     // col("G2", "C", "C", "D", "D", "E", "E"),
     // col("IntCol", 1, 2, 3, 4, 5, 6));
@@ -1656,30 +1638,30 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     //
     // private void testRollupIncremental(int seed) {
     // final Random random = new Random(seed);
-    // final TstUtils.ColumnInfo[] columnInfo;
+    // final ColumnInfo[] columnInfo;
     //
     // final int size = 100;
     // final QueryTable table = getTable(size, random, columnInfo = initColumnInfos(new String[] {
     // "USym", "Group", "IntCol", "DoubleCol", "StringCol", "StringNulls", "BoolCol", "DateTime",
     // "IntSet", "LongSet", "DoubleSet", "FloatSet", "CharSet", "ShortSet", "ByteSet"},
     //
-    // new TstUtils.SetGenerator<>("AAPL", "TSLA", "VXX", "SPY"),
-    // new TstUtils.SetGenerator<>("Terran", "Vulcan", "Klingon", "Romulan"),
-    // new TstUtils.IntGenerator(0, 1_000_000),
-    // new TstUtils.DoubleGenerator(-100, 100),
-    // new TstUtils.SetGenerator<>("A", "B", "C", "D"),
-    // new TstUtils.SetGenerator<>("A", "B", "C", "D", null),
-    // new TstUtils.BooleanGenerator(.5, .1),
-    // new TstUtils.UnsortedDateTimeGenerator(DateTimeUtils.convertDateTime("2020-03-17T09:30:00 NY"),
+    // new SetGenerator<>("AAPL", "TSLA", "VXX", "SPY"),
+    // new SetGenerator<>("Terran", "Vulcan", "Klingon", "Romulan"),
+    // new IntGenerator(0, 1_000_000),
+    // new DoubleGenerator(-100, 100),
+    // new SetGenerator<>("A", "B", "C", "D"),
+    // new SetGenerator<>("A", "B", "C", "D", null),
+    // new BooleanGenerator(.5, .1),
+    // new UnsortedDateTimeGenerator(DateTimeUtils.convertDateTime("2020-03-17T09:30:00 NY"),
     // DateTimeUtils.convertDateTime("2020-03-17T16:00:00 NY")),
-    // new TstUtils.SetGenerator<>(0, 1, 2, 3, 4, 5, NULL_INT),
-    // new TstUtils.SetGenerator<>(0L, 1L, 2L, 3L, 4L, 5L, NULL_LONG),
-    // new TstUtils.SetGenerator<>(0.0D, 1.1D, 2.2D, 3.3D, 4.4D, 5.5D, NULL_DOUBLE),
-    // new TstUtils.SetGenerator<>(0.0f, 1.1f, 2.2f, 3.3f, 4.4f, 5.5f, NULL_FLOAT),
-    // new TstUtils.SetGenerator<>('a', 'b', 'c', 'd', 'e', NULL_CHAR),
-    // new TstUtils.SetGenerator<>((short) 0, (short) 1, (short) 2, (short) 3, (short) 4, (short) 5,
+    // new SetGenerator<>(0, 1, 2, 3, 4, 5, NULL_INT),
+    // new SetGenerator<>(0L, 1L, 2L, 3L, 4L, 5L, NULL_LONG),
+    // new SetGenerator<>(0.0D, 1.1D, 2.2D, 3.3D, 4.4D, 5.5D, NULL_DOUBLE),
+    // new SetGenerator<>(0.0f, 1.1f, 2.2f, 3.3f, 4.4f, 5.5f, NULL_FLOAT),
+    // new SetGenerator<>('a', 'b', 'c', 'd', 'e', NULL_CHAR),
+    // new SetGenerator<>((short) 0, (short) 1, (short) 2, (short) 3, (short) 4, (short) 5,
     // NULL_SHORT),
-    // new TstUtils.SetGenerator<>((byte) 0, (byte) 1, (byte) 2, (byte) 3, (byte) 4, (byte) 5, NULL_BYTE)));
+    // new SetGenerator<>((byte) 0, (byte) 1, (byte) 2, (byte) 3, (byte) 4, (byte) 5, NULL_BYTE)));
     //
     // final Collection<? extends Aggregation> rollupDefinition = List.of(
     // AggSum("IntCol", "DoubleCol"),
@@ -1768,7 +1750,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     // int nextHid = 11;
     // long index = 2;
     //
-    // final QueryTable source = TstUtils.testRefreshingTable(RowSetFactory.flat(1).toTracking(),
+    // final QueryTable source = testRefreshingTable(RowSetFactory.flat(1).toTracking(),
     // longCol("Sentinel", 1), stringCol("hid", "a"), stringCol("hpos", "1"),
     // col("open", true), doubleCol("rand", 1.0));
     //
@@ -1784,7 +1766,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     // .update("treeid=new io.deephaven.datastructures.util.SmartKey(hid, hpos)",
     // "parent=io.deephaven.engine.table.impl.QueryTableTreeTest.getPrefix(hid, hpos)");
     //
-    // final Table ordersTree = orders.treeTable("treeid", "parent");
+    // final Table ordersTree = orders.tree("treeid", "parent");
     // final Table ordersFiltered = TreeTableFilter.filterTree(ordersTree, "rand > 0.8");
     // final Table ordersFiltered2 = TreeTableFilter.filterTree(ordersTree, "rand > 0.1");
     //
@@ -1882,7 +1864,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     // }
     //
     // public void testIds6262() {
-    // final QueryTable table = TstUtils.testRefreshingTable(i(1).toTracking(),
+    // final QueryTable table = testRefreshingTable(i(1).toTracking(),
     // col("Sym", "A"), col("BigI", new BigInteger[] {null}), col("BigD", new BigDecimal[] {null}));
     //
     // final Table rollup = table.rollup(List.of(AggVar("BigI", "BigD")), "Sym");
@@ -1905,7 +1887,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     // }
     //
     // public void testIds7773() {
-    // final QueryTable dataTable = TstUtils.testRefreshingTable(
+    // final QueryTable dataTable = testRefreshingTable(
     // stringCol("USym", "A"),
     // doubleCol("Value", NULL_DOUBLE),
     // byteCol("BValue", NULL_BYTE),
@@ -2057,7 +2039,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     //
     // private static Table getDiffableTable(Table table) {
     // if (table instanceof HierarchicalTable) {
-    // return ((HierarchicalTable) table).getRawRootTable();
+    // return ((HierarchicalTable) table).getRootTable();
     // }
     //
     // return table;
@@ -2065,14 +2047,14 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     //
     // public void testRollupStdSlotOutOfOrder() {
     // final QueryTable source =
-    // TstUtils.testRefreshingTable(col("G1", "a", "b", "c", "d", "e", "f", "g", "A", "A", "B", "B", "A"),
+    // testRefreshingTable(col("G1", "a", "b", "c", "d", "e", "f", "g", "A", "A", "B", "B", "A"),
     // col("G2", "a", "a", "a", "a", "a", "a", "a", "a", "a", "a", "a", "a"),
     // intCol("Val", 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5));
     // final Table rollup = source.rollup(List.of(AggVar("Val")), "G1", "G2");
     // checkVar(source, rollup);
     //
     // UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-    // TstUtils.addToTable(source, i(9, 11), col("G1", "B", "A"), col("G2", "a", "a"), intCol("Val", 6, 7));
+    // addToTable(source, i(9, 11), col("G1", "B", "A"), col("G2", "a", "a"), intCol("Val", 6, 7));
     // final TableUpdate update =
     // new TableUpdateImpl(i(), i(), i(9, 11), RowSetShiftData.EMPTY, source.newModifiedColumnSet("Val"));
     // source.notifyListeners(update);

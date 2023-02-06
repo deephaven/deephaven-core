@@ -1,10 +1,10 @@
-# Building the C++ client from a base Ubuntu 20.04 image
+# Building the C++ client from a base Ubuntu 20.04 or 22.04 image
 
 These instructions show how to install and run the Deephaven C++ client, its dependencies,
-and its unit tests. We have tested these instructions in Ubuntu 20.04 with the default
+and its unit tests. We have tested these instructions in Ubuntu 20.04 and 22.04 with the default
 C++ compiler and tool suite (cmake etc).
 
-1. Start with an Ubuntu 20.04 install
+1. Start with an Ubuntu 20.04 or 22.04 install
 
 2. Get Deephaven running by following the instructions here: https://deephaven.io/core/docs/how-to-guides/launch-build/
 
@@ -26,19 +26,27 @@ C++ compiler and tool suite (cmake etc).
 
 6. Build and install dependencies for Deephaven C++ client.
 
-   Decide on a directory for the dependencies to live (eg, "$HOME/dhcpp").
-   Create that directory and copy the `$DHSRC/deephaven-core/cpp-client/deephaven/client/build-dependencies.sh`
-   to it.  Edit the script if necessary to reflect your selection of build tools and build target
-   (defaults point to Ubuntu system's g++, cmake, and a Debug build target for cmake).
-   Run the script from the same directory you copied it to.
-   It will download, build and install the dependent libraries
+   Get the `build-dependencies.sh` script from Deephaven's base images repository
+   at `https://github.com/deephaven/deephaven-base-images/blob/main/cpp-client`
+   You can download it directly from the link
+   `https://github.com/deephaven/deephaven-base-images/raw/main/cpp-client/build-dependencies.sh`
+   (this script is also used from our automated tools, to generate a docker image to
+   support tests runs; that's why it lives in a separate repo).
+   The script downloads, builds and installs the dependent libraries
    (Protobuf, re2, gflags, absl, flatbuffers, c-ares, zlib, gRPC, and Arrow).
+   Edit your local copy of the script if necessary to reflect your selection
+   of build tools and build target;
+   defaults point to Ubuntu system's g++, cmake, and a Debug build target for cmake.
+   Comments in the script will help you in identifying customization points.
+   Decide on a directory for the dependencies to live (eg, "$HOME/dhcpp").
+   Create that directory, and run your local copy of `build-dependencies.sh` from
+   that directory.
 
-
+   Example:
    ```
    mkdir -p $HOME/dhcpp
    cd $HOME/dhcpp
-   cp $DHSRC/deephaven-core/cpp-client/deephaven/client/build-dependencies.sh .
+   wget https://github.com/deephaven/deephaven-base-images/raw/main/cpp-client/build-dependencies.sh
    # Maybe edit build-dependencies.sh to reflect choices of build tools and build target
    ./build-dependencies.sh
    ```
@@ -49,7 +57,7 @@ C++ compiler and tool suite (cmake etc).
    cd $DHSRC/deephaven-core/cpp-client/deephaven/
    mkdir build && cd build
    export PFX=$HOME/dhcpp/local  # This should reflect your selection in the previous point.
-   export CMAKE_PREFIX_PATH=${PFX}/abseil:${PFX}/cares:${PFX}/flatbuffers:${PFX}/gflags:${PFX}/protobuf:${PFX}/re2:${PFX}/zlib:${PFX}/grpc:${PFX}/arrow:${PFX}/deephaven
+   export CMAKE_PREFIX_PATH=${PFX}/abseil:${PFX}/boost:${PFX}/cares:${PFX}/flatbuffers:${PFX}/gflags:${PFX}/immer:${PFX}/protobuf:${PFX}/re2:${PFX}/zlib:${PFX}/grpc:${PFX}/arrow:${PFX}/deephaven
    export NCPUS=$(getconf _NPROCESSORS_ONLN)
    cmake -DCMAKE_INSTALL_PREFIX=${PFX}/deephaven .. && make -j$NCPUS install
    ```

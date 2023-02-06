@@ -14,8 +14,6 @@ import io.deephaven.internal.log.LoggerFactory;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.jetbrains.annotations.NotNull;
 
-import static io.deephaven.configuration.Configuration.QUIET_PROPERTY;
-
 /**
  * Class for reading in a customized properties file, applying only the locally-relevant properties and keeping track of
  * which properties may not be further modified. Maintains the ordering of the properties from the input file.
@@ -647,7 +645,7 @@ public class ParsedProperties extends Properties {
      *
      */
     public synchronized void load(String fileName) throws IOException, ConfigurationException {
-        if (System.getProperty(QUIET_PROPERTY) == null) {
+        if (!Configuration.isQuiet()) {
             log.info("Loading " + fileName);
         }
         thisFile = fileName;

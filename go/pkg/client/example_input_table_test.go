@@ -124,11 +124,11 @@ func Example_inputTable() {
 	//   schema:
 	//   fields: 3
 	//     - Ticker: type=utf8, nullable
-	//         metadata: ["deephaven:isRowStyle": "false", "deephaven:type": "java.lang.String", "deephaven:isNumberFormat": "false", "deephaven:isStyle": "false", "deephaven:isRollupColumn": "false", "deephaven:inputtable.isKey": "true", "deephaven:isDateFormat": "false"]
+	//         metadata: ["deephaven:isRowStyle": "false", "deephaven:type": "java.lang.String", "deephaven:isNumberFormat": "false", "deephaven:isStyle": "false", "deephaven:inputtable.isKey": "true", "deephaven:isDateFormat": "false"]
 	//     - Close: type=float32, nullable
-	//        metadata: ["deephaven:isRowStyle": "false", "deephaven:type": "float", "deephaven:isNumberFormat": "false", "deephaven:isStyle": "false", "deephaven:isRollupColumn": "false", "deephaven:inputtable.isKey": "false", "deephaven:isDateFormat": "false"]
+	//        metadata: ["deephaven:isRowStyle": "false", "deephaven:type": "float", "deephaven:isNumberFormat": "false", "deephaven:isStyle": "false", "deephaven:inputtable.isKey": "false", "deephaven:isDateFormat": "false"]
 	//     - Volume: type=int32, nullable
-	//         metadata: ["deephaven:isRowStyle": "false", "deephaven:type": "int", "deephaven:isNumberFormat": "false", "deephaven:isStyle": "false", "deephaven:isRollupColumn": "false", "deephaven:inputtable.isKey": "false", "deephaven:isDateFormat": "false"]
+	//         metadata: ["deephaven:isRowStyle": "false", "deephaven:type": "int", "deephaven:isNumberFormat": "false", "deephaven:isStyle": "false", "deephaven:inputtable.isKey": "false", "deephaven:isDateFormat": "false"]
 	//   metadata: ["deephaven:unsent.attribute.InputTable": ""]
 	//   rows: 4
 	//   col[0][Ticker]: ["XRX" "XYZZY" "GME" "ZNGA"]

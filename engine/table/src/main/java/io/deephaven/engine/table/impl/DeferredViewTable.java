@@ -3,16 +3,14 @@
  */
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.api.ColumnName;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.filter.Filter;
-import io.deephaven.api.updateby.UpdateByOperation;
-import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.base.reference.SimpleReference;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
+import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer;
+import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessReferent;
@@ -21,12 +19,14 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
  * An uncoalesced table with view and where operations to be applied after {@link #coalesce()} is forced.
  */
-public class DeferredViewTable extends RedefinableTable {
+public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
 
     private final TableReference tableReference;
     protected final String[] deferredDropColumns;
@@ -45,12 +45,14 @@ public class DeferredViewTable extends RedefinableTable {
                 deferredDropColumns == null ? CollectionUtil.ZERO_LENGTH_STRING_ARRAY : deferredDropColumns;
         this.deferredViewColumns =
                 deferredViewColumns == null ? SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY : deferredViewColumns;
+        final TableDefinition parentDefinition = tableReference.getDefinition();
+        SelectAndViewAnalyzer.initializeSelectColumns(
+                parentDefinition.getColumnNameMap(), this.deferredViewColumns);
         this.deferredFilters = deferredFilters == null ? WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY : deferredFilters;
-        if (deferredFilters != null) {
-            for (final WhereFilter sf : deferredFilters) {
-                if (sf instanceof LivenessReferent) {
-                    manage((LivenessReferent) sf);
-                }
+        for (final WhereFilter sf : this.deferredFilters) {
+            sf.init(parentDefinition);
+            if (sf instanceof LivenessReferent) {
+                manage((LivenessReferent) sf);
             }
         }
 
@@ -71,7 +73,11 @@ public class DeferredViewTable extends RedefinableTable {
 
     @Override
     public Table where(Collection<? extends Filter> filters) {
-        return getResultTableWithWhere(WhereFilter.from(filters));
+        WhereFilter[] whereFilters = WhereFilter.from(filters);
+        for (WhereFilter filter : whereFilters) {
+            filter.init(definition);
+        }
+        return getResultTableWithWhere(whereFilters);
     }
 
     private Table getResultTableWithWhere(WhereFilter... whereFilters) {
@@ -88,7 +94,7 @@ public class DeferredViewTable extends RedefinableTable {
             Table result = tableAndRemainingFilters.table;
             result = applyDeferredViews(result);
             result = result.where(tableAndRemainingFilters.remainingFilters);
-            copyAttributes(result, CopyAttributeOperation.Coalesce);
+            copyAttributes((BaseTable<?>) result, CopyAttributeOperation.Coalesce);
             setCoalesced(result);
             return result;
         }
@@ -101,8 +107,7 @@ public class DeferredViewTable extends RedefinableTable {
             localResult = ((DeferredViewTable) localResult)
                     .getResultTableWithWhere(tableAndRemainingFilters.remainingFilters);
         } else {
-            localResult = localResult.where(Arrays.stream(tableAndRemainingFilters.remainingFilters)
-                    .map(WhereFilter::copy).toArray(WhereFilter[]::new));
+            localResult = localResult.where(WhereFilter.copyFrom(tableAndRemainingFilters.remainingFilters));
         }
 
         localResult = applyDeferredViews(localResult);
@@ -110,7 +115,7 @@ public class DeferredViewTable extends RedefinableTable {
             localResult = localResult.where(preAndPostFilters.postViewFilters);
         }
         if (whereFilters.length == 0) {
-            copyAttributes(localResult, CopyAttributeOperation.Coalesce);
+            copyAttributes((BaseTable<?>) localResult, CopyAttributeOperation.Coalesce);
             setCoalesced(localResult);
         }
         return localResult;
@@ -124,8 +129,7 @@ public class DeferredViewTable extends RedefinableTable {
             result = result.dropColumns(deferredDropColumns);
         }
         if (deferredViewColumns.length > 0) {
-            result = result
-                    .view(Arrays.stream(deferredViewColumns).map(SelectColumn::copy).toArray(SelectColumn[]::new));
+            result = result.view(SelectColumn.copyFrom(deferredViewColumns));
         }
         return result;
     }
@@ -145,55 +149,70 @@ public class DeferredViewTable extends RedefinableTable {
         ArrayList<WhereFilter> preViewFilters = new ArrayList<>();
         ArrayList<WhereFilter> postViewFilters = new ArrayList<>();
 
-        for (WhereFilter filter : filters) {
-            filter.init(definition);
-            ArrayList<String> usedColumns = new ArrayList<>();
-            usedColumns.addAll(filter.getColumns());
-            usedColumns.addAll(filter.getColumnArrays());
+        final Set<String> postViewColumns = new HashSet<>();
+        final Map<String, String> renames = new HashMap<>();
 
-            Map<String, String> renames = new HashMap<>();
-            boolean postFilter = false;
-
-            for (String column : usedColumns) {
-                for (SelectColumn selectColumn : deferredViewColumns) {
-                    if (selectColumn.getName().equals(column)) {
-                        if (selectColumn instanceof SwitchColumn) {
-                            selectColumn.initDef(tableReference.getDefinition().getColumnNameMap());
-                            selectColumn = ((SwitchColumn) selectColumn).getRealColumn();
-                        }
-
-                        // we need to rename this column
-                        if (selectColumn instanceof SourceColumn) {
-                            // this is a rename of the getSourceName to the innerName
-                            renames.put(selectColumn.getName(), ((SourceColumn) selectColumn).getSourceName());
-                        } else {
-                            postFilter = true;
-                            break;
-                        }
-                    }
-                }
+        // prepare data structures needed to determine if filter can be applied pre-view or if it must be post-view
+        for (SelectColumn selectColumn : deferredViewColumns) {
+            final String outerName = selectColumn.getName();
+            if (selectColumn.isRetain()) {
+                continue;
+            }
+            if (selectColumn instanceof SwitchColumn) {
+                selectColumn = ((SwitchColumn) selectColumn).getRealColumn();
             }
 
-            if (postFilter) {
-                postViewFilters.add(filter);
-            } else {
-                if (!renames.isEmpty()) {
-                    if (filter instanceof io.deephaven.engine.table.impl.select.MatchFilter) {
-                        io.deephaven.engine.table.impl.select.MatchFilter matchFilter =
-                                (io.deephaven.engine.table.impl.select.MatchFilter) filter;
-                        Assert.assertion(renames.size() == 1, "Match Filters should only use one column!");
-                        String newName = renames.get(matchFilter.getColumnName());
-                        Assert.neqNull(newName, "newName");
-                        preViewFilters.add(matchFilter.renameFilter(newName));
-                    } else if (filter instanceof ConditionFilter) {
-                        ConditionFilter conditionFilter = (ConditionFilter) filter;
-                        preViewFilters.add(conditionFilter.renameFilter(renames));
-                    } else {
-                        postViewFilters.add(filter);
-                    }
+            // This column is being defined; whatever we currently believe might be wrong
+            renames.remove(outerName);
+            postViewColumns.remove(outerName);
+
+            if (selectColumn instanceof SourceColumn) {
+                // this is a renamed column
+                final String innerName = ((SourceColumn) selectColumn).getSourceName();
+                final String sourceName = renames.getOrDefault(innerName, innerName);
+
+                if (postViewColumns.contains(sourceName)) {
+                    // but it is renamed to a deferred column
+                    postViewColumns.add(outerName);
                 } else {
-                    preViewFilters.add(filter);
+                    // this is renamed to a real source column
+                    renames.put(outerName, sourceName);
                 }
+            } else {
+                // this is a deferred column
+                postViewColumns.add(outerName);
+            }
+        }
+
+        for (final WhereFilter filter : filters) {
+            filter.init(definition);
+
+            final boolean isPostView = Stream.of(filter.getColumns(), filter.getColumnArrays())
+                    .flatMap(Collection::stream)
+                    .anyMatch(postViewColumns::contains);
+            if (isPostView) {
+                postViewFilters.add(filter);
+                continue;
+            }
+
+            final Map<String, String> myRenames = Stream.of(filter.getColumns(), filter.getColumnArrays())
+                    .flatMap(Collection::stream)
+                    .filter(renames::containsKey)
+                    .collect(Collectors.toMap(Function.identity(), renames::get));
+
+            if (myRenames.isEmpty()) {
+                preViewFilters.add(filter);
+            } else if (filter instanceof MatchFilter) {
+                MatchFilter matchFilter = (MatchFilter) filter;
+                Assert.assertion(myRenames.size() == 1, "Match Filters should only use one column!");
+                String newName = myRenames.get(matchFilter.getColumnName());
+                Assert.neqNull(newName, "newName");
+                preViewFilters.add(matchFilter.renameFilter(newName));
+            } else if (filter instanceof ConditionFilter) {
+                ConditionFilter conditionFilter = (ConditionFilter) filter;
+                preViewFilters.add(conditionFilter.renameFilter(myRenames));
+            } else {
+                postViewFilters.add(filter);
             }
         }
 
@@ -216,7 +235,7 @@ public class DeferredViewTable extends RedefinableTable {
             result = tableReference.get();
             result = applyDeferredViews(result);
         }
-        copyAttributes(result, CopyAttributeOperation.Coalesce);
+        copyAttributes((BaseTable<?>) result, CopyAttributeOperation.Coalesce);
         return result;
     }
 
@@ -243,6 +262,15 @@ public class DeferredViewTable extends RedefinableTable {
         /* If the cachedResult is not yet created, we first ask for a selectDistinct cachedResult. */
         Table selectDistinct = tableReference.selectDistinctInternal(columns);
         return selectDistinct == null ? coalesce().selectDistinct(columns) : selectDistinct;
+    }
+
+    @Override
+    protected DeferredViewTable copy() {
+        final DeferredViewTable result = new DeferredViewTable(definition, description, new SimpleTableReference(this),
+                null, null, null);
+        result.setRefreshing(isRefreshing());
+        LiveAttributeMap.copyAttributes(this, result, ak -> true);
+        return result;
     }
 
     @Override
@@ -320,7 +348,7 @@ public class DeferredViewTable extends RedefinableTable {
          * @param whereFilters filters to maybe apply before returning the table
          * @return the instantiated table and a set of filters that were not applied.
          */
-        public TableAndRemainingFilters getWithWhere(WhereFilter... whereFilters) {
+        protected TableAndRemainingFilters getWithWhere(WhereFilter... whereFilters) {
             return new TableAndRemainingFilters(get(), whereFilters);
         }
 

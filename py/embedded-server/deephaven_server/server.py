@@ -3,6 +3,7 @@
 #
 
 from typing import Dict, List, Optional
+import sys
 
 from .start_jvm import start_jvm
 
@@ -39,8 +40,14 @@ class Server:
         # it is now safe to import jpy
         import jpy
 
-        # Create a wrapped java server that we can reference to talk to the platform
+        # Create a python-wrapped java server that we can reference to talk to the platform
         self.j_server = jpy.get_type('io.deephaven.python.server.EmbeddedServer')(host, port, dh_args)
+
+        # Obtain references to the deephaven logbuffer and redirect stdout/stderr to it. Note that we should not import
+        # this until after jpy has started.
+        from deephaven_internal.stream import TeeStream
+        sys.stdout = TeeStream.split(sys.stdout, self.j_server.getStdout())
+        sys.stderr = TeeStream.split(sys.stderr, self.j_server.getStderr())
 
         # Keep a reference to the server so we know it is running
         Server.instance = self

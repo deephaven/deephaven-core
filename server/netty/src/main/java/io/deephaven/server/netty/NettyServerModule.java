@@ -7,11 +7,9 @@ import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
 import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.grpc.MTlsCertificate;
 import io.deephaven.server.config.ServerConfig;
 import io.deephaven.server.runner.GrpcServer;
-import io.deephaven.ssl.config.CiphersJdk;
-import io.deephaven.ssl.config.Protocols;
-import io.deephaven.ssl.config.ProtocolsJdk;
 import io.deephaven.ssl.config.SSLConfig;
 import io.deephaven.ssl.config.TrustJdk;
 import io.deephaven.ssl.config.impl.KickstartUtils;
@@ -20,6 +18,7 @@ import io.grpc.Server;
 import io.grpc.ServerInterceptor;
 import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NettyServerBuilder;
+import io.netty.channel.ChannelOption;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SupportedCipherSuiteFilter;
 import nl.altindag.ssl.SSLFactory;
@@ -47,8 +46,11 @@ public interface NettyServerModule {
         } else {
             serverBuilder = NettyServerBuilder.forPort(serverConfig.port());
         }
+        serverBuilder.withOption(ChannelOption.SO_REUSEADDR, true);
+
         services.forEach(serverBuilder::addService);
         interceptors.forEach(serverBuilder::intercept);
+        serverBuilder.intercept(MTlsCertificate.DEFAULT_INTERCEPTOR);
         serverBuilder.maxInboundMessageSize(serverConfig.maxInboundMessageSize());
         if (serverConfig.ssl().isPresent()) {
             final SSLConfig ssl = serverConfig.ssl().get().orTrust(TrustJdk.of());

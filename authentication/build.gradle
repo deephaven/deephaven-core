@@ -1,0 +1,14 @@
+plugins {
+    id 'java-library'
+    id 'io.deephaven.project.register'
+}
+
+description 'authentication: Deephaven authentication and identity'
+
+dependencies {
+    api project(':proto:proto-backplane-grpc')
+    implementation project(':log-factory')
+    implementation project(':Configuration')
+
+    Classpaths.inheritArrow(project, 'flight-core', 'implementation')
+}

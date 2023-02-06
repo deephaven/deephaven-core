@@ -7,14 +7,16 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.testutil.sources.DateTimeTestSource;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.time.DateTime;
 import io.deephaven.engine.util.TableTools;
-import io.deephaven.engine.table.impl.RefreshingTableTestCase;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.TstUtils;
-import io.deephaven.engine.table.impl.sources.DateTimeTreeMapSource;
+import io.deephaven.engine.testutil.TstUtils;
+
+import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 
 public class TestTailInitializationFilter extends RefreshingTableTestCase {
     public void testSimple() {
@@ -41,7 +43,7 @@ public class TestTailInitializationFilter extends RefreshingTableTestCase {
         final Table slice100_200_filtered = input.slice(100, 200).where("Timestamp >= '" + threshold2 + "'");
         final Table expected = UpdateGraphProcessor.DEFAULT.sharedLock()
                 .computeLocked(() -> TableTools.merge(slice0_100_filtered, slice100_200_filtered));
-        assertEquals("", TableTools.diff(filtered, expected, 10));
+        assertTableEquals(filtered, expected);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             final DateTime[] data2 = new DateTime[4];
@@ -51,7 +53,7 @@ public class TestTailInitializationFilter extends RefreshingTableTestCase {
             data2[1] = DateTimeUtils.convertDateTime("2020-08-20T08:30:00 NY");
             final RowSet newRowSet = RowSetFactory.fromKeys(100, 101, 1100, 1101);
             input.getRowSet().writableCast().insert(newRowSet);
-            ((DateTimeTreeMapSource) input.<DateTime>getColumnSource("Timestamp")).add(newRowSet, data2);
+            ((DateTimeTestSource) input.<DateTime>getColumnSource("Timestamp")).add(newRowSet, data2);
             input.notifyListeners(newRowSet, TstUtils.i(), TstUtils.i());
         });
 
@@ -60,7 +62,6 @@ public class TestTailInitializationFilter extends RefreshingTableTestCase {
         final Table slice202_204 = input.slice(202, 204);
         final Table expected2 = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(
                 () -> TableTools.merge(slice0_100_filtered, slice100_102, slice102_202_filtered, slice202_204));
-        assertEquals("", TableTools.diff(filtered, expected2, 10));
-
+        assertTableEquals(filtered, expected2);
     }
 }

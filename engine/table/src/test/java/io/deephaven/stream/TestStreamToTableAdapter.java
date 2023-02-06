@@ -9,13 +9,13 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.time.DateTime;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.impl.SimpleListener;
-import io.deephaven.engine.table.impl.TstUtils;
 import io.deephaven.chunk.*;
 import io.deephaven.util.BooleanUtils;
 import junit.framework.TestCase;
@@ -56,7 +56,7 @@ public class TestStreamToTableAdapter {
         TstUtils.assertTableEquals(empty, result);
 
         final SimpleListener listener = new SimpleListener(result);
-        result.listenForUpdates(listener);
+        result.addUpdateListener(listener);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(adapter::run);
         TstUtils.assertTableEquals(empty, result);
@@ -232,7 +232,7 @@ public class TestStreamToTableAdapter {
         TstUtils.assertTableEquals(empty, result);
 
         final SimpleListener listener = new SimpleListener(result);
-        result.listenForUpdates(listener);
+        result.addUpdateListener(listener);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(adapter::run);
         TstUtils.assertTableEquals(empty, result);
@@ -302,7 +302,7 @@ public class TestStreamToTableAdapter {
         TstUtils.assertTableEquals(empty, result);
 
         final SimpleListener listener = new SimpleListener(result);
-        result.listenForUpdates(listener);
+        result.addUpdateListener(listener);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(adapter::run);
         TstUtils.assertTableEquals(empty, result);
@@ -361,7 +361,7 @@ public class TestStreamToTableAdapter {
         TstUtils.assertTableEquals(empty, result);
 
         final SimpleListener listener = new SimpleListener(result);
-        result.listenForUpdates(listener);
+        result.addUpdateListener(listener);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(adapter::run);
         TstUtils.assertTableEquals(empty, result);
@@ -440,7 +440,7 @@ public class TestStreamToTableAdapter {
                 listenerFailed.setTrue();
             }
         };
-        result.listenForUpdates(listener);
+        result.addUpdateListener(listener);
 
         streamPublisher.fail = true;
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(adapter::run);

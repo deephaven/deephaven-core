@@ -4,42 +4,40 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.FileUtils;
+import io.deephaven.base.clock.Clock;
+import io.deephaven.chunk.util.pools.ChunkPoolReleaseTracking;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.util.TestClock;
 import io.deephaven.plugin.type.ObjectTypeLookup.NoOp;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.time.DateTime;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.util.GroovyDeephavenSession;
 import io.deephaven.engine.util.GroovyDeephavenSession.RunScripts;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.impl.util.RuntimeMemory;
-import io.deephaven.time.TimeProvider;
-import io.deephaven.test.junit4.EngineCleanup;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.test.types.SerialTest;
 import io.deephaven.util.SafeCloseable;
-import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.Nullable;
-import org.junit.After;
 import org.junit.Assume;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
-import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.text.DecimalFormat;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Category(SerialTest.class)
 public class FuzzerTest {
-    private static final String TEST_ROOT = System.getProperty("devroot", ".");
-    private static final String OUTPUT_ROOT = TEST_ROOT + "/tmp/" + FuzzerTest.class.getSimpleName() + "output";
     private static final boolean REALTIME_FUZZER_ENABLED =
             Configuration.getInstance().getBooleanWithDefault("FuzzerTest.realTime", false);
 
@@ -71,51 +69,33 @@ public class FuzzerTest {
         }
     };
 
-    private void cleanupPersistence() {
-        FileUtils.deleteRecursively(new File(OUTPUT_ROOT));
-    }
-
-    private void setupPersistence() {
-        cleanupPersistence();
-        // noinspection ResultOfMethodCallIgnored
-        new File(OUTPUT_ROOT).mkdirs();
-    }
-
-    @Before
-    public void setUp() throws Exception {
-        setupPersistence();
-    }
-
-    @After
-    public void tearDown() throws Exception {
-        cleanupPersistence();
-    }
-
     private GroovyDeephavenSession getGroovySession() throws IOException {
         return getGroovySession(null);
     }
 
-    private GroovyDeephavenSession getGroovySession(@Nullable TimeProvider timeProvider) throws IOException {
+    private GroovyDeephavenSession getGroovySession(@Nullable Clock clock) throws IOException {
         final GroovyDeephavenSession session = new GroovyDeephavenSession(NoOp.INSTANCE, RunScripts.serviceLoader());
-        QueryScope.setScope(session.newQueryScope());
+        session.getExecutionContext().open();
         return session;
     }
 
     @Test
     public void testFuzzer() throws IOException, InterruptedException {
-        testFuzzerScriptFile(0, "/engine/table/src/test/java/io/deephaven/engine/table/impl/fuzzertest.groovy", true);
+        testFuzzerScriptFile(0, "fuzzertest.groovy", true);
     }
 
     private void testFuzzerScriptFile(final long timeSeed, String s, boolean realtime)
             throws IOException, InterruptedException {
         final Random timeRandom = new Random(timeSeed);
-        final String groovyString = FileUtils.readTextFile(new File(Configuration.getInstance().getDevRootPath() + s));
+        final String groovyString;
+        try (final InputStream in = FuzzerTest.class.getResourceAsStream(s)) {
+            groovyString = FileUtils.readTextFile(in);
+        }
 
         final DateTime fakeStart = DateTimeUtils.convertDateTime("2020-03-17T13:53:25.123456 NY");
-        final MutableLong now = new MutableLong(fakeStart.getNanos());
-        final TimeProvider timeProvider = realtime ? null : () -> new DateTime(now.longValue());
+        final TestClock clock = realtime ? null : new TestClock(fakeStart.getNanos());
 
-        final GroovyDeephavenSession session = getGroovySession(timeProvider);
+        final GroovyDeephavenSession session = getGroovySession(clock);
 
         System.out.println(groovyString);
 
@@ -129,7 +109,7 @@ public class FuzzerTest {
 
         // so the first tick has a duration related to our initialization time
         if (!realtime) {
-            now.add(DateTimeUtils.SECOND / 10 * timeRandom.nextInt(20));
+            clock.now += DateTimeUtils.SECOND / 10 * timeRandom.nextInt(20);
         }
 
         final TimeTable timeTable = (TimeTable) session.getVariable("tt");
@@ -145,7 +125,7 @@ public class FuzzerTest {
             if (realtime) {
                 Thread.sleep(1000);
             } else {
-                now.add(DateTimeUtils.SECOND / 10 * timeRandom.nextInt(20));
+                clock.now += DateTimeUtils.SECOND / 10 * timeRandom.nextInt(20);
             }
         }
     }
@@ -198,21 +178,23 @@ public class FuzzerTest {
     @Test
     public void testLargeSetOfFuzzerQueriesRealtime() throws IOException, InterruptedException {
         Assume.assumeTrue("Realtime Fuzzer can have a positive feedback loop.", REALTIME_FUZZER_ENABLED);
-        runLargeFuzzerSetWithSeed(DateTime.now().getNanos(), 0, 99, true, 120, 1000);
+        runLargeFuzzerSetWithSeed(Clock.system().currentTimeNanos(), 0, 99, true, 120, 1000);
     }
 
     @Test
     public void testLargeSetOfFuzzerQueriesSimTime() throws IOException, InterruptedException {
-        final long seed1 = DateTime.now().getNanos();
+        final long seed1 = Clock.system().currentTimeNanos();
         final int iterations = TstUtils.SHORT_TESTS ? 1 : 5;
         for (long iteration = 0; iteration < iterations; ++iteration) {
             for (int segment = 0; segment < 10; segment++) {
+                ChunkPoolReleaseTracking.enableStrict();
                 UpdateGraphProcessor.DEFAULT.resetForUnitTests(false);
                 try (final SafeCloseable ignored = LivenessScopeStack.open()) {
                     System.out.println("// Segment: " + segment);
                     final int firstRun = segment * 10;
                     runLargeFuzzerSetWithSeed(seed1 + iteration, firstRun, firstRun + 10, false, 180, 0);
                 }
+                ChunkPoolReleaseTracking.checkAndDisable();
             }
         }
     }
@@ -230,11 +212,11 @@ public class FuzzerTest {
         final Random timeRandom = new Random(mainTestSeed + 1);
 
         final DateTime fakeStart = DateTimeUtils.convertDateTime("2020-03-17T13:53:25.123456 NY");
-        final MutableLong now = new MutableLong(fakeStart.getNanos());
-        final TimeProvider timeProvider = () -> new DateTime(now.longValue());
+        final TestClock clock = new TestClock(fakeStart.getNanos());
+
         final long start = System.currentTimeMillis();
 
-        final GroovyDeephavenSession session = getGroovySession(realtime ? null : timeProvider);
+        final GroovyDeephavenSession session = getGroovySession(realtime ? null : clock);
 
         System.out.println(tableQuery);
 
@@ -257,7 +239,7 @@ public class FuzzerTest {
         annotateBinding(session);
 
         if (!realtime) {
-            now.add(DateTimeUtils.SECOND / 10 * timeRandom.nextInt(20));
+            clock.now += DateTimeUtils.SECOND / 10 * timeRandom.nextInt(20);
         }
 
         final DecimalFormat commaFormat = new DecimalFormat();
@@ -287,7 +269,7 @@ public class FuzzerTest {
             if (realtime) {
                 Thread.sleep(sleepTime);
             } else {
-                now.add(DateTimeUtils.SECOND / 10 * timeRandom.nextInt(20));
+                clock.now += DateTimeUtils.SECOND / 10 * timeRandom.nextInt(20);
             }
             if (maxTableSize > 500_000L) {
                 System.out.println("Tables have grown too large, quitting fuzzer run.");
@@ -298,15 +280,18 @@ public class FuzzerTest {
         final long loopEnd = System.currentTimeMillis();
         System.out.println("Elapsed time: " + (loopEnd - start) + "ms, loop: " + (loopEnd - loopStart) + "ms"
                 + (realtime ? ""
-                        : (", sim: " + (double) (now.longValue() - fakeStart.getNanos()) / DateTimeUtils.SECOND))
+                        : (", sim: " + (double) (clock.now - fakeStart.getNanos()) / DateTimeUtils.SECOND))
                 + ", ttSize: " + timeTable.size());
     }
 
     private void annotateBinding(GroovyDeephavenSession session) {
         // noinspection unchecked
-        session.getBinding().getVariables().forEach((k, v) -> {
-            if (v instanceof Table) {
-                ((Table) v).setAttribute("BINDING_VARIABLE_NAME", k);
+        ((Map<String, Object>) session.getBinding().getVariables()).forEach((key, value) -> {
+            if (value instanceof LiveAttributeMap) {
+                final LiveAttributeMap<?, ?> liveAttributeMap = (LiveAttributeMap<?, ?>) value;
+                if (!liveAttributeMap.published()) {
+                    liveAttributeMap.setAttribute("BINDING_VARIABLE_NAME", key);
+                }
             }
         });
     }
@@ -319,7 +304,7 @@ public class FuzzerTest {
         System.out.println();
         if (table.isRefreshing()) {
             final FuzzerPrintListener listener = new FuzzerPrintListener(variable, table);
-            table.listenForUpdates(listener);
+            table.addUpdateListener(listener);
             hardReferences.put("print_" + System.identityHashCode(table), listener);
         }
     }
@@ -335,6 +320,7 @@ public class FuzzerTest {
 
     private void validateBindingPartitionedTableConstituents(
             GroovyDeephavenSession session, Map<String, Object> hardReferences) {
+        final ExecutionContext executionContext = ExecutionContext.makeExecutionContext(true);
         // noinspection unchecked
         session.getBinding().getVariables().forEach((k, v) -> {
             if (v instanceof PartitionedTable) {
@@ -342,12 +328,12 @@ public class FuzzerTest {
                 if (!partitionedTable.table().isRefreshing()) {
                     return;
                 }
-                final PartitionedTable validated = partitionedTable.transform(table -> {
+                final PartitionedTable validated = partitionedTable.transform(executionContext, table -> {
                     final String description = k.toString() + "_" + System.identityHashCode(table);
                     final QueryTable coalesced = (QueryTable) table.coalesce();
                     addValidator(hardReferences, description, coalesced);
                     return coalesced;
-                });
+                }, true);
                 hardReferences.put(k.toString(), validated);
             }
         });
@@ -356,7 +342,7 @@ public class FuzzerTest {
     private void addValidator(Map<String, Object> hardReferences, String description, QueryTable v) {
         final TableUpdateValidator validator = TableUpdateValidator.make(description, v);
         final FailureListener listener = new FailureListener();
-        validator.getResultTable().listenForUpdates(listener);
+        validator.getResultTable().addUpdateListener(listener);
         hardReferences.put(description, listener);
     }
 }

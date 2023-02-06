@@ -11,15 +11,16 @@ import jsinterop.annotations.JsType;
         name = "dhinternal.io.deephaven.proto.table_pb.BatchTableRequest.Operation.OpCase",
         namespace = JsPackage.GLOBAL)
 public class OpCase {
-    public static int AS_OF_JOIN,
+    public static int AGGREGATE,
+            AGGREGATE_ALL,
             APPLY_PREVIEW_COLUMNS,
+            AS_OF_JOIN,
             COMBO_AGGREGATE,
             CREATE_INPUT_TABLE,
             CROSS_JOIN,
             DROP_COLUMNS,
             EMPTY_TABLE,
             EXACT_JOIN,
-            FETCH_PANDAS_TABLE,
             FETCH_TABLE,
             FILTER,
             FLATTEN,
@@ -34,6 +35,7 @@ public class OpCase {
             SELECT,
             SELECT_DISTINCT,
             SNAPSHOT,
+            SNAPSHOT_WHEN,
             SORT,
             TAIL,
             TAIL_BY,
@@ -41,6 +43,8 @@ public class OpCase {
             UNGROUP,
             UNSTRUCTURED_FILTER,
             UPDATE,
+            UPDATE_BY,
             UPDATE_VIEW,
-            VIEW;
+            VIEW,
+            WHERE_IN;
 }

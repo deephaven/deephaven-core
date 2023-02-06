@@ -59,7 +59,7 @@ class DTypesTestCase(BaseTestCase):
         self.assertEqual(dtypes.long.np_type, np.int64)
         self.assertEqual(dtypes.float_.np_type, np.float64)
         self.assertEqual(dtypes.double.np_type, np.float64)
-        self.assertEqual(dtypes.string.np_type, np.object_)
+        self.assertEqual(dtypes.string.np_type, np.str_)
         self.assertEqual(dtypes.BigDecimal.np_type, np.object_)
         self.assertEqual(dtypes.StringSet.np_type, np.object_)
         self.assertEqual(dtypes.DateTime.np_type, np.dtype("datetime64[ns]"))
@@ -92,20 +92,20 @@ class DTypesTestCase(BaseTestCase):
         self.assertTrue(np.array_equal(np_array, expected))
 
     def test_integer_array(self):
-        np_array = np.array([float('nan'), NULL_DOUBLE, 1.123, np.inf], dtype=np.float64)
+        np_array = np.array([float('nan'), NULL_DOUBLE, np.inf], dtype=np.float64)
 
         nulls = {dtypes.int64: NULL_LONG, dtypes.int32: NULL_INT, dtypes.short: NULL_SHORT, dtypes.byte: NULL_BYTE}
         for dt, nv in nulls.items():
             map_fn = functools.partial(remap_double, null_value=nv)
             with self.subTest(f"numpy double array to {dt}"):
-                expected = [nv, nv, 1, nv]
+                expected = [nv, nv, nv]
                 j_array = dtypes.array(dt, np_array, remap=map_fn)
                 py_array = [x for x in j_array]
                 self.assertEqual(expected, py_array)
 
         with self.subTest("int array from Python list"):
             expected = [1, 2, 3]
-            j_array = dtypes.array(dtypes.int32, [1.1, 2.2, 3.3])
+            j_array = dtypes.array(dtypes.int32, [1, 2, 3])
             self.assertIn("[I", str(type(j_array)))
             py_array = [x for x in j_array]
             self.assertEqual(expected, py_array)
@@ -191,6 +191,13 @@ class DTypesTestCase(BaseTestCase):
         values = [dt1, dt2, None]
         j_array = dtypes.array(DateTime, values)
         self.assertTrue(all(x == y for x, y in zip(j_array, values)))
+
+    def test_bool_array(self):
+        np_array = np.array([True, False], np.bool_)
+        j_array = dtypes.array(dtypes.bool_, np_array)
+        j_array2 = dtypes.array(dtypes.bool_, [True, False])
+        self.assertEqual(j_array[0], j_array2[0])
+        self.assertEqual(j_array[1], j_array2[1])
 
 
 if __name__ == '__main__':

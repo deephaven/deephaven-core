@@ -1,5 +1,4 @@
 __QUERY_NAME__="core"
-getDevRootPath = {io.deephaven.configuration.Configuration.getInstance().getDevRootPath()}
 
 source = {fileName ->
     __groovySession.runScript(fileName)

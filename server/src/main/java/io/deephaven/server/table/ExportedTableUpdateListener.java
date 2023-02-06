@@ -20,13 +20,12 @@ import io.deephaven.proto.backplane.grpc.ExportedTableUpdateMessage;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.util.ExportTicketHelper;
 import io.deephaven.server.session.SessionState;
-import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 
-import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyExecute;
+import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyComplete;
 
 /**
  * Manage the lifecycle of exports that are Tables.
@@ -104,7 +103,7 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
             return;
         }
         isDestroyed = true;
-        safelyExecute(responseObserver::onCompleted);
+        safelyComplete(responseObserver);
         updateListenerMap.forEach(ListenerImpl::dropReference);
         updateListenerMap.clear();
         log.info().append(logPrefix).append("is complete").endl();
@@ -131,7 +130,7 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
 
         final SwapListener swapListener = new SwapListener(table);
         swapListener.subscribeForUpdates();
-        final ListenerImpl listener = new ListenerImpl(table, exportId, swapListener);
+        final ListenerImpl listener = new ListenerImpl(table, exportId);
         listener.tryRetainReference();
         updateListenerMap.put(exportId, listener);
 
@@ -182,15 +181,11 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
         final private BaseTable table;
         final private int exportId;
 
-        @ReferentialIntegrity
-        final SwapListener swapListener;
-
-        private ListenerImpl(final BaseTable table, final int exportId, final SwapListener swapListener) {
+        private ListenerImpl(final BaseTable table, final int exportId) {
             super("ExportedTableUpdateListener (" + exportId + ")");
             this.table = table;
             this.exportId = exportId;
-            this.swapListener = swapListener;
-            manage(swapListener);
+            manage(table);
         }
 
         @Override
@@ -201,6 +196,12 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
         @Override
         public void onFailureInternal(final Throwable error, final Entry sourceEntry) {
             sendUpdateMessage(ExportTicketHelper.wrapExportIdInTicket(exportId), table.size(), error);
+        }
+
+        @Override
+        public void destroy() {
+            super.destroy();
+            table.removeUpdateListener(this);
         }
     }
 

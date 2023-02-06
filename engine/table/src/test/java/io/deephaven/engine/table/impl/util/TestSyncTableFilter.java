@@ -5,6 +5,8 @@ package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.*;
@@ -19,12 +21,12 @@ import java.util.Set;
 import org.junit.experimental.categories.Category;
 
 import static io.deephaven.engine.util.TableTools.*;
-import static io.deephaven.engine.table.impl.TstUtils.*;
+import static io.deephaven.engine.testutil.TstUtils.*;
 
 @Category(OutOfBandTest.class)
 public class TestSyncTableFilter extends RefreshingTableTestCase {
     @Override
-    protected void setUp() throws Exception {
+    public void setUp() throws Exception {
         super.setUp();
         setExpectError(false);
     }
@@ -51,16 +53,16 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
         final Table ex1a = newTable(longCol("ID", 2, 2), intCol("Sentinel", 103, 104), col("Key", "a", "a"));
         final Table ex1b = newTable(longCol("ID", 2, 2), intCol("Sentinel", 203, 204), col("Key", "a", "a"));
 
-        assertEquals("", TableTools.diff(fa, ex1a, 10));
-        assertEquals("", TableTools.diff(fb, ex1b, 10));
+        assertTableEquals(fa, ex1a);
+        assertTableEquals(fb, ex1b);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(a, i(10, 11), longCol("ID", 5, 5), intCol("Sentinel", 107, 108), col("Key", "b", "b"));
             a.notifyListeners(i(10, 11), i(), i());
         });
 
-        assertEquals("", TableTools.diff(fa, ex1a, 10));
-        assertEquals("", TableTools.diff(fb, ex1b, 10));
+        assertTableEquals(fa, ex1a);
+        assertTableEquals(fb, ex1b);
 
         final Table ex2a = newTable(longCol("ID", 5, 5), intCol("Sentinel", 107, 108), col("Key", "b", "b"));
         final Table ex2b = newTable(longCol("ID", 5, 5), intCol("Sentinel", 207, 208), col("Key", "a", "a"));
@@ -73,8 +75,8 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
         showWithRowSet(fa);
         showWithRowSet(fb);
 
-        assertEquals("", TableTools.diff(fa, ex2a, 10));
-        assertEquals("", TableTools.diff(fb, ex2b, 10));
+        assertTableEquals(fa, ex2a);
+        assertTableEquals(fb, ex2b);
     }
 
     public void testSimpleAddAgain() {
@@ -99,16 +101,16 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
         final Table ex1a = newTable(longCol("ID", 2, 2), intCol("Sentinel", 103, 104), col("Key", "a", "a"));
         final Table ex1b = newTable(longCol("ID", 2, 2), intCol("Sentinel", 203, 204), col("Key", "a", "a"));
 
-        assertEquals("", TableTools.diff(fa, ex1a, 10));
-        assertEquals("", TableTools.diff(fb, ex1b, 10));
+        assertTableEquals(fa, ex1a);
+        assertTableEquals(fb, ex1b);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(a, i(10, 11), longCol("ID", 5, 5), intCol("Sentinel", 107, 108), col("Key", "b", "b"));
             a.notifyListeners(i(10, 11), i(), i());
         });
 
-        assertEquals("", TableTools.diff(fa, ex1a, 10));
-        assertEquals("", TableTools.diff(fb, ex1b, 10));
+        assertTableEquals(fa, ex1a);
+        assertTableEquals(fb, ex1b);
 
         final Table ex2a = newTable(longCol("ID", 5, 5, 5, 5), intCol("Sentinel", 107, 108, 109, 110),
                 col("Key", "b", "b", "c", "c"));
@@ -124,8 +126,8 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
         showWithRowSet(fa);
         showWithRowSet(fb);
 
-        assertEquals("", TableTools.diff(fa, ex2a, 10));
-        assertEquals("", TableTools.diff(fb, ex2b, 10));
+        assertTableEquals(fa, ex2a);
+        assertTableEquals(fb, ex2b);
 
         final Table ex3b =
                 newTable(longCol("ID", 5, 5, 5), intCol("Sentinel", 207, 208, 209), col("Key", "a", "a", "a"));
@@ -138,8 +140,8 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
         showWithRowSet(fa);
         showWithRowSet(fb);
 
-        assertEquals("", TableTools.diff(fa, ex2a, 10));
-        assertEquals("", TableTools.diff(fb, ex3b, 10));
+        assertTableEquals(fa, ex2a);
+        assertTableEquals(fb, ex3b);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(a, i(14, 15), longCol("ID", 5, 6), intCol("Sentinel", 111, 112), col("Key", "a", "a"));
@@ -153,8 +155,8 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
         final Table ex4a = newTable(longCol("ID", 6), intCol("Sentinel", 112), col("Key", "a"));
         final Table ex4b = newTable(longCol("ID", 6), intCol("Sentinel", 210), col("Key", "a"));
 
-        assertEquals("", TableTools.diff(fa, ex4a, 10));
-        assertEquals("", TableTools.diff(fb, ex4b, 10));
+        assertTableEquals(fa, ex4a);
+        assertTableEquals(fb, ex4b);
     }
 
     public void testNullAppearance() {
@@ -179,8 +181,8 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
 
         final Table empty = a.getSubTable(i().toTracking());
 
-        assertEquals("", TableTools.diff(fa, empty, 10));
-        assertEquals("", TableTools.diff(fb, empty, 10));
+        assertTableEquals(fa, empty);
+        assertTableEquals(fb, empty);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(a, i(10, 11), longCol("ID", 5, 5), intCol("Sentinel", 107, 108), col("Key", "b", "b"));
@@ -191,8 +193,8 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
         final Table ex1a = newTable(longCol("ID", 2, 2), intCol("Sentinel", 103, 104), col("Key", "a", "a"));
         final Table ex1b = newTable(longCol("ID", 2, 2), intCol("Sentinel", 203, 204), col("Key", "a", "a"));
 
-        assertEquals("", TableTools.diff(fa, ex1a, 10));
-        assertEquals("", TableTools.diff(fb, ex1b, 10));
+        assertTableEquals(fa, ex1a);
+        assertTableEquals(fb, ex1b);
 
         final Table ex2a = newTable(longCol("ID", 5, 5), intCol("Sentinel", 107, 108), col("Key", "b", "b"));
         final Table ex2b = newTable(longCol("ID", 5, 5), intCol("Sentinel", 207, 208), col("Key", "a", "a"));
@@ -205,8 +207,8 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
         showWithRowSet(fa);
         showWithRowSet(fb);
 
-        assertEquals("", TableTools.diff(fa, ex2a, 10));
-        assertEquals("", TableTools.diff(fb, ex2b, 10));
+        assertTableEquals(fa, ex2a);
+        assertTableEquals(fb, ex2b);
     }
 
     public void testSimpleKeyed() {
@@ -228,10 +230,10 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
 
         final TableUpdateValidator tuvfa = TableUpdateValidator.make("fa", (QueryTable) fa);
         final FailureListener fla = new FailureListener();
-        tuvfa.getResultTable().listenForUpdates(fla);
+        tuvfa.getResultTable().addUpdateListener(fla);
         final TableUpdateValidator tuvfb = TableUpdateValidator.make("fa", (QueryTable) fb);
         final FailureListener flb = new FailureListener();
-        tuvfb.getResultTable().listenForUpdates(flb);
+        tuvfb.getResultTable().addUpdateListener(flb);
 
         TableTools.show(fa);
         TableTools.show(fb);
@@ -241,8 +243,8 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
         final Table ex1b = newTable(longCol("Ego", 2, 2, 4, 4), intCol("Sentinel", 203, 204, 205, 206),
                 col("Klyuch", "b", "b", "a", "a"));
 
-        assertEquals("", TableTools.diff(fa, ex1a, 10));
-        assertEquals("", TableTools.diff(fb, ex1b, 10));
+        assertTableEquals(fa, ex1a);
+        assertTableEquals(fb, ex1b);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(b, i(10, 11), longCol("Ego", 5, 5), intCol("Sentinel", 207, 208),
@@ -255,8 +257,8 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
         final Table ex2b =
                 newTable(longCol("Ego", 4, 4, 5), intCol("Sentinel", 205, 206, 207), col("Klyuch", "a", "a", "b"));
 
-        assertEquals("", TableTools.diff(fa, ex2a, 10));
-        assertEquals("", TableTools.diff(fb, ex2b, 10));
+        assertTableEquals(fa, ex2a);
+        assertTableEquals(fb, ex2b);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(a, i(20, 21), longCol("ID", 5, 5), intCol("Sentinel", 111, 112), col("Key", "c", "c"));
@@ -271,8 +273,8 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
         showWithRowSet(fa);
         showWithRowSet(fb);
 
-        assertEquals("", TableTools.diff(fa, ex3a, 10));
-        assertEquals("", TableTools.diff(fb, ex3b, 10));
+        assertTableEquals(fa, ex3a);
+        assertTableEquals(fb, ex3b);
 
 
         System.out.println("A before modfications.");
@@ -285,7 +287,7 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
 
         final Table ex4a = newTable(longCol("ID", 4, 4, 5, 5, 5, 5),
                 intCol("Sentinel", 107, 108, 109, 110, 113, 114), col("Key", "a", "a", "b", "b", "c", "c"));
-        assertEquals("", TableTools.diff(fa, ex4a, 10));
+        assertTableEquals(fa, ex4a);
     }
 
     public void testErrorPropagation() {
@@ -303,8 +305,8 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
         final Table fa = result.get("a");
         final Table fb = result.get("b");
 
-        fa.setAttribute("NAME", "a");
-        fb.setAttribute("NAME", "b");
+        ((QueryTable) fa).setAttribute("NAME", "a");
+        ((QueryTable) fb).setAttribute("NAME", "b");
 
         final ErrorListener la = new ErrorListener("fa", fa);
         final ErrorListener lb = new ErrorListener("fb", fb);
@@ -341,8 +343,8 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
         final Table fa = result.get("a");
         final Table fb = result.get("b");
 
-        fa.setAttribute("NAME", "a");
-        fb.setAttribute("NAME", "b");
+        ((QueryTable) fa).setAttribute("NAME", "a");
+        ((QueryTable) fb).setAttribute("NAME", "b");
 
 
         final Table fau =
@@ -357,24 +359,24 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
         showWithRowSet(sentSum);
 
         UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
-        assertTrue(((BaseTable) sentSum).satisfied(LogicalClock.DEFAULT.currentStep()));
+        assertTrue(sentSum.satisfied(LogicalClock.DEFAULT.currentStep()));
         UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
 
         UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
         addToTable(a, i(1), longCol("ID", 1), intCol("Sentinel", 102), col("Key", "b"));
         a.notifyListeners(i(1), i(), i());
-        assertFalse(((BaseTable) fa).satisfied(LogicalClock.DEFAULT.currentStep()));
-        assertFalse(((BaseTable) fb).satisfied(LogicalClock.DEFAULT.currentStep()));
-        assertFalse(((BaseTable) sentSum).satisfied(LogicalClock.DEFAULT.currentStep()));
+        assertFalse(fa.satisfied(LogicalClock.DEFAULT.currentStep()));
+        assertFalse(fb.satisfied(LogicalClock.DEFAULT.currentStep()));
+        assertFalse(sentSum.satisfied(LogicalClock.DEFAULT.currentStep()));
 
-        while (!((BaseTable) fa).satisfied(LogicalClock.DEFAULT.currentStep())) {
+        while (!fa.satisfied(LogicalClock.DEFAULT.currentStep())) {
             UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
         }
-        assertTrue(((BaseTable) fa).satisfied(LogicalClock.DEFAULT.currentStep()));
+        assertTrue(fa.satisfied(LogicalClock.DEFAULT.currentStep()));
         UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
-        assertTrue(((BaseTable) fb).satisfied(LogicalClock.DEFAULT.currentStep()));
+        assertTrue(fb.satisfied(LogicalClock.DEFAULT.currentStep()));
 
-        assertFalse(((BaseTable) joined).satisfied(LogicalClock.DEFAULT.currentStep()));
+        assertFalse(joined.satisfied(LogicalClock.DEFAULT.currentStep()));
 
         UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
 
@@ -389,7 +391,7 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
 
         ErrorListener(String description, Table table) {
             super("Error Checker: " + description, table, false);
-            table.listenForUpdates(this, false);
+            table.addUpdateListener(this, false);
         }
 
         @Override

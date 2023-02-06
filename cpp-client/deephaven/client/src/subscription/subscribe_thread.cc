@@ -3,11 +3,13 @@
  */
 #include "deephaven/client/subscription/subscribe_thread.h"
 
+#include <arrow/buffer.h>
 #include <flatbuffers/detached_buffer.h>
 #include "deephaven/client/ticking.h"
 #include "deephaven/client/server/server.h"
 #include "deephaven/client/subscription/index_decoder.h"
 #include "deephaven/client/subscription/update_processor.h"
+#include "deephaven/client/utility/arrow_util.h"
 #include "deephaven/client/utility/callbacks.h"
 #include "deephaven/client/utility/executor.h"
 #include "deephaven/client/utility/misc.h"
@@ -33,8 +35,7 @@ public:
   SubscribeState(std::shared_ptr<Server> server, std::vector<int8_t> ticketBytes,
       std::shared_ptr<ColumnDefinitions> colDefs,
       std::promise<std::shared_ptr<SubscriptionHandle>> promise,
-      std::shared_ptr <TickingCallback> callback,
-      bool wantImmer);
+      std::shared_ptr <TickingCallback> callback);
   void invoke() final;
 
 private:
@@ -45,7 +46,6 @@ private:
   std::shared_ptr<ColumnDefinitions> colDefs_;
   std::promise<std::shared_ptr<SubscriptionHandle>> promise_;
   std::shared_ptr<TickingCallback> callback_;
-  bool wantImmer_ = false;
 };
 
 // A simple extension to arrow::Buffer that owns its DetachedBuffer storage
@@ -64,13 +64,12 @@ std::shared_ptr<SubscriptionHandle> startSubscribeThread(
     Executor *flightExecutor,
     std::shared_ptr<ColumnDefinitions> columnDefinitions,
     const Ticket &ticket,
-    std::shared_ptr<TickingCallback> callback,
-    bool wantImmer) {
+    std::shared_ptr<TickingCallback> callback) {
   std::promise<std::shared_ptr<SubscriptionHandle>> promise;
   auto future = promise.get_future();
   std::vector<int8_t> ticketBytes(ticket.ticket().begin(), ticket.ticket().end());
   auto ss = std::make_shared<SubscribeState>(std::move(server), std::move(ticketBytes),
-      std::move(columnDefinitions), std::move(promise), std::move(callback), wantImmer);
+      std::move(columnDefinitions), std::move(promise), std::move(callback));
   flightExecutor->invoke(std::move(ss));
   return future.get();
 }
@@ -78,9 +77,9 @@ std::shared_ptr<SubscriptionHandle> startSubscribeThread(
 namespace {
 SubscribeState::SubscribeState(std::shared_ptr<Server> server, std::vector<int8_t> ticketBytes,
     std::shared_ptr<ColumnDefinitions> colDefs, std::promise<std::shared_ptr<SubscriptionHandle>> promise,
-    std::shared_ptr<TickingCallback> callback, bool wantImmer) :
+    std::shared_ptr<TickingCallback> callback) :
     server_(std::move(server)), ticketBytes_(std::move(ticketBytes)), colDefs_(std::move(colDefs)),
-    promise_(std::move(promise)), callback_(std::move(callback)), wantImmer_(wantImmer) {}
+    promise_(std::move(promise)), callback_(std::move(callback)) {}
 
 void SubscribeState::invoke() {
   try {
@@ -98,8 +97,8 @@ struct CancelWrapper final : SubscriptionHandle {
   explicit CancelWrapper(std::shared_ptr<UpdateProcessor> updateProcessor) :
       updateProcessor_(std::move(updateProcessor)) {}
 
-  void cancel() final {
-    updateProcessor_->cancel();
+  void cancel(bool wait) final {
+    updateProcessor_->cancel(wait);
   }
 
   std::shared_ptr<UpdateProcessor> updateProcessor_;
@@ -151,8 +150,8 @@ std::shared_ptr<SubscriptionHandle> SubscribeState::invokeHelper() {
   okOrThrow(DEEPHAVEN_EXPR_MSG(fsw->WriteMetadata(std::move(buffer))));
 
   // Run forever (until error or cancellation)
-  auto processor = UpdateProcessor::startThread(std::move(fsr), std::move(colDefs_),
-      std::move(callback_), wantImmer_);
+  auto processor = UpdateProcessor::startThread(std::move(fsw), std::move(fsr), std::move(colDefs_),
+      std::move(callback_));
   return std::make_shared<CancelWrapper>(std::move(processor));
 }
 

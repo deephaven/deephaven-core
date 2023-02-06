@@ -92,16 +92,16 @@ tasks.withType(JavaCompile).configureEach {
 
 def createCompilerDirectives = tasks.register('createCompilerDirectives') {
   def compilerDirectivesFile = project.layout.buildDirectory.file('dh-compiler-directives.txt')
+  def compilerDirectivesText = new JsonBuilder([{
+    match (['*.*'] as List)
+    // Note: there seems to be a bug where this option doesn't actually get picked up
+    // So using '-XX:DisableIntrinsic=_currentThread' explicitly
+    // DisableIntrinsic('_currentThread')
+  }]).toPrettyString()
+  it.inputs.property('compilerDirectivesText', compilerDirectivesText)
   it.outputs.file(compilerDirectivesFile)
-
   doFirst {
-    def builder = new JsonBuilder([{
-      match (['*.*'] as List)
-      // Note: there seems to be a bug where this option doesn't actually get picked up
-      // So using '-XX:DisableIntrinsic=_currentThread' explicitly
-      // DisableIntrinsic('_currentThread')
-    }])
-    compilerDirectivesFile.get().asFile.text = builder.toPrettyString()
+    compilerDirectivesFile.get().asFile.text = compilerDirectivesText
   }
 }
 
@@ -116,26 +116,75 @@ def compilerArgs = { String compilerDirectivesFile ->
   ]
 }
 
+def parseJvmArgumentsFromEnv = { String envName, List<String> orElse ->
+  def s = System.getenv(envName)
+  if (s == null) {
+    return orElse
+  }
+  // Note: this logic could be improved to handle quotes and other cases, but hopefully this suffices for now.
+  return s.split('\\s+').findAll { it -> !it.trim().isEmpty() } as List<String>
+}
+
+// Note: the gradle logic is explicitly reading the JAVA_OPTS and START_OPTS environment variables to provide
+// developers a model that more closely matches with the native application script
+// https://deephaven.io/core/docs/how-to-guides/configuration/native-application/#native-application-script.
+//
+// For example:
+//
+// ```
+// START_OPTS="-Xmx1g -Dmy.system.property=123" ./gradlew server-jetty-app:run
+// ```
+
+// These are supposed to be generally applicable and recommended JVM options, but they aren't hard requirements.
+// Overly specific options do *not* belong here. For example, we should _not_ be setting something like `-Xmx4g` here.
+// If you are tempted to try and put system properties here (`-Dkey=value`), think again; there should be a more
+// appropriate place to set those.
+//
+// From the perspective of our application distribution, these options will be used as defaults for JAVA_OPTS
+// (if the user already has JAVA_OPTS set, these VM options will _not_ apply).
+def JAVA_OPTS = parseJvmArgumentsFromEnv('JAVA_OPTS', [
+  '-XX:+UseG1GC',
+  '-XX:MaxGCPauseMillis=100',
+  '-XX:+UseStringDeduplication',
+])
+
 // Utility to add jvm args to all executions, whether intellij or from a application script or gradle javaexec
-def devJvmArgs = [
+def START_OPTS = parseJvmArgumentsFromEnv('START_OPTS', [
 //  '-XX:Tier4CompileThreshold=1000', // this optional line makes it easier to trigger the c2 error on the above methods
 //  '-XX:+PrintFlagsFinal',           // this optional line makes it easier to explore the final values for compiler args
 //  '-XX:+PrintCompilation',          // this optional line shows jit operations as they happen
-]
+])
+
+def createVmOptions = tasks.register('createVmOptions') {
+  def vmOptionsFile = project.layout.buildDirectory.file('dh-default.vmoptions')
+  def vmOptionsText = JAVA_OPTS.join('\n')
+  it.inputs.property('vmOptionsText', vmOptionsText)
+  it.outputs.file(vmOptionsFile)
+  doFirst {
+    vmOptionsFile.get().asFile.text = vmOptionsText
+  }
+}
 
 tasks.withType(JavaExec).configureEach {
   def compilerDirectivesFile = createCompilerDirectives.get().outputs.files
+  def vmOptionsFile = createVmOptions.get().outputs.files
   inputs.files compilerDirectivesFile
+  inputs.files vmOptionsFile
   javaLauncher.set runtimeLauncher
-  jvmArgs += compilerArgs(compilerDirectivesFile.singleFile.path) + devJvmArgs
+  // Note: we _could_ have the vmOptionsFile constituents directly listed instead of using -XX:VMOptionsFile.
+  // That said, the current approach used here more closely matches how the application start script is defined.
+  jvmArgs += compilerArgs(compilerDirectivesFile.singleFile.path) + ["-XX:VMOptionsFile=${vmOptionsFile.singleFile.path}"] + START_OPTS
 }
 
 tasks.withType(Test).configureEach {
   def compilerDirectivesFile = createCompilerDirectives.get().outputs.files
+  def vmOptionsFile = createVmOptions.get().outputs.files
   inputs.files compilerDirectivesFile
-
+  inputs.files vmOptionsFile
   javaLauncher.set testRuntimeLauncher
-  jvmArgs += compilerArgs(compilerDirectivesFile.singleFile.path) + devJvmArgs
+  // Note: we _could_ have the vmOptionsFile constituents directly listed instead of using -XX:VMOptionsFile.
+  // That said, the current approach used here more closely matches how the application start script is defined.
+  jvmArgs += compilerArgs(compilerDirectivesFile.singleFile.path) + ["-XX:VMOptionsFile=${vmOptionsFile.singleFile.path}"] + START_OPTS
 }
 
 tasks.withType(GroovyCompile).configureEach {
@@ -143,10 +192,12 @@ tasks.withType(GroovyCompile).configureEach {
 }
 
 plugins.withType(ApplicationPlugin) {
-  applicationDistribution.into('lib') {
+  applicationDistribution.into('etc') {
     from(createCompilerDirectives.get().outputs.files)
+    from(createVmOptions.get().outputs.files)
   }
 }
+
 tasks.withType(CreateStartScripts).configureEach {
   def unixStartScript = resources.text.fromUri(getClass().classLoader.getResource('unixStartScript.txt'))
   inputs.files unixStartScript
@@ -160,8 +211,6 @@ tasks.withType(CreateStartScripts).configureEach {
 //  windowsStartScriptGenerator.template = windowsStartScript
 
   // Note that we don't call compilerArgs() at this time, there is no way to template those strings.
-  // Instead, we hard code the expected paths in the above templates to match the path lib/dh-compiler-directives.txt
+  // Instead, we hard code the expected paths in the above templates to match the path etc/dh-compiler-directives.txt
 //  defaultJvmOpts += compilerArgs(compilerDirectivesFile.singleFile.path)
-
-  defaultJvmOpts += devJvmArgs
 }

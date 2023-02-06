@@ -11,6 +11,9 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.perf.PerformanceEntry;
+import io.deephaven.engine.testutil.TestErrorNotification;
+import io.deephaven.engine.testutil.TestNotification;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.impl.locations.*;
 import io.deephaven.engine.table.impl.locations.impl.SimpleTableLocationKey;
@@ -33,7 +36,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static io.deephaven.engine.table.impl.TstUtils.assertIndexEquals;
+import static io.deephaven.engine.testutil.TstUtils.assertRowSetEquals;
 import static org.junit.Assert.assertArrayEquals;
 
 /**
@@ -76,8 +79,8 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
 
     private Table coalesced;
     private TableUpdateListener listener;
-    private final TstUtils.TstNotification notification = new TstUtils.TstNotification();
-    private final TstUtils.TstErrorNotification errorNotification = new TstUtils.TstErrorNotification();
+    private final TestNotification notification = new TestNotification();
+    private final TestErrorNotification errorNotification = new TestErrorNotification();
 
     private WritableRowSet expectedRowSet;
 
@@ -269,7 +272,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
             try {
                 coalesced = SUT.coalesce();
                 coalesced.retainReference();
-                ((QueryTable) coalesced).listenForUpdates(listener);
+                ((QueryTable) coalesced).addUpdateListener(listener);
                 if (throwException) {
                     fail("Expected exception");
                 }
@@ -281,7 +284,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
                 }
             }
             assertIsSatisfied();
-            assertIndexEquals(expectedRowSet, SUT.getRowSet());
+            assertRowSetEquals(expectedRowSet, SUT.getRowSet());
             if (ciType == ConcurrentInstantiationType.UpdatingClosed) {
                 UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
             }
@@ -318,9 +321,9 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
                             public Object invoke(Invocation invocation) {
                                 final TableUpdate update =
                                         (TableUpdate) invocation.getParameter(0);
-                                assertIndexEquals(toAdd, update.added());
-                                assertIndexEquals(RowSetFactory.empty(), update.removed());
-                                assertIndexEquals(RowSetFactory.empty(), update.modified());
+                                assertRowSetEquals(toAdd, update.added());
+                                assertRowSetEquals(RowSetFactory.empty(), update.removed());
+                                assertRowSetEquals(RowSetFactory.empty(), update.modified());
                                 assertTrue(update.shifted().empty());
                                 return notification;
                             }
@@ -342,7 +345,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
         assertIsSatisfied();
         notification.assertInvoked();
         expectedRowSet.insert(toAdd);
-        assertIndexEquals(expectedRowSet, SUT.getRowSet());
+        assertRowSetEquals(expectedRowSet, SUT.getRowSet());
     }
 
     private void doRefreshUnchangedCheck() {
@@ -358,7 +361,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
         assertIsSatisfied();
         notification.assertNotInvoked();
 
-        assertIndexEquals(expectedRowSet, SUT.getRowSet());
+        assertRowSetEquals(expectedRowSet, SUT.getRowSet());
     }
 
     private void doRefreshExceptionCheck() {
@@ -384,7 +387,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
         assertIsSatisfied();
         errorNotification.assertInvoked();
 
-        assertIndexEquals(expectedRowSet, SUT.getRowSet());
+        assertRowSetEquals(expectedRowSet, SUT.getRowSet());
     }
 
     private void doAddLocationsRefreshCheck(final ImmutableTableLocationKey[] tableLocationKeys,
@@ -425,8 +428,6 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
                     will(returnValue(columnDefinition.getDataType()));
                     allowing(columnSource).getComponentType();
                     will(returnValue(columnDefinition.getComponentType()));
-                    allowing(columnSource).preventsParallelism();
-                    will(returnValue(false));
                     allowing(columnSource).isStateless();
                     will(returnValue(true));
                 }
@@ -629,7 +630,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
         });
         final Table result =
                 SUT.selectDistinct(PARTITIONING_COLUMN_DEFINITION.getName(), INTEGER_COLUMN_DEFINITION.getName());
-        assertIndexEquals(expectedRowSet, result.getRowSet());
+        assertRowSetEquals(expectedRowSet, result.getRowSet());
     }
 
     @Test
@@ -643,7 +644,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
                 oneOf(columnSourceManager).disableGrouping();
             }
         });
-        assertIndexEquals(expectedRowSet, SUT.where(PARTITIONING_COLUMN_DEFINITION.getName() + "=`D0`").getRowSet());
+        assertRowSetEquals(expectedRowSet, SUT.where(PARTITIONING_COLUMN_DEFINITION.getName() + "=`D0`").getRowSet());
         assertIsSatisfied();
     }
 
@@ -689,7 +690,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
                 });
             }
         });
-        assertIndexEquals(expectedRowSet, SUT.where(INTEGER_COLUMN_DEFINITION.getName() + ">0")
+        assertRowSetEquals(expectedRowSet, SUT.where(INTEGER_COLUMN_DEFINITION.getName() + ">0")
                 .where(CollectionUtil.ZERO_LENGTH_STRING_ARRAY).getRowSet());
         assertIsSatisfied();
     }
@@ -726,7 +727,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
                 });
             }
         });
-        assertIndexEquals(expectedRowSet, SUT
+        assertRowSetEquals(expectedRowSet, SUT
                 .where(PARTITIONING_COLUMN_DEFINITION.getName() + "=`D0`", INTEGER_COLUMN_DEFINITION.getName() + ">0")
                 .getRowSet());
         assertIsSatisfied();

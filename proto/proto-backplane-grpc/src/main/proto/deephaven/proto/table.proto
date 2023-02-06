@@ -23,11 +23,6 @@ service TableService {
   rpc FetchTable(FetchTableRequest) returns (ExportedTableCreationResponse) {}
 
   /*
-   * Fetches a pandas table from an existing source ticket and exports it to the local session result ticket.
-   */
-  rpc FetchPandasTable(FetchPandasTableRequest) returns (ExportedTableCreationResponse) {}
-
-  /*
    * Create a table that has preview columns applied to an existing source table.
    */
   rpc ApplyPreviewColumns(ApplyPreviewColumnsRequest) returns (ExportedTableCreationResponse) {}
@@ -71,6 +66,11 @@ service TableService {
    * Select the given columns from the given table.
    */
   rpc Select(SelectOrUpdateRequest) returns (ExportedTableCreationResponse) {}
+
+  /*
+   * Returns the result of an updateBy table operation.
+   */
+  rpc UpdateBy(UpdateByRequest) returns (ExportedTableCreationResponse) {}
 
   /*
    * Returns a new table definition with the unique tuples of the specified columns
@@ -150,16 +150,38 @@ service TableService {
 
   /*
    * Returns the result of an aggregate table operation.
+   *
+   * Deprecated: Please use AggregateAll or Aggregate instead
    */
-  rpc ComboAggregate(ComboAggregateRequest) returns (ExportedTableCreationResponse) {}
+  rpc ComboAggregate(ComboAggregateRequest) returns (ExportedTableCreationResponse) {
+    option deprecated = true;
+  }
 
   /*
-   * Snapshot rightId, triggered by leftId, and export the resulting new Table.
-   * The left table's change events cause a new snapshot to be taken. The result table includes a
-   * "snapshot key" which is a subset (possibly all) of the left table's columns. The
-   * remaining columns in the result table come from right table, the table being snapshotted.
+   * Aggregates all non-grouping columns against a single aggregation specification.
+   */
+  rpc AggregateAll(AggregateAllRequest) returns (ExportedTableCreationResponse) {};
+
+  /*
+   * Produce an aggregated result by grouping the source_id table according to the group_by_columns and applying
+   * aggregations to each resulting group of rows. The result table will have one row per group, ordered by
+   * the encounter order within the source_id table, thereby ensuring that the row key for a given group never
+   * changes.
+   */
+  rpc Aggregate(AggregateRequest) returns (ExportedTableCreationResponse) {};
+
+  /*
+   * Takes a single snapshot of the source_id table.
    */
   rpc Snapshot(SnapshotTableRequest) returns (ExportedTableCreationResponse) {}
+
+  /*
+   * Snapshot base_id, triggered by trigger_id, and export the resulting new table.
+   * The trigger_id table's change events cause a new snapshot to be taken. The result table includes a
+   * "snapshot key" which is a subset (possibly all) of the base_id table's columns. The
+   * remaining columns in the result table come from base_id table, the table being snapshotted.
+   */
+  rpc SnapshotWhen(SnapshotWhenTableRequest) returns (ExportedTableCreationResponse) {}
 
   /*
    * Returns a new table with a flattened row set.
@@ -179,6 +201,14 @@ service TableService {
    */
   rpc CreateInputTable(CreateInputTableRequest) returns (ExportedTableCreationResponse) {}
 
+  /**
+   * Filters the left table based on the set of values in the right table.
+   *
+   * Note that when the right table ticks, all of the rows in the left table are going to be re-evaluated,
+   * thus the intention is that the right table is fairly slow moving compared with the left table.
+   */
+  rpc WhereIn(WhereInRequest) returns (ExportedTableCreationResponse) {}
+
   /*
    * Batch a series of requests and send them all at once. This enables the user to create intermediate tables without
    * requiring them to be exported and managed by the client. The server will automatically release any tables when they
@@ -194,6 +224,11 @@ service TableService {
    * initial update had been sent.
    */
   rpc ExportedTableUpdates(ExportedTableUpdatesRequest) returns (stream ExportedTableUpdateMessage) {}
+
+  /*
+   * Seek a row number within a table.
+   */
+  rpc SeekRow(SeekRowRequest) returns (SeekRowResponse) {}
 }
 
 message TableReference {
@@ -236,11 +271,6 @@ message ApplyPreviewColumnsRequest {
   Ticket result_id = 2;
 }
 
-message FetchPandasTableRequest {
-  TableReference source_id = 1;
-  Ticket result_id = 2;
-}
-
 message ExportedTableUpdatesRequest {
   // Intentionally empty and is here for backwards compatibility should this API change.
 }
@@ -266,6 +296,162 @@ message SelectOrUpdateRequest {
   Ticket result_id = 1;
   TableReference source_id = 2;
   repeated string column_specs = 3;
+}
+
+message MathContext {
+  enum RoundingMode {
+    UP = 0;
+    DOWN = 1;
+    CEILING = 2;
+    FLOOR = 3;
+    HALF_UP = 4;
+    HALF_DOWN = 5;
+    HALF_EVEN = 6;
+    UNNECESSARY = 7;
+  }
+  sint32 precision = 1;
+  RoundingMode rounding_mode = 2;
+}
+
+// Directives for how to handle {@code null} and {@code NaN} values
+enum BadDataBehavior {
+  // Throw an exception and abort processing when bad data is encountered.
+  THROW = 0;
+
+  // Reset the state for the bucket to {@code null} when invalid data is encountered.
+  RESET = 1;
+
+  // Skip and do not process the invalid data without changing state.
+  SKIP = 2;
+
+  // Allow the bad data to poison the result. This is only valid for use with NaN.
+  POISON = 3;
+}
+
+// Create a table with the same rowset as its parent that will perform the specified set of row
+// based operations to it. As opposed to {@link #update(String...)} these operations are more restricted but are
+// capable of processing state between rows. This operation will group the table by the specified set of keys if
+// provided before applying the operation.
+message UpdateByRequest {
+
+  message UpdateByOptions {
+    // If redirections should be used for output sources instead of sparse array sources.
+    // If unset, defaults to server-provided defaults.
+    optional bool use_redirection = 1;
+
+    // The maximum chunk capacity.
+    // If unset, defaults to server-provided defaults.
+    optional int32 chunk_capacity = 2;
+
+    // The maximum fractional memory overhead allowable for sparse redirections as a fraction (e.g. 1.1 is 10%
+    // overhead). Values less than zero disable overhead checking, and result in always using the sparse structure. A
+    // value of zero results in never using the sparse structure.
+    // If unset, defaults to server-provided defaults.
+    optional double max_static_sparse_memory_overhead = 3;
+
+    // The initial hash table size.
+    // If unset, defaults to server-provided defaults.
+    optional int32 initial_hash_table_size = 4;
+
+    // The maximum load factor for the hash table.
+    // If unset, defaults to server-provided defaults.
+    optional double maximum_load_factor = 5;
+
+    // The target load factor for the hash table.
+    // If unset, defaults to server-provided defaults.
+    optional double target_load_factor = 6;
+
+    // The math context.
+    // If unset, defaults to server-provided defaults.
+    MathContext math_context = 7;
+  }
+
+  message UpdateByOperation {
+    message UpdateByColumn {
+      message UpdateBySpec {
+        message UpdateByCumulativeSum {
+
+        }
+
+        message UpdateByCumulativeMin {
+
+        }
+
+        message UpdateByCumulativeMax {
+
+        }
+
+        message UpdateByCumulativeProduct {
+
+        }
+
+        message UpdateByFill {
+
+        }
+
+        message UpdateByEma {
+          message UpdateByEmaOptions {
+            // If unset, defaults to server-provided defaults.
+            optional BadDataBehavior on_null_value = 1;
+
+            // If unset, defaults to server-provided defaults.
+            optional BadDataBehavior on_nan_value = 2;
+
+            // If unset, defaults to server-provided defaults.
+            optional BadDataBehavior on_null_time = 3;
+
+            // If unset, defaults to server-provided defaults.
+            optional BadDataBehavior on_negative_delta_time = 4;
+
+            // If unset, defaults to server-provided defaults.
+            optional BadDataBehavior on_zero_delta_time = 5;
+
+            // If unset, defaults to server-provided defaults.
+            MathContext big_value_context = 6;
+          }
+          message UpdateByEmaTimescale {
+            message UpdateByEmaTicks {
+              sint64 ticks = 1 [jstype=JS_STRING];
+            }
+            message UpdateByEmaTime {
+              string column = 1;
+              sint64 period_nanos = 2 [jstype=JS_STRING];
+            }
+            oneof type {
+              UpdateByEmaTicks ticks = 1;
+              UpdateByEmaTime time = 2;
+            }
+          }
+          // If unset, defaults to server-provided defaults.
+          UpdateByEmaOptions options = 1;
+          UpdateByEmaTimescale timescale = 2;
+        }
+
+        oneof type {
+          UpdateByCumulativeSum sum = 1;
+          UpdateByCumulativeMin min = 2;
+          UpdateByCumulativeMax max = 3;
+          UpdateByCumulativeProduct product = 4;
+          UpdateByFill fill = 5;
+          UpdateByEma ema = 6;
+        }
+      }
+
+      UpdateBySpec spec = 1;
+      repeated string match_pairs = 2;
+    }
+    oneof type {
+      UpdateByColumn column = 1;
+    }
+  }
+
+  Ticket result_id = 1;
+  TableReference source_id = 2;
+
+  // If unset, defaults to server-provided defaults.
+  UpdateByOptions options = 3;
+  repeated UpdateByOperation operations = 4;
+  repeated string group_by_columns = 5;
 }
 
 message SelectDistinctRequest {
@@ -314,15 +500,29 @@ message MergeTablesRequest {
 
 message SnapshotTableRequest {
   Ticket result_id = 1;
+  TableReference source_id = 2;
+}
 
-  // The table on which to invoke the snapshot function. If unset, an empty(1) table will be used.
-  TableReference left_id = 2;
-  // The table to pass into the snapshot function.
-  TableReference right_id = 3;
-  // Whether to take an initial snapshot (passed to table.snapshot function).
-  bool do_initial_snapshot = 4;
-  // Which columns to take from the left table (can be renamed if desired).
-  repeated string stamp_columns = 5;
+message SnapshotWhenTableRequest {
+  Ticket result_id = 1;
+
+  // The base table.
+  TableReference base_id = 2;
+
+  // The trigger table.
+  TableReference trigger_id = 3;
+
+  // Whether the results should contain an initial snapshot.
+  bool initial = 4;
+
+  // Whether the results should be incremental.
+  bool incremental = 5;
+
+  // Whether the results should keep history.
+  bool history = 6;
+
+  // Which columns to stamp from the trigger table. If empty, all columns from the trigger table are stamped. Allows renaming columns.
+  repeated string stamp_columns = 7;
 }
 
 message CrossJoinTablesRequest {
@@ -378,6 +578,8 @@ message AsOfJoinTablesRequest {
 }
 
 message ComboAggregateRequest {
+  option deprecated = true;
+
   Ticket result_id = 1;
   TableReference source_id = 2;
   repeated Aggregate aggregates = 3;
@@ -410,6 +612,226 @@ message ComboAggregateRequest {
   }
 }
 
+message AggregateAllRequest {
+  Ticket result_id = 1;
+  TableReference source_id = 2;
+  AggSpec spec = 3;
+  repeated string group_by_columns = 4;
+}
+
+enum NullValue {
+  NULL_VALUE = 0;
+}
+
+message AggSpec {
+  message AggSpecApproximatePercentile {
+    // Percentile. Must be in range [0.0, 1.0].
+    double percentile = 1;
+
+    // T-Digest compression factor. Must be greater than or equal to 1. 1000 is extremely large.
+    // When not specified, the server will choose a compression value.
+    optional double compression = 2;
+  }
+
+  message AggSpecCountDistinct {
+    // Whether null input values should be included when counting the distinct input values.
+    bool count_nulls = 1;
+  }
+
+  message AggSpecDistinct {
+    // Whether null input values should be included in the distinct output values.
+    bool include_nulls = 1;
+  }
+
+  message AggSpecFormula {
+    // The formula to use to calculate output values from grouped input values.
+    string formula = 1;
+
+    // The formula parameter token to be replaced with the input column name for evaluation.
+    string param_token = 2;
+  }
+
+  message AggSpecMedian {
+    // Whether to average the highest low-bucket value and lowest high-bucket value, when the low-bucket and high-bucket
+    // are of equal size. Only applies to numeric types.
+    bool average_evenly_divided = 1;
+  }
+
+  message AggSpecPercentile {
+    // The percentile to calculate. Must be in the range [0.0, 1.0].
+    double percentile = 1;
+
+    // Whether to average the highest low-bucket value and lowest high-bucket value, when the low-bucket and high-bucket
+    // are of equal size. Only applies to numeric types.
+    bool average_evenly_divided = 2;
+  }
+
+  message AggSpecSorted {
+    // Using a message instead of string to support backwards-compatibility in the future
+    repeated AggSpecSortedColumn columns = 1;
+  }
+
+  message AggSpecSortedColumn {
+    // TODO(deephaven-core#821): SortedFirst / SortedLast aggregations with sort direction
+    string column_name = 1;
+  }
+
+  message AggSpecTDigest {
+    // T-Digest compression factor. Must be greater than or equal to 1. 1000 is extremely large.
+    // When not specified, the server will choose a compression value.
+    optional double compression = 1;
+  }
+
+  message AggSpecUnique {
+    // Whether to include null values as a distinct value for determining if there is only one unique value to output
+    bool include_nulls = 1;
+
+    // The output value to use for groups that don't have a single unique input value
+    AggSpecNonUniqueSentinel non_unique_sentinel = 2;
+  }
+
+  message AggSpecNonUniqueSentinel {
+    oneof type {
+      NullValue null_value = 1;
+      string string_value = 2;
+      sint32 int_value = 3;
+      sint64 long_value = 4 [jstype=JS_STRING];
+      float float_value = 5;
+      double double_value = 6;
+      bool bool_value = 7;
+      // Expected to be in range [Byte.MIN_VALUE, Byte.MAX_VALUE]
+      sint32 byte_value = 8;
+      // Expected to be in range [Short.MIN_VALUE, Short.MAX_VALUE]
+      sint32 short_value = 9;
+      // Expected to be in range [0x0000, 0xFFFF]
+      sint32 char_value = 10;
+      // TODO(deephaven-core#3212): Expand AggSpecNonUniqueSentinel types
+    }
+  }
+
+  message AggSpecWeighted {
+    // Column name for the source of input weights.
+    string weight_column = 1;
+  }
+
+  message AggSpecAbsSum {
+
+  }
+
+  message AggSpecAvg {
+
+  }
+
+  message AggSpecFirst {
+
+  }
+
+  message AggSpecFreeze {
+
+  }
+
+  message AggSpecGroup {
+
+  }
+
+  message AggSpecLast {
+
+  }
+
+  message AggSpecMax {
+
+  }
+
+  message AggSpecMin {
+
+  }
+
+  message AggSpecStd {
+
+  }
+
+  message AggSpecSum {
+
+  }
+
+  message AggSpecVar {
+
+  }
+
+  oneof type {
+    AggSpecAbsSum abs_sum = 1;
+    AggSpecApproximatePercentile approximate_percentile = 2;
+    AggSpecAvg avg = 3;
+    AggSpecCountDistinct count_distinct = 4;
+    AggSpecDistinct distinct = 5;
+    AggSpecFirst first = 6;
+    AggSpecFormula formula = 7;
+    AggSpecFreeze freeze = 8;
+    AggSpecGroup group = 9;
+    AggSpecLast last = 10;
+    AggSpecMax max = 11;
+    AggSpecMedian median = 12;
+    AggSpecMin min = 13;
+    AggSpecPercentile percentile = 14;
+    AggSpecSorted sorted_first = 15;
+    AggSpecSorted sorted_last = 16;
+    AggSpecStd std = 17;
+    AggSpecSum sum = 18;
+    AggSpecTDigest t_digest = 19;
+    AggSpecUnique unique = 20;
+    AggSpecWeighted weighted_avg = 21;
+    AggSpecWeighted weighted_sum = 22;
+    AggSpecVar var = 23;
+  }
+}
+
+message AggregateRequest {
+  Ticket result_id = 1;
+  TableReference source_id = 2;
+  // A table whose distinct combinations of values for the group_by_columns should be used
+  // to create an initial set of aggregation groups. All other columns are ignored. This is useful in
+  // combination with preserve_empty == true to ensure that particular groups appear in the result
+  // table, or with preserve_empty == false to control the encounter order for a collection of groups
+  // and thus their relative order in the result. Changes to initial_group_ids are not expected or handled;
+  // if initial_groups_id is a refreshing table, only its contents at instantiation time will be used. If
+  // initial_groups_id is not present, the result will be the same as if a table with no rows was supplied.
+  TableReference initial_groups_id = 3;
+  // Whether to keep result rows for groups that are initially empty or become empty as a result
+  // of updates. Each aggregation operator defines its own value for empty groups.
+  bool preserve_empty = 4;
+  repeated Aggregation aggregations = 5;
+  repeated string group_by_columns = 6;
+}
+
+message Aggregation {
+  message AggregationColumns {
+    AggSpec spec = 1;
+    repeated string match_pairs = 2;
+  }
+
+  message AggregationCount {
+    // The output column name
+    string column_name = 1;
+  }
+
+  message AggregationRowKey {
+    string column_name = 1;
+  }
+
+  message AggregationPartition {
+    string column_name = 1;
+    bool include_group_by_columns = 2;
+  }
+
+  oneof type {
+    AggregationColumns columns = 1;
+    AggregationCount count = 2;
+    AggregationRowKey first_row_key = 3;
+    AggregationRowKey last_row_key = 4;
+    AggregationPartition partition = 5;
+  }
+}
+
 message SortDescriptor {
   string column_name = 1;
   bool is_absolute = 2;
@@ -434,6 +856,20 @@ message FilterTableRequest {
   TableReference source_id = 2;
 
   repeated Condition filters = 3;
+}
+
+message SeekRowRequest {
+    Ticket source_id = 1;
+    sint64 starting_row = 2 [jstype=JS_STRING];
+    string column_name = 3;
+    Literal seek_value = 4;
+    bool insensitive = 5;
+    bool contains = 6;
+    bool is_backward = 7;
+}
+
+message SeekRowResponse {
+    sint64 result_row = 1 [jstype=JS_STRING];
 }
 
 message Reference {
@@ -599,10 +1035,22 @@ message CreateInputTableRequest {
   InputTableKind kind = 4;
 }
 
+message WhereInRequest {
+  Ticket result_id = 1;
+  TableReference left_id = 2;
+  TableReference right_id = 3;
+  // When true, becomes a "where not in" request
+  bool inverted = 4;
+  repeated string columns_to_match = 5;
+}
+
 message BatchTableRequest {
   repeated Operation ops = 1;
 
   message Operation {
+    reserved 20;
+    reserved 29;
+
     oneof op {
       EmptyTableRequest empty_table = 1;
       TimeTableRequest time_table = 2;
@@ -623,7 +1071,6 @@ message BatchTableRequest {
       UngroupRequest ungroup = 17;
       MergeTablesRequest merge = 18;
       ComboAggregateRequest combo_aggregate = 19;
-      SnapshotTableRequest snapshot = 20;
       FlattenRequest flatten = 21;
       RunChartDownsampleRequest run_chart_downsample = 22;
       CrossJoinTablesRequest cross_join = 23;
@@ -632,9 +1079,14 @@ message BatchTableRequest {
       LeftJoinTablesRequest left_join = 26;
       AsOfJoinTablesRequest as_of_join = 27;
       FetchTableRequest fetch_table = 28;
-      FetchPandasTableRequest fetch_pandas_table = 29;
       ApplyPreviewColumnsRequest apply_preview_columns = 30;
       CreateInputTableRequest create_input_table = 31;
+      UpdateByRequest update_by = 32;
+      WhereInRequest where_in = 33;
+      AggregateAllRequest aggregate_all = 34;
+      AggregateRequest aggregate = 35;
+      SnapshotTableRequest snapshot = 36;
+      SnapshotWhenTableRequest snapshot_when = 37;
     }
   }
 }

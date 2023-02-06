@@ -8,6 +8,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.TableLocation;
@@ -25,7 +26,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static io.deephaven.engine.table.impl.TstUtils.assertIndexEquals;
+import static io.deephaven.engine.testutil.TstUtils.assertRowSetEquals;
 
 /**
  * Tests for {@link SimpleSourceTable}.
@@ -75,8 +76,6 @@ public class TestSimpleSourceTable extends RefreshingTableTestCase {
                     will(returnValue(cd.getDataType()));
                     allowing(mocked).getComponentType();
                     will(returnValue(cd.getComponentType()));
-                    allowing(mocked).preventsParallelism();
-                    will(returnValue(false));
                     allowing(mocked).isStateless();
                     will(returnValue(true));
                 }
@@ -193,7 +192,7 @@ public class TestSimpleSourceTable extends RefreshingTableTestCase {
                     throw exception;
                 }
             }
-            assertIndexEquals(expectedRowSet, rowSet);
+            assertRowSetEquals(expectedRowSet, rowSet);
             assertIsSatisfied();
         }
     }

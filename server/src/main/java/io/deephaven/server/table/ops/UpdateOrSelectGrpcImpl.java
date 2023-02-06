@@ -3,6 +3,7 @@
  */
 package io.deephaven.server.table.ops;
 
+import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.Table;
@@ -29,9 +30,11 @@ public abstract class UpdateOrSelectGrpcImpl extends GrpcTableOperation<SelectOr
     private final boolean requiresSharedLock;
 
     protected UpdateOrSelectGrpcImpl(
+            final PermissionFunction<SelectOrUpdateRequest> permission,
             final Function<BatchTableRequest.Operation, SelectOrUpdateRequest> getRequest,
-            final RealTableOperation realTableOperation, final boolean requiresSharedLock) {
-        super(getRequest, SelectOrUpdateRequest::getResultId, SelectOrUpdateRequest::getSourceId);
+            final RealTableOperation realTableOperation,
+            final boolean requiresSharedLock) {
+        super(permission, getRequest, SelectOrUpdateRequest::getResultId, SelectOrUpdateRequest::getSourceId);
         this.realTableOperation = realTableOperation;
         this.requiresSharedLock = requiresSharedLock;
     }
@@ -57,40 +60,45 @@ public abstract class UpdateOrSelectGrpcImpl extends GrpcTableOperation<SelectOr
     @Singleton
     public static class UpdateGrpcImpl extends UpdateOrSelectGrpcImpl {
         @Inject
-        public UpdateGrpcImpl() {
-            super(BatchTableRequest.Operation::getUpdate, Table::update, true);
+        public UpdateGrpcImpl(final TableServiceContextualAuthWiring authWiring) {
+            super(authWiring::checkPermissionUpdate, BatchTableRequest.Operation::getUpdate,
+                    Table::update, true);
         }
     }
 
     @Singleton
     public static class LazyUpdateGrpcImpl extends UpdateOrSelectGrpcImpl {
         @Inject
-        public LazyUpdateGrpcImpl() {
-            super(BatchTableRequest.Operation::getLazyUpdate, Table::lazyUpdate, true);
+        public LazyUpdateGrpcImpl(final TableServiceContextualAuthWiring authWiring) {
+            super(authWiring::checkPermissionLazyUpdate, BatchTableRequest.Operation::getLazyUpdate,
+                    Table::lazyUpdate, true);
         }
     }
 
     @Singleton
     public static class ViewGrpcImpl extends UpdateOrSelectGrpcImpl {
         @Inject
-        public ViewGrpcImpl() {
-            super(BatchTableRequest.Operation::getView, Table::view, false);
+        public ViewGrpcImpl(final TableServiceContextualAuthWiring authWiring) {
+            super(authWiring::checkPermissionView, BatchTableRequest.Operation::getView,
+                    Table::view, false);
         }
     }
 
     @Singleton
     public static class UpdateViewGrpcImpl extends UpdateOrSelectGrpcImpl {
         @Inject
-        public UpdateViewGrpcImpl() {
-            super(BatchTableRequest.Operation::getUpdateView, Table::updateView, false);
+        public UpdateViewGrpcImpl(final TableServiceContextualAuthWiring authWiring) {
+            super(authWiring::checkPermissionUpdateView, BatchTableRequest.Operation::getUpdateView,
+                    Table::updateView, false);
         }
     }
 
     @Singleton
     public static class SelectGrpcImpl extends UpdateOrSelectGrpcImpl {
         @Inject
-        public SelectGrpcImpl() {
-            super(BatchTableRequest.Operation::getSelect, Table::select, true);
+        public SelectGrpcImpl(final TableServiceContextualAuthWiring authWiring) {
+            super(authWiring::checkPermissionSelect, BatchTableRequest.Operation::getSelect,
+                    Table::select, true);
         }
     }
 }

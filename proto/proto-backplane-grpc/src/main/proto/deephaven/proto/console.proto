@@ -248,7 +248,7 @@ message FigureDescriptor {
         enum ChartType {
             XY = 0;
             PIE = 1;
-            OHLC = 2;
+            OHLC = 2 [deprecated=true];
             CATEGORY = 3;
             XYZ = 4;
             CATEGORY_3D = 5;
@@ -272,6 +272,9 @@ message FigureDescriptor {
         string legend_color = 12;
 
         bool is3d = 13;
+
+        int32 column = 14;
+        int32 row = 15;
     }
 
     enum SeriesPlotStyle {

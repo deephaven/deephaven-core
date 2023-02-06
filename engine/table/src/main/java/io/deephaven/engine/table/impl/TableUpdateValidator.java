@@ -195,6 +195,14 @@ public class TableUpdateValidator implements QueryTable.Operation {
 
             // modified
             updateValues(upstream.modifiedColumnSet(), upstream.modified(), false);
+            if (upstream.added().overlaps(upstream.modified())) {
+                noteIssue(() -> "added contains rows that are modified (post-shift): "
+                        + upstream.added().intersect(upstream.modified()));
+            }
+            if (upstream.removed().overlaps(upstream.getModifiedPreShift())) {
+                noteIssue(() -> "removed contains rows that are modified (pre-shift): "
+                        + upstream.removed().intersect(upstream.getModifiedPreShift()));
+            }
 
             if (!issues.isEmpty()) {
                 StringBuilder result =
@@ -380,7 +388,7 @@ public class TableUpdateValidator implements QueryTable.Operation {
         }
 
         public void remove(final RowSet toRemove) {
-            expectedSource.remove(toRemove);
+            expectedSource.setNull(toRemove);
         }
 
         private void updateValues(final RowSequence toUpdate, final boolean usePrev) {

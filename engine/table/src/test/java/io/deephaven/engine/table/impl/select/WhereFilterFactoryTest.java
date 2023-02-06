@@ -5,12 +5,12 @@ package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.lang.QueryScope;
-import io.deephaven.engine.table.impl.RefreshingTableTestCase;
+import io.deephaven.engine.context.QueryScope;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.util.TableTools;
-import io.deephaven.engine.table.impl.TstUtils;
+import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 
@@ -35,8 +35,6 @@ public class WhereFilterFactoryTest extends RefreshingTableTestCase {
     }
 
     public void testInComplex() {
-        QueryScope.setScope(new QueryScope.StandaloneImpl());
-
         assertEquals(MatchFilter.class, WhereFilterFactory.getExpression("Opra in opra1, opra2, opra3").getClass());
         QueryScope.addParam("pmExpiry", "World");
         assertEquals(MatchFilter.class, WhereFilterFactory.getExpression("amExpiry = pmExpiry").getClass());
@@ -69,7 +67,6 @@ public class WhereFilterFactoryTest extends RefreshingTableTestCase {
     }
 
     public void testCharMatch() {
-        QueryScope.setScope(new QueryScope.StandaloneImpl());
         QueryScope.addParam("theChar", 'C');
 
         final Table tt = TableTools.newTable(TableTools.charCol("AChar", 'A', 'B', 'C', '\0', '\''));
@@ -91,12 +88,12 @@ public class WhereFilterFactoryTest extends RefreshingTableTestCase {
         };
         final RowSet[] expectedResults = new RowSet[] {
                 TstUtils.i(0),
-                TstUtils.ir(1, 4),
+                RowSetFactory.fromRange(1, 4),
                 TstUtils.i(4),
                 TstUtils.i(0, 2, 4),
                 TstUtils.i(1, 3),
                 TstUtils.i(0),
-                TstUtils.ir(1, 4),
+                RowSetFactory.fromRange(1, 4),
                 TstUtils.i(4),
                 TstUtils.i(0, 2, 4),
                 TstUtils.i(1, 3),
@@ -167,8 +164,9 @@ public class WhereFilterFactoryTest extends RefreshingTableTestCase {
         assertEquals(4, idx.size());
 
         t = TstUtils.testRefreshingTable(
-                TstUtils.c("Opra", "opra1", "opra2", "opra3", "Opra1", "Opra2", "Opra3", "Opra4", null, "OpRa5"),
-                TstUtils.cG("Food", "Apple", "Orange", "bacon", "laffa", "pOtato", "carroT", "WafflE", null, "Apple"));
+                TableTools.col("Opra", "opra1", "opra2", "opra3", "Opra1", "Opra2", "Opra3", "Opra4", null, "OpRa5"),
+                TstUtils.colGrouped("Food", "Apple", "Orange", "bacon", "laffa", "pOtato", "carroT", "WafflE", null,
+                        "Apple"));
 
         f = WhereFilterFactory.getExpression("Food icase in `apple`, `orange`, `bacon`,`LAFFA`");
         f.init(t.getDefinition());

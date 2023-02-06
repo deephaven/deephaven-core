@@ -8,7 +8,7 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.metrics.MetricsManager;
 import org.junit.Test;
 
-import static io.deephaven.engine.table.impl.TstUtils.c;
+import static io.deephaven.engine.util.TableTools.col;
 import static io.deephaven.engine.util.TableTools.intCol;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -17,10 +17,10 @@ public class MetricsManagerTest {
 
     private static Table someJoinResult() {
         final Table left = TableTools.newTable(
-                c("LeftString", "A", "B", "A", "C", "D", "A"),
+                col("LeftString", "A", "B", "A", "C", "D", "A"),
                 intCol("LeftInt", 1, 10, 50, 3, 4, 60));
         final Table right = TableTools.newTable(
-                c("RightString", "A", "B", "A", "B", "A", "D", "E"),
+                col("RightString", "A", "B", "A", "B", "A", "D", "E"),
                 intCol("RightInt", 1, 5, 10, 25, 50, 5, 3));
 
         return left.join(right, "LeftString=RightString");

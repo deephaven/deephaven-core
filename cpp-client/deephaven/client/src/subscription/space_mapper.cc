@@ -2,6 +2,8 @@
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
 #include "deephaven/client/subscription/space_mapper.h"
+
+#include <optional>
 #include "deephaven/client/utility/utility.h"
 
 using deephaven::client::container::RowSequence;
@@ -36,119 +38,75 @@ SpaceMapper::SpaceMapper() = default;
 SpaceMapper::~SpaceMapper() = default;
 
 uint64_t SpaceMapper::addRange(uint64_t beginKey, uint64_t endKey) {
+  roaring::Roaring64Map x;
   auto size = endKey - beginKey;
-  if (size == 0) {
-    return 0;  // arbitrary
+  auto initialSize = set_.cardinality();
+  set_.addRange(beginKey, endKey);
+  if (set_.cardinality() != initialSize + size) {
+    auto message = stringf("Some elements of [%o,%o) were already in the set", beginKey,
+        endKey);
+    throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
   }
-  auto initialSize = set_.size();
-  set_.insert(SimpleRangeIterator(beginKey), SimpleRangeIterator(endKey));
-  if (set_.size() != initialSize + size) {
-    throw std::runtime_error(stringf("Some elements of [%o,%o) were already in the set", beginKey,
-        endKey));
-  }
-  return set_.find_rank(beginKey);
+  return zeroBasedRank(beginKey);
 }
 
 uint64_t SpaceMapper::eraseRange(uint64_t beginKey, uint64_t endKey) {
-  size_t size = endKey - beginKey;
-  if (size == 0) {
-    return 0;  // arbitrary
-  }
-  auto ip = set_.find(beginKey);
-  // This is ok (I think) even in the not-found case because set_.rank(set_.end()) is defined, and
-  // is set_.size(). The not-found case will throw an exception shortly in the test inside the loop.
-  auto result = set_.rank(ip);
-  for (auto current = beginKey; current != endKey; ++current) {
-    if (ip == set_.end() || *ip != current) {
-      throw std::runtime_error(stringf("key %o was not in the set", current));
-    }
-    ip = set_.erase(ip);
-  }
+  auto result = zeroBasedRank(beginKey);
+  set_.removeRange(beginKey, endKey);
   return result;
 }
 
 void SpaceMapper::applyShift(uint64_t beginKey, uint64_t endKey, uint64_t destKey) {
-  if (beginKey == endKey) {
-    return;
-  }
-  if (destKey > beginKey) {
-    auto amountToAdd = destKey - beginKey;
-    // positive shift: work backwards
-    auto ip = set_.lower_bound(endKey);
-    // ip is the first element >= endKey, or it is end()
-    if (ip == set_.begin()) {
-      return;
-    }
-    --ip;
-    // ip is the last element < endKey
-    while (true) {
-      if (*ip < beginKey) {
-        // exceeded range
-        return;
-      }
-      std::optional<decltype(ip)> prev;
-      if (ip != set_.begin()) {
-        prev = std::prev(ip);
-      }
-      auto node = set_.extract(ip);
-      node.value() = node.value() + amountToAdd;
-      set_.insert(std::move(node));
-      if (!prev.has_value()) {
-        return;
-      }
-      ip = *prev;
-    }
-    return;
-  }
-
-  // destKey <= beginKey, shifts are negative, so work in the forward direction
-  auto amountToSubtract = beginKey - destKey;
-  // negative shift: work forwards
-  auto ip = set_.lower_bound(beginKey);
-  // ip == end, or the first element >= beginKey
-  while (true) {
-    if (ip == set_.end() || *ip >= endKey) {
-      return;
-    }
-    auto nextp = std::next(ip);
-    auto node = set_.extract(ip);
-    node.value() = node.value() - amountToSubtract;
-    set_.insert(std::move(node));
-    ip = nextp;
-  }
+  auto size = endKey - beginKey;
+  set_.removeRange(beginKey, endKey);
+  set_.addRange(destKey, destKey + size);
 }
 
 std::shared_ptr<RowSequence> SpaceMapper::addKeys(const RowSequence &keys) {
   RowSequenceBuilder builder;
-  auto addChunk = [this, &builder](uint64_t beginKey, uint64_t endKey) {
+  auto addInterval = [this, &builder](uint64_t beginKey, uint64_t endKey) {
     auto size = endKey - beginKey;
     auto beginIndex = addRange(beginKey, endKey);
-    builder.addRange(beginIndex, beginIndex + size);
+    builder.addInterval(beginIndex, beginIndex + size);
   };
-  keys.forEachChunk(addChunk);
+  keys.forEachInterval(addInterval);
   return builder.build();
 }
 
 std::shared_ptr<RowSequence> SpaceMapper::convertKeysToIndices(const RowSequence &keys) const {
+  if (keys.empty()) {
+    return RowSequence::createEmpty();
+  }
+
   RowSequenceBuilder builder;
-  auto convertChunk = [this, &builder](uint64_t begin, uint64_t end) {
-    auto beginp = set_.find(begin);
-    if (beginp == set_.end()) {
-      throw std::runtime_error(stringf("begin key %o is not in the src map", begin));
+  auto convertInterval = [this, &builder](uint64_t beginKey, uint64_t endKey) {
+    auto beginp = set_.begin();
+    if (!beginp.move(beginKey)) {
+      auto message = stringf("begin key %o is not in the src map", beginKey);
+      throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
     }
-    auto nextRank = set_.rank(beginp);
+    auto nextRank = zeroBasedRank(beginKey);
     // Confirm we have entries for everything in the range.
     auto currentp = beginp;
-    for (auto current = begin; current != end; ++current) {
-      if (current != *currentp) {
-        throw std::runtime_error(stringf("current key %o is in not the src map", begin));
+    for (auto currentKey = beginKey; currentKey != endKey; ++currentKey) {
+      if (currentKey != *currentp) {
+        auto message = stringf("current key %o is in not the src map", currentKey);
+        throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
       }
       ++currentp;
     }
-    auto size = end - begin;
-    builder.addRange(nextRank, nextRank + size);
+    auto size = endKey - beginKey;
+    builder.addInterval(nextRank, nextRank + size);
   };
-  keys.forEachChunk(convertChunk);
+  keys.forEachInterval(convertInterval);
   return builder.build();
+}
+
+uint64_t SpaceMapper::zeroBasedRank(uint64_t value) const {
+  // Roaring's convention for rank is to "Return the number of integers that are smaller or equal to x".
+  // But we would rather know the number of values that are strictly smaller than x.
+  auto result = set_.rank(value);
+  // Adjust if 'value' is in the set.
+  return set_.contains(value) ? result - 1 : result;
 }
 }  // namespace deephaven::client::subscription

@@ -3,20 +3,26 @@
  */
 package io.deephaven.engine.table.impl;
 
+import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.datastructures.util.CollectionUtil;
 import com.google.common.collect.Maps;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.testutil.*;
+import io.deephaven.engine.testutil.generator.IntGenerator;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
+import io.deephaven.engine.util.PrintListener;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
+import io.deephaven.io.logger.StreamLoggerImpl;
 import io.deephaven.test.types.OutOfBandTest;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableLong;
@@ -25,8 +31,8 @@ import org.apache.commons.lang3.mutable.MutableObject;
 import java.util.*;
 import org.junit.experimental.categories.Category;
 
-import static io.deephaven.engine.util.TableTools.longCol;
-import static io.deephaven.engine.table.impl.TstUtils.*;
+import static io.deephaven.engine.util.TableTools.*;
+import static io.deephaven.engine.testutil.TstUtils.*;
 
 @Category(OutOfBandTest.class)
 public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
@@ -37,17 +43,17 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         this.numRightBitsToReserve = numRightBitsToReserve;
     }
 
-    private TstUtils.ColumnInfo<?, ?>[] getIncrementalColumnInfo(final String prefix, int numGroups) {
+    private ColumnInfo<?, ?>[] getIncrementalColumnInfo(final String prefix, int numGroups) {
         String[] names = new String[] {"Sym", "IntCol"};
 
         return initColumnInfos(Arrays.stream(names).map(name -> prefix + name).toArray(String[]::new),
-                new TstUtils.IntGenerator(0, numGroups - 1),
-                new TstUtils.IntGenerator(10, 100000));
+                new IntGenerator(0, numGroups - 1),
+                new IntGenerator(10, 100000));
     }
 
     public void testZeroKeyJoinBitExpansionOnAdd() {
         // Looking to force our row set space to need more keys.
-        final QueryTable lTable = testRefreshingTable(c("X", "to-remove", "b", "c", "d"));
+        final QueryTable lTable = testRefreshingTable(col("X", "to-remove", "b", "c", "d"));
         removeRows(lTable, i(0)); // row @ 0 does not need outer shifting
         final QueryTable rTable = testRefreshingTable(longCol("Y"));
 
@@ -61,7 +67,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         final QueryTable jt = (QueryTable) lTable.join(rTable, numRightBitsToReserve);
         final io.deephaven.engine.table.impl.SimpleListener listener =
                 new io.deephaven.engine.table.impl.SimpleListener(jt);
-        jt.listenForUpdates(listener);
+        jt.addUpdateListener(listener);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(rTable, i(1 << 16), longCol("Y", 3));
@@ -81,7 +87,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
 
     public void testZeroKeyJoinBitExpansionOnBoundaryShift() {
         // Looking to force our row set space to need more keys.
-        final QueryTable lTable = testRefreshingTable(c("X", "to-remove", "b", "c", "d"));
+        final QueryTable lTable = testRefreshingTable(col("X", "to-remove", "b", "c", "d"));
         removeRows(lTable, i(0)); // row @ 0 does not need outer shifting
         final QueryTable rTable = testRefreshingTable(longCol("Y"));
 
@@ -97,7 +103,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         final QueryTable jt = (QueryTable) lTable.join(rTable, numRightBitsToReserve);
         final io.deephaven.engine.table.impl.SimpleListener listener =
                 new io.deephaven.engine.table.impl.SimpleListener(jt);
-        jt.listenForUpdates(listener);
+        jt.addUpdateListener(listener);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             removeRows(rTable, i(origIndex));
@@ -122,7 +128,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
 
     public void testZeroKeyJoinBitExpansionWithInnerShift() {
         // Looking to force our row set space to need more keys.
-        final QueryTable lTable = testRefreshingTable(c("X", "to-remove", "b", "c", "d"));
+        final QueryTable lTable = testRefreshingTable(col("X", "to-remove", "b", "c", "d"));
         removeRows(lTable, i(0)); // row @ 0 does not need outer shifting
         final QueryTable rTable = testRefreshingTable(longCol("Y"));
 
@@ -136,7 +142,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         final QueryTable jt = (QueryTable) lTable.join(rTable, numRightBitsToReserve);
         final io.deephaven.engine.table.impl.SimpleListener listener =
                 new io.deephaven.engine.table.impl.SimpleListener(jt);
-        jt.listenForUpdates(listener);
+        jt.addUpdateListener(listener);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             removeRows(rTable, i(128));
@@ -160,7 +166,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
 
     public void testZeroKeyJoinCompoundShift() {
         // rightTable shift, leftTable shift, and bit expansion
-        final QueryTable lTable = testRefreshingTable(c("X", "a", "b", "c", "d"));
+        final QueryTable lTable = testRefreshingTable(col("X", "a", "b", "c", "d"));
         final QueryTable rTable = testRefreshingTable(longCol("Y"));
 
         addToTable(rTable, i(1, 128, (1 << 16) - 1), longCol("Y", 1, 2, 3));
@@ -173,7 +179,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             // left table
             removeRows(lTable, i(0, 1, 2, 3));
-            addToTable(lTable, i(2, 4, 5, 7), c("X", "a", "b", "c", "d"));
+            addToTable(lTable, i(2, 4, 5, 7), col("X", "a", "b", "c", "d"));
             final TableUpdateImpl lUpdate = new TableUpdateImpl();
             lUpdate.added = i();
             lUpdate.removed = i();
@@ -209,6 +215,43 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         }
     }
 
+    public void testCrossJoinShift() {
+        final QueryTable left = (QueryTable) TableTools.newTable(intCol("LK", 1, 2, 3), intCol("LS", 1, 2, 3));
+        final QueryTable right = TstUtils.testRefreshingTable(intCol("RK", 1, 2, 3), intCol("RS", 10, 20, 30));
+
+        final QueryTable joined = (QueryTable) CrossJoinHelper.join(left, right,
+                MatchPairFactory.getExpressions("LK=RK"), MatchPairFactory.getExpressions("RS"), 1);
+        assertTableEquals(TableTools.newTable(intCol("LK", 1, 2, 3), intCol("LS", 1, 2, 3), intCol("RS", 10, 20, 30)),
+                joined);
+
+        final ErrorListener errorListener = makeAndListenToValidator(joined);
+        final PrintListener printListener = new PrintListener("joined", joined);
+        final SimpleListener listener = new SimpleListener(joined);
+        joined.addUpdateListener(listener);
+
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            addToTable(right, i(4, 5), intCol("RK", 2, 2), intCol("RS", 40, 50));
+            right.notifyListeners(i(4, 5), i(), i());
+        });
+
+        assertTableEquals(TableTools.newTable(intCol("LK", 1, 2, 2, 2, 3), intCol("LS", 1, 2, 2, 2, 3),
+                intCol("RS", 10, 20, 40, 50, 30)), joined);
+
+        assertEquals(1, listener.count);
+        assertEquals(i(), listener.update.removed());
+        assertEquals(i(), listener.update.modified());
+        assertEquals(i(5, 6), listener.update.added());
+        listener.reset();
+    }
+
+    private ErrorListener makeAndListenToValidator(QueryTable joined) {
+        final TableUpdateValidator validator = TableUpdateValidator.make("joined", joined);
+        final QueryTable validatorResult = validator.getResultTable();
+        final ErrorListener errorListener = new ErrorListener(validatorResult);
+        validatorResult.addUpdateListener(errorListener);
+        return errorListener;
+    }
+
     private void testIncrementalZeroKeyJoin(final String ctxt, final int size, final int seed,
             final MutableInt numSteps) {
         final int leftSize = (int) Math.ceil(Math.sqrt(size));
@@ -217,10 +260,10 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         final Random random = new Random(seed);
 
         final int numGroups = (int) Math.max(4, Math.ceil(Math.sqrt(leftSize)));
-        final TstUtils.ColumnInfo<?, ?>[] leftColumns = getIncrementalColumnInfo("lt", numGroups);
+        final ColumnInfo<?, ?>[] leftColumns = getIncrementalColumnInfo("lt", numGroups);
         final QueryTable leftTicking = getTable(leftSize, random, leftColumns);
 
-        final TstUtils.ColumnInfo<?, ?>[] rightColumns = getIncrementalColumnInfo("rt", numGroups);
+        final ColumnInfo<?, ?>[] rightColumns = getIncrementalColumnInfo("rt", numGroups);
         final QueryTable rightTicking = getTable(size, random, rightColumns);
 
         final QueryTable leftStatic = getTable(false, leftSize, random, getIncrementalColumnInfo("ls", numGroups));
@@ -257,11 +300,14 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
             for (int rt = 0; rt < 2; ++rt) {
                 boolean leftTicking = lt == 1;
                 boolean rightTicking = rt == 1;
-                testStaticJoin(types, cardinality, types.length, types.length, leftTicking, rightTicking);
+                testStaticJoin(types, cardinality, types.length, types.length, leftTicking, rightTicking,
+                        TestJoinControl.DEFAULT_JOIN_CONTROL);
                 // force left build
-                testStaticJoin(types, cardinality, 1, types.length, leftTicking, rightTicking);
+                testStaticJoin(types, cardinality, 1, types.length, leftTicking, rightTicking,
+                        TestJoinControl.DEFAULT_JOIN_CONTROL);
                 // force right build
-                testStaticJoin(types, cardinality, types.length, 1, leftTicking, rightTicking);
+                testStaticJoin(types, cardinality, types.length, 1, leftTicking, rightTicking,
+                        TestJoinControl.DEFAULT_JOIN_CONTROL);
             }
         }
     }
@@ -277,23 +323,35 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
             for (int rt = 0; rt < 2; ++rt) {
                 boolean leftTicking = lt == 1;
                 boolean rightTicking = rt == 1;
-                testStaticJoin(types, cardinality, types.length, types.length, leftTicking, rightTicking);
+                testStaticJoin(types, cardinality, types.length, types.length, leftTicking, rightTicking,
+                        TestJoinControl.DEFAULT_JOIN_CONTROL);
             }
         }
     }
 
+    public void testLargeStaticOverflow() {
+        final String[] types = new String[26];
+        final int[] cardinality = new int[26];
+        for (int i = 0; i < 26; ++i) {
+            types[i] = String.valueOf('a' + i);
+            cardinality[i] = i * i;
+        }
+        testStaticJoin(types, cardinality, types.length, types.length, false, false,
+                TestJoinControl.OVERFLOW_JOIN_CONTROL);
+    }
+
     // generate a table such that all pairs of types exist and are part of the cross-join
     private void testStaticJoin(final String[] types, final int[] cardinality, int maxLeftType, int maxRightType,
-            boolean leftTicking, boolean rightTicking) {
+            boolean leftTicking, boolean rightTicking, JoinControl joinControl) {
         Assert.eq(types.length, "types.length", cardinality.length, "cardinality.length");
 
         long nextLeftRow = 0;
         final ArrayList<String> leftKeys = new ArrayList<>();
-        final ArrayList<Long> leftData = new ArrayList<>();
+        final TLongArrayList leftData = new TLongArrayList();
 
         long nextRightRow = 0;
         final ArrayList<String> rightKeys = new ArrayList<>();
-        final ArrayList<Long> rightData = new ArrayList<>();
+        final TLongArrayList rightData = new TLongArrayList();
 
         int expectedSize = 0;
         final Map<String, MutableLong> expectedByKey = Maps.newHashMap();
@@ -323,25 +381,18 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
             }
         }
 
-        final QueryTable left;
+        final QueryTable left = (QueryTable) TableTools.newTable(
+                stringCol("sharedKey", leftKeys.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)),
+                longCol("leftData", leftData.toArray()));
         if (leftTicking) {
-            left = TstUtils.testRefreshingTable(RowSetFactory.flat(nextLeftRow).toTracking(),
-                    c("sharedKey", leftKeys.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)),
-                    c("leftData", leftData.toArray(new Long[] {})));
-        } else {
-            left = TstUtils.testTable(RowSetFactory.flat(nextLeftRow).toTracking(),
-                    c("sharedKey", leftKeys.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)),
-                    c("leftData", leftData.toArray(new Long[] {})));
+            left.setRefreshing(true);
         }
-        final QueryTable right;
+
+        final QueryTable right = (QueryTable) TableTools.newTable(stringCol("sharedKey",
+                rightKeys.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)),
+                longCol("rightData", rightData.toArray()));
         if (rightTicking) {
-            right = TstUtils.testRefreshingTable(RowSetFactory.flat(nextRightRow).toTracking(),
-                    c("sharedKey", rightKeys.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)),
-                    c("rightData", rightData.toArray(new Long[] {})));
-        } else {
-            right = TstUtils.testTable(RowSetFactory.flat(nextRightRow).toTracking(),
-                    c("sharedKey", rightKeys.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)),
-                    c("rightData", rightData.toArray(new Long[] {})));
+            right.setRefreshing(true);
         }
 
         final Table chunkedCrossJoin = left.join(right, "sharedKey", numRightBitsToReserve);
@@ -455,13 +506,13 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         // Note: make our join helper think this left table might tick
         final QueryTable leftNotTicking = getTable(1000, random, getIncrementalColumnInfo("lt", numGroups));
 
-        final TstUtils.ColumnInfo<?, ?>[] leftColumns = getIncrementalColumnInfo("lt", numGroups);
+        final ColumnInfo<?, ?>[] leftColumns = getIncrementalColumnInfo("lt", numGroups);
         final QueryTable leftTicking = getTable(0, random, leftColumns);
 
-        final TstUtils.ColumnInfo<?, ?>[] leftShiftingColumns = getIncrementalColumnInfo("lt", numGroups);
+        final ColumnInfo<?, ?>[] leftShiftingColumns = getIncrementalColumnInfo("lt", numGroups);
         final QueryTable leftShifting = getTable(1000, random, leftShiftingColumns);
 
-        final TstUtils.ColumnInfo<?, ?>[] rightColumns = getIncrementalColumnInfo("rt", numGroups);
+        final ColumnInfo<?, ?>[] rightColumns = getIncrementalColumnInfo("rt", numGroups);
         final QueryTable rightTicking = getTable(0, random, rightColumns);
 
         final JoinControl control = new JoinControl() {
@@ -502,10 +553,13 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
             TableTools.showWithRowSet(rightTicking);
         }
 
-        final GenerateTableUpdates.SimulationProfile shiftingProfile = new GenerateTableUpdates.SimulationProfile();
-        shiftingProfile.SHIFT_10_PERCENT_POS_SPACE = 5;
-        shiftingProfile.SHIFT_10_PERCENT_KEY_SPACE = 5;
-        shiftingProfile.SHIFT_AGGRESSIVELY = 85;
+        final GenerateTableUpdates.SimulationProfile shiftingProfile = new GenerateTableUpdates.SimulationProfile() {
+            {
+                SHIFT_10_PERCENT_POS_SPACE = 5;
+                SHIFT_10_PERCENT_KEY_SPACE = 5;
+                SHIFT_AGGRESSIVELY = 85;
+            }
+        };
 
         for (numSteps.setValue(0); numSteps.intValue() < maxSteps; numSteps.increment()) {
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
@@ -540,10 +594,10 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         final Random random = new Random(seed);
 
         final int numGroups = (int) Math.max(4, Math.ceil(Math.sqrt(initialSize)));
-        final TstUtils.ColumnInfo<?, ?>[] leftColumns = getIncrementalColumnInfo("lt", numGroups);
+        final ColumnInfo<?, ?>[] leftColumns = getIncrementalColumnInfo("lt", numGroups);
         final QueryTable leftTicking = getTable(initialSize, random, leftColumns);
 
-        final TstUtils.ColumnInfo<?, ?>[] rightColumns = getIncrementalColumnInfo("rt", numGroups);
+        final ColumnInfo<?, ?>[] rightColumns = getIncrementalColumnInfo("rt", numGroups);
         final QueryTable rightTicking = getTable(initialSize, random, rightColumns);
 
         final QueryTable leftStatic = getTable(false, initialSize, random, getIncrementalColumnInfo("ls", numGroups));

@@ -3,12 +3,12 @@
  */
 package io.deephaven.parquet.table;
 
-import io.deephaven.engine.table.impl.CodecLookup;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.impl.CodecLookup;
 import io.deephaven.stringset.StringSet;
 import io.deephaven.time.DateTime;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.util.codec.ExternalizableCodec;
 import io.deephaven.util.codec.SerializableCodec;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -21,20 +21,20 @@ import org.apache.parquet.schema.Types;
 import org.apache.parquet.schema.Types.PrimitiveBuilder;
 import org.jetbrains.annotations.NotNull;
 
-import static io.deephaven.engine.util.BigDecimalUtils.PrecisionAndScale;
-import static io.deephaven.engine.util.BigDecimalUtils.computePrecisionAndScale;
-
 import java.io.Externalizable;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.*;
 import java.util.function.Supplier;
+
+import static io.deephaven.engine.util.BigDecimalUtils.PrecisionAndScale;
+import static io.deephaven.engine.util.BigDecimalUtils.computePrecisionAndScale;
 
 /**
  * Contains the necessary information to convert a Deephaven table into a Parquet table. Both the schema translation,
  * and the data translation.
  */
 class TypeInfos {
-
     private static final TypeInfo[] TYPE_INFOS = new TypeInfo[] {
             IntType.INSTANCE,
             LongType.INSTANCE,
@@ -45,15 +45,16 @@ class TypeInfos {
             CharType.INSTANCE,
             ByteType.INSTANCE,
             StringType.INSTANCE,
-            DateTimeType.INSTANCE
+            DateTimeType.INSTANCE,
+            BigIntegerType.INSTANCE
     };
 
     private static final Map<Class<?>, TypeInfo> BY_CLASS;
 
     static {
-        Map<Class<?>, TypeInfo> fa = new HashMap<>();
-        for (TypeInfo typeInfo : TYPE_INFOS) {
-            for (Class<?> type : typeInfo.getTypes()) {
+        final Map<Class<?>, TypeInfo> fa = new HashMap<>();
+        for (final TypeInfo typeInfo : TYPE_INFOS) {
+            for (final Class<?> type : typeInfo.getTypes()) {
                 fa.put(type, typeInfo);
             }
         }
@@ -95,6 +96,7 @@ class TypeInfos {
         if (!CodecLookup.codecRequired(columnDefinition)) {
             return null;
         }
+
         // Impute an appropriate codec for the data type
         final Class<?> dataType = columnDefinition.getDataType();
         if (Externalizable.class.isAssignableFrom(dataType)) {
@@ -104,10 +106,10 @@ class TypeInfos {
     }
 
     static PrecisionAndScale getPrecisionAndScale(
-            final Map<String, Map<ParquetTableWriter.CacheTags, Object>> computedCache,
-            final String columnName,
-            final TrackingRowSet rowSet,
-            Supplier<ColumnSource<BigDecimal>> columnSourceSupplier) {
+            @NotNull final Map<String, Map<ParquetTableWriter.CacheTags, Object>> computedCache,
+            @NotNull final String columnName,
+            @NotNull final RowSet rowSet,
+            @NotNull Supplier<ColumnSource<BigDecimal>> columnSourceSupplier) {
         return (PrecisionAndScale) computedCache
                 .computeIfAbsent(columnName, unusedColumnName -> new HashMap<>())
                 .computeIfAbsent(ParquetTableWriter.CacheTags.DECIMAL_ARGS,
@@ -117,7 +119,7 @@ class TypeInfos {
     static TypeInfo bigDecimalTypeInfo(
             final Map<String, Map<ParquetTableWriter.CacheTags, Object>> computedCache,
             @NotNull final ColumnDefinition<?> column,
-            final TrackingRowSet rowSet,
+            final RowSet rowSet,
             final Map<String, ? extends ColumnSource<?>> columnSourceMap) {
         final String columnName = column.getName();
         // noinspection unchecked
@@ -144,7 +146,7 @@ class TypeInfos {
     static TypeInfo getTypeInfo(
             final Map<String, Map<ParquetTableWriter.CacheTags, Object>> computedCache,
             @NotNull final ColumnDefinition<?> column,
-            final TrackingRowSet rowSet,
+            final RowSet rowSet,
             final Map<String, ? extends ColumnSource<?>> columnSourceMap,
             @NotNull final ParquetInstructions instructions) {
         final Class<?> dataType = column.getDataType();
@@ -362,6 +364,28 @@ class TypeInfos {
             }
             return type(PrimitiveTypeName.INT64, required, repeating)
                     .as(LogicalTypeAnnotation.timestampType(true, LogicalTypeAnnotation.TimeUnit.NANOS));
+        }
+    }
+
+    /**
+     * We will encode BigIntegers as Decimal types. Parquet has no special type for BigIntegers, but we can maintain
+     * external compatibility by encoding them as fixed length decimals of scale 1. Internally, we'll record that we
+     * wrote this as a decimal, so we can properly decode it back to BigInteger.
+     */
+    private enum BigIntegerType implements TypeInfo {
+        INSTANCE;
+
+        private static final Set<Class<?>> clazzes = Collections.singleton(BigInteger.class);
+
+        @Override
+        public Set<Class<?>> getTypes() {
+            return clazzes;
+        }
+
+        @Override
+        public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class<?> dataType) {
+            return type(PrimitiveTypeName.BINARY, required, repeating)
+                    .as(LogicalTypeAnnotation.decimalType(0, 1));
         }
     }
 

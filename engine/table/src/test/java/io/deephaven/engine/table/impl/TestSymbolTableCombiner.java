@@ -5,6 +5,11 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.TableUpdateListener;
+import io.deephaven.engine.testutil.ColumnInfo;
+import io.deephaven.engine.testutil.GenerateTableUpdates;
+import io.deephaven.engine.testutil.generator.StringGenerator;
+import io.deephaven.engine.testutil.generator.UniqueLongGenerator;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.IntegerSparseArraySource;
@@ -18,7 +23,7 @@ import java.util.Map;
 import java.util.Random;
 import org.junit.experimental.categories.Category;
 
-import static io.deephaven.engine.table.impl.TstUtils.*;
+import static io.deephaven.engine.testutil.TstUtils.*;
 
 @Category(OutOfBandTest.class)
 public class TestSymbolTableCombiner extends RefreshingTableTestCase {
@@ -32,16 +37,14 @@ public class TestSymbolTableCombiner extends RefreshingTableTestCase {
         final int size = 1000;
         final Random random = new Random(seed);
 
-        final TstUtils.ColumnInfo[] columnInfo;
+        final ColumnInfo<?, ?>[] columnInfo;
         final QueryTable symbolTable = getTable(size, random,
                 columnInfo = initColumnInfos(
                         new String[] {SymbolTableSource.ID_COLUMN_NAME, SymbolTableSource.SYMBOL_COLUMN_NAME},
-                        new TstUtils.UniqueLongGenerator(1, 10000000),
-                        new TstUtils.StringGenerator(34000)));
+                        new UniqueLongGenerator(1, 10000000),
+                        new StringGenerator(34000)));
 
-        // noinspection unchecked
         final ColumnSource<String> symbolSource = symbolTable.getColumnSource(SymbolTableSource.SYMBOL_COLUMN_NAME);
-        // noinspection unchecked
         final ColumnSource<Long> idSource = symbolTable.getColumnSource(SymbolTableSource.ID_COLUMN_NAME);
         final SymbolTableCombiner combiner = new SymbolTableCombiner(new ColumnSource[] {symbolSource}, 128);
 
@@ -68,8 +71,8 @@ public class TestSymbolTableCombiner extends RefreshingTableTestCase {
                 new InstrumentedTableUpdateListenerAdapter("SymbolTableCombiner Adapter", symbolTable, false) {
                     @Override
                     public void onUpdate(final TableUpdate upstream) {
-                        assertIndexEquals(i(), upstream.removed());
-                        assertIndexEquals(i(), upstream.modified());
+                        assertRowSetEquals(i(), upstream.removed());
+                        assertRowSetEquals(i(), upstream.modified());
                         assertTrue(upstream.shifted().empty());
                         combiner.addSymbols(symbolTable, upstream.added(), symbolMapper);
                         checkAdditions(symbolTable, symbolSource, idSource, symbolMapper, uniqueIdMap);
@@ -82,7 +85,7 @@ public class TestSymbolTableCombiner extends RefreshingTableTestCase {
                         super.onFailureInternal(originalException, sourceEntry);
                     }
                 };
-        symbolTable.listenForUpdates(symbolTableListener);
+        symbolTable.addUpdateListener(symbolTableListener);
 
         for (int step = 0; step < 750; step++) {
             if (RefreshingTableTestCase.printTableUpdates) {

@@ -170,11 +170,11 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
         /**
          * <p>
          * Advance the current iterator position until {@code currentRangeStart()} and {@code currentRangeEnd()} are
-         * both greater than or equal to ‘v’. This may or may not move the iterator to the next range: if ‘v’ is inside
-         * the current range (but to the right of {@code currentRangeStart()}, this will simply advance
-         * {@code currentRangeStart()}. Returns true if the operation was successful. Otherwise, returns false. In this
-         * case the iteration is over and the iterator is exhausted (calls to {@code hasNext()} will return false, any
-         * other operation is undefined).
+         * both greater than or equal to {@code v}. This may or may not move the iterator to the next range: if
+         * {@code v} is inside the current range (but to the right of {@code currentRangeStart()}, this will simply
+         * advance {@code currentRangeStart()}. Returns true if the operation was successful. Otherwise, returns false.
+         * In this case the iteration is over and the iterator is exhausted (calls to {@code hasNext()} will return
+         * false, any other operation is undefined).
          * </p>
          *
          * <p>
@@ -193,12 +193,12 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
          *     &#64;code
          *     RangeIterator it = rowSet.getRangeIterator();
          *     if (!it.advance(100)) {
-         *         return; // iteration done… no ranges at 100 or greater
+         *         return; // iteration done... no ranges at 100 or greater
          *     }
          *     assert (it.currentRangeStart() &gt;= 100 &amp;&amp; it.currentRangeEnd() &gt;= 100);
          *     // do something with range
          *     if (!it.advance(500)) {
-         *         return; // iteration done… no ranges at 500 or greater
+         *         return; // iteration done... no ranges at 500 or greater
          *     }
          *     assert (it.currentRangeStart() &gt;= 500 &amp;&amp; it.currentRangeEnd() &gt;= 500);
          *     // do something with range
@@ -289,8 +289,6 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
             }
             return true;
         }
-
-        void close();
     }
 
     /**
@@ -326,17 +324,11 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
     }
 
     interface SearchIterator extends Iterator {
-        void close();
-
-        boolean hasNext();
-
         long currentValue();
-
-        long nextLong();
 
         /**
          * <p>
-         * Advance the current iterator position until {@code currentValue()} is greater than or equal to ‘v’. The
+         * Advance the current iterator position until {@code currentValue()} is greater than or equal to `v`. The
          * operation is a no-op (and returns true) if currentValue() is already >= 'v'. Returns true if the operation
          * was successful. Otherwise, returns false. In this case the iteration is over and the iterator is exhausted;
          * calls to {@code hasNext()} will return false, any other operation is undefined.

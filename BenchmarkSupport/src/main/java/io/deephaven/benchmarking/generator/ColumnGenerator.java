@@ -6,7 +6,7 @@ package io.deephaven.benchmarking.generator;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.benchmarking.generator.random.ExtendedRandom;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.lang.QueryScope;
+import io.deephaven.engine.context.QueryScope;
 
 /**
  * An interface that defines a class which will create Columns for a {@link io.deephaven.benchmarking.BenchmarkTable}
@@ -22,7 +22,7 @@ public interface ColumnGenerator<T> {
 
     /**
      * Initialize any internal state with the specified RNG
-     * 
+     *
      * @param random the RNG to use.
      */
     void init(ExtendedRandom random);

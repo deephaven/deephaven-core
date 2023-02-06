@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl.select.python;
 import io.deephaven.engine.table.impl.select.ConditionFilter.FilterKernel;
 import io.deephaven.engine.table.impl.select.ConditionFilter.FilterKernel.Context;
 import io.deephaven.engine.table.impl.select.formula.FormulaKernel;
+import io.deephaven.engine.util.PyCallableWrapper;
 import org.jpy.PyObject;
 
 import java.util.Arrays;
@@ -18,7 +19,6 @@ import java.util.Objects;
  */
 public class DeephavenCompatibleFunction {
 
-    @SuppressWarnings("unused") // called from python
     public static DeephavenCompatibleFunction create(
             PyObject function,
 
@@ -29,37 +29,42 @@ public class DeephavenCompatibleFunction {
             // todo: python can't convert from list of strings to List<String>
             // but it can convert from list of strings to String[]...
             String[] columnNames,
+            ArgumentsChunked argumentsChunked,
             boolean isVectorized) {
         return new DeephavenCompatibleFunction(function, (Class) returnedType, Arrays.asList(columnNames),
-                isVectorized);
+                argumentsChunked, isVectorized);
     }
 
     private final PyObject function;
     private final Class<?> returnedType; // the un-vectorized type (if this function is vectorized)
     private final List<String> columnNames;
+
+    private final ArgumentsChunked argumentsChunked;
     private final boolean isVectorized;
 
     private DeephavenCompatibleFunction(
             PyObject function,
             Class<?> returnedType,
             List<String> columnNames,
+            ArgumentsChunked argumentsChunked,
             boolean isVectorized) {
         this.function = Objects.requireNonNull(function, "function");
         this.returnedType = Objects.requireNonNull(returnedType, "returnedType");
         this.columnNames = Objects.requireNonNull(columnNames, "columnNames");
+        this.argumentsChunked = argumentsChunked;
         this.isVectorized = isVectorized;
     }
 
     public FormulaKernel toFormulaKernel() {
-        return isVectorized ? new FormulaKernelPythonChunkedFunction(function)
-                : new io.deephaven.engine.table.impl.select.python.FormulaKernelPythonSingularFunction(function);
+        return isVectorized ? new FormulaKernelPythonChunkedFunction(function, argumentsChunked)
+                : new FormulaKernelPythonSingularFunction(function);
     }
 
     public FilterKernel<Context> toFilterKernel() {
-        if (returnedType != boolean.class) {
+        if (returnedType != boolean.class && !Boolean.class.equals(returnedType)) {
             throw new IllegalStateException("FilterKernel functions must be annotated with a boolean return type");
         }
-        return isVectorized ? new FilterKernelPythonChunkedFunction(function)
+        return isVectorized ? new FilterKernelPythonChunkedFunction(function, argumentsChunked)
                 : new FilterKernelPythonSingularFunction(function);
     }
 

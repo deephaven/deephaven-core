@@ -4,6 +4,7 @@
 package io.deephaven.util.locks;
 
 import io.deephaven.util.FunctionalInterfaces.ThrowingBooleanSupplier;
+import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.locks.Lock;
@@ -106,5 +107,33 @@ public interface FunctionalLock extends Lock {
         } finally {
             unlock();
         }
+    }
+
+    /**
+     * Acquire the lock via {@link #lock()} and return a {@link SafeCloseable} that calls {@link #unlock()} on
+     * {@link SafeCloseable#close()}.
+     *
+     * @return the safe closeable
+     */
+    default SafeCloseable lockCloseable() {
+        // Note: we are creating the closeable _first_ in the rare case that we are out of memory or there is some
+        // other exceptional circumstance that causes this object creation to fail.
+        final SafeCloseable unlock = this::unlock;
+        lock();
+        return unlock;
+    }
+
+    /**
+     * Acquire the lock via {@link #lockInterruptibly()} and return a {@link SafeCloseable} that calls {@link #unlock()}
+     * on {@link SafeCloseable#close()}.
+     *
+     * @return the safe closeable
+     */
+    default SafeCloseable lockInterruptiblyCloseable() throws InterruptedException {
+        // Note: we are creating the closeable _first_ in the rare case that we are out of memory or there is some
+        // other exceptional circumstance that causes this object creation to fail.
+        final SafeCloseable unlock = this::unlock;
+        lockInterruptibly();
+        return unlock;
     }
 }

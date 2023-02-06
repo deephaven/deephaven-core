@@ -1,11 +1,11 @@
 package io.deephaven.engine.table.impl.updateby;
 
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.TstUtils.*;
+import io.deephaven.engine.testutil.ColumnInfo;
+import io.deephaven.engine.testutil.generator.*;
 
-import io.deephaven.test.junit4.EngineCleanup;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import org.junit.Rule;
 
 import java.math.BigInteger;
@@ -14,8 +14,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
-import static io.deephaven.engine.table.impl.TstUtils.getTable;
-import static io.deephaven.engine.table.impl.TstUtils.initColumnInfos;
+import static io.deephaven.engine.testutil.TstUtils.getTable;
+import static io.deephaven.engine.testutil.TstUtils.initColumnInfos;
 
 public class BaseUpdateByTest {
     @Rule
@@ -36,7 +36,7 @@ public class BaseUpdateByTest {
     static CreateResult createTestTable(int tableSize, boolean includeSym, boolean includeGroups, boolean isRefreshing,
             int seed) {
         return createTestTable(tableSize, includeSym, includeGroups, isRefreshing, seed,
-                CollectionUtil.ZERO_LENGTH_STRING_ARRAY, new Generator[0]);
+                CollectionUtil.ZERO_LENGTH_STRING_ARRAY, new TestDataGenerator[0]);
     }
 
     @SuppressWarnings({"rawtypes"})
@@ -46,13 +46,13 @@ public class BaseUpdateByTest {
             boolean isRefreshing,
             int seed,
             String[] extraNames,
-            Generator[] extraGenerators) {
+            TestDataGenerator[] extraGenerators) {
         if (includeGroups && !includeSym) {
             throw new IllegalArgumentException();
         }
 
         final List<String> colsList = new ArrayList<>();
-        final List<Generator> generators = new ArrayList<>();
+        final List<TestDataGenerator> generators = new ArrayList<>();
         if (includeSym) {
             colsList.add("Sym");
             generators.add(new SetGenerator<>("a", "b", "c", "d", null));
@@ -77,7 +77,7 @@ public class BaseUpdateByTest {
 
         final Random random = new Random(seed);
         final ColumnInfo[] columnInfos = initColumnInfos(colsList.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY),
-                generators.toArray(new Generator[0]));
+                generators.toArray(new TestDataGenerator[0]));
         final QueryTable t = getTable(tableSize, random, columnInfos);
 
 

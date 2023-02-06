@@ -4,17 +4,12 @@
 package io.deephaven.engine.table.impl.snapshot;
 
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.rowset.TrackingWritableRowSet;
-import io.deephaven.engine.rowset.TrackingRowSet;
-import io.deephaven.engine.table.ChunkSource;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.engine.rowset.*;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.LazySnapshotTable;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.SingleValueColumnSource;
 
@@ -26,8 +21,8 @@ public class SnapshotInternalListener extends BaseTable.ListenerImpl {
     private final Table snapshotTable;
     private long snapshotPrevLength;
     private final QueryTable result;
-    private final Map<String, SingleValueColumnSource<?>> resultLeftColumns;
-    private final Map<String, ArrayBackedColumnSource<?>> resultRightColumns;
+    private final Map<String, SingleValueColumnSource<?>> resultTriggerColumns;
+    private final Map<String, ArrayBackedColumnSource<?>> resultBaseColumns;
     private final Map<String, ? extends ColumnSource<?>> triggerStampColumns;
     private final Map<String, ChunkSource.WithPrev<? extends Values>> snapshotDataColumns;
     private final TrackingWritableRowSet resultRowSet;
@@ -36,8 +31,8 @@ public class SnapshotInternalListener extends BaseTable.ListenerImpl {
             boolean lazySnapshot,
             Table snapshotTable,
             QueryTable result,
-            Map<String, SingleValueColumnSource<?>> resultLeftColumns,
-            Map<String, ArrayBackedColumnSource<?>> resultRightColumns,
+            Map<String, SingleValueColumnSource<?>> resultTriggerColumns,
+            Map<String, ArrayBackedColumnSource<?>> resultBaseColumns,
             TrackingWritableRowSet resultRowSet) {
         super("snapshot " + result.getColumnSourceMap().keySet(), triggerTable, result);
         this.triggerTable = triggerTable;
@@ -45,10 +40,12 @@ public class SnapshotInternalListener extends BaseTable.ListenerImpl {
         this.lazySnapshot = lazySnapshot;
         this.snapshotTable = snapshotTable;
         this.snapshotPrevLength = 0;
-        this.resultLeftColumns = resultLeftColumns;
-        this.resultRightColumns = resultRightColumns;
+        this.resultTriggerColumns = resultTriggerColumns;
+        this.resultBaseColumns = resultBaseColumns;
         this.resultRowSet = resultRowSet;
-        manage(snapshotTable);
+        if (snapshotTable.isRefreshing()) {
+            manage(snapshotTable);
+        }
         triggerStampColumns = SnapshotUtils.generateTriggerStampColumns(triggerTable);
         snapshotDataColumns = SnapshotUtils.generateSnapshotDataColumns(snapshotTable);
     }
@@ -64,9 +61,11 @@ public class SnapshotInternalListener extends BaseTable.ListenerImpl {
         }
 
         // Populate stamp columns from the triggering table
-        if (!triggerTable.getRowSet().isEmpty()) {
+        if (triggerTable.getRowSet().isEmpty()) {
+            SnapshotUtils.setNullStampColumns(triggerStampColumns, resultTriggerColumns);
+        } else {
             SnapshotUtils.copyStampColumns(triggerStampColumns, triggerTable.getRowSet().lastRowKey(),
-                    resultLeftColumns);
+                    resultTriggerColumns);
         }
         final TrackingRowSet currentRowSet = snapshotTable.getRowSet();
         final long snapshotSize;
@@ -76,34 +75,19 @@ public class SnapshotInternalListener extends BaseTable.ListenerImpl {
             if (!snapshotRowSet.isEmpty()) {
                 try (final RowSet destRowSet = RowSetFactory.fromRange(0, snapshotRowSet.size() - 1)) {
                     SnapshotUtils.copyDataColumns(snapshotDataColumns,
-                            snapshotRowSet, resultRightColumns, destRowSet, usePrev);
+                            snapshotRowSet, resultBaseColumns, destRowSet, usePrev);
                 }
             }
         }
         if (snapshotPrevLength < snapshotSize) {
-            // If the table got larger then:
-            // - added is (the suffix)
-            // - modified is (the old RowSet)
-            // resultRowSet updated (by including added) for next time
-            final RowSet addedRange = RowSetFactory.fromRange(snapshotPrevLength, snapshotSize - 1);
-            resultRowSet.insert(addedRange);
-            if (notifyListeners) {
-                result.notifyListeners(addedRange, RowSetFactory.empty(), resultRowSet.copy());
-            }
+            resultRowSet.insertRange(snapshotPrevLength, snapshotSize - 1);
         } else if (snapshotPrevLength > snapshotSize) {
-            // If the table got smaller, then:
-            // - removed is (the suffix)
-            // - resultRowSet updated (by removing 'removed') for next time
-            // modified is (just use the new RowSet)
-            final RowSet removedRange = RowSetFactory.fromRange(snapshotSize, snapshotPrevLength - 1);
-            resultRowSet.remove(removedRange);
-            if (notifyListeners) {
-                result.notifyListeners(RowSetFactory.empty(), removedRange, resultRowSet.copy());
-            }
-        } else if (notifyListeners) {
-            // If the table stayed the same size, then modified = the RowSet
-            result.notifyListeners(RowSetFactory.empty(), RowSetFactory.empty(),
-                    resultRowSet.copy());
+            resultRowSet.removeRange(snapshotSize, snapshotPrevLength - 1);
+        }
+        if (notifyListeners) {
+            result.notifyListeners(new TableUpdateImpl(
+                    resultRowSet.copy(), resultRowSet.copyPrev(),
+                    RowSetFactory.empty(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
         }
         snapshotPrevLength = snapshotTable.size();
     }

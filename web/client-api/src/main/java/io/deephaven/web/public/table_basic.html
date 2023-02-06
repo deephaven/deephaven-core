@@ -19,15 +19,16 @@
 <script type="module">
 import dh from './dh-core.js';
 
-const {IdeConnection} = dh;
+const {CoreClient} = dh;
 var table;
 var connection;
 var ide;
 
 (async () => {
     // Open a connection to the server
-    connection = new IdeConnection(window.location.protocol + "//" + window.location.host);
-
+    var client = new CoreClient(window.location.protocol + "//" + window.location.host);
+    await client.login({type:CoreClient.LOGIN_TYPE_ANONYMOUS});
+    connection = await client.getAsIdeConnection();
 
     var types = await connection.getConsoleTypes();
 

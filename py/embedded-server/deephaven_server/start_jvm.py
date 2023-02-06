@@ -17,6 +17,9 @@ def _jars_path():
 def _compiler_directives():
     return _jars_path() / 'dh-compiler-directives.txt'
 
+def _default_vmoptions():
+    return _jars_path() / 'dh-default.vmoptions'
+
 def _jars():
     return _jars_path().glob('*.jar')
 
@@ -26,15 +29,12 @@ DEFAULT_JVM_PROPERTIES = {
     # TODO (deephaven-core#XXXX) this doesn't work yet
     # # Disable the browser console by default, this is not yet well supported
     # 'deephaven.console.disable': 'true',
+    'LoggerFactory.silenceOnProcessEnvironment': 'true',
+    'stdout.toLogBuffer': 'false',
+    'stderr.toLogBuffer': 'false',
+    'logback.configurationFile': 'logback-minimal.xml',
 }
 DEFAULT_JVM_ARGS = [
-    # Uee the G1 GC
-    '-XX:+UseG1GC',
-    # G1GC: Set a goal for the max duration of a GC pause
-    '-XX:MaxGCPauseMillis=100',
-    # G1GC: Try to deduplicate strings on the Java heap
-    '-XX:+UseStringDeduplication',
-
     # Disable the JVM's signal handling for interactive python consoles - if python will
     # not be handling signals like ctrl-c (for KeyboardInterrupt), this should be safe to
     # remove for a small performance gain.
@@ -45,30 +45,28 @@ DEFAULT_JVM_ARGS = [
     f"-XX:CompilerDirectivesFile={_compiler_directives()}",
     # (deephaven-core#2500): Remove DisableIntrinsic for currentThread
     '-XX:DisableIntrinsic=_currentThread',
+    f"-XX:VMOptionsFile={_default_vmoptions()}",
 ]
 
 # Provide a util func to start the JVM, will use its own defaults if none are offered
 def start_jvm(
-        jvm_args = DEFAULT_JVM_ARGS,
-        jvm_properties = DEFAULT_JVM_PROPERTIES,
-        java_home: str = os.environ.get('JAVA_HOME', None),
+        jvm_args = None,
+        jvm_properties = None,
+        java_home = None,
         extra_classpath = [],
         propfile: str = None,
-        devroot: str = '.',
-        workspace: str = '.',
         config = None):
     """ This function uses the default DH property file to embed the Deephaven server and starts a Deephaven Python
     Script session. """
+    jvm_args = jvm_args or DEFAULT_JVM_ARGS
+    jvm_properties = jvm_properties or DEFAULT_JVM_PROPERTIES
+    java_home = java_home or os.environ.get('JAVA_HOME', None)
 
-    if propfile is None:
-        propfile = 'dh-defaults.prop'
+    system_properties = dict()
+    if propfile:
+        # Build jvm system properties starting with defaults we accept as args
+        system_properties.update({ 'Configuration.rootFile': propfile })
 
-    # Build jvm system properties starting with defaults we accept as args
-    system_properties = {
-        'devroot': os.path.realpath(devroot),
-        'workspace': workspace,
-        'Configuration.rootFile': propfile,
-    }
     # Append user-created args, allowing them to override these values
     system_properties.update(jvm_properties)
 
@@ -81,10 +79,12 @@ def start_jvm(
     # Append args that, if missing, could cause the jvm to be misconfigured for deephaven and its dependencies
     # TODO make these less required (i.e. at your own risk, remove them)
     required_jvm_args = [
-        # Allow netty to access java.nio.Buffer fields
+        # Allow access to java.nio.Buffer fields
         '--add-opens=java.base/java.nio=ALL-UNNAMED',
-        # Allow our hotspotImpl project to access internals
-        '--add-opens=java.management/sun.management=ALL-UNNAMED',
+        # Allow our hotspot-impl project to access internals
+        '--add-exports=java.management/sun.management=ALL-UNNAMED',
+        # Allow our clock-impl project to access internals
+        '--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED',
     ]
     if jvm_args is None:
         jvm_args = required_jvm_args

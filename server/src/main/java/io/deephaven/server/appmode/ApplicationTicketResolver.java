@@ -14,6 +14,7 @@ import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.flight.util.TicketRouterHelper;
 import io.deephaven.proto.util.ApplicationTicketHelper;
 import io.deephaven.proto.util.Exceptions;
+import io.deephaven.server.auth.AuthorizationProvider;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.TicketResolverBase;
 import io.deephaven.server.session.TicketRouter;
@@ -30,14 +31,17 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
+import static io.deephaven.proto.util.ApplicationTicketHelper.TICKET_PREFIX;
+import static io.deephaven.proto.util.ApplicationTicketHelper.FLIGHT_DESCRIPTOR_ROUTE;
+
 @Singleton
 public class ApplicationTicketResolver extends TicketResolverBase implements ApplicationStates {
 
     private final Map<String, ApplicationState> applicationMap = new ConcurrentHashMap<>();
 
     @Inject
-    public ApplicationTicketResolver() {
-        super((byte) ApplicationTicketHelper.TICKET_PREFIX, ApplicationTicketHelper.FLIGHT_DESCRIPTOR_ROUTE);
+    public ApplicationTicketResolver(final AuthorizationProvider authProvider) {
+        super(authProvider, (byte) TICKET_PREFIX, FLIGHT_DESCRIPTOR_ROUTE);
     }
 
     @Override
@@ -79,8 +83,9 @@ public class ApplicationTicketResolver extends TicketResolverBase implements App
             throw GrpcUtil.statusRuntimeException(Code.NOT_FOUND,
                     "Could not resolve '" + logId + "': field '" + getLogNameFor(id) + "' not found");
         }
+        Object value = authTransformation.transform(field.value());
         // noinspection unchecked
-        return SessionState.wrapAsExport((T) field.value());
+        return SessionState.wrapAsExport((T) value);
     }
 
     @Override
@@ -101,6 +106,7 @@ public class ApplicationTicketResolver extends TicketResolverBase implements App
             }
             Object value = field.value();
             if (value instanceof Table) {
+                value = authTransformation.transform(value);
                 info = TicketRouter.getFlightInfo((Table) value, descriptor, flightTicketForName(id.app, id.fieldName));
             } else {
                 throw GrpcUtil.statusRuntimeException(Code.NOT_FOUND,
@@ -140,6 +146,7 @@ public class ApplicationTicketResolver extends TicketResolverBase implements App
             app.listFields().forEach(field -> {
                 Object value = field.value();
                 if (value instanceof Table) {
+                    value = authTransformation.transform(value);
                     final Flight.FlightInfo info = TicketRouter.getFlightInfo((Table) value,
                             descriptorForName(app, field.name()), flightTicketForName(app, field.name()));
                     visitor.accept(info);

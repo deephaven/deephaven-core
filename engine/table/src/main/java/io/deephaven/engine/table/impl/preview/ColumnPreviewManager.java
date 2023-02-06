@@ -7,7 +7,6 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.Table;
 import io.deephaven.vector.Vector;
 import io.deephaven.engine.table.impl.BaseTable;
-import io.deephaven.engine.table.impl.HierarchicalTable;
 import io.deephaven.engine.table.impl.select.FunctionalColumn;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.ColumnSource;
@@ -72,47 +71,44 @@ public class ColumnPreviewManager {
      * @return the table containing the preview columns
      */
     public static Table applyPreview(final Table table) {
-        if (table instanceof HierarchicalTable) {
-            // HierarchicalTable tables do not permit `updateView(...)`, and therefore there is nothing of value that
-            // can be applied in this method. short-circuit away
-            return table;
-        }
-
-        Table result = table;
+        BaseTable<?> result = (BaseTable<?>) table;
         final List<SelectColumn> selectColumns = new ArrayList<>();
         final Map<String, ? extends ColumnSource<?>> columns = table.getColumnSourceMap();
         final Map<String, String> originalTypes = new HashMap<>();
         for (String name : columns.keySet()) {
             final ColumnSource<?> columnSource = columns.get(name);
             final Class<?> type = columnSource.getType();
+            String typeName = type.getCanonicalName();
+            if (typeName == null) {
+                typeName = type.getName();
+            }
             if (shouldPreview(type)) {
                 final PreviewColumnFactory<?, ?> factory = previewMap.get(type);
                 selectColumns.add(factory.makeColumn(name));
-                originalTypes.put(name, type.getCanonicalName());
+                originalTypes.put(name, typeName);
             } else if (Vector.class.isAssignableFrom(type)) {
                 // Always wrap Vectors
                 selectColumns.add(vectorPreviewFactory.makeColumn(name));
-                originalTypes.put(name, type.getCanonicalName());
+                originalTypes.put(name, typeName);
             } else if (PyListWrapper.class.isAssignableFrom(type)) {
                 // Always wrap PyListWrapper
                 selectColumns.add(pyListWrapperPreviewFactory.makeColumn(name));
-                originalTypes.put(name, type.getCanonicalName());
+                originalTypes.put(name, typeName);
             } else if (type.isArray()) {
                 // Always wrap arrays
                 selectColumns.add(arrayPreviewFactory.makeColumn(name));
-                originalTypes.put(name, type.getCanonicalName());
+                originalTypes.put(name, typeName);
             } else if (!isColumnTypeDisplayable(type)
                     || !io.deephaven.util.type.TypeUtils.isPrimitiveOrSerializable(type)) {
                 // Always wrap non-displayable and non-serializable types
                 selectColumns.add(nonDisplayableFactory.makeColumn(name));
-                originalTypes.put(name, type.getCanonicalName());
+                originalTypes.put(name, typeName);
             }
         }
 
         if (!selectColumns.isEmpty()) {
-            result = table.updateView(selectColumns.toArray(SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY));
-            ((BaseTable) table).copyAttributes(result, BaseTable.CopyAttributeOperation.Preview);
-
+            result = (BaseTable<?>) table.updateView(selectColumns);
+            ((BaseTable<?>) table).copyAttributes(result, BaseTable.CopyAttributeOperation.Preview);
             result.setAttribute(Table.PREVIEW_PARENT_TABLE, table);
 
             // Add original types to the column descriptions

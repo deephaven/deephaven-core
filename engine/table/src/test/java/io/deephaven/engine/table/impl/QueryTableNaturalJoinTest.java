@@ -4,42 +4,49 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.FileUtils;
+import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.TrackingRowSet;
-import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
-import io.deephaven.time.DateTimeUtils;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.time.DateTime;
-import io.deephaven.engine.table.impl.util.*;
-import io.deephaven.parquet.table.ParquetTools;
-import io.deephaven.engine.util.TableTools;
-import io.deephaven.io.logger.Logger;
-import io.deephaven.io.logger.StreamLoggerImpl;
+import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.DataColumn;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
-import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.impl.util.ColumnHolder;
+import io.deephaven.engine.testutil.*;
+import io.deephaven.engine.testutil.generator.*;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.util.TableTools;
+import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.test.types.OutOfBandTest;
+import io.deephaven.time.DateTime;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
+import org.junit.experimental.categories.Category;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
-import org.junit.experimental.categories.Category;
-
+import static io.deephaven.engine.testutil.GenerateTableUpdates.generateAppends;
+import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
-import static io.deephaven.engine.table.impl.TstUtils.*;
 import static io.deephaven.util.QueryConstants.NULL_INT;
 import static java.util.Arrays.asList;
 
@@ -172,29 +179,6 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         }
     }
 
-    public void testNaturalJoinIncrementalOverflow() {
-        if (NaturalJoinHelper.USE_TYPED_STATE_MANAGER) {
-            // the typed state manager does not do overflow, there must be enough space in the open addressed hash table
-            // to contain all of our entries
-            return;
-        }
-        setExpectError(false);
-
-        final int maxSteps = 5;
-        final int[] leftSizes = new int[] {10000};
-        final int[] rightSizes = new int[] {10000};
-        for (long seed = 0; seed < 5; seed++) {
-            for (int leftSize : leftSizes) {
-                for (int rightSize : rightSizes) {
-                    for (JoinIncrement joinIncrement : new JoinIncrement[] {leftRightConcurrentStepShift}) {
-                        testNaturalJoinIncremental(false, false, leftSize, rightSize, joinIncrement, seed, maxSteps,
-                                QueryTableJoinTest.HIGH_LOAD_FACTOR_CONTROL);
-                    }
-                }
-            }
-        }
-    }
-
     public void testNaturalJoinLeftIncrementalRightStatic() {
         for (JoinIncrement joinIncrement : new JoinIncrement[] {leftStepShift, leftStep}) {
             final int sz = 5;
@@ -253,20 +237,19 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
             JoinIncrement joinIncrement, long seed, MutableInt numSteps, JoinControl control) {
         final Random random = new Random(seed);
         final int maxSteps = numSteps.intValue();
-        final Logger log = new StreamLoggerImpl();
 
-        final TstUtils.ColumnInfo[] rightColumnInfo;
-        final TstUtils.UniqueIntGenerator rightIntGenerator =
-                new TstUtils.UniqueIntGenerator(1, rightSize * (rightStatic ? 2 : 4));
-        final TstUtils.UniqueIntGenerator rightInt2Generator =
-                new TstUtils.UniqueIntGenerator(1, rightSize * (rightStatic ? 2 : 4));
+        final ColumnInfo<?, ?>[] rightColumnInfo;
+        final UniqueIntGenerator rightIntGenerator =
+                new UniqueIntGenerator(1, rightSize * (rightStatic ? 2 : 4));
+        final UniqueIntGenerator rightInt2Generator =
+                new UniqueIntGenerator(1, rightSize * (rightStatic ? 2 : 4));
 
-        final TstUtils.IntGenerator duplicateGenerator = new TstUtils.IntGenerator(100000, 100010);
+        final IntGenerator duplicateGenerator = new IntGenerator(100000, 100010);
 
-        final List<TstUtils.Generator<Integer, Integer>> generatorList =
+        final List<TestDataGenerator<Integer, Integer>> generatorList =
                 Arrays.asList(rightIntGenerator, duplicateGenerator);
-        final TstUtils.Generator<Integer, Integer> compositeGenerator =
-                new TstUtils.CompositeGenerator<>(generatorList, 0.9);
+        final TestDataGenerator<Integer, Integer> compositeGenerator =
+                new CompositeGenerator<>(generatorList, 0.9);
 
         final QueryTable rightTable = getTable(!rightStatic, rightSize, random,
                 rightColumnInfo = initColumnInfos(new String[] {"I1", "C1", "C2"},
@@ -274,7 +257,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                         new SetGenerator<>("a", "b"),
                         rightInt2Generator));
 
-        final ColumnInfo[] leftColumnInfo;
+        final ColumnInfo<?, ?>[] leftColumnInfo;
         final QueryTable leftTable = getTable(!leftStatic, leftSize, random,
                 leftColumnInfo = initColumnInfos(new String[] {"I1", "C1", "C2"},
                         new FromUniqueIntGenerator(rightIntGenerator, new IntGenerator(20, 10000), 0.75),
@@ -342,7 +325,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                 new IntGenerator(1, rightSize * 10),
                 new SetGenerator<>("a", "b", "c", "d", "e", "f"),
                 new IntGenerator(1, 10)));
-        final ColumnInfo[] rightColumnInfos = initColumnInfos(new String[] {"I1", "C1", "C2"},
+        final ColumnInfo<?, ?>[] rightColumnInfos = initColumnInfos(new String[] {"I1", "C1", "C2"},
                 new ColumnInfo.ColAttributes[] {},
                 new UniqueIntGenerator(1, rightSize * 10),
                 new SetGenerator<>("a", "b", "c", "d", "e"),
@@ -376,11 +359,11 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertTableEquals(noGroupingResult, result);
 
         final Table leftFlat = leftTable.flatten();
-        final ColumnSource flatGrouped = leftFlat.getColumnSource("I1");
+        final ColumnSource<?> flatGrouped = leftFlat.getColumnSource("I1");
         final TrackingRowSet flatRowSet = leftFlat.getRowSet();
         final Map<Object, RowSet> grouping = RowSetIndexer.of(flatRowSet).getGrouping(flatGrouped);
         // noinspection unchecked
-        ((AbstractColumnSource) flatGrouped).setGroupToRange(grouping);
+        ((AbstractColumnSource<Object>) flatGrouped).setGroupToRange(grouping);
 
         final Table resultFlat = leftFlat.naturalJoin(rightTable, "I1", "LC1=C1,LC2=C2");
         assertTableEquals(noGroupingResult, resultFlat);
@@ -409,23 +392,23 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
     public void testNaturalJoinSimpleStatic() {
         // noinspection unchecked
-        testNaturalJoinSimpleStatic(TstUtils::c);
+        testNaturalJoinSimpleStatic(TableTools::col);
     }
 
     public void testNaturalJoinGroupedStatic() {
         // noinspection unchecked
-        testNaturalJoinSimpleStatic(TstUtils::cG);
+        testNaturalJoinSimpleStatic(TstUtils::colGrouped);
     }
 
     private interface MakeLeftColumn {
         @SuppressWarnings("unchecked")
-        <T> ColumnHolder make(String name, T... data);
+        <T> ColumnHolder<T> make(String name, T... data);
     }
 
     private void testNaturalJoinSimpleStatic(MakeLeftColumn lC) {
-        final Table left = testTable(lC.make("Symbol", "A", "B", "C"), c("LeftSentinel", 1, 2, 3));
-        final Table right = newTable(c("Symbol", "A", "B", "D", "E", "F"), c("RightSentinel", 10, 11, 12, 13, 14),
-                c("RightObjectSentinel", 10, 11L, "12", "13", "14"));
+        final Table left = testTable(lC.make("Symbol", "A", "B", "C"), col("LeftSentinel", 1, 2, 3));
+        final Table right = newTable(col("Symbol", "A", "B", "D", "E", "F"), col("RightSentinel", 10, 11, 12, 13, 14),
+                col("RightObjectSentinel", 10, 11L, "12", "13", "14"));
 
         final Table cj = left.naturalJoin(right, "Symbol");
         TableTools.showWithRowSet(cj);
@@ -437,8 +420,8 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         TableTools.showWithRowSet(cjw);
         TableTools.showWithRowSet(cjw2);
 
-        final Table left2 = newTable(lC.make("Symbol", "A", "B", "C", "A"), c("LeftSentinel", 1, 2, 3, 4));
-        final Table right2 = newTable(c("Symbol", "A", "B", "D"), c("RightSentinel", 10, 11, 12));
+        final Table left2 = newTable(lC.make("Symbol", "A", "B", "C", "A"), col("LeftSentinel", 1, 2, 3, 4));
+        final Table right2 = newTable(col("Symbol", "A", "B", "D"), col("RightSentinel", 10, 11, 12));
 
         final Table cj2 = left2.naturalJoin(right2, "Symbol");
         TableTools.showWithRowSet(cj2);
@@ -446,8 +429,9 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
         final int collision = 16384;
         final Table left3 = newTable(lC.make("Int", 10, collision + 10, collision * 2 + 10, collision * 3 + 10),
-                c("LeftSentinel", 1, 3, 3, 4));
-        final Table right3 = newTable(c("Int", 10, collision + 10, collision * 4 + 10), c("RightSentinel", 10, 11, 13));
+                col("LeftSentinel", 1, 3, 3, 4));
+        final Table right3 =
+                newTable(col("Int", 10, collision + 10, collision * 4 + 10), col("RightSentinel", 10, 11, 13));
 
         TableTools.show(left3);
         TableTools.show(right3);
@@ -458,8 +442,8 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
         final Table left4 = newTable(
                 lC.make("String", "c", "e", "g"),
-                c("LeftSentinel", 1, 2, 3));
-        final Table right4 = newTable(c("String", "c", "e"), c("RightSentinel", 10, 11));
+                col("LeftSentinel", 1, 2, 3));
+        final Table right4 = newTable(col("String", "c", "e"), col("RightSentinel", 10, 11));
         final Table cj4 = left4.naturalJoin(right4, "String");
         TableTools.showWithRowSet(cj4);
         assertEquals(new int[] {10, 11, NULL_INT}, intColumn(cj4, "RightSentinel"));
@@ -467,15 +451,15 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
         final Table left5 = newTable(
                 lC.make("String", "c", "e", "g"),
-                c("LeftSentinel", 1, 2, 3));
-        final Table right5 = newTable(c("RightSentinel", 10));
+                col("LeftSentinel", 1, 2, 3));
+        final Table right5 = newTable(col("RightSentinel", 10));
         final Table cj5 = left5.naturalJoin(right5, "");
         TableTools.showWithRowSet(cj5);
         assertEquals(new int[] {10, 10, 10}, intColumn(cj5, "RightSentinel"));
 
         final Table left6 = newTable(
                 lC.make("String", "c", "e", "g"),
-                c("LeftSentinel", 1, 2, 3));
+                col("LeftSentinel", 1, 2, 3));
         final Table right6 = newTable(intCol("RightSentinel"));
         final Table cj6 = left6.naturalJoin(right6, "");
         TableTools.showWithRowSet(cj6);
@@ -490,17 +474,17 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertEquals(0, cj7.size());
 
         // inactive right hand side state, build using the left
-        final Table left8 = newTable(lC.make("Symbol", "A", "B", "C"), c("LeftSentinel", 1, 2, 3));
-        final Table right8 = newTable(c("Symbol", "A", "B", "D", "D", "E", "E", "D"),
-                c("RightSentinel", 10, 11, 12, 13, 14, 15, 16));
+        final Table left8 = newTable(lC.make("Symbol", "A", "B", "C"), col("LeftSentinel", 1, 2, 3));
+        final Table right8 = newTable(col("Symbol", "A", "B", "D", "D", "E", "E", "D"),
+                col("RightSentinel", 10, 11, 12, 13, 14, 15, 16));
         final Table cj8 = left8.naturalJoin(right8, "Symbol");
         TableTools.showWithRowSet(cj8);
         assertEquals(new int[] {10, 11, NULL_INT}, intColumn(cj8, "RightSentinel"));
 
         // inactive right hand side state, build using the right
         final Table left9 =
-                newTable(lC.make("Symbol", "A", "B", "C", "A", "B", "C"), c("LeftSentinel", 1, 2, 3, 4, 5, 6));
-        final Table right9 = newTable(c("Symbol", "A", "D", "D"), c("RightSentinel", 10, 11, 12));
+                newTable(lC.make("Symbol", "A", "B", "C", "A", "B", "C"), col("LeftSentinel", 1, 2, 3, 4, 5, 6));
+        final Table right9 = newTable(col("Symbol", "A", "D", "D"), col("RightSentinel", 10, 11, 12));
         final Table cj9 = left9.naturalJoin(right9, "Symbol");
         TableTools.showWithRowSet(cj9);
         assertEquals(new int[] {10, NULL_INT, NULL_INT, 10, NULL_INT, NULL_INT}, intColumn(cj9, "RightSentinel"));
@@ -508,8 +492,8 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
     public void testNaturalJoinDuplicateRights() {
         // build from right
-        final Table left = testTable(c("Symbol", "A", "B", "C", "D"), c("LeftSentinel", 1, 2, 3, 4));
-        final Table right = newTable(c("Symbol", "A", "A"), c("RightSentinel", 10, 11));
+        final Table left = testTable(col("Symbol", "A", "B", "C", "D"), col("LeftSentinel", 1, 2, 3, 4));
+        final Table right = newTable(col("Symbol", "A", "A"), col("RightSentinel", 10, 11));
         try {
             final Table cj = left.naturalJoin(right, "Symbol");
             TableTools.showWithRowSet(cj);
@@ -519,8 +503,8 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         }
 
         // build from left
-        final Table left2 = testTable(c("Symbol", "A", "B"), c("LeftSentinel", 1, 2));
-        final Table right2 = newTable(c("Symbol", "A", "A", "B", "C", "D"), c("RightSentinel", 10, 11, 12, 13, 14));
+        final Table left2 = testTable(col("Symbol", "A", "B"), col("LeftSentinel", 1, 2));
+        final Table right2 = newTable(col("Symbol", "A", "A", "B", "C", "D"), col("RightSentinel", 10, 11, 12, 13, 14));
         try {
             final Table cj2 = left2.naturalJoin(right2, "Symbol");
             TableTools.showWithRowSet(cj2);
@@ -544,10 +528,10 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         final DateTime dateTimeC = DateTimeUtils.convertDateTime("2022-05-06T09:32:00 NY");
         final DateTime dateTimeD = DateTimeUtils.convertDateTime("2022-05-06T09:33:00 NY");
         final QueryTable left = testTable(col("JK1", false, null, true), col("JK2", dateTimeA, dateTimeA, dateTimeA),
-                c("LeftSentinel", 1, 2, 3));
+                col("LeftSentinel", 1, 2, 3));
         left.setRefreshing(leftRefreshing);
         final QueryTable right =
-                testTable(col("JK1", true, true), col("JK2", dateTimeA, dateTimeA), c("RightSentinel", 10, 11));
+                testTable(col("JK1", true, true), col("JK2", dateTimeA, dateTimeA), col("RightSentinel", 10, 11));
         right.setRefreshing(rightRefreshing);
 
         try {
@@ -559,9 +543,9 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         }
 
         // build from left
-        final Table left2 = testTable(c("DT", dateTimeA, dateTimeB), c("LeftSentinel", 1, 2));
-        final Table right2 = newTable(c("DT", dateTimeA, dateTimeA, dateTimeB, dateTimeC, dateTimeD),
-                c("RightSentinel", 10, 11, 12, 13, 14));
+        final Table left2 = testTable(col("DT", dateTimeA, dateTimeB), col("LeftSentinel", 1, 2));
+        final Table right2 = newTable(col("DT", dateTimeA, dateTimeA, dateTimeB, dateTimeC, dateTimeD),
+                col("RightSentinel", 10, 11, 12, 13, 14));
         try {
             final Table cj2 = left2.naturalJoin(right2, "DT");
             TableTools.showWithRowSet(cj2);
@@ -599,8 +583,8 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         // initial case
         T a = makeKey.apply("A");
         T b = makeKey.apply("B");
-        final Table left = castSymbol(clazz, testTable(c("Symbol", a, b), c("LeftSentinel", 1, 2)));
-        final Table right = castSymbol(clazz, testRefreshingTable(c("Symbol", a, a), c("RightSentinel", 10, 11)));
+        final Table left = castSymbol(clazz, testTable(col("Symbol", a, b), col("LeftSentinel", 1, 2)));
+        final Table right = castSymbol(clazz, testRefreshingTable(col("Symbol", a, a), col("RightSentinel", 10, 11)));
 
         TableTools.showWithRowSet(right.getMeta());
         TableTools.showWithRowSet(right);
@@ -614,7 +598,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         }
 
         // bad right key added
-        final QueryTable right2 = testRefreshingTable(c("Symbol", a), c("RightSentinel", 10));
+        final QueryTable right2 = testRefreshingTable(col("Symbol", a), col("RightSentinel", 10));
         final Table cj2 = left.naturalJoin(castSymbol(clazz, right2), "Symbol");
         assertTableEquals(
                 castSymbol(clazz,
@@ -623,11 +607,11 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                 cj2);
 
         final ErrorListener listener = new ErrorListener(cj2);
-        cj2.listenForUpdates(listener);
+        cj2.addUpdateListener(listener);
 
         try (final ErrorExpectation ignored = new ErrorExpectation()) {
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-                TstUtils.addToTable(right2, i(3), c("Symbol", a), intCol("RightSentinel", 10));
+                TstUtils.addToTable(right2, i(3), col("Symbol", a), intCol("RightSentinel", 10));
                 right2.notifyListeners(i(3), i(), i());
             });
         }
@@ -645,8 +629,8 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         // build from right
         T a = makeKey.apply("A");
         T b = makeKey.apply("B");
-        final Table left = castSymbol(clazz, testRefreshingTable(c("Symbol", a, b), c("LeftSentinel", 1, 2)));
-        final Table right = castSymbol(clazz, testRefreshingTable(c("Symbol", a, a), c("RightSentinel", 10, 11)));
+        final Table left = castSymbol(clazz, testRefreshingTable(col("Symbol", a, b), col("LeftSentinel", 1, 2)));
+        final Table right = castSymbol(clazz, testRefreshingTable(col("Symbol", a, a), col("RightSentinel", 10, 11)));
 
         try {
             final Table cj = left.naturalJoin(right, "Symbol");
@@ -657,7 +641,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         }
 
         // bad right key added
-        final QueryTable right2 = testRefreshingTable(c("Symbol", a), c("RightSentinel", 10));
+        final QueryTable right2 = testRefreshingTable(col("Symbol", a), col("RightSentinel", 10));
         final Table cj2 = left.naturalJoin(castSymbol(clazz, right2), "Symbol");
         assertTableEquals(
                 castSymbol(clazz,
@@ -666,11 +650,11 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                 cj2);
 
         final ErrorListener listener = new ErrorListener(cj2);
-        cj2.listenForUpdates(listener);
+        cj2.addUpdateListener(listener);
 
         try (final ErrorExpectation ignored = new ErrorExpectation()) {
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-                TstUtils.addToTable(right2, i(3), c("Symbol", a), intCol("RightSentinel", 10));
+                TstUtils.addToTable(right2, i(3), col("Symbol", a), intCol("RightSentinel", 10));
                 right2.notifyListeners(i(3), i(), i());
             });
         }
@@ -681,8 +665,8 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
 
     public void testNaturalJoinReinterprets() {
-        final Table left = testTable(c("JBool", true, false, null, true), c("LeftSentinel", 1, 2, 3, 4));
-        final Table right = newTable(c("JBool", true, false, null), c("RightSentinel", 10, 11, 12));
+        final Table left = testTable(col("JBool", true, false, null, true), col("LeftSentinel", 1, 2, 3, 4));
+        final Table right = newTable(col("JBool", true, false, null), col("RightSentinel", 10, 11, 12));
         final Table cj = left.naturalJoin(right, "JBool");
         TableTools.showWithRowSet(cj);
         assertEquals(new int[] {10, 11, 12, 10}, intColumn(cj, "RightSentinel"));
@@ -690,25 +674,26 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         final DateTime time1 = DateTimeUtils.convertDateTime("2019-05-10T09:45:00 NY");
         final DateTime time2 = DateTimeUtils.convertDateTime("2019-05-10T21:45:00 NY");
 
-        final Table left2 = testTable(c("JDate", time1, time2, null, time2), c("LeftSentinel", 1, 2, 3, 4));
-        final Table right2 = newTable(c("JDate", time2, time1, null), c("RightSentinel", 10, 11, 12));
+        final Table left2 = testTable(col("JDate", time1, time2, null, time2), col("LeftSentinel", 1, 2, 3, 4));
+        final Table right2 = newTable(col("JDate", time2, time1, null), col("RightSentinel", 10, 11, 12));
         final Table cj2 = left2.naturalJoin(right2, "JDate");
         TableTools.showWithRowSet(cj2);
         assertEquals(new int[] {11, 10, 12, 10}, intColumn(cj2, "RightSentinel"));
     }
 
     public void testNaturalJoinFloats() {
-        final Table left = testTable(floatCol("JF", 1.0f, 2.0f, Float.NaN, 3.0f), c("LeftSentinel", 1, 2, 3, 4));
-        final Table right = newTable(floatCol("JF", Float.NaN, 1.0f, 2.0f), c("RightSentinel", 10, 11, 12));
+        final Table left = testTable(floatCol("JF", 1.0f, 2.0f, Float.NaN, 3.0f), col("LeftSentinel", 1, 2, 3, 4));
+        final Table right = newTable(floatCol("JF", Float.NaN, 1.0f, 2.0f), col("RightSentinel", 10, 11, 12));
         final Table cj = left.naturalJoin(right, "JF");
         TableTools.showWithRowSet(cj);
         assertEquals(new int[] {11, 12, 10, NULL_INT}, intColumn(cj, "RightSentinel"));
 
         final Table left2 =
                 testTable(doubleCol("JD", 10.0, 20.0, Double.NaN, io.deephaven.util.QueryConstants.NULL_DOUBLE),
-                        c("LeftSentinel", 1, 2, 3, 4));
+                        col("LeftSentinel", 1, 2, 3, 4));
         final Table right2 =
-                newTable(doubleCol("JD", QueryConstants.NULL_DOUBLE, Double.NaN, 10.0), c("RightSentinel", 10, 11, 12));
+                newTable(doubleCol("JD", QueryConstants.NULL_DOUBLE, Double.NaN, 10.0),
+                        col("RightSentinel", 10, 11, 12));
         final Table cj2 = left2.naturalJoin(right2, "JD");
         TableTools.showWithRowSet(cj2);
         assertEquals(new int[] {12, NULL_INT, 11, 10}, intColumn(cj2, "RightSentinel"));
@@ -832,8 +817,8 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
     }
 
     public void testNaturalJoin() {
-        final Table c0 = TstUtils.testRefreshingTable(c("USym0", "A", "B"), intCol("X", 1, 2));
-        final Table c1 = TstUtils.testRefreshingTable(c("USym1", "A", "D"), intCol("Y", 1, 2));
+        final Table c0 = TstUtils.testRefreshingTable(col("USym0", "A", "B"), intCol("X", 1, 2));
+        final Table c1 = TstUtils.testRefreshingTable(col("USym1", "A", "D"), intCol("Y", 1, 2));
 
         Table cj = c0.naturalJoin(c1, "USym0=USym1", "Y");
         cj.select();
@@ -843,10 +828,10 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
 
         final Table lTable = TstUtils.testRefreshingTable(
-                c("String", "a", "b", "c"),
+                col("String", "a", "b", "c"),
                 intCol("Int", 1, 2, 3));
         final Table rTable = TstUtils.testRefreshingTable(
-                c("String", "a", "b", "c"),
+                col("String", "a", "b", "c"),
                 intCol("Int", 10, 20, 30));
         final Table result = lTable.naturalJoin(rTable, "String", "Int2=Int");
         assertEquals(3, result.size());
@@ -860,9 +845,9 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
 
         Table table1 = TstUtils.testRefreshingTable(
-                c("String", "c", "e", "g"));
+                col("String", "c", "e", "g"));
 
-        Table table2 = TstUtils.testRefreshingTable(c("String", "c", "e"), c("v", 1, 2));
+        Table table2 = TstUtils.testRefreshingTable(col("String", "c", "e"), col("v", 1, 2));
         Table pairMatch = table1.naturalJoin(table2, "String", "v");
         assertEquals(3, pairMatch.size());
         assertEquals(2, pairMatch.numColumns());
@@ -875,7 +860,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
 
         table2 = TstUtils.testRefreshingTable(
-                c("String", "c", "e", "g"), c("v", 1, 2, 3));
+                col("String", "c", "e", "g"), col("v", 1, 2, 3));
 
         pairMatch = table1.naturalJoin(table2, "String", "v");
         assertEquals(3, pairMatch.size());
@@ -922,10 +907,10 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
 
         table1 = TstUtils.testRefreshingTable(
-                c("String1", "c", "e", "g"));
+                col("String1", "c", "e", "g"));
 
         table2 = TstUtils.testRefreshingTable(
-                c("String2", "c", "e", "g"), c("v", 1, 2, 3));
+                col("String2", "c", "e", "g"), col("v", 1, 2, 3));
 
 
         pairMatch = table1.naturalJoin(table2, "String1=String2", "String2,v");
@@ -959,8 +944,8 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
     }
 
     public void testNaturalJoinNull() {
-        final Table c0 = TstUtils.testRefreshingTable(c("USym0", "A", null), c("X", 1, 2));
-        final Table c1 = TstUtils.testRefreshingTable(c("USym1", "A", null), c("Y", 3, 4));
+        final Table c0 = TstUtils.testRefreshingTable(col("USym0", "A", null), col("X", 1, 2));
+        final Table c1 = TstUtils.testRefreshingTable(col("USym1", "A", null), col("Y", 3, 4));
 
         final Table cj = c0.naturalJoin(c1, "USym0=USym1", "Y");
 
@@ -975,8 +960,8 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
     public void testNaturalJoinInactive() {
         setExpectError(false);
 
-        final QueryTable c0 = TstUtils.testRefreshingTable(c("USym0", "A", "C"), c("X", 1, 2));
-        final QueryTable c1 = TstUtils.testRefreshingTable(c("USym1", "A", "B", "B"), c("Y", 3, 4, 5));
+        final QueryTable c0 = TstUtils.testRefreshingTable(col("USym0", "A", "C"), col("X", 1, 2));
+        final QueryTable c1 = TstUtils.testRefreshingTable(col("USym1", "A", "B", "B"), col("Y", 3, 4, 5));
 
         final Table cj = c0.naturalJoin(c1, "USym0=USym1", "Y");
 
@@ -1021,14 +1006,14 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
     public void testNaturalJoinLeftIncrementalRightStaticSimple() {
         final QueryTable leftQueryTable = TstUtils.testRefreshingTable(i(1, 2, 4, 6).toTracking(),
-                c("Sym", "aa", "bc", "aa", "aa"),
-                c("ByteCol", (byte) 10, (byte) 20, (byte) 30, (byte) 50),
-                c("DoubleCol", 0.1, 0.2, 0.3, 0.5));
+                col("Sym", "aa", "bc", "aa", "aa"),
+                col("ByteCol", (byte) 10, (byte) 20, (byte) 30, (byte) 50),
+                col("DoubleCol", 0.1, 0.2, 0.3, 0.5));
 
         final QueryTable rightQueryTable = TstUtils.testTable(i(3, 6).toTracking(),
-                c("RSym", "aa", "bc"),
-                c("ByteCol", (byte) 10, (byte) 20),
-                c("RDoubleCol", 1.1, 2.2));
+                col("RSym", "aa", "bc"),
+                col("ByteCol", (byte) 10, (byte) 20),
+                col("RDoubleCol", 1.1, 2.2));
         final EvalNugget[] en = new EvalNugget[] {
                 new EvalNugget() {
                     public Table e() {
@@ -1037,8 +1022,8 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                 }
         };
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            addToTable(leftQueryTable, i(3, 9), c("Sym", "aa", "aa"), c("ByteCol", (byte) 20, (byte) 10),
-                    c("DoubleCol", 2.1, 2.2));
+            addToTable(leftQueryTable, i(3, 9), col("Sym", "aa", "aa"), col("ByteCol", (byte) 20, (byte) 10),
+                    col("DoubleCol", 2.1, 2.2));
             System.out.println("Left Table Updated:");
             TableTools.showWithRowSet(leftQueryTable);
             leftQueryTable.notifyListeners(i(3, 9), i(), i());
@@ -1052,18 +1037,18 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
     public void testNaturalJoinIterative() {
         final QueryTable leftQueryTable = TstUtils.testRefreshingTable(i(1, 2, 4, 6).toTracking(),
-                c("Sym", "aa", "bc", "aa", "aa"),
-                c("intCol", 10, 20, 30, 50),
-                c("doubleCol", 0.1, 0.2, 0.3, 0.5));
+                col("Sym", "aa", "bc", "aa", "aa"),
+                col("intCol", 10, 20, 30, 50),
+                col("doubleCol", 0.1, 0.2, 0.3, 0.5));
 
         final QueryTable rightQueryTable1 = TstUtils.testRefreshingTable(i(3, 6).toTracking(),
-                c("Sym", "aa", "bc"),
-                c("xCol", 11, 22),
-                c("yCol", 1.1, 2.2));
+                col("Sym", "aa", "bc"),
+                col("xCol", 11, 22),
+                col("yCol", 1.1, 2.2));
         final QueryTable rightQueryTable2 = TstUtils.testRefreshingTable(i(10, 20, 30).toTracking(),
-                c("Sym", "aa", "bc", "aa"),
-                c("xCol", 11, 20, 20),
-                c("yCol", 1.1, 2.2, 5.5));
+                col("Sym", "aa", "bc", "aa"),
+                col("xCol", 11, 20, 20),
+                col("yCol", 1.1, 2.2, 5.5));
 
 
         final EvalNugget[] en = new EvalNugget[] {
@@ -1139,7 +1124,8 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         TableTools.showWithRowSet(rightQueryTable1);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            addToTable(leftQueryTable, i(3, 9), c("Sym", "aa", "aa"), c("intCol", 20, 10), c("doubleCol", 2.1, 2.2));
+            addToTable(leftQueryTable, i(3, 9), col("Sym", "aa", "aa"), col("intCol", 20, 10),
+                    col("doubleCol", 2.1, 2.2));
             System.out.println("Left Table Updated:");
             TableTools.showWithRowSet(leftQueryTable);
             leftQueryTable.notifyListeners(i(3, 9), i(), i());
@@ -1147,22 +1133,23 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         TstUtils.validate(en);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            addToTable(leftQueryTable, i(1, 9), c("Sym", "bc", "aa"), c("intCol", 30, 11), c("doubleCol", 2.1, 2.2));
+            addToTable(leftQueryTable, i(1, 9), col("Sym", "bc", "aa"), col("intCol", 30, 11),
+                    col("doubleCol", 2.1, 2.2));
             leftQueryTable.notifyListeners(i(), i(), i(1, 9));
         });
         TstUtils.validate(en);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            addToTable(rightQueryTable1, i(3, 4), c("Sym", "ab", "ac"), c("xCol", 55, 33), c("yCol", 6.6, 7.7));
+            addToTable(rightQueryTable1, i(3, 4), col("Sym", "ab", "ac"), col("xCol", 55, 33), col("yCol", 6.6, 7.7));
             rightQueryTable1.notifyListeners(i(4), i(), i(3));
         });
         TstUtils.validate(en);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             show(rightQueryTable2);
-            addToTable(rightQueryTable2, i(20, 40), c("Sym", "aa", "bc"),
-                    c("xCol", 30, 50),
-                    c("yCol", 1.3, 1.5));
+            addToTable(rightQueryTable2, i(20, 40), col("Sym", "aa", "bc"),
+                    col("xCol", 30, 50),
+                    col("yCol", 1.3, 1.5));
             show(rightQueryTable2);
             rightQueryTable2.notifyListeners(i(40), i(), i(20));
         });
@@ -1170,27 +1157,27 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            addToTable(rightQueryTable1, i(4, 6), c("Sym", "bc", "aa"), c("xCol", 66, 44), c("yCol", 7.6, 6.7));
+            addToTable(rightQueryTable1, i(4, 6), col("Sym", "bc", "aa"), col("xCol", 66, 44), col("yCol", 7.6, 6.7));
             rightQueryTable1.notifyListeners(i(), i(), i(4, 6));
         });
         TstUtils.validate(en);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            addToTable(rightQueryTable1, i(4, 6), c("Sym", "bc", "aa"), c("xCol", 66, 44), c("yCol", 7.7, 6.8));
+            addToTable(rightQueryTable1, i(4, 6), col("Sym", "bc", "aa"), col("xCol", 66, 44), col("yCol", 7.7, 6.8));
             rightQueryTable1.notifyListeners(i(), i(), i(4, 6));
         });
         TstUtils.validate(en);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            addToTable(rightQueryTable1, i(4, 31), c("Sym", "aq", "bc"), c("xCol", 66, 44), c("yCol", 7.5, 6.9));
+            addToTable(rightQueryTable1, i(4, 31), col("Sym", "aq", "bc"), col("xCol", 66, 44), col("yCol", 7.5, 6.9));
             rightQueryTable1.notifyListeners(i(31), i(), i(4));
         });
         TstUtils.validate(en);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            addToTable(rightQueryTable2, i(20, 30), c("Sym", "aa", "aa"),
-                    c("xCol", 20, 30),
-                    c("yCol", 3.1, 5.1));
+            addToTable(rightQueryTable2, i(20, 30), col("Sym", "aa", "aa"),
+                    col("xCol", 20, 30),
+                    col("yCol", 3.1, 5.1));
             rightQueryTable2.notifyListeners(i(), i(), i(20, 30));
         });
         TstUtils.validate(en);
@@ -1204,9 +1191,9 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            addToTable(rightQueryTable2, i(40), c("Sym", "bc"),
-                    c("xCol", 20),
-                    c("yCol", 3.2));
+            addToTable(rightQueryTable2, i(40), col("Sym", "bc"),
+                    col("xCol", 20),
+                    col("yCol", 3.2));
             TstUtils.removeRows(rightQueryTable2, i(20, 30));
             rightQueryTable2.notifyListeners(i(), i(20, 30), i(40));
         });
@@ -1224,7 +1211,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
     private void dumpComplete(QueryTable queryTable, String... columns) {
         final TrackingRowSet rowSet = queryTable.getRowSet();
 
-        final ColumnSource[] columnSources = new ColumnSource[columns.length];
+        final ColumnSource<?>[] columnSources = new ColumnSource[columns.length];
         for (int ii = 0; ii < columns.length; ++ii) {
             columnSources[ii] = queryTable.getColumnSourceMap().get(columns[ii]);
         }
@@ -1259,14 +1246,14 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
     public void testNaturalJoinIterative2() {
         final QueryTable leftQueryTable = TstUtils.testRefreshingTable(i(1, 2, 4, 6).toTracking(),
-                c("Sym", "aa", "bc", "aa", "aa"),
-                c("intCol", 10, 20, 30, 50),
-                c("doubleCol", 0.1, 0.2, 0.3, 0.5));
+                col("Sym", "aa", "bc", "aa", "aa"),
+                col("intCol", 10, 20, 30, 50),
+                col("doubleCol", 0.1, 0.2, 0.3, 0.5));
 
         final QueryTable rightQueryTable2 = TstUtils.testRefreshingTable(i(10, 20, 30).toTracking(),
-                c("Sym", "aa", "bc", "aa"),
-                c("xCol", 11, 20, 20),
-                c("yCol", 1.1, 2.2, 5.5));
+                col("Sym", "aa", "bc", "aa"),
+                col("xCol", 11, 20, 20),
+                col("yCol", 1.1, 2.2, 5.5));
 
 
         final EvalNugget[] en = new EvalNugget[] {
@@ -1282,39 +1269,41 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                 }
         };
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            addToTable(leftQueryTable, i(3, 9), c("Sym", "aa", "aa"), c("intCol", 20, 10), c("doubleCol", 2.1, 2.2));
+            addToTable(leftQueryTable, i(3, 9), col("Sym", "aa", "aa"), col("intCol", 20, 10),
+                    col("doubleCol", 2.1, 2.2));
             leftQueryTable.notifyListeners(i(3, 9), i(), i());
         });
         TstUtils.validate(en);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            addToTable(leftQueryTable, i(1, 9), c("Sym", "bc", "aa"), c("intCol", 30, 11), c("doubleCol", 2.1, 2.2));
+            addToTable(leftQueryTable, i(1, 9), col("Sym", "bc", "aa"), col("intCol", 30, 11),
+                    col("doubleCol", 2.1, 2.2));
             leftQueryTable.notifyListeners(i(), i(), i(1, 9));
         });
         TstUtils.validate(en);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             show(rightQueryTable2);
-            addToTable(rightQueryTable2, i(20, 40), c("Sym", "aa", "bc"),
-                    c("xCol", 30, 50),
-                    c("yCol", 1.3, 1.5));
+            addToTable(rightQueryTable2, i(20, 40), col("Sym", "aa", "bc"),
+                    col("xCol", 30, 50),
+                    col("yCol", 1.3, 1.5));
             show(rightQueryTable2);
             rightQueryTable2.notifyListeners(i(40), i(), i(20));
         });
         TstUtils.validate(en);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            addToTable(rightQueryTable2, i(20, 30), c("Sym", "aa", "aa"),
-                    c("xCol", 20, 30),
-                    c("yCol", 3.1, 5.1));
+            addToTable(rightQueryTable2, i(20, 30), col("Sym", "aa", "aa"),
+                    col("xCol", 20, 30),
+                    col("yCol", 3.1, 5.1));
             rightQueryTable2.notifyListeners(i(), i(), i(20, 30));
         });
         TstUtils.validate(en);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            addToTable(rightQueryTable2, i(40), c("Sym", "bc"),
-                    c("xCol", 20),
-                    c("yCol", 3.2));
+            addToTable(rightQueryTable2, i(40), col("Sym", "bc"),
+                    col("xCol", 20),
+                    col("yCol", 3.2));
             TstUtils.removeRows(rightQueryTable2, i(20));
             rightQueryTable2.notifyListeners(i(), i(20), i(40));
         });
@@ -1329,11 +1318,11 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
     public void testNaturalJoinSortedData() {
         final QueryTable leftTable = TstUtils.testRefreshingTable(
-                c("Sym", "a", "b", "c"),
-                c("Size", 1, 2, 3));
+                col("Sym", "a", "b", "c"),
+                col("Size", 1, 2, 3));
         final QueryTable rightTable = TstUtils.testRefreshingTable(
-                c("Sym", "a", "b", "c"),
-                c("Qty", 10, 20, 30));
+                col("Sym", "a", "b", "c"),
+                col("Qty", 10, 20, 30));
 
         final EvalNugget[] en = new EvalNugget[] {
                 new EvalNugget() {
@@ -1389,42 +1378,42 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(leftTable, i(0, 1, 2),
-                    c("Sym", "c", "a", "b"), c("Size", 1, 2, 3));
+                    col("Sym", "c", "a", "b"), col("Size", 1, 2, 3));
             leftTable.notifyListeners(i(), i(), i(0, 1, 2));
         });
         TstUtils.validate(en);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(rightTable, i(0, 1, 2),
-                    c("Sym", "b", "c", "a"), c("Qty", 10, 20, 30));
+                    col("Sym", "b", "c", "a"), col("Qty", 10, 20, 30));
             rightTable.notifyListeners(i(), i(), i(0, 1, 2));
         });
         TstUtils.validate(en);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(leftTable, i(0, 1, 2),
-                    c("Sym", "a", "b", "c"), c("Size", 3, 1, 2));
+                    col("Sym", "a", "b", "c"), col("Size", 3, 1, 2));
             leftTable.notifyListeners(i(), i(), i(0, 1, 2));
         });
         TstUtils.validate(en);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(rightTable, i(0, 1, 2),
-                    c("Sym", "a", "b", "c"), c("Qty", 30, 10, 20));
+                    col("Sym", "a", "b", "c"), col("Qty", 30, 10, 20));
             rightTable.notifyListeners(i(), i(), i(0, 1, 2));
         });
         TstUtils.validate(en);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(leftTable, i(3, 4),
-                    c("Sym", "d", "e"), c("Size", -1, 100));
+                    col("Sym", "d", "e"), col("Size", -1, 100));
             leftTable.notifyListeners(i(3, 4), i(), i());
         });
         TstUtils.validate(en);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(rightTable, i(3, 4),
-                    c("Sym", "e", "d"), c("Qty", -10, 50));
+                    col("Sym", "e", "d"), col("Qty", -10, 50));
             rightTable.notifyListeners(i(3, 4), i(), i());
         });
         TstUtils.validate(en);
@@ -1433,17 +1422,17 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
     public void testExactJoin() {
         Table table1 = testRefreshingTable(
-                c("String", "c", "e", "g"));
+                col("String", "c", "e", "g"));
 
         try {
-            table1.exactJoin(testRefreshingTable(c("String", "c", "e"), c("v", 1, 2)), "String");
+            table1.exactJoin(testRefreshingTable(col("String", "c", "e"), col("v", 1, 2)), "String");
             TestCase.fail("Previous statement should have thrown an exception");
         } catch (Exception e) {
             assertEquals("Tables don't have one-to-one mapping - no mappings for key g.", e.getMessage());
         }
 
 
-        Table table2 = testRefreshingTable(c("String", "c", "e", "g"), c("v", 1, 2, 3));
+        Table table2 = testRefreshingTable(col("String", "c", "e", "g"), col("v", 1, 2, 3));
 
         Table pairMatch = table1.exactJoin(table2, "String");
         assertEquals(3, pairMatch.size());
@@ -1489,9 +1478,9 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertEquals(3, pairMatch.getColumn("v").getInt(2));
 
 
-        table1 = testRefreshingTable(c("String1", "c", "e", "g"));
+        table1 = testRefreshingTable(col("String1", "c", "e", "g"));
 
-        table2 = testRefreshingTable(c("String2", "c", "e", "g"), c("v", 1, 2, 3));
+        table2 = testRefreshingTable(col("String2", "c", "e", "g"), col("v", 1, 2, 3));
 
         pairMatch = table1.exactJoin(table2, "String1=String2");
         assertEquals(3, pairMatch.size());
@@ -1532,6 +1521,84 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         });
     }
 
+    /** Test #1 for DHC issue #3202 */
+    public void testDHC3202_v1() {
+        // flood the hashtable with large updates
+        final Random random = new Random(0x31313131);
+
+        final ColumnInfo<?, ?>[] leftColumnInfo;
+        final QueryTable leftTable = getTable(true, 0, random,
+                leftColumnInfo = initColumnInfos(new String[] {"idx", "LeftValue"},
+                        new UniqueIntGenerator(0, 100_000_000),
+                        new IntGenerator(10_000_000, 10_010_000)));
+
+        final ColumnInfo<?, ?>[] rightColumnInfo;
+        final QueryTable rightTable = getTable(true, 0, random,
+                rightColumnInfo = initColumnInfos(new String[] {"idx", "RightValue"},
+                        new UniqueIntGenerator(0, 100_000_000),
+                        new IntGenerator(20_000_000, 20_010_000)));
+
+        // noinspection unused
+        final Table joinTable = leftTable.naturalJoin(rightTable, "idx=idx", "RightValue");
+
+        for (int ii = 0; ii < 10; ii++) {
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(
+                    () -> {
+                        generateAppends(10_000, random, leftTable, leftColumnInfo);
+                        generateAppends(10_000, random, rightTable, rightColumnInfo);
+                    });
+        }
+    }
+
+    /** Test #1 for DHC issue #3202 */
+    public void testDHC3202_v2() {
+        // flood the hashtable with large updates
+        final Random random = new Random(0x31313131);
+
+        final ColumnInfo<?, ?>[] leftColumnInfo;
+        final QueryTable leftTable = getTable(true, 0, random,
+                leftColumnInfo = initColumnInfos(new String[] {"idx", "LeftValue"},
+                        new UniqueIntGenerator(0, 100_000_000),
+                        new IntGenerator(10_000_000, 10_010_000)));
+
+        final ColumnInfo<?, ?>[] rightColumnInfo;
+        final QueryTable rightTable = getTable(true, 0, random,
+                rightColumnInfo = initColumnInfos(new String[] {"idx", "RightValue"},
+                        new UniqueIntGenerator(0, 100_000_000),
+                        new IntGenerator(20_000_000, 20_010_000)));
+
+        // noinspection unused
+        final Table joinTable = leftTable.naturalJoin(rightTable, "idx=idx", "RightValue");
+
+        for (int ii = 0; ii < 10; ii++) {
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(
+                    () -> {
+                        generateAppends(100_000, random, leftTable, leftColumnInfo);
+                        generateAppends(100_000, random, rightTable, rightColumnInfo);
+                    });
+        }
+    }
+
+    public void testGetDirectAfterNaturalJoin() {
+        final Table sodiumLeft = emptyTable(3).updateView("Value=(i%5==0? null : i*2)", "ColLeft=`LeftOnlyContents`");
+        final Table peppermintRight =
+                emptyTable(4).updateView("Value=(i%5==0? null : i)", "ColRight=`RightOnlyContents`");
+        final Table vanillaVanilla = sodiumLeft.naturalJoin(peppermintRight, "Value");
+        final String rightValue = "RightOnlyContents";
+
+        final ColumnSource<?> colRightSource = vanillaVanilla.getColumnSource("ColRight");
+        try (final ChunkSource.GetContext gc = colRightSource.makeGetContext(3)) {
+            final ObjectChunk<String, ?> ck = colRightSource.getChunk(gc, vanillaVanilla.getRowSet()).asObjectChunk();
+            assertEquals(rightValue, ck.get(0));
+            assertEquals(rightValue, ck.get(1));
+            assertNull(ck.get(2));
+        }
+        final DataColumn<?> colRight = vanillaVanilla.getColumn("ColRight");
+        assertEquals(rightValue, colRight.get(0));
+        assertEquals(rightValue, colRight.get(1));
+        assertNull(colRight.get(2));
+    }
+
     private void diskBackedTestHarness(BiConsumer<Table, Table> testFunction) throws IOException {
         final File leftDirectory = Files.createTempDirectory("QueryTableJoinTest-Left").toFile();
         final File rightDirectory = Files.createTempDirectory("QueryTableJoinTest-Right").toFile();
@@ -1551,7 +1618,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
     }
 
     @NotNull
-    private Table makeLeftDiskTable(File leftLocation) throws IOException {
+    private Table makeLeftDiskTable(File leftLocation) {
         final TableDefinition leftDefinition = TableDefinition.of(
                 ColumnDefinition.ofString("Symbol"),
                 ColumnDefinition.ofInt("LeftSentinel"));
@@ -1563,7 +1630,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
     }
 
     @NotNull
-    private Table makeRightDiskTable(File rightLocation) throws IOException {
+    private Table makeRightDiskTable(File rightLocation) {
         final TableDefinition rightDefinition = TableDefinition.of(
                 ColumnDefinition.ofString("Symbol"),
                 ColumnDefinition.ofInt("RightSentinel"));

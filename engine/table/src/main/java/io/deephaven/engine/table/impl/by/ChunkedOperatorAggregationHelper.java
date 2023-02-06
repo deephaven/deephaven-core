@@ -3,6 +3,9 @@
  */
 package io.deephaven.engine.table.impl.by;
 
+import gnu.trove.impl.Constants;
+import gnu.trove.map.TObjectIntMap;
+import gnu.trove.map.hash.TObjectIntHashMap;
 import io.deephaven.api.ColumnName;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
@@ -11,7 +14,6 @@ import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.rowset.*;
@@ -47,10 +49,10 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
-import java.util.function.Consumer;
-import java.util.function.LongFunction;
-import java.util.function.Supplier;
-import java.util.function.UnaryOperator;
+import java.util.function.*;
+
+import static io.deephaven.engine.table.impl.by.AggregationRowLookup.EMPTY_KEY;
+import static io.deephaven.engine.table.impl.by.AggregationRowLookup.DEFAULT_UNKNOWN_ROW;
 
 @SuppressWarnings("rawtypes")
 public class ChunkedOperatorAggregationHelper {
@@ -219,7 +221,7 @@ public class ChunkedOperatorAggregationHelper {
 
         // Construct the result table
         final QueryTable result = new QueryTable(resultRowSet, resultColumnSourceMap);
-        ac.propagateInitialStateToOperators(result);
+        ac.propagateInitialStateToOperators(result, outputPosition.intValue());
 
         if (input.isRefreshing()) {
             assert keyColumnsCopied != null;
@@ -280,13 +282,6 @@ public class ChunkedOperatorAggregationHelper {
                     };
 
             swapListener.setListenerAndResult(listener, result);
-            result.addParentReference(swapListener);
-            // In general, result listeners depend on the swap listener for continued liveness, but most
-            // operations handle this by having the result table depend on both (in both a reachability sense
-            // and a liveness sense). That said, it is arguably very natural for the result listener to manage
-            // the swap listener. We do so in this case because partitionBy requires it in order for the
-            // sub-tables to continue ticking if the result Table and TableMap are released.
-            listener.manage(swapListener);
         }
 
         return ac.transformResult(result);
@@ -323,7 +318,7 @@ public class ChunkedOperatorAggregationHelper {
                         control.getTargetLoadFactor());
             }
         }
-        setReverseLookupFunction(keySources, ac, stateManager);
+        ac.supplyRowLookup(() -> stateManager::findPositionForKey);
         return stateManager;
     }
 
@@ -337,47 +332,6 @@ public class ChunkedOperatorAggregationHelper {
         }
         return new TableUpdateImpl(upstream.added(), RowSetFactory.empty(), upstream.modified(), upstream.shifted(),
                 upstream.modifiedColumnSet());
-    }
-
-    private static void setReverseLookupFunction(ColumnSource<?>[] keySources, AggregationContext ac,
-            OperatorAggregationStateManager stateManager) {
-        if (keySources.length == 1) {
-            if (keySources[0].getType() == DateTime.class) {
-                ac.setReverseLookupFunction(key -> stateManager
-                        .findPositionForKey(key == null ? null : DateTimeUtils.nanos((DateTime) key)));
-            } else if (keySources[0].getType() == Boolean.class) {
-                ac.setReverseLookupFunction(
-                        key -> stateManager.findPositionForKey(BooleanUtils.booleanAsByte((Boolean) key)));
-            } else {
-                ac.setReverseLookupFunction(stateManager::findPositionForKey);
-            }
-        } else {
-            final List<Consumer<Object[]>> transformers = new ArrayList<>();
-            for (int ii = 0; ii < keySources.length; ++ii) {
-                if (keySources[ii].getType() == DateTime.class) {
-                    final int fii = ii;
-                    transformers.add(reinterpreted -> reinterpreted[fii] =
-                            reinterpreted[fii] == null ? null : DateTimeUtils.nanos((DateTime) reinterpreted[fii]));
-                } else if (keySources[ii].getType() == Boolean.class) {
-                    final int fii = ii;
-                    transformers.add(reinterpreted -> reinterpreted[fii] =
-                            reinterpreted[fii] == null ? null
-                                    : BooleanUtils.booleanAsByte((Boolean) reinterpreted[fii]));
-                }
-            }
-            if (transformers.isEmpty()) {
-                ac.setReverseLookupFunction(sk -> stateManager.findPositionForKey(((SmartKey) sk).values_));
-            } else {
-                ac.setReverseLookupFunction(key -> {
-                    final SmartKey smartKey = (SmartKey) key;
-                    final Object[] reinterpreted = Arrays.copyOf(smartKey.values_, smartKey.values_.length);
-                    for (final Consumer<Object[]> transform : transformers) {
-                        transform.accept(reinterpreted);
-                    }
-                    return stateManager.findPositionForKey(reinterpreted);
-                });
-            }
-        }
     }
 
     private static class KeyedUpdateContext implements SafeCloseable {
@@ -562,8 +516,8 @@ public class ChunkedOperatorAggregationHelper {
                 @NotNull final WritableColumnSource<?>[] keyColumnsCopied,
                 @NotNull final ModifiedColumnSet resultModifiedColumnSet,
                 @NotNull final UnaryOperator<ModifiedColumnSet>[] resultModifiedColumnSetFactories) {
-            final int previousLastState = outputPosition.intValue();
-            ac.resetOperatorsForStep(upstream);
+            final int firstStateToAdd = outputPosition.intValue();
+            ac.resetOperatorsForStep(upstream, firstStateToAdd);
 
             if (upstream.removed().isNonempty()) {
                 doRemoves(upstream.removed());
@@ -660,7 +614,7 @@ public class ChunkedOperatorAggregationHelper {
             final TableUpdateImpl downstream = new TableUpdateImpl();
             downstream.shifted = RowSetShiftData.EMPTY;
 
-            try (final RowSet newStates = makeNewStatesRowSet(previousLastState, outputPosition.intValue() - 1)) {
+            try (final RowSet newStates = makeNewStatesRowSet(firstStateToAdd, outputPosition.intValue() - 1)) {
                 downstream.added = reincarnatedStatesBuilder.build();
                 downstream.removed = emptiedStatesBuilder.build();
 
@@ -1593,10 +1547,15 @@ public class ChunkedOperatorAggregationHelper {
 
         final QueryTable result = new QueryTable(RowSetFactory.flat(responsiveGroups).toTracking(),
                 resultColumnSourceMap);
-        ac.propagateInitialStateToOperators(result);
+        ac.propagateInitialStateToOperators(result, responsiveGroups);
 
-        final ReverseLookupListener rll = ReverseLookupListener.makeReverseLookupListenerWithSnapshot(result, keyName);
-        ac.setReverseLookupFunction(k -> (int) rll.get(k));
+        ac.supplyRowLookup(() -> {
+            final TObjectIntMap<Object> keyToSlot = new TObjectIntHashMap<>(
+                    responsiveGroups, Constants.DEFAULT_LOAD_FACTOR, DEFAULT_UNKNOWN_ROW);
+            final MutableInt slotNumber = new MutableInt(0);
+            grouping.keySet().forEach(k -> keyToSlot.put(k, slotNumber.getAndIncrement()));
+            return keyToSlot::get;
+        });
 
         return ac.transformResult(result);
     }
@@ -1957,7 +1916,8 @@ public class ChunkedOperatorAggregationHelper {
 
         final QueryTable result = new QueryTable(RowSetFactory.flat(initialResultSize).toTracking(),
                 resultColumnSourceMap);
-        ac.propagateInitialStateToOperators(result);
+        // always will create one result for zerokey
+        ac.propagateInitialStateToOperators(result, 1);
 
         if (table.isRefreshing()) {
             ac.startTrackingPrevValues();
@@ -1983,7 +1943,7 @@ public class ChunkedOperatorAggregationHelper {
                         }
 
                         private void processNoKeyUpdate(@NotNull final TableUpdate upstream) {
-                            ac.resetOperatorsForStep(upstream);
+                            ac.resetOperatorsForStep(upstream, 1);
 
                             final ModifiedColumnSet upstreamModifiedColumnSet =
                                     upstream.modified().isEmpty() ? ModifiedColumnSet.EMPTY
@@ -2119,11 +2079,9 @@ public class ChunkedOperatorAggregationHelper {
                         }
                     };
             swapListener.setListenerAndResult(listener, result);
-            result.addParentReference(swapListener);
-            listener.manage(swapListener); // See note on keyed version
         }
 
-        ac.setReverseLookupFunction(key -> SmartKey.EMPTY.equals(key) ? 0 : -1);
+        ac.supplyRowLookup(() -> key -> Arrays.equals((Object[]) key, EMPTY_KEY) ? 0 : DEFAULT_UNKNOWN_ROW);
 
         return ac.transformResult(result);
     }
@@ -2397,92 +2355,5 @@ public class ChunkedOperatorAggregationHelper {
         }
     }
 
-    /**
-     * The output RowSet of an aggregation is fairly special. It is always from zero to the number of output rows, and
-     * while modifying states we randomly add rows to it, potentially touching the same state many times. The normal
-     * index random builder does not guarantee those values are de-duplicated and requires O(lg n) operations for each
-     * insertion and building the RowSet.
-     *
-     * This version is O(1) for updating a modified slot, then linear in the number of output positions (not the number
-     * of result values) to build the RowSet. The memory usage is 1 bit per output position, vs. the standard builder is
-     * 128 bits per used value (though with the possibility of collapsing adjacent ranges when they are modified
-     * back-to-back). For random access patterns, this version will be more efficient; for friendly patterns the default
-     * random builder is likely more efficient.
-     *
-     * We also know that we will only modify the rows that existed when we start, so that we can clamp the maximum key
-     * for the builder to the maximum output position without loss of fidelity.
-     */
-    private static class BitmapRandomBuilder implements RowSetBuilderRandom {
-
-        /**
-         * An upper bound on {@code lastUsed}. That is, the highest bit index that may be used in {@code bitset}.
-         */
-        final int maxKey;
-
-        /**
-         * The lowest set bit index in {@code bitset}.
-         */
-        int firstUsed = Integer.MAX_VALUE;
-
-        /**
-         * The highest set bit index in {@code bitset}.
-         */
-        int lastUsed = -1;
-
-        /**
-         * The bitset itself.
-         */
-        long[] bitset;
-
-        private BitmapRandomBuilder(int maxKey) {
-            this.maxKey = maxKey;
-        }
-
-        private static int rowKeyToArrayIndex(long rowKey) {
-            return (int) (rowKey / 64);
-        }
-
-        @Override
-        public WritableRowSet build() {
-            final RowSetBuilderSequential seqBuilder = RowSetFactory.builderSequential();
-            for (int ii = firstUsed; ii <= lastUsed; ++ii) {
-                long word = bitset[ii];
-                long rowKey = ii * 64L;
-
-                while (word != 0) {
-                    if ((word & 1) != 0) {
-                        seqBuilder.appendKey(rowKey);
-                    }
-                    rowKey++;
-                    word >>>= 1;
-                }
-            }
-            return seqBuilder.build();
-        }
-
-        @Override
-        public void addKey(final long rowKey) {
-            if (rowKey >= maxKey) {
-                return;
-            }
-            int index = rowKeyToArrayIndex(rowKey);
-            if (bitset == null) {
-                final int maxSize = (maxKey + 63) / 64;
-                bitset = new long[Math.min(maxSize, (index + 1) * 2)];
-            } else if (index >= bitset.length) {
-                final int maxSize = (maxKey + 63) / 64;
-                bitset = Arrays.copyOf(bitset, Math.min(maxSize, Math.max(bitset.length * 2, index + 1)));
-            }
-            bitset[index] |= 1L << rowKey;
-            firstUsed = Math.min(index, firstUsed);
-            lastUsed = Math.max(index, lastUsed);
-        }
-
-        @Override
-        public void addRange(final long firstRowKey, final long lastRowKey) {
-            // This class is used only with aggregation state managers, which never call addRange.
-            throw new UnsupportedOperationException();
-        }
-    }
 }
 

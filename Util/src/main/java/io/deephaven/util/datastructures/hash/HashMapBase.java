@@ -283,8 +283,8 @@ public abstract class HashMapBase implements TNullableLongLongMap {
     /*
      * The strategy used in this class is to keep track of: - The current position (which could be any valid position as
      * well as one before the start) - The next position (which could be any valid position as well as one after the
-     * end). Java iterator semantics makes this annoying. Because it's Java!™ We also have to make sure we un-redirect
-     * the REDIRECTED_KEY_FOR_EMPTY_SLOT back to 0.
+     * end). Java iterator semantics makes this annoying. Because it's Java!&trade; We also have to make sure we
+     * un-redirect the REDIRECTED_KEY_FOR_EMPTY_SLOT back to 0.
      */
     private static class Iterator implements TLongLongIterator {
         // We keep a local reference to this array so we can avoid crashing if there's an unprotected concurrent write
@@ -460,5 +460,37 @@ public abstract class HashMapBase implements TNullableLongLongMap {
     @Override
     public TLongCollection valueCollection() {
         return null;
+    }
+
+    /**
+     * Computes Stafford variant 13 of 64bit mix function.
+     *
+     * <p>
+     * See David Stafford's <a href="http://zimbry.blogspot.com/2011/09/better-bit-mixing-improving-on.html">Mix13
+     * variant</a> / java.util.SplittableRandom#mix64(long).
+     */
+    static long mix64(long key) {
+        key ^= (key >>> 30);
+        key *= 0xbf58476d1ce4e5b9L;
+        key ^= (key >>> 27);
+        key *= 0x94d049bb133111ebL;
+        key ^= (key >>> 31);
+        return key;
+    }
+
+    /**
+     * This poorly distributed hash function has been intentionally left with the acknowledgement that some sequentially
+     * indexed key cases may benefit from the cacheability of the poor distribution. If we find common use cases in the
+     * future where this poor first hash causes more problems than it solves, we can update it to a better distributed
+     * hash function.
+     */
+    static int probe1(long key, int range) {
+        final long badHash = (key ^ (key >>> 32));
+        return (int) ((badHash & 0x7fffffffffffffffL) % range);
+    }
+
+    static int probe2(long key, int range) {
+        final long mixHash = mix64(key);
+        return (int) ((mixHash & 0x7fffffffffffffffL) % range);
     }
 }

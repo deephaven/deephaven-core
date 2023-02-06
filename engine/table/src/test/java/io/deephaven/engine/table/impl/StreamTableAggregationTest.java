@@ -10,16 +10,18 @@ import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.SortedBy;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
 import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.qst.table.EmptyTable;
-import io.deephaven.test.junit4.EngineCleanup;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import junit.framework.ComparisonFailure;
 import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -41,10 +43,15 @@ public class StreamTableAggregationTest {
     @Rule
     public final EngineCleanup base = new EngineCleanup();
 
-    private final Table source = TableCreatorImpl.create(EmptyTable.of(INPUT_SIZE)
-            .update("Sym = Long.toString(ii % 1000) + `_Sym`")
-            .update("Price = ii / 100 - (ii % 100)")
-            .update("Size = (long) (ii / 50 - (ii % 50))"));
+    private Table source;
+
+    @Before
+    public void setUp() {
+        source = TableCreatorImpl.create(EmptyTable.of(INPUT_SIZE)
+                .update("Sym = Long.toString(ii % 1000) + `_Sym`")
+                .update("Price = ii / 100 - (ii % 100)")
+                .update("Size = (long) (ii / 50 - (ii % 50))"));
+    }
 
     /**
      * Execute a table operator ending in an aggregation.
@@ -73,7 +80,7 @@ public class StreamTableAggregationTest {
                     new WrappedRowSetWritableRowRedirection(streamInternalRowSet);
             streamSources = source.getColumnSourceMap().entrySet().stream().collect(Collectors.toMap(
                     Map.Entry::getKey,
-                    (entry -> new RedirectedColumnSource<>(streamRedirections, entry.getValue())),
+                    (entry -> RedirectedColumnSource.maybeRedirect(streamRedirections, entry.getValue())),
                     Assert::neverInvoked,
                     LinkedHashMap::new));
         }

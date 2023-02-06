@@ -62,6 +62,32 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         return defaultMaximumDictionaryKeys;
     }
 
+    private static final int MIN_DEFAULT_PAGE_SIZE = 64 << 10;
+    private static volatile int defaultTargetPageSize = 1 << 20;
+
+    /**
+     * Set the default target page size (in bytes) used to section rows of data into pages during column writing. This
+     * number should be no smaller than {@value #MIN_DEFAULT_PAGE_SIZE}.
+     *
+     * @param newDefaultSizeBytes the new default target page size.
+     */
+    public static void setDefaultTargetPageSize(final int newDefaultSizeBytes) {
+        if (newDefaultSizeBytes < MIN_DEFAULT_PAGE_SIZE) {
+            throw new IllegalArgumentException(
+                    "Default target page size should be larger than " + MIN_DEFAULT_PAGE_SIZE + " bytes");
+        }
+        defaultTargetPageSize = newDefaultSizeBytes;
+    }
+
+    /**
+     * Get the current default target page size in bytes.
+     * 
+     * @return the current default target page size in bytes.
+     */
+    public static int getDefaultTargetPageSize() {
+        return defaultTargetPageSize;
+    }
+
     public ParquetInstructions() {}
 
     public final String getColumnNameFromParquetColumnNameOrDefault(final String parquetColumnName) {
@@ -95,6 +121,8 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
     public abstract int getMaximumDictionaryKeys();
 
     public abstract boolean isLegacyParquet();
+
+    public abstract int getTargetPageSize();
 
     @VisibleForTesting
     public static boolean sameColumnNamesAndCodecMappings(final ParquetInstructions i1, final ParquetInstructions i2) {
@@ -149,6 +177,11 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         @Override
         public boolean isLegacyParquet() {
             return false;
+        }
+
+        @Override
+        public int getTargetPageSize() {
+            return defaultTargetPageSize;
         }
     };
 
@@ -215,17 +248,21 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         private int maximumDictionaryKeys;
         private final boolean isLegacyParquet;
 
-        protected ReadOnly(
+        private final int targetPageSize;
+
+        private ReadOnly(
                 final KeyedObjectHashMap<String, ColumnInstructions> columnNameToInstructions,
                 final KeyedObjectHashMap<String, ColumnInstructions> parquetColumnNameToColumnName,
                 final String compressionCodecName,
                 final int maximumDictionaryKeys,
-                final boolean isLegacyParquet) {
+                final boolean isLegacyParquet,
+                final int targetPageSize) {
             this.columnNameToInstructions = columnNameToInstructions;
             this.parquetColumnNameToInstructions = parquetColumnNameToColumnName;
             this.compressionCodecName = compressionCodecName;
             this.maximumDictionaryKeys = maximumDictionaryKeys;
             this.isLegacyParquet = isLegacyParquet;
+            this.targetPageSize = targetPageSize;
         }
 
         private String getOrDefault(final String columnName, final String defaultValue,
@@ -299,6 +336,11 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             return isLegacyParquet;
         }
 
+        @Override
+        public int getTargetPageSize() {
+            return targetPageSize;
+        }
+
         KeyedObjectHashMap<String, ColumnInstructions> copyColumnNameToInstructions() {
             // noinspection unchecked
             return (columnNameToInstructions == null)
@@ -346,6 +388,8 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         private String compressionCodecName = defaultCompressionCodecName;
         private int maximumDictionaryKeys = defaultMaximumDictionaryKeys;
         private boolean isLegacyParquet;
+
+        private int targetPageSize = defaultTargetPageSize;
 
         public Builder() {}
 
@@ -492,6 +536,14 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             return this;
         }
 
+        public Builder setTargetPageSize(final int targetPageSize) {
+            if (targetPageSize < MIN_DEFAULT_PAGE_SIZE) {
+                throw new IllegalArgumentException("Target page size should be >= " + MIN_DEFAULT_PAGE_SIZE);
+            }
+            this.targetPageSize = targetPageSize;
+            return this;
+        }
+
         public ParquetInstructions build() {
             final KeyedObjectHashMap<String, ColumnInstructions> columnNameToInstructionsOut = columnNameToInstructions;
             columnNameToInstructions = null;
@@ -499,7 +551,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
                     parquetColumnNameToInstructions;
             parquetColumnNameToInstructions = null;
             return new ReadOnly(columnNameToInstructionsOut, parquetColumnNameToColumnNameOut, compressionCodecName,
-                    maximumDictionaryKeys, isLegacyParquet);
+                    maximumDictionaryKeys, isLegacyParquet, targetPageSize);
         }
     }
 

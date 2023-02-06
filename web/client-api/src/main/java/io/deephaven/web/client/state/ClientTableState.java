@@ -12,7 +12,7 @@ import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.schema_gene
 import io.deephaven.javascript.proto.dhinternal.browserheaders.BrowserHeaders;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExportedTableCreationResponse;
 import io.deephaven.web.client.api.*;
-import io.deephaven.web.client.api.barrage.BarrageUtils;
+import io.deephaven.web.client.api.barrage.WebBarrageUtils;
 import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
 import io.deephaven.web.client.api.barrage.def.InitialTableDefinition;
 import io.deephaven.web.client.api.barrage.def.TableAttributesDefinition;
@@ -33,11 +33,11 @@ import java.util.function.Function;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
-import static io.deephaven.web.client.api.barrage.BarrageUtils.keyValuePairs;
+import static io.deephaven.web.client.api.barrage.WebBarrageUtils.keyValuePairs;
 import static io.deephaven.web.client.fu.JsItr.iterate;
 
 /**
- * Container for state information pertaining to a given {@link TableHandle}.
+ * Container for state information pertaining to a given {@link TableTicket}.
  *
  * Where JsTable is a mutable object which can point to any given ClientTableState, each ClientTableState represents an
  * immutable table configuration / handle which can have zero or more JsTable objects bound to it.
@@ -357,7 +357,7 @@ public final class ClientTableState extends TableConfig {
         JsConsumer<JsTable> doSetSize = table -> {
             long localSize = size;
             final ActiveTableBinding binding = getActiveBinding(table);
-            if (binding != null && table.isStreamTable()) {
+            if (binding != null && table.isStreamTable() && binding.getRows() != null) {
                 localSize = Math.min(size, binding.getRows().size());
             }
             table.setSize(localSize);
@@ -394,39 +394,27 @@ public final class ClientTableState extends TableConfig {
             ColumnDefinition[] columnDefinitions = tableDef.getColumns();
 
             // iterate through the columns, combine format columns into the normal model
-            Map<String, ColumnDefinition> byNameMap = Arrays.stream(columnDefinitions)
-                    .collect(columnCollector(false));
-            Column[] columns1 = new Column[0];
+            Map<Boolean, Map<String, ColumnDefinition>> byNameMap = tableDef.getColumnsByName();
+            assert byNameMap.get(true).isEmpty() : "Unexpected constituent columns in table " + byNameMap.get(true);
+            Column[] columns = new Column[0];
             allColumns = new Column[0];
             for (ColumnDefinition definition : columnDefinitions) {
+                Column column = definition.makeJsColumn(columns.length, byNameMap);
                 if (definition.isForRow()) {
                     // special case for the row format column
-                    setRowFormatColumn(makeColumn(-1, definition, null, null, false, null, null, false));
+                    setRowFormatColumn(column);
                     continue;
                 }
-                String name = definition.getName();
-
-                ColumnDefinition format = byNameMap.get(definition.getFormatColumnName());
-                ColumnDefinition style = byNameMap.get(definition.getStyleColumnName());
-
-                boolean isPartitionColumn = definition.isPartitionColumn();
 
                 // note the use of columns.length as jsIndex is accurate for visible columns
-                allColumns[allColumns.length] = makeColumn(columns1.length,
-                        definition,
-                        format == null || !format.isNumberFormatColumn() ? null : format.getColumnIndex(),
-                        style == null ? null : style.getColumnIndex(),
-                        isPartitionColumn,
-                        format == null || format.isNumberFormatColumn() ? null : format.getColumnIndex(),
-                        definition.getDescription(),
-                        definition.isInputTableKeyColumn());
+                allColumns[allColumns.length] = column;
 
                 if (definition.isVisible()) {
-                    columns1[columns1.length] = allColumns[allColumns.length - 1];
+                    columns[columns.length] = allColumns[allColumns.length - 1];
                 }
             }
 
-            this.columns = JsObject.freeze(columns1);
+            this.columns = JsObject.freeze(columns);
             this.columnLookup = resetLookup();
         }
     }
@@ -449,26 +437,6 @@ public final class ClientTableState extends TableConfig {
         } else {
             totalsTableConfig = JsTotalsTableConfig.parse(configString);
         }
-    }
-
-    private static Column makeColumn(int jsIndex, ColumnDefinition definition, Integer numberFormatIndex,
-            Integer styleIndex, boolean isPartitionColumn, Integer formatStringIndex, String description,
-            boolean inputTableKeyColumn) {
-        return new Column(jsIndex, definition.getColumnIndex(), numberFormatIndex, styleIndex, definition.getType(),
-                definition.getName(), isPartitionColumn, formatStringIndex, description, inputTableKeyColumn);
-    }
-
-    private static Collector<? super ColumnDefinition, ?, Map<String, ColumnDefinition>> columnCollector(
-            boolean ordered) {
-        return Collectors.toMap(ColumnDefinition::getName, Function.identity(), assertNoDupes(),
-                ordered ? LinkedHashMap::new : HashMap::new);
-    }
-
-    private static <T> BinaryOperator<T> assertNoDupes() {
-        return (u, v) -> {
-            assert u == v : "Duplicates found for " + u + " and " + v;
-            return u;
-        };
     }
 
     public Column getRowFormatColumn() {
@@ -1040,18 +1008,9 @@ public final class ClientTableState extends TableConfig {
         handle.setConnected(true);
 
         Uint8Array flightSchemaMessage = def.getSchemaHeader_asU8();
-        Schema schema = BarrageUtils.readSchemaMessage(flightSchemaMessage);
+        Schema schema = WebBarrageUtils.readSchemaMessage(flightSchemaMessage);
 
-        ColumnDefinition[] cols = BarrageUtils.readColumnDefinitions(schema);
-
-        TableAttributesDefinition attributes = new TableAttributesDefinition(
-                keyValuePairs("deephaven:attribute.", schema.customMetadataLength(), schema::customMetadata),
-                keyValuePairs("deephaven:attribute_type.", schema.customMetadataLength(), schema::customMetadata),
-                keyValuePairs("deephaven:unsent.attribute.", schema.customMetadataLength(), schema::customMetadata)
-                        .keySet());
-        setTableDef(new InitialTableDefinition()
-                .setAttributes(attributes)
-                .setColumns(cols));
+        setTableDef(WebBarrageUtils.readTableDefinition(schema));
 
         setResolution(ResolutionState.RUNNING);
         setSize(Long.parseLong(def.getSize()));

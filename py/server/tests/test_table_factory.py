@@ -8,7 +8,7 @@ from dataclasses import dataclass
 import jpy
 import numpy as np
 
-from deephaven import DHError, read_csv, time_table, empty_table, merge, merge_sorted, dtypes, new_table
+from deephaven import DHError, read_csv, time_table, empty_table, merge, merge_sorted, dtypes, new_table, input_table
 from deephaven.column import byte_col, char_col, short_col, bool_col, int_col, long_col, float_col, double_col, \
     string_col, datetime_col, pyobj_col, jobj_col
 from deephaven.constants import NULL_DOUBLE, NULL_FLOAT, NULL_LONG, NULL_INT, NULL_SHORT, NULL_BYTE
@@ -26,10 +26,12 @@ class CustomClass:
 
 class TableFactoryTestCase(BaseTestCase):
     def setUp(self):
+        super().setUp()
         self.test_table = read_csv("tests/data/test_table.csv")
 
     def tearDown(self) -> None:
         self.test_table = None
+        super().tearDown()
 
     def test_empty_table(self):
         t = empty_table(10)
@@ -198,10 +200,63 @@ class TableFactoryTestCase(BaseTestCase):
 
         col_defs = {"A_Long": dtypes.long}
         table_writer = DynamicTableWriter(col_defs)
-        table_writer.write_row(10**10)
+        table_writer.write_row(10 ** 10)
         t = table_writer.table
         self.wait_ticking_table_update(t, row_count=1, timeout=5)
         self.assertIn("10000000000", t.to_string())
+
+    def test_input_table(self):
+        cols = [
+            bool_col(name="Boolean", data=[True, False]),
+            byte_col(name="Byte", data=(1, -1)),
+            char_col(name="Char", data='-1'),
+            short_col(name="Short", data=[1, -1]),
+            int_col(name="Int", data=[1, -1]),
+            long_col(name="Long", data=[1, -1]),
+            long_col(name="NPLong", data=np.array([1, -1], dtype=np.int8)),
+            float_col(name="Float", data=[1.01, -1.01]),
+            double_col(name="Double", data=[1.01, -1.01]),
+            string_col(name="String", data=["foo", "bar"]),
+        ]
+        t = new_table(cols=cols)
+        self.assertEqual(t.size, 2)
+        col_defs = {c.name: c.data_type for c in t.columns}
+        with self.subTest("from table definition"):
+            append_only_input_table = input_table(col_defs=col_defs)
+            append_only_input_table.add(t)
+            self.assertEqual(append_only_input_table.size, 2)
+            append_only_input_table.add(t)
+            self.assertEqual(append_only_input_table.size, 4)
+
+            keyed_input_table = input_table(col_defs=col_defs, key_cols="String")
+            keyed_input_table.add(t)
+            self.assertEqual(keyed_input_table.size, 2)
+            keyed_input_table.add(t)
+            self.assertEqual(keyed_input_table.size, 2)
+
+        with self.subTest("from init table"):
+            append_only_input_table = input_table(init_table=t)
+            self.assertEqual(append_only_input_table.size, 2)
+            append_only_input_table.add(t)
+            self.assertEqual(append_only_input_table.size, 4)
+
+            keyed_input_table = input_table(init_table=t, key_cols="String")
+            self.assertEqual(keyed_input_table.size, 2)
+            keyed_input_table.add(t)
+            self.assertEqual(keyed_input_table.size, 2)
+            keyed_input_table.add(append_only_input_table)
+            self.assertEqual(keyed_input_table.size, 2)
+
+        with self.subTest("deletion on input table"):
+            append_only_input_table = input_table(init_table=t)
+            with self.assertRaises(DHError) as cm:
+                append_only_input_table.delete(t)
+            self.assertIn("not allowed.", str(cm.exception))
+
+            keyed_input_table = input_table(init_table=t, key_cols=["String", "Double"])
+            self.assertEqual(keyed_input_table.size, 2)
+            keyed_input_table.delete(t.select(["String", "Double"]))
+            self.assertEqual(keyed_input_table.size, 0)
 
 
 if __name__ == '__main__':

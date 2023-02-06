@@ -3,39 +3,56 @@
  */
 package io.deephaven.engine.table.impl.sources;
 
+import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
-import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.table.ChunkSource;
-import io.deephaven.engine.table.ColumnSource;
 import org.jetbrains.annotations.NotNull;
 
-public interface FillUnordered {
+public interface FillUnordered<ATTR extends Any> {
     /**
      * Populates a contiguous portion of the given destination chunk with data corresponding to the keys from the given
      * {@link LongChunk}.
+     * <p>
+     * It behaves as if the following code were executed:
      * 
+     * <pre>
+     * destination.setSize(keys.size());
+     * for (int ii = 0; ii < keys.size(); ++ii) {
+     *     destination.set(ii, get(keys.get(ii)));
+     * }
+     * </pre>
+     *
      * @param context A context containing all mutable/state related data used in retrieving the Chunk.
      * @param dest The chunk to be populated according to {@code keys}
      * @param keys A chunk of individual, not assumed to be ordered keys to be fetched
      */
     void fillChunkUnordered(
-            @NotNull ColumnSource.FillContext context,
-            @NotNull WritableChunk<? super Values> dest,
+            @NotNull ChunkSource.FillContext context,
+            @NotNull WritableChunk<? super ATTR> dest,
             @NotNull LongChunk<? extends RowKeys> keys);
 
     /**
      * Populates a contiguous portion of the given destination chunk with prev data corresponding to the keys from the
      * given {@link LongChunk}.
+     * <p>
+     * It behaves as if the following code were executed:
      * 
+     * <pre>
+     * destination.setSize(keys.size());
+     * for (int ii = 0; ii < keys.size(); ++ii) {
+     *     destination.set(ii, getPrev(keys.get(ii)));
+     * }
+     * </pre>
+     *
      * @param context A context containing all mutable/state related data used in retrieving the Chunk.
      * @param dest The chunk to be populated according to {@code keys}
      * @param keys A chunk of individual, not assumed to be ordered keys to be fetched
      */
     void fillPrevChunkUnordered(
-            @NotNull ColumnSource.FillContext context,
-            @NotNull WritableChunk<? super Values> dest,
+            @NotNull ChunkSource.FillContext context,
+            @NotNull WritableChunk<? super ATTR> dest,
             @NotNull LongChunk<? extends RowKeys> keys);
 
     /**
@@ -49,6 +66,6 @@ public interface FillUnordered {
     boolean providesFillUnordered();
 
     static boolean providesFillUnordered(ChunkSource<?> chunkSource) {
-        return (chunkSource instanceof FillUnordered) && ((FillUnordered) chunkSource).providesFillUnordered();
+        return (chunkSource instanceof FillUnordered) && ((FillUnordered<?>) chunkSource).providesFillUnordered();
     }
 }

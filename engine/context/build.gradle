@@ -1,0 +1,33 @@
+plugins {
+    id 'java-library'
+    id 'io.deephaven.project.register'
+}
+
+description 'Engine Context: QueryScope, QueryLibrary and QueryCompiler via ExecutionContext'
+
+configurations {
+    testCompile.extendsFrom junit
+}
+
+dependencies {
+    api project(':authentication')
+
+    implementation project(':Configuration')
+    implementation project(':DataStructures')
+    implementation project(':log-factory')
+    implementation project(':Util')
+    implementation project(':engine-time')
+    implementation project(':table-api')
+    implementation project(':IO')
+
+    implementation 'com.github.f4b6a3:uuid-creator:5.2.0'
+
+    Classpaths.inheritCommonsText(project, 'implementation')
+
+    testImplementation TestTools.projectDependency(project, 'Base')
+
+    testRuntimeOnly project(':log-to-slf4j'),
+            project(path: ':configs'),
+            project(path: ':test-configs')
+    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+}

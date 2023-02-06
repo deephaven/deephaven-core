@@ -482,7 +482,7 @@ class SymbolTableCombiner
     }
 
     private void buildTable(final BuildContext bc,
-                            final RowSequence buildIndex,
+                            final RowSequence buildRows,
                             ColumnSource<?>[] buildSources
             // region extra build arguments
             , final IntegerArraySource resultSource
@@ -492,12 +492,12 @@ class SymbolTableCombiner
         // region build start
         // endregion build start
 
-        try (final RowSequence.Iterator rsIt = buildIndex.getRowSequenceIterator();
+        try (final RowSequence.Iterator rsIt = buildRows.getRowSequenceIterator();
              // region build initialization try
              // endregion build initialization try
         ) {
             // region build initialization
-            final WritableIntChunk<RowKeys> sourceResultIdentifiers = WritableIntChunk.makeWritableChunk((int)Math.min(CHUNK_SIZE, buildIndex.size()));
+            final WritableIntChunk<RowKeys> sourceResultIdentifiers = WritableIntChunk.makeWritableChunk((int)Math.min(CHUNK_SIZE, buildRows.size()));
             // endregion build initialization
 
             // chunks to write through to the table key sources
@@ -1253,8 +1253,8 @@ class SymbolTableCombiner
         // the chunk of positions within our table
         final WritableLongChunk<RowKeys> tableLocationsChunk;
 
-        // the chunk of right indices that we read from the hash table, the empty right index is used as a sentinel that the
-        // state exists; otherwise when building from the left it is always null
+        // the chunk of right keys that we read from the hash table, the empty right rowKey is used as a sentinel
+        // that the state exists; otherwise when building from the left it is always null
         // @WritableStateChunkType@ from \QWritableIntChunk<Values>\E
         final WritableIntChunk<Values> workingStateEntries;
 
@@ -1373,7 +1373,7 @@ class SymbolTableCombiner
     }
 
     private void decorationProbe(ProbeContext pc
-                                , RowSequence probeIndex
+                                , RowSequence probeRows
                                 , final ColumnSource<?>[] probeSources
                                  // region additional probe arguments
                                  , @NotNull final IntegerArraySource symbolMappings
@@ -1384,7 +1384,7 @@ class SymbolTableCombiner
         // endregion probe start
         long hashSlotOffset = 0;
 
-        try (final RowSequence.Iterator rsIt = probeIndex.getRowSequenceIterator();
+        try (final RowSequence.Iterator rsIt = probeRows.getRowSequenceIterator();
              // region probe additional try resources
              // endregion probe additional try resources
             ) {
@@ -1599,96 +1599,6 @@ class SymbolTableCombiner
     // region overflowLocationToHashLocation
     // endregion overflowLocationToHashLocation
 
-    // mixin dumpTable
-    @SuppressWarnings("unused")
-    private void dumpTable() {
-        dumpTable(true, true);
-    }
-
-    @SuppressWarnings("SameParameterValue")
-    private void dumpTable(boolean showBadMain, boolean showBadOverflow) {
-        //noinspection unchecked
-        final WritableChunk<Values> [] dumpChunks = new WritableChunk[keyColumnCount];
-        //noinspection unchecked
-        final WritableChunk<Values> [] overflowDumpChunks = new WritableChunk[keyColumnCount];
-        // @WritableStateChunkType@ from \QWritableIntChunk<Values>\E, @WritableStateChunkName@ from \QWritableIntChunk\E
-        final WritableIntChunk<Values> stateChunk = WritableIntChunk.makeWritableChunk(tableSize);
-        final WritableIntChunk<Values> overflowLocationChunk = WritableIntChunk.makeWritableChunk(tableSize);
-        // @WritableStateChunkType@ from \QWritableIntChunk<Values>\E, @WritableStateChunkName@ from \QWritableIntChunk\E
-        final WritableIntChunk<Values> overflowStateChunk = WritableIntChunk.makeWritableChunk(nextOverflowLocation);
-        final WritableIntChunk<Values> overflowOverflowLocationChunk = WritableIntChunk.makeWritableChunk(nextOverflowLocation);
-
-        final WritableIntChunk<HashCodes> hashChunk = WritableIntChunk.makeWritableChunk(tableSize);
-        final WritableIntChunk<HashCodes> overflowHashChunk = WritableIntChunk.makeWritableChunk(nextOverflowLocation);
-
-
-        final RowSequence tableLocations = RowSetFactory.fromRange(0, tableSize - 1);
-        final RowSequence overflowLocations = nextOverflowLocation > 0 ? RowSetFactory.fromRange(0, nextOverflowLocation - 1) : RowSequenceFactory.EMPTY;
-
-        for (int ii = 0; ii < keyColumnCount; ++ii) {
-            dumpChunks[ii] = keyChunkTypes[ii].makeWritableChunk(tableSize);
-            overflowDumpChunks[ii] = keyChunkTypes[ii].makeWritableChunk(nextOverflowLocation);
-
-            try (final ColumnSource.FillContext fillContext = keySources[ii].makeFillContext(tableSize)) {
-                keySources[ii].fillChunk(fillContext, dumpChunks[ii], tableLocations);
-            }
-            try (final ColumnSource.FillContext fillContext = overflowKeySources[ii].makeFillContext(nextOverflowLocation)) {
-                overflowKeySources[ii].fillChunk(fillContext, overflowDumpChunks[ii], overflowLocations);
-            }
-
-            if (ii == 0) {
-                chunkHashers[ii].hashInitial(dumpChunks[ii], hashChunk);
-                chunkHashers[ii].hashInitial(overflowDumpChunks[ii], overflowHashChunk);
-            } else {
-                chunkHashers[ii].hashUpdate(dumpChunks[ii], hashChunk);
-                chunkHashers[ii].hashUpdate(overflowDumpChunks[ii], overflowHashChunk);
-            }
-        }
-
-        try (final ColumnSource.FillContext fillContext = uniqueIdentifierSource.makeFillContext(tableSize)) {
-            uniqueIdentifierSource.fillChunk(fillContext, stateChunk, tableLocations);
-        }
-        try (final ColumnSource.FillContext fillContext = overflowLocationSource.makeFillContext(tableSize)) {
-            overflowLocationSource.fillChunk(fillContext, overflowLocationChunk, tableLocations);
-        }
-        try (final ColumnSource.FillContext fillContext = overflowOverflowLocationSource.makeFillContext(nextOverflowLocation)) {
-            overflowOverflowLocationSource.fillChunk(fillContext, overflowOverflowLocationChunk, overflowLocations);
-        }
-        try (final ColumnSource.FillContext fillContext = overflowUniqueIdentifierSource.makeFillContext(nextOverflowLocation)) {
-            overflowUniqueIdentifierSource.fillChunk(fillContext, overflowStateChunk, overflowLocations);
-        }
-
-        for (int ii = 0; ii < tableSize; ++ii) {
-            System.out.print("Bucket[" + ii + "] ");
-            // @StateValueType@ from \Qint\E
-            final int stateValue = stateChunk.get(ii);
-            int overflowLocation = overflowLocationChunk.get(ii);
-
-            if (stateValue == EMPTY_SYMBOL_VALUE) {
-                System.out.println("<empty>");
-            } else {
-                final int hashCode = hashChunk.get(ii);
-                System.out.println(ChunkUtils.extractKeyStringFromChunks(keyChunkTypes, dumpChunks, ii) + " (hash=" + hashCode + ") = " + stateValue);
-                final int expectedPosition = hashToTableLocation(tableHashPivot, hashCode);
-                if (showBadMain && expectedPosition != ii) {
-                    System.out.println("***** BAD HASH POSITION **** (computed " + expectedPosition + ")");
-                }
-            }
-
-            while (overflowLocation != QueryConstants.NULL_INT) {
-                // @StateValueType@ from \Qint\E
-                final int overflowStateValue = overflowStateChunk.get(overflowLocation);
-                final int overflowHashCode = overflowHashChunk.get(overflowLocation);
-                System.out.println("\tOF[" + overflowLocation + "] " + ChunkUtils.extractKeyStringFromChunks(keyChunkTypes, overflowDumpChunks, overflowLocation) + " (hash=" + overflowHashCode + ") = " + overflowStateValue);
-                final int expectedPosition = hashToTableLocation(tableHashPivot, overflowHashCode);
-                if (showBadOverflow && expectedPosition != ii) {
-                    System.out.println("***** BAD HASH POSITION FOR OVERFLOW **** (computed " + expectedPosition + ")");
-                }
-                overflowLocation = overflowOverflowLocationChunk.get(overflowLocation);
-            }
-        }
-    }
-    // endmixin dumpTable
 
     static int hashTableSize(long initialCapacity) {
         return (int)Math.max(MINIMUM_INITIAL_HASH_SIZE, Math.min(MAX_TABLE_SIZE, Long.highestOneBit(initialCapacity) * 2));

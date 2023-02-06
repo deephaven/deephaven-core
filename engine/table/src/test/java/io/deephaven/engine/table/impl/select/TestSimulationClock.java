@@ -6,7 +6,7 @@ package io.deephaven.engine.table.impl.select;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.time.DateTime;
-import io.deephaven.engine.table.impl.RefreshingTableTestCase;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 
 /**
  * Quick unit test for {@link SimulationClock}.

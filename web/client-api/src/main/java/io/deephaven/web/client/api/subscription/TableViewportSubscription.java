@@ -3,7 +3,6 @@
  */
 package io.deephaven.web.client.api.subscription;
 
-import elemental2.core.Int8Array;
 import elemental2.core.Uint8Array;
 import elemental2.dom.CustomEvent;
 import elemental2.dom.CustomEventInit;
@@ -21,7 +20,6 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.bar
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageSnapshotOptions;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageSnapshotRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageSubscriptionOptions;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageUpdateMetadata;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.ColumnConversionMode;
@@ -32,7 +30,7 @@ import io.deephaven.web.client.api.JsRangeSet;
 import io.deephaven.web.client.api.JsTable;
 import io.deephaven.web.client.api.TableData;
 import io.deephaven.web.client.api.WorkerConnection;
-import io.deephaven.web.client.api.barrage.BarrageUtils;
+import io.deephaven.web.client.api.barrage.WebBarrageUtils;
 import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
 import io.deephaven.web.client.api.barrage.stream.BiDiStream;
 import io.deephaven.web.client.fu.JsLog;
@@ -46,8 +44,8 @@ import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Collections;
 
-import static io.deephaven.web.client.api.barrage.BarrageUtils.makeUint8ArrayFromBitset;
-import static io.deephaven.web.client.api.barrage.BarrageUtils.serializeRanges;
+import static io.deephaven.web.client.api.barrage.WebBarrageUtils.makeUint8ArrayFromBitset;
+import static io.deephaven.web.client.api.barrage.WebBarrageUtils.serializeRanges;
 import static io.deephaven.web.client.api.subscription.ViewportData.NO_ROW_FORMAT_COLUMN;
 
 /**
@@ -111,9 +109,13 @@ public class TableViewportSubscription extends HasEventHandling {
         this.original = existingTable;
         this.originalState = original.state();
         copy = existingTable.copy(false).then(table -> new Promise<>((resolve, reject) -> {
-
             // Wait until the state is running to copy it
             originalState.onRunning(newState -> {
+                if (this.status == Status.DONE) {
+                    JsLog.debug("TableViewportSubscription closed before originalState.onRunning completed, ignoring");
+                    table.close();
+                    return;
+                }
                 table.batch(batcher -> {
                     batcher.customColumns(newState.getCustomColumns());
                     batcher.filter(newState.getFilters());
@@ -122,7 +124,8 @@ public class TableViewportSubscription extends HasEventHandling {
                     batcher.setFlat(true);
                 });
                 // TODO handle updateInterval core#188
-                table.setInternalViewport(firstRow, lastRow, columns);
+                Column[] columnsToSub = table.isStreamTable() ? table.getColumns().asArray(new Column[0]) : columns;
+                table.setInternalViewport(firstRow, lastRow, columnsToSub);
 
                 // Listen for events and refire them on ourselves, optionally on the original table
                 table.addEventListener(JsTable.EVENT_UPDATED, this::refire);
@@ -295,7 +298,7 @@ public class TableViewportSubscription extends HasEventHandling {
                 double viewportOffset = BarrageSubscriptionRequest.createViewportVector(doGetRequest, serializeRanges(
                         Collections.singleton(rows.getRange())));
                 double serializationOptionsOffset = BarrageSnapshotOptions
-                        .createBarrageSnapshotOptions(doGetRequest, ColumnConversionMode.Stringify, true, 0);
+                        .createBarrageSnapshotOptions(doGetRequest, ColumnConversionMode.Stringify, true, 0, 0);
                 double tableTicketOffset =
                         BarrageSubscriptionRequest.createTicketVector(doGetRequest, state.getHandle().getTicket());
                 BarrageSnapshotRequest.startBarrageSnapshotRequest(doGetRequest);
@@ -307,7 +310,7 @@ public class TableViewportSubscription extends HasEventHandling {
 
                 FlightData request = new FlightData();
                 request.setAppMetadata(
-                        BarrageUtils.wrapMessage(doGetRequest, BarrageMessageType.BarrageSnapshotRequest));
+                        WebBarrageUtils.wrapMessage(doGetRequest, BarrageMessageType.BarrageSnapshotRequest));
                 stream.send(request);
                 stream.end();
                 stream.onData(flightData -> {
@@ -331,8 +334,8 @@ public class TableViewportSubscription extends HasEventHandling {
                                 new ByteBuffer(
                                         new Uint8Array(barrageMessageWrapper.msgPayloadArray())));
                     }
-                    TableSnapshot snapshot = BarrageUtils.createSnapshot(header,
-                            BarrageUtils.typedArrayToLittleEndianByteBuffer(flightData.getDataBody_asU8()), update,
+                    TableSnapshot snapshot = WebBarrageUtils.createSnapshot(header,
+                            WebBarrageUtils.typedArrayToLittleEndianByteBuffer(flightData.getDataBody_asU8()), update,
                             true,
                             columnTypes);
                     callback.onSuccess(snapshot);

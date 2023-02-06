@@ -4,6 +4,14 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.testutil.ColumnInfo;
+import io.deephaven.engine.testutil.QueryTableTestBase;
+import io.deephaven.engine.testutil.generator.BooleanGenerator;
+import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.testutil.generator.IntGenerator;
+import io.deephaven.engine.testutil.generator.SetGenerator;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
+import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.util.TickSuppressor;
@@ -14,13 +22,13 @@ import java.util.Random;
 import org.junit.experimental.categories.Category;
 
 import static io.deephaven.engine.util.TableTools.intCol;
-import static io.deephaven.engine.table.impl.TstUtils.*;
+import static io.deephaven.engine.testutil.TstUtils.*;
 
 @Category(OutOfBandTest.class)
 public class TickSuppressorTest extends QueryTableTestBase {
     public void testModifyToAddRemoves() {
         final Random random = new Random(0);
-        final ColumnInfo[] columnInfo;
+        final ColumnInfo<?, ?>[] columnInfo;
         final int size = 50;
         final QueryTable queryTable = getTable(size, random,
                 columnInfo = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol"},
@@ -58,7 +66,7 @@ public class TickSuppressorTest extends QueryTableTestBase {
 
     private void testRemoveSpuriousModificationsIterative(int seed, int size, int maxSteps) {
         final Random random = new Random(seed);
-        final ColumnInfo[] columnInfo;
+        final ColumnInfo<?, ?>[] columnInfo;
 
         final QueryTable queryTable = getTable(size, random,
                 columnInfo = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol", "boolCol", "boolCol2"},
@@ -124,7 +132,7 @@ public class TickSuppressorTest extends QueryTableTestBase {
 
         final io.deephaven.engine.table.impl.SimpleListener listener =
                 new io.deephaven.engine.table.impl.SimpleListener(suppressed);
-        suppressed.listenForUpdates(listener);
+        suppressed.addUpdateListener(listener);
 
         assertEquals(0, listener.getCount());
 

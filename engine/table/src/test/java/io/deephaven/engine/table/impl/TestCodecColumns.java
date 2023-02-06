@@ -7,6 +7,8 @@ import io.deephaven.base.FileUtils;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.parquet.table.BigIntegerParquetBytesCodec;
 import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.parquet.table.ParquetInstructions;
@@ -50,16 +52,18 @@ public class TestCodecColumns {
                 ColumnDefinition.fromGenericType("VWBA", byte[].class, byte.class);
         writeBuilder.addColumnCodec("VWBA", SimpleByteArrayCodec.class.getName());
         readBuilder.addColumnCodec("VWBA", SimpleByteArrayCodec.class.getName());
+
         VARIABLE_WIDTH_COLUMN_DEFINITION_2 = ColumnDefinition.fromGenericType("VWCD", ArrayTuple.class);
         readBuilder.addColumnCodec("VWCD", ExternalizableCodec.class.getName(), ArrayTuple.class.getName());
         FIXED_WIDTH_BYTE_ARRAY_COLUMN_DEFINITION = ColumnDefinition.fromGenericType("FWBA", byte[].class, byte.class);
         writeBuilder.addColumnCodec("FWBA", SimpleByteArrayCodec.class.getName(), "9");
         readBuilder.addColumnCodec("FWBA", SimpleByteArrayCodec.class.getName(), "9");
+
         VARIABLE_WIDTH_BIG_INTEGER_COLUMN_DEFINITION = ColumnDefinition.fromGenericType("VWBI", BigInteger.class);
-        writeBuilder.addColumnCodec("VWBI", BigIntegerCodec.class.getName());
-        readBuilder.addColumnCodec("VWBI", BigIntegerCodec.class.getName());
+        writeBuilder.addColumnCodec("VWBI", SerializableCodec.class.getName());
+        readBuilder.addColumnCodec("VWBI", SerializableCodec.class.getName());
+
         VARIABLE_WIDTH_BIG_INTEGER_COLUMN_DEFINITION_S = ColumnDefinition.fromGenericType("VWBIS", BigInteger.class);
-        readBuilder.addColumnCodec("VWBIS", SerializableCodec.class.getName());
         expectedReadInstructions = readBuilder.build();
         writeInstructions = writeBuilder.build();
     }

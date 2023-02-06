@@ -6,13 +6,18 @@ package io.deephaven.server.console;
 import com.google.protobuf.ByteStringAccess;
 import com.google.rpc.Code;
 import io.deephaven.base.string.EncodingInfo;
+import io.deephaven.engine.context.QueryScope;
+import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.flight.util.TicketRouterHelper;
+import io.deephaven.proto.util.ByteHelper;
 import io.deephaven.proto.util.ScopeTicketHelper;
+import io.deephaven.server.auth.AuthorizationProvider;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.TicketResolverBase;
 import io.deephaven.server.session.TicketRouter;
@@ -36,8 +41,10 @@ public class ScopeTicketResolver extends TicketResolverBase {
     private final Provider<ScriptSession> scriptSessionProvider;
 
     @Inject
-    public ScopeTicketResolver(final Provider<ScriptSession> globalSessionProvider) {
-        super((byte) TICKET_PREFIX, FLIGHT_DESCRIPTOR_ROUTE);
+    public ScopeTicketResolver(
+            final AuthorizationProvider authProvider,
+            final Provider<ScriptSession> globalSessionProvider) {
+        super(authProvider, (byte) TICKET_PREFIX, FLIGHT_DESCRIPTOR_ROUTE);
         this.scriptSessionProvider = globalSessionProvider;
     }
 
@@ -60,6 +67,7 @@ public class ScopeTicketResolver extends TicketResolverBase {
                         "Could not resolve '" + logId + ": no variable exists with name '" + scopeName + "'");
             }
             if (scopeVar instanceof Table) {
+                scopeVar = authTransformation.transform(scopeVar);
                 return TicketRouter.getFlightInfo((Table) scopeVar, descriptor, flightTicketForName(scopeName));
             }
 
@@ -94,22 +102,25 @@ public class ScopeTicketResolver extends TicketResolverBase {
 
     private <T> SessionState.ExportObject<T> resolve(
             @Nullable final SessionState session, final String scopeName, final String logId) {
-        // if we are not attached to a session, check the scope for a variable right now
-        final T export = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> {
+        // fetch the variable from the scope right now
+        T export = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> {
             final ScriptSession gss = scriptSessionProvider.get();
-            // noinspection unchecked
-            T scopeVar = (T) gss.unwrapObject(gss.getVariable(scopeName));
-            if (scopeVar == null) {
-                throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
-                        "Could not resolve '" + logId + "': no variable exists with name '" + scopeName + "'");
+            T scopeVar = null;
+            try {
+                // noinspection unchecked
+                scopeVar = (T) gss.unwrapObject(gss.getVariable(scopeName));
+            } catch (QueryScope.MissingVariableException ignored) {
             }
             return scopeVar;
         });
 
+        export = authTransformation.transform(export);
+
         if (export == null) {
-            throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
-                    "Could not resolve '" + logId + "': no variable exists with name '" + scopeName + "'");
+            return SessionState.wrapAsFailedExport(GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
+                    "Could not resolve '" + logId + "': no variable exists with name '" + scopeName + "'"));
         }
+
         return SessionState.wrapAsExport(export);
     }
 
@@ -138,7 +149,11 @@ public class ScopeTicketResolver extends TicketResolverBase {
                 .require(resultExport)
                 .submit(() -> {
                     final ScriptSession gss = scriptSessionProvider.get();
-                    gss.setVariable(varName, resultExport.get());
+                    T value = resultExport.get();
+                    if (value instanceof LivenessReferent && DynamicNode.notDynamicOrIsRefreshing(value)) {
+                        gss.manage((LivenessReferent) value);
+                    }
+                    gss.setVariable(varName, value);
                 });
 
         return resultBuilder;
@@ -196,7 +211,7 @@ public class ScopeTicketResolver extends TicketResolverBase {
         if (ticket.remaining() < 3 || ticket.get(ticket.position()) != TICKET_PREFIX
                 || ticket.get(ticket.position() + 1) != '/') {
             throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
-                    "Could not resolve '" + logId + "': found 0x" + byteBufToHex(ticket) + "' (hex)");
+                    "Could not resolve '" + logId + "': found 0x" + ByteHelper.byteBufToHex(ticket) + "' (hex)");
         }
 
         final int initialLimit = ticket.limit();

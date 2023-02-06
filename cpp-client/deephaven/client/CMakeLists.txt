@@ -8,7 +8,6 @@ include(GNUInstallDirs)
 
 find_package(Arrow REQUIRED)
 find_package(ArrowFlight REQUIRED HINTS ${Arrow_DIR})
-find_package(Boost REQUIRED)
 find_package(Immer REQUIRED)
 find_package(Protobuf REQUIRED)
 find_package(gRPC REQUIRED)
@@ -43,33 +42,52 @@ set(ALL_FILES
     include/private/deephaven/client/impl/table_handle_manager_impl.h
     include/private/deephaven/client/impl/util.h
 
+    src/arrowutil/arrow_flight.cc
+
+    include/private/deephaven/client/arrowutil/arrow_traits.h
+    include/private/deephaven/client/arrowutil/arrow_flight.h
     include/private/deephaven/client/arrowutil/arrow_visitors.h
+    include/private/deephaven/client/arrowutil/arrow_value_converter.h
 
     src/columns.cc
     src/expressions.cc
     src/client.cc
+    src/flight.cc
     src/ticking.cc
     src/types.cc
     src/chunk/chunk.cc
     src/chunk/chunk_filler.cc
     src/chunk/chunk_maker.cc
+    src/column/array_column_source.cc
     src/column/column_source.cc
     src/container/row_sequence.cc
+    src/table/schema.cc
     src/table/table.cc
 
     include/public/deephaven/client/columns.h
     include/public/deephaven/client/expressions.h
     include/public/deephaven/client/client.h
+    include/public/deephaven/client/flight.h
     include/public/deephaven/client/ticking.h
     include/public/deephaven/client/types.h
     include/public/deephaven/client/chunk/chunk.h
     include/public/deephaven/client/chunk/chunk_filler.h
     include/public/deephaven/client/chunk/chunk_maker.h
+    include/public/deephaven/client/chunk/chunk_traits.h
+    include/public/deephaven/client/column/array_column_source.h
     include/public/deephaven/client/column/column_source.h
+    include/public/deephaven/client/column/column_source_helpers.h
     include/public/deephaven/client/container/row_sequence.h
+    include/public/deephaven/client/table/schema.h
     include/public/deephaven/client/table/table.h
+    include/public/deephaven/client/utility/arrow_util.h
 
-    include/private/deephaven/client/subscription/batch_parser.h
+    src/subscription/immer_table_state.cc
+    src/subscription/index_decoder.cc
+    src/subscription/shift_processor.cc
+    src/subscription/space_mapper.cc
+    src/subscription/subscribe_thread.cc
+    src/subscription/update_processor.cc
     include/private/deephaven/client/subscription/classic_table_state.h
     include/private/deephaven/client/subscription/immer_table_state.h
     include/private/deephaven/client/subscription/index_decoder.h
@@ -78,21 +96,13 @@ set(ALL_FILES
     include/private/deephaven/client/subscription/subscribe_thread.h
     include/private/deephaven/client/subscription/subscription_handle.h
     include/private/deephaven/client/subscription/update_processor.h
-    src/subscription/batch_parser.cc
-    src/subscription/classic_table_state.cc
-    src/subscription/immer_table_state.cc
-    src/subscription/index_decoder.cc
-    src/subscription/shift_processor.cc
-    src/subscription/space_mapper.cc
-    src/subscription/subscribe_thread.cc
-    src/subscription/update_processor.cc
-
 
     src/immerutil/abstract_flex_vector.cc
     src/immerutil/immer_column_source.cc
     include/private/deephaven/client/immerutil/abstract_flex_vector.h
     include/private/deephaven/client/immerutil/immer_column_source.h
 
+    src/utility/arrow_util.cc
     src/utility/executor.cc
     src/utility/misc.cc
     include/private/deephaven/client/utility/executor.h
@@ -107,6 +117,8 @@ set(ALL_FILES
     include/private/deephaven/client/utility/misc.h
     include/public/deephaven/client/utility/table_maker.h
     include/public/deephaven/client/utility/utility.h
+
+    flatbuf/deephaven/flatbuf/Barrage_generated.h
 
     proto/deephaven/proto/application.grpc.pb.cc
     proto/deephaven/proto/application.grpc.pb.h
@@ -141,18 +153,39 @@ set(ALL_FILES
     proto/deephaven/proto/ticket.pb.cc
     proto/deephaven/proto/ticket.pb.h
 
-    flatbuf/deephaven/flatbuf/Barrage_generated.h
-    )
+    third_party/flatbuffers/include/flatbuffers/allocator.h
+    third_party/flatbuffers/include/flatbuffers/array.h
+    third_party/flatbuffers/include/flatbuffers/base.h
+    third_party/flatbuffers/include/flatbuffers/buffer.h
+    third_party/flatbuffers/include/flatbuffers/buffer_ref.h
+    third_party/flatbuffers/include/flatbuffers/default_allocator.h
+    third_party/flatbuffers/include/flatbuffers/detached_buffer.h
+    third_party/flatbuffers/include/flatbuffers/flatbuffer_builder.h
+    third_party/flatbuffers/include/flatbuffers/flatbuffers.h
+    third_party/flatbuffers/include/flatbuffers/stl_emulation.h
+    third_party/flatbuffers/include/flatbuffers/string.h
+    third_party/flatbuffers/include/flatbuffers/struct.h
+    third_party/flatbuffers/include/flatbuffers/table.h
+    third_party/flatbuffers/include/flatbuffers/util.h
+    third_party/flatbuffers/include/flatbuffers/vector_downward.h
+    third_party/flatbuffers/include/flatbuffers/vector.h
+    third_party/flatbuffers/include/flatbuffers/verifier.h
+
+    third_party/roaring/include/roaring/roaring.c
+    src/column/column_source_helpers.cc)
 
 add_library(client ${ALL_FILES})
+# In order to make a shared library suitable for Cython.
+set_property(TARGET client PROPERTY POSITION_INDEPENDENT_CODE ON)
+
 # This is so deephaven::client works both when using the installed CMake config
 # and when using this project as a CMake subdirectory of your own project.
 add_library(deephaven::client ALIAS client)
-target_compile_options(client PRIVATE -Wall -Werror)
+target_compile_options(client PRIVATE -Wall -Werror -Wno-deprecated-declarations)
 
-target_include_directories(client PRIVATE ${Boost_INCLUDE_DIR})
 target_include_directories(client PRIVATE include/private)
-target_include_directories(client PRIVATE third_party)
+target_include_directories(client PRIVATE third_party/flatbuffers/include)
+target_include_directories(client PRIVATE third_party/roaring/include)
 target_include_directories(client PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/public>)
 
 # Protos and flatbuf are doing their own thing.
@@ -161,9 +194,7 @@ target_include_directories(client PRIVATE "./flatbuf")
 
 target_link_libraries(client PUBLIC arrow_flight_static)
 target_link_libraries(client PUBLIC arrow_static)
-target_link_libraries(client PUBLIC Boost::boost)
 target_link_libraries(client PUBLIC immer)
 target_link_libraries(client PUBLIC protobuf::libprotobuf)
 target_link_libraries(client PUBLIC gRPC::grpc++)
 target_link_libraries(client PUBLIC Threads::Threads)
-

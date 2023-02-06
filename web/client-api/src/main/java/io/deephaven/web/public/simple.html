@@ -15,11 +15,14 @@
 <script type="module">
 import dh from './dh-core.js';
 
-const {IdeConnection} = dh;
+const {CoreClient} = dh;
 var ide;
 var table;
 (async () => {
-    var connection = new IdeConnection(window.location.protocol + "//" + window.location.host);
+    var client = new CoreClient(window.location.protocol + "//" + window.location.host);
+    await client.login({type:CoreClient.LOGIN_TYPE_ANONYMOUS});
+    connection = await client.getAsIdeConnection();
+
     var consoleTypes = await connection.getConsoleTypes();
     ide = await connection.startSession(consoleTypes[0]);
     document.body.append("session created", document.createElement("br"));
@@ -37,7 +40,6 @@ var table;
     document.body.append("Starting viewport subscription");
     table.setViewport(0, 100);
     table.addEventListener("updated", event => {
-        rows = event.detail.rows;
         if (rows.length === 0) {
             return;
         }

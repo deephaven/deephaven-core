@@ -195,7 +195,7 @@ func (client *Client) withToken(ctx context.Context) (context.Context, error) {
 		return nil, err
 	}
 
-	return metadata.NewOutgoingContext(ctx, metadata.Pairs("deephaven_session_id", string(tok))), nil
+	return metadata.NewOutgoingContext(ctx, metadata.Pairs("authorization", string(tok))), nil
 }
 
 // RunScript executes a script on the deephaven server.

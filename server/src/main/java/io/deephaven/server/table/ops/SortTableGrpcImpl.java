@@ -3,13 +3,15 @@
  */
 package io.deephaven.server.table.ops;
 
-
 import com.google.rpc.Code;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.SortColumn;
+import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.AbsoluteSortColumnConventions;
+import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.SortDescriptor;
@@ -25,30 +27,32 @@ import java.util.List;
 public class SortTableGrpcImpl extends GrpcTableOperation<SortTableRequest> {
 
     @Inject
-    public SortTableGrpcImpl() {
-        super(BatchTableRequest.Operation::getSort, SortTableRequest::getResultId, SortTableRequest::getSourceId);
+    public SortTableGrpcImpl(final TableServiceContextualAuthWiring authWiring) {
+        super(authWiring::checkPermissionSort, BatchTableRequest.Operation::getSort,
+                SortTableRequest::getResultId, SortTableRequest::getSourceId);
     }
 
     @Override
-    public Table create(final SortTableRequest request, final List<SessionState.ExportObject<Table>> sourceTables) {
+    public Table create(final SortTableRequest request,
+            final List<SessionState.ExportObject<Table>> sourceTables) {
         Assert.eq(sourceTables.size(), "sourceTables.size()", 1);
 
         final Table original = sourceTables.get(0).get();
         Table result = original;
 
-        final ArrayList<String> absColumns = new ArrayList<>();
-        final ArrayList<String> absViews = new ArrayList<>();
-        for (int i = request.getSortsCount() - 1; i >= 0; i--) {
-            if (request.getSorts(i).getIsAbsolute()) {
-                final String columnName = request.getSorts(i).getColumnName();
-                final String absName = "__ABS__" + columnName;
+        final List<String> absColumns = new ArrayList<>();
+        final List<Selectable> absViews = new ArrayList<>();
+        for (int si = request.getSortsCount() - 1; si >= 0; si--) {
+            if (request.getSorts(si).getIsAbsolute()) {
+                final String columnName = request.getSorts(si).getColumnName();
+                final String absName = AbsoluteSortColumnConventions.baseColumnNameToAbsoluteName(columnName);
                 absColumns.add(absName);
-                absViews.add("__ABS__" + columnName + " = abs(" + columnName + ")");
+                absViews.add(AbsoluteSortColumnConventions.makeSelectable(absName, columnName));
             }
         }
 
         if (!absViews.isEmpty()) {
-            result = result.updateView(Selectable.from(absViews));
+            result = result.updateView(absViews);
         }
 
         // This loop does two optimizations:
@@ -59,8 +63,8 @@ public class SortTableGrpcImpl extends GrpcTableOperation<SortTableRequest> {
         // As a reverse moves past a sort, the direction of the sort is reversed (e.g. asc -> desc)
         final List<SortColumn> sortColumns = new ArrayList<>();
         boolean shouldReverse = false;
-        for (int i = 0; i < request.getSortsCount(); i++) {
-            final SortDescriptor sort = request.getSorts(i);
+        for (int si = 0; si < request.getSortsCount(); si++) {
+            final SortDescriptor sort = request.getSorts(si);
 
             int direction = 0;
             switch (sort.getDirection()) {
@@ -79,10 +83,9 @@ public class SortTableGrpcImpl extends GrpcTableOperation<SortTableRequest> {
                             "Unexpected sort direction: " + direction);
             }
 
-            final StringBuilder columnName = new StringBuilder(sort.getColumnName());
-            if (sort.getIsAbsolute()) {
-                columnName.insert(0, "__ABS__");
-            }
+            final String columnName = sort.getIsAbsolute()
+                    ? AbsoluteSortColumnConventions.baseColumnNameToAbsoluteName(sort.getColumnName())
+                    : sort.getColumnName();
 
             // if should reverse is true, then a flip the direction of the sort
             if (shouldReverse) {
@@ -90,9 +93,9 @@ public class SortTableGrpcImpl extends GrpcTableOperation<SortTableRequest> {
             }
 
             if (direction == -1) {
-                sortColumns.add(SortColumn.desc(ColumnName.of(columnName.toString())));
+                sortColumns.add(SortColumn.desc(ColumnName.of(columnName)));
             } else {
-                sortColumns.add(SortColumn.asc(ColumnName.of(columnName.toString())));
+                sortColumns.add(SortColumn.asc(ColumnName.of(columnName)));
             }
         }
 
@@ -111,11 +114,11 @@ public class SortTableGrpcImpl extends GrpcTableOperation<SortTableRequest> {
             // dropColumns does not preserve key column attributes, so they need to be copied over
             final Object keyColumns = original.getAttribute(Table.KEY_COLUMNS_ATTRIBUTE);
             if (keyColumns != null) {
-                result.setAttribute(Table.KEY_COLUMNS_ATTRIBUTE, keyColumns);
+                ((QueryTable) result).setAttribute(Table.KEY_COLUMNS_ATTRIBUTE, keyColumns);
             }
             final Object uniqueKeys = original.getAttribute(Table.UNIQUE_KEYS_ATTRIBUTE);
             if (uniqueKeys != null) {
-                result.setAttribute(Table.UNIQUE_KEYS_ATTRIBUTE, uniqueKeys);
+                ((QueryTable) result).setAttribute(Table.UNIQUE_KEYS_ATTRIBUTE, uniqueKeys);
             }
         }
 

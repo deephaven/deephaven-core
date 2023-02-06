@@ -118,11 +118,11 @@ public interface TableSpec extends TableOperations<TableSpec, TableSpec>, TableS
 
         void visit(SnapshotTable snapshotTable);
 
+        void visit(SnapshotWhenTable snapshotWhenTable);
+
         void visit(WhereTable whereTable);
 
         void visit(WhereInTable whereInTable);
-
-        void visit(WhereNotInTable whereNotInTable);
 
         void visit(NaturalJoinTable naturalJoinTable);
 
@@ -144,9 +144,9 @@ public interface TableSpec extends TableOperations<TableSpec, TableSpec>, TableS
 
         void visit(LazyUpdateTable lazyUpdateTable);
 
-        void visit(AggregationTable aggregationTable);
+        void visit(AggregateTable aggregateTable);
 
-        void visit(AggregateAllByTable aggAllByTable);
+        void visit(AggregateAllTable aggregateAllTable);
 
         void visit(TicketTable ticketTable);
 
@@ -154,8 +154,8 @@ public interface TableSpec extends TableOperations<TableSpec, TableSpec>, TableS
 
         void visit(SelectDistinctTable selectDistinctTable);
 
-        void visit(CountByTable countByTable);
-
         void visit(UpdateByTable updateByTable);
+
+        void visit(UngroupTable ungroupTable);
     }
 }

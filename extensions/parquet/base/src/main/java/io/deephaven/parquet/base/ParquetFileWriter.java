@@ -5,8 +5,8 @@ package io.deephaven.parquet.base;
 
 import io.deephaven.parquet.base.tempfix.ParquetMetadataConverter;
 import io.deephaven.parquet.base.util.SeekableChannelsProvider;
-import io.deephaven.parquet.compress.Compressor;
-import io.deephaven.parquet.compress.DeephavenCodecFactory;
+import io.deephaven.parquet.compress.CompressorAdapter;
+import io.deephaven.parquet.compress.DeephavenCompressorAdapterFactory;
 import org.apache.parquet.Version;
 import org.apache.parquet.bytes.ByteBufferAllocator;
 import org.apache.parquet.bytes.BytesUtils;
@@ -19,6 +19,7 @@ import org.apache.parquet.schema.MessageType;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.SeekableByteChannel;
 import java.util.ArrayList;
@@ -34,10 +35,10 @@ public class ParquetFileWriter {
 
     private final SeekableByteChannel writeChannel;
     private final MessageType type;
-    private final int pageSize;
+    private final int targetPageSize;
     private final ByteBufferAllocator allocator;
     private final SeekableChannelsProvider channelsProvider;
-    private final Compressor compressor;
+    private final CompressorAdapter compressorAdapter;
     private final Map<String, String> extraMetaData;
     private final List<BlockMetaData> blocks = new ArrayList<>();
     private final List<List<OffsetIndex>> offsetIndexes = new ArrayList<>();
@@ -45,30 +46,33 @@ public class ParquetFileWriter {
     public ParquetFileWriter(
             final String filePath,
             final SeekableChannelsProvider channelsProvider,
-            final int pageSize,
+            final int targetPageSize,
             final ByteBufferAllocator allocator,
             final MessageType type,
             final String codecName,
             final Map<String, String> extraMetaData) throws IOException {
-        this.pageSize = pageSize;
+        this.targetPageSize = targetPageSize;
         this.allocator = allocator;
         this.extraMetaData = new HashMap<>(extraMetaData);
         writeChannel = channelsProvider.getWriteChannel(filePath, false); // TODO add support for appending
+        writeChannel.write(ByteBuffer.wrap(ParquetFileReader.MAGIC));
         this.type = type;
         this.channelsProvider = channelsProvider;
-        this.compressor = DeephavenCodecFactory.getInstance().getByName(codecName);
+        this.compressorAdapter = DeephavenCompressorAdapterFactory.getInstance().getByName(codecName);
     }
 
     @SuppressWarnings("unused")
     RowGroupWriter addRowGroup(final String path, final boolean append) throws IOException {
         RowGroupWriterImpl rowGroupWriter =
-                new RowGroupWriterImpl(path, append, channelsProvider, type, pageSize, allocator, compressor);
+                new RowGroupWriterImpl(path, append, channelsProvider, type, targetPageSize, allocator,
+                        compressorAdapter);
         blocks.add(rowGroupWriter.getBlock());
         return rowGroupWriter;
     }
 
     public RowGroupWriter addRowGroup(final long size) {
-        RowGroupWriterImpl rowGroupWriter = new RowGroupWriterImpl(writeChannel, type, pageSize, allocator, compressor);
+        RowGroupWriterImpl rowGroupWriter =
+                new RowGroupWriterImpl(writeChannel, type, targetPageSize, allocator, compressorAdapter);
         rowGroupWriter.getBlock().setRowCount(size);
         blocks.add(rowGroupWriter.getBlock());
         offsetIndexes.add(rowGroupWriter.offsetIndexes());
@@ -77,13 +81,14 @@ public class ParquetFileWriter {
 
     public void close() throws IOException {
         try (final OutputStream os = Channels.newOutputStream(writeChannel)) {
-            os.write(ParquetFileReader.MAGIC);
             serializeOffsetIndexes(offsetIndexes, blocks, os);
             ParquetMetadata footer =
                     new ParquetMetadata(new FileMetaData(type, extraMetaData, Version.FULL_VERSION), blocks);
             serializeFooter(footer, os);
         }
         // os (and thus writeChannel) are closed at this point.
+
+        compressorAdapter.close();
     }
 
     private void serializeFooter(final ParquetMetadata footer, final OutputStream os) throws IOException {

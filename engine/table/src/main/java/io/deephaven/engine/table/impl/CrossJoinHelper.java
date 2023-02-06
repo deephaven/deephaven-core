@@ -11,6 +11,7 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.impl.join.JoinListenerRecorder;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.sources.BitMaskingColumnSource;
 import io.deephaven.engine.table.impl.sources.BitShiftingColumnSource;
 import io.deephaven.engine.table.impl.sources.CrossJoinRightColumnSource;
@@ -28,13 +29,49 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.LongConsumer;
 
+import static io.deephaven.engine.table.MatchPair.matchString;
+
 /**
- * Implementation for chunk-oriented aggregation operations, including {@link Table#join}.
+ * Implementation for chunk-oriented joins that produce multiple RHS rows per-LHS row, including {@link Table#join}
+ * (referred to as simply join or "cross join") and a left outer join. The left outer join does not currently have any
+ * user visible API.
+ *
+ * <p>
+ * When there are zero keys, the result table uses {@link BitShiftingColumnSource}s for the columns derived from the
+ * left table and a {@link BitMaskingColumnSource} for the columns on the right. The rowkey space has some number of
+ * bits for shifting, the low order bits are directly translated to the right table's rowset; the high order bits are
+ * shifted to the right and indexed into the left table. For example if the right table has a rowset of {0, 1, 7}; then
+ * 3 bits are required to address the right table and the remainder of the bits are used for the left table.
+ * </p>
+ *
+ * <p>
+ * For a bucketed cross join, the number of RHS bits is determined by the size of the largest group. The LHS sources are
+ * similarly shifted using a {@link BitShiftingColumnSource}, but instead of using the rowkey space of the right hand
+ * side directly each group is flattened. The RHS ues a {@link CrossJoinRightColumnSource} to handle these flat indices.
+ * So in the case where we had a group containing an rowset of {0, 1, 7} it only requires 2 bits (for 3 values) not 3
+ * bits (to represent the key 7). When values are added or removed from the RHS, the remaining values must appropriately
+ * shift to maintain the flat space. If the largest right hand side group increases, then we must increase the number of
+ * bits dedicated to the RHS and all of the groups require a shift.
+ * </p>
+ *
+ * <p>
+ * The difference between a cross join and a left outer join is that in the case there are zero matching RHS rows, the
+ * cross join does not produce any output for that state. For the left outer join, a single row with null RHS values is
+ * produced. When a tick causes a transition from empty to non-empty or vice-versa the matched row is added or removed
+ * and the corresponding null row is removed or added in the downstream update (as opposed to being represented as a
+ * modification).
+ * </p>
+ *
+ * <p>
+ * From a user-perspective, when the operation can be suitably performed using a {@link Table#naturalJoin}, that
+ * operation should be preferred. The LHS columns and RowSet are passed through unchanged in a naturalJoin and the right
+ * columns have a simpler redirection. The simpler naturalJoin is likely to provide better performance, though can not
+ * handle results that require multiple RHS rows.
+ * </p>
  */
 public class CrossJoinHelper {
     // Note: This would be >= 16 to get efficient performance from WritableRowSet#insert and
-    // WritableRowSet#shiftInPlace. However, it is
-    // very costly for joins of many small groups for the default to be so high.
+    // WritableRowSet#shiftInPlace. However, it is too costly for joins of many small groups when the default is high.
     public static final int DEFAULT_NUM_RIGHT_BITS_TO_RESERVE = Configuration.getInstance()
             .getIntegerForClassWithDefault(CrossJoinHelper.class, "numRightBitsToReserve", 10);
 
@@ -43,22 +80,62 @@ public class CrossJoinHelper {
      */
     private CrossJoinHelper() {}
 
-    static Table join(final QueryTable leftTable, final QueryTable rightTable, final MatchPair[] columnsToMatch,
-            final MatchPair[] columnsToAdd, final int numReserveRightBits) {
+    static Table join(
+            final QueryTable leftTable,
+            final QueryTable rightTable,
+            final MatchPair[] columnsToMatch,
+            final MatchPair[] columnsToAdd,
+            final int numReserveRightBits) {
         return join(leftTable, rightTable, columnsToMatch, columnsToAdd, numReserveRightBits, new JoinControl());
     }
 
-    static Table join(final QueryTable leftTable, final QueryTable rightTable, final MatchPair[] columnsToMatch,
-            final MatchPair[] columnsToAdd, final int numReserveRightBits, final JoinControl control) {
-        final Table result =
-                internalJoin(leftTable, rightTable, columnsToMatch, columnsToAdd, numReserveRightBits, control);
+    static Table join(
+            final QueryTable leftTable,
+            final QueryTable rightTable,
+            final MatchPair[] columnsToMatch,
+            final MatchPair[] columnsToAdd,
+            final int numReserveRightBits,
+            final JoinControl control) {
+        final QueryTable result = internalJoin(leftTable, rightTable, columnsToMatch, columnsToAdd, numReserveRightBits,
+                control, false);
         leftTable.maybeCopyColumnDescriptions(result, rightTable, columnsToMatch, columnsToAdd);
         return result;
     }
 
-    private static Table internalJoin(final QueryTable leftTable, final QueryTable rightTable,
-            final MatchPair[] columnsToMatch, final MatchPair[] columnsToAdd, int numRightBitsToReserve,
+    public static Table leftOuterJoin(
+            final QueryTable leftTable,
+            final QueryTable rightTable,
+            final MatchPair[] columnsToMatch,
+            final MatchPair[] columnsToAdd,
+            final int numReserveRightBits) {
+        return leftOuterJoin(leftTable, rightTable, columnsToMatch, columnsToAdd, numReserveRightBits,
+                new JoinControl());
+    }
+
+    static Table leftOuterJoin(
+            final QueryTable leftTable,
+            final QueryTable rightTable,
+            final MatchPair[] columnsToMatch,
+            final MatchPair[] columnsToAdd,
+            final int numReserveRightBits,
             final JoinControl control) {
+        return QueryPerformanceRecorder.withNugget("leftJoin(" + rightTable.getDescription() + ","
+                + matchString(columnsToMatch) + "," + matchString(columnsToAdd) + ")", leftTable.size(), () -> {
+                    final QueryTable result = internalJoin(leftTable, rightTable, columnsToMatch, columnsToAdd,
+                            numReserveRightBits, control, true);
+                    leftTable.maybeCopyColumnDescriptions(result, rightTable, columnsToMatch, columnsToAdd);
+                    return result;
+                });
+    }
+
+    private static QueryTable internalJoin(
+            final QueryTable leftTable,
+            final QueryTable rightTable,
+            final MatchPair[] columnsToMatch,
+            final MatchPair[] columnsToAdd,
+            int numRightBitsToReserve,
+            final JoinControl control,
+            final boolean leftOuterJoin) {
         QueryTable.checkInitiateOperation(leftTable);
         QueryTable.checkInitiateOperation(rightTable);
 
@@ -72,7 +149,7 @@ public class CrossJoinHelper {
                     numRightBitsToReserve = 1; // tight computation of this is efficient and appropriate
                 }
                 return zeroKeyColumnsJoin(leftTable, rightTable, columnsToAdd, numRightBitsToReserve,
-                        bucketingContext.listenerDescription);
+                        bucketingContext.listenerDescription, leftOuterJoin);
             }
 
             final ModifiedColumnSet rightKeyColumns =
@@ -84,38 +161,44 @@ public class CrossJoinHelper {
                 // TODO: use grouping
                 if (!leftTable.isRefreshing()) {
                     final StaticChunkedCrossJoinStateManager jsm = new StaticChunkedCrossJoinStateManager(
-                            bucketingContext.leftSources, control.initialBuildSize(), control, leftTable);
+                            bucketingContext.leftSources, control.initialBuildSize(), control, leftTable,
+                            leftOuterJoin);
                     jsm.setMaximumLoadFactor(control.getMaximumLoadFactor());
                     jsm.setTargetLoadFactor(control.getTargetLoadFactor());
 
-                    // We can only build from right, because the left hand side does not permit us to nicely rehash as
-                    // we only have the row redirection when building left and no way to reverse the lookup.
-                    final TrackingWritableRowSet resultRowSet = jsm.buildFromRight(leftTable,
-                            bucketingContext.leftSources, rightTable, bucketingContext.rightSources)
-                            .toTracking();
+                    final WritableRowSet resultRowSet = control.buildLeft(leftTable, rightTable)
+                            ? jsm.buildFromLeft(leftTable, bucketingContext.leftSources, rightTable,
+                                    bucketingContext.rightSources)
+                            : jsm.buildFromRight(leftTable, bucketingContext.leftSources, rightTable,
+                                    bucketingContext.rightSources);
 
-                    return makeResult(leftTable, rightTable, columnsToAdd, jsm, resultRowSet,
-                            cs -> new CrossJoinRightColumnSource<>(jsm, cs, rightTable.isRefreshing()));
+                    final StaticChunkedCrossJoinStateManager.ResultOnlyCrossJoinStateManager resultStateManager =
+                            jsm.getResultOnlyStateManager();
+
+                    return makeResult(leftTable, rightTable, columnsToAdd, resultStateManager,
+                            resultRowSet.toTracking(),
+                            cs -> CrossJoinRightColumnSource.maybeWrap(
+                                    resultStateManager, cs, rightTable.isRefreshing()));
                 }
 
                 final LeftOnlyIncrementalChunkedCrossJoinStateManager jsm =
                         new LeftOnlyIncrementalChunkedCrossJoinStateManager(
                                 bucketingContext.leftSources, control.initialBuildSize(), leftTable,
-                                numRightBitsToReserve);
+                                numRightBitsToReserve, leftOuterJoin);
                 jsm.setMaximumLoadFactor(control.getMaximumLoadFactor());
                 jsm.setTargetLoadFactor(control.getTargetLoadFactor());
 
                 final TrackingWritableRowSet resultRowSet =
                         jsm.buildLeftTicking(leftTable, rightTable, bucketingContext.rightSources).toTracking();
                 final QueryTable resultTable = makeResult(leftTable, rightTable, columnsToAdd, jsm, resultRowSet,
-                        cs -> new CrossJoinRightColumnSource<>(jsm, cs, rightTable.isRefreshing()));
+                        cs -> CrossJoinRightColumnSource.maybeWrap(jsm, cs, rightTable.isRefreshing()));
 
                 jsm.startTrackingPrevValues();
                 final ModifiedColumnSet.Transformer leftTransformer = leftTable.newModifiedColumnSetTransformer(
                         resultTable,
                         leftTable.getColumnSourceMap().keySet().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
 
-                leftTable.listenForUpdates(new BaseTable.ListenerImpl(bucketingContext.listenerDescription,
+                leftTable.addUpdateListener(new BaseTable.ListenerImpl(bucketingContext.listenerDescription,
                         leftTable, resultTable) {
                     @Override
                     public void onUpdate(final TableUpdate upstream) {
@@ -126,12 +209,19 @@ public class CrossJoinHelper {
 
                         final RowSetBuilderRandom rmBuilder = RowSetFactory.builderRandom();
                         jsm.removeLeft(upstream.removed(), (stateSlot, leftKey) -> {
-                            final RowSet rightRowSet = jsm.getRightRowSet(stateSlot);
-                            if (rightRowSet.isNonempty()) {
-                                final long prevLeftOffset = leftKey << jsm.getPrevNumShiftBits();
-                                final long lastRightIndex = prevLeftOffset + rightRowSet.size() - 1;
-                                rmBuilder.addRange(prevLeftOffset, lastRightIndex);
+                            final long prevLeftOffset = leftKey << jsm.getPrevNumShiftBits();
+                            if (stateSlot == RowSet.NULL_ROW_KEY) {
+                                if (leftOuterJoin) {
+                                    rmBuilder.addKey(prevLeftOffset);
+                                }
+                                return;
                             }
+                            // the right table can never change and we always build right, so there should never be a
+                            // state that exists w/o the right having a non-empty rowset
+                            final long rightSize = jsm.getRightSize(stateSlot);
+                            Assert.gtZero(rightSize, "rightSize");
+                            final long lastRightRowKey = prevLeftOffset + rightSize - 1;
+                            rmBuilder.addRange(prevLeftOffset, lastRightRowKey);
                         });
                         downstream.removed = rmBuilder.build();
                         resultRowSet.remove(downstream.removed());
@@ -156,10 +246,12 @@ public class CrossJoinHelper {
                         } else if (upstream.modified().isNonempty()) {
                             final RowSetBuilderSequential modBuilder = RowSetFactory.builderSequential();
                             upstream.modified().forAllRowKeys(ll -> {
-                                final RowSet rightRowSet = jsm.getRightRowSetFromLeftIndex(ll);
+                                final RowSet rightRowSet = jsm.getRightRowSetFromLeftRow(ll);
+                                final long currResultOffset = ll << jsm.getNumShiftBits();
                                 if (rightRowSet.isNonempty()) {
-                                    final long currResultOffset = ll << jsm.getNumShiftBits();
                                     modBuilder.appendRange(currResultOffset, currResultOffset + rightRowSet.size() - 1);
+                                } else if (leftOuterJoin) {
+                                    modBuilder.appendKey(currResultOffset);
                                 }
                             });
                             downstream.modified = modBuilder.build();
@@ -171,11 +263,12 @@ public class CrossJoinHelper {
                         }
 
                         final RowSetBuilderRandom addBuilder = RowSetFactory.builderRandom();
-                        jsm.addLeft(upstream.added(), (stateSlot, leftKey) -> {
-                            final RowSet rightRowSet = jsm.getRightRowSet(stateSlot);
+                        jsm.addLeft(upstream.added(), (stateSlot, leftKey, rightRowSet) -> {
+                            final long regionStart = leftKey << jsm.getNumShiftBits();
                             if (rightRowSet.isNonempty()) {
-                                final long regionStart = leftKey << jsm.getNumShiftBits();
                                 addBuilder.addRange(regionStart, regionStart + rightRowSet.size() - 1);
+                            } else if (leftOuterJoin) {
+                                addBuilder.addKey(regionStart);
                             }
                         });
                         try (final RowSet added = addBuilder.build()) {
@@ -191,25 +284,24 @@ public class CrossJoinHelper {
 
             final RightIncrementalChunkedCrossJoinStateManager jsm = new RightIncrementalChunkedCrossJoinStateManager(
                     bucketingContext.leftSources, control.initialBuildSize(), bucketingContext.rightSources, leftTable,
-                    numRightBitsToReserve);
+                    numRightBitsToReserve, leftOuterJoin);
             jsm.setMaximumLoadFactor(control.getMaximumLoadFactor());
             jsm.setTargetLoadFactor(control.getTargetLoadFactor());
 
             final TrackingWritableRowSet resultRowSet = jsm.build(leftTable, rightTable).toTracking();
 
             final QueryTable resultTable = makeResult(leftTable, rightTable, columnsToAdd, jsm, resultRowSet,
-                    cs -> new CrossJoinRightColumnSource<>(jsm, cs, rightTable.isRefreshing()));
+                    cs -> CrossJoinRightColumnSource.maybeWrap(jsm, cs, rightTable.isRefreshing()));
 
             final ModifiedColumnSet.Transformer rightTransformer =
                     rightTable.newModifiedColumnSetTransformer(resultTable, columnsToAdd);
 
             if (leftTable.isRefreshing()) {
-                // LeftIndexToSlot needs prev value tracking
+                // LeftRowSetToSlot needs prev value tracking
                 jsm.startTrackingPrevValues();
 
                 final ModifiedColumnSet.Transformer leftTransformer = leftTable.newModifiedColumnSetTransformer(
-                        resultTable,
-                        leftTable.getColumnSourceMap().keySet().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
+                        resultTable, leftTable.getDefinition().getColumnNamesArray());
 
                 final JoinListenerRecorder leftRecorder =
                         new JoinListenerRecorder(true, bucketingContext.listenerDescription, leftTable, resultTable);
@@ -247,8 +339,8 @@ public class CrossJoinHelper {
                                 jsm.rightRemove(upstreamRight.removed(), tracker);
                             }
                             if (upstreamRight.shifted().nonempty()) {
-                                try (final RowSet prevIndex = rightTable.getRowSet().copyPrev()) {
-                                    jsm.rightShift(prevIndex, upstreamRight.shifted(), tracker);
+                                try (final RowSet prevRowSet = rightTable.getRowSet().copyPrev()) {
+                                    jsm.rightShift(prevRowSet, upstreamRight.shifted(), tracker);
                                 }
                             }
                             if (upstreamRight.added().isNonempty()) {
@@ -265,8 +357,8 @@ public class CrossJoinHelper {
                             // We must finalize all known slots, so that left accumulation does not mix with right
                             // accumulation.
                             if (upstreamRight.shifted().nonempty()) {
-                                try (final RowSet prevIndex = rightTable.getRowSet().copyPrev()) {
-                                    jsm.shiftRightIndexToSlot(prevIndex, upstreamRight.shifted());
+                                try (final RowSet prevRowSet = rightTable.getRowSet().copyPrev()) {
+                                    jsm.shiftRightRowSetToSlot(prevRowSet, upstreamRight.shifted());
                                 }
                             }
                             tracker.finalizeRightProcessing();
@@ -304,27 +396,27 @@ public class CrossJoinHelper {
                             downstream.modified = RowSetFactory.empty();
                         }
 
+                        final RowSetBuilderRandom addedBuilder = RowSetFactory.builderRandom();
                         if (rightChanged) {
                             // With left removes (and modified-removes) applied (yet adds and modified-adds pending),
                             // we can now easily calculate which rows are removed due to right removes.
 
-                            try (final WritableRowSet leftIndexToVisitForRightRm = RowSetFactory.empty()) {
-                                tracker.forAllModifiedSlots(slotState -> {
-                                    if (slotState.leftRowSet.size() > 0 && slotState.rightRemoved.isNonempty()) {
-                                        leftIndexToVisitForRightRm.insert(slotState.leftRowSet);
-                                    }
-                                });
+                            final RowSetBuilderRandom leftRowsToVisitForRightRmBuilder = RowSetFactory.builderRandom();
+                            tracker.forAllModifiedSlots(slotState -> {
+                                if (slotState.leftRowSet.size() > 0 && slotState.rightRemoved.isNonempty()) {
+                                    leftRowsToVisitForRightRmBuilder.addRowSet(slotState.leftRowSet);
+                                }
+                            });
 
-                                try (final WritableRowSet toRemove = RowSetFactory.empty()) {
-                                    // This could use a sequential builder, however, since we are always appending
-                                    // non-overlapping containers, inserting into a RowSet is actually rather
-                                    // efficient.
-                                    leftIndexToVisitForRightRm.forAllRowKeys(ii -> {
-                                        final long prevOffset = ii << prevRightBits;
-                                        final CrossJoinModifiedSlotTracker.SlotState state = tracker
-                                                .getFinalSlotState(jsm.getTrackerCookie(jsm.getSlotFromLeftIndex(ii)));
-                                        toRemove.insertWithShift(prevOffset, state.rightRemoved);
-                                    });
+                            try (final RowSet leftRowsToVisitForRightRm = leftRowsToVisitForRightRmBuilder.build()) {
+                                final RowSetBuilderSequential toRemoveBuilder = RowSetFactory.builderSequential();
+                                leftRowsToVisitForRightRm.forAllRowKeys(ii -> {
+                                    final long prevOffset = ii << prevRightBits;
+                                    final CrossJoinModifiedSlotTracker.SlotState state = tracker
+                                            .getFinalSlotState(jsm.getTrackerCookie(jsm.getSlotFromLeftRowKey(ii)));
+                                    toRemoveBuilder.appendRowSequenceWithOffset(state.rightRemoved, prevOffset);
+                                });
+                                try (final RowSet toRemove = toRemoveBuilder.build()) {
                                     downstream.removed().writableCast().insert(toRemove);
                                 }
                             }
@@ -346,6 +438,8 @@ public class CrossJoinHelper {
                         if (rightChanged) {
                             // process right mods / adds (in post-shift space)
                             final RowSetBuilderRandom addsToVisit = RowSetFactory.builderRandom();
+                            final RowSetBuilderRandom addsToVisitForOuterJoinRemoval =
+                                    leftOuterJoin ? RowSetFactory.builderRandom() : null;
                             final RowSetBuilderRandom modsToVisit = RowSetFactory.builderRandom();
                             tracker.forAllModifiedSlots(slotState -> {
                                 if (slotState.leftRowSet.size() == 0) {
@@ -353,38 +447,57 @@ public class CrossJoinHelper {
                                 }
                                 if (slotState.rightAdded.isNonempty()) {
                                     addsToVisit.addRowSet(slotState.leftRowSet);
+                                    if (leftOuterJoin && slotState.rightRowSet.sizePrev() == 0) {
+                                        try (final RowSet leftPrev = slotState.leftRowSet.copyPrev()) {
+                                            addsToVisitForOuterJoinRemoval.addRowSet(leftPrev);
+                                        }
+                                    }
                                 }
                                 if (slotState.rightModified.isNonempty()) {
                                     modsToVisit.addRowSet(slotState.leftRowSet);
                                 }
                             });
 
-                            try (final RowSet leftIndexesToVisitForAdds = addsToVisit.build();
-                                    final RowSet leftIndexesToVisitForMods = modsToVisit.build();
-                                    final WritableRowSet modified = RowSetFactory.empty()) {
-                                downstream.added = RowSetFactory.empty();
+                            if (leftOuterJoin) {
+                                try (final RowSet leftRowsForNullKeyRemoval = addsToVisitForOuterJoinRemoval.build()) {
+                                    final RowSetBuilderSequential toRemoveBuilder = RowSetFactory.builderSequential();
+                                    leftRowsForNullKeyRemoval.forAllRowKeys((key) -> {
+                                        toRemoveBuilder.appendKey(key << prevRightBits);
+                                    });
+                                    try (final RowSet toRemove = toRemoveBuilder.build()) {
+                                        downstream.removed().writableCast().insert(toRemove);
+                                    }
+                                }
+                            }
 
-                                leftIndexesToVisitForAdds.forAllRowKeys(ii -> {
+                            try (final RowSet leftRowsToVisitForAdds = addsToVisit.build();
+                                    final RowSet leftRowsToVisitForMods = modsToVisit.build()) {
+                                downstream.added = addedBuilder.build();
+
+                                leftRowsToVisitForAdds.forAllRowKeys(ii -> {
                                     final long currOffset = ii << currRightBits;
                                     final CrossJoinModifiedSlotTracker.SlotState state = tracker
-                                            .getFinalSlotState(jsm.getTrackerCookie(jsm.getSlotFromLeftIndex(ii)));
+                                            .getFinalSlotState(jsm.getTrackerCookie(jsm.getSlotFromLeftRowKey(ii)));
                                     downstream.added().writableCast().insertWithShift(currOffset, state.rightAdded);
                                 });
 
-                                leftIndexesToVisitForMods.forAllRowKeys(ii -> {
+                                final RowSetBuilderSequential modifiedBuilder = RowSetFactory.builderSequential();
+                                leftRowsToVisitForMods.forAllRowKeys(ii -> {
                                     final long currOffset = ii << currRightBits;
                                     final CrossJoinModifiedSlotTracker.SlotState state = tracker
-                                            .getFinalSlotState(jsm.getTrackerCookie(jsm.getSlotFromLeftIndex(ii)));
-                                    modified.insertWithShift(currOffset, state.rightModified);
+                                            .getFinalSlotState(jsm.getTrackerCookie(jsm.getSlotFromLeftRowKey(ii)));
+                                    modifiedBuilder.appendRowSequenceWithOffset(state.rightModified, currOffset);
                                 });
-                                downstream.modified().writableCast().insert(modified);
+                                try (final RowSet modified = modifiedBuilder.build()) {
+                                    downstream.modified().writableCast().insert(modified);
+                                }
 
                                 mustCloseRowsToShift = leftChanged || !allRowsShift;
                                 if (allRowsShift) {
                                     rowsToShift = leftChanged ? leftTable.getRowSet().minus(upstreamLeft.added())
                                             : leftTable.getRowSet();
                                 } else {
-                                    rowsToShift = leftIndexesToVisitForAdds.copy();
+                                    rowsToShift = leftRowsToVisitForAdds.copy();
                                 }
                             }
 
@@ -409,8 +522,8 @@ public class CrossJoinHelper {
                         final long prevCardinality = 1L << prevRightBits;
                         final long currCardinality = 1L << currRightBits;
                         final RowSetShiftData.Builder shiftBuilder = new RowSetShiftData.Builder();
-                        final RowSetBuilderSequential toRemoveFromResultIndex = RowSetFactory.builderSequential();
-                        final RowSetBuilderSequential toInsertIntoResultIndex = RowSetFactory.builderSequential();
+                        final RowSetBuilderSequential toRemoveFromResultRowSet = RowSetFactory.builderSequential();
+                        final RowSetBuilderSequential toInsertIntoResultRowSet = RowSetFactory.builderSequential();
 
                         if (rowsToShift.isNonempty() && leftChanged && upstreamLeft.shifted().nonempty()) {
                             final MutableBoolean finishShifting = new MutableBoolean();
@@ -456,8 +569,8 @@ public class CrossJoinHelper {
 
                                         shiftBuilder.shiftRange(minTouched, maxTouched, shiftDelta);
                                         rsIt.getNextRowSequenceThrough(maxTouched).forAllRowKeyRanges((s, e) -> {
-                                            toRemoveFromResultIndex.appendRange(s, e);
-                                            toInsertIntoResultIndex.appendRange(s + shiftDelta, e + shiftDelta);
+                                            toRemoveFromResultRowSet.appendRange(s, e);
+                                            toInsertIntoResultRowSet.appendRange(s + shiftDelta, e + shiftDelta);
                                         });
                                         watermark.setValue(maxTouched + 1);
 
@@ -472,19 +585,16 @@ public class CrossJoinHelper {
 
                                     final long prevOffset = pi << prevRightBits;
                                     final long currOffset = ii << currRightBits;
-                                    final long slotFromLeftIndex = jsm.getSlotFromLeftIndex(ii);
+                                    final long slotFromLeftIndex = jsm.getSlotFromLeftRowKey(ii);
 
                                     processLeftShiftsUntil.accept(prevOffset);
 
                                     if (slotFromLeftIndex == RightIncrementalChunkedCrossJoinStateManager.LEFT_MAPPING_MISSING) {
                                         // Since left rows that change key-column-groups are currently removed from all
-                                        // JSM data structures,
-                                        // they won't have a properly mapped slot. They will be added to their new slot
-                                        // after we
-                                        // generate-downstream shifts. The result RowSet is also updated for these rows
-                                        // in
-                                        // the left-rm/left-add code paths. This code path should only be hit when
-                                        // prevRightBits != currRightBits.
+                                        // JSM data structures, they won't have a properly mapped slot. They will be
+                                        // added to their new slot after we generate-downstream shifts. The result
+                                        // RowSet is also updated for these rows in the left-rm/left-add code paths.
+                                        // This code path should only be hit when prevRightBits != currRightBits.
                                         return;
                                     }
                                     final CrossJoinModifiedSlotTracker.SlotState slotState =
@@ -493,8 +603,10 @@ public class CrossJoinHelper {
                                     if (prevRightBits != currRightBits) {
                                         final RowSet rightRowSet = jsm.getRightRowSet(slotFromLeftIndex);
                                         if (rightRowSet.isNonempty()) {
-                                            toInsertIntoResultIndex.appendRange(currOffset,
+                                            toInsertIntoResultRowSet.appendRange(currOffset,
                                                     currOffset + rightRowSet.size() - 1);
+                                        } else if (leftOuterJoin) {
+                                            toInsertIntoResultRowSet.appendKey(currOffset);
                                         }
                                     } else if (slotState != null) {
                                         final long prevSize = slotState.rightRowSet.sizePrev();
@@ -503,20 +615,29 @@ public class CrossJoinHelper {
                                         if (prevOffset != currOffset) {
                                             // might be changing to an empty group
                                             if (currSize > 0) {
-                                                toInsertIntoResultIndex.appendRange(currOffset,
+                                                toInsertIntoResultRowSet.appendRange(currOffset,
                                                         currOffset + currSize - 1);
+                                            } else if (leftOuterJoin) {
+                                                toInsertIntoResultRowSet.appendKey(currOffset);
                                             }
                                             // might have changed from an empty group
                                             if (prevSize > 0) {
-                                                toRemoveFromResultIndex.appendRange(prevOffset,
+                                                toRemoveFromResultRowSet.appendRange(prevOffset,
                                                         prevOffset + currCardinality - 1);
+                                            } else if (leftOuterJoin) {
+                                                toRemoveFromResultRowSet.appendKey(prevOffset);
                                             }
                                         } else if (prevSize < currSize) {
-                                            toInsertIntoResultIndex.appendRange(currOffset + prevSize,
+                                            toInsertIntoResultRowSet.appendRange(currOffset + prevSize,
                                                     currOffset + currSize - 1);
                                         } else if (currSize < prevSize && prevSize > 0) {
-                                            toRemoveFromResultIndex.appendRange(prevOffset + currSize,
-                                                    prevOffset + currCardinality - 1);
+                                            if (currSize == 0 && leftOuterJoin) {
+                                                toRemoveFromResultRowSet.appendRange(prevOffset + 1,
+                                                        prevOffset + currCardinality - 1);
+                                            } else {
+                                                toRemoveFromResultRowSet.appendRange(prevOffset + currSize,
+                                                        prevOffset + currCardinality - 1);
+                                            }
                                         }
                                     }
 
@@ -539,7 +660,7 @@ public class CrossJoinHelper {
                             rowsToShift.forAllRowKeys(ii -> {
                                 final long prevOffset = ii << prevRightBits;
                                 final long currOffset = ii << currRightBits;
-                                final long slotFromLeftIndex = jsm.getSlotFromLeftIndex(ii);
+                                final long slotFromLeftIndex = jsm.getSlotFromLeftRowKey(ii);
 
                                 if (slotFromLeftIndex == RightIncrementalChunkedCrossJoinStateManager.LEFT_MAPPING_MISSING) {
                                     // Since left rows that change key-column-groups are currently removed from all JSM
@@ -559,8 +680,10 @@ public class CrossJoinHelper {
                                 if (prevRightBits != currRightBits) {
                                     final RowSet rightRowSet = jsm.getRightRowSet(slotFromLeftIndex);
                                     if (rightRowSet.isNonempty()) {
-                                        toInsertIntoResultIndex.appendRange(currOffset,
+                                        toInsertIntoResultRowSet.appendRange(currOffset,
                                                 currOffset + rightRowSet.size() - 1);
+                                    } else if (leftOuterJoin) {
+                                        toInsertIntoResultRowSet.appendKey(currOffset);
                                     }
                                 } else if (slotState != null) {
                                     final long prevSize = slotState.rightRowSet.sizePrev();
@@ -569,12 +692,15 @@ public class CrossJoinHelper {
                                     // note: prevOffset == currOffset (because left did not shift and right bits are
                                     // unchanged)
                                     if (prevSize < currSize) {
-                                        toInsertIntoResultIndex.appendRange(currOffset + prevSize,
+                                        toInsertIntoResultRowSet.appendRange(currOffset + prevSize,
                                                 currOffset + currSize - 1);
                                     } else if (currSize < prevSize && prevSize > 0) {
                                         // note prevCardinality == currCardinality if prevRightBits == currRightBits
-                                        toRemoveFromResultIndex.appendRange(prevOffset + currSize,
+                                        toRemoveFromResultRowSet.appendRange(prevOffset + currSize,
                                                 prevOffset + currCardinality - 1);
+                                        if (currSize == 0 && leftOuterJoin) {
+                                            toInsertIntoResultRowSet.appendKey(currOffset);
+                                        }
                                     }
                                 }
 
@@ -602,8 +728,8 @@ public class CrossJoinHelper {
 
                                     shiftBuilder.shiftRange(beginRange, endRange, shiftDelta);
                                     rsIt.getNextRowSequenceThrough(endRange).forAllRowKeyRanges((s, e) -> {
-                                        toRemoveFromResultIndex.appendRange(s, e);
-                                        toInsertIntoResultIndex.appendRange(s + shiftDelta, e + shiftDelta);
+                                        toRemoveFromResultRowSet.appendRange(s, e);
+                                        toInsertIntoResultRowSet.appendRange(s + shiftDelta, e + shiftDelta);
                                     });
                                 }
                             }
@@ -611,8 +737,8 @@ public class CrossJoinHelper {
 
                         downstream.shifted = shiftBuilder.build();
 
-                        try (final RowSet toRemove = toRemoveFromResultIndex.build();
-                                final RowSet toInsert = toInsertIntoResultIndex.build()) {
+                        try (final RowSet toRemove = toRemoveFromResultRowSet.build();
+                                final RowSet toInsert = toInsertIntoResultRowSet.build()) {
                             if (prevRightBits != currRightBits) {
                                 // every row shifted
                                 resultRowSet.clear();
@@ -681,11 +807,11 @@ public class CrossJoinHelper {
 
                 leftRecorder.setMergedListener(mergedListener);
                 rightRecorder.setMergedListener(mergedListener);
-                leftTable.listenForUpdates(leftRecorder);
-                rightTable.listenForUpdates(rightRecorder);
+                leftTable.addUpdateListener(leftRecorder);
+                rightTable.addUpdateListener(rightRecorder);
                 resultTable.addParentReference(mergedListener);
             } else {
-                rightTable.listenForUpdates(new BaseTable.ListenerImpl(bucketingContext.listenerDescription,
+                rightTable.addUpdateListener(new BaseTable.ListenerImpl(bucketingContext.listenerDescription,
                         rightTable, resultTable) {
                     private final CrossJoinModifiedSlotTracker tracker = new CrossJoinModifiedSlotTracker(jsm);
 
@@ -715,7 +841,7 @@ public class CrossJoinHelper {
                         // right changes are flushed now
                         if (upstream.shifted().nonempty()) {
                             try (final RowSet prevRowSet = rightTable.getRowSet().copyPrev()) {
-                                jsm.shiftRightIndexToSlot(prevRowSet, upstream.shifted());
+                                jsm.shiftRightRowSetToSlot(prevRowSet, upstream.shifted());
                             }
                         }
                         tracker.finalizeRightProcessing();
@@ -753,39 +879,51 @@ public class CrossJoinHelper {
 
                         final RowSetBuilderSequential removeFromResultIndex =
                                 numRightBitsChanged ? null : RowSetFactory.builderSequential();
-                        final RowSetBuilderSequential addToResultIndex = RowSetFactory.builderSequential();
+                        final RowSetBuilderSequential addToResultRowSet = RowSetFactory.builderSequential();
 
                         // Accumulate all changes by left row.
                         leftChanged.forAllRowKeys(ii -> {
                             final long prevOffset = ii << prevRightBits;
                             final long currOffset = ii << currRightBits;
 
-                            final long slot = jsm.getSlotFromLeftIndex(ii);
+                            final long slot = jsm.getSlotFromLeftRowKey(ii);
                             final CrossJoinModifiedSlotTracker.SlotState slotState =
                                     tracker.getFinalSlotState(jsm.getTrackerCookie(slot));
                             final TrackingRowSet rightRowSet =
                                     slotState == null ? jsm.getRightRowSet(slot) : slotState.rightRowSet;
+                            final long currSize = rightRowSet.size();
+                            final long prevSize = rightRowSet.sizePrev();
+                            final long currSizeAdjusted = leftOuterJoin ? Math.max(currSize, 1) : currSize;
+                            final long prevSizeAdjusted = leftOuterJoin ? Math.max(prevSize, 1) : prevSize;
 
                             if (numRightBitsChanged) {
-                                if (rightRowSet.isNonempty()) {
-                                    addToResultIndex.appendRange(currOffset, currOffset + rightRowSet.size() - 1);
+                                if (currSize > 0) {
+                                    addToResultRowSet.appendRange(currOffset, currOffset + currSize - 1);
+                                } else if (leftOuterJoin) {
+                                    addToResultRowSet.appendKey(currOffset);
                                 }
                             } else if (slotState != null) {
-                                final long prevSize = slotState.rightRowSet.sizePrev();
-                                final long currSize = slotState.rightRowSet.size();
-
                                 if (prevSize < currSize) {
-                                    addToResultIndex.appendRange(currOffset + prevSize, currOffset + currSize - 1);
-                                } else if (currSize < prevSize && prevSize > 0) {
+                                    if (!leftOuterJoin || prevSize != 0) {
+                                        addToResultRowSet.appendRange(currOffset + prevSize, currOffset + currSize - 1);
+                                    } else if (currSize > 1) {
+                                        addToResultRowSet.appendRange(currOffset + 1, currOffset + currSize - 1);
+                                    }
+                                } else if (currSize < prevSize) {
                                     // note prevCardinality == currCardinality if prevRightBits == currRightBits
-                                    removeFromResultIndex.appendRange(prevOffset + currSize,
-                                            prevOffset + prevCardinality - 1);
+                                    if (!leftOuterJoin || currSize != 0) {
+                                        removeFromResultIndex.appendRange(
+                                                prevOffset + currSize, prevOffset + prevCardinality - 1);
+                                    } else if (prevSize > 1) {
+                                        removeFromResultIndex.appendRange(
+                                                prevOffset + 1, prevOffset + prevCardinality - 1);
+                                    }
                                 }
                             }
 
                             if (slotState == null || !slotState.rightChanged) {
-                                if (prevOffset != currOffset) {
-                                    shifted.shiftRange(prevOffset, prevOffset + rightRowSet.sizePrev() - 1,
+                                if (prevOffset != currOffset && prevSizeAdjusted > 0) {
+                                    shifted.shiftRange(prevOffset, prevOffset + prevSizeAdjusted - 1,
                                             currOffset - prevOffset);
                                 }
                                 return;
@@ -796,6 +934,9 @@ public class CrossJoinHelper {
                             if (slotState.rightAdded.isNonempty()) {
                                 slotState.rightAdded.shiftInPlace(postShiftShiftAmt);
                                 added.appendRowSequence(slotState.rightAdded);
+                                if (leftOuterJoin && prevSize == 0) {
+                                    removed.appendKey(prevOffset);
+                                }
                             }
                             if (slotState.rightRemoved.isNonempty()) {
                                 slotState.rightRemoved.shiftInPlace(preShiftShiftAmt);
@@ -807,8 +948,8 @@ public class CrossJoinHelper {
                             }
                             slotState.lastIndex = ii;
 
-                            shifted.appendShiftData(slotState.innerShifted, prevOffset, rightRowSet.sizePrev(),
-                                    currOffset, rightRowSet.size());
+                            shifted.appendShiftData(slotState.innerShifted, prevOffset, prevSizeAdjusted,
+                                    currOffset, currSizeAdjusted);
                         });
 
                         downstream.added = added.build();
@@ -822,7 +963,7 @@ public class CrossJoinHelper {
                                 resultRowSet.remove(remove);
                             }
                         }
-                        try (final RowSet add = addToResultIndex.build()) {
+                        try (final RowSet add = addToResultRowSet.build()) {
                             resultRowSet.insert(add);
                         }
 
@@ -847,7 +988,9 @@ public class CrossJoinHelper {
         }
     }
 
-    private static void validateZeroKeyIndexSpace(final QueryTable leftTable, final QueryTable rightTable,
+    private static void validateZeroKeyIndexSpace(
+            final QueryTable leftTable,
+            final QueryTable rightTable,
             int numRightBitsReserved) {
         final long leftLastKey = leftTable.getRowSet().lastRowKey();
         final long rightLastKey = rightTable.getRowSet().lastRowKey();
@@ -866,16 +1009,48 @@ public class CrossJoinHelper {
     }
 
     @NotNull
-    private static Table zeroKeyColumnsJoin(QueryTable leftTable, QueryTable rightTable, MatchPair[] columnsToAdd,
-            int numRightBitsToReserve, String listenerDescription) {
+    private static QueryTable zeroKeyColumnsJoin(
+            final QueryTable leftTable,
+            final QueryTable rightTable,
+            final MatchPair[] columnsToAdd,
+            final int numRightBitsToReserve,
+            final String listenerDescription,
+            final boolean leftOuterJoin) {
         // we are a single value join, we do not need to do any hash-related work
         validateZeroKeyIndexSpace(leftTable, rightTable, numRightBitsToReserve);
-        final CrossJoinShiftState crossJoinState =
-                new CrossJoinShiftState(Math.max(numRightBitsToReserve, CrossJoinShiftState.getMinBits(rightTable)));
+        final ZeroKeyCrossJoinShiftState crossJoinState = new ZeroKeyCrossJoinShiftState(
+                Math.max(numRightBitsToReserve, CrossJoinShiftState.getMinBits(rightTable)), leftOuterJoin);
 
-        final TrackingWritableRowSet resultRowSet = RowSetFactory.empty().toTracking();
+        // Initialize result table.
+        final TrackingWritableRowSet resultRowSet;
+        try (final WritableRowSet currRight = rightTable.getRowSet().copy()) {
+            final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
+            final MutableLong currRightShift = new MutableLong();
+            if (currRight.size() == 0) {
+                if (leftOuterJoin) {
+                    leftTable.getRowSet().forAllRowKeys((currIdx) -> {
+                        final long currResultIdx = currIdx << crossJoinState.getNumShiftBits();
+                        builder.appendKey(currResultIdx);
+                    });
+                }
+                crossJoinState.setRightEmpty(true);
+            } else {
+                leftTable.getRowSet().forAllRowKeys((currIdx) -> {
+                    final long currResultIdx = currIdx << crossJoinState.getNumShiftBits();
+                    currRightShift.setValue(furtherShiftIndex(currRight, currRightShift.longValue(), currResultIdx));
+                    builder.appendRowSequence(currRight);
+                });
+                crossJoinState.setRightEmpty(false);
+            }
+            resultRowSet = builder.build().toTracking();
+        }
+
         final QueryTable result = makeResult(leftTable, rightTable, columnsToAdd, crossJoinState, resultRowSet,
-                cs -> new BitMaskingColumnSource<>(crossJoinState, cs));
+                cs -> BitMaskingColumnSource.maybeWrap(crossJoinState, cs));
+
+        if (leftTable.isRefreshing() || rightTable.isRefreshing()) {
+            crossJoinState.startTrackingPrevious();
+        }
         final ModifiedColumnSet.Transformer leftTransformer =
                 leftTable.newModifiedColumnSetTransformer(result, leftTable.getDefinition().getColumnNamesArray());
         final ModifiedColumnSet.Transformer rightTransformer =
@@ -895,9 +1070,6 @@ public class CrossJoinHelper {
             }
 
             final TableUpdateImpl downstream = new TableUpdateImpl();
-            downstream.added = RowSetFactory.empty();
-            downstream.removed = RowSetFactory.empty();
-            downstream.modified = RowSetFactory.empty();
             downstream.modifiedColumnSet = result.getModifiedColumnSetForUpdates();
             downstream.modifiedColumnSet.clear();
 
@@ -933,6 +1105,8 @@ public class CrossJoinHelper {
 
                     long existingRightShift = 0; // how far existingRight has been shifted
                     final WritableRowSet existingRight = closer.add(currRight.minus(rightUpdate.added()));
+                    boolean modifyNullKeys = leftOuterJoin && prevRight.isEmpty() && currRight.isEmpty();
+                    boolean removeNullKeys = leftOuterJoin && prevRight.isEmpty() && currRight.isNonempty();
 
                     final boolean rightHasAdds = addRight.isNonempty();
                     final boolean rightHasRemoves = rmRight.isNonempty();
@@ -955,6 +1129,10 @@ public class CrossJoinHelper {
 
                     // It is more efficient to completely rebuild this RowSet, than to modify each row to right mapping.
                     resultRowSet.clear();
+                    final RowSetBuilderSequential newResultBuilder = RowSetFactory.builderSequential();
+                    final RowSetBuilderSequential addedBuilder = RowSetFactory.builderSequential();
+                    final RowSetBuilderSequential removedBuilder = RowSetFactory.builderSequential();
+                    final RowSetBuilderSequential modifiedBuilder = RowSetFactory.builderSequential();
 
                     final long prevCardinality = 1L << prevRightBits;
                     final long currCardinality = 1L << currRightBits;
@@ -969,7 +1147,11 @@ public class CrossJoinHelper {
                             // currPrevIdx is a left remove.
                             moreLeftRm = advanceIterator(leftRmIter);
                             prevRightShift = furtherShiftIndex(prevRight, prevRightShift, prevResultOffset);
-                            downstream.removed().writableCast().insert(prevRight);
+                            if (removeNullKeys) {
+                                removedBuilder.appendKey(prevResultOffset);
+                            } else {
+                                removedBuilder.appendRowSequence(prevRight);
+                            }
                             continue;
                         }
 
@@ -983,9 +1165,15 @@ public class CrossJoinHelper {
                         while (moreLeftAdd && currCurrIdx == leftAddIter.currentValue()) {
                             // currCurrIdx is a left add.
                             moreLeftAdd = advanceIterator(leftAddIter);
-                            currRightShift = furtherShiftIndex(currRight, currRightShift, currResultOffset);
-                            downstream.added().writableCast().insert(currRight);
-                            resultRowSet.insert(currRight);
+
+                            if (currRight.isNonempty()) {
+                                currRightShift = furtherShiftIndex(currRight, currRightShift, currResultOffset);
+                                addedBuilder.appendRowSequence(currRight);
+                                newResultBuilder.appendRowSequence(currRight);
+                            } else if (leftOuterJoin) {
+                                addedBuilder.appendKey(currResultOffset);
+                                newResultBuilder.appendKey(currResultOffset);
+                            }
 
                             // Advance left current iterator.
                             Assert.eqTrue(moreLeftCurr, "moreLeftCurr");
@@ -996,26 +1184,41 @@ public class CrossJoinHelper {
 
                         if (rightHasRemoves) {
                             rmRightShift = furtherShiftIndex(rmRight, rmRightShift, prevResultOffset);
-                            downstream.removed().writableCast().insert(rmRight);
+                            removedBuilder.appendRowSequence(rmRight);
+                            // we need to replace the result with a null row
+                            if (leftOuterJoin && currRight.isEmpty()) {
+                                addedBuilder.appendKey(currResultOffset);
+                                newResultBuilder.appendKey(currResultOffset);
+                            }
                         }
 
                         if (rightHasAdds) {
                             addRightShift = furtherShiftIndex(addRight, addRightShift, currResultOffset);
-                            downstream.added().writableCast().insert(addRight);
+                            addedBuilder.appendRowSequence(addRight);
+                            if (leftOuterJoin && prevRight.isEmpty()) {
+                                removedBuilder.appendKey(prevResultOffset);
+                            }
                         }
 
                         if (moreLeftMod && currCurrIdx == leftModIter.currentValue()) {
                             // currCurrIdx is modify; paint all existing rows as modified
                             moreLeftMod = advanceIterator(leftModIter);
-                            existingRightShift = furtherShiftIndex(existingRight, existingRightShift, currResultOffset);
-                            downstream.modified().writableCast().insert(existingRight);
+                            if (existingRight.isNonempty()) {
+                                existingRightShift =
+                                        furtherShiftIndex(existingRight, existingRightShift, currResultOffset);
+                                modifiedBuilder.appendRowSequence(existingRight);
+                            } else if (modifyNullKeys) {
+                                modifiedBuilder.appendKey(currResultOffset);
+                            }
                         } else if (rightHasModifies) {
                             modRightShift = furtherShiftIndex(modRight, modRightShift, currResultOffset);
-                            downstream.modified().writableCast().insert(modRight);
+                            modifiedBuilder.appendRowSequence(modRight);
                         }
 
-                        currRightShift = furtherShiftIndex(currRight, currRightShift, currResultOffset);
-                        resultRowSet.insert(currRight);
+                        if (currRight.isNonempty()) {
+                            currRightShift = furtherShiftIndex(currRight, currRightShift, currResultOffset);
+                            newResultBuilder.appendRowSequence(currRight);
+                        }
 
                         if (rightUpdate.shifted().nonempty()) {
                             shiftBuilder.appendShiftData(rightUpdate.shifted(), prevResultOffset, prevCardinality,
@@ -1038,44 +1241,84 @@ public class CrossJoinHelper {
                         moreLeftAdd = advanceIterator(leftAddIter);
 
                         final long currResultIdx = currCurrIdx << currRightBits;
-                        currRightShift = furtherShiftIndex(currRight, currRightShift, currResultIdx);
-                        downstream.added().writableCast().insert(currRight);
-                        resultRowSet.insert(currRight);
+                        if (currRight.isNonempty()) {
+                            currRightShift = furtherShiftIndex(currRight, currRightShift, currResultIdx);
+                            addedBuilder.appendRowSequence(currRight);
+                            newResultBuilder.appendRowSequence(currRight);
+                        } else if (leftOuterJoin) {
+                            addedBuilder.appendKey(currResultIdx);
+                            newResultBuilder.appendKey(currResultIdx);
+                        }
                     }
 
+                    try (final RowSet newResult = newResultBuilder.build()) {
+                        resultRowSet.insert(newResult);
+                    }
+                    downstream.added = addedBuilder.build();
+                    downstream.removed = removedBuilder.build();
+                    downstream.modified = modifiedBuilder.build();
+
                     downstream.shifted = shiftBuilder.build();
+
+                    crossJoinState.setRightEmpty(currRight.isEmpty());
                 } else {
                     // Explode left updates to apply to all right rows.
                     assert leftUpdate != null;
 
-                    RowSet.SearchIterator iter = leftUpdate.removed().searchIterator();
+                    RowSet.Iterator iter = leftUpdate.removed().iterator();
+                    final RowSetBuilderSequential removeBuilder = RowSetFactory.builderSequential();
+                    final RowSetBuilderSequential removeRangeBuilder = RowSetFactory.builderSequential();
+
+                    final long currRightSize = currRight.size();
+                    final long currRightRange = (1L << currRightBits) - 1;
                     while (iter.hasNext()) {
                         final long currIdx = iter.nextLong();
                         final long currResultIdx = currIdx << currRightBits;
-                        currRightShift = furtherShiftIndex(currRight, currRightShift, currResultIdx);
-                        downstream.removed().writableCast().insert(currRight);
-                        resultRowSet.removeRange(currResultIdx, ((currIdx + 1) << currRightBits) - 1);
+                        if (currRightSize > 0) {
+                            currRightShift = furtherShiftIndex(currRight, currRightShift, currResultIdx);
+                            removeBuilder.appendRowSequence(currRight);
+                            removeRangeBuilder.appendRange(currResultIdx, ((currIdx + 1) << currRightBits) - 1);
+                        } else if (leftOuterJoin) {
+                            removeBuilder.appendKey(currResultIdx);
+                            removeRangeBuilder.appendRange(currResultIdx, currResultIdx + currRightRange);
+                        }
+                    }
+                    downstream.removed = removeBuilder.build();
+                    try (final RowSet removedRanges = removeRangeBuilder.build()) {
+                        resultRowSet.remove(removedRanges);
                     }
 
                     downstream.shifted = expandLeftOnlyShift(leftUpdate.shifted(), crossJoinState);
-                    downstream.shifted().apply(resultRowSet);
+                    downstream.shifted.apply(resultRowSet);
 
-                    iter = leftUpdate.modified().searchIterator();
+                    iter = leftUpdate.modified().iterator();
+                    final RowSetBuilderSequential modifiedBuilder = RowSetFactory.builderSequential();
                     while (iter.hasNext()) {
                         final long currIdx = iter.nextLong();
                         final long currResultIdx = currIdx << currRightBits;
-                        currRightShift = furtherShiftIndex(currRight, currRightShift, currResultIdx);
-                        downstream.modified().writableCast().insert(currRight);
+                        if (currRightSize > 0) {
+                            currRightShift = furtherShiftIndex(currRight, currRightShift, currResultIdx);
+                            modifiedBuilder.appendRowSequence(currRight);
+                        } else if (leftOuterJoin) {
+                            modifiedBuilder.appendKey(currResultIdx);
+                        }
                     }
+                    downstream.modified = modifiedBuilder.build();
 
-                    iter = leftUpdate.added().searchIterator();
+                    iter = leftUpdate.added().iterator();
+                    final RowSetBuilderSequential addedBuilder = RowSetFactory.builderSequential();
                     while (iter.hasNext()) {
                         final long currIdx = iter.nextLong();
                         final long currResultIdx = currIdx << currRightBits;
-                        currRightShift = furtherShiftIndex(currRight, currRightShift, currResultIdx);
-                        downstream.added().writableCast().insert(currRight);
-                        resultRowSet.insert(currRight);
+                        if (currRightSize > 0) {
+                            currRightShift = furtherShiftIndex(currRight, currRightShift, currResultIdx);
+                            addedBuilder.appendRowSequence(currRight);
+                        } else if (leftOuterJoin) {
+                            addedBuilder.appendKey(currResultIdx);
+                        }
                     }
+                    downstream.added = addedBuilder.build();
+                    resultRowSet.insert(downstream.added);
                 }
             }
 
@@ -1098,18 +1341,18 @@ public class CrossJoinHelper {
 
             leftRecorder.setMergedListener(mergedListener);
             rightRecorder.setMergedListener(mergedListener);
-            leftTable.listenForUpdates(leftRecorder);
-            rightTable.listenForUpdates(rightRecorder);
+            leftTable.addUpdateListener(leftRecorder);
+            rightTable.addUpdateListener(rightRecorder);
             result.addParentReference(mergedListener);
         } else if (leftTable.isRefreshing() && rightTable.size() > 0) {
-            leftTable.listenForUpdates(new BaseTable.ListenerImpl(listenerDescription, leftTable, result) {
+            leftTable.addUpdateListener(new BaseTable.ListenerImpl(listenerDescription, leftTable, result) {
                 @Override
                 public void onUpdate(final TableUpdate upstream) {
                     onUpdate.accept(upstream, null);
                 }
             });
         } else if (rightTable.isRefreshing() && leftTable.size() > 0) {
-            rightTable.listenForUpdates(new BaseTable.ListenerImpl(listenerDescription, rightTable, result) {
+            rightTable.addUpdateListener(new BaseTable.ListenerImpl(listenerDescription, rightTable, result) {
                 @Override
                 public void onUpdate(final TableUpdate upstream) {
                     onUpdate.accept(null, upstream);
@@ -1117,16 +1360,6 @@ public class CrossJoinHelper {
             });
         }
 
-        // Initialize result table.
-        try (final WritableRowSet currRight = rightTable.getRowSet().copy()) {
-            final MutableLong currRightShift = new MutableLong();
-            leftTable.getRowSet().forAllRowKeys((currIdx) -> {
-                final long currResultIdx = currIdx << crossJoinState.getNumShiftBits();
-                currRightShift.setValue(furtherShiftIndex(currRight, currRightShift.longValue(), currResultIdx));
-                resultRowSet.insert(currRight);
-            });
-        }
-        resultRowSet.initializePreviousValue();
         return result;
     }
 
@@ -1177,8 +1410,7 @@ public class CrossJoinHelper {
         final Map<String, ColumnSource<?>> columnSourceMap = new LinkedHashMap<>();
 
         for (final Map.Entry<String, ColumnSource<?>> leftColumn : leftTable.getColumnSourceMap().entrySet()) {
-            final BitShiftingColumnSource<?> wrappedSource =
-                    new BitShiftingColumnSource<>(joinState, leftColumn.getValue());
+            final ColumnSource<?> wrappedSource = BitShiftingColumnSource.maybeWrap(joinState, leftColumn.getValue());
             columnSourceMap.put(leftColumn.getKey(), wrappedSource);
         }
 

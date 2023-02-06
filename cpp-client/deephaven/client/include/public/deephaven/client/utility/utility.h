@@ -3,18 +3,18 @@
  */
 #pragma once
 
+#include <cstring>
 #include <iostream>
 #include <memory>
 #include <string>
 #include <vector>
-#include <arrow/type.h>
 
 namespace deephaven::client::utility {
 template<typename Dest, typename Src>
 inline Dest bit_cast(const Src &item) {
   static_assert(sizeof(Src) == sizeof(Dest), "Src and Dest are not the same size");
   Dest dest;
-  memcpy(static_cast<void *>(&dest), static_cast<const void *>(&item), sizeof(Dest));
+  std::memcpy(static_cast<void *>(&dest), static_cast<const void *>(&item), sizeof(Dest));
   return dest;
 }
 
@@ -24,9 +24,6 @@ std::vector<T> makeReservedVector(size_t n) {
   v.reserve(n);
   return v;
 }
-
-void assertLessEq(size_t lhs, size_t rhs, std::string_view context, std::string_view lhsName,
-  std::string_view rhsName);
 
 // A more efficient ostringstream that also allows you to grab the internal buffer if you want it.
 // Or, if you don't want to use the internal buffer, it allows you to provide your own.
@@ -214,7 +211,7 @@ constexpr std::string_view getTypeName() {
 }
 
 template<typename DESTP, typename SRCP>
-DESTP verboseCast(SRCP ptr, std::string_view caller) {
+DESTP verboseCast(const DebugInfo &debugInfo, SRCP ptr) {
   using deephaven::client::utility::stringf;
 
   auto *typedPtr = dynamic_cast<DESTP>(ptr);
@@ -223,51 +220,20 @@ DESTP verboseCast(SRCP ptr, std::string_view caller) {
   }
   typedef decltype(*std::declval<DESTP>()) destType_t;
   auto message = stringf("%o: Expected type %o. Got type %o",
-      caller, getTypeName<destType_t>(), typeid(*ptr).name());
+      debugInfo, getTypeName<destType_t>(), typeid(*ptr).name());
   throw std::runtime_error(message);
 }
 
-/**
- * TODO(kosak): Do something else here. Maybe.
- */
-template<typename T>
-void assertLessEq(const T &lhs, const T &rhs, std::string_view lhsText, std::string_view rhsText,
-  std::string_view func) {
-  if (lhs <= rhs) {
+std::string getWhat(std::exception_ptr eptr);
+
+namespace internal {
+void trueOrThrowHelper(const DebugInfo &debugInfo);
+}  // namespace internal
+
+inline void trueOrThrow(const DebugInfo &debugInfo, bool value) {
+  if (value) {
     return;
   }
-  throw std::runtime_error(stringf("assertion failed: %o: %o <= %o (%o <= %o)", func, lhs, rhs,
-      lhsText, rhsText));
+  internal::trueOrThrowHelper(debugInfo);
 }
-
-/**
- * If result's status is OK, do nothing. Otherwise throw a runtime error with an informative message.
- * @param debugInfo A DebugInfo object, typically as provided by DEEPHAVEN_EXPR_MESSAGE.
- * @param result an arrow::Result
- */
-template<typename T>
-void okOrThrow(const DebugInfo &debugInfo, const arrow::Result<T> &result) {
-  okOrThrow(debugInfo, result.status());
-}
-
-/**
- * If status is OK, do nothing. Otherwise throw a runtime error with an informative message.
- * @param debugInfo A DebugInfo object, typically as provided by DEEPHAVEN_EXPR_MESSAGE.
- * @param status the arrow::Status
- */
-void okOrThrow(const DebugInfo &debugInfo, const arrow::Status &status);
-
-/**
- * If result's internal status is OK, return result's contained value.
- * Otherwise throw a runtime error with an informative message.
- * @param result The arrow::Result
- * @param message An optional message to be included in the exception message.
- */
-template<typename T>
-T valueOrThrow(const DebugInfo &debugInfo, arrow::Result<T> result) {
-  okOrThrow(debugInfo, result.status());
-  return result.ValueUnsafe();
-}
-
-
 }  // namespace deephaven::client::utility

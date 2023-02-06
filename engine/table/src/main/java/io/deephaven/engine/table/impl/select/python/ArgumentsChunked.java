@@ -3,125 +3,108 @@
  */
 package io.deephaven.engine.table.impl.select.python;
 
-import io.deephaven.chunk.attributes.Any;
-import io.deephaven.chunk.*;
-import io.deephaven.util.PrimitiveArrayType;
+import io.deephaven.engine.util.PyCallableWrapper.ChunkArgument;
+import io.deephaven.engine.util.PyCallableWrapper.ConstantChunkArgument;
+import org.jpy.PyObject;
 
-import java.util.Objects;
+import java.util.Arrays;
+import java.util.Collection;
 
-class ArgumentsChunked {
-    static ArgumentsChunked buildArguments(Chunk<?>[] __sources) {
-        final Class<?>[] paramTypes = new Class[__sources.length];
-        final Object[] params = new Object[__sources.length];
-        for (int i = 0; i < __sources.length; i++) {
-            final ChunkToArray<?> cta = __sources[i].walk(new ChunkToArray<>());
-            paramTypes[i] = Objects.requireNonNull(cta.getArrayType());
-            params[i] = Objects.requireNonNull(cta.getArray());
+public class ArgumentsChunked {
+    private final Collection<ChunkArgument> chunkArguments;
+    private final Class<?> returnType;
+    private final boolean forNumba;
+
+    private void prepareOneChunkedArg(Object[] chunkedArgs, Class<?>[] chunkedArgTypes, int argIdx, Class<?> argType,
+            Object argValue, int maxChunkSize) {
+        if (argType == byte.class) {
+            chunkedArgTypes[argIdx] = byte[].class;
+            chunkedArgs[argIdx] = new byte[maxChunkSize];
+            if (argValue != null) {
+                Arrays.fill((byte[]) chunkedArgs[argIdx], (byte) argValue);
+            }
+        } else if (argType == boolean.class) {
+            chunkedArgTypes[argIdx] = boolean[].class;
+            chunkedArgs[argIdx] = new boolean[maxChunkSize];
+            if (argValue != null) {
+                Arrays.fill((boolean[]) chunkedArgs[argIdx], (boolean) argValue);
+            }
+        } else if (argType == char.class) {
+            chunkedArgTypes[argIdx] = char[].class;
+            chunkedArgs[argIdx] = new char[maxChunkSize];
+            if (argValue != null) {
+                Arrays.fill((char[]) chunkedArgs[argIdx], (char) argValue);
+            }
+        } else if (argType == short.class) {
+            chunkedArgTypes[argIdx] = short[].class;
+            chunkedArgs[argIdx] = new short[maxChunkSize];
+            if (argValue != null) {
+                Arrays.fill((short[]) chunkedArgs[argIdx], (short) argValue);
+            }
+        } else if (argType == int.class) {
+            chunkedArgTypes[argIdx] = int[].class;
+            chunkedArgs[argIdx] = new int[maxChunkSize];
+            if (argValue != null) {
+                Arrays.fill((int[]) chunkedArgs[argIdx], (int) argValue);
+            }
+        } else if (argType == long.class) {
+            chunkedArgTypes[argIdx] = long[].class;
+            chunkedArgs[argIdx] = new long[maxChunkSize];
+            if (argValue != null) {
+                Arrays.fill((long[]) chunkedArgs[argIdx], (long) argValue);
+            }
+        } else if (argType == float.class) {
+            chunkedArgTypes[argIdx] = float[].class;
+            chunkedArgs[argIdx] = new float[maxChunkSize];
+            if (argValue != null) {
+                Arrays.fill((float[]) chunkedArgs[argIdx], (float) argValue);
+            }
+        } else if (argType == double.class) {
+            chunkedArgTypes[argIdx] = double[].class;
+            chunkedArgs[argIdx] = new double[maxChunkSize];
+            if (argValue != null) {
+                Arrays.fill((double[]) chunkedArgs[argIdx], (double) argValue);
+            }
+        } else if (argType == PyObject.class) {
+            chunkedArgTypes[argIdx] = PyObject[].class;
+            chunkedArgs[argIdx] = new PyObject[maxChunkSize];
+            if (argValue != null) {
+                Arrays.fill((PyObject[]) chunkedArgs[argIdx], (PyObject) argValue);
+            }
+        } else {
+            chunkedArgTypes[argIdx] = Object[].class;
+            chunkedArgs[argIdx] = new Object[maxChunkSize];
+            Arrays.fill((Object[]) chunkedArgs[argIdx], argValue);
         }
-        return new ArgumentsChunked(paramTypes, params);
     }
 
-    private final Class<?>[] paramTypes;
-    private final Object[] params;
+    public FillContextPython makeFillContextPython(int maxChunkSize) {
+        final Class<?>[] chunkedArgTypes;
+        final Object[] chunkedArgs;
 
-    private ArgumentsChunked(Class<?>[] paramTypes, Object[] params) {
-        this.paramTypes = paramTypes;
-        this.params = params;
+        if (forNumba) {
+            chunkedArgs = new Object[chunkArguments.size()];
+            chunkedArgTypes = new Class[chunkArguments.size()];
+        } else {
+            // For DH vectorized func, we prepend 2 parameter to pass the chunk size and the return array
+            chunkedArgs = new Object[chunkArguments.size() + 2];
+            chunkedArgTypes = new Class[chunkArguments.size() + 2];
+            prepareOneChunkedArg(chunkedArgs, chunkedArgTypes, 1, returnType, null, maxChunkSize);
+        }
+
+        int i = forNumba ? 0 : 2;
+        for (ChunkArgument arg : chunkArguments) {
+            Object argValue = arg instanceof ConstantChunkArgument ? ((ConstantChunkArgument) arg).getValue() : null;
+            Class<?> argType = arg.getType();
+            prepareOneChunkedArg(chunkedArgs, chunkedArgTypes, i, argType, argValue, maxChunkSize);
+            i++;
+        }
+        return new FillContextPython(chunkArguments, chunkedArgs, chunkedArgTypes, forNumba);
     }
 
-    Class<?>[] getParamTypes() {
-        return paramTypes;
-    }
-
-    Object[] getParams() {
-        return params;
-    }
-
-    private static class ChunkToArray<ATTR extends Any> implements Chunk.Visitor<ATTR> {
-
-        private Class<?> arrayType;
-        private Object array;
-
-        Class<?> getArrayType() {
-            return Objects.requireNonNull(arrayType);
-        }
-
-        Object getArray() {
-            return Objects.requireNonNull(array);
-        }
-
-        @Override
-        public void visit(ByteChunk<ATTR> chunk) {
-            arrayType = PrimitiveArrayType.bytes().getArrayType();
-            final byte[] out = PrimitiveArrayType.bytes().newInstance(chunk.size());
-            chunk.copyToTypedArray(0, out, 0, out.length);
-            array = out;
-        }
-
-        @Override
-        public void visit(BooleanChunk<ATTR> chunk) {
-            arrayType = PrimitiveArrayType.booleans().getArrayType();
-            final boolean[] out = PrimitiveArrayType.booleans().newInstance(chunk.size());
-            chunk.copyToTypedArray(0, out, 0, out.length);
-            array = out;
-        }
-
-        @Override
-        public void visit(CharChunk<ATTR> chunk) {
-            arrayType = PrimitiveArrayType.chars().getArrayType();
-            final char[] out = PrimitiveArrayType.chars().newInstance(chunk.size());
-            chunk.copyToTypedArray(0, out, 0, out.length);
-            array = out;
-        }
-
-        @Override
-        public void visit(ShortChunk<ATTR> chunk) {
-            arrayType = PrimitiveArrayType.shorts().getArrayType();
-            final short[] out = PrimitiveArrayType.shorts().newInstance(chunk.size());
-            chunk.copyToTypedArray(0, out, 0, out.length);
-            array = out;
-        }
-
-        @Override
-        public void visit(IntChunk<ATTR> chunk) {
-            arrayType = PrimitiveArrayType.ints().getArrayType();
-            final int[] out = PrimitiveArrayType.ints().newInstance(chunk.size());
-            chunk.copyToTypedArray(0, out, 0, out.length);
-            array = out;
-        }
-
-        @Override
-        public void visit(LongChunk<ATTR> chunk) {
-            arrayType = PrimitiveArrayType.longs().getArrayType();
-            final long[] out = PrimitiveArrayType.longs().newInstance(chunk.size());
-            chunk.copyToTypedArray(0, out, 0, out.length);
-            array = out;
-        }
-
-        @Override
-        public void visit(FloatChunk<ATTR> chunk) {
-            arrayType = PrimitiveArrayType.floats().getArrayType();
-            final float[] out = PrimitiveArrayType.floats().newInstance(chunk.size());
-            chunk.copyToTypedArray(0, out, 0, out.length);
-            array = out;
-        }
-
-        @Override
-        public void visit(DoubleChunk<ATTR> chunk) {
-            arrayType = PrimitiveArrayType.doubles().getArrayType();
-            final double[] out = PrimitiveArrayType.doubles().newInstance(chunk.size());
-            chunk.copyToTypedArray(0, out, 0, out.length);
-            array = out;
-        }
-
-        @Override
-        public <T> void visit(ObjectChunk<T, ATTR> chunk) {
-            // this is LESS THAN IDEAL - it would be much better if ObjectChunk would be able to return
-            // the array type
-            arrayType = Object[].class;
-            final Object[] out = new Object[chunk.size()];
-            chunk.copyToArray(0, out, 0, out.length);
-            array = out;
-        }
+    public ArgumentsChunked(Collection<ChunkArgument> chunkArguments, Class<?> returnType, boolean forNumba) {
+        this.chunkArguments = chunkArguments;
+        this.returnType = returnType;
+        this.forNumba = forNumba;
     }
 }

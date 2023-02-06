@@ -6,6 +6,14 @@ package io.deephaven.engine.table.impl.by;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
+import io.deephaven.engine.testutil.ColumnInfo;
+import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.testutil.generator.IntGenerator;
+import io.deephaven.engine.testutil.generator.SetGenerator;
+import io.deephaven.engine.testutil.generator.SortedLongGenerator;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
+import io.deephaven.engine.testutil.EvalNugget;
+import io.deephaven.engine.testutil.EvalNuggetInterface;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.SortedBy;
 import io.deephaven.engine.table.impl.*;
@@ -21,8 +29,8 @@ import org.junit.experimental.categories.Category;
 
 import static io.deephaven.api.agg.Aggregation.AggSortedLast;
 import static io.deephaven.engine.util.TableTools.*;
-import static io.deephaven.engine.table.impl.TstUtils.*;
-import static io.deephaven.engine.table.impl.TstUtils.addToTable;
+import static io.deephaven.engine.testutil.TstUtils.*;
+import static io.deephaven.engine.testutil.TstUtils.addToTable;
 
 @Category(OutOfBandTest.class)
 public class TestSortedFirstOrLastByFactory extends RefreshingTableTestCase {
@@ -46,13 +54,13 @@ public class TestSortedFirstOrLastByFactory extends RefreshingTableTestCase {
 
     private void incrementalTest(int seed, int size, final String... sortColumns) {
         final Random random = new Random(seed);
-        final TstUtils.ColumnInfo[] columnInfo;
+        final ColumnInfo<?, ?>[] columnInfo;
         final QueryTable queryTable = getTable(size, random, columnInfo = initColumnInfos(
                 colNames,
-                new TstUtils.SetGenerator<>("a", "b", "c", "d"),
-                new TstUtils.IntGenerator(10, 100, 0.1),
-                new TstUtils.SetGenerator<>(10.1, 20.1, 30.1),
-                new TstUtils.SortedLongGenerator(0, Integer.MAX_VALUE)));
+                new SetGenerator<>("a", "b", "c", "d"),
+                new IntGenerator(10, 100, 0.1),
+                new SetGenerator<>(10.1, 20.1, 30.1),
+                new SortedLongGenerator(0, Integer.MAX_VALUE)));
         if (printTableUpdates) {
             showWithRowSet(queryTable);
         }
@@ -93,23 +101,23 @@ public class TestSortedFirstOrLastByFactory extends RefreshingTableTestCase {
                         intCol("SFB", 2, 1, 2, 1, 2), intCol("Sentinel", 1, 2, 3, 4, 5),
                         col("DummyBucket", "A", "A", "A", "A", "A"));
         // final FuzzerPrintListener pl = new FuzzerPrintListener("source", source);
-        // source.listenForUpdates(pl);
+        // source.addUpdateListener(pl);
 
         final QueryTable sfb = (QueryTable) source.aggAllBy(AggSpec.sortedFirst("SFB"));
         final QueryTable bucketed = (QueryTable) source.aggAllBy(AggSpec.sortedFirst("SFB"), "DummyBucket");
         // final FuzzerPrintListener plsfb = new FuzzerPrintListener("sfb", sfb);
-        // sfb.listenForUpdates(plsfb);
+        // sfb.addUpdateListener(plsfb);
 
         final TableUpdateValidator tuv = TableUpdateValidator.make("source validator", source);
         final FailureListener failureListener = new FailureListener();
-        tuv.getResultTable().listenForUpdates(failureListener);
+        tuv.getResultTable().addUpdateListener(failureListener);
         final TableUpdateValidator tuvsfb = TableUpdateValidator.make("sfb validator", sfb);
         final FailureListener failureListenerSfb = new FailureListener();
-        tuvsfb.getResultTable().listenForUpdates(failureListenerSfb);
+        tuvsfb.getResultTable().addUpdateListener(failureListenerSfb);
 
         final TableUpdateValidator tuvbuck = TableUpdateValidator.make("sfb validator", bucketed);
         final FailureListener failureListenerBuck = new FailureListener();
-        tuvbuck.getResultTable().listenForUpdates(failureListenerBuck);
+        tuvbuck.getResultTable().addUpdateListener(failureListenerBuck);
 
         showWithRowSet(sfb);
         TestCase.assertEquals(2, sfb.getColumn("Sentinel").get(0));

@@ -145,6 +145,9 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
     public void run() {
         super.run();
         synchronized (pendingChanges) {
+            if (pendingProcessed < 0) {
+                return;
+            }
             processedSequence = pendingProcessed;
             pendingProcessed = -1L;
             pendingChanges.notifyAll();
@@ -249,7 +252,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
         private Table doSnap(Table newData) {
             Table addTable;
             if (newData.isRefreshing()) {
-                addTable = TableTools.emptyTable(1).snapshot(newData);
+                addTable = newData.snapshot();
             } else {
                 addTable = newData.select();
             }

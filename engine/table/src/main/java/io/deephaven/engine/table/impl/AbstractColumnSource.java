@@ -43,7 +43,7 @@ public abstract class AbstractColumnSource<T> implements
     protected final Class<?> componentType;
 
     protected volatile Map<T, RowSet> groupToRange;
-    protected volatile List<ColumnSource> rowSetIndexerKey;
+    protected volatile List<ColumnSource<?>> rowSetIndexerKey;
 
     protected AbstractColumnSource(@NotNull final Class<T> type) {
         this(type, Object.class);
@@ -105,8 +105,8 @@ public abstract class AbstractColumnSource<T> implements
     }
 
     @Override
-    public List<ColumnSource> getColumnSources() {
-        List<ColumnSource> localRowSetIndexerKey;
+    public List<ColumnSource<?>> getColumnSources() {
+        List<ColumnSource<?>> localRowSetIndexerKey;
         if ((localRowSetIndexerKey = rowSetIndexerKey) == null) {
             synchronized (this) {
                 if ((localRowSetIndexerKey = rowSetIndexerKey) == null) {

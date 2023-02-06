@@ -11,6 +11,10 @@ package io.deephaven.engine.table.impl.ssms;
 import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.engine.table.ShiftObliviousListener;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.testutil.ColumnInfo;
+import io.deephaven.engine.testutil.GenerateTableUpdates;
+import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.compare.ObjectComparisons;
@@ -37,8 +41,8 @@ import java.util.Map;
 import java.util.Random;
 import java.util.TreeMap;
 
-import static io.deephaven.engine.table.impl.TstUtils.getTable;
-import static io.deephaven.engine.table.impl.TstUtils.initColumnInfos;
+import static io.deephaven.engine.testutil.TstUtils.getTable;
+import static io.deephaven.engine.testutil.TstUtils.initColumnInfos;
 import static org.junit.Assert.assertArrayEquals;
 
 @Category(ParallelTest.class)
@@ -126,7 +130,7 @@ public class TestObjectSegmentedSortedMultiset extends RefreshingTableTestCase {
 
     private void testUpdates(@NotNull final SsaTestHelpers.TestDescriptor desc, boolean allowAddition, boolean allowRemoval, boolean countNull) {
         final Random random = new Random(desc.seed());
-        final TstUtils.ColumnInfo[] columnInfo;
+        final ColumnInfo[] columnInfo;
         final QueryTable table = getTable(desc.tableSize(), random, columnInfo = initColumnInfos(new String[]{"Value"},
                 SsaTestHelpers.getGeneratorForObject()));
 
@@ -165,7 +169,7 @@ public class TestObjectSegmentedSortedMultiset extends RefreshingTableTestCase {
                     }
                 }
             };
-            asObject.listenForUpdates(asObjectListener);
+            asObject.addUpdateListener(asObjectListener);
 
             while (desc.advance(50)) {
                 UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {

@@ -3,12 +3,12 @@
  */
 package io.deephaven.benchmarking;
 
-import io.deephaven.base.StringUtils;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.configuration.DataDir;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.time.DateTime;
 import io.deephaven.util.annotations.ScriptApi;
 import io.deephaven.benchmarking.generator.*;
@@ -17,10 +17,12 @@ import io.deephaven.benchmarking.impl.InMemoryBenchmarkTableBuilder;
 import io.deephaven.benchmarking.impl.TableBackedBenchmarkTableBuilder;
 import org.openjdk.jmh.infra.BenchmarkParams;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
+import java.util.stream.Collectors;
 
 /**
  * An entry point to get instances of {@link BenchmarkTableBuilder}s.
@@ -254,11 +256,11 @@ public class BenchmarkTools {
     }
 
     public static String buildParameterString(BenchmarkParams params) {
-        return StringUtils.joinStrings(params.getParamsKeys().stream().map(params::getParam), ";");
+        return params.getParamsKeys().stream().map(params::getParam).collect(Collectors.joining(";"));
     }
 
-    public static String getLogPath() {
-        return Configuration.getInstance().getWorkspacePath();
+    public static Path dataDir() {
+        return DataDir.get();
     }
 
     public static final String DETAIL_LOG_PREFIX = "Details.";
@@ -300,7 +302,7 @@ public class BenchmarkTools {
             throw new IllegalStateException("Sparsity must be in the range of 1 through 100");
         }
         Random random = new Random(seed);
-        QueryScope.getScope().putParam("__random__", random);
+        ExecutionContext.getContext().getQueryScope().putParam("__random__", random);
         return table.where("__random__.nextInt(100) < " + sparsity).head(size);
     }
 

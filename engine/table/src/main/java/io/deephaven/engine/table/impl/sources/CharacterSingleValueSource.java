@@ -3,12 +3,12 @@
  */
 package io.deephaven.engine.table.impl.sources;
 
+import io.deephaven.chunk.WritableCharChunk;
+import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
-import io.deephaven.util.QueryConstants;
 import io.deephaven.chunk.CharChunk;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
@@ -66,24 +66,28 @@ public class CharacterSingleValueSource extends SingleValueColumnSource<Characte
     // endregion UnboxedSetter
 
     @Override
+    public final void setNull() {
+        set(NULL_CHAR);
+    }
+
+    @Override
     public final void set(long key, char value) {
         set(value);
     }
 
     @Override
-    public final void setNull(long key) {
-        // region null set
-        set(NULL_CHAR);
-        // endregion null set
-    }
-
-    @Override
     public final char getChar(long rowKey) {
+        if (rowKey == RowSequence.NULL_ROW_KEY) {
+            return NULL_CHAR;
+        }
         return current;
     }
 
     @Override
     public final char getPrevChar(long rowKey) {
+        if (rowKey == RowSequence.NULL_ROW_KEY) {
+            return NULL_CHAR;
+        }
         if (!isTrackingPrevValues || changeTime < LogicalClock.DEFAULT.currentStep()) {
             return current;
         }
@@ -108,5 +112,46 @@ public class CharacterSingleValueSource extends SingleValueColumnSource<Characte
         // We can only hold one value anyway, so arbitrarily take the first value in the chunk and ignore the rest.
         final CharChunk<? extends Values> chunk = src.asCharChunk();
         set(chunk.get(0));
+    }
+
+    @Override
+    public void fillChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Values> destination,
+            @NotNull RowSequence rowSequence) {
+        destination.setSize(rowSequence.intSize());
+        destination.asWritableCharChunk().fillWithValue(0, rowSequence.intSize(), current);
+    }
+
+    @Override
+    public void fillPrevChunk(@NotNull FillContext context,
+            @NotNull WritableChunk<? super Values> destination, @NotNull RowSequence rowSequence) {
+        char value = getPrevChar(0); // avoid duplicating the current vs prev logic in getPrevChar
+        destination.setSize(rowSequence.intSize());
+        destination.asWritableCharChunk().fillWithValue(0, rowSequence.intSize(), value);
+    }
+
+    @Override
+    public void fillChunkUnordered(@NotNull FillContext context, @NotNull WritableChunk<? super Values> dest,
+            @NotNull LongChunk<? extends RowKeys> keys) {
+        final WritableCharChunk<? super Values> destChunk = dest.asWritableCharChunk();
+        for (int ii = 0; ii < keys.size(); ++ii) {
+            destChunk.set(ii, keys.get(ii) == RowSequence.NULL_ROW_KEY ? NULL_CHAR : current);
+        }
+        destChunk.setSize(keys.size());
+    }
+
+    @Override
+    public void fillPrevChunkUnordered(@NotNull FillContext context, @NotNull WritableChunk<? super Values> dest,
+            @NotNull LongChunk<? extends RowKeys> keys) {
+        char value = getPrevChar(0); // avoid duplicating the current vs prev logic in getPrevChar
+        final WritableCharChunk<? super Values> destChunk = dest.asWritableCharChunk();
+        for (int ii = 0; ii < keys.size(); ++ii) {
+            destChunk.set(ii, keys.get(ii) == RowSequence.NULL_ROW_KEY ? NULL_CHAR : value);
+        }
+        destChunk.setSize(keys.size());
+    }
+
+    @Override
+    public boolean providesFillUnordered() {
+        return true;
     }
 }

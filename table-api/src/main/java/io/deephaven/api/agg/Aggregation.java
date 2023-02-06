@@ -16,10 +16,12 @@ import io.deephaven.api.agg.spec.AggSpecUnique;
 import io.deephaven.api.agg.spec.AggSpecWAvg;
 import io.deephaven.api.agg.spec.AggSpecWSum;
 import io.deephaven.api.agg.util.PercentileOutput;
-import io.deephaven.api.agg.util.Sentinel;
+import io.deephaven.api.object.UnionObject;
 
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.function.BiFunction;
 
 /**
@@ -57,8 +59,25 @@ public interface Aggregation extends Serializable {
      * @return The aggregation
      */
     static Aggregation of(AggSpec spec, String... pairs) {
-        if (pairs.length == 1) {
-            return of(spec, pairs[0]);
+        return of(spec, Arrays.asList(pairs));
+    }
+
+    /**
+     * Combine an {@link AggSpec} and one or more input/output {@link Pair column name pairs} into a
+     * {@link ColumnAggregation} or {@link ColumnAggregations}.
+     *
+     * @param spec The {@link ColumnAggregation#spec() aggregation specifier} to apply to the column name pair(s)
+     * @param pairs The input/output column name {@link ColumnAggregation#pair() pair} or
+     *        {@link ColumnAggregations#pairs() pairs}
+     * @return The aggregation
+     */
+    static Aggregation of(AggSpec spec, List<String> pairs) {
+        if (pairs.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "Must have at least one pair to create an Aggregation from an AggSpec. Did you mean to use TableOperations#aggAllBy?");
+        }
+        if (pairs.size() == 1) {
+            return of(spec, pairs.get(0));
         }
         final ColumnAggregations.Builder builder = ColumnAggregations.builder().spec(spec);
         for (String pair : pairs) {
@@ -74,6 +93,9 @@ public interface Aggregation extends Serializable {
      * @return The combined aggregation
      */
     static Aggregation of(Aggregation... aggregations) {
+        if (aggregations.length == 0) {
+            throw new IllegalArgumentException("Unable to create an empty aggregation.");
+        }
         if (aggregations.length == 1) {
             return aggregations[0];
         }
@@ -93,6 +115,9 @@ public interface Aggregation extends Serializable {
     @SafeVarargs
     static <INPUT_TYPE> Aggregation of(BiFunction<ColumnName, INPUT_TYPE, ColumnAggregation> columnAggFactory,
             String inputColumn, INPUT_TYPE... inputs) {
+        if (inputs.length == 0) {
+            throw new IllegalArgumentException("Unable to create an empty aggregation.");
+        }
         final ColumnName inputColumnName = ColumnName.of(inputColumn);
         if (inputs.length == 1) {
             return columnAggFactory.apply(inputColumnName, inputs[0]);
@@ -564,7 +589,7 @@ public interface Aggregation extends Serializable {
      * @return The aggregation
      */
     static Aggregation AggUnique(boolean includeNulls, String... pairs) {
-        return AggUnique(includeNulls, Sentinel.of(), pairs);
+        return AggUnique(includeNulls, null, pairs);
     }
 
     /**
@@ -578,8 +603,8 @@ public interface Aggregation extends Serializable {
      * @param pairs The input/output column name pairs
      * @return The aggregation
      */
-    static Aggregation AggUnique(boolean includeNulls, Sentinel nonUniqueSentinel, String... pairs) {
-        return of(AggSpec.unique(includeNulls, nonUniqueSentinel.value()), pairs);
+    static Aggregation AggUnique(boolean includeNulls, UnionObject nonUniqueSentinel, String... pairs) {
+        return of(AggSpec.unique(includeNulls, nonUniqueSentinel), pairs);
     }
 
     /**
@@ -633,26 +658,18 @@ public interface Aggregation extends Serializable {
     }
 
     /**
-     * Make a {@link Sentinel sentinel} wrapping {@code value}. This serves to avoid ambiguity in the var-args overloads
-     * of some Aggregation factory methods.
+     * Calls every single visit method of {@code visitor} with a {@code null} object.
      *
-     * @param value The value to wrap
-     * @return The sentinel
-     * @see #AggUnique(boolean, Sentinel, String...)
+     * @param visitor the visitor
      */
-    static Sentinel Sentinel(Object value) {
-        return Sentinel.of(value);
-    }
-
-    /**
-     * Make a {@link Sentinel sentinel} wrapping {@code null}. This serves to avoid ambiguity in the var-args overloads
-     * of some Aggregation factory methods.
-     * 
-     * @return The sentinel
-     * @see #AggUnique(boolean, Sentinel, String...)
-     */
-    static Sentinel Sentinel() {
-        return Sentinel.of();
+    static void visitAll(Visitor visitor) {
+        visitor.visit((Aggregations) null);
+        visitor.visit((ColumnAggregation) null);
+        visitor.visit((ColumnAggregations) null);
+        visitor.visit((Count) null);
+        visitor.visit((FirstRowKey) null);
+        visitor.visit((LastRowKey) null);
+        visitor.visit((Partition) null);
     }
 
     /**

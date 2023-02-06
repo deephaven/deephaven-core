@@ -12,6 +12,10 @@ from typing import Dict
 
 from deephaven_internal import jvm
 
+
+py_dh_session = None
+
+
 def start_jvm(jvm_props: Dict[str, str] = None):
     jvm.preload_jvm_dll()
     import jpy
@@ -21,38 +25,7 @@ def start_jvm(jvm_props: Dict[str, str] = None):
     if not jpy.has_jvm():
 
         # we will try to initialize the jvm
-        workspace = os.environ.get('DEEPHAVEN_WORKSPACE', '.')
-        devroot = os.environ.get('DEEPHAVEN_DEVROOT', '.')
         propfile = os.environ.get('DEEPHAVEN_PROPFILE', 'dh-defaults.prop')
-
-        # validate devroot & workspace
-        if devroot is None:
-            raise IOError("dh.init: devroot is not specified.")
-        if not os.path.isdir(devroot):
-            raise IOError("dh.init: devroot={} does not exist.".format(devroot))
-
-        if workspace is None:
-            raise IOError("dh.init: workspace is not specified.")
-        if not os.path.isdir(workspace):
-            raise IOError("dh.init: workspace={} does not exist.".format(workspace))
-
-        dtemp = workspace
-        for entry in ['', 'cache', 'classes']:
-            dtemp = os.path.join(dtemp, entry)
-            if os.path.exists(dtemp):
-                if not (os.path.isdir(dtemp) and os.access(dtemp, os.W_OK | os.X_OK)):
-                    # this is silly, but a directory must be both writable and executible by a user for a
-                    # file to be written there - write without executible is delete only
-                    raise IOError("dh.init: workspace directory={} does exists, but is "
-                                  "not writeable by your user.".format(dtemp))
-            else:
-                # Log potentially helpful warning - in case of failure.
-                warnings.warn("dh.init: workspace directory={} does not exist, and its absence may "
-                              "lead to an error. When required, it SHOULD get created with appropriate "
-                              "permissions by the Deephaven class DynamicCompileUtils. If strange errors arise "
-                              "from jpy about inability to find some java class, then check "
-                              "the existence/permissions of the directory.".format(dtemp),
-                              RuntimeWarning)
 
         jvm_properties = {
             'PyObject.cleanup_on_thread': 'false',
@@ -61,24 +34,26 @@ def start_jvm(jvm_props: Dict[str, str] = None):
             'MetricsManager.enabled': 'true',
 
             'Configuration.rootFile': propfile,
-            'devroot': os.path.realpath(devroot),
-            'workspace': os.path.realpath(workspace),
-
+            'deephaven.dataDir': '/data',
+            'deephaven.cacheDir': '/cache',
         }
 
         if jvm_props:
             jvm_properties.update(jvm_props)
 
         jvm_options = {
-            '-XX:+UseG1GC',
-            '-XX:MaxGCPauseMillis=100',
-            '-XX:+UseStringDeduplication',
-
             '-XX:InitialRAMPercentage=25.0',
             '-XX:MinRAMPercentage=70.0',
             '-XX:MaxRAMPercentage=80.0',
 
+            # Allow access to java.nio.Buffer fields
             '--add-opens=java.base/java.nio=ALL-UNNAMED',
+
+            # Allow our hotspot-impl project to access internals
+            '--add-exports=java.management/sun.management=ALL-UNNAMED',
+
+            # Allow our clock-impl project to access internals
+            '--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED',
         }
         jvm_classpath = os.environ.get('DEEPHAVEN_CLASSPATH', '')
 
@@ -93,8 +68,8 @@ def start_jvm(jvm_props: Dict[str, str] = None):
 
         # Set up a Deephaven Python session
         py_scope_jpy = jpy.get_type("io.deephaven.engine.util.PythonScopeJpyImpl").ofMainGlobals()
+        global py_dh_session
         py_dh_session = jpy.get_type("io.deephaven.integrations.python.PythonDeephavenSession")(py_scope_jpy)
-        jpy.get_type("io.deephaven.engine.table.lang.QueryScope").setScope(py_dh_session.newQueryScope())
 
 
 def _expandWildcardsInList(elements):

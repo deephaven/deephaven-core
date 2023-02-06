@@ -6,8 +6,14 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.*;
+import io.deephaven.engine.testutil.EvalNugget;
+import io.deephaven.engine.testutil.EvalNuggetInterface;
+import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.testutil.generator.CharGenerator;
+import io.deephaven.engine.testutil.generator.TestDataGenerator;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.function.Basic;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.FunctionalInterfaces;
 import org.jetbrains.annotations.NotNull;
@@ -17,13 +23,12 @@ import org.junit.experimental.categories.Category;
 import java.util.Arrays;
 import java.util.Random;
 
-import static io.deephaven.engine.table.impl.GenerateTableUpdates.generateAppends;
-import static io.deephaven.engine.table.impl.RefreshingTableTestCase.simulateShiftAwareStep;
-import static io.deephaven.engine.table.impl.TstUtils.*;
+import static io.deephaven.engine.testutil.GenerateTableUpdates.generateAppends;
+import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.simulateShiftAwareStep;
+import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.intCol;
 import static io.deephaven.engine.util.TableTools.stringCol;
-import static io.deephaven.function.Basic.forwardFill;
-import static io.deephaven.test.junit4.EngineCleanup.printTableUpdates;
+import static io.deephaven.engine.testutil.junit4.EngineCleanup.printTableUpdates;
 import static io.deephaven.util.QueryConstants.NULL_INT;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -35,7 +40,7 @@ public class TestForwardFill extends BaseUpdateByTest {
     @Test
     public void testStaticZeroKey() {
         final QueryTable t = createTestTable(100000, true, false, false, 0x507A70,
-                new String[] {"charCol"}, new TstUtils.Generator[] {new TstUtils.CharGenerator('A', 'Z', .1)}).t;
+                new String[] {"charCol"}, new TestDataGenerator[] {new CharGenerator('A', 'Z', .1)}).t;
 
         final Table filled = t.updateBy(UpdateByOperation.Fill());
         for (String col : t.getDefinition().getColumnNamesArray()) {
@@ -53,7 +58,7 @@ public class TestForwardFill extends BaseUpdateByTest {
         final Table result = src.updateBy(UpdateByOperation.Fill());
         final TableUpdateValidator validator = TableUpdateValidator.make((QueryTable) result);
         final FailureListener failureListener = new FailureListener();
-        validator.getResultTable().listenForUpdates(failureListener);
+        validator.getResultTable().addUpdateListener(failureListener);
         assertEquals(8, result.intSize());
 
         for (int ii = 0; ii < 2; ii++) {
@@ -111,7 +116,7 @@ public class TestForwardFill extends BaseUpdateByTest {
         final Table result = src.updateBy(UpdateByOperation.Fill());
         final TableUpdateValidator validator = TableUpdateValidator.make((QueryTable) result);
         final FailureListener failureListener = new FailureListener();
-        validator.getResultTable().listenForUpdates(failureListener);
+        validator.getResultTable().addUpdateListener(failureListener);
         assertEquals(8, result.intSize());
 
         for (int ii = 0; ii < 2; ii++) {
@@ -163,7 +168,7 @@ public class TestForwardFill extends BaseUpdateByTest {
         final Table result = src.updateBy(UpdateByOperation.Fill());
         final TableUpdateValidator validator = TableUpdateValidator.make((QueryTable) result);
         final FailureListener failureListener = new FailureListener();
-        validator.getResultTable().listenForUpdates(failureListener);
+        validator.getResultTable().addUpdateListener(failureListener);
         assertEquals(8, result.intSize());
 
         for (int ii = 0; ii < 2; ii++) {
@@ -253,7 +258,7 @@ public class TestForwardFill extends BaseUpdateByTest {
 
     private void doTestNoKeyIncremental(String context, int steps, int size, int seed) {
         final CreateResult result = createTestTable(size, true, false, true, seed,
-                new String[] {"charCol"}, new Generator[] {new CharGenerator('A', 'Z', .1)});
+                new String[] {"charCol"}, new TestDataGenerator[] {new CharGenerator('A', 'Z', .1)});
         final QueryTable queryTable = result.t;
 
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
@@ -264,7 +269,7 @@ public class TestForwardFill extends BaseUpdateByTest {
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return ((TableWithDefaults) queryTable.sort("intCol")).updateBy(UpdateByOperation.Fill());
+                        return ((TableDefaults) queryTable.sort("intCol")).updateBy(UpdateByOperation.Fill());
                     }
                 },
         };
@@ -303,21 +308,21 @@ public class TestForwardFill extends BaseUpdateByTest {
 
     final void assertWithForwardFill(final @NotNull Object expected, final @NotNull Object actual) {
         if (expected instanceof char[]) {
-            assertArrayEquals(forwardFill((char[]) expected), (char[]) actual);
+            assertArrayEquals(Basic.forwardFill((char[]) expected), (char[]) actual);
         } else if (expected instanceof byte[]) {
-            assertArrayEquals(forwardFill((byte[]) expected), (byte[]) actual);
+            assertArrayEquals(Basic.forwardFill((byte[]) expected), (byte[]) actual);
         } else if (expected instanceof short[]) {
-            assertArrayEquals(forwardFill((short[]) expected), (short[]) actual);
+            assertArrayEquals(Basic.forwardFill((short[]) expected), (short[]) actual);
         } else if (expected instanceof int[]) {
-            assertArrayEquals(forwardFill((int[]) expected), (int[]) actual);
+            assertArrayEquals(Basic.forwardFill((int[]) expected), (int[]) actual);
         } else if (expected instanceof long[]) {
-            assertArrayEquals(forwardFill((long[]) expected), (long[]) actual);
+            assertArrayEquals(Basic.forwardFill((long[]) expected), (long[]) actual);
         } else if (expected instanceof float[]) {
-            assertArrayEquals(forwardFill((float[]) expected), (float[]) actual, .001f);
+            assertArrayEquals(Basic.forwardFill((float[]) expected), (float[]) actual, .001f);
         } else if (expected instanceof double[]) {
-            assertArrayEquals(forwardFill((double[]) expected), (double[]) actual, .001d);
+            assertArrayEquals(Basic.forwardFill((double[]) expected), (double[]) actual, .001d);
         } else {
-            assertArrayEquals(forwardFill((Object[]) expected), (Object[]) actual);
+            assertArrayEquals(Basic.forwardFillObj((Object[]) expected), (Object[]) actual);
         }
     }
     // endregion
@@ -326,7 +331,7 @@ public class TestForwardFill extends BaseUpdateByTest {
     @Test
     public void testStaticBucketed() {
         final QueryTable t = createTestTable(100000, true, false, false, 0x507A70,
-                new String[] {"charCol"}, new Generator[] {new CharGenerator('A', 'Z', .1)}).t;
+                new String[] {"charCol"}, new TestDataGenerator[] {new CharGenerator('A', 'Z', .1)}).t;
 
         final Table filled = t.updateBy(UpdateByOperation.Fill(), "Sym");
 
@@ -347,7 +352,7 @@ public class TestForwardFill extends BaseUpdateByTest {
     @Test
     public void testStaticGroupedBucketed() {
         final QueryTable t = createTestTable(100000, true, true, false, 0x507A70,
-                new String[] {"charCol"}, new Generator[] {new CharGenerator('A', 'Z', .1)}).t;
+                new String[] {"charCol"}, new TestDataGenerator[] {new CharGenerator('A', 'Z', .1)}).t;
 
         final Table filled = t.updateBy(UpdateByOperation.Fill(), "Sym");
 

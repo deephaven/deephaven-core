@@ -525,7 +525,7 @@ public class Numeric {
 
         final long n = values.size();
 
-        if(n != weights.size()){
+        if (n != weights.size()) {
             throw new IllegalArgumentException("Incompatible input sizes: " + values.size() + ", " + weights.size());
         }
 
@@ -757,7 +757,7 @@ public class Numeric {
             return NULL_DOUBLE;
         }
 
-        if(values.size() != weights.size()){
+        if (values.size() != weights.size()) {
             throw new IllegalArgumentException("Incompatible input sizes: " + values.size() + ", " + weights.size());
         }
 
@@ -770,7 +770,7 @@ public class Numeric {
             final ${pt.primitive} v = values.get(i);
             final ${pt2.primitive} w = weights.get(i);
 
-            if(!isNull(v) && !isNull(w)){
+            if (!isNull(v) && !isNull(w)) {
                 sumw += w;
                 sumw2 += w*w;
             }
@@ -1122,10 +1122,10 @@ public class Numeric {
      *
      * @param percentile percentile to compute.
      * @param values values.
-     * @return percentile.
+     * @return percentile, or null value in the Deephaven convention if values is null or empty.
      */
     public static double percentile(double percentile, ${pt.primitive}... values) {
-        if(values == null){
+        if (values == null || values.length == 0) {
             return NULL_DOUBLE;
         }
 
@@ -1137,10 +1137,10 @@ public class Numeric {
      *
      * @param percentile percentile to compute.
      * @param values values.
-     * @return percentile.
+     * @return percentile, or null value in the Deephaven convention if values is null or empty.
      */
     public static double percentile(double percentile, ${pt.dbArray} values) {
-        if(values == null){
+        if (values == null || values.isEmpty()) {
             return NULL_DOUBLE;
         }
 
@@ -1390,7 +1390,7 @@ public class Numeric {
             }
         }
 
-        if(count == 0){
+        if (count == 0) {
             return ${pt.null};
         }
 
@@ -1411,6 +1411,15 @@ public class Numeric {
         return product(new ${pt.dbArrayDirect}(values));
     }
 
+    /**
+     * Returns the cumulative minimum.  Null values are excluded.
+     *
+     * @param values values.
+     * @return cumulative min of non-null values.
+     */
+    public static ${pt.primitive}[] cummin(${pt.boxed}[] values) {
+        return cummin(unbox(values));
+    }
 
     /**
      * Returns the cumulative minimum.  Null values are excluded.
@@ -1418,7 +1427,7 @@ public class Numeric {
      * @param values values.
      * @return cumulative min of non-null values.
      */
-    public static ${pt.primitive}[] cumMin(${pt.primitive}... values) {
+    public static ${pt.primitive}[] cummin(${pt.primitive}... values) {
         if (values == null) {
             return null;
         }
@@ -1444,12 +1453,54 @@ public class Numeric {
     }
 
     /**
+     * Returns the cumulative minimum.  Null values are excluded.
+     *
+     * @param values values.
+     * @return cumulative min of non-null values.
+     */
+    public static ${pt.primitive}[] cummin(${pt.dbArray} values) {
+        if (values == null) {
+            return null;
+        }
+
+        if (values.size() == 0) {
+            return new ${pt.primitive}[0];
+        }
+
+        final int n = values.intSize("cummin");
+        ${pt.primitive}[] result = new ${pt.primitive}[n];
+        result[0] = values.get(0);
+
+        for (int i = 1; i < n; i++) {
+            if (isNull(result[i - 1])) {
+                result[i] = values.get(i);
+            } else if (isNull(values.get(i))) {
+                result[i] = result[i - 1];
+            } else {
+                result[i] = (${pt.primitive})Math.min(result[i - 1],  values.get(i));
+            }
+        }
+
+        return result;
+    }
+
+    /**
      * Returns the cumulative maximum.  Null values are excluded.
      *
      * @param values values.
      * @return cumulative max of non-null values.
      */
-    public static ${pt.primitive}[] cumMax(${pt.primitive}... values) {
+    public static ${pt.primitive}[] cummax(${pt.boxed}[] values) {
+        return cummax(unbox(values));
+    }
+
+    /**
+     * Returns the cumulative maximum.  Null values are excluded.
+     *
+     * @param values values.
+     * @return cumulative max of non-null values.
+     */
+    public static ${pt.primitive}[] cummax(${pt.primitive}... values) {
         if (values == null) {
             return null;
         }
@@ -1468,6 +1519,32 @@ public class Numeric {
         return result;
     }
 
+    /**
+     * Returns the cumulative maximum.  Null values are excluded.
+     *
+     * @param values values.
+     * @return cumulative max of non-null values.
+     */
+    public static ${pt.primitive}[] cummax(${pt.dbArray} values) {
+        if (values == null) {
+            return null;
+        }
+
+        if (values.size() == 0) {
+            return new ${pt.primitive}[0];
+        }
+
+        final int n = values.intSize("cummax");
+        ${pt.primitive}[] result = new ${pt.primitive}[n];
+
+        result[0] = values.get(0);
+
+        for (int i = 1; i < n; i++) {
+            result[i] = compare(result[i-1], values.get(i)) > 0 ? result[i-1] : values.get(i);
+        }
+
+        return result;
+    }
 
    /**
      * Returns the cumulative sum.  Null values are excluded.
@@ -2072,7 +2149,7 @@ public class Numeric {
 
         final long n = values.size();
 
-        if(n != weights.size()){
+        if (n != weights.size()) {
             throw new IllegalArgumentException("Incompatible input sizes: " + values.size() + ", " + weights.size());
         }
 
@@ -2148,7 +2225,7 @@ public class Numeric {
 
         final long n = values.size();
 
-        if(n != weights.size()){
+        if (n != weights.size()) {
             throw new IllegalArgumentException("Incompatible input sizes: " + values.size() + ", " + weights.size());
         }
 
@@ -2179,19 +2256,19 @@ public class Numeric {
      * @return sequence of values from start to end.
      */
     public static ${pt.primitive}[] sequence(${pt.primitive} start, ${pt.primitive} end, ${pt.primitive} step) {
-        if(step == 0) {
+        if (step == 0) {
             return new ${pt.primitive}[0];
         }
 
         final int n = (int)((end-start)/step);
 
-        if(n < 0) {
+        if (n < 0) {
             return new ${pt.primitive}[0];
         }
 
         final ${pt.primitive}[] result = new ${pt.primitive}[n+1];
 
-        for(int i=0; i<=n; i++){
+        for (int i=0; i<=n; i++) {
             result[i] = (${pt.primitive})(start + i*step);
         }
 

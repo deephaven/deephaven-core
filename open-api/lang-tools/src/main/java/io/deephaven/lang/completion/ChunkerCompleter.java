@@ -6,7 +6,7 @@ package io.deephaven.lang.completion;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.lang.QueryScope.MissingVariableException;
+import io.deephaven.engine.context.QueryScope.MissingVariableException;
 import io.deephaven.time.DateTime;
 import io.deephaven.engine.util.VariableProvider;
 import io.deephaven.io.logger.Logger;
@@ -354,7 +354,7 @@ public class ChunkerCompleter implements CompletionHandler {
     }
 
 
-    private String sortable(int i) {
+    public static String sortable(int i) {
         StringBuilder res = new StringBuilder(Integer.toString(i, 36));
         while (res.length() < 5) {
             res.insert(0, "0");

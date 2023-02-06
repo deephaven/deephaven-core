@@ -4,10 +4,9 @@
 package io.deephaven.graphviz;
 
 import io.deephaven.api.Strings;
-import io.deephaven.qst.table.AggregateAllByTable;
-import io.deephaven.qst.table.AggregationTable;
+import io.deephaven.qst.table.AggregateAllTable;
+import io.deephaven.qst.table.AggregateTable;
 import io.deephaven.qst.table.AsOfJoinTable;
-import io.deephaven.qst.table.CountByTable;
 import io.deephaven.qst.table.EmptyTable;
 import io.deephaven.qst.table.ExactJoinTable;
 import io.deephaven.qst.table.HeadTable;
@@ -27,6 +26,7 @@ import io.deephaven.qst.table.TableVisitorGeneric;
 import io.deephaven.qst.table.TailTable;
 import io.deephaven.qst.table.TicketTable;
 import io.deephaven.qst.table.TimeTable;
+import io.deephaven.qst.table.UngroupTable;
 import io.deephaven.qst.table.UpdateByTable;
 import io.deephaven.qst.table.UpdateTable;
 import io.deephaven.qst.table.UpdateViewTable;
@@ -141,18 +141,18 @@ public class LabelBuilder extends TableVisitorGeneric {
     }
 
     @Override
-    public void visit(AggregateAllByTable aggAllByTable) {
+    public void visit(AggregateAllTable aggregateAllTable) {
         sb.append("aggAllBy(");
-        sb.append(aggAllByTable.spec()).append(',');
-        append(Strings::of, aggAllByTable.groupByColumns(), sb);
+        sb.append(aggregateAllTable.spec()).append(',');
+        append(Strings::of, aggregateAllTable.groupByColumns(), sb);
         sb.append(')');
     }
 
     @Override
-    public void visit(AggregationTable aggregationTable) {
+    public void visit(AggregateTable aggregateTable) {
         // TODO(deephaven-core#1116): Add labeling, or structuring, for qst graphviz aggregations
         sb.append("aggBy([");
-        append(Strings::of, aggregationTable.groupByColumns(), sb);
+        append(Strings::of, aggregateTable.groupByColumns(), sb);
         sb.append("],[ todo ])");
     }
 
@@ -184,18 +184,18 @@ public class LabelBuilder extends TableVisitorGeneric {
     }
 
     @Override
-    public void visit(CountByTable countByTable) {
-        sb.append("countBy(").append(countByTable.countName()).append(',');
-        append(Strings::of, countByTable.groupByColumns(), sb);
-        sb.append(')');
-    }
-
-    @Override
     public void visit(UpdateByTable updateByTable) {
         // TODO(deephaven-core#1116): Add labeling, or structuring, for qst graphviz aggregations
         sb.append("updateBy([");
         append(Strings::of, updateByTable.groupByColumns(), sb);
         sb.append("],[ todo ])");
+    }
+
+    @Override
+    public void visit(UngroupTable ungroupTable) {
+        sb.append("ungroup(").append(ungroupTable.nullFill()).append(",[");
+        append(Strings::of, ungroupTable.ungroupColumns(), sb);
+        sb.append("])");
     }
 
     private void join(String name, Join j) {

@@ -36,7 +36,7 @@
 <script type="module">
   import dh from './dh-core.js'
 
-  const {IdeConnection, Table} = dh;
+  const {CoreClient, Table} = dh;
   var table, inputTable;
   var connection;
   var ide;
@@ -45,7 +45,9 @@
   var currentOffset;
   var PAGE_SIZE = 20;
   (async () => {
-    connection = new IdeConnection(window.location.protocol + "//" + window.location.host);
+    var client = new CoreClient(window.location.protocol + "//" + window.location.host);
+    await client.login({type:CoreClient.LOGIN_TYPE_ANONYMOUS});
+    connection = await client.getAsIdeConnection();
 
     var types = await connection.getConsoleTypes();
     if (types.indexOf("python") !== -1) {

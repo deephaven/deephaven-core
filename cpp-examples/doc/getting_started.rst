@@ -6,7 +6,7 @@ Installation
 
 1. Install the Deephaven library and the packages it depends on. Instructions
    for doing so are in the Deephaven repo in ``cpp-client/README.md``.
-2. Confirm that you are able to build and run the "Hello, WOrld" example
+2. Confirm that you are able to build and run the "Hello, World" example
    program provided in the Deephaven Examples repo in the directory
    ``hello_world``
 3. The file ``hello_world/CMakeLists.txt`` shows how to use CMake to build
@@ -19,14 +19,14 @@ Hello, World
 Deephaven client programs typically follow this recipe:
 
 1. Connect to the server with
-   :cpp:func:`Client::connect <deephaven::client::highlevel::Client::connect>`
+   :cpp:func:`Client::connect <deephaven::client::Client::connect>`
    providing the server hostname and port.
 2. Call
-   :cpp:func:`Client.getManager <deephaven::client::highlevel::Client::getManager>`
+   :cpp:func:`Client.getManager <deephaven::client::Client::getManager>`
    to get a
-   :cpp:class:`TableHandleManager <deephaven::client::highlevel::TableHandleManager>`.
+   :cpp:class:`TableHandleManager <deephaven::client::TableHandleManager>`.
 3. Use that
-   :cpp:class:`TableHandleManager <deephaven::client::highlevel::TableHandleManager>`
+   :cpp:class:`TableHandleManager <deephaven::client::TableHandleManager>`
    to create, access, or modify tables in the system.
 4. Clean up resources automatically when the variables exit their scopes.
 
@@ -37,7 +37,7 @@ This is the "Hello, World" example from the file ``hello_world/main.cc``.
   #include <iostream>
   #include "deephaven/client/highlevel/client.h"
 
-  using deephaven::client::highlevel::Client;
+  using deephaven::client::Client;
 
   int main() {
     const char *server = "localhost:10000";

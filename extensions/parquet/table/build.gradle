@@ -36,7 +36,9 @@ dependencies {
 
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
 
-    testImplementation TestTools.projectDependency(project, 'engine-table')
+    testImplementation project(':base-test-utils')
+    testImplementation project(':engine-test-utils')
+    testImplementation TestTools.projectDependency(project, 'engine-context')
     Classpaths.inheritJUnitClassic(project, 'testImplementation')
 
     testRuntimeOnly project(':log-to-slf4j'),
@@ -44,7 +46,11 @@ dependencies {
             project(path: ':test-configs')
     Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
 
+    brotliTestImplementation project(':extensions-parquet-table')
     brotliTestImplementation('com.github.rdblue:brotli-codec:0.1.1')
+    brotliTestRuntimeOnly project(':log-to-slf4j'),
+                         project(path: ':configs'),
+                         project(path: ':test-configs')
 }
 
 // if architecture is x86, run the brotli test

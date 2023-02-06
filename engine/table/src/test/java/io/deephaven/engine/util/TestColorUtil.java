@@ -4,16 +4,32 @@
 package io.deephaven.engine.util;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
+import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.gui.color.Color;
 import io.deephaven.engine.table.Table;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.SafeCloseable;
 
 import static io.deephaven.gui.color.Color.*;
 
 public class TestColorUtil extends BaseArrayTestCase {
 
     private final int size = 10;
-    private final Table t1 = TableTools.emptyTable(size).updateView("X = i", "Y = 2*i");
+    private SafeCloseable executionContext;
+    private Table t1;
+
+    @Override
+    protected void setUp() throws Exception {
+        super.setUp();
+        executionContext = TestExecutionContext.createForUnitTests().open();
+        t1 = TableTools.emptyTable(size).updateView("X = i", "Y = 2*i");
+    }
+
+    @Override
+    protected void tearDown() throws Exception {
+        super.tearDown();
+        executionContext.close();
+    }
 
     public void testRowFormatWhereNew() {
         testRowFormatWhere(t1.formatRowWhere("X > 5", "ALICEBLUE"), ALICEBLUE);
@@ -274,7 +290,7 @@ public class TestColorUtil extends BaseArrayTestCase {
 
     private void testRowFormatWhere(final Table colorTable, final Color color) {
         final long[] colorTableCol =
-                colorTable.getColumn(ColumnFormattingValues.ROW_FORMAT_NAME + ColumnFormattingValues.TABLE_FORMAT_NAME)
+                colorTable.getColumn(ColumnFormatting.getRowStyleFormatColumn())
                         .getLongs(0, size);
 
         for (int i = 0; i < 6; i++) {
@@ -287,7 +303,7 @@ public class TestColorUtil extends BaseArrayTestCase {
 
     private void testFormatColumns(final Table colorTable, final Color color) {
         final long[] colorTableCol =
-                colorTable.getColumn("X" + ColumnFormattingValues.TABLE_FORMAT_NAME).getLongs(0, size);
+                colorTable.getColumn(ColumnFormatting.getStyleFormatColumn("X")).getLongs(0, size);
         for (long aColorTableCol : colorTableCol) {
             assertEquals(ColorUtil.toLong(color), aColorTableCol);
         }

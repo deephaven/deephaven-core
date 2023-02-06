@@ -13,13 +13,15 @@ from tests.testbase import BaseTestCase
 
 class PartitionedTableProxyTestCase(BaseTestCase):
     def setUp(self):
-        self.test_table = read_csv("tests/data/test_table.csv")
+        super().setUp()
+        self.test_table = read_csv("tests/data/test_table.csv").tail(num_rows=100)
         self.partitioned_table = self.test_table.partition_by(by=["c"])
         self.pt_proxy = self.partitioned_table.proxy()
 
     def tearDown(self):
         self.partitioned_table = None
         self.test_table = None
+        super().tearDown()
 
     def test_target(self):
         self.assertEqual(self.partitioned_table, self.pt_proxy.target)
@@ -56,28 +58,25 @@ class PartitionedTableProxyTestCase(BaseTestCase):
             )
 
     def test_snapshot(self):
-        with self.subTest("snapshot with a Table"):
-            t = empty_table(10).update(
-                formulas=["Timestamp=io.deephaven.time.DateTime.now()", "X = i * i", "Y = i + i"]
-            )
-            pt_proxy = self.pt_proxy.snapshot(t, cols="a")
-            self.assertEqual(4, len(pt_proxy.target.constituent_table_columns))
-            self.assertTrue(all(ct.size == 0 for ct in pt_proxy.target.constituent_tables))
-            self.assertEqual(len(pt_proxy.target.constituent_tables), len(self.pt_proxy.target.constituent_tables))
+        snapshot_proxy = self.pt_proxy.snapshot()
+        for ct, snapshot_ct in zip(self.pt_proxy.target.constituent_tables, snapshot_proxy.target.constituent_tables):
+            self.assert_table_equals(ct, snapshot_ct)
 
-        with self.subTest("snapshot with another Proxy"):
-            trigger_proxy = self.test_table.drop_columns(["d", "e"]).partition_by("c").proxy()
-            snapshot_proxy = trigger_proxy.snapshot(self.pt_proxy, cols=["ja=a", "jb=b", "jc=c"])
-            self.assertTrue(all(ct.size == 0 for ct in pt_proxy.target.constituent_tables))
-            self.assertEqual(len(snapshot_proxy.target.constituent_tables),
-                             len(self.pt_proxy.target.constituent_tables))
+    def test_snapshot_when(self):
+        with self.subTest("snapshot_when with a Table"):
+            trigger_proxy = time_table("00:00:01")
+            result_proxy = self.pt_proxy.snapshot_when(trigger_proxy)
+            self.assertEqual(6, len(result_proxy.target.constituent_table_columns))
+            self.wait_ticking_proxy_table_update(result_proxy, 1, 5)
+            self.assertTrue(all(ct.size > 0 for ct in result_proxy.target.constituent_tables))
+            self.assertEqual(len(result_proxy.target.constituent_tables), len(self.pt_proxy.target.constituent_tables))
 
-            trigger_proxy = self.test_table.drop_columns(["d", "e"]).partition_by("a").proxy(
-                require_matching_keys=False)
-            snapshot_proxy = trigger_proxy.snapshot(self.pt_proxy, cols=["ja=a", "jb=b", "jc=c"])
-            self.assertTrue(all(ct.size == 0 for ct in pt_proxy.target.constituent_tables))
-            self.assertLessEqual(len(snapshot_proxy.target.constituent_tables),
-                                 len(self.pt_proxy.target.constituent_tables))
+        with self.subTest("snapshot_when with another Proxy"):
+            trigger_proxy = time_table("00:00:00.001").update_view(["c = (int)(ii % 1000)"]).partition_by("c", drop_keys=True).proxy()
+            lenient_proxy = self.partitioned_table.proxy(require_matching_keys=False)
+            result_proxy = lenient_proxy.snapshot_when(trigger_proxy)
+            self.wait_ticking_proxy_table_update(result_proxy, 1, 5)
+            self.assertTrue(all(ct.size > 0 for ct in result_proxy.target.constituent_tables))
 
     def test_sort(self):
         sorted_pt_proxy = self.pt_proxy.sort(order_by=["a", "b"],
@@ -151,7 +150,6 @@ class PartitionedTableProxyTestCase(BaseTestCase):
                 right_proxy = self.test_table.drop_columns(["b", "d"]).partition_by("c").proxy()
                 joined_pt_proxy = pt_proxy.natural_join(right_proxy, on="a", joins="e")
             self.assertIn("join keys found in multiple constituents", str(cm.exception))
-            print(cm.exception)
 
             with self.assertRaises(DHError) as cm:
                 pt_proxy = self.test_table.drop_columns(["d", "e"]).partition_by("c").proxy(sanity_check_joins=False)
@@ -318,6 +316,40 @@ class PartitionedTableProxyTestCase(BaseTestCase):
             for gct in agg_pt_proxy.target.constituent_tables:
                 self.assertGreaterEqual(gct.size, 1)
 
+    def test_query_scope(self):
+
+        nonlocal_str = "nonlocal str"
+        closure_str = "closure str"
+
+        def inner_func(arg: str):
+            def local_fn() -> str:
+                return "local str"
+
+            # Note, need to bring a nonlocal_str into the local scope before it can be used in formulas
+            nonlocal nonlocal_str
+            a_number = 20002
+
+            local_int = 101
+            formulas = ["Col1 = local_fn()",
+                        "Col2 = global_fn()",
+                        "Col3 = nonlocal_str",
+                        "Col4 = arg",
+                        "Col5 = local_int",
+                        "Col6 = global_int",
+                        "Col7 = a_number",
+                        ]
+
+            return self.pt_proxy.update(formulas)
+
+        self.assertIsNotNone(inner_func("param str"))
+
+
+def global_fn() -> str:
+    return "global str"
+
+
+global_int = 1001
+a_number = 10001
 
 if __name__ == '__main__':
     unittest.main()

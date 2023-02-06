@@ -5,14 +5,15 @@
  */
 package io.deephaven.engine.table.impl.updateby.ema;
 
+import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
-import io.deephaven.chunk.WritableDoubleChunk;
+import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.engine.table.MatchPair;
-import io.deephaven.engine.table.impl.updateby.internal.LongRecordingUpdateByOperator;
+import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -20,94 +21,120 @@ import org.jetbrains.annotations.Nullable;
 import static io.deephaven.util.QueryConstants.*;
 
 public class LongEMAOperator extends BasePrimitiveEMAOperator {
-    private final ColumnSource<Long> valueSource;
+    public final ColumnSource<?> valueSource;
+
+    protected class Context extends BasePrimitiveEMAOperator.Context {
+
+        public LongChunk<? extends Values> longValueChunk;
+
+        protected Context(final int chunkSize, final int chunkCount) {
+            super(chunkSize, chunkCount);
+        }
+
+        @Override
+        public void accumulateCumulative(RowSequence inputKeys,
+                                         Chunk<? extends Values>[] valueChunkArr,
+                                         LongChunk<? extends Values> tsChunk,
+                                         int len) {
+            setValuesChunk(valueChunkArr[0]);
+
+            // chunk processing
+            if (timestampColumnName == null) {
+                // compute with ticks
+                for (int ii = 0; ii < len; ii++) {
+                    // read the value from the values chunk
+                    final long input = longValueChunk.get(ii);
+
+                    if (input == NULL_LONG) {
+                        handleBadData(this, true, false);
+                    } else {
+                        if (curVal == NULL_DOUBLE) {
+                            curVal = input;
+                        } else {
+                            curVal = alpha * curVal + (oneMinusAlpha * input);
+                        }
+                    }
+                    outputValues.set(ii, curVal);
+                }
+            } else {
+                // compute with time
+                for (int ii = 0; ii < len; ii++) {
+                    // read the value from the values chunk
+                    final long input = longValueChunk.get(ii);
+                    final long timestamp = tsChunk.get(ii);
+                    //noinspection ConstantConditions
+                    final boolean isNull = input == NULL_LONG;
+                    final boolean isNullTime = timestamp == NULL_LONG;
+                    if (isNull) {
+                        handleBadData(this, true, false);
+                    } else if (isNullTime) {
+                        // no change to curVal and lastStamp
+                    } else if (curVal == NULL_DOUBLE) {
+                        curVal = input;
+                        lastStamp = timestamp;
+                    } else {
+                        final long dt = timestamp - lastStamp;
+                        if (dt != 0) {
+                            // alpha is dynamic, based on time
+                            final double alpha = Math.exp(-dt / (double) reverseWindowScaleUnits);
+                            curVal = alpha * curVal + (1 - alpha) * input;
+                            lastStamp = timestamp;
+                        }
+                    }
+                    outputValues.set(ii, curVal);
+                }
+            }
+
+            // chunk output to column
+            writeToOutputColumn(inputKeys);
+        }
+
+        @Override
+        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
+            longValueChunk = valuesChunk.asLongChunk();
+        }
+
+        @Override
+        public boolean isValueValid(long atKey) {
+            return valueSource.getLong(atKey) != NULL_LONG;
+        }
+
+        @Override
+        public void push(long key, int pos, int count) {
+            throw new IllegalStateException("EMAOperator#push() is not used");
+        }
+    }
 
     /**
      * An operator that computes an EMA from a long column using an exponential decay function.
      *
-     * @param pair the {@link MatchPair} that defines the input/output for this operation
-     * @param affectingColumns the names of the columns that affect this ema
-     * @param control        defines how to handle {@code null} input values.
-     * @param timeRecorder   an optional recorder for a timestamp column.  If this is null, it will be assumed time is
-     *                       measured in integer ticks.
-     * @param timeScaleUnits the smoothing window for the EMA. If no {@code timeRecorder} is provided, this is measured
-     *                       in ticks, otherwise it is measured in nanoseconds
-     * @param valueSource the input column source.  Used when determining reset positions for reprocessing
+     * @param pair                the {@link MatchPair} that defines the input/output for this operation
+     * @param affectingColumns    the names of the columns that affect this ema
+     * @param rowRedirection      the {@link RowRedirection} to use for dense output sources
+     * @param control             defines how to handle {@code null} input values.
+     * @param timestampColumnName the name of the column containing timestamps for time-based calcuations
+     * @param windowScaleUnits      the smoothing window for the EMA. If no {@code timestampColumnName} is provided, this is measured in ticks, otherwise it is measured in nanoseconds
+     * @param valueSource         a reference to the input column source for this operation
      */
     public LongEMAOperator(@NotNull final MatchPair pair,
                             @NotNull final String[] affectingColumns,
+                            @Nullable final RowRedirection rowRedirection,
                             @NotNull final OperationControl control,
-                            @Nullable final LongRecordingUpdateByOperator timeRecorder,
-                            final long timeScaleUnits,
-                            @NotNull final ColumnSource<Long> valueSource,
-                            @Nullable final RowRedirection rowRedirection
+                            @Nullable final String timestampColumnName,
+                            final long windowScaleUnits,
+                            final ColumnSource<?> valueSource
                             // region extra-constructor-args
                             // endregion extra-constructor-args
-                            ) {
-        super(pair, affectingColumns, control, timeRecorder, timeScaleUnits, rowRedirection);
+    ) {
+        super(pair, affectingColumns, rowRedirection, control, timestampColumnName, windowScaleUnits);
         this.valueSource = valueSource;
         // region constructor
         // endregion constructor
     }
 
+    @NotNull
     @Override
-    void computeWithTicks(final EmaContext ctx,
-                          final Chunk<Values> valueChunk,
-                          final int chunkStart,
-                          final int chunkEnd) {
-        final LongChunk<Values> asLongs = valueChunk.asLongChunk();
-        final WritableDoubleChunk<Values> localOutputChunk = ctx.outputValues.get();
-        for (int ii = chunkStart; ii < chunkEnd; ii++) {
-            final long input = asLongs.get(ii);
-            if(input == NULL_LONG) {
-                handleBadData(ctx, true, false, false);
-            } else {
-                if(ctx.curVal == NULL_DOUBLE) {
-                    ctx.curVal = input;
-                } else {
-                    ctx.curVal = ctx.alpha * ctx.curVal + (ctx.oneMinusAlpha * input);
-                }
-            }
-            localOutputChunk.set(ii, ctx.curVal);
-        }
-    }
-
-    @Override
-    void computeWithTime(final EmaContext ctx,
-                         final Chunk<Values> valueChunk,
-                         final int chunkStart,
-                         final int chunkEnd) {
-        final LongChunk<Values> asLongs = valueChunk.asLongChunk();
-        final WritableDoubleChunk<Values> localOutputChunk = ctx.outputValues.get();
-        for (int ii = chunkStart; ii < chunkEnd; ii++) {
-            final long input = asLongs.get(ii);
-            //noinspection ConstantConditions
-            final long timestamp = timeRecorder.getLong(ii);
-            final boolean isNull = input == NULL_LONG;
-            final boolean isNullTime = timestamp == NULL_LONG;
-            if(isNull || isNullTime) {
-                handleBadData(ctx, isNull, false, isNullTime);
-            } else {
-                if(ctx.curVal == NULL_DOUBLE) {
-                    ctx.curVal = input;
-                    ctx.lastStamp = timestamp;
-                } else {
-                    final long dt = timestamp - ctx.lastStamp;
-                    if(dt <= 0) {
-                        handleBadTime(ctx, dt);
-                    } else {
-                        final double alpha = Math.exp(-dt / timeScaleUnits);
-                        ctx.curVal = alpha * ctx.curVal + ((1 - alpha) * input);
-                        ctx.lastStamp = timestamp;
-                    }
-                }
-            }
-            localOutputChunk.set(ii, ctx.curVal);
-        }
-    }
-
-    @Override
-    boolean isValueValid(long atKey) {
-        return valueSource.getLong(atKey) != NULL_LONG;
+    public UpdateByOperator.Context makeUpdateContext(final int chunkSize, final int chunkCount) {
+        return new Context(chunkSize, chunkCount);
     }
 }

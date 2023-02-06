@@ -33,8 +33,9 @@ import java.util.*;
 public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implements NotificationQueue.Dependency {
     private static final int CHUNK_SIZE = 1 << 16;
 
+    private final boolean setRefreshing;
     private final MatchPair[] matchPairs;
-    private final TupleSource setTupleSource;
+    private final TupleSource<?> setTupleSource;
     private final boolean inclusion;
 
     private final HashSet<Object> liveValues = new HashSet<>();
@@ -54,22 +55,22 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
     private QueryTable resultTable;
 
     public DynamicWhereFilter(final QueryTable setTable, final boolean inclusion, final MatchPair... setColumnsNames) {
-        if (setTable.isRefreshing()) {
+        setRefreshing = setTable.isRefreshing();
+        if (setRefreshing) {
             UpdateGraphProcessor.DEFAULT.checkInitiateTableOperation();
         }
 
         this.matchPairs = setColumnsNames;
         this.inclusion = inclusion;
 
-        this.setTable = setTable;
-        final ColumnSource[] setColumns =
-                Arrays.stream(matchPairs).map(mp -> setTable.getColumnSource(mp.rightColumn()))
-                        .toArray(ColumnSource[]::new);
-        setTupleSource = TupleSourceFactory.makeTupleSource(setColumns);
+        final ColumnSource<?>[] setColumns = Arrays.stream(matchPairs)
+                .map(mp -> setTable.getColumnSource(mp.rightColumn())).toArray(ColumnSource[]::new);
 
-        setTable.getRowSet().forAllRowKeys((final long v) -> addKey(makeKey(v)));
+        if (setRefreshing) {
+            this.setTable = setTable;
+            setTupleSource = TupleSourceFactory.makeTupleSource(setColumns);
+            setTable.getRowSet().forAllRowKeys((final long v) -> addKey(makeKey(v)));
 
-        if (DynamicNode.isDynamicAndIsRefreshing(setTable)) {
             final String[] columnNames = Arrays.stream(matchPairs).map(MatchPair::rightColumn).toArray(String[]::new);
             final ModifiedColumnSet modTokenSet = setTable.newModifiedColumnSet(columnNames);
             setUpdateListener = new InstrumentedTableUpdateListenerAdapter(
@@ -124,16 +125,26 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
                     }
                 }
             };
-            setTable.listenForUpdates(setUpdateListener);
+            setTable.addUpdateListener(setUpdateListener);
 
             manage(setUpdateListener);
         } else {
+            this.setTable = null;
+            setTupleSource = null;
+            final TupleSource<?> temporaryTupleSource = TupleSourceFactory.makeTupleSource(setColumns);
+            setTable.getRowSet().forAllRowKeys((final long v) -> addKeyUnchecked(makeKey(temporaryTupleSource, v)));
+            kernelValid = liveValuesArrayValid = false;
+            setInclusionKernel = null;
             setUpdateListener = null;
         }
     }
 
     private Object makeKey(long index) {
-        return setTupleSource.createTuple(index);
+        return makeKey(setTupleSource, index);
+    }
+
+    private static Object makeKey(TupleSource<?> tupleSource, long index) {
+        return tupleSource.createTuple(index);
     }
 
     private Object makePrevKey(long index) {
@@ -158,6 +169,10 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
         setInclusionKernel = null;
     }
 
+    private void addKeyUnchecked(Object key) {
+        liveValues.add(key);
+    }
+
     @Override
     public List<String> getColumns() {
         return Arrays.asList(MatchPair.getLeftColumns(matchPairs));
@@ -177,10 +192,9 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
             throw new PreviousFilteringNotSupported();
         }
 
-        final ColumnSource[] keyColumns =
-                Arrays.stream(matchPairs).map(mp -> table.getColumnSource(mp.leftColumn()))
-                        .toArray(ColumnSource[]::new);
-        final TupleSource tupleSource = TupleSourceFactory.makeTupleSource(keyColumns);
+        final ColumnSource<?>[] keyColumns = Arrays.stream(matchPairs)
+                .map(mp -> table.getColumnSource(mp.leftColumn())).toArray(ColumnSource[]::new);
+        final TupleSource<?> tupleSource = TupleSourceFactory.makeTupleSource(keyColumns);
         final TrackingRowSet trackingSelection = selection.isTracking() ? selection.trackingCast() : null;
 
         if (matchPairs.length == 1) {
@@ -208,12 +222,10 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
                 return filterGrouping(trackingSelection, selectionIndexer, tupleSource);
             }
 
-            final ColumnSource[] sourcesWithGroupings =
-                    Arrays.stream(keyColumns).filter(selectionIndexer::hasGrouping)
-                            .toArray(ColumnSource[]::new);
-            final OptionalInt minGroupCount =
-                    Arrays.stream(sourcesWithGroupings).mapToInt(x -> selectionIndexer.getGrouping(x).size())
-                            .min();
+            final ColumnSource<?>[] sourcesWithGroupings = Arrays.stream(keyColumns)
+                    .filter(selectionIndexer::hasGrouping).toArray(ColumnSource[]::new);
+            final OptionalInt minGroupCount = Arrays.stream(sourcesWithGroupings)
+                    .mapToInt(x -> selectionIndexer.getGrouping(x).size()).min();
             if (minGroupCount.isPresent() && (minGroupCount.getAsInt() * 4L) < selection.size()) {
                 return filterGrouping(trackingSelection, selectionIndexer, tupleSource);
             }
@@ -222,20 +234,19 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
     }
 
     private WritableRowSet filterGrouping(TrackingRowSet selection, RowSetIndexer selectionIndexer,
-            TupleSource tupleSource) {
+            TupleSource<?> tupleSource) {
         final RowSet matchingKeys = selectionIndexer.getSubSetForKeySet(liveValues, tupleSource);
         return (inclusion ? matchingKeys.copy() : selection.minus(matchingKeys));
     }
 
     private WritableRowSet filterGrouping(TrackingRowSet selection, RowSetIndexer selectionIndexer, Table table) {
-        final ColumnSource[] keyColumns =
-                Arrays.stream(matchPairs).map(mp -> table.getColumnSource(mp.leftColumn()))
-                        .toArray(ColumnSource[]::new);
-        final TupleSource tupleSource = TupleSourceFactory.makeTupleSource(keyColumns);
+        final ColumnSource<?>[] keyColumns = Arrays.stream(matchPairs)
+                .map(mp -> table.getColumnSource(mp.leftColumn())).toArray(ColumnSource[]::new);
+        final TupleSource<?> tupleSource = TupleSourceFactory.makeTupleSource(keyColumns);
         return filterGrouping(selection, selectionIndexer, tupleSource);
     }
 
-    private WritableRowSet filterLinear(RowSet selection, ColumnSource[] keyColumns, TupleSource tupleSource) {
+    private WritableRowSet filterLinear(RowSet selection, ColumnSource<?>[] keyColumns, TupleSource<?> tupleSource) {
         if (keyColumns.length == 1) {
             return filterLinearOne(selection, keyColumns[0]);
         } else {
@@ -243,7 +254,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
         }
     }
 
-    private WritableRowSet filterLinearOne(RowSet selection, ColumnSource keyColumn) {
+    private WritableRowSet filterLinearOne(RowSet selection, ColumnSource<?> keyColumn) {
         if (selection.isEmpty()) {
             return RowSetFactory.empty();
         }
@@ -257,14 +268,13 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
 
         try (final ColumnSource.GetContext getContext = keyColumn.makeGetContext(CHUNK_SIZE);
                 final RowSequence.Iterator rsIt = selection.getRowSequenceIterator()) {
-            final WritableLongChunk<OrderedRowKeys> keyIndices =
-                    WritableLongChunk.makeWritableChunk(CHUNK_SIZE);
+            final WritableLongChunk<OrderedRowKeys> keyIndices = WritableLongChunk.makeWritableChunk(CHUNK_SIZE);
             final WritableBooleanChunk<Values> matches = WritableBooleanChunk.makeWritableChunk(CHUNK_SIZE);
 
             while (rsIt.hasMore()) {
                 final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(CHUNK_SIZE);
 
-                final Chunk<Values> chunk = keyColumn.getChunk(getContext, chunkOk);
+                final Chunk<Values> chunk = Chunk.downcast(keyColumn.getChunk(getContext, chunkOk));
                 setInclusionKernel.matchValues(chunk, matches);
 
                 keyIndices.setSize(chunk.size());
@@ -282,7 +292,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
         return indexBuilder.build();
     }
 
-    private WritableRowSet filterLinearTuple(RowSet selection, TupleSource tupleSource) {
+    private WritableRowSet filterLinearTuple(RowSet selection, TupleSource<?> tupleSource) {
         final RowSetBuilderSequential indexBuilder = RowSetFactory.builderSequential();
 
         for (final RowSet.Iterator it = selection.iterator(); it.hasNext();) {
@@ -304,7 +314,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
 
     @Override
     public boolean isRefreshing() {
-        return setTable.isRefreshing();
+        return setRefreshing;
     }
 
     @Override

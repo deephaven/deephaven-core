@@ -11,7 +11,6 @@ String[] mods = [
         'Numerics',
         'TableLogger',
         'Plot',
-        'CompilerTools',
         'Generators',
         'Integrations',
         'ModelFarm',
@@ -21,7 +20,9 @@ String[] mods = [
         'server',
         'table-api',
         'qst',
-        'go'
+        'go',
+        'authentication',
+        'cpp-client',
 ]
 
         // new web projects; these modules are intended to form a complete, modular web application,
@@ -29,7 +30,6 @@ String[] mods = [
 String[] webMods = [
         'web',
         'web-client-api', // compiled javascript api client
-        'web-client-ide', // IDE-only additions to open-api javascript client
         'web-client-ui', // React IDE client app
         'web-shared-beans', // shared data types and common interfaces
         'web-client-backplane', // shared data types and common interfaces
@@ -54,6 +54,7 @@ include 'combined-javadoc'
 
 include 'grpc-java:grpc-servlet-jakarta'
 include 'grpc-java:grpc-servlet-websocket-jakarta'
+include 'grpc-java:grpc-mtls'
 
 include 'DHProcess'
 include 'proto:proto-backplane-grpc'
@@ -120,7 +121,12 @@ project(':server-jetty').projectDir = file('server/jetty')
 include(':server-jetty-app')
 project(':server-jetty-app').projectDir = file('server/jetty-app')
 
+include(':server-jetty-app-custom')
+project(':server-jetty-app-custom').projectDir = file('server/jetty-app-custom')
+
 include(':Base')
+
+include(':base-test-utils')
 
 include(':SevenZip')
 
@@ -156,6 +162,9 @@ project(':replication-reflective').projectDir = file('replication/reflective')
 include(':engine-chunk')
 project(':engine-chunk').projectDir = file('engine/chunk')
 
+include(':engine-context')
+project(':engine-context').projectDir = file('engine/context')
+
 include(':engine-vector')
 project(':engine-vector').projectDir = file('engine/vector')
 
@@ -180,6 +189,9 @@ project(':engine-api').projectDir = file('engine/api')
 include(':engine-rowset')
 project(':engine-rowset').projectDir = file('engine/rowset')
 
+include(':engine-rowset-test-utils')
+project(':engine-rowset-test-utils').projectDir = file('engine/rowset-test-utils')
+
 include(':engine-base')
 project(':engine-base').projectDir = file('engine/base')
 
@@ -191,6 +203,9 @@ project(':engine-table').projectDir = file('engine/table')
 
 include(':engine-benchmark')
 project(':engine-benchmark').projectDir = file('engine/benchmark')
+
+include(':engine-test-utils')
+project(':engine-test-utils').projectDir = file('engine/test-utils')
 
 include(':extensions-csv')
 project(':extensions-csv').projectDir = file('extensions/csv')
@@ -206,6 +221,9 @@ project(':extensions-parquet-compression').projectDir = file('extensions/parquet
 
 include(':extensions-parquet-table')
 project(':extensions-parquet-table').projectDir = file('extensions/parquet/table')
+
+include(':extensions-parquet-benchmark')
+project(':extensions-parquet-benchmark').projectDir = file('extensions/parquet/benchmark')
 
 include(':extensions-barrage')
 project(':extensions-barrage').projectDir = file('extensions/barrage')
@@ -229,6 +247,12 @@ project(':plugin-figure').projectDir = file('plugin/figure')
 
 include(':plugin-partitionedtable')
 project(':plugin-partitionedtable').projectDir = file('plugin/partitionedtable')
+
+include(':plugin-hierarchicaltable')
+project(':plugin-hierarchicaltable').projectDir = file('plugin/hierarchicaltable')
+
+include(':plugin-gc-app')
+project(':plugin-gc-app').projectDir = file('plugin/gc-app')
 
 include(':envoy')
 
@@ -304,6 +328,9 @@ project(':docker-runtime-base').projectDir = file('docker/runtime-base')
 include(':docker-server')
 project(':docker-server').projectDir = file('docker/server')
 
+include(':docker-server-jetty')
+project(':docker-server-jetty').projectDir = file('docker/server-jetty')
+
 include(':docker-web')
 project(':docker-web').projectDir = file('docker/web')
 
@@ -318,6 +345,13 @@ project(':hotspot').projectDir = file('hotspot')
 
 include(':hotspot-impl')
 project(':hotspot-impl').projectDir = file('hotspot-impl')
+
+include ':authentication'
+include ':authorization-codegen'
+include ':authorization'
+
+include ':clock'
+include ':clock-impl'
 
 file("${rootDir}/docker/registry").list().each { name ->
     if (file("${rootDir}/docker/registry/${name}/build.gradle").exists()) {
@@ -369,3 +403,4 @@ if (isCiServer) {
         }
     }
 }
+

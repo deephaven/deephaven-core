@@ -249,13 +249,13 @@ final class IncrementalAggOpenHasherLongShort extends IncrementalChunkedOperator
             if (positionValue == EMPTY_OUTPUT_POSITION) {
                 int alternateTableLocation = hashToTableLocationAlternate(hash);
                 if (alternateTableLocation >= rehashPointer) {
-                    return -1;
+                    return UNKNOWN_ROW;
                 }
                 final int firstAlternateTableLocation = alternateTableLocation;
                 while (true) {
                     final int alternatePositionValue = alternateOutputPosition.getUnsafe(alternateTableLocation);
                     if (alternatePositionValue == EMPTY_OUTPUT_POSITION) {
-                        return -1;
+                        return UNKNOWN_ROW;
                     }
                     if (eq(alternateKeySource0.getUnsafe(alternateTableLocation), k0) && eq(alternateKeySource1.getUnsafe(alternateTableLocation), k1)) {
                         return alternatePositionValue;

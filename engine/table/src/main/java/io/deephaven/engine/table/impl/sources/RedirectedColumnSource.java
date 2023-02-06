@@ -8,7 +8,6 @@ import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.engine.table.impl.join.dupexpand.DupExpandKernel;
@@ -34,13 +33,43 @@ import static io.deephaven.util.QueryConstants.*;
  *
  * @param <T>
  */
-public class RedirectedColumnSource<T> extends AbstractColumnSource<T>
+public class RedirectedColumnSource<T> extends AbstractDeferredGroupingColumnSource<T>
         implements UngroupableColumnSource {
+    /**
+     * Redirect the innerSource if it is not agnostic to redirection. Otherwise, return the innerSource.
+     *
+     * @param rowRedirection The row redirection to use
+     * @param innerSource The column source to redirect
+     */
+    public static <T> ColumnSource<T> maybeRedirect(
+            @NotNull final RowRedirection rowRedirection,
+            @NotNull final ColumnSource<T> innerSource) {
+        if (innerSource instanceof RowKeyAgnosticChunkSource) {
+            return innerSource;
+        }
+        return new RedirectedColumnSource<>(rowRedirection, innerSource);
+    }
+
+    /**
+     * This factory method should be used when unmapped rows in the row redirection must be redirected to null values.
+     * For example, natural joins, left outer joins, and as-of joins must map unmatched rows to null values in
+     * right-side columns.
+     *
+     * @param rowRedirection The row redirection to use
+     * @param innerSource The column source to redirect
+     */
+    public static <T> ColumnSource<T> alwaysRedirect(
+            @NotNull final RowRedirection rowRedirection,
+            @NotNull final ColumnSource<T> innerSource) {
+        return new RedirectedColumnSource<>(rowRedirection, innerSource);
+    }
+
     protected final RowRedirection rowRedirection;
     protected final ColumnSource<T> innerSource;
     private final boolean ascendingMapping;
 
-    public RedirectedColumnSource(@NotNull final RowRedirection rowRedirection,
+    protected RedirectedColumnSource(
+            @NotNull final RowRedirection rowRedirection,
             @NotNull final ColumnSource<T> innerSource) {
         super(innerSource.getType());
         this.rowRedirection = rowRedirection;
@@ -430,7 +459,8 @@ public class RedirectedColumnSource<T> extends AbstractColumnSource<T>
         if (ascendingMapping) {
             effectiveContext.doOrderedFillAscending(innerSource, usePrev, destination);
         } else if (innerSource instanceof FillUnordered) {
-            effectiveContext.doUnorderedFill((FillUnordered) innerSource, usePrev, destination);
+            // noinspection unchecked
+            effectiveContext.doUnorderedFill((FillUnordered<Values>) innerSource, usePrev, destination);
         } else {
             effectiveContext.doOrderedFillAndPermute(innerSource, usePrev, destination);
         }
@@ -658,7 +688,7 @@ public class RedirectedColumnSource<T> extends AbstractColumnSource<T>
             }
         }
 
-        private void doUnorderedFill(@NotNull final FillUnordered innerSource, final boolean usePrev,
+        private void doUnorderedFill(@NotNull final FillUnordered<Values> innerSource, final boolean usePrev,
                 @NotNull final WritableChunk<? super Values> destination) {
             if (usePrev) {
                 innerSource.fillPrevChunkUnordered(innerFillContext, destination, shareable.mappedKeys);
@@ -725,11 +755,6 @@ public class RedirectedColumnSource<T> extends AbstractColumnSource<T>
                 }
             }
         }
-    }
-
-    @Override
-    public boolean preventsParallelism() {
-        return innerSource.preventsParallelism();
     }
 
     @Override

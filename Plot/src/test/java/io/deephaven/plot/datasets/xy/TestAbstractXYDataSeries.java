@@ -4,21 +4,25 @@
 package io.deephaven.plot.datasets.xy;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
-import io.deephaven.plot.*;
+import io.deephaven.engine.context.TestExecutionContext;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.util.TableTools;
+import io.deephaven.gui.color.Color;
+import io.deephaven.gui.shape.JShapes;
+import io.deephaven.gui.shape.NamedShape;
+import io.deephaven.plot.AxesImpl;
+import io.deephaven.plot.BaseFigureImpl;
+import io.deephaven.plot.LineStyle;
 import io.deephaven.plot.datasets.data.IndexableData;
 import io.deephaven.plot.datasets.data.IndexableDataArray;
 import io.deephaven.plot.datasets.data.IndexableDataInteger;
 import io.deephaven.plot.util.PlotUtils;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.util.TableTools;
-import io.deephaven.gui.color.Color;
-import io.deephaven.gui.color.Paint;
-import io.deephaven.gui.shape.JShapes;
-import io.deephaven.gui.shape.NamedShape;
-import groovy.lang.Closure;
+import io.deephaven.util.SafeCloseable;
 import junit.framework.TestCase;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class TestAbstractXYDataSeries extends BaseArrayTestCase {
@@ -53,6 +57,20 @@ public class TestAbstractXYDataSeries extends BaseArrayTestCase {
         public int size() {
             return 3;
         }
+    }
+
+    private SafeCloseable executionContext;
+
+    @Override
+    public void setUp() throws Exception {
+        super.setUp();
+        executionContext = TestExecutionContext.createForUnitTests().open();
+    }
+
+    @Override
+    protected void tearDown() throws Exception {
+        super.tearDown();
+        executionContext.close();
     }
 
     public void testVisibility() {

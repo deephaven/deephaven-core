@@ -1,8 +1,11 @@
 /*
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
+#include "deephaven/client/flight.h"
+#include "deephaven/client/flight.h"
 #include "deephaven/client/utility/table_maker.h"
 #include "deephaven/client/utility/utility.h"
+#include "deephaven/client/utility/arrow_util.h"
 
 using deephaven::client::TableHandle;
 using deephaven::client::utility::okOrThrow;
@@ -37,14 +40,15 @@ TableHandle TableMaker::makeTable(const TableHandleManager &manager) {
   auto schema = valueOrThrow(DEEPHAVEN_EXPR_MSG(schemaBuilder_.Finish()));
 
   auto wrapper = manager.createFlightWrapper();
-  auto [result, fd] = manager.newTableHandleAndFlightDescriptor();
+  auto thfd = manager.newTableHandleAndFlightDescriptor();
 
   arrow::flight::FlightCallOptions options;
   wrapper.addAuthHeaders(&options);
 
   std::unique_ptr<arrow::flight::FlightStreamWriter> fsw;
   std::unique_ptr<arrow::flight::FlightMetadataReader> fmr;
-  okOrThrow(DEEPHAVEN_EXPR_MSG(wrapper.flightClient()->DoPut(options, fd, schema, &fsw, &fmr)));
+  okOrThrow(DEEPHAVEN_EXPR_MSG(wrapper.flightClient()->DoPut(options, thfd.flightDescriptor(),
+      schema, &fsw, &fmr)));
   auto batch = arrow::RecordBatch::Make(schema, numRows_, std::move(columns_));
 
   okOrThrow(DEEPHAVEN_EXPR_MSG(fsw->WriteRecordBatch(*batch)));
@@ -53,7 +57,7 @@ TableHandle TableMaker::makeTable(const TableHandleManager &manager) {
   std::shared_ptr<arrow::Buffer> buf;
   okOrThrow(DEEPHAVEN_EXPR_MSG(fmr->ReadMetadata(&buf)));
   okOrThrow(DEEPHAVEN_EXPR_MSG(fsw->Close()));
-  return result;
+  return std::move(thfd.tableHandle());
 }
 
 namespace internal {
@@ -63,13 +67,14 @@ TypeConverter::TypeConverter(std::shared_ptr<arrow::DataType> dataType,
     column_(std::move(column)) {}
     TypeConverter::~TypeConverter() = default;
 
-const char *TypeConverterTraits<bool>::deephavenTypeName = "java.lang.Boolean";
-const char *TypeConverterTraits<int8_t>::deephavenTypeName = "byte";
-const char *TypeConverterTraits<int16_t>::deephavenTypeName = "short";
-const char *TypeConverterTraits<int32_t>::deephavenTypeName = "int";
-const char *TypeConverterTraits<int64_t>::deephavenTypeName = "long";
-const char *TypeConverterTraits<float>::deephavenTypeName = "float";
-const char *TypeConverterTraits<double>::deephavenTypeName = "double";
-const char *TypeConverterTraits<std::string>::deephavenTypeName = "java.lang.String";
+const char * const TypeConverterTraits<char16_t>::deephavenTypeName = "char";
+const char * const TypeConverterTraits<bool>::deephavenTypeName = "java.lang.Boolean";
+const char * const TypeConverterTraits<int8_t>::deephavenTypeName = "byte";
+const char * const TypeConverterTraits<int16_t>::deephavenTypeName = "short";
+const char * const TypeConverterTraits<int32_t>::deephavenTypeName = "int";
+const char * const TypeConverterTraits<int64_t>::deephavenTypeName = "long";
+const char * const TypeConverterTraits<float>::deephavenTypeName = "float";
+const char * const TypeConverterTraits<double>::deephavenTypeName = "double";
+const char * const TypeConverterTraits<std::string>::deephavenTypeName = "java.lang.String";
 }  // namespace internal
 }  // namespace deephaven::client::utility

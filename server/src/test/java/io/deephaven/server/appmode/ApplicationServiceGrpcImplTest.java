@@ -3,6 +3,7 @@
  */
 package io.deephaven.server.appmode;
 
+import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.util.NoLanguageDeephavenSession;
 import io.deephaven.engine.util.ScriptSession;
@@ -15,13 +16,14 @@ import io.deephaven.server.session.SessionServiceGrpcImpl;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.util.TestControlledScheduler;
 import io.deephaven.util.SafeCloseable;
-import io.deephaven.util.auth.AuthContext;
+import io.deephaven.auth.AuthContext;
 import io.grpc.Context;
 import io.grpc.stub.StreamObserver;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.Collections;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.Assert.assertEquals;
@@ -39,9 +41,10 @@ public class ApplicationServiceGrpcImplTest {
     public void setup() {
         livenessScope = LivenessScopeStack.open();
         scheduler = new TestControlledScheduler();
-        sessionService =
-                new SessionService(scheduler, authContext -> new SessionState(scheduler, authContext), TOKEN_EXPIRE_MS);
-        applicationServiceGrpcImpl = new ApplicationServiceGrpcImpl(AppMode.HYBRID, scheduler, sessionService,
+        sessionService = new SessionService(scheduler,
+                authContext -> new SessionState(scheduler, TestExecutionContext::createForUnitTests, authContext),
+                TOKEN_EXPIRE_MS, Collections.emptyMap());
+        applicationServiceGrpcImpl = new ApplicationServiceGrpcImpl(scheduler, sessionService,
                 new TypeLookup(ObjectTypeLookup.NoOp.INSTANCE));
     }
 

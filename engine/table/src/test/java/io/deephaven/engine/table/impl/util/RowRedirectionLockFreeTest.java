@@ -4,7 +4,7 @@
 package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.table.impl.RefreshingTableTestCase;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.updategraph.LogicalClock;
 import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.test.types.OutOfBandTest;

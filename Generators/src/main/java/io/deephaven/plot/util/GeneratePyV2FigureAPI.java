@@ -845,7 +845,7 @@ public class GeneratePyV2FigureAPI {
                     sb.append(INDENT)
                             .append(INDENT)
                             .append(INDENT)
-                            .append("return Figure(self.j_figure.")
+                            .append("return Figure(j_figure=self.j_figure.")
                             .append(key.name)
                             .append("(")
                             .append(String.join(", ", argNames))
@@ -947,7 +947,7 @@ public class GeneratePyV2FigureAPI {
 
             sb.append(INDENT)
                     .append(INDENT)
-                    .append("return Figure(j_figure)\n");
+                    .append("return Figure(j_figure=j_figure)\n");
         }
 
         /**

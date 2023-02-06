@@ -19,10 +19,10 @@ _JUpdateGraphProcessor = jpy.get_type("io.deephaven.engine.updategraph.UpdateGra
 _j_exclusive_lock = _JUpdateGraphProcessor.DEFAULT.exclusiveLock()
 _j_shared_lock = _JUpdateGraphProcessor.DEFAULT.sharedLock()
 
-auto_locking = False
-"""Whether to automatically acquire the Update Graph Processor(UGP) shared lock for an unsafe operation on a ticking 
+auto_locking = True
+"""Whether to automatically acquire the Update Graph Processor(UGP) shared lock for an unsafe operation on a refreshing 
 table when the current thread doesn't own either the UGP shared or the UGP exclusive lock. The newly obtained lock will 
-be released after the table operation finishes."""
+be released after the table operation finishes. Auto locking is turned on by default."""
 
 
 def has_exclusive_lock() -> bool:

@@ -6,17 +6,14 @@ package io.deephaven.util.datastructures.intrusive;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Array;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.Set;
+import java.util.*;
 
 /**
  * An intrusive set that uses an array for its backing storage.
- *
+ * <p>
  * You can insert, remove, or check for existence in O(1) time. Clearing the set is O(n); as we need to null out
  * references.
- *
+ * <p>
  * If you attempt to perform an operation element which is not in this set, but is in another set with the same adapter;
  * then you are going to have a bad time. Tread carefully.
  *
@@ -157,6 +154,7 @@ public class IntrusiveArraySet<T> implements Set<T> {
         int destinationSlot = 0;
 
         for (Object c : collection) {
+            // noinspection unchecked
             final int slot = adapter.getSlot((T) c);
             // check if it exists in our set
             if (slot >= 0 && slot < size && storage[slot] == c) {
@@ -171,6 +169,7 @@ public class IntrusiveArraySet<T> implements Set<T> {
 
                 // swap c and destination slot
                 storage[slot] = storage[destinationSlot];
+                // noinspection unchecked
                 storage[destinationSlot] = (T) c;
 
                 adapter.setSlot(storage[destinationSlot], destinationSlot);
@@ -201,6 +200,20 @@ public class IntrusiveArraySet<T> implements Set<T> {
     public void clear() {
         Arrays.fill(storage, 0, size, null);
         size = 0;
+    }
+
+    /**
+     * Sort the contents of this IntrusiveArraySet according to {@code c}. <em>Any</em> subsequent mutation may render
+     * this IntrusiveArraySet unsorted, as removes are done in O(1) time by swapping with the last element.
+     *
+     * @param c The {@link Comparator} to sort by
+     */
+    public void sort(@NotNull final Comparator<? super T> c) {
+        final int s = size;
+        Arrays.sort(storage, 0, s, c);
+        for (int ii = 0; ii < s; ++ii) {
+            adapter.setSlot(storage[ii], ii);
+        }
     }
 
     /**

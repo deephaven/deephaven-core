@@ -19,17 +19,23 @@ public:
   virtual void invoke(Args... args) = 0;
 };
 
-// Non-templated base class for SFCallbacks that implements the "failure" side.
-class FailureCallback {
+/**
+ * Non-templated abstract base class for SFCallback.
+ */
+class SFCallbackBase {
 public:
-  virtual ~FailureCallback() = default;
-  virtual void onFailure(std::exception_ptr ep) = 0;
+  /**
+   * Destructor.
+   */
+  virtual ~SFCallbackBase() = default;
 };
 
-// Success-or-failure callbacks. The callee is required to eventually invoke either onSuccess or
-// onFailure exactly once.
+/**
+ * Success-or-failure callbacks. The contract requires the invoker to eventually call either
+ * onSuccess() or onFailure() exactly once.
+ */
 template<typename... Args>
-class SFCallback : public FailureCallback {
+class SFCallback : public SFCallbackBase {
 public:
   template<typename Callable>
   static std::shared_ptr<SFCallback> createFromCallable(Callable &&callable);
@@ -37,13 +43,26 @@ public:
   static std::pair<std::shared_ptr<SFCallback<Args...>>, std::future<std::tuple<Args...>>>
   createForFuture();
 
+  /**
+   * Destructor.
+   */
   ~SFCallback() override = default;
-  virtual void onSuccess(Args... item) = 0;
+
+  /**
+   * This method is called by the invoker to indicate the operation was successful.
+   */
+  virtual void onSuccess(Args ...args) = 0;
+  /**
+   * This method is called by the invoker to indicate the operation was a failure.
+   */
+  virtual void onFailure(std::exception_ptr ep) = 0;
 };
 
-// This helps us make a Callback<T> that can hold some kind of invokeable item (function object or
-// lambda or std::function).
 namespace internal {
+/**
+ * This helps us make a Callback<T> that can hold some kind of invokeable item (function object or
+ * lambda or std::function).
+ */
 template<typename Callable, typename... Args>
 class CallbackCallable final : public Callback<Args...> {
 public:
@@ -57,11 +76,12 @@ private:
   Callable callable_;
 };
 
-// This helper class helps us make a SFCallback<T> that can hold some kind of invokeable item
-// (function object or lambda or std::function). It works with the method 'createFromCallable'.
-// The invokeable item needs to have an operator() that can take either something compatible with T
-// or a std::exception_ptr. So, there can be two overloaded operator() methods, or you can have
-// something like boost::variant<T, std::exception_ptr>().
+/**
+ * This helper class helps us make a SFCallback<Args...> that can hold some kind of invokeable item
+ * (function object or lambda or std::function). It works with the method 'createFromCallable'.
+ * The invokeable item needs to have an operator() that can take either something compatible with
+ * Args... or a std::exception_ptr. So for example you could have two overloaded operator() methods.
+*/
 template<typename Callable, typename... Args>
 class SFCallbackCallable final : public SFCallback<Args...> {
 
@@ -80,11 +100,13 @@ private:
   Callable callable_;
 };
 
-// This helps us make a SFCallback<T> that holds a promise. It works with the method 'createForFuture'
+/**
+ * This helps us make a SFCallback<T> that holds a promise. It works with the method 'createForFuture'
+ */
 template<typename... Args>
 class SFCallbackFutureable final : public SFCallback<Args...> {
 public:
-  void onSuccess(Args... args) final {
+  void onSuccess(Args ...args) final {
     promise_.set_value(std::make_tuple(std::forward<Args>(args)...));
   }
 
@@ -115,8 +137,10 @@ std::shared_ptr<SFCallback<Args...>> SFCallback<Args...>::createFromCallable(Cal
       std::forward<Callable>(callable));
 }
 
-// Returns a pair whose first item is a SFCallback<T> which satisfies a promise, and whose second
-// item is a std::future<T> which is the future corresponding to that promise.
+/**
+ * Returns a pair whose first item is a SFCallback<Args...> which satisfies a promise, and whose second
+ * item is a std::future<Args...> which is the future corresponding to that promise.
+ */
 template<typename... Args>
 std::pair<std::shared_ptr<SFCallback<Args...>>, std::future<std::tuple<Args...>>>
 SFCallback<Args...>::createForFuture() {

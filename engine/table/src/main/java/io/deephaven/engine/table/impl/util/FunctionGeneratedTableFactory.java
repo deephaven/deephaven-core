@@ -64,7 +64,7 @@ public class FunctionGeneratedTableFactory {
         final FunctionBackedTable result = factory.getTable();
 
         for (Table source : sourceTables) {
-            source.listenForUpdates(new BaseTable.ListenerImpl("FunctionGeneratedTable", source, result) {
+            source.addUpdateListener(new BaseTable.ListenerImpl("FunctionGeneratedTable", source, result) {
                 @Override
                 public void onUpdate(final TableUpdate upstream) {
                     result.doRefresh();

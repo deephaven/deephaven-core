@@ -10,7 +10,7 @@ from setuptools import find_namespace_packages, setup
 HERE = pathlib.Path(__file__).parent
 
 # The text of the README file
-README = (HERE / "README.md").read_text()
+README = (HERE / "README_PyPi.md").read_text()
 
 
 # Versions should comply with PEP440.  For a discussion on single-sourcing
@@ -48,12 +48,14 @@ setup(
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
-        'Programming Language :: Python :: 3.10'
+        'Programming Language :: Python :: 3.10',
+        'Programming Language :: Python :: 3.11',
     ],
     keywords='Deephaven Development',
     python_requires='>=3.7',
     install_requires=[
-        'jpy>=0.11.0',
-        f"deephaven-core=={__normalized_version__}",
+        'jpy>=0.13.0',
+        "java-utilities",
+        f"deephaven-core[autocomplete]=={__normalized_version__}",
     ]
 )

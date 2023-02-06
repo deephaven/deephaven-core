@@ -5,9 +5,11 @@ package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.api.Selectable;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.table.lang.QueryScope;
+import io.deephaven.engine.context.QueryScope;
 import io.deephaven.time.DateTime;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.*;
@@ -16,7 +18,7 @@ import junit.framework.TestCase;
 import java.util.Arrays;
 import java.util.List;
 
-import static io.deephaven.engine.table.impl.TstUtils.*;
+import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
 
 public class TestFreezeBy extends RefreshingTableTestCase {
@@ -36,7 +38,7 @@ public class TestFreezeBy extends RefreshingTableTestCase {
 
         final TableUpdateValidator tuv = TableUpdateValidator.make("frozen", (QueryTable) frozen);
         final FailureListener failureListener = new FailureListener();
-        tuv.getResultTable().listenForUpdates(failureListener);
+        tuv.getResultTable().addUpdateListener(failureListener);
 
         assertTableEquals(inputUpdated, frozen);
         assertEquals(String.class, frozen.getDefinition().getColumn("SStr").getDataType());
@@ -90,7 +92,7 @@ public class TestFreezeBy extends RefreshingTableTestCase {
 
         final TableUpdateValidator tuv = TableUpdateValidator.make("frozen", (QueryTable) frozen);
         final FailureListener failureListener = new FailureListener();
-        tuv.getResultTable().listenForUpdates(failureListener);
+        tuv.getResultTable().addUpdateListener(failureListener);
 
         assertTableEquals(input, frozen);
 
@@ -111,13 +113,12 @@ public class TestFreezeBy extends RefreshingTableTestCase {
         final Table frozen = FreezeBy.freezeBy(input);
         showWithRowSet(frozen);
 
-        final Table originalExpect =
-                UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> TableTools.emptyTable(1).snapshot(input));
+        final Table originalExpect = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(input::snapshot);
         assertTableEquals(input, originalExpect);
 
         final TableUpdateValidator tuv = TableUpdateValidator.make("frozen", (QueryTable) frozen);
         final FailureListener failureListener = new FailureListener();
-        tuv.getResultTable().listenForUpdates(failureListener);
+        tuv.getResultTable().addUpdateListener(failureListener);
         assertTableEquals(input, frozen);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
@@ -147,8 +148,7 @@ public class TestFreezeBy extends RefreshingTableTestCase {
             input.notifyListeners(i(2), i(), i());
         });
         showWithRowSet(frozen);
-        final Table newExpect =
-                UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> TableTools.emptyTable(1).snapshot(input));
+        final Table newExpect = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(input::snapshot);
         assertTableEquals(input, newExpect);
         assertTableEquals(newExpect, frozen);
 

@@ -5,6 +5,7 @@
 package io.deephaven.function;
 
 import io.deephaven.vector.*;
+import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.util.QueryConstants;
 import gnu.trove.list.array.*;
 import gnu.trove.set.*;
@@ -132,6 +133,35 @@ public class Basic {
     }
 
     /**
+     * Returns the length of the input.
+     *
+     * @param values values.
+     * @return length of the input or the Deephaven null constant for null inputs.
+     */
+    static public <T> long len(T[] values) {
+        if (values == null) {
+            return NULL_LONG;
+        }
+
+        return values.length;
+    }
+
+    /**
+     * Returns the length of the input.
+     *
+     * @param values values.
+     * @return length of the input or the Deephaven null constant for null inputs.
+     */
+    @SuppressWarnings("rawtypes")
+    static public long len(LongSizedDataStructure values) {
+        if (values == null) {
+            return NULL_LONG;
+        }
+
+        return values.size();
+    }
+
+    /**
      * Counts the number of non-null values.
      *
      * @param values values.
@@ -153,7 +183,7 @@ public class Basic {
      * @return number of non-null values.
      */
     static public <T> long countObj(ObjectVector<T> values) {
-        if(values == null){
+        if (values == null) {
             return NULL_LONG;
         }
 
@@ -179,7 +209,7 @@ public class Basic {
      */
     @SafeVarargs
     static public <T> T lastObj(T... values) {
-        if(values == null || values.length == 0) {
+        if (values == null || values.length == 0) {
             return null;
         }
 
@@ -193,7 +223,7 @@ public class Basic {
      * @return last value from the array.
      */
     static public <T> T lastObj(ObjectVector<T> values) {
-        if(values == null || values.size() == 0) {
+        if (values == null || values.size() == 0) {
             return null;
         }
 
@@ -208,7 +238,7 @@ public class Basic {
      */
     @SafeVarargs
     static public <T> T firstObj(T... values) {
-        if(values == null || values.length == 0) {
+        if (values == null || values.length == 0) {
             return null;
         }
 
@@ -222,7 +252,7 @@ public class Basic {
      * @return first value from the array.
      */
     static public <T> T firstObj(ObjectVector<T> values) {
-        if(values == null || values.size() == 0) {
+        if (values == null || values.size() == 0) {
             return null;
         }
 
@@ -261,13 +291,13 @@ public class Basic {
     }
 
     /**
-     * Converts a DB array to an array.
+     * Converts a Deephaven vector to an array.
      *
-     * @param values DB array
+     * @param values Deephaven vector
      * @return primitive array.
      */
-    public static <T> T[] vecObj(ObjectVector<T> values) {
-        if(values == null) {
+    public static <T> T[] arrayObj(ObjectVector<T> values) {
+        if (values == null) {
             return null;
         }
 
@@ -275,14 +305,14 @@ public class Basic {
     }
 
     /**
-     * Converts an array to a DB array.
+     * Converts an array to a Deephaven vector.
      *
      * @param values primitive array
-     * @return DB array.
+     * @return Deephaven vector.
      */
     @SafeVarargs
-    public static <T> ObjectVector<T> arrayObj(T... values){
-        if(values == null) {
+    public static <T> ObjectVector<T> vecObj(T... values) {
+        if (values == null) {
             return null;
         }
 
@@ -347,7 +377,7 @@ public class Basic {
      * @return number of distinct non-null values.
      */
     public static <T extends Comparable<? super T>> long countDistinctObj(final ObjectVector<T> values) {
-        if(values == null) {
+        if (values == null) {
             return QueryConstants.NULL_LONG;
         }
 
@@ -362,7 +392,7 @@ public class Basic {
      */
     @SafeVarargs
     public static <T extends Comparable<? super T>> long countDistinctObj(T... values) {
-        if(values == null) {
+        if (values == null) {
             return QueryConstants.NULL_LONG;
         }
 
@@ -377,7 +407,7 @@ public class Basic {
      * @return number of distinct values.
      */
     public static <T extends Comparable<? super T>> long countDistinctObj(final T[] values, boolean countNull) {
-        if(values == null) {
+        if (values == null) {
             return QueryConstants.NULL_LONG;
         }
 
@@ -393,27 +423,27 @@ public class Basic {
      */
     @SuppressWarnings("SuspiciousMethodCalls")
     public static <T extends Comparable<? super T>> long countDistinctObj(final ObjectVector<T> values, boolean countNull) {
-        if(values == null) {
+        if (values == null) {
             return QueryConstants.NULL_LONG;
         }
 
         final long n = values.size();
 
-        if(n == 0){
+        if (n == 0) {
             return 0;
         }
 
-        if(n == 1) {
+        if (n == 1) {
             return !countNull && isNull(values.get(0)) ? 0 : 1;
         }
 
         final THashSet<T> keys = new THashSet<>();
 
-        for(long ii = 0; ii < n; ii++) {
+        for (long ii = 0; ii < n; ii++) {
             keys.add(values.get(ii));
         }
 
-        if(!countNull) {
+        if (!countNull) {
             keys.remove(null);
             keys.remove(NULL_BOOLEAN);
             keys.remove(NULL_CHAR_BOXED);
@@ -436,7 +466,7 @@ public class Basic {
      */
     @SafeVarargs
     public static <T extends Comparable<? super T>> T[] distinctObj(T... values) {
-        if(values == null) {
+        if (values == null) {
             return null;
         }
 
@@ -450,7 +480,7 @@ public class Basic {
      * @return unsorted array containing only distinct non-null items from arr.
      */
     public static <T extends Comparable<? super T>> T[] distinctObj(final ObjectVector<T> values) {
-        if(values == null) {
+        if (values == null) {
             return null;
         }
 
@@ -465,7 +495,7 @@ public class Basic {
      * @return array containing only distinct items from arr.
      */
     public static <T extends Comparable<? super T>> T[] distinctObj(final T[] values, boolean includeNull) {
-        if(values == null) {
+        if (values == null) {
             return null;
         }
 
@@ -481,27 +511,27 @@ public class Basic {
      */
     @SuppressWarnings({"unchecked"})
     public static <T extends Comparable<? super T>> T[] distinctObj(final ObjectVector<T> values, boolean includeNull) {
-        if(values == null) {
+        if (values == null) {
             return null;
         }
 
         final long n = values.size();
         final T[] empty = (T[])Array.newInstance(values.getComponentType(), 0);
 
-        if(n == 0) {
+        if (n == 0) {
             return empty;
         }
 
-        if(n == 1) {
+        if (n == 1) {
             return !includeNull && isNull(values.get(0)) ? empty : values.toArray();
         }
 
         final List<T> orderedList = new ArrayList<>();
         final THashSet<T> counts = new THashSet<>();
 
-        for(long ii = 0; ii < n; ii++) {
+        for (long ii = 0; ii < n; ii++) {
             T val = values.get(ii);
-            if((includeNull || !isNull(val)) && counts.add(val)) {
+            if ((includeNull || !isNull(val)) && counts.add(val)) {
                 orderedList.add(val);
             }
         }
@@ -518,13 +548,13 @@ public class Basic {
      */
     @SuppressWarnings({"unchecked"})
     public static <T> T[] repeat(T value, int size) {
-        if( size < 0 ) {
+        if ( size < 0 ) {
             throw new IllegalArgumentException("Negative size: size=" + size);
         }
 
         final T[] array = (T[])Array.newInstance(value.getClass(), size);
 
-        for(int i = 0; i < size; i++){
+        for (int i = 0; i < size; i++) {
             array[i] = value;
         }
 
@@ -539,7 +569,7 @@ public class Basic {
      */
     @SafeVarargs
     @SuppressWarnings({"unchecked"})
-    public static <T> T[] concat(T[]... values){
+    public static <T> T[] concat(T[]... values) {
 
         int n = 0;
 
@@ -572,9 +602,9 @@ public class Basic {
      */
     @SafeVarargs
     @SuppressWarnings({"unchecked"})
-    public static <T> T[] concat(ObjectVector<T>... values){
+    public static <T> T[] concat(ObjectVector<T>... values) {
 
-        if(values.length == 0){
+        if (values.length == 0) {
             return (T[])Array.newInstance(Object.class, 0);
         }
 
@@ -611,8 +641,8 @@ public class Basic {
      * @return array with the values reversed.
      */
     @SafeVarargs
-    public static <T> T[] reverseObj(T... values){
-        if(values == null){
+    public static <T> T[] reverseObj(T... values) {
+        if (values == null) {
             return null;
         }
 
@@ -625,15 +655,15 @@ public class Basic {
      * @param values values.
      * @return array with the values reversed.
      */
-    public static <T> T[] reverseObj(ObjectVector<T> values){
-        if(values == null){
+    public static <T> T[] reverseObj(ObjectVector<T> values) {
+        if (values == null) {
             return null;
         }
 
-        final int n = values.intSize("reverse");
+        final int n = values.intSize("reverseObj");
         @SuppressWarnings("unchecked") final T[] result = (T[])Array.newInstance(values.getComponentType(), n);
 
-        for(int i=0; i<n; i++){
+        for (int i=0; i<n; i++) {
             result[i] = values.get(i);
         }
 
@@ -684,6 +714,217 @@ public class Basic {
         return NULL_LONG;
     }
 
+    /**
+     * Returns elements from either trueCase or falseCase, depending on condition.
+     *
+     * @param condition a boolean value used to select output values.
+     * @param trueCase value returned when condition is true.
+     * @param falseCase value returned when condition is false.
+     * @return trueCase value if condition is true, falseCase value if condition is false, or null if condition is null.
+     */
+    public static <T> T ifelseObj(Boolean condition, T trueCase, T falseCase) {
+        if (condition == null) {
+            return null;
+        }
+
+        return condition ? trueCase : falseCase;
+    }
+
+    /**
+     * Returns elements from either trueCase or falseCase, depending on condition.
+     *
+     * @param condition a boolean value used to select output values.
+     * @param trueCase value returned when condition is true.
+     * @param falseCase value returned when condition is false.
+     * @return An array of T whose values are determined by the corresponding elements of condition, trueCase, and falseCase.
+     *         The result element will be the trueCase element if the condition element is true;
+     *         the falseCase element if the condition element is false; or null if the condition element is null.
+     *         Returns null if any of the inputs is null.
+     */
+    public static <T> T[] ifelseObj(BooleanVector condition, ObjectVector<T> trueCase, ObjectVector<T> falseCase) {
+        if (condition == null || trueCase == null || falseCase == null) {
+            return null;
+        }
+
+        final int n_c = condition.intSize("condition");
+        final int n_t = trueCase.intSize("trueCase");
+        final int n_f = falseCase.intSize("falseCase");
+
+        if (n_c != n_t || n_c != n_f) {
+            throw new IllegalArgumentException("Inconsistent input sizes: condition=" + n_c + " trueCase=" + n_t + " falseCase=" + n_f);
+        }
+
+        if (!trueCase.getComponentType().equals(falseCase.getComponentType())) {
+            throw new IllegalArgumentException("Input vectors have different element types. trueCase=" + trueCase.getComponentType() + " falseCase=" + falseCase.getComponentType());
+        }
+
+        @SuppressWarnings("unchecked") final T[] result = (T[])Array.newInstance(trueCase.getComponentType(), n_c);
+
+        for (int i=0; i < n_c; i++) {
+            result[i] = condition.get(i) == null ? null : (condition.get(i) ? trueCase.get(i) : falseCase.get(i));
+        }
+
+        return result;
+    }
+
+    /**
+     * Returns elements from either trueCase or falseCase, depending on condition.
+     *
+     * @param condition a boolean value used to select output values.
+     * @param trueCase value returned when condition is true.
+     * @param falseCase value returned when condition is false.
+     * @return An array of T whose values are determined by the corresponding elements of condition, trueCase, and falseCase.
+     *         The result element will be the trueCase element if the condition element is true;
+     *         the falseCase element if the condition element is false; or null if the condition element is null.
+     *         Returns null if any of the inputs is null.
+     */
+    public static <T> T[] ifelseObj(Boolean[] condition, T[] trueCase, T[] falseCase) {
+        if (condition == null || trueCase == null || falseCase == null) {
+            return null;
+        }
+
+        return ifelseObj(new BooleanVectorDirect(condition), new ObjectVectorDirect<T>(trueCase), new ObjectVectorDirect<T>(falseCase));
+    }
+
+    /**
+     * Returns elements from either trueCase or falseCase, depending on condition.
+     *
+     * @param condition a boolean value used to select output values.
+     * @param trueCase value returned when condition is true.
+     * @param falseCase value returned when condition is false.
+     * @return An array of T whose values are determined by the corresponding elements of condition, trueCase, and falseCase.
+     *         The result element will be trueCase if the condition element is true;
+     *         falseCase if the condition element is false; or null if the condition element is null.
+     *         Returns null if condition is null.
+     */
+    public static <T> T[] ifelseObj(BooleanVector condition, T trueCase, T falseCase) {
+        if (condition == null) {
+            return null;
+        }
+
+        final int n_c = condition.intSize("condition");
+        final T typeToUse = trueCase != null ? trueCase : falseCase;
+
+        if (typeToUse == null) {
+            throw new IllegalArgumentException("trueCase and falseCase are null.  Can not resolve a return type.");
+        }
+
+        if (trueCase != null && falseCase != null && trueCase.getClass() != falseCase.getClass()) {
+            throw new IllegalArgumentException("Inputs have different types. trueCase=" + trueCase.getClass() + " falseCase=" + falseCase.getClass());
+        }
+
+        @SuppressWarnings("unchecked") final T[] result = (T[])Array.newInstance(typeToUse.getClass(), n_c);
+
+        for (int i=0; i < n_c; i++) {
+            final Boolean c = condition.get(i);
+            result[i] = c == null ? null : (c ? trueCase : falseCase);
+        }
+
+        return result;
+    }
+
+    /**
+     * Returns elements from either trueCase or falseCase, depending on condition.
+     *
+     * @param condition a boolean value used to select output values.
+     * @param trueCase value returned when condition is true.
+     * @param falseCase value returned when condition is false.
+     * @return An array of T whose values are determined by the corresponding elements of condition, trueCase, and falseCase.
+     *         The result element will be trueCase if the condition element is true;
+     *         falseCase if the condition element is false; or null if the condition element is null.
+     *         Returns null if condition is null.
+     */
+    public static <T> T[] ifelseObj(Boolean[] condition, T trueCase, T falseCase) {
+        if (condition == null) {
+            return null;
+        }
+
+        return ifelseObj(new BooleanVectorDirect(condition), trueCase, falseCase);
+    }
+
+    /**
+     * Copies the specified array, replacing elements that represent null in the Deephaven convention by the most
+     * recently encountered non-null value if one exists. Otherwise (if no such value exists), replaces those elements
+     * with null.
+     *
+     * @param values values.
+     * @return A copy of the specified array, with Deephaven null elements replaced as described above. If the specified
+     *         array is null, returns null.
+     */
+    @SafeVarargs
+    public static <T> T[] forwardFillObj(final T... values) {
+        if (values == null) {
+            return null;
+        }
+
+        final T[] result = Arrays.copyOf(values, values.length);
+
+        T lastGood = null;
+        for (int ii = 0; ii < values.length; ii++) {
+            if (!isNull(values[ii])) {
+                lastGood = values[ii];
+            }
+
+            result[ii] = lastGood;
+        }
+        return result;
+    }
+
+    /**
+     * Copies the specified array, replacing elements that represent null in the Deephaven convention by the most
+     * recently encountered non-null value if one exists. Otherwise (if no such value exists), replaces those elements
+     * with null.
+     *
+     * @param values values.
+     * @return A copy of the specified array, with Deephaven null elements replaced as described above. If the specified
+     *         array is null, returns null.
+     */
+    public static <T> T[] forwardFillObj(ObjectVector<T> values) {
+        if (values == null) {
+            return null;
+        }
+
+        final int n = values.intSize("forwardFill");
+        final T[] result = values.toArray();
+
+        T lastGood = null;
+        for (int ii = 0; ii < n; ii++) {
+            if (!isNull(values.get(ii))) {
+                lastGood = values.get(ii);
+            }
+
+            result[ii] = lastGood;
+        }
+        return result;
+    }
+
+    /**
+     * Copies the specified array, replacing elements that represent null in the Deephaven convention by the most
+     * recently encountered non-null value if one exists. Otherwise (if no such value exists), replaces those elements
+     * with null.
+     *
+     * @param values values.
+     * @return A copy of the specified array, with Deephaven null elements replaced as described above. If the specified
+     *         array is null, returns null.
+     */
+    public static Boolean[] forwardFillObj(BooleanVector values) {
+        if (values == null) {
+            return null;
+        }
+
+        final int n = values.intSize("forwardFill");
+        final Boolean[] result = values.toArray();
+
+        Boolean lastGood = null;
+        for (int ii = 0; ii < n; ii++) {
+            if (!isNull(values.get(ii))) {
+                lastGood = values.get(ii);
+            }
+
+            result[ii] = lastGood;
+        }
+        return result;
+    }
 
     <#list primitiveTypes as pt>
     <#if !pt.valueType.isBoolean >
@@ -699,7 +940,7 @@ public class Basic {
      * @param value value.
      * @return true if the value is null according to the Deephaven convention, and false otherwise.
      */
-    static public boolean isNull(${pt.primitive} value){
+    static public boolean isNull(${pt.primitive} value) {
         return value == QueryConstants.${pt.null};
     }
 
@@ -713,16 +954,16 @@ public class Basic {
      * @return unboxed array of values.
      */
     public static ${pt.primitive}[] unbox(${pt.boxed}... values) {
-        if(values == null){
+        if (values == null) {
             return null;
         }
 
         ${pt.primitive}[] result = new ${pt.primitive}[values.length];
 
-        for(int i=0; i<values.length; i++){
+        for (int i=0; i<values.length; i++) {
             ${pt.boxed} v = values[i];
 
-            if(v == null || isNull(v.${pt.primitive}Value())) {
+            if (v == null || isNull(v.${pt.primitive}Value())) {
                 result[i] = QueryConstants.${pt.null};
             } else {
                 result[i] = v;
@@ -779,13 +1020,27 @@ public class Basic {
     }
 
     /**
+     * Returns the length of the input.
+     *
+     * @param values values.
+     * @return length of the input or the Deephaven null constant for null inputs.
+     */
+    static public long len(${pt.primitive}[] values) {
+        if (values == null) {
+            return NULL_LONG;
+        }
+
+        return values.length;
+    }
+
+    /**
      * Counts the number of non-null values.
      *
      * @param values values.
      * @return number of non-null values.
      */
-    static public long count(${pt.primitive}... values){
-        if (values == null){
+    static public long count(${pt.primitive}... values) {
+        if (values == null) {
             return NULL_LONG;
         }
 
@@ -798,8 +1053,8 @@ public class Basic {
      * @param values values.
      * @return number of non-null values.
      */
-    static public long count(${pt.dbArray} values){
-        if (values == null){
+    static public long count(${pt.dbArray} values) {
+        if (values == null) {
             return NULL_LONG;
         }
 
@@ -821,14 +1076,14 @@ public class Basic {
      * @param values values.
      * @return last value from the array.
      */
-    static public ${pt.primitive} last(${pt.dbArray} values){
-        if(values == null){
+    static public ${pt.primitive} last(${pt.dbArray} values) {
+        if (values == null) {
             return QueryConstants.${pt.null};
         }
 
         final long n = values.size();
 
-        if(n == 0){
+        if (n == 0) {
             return QueryConstants.${pt.null};
         }
 
@@ -841,12 +1096,12 @@ public class Basic {
      * @param values values.
      * @return last value from the array.
      */
-    static public ${pt.primitive} last(${pt.primitive}... values){
-        if(values == null){
+    static public ${pt.primitive} last(${pt.primitive}... values) {
+        if (values == null) {
             return QueryConstants.${pt.null};
         }
 
-        return last(array(values));
+        return last(vec(values));
     }
 
     /**
@@ -855,8 +1110,8 @@ public class Basic {
      * @param values values.
      * @return first value from the array.
      */
-    static public ${pt.primitive} first(${pt.dbArray} values){
-        if(values == null || values.size() == 0){
+    static public ${pt.primitive} first(${pt.dbArray} values) {
+        if (values == null || values.size() == 0) {
             return QueryConstants.${pt.null};
         }
 
@@ -869,12 +1124,12 @@ public class Basic {
      * @param values values.
      * @return first value from the array.
      */
-    static public ${pt.primitive} first(${pt.primitive}... values){
-        if(values == null){
+    static public ${pt.primitive} first(${pt.primitive}... values) {
+        if (values == null) {
             return QueryConstants.${pt.null};
         }
 
-        return first(array(values));
+        return first(vec(values));
     }
 
     /**
@@ -884,8 +1139,8 @@ public class Basic {
      * @param values values.
      * @return nth value from the array or null, if the index is outside of the array's index range.
      */
-    static public ${pt.primitive} nth(long index, ${pt.dbArray} values){
-        if(index < 0 || index >= values.size()){
+    static public ${pt.primitive} nth(long index, ${pt.dbArray} values) {
+        if (index < 0 || index >= values.size()) {
             return QueryConstants.${pt.null};
         }
 
@@ -899,18 +1154,18 @@ public class Basic {
      * @param values values.
      * @return nth value from the array or null, if the index is outside of the array's index range.
      */
-    static public ${pt.primitive} nth(long index, ${pt.primitive}... values){
-        return nth(index, array(values));
+    static public ${pt.primitive} nth(long index, ${pt.primitive}... values) {
+        return nth(index, vec(values));
     }
 
     /**
-     * Converts a DB array to a primitive array.
+     * Converts a Deephaven vector to a primitive array.
      *
-     * @param values DB array
+     * @param values Deephaven vector
      * @return primitive array.
      */
-    public static ${pt.primitive}[] vec(${pt.dbArray} values) {
-        if(values == null){
+    public static ${pt.primitive}[] array(${pt.dbArray} values) {
+        if (values == null) {
             return null;
         }
 
@@ -918,12 +1173,12 @@ public class Basic {
     }
 
     /**
-     * Converts a primitive array to a DB array.
+     * Converts a primitive array to a Deephaven vector.
      *
      * @param values primitive array
-     * @return DB array.
+     * @return Deephaven vector.
      */
-    public static ${pt.dbArray} array(${pt.primitive}... values) {
+    public static ${pt.dbArray} vec(${pt.primitive}... values) {
         return new ${pt.dbArrayDirect}(values);
     }
 
@@ -937,7 +1192,7 @@ public class Basic {
      * @param highInclusiveValue upper inclusive bound of the range.
      * @return true if the tested value is within the range, and false if the tested value is not in the range or is null.
      */
-    static public boolean inRange(${pt.primitive} testedValue,${pt.primitive} lowInclusiveValue,${pt.primitive} highInclusiveValue){
+    static public boolean inRange(${pt.primitive} testedValue,${pt.primitive} lowInclusiveValue,${pt.primitive} highInclusiveValue) {
         if (isNull(testedValue)) {
             return false;
         }
@@ -954,7 +1209,7 @@ public class Basic {
      * @param possibleValues possible values.
      * @return true if the tested value is contained in the possible values, and false otherwise.
      */
-    static public boolean in(${pt.primitive} testedValues,${pt.primitive}... possibleValues){
+    static public boolean in(${pt.primitive} testedValues,${pt.primitive}... possibleValues) {
         for (${pt.primitive} possibleValue : possibleValues) {
             if (testedValues == possibleValue) {
                 return true;
@@ -972,7 +1227,7 @@ public class Basic {
      * @return number of distinct non-null values.
      */
     public static long countDistinct(final ${pt.primitive}... values) {
-        if(values == null) {
+        if (values == null) {
             return QueryConstants.NULL_LONG;
         }
 
@@ -997,7 +1252,7 @@ public class Basic {
      * @return number of distinct values.
      */
     public static long countDistinct(final ${pt.primitive}[] values, boolean countNull) {
-        if(values == null) {
+        if (values == null) {
             return QueryConstants.NULL_LONG;
         }
 
@@ -1014,27 +1269,27 @@ public class Basic {
      * @return number of distinct values.
      */
     public static long countDistinct(final ${pt.dbArray} values, boolean countNull) {
-        if(values == null) {
+        if (values == null) {
             return QueryConstants.NULL_LONG;
         }
 
         final long n = values.size();
 
-        if(n == 0) {
+        if (n == 0) {
             return 0;
         }
 
-        if(n == 1) {
+        if (n == 1) {
             return !countNull && values.get(0) == QueryConstants.${pt.null} ? 0 : 1;
         }
 
         final T${pt.primitive?capitalize}Set keys = new T${pt.primitive?capitalize}HashSet();
 
-        for(long ii = 0; ii < n; ii++) {
+        for (long ii = 0; ii < n; ii++) {
             keys.add(values.get(ii));
         }
 
-        if(!countNull) {
+        if (!countNull) {
             keys.remove(QueryConstants.${pt.null});
         }
 
@@ -1051,27 +1306,27 @@ public class Basic {
      * @return number of distinct values.
      */
     public static long countDistinct(final ${pt.dbArray} values, boolean countNull) {
-        if(values == null) {
+        if (values == null) {
             return QueryConstants.NULL_LONG;
         }
 
         final long n = values.size();
 
-        if(n == 0) {
+        if (n == 0) {
             return 0;
         }
 
-        if(n == 1) {
+        if (n == 1) {
             return !countNull && values.get(0) == QueryConstants.${pt.null} ? 0 : 1;
         }
 
         final Set<${pt.boxed}> keys = new HashSet<${pt.boxed}>();
 
-        for(long ii = 0; ii < n; ii++) {
+        for (long ii = 0; ii < n; ii++) {
             keys.add(values.get(ii));
         }
 
-        if(!countNull) {
+        if (!countNull) {
             keys.remove(QueryConstants.${pt.null});
         }
 
@@ -1087,7 +1342,7 @@ public class Basic {
      * @return unsorted array containing only distinct non-null items from arr.
      */
     public static ${pt.primitive}[] distinct(final ${pt.primitive}... values) {
-        if(values == null) {
+        if (values == null) {
             return null;
         }
 
@@ -1114,15 +1369,15 @@ public class Basic {
      * @return array containing only distinct items from arr.
      */
     public static ${pt.primitive}[] distinct(final ${pt.primitive}[] values, boolean includeNull) {
-        if(values == null) {
+        if (values == null) {
             return null;
         }
 
-        if(values.length == 0) {
+        if (values.length == 0) {
             return new ${pt.primitive}[0];
         }
 
-        if(values.length == 1) {
+        if (values.length == 1) {
             return !includeNull && values[0] == QueryConstants.${pt.null} ? new ${pt.primitive}[0] : values;
         }
 
@@ -1146,26 +1401,26 @@ public class Basic {
      * @return array containing only distinct items from arr.
      */
     public static ${pt.primitive}[] distinct(final ${pt.dbArray} values, boolean includeNull) {
-        if(values == null) {
+        if (values == null) {
             return null;
         }
 
         final long n = values.size();
 
-        if(n == 0) {
+        if (n == 0) {
             return new ${pt.primitive}[0];
         }
 
-        if(n == 1) {
+        if (n == 1) {
             return !includeNull && values.get(0) == QueryConstants.${pt.null} ? new ${pt.primitive}[0] : values.toArray();
         }
 
         final T${pt.primitive?capitalize}ArrayList orderedList = new T${pt.primitive?capitalize}ArrayList();
         final T${pt.primitive?capitalize}Set counts = new T${pt.primitive?capitalize}HashSet();
 
-        for(long ii = 0; ii < n; ii++) {
+        for (long ii = 0; ii < n; ii++) {
             ${pt.primitive} val = values.get(ii);
-            if((includeNull || val != QueryConstants.${pt.null}) && counts.add(val)) {
+            if ((includeNull || val != QueryConstants.${pt.null}) && counts.add(val)) {
                 orderedList.add(val);
             }
         }
@@ -1183,15 +1438,15 @@ public class Basic {
      * @return array containing only distinct items from arr.
      */
     public static ${pt.primitive}[] distinct(final ${pt.primitive}[] values, boolean includeNull) {
-        if(values == null) {
+        if (values == null) {
             return null;
         }
 
-        if(values.length == 0) {
+        if (values.length == 0) {
             return new ${pt.primitive}[0];
         }
 
-        if(values.length == 1) {
+        if (values.length == 1) {
             return !includeNull && values[0] == QueryConstants.${pt.null} ? new ${pt.primitive}[0] : values;
         }
 
@@ -1215,26 +1470,26 @@ public class Basic {
      * @return array containing only distinct items from arr.
      */
     public static ${pt.primitive}[] distinct(final ${pt.dbArray} values, boolean includeNull) {
-        if(values == null) {
+        if (values == null) {
             return null;
         }
 
         final long n = values.size();
 
-        if(n == 0) {
+        if (n == 0) {
             return new ${pt.primitive}[0];
         }
 
-        if(n == 1) {
+        if (n == 1) {
             return !includeNull && values.get(0) == QueryConstants.${pt.null} ? new ${pt.primitive}[0] : values.toArray();
         }
 
         final ArrayList<${pt.boxed}> orderedList = new ArrayList<>();
         final Set<${pt.boxed}> counts = new HashSet<>();
 
-        for(long ii = 0; ii < n; ii++) {
+        for (long ii = 0; ii < n; ii++) {
             ${pt.primitive} val = values.get(ii);
-            if((includeNull || val != QueryConstants.${pt.null}) && counts.add(val)) {
+            if ((includeNull || val != QueryConstants.${pt.null}) && counts.add(val)) {
                 orderedList.add(val);
             }
         }
@@ -1252,13 +1507,13 @@ public class Basic {
      * @return array of repeated values.  If {@code size} is less than zero, an empty array is returned.
      */
     public static ${pt.primitive}[] repeat(${pt.primitive} value, int size) {
-        if(size < 0){
+        if (size < 0) {
             return new ${pt.primitive}[0];
         }
 
         final ${pt.primitive}[] result = new ${pt.primitive}[size];
 
-        for(int i=0; i<size; i++){
+        for (int i=0; i<size; i++) {
             result[i] = value;
         }
 
@@ -1271,8 +1526,8 @@ public class Basic {
      * @param values values.
      * @return list containing values.
      */
-    public static ${pt.primitive}[] enlist(${pt.primitive}... values){
-        if(values == null){
+    public static ${pt.primitive}[] enlist(${pt.primitive}... values) {
+        if (values == null) {
             return new ${pt.primitive}[0];
         }
 
@@ -1285,8 +1540,8 @@ public class Basic {
      * @param values values.
      * @return concatenation of multiple arrays into a single array.
      */
-    public static ${pt.primitive}[] concat(${pt.primitive}[]... values){
-        if(values == null){
+    public static ${pt.primitive}[] concat(${pt.primitive}[]... values) {
+        if (values == null) {
             return new ${pt.primitive}[0];
         }
 
@@ -1299,8 +1554,8 @@ public class Basic {
      * @param values values.
      * @return concatenation of multiple arrays into a single array.
      */
-    public static ${pt.primitive}[] concat(${pt.dbArray}... values){
-        if(values == null){
+    public static ${pt.primitive}[] concat(${pt.dbArray}... values) {
+        if (values == null) {
             return new ${pt.primitive}[0];
         }
 
@@ -1334,8 +1589,8 @@ public class Basic {
      * @param values values.
      * @return array with the values reversed.
      */
-    public static ${pt.primitive}[] reverse(${pt.primitive}... values){
-        if(values == null){
+    public static ${pt.primitive}[] reverse(${pt.primitive}... values) {
+        if (values == null) {
             return null;
         }
 
@@ -1348,15 +1603,15 @@ public class Basic {
      * @param values values.
      * @return array with the values reversed.
      */
-    public static ${pt.primitive}[] reverse(${pt.dbArray} values){
-        if(values == null){
+    public static ${pt.primitive}[] reverse(${pt.dbArray} values) {
+        if (values == null) {
             return null;
         }
 
         final int n = values.intSize("reverse");
         final ${pt.primitive}[] result = new ${pt.primitive}[n];
 
-        for(int i=0; i<n; i++){
+        for (int i=0; i<n; i++) {
             result[i] = values.get(n-1-i);
         }
 
@@ -1402,25 +1657,158 @@ public class Basic {
         return NULL_LONG;
     }
 
-    public static ${pt.primitive}[] forwardFill(${pt.primitive}... values){
-        if(values == null){
+    /**
+     * Returns elements from either trueCase or falseCase, depending on condition.
+     *
+     * @param condition a boolean value used to select output values.
+     * @param trueCase value returned when condition is true.
+     * @param falseCase value returned when condition is false.
+     * @return trueCase value if condition is true, falseCase value if condition is false, or the Deephaven null constant if condition is null.
+     */
+    public static ${pt.primitive} ifelse(Boolean condition, ${pt.primitive} trueCase, ${pt.primitive} falseCase) {
+        if (condition == null) {
+            return ${pt.null};
+        }
+
+        return condition ? trueCase : falseCase;
+    }
+
+    /**
+     * Returns elements from either trueCase or falseCase, depending on condition.
+     *
+     * @param condition a boolean value used to select output values.
+     * @param trueCase value returned when condition is true.
+     * @param falseCase value returned when condition is false.
+     * @return An array of ${pt.primitive} whose values are determined by the corresponding elements of condition, trueCase, and falseCase.
+     *         The result element will be the trueCase element if the condition element is true;
+     *         the falseCase element if the condition element is false; or the Deephaven null constant if the condition element is null.
+     *         Returns null if any of the inputs is null.
+     */
+    public static ${pt.primitive}[] ifelse(BooleanVector condition, ${pt.dbArray} trueCase, ${pt.dbArray} falseCase) {
+        if (condition == null || trueCase == null || falseCase == null) {
+            return null;
+        }
+
+        final int n_c = condition.intSize("condition");
+        final int n_t = trueCase.intSize("trueCase");
+        final int n_f = falseCase.intSize("falseCase");
+
+        if (n_c != n_t || n_c != n_f) {
+            throw new IllegalArgumentException("Inconsistent input sizes: condition=" + n_c + " trueCase=" + n_t + " falseCase=" + n_f);
+        }
+
+        final ${pt.primitive}[] result = new ${pt.primitive}[n_c];
+
+        for (int i=0; i < n_c; i++) {
+            result[i] = condition.get(i) == null ? ${pt.null} : (condition.get(i) ? trueCase.get(i) : falseCase.get(i));
+        }
+
+        return result;
+    }
+
+    /**
+     * Returns elements from either trueCase or falseCase, depending on condition.
+     *
+     * @param condition a boolean value used to select output values.
+     * @param trueCase value returned when condition is true.
+     * @param falseCase value returned when condition is false.
+     * @return An array of ${pt.primitive} whose values are determined by the corresponding elements of condition, trueCase, and falseCase.
+     *         The result element will be the trueCase element if the condition element is true;
+     *         the falseCase element if the condition element is false; or the Deephaven null constant if the condition element is null.
+     *         Returns null if any of the inputs is null.
+     */
+    public static ${pt.primitive}[] ifelse(Boolean[] condition, ${pt.primitive}[] trueCase, ${pt.primitive}[] falseCase) {
+        if (condition == null || trueCase == null || falseCase == null) {
+            return null;
+        }
+
+        return ifelse(new BooleanVectorDirect(condition), new ${pt.dbArrayDirect}(trueCase), new ${pt.dbArrayDirect}(falseCase));
+    }
+
+    /**
+     * Returns elements from either trueCase or falseCase, depending on condition.
+     *
+     * @param condition a boolean value used to select output values.
+     * @param trueCase value returned when condition is true.
+     * @param falseCase value returned when condition is false.
+     * @return An array of ${pt.primitive} whose values are determined by the corresponding elements of condition, trueCase, and falseCase.
+     *         The result element will be trueCase if the condition element is true;
+     *         falseCase if the condition element is false; or the Deephaven null constant if the condition element is null.
+     *         Returns null if condition is null.
+     */
+    public static ${pt.primitive}[] ifelse(BooleanVector condition, ${pt.primitive} trueCase, ${pt.primitive} falseCase) {
+        if (condition == null) {
+            return null;
+        }
+
+        final int n_c = condition.intSize("condition");
+
+        final ${pt.primitive}[] result = new ${pt.primitive}[n_c];
+
+        for (int i=0; i < n_c; i++) {
+            final Boolean c = condition.get(i);
+            result[i] = c == null ? ${pt.null} : (c ? trueCase : falseCase);
+        }
+
+        return result;
+    }
+
+    /**
+     * Returns elements from either trueCase or falseCase, depending on condition.
+     *
+     * @param condition a boolean value used to select output values.
+     * @param trueCase value returned when condition is true.
+     * @param falseCase value returned when condition is false.
+     * @return An array of ${pt.primitive} whose values are determined by the corresponding elements of condition, trueCase, and falseCase.
+     *         The result element will be trueCase if the condition element is true;
+     *         falseCase if the condition element is false; or the Deephaven null constant if the condition element is null.
+     *         Returns null if condition is null.
+     */
+    public static ${pt.primitive}[] ifelse(Boolean[] condition, ${pt.primitive} trueCase, ${pt.primitive} falseCase) {
+        if (condition == null) {
+            return null;
+        }
+
+        return ifelse(new BooleanVectorDirect(condition), trueCase, falseCase);
+    }
+
+    /**
+     * Copies the specified array, replacing elements that represent null in the Deephaven convention by the most
+     * recently encountered non-null value if one exists. Otherwise (if no such value exists), replaces those elements
+     * with Deephaven null.
+     *
+     * @param values values.
+     * @return A copy of the specified array, with Deephaven null elements replaced as described above. If the
+     *         specified array is null, returns null.
+     */
+    public static ${pt.primitive}[] forwardFill(${pt.primitive}... values) {
+        if (values == null) {
             return null;
         }
 
         return forwardFill(new ${pt.dbArrayDirect}(values));
     }
 
-    public static ${pt.primitive}[] forwardFill(${pt.dbArray} values){
-        if(values == null) {
+    /**
+     * Copies the specified array, replacing elements that represent null in the Deephaven convention by the most
+     * recently encountered non-null value if one exists. Otherwise (if no such value exists), replaces those elements
+     * with Deephaven null.
+     *
+     * @param values values.
+     * @return A copy of the specified array, with Deephaven null elements replaced as described above. If the
+     *         specified array is null, returns null.
+     */
+    public static ${pt.primitive}[] forwardFill(${pt.dbArray} values) {
+        if (values == null) {
             return null;
         }
 
-        final int n = values.intSize("reverse");
+        final int n = values.intSize("forwardFill");
         final ${pt.primitive}[] result = new ${pt.primitive}[n];
 
         ${pt.primitive} lastGood = QueryConstants.${pt.null};
-        for(int ii = 0; ii < n; ii++) {
-            if(!isNull(values.get(ii))) {
+        for (int ii = 0; ii < n; ii++) {
+            if (!isNull(values.get(ii))) {
                 lastGood = values.get(ii);
             }
 
@@ -1431,22 +1819,4 @@ public class Basic {
 
     </#if>
     </#list>
-
-    public static <T> T[] forwardFill(final T[] values) {
-        if(values == null) {
-            return null;
-        }
-
-        final T[] result = Arrays.copyOf(values, values.length);
-
-        T lastGood = null;
-        for(int ii = 0; ii < values.length; ii++) {
-            if(!isNull(values[ii])) {
-                lastGood = values[ii];
-            }
-
-            result[ii] = lastGood;
-        }
-        return result;
-    }
 }

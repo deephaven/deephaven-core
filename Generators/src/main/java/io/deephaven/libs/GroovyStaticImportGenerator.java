@@ -3,7 +3,6 @@
  */
 package io.deephaven.libs;
 
-import io.deephaven.configuration.Configuration;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 
@@ -373,15 +372,13 @@ public class GroovyStaticImportGenerator {
 
         String devroot = null;
         boolean assertNoChange = false;
-        if (args.length == 0) {
-            devroot = Configuration.getInstance().getDevRootPath();
-        } else if (args.length == 1) {
+        if (args.length == 1) {
             devroot = args[0];
         } else if (args.length == 2) {
             devroot = args[0];
             assertNoChange = Boolean.parseBoolean(args[1]);
         } else {
-            System.out.println("Usage: [<devroot> [assertNoChange]]");
+            System.out.println("Usage: <devroot> [assertNoChange]");
             System.exit(-1);
         }
 

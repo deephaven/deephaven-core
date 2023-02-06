@@ -61,7 +61,7 @@ public class SparseSelect {
 
     private final static ExecutorService executor = SPARSE_SELECT_THREADS == 1 ? null
             : Executors.newFixedThreadPool(SPARSE_SELECT_THREADS,
-                    new NamingThreadFactory(SparseSelect.class, "copyThread", true));
+                    new NamingThreadFactory(SparseSelect.class, "copyThread"));
 
     private SparseSelect() {} // static use only
 
@@ -180,7 +180,7 @@ public class SparseSelect {
                                 outputSourcesList.stream().filter(x -> x instanceof ObjectSparseArraySource)
                                         .map(x -> (ObjectSparseArraySource<?>) x)
                                         .toArray(ObjectSparseArraySource[]::new);
-                        source.listenForUpdates(new BaseTable.ListenerImpl(
+                        source.addUpdateListener(new BaseTable.ListenerImpl(
                                 "sparseSelect(" + Arrays.toString(columnNames) + ")", source, resultTable) {
                             private final ModifiedColumnSet modifiedColumnSetForUpdates =
                                     resultTable.getModifiedColumnSetForUpdates();
@@ -195,7 +195,7 @@ public class SparseSelect {
                                 if (sparseObjectSources.length > 0) {
                                     try (final RowSet removedOnly = upstream.removed().minus(upstream.added())) {
                                         for (final ObjectSparseArraySource<?> objectSparseArraySource : sparseObjectSources) {
-                                            objectSparseArraySource.remove(removedOnly);
+                                            objectSparseArraySource.setNull(removedOnly);
                                         }
                                     }
                                 }

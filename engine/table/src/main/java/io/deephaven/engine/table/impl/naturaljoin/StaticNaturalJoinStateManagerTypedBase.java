@@ -12,10 +12,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.JoinControl;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
-import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
-import io.deephaven.engine.table.impl.sources.LongArraySource;
-import io.deephaven.engine.table.impl.sources.ObjectArraySource;
+import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableLongArraySource;
 import io.deephaven.engine.table.impl.util.TypedHasherUtil;
 import io.deephaven.engine.table.impl.util.TypedHasherUtil.BuildOrProbeContext.BuildContext;
@@ -23,12 +20,13 @@ import io.deephaven.engine.table.impl.util.TypedHasherUtil.BuildOrProbeContext.P
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import io.deephaven.util.QueryConstants;
 
+import static io.deephaven.engine.table.impl.JoinControl.CHUNK_SIZE;
+import static io.deephaven.engine.table.impl.JoinControl.MAX_TABLE_SIZE;
 import static io.deephaven.engine.table.impl.util.TypedHasherUtil.getKeyChunks;
 import static io.deephaven.engine.table.impl.util.TypedHasherUtil.getPrevKeyChunks;
 
 public abstract class StaticNaturalJoinStateManagerTypedBase extends StaticHashedNaturalJoinStateManager {
-    public static final int CHUNK_SIZE = 4096;
-    private static final long MAX_TABLE_SIZE = 1 << 30; // maximum array size
+
     public static final long NO_RIGHT_STATE_VALUE = RowSet.NULL_ROW_KEY;
     public static final long EMPTY_RIGHT_STATE = QueryConstants.NULL_LONG;
     public static final long DUPLICATE_RIGHT_STATE = -2;
@@ -88,10 +86,10 @@ public abstract class StaticNaturalJoinStateManagerTypedBase extends StaticHashe
     }
 
     private class LeftBuildHandler implements TypedHasherUtil.BuildHandler {
-        final LongArraySource leftHashSlots;
-        int offset = 0;
+        final IntegerArraySource leftHashSlots;
+        long offset = 0;
 
-        private LeftBuildHandler(LongArraySource leftHashSlots) {
+        private LeftBuildHandler(IntegerArraySource leftHashSlots) {
             this.leftHashSlots = leftHashSlots;
         }
 
@@ -104,23 +102,23 @@ public abstract class StaticNaturalJoinStateManagerTypedBase extends StaticHashe
     }
 
     private class LeftProbeHandler implements TypedHasherUtil.ProbeHandler {
-        final LongArraySource leftHashSlots;
-        int offset = 0;
+        final LongArraySource leftRedirections;
+        long offset = 0;
 
-        private LeftProbeHandler(LongArraySource leftHashSlots) {
-            this.leftHashSlots = leftHashSlots;
+        private LeftProbeHandler(LongArraySource leftRedirections) {
+            this.leftRedirections = leftRedirections;
         }
 
         @Override
         public void doProbe(RowSequence chunkOk, Chunk<Values>[] sourceKeyChunks) {
-            leftHashSlots.ensureCapacity(offset + chunkOk.intSize());
-            decorateLeftSide(chunkOk, sourceKeyChunks, leftHashSlots, offset);
+            leftRedirections.ensureCapacity(offset + chunkOk.intSize());
+            decorateLeftSide(chunkOk, sourceKeyChunks, leftRedirections, offset);
             offset += chunkOk.intSize();
         }
     }
 
     @Override
-    public void buildFromLeftSide(Table leftTable, ColumnSource<?>[] leftSources, LongArraySource leftHashSlots) {
+    public void buildFromLeftSide(Table leftTable, ColumnSource<?>[] leftSources, IntegerArraySource leftHashSlots) {
         if (leftTable.isEmpty()) {
             return;
         }
@@ -130,7 +128,7 @@ public abstract class StaticNaturalJoinStateManagerTypedBase extends StaticHashe
     }
 
     abstract protected void buildFromLeftSide(RowSequence rowSequence, Chunk[] sourceKeyChunks,
-            LongArraySource leftHashSlots, int hashSlotOffset);
+            IntegerArraySource leftHashSlots, long hashSlotOffset);
 
     @Override
     public void buildFromRightSide(Table rightTable, ColumnSource<?>[] rightSources) {
@@ -155,7 +153,7 @@ public abstract class StaticNaturalJoinStateManagerTypedBase extends StaticHashe
     }
 
     abstract protected void decorateLeftSide(RowSequence rowSequence, Chunk[] sourceKeyChunks,
-            LongArraySource leftRedirections, int hashSlotOffset);
+            LongArraySource leftRedirections, long redirectionsOffset);
 
     @Override
     public void decorateWithRightSide(Table rightTable, ColumnSource<?>[] rightSources) {
@@ -232,7 +230,7 @@ public abstract class StaticNaturalJoinStateManagerTypedBase extends StaticHashe
     }
 
     public WritableRowRedirection buildRowRedirectionFromHashSlot(QueryTable leftTable, boolean exactMatch,
-            LongArraySource leftHashSlots, JoinControl.RedirectionType redirectionType) {
+            IntegerArraySource leftHashSlots, JoinControl.RedirectionType redirectionType) {
         return buildRowRedirection(leftTable, exactMatch,
                 position -> mainRightRowKey.getUnsafe(leftHashSlots.getUnsafe(position)), redirectionType);
     }
@@ -243,21 +241,21 @@ public abstract class StaticNaturalJoinStateManagerTypedBase extends StaticHashe
     }
 
     public WritableRowRedirection buildGroupedRowRedirection(QueryTable leftTable, boolean exactMatch,
-            long groupingSize, LongArraySource leftHashSlots, ArrayBackedColumnSource<RowSet> leftIndices,
+            long groupingSize, IntegerArraySource leftHashSlots, ArrayBackedColumnSource<RowSet> leftIndices,
             JoinControl.RedirectionType redirectionType) {
         return buildGroupedRowRedirection(leftTable, exactMatch, groupingSize,
                 (long groupPosition) -> mainRightRowKey.getUnsafe(leftHashSlots.getUnsafe(groupPosition)), leftIndices,
                 redirectionType);
     }
 
-    public void errorOnDuplicatesGrouped(LongArraySource leftHashSlots, long size,
+    public void errorOnDuplicatesGrouped(IntegerArraySource leftHashSlots, long size,
             ObjectArraySource<RowSet> rowSetSource) {
         errorOnDuplicates(leftHashSlots, size,
                 (long groupPosition) -> mainRightRowKey.getUnsafe(leftHashSlots.getUnsafe(groupPosition)),
                 (long row) -> rowSetSource.getUnsafe(row).firstRowKey());
     }
 
-    public void errorOnDuplicatesSingle(LongArraySource leftHashSlots, long size, RowSet rowSet) {
+    public void errorOnDuplicatesSingle(IntegerArraySource leftHashSlots, long size, RowSet rowSet) {
         errorOnDuplicates(leftHashSlots, size,
                 (long position) -> mainRightRowKey.getUnsafe(leftHashSlots.getUnsafe(position)), rowSet::get);
     }

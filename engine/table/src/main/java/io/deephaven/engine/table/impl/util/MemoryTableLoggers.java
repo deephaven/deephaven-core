@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl.util;
 
+import io.deephaven.base.clock.Clock;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.tablelogger.ProcessInfoLogLogger;
 import io.deephaven.engine.tablelogger.ProcessMetricsLogLogger;
@@ -10,7 +11,6 @@ import io.deephaven.engine.tablelogger.QueryOperationPerformanceLogLogger;
 import io.deephaven.engine.tablelogger.QueryPerformanceLogLogger;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.stats.StatsIntradayLogger;
-import io.deephaven.util.clock.RealTimeClock;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.process.ProcessInfo;
@@ -121,7 +121,7 @@ public class MemoryTableLoggers {
         }
         final boolean fdStatsLoggingEnabled = Configuration.getInstance().getBooleanWithDefault(
                 "fdStatsLoggingEnabled", false);
-        Driver.start(new RealTimeClock(), MemoryTableLoggers.getInstance().getStatsLogger(), fdStatsLoggingEnabled);
+        Driver.start(Clock.system(), MemoryTableLoggers.getInstance().getStatsLogger(), fdStatsLoggingEnabled);
         return true;
     }
 }

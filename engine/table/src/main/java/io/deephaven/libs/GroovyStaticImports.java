@@ -16,6 +16,7 @@ import io.deephaven.function.Numeric;
 import io.deephaven.function.Parse;
 import io.deephaven.function.Random;
 import io.deephaven.function.Sort;
+import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.vector.BooleanVector;
 import io.deephaven.vector.ByteVector;
 import io.deephaven.vector.CharVector;
@@ -113,22 +114,22 @@ public class GroovyStaticImports {
     public static  java.lang.Boolean and( java.lang.Boolean[] values, java.lang.Boolean nullValue ) {return Logic.and( values, nullValue );}
     /** @see io.deephaven.function.Logic#and(io.deephaven.vector.BooleanVector,java.lang.Boolean) */
     public static  java.lang.Boolean and( io.deephaven.vector.BooleanVector values, java.lang.Boolean nullValue ) {return Logic.and( values, nullValue );}
-    /** @see io.deephaven.function.Basic#array(byte[]) */
-    public static  io.deephaven.vector.ByteVector array( byte[] values ) {return Basic.array( values );}
-    /** @see io.deephaven.function.Basic#array(char[]) */
-    public static  io.deephaven.vector.CharVector array( char[] values ) {return Basic.array( values );}
-    /** @see io.deephaven.function.Basic#array(double[]) */
-    public static  io.deephaven.vector.DoubleVector array( double[] values ) {return Basic.array( values );}
-    /** @see io.deephaven.function.Basic#array(float[]) */
-    public static  io.deephaven.vector.FloatVector array( float[] values ) {return Basic.array( values );}
-    /** @see io.deephaven.function.Basic#array(int[]) */
-    public static  io.deephaven.vector.IntVector array( int[] values ) {return Basic.array( values );}
-    /** @see io.deephaven.function.Basic#array(long[]) */
-    public static  io.deephaven.vector.LongVector array( long[] values ) {return Basic.array( values );}
-    /** @see io.deephaven.function.Basic#array(short[]) */
-    public static  io.deephaven.vector.ShortVector array( short[] values ) {return Basic.array( values );}
-    /** @see io.deephaven.function.Basic#arrayObj(T[]) */
-    public static <T> io.deephaven.vector.ObjectVector<T> arrayObj( T[] values ) {return Basic.arrayObj( values );}
+    /** @see io.deephaven.function.Basic#array(io.deephaven.vector.ByteVector) */
+    public static  byte[] array( io.deephaven.vector.ByteVector values ) {return Basic.array( values );}
+    /** @see io.deephaven.function.Basic#array(io.deephaven.vector.CharVector) */
+    public static  char[] array( io.deephaven.vector.CharVector values ) {return Basic.array( values );}
+    /** @see io.deephaven.function.Basic#array(io.deephaven.vector.DoubleVector) */
+    public static  double[] array( io.deephaven.vector.DoubleVector values ) {return Basic.array( values );}
+    /** @see io.deephaven.function.Basic#array(io.deephaven.vector.FloatVector) */
+    public static  float[] array( io.deephaven.vector.FloatVector values ) {return Basic.array( values );}
+    /** @see io.deephaven.function.Basic#array(io.deephaven.vector.IntVector) */
+    public static  int[] array( io.deephaven.vector.IntVector values ) {return Basic.array( values );}
+    /** @see io.deephaven.function.Basic#array(io.deephaven.vector.LongVector) */
+    public static  long[] array( io.deephaven.vector.LongVector values ) {return Basic.array( values );}
+    /** @see io.deephaven.function.Basic#array(io.deephaven.vector.ShortVector) */
+    public static  short[] array( io.deephaven.vector.ShortVector values ) {return Basic.array( values );}
+    /** @see io.deephaven.function.Basic#arrayObj(io.deephaven.vector.ObjectVector) */
+    public static <T> T[] arrayObj( io.deephaven.vector.ObjectVector<T> values ) {return Basic.arrayObj( values );}
     /** @see io.deephaven.function.Numeric#asin(byte) */
     public static  double asin( byte value ) {return Numeric.asin( value );}
     /** @see io.deephaven.function.Numeric#asin(double) */
@@ -1261,30 +1262,78 @@ public class GroovyStaticImports {
     public static  double cov( io.deephaven.vector.ShortVector values0, io.deephaven.vector.LongVector values1 ) {return Numeric.cov( values0, values1 );}
     /** @see io.deephaven.function.Numeric#cov(io.deephaven.vector.ShortVector,io.deephaven.vector.ShortVector) */
     public static  double cov( io.deephaven.vector.ShortVector values0, io.deephaven.vector.ShortVector values1 ) {return Numeric.cov( values0, values1 );}
-    /** @see io.deephaven.function.Numeric#cumMax(byte[]) */
-    public static  byte[] cumMax( byte[] values ) {return Numeric.cumMax( values );}
-    /** @see io.deephaven.function.Numeric#cumMax(double[]) */
-    public static  double[] cumMax( double[] values ) {return Numeric.cumMax( values );}
-    /** @see io.deephaven.function.Numeric#cumMax(float[]) */
-    public static  float[] cumMax( float[] values ) {return Numeric.cumMax( values );}
-    /** @see io.deephaven.function.Numeric#cumMax(int[]) */
-    public static  int[] cumMax( int[] values ) {return Numeric.cumMax( values );}
-    /** @see io.deephaven.function.Numeric#cumMax(long[]) */
-    public static  long[] cumMax( long[] values ) {return Numeric.cumMax( values );}
-    /** @see io.deephaven.function.Numeric#cumMax(short[]) */
-    public static  short[] cumMax( short[] values ) {return Numeric.cumMax( values );}
-    /** @see io.deephaven.function.Numeric#cumMin(byte[]) */
-    public static  byte[] cumMin( byte[] values ) {return Numeric.cumMin( values );}
-    /** @see io.deephaven.function.Numeric#cumMin(double[]) */
-    public static  double[] cumMin( double[] values ) {return Numeric.cumMin( values );}
-    /** @see io.deephaven.function.Numeric#cumMin(float[]) */
-    public static  float[] cumMin( float[] values ) {return Numeric.cumMin( values );}
-    /** @see io.deephaven.function.Numeric#cumMin(int[]) */
-    public static  int[] cumMin( int[] values ) {return Numeric.cumMin( values );}
-    /** @see io.deephaven.function.Numeric#cumMin(long[]) */
-    public static  long[] cumMin( long[] values ) {return Numeric.cumMin( values );}
-    /** @see io.deephaven.function.Numeric#cumMin(short[]) */
-    public static  short[] cumMin( short[] values ) {return Numeric.cumMin( values );}
+    /** @see io.deephaven.function.Numeric#cummax(byte[]) */
+    public static  byte[] cummax( byte[] values ) {return Numeric.cummax( values );}
+    /** @see io.deephaven.function.Numeric#cummax(double[]) */
+    public static  double[] cummax( double[] values ) {return Numeric.cummax( values );}
+    /** @see io.deephaven.function.Numeric#cummax(float[]) */
+    public static  float[] cummax( float[] values ) {return Numeric.cummax( values );}
+    /** @see io.deephaven.function.Numeric#cummax(int[]) */
+    public static  int[] cummax( int[] values ) {return Numeric.cummax( values );}
+    /** @see io.deephaven.function.Numeric#cummax(long[]) */
+    public static  long[] cummax( long[] values ) {return Numeric.cummax( values );}
+    /** @see io.deephaven.function.Numeric#cummax(java.lang.Byte[]) */
+    public static  byte[] cummax( java.lang.Byte[] values ) {return Numeric.cummax( values );}
+    /** @see io.deephaven.function.Numeric#cummax(java.lang.Double[]) */
+    public static  double[] cummax( java.lang.Double[] values ) {return Numeric.cummax( values );}
+    /** @see io.deephaven.function.Numeric#cummax(java.lang.Float[]) */
+    public static  float[] cummax( java.lang.Float[] values ) {return Numeric.cummax( values );}
+    /** @see io.deephaven.function.Numeric#cummax(java.lang.Integer[]) */
+    public static  int[] cummax( java.lang.Integer[] values ) {return Numeric.cummax( values );}
+    /** @see io.deephaven.function.Numeric#cummax(java.lang.Long[]) */
+    public static  long[] cummax( java.lang.Long[] values ) {return Numeric.cummax( values );}
+    /** @see io.deephaven.function.Numeric#cummax(java.lang.Short[]) */
+    public static  short[] cummax( java.lang.Short[] values ) {return Numeric.cummax( values );}
+    /** @see io.deephaven.function.Numeric#cummax(short[]) */
+    public static  short[] cummax( short[] values ) {return Numeric.cummax( values );}
+    /** @see io.deephaven.function.Numeric#cummax(io.deephaven.vector.ByteVector) */
+    public static  byte[] cummax( io.deephaven.vector.ByteVector values ) {return Numeric.cummax( values );}
+    /** @see io.deephaven.function.Numeric#cummax(io.deephaven.vector.DoubleVector) */
+    public static  double[] cummax( io.deephaven.vector.DoubleVector values ) {return Numeric.cummax( values );}
+    /** @see io.deephaven.function.Numeric#cummax(io.deephaven.vector.FloatVector) */
+    public static  float[] cummax( io.deephaven.vector.FloatVector values ) {return Numeric.cummax( values );}
+    /** @see io.deephaven.function.Numeric#cummax(io.deephaven.vector.IntVector) */
+    public static  int[] cummax( io.deephaven.vector.IntVector values ) {return Numeric.cummax( values );}
+    /** @see io.deephaven.function.Numeric#cummax(io.deephaven.vector.LongVector) */
+    public static  long[] cummax( io.deephaven.vector.LongVector values ) {return Numeric.cummax( values );}
+    /** @see io.deephaven.function.Numeric#cummax(io.deephaven.vector.ShortVector) */
+    public static  short[] cummax( io.deephaven.vector.ShortVector values ) {return Numeric.cummax( values );}
+    /** @see io.deephaven.function.Numeric#cummin(byte[]) */
+    public static  byte[] cummin( byte[] values ) {return Numeric.cummin( values );}
+    /** @see io.deephaven.function.Numeric#cummin(double[]) */
+    public static  double[] cummin( double[] values ) {return Numeric.cummin( values );}
+    /** @see io.deephaven.function.Numeric#cummin(float[]) */
+    public static  float[] cummin( float[] values ) {return Numeric.cummin( values );}
+    /** @see io.deephaven.function.Numeric#cummin(int[]) */
+    public static  int[] cummin( int[] values ) {return Numeric.cummin( values );}
+    /** @see io.deephaven.function.Numeric#cummin(long[]) */
+    public static  long[] cummin( long[] values ) {return Numeric.cummin( values );}
+    /** @see io.deephaven.function.Numeric#cummin(java.lang.Byte[]) */
+    public static  byte[] cummin( java.lang.Byte[] values ) {return Numeric.cummin( values );}
+    /** @see io.deephaven.function.Numeric#cummin(java.lang.Double[]) */
+    public static  double[] cummin( java.lang.Double[] values ) {return Numeric.cummin( values );}
+    /** @see io.deephaven.function.Numeric#cummin(java.lang.Float[]) */
+    public static  float[] cummin( java.lang.Float[] values ) {return Numeric.cummin( values );}
+    /** @see io.deephaven.function.Numeric#cummin(java.lang.Integer[]) */
+    public static  int[] cummin( java.lang.Integer[] values ) {return Numeric.cummin( values );}
+    /** @see io.deephaven.function.Numeric#cummin(java.lang.Long[]) */
+    public static  long[] cummin( java.lang.Long[] values ) {return Numeric.cummin( values );}
+    /** @see io.deephaven.function.Numeric#cummin(java.lang.Short[]) */
+    public static  short[] cummin( java.lang.Short[] values ) {return Numeric.cummin( values );}
+    /** @see io.deephaven.function.Numeric#cummin(short[]) */
+    public static  short[] cummin( short[] values ) {return Numeric.cummin( values );}
+    /** @see io.deephaven.function.Numeric#cummin(io.deephaven.vector.ByteVector) */
+    public static  byte[] cummin( io.deephaven.vector.ByteVector values ) {return Numeric.cummin( values );}
+    /** @see io.deephaven.function.Numeric#cummin(io.deephaven.vector.DoubleVector) */
+    public static  double[] cummin( io.deephaven.vector.DoubleVector values ) {return Numeric.cummin( values );}
+    /** @see io.deephaven.function.Numeric#cummin(io.deephaven.vector.FloatVector) */
+    public static  float[] cummin( io.deephaven.vector.FloatVector values ) {return Numeric.cummin( values );}
+    /** @see io.deephaven.function.Numeric#cummin(io.deephaven.vector.IntVector) */
+    public static  int[] cummin( io.deephaven.vector.IntVector values ) {return Numeric.cummin( values );}
+    /** @see io.deephaven.function.Numeric#cummin(io.deephaven.vector.LongVector) */
+    public static  long[] cummin( io.deephaven.vector.LongVector values ) {return Numeric.cummin( values );}
+    /** @see io.deephaven.function.Numeric#cummin(io.deephaven.vector.ShortVector) */
+    public static  short[] cummin( io.deephaven.vector.ShortVector values ) {return Numeric.cummin( values );}
     /** @see io.deephaven.function.Numeric#cumprod(byte[]) */
     public static  byte[] cumprod( byte[] values ) {return Numeric.cumprod( values );}
     /** @see io.deephaven.function.Numeric#cumprod(double[]) */
@@ -1523,8 +1572,6 @@ public class GroovyStaticImports {
     public static  double floor( long value ) {return Numeric.floor( value );}
     /** @see io.deephaven.function.Numeric#floor(short) */
     public static  double floor( short value ) {return Numeric.floor( value );}
-    /** @see io.deephaven.function.Basic#forwardFill(T[]) */
-    public static <T> T[] forwardFill( T[] values ) {return Basic.forwardFill( values );}
     /** @see io.deephaven.function.Basic#forwardFill(byte[]) */
     public static  byte[] forwardFill( byte[] values ) {return Basic.forwardFill( values );}
     /** @see io.deephaven.function.Basic#forwardFill(char[]) */
@@ -1553,6 +1600,92 @@ public class GroovyStaticImports {
     public static  long[] forwardFill( io.deephaven.vector.LongVector values ) {return Basic.forwardFill( values );}
     /** @see io.deephaven.function.Basic#forwardFill(io.deephaven.vector.ShortVector) */
     public static  short[] forwardFill( io.deephaven.vector.ShortVector values ) {return Basic.forwardFill( values );}
+    /** @see io.deephaven.function.Basic#forwardFillObj(T[]) */
+    public static <T> T[] forwardFillObj( T[] values ) {return Basic.forwardFillObj( values );}
+    /** @see io.deephaven.function.Basic#forwardFillObj(io.deephaven.vector.BooleanVector) */
+    public static  java.lang.Boolean[] forwardFillObj( io.deephaven.vector.BooleanVector values ) {return Basic.forwardFillObj( values );}
+    /** @see io.deephaven.function.Basic#forwardFillObj(io.deephaven.vector.ObjectVector) */
+    public static <T> T[] forwardFillObj( io.deephaven.vector.ObjectVector<T> values ) {return Basic.forwardFillObj( values );}
+    /** @see io.deephaven.function.Basic#ifelse(java.lang.Boolean[],byte,byte) */
+    public static  byte[] ifelse( java.lang.Boolean[] condition, byte trueCase, byte falseCase ) {return Basic.ifelse( condition, trueCase, falseCase );}
+    /** @see io.deephaven.function.Basic#ifelse(java.lang.Boolean[],char,char) */
+    public static  char[] ifelse( java.lang.Boolean[] condition, char trueCase, char falseCase ) {return Basic.ifelse( condition, trueCase, falseCase );}
+    /** @see io.deephaven.function.Basic#ifelse(java.lang.Boolean[],byte[],byte[]) */
+    public static  byte[] ifelse( java.lang.Boolean[] condition, byte[] trueCase, byte[] falseCase ) {return Basic.ifelse( condition, trueCase, falseCase );}
+    /** @see io.deephaven.function.Basic#ifelse(java.lang.Boolean[],char[],char[]) */
+    public static  char[] ifelse( java.lang.Boolean[] condition, char[] trueCase, char[] falseCase ) {return Basic.ifelse( condition, trueCase, falseCase );}
+    /** @see io.deephaven.function.Basic#ifelse(java.lang.Boolean[],double[],double[]) */
+    public static  double[] ifelse( java.lang.Boolean[] condition, double[] trueCase, double[] falseCase ) {return Basic.ifelse( condition, trueCase, falseCase );}
+    /** @see io.deephaven.function.Basic#ifelse(java.lang.Boolean[],float[],float[]) */
+    public static  float[] ifelse( java.lang.Boolean[] condition, float[] trueCase, float[] falseCase ) {return Basic.ifelse( condition, trueCase, falseCase );}
+    /** @see io.deephaven.function.Basic#ifelse(java.lang.Boolean[],int[],int[]) */
+    public static  int[] ifelse( java.lang.Boolean[] condition, int[] trueCase, int[] falseCase ) {return Basic.ifelse( condition, trueCase, falseCase );}
+    /** @see io.deephaven.function.Basic#ifelse(java.lang.Boolean[],long[],long[]) */
+    public static  long[] ifelse( java.lang.Boolean[] condition, long[] trueCase, long[] falseCase ) {return Basic.ifelse( condition, trueCase, falseCase );}
+    /** @see io.deephaven.function.Basic#ifelse(java.lang.Boolean[],short[],short[]) */
+    public static  short[] ifelse( java.lang.Boolean[] condition, short[] trueCase, short[] falseCase ) {return Basic.ifelse( condition, trueCase, falseCase );}
+    /** @see io.deephaven.function.Basic#ifelse(java.lang.Boolean[],double,double) */
+    public static  double[] ifelse( java.lang.Boolean[] condition, double trueCase, double falseCase ) {return Basic.ifelse( condition, trueCase, falseCase );}
+    /** @see io.deephaven.function.Basic#ifelse(java.lang.Boolean[],float,float) */
+    public static  float[] ifelse( java.lang.Boolean[] condition, float trueCase, float falseCase ) {return Basic.ifelse( condition, trueCase, falseCase );}
+    /** @see io.deephaven.function.Basic#ifelse(java.lang.Boolean[],int,int) */
+    public static  int[] ifelse( java.lang.Boolean[] condition, int trueCase, int falseCase ) {return Basic.ifelse( condition, trueCase, falseCase );}
+    /** @see io.deephaven.function.Basic#ifelse(java.lang.Boolean[],long,long) */
+    public static  long[] ifelse( java.lang.Boolean[] condition, long trueCase, long falseCase ) {return Basic.ifelse( condition, trueCase, falseCase );}
+    /** @see io.deephaven.function.Basic#ifelse(java.lang.Boolean[],short,short) */
+    public static  short[] ifelse( java.lang.Boolean[] condition, short trueCase, short falseCase ) {return Basic.ifelse( condition, trueCase, falseCase );}
+    /** @see io.deephaven.function.Basic#ifelse(java.lang.Boolean,byte,byte) */
+    public static  byte ifelse( java.lang.Boolean condition, byte trueCase, byte falseCase ) {return Basic.ifelse( condition, trueCase, falseCase );}
+    /** @see io.deephaven.function.Basic#ifelse(java.lang.Boolean,char,char) */
+    public static  char ifelse( java.lang.Boolean condition, char trueCase, char falseCase ) {return Basic.ifelse( condition, trueCase, falseCase );}
+    /** @see io.deephaven.function.Basic#ifelse(java.lang.Boolean,double,double) */
+    public static  double ifelse( java.lang.Boolean condition, double trueCase, double falseCase ) {return Basic.ifelse( condition, trueCase, falseCase );}
+    /** @see io.deephaven.function.Basic#ifelse(java.lang.Boolean,float,float) */
+    public static  float ifelse( java.lang.Boolean condition, float trueCase, float falseCase ) {return Basic.ifelse( condition, trueCase, falseCase );}
+    /** @see io.deephaven.function.Basic#ifelse(java.lang.Boolean,int,int) */
+    public static  int ifelse( java.lang.Boolean condition, int trueCase, int falseCase ) {return Basic.ifelse( condition, trueCase, falseCase );}
+    /** @see io.deephaven.function.Basic#ifelse(java.lang.Boolean,long,long) */
+    public static  long ifelse( java.lang.Boolean condition, long trueCase, long falseCase ) {return Basic.ifelse( condition, trueCase, falseCase );}
+    /** @see io.deephaven.function.Basic#ifelse(java.lang.Boolean,short,short) */
+    public static  short ifelse( java.lang.Boolean condition, short trueCase, short falseCase ) {return Basic.ifelse( condition, trueCase, falseCase );}
+    /** @see io.deephaven.function.Basic#ifelse(io.deephaven.vector.BooleanVector,byte,byte) */
+    public static  byte[] ifelse( io.deephaven.vector.BooleanVector condition, byte trueCase, byte falseCase ) {return Basic.ifelse( condition, trueCase, falseCase );}
+    /** @see io.deephaven.function.Basic#ifelse(io.deephaven.vector.BooleanVector,char,char) */
+    public static  char[] ifelse( io.deephaven.vector.BooleanVector condition, char trueCase, char falseCase ) {return Basic.ifelse( condition, trueCase, falseCase );}
+    /** @see io.deephaven.function.Basic#ifelse(io.deephaven.vector.BooleanVector,double,double) */
+    public static  double[] ifelse( io.deephaven.vector.BooleanVector condition, double trueCase, double falseCase ) {return Basic.ifelse( condition, trueCase, falseCase );}
+    /** @see io.deephaven.function.Basic#ifelse(io.deephaven.vector.BooleanVector,float,float) */
+    public static  float[] ifelse( io.deephaven.vector.BooleanVector condition, float trueCase, float falseCase ) {return Basic.ifelse( condition, trueCase, falseCase );}
+    /** @see io.deephaven.function.Basic#ifelse(io.deephaven.vector.BooleanVector,int,int) */
+    public static  int[] ifelse( io.deephaven.vector.BooleanVector condition, int trueCase, int falseCase ) {return Basic.ifelse( condition, trueCase, falseCase );}
+    /** @see io.deephaven.function.Basic#ifelse(io.deephaven.vector.BooleanVector,io.deephaven.vector.ByteVector,io.deephaven.vector.ByteVector) */
+    public static  byte[] ifelse( io.deephaven.vector.BooleanVector condition, io.deephaven.vector.ByteVector trueCase, io.deephaven.vector.ByteVector falseCase ) {return Basic.ifelse( condition, trueCase, falseCase );}
+    /** @see io.deephaven.function.Basic#ifelse(io.deephaven.vector.BooleanVector,io.deephaven.vector.CharVector,io.deephaven.vector.CharVector) */
+    public static  char[] ifelse( io.deephaven.vector.BooleanVector condition, io.deephaven.vector.CharVector trueCase, io.deephaven.vector.CharVector falseCase ) {return Basic.ifelse( condition, trueCase, falseCase );}
+    /** @see io.deephaven.function.Basic#ifelse(io.deephaven.vector.BooleanVector,io.deephaven.vector.DoubleVector,io.deephaven.vector.DoubleVector) */
+    public static  double[] ifelse( io.deephaven.vector.BooleanVector condition, io.deephaven.vector.DoubleVector trueCase, io.deephaven.vector.DoubleVector falseCase ) {return Basic.ifelse( condition, trueCase, falseCase );}
+    /** @see io.deephaven.function.Basic#ifelse(io.deephaven.vector.BooleanVector,io.deephaven.vector.FloatVector,io.deephaven.vector.FloatVector) */
+    public static  float[] ifelse( io.deephaven.vector.BooleanVector condition, io.deephaven.vector.FloatVector trueCase, io.deephaven.vector.FloatVector falseCase ) {return Basic.ifelse( condition, trueCase, falseCase );}
+    /** @see io.deephaven.function.Basic#ifelse(io.deephaven.vector.BooleanVector,io.deephaven.vector.IntVector,io.deephaven.vector.IntVector) */
+    public static  int[] ifelse( io.deephaven.vector.BooleanVector condition, io.deephaven.vector.IntVector trueCase, io.deephaven.vector.IntVector falseCase ) {return Basic.ifelse( condition, trueCase, falseCase );}
+    /** @see io.deephaven.function.Basic#ifelse(io.deephaven.vector.BooleanVector,io.deephaven.vector.LongVector,io.deephaven.vector.LongVector) */
+    public static  long[] ifelse( io.deephaven.vector.BooleanVector condition, io.deephaven.vector.LongVector trueCase, io.deephaven.vector.LongVector falseCase ) {return Basic.ifelse( condition, trueCase, falseCase );}
+    /** @see io.deephaven.function.Basic#ifelse(io.deephaven.vector.BooleanVector,io.deephaven.vector.ShortVector,io.deephaven.vector.ShortVector) */
+    public static  short[] ifelse( io.deephaven.vector.BooleanVector condition, io.deephaven.vector.ShortVector trueCase, io.deephaven.vector.ShortVector falseCase ) {return Basic.ifelse( condition, trueCase, falseCase );}
+    /** @see io.deephaven.function.Basic#ifelse(io.deephaven.vector.BooleanVector,long,long) */
+    public static  long[] ifelse( io.deephaven.vector.BooleanVector condition, long trueCase, long falseCase ) {return Basic.ifelse( condition, trueCase, falseCase );}
+    /** @see io.deephaven.function.Basic#ifelse(io.deephaven.vector.BooleanVector,short,short) */
+    public static  short[] ifelse( io.deephaven.vector.BooleanVector condition, short trueCase, short falseCase ) {return Basic.ifelse( condition, trueCase, falseCase );}
+    /** @see io.deephaven.function.Basic#ifelseObj(java.lang.Boolean[],T,T) */
+    public static <T> T[] ifelseObj( java.lang.Boolean[] condition, T trueCase, T falseCase ) {return Basic.ifelseObj( condition, trueCase, falseCase );}
+    /** @see io.deephaven.function.Basic#ifelseObj(java.lang.Boolean[],T[],T[]) */
+    public static <T> T[] ifelseObj( java.lang.Boolean[] condition, T[] trueCase, T[] falseCase ) {return Basic.ifelseObj( condition, trueCase, falseCase );}
+    /** @see io.deephaven.function.Basic#ifelseObj(java.lang.Boolean,T,T) */
+    public static <T> T ifelseObj( java.lang.Boolean condition, T trueCase, T falseCase ) {return Basic.ifelseObj( condition, trueCase, falseCase );}
+    /** @see io.deephaven.function.Basic#ifelseObj(io.deephaven.vector.BooleanVector,T,T) */
+    public static <T> T[] ifelseObj( io.deephaven.vector.BooleanVector condition, T trueCase, T falseCase ) {return Basic.ifelseObj( condition, trueCase, falseCase );}
+    /** @see io.deephaven.function.Basic#ifelseObj(io.deephaven.vector.BooleanVector,io.deephaven.vector.ObjectVector,io.deephaven.vector.ObjectVector) */
+    public static <T> T[] ifelseObj( io.deephaven.vector.BooleanVector condition, io.deephaven.vector.ObjectVector<T> trueCase, io.deephaven.vector.ObjectVector<T> falseCase ) {return Basic.ifelseObj( condition, trueCase, falseCase );}
     /** @see io.deephaven.function.Basic#in(byte,byte[]) */
     public static  boolean in( byte testedValues, byte[] possibleValues ) {return Basic.in( testedValues, possibleValues );}
     /** @see io.deephaven.function.Basic#in(char,char[]) */
@@ -1787,6 +1920,24 @@ public class GroovyStaticImports {
     public static <T> T lastObj( T[] values ) {return Basic.lastObj( values );}
     /** @see io.deephaven.function.Basic#lastObj(io.deephaven.vector.ObjectVector) */
     public static <T> T lastObj( io.deephaven.vector.ObjectVector<T> values ) {return Basic.lastObj( values );}
+    /** @see io.deephaven.function.Basic#len(T[]) */
+    public static <T> long len( T[] values ) {return Basic.len( values );}
+    /** @see io.deephaven.function.Basic#len(byte[]) */
+    public static  long len( byte[] values ) {return Basic.len( values );}
+    /** @see io.deephaven.function.Basic#len(char[]) */
+    public static  long len( char[] values ) {return Basic.len( values );}
+    /** @see io.deephaven.function.Basic#len(double[]) */
+    public static  long len( double[] values ) {return Basic.len( values );}
+    /** @see io.deephaven.function.Basic#len(float[]) */
+    public static  long len( float[] values ) {return Basic.len( values );}
+    /** @see io.deephaven.function.Basic#len(int[]) */
+    public static  long len( int[] values ) {return Basic.len( values );}
+    /** @see io.deephaven.function.Basic#len(long[]) */
+    public static  long len( long[] values ) {return Basic.len( values );}
+    /** @see io.deephaven.function.Basic#len(short[]) */
+    public static  long len( short[] values ) {return Basic.len( values );}
+    /** @see io.deephaven.function.Basic#len(io.deephaven.util.datastructures.LongSizedDataStructure) */
+    public static  long len( io.deephaven.util.datastructures.LongSizedDataStructure values ) {return Basic.len( values );}
     /** @see io.deephaven.function.Numeric#log(byte) */
     public static  double log( byte value ) {return Numeric.log( value );}
     /** @see io.deephaven.function.Numeric#log(double) */
@@ -2701,22 +2852,22 @@ public class GroovyStaticImports {
     public static  double var( io.deephaven.vector.LongVector values ) {return Numeric.var( values );}
     /** @see io.deephaven.function.Numeric#var(io.deephaven.vector.ShortVector) */
     public static  double var( io.deephaven.vector.ShortVector values ) {return Numeric.var( values );}
-    /** @see io.deephaven.function.Basic#vec(io.deephaven.vector.ByteVector) */
-    public static  byte[] vec( io.deephaven.vector.ByteVector values ) {return Basic.vec( values );}
-    /** @see io.deephaven.function.Basic#vec(io.deephaven.vector.CharVector) */
-    public static  char[] vec( io.deephaven.vector.CharVector values ) {return Basic.vec( values );}
-    /** @see io.deephaven.function.Basic#vec(io.deephaven.vector.DoubleVector) */
-    public static  double[] vec( io.deephaven.vector.DoubleVector values ) {return Basic.vec( values );}
-    /** @see io.deephaven.function.Basic#vec(io.deephaven.vector.FloatVector) */
-    public static  float[] vec( io.deephaven.vector.FloatVector values ) {return Basic.vec( values );}
-    /** @see io.deephaven.function.Basic#vec(io.deephaven.vector.IntVector) */
-    public static  int[] vec( io.deephaven.vector.IntVector values ) {return Basic.vec( values );}
-    /** @see io.deephaven.function.Basic#vec(io.deephaven.vector.LongVector) */
-    public static  long[] vec( io.deephaven.vector.LongVector values ) {return Basic.vec( values );}
-    /** @see io.deephaven.function.Basic#vec(io.deephaven.vector.ShortVector) */
-    public static  short[] vec( io.deephaven.vector.ShortVector values ) {return Basic.vec( values );}
-    /** @see io.deephaven.function.Basic#vecObj(io.deephaven.vector.ObjectVector) */
-    public static <T> T[] vecObj( io.deephaven.vector.ObjectVector<T> values ) {return Basic.vecObj( values );}
+    /** @see io.deephaven.function.Basic#vec(byte[]) */
+    public static  io.deephaven.vector.ByteVector vec( byte[] values ) {return Basic.vec( values );}
+    /** @see io.deephaven.function.Basic#vec(char[]) */
+    public static  io.deephaven.vector.CharVector vec( char[] values ) {return Basic.vec( values );}
+    /** @see io.deephaven.function.Basic#vec(double[]) */
+    public static  io.deephaven.vector.DoubleVector vec( double[] values ) {return Basic.vec( values );}
+    /** @see io.deephaven.function.Basic#vec(float[]) */
+    public static  io.deephaven.vector.FloatVector vec( float[] values ) {return Basic.vec( values );}
+    /** @see io.deephaven.function.Basic#vec(int[]) */
+    public static  io.deephaven.vector.IntVector vec( int[] values ) {return Basic.vec( values );}
+    /** @see io.deephaven.function.Basic#vec(long[]) */
+    public static  io.deephaven.vector.LongVector vec( long[] values ) {return Basic.vec( values );}
+    /** @see io.deephaven.function.Basic#vec(short[]) */
+    public static  io.deephaven.vector.ShortVector vec( short[] values ) {return Basic.vec( values );}
+    /** @see io.deephaven.function.Basic#vecObj(T[]) */
+    public static <T> io.deephaven.vector.ObjectVector<T> vecObj( T[] values ) {return Basic.vecObj( values );}
     /** @see io.deephaven.function.Numeric#wavg(byte[],byte[]) */
     public static  double wavg( byte[] values, byte[] weights ) {return Numeric.wavg( values, weights );}
     /** @see io.deephaven.function.Numeric#wavg(byte[],double[]) */

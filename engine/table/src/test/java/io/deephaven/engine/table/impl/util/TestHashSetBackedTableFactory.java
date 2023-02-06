@@ -5,13 +5,14 @@ package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.testutil.generator.StringGenerator;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.table.impl.EvalNuggetInterface;
+import io.deephaven.engine.testutil.EvalNuggetInterface;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.EvalNugget;
-import io.deephaven.engine.table.impl.RefreshingTableTestCase;
-import io.deephaven.engine.table.impl.TstUtils;
-import io.deephaven.engine.table.impl.UpdateValidatorNugget;
+import io.deephaven.engine.testutil.EvalNugget;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
+import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.testutil.UpdateValidatorNugget;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.tuple.ArrayTuple;
@@ -47,7 +48,7 @@ public class TestHashSetBackedTableFactory extends RefreshingTableTestCase {
 
         final Table result = HashSetBackedTableFactory.create(() -> set, 0, "Arg");
 
-        final TstUtils.StringGenerator generator = new TstUtils.StringGenerator();
+        final StringGenerator generator = new StringGenerator();
         final Random random = new Random();
 
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
@@ -78,7 +79,7 @@ public class TestHashSetBackedTableFactory extends RefreshingTableTestCase {
                     }
                 }
                 for (int jj = 0; jj < additions; ++jj) {
-                    set.add(new ArrayTuple(generator.nextValue(null, 0, random)));
+                    set.add(new ArrayTuple(generator.nextValue(random)));
                 }
 
                 ((Runnable) result).run();

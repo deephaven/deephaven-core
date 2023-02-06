@@ -76,19 +76,17 @@ public abstract class PatternFilter extends WhereFilterImpl {
     }
 
     @Override
-    public void init(TableDefinition tableDefinition) {
-        synchronized (this) {
-            if (pattern != null) {
-                return;
-            }
-
-            final ColumnDefinition column = tableDefinition.getColumn(columnName);
-            if (column == null) {
-                throw new RuntimeException("Column \"" + columnName
-                        + "\" doesn't exist in this table, available columns: " + tableDefinition.getColumnNames());
-            }
-            pattern = compile(value, caseInsensitive ? Pattern.CASE_INSENSITIVE : 0);
+    public synchronized void init(TableDefinition tableDefinition) {
+        if (pattern != null) {
+            return;
         }
+
+        final ColumnDefinition<?> column = tableDefinition.getColumn(columnName);
+        if (column == null) {
+            throw new RuntimeException("Column \"" + columnName
+                    + "\" doesn't exist in this table, available columns: " + tableDefinition.getColumnNames());
+        }
+        pattern = compile(value, caseInsensitive ? Pattern.CASE_INSENSITIVE : 0);
     }
 
     protected abstract Pattern compile(String value, int flags);

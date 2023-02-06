@@ -7,6 +7,7 @@ import gnu.trove.iterator.TLongIterator;
 import gnu.trove.list.array.TLongArrayList;
 import gnu.trove.set.TLongSet;
 import gnu.trove.set.hash.TLongHashSet;
+import io.deephaven.base.testing.Shuffle;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -16,7 +17,6 @@ import io.deephaven.engine.rowset.impl.TrackingWritableRowSetImpl;
 import io.deephaven.engine.rowset.impl.ValidationSet;
 import io.deephaven.engine.rowset.impl.rsp.RspBitmap;
 import io.deephaven.engine.rowset.impl.singlerange.SingleRange;
-import io.deephaven.engine.testutil.Shuffle;
 import io.deephaven.test.types.OutOfBandTest;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableLong;
@@ -1079,15 +1079,42 @@ public class SortedRangesTest {
     @Test
     public void testSearchIteratorBinarySearchCases() {
         SortedRanges sar = new SortedRangesLong(2);
+
+        // search for last when single value is final entry
         sar.appendRange(4, 10);
         sar.append(25);
         sar.append(32);
-        final RowSet.SearchIterator sit = sar.getSearchIterator();
-        final long v = sar.last();
-        final RowSet.TargetComparator comp =
-                (final long key, final int dir) -> Long.signum(dir * (v - key));
-        final long r = sit.binarySearchValue(comp, 1);
-        assertEquals(v, r);
+        try (final RowSet.SearchIterator sit = sar.getSearchIterator()) {
+            final long v = sar.last();
+            final RowSet.TargetComparator comp =
+                    (final long key, final int dir) -> Long.signum(dir * (v - key));
+            final long r = sit.binarySearchValue(comp, 1);
+            assertEquals(v, r);
+        }
+
+        // search for last when a range is the final entry
+        sar.clear();
+        sar.appendRange(4, 10);
+        sar.appendRange(25, 32);
+        try (final RowSet.SearchIterator sit = sar.getSearchIterator()) {
+            final long v = sar.last();
+            final RowSet.TargetComparator comp =
+                    (final long key, final int dir) -> Long.signum(dir * (v - key));
+            final long r = sit.binarySearchValue(comp, 1);
+            assertEquals(v, r);
+        }
+
+        // search for value in the final range when a range is the final entry
+        sar.clear();
+        sar.appendRange(4, 10);
+        sar.appendRange(25, 32);
+        try (final RowSet.SearchIterator sit = sar.getSearchIterator()) {
+            final long v = sar.last() - 1;
+            final RowSet.TargetComparator comp =
+                    (final long key, final int dir) -> Long.signum(dir * (v - key));
+            final long r = sit.binarySearchValue(comp, 1);
+            assertEquals(v, r);
+        }
     }
 
     @Test

@@ -5,7 +5,9 @@ package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
@@ -20,15 +22,15 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
  * A column source that returns null for all keys.
  */
-public class NullValueColumnSource<T> extends AbstractColumnSource<T> implements ShiftData.ShiftCallback {
+public class NullValueColumnSource<T> extends AbstractColumnSource<T>
+        implements ShiftData.ShiftCallback, InMemoryColumnSource, RowKeyAgnosticChunkSource<Values> {
     private static final KeyedObjectKey.Basic<Pair<Class<?>, Class<?>>, NullValueColumnSource<?>> KEY_TYPE =
-            new KeyedObjectKey.Basic<Pair<Class<?>, Class<?>>, NullValueColumnSource<?>>() {
+            new KeyedObjectKey.Basic<>() {
                 @Override
                 public Pair<Class<?>, Class<?>> getKey(NullValueColumnSource columnSource) {
                     // noinspection unchecked,rawtypes
@@ -41,13 +43,13 @@ public class NullValueColumnSource<T> extends AbstractColumnSource<T> implements
     private static final ColumnSource<Byte> BOOL_AS_BYTE_SOURCE =
             new BooleanAsByteColumnSource(getInstance(Boolean.class, null));
 
-    public static <T2> NullValueColumnSource<T2> getInstance(Class<T2> clazz, @Nullable final Class elementType) {
+    public static <T2> NullValueColumnSource<T2> getInstance(Class<T2> clazz, @Nullable final Class<?> elementType) {
         // noinspection unchecked,rawtypes
         return (NullValueColumnSource) INSTANCES.putIfAbsent(new Pair<>(clazz, elementType),
-                p -> new NullValueColumnSource<T2>(clazz, elementType));
+                p -> new NullValueColumnSource<>(clazz, elementType));
     }
 
-    public static Map<String, ColumnSource<?>> createColumnSourceMap(TableDefinition definition) {
+    public static LinkedHashMap<String, ColumnSource<?>> createColumnSourceMap(TableDefinition definition) {
         return definition.getColumnStream().collect(Collectors.toMap(
                 ColumnDefinition::getName,
                 c -> getInstance(c.getDataType(), c.getComponentType()),
@@ -55,7 +57,7 @@ public class NullValueColumnSource<T> extends AbstractColumnSource<T> implements
                 LinkedHashMap::new));
     }
 
-    private NullValueColumnSource(Class<T> type, @Nullable final Class elementType) {
+    private NullValueColumnSource(Class<T> type, @Nullable final Class<?> elementType) {
         super(type, elementType);
     }
 
@@ -174,7 +176,7 @@ public class NullValueColumnSource<T> extends AbstractColumnSource<T> implements
         if ((type == Boolean.class || type == boolean.class) &&
                 (alternateDataType == byte.class || alternateDataType == Byte.class)) {
             // noinspection unchecked
-            return (ColumnSource) BOOL_AS_BYTE_SOURCE;
+            return (ColumnSource<ALTERNATE_DATA_TYPE>) BOOL_AS_BYTE_SOURCE;
         }
 
         return getInstance(alternateDataType, null);
@@ -191,5 +193,24 @@ public class NullValueColumnSource<T> extends AbstractColumnSource<T> implements
     public void fillPrevChunk(@NotNull FillContext context,
             @NotNull WritableChunk<? super Values> destination, @NotNull RowSequence rowSequence) {
         fillChunk(context, destination, rowSequence);
+    }
+
+    @Override
+    public void fillChunkUnordered(@NotNull FillContext context, @NotNull WritableChunk<? super Values> destination,
+            @NotNull LongChunk<? extends RowKeys> keys) {
+        // note that we do not need to look for RowSequence.NULL_ROW_KEY; all values are null
+        destination.setSize(keys.size());
+        destination.fillWithNullValue(0, keys.size());
+    }
+
+    @Override
+    public void fillPrevChunkUnordered(@NotNull FillContext context, @NotNull WritableChunk<? super Values> destination,
+            @NotNull LongChunk<? extends RowKeys> keys) {
+        fillChunkUnordered(context, destination, keys);
+    }
+
+    @Override
+    public boolean providesFillUnordered() {
+        return true;
     }
 }

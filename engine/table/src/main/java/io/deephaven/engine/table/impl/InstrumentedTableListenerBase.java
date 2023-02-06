@@ -7,6 +7,7 @@ import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.exceptions.UncheckedTableException;
 import io.deephaven.engine.table.TableListener;
 import io.deephaven.engine.table.TableUpdate;
@@ -52,6 +53,8 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
 
     private volatile long lastCompletedStep = NotificationStepReceiver.NULL_NOTIFICATION_STEP;
     private volatile long lastEnqueuedStep = NotificationStepReceiver.NULL_NOTIFICATION_STEP;
+
+    protected final ExecutionContext executionContext = ExecutionContext.getContextToRecord();
 
     InstrumentedTableListenerBase(@Nullable String description, boolean terminalListener) {
         this.entry = UpdatePerformanceTracker.getInstance().getEntry(description);
@@ -149,12 +152,13 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
 
     @Override
     public void onFailure(Throwable originalException, Entry sourceEntry) {
+        forceReferenceCountToZero();
         onFailureInternal(originalException, sourceEntry == null ? entry : sourceEntry);
     }
 
     protected abstract void onFailureInternal(Throwable originalException, Entry sourceEntry);
 
-    protected final void onFailureInternalWithDependent(final BaseTable dependent, final Throwable originalException,
+    protected final void onFailureInternalWithDependent(final BaseTable<?> dependent, final Throwable originalException,
             final Entry sourceEntry) {
         dependent.notifyListenersOnError(originalException, sourceEntry);
 
@@ -164,7 +168,9 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
                 AsyncClientErrorNotifier.reportError(originalException);
             }
         } catch (IOException e) {
-            throw new UncheckedTableException("Exception in " + sourceEntry.toString(), originalException);
+            throw new UncheckedTableException(
+                    "Exception while delivering async client error notification for " + sourceEntry.toString(),
+                    originalException);
         }
     }
 
@@ -186,12 +192,13 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
             }
             failed = true;
             try {
-                AsyncErrorLogger.log(DateTimeUtils.currentTime(), entry, sourceEntry, originalException);
+                AsyncErrorLogger.log(DateTimeUtils.currentTimeMillis(), entry, sourceEntry,
+                        originalException);
             } catch (IOException e) {
                 log.error().append("Error logging failure from ").append(entry).append(": ").append(e).endl();
             }
             try {
-                onFailureInternal(originalException, sourceEntry);
+                onFailure(originalException, sourceEntry);
             } catch (Exception e) {
                 log.error().append("Error propagating failure from ").append(sourceEntry).append(": ").append(e).endl();
             }
@@ -206,6 +213,11 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
         public LogOutput append(LogOutput output) {
             return output.append("ErrorNotification{").append("originalException=")
                     .append(originalException.getMessage()).append(", sourceEntry=").append(sourceEntry).append("}");
+        }
+
+        @Override
+        public ExecutionContext getExecutionContext() {
+            return executionContext;
         }
     }
 
@@ -250,6 +262,11 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
         @Override
         public final boolean canExecute(final long step) {
             return InstrumentedTableListenerBase.this.canExecute(step);
+        }
+
+        @Override
+        public ExecutionContext getExecutionContext() {
+            return executionContext;
         }
 
         void doRun(final Runnable invokeOnUpdate) {
@@ -306,7 +323,7 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
 
                 // If the table has an error, we should cease processing further updates.
                 failed = true;
-                onFailureInternal(e, entry);
+                onFailure(e, entry);
             } finally {
                 entry.onUpdateEnd();
                 final long oldLastCompletedStep =

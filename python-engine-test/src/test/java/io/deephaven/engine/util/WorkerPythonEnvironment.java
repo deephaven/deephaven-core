@@ -8,10 +8,9 @@ import io.deephaven.base.FileUtils;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.integrations.python.PythonDeephavenSession;
-import io.deephaven.integrations.python.PythonLogAdapter;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.engine.table.lang.QueryScope;
+import io.deephaven.engine.context.QueryScope;
 import org.jpy.PyObject;
 
 import java.io.FileNotFoundException;
@@ -65,12 +64,8 @@ public enum WorkerPythonEnvironment {
                     .endl();
         }
 
-        PythonLogAdapter.interceptOutputStreams(evaluator);
-
         final String defaultScriptPath = Configuration.getInstance()
-                .getProperty("WorkerPythonEnvironment.defaultScriptPath")
-                .replace("<devroot>", Configuration.getInstance().getDevRootPath())
-                .replace("<workspace>", Configuration.getInstance().getWorkspacePath());
+                .getStringWithDefault("WorkerPythonEnvironment.defaultScriptPath", ".");
 
         final ScriptFinder scriptFinder = new ScriptFinder(defaultScriptPath);
         final String initScript = Configuration.getInstance().getStringWithDefault("WorkerPythonEnvironment.initScript",

@@ -38,9 +38,12 @@ public class VectorChunkInputStreamGenerator extends BaseChunkInputStreamGenerat
     private WritableIntChunk<ChunkPositions> offsets;
     private ChunkInputStreamGenerator innerGenerator;
 
-    VectorChunkInputStreamGenerator(final Class<Vector<?>> type, final Class<?> componentType,
-                                    final ObjectChunk<Vector<?>, Values> chunk) {
-        super(chunk, 0);
+    VectorChunkInputStreamGenerator(
+            final Class<Vector<?>> type,
+            final Class<?> componentType,
+            final ObjectChunk<Vector<?>, Values> chunk,
+            final long rowOffset) {
+        super(chunk, 0, rowOffset);
         this.componentType = VectorExpansionKernel.getComponentType(type, componentType);
     }
 
@@ -56,7 +59,7 @@ public class VectorChunkInputStreamGenerator extends BaseChunkInputStreamGenerat
 
         final WritableChunk<Values> innerChunk = kernel.expand(chunk, offsets);
         innerGenerator = ChunkInputStreamGenerator.makeInputStreamGenerator(
-                chunkType, componentType, innerComponentType, innerChunk);
+                chunkType, componentType, innerComponentType, innerChunk, 0);
     }
 
     @Override

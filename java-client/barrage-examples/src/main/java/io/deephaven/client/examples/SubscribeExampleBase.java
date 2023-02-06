@@ -11,6 +11,7 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.TableUpdateListener;
 import io.deephaven.engine.table.impl.InstrumentedTableUpdateListener;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.table.BarrageTable;
 import io.deephaven.qst.TableCreationLogic;
@@ -47,32 +48,44 @@ abstract class SubscribeExampleBase extends BarrageClientExampleBase {
 
         final BarrageSubscriptionOptions options = BarrageSubscriptionOptions.builder().build();
 
-        final TableHandleManager manager = mode == null ? client.session()
+        final CountDownLatch countDownLatch = new CountDownLatch(1);
+        final TableHandleManager subscriptionManager = mode == null ? client.session()
                 : mode.batch ? client.session().batch() : client.session().serial();
 
-        try (final TableHandle handle = manager.executeLogic(logic());
+        try (final TableHandle handle = subscriptionManager.executeLogic(logic());
                 final BarrageSubscription subscription = client.subscribe(handle, options)) {
 
-            final BarrageTable table;
+            final BarrageTable subscriptionTable;
             if (headerSize > 0) {
-                // create a table subscription with forward viewport of the specified size
-                table = subscription.partialTable(RowSetFactory.flat(headerSize), null, false);
+                // create a Table subscription with forward viewport of the specified size
+                subscriptionTable = subscription.partialTable(RowSetFactory.flat(headerSize), null, false);
             } else if (tailSize > 0) {
-                // create a table subscription with reverse viewport of the specified size
-                table = subscription.partialTable(RowSetFactory.flat(tailSize), null, true);
+                // create a Table subscription with reverse viewport of the specified size
+                subscriptionTable = subscription.partialTable(RowSetFactory.flat(tailSize), null, true);
             } else {
-                // create a table subscription of the entire table
-                table = subscription.entireTable();
+                // create a Table subscription of the entire Table
+                subscriptionTable = subscription.entireTable();
             }
 
-            final CountDownLatch countDownLatch = new CountDownLatch(1);
+            System.out.println("Subscription established");
+            System.out.println("Table info: rows = " + subscriptionTable.size() + ", cols = " +
+                    subscriptionTable.getColumns().length);
+            TableTools.show(subscriptionTable);
+            System.out.println("");
 
-            table.listenForUpdates(listener = new InstrumentedTableUpdateListener("example-listener") {
+            subscriptionTable.addUpdateListener(listener = new InstrumentedTableUpdateListener("example-listener") {
                 @ReferentialIntegrity
-                final BarrageTable tableRef = table;
+                final BarrageTable tableRef = subscriptionTable;
                 {
-                    // Maintain a liveness ownership relationship with table for the lifetime of the listener
+                    // Maintain a liveness ownership relationship with subscriptionTable for the lifetime of the
+                    // listener
                     manage(tableRef);
+                }
+
+                @Override
+                protected void destroy() {
+                    super.destroy();
+                    tableRef.removeUpdateListener(this);
                 }
 
                 @Override

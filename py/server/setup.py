@@ -47,17 +47,25 @@ setup(
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
-        'Programming Language :: Python :: 3.10'
+        'Programming Language :: Python :: 3.10',
+        'Programming Language :: Python :: 3.11',
     ],
     keywords='Deephaven Development',
     python_requires='>=3.7',
     install_requires=[
-        'jpy>=0.11.0',
+        'jpy>=0.13.0',
         'deephaven-plugin',
         'numpy',
         'pandas',
-        'numba'
+        'pyarrow',
+        # Numba does not support 3.11 yet
+        # https://github.com/numba/numba/issues/8304
+        # TODO(deephaven-core#3082): Remove numba dependency workarounds
+        'numba; python_version < "3.11"',
     ],
+    extras_require={
+        "autocomplete": ["jedi==0.18.2"],
+    },
     entry_points={
         'deephaven.plugin': ['registration_cls = deephaven.pandasplugin:PandasPluginRegistration']
     }

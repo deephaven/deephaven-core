@@ -1,10 +1,10 @@
 package io.deephaven.server.partitionedtable;
 
 import com.google.rpc.Code;
+import io.deephaven.auth.codegen.impl.PartitionedTableServiceContextualAuthWiring;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.extensions.barrage.util.ExportUtil;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
@@ -14,17 +14,20 @@ import io.deephaven.proto.backplane.grpc.MergeRequest;
 import io.deephaven.proto.backplane.grpc.PartitionByRequest;
 import io.deephaven.proto.backplane.grpc.PartitionByResponse;
 import io.deephaven.proto.backplane.grpc.PartitionedTableServiceGrpc;
+import io.deephaven.server.auth.AuthorizationProvider;
 import io.deephaven.server.session.SessionService;
 import io.deephaven.server.session.SessionState;
+import io.deephaven.server.session.TicketResolverBase;
 import io.deephaven.server.session.TicketRouter;
 import io.grpc.stub.StreamObserver;
 
 import javax.inject.Inject;
 
-import java.util.function.Supplier;
+import java.util.Collections;
+import java.util.List;
 
 import static io.deephaven.extensions.barrage.util.ExportUtil.buildTableCreationResponse;
-import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyExecute;
+import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyComplete;
 
 public class PartitionedTableServiceGrpcImpl extends PartitionedTableServiceGrpc.PartitionedTableServiceImplBase {
     private static final Logger log = LoggerFactory.getLogger(PartitionedTableServiceGrpcImpl.class);
@@ -32,13 +35,21 @@ public class PartitionedTableServiceGrpcImpl extends PartitionedTableServiceGrpc
     private final TicketRouter ticketRouter;
     private final SessionService sessionService;
     private final UpdateGraphProcessor updateGraphProcessor;
+    private final PartitionedTableServiceContextualAuthWiring authWiring;
+    private final TicketResolverBase.AuthTransformation authorizationTransformation;
 
     @Inject
-    public PartitionedTableServiceGrpcImpl(TicketRouter ticketRouter, SessionService sessionService,
-            UpdateGraphProcessor updateGraphProcessor) {
+    public PartitionedTableServiceGrpcImpl(
+            TicketRouter ticketRouter,
+            SessionService sessionService,
+            UpdateGraphProcessor updateGraphProcessor,
+            AuthorizationProvider authorizationProvider,
+            PartitionedTableServiceContextualAuthWiring authWiring) {
         this.ticketRouter = ticketRouter;
         this.sessionService = sessionService;
         this.updateGraphProcessor = updateGraphProcessor;
+        this.authWiring = authWiring;
+        this.authorizationTransformation = authorizationProvider.getTicketTransformation();
     }
 
     @Override
@@ -53,12 +64,11 @@ public class PartitionedTableServiceGrpcImpl extends PartitionedTableServiceGrpc
                     .require(targetTable)
                     .onError(responseObserver)
                     .submit(() -> {
+                        authWiring.checkPermissionPartitionBy(session.getAuthContext(), request,
+                                Collections.singletonList(targetTable.get()));
                         PartitionedTable partitionedTable = targetTable.get().partitionBy(request.getDropKeys(),
                                 request.getKeyColumnNamesList().toArray(String[]::new));
-                        safelyExecute(() -> {
-                            responseObserver.onNext(PartitionByResponse.getDefaultInstance());
-                            responseObserver.onCompleted();
-                        });
+                        safelyComplete(responseObserver, PartitionByResponse.getDefaultInstance());
                         return partitionedTable;
                     });
 
@@ -77,17 +87,19 @@ public class PartitionedTableServiceGrpcImpl extends PartitionedTableServiceGrpc
                     .require(partitionedTable)
                     .onError(responseObserver)
                     .submit(() -> {
-                        final Table merged;
+                        authWiring.checkPermissionMerge(session.getAuthContext(), request,
+                                Collections.singletonList(partitionedTable.get().table()));
+                        Table merged;
                         if (partitionedTable.get().table().isRefreshing()) {
                             merged = updateGraphProcessor.sharedLock()
                                     .computeLocked(partitionedTable.get()::merge);
                         } else {
                             merged = partitionedTable.get().merge();
                         }
-                        safelyExecute(() -> {
-                            responseObserver.onNext(buildTableCreationResponse(request.getResultId(), merged));
-                            responseObserver.onCompleted();
-                        });
+                        merged = authorizationTransformation.transform(merged);
+                        final ExportedTableCreationResponse response =
+                                buildTableCreationResponse(request.getResultId(), merged);
+                        safelyComplete(responseObserver, response);
                         return merged;
                     });
         });
@@ -108,8 +120,10 @@ public class PartitionedTableServiceGrpcImpl extends PartitionedTableServiceGrpc
                     .require(partitionedTable, keys)
                     .onError(responseObserver)
                     .submit(() -> {
-                        final Table table;
+                        Table table;
                         Table keyTable = keys.get();
+                        authWiring.checkPermissionGetTable(session.getAuthContext(), request,
+                                List.of(partitionedTable.get().table(), keyTable));
                         if (!keyTable.isRefreshing()) {
                             long keyTableSize = keyTable.size();
                             if (keyTableSize != 1) {
@@ -147,10 +161,10 @@ public class PartitionedTableServiceGrpcImpl extends PartitionedTableServiceGrpc
                                         .get(requestedRow.getRowSet().firstRowKey());
                             });
                         }
-                        safelyExecute(() -> {
-                            responseObserver.onNext(buildTableCreationResponse(request.getResultId(), table));
-                            responseObserver.onCompleted();
-                        });
+                        table = authorizationTransformation.transform(table);
+                        final ExportedTableCreationResponse response =
+                                buildTableCreationResponse(request.getResultId(), table);
+                        safelyComplete(responseObserver, response);
                         return table;
                     });
         });

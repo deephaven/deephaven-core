@@ -5,6 +5,7 @@
 import unittest
 
 from deephaven.agg import partition
+from deephaven.execution_context import make_user_exec_ctx
 from deephaven.table import Table, PartitionedTable
 
 from deephaven.filters import Filter
@@ -34,12 +35,14 @@ class PartitionedTransformer:
 
 class PartitionedTableTestCase(BaseTestCase):
     def setUp(self):
-        self.test_table = read_csv("tests/data/test_table.csv")
+        super().setUp()
+        self.test_table = read_csv("tests/data/test_table.csv").tail(num_rows=100)
         self.partitioned_table = self.test_table.partition_by(by=["c", "e"])
 
     def tearDown(self):
         self.partitioned_table = None
         self.test_table = None
+        super().tearDown()
 
     def test_table(self):
         self.assertIsNotNone(self.partitioned_table.table)
@@ -92,7 +95,7 @@ class PartitionedTableTestCase(BaseTestCase):
         self.assertIn("Unsupported sort on constituent column", str(cm.exception))
 
     def test_get_constituent(self):
-        keys = [917, 167]
+        keys = [967, 203]
         self.assertIsNotNone(self.partitioned_table.get_constituent(keys))
 
         from deephaven.column import string_col, int_col, double_col
@@ -116,23 +119,25 @@ class PartitionedTableTestCase(BaseTestCase):
         self.assertGreater(len(constituent_tables), 0)
 
     def test_transform(self):
-        pt = self.partitioned_table.transform(transform_func)
-        self.assertIn("f", [col.name for col in pt.constituent_table_columns])
+        with make_user_exec_ctx():
+            pt = self.partitioned_table.transform(transform_func)
+            self.assertIn("f", [col.name for col in pt.constituent_table_columns])
 
-        pt = self.partitioned_table.transform(Transformer)
-        self.assertIn("f", [col.name for col in pt.constituent_table_columns])
+            pt = self.partitioned_table.transform(Transformer)
+            self.assertIn("f", [col.name for col in pt.constituent_table_columns])
 
-        with self.assertRaises(DHError) as cm:
-            pt = self.partitioned_table.transform(lambda t, t1: t.join(t1))
-        self.assertRegex(str(cm.exception), r"missing .* argument")
+            with self.assertRaises(DHError) as cm:
+                pt = self.partitioned_table.transform(lambda t, t1: t.join(t1))
+            self.assertRegex(str(cm.exception), r"missing .* argument")
 
     def test_partitioned_transform(self):
-        other_pt = self.partitioned_table.transform(transform_func)
-        pt = self.partitioned_table.partitioned_transform(other_pt, partitioned_transform_func)
-        self.assertIn("f", [col.name for col in pt.constituent_table_columns])
+        with make_user_exec_ctx():
+            other_pt = self.partitioned_table.transform(transform_func)
+            pt = self.partitioned_table.partitioned_transform(other_pt, partitioned_transform_func)
+            self.assertIn("f", [col.name for col in pt.constituent_table_columns])
 
-        pt = self.partitioned_table.partitioned_transform(other_pt, PartitionedTransformer())
-        self.assertIn("f", [col.name for col in pt.constituent_table_columns])
+            pt = self.partitioned_table.partitioned_transform(other_pt, PartitionedTransformer())
+            self.assertIn("f", [col.name for col in pt.constituent_table_columns])
 
     def test_partition_agg(self):
         with ugp.shared_lock():

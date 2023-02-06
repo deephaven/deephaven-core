@@ -6,27 +6,32 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.chunk.util.pools.ChunkPoolReleaseTracking;
+import io.deephaven.engine.testutil.ColumnInfo;
+import io.deephaven.engine.testutil.generator.IntGenerator;
+import io.deephaven.engine.testutil.generator.SetGenerator;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
+import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.util.SafeCloseable;
 
 import java.util.Random;
 
-import static io.deephaven.engine.table.impl.TstUtils.getTable;
-import static io.deephaven.engine.table.impl.TstUtils.initColumnInfos;
+import static io.deephaven.engine.testutil.TstUtils.getTable;
+import static io.deephaven.engine.testutil.TstUtils.initColumnInfos;
 
 public class TestTableValidator extends RefreshingTableTestCase {
     public void testValidator() {
         ChunkPoolReleaseTracking.enableStrict();
 
-        try (final SafeCloseable sc = LivenessScopeStack.open()) {
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
 
             final Random random = new Random(0);
-            final TstUtils.ColumnInfo[] columnInfo;
+            final ColumnInfo<?, ?>[] columnInfo;
             final int size = 50;
             final QueryTable queryTable = getTable(size, random,
                     columnInfo = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol"},
-                            new TstUtils.SetGenerator<>("a", "b", "c", "d", "e"),
-                            new TstUtils.IntGenerator(10, 100),
-                            new TstUtils.SetGenerator<>(10.1, 20.1, 30.1)));
+                            new SetGenerator<>("a", "b", "c", "d", "e"),
+                            new IntGenerator(10, 100),
+                            new SetGenerator<>(10.1, 20.1, 30.1)));
 
             final EvalNugget[] en = new EvalNugget[] {
                     new EvalNugget() {

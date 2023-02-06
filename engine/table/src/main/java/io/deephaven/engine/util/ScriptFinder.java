@@ -79,6 +79,7 @@ public class ScriptFinder {
     }
 
     private FileOrStream findScriptEx(final String script, final String dbScriptPath) throws IOException {
+        // TODO(deephaven-core#2978): Cleanup ScriptSession initialization logic / ScriptFinder
         /*
          * NB: This code is overdue for some cleanup. In practice, there are two modes: (1) local - a user runs a local
          * groovy session from IntelliJ or otherwise, and needs to find scripts under their devroot. (2) deployed - a

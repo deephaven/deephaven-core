@@ -4,13 +4,16 @@
 package io.deephaven.server.session;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.server.util.TestControlledScheduler;
 import io.deephaven.util.SafeCloseable;
-import io.deephaven.util.auth.AuthContext;
+import io.deephaven.auth.AuthContext;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.util.Collections;
 
 public class SessionServiceTest {
 
@@ -25,8 +28,9 @@ public class SessionServiceTest {
     public void setup() {
         livenessScope = LivenessScopeStack.open();
         scheduler = new TestControlledScheduler();
-        sessionService =
-                new SessionService(scheduler, authContext -> new SessionState(scheduler, authContext), TOKEN_EXPIRE_MS);
+        sessionService = new SessionService(scheduler,
+                authContext -> new SessionState(scheduler, TestExecutionContext::createForUnitTests, authContext),
+                TOKEN_EXPIRE_MS, Collections.emptyMap());
     }
 
     @After
@@ -74,7 +78,7 @@ public class SessionServiceTest {
         // let's advance by some reasonable amount and ensure that the token now refreshes
         scheduler.runUntil(scheduler.timeAfterMs(TOKEN_EXPIRE_MS / 3));
         final SessionService.TokenExpiration newToken = sessionService.refreshToken(session);
-        final long timeToNewExpiration = newToken.deadline.getMillis() - scheduler.currentTime().getMillis();
+        final long timeToNewExpiration = newToken.deadlineMillis - scheduler.currentTimeMillis();
         Assert.eq(timeToNewExpiration, "timeToNewExpiration", TOKEN_EXPIRE_MS);
 
         // ensure that the UUIDs are different so they may expire independently
@@ -85,7 +89,7 @@ public class SessionServiceTest {
     public void testExpirationClosesSession() {
         final SessionState session = sessionService.newSession(AUTH_CONTEXT);
         Assert.eqFalse(session.isExpired(), "session.isExpired()");
-        scheduler.runThrough(session.getExpiration().deadline);
+        scheduler.runThrough(session.getExpiration().deadlineMillis);
         Assert.eqTrue(session.isExpired(), "session.isExpired()");
     }
 
@@ -100,11 +104,11 @@ public class SessionServiceTest {
         sessionService.refreshToken(session);
 
         // expire initial token
-        scheduler.runThrough(initialToken.deadline);
+        scheduler.runThrough(initialToken.deadlineMillis);
         Assert.eqFalse(session.isExpired(), "session.isExpired()");
 
         // expire refreshed token
-        scheduler.runThrough(session.getExpiration().deadline);
+        scheduler.runThrough(session.getExpiration().deadlineMillis);
         Assert.eqTrue(session.isExpired(), "session.isExpired()");
     }
 
@@ -127,14 +131,14 @@ public class SessionServiceTest {
                 "sessionService.getSessionForToken(newToken.token)", session, "session");
 
         // expire original token; current token should be valid
-        scheduler.runThrough(initialToken.deadline);
+        scheduler.runThrough(initialToken.deadlineMillis);
         Assert.eqNull(sessionService.getSessionForToken(initialToken.token),
                 "sessionService.getSessionForToken(initialToken.token)");
         Assert.eq(sessionService.getSessionForToken(newToken.token),
                 "sessionService.getSessionForToken(newToken.token)", session, "session");
 
         // let's expire the new token
-        scheduler.runThrough(session.getExpiration().deadline);
+        scheduler.runThrough(session.getExpiration().deadlineMillis);
         Assert.eqTrue(session.isExpired(), "session.isExpired()");
         Assert.eqNull(sessionService.getSessionForToken(newToken.token),
                 "sessionService.getSessionForToken(newToken.token)");
@@ -151,9 +155,9 @@ public class SessionServiceTest {
         final SessionService.TokenExpiration expiration1 = sessionService.refreshToken(session1);
         final SessionService.TokenExpiration expiration2 = session2.getExpiration();
 
-        Assert.lt(expiration2.deadline.getNanos(), "expiration2.deadline", expiration1.deadline.getNanos(),
+        Assert.lt(expiration2.deadlineMillis, "expiration2.deadline", expiration1.deadlineMillis,
                 "expiration1.deadline");
-        scheduler.runThrough(expiration2.deadline);
+        scheduler.runThrough(expiration2.deadlineMillis);
 
         // first session is live
         Assert.eqFalse(session1.isExpired(), "session2.isExpired()");

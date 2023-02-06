@@ -28,7 +28,7 @@ public class PythonConsoleSessionModule {
     PythonDeephavenSession bindPythonSession(ObjectTypeLookup lookup, final ScriptSession.Listener listener,
             PythonEvaluatorJpy pythonEvaluator) {
         try {
-            return new PythonDeephavenSession(lookup, listener, true, true, pythonEvaluator);
+            return new PythonDeephavenSession(lookup, listener, true, pythonEvaluator);
         } catch (IOException e) {
             throw new UncheckedIOException("Unable to run python startup scripts", e);
         }

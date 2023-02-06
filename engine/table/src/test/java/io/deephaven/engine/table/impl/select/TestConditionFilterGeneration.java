@@ -3,28 +3,34 @@
  */
 package io.deephaven.engine.table.impl.select;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.lang.QueryLibrary;
-import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.util.ModelFileGenerator;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
+import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
-import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
 public class TestConditionFilterGeneration {
+    @Rule
+    public final EngineCleanup base = new EngineCleanup();
+
+    private SafeCloseable executionContext;
+
     @Before
     public void setUp() {
-        QueryLibrary.setLibrary(QueryLibrary.makeNewLibrary("DEFAULT"));
-    }
+        executionContext = ExecutionContext.newBuilder()
+                .newQueryLibrary("DEFAULT")
+                .captureQueryCompiler()
+                .captureQueryScope()
+                .build().open();
 
-    @After
-    public void tearDown() {
-        QueryLibrary.resetLibrary();
     }
 
     // @Test
@@ -49,9 +55,9 @@ public class TestConditionFilterGeneration {
 
     @NotNull
     private static String getClassDefString() {
-        QueryScope.getScope().putParam("p1", 10);
-        QueryScope.getScope().putParam("p2", (float) 10);
-        QueryScope.getScope().putParam("p3", "10");
+        ExecutionContext.getContext().getQueryScope().putParam("p1", 10);
+        ExecutionContext.getContext().getQueryScope().putParam("p2", (float) 10);
+        ExecutionContext.getContext().getQueryScope().putParam("p3", "10");
         final Table t = TableTools.emptyTable(10).select("v1 = (short)1", "v2 = 1.1");
 
         final ConditionFilter conditionFilter =

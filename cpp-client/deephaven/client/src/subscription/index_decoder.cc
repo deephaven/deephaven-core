@@ -44,7 +44,7 @@ std::shared_ptr<RowSequence> IndexDecoder::readExternalCompressedDelta(DataInput
     } else if (v < 0) {
       auto begin = (uint64_t)s;
       auto end = ((uint64_t)-v) + 1;
-      builder.addRange(begin, end);
+      builder.addInterval(begin, end);
       pending = -1;
     } else {
       builder.add(s);
@@ -94,8 +94,10 @@ std::shared_ptr<RowSequence> IndexDecoder::readExternalCompressedDelta(DataInput
         return builder.build();
       }
 
-      default:
-        throw std::runtime_error(stringf("Bad command: %o", command));
+      default: {
+        auto message = stringf("Bad command: %o", command);
+        throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
+      }
     }
   }
 }
@@ -115,7 +117,8 @@ int64_t DataInput::readValue(int command) {
       return readByte();
     }
     default: {
-      throw std::runtime_error(stringf("Bad command: %o", command));
+      auto message = stringf("Bad command: %o", command);
+      throw std::runtime_error(DEEPHAVEN_DEBUG_MSG(message));
     }
   }
 }

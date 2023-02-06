@@ -8,16 +8,17 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.lang.QueryLibrary;
 import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.util.file.TrackedFileHandleFactory;
-import io.deephaven.engine.table.impl.TstUtils;
+import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.parquet.table.layout.DeephavenNestedPartitionLayout;
 import io.deephaven.parquet.table.ParquetInstructions;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
@@ -35,6 +36,9 @@ import static io.deephaven.parquet.table.layout.DeephavenNestedPartitionLayout.P
  */
 public class TestGroupingProviders {
 
+    @Rule
+    public final EngineCleanup base = new EngineCleanup();
+
     private File dataDirectory;
 
     @Before
@@ -45,8 +49,6 @@ public class TestGroupingProviders {
 
     @After
     public void tearDown() throws Exception {
-        QueryLibrary.resetLibrary();
-
         if (dataDirectory.exists()) {
             TrackedFileHandleFactory.getInstance().closeAll();
             int tries = 0;
@@ -77,7 +79,9 @@ public class TestGroupingProviders {
     private void doTest(final boolean missingGroups) {
         final Table raw = TableTools.emptyTable(26 * 10 * 1000).update("Part=String.format(`%04d`, (long)(ii/1000))",
                 "Sym=(char)('A' + ii % 26)", "Other=ii");
-        final Table[] partitions = raw.partitionBy("Part").transform(rp -> rp.groupBy("Sym").ungroup()).constituents();
+        final Table[] partitions = raw.partitionBy("Part")
+                .transform(null, rp -> rp.groupBy("Sym").ungroup(), false)
+                .constituents();
 
         if (!missingGroups) {
             // Create a pair of partitions without the grouping column

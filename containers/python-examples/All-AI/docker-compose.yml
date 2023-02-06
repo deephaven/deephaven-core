@@ -1,0 +1,17 @@
+version: "3.4"
+
+services:
+  deephaven:
+    image: ghcr.io/deephaven/server-all-ai:latest
+    ports:
+      - "${DEEPHAVEN_PORT:-10000}:10000"
+    volumes:
+      - ./data:/data
+    environment:
+      - START_OPTS=-Xmx4g
+
+  examples:
+    image: ghcr.io/deephaven/examples:latest
+    volumes:
+      - ./data:/data
+    command: initialize

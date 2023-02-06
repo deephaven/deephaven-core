@@ -60,7 +60,7 @@ public abstract class InstrumentedTableUpdateListenerAdapter extends Instrumente
         if (this.retain = retain) {
             RETENTION_CACHE.retain(this);
             if (Liveness.DEBUG_MODE_ENABLED) {
-                Liveness.log.info().append("LivenessDebug: ShiftObliviousInstrumentedListenerAdapter ")
+                Liveness.log.info().append("LivenessDebug: InstrumentedTableUpdateListenerAdapter ")
                         .append(Utils.REFERENT_FORMATTER, this)
                         .append(" created with retention enabled").endl();
             }
@@ -80,7 +80,8 @@ public abstract class InstrumentedTableUpdateListenerAdapter extends Instrumente
     @Override
     public void onFailureInternal(Throwable originalException, Entry sourceEntry) {
         try {
-            AsyncErrorLogger.log(DateTimeUtils.currentTime(), sourceEntry, sourceEntry, originalException);
+            AsyncErrorLogger.log(DateTimeUtils.currentTimeMillis(), sourceEntry, sourceEntry,
+                    originalException);
             AsyncClientErrorNotifier.reportError(originalException);
         } catch (IOException e) {
             throw new UncheckedTableException("Exception in " + sourceEntry.toString(), originalException);

@@ -12,6 +12,7 @@ import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
 import io.deephaven.barrage.flatbuf.BarrageModColumnMetadata;
 import io.deephaven.barrage.flatbuf.BarrageUpdateMetadata;
+import io.deephaven.base.ArrayUtil;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
@@ -42,7 +43,7 @@ public class BarrageStreamReader implements StreamReader {
     private static final Logger log = LoggerFactory.getLogger(BarrageStreamReader.class);
 
     // We would like to use jdk.internal.util.ArraysSupport.MAX_ARRAY_LENGTH, but it is not exported
-    private static final int MAX_CHUNK_SIZE = Integer.MAX_VALUE - 8;
+    private static final int MAX_CHUNK_SIZE = ArrayUtil.MAX_ARRAY_SIZE;
 
     private final LongConsumer deserializeTmConsumer;
 
@@ -194,7 +195,6 @@ public class BarrageStreamReader implements StreamReader {
                 // noinspection UnstableApiUsage
                 try (final LittleEndianDataInputStream ois =
                         new LittleEndianDataInputStream(new BarrageProtoUtil.ObjectInputStreamAdapter(decoder, size))) {
-                    final MutableInt bufferOffset = new MutableInt();
                     final Iterator<ChunkInputStreamGenerator.FieldNodeInfo> fieldNodeIter =
                             new FlatBufferIteratorAdapter<>(batch.nodesLength(),
                                     i -> new ChunkInputStreamGenerator.FieldNodeInfo(batch.nodes(i)));
@@ -209,7 +209,6 @@ public class BarrageStreamReader implements StreamReader {
                             // our parsers handle overhanging buffers
                             length += Math.max(0, nextOffset - offset - length);
                         }
-                        bufferOffset.setValue(offset + length);
                         bufferInfo.add(length);
                     }
                     final TLongIterator bufferInfoIter = bufferInfo.iterator();
@@ -270,7 +269,9 @@ public class BarrageStreamReader implements StreamReader {
                             final int chunkOffset;
                             long rowOffset = numModRowsRead - lastModStartIndex;
                             // this batch might overflow the chunk
-                            if (rowOffset + Math.min(remaining, batch.length()) > chunkSize) {
+                            final int numRowsToRead = LongSizedDataStructure.intSize("BarrageStreamReader",
+                                    Math.min(remaining, batch.length()));
+                            if (rowOffset + numRowsToRead > chunkSize) {
                                 lastModStartIndex += chunkSize;
 
                                 // create a new chunk before trying to write again
@@ -288,7 +289,7 @@ public class BarrageStreamReader implements StreamReader {
                             mcd.data.set(lastChunkIndex,
                                     ChunkInputStreamGenerator.extractChunkFromInputStream(options, columnChunkTypes[ci],
                                             columnTypes[ci], componentTypes[ci], fieldNodeIter, bufferInfoIter, ois,
-                                            chunk, chunkOffset, chunkSize));
+                                            chunk, chunkOffset, numRowsToRead));
                         }
                         numModRowsRead += batch.length();
                     }

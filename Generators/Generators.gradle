@@ -6,7 +6,7 @@ plugins {
 evaluationDependsOn Docker.registryProject('python')
 
 configurations {
-    implementation.extendsFrom fishConfig, jdom
+    implementation.extendsFrom jdom
     testImplementation.extendsFrom fishBaseTest
     combinedJavadoc
 }
@@ -17,6 +17,7 @@ dependencies {
     implementation project(':extensions-csv')
     implementation project(':extensions-kafka')
     implementation project(':extensions-parquet-table')
+    implementation depTrove3
 
     Classpaths.inheritGroovy(project, 'groovy', 'implementation')
     Classpaths.inheritGroovy(project, 'groovy-json', 'implementation')
@@ -34,7 +35,7 @@ dependencies {
     combinedJavadoc project(path: ':combined-javadoc', targetConfiguration: 'combinedJavadoc')
 }
 
-def workspace = "$rootDir/tmp/workspace"
+def dataDir = "$rootDir/tmp/workspace"
 def workDir = "$rootDir/.."
 String devRoot = rootDir.absolutePath
 
@@ -65,8 +66,7 @@ task generateAxesPlotMethods(type: JavaExec, dependsOn: 'classes') {
     args devRoot, 'false'
     classpath = sourceSets.main.runtimeClasspath
     workingDir = workDir
-    systemProperty 'workspace', workspace
-    systemProperty 'devroot', devRoot
+    systemProperty 'deephaven.dataDir', dataDir
     systemProperty 'Configuration.rootFile', 'dh-defaults.prop'
 }
 
@@ -77,8 +77,7 @@ task generateAxesPlotMethodsAssert(type: JavaExec, dependsOn: 'classes') {
     args devRoot, 'true'
     classpath = sourceSets.main.runtimeClasspath
     workingDir = workDir
-    systemProperty 'workspace', workspace
-    systemProperty 'devroot', devRoot
+    systemProperty 'deephaven.dataDir', dataDir
     systemProperty 'Configuration.rootFile', 'dh-defaults.prop'
     onlyIf { System.getenv('NO_ASSERT') != 'true' }
 }
@@ -90,8 +89,7 @@ task generateMultiSeries(type: JavaExec, dependsOn: 'classes') {
     args devRoot, 'false'
     classpath = sourceSets.main.runtimeClasspath
     workingDir = workDir
-    systemProperty 'workspace', workspace
-    systemProperty 'devroot', devRoot
+    systemProperty 'deephaven.dataDir', dataDir
     systemProperty 'Configuration.rootFile', 'dh-defaults.prop'
 }
 
@@ -102,8 +100,7 @@ task generateMultiSeriesAssert(type: JavaExec, dependsOn: 'classes') {
     args devRoot, 'true'
     classpath = sourceSets.main.runtimeClasspath
     workingDir = workDir
-    systemProperty 'workspace', workspace
-    systemProperty 'devroot', devRoot
+    systemProperty 'deephaven.dataDir', dataDir
     systemProperty 'Configuration.rootFile', 'dh-defaults.prop'
     onlyIf { System.getenv('NO_ASSERT') != 'true' }
 }
@@ -116,8 +113,7 @@ task generateFigureImmutable(type: JavaExec, dependsOn: 'classes') {
     args devRoot, 'false'
     classpath = sourceSets.main.runtimeClasspath
     workingDir = workDir
-    systemProperty 'workspace', workspace
-    systemProperty 'devroot', devRoot
+    systemProperty 'deephaven.dataDir', dataDir
     systemProperty 'Configuration.rootFile', 'dh-defaults.prop'
 }
 
@@ -129,8 +125,7 @@ task generateFigureImmutableAssert(type: JavaExec, dependsOn: 'classes') {
     args devRoot, 'true'
     classpath = sourceSets.main.runtimeClasspath
     workingDir = workDir
-    systemProperty 'workspace', workspace
-    systemProperty 'devroot', devRoot
+    systemProperty 'deephaven.dataDir', dataDir
     systemProperty 'Configuration.rootFile', 'dh-defaults.prop'
     onlyIf { System.getenv('NO_ASSERT') != 'true' }
 }
@@ -143,8 +138,7 @@ task generatePlottingConvenience(type: JavaExec, dependsOn: 'classes') {
     args devRoot
     classpath = sourceSets.main.runtimeClasspath
     workingDir = workDir
-    systemProperty 'workspace', workspace
-    systemProperty 'devroot', devRoot
+    systemProperty 'deephaven.dataDir', dataDir
     systemProperty 'Configuration.rootFile', 'dh-defaults.prop'
 }
 
@@ -156,8 +150,7 @@ task generatePlottingConvenienceAssert(type: JavaExec, dependsOn: 'classes') {
     args devRoot, 'true'
     classpath = sourceSets.main.runtimeClasspath
     workingDir = workDir
-    systemProperty 'workspace', workspace
-    systemProperty 'devroot', devRoot
+    systemProperty 'deephaven.dataDir', dataDir
     systemProperty 'Configuration.rootFile', 'dh-defaults.prop'
 }
 
@@ -169,8 +162,7 @@ task generatePythonFigureWrapper(type: JavaExec, dependsOn: 'classes') {
     args devRoot, 'false'
     classpath = sourceSets.main.runtimeClasspath
     workingDir = workDir
-    systemProperty 'workspace', workspace
-    systemProperty 'devroot', devRoot
+    systemProperty 'deephaven.dataDir', dataDir
     systemProperty 'Configuration.rootFile', 'dh-defaults.prop'
     dependsOn ':Generators:generateFigureImmutable'
 }
@@ -183,8 +175,7 @@ task generatePythonFigureWrapperAssert(type: JavaExec, dependsOn: 'classes') {
     args devRoot, 'true'
     classpath = sourceSets.main.runtimeClasspath
     workingDir = workDir
-    systemProperty 'workspace', workspace
-    systemProperty 'devroot', devRoot
+    systemProperty 'deephaven.dataDir', dataDir
     systemProperty 'Configuration.rootFile', 'dh-defaults.prop'
 }
 

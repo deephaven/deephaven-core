@@ -16,6 +16,94 @@ import jsinterop.base.JsPropertyMap;
         namespace = JsPackage.GLOBAL)
 public class TableService {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface AggregateAllType {
+        @JsOverlay
+        static TableService.AggregateAllType create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+        }
+
+        @JsProperty
+        String getMethodName();
+
+        @JsProperty
+        Object getRequestType();
+
+        @JsProperty
+        Object getResponseType();
+
+        @JsProperty
+        Object getService();
+
+        @JsProperty
+        boolean isRequestStream();
+
+        @JsProperty
+        boolean isResponseStream();
+
+        @JsProperty
+        void setMethodName(String methodName);
+
+        @JsProperty
+        void setRequestStream(boolean requestStream);
+
+        @JsProperty
+        void setRequestType(Object requestType);
+
+        @JsProperty
+        void setResponseStream(boolean responseStream);
+
+        @JsProperty
+        void setResponseType(Object responseType);
+
+        @JsProperty
+        void setService(Object service);
+    }
+
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface AggregateType {
+        @JsOverlay
+        static TableService.AggregateType create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+        }
+
+        @JsProperty
+        String getMethodName();
+
+        @JsProperty
+        Object getRequestType();
+
+        @JsProperty
+        Object getResponseType();
+
+        @JsProperty
+        Object getService();
+
+        @JsProperty
+        boolean isRequestStream();
+
+        @JsProperty
+        boolean isResponseStream();
+
+        @JsProperty
+        void setMethodName(String methodName);
+
+        @JsProperty
+        void setRequestStream(boolean requestStream);
+
+        @JsProperty
+        void setRequestType(Object requestType);
+
+        @JsProperty
+        void setResponseStream(boolean responseStream);
+
+        @JsProperty
+        void setResponseType(Object responseType);
+
+        @JsProperty
+        void setService(Object service);
+    }
+
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ApplyPreviewColumnsType {
         @JsOverlay
         static TableService.ApplyPreviewColumnsType create() {
@@ -415,50 +503,6 @@ public class TableService {
     public interface ExportedTableUpdatesType {
         @JsOverlay
         static TableService.ExportedTableUpdatesType create() {
-            return Js.uncheckedCast(JsPropertyMap.of());
-        }
-
-        @JsProperty
-        String getMethodName();
-
-        @JsProperty
-        Object getRequestType();
-
-        @JsProperty
-        Object getResponseType();
-
-        @JsProperty
-        Object getService();
-
-        @JsProperty
-        boolean isRequestStream();
-
-        @JsProperty
-        boolean isResponseStream();
-
-        @JsProperty
-        void setMethodName(String methodName);
-
-        @JsProperty
-        void setRequestStream(boolean requestStream);
-
-        @JsProperty
-        void setRequestType(Object requestType);
-
-        @JsProperty
-        void setResponseStream(boolean responseStream);
-
-        @JsProperty
-        void setResponseType(Object responseType);
-
-        @JsProperty
-        void setService(Object service);
-    }
-
-    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface FetchPandasTableType {
-        @JsOverlay
-        static TableService.FetchPandasTableType create() {
             return Js.uncheckedCast(JsPropertyMap.of());
         }
 
@@ -984,6 +1028,50 @@ public class TableService {
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface SeekRowType {
+        @JsOverlay
+        static TableService.SeekRowType create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+        }
+
+        @JsProperty
+        String getMethodName();
+
+        @JsProperty
+        Object getRequestType();
+
+        @JsProperty
+        Object getResponseType();
+
+        @JsProperty
+        Object getService();
+
+        @JsProperty
+        boolean isRequestStream();
+
+        @JsProperty
+        boolean isResponseStream();
+
+        @JsProperty
+        void setMethodName(String methodName);
+
+        @JsProperty
+        void setRequestStream(boolean requestStream);
+
+        @JsProperty
+        void setRequestType(Object requestType);
+
+        @JsProperty
+        void setResponseStream(boolean responseStream);
+
+        @JsProperty
+        void setResponseType(Object responseType);
+
+        @JsProperty
+        void setService(Object service);
+    }
+
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface SelectDistinctType {
         @JsOverlay
         static TableService.SelectDistinctType create() {
@@ -1075,6 +1163,50 @@ public class TableService {
     public interface SnapshotType {
         @JsOverlay
         static TableService.SnapshotType create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+        }
+
+        @JsProperty
+        String getMethodName();
+
+        @JsProperty
+        Object getRequestType();
+
+        @JsProperty
+        Object getResponseType();
+
+        @JsProperty
+        Object getService();
+
+        @JsProperty
+        boolean isRequestStream();
+
+        @JsProperty
+        boolean isResponseStream();
+
+        @JsProperty
+        void setMethodName(String methodName);
+
+        @JsProperty
+        void setRequestStream(boolean requestStream);
+
+        @JsProperty
+        void setRequestType(Object requestType);
+
+        @JsProperty
+        void setResponseStream(boolean responseStream);
+
+        @JsProperty
+        void setResponseType(Object responseType);
+
+        @JsProperty
+        void setService(Object service);
+    }
+
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface SnapshotWhenType {
+        @JsOverlay
+        static TableService.SnapshotWhenType create() {
             return Js.uncheckedCast(JsPropertyMap.of());
         }
 
@@ -1380,6 +1512,50 @@ public class TableService {
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface UpdateByType {
+        @JsOverlay
+        static TableService.UpdateByType create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+        }
+
+        @JsProperty
+        String getMethodName();
+
+        @JsProperty
+        Object getRequestType();
+
+        @JsProperty
+        Object getResponseType();
+
+        @JsProperty
+        Object getService();
+
+        @JsProperty
+        boolean isRequestStream();
+
+        @JsProperty
+        boolean isResponseStream();
+
+        @JsProperty
+        void setMethodName(String methodName);
+
+        @JsProperty
+        void setRequestStream(boolean requestStream);
+
+        @JsProperty
+        void setRequestType(Object requestType);
+
+        @JsProperty
+        void setResponseStream(boolean responseStream);
+
+        @JsProperty
+        void setResponseType(Object responseType);
+
+        @JsProperty
+        void setService(Object service);
+    }
+
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface UpdateType {
         @JsOverlay
         static TableService.UpdateType create() {
@@ -1511,6 +1687,52 @@ public class TableService {
         void setService(Object service);
     }
 
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface WhereInType {
+        @JsOverlay
+        static TableService.WhereInType create() {
+            return Js.uncheckedCast(JsPropertyMap.of());
+        }
+
+        @JsProperty
+        String getMethodName();
+
+        @JsProperty
+        Object getRequestType();
+
+        @JsProperty
+        Object getResponseType();
+
+        @JsProperty
+        Object getService();
+
+        @JsProperty
+        boolean isRequestStream();
+
+        @JsProperty
+        boolean isResponseStream();
+
+        @JsProperty
+        void setMethodName(String methodName);
+
+        @JsProperty
+        void setRequestStream(boolean requestStream);
+
+        @JsProperty
+        void setRequestType(Object requestType);
+
+        @JsProperty
+        void setResponseStream(boolean responseStream);
+
+        @JsProperty
+        void setResponseType(Object responseType);
+
+        @JsProperty
+        void setService(Object service);
+    }
+
+    public static TableService.AggregateType Aggregate;
+    public static TableService.AggregateAllType AggregateAll;
     public static TableService.ApplyPreviewColumnsType ApplyPreviewColumns;
     public static TableService.AsOfJoinTablesType AsOfJoinTables;
     public static TableService.BatchType Batch;
@@ -1521,7 +1743,6 @@ public class TableService {
     public static TableService.EmptyTableType EmptyTable;
     public static TableService.ExactJoinTablesType ExactJoinTables;
     public static TableService.ExportedTableUpdatesType ExportedTableUpdates;
-    public static TableService.FetchPandasTableType FetchPandasTable;
     public static TableService.FetchTableType FetchTable;
     public static TableService.FilterType Filter;
     public static TableService.FlattenType Flatten;
@@ -1533,9 +1754,11 @@ public class TableService {
     public static TableService.MergeTablesType MergeTables;
     public static TableService.NaturalJoinTablesType NaturalJoinTables;
     public static TableService.RunChartDownsampleType RunChartDownsample;
+    public static TableService.SeekRowType SeekRow;
     public static TableService.SelectType Select;
     public static TableService.SelectDistinctType SelectDistinct;
     public static TableService.SnapshotType Snapshot;
+    public static TableService.SnapshotWhenType SnapshotWhen;
     public static TableService.SortType Sort;
     public static TableService.TailType Tail;
     public static TableService.TailByType TailBy;
@@ -1543,7 +1766,9 @@ public class TableService {
     public static TableService.UngroupType Ungroup;
     public static TableService.UnstructuredFilterType UnstructuredFilter;
     public static TableService.UpdateType Update;
+    public static TableService.UpdateByType UpdateBy;
     public static TableService.UpdateViewType UpdateView;
     public static TableService.ViewType View;
+    public static TableService.WhereInType WhereIn;
     public static String serviceName;
 }

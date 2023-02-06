@@ -6,7 +6,7 @@ Client programs that read tables using
 typically follow the below recipe:
 
 1. Get a ``shared_ptr`` to a ``arrow::flight::FlightStreamReader`` via
-   :cpp:func:`TableHandle::getFlightStreamReader <deephaven::client::highlevel::TableHandle::getFlightStreamReader>`
+   :cpp:func:`TableHandle::getFlightStreamReader <deephaven::client::TableHandle::getFlightStreamReader>`
 2. Read the data using operations as described in
    `Arrow Flight RPC <https://arrow.apache.org/docs/cpp/flight.html>`__   
 
@@ -19,10 +19,10 @@ Consider the following program from ``cpp-examples/read_table_with_arrow_flight`
   #include "deephaven/client/utility/table_maker.h"
   #include "deephaven/client/utility/utility.h"
 
-  using deephaven::client::highlevel::NumCol;
-  using deephaven::client::highlevel::Client;
-  using deephaven::client::highlevel::TableHandle;
-  using deephaven::client::highlevel::TableHandleManager;
+  using deephaven::client::NumCol;
+  using deephaven::client::Client;
+  using deephaven::client::TableHandle;
+  using deephaven::client::TableHandleManager;
   using deephaven::client::utility::flight::statusOrDie;
   using deephaven::client::utility::TableMaker;
 

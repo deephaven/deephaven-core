@@ -26,12 +26,12 @@ import io.deephaven.engine.table.impl.util.TypedHasherUtil.BuildOrProbeContext.B
 import io.deephaven.engine.table.impl.util.TypedHasherUtil.BuildOrProbeContext.ProbeContext;
 import org.jetbrains.annotations.NotNull;
 
+import static io.deephaven.engine.table.impl.JoinControl.CHUNK_SIZE;
+import static io.deephaven.engine.table.impl.JoinControl.MAX_TABLE_SIZE;
 import static io.deephaven.engine.table.impl.util.TypedHasherUtil.getKeyChunks;
 import static io.deephaven.engine.table.impl.util.TypedHasherUtil.getPrevKeyChunks;
 
 public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends RightIncrementalNaturalJoinStateManager {
-    public static final int CHUNK_SIZE = 4096;
-    private static final long MAX_TABLE_SIZE = 1 << 30; // maximum array size
 
     // the number of slots in our table
     protected int tableSize;
@@ -168,17 +168,17 @@ public abstract class RightIncrementalNaturalJoinStateManagerTypedBase extends R
     }
 
     @Override
-    public long getRightIndex(long slot) {
+    public long getRightIndex(int slot) {
         return rightRowKey.getUnsafe(slot);
     }
 
     @Override
-    public RowSet getLeftIndex(long slot) {
+    public RowSet getLeftIndex(int slot) {
         return leftRowSet.getUnsafe(slot);
     }
 
     @Override
-    public String keyString(long slot) {
+    public String keyString(int slot) {
         throw new UnsupportedOperationException();
     }
 

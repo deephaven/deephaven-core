@@ -10,7 +10,7 @@ import jpy
 from deephaven import DHError
 
 _JPackage = jpy.get_type("java.lang.Package")
-_JQueryLibrary = jpy.get_type("io.deephaven.engine.table.lang.QueryLibrary")
+_JExecutionContext = jpy.get_type("io.deephaven.engine.context.ExecutionContext")
 _JClass = jpy.get_type("java.lang.Class")
 
 
@@ -26,7 +26,7 @@ def import_class(name: str) -> None:
     """
     try:
         j_class = _JClass.forName(name)
-        _JQueryLibrary.importClass(j_class)
+        _JExecutionContext.getContext().getQueryLibrary().importClass(j_class)
     except Exception as e:
         raise DHError(e, "failed to add the Java class to the Query Library.") from e
 
@@ -44,7 +44,7 @@ def import_static(name: str) -> None:
     """
     try:
         j_class = _JClass.forName(name)
-        _JQueryLibrary.importStatic(j_class)
+        _JExecutionContext.getContext().getQueryLibrary().importStatic(j_class)
     except Exception as e:
         raise DHError(e, "failed to add the static members of the Java class to the Query Library.") from e
 
@@ -62,7 +62,7 @@ def import_package(name: str) -> None:
     """
     try:
         j_package = _JPackage.getPackage(name)
-        _JQueryLibrary.importPackage(j_package)
+        _JExecutionContext.getContext().getQueryLibrary().importPackage(j_package)
     except Exception as e:
         raise DHError(e, "failed to add the Java package into to the Query Library.") from e
 
@@ -73,4 +73,4 @@ def imports() -> List[str]:
     Returns:
         a list of strings
     """
-    return list(_JQueryLibrary.getImportStrings().toArray())[1:]
+    return list(_JExecutionContext.getContext().getQueryLibrary().getImportStrings().toArray())[1:]

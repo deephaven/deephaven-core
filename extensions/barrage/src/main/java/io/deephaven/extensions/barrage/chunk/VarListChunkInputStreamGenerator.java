@@ -37,8 +37,8 @@ public class VarListChunkInputStreamGenerator<T> extends BaseChunkInputStreamGen
     private WritableIntChunk<ChunkPositions> offsets;
     private ChunkInputStreamGenerator innerGenerator;
 
-    VarListChunkInputStreamGenerator(final Class<T> type, final ObjectChunk<T, Values> chunk) {
-        super(chunk, 0);
+    VarListChunkInputStreamGenerator(final Class<T> type, final ObjectChunk<T, Values> chunk, final long rowOffset) {
+        super(chunk, 0, rowOffset);
         this.type = type;
     }
 
@@ -49,13 +49,17 @@ public class VarListChunkInputStreamGenerator<T> extends BaseChunkInputStreamGen
 
         final Class<?> myType = type.getComponentType();
         final Class<?> myComponentType = myType != null ? myType.getComponentType() : null;
-        final ChunkType chunkType = ChunkType.fromElementType(myType);
+        ChunkType chunkType = ChunkType.fromElementType(myType);
+        if (chunkType == ChunkType.Boolean) {
+            // the internal payload is in bytes (to handle nulls), but the wire format is packed bits
+            chunkType = ChunkType.Byte;
+        }
         final ArrayExpansionKernel kernel = ArrayExpansionKernel.makeExpansionKernel(chunkType, myType);
         offsets = WritableIntChunk.makeWritableChunk(chunk.size() + 1);
 
         final WritableChunk<Values> innerChunk = kernel.expand(chunk, offsets);
         innerGenerator = ChunkInputStreamGenerator.makeInputStreamGenerator(
-                chunkType, myType, myComponentType, innerChunk);
+                chunkType, myType, myComponentType, innerChunk, 0);
     }
 
     @Override
@@ -246,9 +250,17 @@ public class VarListChunkInputStreamGenerator<T> extends BaseChunkInputStreamGen
         final Class<?> componentType = type.getComponentType();
         final Class<?> innerComponentType = componentType != null ? componentType.getComponentType() : null;
 
+        final ChunkType chunkType;
+        if (componentType == boolean.class || componentType == Boolean.class) {
+            // Note: Internally booleans are passed around as bytes, but the wire format is packed bits.
+            chunkType = ChunkType.Byte;
+        } else {
+            chunkType = ChunkType.fromElementType(componentType);
+        }
+
         if (nodeInfo.numElements == 0) {
             try (final WritableChunk<Values> ignored = ChunkInputStreamGenerator.extractChunkFromInputStream(
-                    options, ChunkType.fromElementType(componentType), componentType, innerComponentType, fieldNodeIter,
+                    options, chunkType, componentType, innerComponentType, fieldNodeIter,
                     bufferInfoIter, is, null, 0, 0)) {
                 return WritableObjectChunk.makeWritableChunk(nodeInfo.numElements);
             }
@@ -285,10 +297,9 @@ public class VarListChunkInputStreamGenerator<T> extends BaseChunkInputStreamGen
                 is.skipBytes(LongSizedDataStructure.intSize(DEBUG_NAME, offsetsBuffer - offBufRead));
             }
 
-            final ArrayExpansionKernel kernel = ArrayExpansionKernel.makeExpansionKernel(
-                    ChunkType.fromElementType(componentType), componentType);
+            final ArrayExpansionKernel kernel = ArrayExpansionKernel.makeExpansionKernel(chunkType, componentType);
             try (final WritableChunk<Values> inner = ChunkInputStreamGenerator.extractChunkFromInputStream(
-                    options, ChunkType.fromElementType(componentType), componentType, innerComponentType,
+                    options, chunkType, componentType, innerComponentType,
                     fieldNodeIter, bufferInfoIter, is, null, 0, 0)) {
                 chunk = kernel.contract(inner, offsets, outChunk, outOffset, totalRows);
 

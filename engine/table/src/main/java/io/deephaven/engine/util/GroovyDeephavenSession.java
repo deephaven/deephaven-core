@@ -10,12 +10,12 @@ import groovy.lang.GroovyShell;
 import groovy.lang.MissingPropertyException;
 import io.deephaven.base.FileUtils;
 import io.deephaven.base.Pair;
-import io.deephaven.base.StringUtils;
-import io.deephaven.compilertools.CompilerTools;
+import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.QueryCompiler;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.table.lang.QueryScope;
+import io.deephaven.engine.context.QueryScope;
 import io.deephaven.api.util.NameValidator;
 import io.deephaven.engine.util.GroovyDeephavenSession.GroovySnapshot;
 import io.deephaven.engine.util.scripts.ScriptPathLoader;
@@ -25,6 +25,9 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.plugin.type.ObjectTypeLookup;
 import io.deephaven.util.annotations.VisibleForTesting;
+import io.github.classgraph.ClassGraph;
+import io.github.classgraph.ClassInfo;
+import io.github.classgraph.ScanResult;
 import org.codehaus.groovy.control.CompilationUnit;
 import org.codehaus.groovy.control.Phases;
 import org.codehaus.groovy.tools.GroovyClass;
@@ -37,12 +40,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.security.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
@@ -58,13 +59,11 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
     private static final Logger log = LoggerFactory.getLogger(GroovyDeephavenSession.class);
 
     public static final String SCRIPT_TYPE = "Groovy";
-    private static final String PACKAGE = CompilerTools.DYNAMIC_GROOVY_CLASS_PREFIX;
+    private static final String PACKAGE = QueryCompiler.DYNAMIC_GROOVY_CLASS_PREFIX;
     private static final String SCRIPT_PREFIX = "io.deephaven.engine.util.Script";
 
     private static final String DEFAULT_SCRIPT_PATH = Configuration.getInstance()
-            .getProperty("GroovyDeephavenSession.defaultScriptPath")
-            .replace("<devroot>", Configuration.getInstance().getDevRootPath())
-            .replace("<workspace>", Configuration.getInstance().getWorkspacePath());
+            .getStringWithDefault("GroovyDeephavenSession.defaultScriptPath", ".");
 
     private static final boolean ALLOW_UNKNOWN_GROOVY_PACKAGE_IMPORTS = Configuration.getInstance()
             .getBooleanForClassWithDefault(GroovyDeephavenSession.class, "allowUnknownGroovyPackageImports", false);
@@ -126,21 +125,22 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
 
     public GroovyDeephavenSession(ObjectTypeLookup objectTypeLookup, final RunScripts runScripts)
             throws IOException {
-        this(objectTypeLookup, null, runScripts, false);
+        this(objectTypeLookup, null, runScripts);
     }
 
     public GroovyDeephavenSession(
-            ObjectTypeLookup objectTypeLookup, @Nullable final Listener changeListener,
-            final RunScripts runScripts, boolean isDefaultScriptSession)
+            ObjectTypeLookup objectTypeLookup,
+            @Nullable final Listener changeListener,
+            final RunScripts runScripts)
             throws IOException {
-        super(objectTypeLookup, changeListener, isDefaultScriptSession);
+        super(objectTypeLookup, changeListener);
 
         this.scriptFinder = new ScriptFinder(DEFAULT_SCRIPT_PATH);
 
         groovyShell.setVariable("__groovySession", this);
         groovyShell.setVariable("DB_SCRIPT_PATH", DEFAULT_SCRIPT_PATH);
 
-        compilerContext.setParentClassLoader(getShell().getClassLoader());
+        executionContext.getQueryCompiler().setParentClassLoader(getShell().getClassLoader());
 
         publishInitial();
 
@@ -203,30 +203,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
     }
 
     private void evaluateCommand(String command) {
-        final SecurityManager sm = System.getSecurityManager();
-        if (sm != null) {
-            // We explicitly want all Groovy commands to run under the 'file:/groovy/shell' source, so explicitly create
-            // that.
-            AccessControlContext context;
-            try {
-                final URL urlSource = new URL("file:/groovy/shell");
-                final CodeSource codeSource = new CodeSource(urlSource, (java.security.cert.Certificate[]) null);
-                final PermissionCollection perms = Policy.getPolicy().getPermissions(codeSource);
-                context = AccessController
-                        .doPrivileged((PrivilegedAction<AccessControlContext>) () -> new AccessControlContext(
-                                new ProtectionDomain[] {new ProtectionDomain(
-                                        new CodeSource(urlSource, (java.security.cert.Certificate[]) null), perms)}));
-            } catch (MalformedURLException e) {
-                throw new RuntimeException("Groovy shell URL somehow invalid.", e);
-            }
-
-            AccessController.doPrivileged((PrivilegedAction<Void>) () -> {
-                groovyShell.evaluate(command);
-                return null;
-            }, context);
-        } else {
-            groovyShell.evaluate(command);
-        }
+        groovyShell.evaluate(command);
     }
 
     @Override
@@ -296,10 +273,9 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         return e;
     }
 
-    private static String classForNameString(String className) throws ClassNotFoundException {
+    private static Class<?> loadClass(String className) throws ClassNotFoundException {
         try {
-            Class.forName(className);
-            return className;
+            return Class.forName(className, false, GroovyDeephavenSession.class.getClassLoader());
         } catch (ClassNotFoundException e) {
             if (className.contains(".")) {
                 // handle inner class cases
@@ -308,7 +284,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
                 String tail = className.substring(index + 1);
                 String newClassName = head + "$" + tail;
 
-                return classForNameString(newClassName);
+                return loadClass(newClassName);
             } else {
                 throw e;
             }
@@ -317,7 +293,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
 
     private static boolean classExists(String className) {
         try {
-            classForNameString(className);
+            loadClass(className);
             return true;
         } catch (ClassNotFoundException e) {
             return false;
@@ -326,7 +302,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
 
     private static boolean functionExists(String className, String functionName) {
         try {
-            Method[] ms = Class.forName(classForNameString(className)).getMethods();
+            Method[] ms = loadClass(className).getMethods();
 
             for (Method m : ms) {
                 if (m.getName().equals(functionName)) {
@@ -342,7 +318,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
 
     private static boolean fieldExists(String className, String fieldName) {
         try {
-            Field[] fs = Class.forName(classForNameString(className)).getFields();
+            Field[] fs = loadClass(className).getFields();
 
             for (Field f : fs) {
                 if (f.getName().equals(fieldName)) {
@@ -419,9 +395,9 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
             }
         } else {
             if (isWildcard) {
-                okToImport = classExists(body) || (Package.getPackage(body) != null); // Note: this might not find a
-                                                                                      // valid package that has never
-                                                                                      // been loaded
+                okToImport = classExists(body) || (Package.getPackage(body) != null)
+                        || packageIsVisibleToClassGraph(body);
+
                 if (!okToImport) {
                     if (ALLOW_UNKNOWN_GROOVY_PACKAGE_IMPORTS) {
                         // Check for proper form of a package. Pass a package star import that is plausible. Groovy is
@@ -430,7 +406,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
                                 "(\\p{javaJavaIdentifierStart}\\p{javaJavaIdentifierPart}*\\.)+\\p{javaJavaIdentifierStart}\\p{javaJavaIdentifierPart}*";
                         if (body.matches(javaIdentifierPattern)) {
                             log.info().append("Package or class \"").append(body)
-                                    .append("\" could not be verified. If this is a package, it could mean that no class from that package has been seen by the classloader.")
+                                    .append("\" could not be verified.")
                                     .endl();
                             okToImport = true;
                         } else {
@@ -440,7 +416,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
                         }
                     } else {
                         log.warn().append("Package or class \"").append(body)
-                                .append("\" could not be verified. If this is a package, it could mean that no class from that package has been seen by the classloader.")
+                                .append("\" could not be verified.")
                                 .endl();
                     }
                 }
@@ -458,6 +434,15 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         } else {
             log.error().append("Invalid import: \"").append(importString).append("\"").endl();
             return null;
+        }
+    }
+
+    private static boolean packageIsVisibleToClassGraph(String packageImport) {
+        try (ScanResult scanResult = new ClassGraph().enableClassInfo().acceptPackages(packageImport).scan()) {
+            final Optional<ClassInfo> firstClassFound = scanResult.getAllClasses().stream().findFirst();
+            // force load the class so that the jvm is aware of the package
+            firstClassFound.ifPresent(ClassInfo::loadClass);
+            return firstClassFound.isPresent();
         }
     }
 
@@ -531,8 +516,8 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
                 "import static io.deephaven.base.string.cache.CompressedString.compress;\n" +
                 "import org.joda.time.LocalTime;\n" +
                 "import io.deephaven.time.Period;\n" +
-                "import io.deephaven.engine.table.lang.QueryScopeParam;\n" +
-                "import io.deephaven.engine.table.lang.QueryScope;\n" +
+                "import io.deephaven.engine.context.QueryScopeParam;\n" +
+                "import io.deephaven.engine.context.QueryScope;\n" +
                 "import java.util.*;\n" +
                 "import java.lang.*;\n" +
                 "import static io.deephaven.util.QueryConstants.*;\n" +
@@ -543,13 +528,13 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
                 "import static io.deephaven.api.agg.Aggregation.*;\n" +
                 "import static io.deephaven.api.updateby.UpdateByOperation.*;\n" +
 
-                StringUtils.joinStrings(scriptImports, "\n") + "\n";
+                String.join("\n", scriptImports) + "\n";
         return new Pair<>(commandPrefix, commandPrefix + command
                 + "\n\n// this final true prevents Groovy from interpreting a trailing class definition as something to execute\n;\ntrue;\n");
     }
 
     public static byte[] getDynamicClass(String name) {
-        return readClass(CompilerTools.getContext().getFakeClassDestination(), name);
+        return readClass(ExecutionContext.getContext().getQueryCompiler().getFakeClassDestination(), name);
     }
 
     private static byte[] readClass(final File rootDirectory, final String className) {
@@ -572,7 +557,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         } catch (RuntimeException e) {
             throw new GroovyExceptionWrapper(e);
         }
-        final File dynamicClassDestination = CompilerTools.getContext().getFakeClassDestination();
+        final File dynamicClassDestination = ExecutionContext.getContext().getQueryCompiler().getFakeClassDestination();
         if (dynamicClassDestination == null) {
             return;
         }
@@ -596,11 +581,11 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
                 // only increment QueryLibrary version if some dynamic class overrides an existing class
                 if (!dynamicClasses.add(entry.getKey()) && !notifiedQueryLibrary) {
                     notifiedQueryLibrary = true;
-                    queryLibrary.updateVersionString();
+                    executionContext.getQueryLibrary().updateVersionString();
                 }
 
                 try {
-                    CompilerTools.writeClass(dynamicClassDestination, entry.getKey(), entry.getValue());
+                    QueryCompiler.writeClass(dynamicClassDestination, entry.getKey(), entry.getValue());
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
@@ -713,7 +698,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
     @Override
     public void onApplicationInitializationBegin(Supplier<ScriptPathLoader> pathLoaderSupplier,
             ScriptPathLoaderState scriptLoaderState) {
-        CompilerTools.getContext().setParentClassLoader(getShell().getClassLoader());
+        ExecutionContext.getContext().getQueryCompiler().setParentClassLoader(getShell().getClassLoader());
         setScriptPathLoader(pathLoaderSupplier, true);
     }
 
@@ -763,7 +748,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
             }
         } else {
             log.warn().append("Incorrect closure type for query: ")
-                    .append(sourceClosure == null ? "(null)" : sourceClosure.getClass().toString()).endl();
+                    .append(sourceClosure.getClass().toString()).endl();
         }
 
         return false;

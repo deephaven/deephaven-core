@@ -6,9 +6,14 @@ package io.deephaven.server.table;
 import dagger.Binds;
 import dagger.MapKey;
 import dagger.Module;
+import dagger.Provides;
 import dagger.multibindings.IntoMap;
 import dagger.multibindings.IntoSet;
+import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
+import io.deephaven.server.auth.AuthorizationProvider;
+import io.deephaven.server.table.ops.AggregateAllGrpcImpl;
+import io.deephaven.server.table.ops.AggregateGrpcImpl;
 import io.deephaven.server.table.ops.ApplyPreviewColumnsGrpcImpl;
 import io.deephaven.server.table.ops.ComboAggregateGrpcImpl;
 import io.deephaven.server.table.ops.CreateInputTableGrpcImpl;
@@ -25,11 +30,15 @@ import io.deephaven.server.table.ops.MergeTablesGrpcImpl;
 import io.deephaven.server.table.ops.RunChartDownsampleGrpcImpl;
 import io.deephaven.server.table.ops.SelectDistinctGrpcImpl;
 import io.deephaven.server.table.ops.SnapshotTableGrpcImpl;
+import io.deephaven.server.table.ops.SnapshotWhenTableGrpcImpl;
 import io.deephaven.server.table.ops.SortTableGrpcImpl;
+import io.deephaven.server.table.ops.TableServiceGrpcImpl;
 import io.deephaven.server.table.ops.TimeTableGrpcImpl;
 import io.deephaven.server.table.ops.UngroupGrpcImpl;
 import io.deephaven.server.table.ops.UnstructuredFilterTableGrpcImpl;
+import io.deephaven.server.table.ops.UpdateByGrpcImpl;
 import io.deephaven.server.table.ops.UpdateOrSelectGrpcImpl;
+import io.deephaven.server.table.ops.WhereInGrpcImpl;
 import io.grpc.BindableService;
 
 @MapKey
@@ -40,6 +49,11 @@ import io.grpc.BindableService;
 
 @Module
 public interface TableModule {
+    @Provides
+    static TableServiceContextualAuthWiring provideAuthWiring(AuthorizationProvider authProvider) {
+        return authProvider.getTableServiceContextualAuthWiring();
+    }
+
     @Binds
     @IntoSet
     BindableService bindTableServiceGrpcImpl(TableServiceGrpcImpl tableService);
@@ -121,6 +135,16 @@ public interface TableModule {
 
     @Binds
     @IntoMap
+    @BatchOpCode(BatchTableRequest.Operation.OpCase.AGGREGATE_ALL)
+    GrpcTableOperation<?> bindOperationAggregateAll(AggregateAllGrpcImpl op);
+
+    @Binds
+    @IntoMap
+    @BatchOpCode(BatchTableRequest.Operation.OpCase.AGGREGATE)
+    GrpcTableOperation<?> bindOperationAggregate(AggregateGrpcImpl op);
+
+    @Binds
+    @IntoMap
     @BatchOpCode(BatchTableRequest.Operation.OpCase.CROSS_JOIN)
     GrpcTableOperation<?> bindOperationCrossJoin(JoinTablesGrpcImpl.CrossJoinTablesGrpcImpl op);
 
@@ -153,6 +177,11 @@ public interface TableModule {
     @IntoMap
     @BatchOpCode(BatchTableRequest.Operation.OpCase.SNAPSHOT)
     GrpcTableOperation<?> bindOperationSnapshotTable(SnapshotTableGrpcImpl op);
+
+    @Binds
+    @IntoMap
+    @BatchOpCode(BatchTableRequest.Operation.OpCase.SNAPSHOT_WHEN)
+    GrpcTableOperation<?> bindOperationSnapshotWhenTable(SnapshotWhenTableGrpcImpl op);
 
     @Binds
     @IntoMap
@@ -193,4 +222,14 @@ public interface TableModule {
     @IntoMap
     @BatchOpCode(BatchTableRequest.Operation.OpCase.CREATE_INPUT_TABLE)
     GrpcTableOperation<?> bindCreateInputTable(CreateInputTableGrpcImpl op);
+
+    @Binds
+    @IntoMap
+    @BatchOpCode(BatchTableRequest.Operation.OpCase.UPDATE_BY)
+    GrpcTableOperation<?> bindUpdateBy(UpdateByGrpcImpl op);
+
+    @Binds
+    @IntoMap
+    @BatchOpCode(BatchTableRequest.Operation.OpCase.WHERE_IN)
+    GrpcTableOperation<?> bindWhereIn(WhereInGrpcImpl op);
 }

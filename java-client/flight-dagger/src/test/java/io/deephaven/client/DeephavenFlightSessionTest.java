@@ -4,18 +4,22 @@
 package io.deephaven.client;
 
 import io.deephaven.api.TableOperations;
+import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.client.impl.TableHandle;
-import io.deephaven.client.impl.TableHandle.TableHandleException;
 import io.deephaven.qst.TableCreator;
 import io.deephaven.qst.column.header.ColumnHeader;
 import io.deephaven.qst.table.NewTable;
 import io.deephaven.qst.table.TableCreatorImpl;
 import io.deephaven.qst.table.TableSpec;
+import io.deephaven.qst.table.UpdateByTable;
 import org.apache.arrow.flight.FlightStream;
+import org.apache.arrow.vector.BigIntVector;
+import org.apache.arrow.vector.VectorSchemaRoot;
 import org.apache.arrow.vector.types.Types.MinorType;
 import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.FieldType;
 import org.apache.arrow.vector.types.pojo.Schema;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.time.Instant;
@@ -43,13 +47,38 @@ public class DeephavenFlightSessionTest extends DeephavenFlightSessionTestBase {
     @Test
     public void getStream() throws Exception {
         final TableSpec table = i32768(TableCreatorImpl.INSTANCE);
-        try (
-                final TableHandle handle = flightSession.session().execute(table);
+        try (final TableHandle handle = flightSession.session().execute(table);
                 final FlightStream stream = flightSession.stream(handle)) {
-            System.out.println(stream.getSchema());
+            int numRows = 0;
             while (stream.next()) {
-                System.out.println(stream.getRoot().contentToTSVString());
+                numRows += stream.getRoot().getRowCount();
             }
+            Assert.assertEquals(32768, numRows);
+        }
+    }
+
+    @Test
+    public void updateBy() throws Exception {
+        final int size = 100;
+        final UpdateByTable spec = TableSpec.empty(size)
+                .view("I=i")
+                .updateBy(UpdateByOperation.CumSum("I"));
+        try (
+                final TableHandle handle = flightSession.session().batch().execute(spec);
+                final FlightStream stream = flightSession.stream(handle)) {
+            int i = 0;
+            long sum = 0;
+            while (stream.next()) {
+                final VectorSchemaRoot root = stream.getRoot();
+                final BigIntVector longVector = (BigIntVector) root.getVector("I");
+                final int rowCount = root.getRowCount();
+                for (int r = 0; r < rowCount; ++r, ++i) {
+                    sum += i;
+                    final long actual = longVector.get(r);
+                    assertThat(actual).isEqualTo(sum);
+                }
+            }
+            assertThat(i).isEqualTo(size);
         }
     }
 

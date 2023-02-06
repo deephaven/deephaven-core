@@ -10,11 +10,10 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser.QueryLanguageParseException;
-import io.deephaven.engine.table.lang.QueryLibrary;
-import io.deephaven.engine.table.lang.QueryScope;
+import io.deephaven.engine.context.QueryScope;
 import io.deephaven.time.DateTime;
 import io.deephaven.engine.table.impl.util.codegen.TypeAnalyzer;
-import io.deephaven.test.junit4.EngineCleanup;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.type.TypeUtils;
@@ -51,10 +50,6 @@ public class TestFormulaColumn {
     private final boolean useKernelFormulas;
     private boolean kernelFormulasSavedValue;
 
-    static {
-        setUpQueryScope();
-    }
-
     public TestFormulaColumn(boolean useKernelFormulas) {
         this.useKernelFormulas = useKernelFormulas;
         testDataTable = getTestDataTable();
@@ -69,12 +64,12 @@ public class TestFormulaColumn {
         kernelFormulasSavedValue = DhFormulaColumn.useKernelFormulasProperty;
         DhFormulaColumn.useKernelFormulasProperty = useKernelFormulas;
 
+        setUpQueryScope();
         setUpQueryLibrary();
     }
 
     @After
     public void tearDown() throws Exception {
-        QueryLibrary.resetLibrary();
         DhFormulaColumn.useKernelFormulasProperty = kernelFormulasSavedValue;
     }
 
@@ -193,8 +188,8 @@ public class TestFormulaColumn {
 
     @Test
     public void testNoInput() {
-        final String oldValue = Configuration.getInstance().getProperty("CompilerTools.logEnabledDefault");
-        Configuration.getInstance().setProperty("CompilerTools.logEnabledDefault", "true");
+        final String oldValue = Configuration.getInstance().getProperty("QueryCompiler.logEnabledDefault");
+        Configuration.getInstance().setProperty("QueryCompiler.logEnabledDefault", "true");
         try {
             FormulaColumn formulaColumn = FormulaColumn.createFormulaColumn("Foo", "(String)\"1234\"");
             formulaColumn.initDef(Collections.emptyMap());
@@ -206,7 +201,7 @@ public class TestFormulaColumn {
             final long longResult = longFormulaColumn.getDataView().getLong(0);
             assertEquals(longResult, 1234L);
         } finally {
-            Configuration.getInstance().setProperty("CompilerTools.logEnabledDefault", oldValue);
+            Configuration.getInstance().setProperty("QueryCompiler.logEnabledDefault", oldValue);
         }
     }
 

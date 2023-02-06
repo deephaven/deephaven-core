@@ -6,21 +6,22 @@ package io.deephaven.server.runner;
 import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.ElementsIntoSet;
+import io.deephaven.base.clock.Clock;
 import io.deephaven.chunk.util.pools.MultiChunkPool;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.ScriptSession;
+import io.deephaven.server.appmode.ApplicationsModule;
+import io.deephaven.server.config.ConfigServiceModule;
+import io.deephaven.server.hierarchicaltable.HierarchicalTableServiceModule;
+import io.deephaven.server.notebook.FilesystemStorageServiceModule;
 import io.deephaven.server.object.ObjectServiceModule;
 import io.deephaven.server.partitionedtable.PartitionedTableServiceModule;
 import io.deephaven.server.plugin.PluginsModule;
-import io.deephaven.server.appmode.AppMode;
 import io.deephaven.server.appmode.AppModeModule;
 import io.deephaven.server.arrow.ArrowModule;
 import io.deephaven.server.auth.AuthContextModule;
 import io.deephaven.server.console.ConsoleModule;
-import io.deephaven.server.console.groovy.GroovyConsoleSessionModule;
-import io.deephaven.server.console.python.PythonConsoleSessionModule;
-import io.deephaven.server.log.LogModule;
 import io.deephaven.server.session.SessionModule;
 import io.deephaven.server.table.TableModule;
 import io.deephaven.server.table.inputtables.InputTableModule;
@@ -28,9 +29,8 @@ import io.deephaven.server.uri.UriModule;
 import io.deephaven.server.util.Scheduler;
 import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.util.thread.NamingThreadFactory;
+import io.deephaven.util.thread.ThreadInitializationFactory;
 import io.grpc.BindableService;
-import io.grpc.Server;
-import io.grpc.ServerBuilder;
 import io.grpc.ServerInterceptor;
 import org.jetbrains.annotations.NotNull;
 
@@ -52,9 +52,9 @@ import java.util.concurrent.TimeUnit;
 
 @Module(includes = {
         AppModeModule.class,
+        ApplicationsModule.class,
         ArrowModule.class,
         AuthContextModule.class,
-        LogModule.class,
         UriModule.class,
         SessionModule.class,
         TableModule.class,
@@ -63,8 +63,9 @@ import java.util.concurrent.TimeUnit;
         ObjectServiceModule.class,
         PluginsModule.class,
         PartitionedTableServiceModule.class,
-        GroovyConsoleSessionModule.class,
-        PythonConsoleSessionModule.class
+        HierarchicalTableServiceModule.class,
+        FilesystemStorageServiceModule.class,
+        ConfigServiceModule.class,
 })
 public class DeephavenApiServerModule {
 
@@ -82,14 +83,11 @@ public class DeephavenApiServerModule {
 
     @Provides
     @Singleton
-    public static AppMode provideAppMode() {
-        return AppMode.currentMode();
-    }
-
-    @Provides
-    @Singleton
     public ScriptSession provideScriptSession(Map<String, Provider<ScriptSession>> scriptTypes) {
-        String scriptSessionType = Configuration.getInstance().getStringWithDefault("deephaven.console.type", "python");
+        // Check which script language is configured
+        String scriptSessionType = Configuration.getInstance().getProperty("deephaven.console.type");
+
+        // Emit an error if the selected language isn't provided
         if (!scriptTypes.containsKey(scriptSessionType)) {
             throw new IllegalArgumentException("Console type not found: " + scriptSessionType);
         }
@@ -120,7 +118,7 @@ public class DeephavenApiServerModule {
             }
         };
 
-        return new Scheduler.DelegatingImpl(serialExecutor, concurrentExecutor);
+        return new Scheduler.DelegatingImpl(serialExecutor, concurrentExecutor, Clock.system());
     }
 
     private static void report(final String executorType, final Throwable error) {
@@ -133,6 +131,8 @@ public class DeephavenApiServerModule {
             report(executorType, error);
         } else if (task instanceof Future<?>) {
             try {
+                // Note: this paradigm is not compatible with
+                // TODO(deephaven-core#3396): Add io.deephaven.server.util.Scheduler fixed delay support
                 ((Future<?>) task).get();
             } catch (final InterruptedException ignored) {
                 // noinspection ResultOfMethodCallIgnored
@@ -152,15 +152,15 @@ public class DeephavenApiServerModule {
 
     private static class ThreadFactory extends NamingThreadFactory {
         public ThreadFactory(final String name) {
-            super(DeephavenApiServer.class, name, true);
+            super(DeephavenApiServer.class, name);
         }
 
         @Override
         public Thread newThread(final @NotNull Runnable r) {
-            return super.newThread(() -> {
+            return super.newThread(ThreadInitializationFactory.wrapRunnable(() -> {
                 MultiChunkPool.enableDedicatedPoolForThisThread();
                 r.run();
-            });
+            }));
         }
     }
 }

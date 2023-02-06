@@ -33,6 +33,7 @@ def serverClasspath = tasks.register('serverClasspath', Sync) {
     from configurations.runtimeClasspath
     from jar
     from tasks.named('createCompilerDirectives')
+    from tasks.named('createVmOptions')
     into layout.buildDirectory.dir('classpath')
 }
 

@@ -4,10 +4,10 @@
 package io.deephaven.plot.util;
 
 import io.deephaven.api.ColumnName;
-import io.deephaven.api.Selectable;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.base.verify.Require;
 import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.plot.ChartImpl;
 import io.deephaven.plot.datasets.category.CategoryDataSeries;
 import io.deephaven.plot.datasets.data.*;
@@ -18,7 +18,7 @@ import io.deephaven.plot.util.tables.TableHandle;
 import io.deephaven.engine.table.DataColumn;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.lang.QueryScope;
+import io.deephaven.engine.context.QueryScope;
 import io.deephaven.time.DateTime;
 import io.deephaven.gui.color.ColorPaletteArray;
 import io.deephaven.util.QueryConstants;
@@ -721,13 +721,13 @@ public class PlotUtils {
         // We need to do the equivalent of LastBy wrt. to columns included, or we have a chance to break ACLs
         final List<String> lastColumns = t.getDefinition().getColumnNames();
         lastColumns.removeAll(Arrays.asList(catColumns));
-        final Table result = t.aggBy(
+        final QueryTable result = (QueryTable) t.aggBy(
                 createCategoryAggs(AggLast(lastColumns.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY))),
                 ColumnName.from(catColumns));
 
         // We must explicitly copy attributes because we are doing a modified manual first/lastBy which will not
         // automatically do the copy.
-        ((BaseTable) t).copyAttributes(result, BaseTable.CopyAttributeOperation.LastBy);
+        ((BaseTable<?>) t).copyAttributes(result, BaseTable.CopyAttributeOperation.LastBy);
         return result;
     }
 

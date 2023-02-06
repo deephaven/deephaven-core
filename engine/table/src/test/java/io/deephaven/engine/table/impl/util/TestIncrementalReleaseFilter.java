@@ -4,9 +4,7 @@
 package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.time.ClockTimeProvider;
-import io.deephaven.engine.table.impl.RefreshingTableTestCase;
-import io.deephaven.util.clock.RealTimeClock;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.select.AutoTuningIncrementalReleaseFilter;
@@ -17,7 +15,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static io.deephaven.engine.table.impl.TstUtils.assertTableEquals;
+import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 
 public class TestIncrementalReleaseFilter extends RefreshingTableTestCase {
     public void testSimple() {
@@ -93,7 +91,7 @@ public class TestIncrementalReleaseFilter extends RefreshingTableTestCase {
         final Table source = TableTools.emptyTable(1_000_000);
 
         final AutoTuningIncrementalReleaseFilter incrementalReleaseFilter =
-                new AutoTuningIncrementalReleaseFilter(0, 100, 1.1, true, new ClockTimeProvider(new RealTimeClock()));
+                new AutoTuningIncrementalReleaseFilter(0, 100, 1.1, true);
         incrementalReleaseFilter.start();
         final Table filtered = source.where(incrementalReleaseFilter);
 
@@ -117,7 +115,7 @@ public class TestIncrementalReleaseFilter extends RefreshingTableTestCase {
         TableTools.show(source);
 
         final AutoTuningIncrementalReleaseFilter incrementalReleaseFilter =
-                new AutoTuningIncrementalReleaseFilter(0, 100, 1.1, true, new ClockTimeProvider(new RealTimeClock()));
+                new AutoTuningIncrementalReleaseFilter(0, 100, 1.1, true);
         incrementalReleaseFilter.start();
         final Table filtered = source.where(incrementalReleaseFilter);
 

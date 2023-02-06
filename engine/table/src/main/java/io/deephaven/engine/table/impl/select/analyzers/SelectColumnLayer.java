@@ -8,8 +8,10 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.ObjectChunkIterator;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessNode;
 import io.deephaven.engine.liveness.LivenessReferent;
+import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.QueryTable;
@@ -19,6 +21,7 @@ import io.deephaven.engine.table.impl.select.VectorChunkAdapter;
 import io.deephaven.engine.table.impl.sources.ChunkedBackingStoreExposedWritableSource;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.util.ChunkUtils;
+import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.updategraph.UpdateCommitterEx;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
@@ -40,7 +43,13 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
     /**
      * The same reference as super.columnSource, but as a WritableColumnSource and maybe reinterpretted
      */
-    private final WritableColumnSource writableSource;
+    private final WritableColumnSource<?> writableSource;
+
+    /**
+     * The execution context the select column layer was constructed in
+     */
+    private final ExecutionContext executionContext;
+
     /**
      * Our parent row set, used for ensuring capacity.
      */
@@ -49,7 +58,6 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
     private final boolean flattenedResult;
     private final boolean alreadyFlattenedSources;
     private final BitSet dependencyBitSet;
-    private final boolean canUseThreads;
     private final boolean canParallelizeThisColumn;
     private final boolean isSystemic;
     private final boolean resultTypeIsLivenessReferent;
@@ -64,13 +72,14 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
     private ChunkSource.WithPrev<Values> chunkSource;
 
     SelectColumnLayer(RowSet parentRowSet, SelectAndViewAnalyzer inner, String name, SelectColumn sc,
-            WritableColumnSource ws, WritableColumnSource underlying,
+            WritableColumnSource<?> ws, WritableColumnSource<?> underlying,
             String[] deps, ModifiedColumnSet mcsBuilder, boolean isRedirected,
             boolean flattenedResult, boolean alreadyFlattenedSources) {
         super(inner, name, sc, ws, underlying, deps, mcsBuilder);
         this.parentRowSet = parentRowSet;
-        this.writableSource = (WritableColumnSource) ReinterpretUtils.maybeConvertToPrimitive(ws);
+        this.writableSource = (WritableColumnSource<?>) ReinterpretUtils.maybeConvertToPrimitive(ws);
         this.isRedirected = isRedirected;
+        this.executionContext = ExecutionContext.getContextToRecord();
 
         dependencyBitSet = new BitSet();
         Arrays.stream(deps).mapToInt(inner::getLayerIndexFor).forEach(dependencyBitSet::set);
@@ -78,14 +87,11 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         this.flattenedResult = flattenedResult;
         this.alreadyFlattenedSources = alreadyFlattenedSources;
 
-        // We can't use threads at all if we have column that uses a Python query scope, because we are likely operating
-        // under the GIL which will cause a deadlock
-        canUseThreads = !sc.getDataView().preventsParallelism();
-
         // We can only parallelize this column if we are not redirected, our destination provides ensure previous, and
         // the select column is stateless
-        canParallelizeThisColumn = canUseThreads && !isRedirected
-                && WritableSourceWithEnsurePrevious.providesEnsurePrevious(ws) && sc.isStateless();
+        canParallelizeThisColumn = !isRedirected
+                && WritableSourceWithPrepareForParallelPopulation.supportsParallelPopulation(writableSource)
+                && sc.isStateless();
 
         // If we were created on a systemic thread, we want to be sure to make sure that any updates are also
         // applied systemically.
@@ -136,8 +142,14 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                         // If we have shifts, that makes everything nasty; so we do not want to deal with it
                         final boolean hasShifts = upstream.shifted().nonempty();
 
+                        final boolean checkTableOperations =
+                                UpdateGraphProcessor.DEFAULT.getCheckTableOperations()
+                                        && !UpdateGraphProcessor.DEFAULT.sharedLock().isHeldByCurrentThread()
+                                        && !UpdateGraphProcessor.DEFAULT.exclusiveLock().isHeldByCurrentThread();
+
                         if (canParallelizeThisColumn && jobScheduler.threadCount() > 1 && !hasShifts &&
-                                (resultTypeIsTable || totalSize > QueryTable.MINIMUM_PARALLEL_SELECT_ROWS)) {
+                                ((resultTypeIsTable && totalSize > 0)
+                                        || totalSize > QueryTable.MINIMUM_PARALLEL_SELECT_ROWS)) {
                             final long divisionSize = resultTypeIsTable ? 1
                                     : Math.max(QueryTable.MINIMUM_PARALLEL_SELECT_ROWS,
                                             (totalSize + jobScheduler.threadCount() - 1) / jobScheduler.threadCount());
@@ -173,12 +185,17 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                                 throw new IllegalStateException();
                             }
 
-                            jobScheduler.submit(() -> prepareParallelUpdate(jobScheduler, upstream, toClear, helper,
-                                    liveResultOwner, onCompletion, this::onError, updates),
+                            jobScheduler.submit(
+                                    executionContext,
+                                    () -> prepareParallelUpdate(jobScheduler, upstream, toClear, helper,
+                                            liveResultOwner, onCompletion, this::onError, updates,
+                                            checkTableOperations),
                                     SelectColumnLayer.this, this::onError);
                         } else {
                             jobScheduler.submit(
-                                    () -> doSerialApplyUpdate(upstream, toClear, helper, liveResultOwner, onCompletion),
+                                    executionContext,
+                                    () -> doSerialApplyUpdate(upstream, toClear, helper, liveResultOwner, onCompletion,
+                                            checkTableOperations),
                                     SelectColumnLayer.this, this::onError);
                         }
                     }
@@ -188,23 +205,20 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
     private void prepareParallelUpdate(final JobScheduler jobScheduler, final TableUpdate upstream,
             final RowSet toClear, final UpdateHelper helper, @Nullable final LivenessNode liveResultOwner,
             final SelectLayerCompletionHandler onCompletion, final Consumer<Exception> onError,
-            final List<TableUpdate> splitUpdates) {
+            final List<TableUpdate> splitUpdates, final boolean checkTableOperations) {
         // we have to do removal and previous initialization before we can do any of the actual filling in multiple
         // threads to avoid concurrency problems with our destination column sources
         doEnsureCapacity();
 
-        copyPreviousValues(upstream);
+        prepareSourcesForParallelPopulation(upstream);
 
-        final boolean checkTableOperations =
-                UpdateGraphProcessor.DEFAULT.getCheckTableOperations()
-                        && !UpdateGraphProcessor.DEFAULT.sharedLock().isHeldByCurrentThread()
-                        && !UpdateGraphProcessor.DEFAULT.exclusiveLock().isHeldByCurrentThread();
         final AtomicInteger divisions = new AtomicInteger(splitUpdates.size());
 
         long destinationOffset = 0;
         for (TableUpdate splitUpdate : splitUpdates) {
             final long fdest = destinationOffset;
             jobScheduler.submit(
+                    executionContext,
                     () -> doParallelApplyUpdate(splitUpdate, toClear, helper, liveResultOwner, onCompletion,
                             checkTableOperations, divisions, fdest),
                     SelectColumnLayer.this, onError);
@@ -218,11 +232,16 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
     }
 
     private void doSerialApplyUpdate(final TableUpdate upstream, final RowSet toClear, final UpdateHelper helper,
-            @Nullable final LivenessNode liveResultOwner, final SelectLayerCompletionHandler onCompletion) {
+            @Nullable final LivenessNode liveResultOwner, final SelectLayerCompletionHandler onCompletion,
+            final boolean checkTableOperations) {
         doEnsureCapacity();
-        SystemicObjectTracker.executeSystemically(isSystemic,
-                () -> doApplyUpdate(upstream, helper, liveResultOwner, 0));
-
+        final boolean oldCheck = UpdateGraphProcessor.DEFAULT.setCheckTableOperations(checkTableOperations);
+        try {
+            SystemicObjectTracker.executeSystemically(isSystemic,
+                    () -> doApplyUpdate(upstream, helper, liveResultOwner, 0));
+        } finally {
+            UpdateGraphProcessor.DEFAULT.setCheckTableOperations(oldCheck);
+        }
         if (!isRedirected) {
             clearObjectsAtThisLevel(toClear);
         }
@@ -261,9 +280,6 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         final RowSet preMoveKeys = helper.getPreShifted(!modifiesAffectUs);
         final RowSet postMoveKeys = helper.getPostShifted(!modifiesAffectUs);
 
-        // Note that applyUpdate is called during initialization. If the table begins empty, we still want to force that
-        // an initial call to getDataView() (via getChunkSource()) or else the formula will only be computed later when
-        // data begins to flow; start-of-day is likely a bad time to find formula errors for our customers.
         final ChunkSource<Values> chunkSource = getChunkSource();
 
         final boolean needGetContext = upstream.added().isNonempty() || modifiesAffectUs;
@@ -274,13 +290,16 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         final boolean isBackingChunkExposed =
                 ChunkedBackingStoreExposedWritableSource.exposesChunkedBackingStore(writableSource);
 
-        try (final ChunkSink.FillFromContext destContext =
-                needDestContext ? writableSource.makeFillFromContext(destContextSize) : null;
-                final ChunkSource.GetContext chunkSourceContext =
-                        needGetContext ? chunkSource.makeGetContext(chunkSourceContextSize) : null;
-                final ChunkSource.FillContext chunkSourceFillContext =
-                        needGetContext && isBackingChunkExposed ? chunkSource.makeFillContext(chunkSourceContextSize)
-                                : null) {
+        try (final SafeCloseable ignored = LivenessScopeStack.open();
+                final ChunkSink.FillFromContext destContext = needDestContext
+                        ? writableSource.makeFillFromContext(destContextSize)
+                        : null;
+                final ChunkSource.GetContext chunkSourceContext = needGetContext
+                        ? chunkSource.makeGetContext(chunkSourceContextSize)
+                        : null;
+                final ChunkSource.FillContext chunkSourceFillContext = needGetContext && isBackingChunkExposed
+                        ? chunkSource.makeFillContext(chunkSourceContextSize)
+                        : null) {
 
             // apply shifts!
             if (!isRedirected && preMoveKeys.isNonempty()) {
@@ -525,13 +544,13 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         }
     }
 
-    void copyPreviousValues(TableUpdate upstream) {
+    void prepareSourcesForParallelPopulation(TableUpdate upstream) {
         // we do not permit in-column parallelization with redirected results, so do not need to worry about how this
         // interacts with the previous clearing of the redirection index that has occurred at the start of applyUpdate
-        try (final WritableRowSet changedRows =
-                upstream.added().union(upstream.getModifiedPreShift())) {
+        try (final WritableRowSet changedRows = upstream.added().union(upstream.getModifiedPreShift())) {
             changedRows.insert(upstream.removed());
-            ((WritableSourceWithEnsurePrevious) (writableSource)).ensurePrevious(changedRows);
+            ((WritableSourceWithPrepareForParallelPopulation) (writableSource))
+                    .prepareForParallelPopulation(changedRows);
         }
     }
 
@@ -560,6 +579,6 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
 
     @Override
     public boolean allowCrossColumnParallelization() {
-        return canUseThreads && inner.allowCrossColumnParallelization();
+        return selectColumn.isStateless() && inner.allowCrossColumnParallelization();
     }
 }

@@ -4,6 +4,7 @@
 #pragma once
 
 #include <arrow/type.h>
+#include "deephaven/client/types.h"
 
 namespace deephaven::client::arrowutil {
 
@@ -33,18 +34,28 @@ public:
     return arrow::Status::OK();
   }
 
-  arrow::Status Visit(const arrow::FloatType &type) final {
+  arrow::Status Visit(const arrow::FloatType &) final {
     inner_.template operator()<float>();
     return arrow::Status::OK();
   }
 
-  arrow::Status Visit(const arrow::DoubleType &type) final {
+  arrow::Status Visit(const arrow::DoubleType &) final {
     inner_.template operator()<double>();
     return arrow::Status::OK();
   }
 
-  arrow::Status Visit(const arrow::StringType &type) final {
+  arrow::Status Visit(const arrow::BooleanType &) final {
+    inner_.template operator()<bool>();
+    return arrow::Status::OK();
+  }
+
+  arrow::Status Visit(const arrow::StringType &) final {
     inner_.template operator()<std::string>();
+    return arrow::Status::OK();
+  }
+
+  arrow::Status Visit(const arrow::TimestampType &) final {
+    inner_.template operator()<deephaven::client::DateTime>();
     return arrow::Status::OK();
   }
 
@@ -93,6 +104,16 @@ public:
 
   arrow::Status Visit(const arrow::StringArray &) final {
     inner_.template operator()<std::string>();
+    return arrow::Status::OK();
+  }
+
+  arrow::Status Visit(const arrow::BooleanArray &) final {
+    inner_.template operator()<bool>();
+    return arrow::Status::OK();
+  }
+
+  arrow::Status Visit(const arrow::TimestampArray &) final {
+    inner_.template operator()<deephaven::client::DateTime>();
     return arrow::Status::OK();
   }
 

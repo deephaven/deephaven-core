@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl.sources;
 
+import io.deephaven.base.ArrayUtil;
 import io.deephaven.base.MathUtil;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.util.annotations.VisibleForTesting;
@@ -32,7 +33,7 @@ public class UnionRedirection {
             Configuration.getInstance().getLongWithDefault("UnionRedirection.allocationUnit", 1 << 16);
 
     // We would like to use jdk.internal.util.ArraysSupport.MAX_ARRAY_LENGTH, but it is not exported
-    private static final int MAX_ARRAY_SIZE = Integer.MAX_VALUE - 8;
+    private static final int MAX_ARRAY_SIZE = ArrayUtil.MAX_ARRAY_SIZE;
 
     /**
      * Number of table slots to allocate initially.

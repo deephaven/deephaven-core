@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
@@ -12,10 +13,10 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.io.log.LogLevel;
 import io.deephaven.io.logger.StreamLoggerImpl;
 import io.deephaven.util.process.ProcessEnvironment;
-import io.deephaven.compilertools.CompilerTools;
+import io.deephaven.engine.context.QueryCompiler;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.lang.QueryScopeParam;
-import io.deephaven.engine.table.lang.QueryScope;
+import io.deephaven.engine.context.QueryScopeParam;
+import io.deephaven.engine.context.QueryScope;
 import io.deephaven.integrations.python.PythonDeephavenSession;
 import io.deephaven.engine.util.PythonScopeJpyImpl;
 import io.deephaven.engine.table.ColumnSource;
@@ -47,11 +48,11 @@ public class TestConditionFilter extends PythonTest {
         }
     }
 
-    private static final boolean ENABLE_COMPILER_TOOLS_LOGGING = Configuration.getInstance()
-            .getBooleanForClassWithDefault(TestConditionFilter.class, "CompilerTools.logEnabled", false);
+    private static final boolean ENABLE_QUERY_COMPILER_LOGGING = Configuration.getInstance()
+            .getBooleanForClassWithDefault(TestConditionFilter.class, "QueryCompiler.logEnabled", false);
 
     private final Table testDataTable;
-    private boolean compilerToolsLogEnabledInitial = false;
+    private boolean queryCompilerLogEnabledInitial = false;
 
     public TestConditionFilter() {
         testDataTable = getTestDataTable();
@@ -66,12 +67,12 @@ public class TestConditionFilter extends PythonTest {
             ProcessEnvironment.basicInteractiveProcessInitialization(Configuration.getInstance(),
                     PythonMatchFilterTest.class.getCanonicalName(), new StreamLoggerImpl(System.out, LogLevel.INFO));
         }
-        compilerToolsLogEnabledInitial = CompilerTools.setLogEnabled(ENABLE_COMPILER_TOOLS_LOGGING);
+        queryCompilerLogEnabledInitial = QueryCompiler.setLogEnabled(ENABLE_QUERY_COMPILER_LOGGING);
     }
 
     @After
     public void tearDown() throws Exception {
-        CompilerTools.setLogEnabled(compilerToolsLogEnabledInitial);
+        QueryCompiler.setLogEnabled(queryCompilerLogEnabledInitial);
     }
 
     @Test
@@ -369,12 +370,14 @@ public class TestConditionFilter extends PythonTest {
             validate(expression, keepRowSet, dropRowSet, FormulaParserConfiguration.Deephaven);
         }
         if (testPython) {
-            QueryScope currentScope = QueryScope.getScope();
+            ExecutionContext currentContext = ExecutionContext.getContext();
+            QueryScope currentScope = currentContext.getQueryScope();
             try {
                 if (pythonScope == null) {
-                    pythonScope = new PythonDeephavenSession(new PythonScopeJpyImpl(getMainGlobals().asDict()))
-                            .newQueryScope();
-                    QueryScope.setScope(pythonScope);
+                    final ExecutionContext context = new PythonDeephavenSession(new PythonScopeJpyImpl(
+                            getMainGlobals().asDict())).getExecutionContext();
+                    pythonScope = context.getQueryScope();
+                    context.open();
                 }
                 for (QueryScopeParam param : currentScope.getParams(currentScope.getParamNames())) {
                     pythonScope.putParam(param.getName(), param.getValue());
@@ -382,7 +385,7 @@ public class TestConditionFilter extends PythonTest {
                 expression = expression.replaceAll("true", "True").replaceAll("false", "False");
                 validate(expression, keepRowSet, dropRowSet, FormulaParserConfiguration.Numba);
             } finally {
-                QueryScope.setScope(currentScope);
+                currentContext.open();
             }
         }
 

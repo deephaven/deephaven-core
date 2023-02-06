@@ -3,14 +3,15 @@
  */
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.base.StringUtils;
+import io.deephaven.api.TableOperationsDefaults;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.io.logger.Logger;
-import io.deephaven.io.logger.StreamLoggerImpl;
+import io.deephaven.engine.testutil.ColumnInfo;
+import io.deephaven.engine.testutil.QueryTableTestBase;
+import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
-import io.deephaven.engine.table.lang.QueryScope;
+import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.ColumnSource;
 import gnu.trove.map.TByteIntMap;
@@ -28,54 +29,53 @@ import org.jetbrains.annotations.Nullable;
 import java.util.*;
 import org.junit.experimental.categories.Category;
 
-import static io.deephaven.engine.table.impl.TstUtils.*;
+import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.util.QueryConstants.NULL_INT;
 
 @Category(OutOfBandTest.class)
 public class QueryTableStaticNaturalJoinRandomTest extends QueryTableTestBase {
     private final static boolean DO_STATIC_JOIN_PRINT = false;
 
-    private static void testNaturalJoinRandomStatic(int seed, int leftSize, int rightSize, Class dataType,
+    private static void testNaturalJoinRandomStatic(int seed, int leftSize, int rightSize, Class<?> dataType,
             boolean grouped, boolean flattenLeft, @Nullable JoinControl control) {
-        final Logger log = new StreamLoggerImpl();
         final Random random = new Random(seed);
 
-        final TstUtils.Generator leftGenerator;
-        final TstUtils.Generator rightGenerator;
+        final TestDataGenerator leftGenerator;
+        final TestDataGenerator rightGenerator;
 
         if (dataType == int.class) {
-            leftGenerator = new TstUtils.IntGenerator(1, 10 * rightSize);
-            rightGenerator = new TstUtils.UniqueIntGenerator(1, rightSize * 8);
+            leftGenerator = new IntGenerator(1, 10 * rightSize);
+            rightGenerator = new UniqueIntGenerator(1, rightSize * 8);
         } else if (dataType == short.class) {
-            leftGenerator = new TstUtils.ShortGenerator((short) 1, (short) (2 * rightSize));
-            rightGenerator = new TstUtils.UniqueShortGenerator((short) 1, (short) (2 * rightSize));
+            leftGenerator = new ShortGenerator((short) 1, (short) (2 * rightSize));
+            rightGenerator = new UniqueShortGenerator((short) 1, (short) (2 * rightSize));
         } else if (dataType == byte.class) {
-            leftGenerator = new TstUtils.ByteGenerator((byte) 1, (byte) rightSize);
-            rightGenerator = new TstUtils.UniqueByteGenerator((byte) 1, (byte) rightSize);
+            leftGenerator = new ByteGenerator((byte) 1, (byte) rightSize);
+            rightGenerator = new UniqueByteGenerator((byte) 1, (byte) rightSize);
         } else if (dataType == char.class) {
-            leftGenerator = new TstUtils.CharGenerator((char) 1, (char) rightSize);
-            rightGenerator = new TstUtils.UniqueCharGenerator((char) 1, (char) rightSize);
+            leftGenerator = new CharGenerator((char) 1, (char) rightSize);
+            rightGenerator = new UniqueCharGenerator((char) 1, (char) rightSize);
         } else if (dataType == String.class) {
-            final TstUtils.UniqueStringGenerator uniqueStringGenerator = new TstUtils.UniqueStringGenerator();
+            final UniqueStringGenerator uniqueStringGenerator = new UniqueStringGenerator();
 
             final Set<String> duplicateRights = new HashSet<>();
             while (duplicateRights.size() < ((rightSize * 0.1) / 10)) {
                 duplicateRights.add("Dup-" + Long.toHexString(random.nextLong()));
             }
 
-            final List<TstUtils.Generator<String, String>> generatorList = Arrays.asList(uniqueStringGenerator,
-                    new TstUtils.SetGenerator<>(duplicateRights.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)));
-            rightGenerator = new TstUtils.CompositeGenerator<>(generatorList, 0.9);
-            leftGenerator = new TstUtils.FromUniqueStringGenerator(uniqueStringGenerator, 0.5);
+            final List<TestDataGenerator<String, String>> generatorList = Arrays.asList(uniqueStringGenerator,
+                    new SetGenerator<>(duplicateRights.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)));
+            rightGenerator = new CompositeGenerator<>(generatorList, 0.9);
+            leftGenerator = new FromUniqueStringGenerator(uniqueStringGenerator, 0.5);
         } else if (dataType == ArrayTuple.class) {
-            final UniqueTupleGenerator uniqueTupleGenerator =
-                    new UniqueTupleGenerator(new TstUtils.LongGenerator(0, 2 * (long) Math.sqrt(rightSize)),
-                            new TstUtils.IntGenerator(0, 2 * (int) Math.sqrt(rightSize)));
-            final TupleGenerator defaultGenerator =
-                    new TupleGenerator(new TstUtils.LongGenerator(0, (long) Math.sqrt(rightSize)),
-                            new TstUtils.IntGenerator(0, (int) Math.sqrt(rightSize)));
+            final UniqueArrayTupleGenerator uniqueTupleGenerator =
+                    new UniqueArrayTupleGenerator(new LongGenerator(0, 2 * (long) Math.sqrt(rightSize)),
+                            new IntGenerator(0, 2 * (int) Math.sqrt(rightSize)));
+            final ArrayTupleGenerator defaultGenerator =
+                    new ArrayTupleGenerator(new LongGenerator(0, (long) Math.sqrt(rightSize)),
+                            new IntGenerator(0, (int) Math.sqrt(rightSize)));
             rightGenerator = uniqueTupleGenerator;
-            leftGenerator = new FromUniqueTupleGenerator(uniqueTupleGenerator, defaultGenerator, 0.75);
+            leftGenerator = new FromUniqueArrayTupleGenerator(uniqueTupleGenerator, defaultGenerator, 0.75);
         } else {
             throw new UnsupportedOperationException("Invalid Data Type: " + dataType);
         }
@@ -83,14 +83,14 @@ public class QueryTableStaticNaturalJoinRandomTest extends QueryTableTestBase {
         final QueryTable rightTable = getTable(false, rightSize, random,
                 initColumnInfos(new String[] {"JoinKey", "RightSentinel"},
                         rightGenerator,
-                        new TstUtils.IntGenerator()));
-        final List<TstUtils.ColumnInfo.ColAttributes> leftKeyAttributes =
-                grouped ? Collections.singletonList(TstUtils.ColumnInfo.ColAttributes.Grouped)
+                        new IntGenerator()));
+        final List<ColumnInfo.ColAttributes> leftKeyAttributes =
+                grouped ? Collections.singletonList(ColumnInfo.ColAttributes.Grouped)
                         : Collections.emptyList();
         final QueryTable leftTable = getTable(false, leftSize, random,
                 initColumnInfos(new String[] {"JoinKey", "LeftSentinel"},
                         Arrays.asList(leftKeyAttributes, Collections.emptyList()), leftGenerator,
-                        new TstUtils.IntGenerator()));
+                        new IntGenerator()));
 
         String matchKeys = "JoinKey";
         Table rightJoinTable = rightTable;
@@ -205,7 +205,7 @@ public class QueryTableStaticNaturalJoinRandomTest extends QueryTableTestBase {
             joined = leftJoinTable.naturalJoin(rightJoinTable, matchKeys, "RightSentinel");
         } else {
             joined = NaturalJoinHelper.naturalJoin((QueryTable) leftJoinTable, (QueryTable) rightJoinTable,
-                    MatchPairFactory.getExpressions(StringUtils.splitToCollection(matchKeys)),
+                    MatchPairFactory.getExpressions(TableOperationsDefaults.splitToCollection(matchKeys)),
                     MatchPairFactory.getExpressions("RightSentinel"), false, control);
         }
 
@@ -249,29 +249,6 @@ public class QueryTableStaticNaturalJoinRandomTest extends QueryTableTestBase {
                         System.out.println("Seed = " + seed + ", leftSize=" + leftSize + ", rightSize=" + rightSize
                                 + ", type=" + dataType + ", grouped=" + grouped);
                         testNaturalJoinRandomStatic(seed, leftSize, rightSize, dataType, grouped, false, null);
-                    }
-                }
-            }
-        }
-    }
-
-    // let's force some collisions by making our table small
-    public void testNaturalJoinRandomStaticOverflow() {
-        // we can not make our table small with the typed state manager, as it does not support overflow
-        if (NaturalJoinHelper.USE_TYPED_STATE_MANAGER) {
-            return;
-        }
-
-        for (int leftSize = 10_000; leftSize <= 100_000; leftSize *= 10) {
-            for (int rightSize = 10_000; rightSize <= 100_000; rightSize *= 10) {
-                for (int seed = 0; seed < 2; ++seed) {
-                    for (Class dataType : Arrays.asList(String.class, int.class, ArrayTuple.class)) {
-                        System.out.println("Seed = " + seed + ", leftSize=" + leftSize + ", rightSize=" + rightSize
-                                + ", type=" + dataType);
-                        testNaturalJoinRandomStatic(seed, leftSize, rightSize, dataType, false, false,
-                                QueryTableJoinTest.SMALL_LEFT_CONTROL);
-                        testNaturalJoinRandomStatic(seed, leftSize, rightSize, dataType, false, false,
-                                QueryTableJoinTest.SMALL_RIGHT_CONTROL);
                     }
                 }
             }

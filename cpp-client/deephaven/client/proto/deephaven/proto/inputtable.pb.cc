@@ -145,14 +145,16 @@ const char descriptor_table_protodef_deephaven_2fproto_2finputtable_2eproto[] PR
   "\022\214\001\n\031DeleteTableFromInputTable\0225.io.deep"
   "haven.proto.backplane.grpc.DeleteTableRe"
   "quest\0326.io.deephaven.proto.backplane.grp"
-  "c.DeleteTableResponse\"\000B\004H\001P\001b\006proto3"
+  "c.DeleteTableResponse\"\000BFH\001P\001Z@github.co"
+  "m/deephaven/deephaven-core/go/internal/p"
+  "roto/inputtableb\006proto3"
   ;
 static const ::_pbi::DescriptorTable* const descriptor_table_deephaven_2fproto_2finputtable_2eproto_deps[1] = {
   &::descriptor_table_deephaven_2fproto_2fticket_2eproto,
 };
 static ::_pbi::once_flag descriptor_table_deephaven_2fproto_2finputtable_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_deephaven_2fproto_2finputtable_2eproto = {
-    false, false, 757, descriptor_table_protodef_deephaven_2fproto_2finputtable_2eproto,
+    false, false, 823, descriptor_table_protodef_deephaven_2fproto_2finputtable_2eproto,
     "deephaven/proto/inputtable.proto",
     &descriptor_table_deephaven_2fproto_2finputtable_2eproto_once, descriptor_table_deephaven_2fproto_2finputtable_2eproto_deps, 1, 4,
     schemas, file_default_instances, TableStruct_deephaven_2fproto_2finputtable_2eproto::offsets,

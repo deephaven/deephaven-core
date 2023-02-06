@@ -17,7 +17,6 @@ import io.grpc.stub.StreamObserver;
 import java.io.IOException;
 import java.util.UUID;
 import java.util.concurrent.Callable;
-import java.util.function.Function;
 
 public class GrpcUtil {
     private static final Logger log = LoggerFactory.getLogger(GrpcUtil.class);
@@ -41,9 +40,9 @@ public class GrpcUtil {
             } else {
                 log.error().append(err).endl();
             }
-            response.onError(err);
+            safelyError(response, err);
         } catch (final RuntimeException | IOException err) {
-            response.onError(securelyWrapError(log, err));
+            safelyError(response, securelyWrapError(log, err));
         }
     }
 
@@ -96,66 +95,56 @@ public class GrpcUtil {
     }
 
     /**
-     * This helper allows one to propagate the onError/onComplete calls through to the delegate, while applying the
-     * provided mapping function to the original input objects. The mapper may return null to skip sending a message to
-     * the delegated stream observer.
-     *
-     * @param delegate the stream observer to ultimately receive this message
-     * @param mapper the function that maps from input objects to the objects the stream observer expects
-     * @param <T> input type
-     * @param <V> output type
-     * @return a new stream observer that maps from T to V before delivering to {@code delegate::onNext}
-     */
-    public static <T, V> StreamObserver<T> mapOnNext(final StreamObserver<V> delegate, final Function<T, V> mapper) {
-        return new StreamObserver<T>() {
-            @Override
-            public void onNext(final T value) {
-                final V mapped = mapper.apply(value);
-                if (mapped != null) {
-                    delegate.onNext(mapped);
-                }
-            }
-
-            @Override
-            public void onError(final Throwable t) {
-                delegate.onError(t);
-            }
-
-            @Override
-            public void onCompleted() {
-                delegate.onCompleted();
-            }
-        };
-    }
-
-    /**
      * Wraps the provided runner in a try/catch block to minimize damage caused by a failing externally supplied helper.
      *
+     * @param observer the stream that will be used in the runnable
      * @param runner the runnable to execute safely
      */
-    public static void safelyExecute(final FunctionalInterfaces.ThrowingRunnable<Exception> runner) {
-        try {
-            runner.run();
-        } catch (final Exception err) {
-            log.debug().append("Unanticipated gRPC Error: ").append(err).endl();
-        }
-    }
-
-    /**
-     * Wraps the provided runner in a try/catch block to minimize damage caused by a failing externally supplied helper.
-     *
-     * @param runner the runnable to execute safely
-     */
-    public static void safelyExecuteLocked(final Object lockedObject,
+    private static void safelyExecuteLocked(final StreamObserver<?> observer,
             final FunctionalInterfaces.ThrowingRunnable<Exception> runner) {
         try {
             // noinspection SynchronizationOnLocalVariableOrMethodParameter
-            synchronized (lockedObject) {
+            synchronized (observer) {
                 runner.run();
             }
         } catch (final Exception err) {
             log.debug().append("Unanticipated gRPC Error: ").append(err).endl();
         }
+    }
+
+    /**
+     * Sends one message to the stream, ignoring any errors that may happen during that call.
+     *
+     * @param observer the stream to complete
+     * @param message the message to send on this stream
+     * @param <T> the type of message that the stream handles
+     */
+    public static <T> void safelyOnNext(StreamObserver<T> observer, T message) {
+        safelyExecuteLocked(observer, () -> observer.onNext(message));
+    }
+
+    /**
+     * Sends one message and then completes the stream, ignoring any errors that may happen during these calls. Useful
+     * for unary responses.
+     *
+     * @param observer the stream to complete
+     * @param message the last message to send on this stream before completing
+     * @param <T> the type of message that the stream handles
+     */
+    public static <T> void safelyComplete(StreamObserver<T> observer, T message) {
+        safelyExecuteLocked(observer, () -> {
+            observer.onNext(message);
+            observer.onCompleted();
+        });
+    }
+
+    /**
+     * Completes the stream, ignoring any errors that may happen during this call.
+     *
+     * @param observer the stream to complete
+     */
+    public static void safelyComplete(StreamObserver<?> observer) {
+        safelyExecuteLocked(observer, observer::onCompleted);
     }
 
     /**

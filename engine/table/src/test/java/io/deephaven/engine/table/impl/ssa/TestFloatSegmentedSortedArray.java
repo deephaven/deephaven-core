@@ -10,6 +10,9 @@ package io.deephaven.engine.table.impl.ssa;
 
 import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.testutil.ColumnInfo;
+import io.deephaven.engine.testutil.GenerateTableUpdates;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
@@ -29,7 +32,7 @@ import org.junit.experimental.categories.Category;
 
 import java.util.Random;
 
-import static io.deephaven.engine.table.impl.TstUtils.*;
+import static io.deephaven.engine.testutil.TstUtils.*;
 
 @Category(ParallelTest.class)
 public class TestFloatSegmentedSortedArray extends RefreshingTableTestCase {
@@ -89,7 +92,7 @@ public class TestFloatSegmentedSortedArray extends RefreshingTableTestCase {
 
     private void testShifts(@NotNull final SsaTestHelpers.TestDescriptor desc) {
         final Random random = new Random(desc.seed());
-        final TstUtils.ColumnInfo[] columnInfo;
+        final ColumnInfo[] columnInfo;
         final QueryTable table = getTable(desc.tableSize(), random, columnInfo = initColumnInfos(new String[]{"Value"},
                 SsaTestHelpers.getGeneratorForFloat()));
 
@@ -170,7 +173,7 @@ public class TestFloatSegmentedSortedArray extends RefreshingTableTestCase {
                     }
                 }
             };
-            asFloat.listenForUpdates(asFloatListener);
+            asFloat.addUpdateListener(asFloatListener);
 
             while (desc.advance(50)) {
                 UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() ->
@@ -186,7 +189,7 @@ public class TestFloatSegmentedSortedArray extends RefreshingTableTestCase {
 
     private void testUpdates(@NotNull final SsaTestHelpers.TestDescriptor desc, boolean allowAddition, boolean allowRemoval) {
         final Random random = new Random(desc.seed());
-        final TstUtils.ColumnInfo[] columnInfo;
+        final ColumnInfo[] columnInfo;
         final QueryTable table = getTable(desc.tableSize(), random, columnInfo = initColumnInfos(new String[]{"Value"},
                 SsaTestHelpers.getGeneratorForFloat()));
 
@@ -213,7 +216,7 @@ public class TestFloatSegmentedSortedArray extends RefreshingTableTestCase {
                     }
                 }
             };
-            asFloat.listenForUpdates(asFloatListener);
+            asFloat.addUpdateListener(asFloatListener);
 
             while (desc.advance(50)) {
                 UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {

@@ -149,7 +149,7 @@ public class ColumnsToRowsTransform {
         final List<String> expandSet = new ArrayList<>();
 
         final int bits = 64 - Long.numberOfLeadingZeros(fanout - 1);
-        final CrossJoinShiftState crossJoinShiftState = bits > 0 ? new CrossJoinShiftState(bits) : null;
+        final CrossJoinShiftState crossJoinShiftState = bits > 0 ? new CrossJoinShiftState(bits, false) : null;
         final Class<?>[] valueTypes = new Class[transposeColumns.length];
         final String[] typeSourceName = new String[transposeColumns.length];
         final ColumnSource<?>[][] sourcesToTranspose = new ColumnSource[transposeColumns.length][labels.length];
@@ -179,7 +179,7 @@ public class ColumnsToRowsTransform {
             }
             expandSet.add(name);
             if (crossJoinShiftState != null) {
-                resultMap.put(name, new BitShiftingColumnSource<>(crossJoinShiftState, cs));
+                resultMap.put(name, BitShiftingColumnSource.maybeWrap(crossJoinShiftState, cs));
             } else {
                 resultMap.put(name, cs);
             }
@@ -238,7 +238,7 @@ public class ColumnsToRowsTransform {
 
             final ModifiedColumnSet.Transformer transformer =
                     querySource.newModifiedColumnSetTransformer(sourceColumns, resultColumnSets);
-            querySource.listenForUpdates(new BaseTable.ListenerImpl("columnsToRows(" + labelColumn + ", "
+            querySource.addUpdateListener(new BaseTable.ListenerImpl("columnsToRows(" + labelColumn + ", "
                     + Arrays.toString(valueColumns) + ", " + Arrays.deepToString(transposeColumns) + ")", querySource,
                     result) {
                 @Override
@@ -613,11 +613,6 @@ public class ColumnsToRowsTransform {
                 transposeFillContext.permuteKernel.permute((WritableChunk) transposeFillContext.tempValues,
                         transposeFillContext.outputPositions[ii], destination);
             }
-        }
-
-        @Override
-        public boolean preventsParallelism() {
-            return Arrays.stream(transposeColumns).anyMatch(ColumnSource::preventsParallelism);
         }
 
         @Override

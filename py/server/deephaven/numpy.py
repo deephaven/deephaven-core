@@ -17,18 +17,6 @@ from deephaven.table import Table
 _JPrimitiveArrayConversionUtility = jpy.get_type("io.deephaven.integrations.common.PrimitiveArrayConversionUtility")
 
 
-def freeze_table(table: Table) -> Table:
-    """ Returns a static snapshot of the source ticking table.
-
-    Args:
-        table (Table): the source table
-
-    Returns:
-        a new table
-    """
-    return empty_table(0).snapshot(table, True)
-
-
 def _to_column_name(name: str) -> str:
     """ Transforms the given name string into a valid table column name. """
     tmp_name = re.sub(r"\W+", " ", str(name)).strip()
@@ -47,6 +35,8 @@ def column_to_numpy_array(col_def: Column, j_array: jpy.JType) -> np.ndarray:
         elif col_def.data_type == dtypes.bool_:
             bytes_ = _JPrimitiveArrayConversionUtility.translateArrayBooleanToByte(j_array)
             np_array = np.frombuffer(bytes_, col_def.data_type.np_type)
+        elif col_def.data_type == dtypes.string:
+            np_array = np.array([s for s in j_array], dtypes.string.np_type)
         elif col_def.data_type.np_type is not np.object_:
             try:
                 np_array = np.frombuffer(j_array, col_def.data_type.np_type)
@@ -84,15 +74,6 @@ def _columns_to_2d_numpy_array(col_def: Column, j_arrays: List[jpy.JType]) -> np
 
 def _make_input_column(col: str, np_array: np.ndarray, dtype: DType) -> InputColumn:
     """ Creates a InputColumn with the given column name and the numpy array. """
-    if dtype == dtypes.bool_:
-        bytes_ = np_array.astype(dtype=np.int8)
-        j_bytes = dtypes.array(dtypes.byte, bytes_)
-        np_array = _JPrimitiveArrayConversionUtility.translateArrayByteToBoolean(j_bytes)
-
-    if dtype == dtypes.DateTime:
-        longs = jpy.array('long', np_array.astype('datetime64[ns]').astype('int64'))
-        np_array = _JPrimitiveArrayConversionUtility.translateArrayLongToDateTime(longs)
-
     return InputColumn(name=_to_column_name(col), data_type=dtype, input_data=np_array)
 
 
@@ -116,7 +97,7 @@ def to_numpy(table: Table, cols: List[str] = None) -> np.ndarray:
 
     try:
         if table.is_refreshing:
-            table = freeze_table(table)
+            table = table.snapshot()
 
         col_def_dict = {col.name: col for col in table.columns}
         if not cols:
@@ -167,10 +148,10 @@ def to_table(np_array: np.ndarray, cols: List[str]) -> Table:
         dtype = dtypes.from_np_dtype(np_array.dtype)
 
         if len(cols) == 1:
-            input_cols.append(_make_input_column(cols[0], np_array, dtype))
+            input_cols.append(_make_input_column(cols[0], np.stack(np_array, axis=1)[0], dtype))
         else:
             for i, col in enumerate(cols):
-                input_cols.append(_make_input_column(col, np_array[:, [i]], dtype))
+                input_cols.append(_make_input_column(col, np.stack(np_array[:, [i]], axis=1)[0], dtype))
 
         return new_table(cols=input_cols)
     except DHError:

@@ -4,20 +4,20 @@ Fluent classes representing expressions
 Leaf classes
 ------------
 
-.. doxygenclass:: deephaven::client::highlevel::NumericExpression
+.. doxygenclass:: deephaven::client::NumericExpression
    :members:
 
-.. doxygenclass:: deephaven::client::highlevel::StringExpression
+.. doxygenclass:: deephaven::client::StringExpression
    :members:
 
-.. doxygenclass:: deephaven::client::highlevel::DateTimeExpression
+.. doxygenclass:: deephaven::client::DateTimeExpression
    :members:
 
-.. doxygenclass:: deephaven::client::highlevel::BooleanExpression
+.. doxygenclass:: deephaven::client::BooleanExpression
    :members:
 
 Intermediate classes
 --------------------
 
-.. doxygenclass:: deephaven::client::highlevel::Expression
+.. doxygenclass:: deephaven::client::Expression
    :members:

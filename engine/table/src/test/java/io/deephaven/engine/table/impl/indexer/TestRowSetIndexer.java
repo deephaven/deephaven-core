@@ -7,6 +7,12 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.*;
+import io.deephaven.engine.testutil.ColumnInfo;
+import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.testutil.generator.IntGenerator;
+import io.deephaven.engine.testutil.generator.SetGenerator;
+import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
+import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.ColumnSource;
@@ -60,22 +66,17 @@ public class TestRowSetIndexer extends RefreshingTableTestCase {
     public void testGrouping(final boolean immutableColumns, final Random random, final MutableInt numSteps) {
         int size = 100;
 
-        TstUtils.ColumnInfo[] columnInfo = new TstUtils.ColumnInfo[3];
+        ColumnInfo<?, ?>[] columnInfo = new ColumnInfo[3];
         if (immutableColumns) {
-            // noinspection unchecked
-            columnInfo[0] = new TstUtils.ColumnInfo(new TstUtils.SetGenerator<>("a", "b", "c", "d", "e", "f"), "Sym",
-                    TstUtils.ColumnInfo.ColAttributes.Immutable);
-            // noinspection unchecked
-            columnInfo[1] = new TstUtils.ColumnInfo(new TstUtils.IntGenerator(10, 100), "intCol",
-                    TstUtils.ColumnInfo.ColAttributes.Immutable);
+            columnInfo[0] = new ColumnInfo<>(new SetGenerator<>("a", "b", "c", "d", "e", "f"), "Sym",
+                    ColumnInfo.ColAttributes.Immutable);
+            columnInfo[1] = new ColumnInfo<>(new IntGenerator(10, 100), "intCol",
+                    ColumnInfo.ColAttributes.Immutable);
         } else {
-            // noinspection unchecked
-            columnInfo[0] = new TstUtils.ColumnInfo(new TstUtils.SetGenerator<>("a", "b", "c", "d", "e", "f"), "Sym");
-            // noinspection unchecked
-            columnInfo[1] = new TstUtils.ColumnInfo(new TstUtils.IntGenerator(10, 100), "intCol");
+            columnInfo[0] = new ColumnInfo<>(new SetGenerator<>("a", "b", "c", "d", "e", "f"), "Sym");
+            columnInfo[1] = new ColumnInfo<>(new IntGenerator(10, 100), "intCol");
         }
-        // noinspection unchecked
-        columnInfo[2] = new TstUtils.ColumnInfo(new TstUtils.SetGenerator<>(10.1, 20.1, 30.1), "doubleCol");
+        columnInfo[2] = new ColumnInfo<>(new SetGenerator<>(10.1, 20.1, 30.1), "doubleCol");
 
         final QueryTable queryTable = TstUtils.getTable(size, random, columnInfo);
         addGroupingValidator(queryTable, "queryTable");
@@ -180,27 +181,23 @@ public class TestRowSetIndexer extends RefreshingTableTestCase {
         Random random = new Random(0);
         int size = 100;
 
-        TstUtils.ColumnInfo[] columnInfo = new TstUtils.ColumnInfo[4];
-        // noinspection unchecked
-        columnInfo[0] = new TstUtils.ColumnInfo(new TstUtils.SetGenerator<>("a", "b", "c", "d", "e", "f"), "Sym",
-                TstUtils.ColumnInfo.ColAttributes.Immutable, TstUtils.ColumnInfo.ColAttributes.Grouped);
-        // noinspection unchecked
-        columnInfo[1] = new TstUtils.ColumnInfo(new TstUtils.SetGenerator<>("q", "r", "s", "t"), "Sym2",
-                TstUtils.ColumnInfo.ColAttributes.Immutable, TstUtils.ColumnInfo.ColAttributes.Grouped);
-        // noinspection unchecked
-        columnInfo[2] = new TstUtils.ColumnInfo(new TstUtils.IntGenerator(10, 100), "intCol",
-                TstUtils.ColumnInfo.ColAttributes.Immutable, TstUtils.ColumnInfo.ColAttributes.Grouped);
-        // noinspection unchecked
-        columnInfo[3] = new TstUtils.ColumnInfo(new TstUtils.SetGenerator<>(10.1, 20.1, 30.1), "doubleCol");
+        ColumnInfo<?, ?>[] columnInfo = new ColumnInfo[4];
+        columnInfo[0] = new ColumnInfo<>(new SetGenerator<>("a", "b", "c", "d", "e", "f"), "Sym",
+                ColumnInfo.ColAttributes.Immutable, ColumnInfo.ColAttributes.Grouped);
+        columnInfo[1] = new ColumnInfo<>(new SetGenerator<>("q", "r", "s", "t"), "Sym2",
+                ColumnInfo.ColAttributes.Immutable, ColumnInfo.ColAttributes.Grouped);
+        columnInfo[2] = new ColumnInfo<>(new IntGenerator(10, 100), "intCol",
+                ColumnInfo.ColAttributes.Immutable, ColumnInfo.ColAttributes.Grouped);
+        columnInfo[3] = new ColumnInfo<>(new SetGenerator<>(10.1, 20.1, 30.1), "doubleCol");
 
         final QueryTable nonCountingTable = TstUtils.getTable(size, random, columnInfo);
 
         final QueryTable countingTable = CountingTable.getCountingTable(nonCountingTable);
 
-        final ColumnSource symColumnSource = countingTable.getColumnSource("Sym");
-        final ColumnSource sym2ColumnSource = countingTable.getColumnSource("Sym2");
-        final ColumnSource intColumnSource = countingTable.getColumnSource("intCol");
-        final ColumnSource doubleColumnSource = countingTable.getColumnSource("doubleCol");
+        final ColumnSource<?> symColumnSource = countingTable.getColumnSource("Sym");
+        final ColumnSource<?> sym2ColumnSource = countingTable.getColumnSource("Sym2");
+        final ColumnSource<?> intColumnSource = countingTable.getColumnSource("intCol");
+        final ColumnSource<?> doubleColumnSource = countingTable.getColumnSource("doubleCol");
 
         final RowSetIndexer indexer = RowSetIndexer.of(countingTable.getRowSet());
 
@@ -225,7 +222,7 @@ public class TestRowSetIndexer extends RefreshingTableTestCase {
                 intGrouping);
         countingTable.getColumnSources().forEach(x -> ((CountingTable.MethodCounter) x).clear());
 
-        final TupleSource intSymTupleSource = TupleSourceFactory.makeTupleSource(intColumnSource, symColumnSource);
+        final TupleSource<?> intSymTupleSource = TupleSourceFactory.makeTupleSource(intColumnSource, symColumnSource);
 
         Map<Object, RowSet> intSymGrouping = indexer.getGrouping(intSymTupleSource);
         TestCase.assertEquals(0, ((CountingTable.MethodCounter) symColumnSource).getMethodCount("get"));
@@ -235,7 +232,7 @@ public class TestRowSetIndexer extends RefreshingTableTestCase {
                 "intCol+sym", intSymGrouping);
         countingTable.getColumnSources().forEach(x -> ((CountingTable.MethodCounter) x).clear());
 
-        final TupleSource intSymSym2TupleSource =
+        final TupleSource<?> intSymSym2TupleSource =
                 TupleSourceFactory.makeTupleSource(intColumnSource, symColumnSource, sym2ColumnSource);
         Map<Object, RowSet> intSymSym2Grouping = indexer.getGrouping(intSymSym2TupleSource);
         TestCase.assertEquals(0, ((CountingTable.MethodCounter) symColumnSource).getMethodCount("get"));
@@ -246,7 +243,7 @@ public class TestRowSetIndexer extends RefreshingTableTestCase {
                 countingTable, "intCol+sym+sym2", intSymSym2Grouping);
         countingTable.getColumnSources().forEach(x -> ((CountingTable.MethodCounter) x).clear());
 
-        final TupleSource intSymDoubleTupleSource =
+        final TupleSource<?> intSymDoubleTupleSource =
                 TupleSourceFactory.makeTupleSource(intColumnSource, symColumnSource, doubleColumnSource);
         Map<Object, RowSet> intSymDoubleGrouping = indexer.getGrouping(intSymDoubleTupleSource);
         TestCase.assertEquals(0, ((CountingTable.MethodCounter) symColumnSource).getMethodCount("get"));
@@ -259,7 +256,7 @@ public class TestRowSetIndexer extends RefreshingTableTestCase {
                 countingTable, "intCol+sym+doubleCol", intSymDoubleGrouping);
         countingTable.getColumnSources().forEach(x -> ((CountingTable.MethodCounter) x).clear());
 
-        final TupleSource intSymSym2DoubleTupleSource = TupleSourceFactory.makeTupleSource(intColumnSource,
+        final TupleSource<?> intSymSym2DoubleTupleSource = TupleSourceFactory.makeTupleSource(intColumnSource,
                 symColumnSource, sym2ColumnSource, doubleColumnSource);
         Map<Object, RowSet> intSymSym2DoubleGrouping =
                 indexer.getGrouping(intSymSym2DoubleTupleSource);
@@ -279,27 +276,23 @@ public class TestRowSetIndexer extends RefreshingTableTestCase {
         Random random = new Random(0);
         int size = 100;
 
-        TstUtils.ColumnInfo[] columnInfo = new TstUtils.ColumnInfo[4];
-        // noinspection unchecked
-        columnInfo[0] = new TstUtils.ColumnInfo(new TstUtils.SetGenerator<>("a", "b", "c", "d", "e", "f"), "Sym",
-                TstUtils.ColumnInfo.ColAttributes.Immutable, TstUtils.ColumnInfo.ColAttributes.Grouped);
-        // noinspection unchecked
-        columnInfo[1] = new TstUtils.ColumnInfo(new TstUtils.SetGenerator<>("q", "r", "s", "t", "u", "v"), "Sym2",
-                TstUtils.ColumnInfo.ColAttributes.Immutable, TstUtils.ColumnInfo.ColAttributes.Grouped);
-        // noinspection unchecked
-        columnInfo[2] = new TstUtils.ColumnInfo(new TstUtils.IntGenerator(10, 100), "intCol",
-                TstUtils.ColumnInfo.ColAttributes.Immutable, TstUtils.ColumnInfo.ColAttributes.Grouped);
-        // noinspection unchecked
-        columnInfo[3] = new TstUtils.ColumnInfo(new TstUtils.SetGenerator<>(10.1, 20.1, 30.1), "doubleCol");
+        ColumnInfo<?, ?>[] columnInfo = new ColumnInfo[4];
+        columnInfo[0] = new ColumnInfo<>(new SetGenerator<>("a", "b", "c", "d", "e", "f"), "Sym",
+                ColumnInfo.ColAttributes.Immutable, ColumnInfo.ColAttributes.Grouped);
+        columnInfo[1] = new ColumnInfo<>(new SetGenerator<>("q", "r", "s", "t", "u", "v"), "Sym2",
+                ColumnInfo.ColAttributes.Immutable, ColumnInfo.ColAttributes.Grouped);
+        columnInfo[2] = new ColumnInfo<>(new IntGenerator(10, 100), "intCol",
+                ColumnInfo.ColAttributes.Immutable, ColumnInfo.ColAttributes.Grouped);
+        columnInfo[3] = new ColumnInfo<>(new SetGenerator<>(10.1, 20.1, 30.1), "doubleCol");
 
         final QueryTable nonCountingTable = TstUtils.getTable(size, random, columnInfo);
 
         final QueryTable countingTable = CountingTable.getCountingTable(nonCountingTable);
 
-        final ColumnSource symColumnSource = countingTable.getColumnSource("Sym");
-        final ColumnSource sym2ColumnSource = countingTable.getColumnSource("Sym2");
-        final ColumnSource intColumnSource = countingTable.getColumnSource("intCol");
-        final ColumnSource doubleColumnSource = countingTable.getColumnSource("doubleCol");
+        final ColumnSource<?> symColumnSource = countingTable.getColumnSource("Sym");
+        final ColumnSource<?> sym2ColumnSource = countingTable.getColumnSource("Sym2");
+        final ColumnSource<?> intColumnSource = countingTable.getColumnSource("intCol");
+        final ColumnSource<?> doubleColumnSource = countingTable.getColumnSource("doubleCol");
 
         final RowSetIndexer indexer = RowSetIndexer.of(countingTable.getRowSet());
 
@@ -331,7 +324,7 @@ public class TestRowSetIndexer extends RefreshingTableTestCase {
         countingTable.getColumnSources().forEach(x -> ((CountingTable.MethodCounter) x).clear());
 
         keySet.clear();
-        final TupleSource intSymFactory = TupleSourceFactory.makeTupleSource(intColumnSource, symColumnSource);
+        final TupleSource<?> intSymFactory = TupleSourceFactory.makeTupleSource(intColumnSource, symColumnSource);
         TstUtils.selectSubIndexSet(5, countingTable.getRowSet(), random)
                 .forAllRowKeys(row -> keySet.add(intSymFactory.createTuple(row)));
         countingTable.getColumnSources().forEach(x -> ((CountingTable.MethodCounter) x).clear());
@@ -346,7 +339,7 @@ public class TestRowSetIndexer extends RefreshingTableTestCase {
         countingTable.getColumnSources().forEach(x -> ((CountingTable.MethodCounter) x).clear());
 
         keySet.clear();
-        final TupleSource intSymDoubleFactory =
+        final TupleSource<?> intSymDoubleFactory =
                 TupleSourceFactory.makeTupleSource(intColumnSource, symColumnSource, doubleColumnSource);
         TstUtils.selectSubIndexSet(5, countingTable.getRowSet(), random)
                 .forAllRowKeys(row -> keySet.add(intSymDoubleFactory.createTuple(row)));
@@ -366,8 +359,9 @@ public class TestRowSetIndexer extends RefreshingTableTestCase {
                 countingTable.getRowSet(), countingTable, "intCol+sym+doubleCol", intSymDoubleGrouping, keySet);
 
         keySet.clear();
-        final TupleSource intSymSym2DoubleFactory = TupleSourceFactory.makeTupleSource(intColumnSource, symColumnSource,
-                sym2ColumnSource, doubleColumnSource);
+        final TupleSource<?> intSymSym2DoubleFactory =
+                TupleSourceFactory.makeTupleSource(intColumnSource, symColumnSource,
+                        sym2ColumnSource, doubleColumnSource);
         TstUtils.selectSubIndexSet(5, countingTable.getRowSet(), random)
                 .forAllRowKeys(row -> keySet.add(intSymSym2DoubleFactory.createTuple(row)));
         countingTable.getColumnSources().forEach(x -> ((CountingTable.MethodCounter) x).clear());

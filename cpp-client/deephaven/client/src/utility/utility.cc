@@ -110,18 +110,26 @@ std::ostream &operator<<(std::ostream &s, const DebugInfo &o) {
   return streamf(s, "%o@%o:%o args=(%o))", o.func_, o.file_, o.line_, o.args_);
 }
 
-void okOrThrow(const DebugInfo &debugInfo, const arrow::Status &status) {
-  if (status.ok()) {
-    return;
-  }
-
-  auto msg = stringf("Status: %o. Caller: %o", status, debugInfo);
-  throw std::runtime_error(msg);
+namespace internal {
+void trueOrThrowHelper(const DebugInfo &debugInfo) {
+  auto message = stringf("Assertion failed: %o", debugInfo);
+  throw std::runtime_error(message);
 }
+}  // namespace internal
 
 std::string formatDebugString(const char *func, const char *file, size_t line,
     const std::string &message) {
   return stringf("%o@%o:%o: %o", func, file, line, message);
+}
+
+std::string getWhat(std::exception_ptr eptr) {
+  try {
+    std::rethrow_exception(std::move(eptr));
+  } catch (const std::exception &e) {
+    return e.what();
+  } catch (...) {
+    return "Some exception thrown, but could not get message";
+  }
 }
 
 namespace {

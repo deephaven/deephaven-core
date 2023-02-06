@@ -31,6 +31,8 @@ import java.util.function.Supplier;
  */
 public class TDigestPercentileOperator implements IterativeChunkedAggregationOperator {
 
+    static final double COMPRESSION_DEFAULT = 100.0;
+
     private final double compression;
     private final double[] percentiles;
     private final String digestColumnName;
@@ -184,7 +186,7 @@ public class TDigestPercentileOperator implements IterativeChunkedAggregationOpe
     }
 
     @Override
-    public void propagateInitialState(@NotNull final QueryTable resultTable) {
+    public void propagateInitialState(@NotNull final QueryTable resultTable, int startingDestinationsCount) {
         if (resultColumns.length == 0) {
             return;
         }
@@ -200,7 +202,7 @@ public class TDigestPercentileOperator implements IterativeChunkedAggregationOpe
     }
 
     @Override
-    public void resetForStep(@NotNull final TableUpdate upstream) {
+    public void resetForStep(@NotNull final TableUpdate upstream, final int startingDestinationsCount) {
         modifiedThisStep = false;
     }
 
@@ -353,7 +355,7 @@ public class TDigestPercentileOperator implements IterativeChunkedAggregationOpe
         }
 
         @Override
-        public void propagateInitialState(@NotNull final QueryTable resultTable) {
+        public void propagateInitialState(@NotNull final QueryTable resultTable, int startingDestinationsCount) {
             resultTable.getRowSet().forAllRowKeys(this::updateDestination);
         }
 

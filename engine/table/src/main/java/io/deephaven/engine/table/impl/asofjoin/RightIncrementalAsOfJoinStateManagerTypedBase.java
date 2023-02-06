@@ -13,7 +13,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.by.alternatingcolumnsource.AlternatingColumnSource;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
-import io.deephaven.engine.table.impl.sources.LongArraySource;
+import io.deephaven.engine.table.impl.sources.IntegerArraySource;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableByteArraySource;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableLongArraySource;
@@ -29,14 +29,16 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.function.Function;
 
+import static io.deephaven.engine.table.impl.JoinControl.CHUNK_SIZE;
+import static io.deephaven.engine.table.impl.JoinControl.MAX_TABLE_SIZE;
 import static io.deephaven.engine.table.impl.util.TypedHasherUtil.getKeyChunks;
 import static io.deephaven.engine.table.impl.util.TypedHasherUtil.getPrevKeyChunks;
 
 public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends RightIncrementalHashedAsOfJoinStateManager {
-    public static final int CHUNK_SIZE = 4096;
-    private static final long MAX_TABLE_SIZE = 1 << 30; // maximum array size
 
     public static final byte ENTRY_EMPTY_STATE = QueryConstants.NULL_BYTE;
+    private static final int ALTERNATE_SWITCH_MASK = (int) AlternatingColumnSource.ALTERNATE_SWITCH_MASK;
+    private static final int ALTERNATE_INNER_MASK = (int) AlternatingColumnSource.ALTERNATE_INNER_MASK;
 
     // the number of slots in our table
     protected int tableSize;
@@ -76,7 +78,7 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
     // the mask for insertion into the main table (this is used so that we can identify whether a slot belongs to the
     // main or alternate table)
     protected int mainInsertMask = 0;
-    protected int alternateInsertMask = (int) AlternatingColumnSource.ALTERNATE_SWITCH_MASK;
+    protected int alternateInsertMask = ALTERNATE_SWITCH_MASK;
 
     /**
      * Each slot in the hash table has a 'cookie', which we reset by incrementing the cookie generation. The cookie
@@ -87,21 +89,25 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
     protected ImmutableLongArraySource alternateCookieSource;
     protected long cookieGeneration;
     protected int nextCookie;
+    /**
+     * This stores the current set of slots and makes it accessible to the rehashing methods
+     */
+    protected IntegerArraySource hashSlots;
 
     protected void resetCookie() {
         cookieGeneration += (10 + nextCookie);
         nextCookie = 0;
     }
 
-    protected long getCookieMain(long slot) {
+    protected long getCookieMain(int slot) {
         return getCookie(mainCookieSource, slot);
     }
 
-    protected long getCookieAlternate(long slot) {
+    protected long getCookieAlternate(int slot) {
         return getCookie(alternateCookieSource, slot);
     }
 
-    protected long getCookie(ImmutableLongArraySource cookieSource, long slot) {
+    protected long getCookie(ImmutableLongArraySource cookieSource, int slot) {
         long cookie = cookieSource.getUnsafe(slot);
         if (cookie == QueryConstants.NULL_LONG || cookie < cookieGeneration) {
             cookieSource.set(slot, cookie = cookieGeneration + nextCookie);
@@ -110,18 +116,18 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
         return cookie - cookieGeneration;
     }
 
-    protected long makeCookieMain(long slot) {
+    protected long makeCookieMain(int slot) {
         return makeCookie(mainCookieSource, slot);
     }
 
-    protected long makeCookie(ImmutableLongArraySource cookieSource, long slot) {
+    protected long makeCookie(ImmutableLongArraySource cookieSource, int slot) {
         long cookie = cookieGeneration + nextCookie;
         cookieSource.set(slot, cookie);
         nextCookie++;
         return cookie - cookieGeneration;
     }
 
-    protected void migrateCookie(long cookie, long destinationLocation, LongArraySource hashSlots) {
+    protected void migrateCookie(long cookie, int destinationLocation) {
         if (cookie >= cookieGeneration && cookie - cookieGeneration < nextCookie) {
             hashSlots.set(cookie, destinationLocation | mainInsertMask);
             mainCookieSource.set(destinationLocation, cookie);
@@ -258,117 +264,119 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
             final BuildContext bc,
             final RowSequence buildRows,
             final ColumnSource<?>[] buildSources,
-            final LongArraySource hashSlots,
+            final IntegerArraySource hashSlots,
             final TypedHasherUtil.BuildHandler buildHandler) {
+
+        // store this for access by the hashing methods
+        this.hashSlots = hashSlots;
+
         try (final RowSequence.Iterator rsIt = buildRows.getRowSequenceIterator()) {
             // noinspection unchecked
             final Chunk<Values>[] sourceKeyChunks = new Chunk[buildSources.length];
 
             while (rsIt.hasMore()) {
                 final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(bc.chunkSize);
-
-                while (doRehash(initialBuild, bc.rehashCredits, chunkOk.intSize(), hashSlots)) {
-                    migrateFront(hashSlots);
+                while (doRehash(initialBuild, bc.rehashCredits, chunkOk.intSize())) {
+                    migrateFront();
                 }
 
                 getKeyChunks(buildSources, bc.getContexts, sourceKeyChunks, chunkOk);
 
+                final long oldEntries = numEntries;
                 buildHandler.doBuild(chunkOk, sourceKeyChunks);
+                final long entriesAdded = numEntries - oldEntries;
+                // if we actually added anything, then take away from the "equity" we've built up rehashing, otherwise
+                // don't penalize this build call with additional rehashing
+                bc.rehashCredits.subtract(entriesAdded);
 
                 bc.resetSharedContexts();
             }
+        } finally {
+            this.hashSlots = null;
         }
     }
 
     private class LeftBuildHandler implements TypedHasherUtil.BuildHandler {
-        final LongArraySource hashSlots;
         final ObjectArraySource<RowSetBuilderSequential> sequentialBuilders;
 
-        private LeftBuildHandler(final LongArraySource hashSlots) {
-            this.hashSlots = hashSlots;
+        private LeftBuildHandler() {
             this.sequentialBuilders = null;
         }
 
-        private LeftBuildHandler(final LongArraySource hashSlots,
-                final ObjectArraySource<RowSetBuilderSequential> sequentialBuilders) {
-            this.hashSlots = hashSlots;
+        private LeftBuildHandler(final ObjectArraySource<RowSetBuilderSequential> sequentialBuilders) {
             this.sequentialBuilders = sequentialBuilders;
         }
 
         @Override
         public void doBuild(RowSequence chunkOk, Chunk<Values>[] sourceKeyChunks) {
             hashSlots.ensureCapacity(nextCookie + chunkOk.intSize());
-            buildFromLeftSide(chunkOk, sourceKeyChunks, hashSlots, sequentialBuilders);
+            buildFromLeftSide(chunkOk, sourceKeyChunks, sequentialBuilders);
         }
     }
 
     private class RightBuildHandler implements TypedHasherUtil.BuildHandler {
-        final LongArraySource hashSlots;
         final ObjectArraySource<RowSetBuilderSequential> sequentialBuilders;
 
-        private RightBuildHandler(final LongArraySource hashSlots) {
-            this.hashSlots = hashSlots;
+        private RightBuildHandler() {
             this.sequentialBuilders = null;
         }
 
-        private RightBuildHandler(final LongArraySource hashSlots,
-                final ObjectArraySource<RowSetBuilderSequential> sequentialBuilders) {
-            this.hashSlots = hashSlots;
+        private RightBuildHandler(final ObjectArraySource<RowSetBuilderSequential> sequentialBuilders) {
             this.sequentialBuilders = sequentialBuilders;
         }
 
         @Override
         public void doBuild(RowSequence chunkOk, Chunk<Values>[] sourceKeyChunks) {
             hashSlots.ensureCapacity(nextCookie + chunkOk.intSize());
-            buildFromRightSide(chunkOk, sourceKeyChunks, hashSlots, sequentialBuilders);
+            buildFromRightSide(chunkOk, sourceKeyChunks, sequentialBuilders);
         }
     }
 
     @Override
     public int buildFromLeftSide(RowSequence leftRowSet, ColumnSource<?>[] leftSources,
-            @NotNull final LongArraySource addedSlots) {
+            @NotNull final IntegerArraySource addedSlots) {
         if (leftRowSet.isEmpty()) {
             return 0;
         }
         try (final BuildContext bc = makeBuildContext(leftSources, leftRowSet.size())) {
             int startCookie = nextCookie;
-            buildTable(true, bc, leftRowSet, leftSources, addedSlots, new LeftBuildHandler(addedSlots));
+            buildTable(true, bc, leftRowSet, leftSources, addedSlots, new LeftBuildHandler());
             return nextCookie - startCookie;
         }
     }
 
     @Override
     public int buildFromRightSide(RowSequence rightRowSet, ColumnSource<?>[] rightSources,
-            @NotNull final LongArraySource addedSlots, int usedSlots) {
+            @NotNull final IntegerArraySource addedSlots, int usedSlots) {
         if (rightRowSet.isEmpty()) {
             return usedSlots;
         }
         try (final BuildContext bc = makeBuildContext(rightSources, rightRowSet.size())) {
             int startCookie = nextCookie;
-            buildTable(true, bc, rightRowSet, rightSources, addedSlots, new RightBuildHandler(addedSlots));
+            buildTable(true, bc, rightRowSet, rightSources, addedSlots, new RightBuildHandler());
             return usedSlots + (nextCookie - startCookie);
         }
     }
 
     @Override
-    public int markForRemoval(RowSet restampRemovals, ColumnSource<?>[] sources, LongArraySource slots,
+    public int markForRemoval(RowSet restampRemovals, ColumnSource<?>[] sources, IntegerArraySource slots,
             ObjectArraySource<RowSetBuilderSequential> sequentialBuilders) {
         return accumulateIndices(restampRemovals, sources, slots, sequentialBuilders, true);
     }
 
     @Override
-    public int probeAdditions(RowSet restampAdditions, ColumnSource<?>[] sources, LongArraySource slots,
+    public int probeAdditions(RowSet restampAdditions, ColumnSource<?>[] sources, IntegerArraySource slots,
             ObjectArraySource<RowSetBuilderSequential> sequentialBuilders) {
         return accumulateIndices(restampAdditions, sources, slots, sequentialBuilders, false);
     }
 
     @Override
-    public int gatherShiftIndex(RowSet restampAdditions, ColumnSource<?>[] sources, LongArraySource slots,
+    public int gatherShiftIndex(RowSet restampAdditions, ColumnSource<?>[] sources, IntegerArraySource slots,
             ObjectArraySource<RowSetBuilderSequential> sequentialBuilders) {
         return accumulateIndices(restampAdditions, sources, slots, sequentialBuilders, true);
     }
 
-    public int gatherModifications(RowSet restampAdditions, ColumnSource<?>[] sources, LongArraySource slots,
+    public int gatherModifications(RowSet restampAdditions, ColumnSource<?>[] sources, IntegerArraySource slots,
             ObjectArraySource<RowSetBuilderSequential> sequentialBuilders) {
         return accumulateIndices(restampAdditions, sources, slots, sequentialBuilders, false);
     }
@@ -400,23 +408,19 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
     }
 
     private class RightProbeHandler implements TypedHasherUtil.ProbeHandler {
-        final LongArraySource hashSlots;
         final ObjectArraySource<RowSetBuilderSequential> sequentialBuilders;
 
         private RightProbeHandler() {
-            this.hashSlots = null;
             this.sequentialBuilders = null;
         }
 
-        private RightProbeHandler(final LongArraySource hashSlots,
-                final ObjectArraySource<RowSetBuilderSequential> sequentialBuilders) {
-            this.hashSlots = hashSlots;
+        private RightProbeHandler(final ObjectArraySource<RowSetBuilderSequential> sequentialBuilders) {
             this.sequentialBuilders = sequentialBuilders;
         }
 
         @Override
         public void doProbe(RowSequence chunkOk, Chunk<Values>[] sourceKeyChunks) {
-            probeRightSide(chunkOk, sourceKeyChunks, hashSlots, sequentialBuilders);
+            probeRightSide(chunkOk, sourceKeyChunks, sequentialBuilders);
         }
     }
 
@@ -430,7 +434,7 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
         }
     }
 
-    private int accumulateIndices(RowSet rowSet, ColumnSource<?>[] sources, LongArraySource slots,
+    private int accumulateIndices(RowSet rowSet, ColumnSource<?>[] sources, IntegerArraySource slots,
             ObjectArraySource<RowSetBuilderSequential> sequentialBuilders, boolean usePrev) {
         resetCookie();
 
@@ -438,16 +442,20 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
             return 0;
         }
 
+        // store this for access by the hashing methods
+        this.hashSlots = slots;
         try (final ProbeContext pc = makeProbeContext(sources, rowSet.size())) {
-            probeTable(pc, rowSet, usePrev, sources, new RightProbeHandler(slots, sequentialBuilders));
+            probeTable(pc, rowSet, usePrev, sources, new RightProbeHandler(sequentialBuilders));
+        } finally {
+            this.hashSlots = null;
         }
 
         return nextCookie;
     }
 
     @Override
-    public int buildAdditions(boolean isLeftSide, RowSet additions, ColumnSource<?>[] sources, LongArraySource slots,
-            ObjectArraySource<RowSetBuilderSequential> sequentialBuilders) {
+    public int buildAdditions(boolean isLeftSide, RowSet additions, ColumnSource<?>[] sources,
+            IntegerArraySource slots, ObjectArraySource<RowSetBuilderSequential> sequentialBuilders) {
 
         resetCookie();
 
@@ -457,9 +465,9 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
 
         try (final BuildContext bc = makeBuildContext(sources, additions.size())) {
             if (isLeftSide) {
-                buildTable(false, bc, additions, sources, slots, new LeftBuildHandler(slots, sequentialBuilders));
+                buildTable(false, bc, additions, sources, slots, new LeftBuildHandler(sequentialBuilders));
             } else {
-                buildTable(false, bc, additions, sources, slots, new RightBuildHandler(slots, sequentialBuilders));
+                buildTable(false, bc, additions, sources, slots, new RightBuildHandler(sequentialBuilders));
             }
             return nextCookie;
         }
@@ -471,12 +479,7 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
     }
 
     @Override
-    public int getOverflowSize() {
-        return 0;
-    }
-
-    @Override
-    public WritableRowSet getAndClearLeftIndex(long slot) {
+    public WritableRowSet getAndClearLeftIndex(int slot) {
         final RowSetBuilderSequential builder = (RowSetBuilderSequential) leftRowSetSource.getUnsafe(slot);
         leftRowSetSource.set(slot, null);
         if (builder == null) {
@@ -486,24 +489,24 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
     }
 
     @Override
-    public byte getState(long slot) {
+    public byte getState(int slot) {
         final ImmutableByteArraySource source;
-        if ((slot & AlternatingColumnSource.ALTERNATE_SWITCH_MASK) == mainInsertMask) {
+        if ((slot & ALTERNATE_SWITCH_MASK) == mainInsertMask) {
             source = stateSource;
         } else {
             source = alternateStateSource;
         }
         // clear the mask bits
-        slot = slot & AlternatingColumnSource.ALTERNATE_INNER_MASK;
+        slot = slot & ALTERNATE_INNER_MASK;
 
         return source.getUnsafe(slot);
     }
 
     @Override
-    public SegmentedSortedArray getRightSsa(long slot) {
+    public SegmentedSortedArray getRightSsa(int slot) {
         final ImmutableByteArraySource source;
         final ImmutableObjectArraySource<Object> rowSetSource;
-        if ((slot & AlternatingColumnSource.ALTERNATE_SWITCH_MASK) == mainInsertMask) {
+        if ((slot & ALTERNATE_SWITCH_MASK) == mainInsertMask) {
             source = stateSource;
             rowSetSource = rightRowSetSource;
         } else {
@@ -511,7 +514,7 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
             rowSetSource = alternateRightRowSetSource;
         }
         // clear the mask bits
-        slot = slot & AlternatingColumnSource.ALTERNATE_INNER_MASK;
+        slot = slot & ALTERNATE_INNER_MASK;
 
         final byte entryType = source.getUnsafe(slot);
         if ((entryType & ENTRY_RIGHT_MASK) == ENTRY_RIGHT_IS_SSA) {
@@ -521,10 +524,10 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
     }
 
     @Override
-    public SegmentedSortedArray getRightSsa(long slot, Function<RowSet, SegmentedSortedArray> ssaFactory) {
+    public SegmentedSortedArray getRightSsa(int slot, Function<RowSet, SegmentedSortedArray> ssaFactory) {
         final ImmutableByteArraySource source;
         final ImmutableObjectArraySource<Object> rowSetSource;
-        if ((slot & AlternatingColumnSource.ALTERNATE_SWITCH_MASK) == mainInsertMask) {
+        if ((slot & ALTERNATE_SWITCH_MASK) == mainInsertMask) {
             source = stateSource;
             rowSetSource = rightRowSetSource;
         } else {
@@ -532,7 +535,7 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
             rowSetSource = alternateRightRowSetSource;
         }
         // clear the mask bits
-        slot = slot & AlternatingColumnSource.ALTERNATE_INNER_MASK;
+        slot = slot & ALTERNATE_INNER_MASK;
 
         final byte entryType = source.getUnsafe(slot);
         switch (entryType & ENTRY_RIGHT_MASK) {
@@ -552,10 +555,10 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
     }
 
     @Override
-    public WritableRowSet getRightIndex(long slot) {
+    public WritableRowSet getRightIndex(int slot) {
         final ImmutableByteArraySource source;
         final ImmutableObjectArraySource<Object> rowSetSource;
-        if ((slot & AlternatingColumnSource.ALTERNATE_SWITCH_MASK) == mainInsertMask) {
+        if ((slot & ALTERNATE_SWITCH_MASK) == mainInsertMask) {
             source = stateSource;
             rowSetSource = rightRowSetSource;
         } else {
@@ -563,7 +566,7 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
             rowSetSource = alternateRightRowSetSource;
         }
         // clear the mask bits
-        slot = slot & AlternatingColumnSource.ALTERNATE_INNER_MASK;
+        slot = slot & ALTERNATE_INNER_MASK;
 
         final byte entryType = source.getUnsafe(slot);
         if ((entryType & ENTRY_RIGHT_MASK) == ENTRY_RIGHT_IS_INDEX) {
@@ -578,10 +581,10 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
     }
 
     @Override
-    public WritableRowSet getLeftIndex(long slot) {
+    public WritableRowSet getLeftIndex(int slot) {
         final ImmutableByteArraySource source;
         final ImmutableObjectArraySource<Object> rowSetSource;
-        if ((slot & AlternatingColumnSource.ALTERNATE_SWITCH_MASK) == mainInsertMask) {
+        if ((slot & ALTERNATE_SWITCH_MASK) == mainInsertMask) {
             source = stateSource;
             rowSetSource = leftRowSetSource;
         } else {
@@ -589,7 +592,7 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
             rowSetSource = alternateLeftRowSetSource;
         }
         // clear the mask bits
-        slot = slot & AlternatingColumnSource.ALTERNATE_INNER_MASK;
+        slot = slot & ALTERNATE_INNER_MASK;
 
         final byte entryType = source.getUnsafe(slot);
         if ((entryType & ENTRY_LEFT_MASK) == ENTRY_LEFT_IS_INDEX) {
@@ -604,10 +607,10 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
     }
 
     @Override
-    public void setLeftIndex(long slot, RowSet rowSet) {
+    public void setLeftIndex(int slot, RowSet rowSet) {
         final ImmutableByteArraySource source;
         final ImmutableObjectArraySource<Object> rowSetSource;
-        if ((slot & AlternatingColumnSource.ALTERNATE_SWITCH_MASK) == mainInsertMask) {
+        if ((slot & ALTERNATE_SWITCH_MASK) == mainInsertMask) {
             source = stateSource;
             rowSetSource = leftRowSetSource;
         } else {
@@ -615,7 +618,7 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
             rowSetSource = alternateLeftRowSetSource;
         }
         // clear the mask bits
-        slot = slot & AlternatingColumnSource.ALTERNATE_INNER_MASK;
+        slot = slot & ALTERNATE_INNER_MASK;
 
         final byte entryType = source.getUnsafe(slot);
         if ((entryType & ENTRY_LEFT_MASK) == ENTRY_LEFT_IS_EMPTY) {
@@ -627,10 +630,10 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
     }
 
     @Override
-    public void setRightIndex(long slot, RowSet rowSet) {
+    public void setRightIndex(int slot, RowSet rowSet) {
         final ImmutableByteArraySource source;
         final ImmutableObjectArraySource<Object> rowSetSource;
-        if ((slot & AlternatingColumnSource.ALTERNATE_SWITCH_MASK) == mainInsertMask) {
+        if ((slot & ALTERNATE_SWITCH_MASK) == mainInsertMask) {
             source = stateSource;
             rowSetSource = rightRowSetSource;
         } else {
@@ -638,7 +641,7 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
             rowSetSource = alternateRightRowSetSource;
         }
         // clear the mask bits
-        slot = slot & AlternatingColumnSource.ALTERNATE_INNER_MASK;
+        slot = slot & ALTERNATE_INNER_MASK;
 
         final byte entryType = source.getUnsafe(slot);
         if ((entryType & ENTRY_RIGHT_MASK) == ENTRY_RIGHT_IS_EMPTY) {
@@ -650,10 +653,10 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
     }
 
     @Override
-    public SegmentedSortedArray getLeftSsa(long slot) {
+    public SegmentedSortedArray getLeftSsa(int slot) {
         final ImmutableByteArraySource source;
         final ImmutableObjectArraySource<Object> rowSetSource;
-        if ((slot & AlternatingColumnSource.ALTERNATE_SWITCH_MASK) == mainInsertMask) {
+        if ((slot & ALTERNATE_SWITCH_MASK) == mainInsertMask) {
             source = stateSource;
             rowSetSource = leftRowSetSource;
         } else {
@@ -661,7 +664,7 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
             rowSetSource = alternateLeftRowSetSource;
         }
         // clear the mask bits
-        slot = slot & AlternatingColumnSource.ALTERNATE_INNER_MASK;
+        slot = slot & ALTERNATE_INNER_MASK;
 
         final byte entryType = source.getUnsafe(slot);
         if ((entryType & ENTRY_LEFT_MASK) == ENTRY_LEFT_IS_SSA) {
@@ -671,10 +674,10 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
     }
 
     @Override
-    public SegmentedSortedArray getLeftSsa(long slot, Function<RowSet, SegmentedSortedArray> ssaFactory) {
+    public SegmentedSortedArray getLeftSsa(int slot, Function<RowSet, SegmentedSortedArray> ssaFactory) {
         final ImmutableByteArraySource source;
         final ImmutableObjectArraySource<Object> rowSetSource;
-        if ((slot & AlternatingColumnSource.ALTERNATE_SWITCH_MASK) == mainInsertMask) {
+        if ((slot & ALTERNATE_SWITCH_MASK) == mainInsertMask) {
             source = stateSource;
             rowSetSource = leftRowSetSource;
         } else {
@@ -682,7 +685,7 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
             rowSetSource = alternateLeftRowSetSource;
         }
         // clear the mask bits
-        slot = slot & AlternatingColumnSource.ALTERNATE_INNER_MASK;
+        slot = slot & ALTERNATE_INNER_MASK;
 
         final byte entryType = source.getUnsafe(slot);
         switch (entryType & ENTRY_LEFT_MASK) {
@@ -702,10 +705,10 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
     }
 
     @Override
-    public SegmentedSortedArray getLeftSsaOrIndex(long slot, MutableObject<WritableRowSet> indexOutput) {
+    public SegmentedSortedArray getLeftSsaOrIndex(int slot, MutableObject<WritableRowSet> indexOutput) {
         final ImmutableByteArraySource source;
         final ImmutableObjectArraySource<Object> rowSetSource;
-        if ((slot & AlternatingColumnSource.ALTERNATE_SWITCH_MASK) == mainInsertMask) {
+        if ((slot & ALTERNATE_SWITCH_MASK) == mainInsertMask) {
             source = stateSource;
             rowSetSource = leftRowSetSource;
         } else {
@@ -713,7 +716,7 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
             rowSetSource = alternateLeftRowSetSource;
         }
         // clear the mask bits
-        slot = slot & AlternatingColumnSource.ALTERNATE_INNER_MASK;
+        slot = slot & ALTERNATE_INNER_MASK;
 
         final byte entryType = source.getUnsafe(slot);
         final byte stateValueForIndex = (byte) ((entryType & ENTRY_RIGHT_MASK) | ENTRY_LEFT_IS_INDEX);
@@ -722,10 +725,10 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
     }
 
     @Override
-    public SegmentedSortedArray getRightSsaOrIndex(long slot, MutableObject<WritableRowSet> indexOutput) {
+    public SegmentedSortedArray getRightSsaOrIndex(int slot, MutableObject<WritableRowSet> indexOutput) {
         final ImmutableByteArraySource source;
         final ImmutableObjectArraySource<Object> rowSetSource;
-        if ((slot & AlternatingColumnSource.ALTERNATE_SWITCH_MASK) == mainInsertMask) {
+        if ((slot & ALTERNATE_SWITCH_MASK) == mainInsertMask) {
             source = stateSource;
             rowSetSource = rightRowSetSource;
         } else {
@@ -733,7 +736,7 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
             rowSetSource = alternateRightRowSetSource;
         }
         // clear the mask bits
-        slot = slot & AlternatingColumnSource.ALTERNATE_INNER_MASK;
+        slot = slot & ALTERNATE_INNER_MASK;
 
         final byte entryType = source.getUnsafe(slot);
         final byte stateValueForIndex = (byte) ((entryType & ENTRY_LEFT_MASK) | ENTRY_RIGHT_IS_INDEX);
@@ -771,7 +774,7 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
     }
 
     @Nullable
-    private SegmentedSortedArray makeSsaFromBuilder(long slot, Function<RowSet, SegmentedSortedArray> ssaFactory,
+    private SegmentedSortedArray makeSsaFromBuilder(int slot, Function<RowSet, SegmentedSortedArray> ssaFactory,
             ImmutableObjectArraySource<Object> ssaSource, ImmutableByteArraySource stateSource, byte newState) {
         final RowSetBuilderSequential builder = (RowSetBuilderSequential) ssaSource.getUnsafe(slot);
         final RowSet rowSet;
@@ -784,18 +787,18 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
     }
 
     @Nullable
-    private SegmentedSortedArray makeSsaFromEmpty(long slot, Function<RowSet, SegmentedSortedArray> ssaFactory,
+    private SegmentedSortedArray makeSsaFromEmpty(int slot, Function<RowSet, SegmentedSortedArray> ssaFactory,
             ImmutableObjectArraySource<Object> ssaSource, ImmutableByteArraySource stateSource, byte newState) {
         return makeSsaFromIndex(slot, ssaFactory, ssaSource, stateSource, newState, RowSetFactory.empty());
     }
 
     @Nullable
-    private SegmentedSortedArray makeSsaFromIndex(long slot, Function<RowSet, SegmentedSortedArray> ssaFactory,
+    private SegmentedSortedArray makeSsaFromIndex(int slot, Function<RowSet, SegmentedSortedArray> ssaFactory,
             ImmutableObjectArraySource<Object> ssaSource, ImmutableByteArraySource stateSource, byte newState) {
         return makeSsaFromIndex(slot, ssaFactory, ssaSource, stateSource, newState, (RowSet) ssaSource.getUnsafe(slot));
     }
 
-    private SegmentedSortedArray makeSsaFromIndex(long slot, Function<RowSet, SegmentedSortedArray> ssaFactory,
+    private SegmentedSortedArray makeSsaFromIndex(int slot, Function<RowSet, SegmentedSortedArray> ssaFactory,
             ImmutableObjectArraySource<Object> ssaSource, ImmutableByteArraySource stateSource, byte newState,
             RowSet rowSet) {
         stateSource.set(slot, newState);
@@ -823,11 +826,11 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
         mainCookieSource.ensureCapacity(tableSize);
 
         if (mainInsertMask == 0) {
-            mainInsertMask = (int) AlternatingColumnSource.ALTERNATE_SWITCH_MASK;
+            mainInsertMask = ALTERNATE_SWITCH_MASK;
             alternateInsertMask = 0;
         } else {
             mainInsertMask = 0;
-            alternateInsertMask = (int) AlternatingColumnSource.ALTERNATE_SWITCH_MASK;
+            alternateInsertMask = ALTERNATE_SWITCH_MASK;
         }
     }
 
@@ -844,8 +847,7 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
      * @param nextChunkSize the size of the chunk we are processing
      * @return true if a front migration is required
      */
-    public boolean doRehash(boolean fullRehash, MutableInt rehashCredits, int nextChunkSize,
-            LongArraySource hashSlots) {
+    public boolean doRehash(boolean fullRehash, MutableInt rehashCredits, int nextChunkSize) {
         if (rehashPointer > 0) {
             final int requiredRehash = nextChunkSize - rehashCredits.intValue();
             if (requiredRehash <= 0) {
@@ -853,7 +855,7 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
             }
 
             // before building, we need to do at least as much rehash work as we would do build work
-            rehashCredits.add(rehashInternalPartial(requiredRehash, hashSlots));
+            rehashCredits.add(rehashInternalPartial(requiredRehash));
             if (rehashPointer == 0) {
                 clearAlternate();
             }
@@ -880,7 +882,7 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
         if (fullRehash) {
             // if we are doing a full rehash, we need to ditch the alternate
             if (rehashPointer > 0) {
-                rehashInternalPartial((int) numEntries, hashSlots);
+                rehashInternalPartial((int) numEntries);
                 clearAlternate();
             }
 
@@ -920,17 +922,17 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
     }
 
     abstract protected void buildFromLeftSide(RowSequence rowSequence, Chunk[] sourceKeyChunks,
-            final LongArraySource hashSlots, final ObjectArraySource<RowSetBuilderSequential> sequentialBuilders);
+            ObjectArraySource<RowSetBuilderSequential> sequentialBuilders);
 
     abstract protected void buildFromRightSide(RowSequence rowSequence, Chunk[] sourceKeyChunks,
-            final LongArraySource hashSlots, final ObjectArraySource<RowSetBuilderSequential> sequentialBuilders);
+            ObjectArraySource<RowSetBuilderSequential> sequentialBuilders);
 
     abstract protected void probeRightSide(RowSequence rowSequence, Chunk[] sourceKeyChunks,
-            final LongArraySource hashSlots, final ObjectArraySource<RowSetBuilderSequential> sequentialBuilders);
+            ObjectArraySource<RowSetBuilderSequential> sequentialBuilders);
 
-    abstract protected int rehashInternalPartial(int entriesToRehash, LongArraySource hashSlots);
+    abstract protected int rehashInternalPartial(int entriesToRehash);
 
-    abstract protected void migrateFront(LongArraySource hashSlots);
+    abstract protected void migrateFront();
 
-    abstract protected void rehashInternalFull(final int oldSize);
+    abstract protected void rehashInternalFull(int oldSize);
 }

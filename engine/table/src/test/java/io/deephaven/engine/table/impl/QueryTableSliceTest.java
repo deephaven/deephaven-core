@@ -7,6 +7,13 @@ import io.deephaven.base.Procedure;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.engine.testutil.ColumnInfo;
+import io.deephaven.engine.testutil.EvalNugget;
+import io.deephaven.engine.testutil.QueryTableTestBase;
+import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.testutil.generator.IntGenerator;
+import io.deephaven.engine.testutil.generator.SetGenerator;
+import io.deephaven.engine.testutil.generator.SortedLongGenerator;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.rowset.RowSet;
@@ -14,35 +21,33 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 
 import io.deephaven.test.types.OutOfBandTest;
-import java.io.IOException;
 import java.util.Random;
 import org.junit.experimental.categories.Category;
 
-import static io.deephaven.engine.util.TableTools.diff;
+import static io.deephaven.engine.util.TableTools.col;
 import static io.deephaven.engine.util.TableTools.emptyTable;
-import static io.deephaven.engine.util.TableTools.showWithRowSet;
-import static io.deephaven.engine.table.impl.TstUtils.*;
-import static io.deephaven.engine.table.impl.TstUtils.initColumnInfos;
+import static io.deephaven.engine.testutil.TstUtils.*;
+import static io.deephaven.engine.testutil.TstUtils.initColumnInfos;
 
 @Category(OutOfBandTest.class)
 public class QueryTableSliceTest extends QueryTableTestBase {
-    public void testSliceIncremental() throws IOException {
+    public void testSliceIncremental() {
         final int[] sizes = {1, 10, 100};
         for (int size : sizes) {
             testSliceIncremental("size == " + size, size);
         }
     }
 
-    private void testSliceIncremental(final String ctxt, final int size) throws IOException {
+    private void testSliceIncremental(final String ctxt, final int size) {
         final Random random = new Random(0);
-        final TstUtils.ColumnInfo columnInfo[];
+        final ColumnInfo<?, ?>[] columnInfo;
         final QueryTable queryTable = getTable(size, random,
                 columnInfo = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol", "Indices"},
-                        new TstUtils.SetGenerator<>("a", "b", "c", "d"),
-                        new TstUtils.IntGenerator(10, 100),
-                        new TstUtils.SetGenerator<>(10.1, 20.1, 30.1),
-                        new TstUtils.SortedLongGenerator(0, Long.MAX_VALUE - 1)));
-        final EvalNugget en[] = new EvalNugget[] {
+                        new SetGenerator<>("a", "b", "c", "d"),
+                        new IntGenerator(10, 100),
+                        new SetGenerator<>(10.1, 20.1, 30.1),
+                        new SortedLongGenerator(0, Long.MAX_VALUE - 1)));
+        final EvalNugget[] en = new EvalNugget[] {
                 EvalNugget.from(() -> queryTable.head(0)),
                 EvalNugget.from(() -> queryTable.update("x = Indices").head(0)),
                 EvalNugget.from(() -> queryTable.updateView("x = Indices").head(0)),
@@ -363,8 +368,8 @@ public class QueryTableSliceTest extends QueryTableTestBase {
             };
 
             for (int i = 0; i < steps; ++i) {
-                final int ii = i;
-                final int jj = j;
+                final long ii = i;
+                final long jj = j;
                 UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                     RowSet added = RowSetFactory.fromRange(ii * jj, (ii + 1) * jj - 1);
                     upTable.getRowSet().writableCast().insert(added);
@@ -428,29 +433,28 @@ public class QueryTableSliceTest extends QueryTableTestBase {
 
     public void testHeadTailPct() {
         final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
-                c("x", 1, 2, 3), c("y", 'a', 'b', 'c'));
+                col("x", 1, 2, 3), col("y", 'a', 'b', 'c'));
 
-        assertEquals("", diff(table.headPct(0.5),
-                TstUtils.testRefreshingTable(i(2, 4).toTracking(), c("x", 1, 2), c("y", 'a', 'b')), 10));
-        assertEquals("", diff(table.tailPct(0.5),
-                TstUtils.testRefreshingTable(i(4, 6).toTracking(), c("x", 2, 3), c("y", 'b', 'c')), 10));
-        assertEquals("", diff(table.headPct(0.1),
-                TstUtils.testRefreshingTable(i(2).toTracking(), c("x", 1), c("y", 'a')), 10));
-        assertEquals("", diff(table.tailPct(0.1),
-                TstUtils.testRefreshingTable(i(6).toTracking(), c("x", 3), c("y", 'c')), 10));
-
+        assertTableEquals(table.headPct(0.5),
+                TstUtils.testRefreshingTable(i(2, 4).toTracking(), col("x", 1, 2), col("y", 'a', 'b')));
+        assertTableEquals(table.tailPct(0.5),
+                TstUtils.testRefreshingTable(i(4, 6).toTracking(), col("x", 2, 3), col("y", 'b', 'c')));
+        assertTableEquals(table.headPct(0.1),
+                TstUtils.testRefreshingTable(i(2).toTracking(), col("x", 1), col("y", 'a')));
+        assertTableEquals(table.tailPct(0.1),
+                TstUtils.testRefreshingTable(i(6).toTracking(), col("x", 3), col("y", 'c')));
     }
 
-    public void testHeadTailPctIncremental() throws IOException {
+    public void testHeadTailPctIncremental() {
         final int[] sizes = {1, 10, 100};
         for (int size : sizes) {
             testHeadTailPctIncremental("size == " + size, size);
         }
     }
 
-    private void testHeadTailPctIncremental(final String ctxt, final int size) throws IOException {
+    private void testHeadTailPctIncremental(final String ctxt, final int size) {
         final Random random = new Random(0);
-        final ColumnInfo[] columnInfo;
+        final ColumnInfo<?, ?>[] columnInfo;
         final QueryTable queryTable = getTable(size, random,
                 columnInfo = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol"},
                         new SetGenerator<>("a", "b", "c", "d"),

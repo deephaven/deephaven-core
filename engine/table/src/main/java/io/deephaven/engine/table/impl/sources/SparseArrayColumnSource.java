@@ -6,7 +6,7 @@ package io.deephaven.engine.table.impl.sources;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
-import io.deephaven.engine.table.WritableSourceWithEnsurePrevious;
+import io.deephaven.engine.table.WritableSourceWithPrepareForParallelPopulation;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.time.DateTime;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
@@ -71,8 +71,8 @@ import java.util.Collection;
  */
 public abstract class SparseArrayColumnSource<T>
         extends AbstractDeferredGroupingColumnSource<T>
-        implements FillUnordered, WritableColumnSource<T>, InMemoryColumnSource, PossiblyImmutableColumnSource,
-        WritableSourceWithEnsurePrevious {
+        implements FillUnordered<Values>, WritableColumnSource<T>, InMemoryColumnSource, PossiblyImmutableColumnSource,
+        WritableSourceWithPrepareForParallelPopulation {
     public static final SparseArrayColumnSource<?>[] ZERO_LENGTH_SPARSE_ARRAY_COLUMN_SOURCE_ARRAY =
             new SparseArrayColumnSource[0];
 
@@ -195,7 +195,7 @@ public abstract class SparseArrayColumnSource<T>
     }
 
     public void remove(RowSet toRemove) {
-        throw new UnsupportedOperationException();
+        setNull(toRemove);
     }
 
     public static <T> SparseArrayColumnSource<T> getSparseMemoryColumnSource(Collection<T> data, Class<T> type) {
@@ -404,6 +404,15 @@ public abstract class SparseArrayColumnSource<T>
     // endregion fillChunk
 
     @Override
+    public void setNull(RowSequence rowSequence) {
+        if (rowSequence.getAverageRunLengthEstimate() < USE_RANGES_AVERAGE_RUN_LENGTH) {
+            nullByKeys(rowSequence);
+        } else {
+            nullByRanges(rowSequence);
+        }
+    }
+
+    @Override
     public void fillChunkUnordered(
             @NotNull final FillContext context,
             @NotNull final WritableChunk<? super Values> dest,
@@ -429,11 +438,9 @@ public abstract class SparseArrayColumnSource<T>
     abstract void fillPrevByUnRowSequence(@NotNull WritableChunk<? super Values> dest,
             @NotNull LongChunk<? extends RowKeys> keyIndices);
 
-    private static final FillFromContext FILL_FROM_CONTEXT_INSTANCE = new FillFromContext() {};
-
     @Override
     public FillFromContext makeFillFromContext(int chunkCapacity) {
-        return FILL_FROM_CONTEXT_INSTANCE;
+        return DEFAULT_FILL_FROM_INSTANCE;
     }
 
     @Override
@@ -449,6 +456,10 @@ public abstract class SparseArrayColumnSource<T>
     abstract void fillFromChunkByRanges(@NotNull RowSequence rowSequence, Chunk<? extends Values> src);
 
     abstract void fillFromChunkByKeys(@NotNull RowSequence rowSequence, Chunk<? extends Values> src);
+
+    abstract void nullByRanges(@NotNull RowSequence rowSequence);
+
+    abstract void nullByKeys(@NotNull RowSequence rowSequence);
 
     @Override
     public boolean isImmutable() {

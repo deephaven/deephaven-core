@@ -1,6 +1,33 @@
+import io.deephaven.tools.docker.DiffTask
+
 plugins {
+    id 'com.bmuschko.docker-remote-api'
     id 'io.deephaven.project.register'
+    id 'io.deephaven.deephaven-in-docker'
     id 'license'
+}
+
+evaluationDependsOn Docker.registryProject('cpp-client-base')
+
+configurations {
+    cpp {}
+}
+dependencies {
+    cpp project(path: ':proto:proto-backplane-grpc', configuration: 'cpp')
+}
+def protoSourceDir = layout.projectDirectory.dir('deephaven/client/proto')
+def compare = tasks.register('compareProtobuf', DiffTask) {
+    expectedContents.set configurations.cpp
+    actualContents.set protoSourceDir
+    generateTask.set ':cpp-client:updateProtobuf'
+}
+// fail a "check" build if these are out of date
+tasks.getByName('quick').dependsOn(compare)
+
+tasks.register('updateProtobuf', Sync) {
+    finalizedBy compare
+    from configurations.cpp
+    into protoSourceDir
 }
 
 license {
@@ -19,3 +46,77 @@ tasks.getByName('licenseFormat').dependsOn(tasks.create("licenseFormatPy", com.h
 })
 
 project.tasks.getByName('quick').dependsOn project.tasks.getByName('license')
+
+// start a grpc-api server
+String randomSuffix = UUID.randomUUID().toString();
+deephavenDocker {
+    containerName.set "dh-server-for-cpp-${randomSuffix}"
+    networkName.set "cpp-test-network-${randomSuffix}"
+}
+
+def testCppClient = Docker.registerDockerTask(project, 'testCppClient') {
+    // Only tested on x86, and we only build dependencies for x86
+    platform = 'linux/amd64'
+
+    copyIn {
+        from(layout.projectDirectory) {
+            include 'cpp-tests-to-junit.sh'
+            include 'deephaven/CMakeLists.txt'
+            include 'deephaven/client/**'
+            include 'tests/CMakeLists.txt'
+            include 'tests/*.cc'
+            include 'tests/*.h'
+            include 'tests/third_party/**'
+        }
+    }
+    copyOut {
+        into layout.buildDirectory.dir('test-results')
+    }
+    dockerfile {
+        from('deephaven/cpp-client-base:local-build')
+        //
+        // Build client library.
+        //
+        runCommand('mkdir -p /cpp-client/deephaven/client /cpp-client/deephaven/build')
+        copyFile('deephaven/CMakeLists.txt', '/cpp-client/deephaven')
+        copyFile('deephaven/client', '/cpp-client/deephaven/client/')
+        runCommand('''set -eux; \\
+                      cd /cpp-client/deephaven/build; \\
+                      . /cpp-client/deps/env.sh; \\
+                      cmake -DCMAKE_INSTALL_PREFIX=/cpp-client/install ..; \\
+                      make -j\$NCPUS install; \\
+                      cd ..; \\
+                      rm -fr /cpp-client/deephaven/build
+                   ''')
+        //
+        // Build tests.
+        //
+        runCommand('mkdir -p /cpp-client/tests/build /cpp-client/install/bin /out')
+        copyFile('cpp-tests-to-junit.sh', '/cpp-client/install/bin')
+        copyFile('tests/*.cc', '/cpp-client/tests/')
+        copyFile('tests/*.h', '/cpp-client/tests/')
+        copyFile('tests/CMakeLists.txt', '/cpp-client/tests/')
+        copyFile('tests/third_party', '/cpp-client/tests/third_party/')
+        runCommand('''set -eux; \\
+                      cd /cpp-client/tests/build; \\
+                      . /cpp-client/deps/env.sh; \\
+                      cmake -DCMAKE_PREFIX_PATH=/cpp-client/install:$CMAKE_PREFIX_PATH ..; \\
+                      make -j\$NCPUS; \\
+                      mkdir -p /cpp-client/install/bin; \\
+                      cp -f /cpp-client/tests/build/tests /cpp-client/install/bin; \
+                      cd ..; \\
+                      rm -fr /cpp-client/tests/build
+                   ''')
+        //
+        // Setup for test run.
+        //
+        environmentVariable 'DH_HOST', deephavenDocker.containerName.get()
+        environmentVariable 'DH_PORT', '8080'
+    }
+    containerDependencies.dependsOn = [deephavenDocker.healthyTask]
+    containerDependencies.finalizedBy = deephavenDocker.endTask
+    network = deephavenDocker.networkName.get()
+    parentContainers = [ Docker.registryTask(project, 'cpp-client-base') ]
+    entrypoint = ['/cpp-client/install/bin/cpp-tests-to-junit.sh', '/out/cpp-test.xml', '/out/cpp-test.log']
+}
+tasks.check.dependsOn(testCppClient)

@@ -3,12 +3,20 @@
  */
 package io.deephaven.server.runner;
 
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import dagger.BindsInstance;
+import dagger.Component;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.io.logger.LogBuffer;
 import io.deephaven.io.logger.LogBufferGlobal;
 import io.deephaven.proto.DeephavenChannel;
+import io.deephaven.proto.DeephavenChannelImpl;
+import io.deephaven.server.auth.AuthorizationProvider;
+import io.deephaven.server.auth.CommunityAuthorizationProvider;
+import io.deephaven.server.config.ServerConfig;
+import io.deephaven.server.console.NoConsoleSessionModule;
+import io.deephaven.server.log.LogModule;
 import io.deephaven.util.SafeCloseable;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -17,17 +25,54 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 
+import javax.inject.Named;
+import javax.inject.Singleton;
+import java.io.PrintStream;
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 /**
  * Manages a single instance of {@link DeephavenApiServer}.
  */
 public abstract class DeephavenApiServerTestBase {
+    @Singleton
+    @Component(modules = {
+            DeephavenApiServerModule.class,
+            DeephavenApiConfigModule.class,
+            LogModule.class,
+            NoConsoleSessionModule.class,
+            ServerBuilderInProcessModule.class,
+            ExecutionContextUnitTestModule.class,
+    })
+    public interface TestComponent {
+
+        DeephavenApiServer getServer();
+
+        ManagedChannelBuilder<?> channelBuilder();
+
+        @Component.Builder
+        interface Builder {
+
+            @BindsInstance
+            Builder withServerConfig(ServerConfig serverConfig);
+
+            @BindsInstance
+            Builder withOut(@Named("out") PrintStream out);
+
+            @BindsInstance
+            Builder withErr(@Named("err") PrintStream err);
+
+            @BindsInstance
+            Builder withAuthorizationProvider(AuthorizationProvider authorizationProvider);
+
+            TestComponent build();
+        }
+    }
 
     @Rule
     public final GrpcCleanupRule grpcCleanup = new GrpcCleanupRule();
 
-    private DeephavenApiServerInProcessComponent serverComponent;
+    private TestComponent serverComponent;
     private LogBuffer logBuffer;
     private DeephavenApiServer server;
     private SafeCloseable scopeCloseable;
@@ -40,10 +85,15 @@ public abstract class DeephavenApiServerTestBase {
         logBuffer = new LogBuffer(128);
         LogBufferGlobal.setInstance(logBuffer);
 
-        serverComponent = DaggerDeephavenApiServerInProcessComponent
-                .builder()
-                .withSchedulerPoolSize(4)
-                .withSessionTokenExpireTmMs(sessionTokenExpireTmMs())
+        final DeephavenApiServerTestConfig config = DeephavenApiServerTestConfig.builder()
+                .schedulerPoolSize(4)
+                .tokenExpire(sessionTokenExpireTime())
+                .port(-1)
+                .build();
+
+        serverComponent = DaggerDeephavenApiServerTestBase_TestComponent.builder()
+                .withServerConfig(config)
+                .withAuthorizationProvider(new CommunityAuthorizationProvider())
                 .withOut(System.out)
                 .withErr(System.err)
                 .build();
@@ -63,7 +113,6 @@ public abstract class DeephavenApiServerTestBase {
             server.server().join();
         } finally {
             LogBufferGlobal.clear(logBuffer);
-            UpdateGraphProcessor.DEFAULT.resetForUnitTests(true);
         }
     }
 
@@ -71,15 +120,19 @@ public abstract class DeephavenApiServerTestBase {
         return server;
     }
 
+    public LogBuffer logBuffer() {
+        return logBuffer;
+    }
+
     /**
-     * The session token expiration, in milliseconds.
+     * The session token expiration
      *
-     * @return the session token expiration, in milliseconds.
+     * @return the session token expiration
      */
-    public long sessionTokenExpireTmMs() {
+    public Duration sessionTokenExpireTime() {
         // Long expiration is useful for debugging sessions, and the majority of tests should not worry about
         // re-authentication. Any test classes that need an explicit token expiration should override this method.
-        return TimeUnit.DAYS.toMillis(7);
+        return Duration.ofDays(7);
     }
 
     public ManagedChannelBuilder<?> channelBuilder() {
@@ -93,6 +146,6 @@ public abstract class DeephavenApiServerTestBase {
     public DeephavenChannel createChannel() {
         ManagedChannel channel = channelBuilder().build();
         register(channel);
-        return new DeephavenChannel(channel);
+        return new DeephavenChannelImpl(channel);
     }
 }

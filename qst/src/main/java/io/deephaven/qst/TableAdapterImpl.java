@@ -7,10 +7,9 @@ import io.deephaven.api.ColumnName;
 import io.deephaven.api.TableOperations;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.qst.TableAdapterResults.Output;
-import io.deephaven.qst.table.AggregateAllByTable;
-import io.deephaven.qst.table.AggregationTable;
+import io.deephaven.qst.table.AggregateAllTable;
+import io.deephaven.qst.table.AggregateTable;
 import io.deephaven.qst.table.AsOfJoinTable;
-import io.deephaven.qst.table.CountByTable;
 import io.deephaven.qst.table.EmptyTable;
 import io.deephaven.qst.table.ExactJoinTable;
 import io.deephaven.qst.table.HeadTable;
@@ -27,18 +26,19 @@ import io.deephaven.qst.table.SelectDistinctTable;
 import io.deephaven.qst.table.SelectTable;
 import io.deephaven.qst.table.SingleParentTable;
 import io.deephaven.qst.table.SnapshotTable;
+import io.deephaven.qst.table.SnapshotWhenTable;
 import io.deephaven.qst.table.SortTable;
 import io.deephaven.qst.table.TableSpec;
 import io.deephaven.qst.table.TableSpec.Visitor;
 import io.deephaven.qst.table.TailTable;
 import io.deephaven.qst.table.TicketTable;
 import io.deephaven.qst.table.TimeTable;
+import io.deephaven.qst.table.UngroupTable;
 import io.deephaven.qst.table.UpdateByTable;
 import io.deephaven.qst.table.UpdateTable;
 import io.deephaven.qst.table.UpdateViewTable;
 import io.deephaven.qst.table.ViewTable;
 import io.deephaven.qst.table.WhereInTable;
-import io.deephaven.qst.table.WhereNotInTable;
 import io.deephaven.qst.table.WhereTable;
 
 import java.util.Collections;
@@ -155,10 +155,15 @@ class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> impleme
 
     @Override
     public void visit(SnapshotTable snapshotTable) {
-        final TOPS trigger = ops(snapshotTable.trigger());
-        final TABLE base = table(snapshotTable.base());
-        addOp(snapshotTable, trigger.snapshot(base, snapshotTable.doInitialSnapshot(),
-                snapshotTable.stampColumns()));
+        final TOPS base = ops(snapshotTable.base());
+        addOp(snapshotTable, base.snapshot());
+    }
+
+    @Override
+    public void visit(SnapshotWhenTable snapshotWhenTable) {
+        final TOPS base = ops(snapshotWhenTable.base());
+        final TABLE trigger = table(snapshotWhenTable.trigger());
+        addOp(snapshotWhenTable, base.snapshotWhen(trigger, snapshotWhenTable.options()));
     }
 
     @Override
@@ -170,14 +175,9 @@ class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> impleme
     public void visit(WhereInTable whereInTable) {
         final TOPS left = ops(whereInTable.left());
         final TABLE right = table(whereInTable.right());
-        addOp(whereInTable, left.whereIn(right, whereInTable.matches()));
-    }
-
-    @Override
-    public void visit(WhereNotInTable whereNotInTable) {
-        final TOPS left = ops(whereNotInTable.left());
-        final TABLE right = table(whereNotInTable.right());
-        addOp(whereNotInTable, left.whereNotIn(right, whereNotInTable.matches()));
+        final TOPS result = whereInTable.inverted() ? left.whereNotIn(right, whereInTable.matches())
+                : left.whereIn(right, whereInTable.matches());
+        addOp(whereInTable, result);
     }
 
     @Override
@@ -244,25 +244,28 @@ class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> impleme
     }
 
     @Override
-    public void visit(AggregateAllByTable aggAllByTable) {
-        final AggSpec spec = aggAllByTable.spec();
-        if (aggAllByTable.groupByColumns().isEmpty()) {
-            addOp(aggAllByTable, parentOps(aggAllByTable).aggAllBy(spec));
+    public void visit(AggregateAllTable aggregateAllTable) {
+        final AggSpec spec = aggregateAllTable.spec();
+        if (aggregateAllTable.groupByColumns().isEmpty()) {
+            addOp(aggregateAllTable, parentOps(aggregateAllTable).aggAllBy(spec));
         } else {
-            final ColumnName[] groupByColumns = aggAllByTable.groupByColumns().toArray(new ColumnName[0]);
-            addOp(aggAllByTable, parentOps(aggAllByTable).aggAllBy(spec, groupByColumns));
+            final ColumnName[] groupByColumns = aggregateAllTable.groupByColumns().toArray(new ColumnName[0]);
+            addOp(aggregateAllTable, parentOps(aggregateAllTable).aggAllBy(spec, groupByColumns));
         }
     }
 
     @Override
-    public void visit(AggregationTable aggregationTable) {
-        if (aggregationTable.groupByColumns().isEmpty()) {
-            addOp(aggregationTable, ops(aggregationTable.parent()).aggBy(aggregationTable.aggregations(),
-                    aggregationTable.preserveEmpty()));
+    public void visit(AggregateTable aggregateTable) {
+        if (aggregateTable.groupByColumns().isEmpty()) {
+            addOp(aggregateTable, ops(aggregateTable.parent()).aggBy(
+                    aggregateTable.aggregations(),
+                    aggregateTable.preserveEmpty()));
         } else {
-            addOp(aggregationTable, ops(aggregationTable.parent()).aggBy(aggregationTable.aggregations(),
-                    aggregationTable.preserveEmpty(), aggregationTable.initialGroups().map(this::table).orElse(null),
-                    aggregationTable.groupByColumns()));
+            addOp(aggregateTable, ops(aggregateTable.parent()).aggBy(
+                    aggregateTable.aggregations(),
+                    aggregateTable.preserveEmpty(),
+                    aggregateTable.initialGroups().map(this::table).orElse(null),
+                    aggregateTable.groupByColumns()));
         }
     }
 
@@ -287,16 +290,6 @@ class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> impleme
     }
 
     @Override
-    public void visit(CountByTable countByTable) {
-        if (countByTable.groupByColumns().isEmpty()) {
-            addOp(countByTable, parentOps(countByTable).countBy(countByTable.countName().name()));
-        } else {
-            addOp(countByTable, parentOps(countByTable).countBy(countByTable.countName().name(),
-                    countByTable.groupByColumns().toArray(new ColumnName[0])));
-        }
-    }
-
-    @Override
     public void visit(UpdateByTable updateByTable) {
         if (updateByTable.control().isPresent()) {
             addOp(updateByTable, parentOps(updateByTable).updateBy(
@@ -308,6 +301,12 @@ class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> impleme
                     updateByTable.operations(),
                     updateByTable.groupByColumns()));
         }
+    }
+
+    @Override
+    public void visit(UngroupTable ungroupTable) {
+        addOp(ungroupTable, parentOps(ungroupTable)
+                .ungroup(ungroupTable.nullFill(), ungroupTable.ungroupColumns()));
     }
 
     private final class OutputTable implements Output<TOPS, TABLE> {

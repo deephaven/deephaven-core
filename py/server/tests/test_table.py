@@ -1,22 +1,65 @@
 #
 # Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
-
 import unittest
+from types import SimpleNamespace
+from typing import List, Any
 
-from deephaven import DHError, read_csv, empty_table, SortDirection, AsOfMatchRule
+from deephaven import DHError, read_csv, empty_table, SortDirection, AsOfMatchRule, time_table, ugp
 from deephaven.agg import sum_, weighted_avg, avg, pct, group, count_, first, last, max_, median, min_, std, abs_sum, \
     var, formula, partition
+from deephaven.execution_context import make_user_exec_ctx
+from deephaven.html import to_html
+from deephaven.pandas import to_pandas
 from deephaven.table import Table
 from tests.testbase import BaseTestCase
 
 
+# for scoping dependent table operation tests
+def global_fn() -> str:
+    return "global str"
+
+
+global_int = 1001
+a_number = 10001
+
+
+class EmptyCls:
+    ...
+
+
+foo = EmptyCls()
+foo.name = "GOOG"
+foo.price = 1000
+
+
 class TableTestCase(BaseTestCase):
     def setUp(self):
+        super().setUp()
         self.test_table = read_csv("tests/data/test_table.csv")
+        self.aggs_for_rollup = [
+            avg(["aggAvg=var"]),
+            count_("aggCount"),
+            first(["aggFirst=var"]),
+            last(["aggLast=var"]),
+            max_(["aggMax=var"]),
+            min_(["aggMin=var"]),
+            std(["aggStd=var"]),
+            sum_(["aggSum=var"]),
+            abs_sum(["aggAbsSum=var"]),
+            var(["aggVar=var"]),
+        ]
+        self.aggs_not_for_rollup = [group(["aggGroup=var"]),
+                                    partition("aggPartition"),
+                                    median(["aggMed=var"]),
+                                    pct(0.20, ["aggPct=var"]),
+                                    weighted_avg("var", ["weights"]),
+                                    ]
+        self.aggs = self.aggs_for_rollup + self.aggs_not_for_rollup
 
     def tearDown(self) -> None:
         self.test_table = None
+        super().tearDown()
 
     def test_repr(self):
         regex = r"deephaven\.table\.Table\(io\.deephaven\.engine\.table\.Table\(objectRef=0x.+\{.+\}\)\)"
@@ -200,12 +243,12 @@ class TableTestCase(BaseTestCase):
 
     def test_restrict_sort_to(self):
         cols = ["b", "e"]
-        self.test_table.restrict_sort_to(cols)
-        result_table = self.test_table.sort(order_by=cols)
-        self.test_table.restrict_sort_to("b")
-        result_table = self.test_table.sort(order_by="b")
+        restricted_table = self.test_table.restrict_sort_to(cols)
+        result_table = restricted_table.sort(order_by=cols)
+        restricted_table = self.test_table.restrict_sort_to("b")
+        result_table = restricted_table.sort(order_by="b")
         with self.assertRaises(DHError) as cm:
-            self.test_table.sort(order_by=["a"])
+            restricted_table.sort(order_by=["a"])
         self.assertIn("RuntimeError", cm.exception.compact_traceback)
 
     def test_sort_descending(self):
@@ -400,55 +443,93 @@ class TableTestCase(BaseTestCase):
             ["grp_id=(int)(i/5)", "var=(int)i", "weights=(double)1.0/(i+1)"]
         )
 
-        aggs = [
-            group(["aggGroup=var"]),
-            avg(["aggAvg=var"]),
-            count_("aggCount"),
-            partition("aggPartition"),
-            first(["aggFirst=var"]),
-            last(["aggLast=var"]),
-            max_(["aggMax=var"]),
-            median(["aggMed=var"]),
-            min_(["aggMin=var"]),
-            pct(0.20, ["aggPct=var"]),
-            std(["aggStd=var"]),
-            sum_(["aggSum=var"]),
-            abs_sum(["aggAbsSum=var"]),
-            var(["aggVar=var"]),
-            weighted_avg("var", ["weights"]),
-        ]
+        result_table = test_table.agg_by(self.aggs, ["grp_id"])
+        self.assertEqual(result_table.size, 2)
 
-        result_table = test_table.agg_by(aggs, ["grp_id"])
-        self.assertGreaterEqual(result_table.size, 1)
-
-        for agg in aggs:
+        for agg in self.aggs:
             result_table = test_table.agg_by(agg, "grp_id")
-            self.assertGreaterEqual(result_table.size, 1)
+            self.assertEqual(result_table.size, 2)
 
-    def test_snapshot(self):
-        with self.subTest("do_init is False"):
-            t = empty_table(0).update(
-                formulas=["Timestamp=io.deephaven.time.DateTime.now()", "X = i * i", "Y = i + i"]
-            )
-            snapshot = t.snapshot(source_table=self.test_table)
-            self.assertEqual(len(t.columns) + len(self.test_table.columns), len(snapshot.columns))
-            self.assertEqual(0, snapshot.size)
+    def test_agg_by_initial_groups_preserve_empty(self):
+        test_table = empty_table(10)
+        test_table = test_table.update(
+            ["grp_id=(int)(i/5)", "var=(int)i", "weights=(double)1.0/(i+1)"]
+        )
 
-        with self.subTest("do_init is True"):
-            snapshot = t.snapshot(source_table=self.test_table, do_init=True)
+        with self.subTest("no-initial-groups, no-by, preserve_empty only"):
+            t = test_table.where("grp_id > 2")
+            result_table = t.agg_by(self.aggs, preserve_empty=False)
+            self.assertEqual(result_table.size, 0)
+            result_table = t.agg_by(self.aggs, preserve_empty=True)
+            self.assertEqual(result_table.size, 1)
+            print(result_table.to_string())
+
+        with self.subTest("with initial-groups, no-by, and preserve_empty"):
+            init_groups = test_table.update("grp_id=i")
+            # can't specify 'initial-groups' without also specifying 'by'
+            with self.assertRaises(DHError):
+                result_table = test_table.agg_by(self.aggs, initial_groups=init_groups)
+
+        with self.subTest("with initial-groups, by, and preserve_empty"):
+            result_table = test_table.agg_by(self.aggs, by="grp_id", initial_groups=init_groups, preserve_empty=False)
+            self.assertEqual(result_table.size, 2)
+            result_table = test_table.agg_by(self.aggs, by="grp_id", initial_groups=init_groups, preserve_empty=True)
+            self.assertEqual(result_table.size, 10)
+
+    def test_partitioned_agg_by(self):
+        test_table = empty_table(10)
+        test_table = test_table.update(
+            ["grp_id=(int)(i/5)", "var=(int)i", "weights=(double)1.0/(i+1)"]
+        )
+
+        with self.subTest("no-initial-groups"):
+            result_pt = test_table.partitioned_agg_by(aggs=self.aggs, by="grp_id")
+            self.assertGreaterEqual(result_pt.table.size, 2)
+            self.assertEqual(result_pt.constituent_column, "aggPartition")
+            self.assertEqual(result_pt.key_columns, ["grp_id"])
+            for ct in result_pt.constituent_tables:
+                self.assertEqual(ct.size, 5)
+
+        with self.subTest("initial-groups, preserve_empty=True"):
+            init_groups = test_table.update("grp_id=i")
+            result_pt1 = test_table.partitioned_agg_by(aggs=self.aggs, by="grp_id", preserve_empty=True,
+                                                       initial_groups=init_groups)
+            self.assertGreaterEqual(result_pt1.table.size, 10)
+            self.assertTrue(any([ct.size == 0 for ct in result_pt1.constituent_tables]))
+            self.assertTrue(any([ct.size == 5 for ct in result_pt1.constituent_tables]))
+
+        with self.subTest("initial-groups, preserve_empty=False, used to control constituent table order (reversed)"):
+            reversed_init_groups = test_table.update("grp_id=i").reverse()
+            result_pt2 = test_table.partitioned_agg_by(aggs=self.aggs, by="grp_id", initial_groups=reversed_init_groups)
+
+            self.assertEqual(result_pt2.table.size, 2)
+            self.assertEqual(result_pt.keys().to_string(), result_pt2.keys().reverse().to_string())
+
+    def test_snapshot_when(self):
+        t = time_table("00:00:01").update_view(["X = i * i", "Y = i + i"])
+        with self.subTest("with defaults"):
+            snapshot = self.test_table.snapshot_when(t)
+            self.wait_ticking_table_update(snapshot, row_count=1, timeout=5)
             self.assertEqual(self.test_table.size, snapshot.size)
+            self.assertEqual(len(t.columns) + len(self.test_table.columns), len(snapshot.columns))
 
-        with self.subTest("with cols"):
-            snapshot = t.snapshot(source_table=self.test_table, cols="X")
+        with self.subTest("initial=True"):
+            snapshot = self.test_table.snapshot_when(t, initial=True)
+            self.assertEqual(self.test_table.size, snapshot.size)
+            self.assertEqual(len(t.columns) + len(self.test_table.columns), len(snapshot.columns))
+
+        with self.subTest("stamp_cols=\"X\""):
+            snapshot = self.test_table.snapshot_when(t, stamp_cols="X")
             self.assertEqual(len(snapshot.columns), len(self.test_table.columns) + 1)
-            snapshot = t.snapshot(source_table=self.test_table, cols=["X", "Y"])
+
+        with self.subTest("stamp_cols=[\"X\", \"Y\"]"):
+            snapshot = self.test_table.snapshot_when(t, stamp_cols=["X", "Y"])
             self.assertEqual(len(snapshot.columns), len(self.test_table.columns) + 2)
 
-    def test_snapshot_history(self):
-        t = empty_table(1).update(
-            formulas=["Timestamp=io.deephaven.time.DateTime.now()"]
-        )
-        snapshot_hist = t.snapshot_history(source_table=self.test_table)
+    def test_snapshot_when_with_history(self):
+        t = time_table("00:00:01")
+        snapshot_hist = self.test_table.snapshot_when(t, history=True)
+        self.wait_ticking_table_update(snapshot_hist, row_count=1, timeout=5)
         self.assertEqual(1 + len(self.test_table.columns), len(snapshot_hist.columns))
         self.assertEqual(self.test_table.size, snapshot_hist.size)
 
@@ -559,6 +640,224 @@ class TableTestCase(BaseTestCase):
             t = self.test_table.layout_hints(front=["e"], back=True)
         self.assertTrue(cm.exception.root_cause)
         self.assertIn("RuntimeError", cm.exception.compact_traceback)
+
+    def verify_table_data(self, t: Table, expected: List[Any], assert_not_in: bool = False):
+        t_data = to_pandas(t).values.flatten()
+        for s in expected:
+            if assert_not_in:
+                self.assertNotIn(s, t_data)
+            else:
+                self.assertIn(s, t_data)
+
+    def test_update_LEG_closure(self):
+        nonlocal_str = "nonlocal str"
+        closure_str = "closure str"
+
+        def inner_func(arg: str):
+            def local_fn() -> str:
+                return "local str"
+
+            # Note, need to bring a nonlocal_str into the local scope before it can be used in formulas
+            nonlocal nonlocal_str
+            a_number = 20002
+
+            local_int = 101
+            with self.subTest("LEG"):
+                t = empty_table(1)
+                formulas = ["Col1 = local_fn()",
+                            "Col2 = global_fn()",
+                            "Col3 = nonlocal_str",
+                            "Col4 = arg",
+                            "Col5 = local_int",
+                            "Col6 = global_int",
+                            "Col7 = a_number",
+                            ]
+
+                rt = t.update(formulas)
+                column_data = ["local str", "global str", "nonlocal str", arg, 101, 1001, 20002]
+                self.verify_table_data(rt, column_data)
+
+            with self.subTest("Closure"):
+                def closure_fn() -> str:
+                    return closure_str
+
+                formulas = ["Col1 = closure_fn()"]
+                rt = t.update(formulas)
+                self.verify_table_data(rt, ["closure str"])
+                nonlocal closure_str
+                closure_str = "closure str2"
+                rt = t.update(formulas)
+                self.verify_table_data(rt, ["closure str2"])
+
+            with self.subTest("Changing scope"):
+                x = 1
+                rt = empty_table(1).update("X = x")
+                self.verify_table_data(rt, [1])
+                x = 2
+                rt = rt.update(formulas="Y = x")
+                self.verify_table_data(rt, [1, 2])
+
+        inner_func("param str")
+
+    def test_nested_scopes(self):
+        def inner_func(p) -> str:
+            t = empty_table(1).update("X = p * 10")
+            return t.to_string().split()[2]
+
+        with make_user_exec_ctx():
+            t = empty_table(1).update("X = i").update("TableString = inner_func(X + 10)")
+
+        self.assertIn("100", t.to_string())
+
+    def test_nested_scope_ticking(self):
+        def inner_func(p) -> str:
+            t = empty_table(1).update("X = p * 10")
+            return t.to_string().split()[2]
+
+        with make_user_exec_ctx(), ugp.shared_lock():
+            t = time_table("00:00:01").update("X = i").update("TableString = inner_func(X + 10)")
+
+        self.wait_ticking_table_update(t, row_count=5, timeout=10)
+        self.assertIn("100", t.to_string())
+
+    def test_scope_comprehensions(self):
+        with self.subTest("List comprehension"):
+            t = empty_table(1)
+            a_list = range(3)
+            rt_list = [t.update(formulas=["X=a", "Y=a*10"]) for a in a_list]
+            for i, rt in enumerate(rt_list):
+                self.verify_table_data(rt, [i, i * 10])
+
+        with self.subTest("Set comprehension"):
+            rt_set = {(a, t.update(formulas=["X=a", "Y=a*10"])) for a in a_list}
+            for i, rt in rt_set:
+                self.verify_table_data(rt, [i, i * 10])
+
+        with self.subTest("Dict comprehension"):
+            a_dict = {"k1": 101, "k2": 202}
+            rt_dict = {k: t.update(formulas=["X=v", "Y=v*10"]) for k, v in a_dict.items()}
+            for k, rt in rt_dict.items():
+                v = a_dict[k]
+                self.verify_table_data(rt, [v, v * 10])
+
+    def test_scope_lambda(self):
+        t = empty_table(1)
+        lambda_fn = lambda x: t.update(formulas=["X = x", "Y = x * 10"])
+        rt = lambda_fn(10)
+        self.verify_table_data(rt, [10, 10 * 10])
+
+    @classmethod
+    def update_in_class_method(cls, arg1, arg2) -> Table:
+        return empty_table(1).update(formulas=["X = arg1", "Y = arg2"])
+
+    @staticmethod
+    def update_in_static_method(arg1, arg2) -> Table:
+        return empty_table(1).update(formulas=["X = arg1", "Y = arg2"])
+
+    def test_decorated_methods(self):
+        rt = self.update_in_class_method("101", "202")
+        self.verify_table_data(rt, ["101", "202"])
+
+        rt = self.update_in_static_method(101, 202)
+        self.verify_table_data(rt, [101, 202])
+
+    def test_ticking_table_scope(self):
+        from deephaven import ugp
+        x = 1
+        with ugp.shared_lock():
+            rt = time_table("00:00:01").update("X = x")
+        self.wait_ticking_table_update(rt, row_count=1, timeout=5)
+        self.verify_table_data(rt, [1])
+        for i in range(2, 5):
+            x = i
+            self.wait_ticking_table_update(rt, row_count=i, timeout=5)
+        self.verify_table_data(rt, list(range(2, 5)), assert_not_in=True)
+
+        x = SimpleNamespace()
+        x.v = 1
+        with ugp.shared_lock():
+            rt = time_table("00:00:01").update("X = x.v").drop_columns("Timestamp")
+        self.wait_ticking_table_update(rt, row_count=1, timeout=5)
+
+        for i in range(2, 5):
+            with ugp.exclusive_lock():
+                x.v = i
+                self.wait_ticking_table_update(rt, row_count=rt.size + 1, timeout=5)
+        self.verify_table_data(rt, list(range(1, 5)))
+
+    def test_long_number_conversion(self):
+        long_value = 2 ** 32 + 5
+        t = empty_table(1)
+        result = t.update("X = long_value").to_string(1)
+        self.assertEqual(long_value, int(result.split()[2]))
+
+    def test_python_field_access(self):
+        t = empty_table(10)
+        t2 = t.update(formulas=["SYM = `AAPL-` + (String)foo.name", "PRICE = i * 1000"]).where(
+            "PRICE > (int)foo.price + 100")
+        html_output = to_html(t2)
+        self.assertIn("AAPL-GOOG", html_output)
+        self.assertIn("2000", html_output)
+
+    def test_slice(self):
+        with ugp.shared_lock():
+            t = time_table("00:00:00.01")
+        rt = t.slice(0, 3)
+        self.assert_table_equals(t.head(3), rt)
+
+        self.wait_ticking_table_update(t, row_count=5, timeout=5)
+        with ugp.shared_lock():
+            rt = t.slice(t.size, -2)
+            self.assertEqual(0, rt.size)
+        self.wait_ticking_table_update(rt, row_count=1, timeout=5)
+        self.assertGreaterEqual(rt.size, 1)
+
+        rt = t.slice(-3, 0)
+        self.assert_table_equals(t.tail(3), rt)
+
+        rt = t.slice(-3, -2)
+        self.wait_ticking_table_update(rt, row_count=1, timeout=5)
+        self.assert_table_equals(t.tail(3).head(1), rt)
+
+        rt = t.slice(1, 3)
+        self.wait_ticking_table_update(rt, row_count=2, timeout=5)
+        self.assert_table_equals(t.head(3).tail(2), rt)
+
+        with self.assertRaises(DHError):
+            rt = t.slice(3, 2)
+
+    def test_rollup(self):
+        test_table = empty_table(100)
+        test_table = test_table.update(
+            ["grp_id=(int)(i/5)", "var=(int)i", "weights=(double)1.0/(i+1)"]
+        )
+        for agg in self.aggs_not_for_rollup:
+            with self.assertRaises(DHError) as cm:
+                rollup_table = test_table.rollup(aggs=[agg])
+            self.assertRegex(str(cm.exception), r".+ is not supported for rollup")
+
+        rollup_table = test_table.rollup(aggs=self.aggs_for_rollup, by='grp_id')
+        self.assertIsNotNone(rollup_table)
+
+        rollup_table = test_table.rollup(aggs=self.aggs_for_rollup, include_constituents=True)
+        self.assertIsNotNone(rollup_table)
+
+    def test_tree(self):
+        # column 'a' contains duplicate values
+        with self.assertRaises(DHError) as cm:
+            tree_table = self.test_table.tree(id_col='a', parent_col='c')
+        self.assertRegex(str(cm.exception), r".+IllegalStateException")
+
+        tree_table = self.test_table.tail(10).tree(id_col='a', parent_col='c')
+        self.assertIsNotNone(tree_table)
+        self.assertEqual(tree_table.id_col, 'a')
+        self.assertEqual(tree_table.parent_col, 'c')
+
+        tree_table = self.test_table.tail(10).tree(id_col='a', parent_col='a')
+        self.assertIsNotNone(tree_table)
+
+        tree_table = self.test_table.tail(10).tree(id_col='a', parent_col='c', promote_orphans=True)
+        self.assertIsNotNone(tree_table)
 
 
 if __name__ == "__main__":
