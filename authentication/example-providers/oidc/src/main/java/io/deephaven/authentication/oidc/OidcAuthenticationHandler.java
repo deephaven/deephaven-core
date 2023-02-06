@@ -7,7 +7,6 @@ import io.deephaven.configuration.Configuration;
 import org.pac4j.core.client.Client;
 import org.pac4j.core.config.Config;
 import org.pac4j.core.context.WebContext;
-import org.pac4j.core.engine.DefaultSecurityLogic;
 import org.pac4j.oidc.client.KeycloakOidcClient;
 import org.pac4j.oidc.config.KeycloakOidcConfiguration;
 
@@ -71,11 +70,7 @@ public class OidcAuthenticationHandler implements AuthenticationRequestHandler {
     }
 
     private Optional<AuthContext> validate(String stringToken) {
-        DefaultSecurityLogic logic = new DefaultSecurityLogic();
-
-        // logic.setProfileManagerFactory(DeephavenProfileManager::new);
         WebContext context = new FlightTokenWebContext(stringToken);
-
 
         // Inlined the contents of DefaultSecurityLogic that we care about, as we only have one direct client to try
         Client client = pac4jConfig.getClients().getClients().get(0);
@@ -83,11 +78,4 @@ public class OidcAuthenticationHandler implements AuthenticationRequestHandler {
                 .map(credentials -> client.getUserProfile(credentials, context, null))
                 .map(profile -> new AuthContext.SuperUser());
     }
-
-    // public static class DeephavenProfileManager extends ProfileManager {
-    // public DeephavenProfileManager(WebContext context, SessionStore sessionStore) {
-    // super(context, sessionStore);
-    // }
-    //
-    // }
 }
