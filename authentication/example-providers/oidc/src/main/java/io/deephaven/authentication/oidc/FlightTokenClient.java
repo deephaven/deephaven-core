@@ -22,6 +22,5 @@ public class FlightTokenClient extends DirectClient {
     }
 
     @Override
-    protected void internalInit(boolean forceReinit) {
-    }
+    protected void internalInit(boolean forceReinit) {}
 }

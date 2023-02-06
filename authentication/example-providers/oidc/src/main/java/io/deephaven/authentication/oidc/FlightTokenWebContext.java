@@ -11,7 +11,9 @@ import java.util.Optional;
 import static io.deephaven.authentication.oidc.FlightTokenClient.FLIGHT_TOKEN_ATTRIBUTE_NAME;
 
 /**
- * Simple WebContext that only exposes the provided string token as a request attribute. Flight's grpc/http contract isn't flexible enough let most of this make sense, and Deephaven's specific authentication assumptions adds further restrictions.
+ * Simple WebContext that only exposes the provided string token as a request attribute. Flight's grpc/http contract
+ * isn't flexible enough let most of this make sense, and Deephaven's specific authentication assumptions adds further
+ * restrictions.
  */
 class FlightTokenWebContext implements WebContext {
     private final String stringToken;

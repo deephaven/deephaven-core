@@ -18,20 +18,24 @@ import java.util.Optional;
 /**
  * Functionally behaves as a pac4j DirectClient, but can lean on a profile creator as HeaderClient does.
  *
- * At this time, this is specific to Keycloak, as it is an easy IDP to quickly set up, and it can delegate to
- * other IDPs.
+ * At this time, this is specific to Keycloak, as it is an easy IDP to quickly set up, and it can delegate to other
+ * IDPs.
  */
 public class OidcAuthenticationHandler implements AuthenticationRequestHandler {
     // Technically a general OIDC client only needs a discovery url, but this is helpful not only for
-    private static final String KEYCLOAK_BASE_URL = Configuration.getInstance().getProperty("authentication.oidc.keycloak.url");
-    private static final String KEYCLOAK_REALM = Configuration.getInstance().getProperty("authentication.oidc.keycloak.realm");
-    private static final String KEYCLOAK_CLIENT_ID = Configuration.getInstance().getProperty("authentication.oidc.keycloak.clientId");
+    private static final String KEYCLOAK_BASE_URL =
+            Configuration.getInstance().getProperty("authentication.oidc.keycloak.url");
+    private static final String KEYCLOAK_REALM =
+            Configuration.getInstance().getProperty("authentication.oidc.keycloak.realm");
+    private static final String KEYCLOAK_CLIENT_ID =
+            Configuration.getInstance().getProperty("authentication.oidc.keycloak.clientId");
 
     private Config pac4jConfig;
 
     @Override
     public void initialize(String targetUrl) {
-        // Configure Pac4j's keycloak client. Note that these actually just a plain openid configuration and client, with some simplified setup
+        // Configure Pac4j's keycloak client. Note that these actually just a plain openid configuration and client,
+        // with some simplified setup
         KeycloakOidcConfiguration config = new KeycloakOidcConfiguration();
         config.setClientId(KEYCLOAK_CLIENT_ID);
         config.setRealm(KEYCLOAK_REALM);
@@ -55,19 +59,21 @@ public class OidcAuthenticationHandler implements AuthenticationRequestHandler {
     }
 
     @Override
-    public Optional<AuthContext> login(long protocolVersion, ByteBuffer payload, HandshakeResponseListener listener) throws AuthenticationException {
+    public Optional<AuthContext> login(long protocolVersion, ByteBuffer payload, HandshakeResponseListener listener)
+            throws AuthenticationException {
         return validate(StandardCharsets.US_ASCII.decode(payload).toString());
     }
 
     @Override
-    public Optional<AuthContext> login(String payload, MetadataResponseListener listener) throws AuthenticationException {
+    public Optional<AuthContext> login(String payload, MetadataResponseListener listener)
+            throws AuthenticationException {
         return validate(payload);
     }
 
     private Optional<AuthContext> validate(String stringToken) {
         DefaultSecurityLogic logic = new DefaultSecurityLogic();
 
-//        logic.setProfileManagerFactory(DeephavenProfileManager::new);
+        // logic.setProfileManagerFactory(DeephavenProfileManager::new);
         WebContext context = new FlightTokenWebContext(stringToken);
 
 
@@ -78,10 +84,10 @@ public class OidcAuthenticationHandler implements AuthenticationRequestHandler {
                 .map(profile -> new AuthContext.SuperUser());
     }
 
-//    public static class DeephavenProfileManager extends ProfileManager {
-//        public DeephavenProfileManager(WebContext context, SessionStore sessionStore) {
-//            super(context, sessionStore);
-//        }
-//
-//    }
+    // public static class DeephavenProfileManager extends ProfileManager {
+    // public DeephavenProfileManager(WebContext context, SessionStore sessionStore) {
+    // super(context, sessionStore);
+    // }
+    //
+    // }
 }
