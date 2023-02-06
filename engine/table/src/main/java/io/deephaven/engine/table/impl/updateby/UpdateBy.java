@@ -358,12 +358,25 @@ public abstract class UpdateBy {
          * {@code completedAction} when the work is complete
          */
         private void computeCachedColumnRowsets(final Runnable resumeAction) {
+            // Determine which windows need to be computed.
+            if (initialStep) {
+                Arrays.fill(dirtyWindows, true);
+            } else {
+                for (int winIdx = 0; winIdx < windows.length; winIdx++) {
+                    final int fWinIdx = winIdx;
+                    // look in the dirty buckets for the windows that need to be computed
+                    dirtyWindows[fWinIdx] = Arrays.stream(dirtyBuckets)
+                            .anyMatch(bucket -> windows[fWinIdx].isWindowDirty(bucket.windowContexts[fWinIdx]));
+                }
+            }
+
+            // We have nothing to cache, so we can exit early.
             if (!inputCacheNeeded) {
                 resumeAction.run();
                 return;
             }
 
-            // initially everything is dirty so cache everything
+            // Initially everything is dirty so cache everything.
             if (initialStep) {
                 for (int srcIdx : cacheableSourceIndices) {
                     if (inputSourceCacheNeeded[srcIdx]) {
@@ -375,7 +388,6 @@ public abstract class UpdateBy {
                                 (int) Arrays.stream(windows).filter(win -> win.isSourceInUse(srcIdx)).count();
                     }
                 }
-                Arrays.fill(dirtyWindows, true);
                 resumeAction.run();
                 return;
             }
@@ -409,8 +421,6 @@ public abstract class UpdateBy {
                                         }
                                         // at least one dirty bucket will need this source
                                         srcNeeded = true;
-                                        // this window must be computed
-                                        dirtyWindows[winIdx] = true;
                                     }
                                 }
                                 if (srcNeeded) {
