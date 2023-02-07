@@ -34,10 +34,9 @@ def j_hashmap(d: Dict = None) -> jpy.JType:
         return None
 
     r = jpy.get_type("java.util.HashMap")()
-    for key, value in d.items():
-        if value is None:
-            value = ""
-        r.put(key, value)
+    for k, v in d.items():
+        v = "" if v is None else unwrap(v)
+        r.put(k, v)
     return r
 
 
@@ -48,7 +47,7 @@ def j_hashset(s: Set = None) -> jpy.JType:
 
     r = jpy.get_type("java.util.HashSet")()
     for v in s:
-        r.add(v)
+        r.add(unwrap(v))
     return r
 
 
@@ -57,25 +56,18 @@ def j_properties(d: Dict = None) -> jpy.JType:
     if d is None:
         return None
     r = jpy.get_type("java.util.Properties")()
-    for key, value in d.items():
-        if value is None:
-            value = ""
-        r.setProperty(key, value)
+    for k, v in d.items():
+        v = "" if v is None else unwrap(v)
+        r.setProperty(k, v)
     return r
 
 
-def j_map_to_dict(m):
+def j_map_to_dict(m) -> Dict[Any, Any]:
     """Converts a java map to a python dictionary."""
     if not m:
-        return None
+        return {}
 
-    r = {}
-    for e in m.entrySet().toArray():
-        k = e.getKey()
-        v = e.getValue()
-        r[k] = v
-
-    return r
+    return {e.getKey(): e.getValue() for e in m.entrySet().toArray()}
 
 
 T = TypeVar("T")
@@ -140,6 +132,6 @@ def to_sequence(v: Union[T, Sequence[T]] = None) -> Sequence[Union[T, jpy.JType]
     if not v:
         return ()
     if not isinstance(v, Sequence) or isinstance(v, str):
-        return (unwrap(v),)
+        return unwrap(v),
     else:
         return tuple((unwrap(o) for o in v))

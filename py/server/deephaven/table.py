@@ -10,7 +10,7 @@ from __future__ import annotations
 import contextlib
 import inspect
 from enum import Enum, auto
-from typing import Union, Sequence, List, Any, Optional, Callable
+from typing import Union, Sequence, List, Any, Optional, Callable, Dict
 
 import jpy
 import numpy as np
@@ -21,11 +21,13 @@ from deephaven._wrapper import JObjectWrapper, unwrap
 from deephaven.agg import Aggregation
 from deephaven.column import Column, ColumnType
 from deephaven.filters import Filter
-from deephaven.jcompat import j_array_list, to_sequence, j_unary_operator, j_binary_operator
+from deephaven.jcompat import j_array_list, to_sequence, j_unary_operator, j_binary_operator, j_map_to_dict, j_hashmap
 from deephaven.ugp import auto_locking_ctx
 from deephaven.updateby import UpdateByOperation
 
 # Table
+_J_Table = jpy.get_type("io.deephaven.engine.table.Table")
+_JLiveAttributeMap = jpy.get_type("io.deephaven.engine.table.impl.LiveAttributeMap")
 _JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
 _JColumnName = jpy.get_type("io.deephaven.api.ColumnName")
 _JSortColumn = jpy.get_type("io.deephaven.api.SortColumn")
@@ -262,8 +264,7 @@ class Table(JObjectWrapper):
     data ingestion operations, queries, aggregations, joins, etc.
 
     """
-
-    j_object_type = jpy.get_type("io.deephaven.engine.table.Table")
+    j_object_type = _J_Table
 
     def __init__(self, j_table: jpy.JType):
         self.j_table = jpy.cast(j_table, self.j_object_type)
@@ -319,6 +320,34 @@ class Table(JObjectWrapper):
     def j_object(self) -> jpy.JType:
         return self.j_table
 
+    def get_table_attributes(self) -> Dict[str, Any]:
+        """Returns all the attributes defined on the table."""
+        j_map = jpy.cast(self.j_table, _JLiveAttributeMap).getAttributes()
+        return j_map_to_dict(j_map)
+
+    def with_table_attributes(self, attrs: Dict[str, Any]) -> Table:
+        """Returns a new Table that has the provided attributes defined on it and shares the underlying data and schema
+        with this table.
+
+        Note, the table attributes are immutable once defined, and are mostly used internally by the Deephaven
+        engine. For advanced users, certain predefined plug-in attributes provide a way to extend Deephaven with
+        custom-built plug-ins.
+
+        Args:
+            attrs (Dict[str, Any]): a dict of table attribute names and their values
+
+        Returns:
+            a new Table
+
+        Raises:
+            DHError
+        """
+        try:
+            j_map = j_hashmap(attrs)
+            return Table(j_table=jpy.cast(self.j_table, _JLiveAttributeMap).withAttributes(j_map))
+        except Exception as e:
+            raise DHError(e, "failed to TODO") from e
+
     def to_string(self, num_rows: int = 10, cols: Union[str, Sequence[str]] = None) -> str:
         """Returns the first few rows of a table as a pipe-delimited string.
 
@@ -357,7 +386,8 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(message="failed to create a snapshot.") from e
 
-    def snapshot_when(self, trigger_table: Table, stamp_cols: Union[str, List[str]] = None, initial: bool = False, incremental: bool = False, history: bool = False) -> Table:
+    def snapshot_when(self, trigger_table: Table, stamp_cols: Union[str, List[str]] = None, initial: bool = False,
+                      incremental: bool = False, history: bool = False) -> Table:
         """Returns a table that captures a snapshot of this table whenever trigger_table updates.
 
         When trigger_table updates, a snapshot of this table and the "stamp key" from trigger_table form the resulting
@@ -2233,7 +2263,9 @@ class PartitionedTableProxy(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "snapshot operation on the PartitionedTableProxy failed.") from e
 
-    def snapshot_when(self, trigger_table: Union[Table, PartitionedTableProxy], stamp_cols: Union[str, List[str]] = None, initial: bool = False, incremental: bool = False, history: bool = False) -> PartitionedTableProxy:
+    def snapshot_when(self, trigger_table: Union[Table, PartitionedTableProxy],
+                      stamp_cols: Union[str, List[str]] = None, initial: bool = False, incremental: bool = False,
+                      history: bool = False) -> PartitionedTableProxy:
         """Applies the :meth:`~Table.snapshot_when` table operation to all constituent tables of the underlying
         partitioned table with the provided trigger table or PartitionedTableProxy, and produces a new
         PartitionedTableProxy with the result tables as the constituents of its underlying partitioned table.
