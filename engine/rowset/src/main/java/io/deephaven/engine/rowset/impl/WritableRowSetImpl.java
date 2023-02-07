@@ -77,6 +77,14 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
 
     protected void postMutationHook() {}
 
+    @Override
+    public void resetTo(@NotNull final RowSet other) {
+        final OrderedLongSet otherInnerSet = getInnerSet(other);
+        preMutationHook();
+        assign(otherInnerSet.ixCowRef());
+        postMutationHook();
+    }
+
     private void assign(final OrderedLongSet maybeNewImpl) {
         invalidateRowSequenceAsChunkImpl();
         if (maybeNewImpl == innerSet) {

@@ -14,6 +14,7 @@ import io.deephaven.engine.table.impl.updateby.ema.*;
 import io.deephaven.engine.table.impl.updateby.fill.*;
 import io.deephaven.engine.table.impl.updateby.minmax.*;
 import io.deephaven.engine.table.impl.updateby.prod.*;
+import io.deephaven.engine.table.impl.updateby.rollinggroup.ShortRollingGroupOperator;
 import io.deephaven.engine.table.impl.updateby.rollingsum.*;
 import io.deephaven.engine.table.impl.updateby.sum.*;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
@@ -198,14 +199,28 @@ public class UpdateByOperatorFactory {
 
         @Override
         public Void visit(@NotNull final RollingSumSpec rs) {
-            final boolean isTimeBased = rs.revTimeScale().isTimeBased();
-            final String timestampCol = rs.revTimeScale().timestampCol();
+            final boolean isTimeBased = rs.revWindowScale().isTimeBased();
+            final String timestampCol = rs.revWindowScale().timestampCol();
 
             Arrays.stream(pairs)
                     .filter(p -> !isTimeBased || !p.rightColumn().equals(timestampCol))
                     .map(fc -> makeRollingSumOperator(fc,
                             source,
                             rs))
+                    .forEach(ops::add);
+            return null;
+        }
+
+        @Override
+        public Void visit(@NotNull final RollingGroupSpec rg) {
+            final boolean isTimeBased = rg.revWindowScale().isTimeBased();
+            final String timestampCol = rg.revWindowScale().timestampCol();
+
+            Arrays.stream(pairs)
+                    .filter(p -> !isTimeBased || !p.rightColumn().equals(timestampCol))
+                    .map(fc -> makeRollingGroupOperator(fc,
+                            source,
+                            rg))
                     .forEach(ops::add);
             return null;
         }
@@ -360,54 +375,119 @@ public class UpdateByOperatorFactory {
             final Class<?> csType = columnSource.getType();
 
             final String[] affectingColumns;
-            if (rs.revTimeScale().timestampCol() == null) {
+            if (rs.revWindowScale().timestampCol() == null) {
                 affectingColumns = new String[] {pair.rightColumn};
             } else {
-                affectingColumns = new String[] {rs.revTimeScale().timestampCol(), pair.rightColumn};
+                affectingColumns = new String[] {rs.revWindowScale().timestampCol(), pair.rightColumn};
             }
 
-            final long prevTimeScaleUnits = rs.revTimeScale().timescaleUnits();
-            final long fwdTimeScaleUnits = rs.fwdTimeScale().timescaleUnits();
+            final long prevWindowScaleUnits = rs.revWindowScale().timescaleUnits();
+            final long fwdWindowScaleUnits = rs.fwdWindowScale().timescaleUnits();
 
             if (csType == Boolean.class || csType == boolean.class) {
                 return new ByteRollingSumOperator(pair, affectingColumns, rowRedirection,
-                        rs.revTimeScale().timestampCol(),
-                        prevTimeScaleUnits, fwdTimeScaleUnits, NULL_BOOLEAN_AS_BYTE);
+                        rs.revWindowScale().timestampCol(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits, NULL_BOOLEAN_AS_BYTE);
             } else if (csType == byte.class || csType == Byte.class) {
                 return new ByteRollingSumOperator(pair, affectingColumns, rowRedirection,
-                        rs.revTimeScale().timestampCol(),
-                        prevTimeScaleUnits, fwdTimeScaleUnits, NULL_BYTE);
+                        rs.revWindowScale().timestampCol(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits, NULL_BYTE);
             } else if (csType == short.class || csType == Short.class) {
                 return new ShortRollingSumOperator(pair, affectingColumns, rowRedirection,
-                        rs.revTimeScale().timestampCol(),
-                        prevTimeScaleUnits, fwdTimeScaleUnits);
+                        rs.revWindowScale().timestampCol(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits);
             } else if (csType == int.class || csType == Integer.class) {
                 return new IntRollingSumOperator(pair, affectingColumns, rowRedirection,
-                        rs.revTimeScale().timestampCol(),
-                        prevTimeScaleUnits, fwdTimeScaleUnits);
+                        rs.revWindowScale().timestampCol(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits);
             } else if (csType == long.class || csType == Long.class) {
                 return new LongRollingSumOperator(pair, affectingColumns, rowRedirection,
-                        rs.revTimeScale().timestampCol(),
-                        prevTimeScaleUnits, fwdTimeScaleUnits);
+                        rs.revWindowScale().timestampCol(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits);
             } else if (csType == float.class || csType == Float.class) {
                 return new FloatRollingSumOperator(pair, affectingColumns, rowRedirection,
-                        rs.revTimeScale().timestampCol(),
-                        prevTimeScaleUnits, fwdTimeScaleUnits);
+                        rs.revWindowScale().timestampCol(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits);
             } else if (csType == double.class || csType == Double.class) {
                 return new DoubleRollingSumOperator(pair, affectingColumns, rowRedirection,
-                        rs.revTimeScale().timestampCol(),
-                        prevTimeScaleUnits, fwdTimeScaleUnits);
+                        rs.revWindowScale().timestampCol(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits);
             } else if (csType == BigDecimal.class) {
                 return new BigDecimalRollingSumOperator(pair, affectingColumns, rowRedirection,
-                        rs.revTimeScale().timestampCol(),
-                        prevTimeScaleUnits, fwdTimeScaleUnits, control.mathContextOrDefault());
+                        rs.revWindowScale().timestampCol(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits, control.mathContextOrDefault());
             } else if (csType == BigInteger.class) {
                 return new BigIntegerRollingSumOperator(pair, affectingColumns, rowRedirection,
-                        rs.revTimeScale().timestampCol(),
-                        prevTimeScaleUnits, fwdTimeScaleUnits);
+                        rs.revWindowScale().timestampCol(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits);
             }
 
             throw new IllegalArgumentException("Can not perform RollingSum on type " + csType);
         }
+
+        private UpdateByOperator makeRollingGroupOperator(@NotNull final MatchPair pair,
+                @NotNull final TableDefaults source,
+                @NotNull final RollingGroupSpec rs) {
+            // noinspection rawtypes
+            final ColumnSource columnSource = source.getColumnSource(pair.rightColumn);
+            final Class<?> csType = columnSource.getType();
+
+            final String[] affectingColumns;
+            if (rs.revWindowScale().timestampCol() == null) {
+                affectingColumns = new String[] {pair.rightColumn};
+            } else {
+                affectingColumns = new String[] {rs.revWindowScale().timestampCol(), pair.rightColumn};
+            }
+
+            final long prevWindowScaleUnits = rs.revWindowScale().timescaleUnits();
+            final long fwdWindowScaleUnits = rs.fwdWindowScale().timescaleUnits();
+
+            if (csType == short.class || csType == Short.class) {
+                return new ShortRollingGroupOperator(pair, affectingColumns, rowRedirection,
+                        rs.revWindowScale().timestampCol(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits, columnSource);
+            }
+
+            // if (csType == Boolean.class || csType == boolean.class) {
+            // return new ByteRollingSumOperator(pair, affectingColumns, rowRedirection,
+            // rs.revWindowScale().timestampCol(),
+            // prevWindowScaleUnits, fwdWindowScaleUnits, NULL_BOOLEAN_AS_BYTE);
+            // } else if (csType == byte.class || csType == Byte.class) {
+            // return new ByteRollingSumOperator(pair, affectingColumns, rowRedirection,
+            // rs.revWindowScale().timestampCol(),
+            // prevWindowScaleUnits, fwdWindowScaleUnits, NULL_BYTE);
+            // } else if (csType == short.class || csType == Short.class) {
+            // return new ShortRollingSumOperator(pair, affectingColumns, rowRedirection,
+            // rs.revWindowScale().timestampCol(),
+            // prevWindowScaleUnits, fwdWindowScaleUnits);
+            // } else if (csType == int.class || csType == Integer.class) {
+            // return new IntRollingSumOperator(pair, affectingColumns, rowRedirection,
+            // rs.revWindowScale().timestampCol(),
+            // prevWindowScaleUnits, fwdWindowScaleUnits);
+            // } else if (csType == long.class || csType == Long.class) {
+            // return new LongRollingSumOperator(pair, affectingColumns, rowRedirection,
+            // rs.revWindowScale().timestampCol(),
+            // prevWindowScaleUnits, fwdWindowScaleUnits);
+            // } else if (csType == float.class || csType == Float.class) {
+            // return new FloatRollingSumOperator(pair, affectingColumns, rowRedirection,
+            // rs.revWindowScale().timestampCol(),
+            // prevWindowScaleUnits, fwdWindowScaleUnits);
+            // } else if (csType == double.class || csType == Double.class) {
+            // return new DoubleRollingSumOperator(pair, affectingColumns, rowRedirection,
+            // rs.revWindowScale().timestampCol(),
+            // prevWindowScaleUnits, fwdWindowScaleUnits);
+            // } else if (csType == BigDecimal.class) {
+            // return new BigDecimalRollingSumOperator(pair, affectingColumns, rowRedirection,
+            // rs.revWindowScale().timestampCol(),
+            // prevWindowScaleUnits, fwdWindowScaleUnits, control.mathContextOrDefault());
+            // } else if (csType == BigInteger.class) {
+            // return new BigIntegerRollingSumOperator(pair, affectingColumns, rowRedirection,
+            // rs.revWindowScale().timestampCol(),
+            // prevWindowScaleUnits, fwdWindowScaleUnits);
+            // }
+
+            throw new IllegalArgumentException("Can not perform RollingGroup on type " + csType);
+        }
+
     }
 }

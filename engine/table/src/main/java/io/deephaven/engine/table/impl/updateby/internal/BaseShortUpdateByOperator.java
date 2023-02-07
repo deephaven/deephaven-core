@@ -12,6 +12,7 @@ import io.deephaven.chunk.WritableShortChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
@@ -54,7 +55,7 @@ public abstract class BaseShortUpdateByOperator extends UpdateByOperator {
 
             // chunk processing
             for (int ii = 0; ii < len; ii++) {
-                push(NULL_ROW_KEY, ii, 1);
+                push(ii, 1);
                 writeToOutputChunk(ii);
             }
 
@@ -65,11 +66,13 @@ public abstract class BaseShortUpdateByOperator extends UpdateByOperator {
         @Override
         public void accumulateRolling(RowSequence inputKeys,
                                       Chunk<? extends Values>[] influencerValueChunkArr,
+                                      LongChunk<OrderedRowKeys> influencerKeyChunk,
                                       IntChunk<? extends Values> pushChunk,
                                       IntChunk<? extends Values> popChunk,
                                       int len) {
 
             setValuesChunk(influencerValueChunkArr[0]);
+            setKeyChunk(influencerKeyChunk);
             int pushIndex = 0;
 
             // chunk processing
@@ -89,7 +92,7 @@ public abstract class BaseShortUpdateByOperator extends UpdateByOperator {
 
                 // push for this row
                 if (pushCount > 0) {
-                    push(NULL_ROW_KEY, pushIndex, pushCount);
+                    push(pushIndex, pushCount);
                     pushIndex += pushCount;
                 }
 

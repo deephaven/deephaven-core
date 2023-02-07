@@ -47,7 +47,7 @@ public class FloatRollingSumOperator extends BaseFloatUpdateByOperator {
         }
 
         @Override
-        public void push(long key, int pos, int count) {
+        public void push(int pos, int count) {
             floatPairwiseSum.ensureRemaining(count);
 
             for (int ii = 0; ii < count; ii++) {

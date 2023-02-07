@@ -35,7 +35,7 @@ public class IntFillByOperator extends BaseIntUpdateByOperator {
         }
 
         @Override
-        public void push(long key, int pos, int count) {
+        public void push(int pos, int count) {
             Assert.eq(count, "push count", 1);
 
             int val = intValueChunk.get(pos);

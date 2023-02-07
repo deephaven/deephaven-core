@@ -127,6 +127,15 @@ public interface WritableRowSet extends RowSet {
      */
     void compact();
 
+    /**
+     * Reset this RowSet to match another RowSet by updating the {@code innerSet}. This will internally make a
+     * copy-on-write call of the incoming RowSet so the two sets will diverge when either is modified. To maintain
+     * continuity between the sets, this function should be called each UGP cycle.
+     *
+     * @param other the RowSet to accept as the new innerSet.
+     */
+    void resetTo(@NotNull final RowSet other);
+
     @Override
     default TrackingWritableRowSet trackingCast() {
         return (TrackingWritableRowSet) this;

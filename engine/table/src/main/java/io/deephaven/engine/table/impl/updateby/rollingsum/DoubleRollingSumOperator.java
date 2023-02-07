@@ -52,7 +52,7 @@ public class DoubleRollingSumOperator extends BaseDoubleUpdateByOperator {
         }
 
         @Override
-        public void push(long key, int pos, int count) {
+        public void push(int pos, int count) {
             doublePairwiseSum.ensureRemaining(count);
 
             for (int ii = 0; ii < count; ii++) {

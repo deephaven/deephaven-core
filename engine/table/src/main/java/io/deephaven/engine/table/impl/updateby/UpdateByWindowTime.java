@@ -7,10 +7,12 @@ import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.pools.ChunkPoolConstants;
 import io.deephaven.engine.rowset.*;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.ssa.LongSegmentedSortedArray;
+import io.deephaven.engine.table.impl.updateby.rollinggroup.RollingGroupOperator;
 import io.deephaven.engine.table.iterators.LongColumnIterator;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
@@ -317,7 +319,7 @@ class UpdateByWindowTime extends UpdateByWindow {
 
         for (int opIdx : context.dirtyOperatorIndices) {
             UpdateByOperator winOp = operators[opIdx];
-            // call the specialized version of `intializeUpdate()` for these operators
+            // call the specialized version of `intialize()` for these operators
             winOp.initializeRolling(ctx.opContexts[opIdx]);
         }
 
@@ -401,6 +403,8 @@ class UpdateByWindowTime extends UpdateByWindow {
                 }
                 final RowSequence chunkAffectedRows = affectedRowsIt.getNextRowSequenceWithLength(affectedRowIndex);
                 final RowSequence chunkInfluencerRows = influencerRowsIt.getNextRowSequenceWithLength(totalPushCount);
+                final LongChunk<OrderedRowKeys> influencerKeyChunk =
+                        operatorsRequireKeys ? chunkInfluencerRows.asRowKeyChunk() : null;
 
                 // execute the operators
                 ensureGetContextSize(ctx, chunkInfluencerRows.size());
@@ -410,17 +414,24 @@ class UpdateByWindowTime extends UpdateByWindow {
                     UpdateByOperator.Context opCtx = context.opContexts[opIdx];
                     // prep the chunk array needed by the accumulate call
                     final int[] srcIndices = operatorInputSourceSlots[opIdx];
-                    for (int ii = 0; ii < srcIndices.length; ii++) {
+                    for (int ii = 0; ii < srcIndices.length && ii < opCtx.chunkArr.length; ii++) {
                         int srcIdx = srcIndices[ii];
                         // chunk prep
                         prepareValuesChunkForSource(ctx, srcIdx, chunkInfluencerRows);
                         opCtx.chunkArr[ii] = ctx.inputSourceChunks[srcIdx];
                     }
 
+                    // assign the bucket rowsets before we accumulate
+                    if (ctx.opContexts[opIdx] instanceof RollingGroupOperator.Context) {
+                        ((RollingGroupOperator.Context) ctx.opContexts[opIdx])
+                                .assignBucketRowSource(context.timestampValidRowSet, chunkAffectedRows);
+                    }
+
                     // make the specialized call for windowed operators
                     ctx.opContexts[opIdx].accumulateRolling(
                             chunkAffectedRows,
                             opCtx.chunkArr,
+                            influencerKeyChunk,
                             pushChunk,
                             popChunk,
                             chunkAffectedRows.intSize());

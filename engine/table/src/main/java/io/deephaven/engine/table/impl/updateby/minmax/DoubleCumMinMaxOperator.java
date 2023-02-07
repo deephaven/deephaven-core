@@ -37,7 +37,7 @@ public class DoubleCumMinMaxOperator extends BaseDoubleUpdateByOperator {
         }
 
         @Override
-        public void push(long key, int pos, int count) {
+        public void push(int pos, int count) {
             Assert.eq(count, "push count", 1);
 
             final double val = doubleValueChunk.get(pos);

@@ -6,6 +6,7 @@ import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.ModifiedColumnSet;
@@ -60,6 +61,7 @@ public abstract class UpdateByOperator {
     public abstract static class Context implements SafeCloseable {
         protected final Chunk<? extends Values>[] chunkArr;
         protected int nullCount = 0;
+        protected LongChunk<OrderedRowKeys> keyChunk;
 
         public Context(int chunkCount) {
             chunkArr = new Chunk[chunkCount];
@@ -75,16 +77,19 @@ public abstract class UpdateByOperator {
 
         protected abstract void setValuesChunk(@NotNull Chunk<? extends Values> valuesChunk);
 
+        protected void setKeyChunk(final LongChunk<OrderedRowKeys> keyChunk) {
+            this.keyChunk = keyChunk;
+        }
+
         /**
          * Add values to the operators current data set
          *
-         * @param key the row key associated with the value
          * @param pos the index in the associated chunk where this value can be found. Depending on the usage, might be
          *        a values chunk (for cumulative operators) or an influencer values chunk (for windowed). It is the task
          *        of the operator to pull the data from the chunk and use it properly
          * @param count the number of items to push from the chunk
          */
-        protected abstract void push(long key, int pos, int count);
+        protected abstract void push(int pos, int count);
 
         /**
          * Remove values from the operators current data set. This is only valid for windowed operators as cumulative
@@ -103,6 +108,7 @@ public abstract class UpdateByOperator {
 
         public abstract void accumulateRolling(RowSequence inputKeys,
                 Chunk<? extends Values>[] influencerValueChunkArr,
+                LongChunk<OrderedRowKeys> influencerKeyChunk,
                 IntChunk<? extends Values> pushChunk,
                 IntChunk<? extends Values> popChunk,
                 int len);
@@ -281,4 +287,11 @@ public abstract class UpdateByOperator {
      * Clear the output rows by setting value to NULL. Dense sources will apply removes to the inner source.
      */
     protected abstract void clearOutputRows(RowSet toClear);
+
+    /**
+     * Return whether the operator needs row keys during accumulation. Defaults to {@code false}.
+     */
+    protected boolean requiresKeys() {
+        return false;
+    }
 }

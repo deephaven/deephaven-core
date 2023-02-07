@@ -30,6 +30,9 @@ abstract class UpdateByWindow {
     /** The indices in the UpdateBy input source collection for each operator input slots */
     protected final int[][] operatorInputSourceSlots;
 
+    /** Whether the operators for this window require row keys during accumulation */
+    protected final boolean operatorsRequireKeys;
+
     protected int[] uniqueInputSourceIndices;
 
     /** This context will store the necessary info to process a single window for a single bucket */
@@ -117,11 +120,14 @@ abstract class UpdateByWindow {
             final int chunkSize,
             final boolean isInitializeStep);
 
-    UpdateByWindow(UpdateByOperator[] operators, int[][] operatorInputSourceSlots,
-            @Nullable String timestampColumnName) {
+    UpdateByWindow(final UpdateByOperator[] operators,
+            final int[][] operatorInputSourceSlots,
+            @Nullable final String timestampColumnName) {
         this.operators = operators;
         this.operatorInputSourceSlots = operatorInputSourceSlots;
         this.timestampColumnName = timestampColumnName;
+
+        operatorsRequireKeys = Arrays.stream(operators).anyMatch(UpdateByOperator::requiresKeys);
     }
 
     /**
@@ -230,6 +236,7 @@ abstract class UpdateByWindow {
     void assignInputSources(final UpdateByWindowBucketContext context, final ColumnSource<?>[] inputSources) {
         context.inputSources = inputSources;
         context.inputSourceGetContexts = new ChunkSource.GetContext[inputSources.length];
+        // noinspection unchecked
         context.inputSourceChunks = new Chunk[inputSources.length];
 
         for (int srcIdx : context.dirtySourceIndices) {
