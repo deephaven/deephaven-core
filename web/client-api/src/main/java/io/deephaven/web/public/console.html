@@ -21,7 +21,7 @@
         var url = new URL(window.location);
         // create a connection to the server
         client = new dh.CoreClient(url.protocol + "//" + url.host);
-        await client.login({type:dh.CoreClient.LOGIN_TYPE_PSK, token:url.searchParams.get('psk')});
+        await client.login({type:dh.CoreClient.LOGIN_TYPE_ANONYMOUS, token:url.searchParams.get('psk')});
         connection = await client.getAsIdeConnection();
 
         // check if a language was specified
