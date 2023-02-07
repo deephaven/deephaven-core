@@ -319,7 +319,7 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
             if (BigInteger.class.isAssignableFrom(dataType)) {
                 return new BigInteger(literal.getStringValue());
             }
-            if (!String.class.isAssignableFrom(dataType)) {
+            if (!String.class.isAssignableFrom(dataType) && dataType != char.class) {
                 throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
                         "Invalid String type for seek: " + dataType);
             }
