@@ -21,6 +21,8 @@ var $wnd = new Scope();
 bindTo($wnd, self);
 var dh = {}
 $wnd.dh = dh;
+import {dhinternal} from './dh-internal.js';
+$wnd.dhinternal = dhinternal;
 var $gwt_version = "__GWT_VERSION__";
 __JAVASCRIPT_RESULT__
 gwtOnLoad(null, '__MODULE_NAME__', null);
