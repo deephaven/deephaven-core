@@ -77,6 +77,14 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
 
     protected void postMutationHook() {}
 
+    /**
+     * Reset this WritableRowSetImpl to match another RowSet by updating the {@code innerSet}. This will internally
+     * assign {@code this.innerSet} to a copy-on-write reference to {@code ((WritableRowSetImpl) other).innerSet}. The
+     * two sets will diverge when either is modified. To maintain continuity between the sets, this function should be
+     * called each UGP cycle.
+     *
+     * @param other The RowSet to reset to
+     */
     @Override
     public void resetTo(@NotNull final RowSet other) {
         final OrderedLongSet otherInnerSet = getInnerSet(other);

@@ -29,7 +29,7 @@ public class ShortRollingGroupOperator extends RollingGroupOperator {
            final long forwardWindowScaleUnits,
            final ColumnSource<Short> valueSource
            // region extra-constructor-args
-                                   // endregion extra-constructor-args
+           // endregion extra-constructor-args
     ) {
         super(pair, affectingColumns, rowRedirection, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits);
         this.valueSource = valueSource;

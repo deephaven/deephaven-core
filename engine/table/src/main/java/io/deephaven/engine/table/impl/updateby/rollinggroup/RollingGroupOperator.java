@@ -16,6 +16,7 @@ import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.util.ChunkUtils;
 import io.deephaven.engine.table.impl.util.RowRedirection;
+import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -34,7 +35,6 @@ public abstract class RollingGroupOperator extends UpdateByOperator {
 
     public class Context extends UpdateByOperator.Context {
         private static final int RING_BUFFER_INITIAL_CAPACITY = 512;
-
         public final ChunkSink.FillFromContext groupRowSetSourceFillContext;
         public final WritableObjectChunk<RowSet, ? extends Values> groupRowSetSourceOutputValues;
         public final ChunkSink.FillFromContext startSourceFillContext;
@@ -59,7 +59,15 @@ public abstract class RollingGroupOperator extends UpdateByOperator {
         }
 
         @Override
-        public void close() {}
+        public void close() {
+            SafeCloseable.closeArray(
+                    groupRowSetSourceFillContext,
+                    groupRowSetSourceOutputValues,
+                    startSourceFillContext,
+                    startSourceOutputValues,
+                    endSourceFillContext,
+                    endSourceOutputValues);
+        }
 
         @Override
         public void accumulateCumulative(RowSequence inputKeys, Chunk<? extends Values>[] valueChunkArr,
@@ -130,7 +138,13 @@ public abstract class RollingGroupOperator extends UpdateByOperator {
             Assert.geq(windowKeys.size(), "windowKeys.size()", count);
 
             for (int ii = 0; ii < count; ii++) {
-                startKey = windowKeys.removeUnsafe();
+                windowKeys.removeUnsafe();
+                if (!windowKeys.isEmpty()) {
+                    startKey = windowKeys.front();
+                } else {
+                    startKey = NULL_ROW_KEY;
+                    endKey = NULL_ROW_KEY;
+                }
             }
         }
 
@@ -220,6 +234,8 @@ public abstract class RollingGroupOperator extends UpdateByOperator {
     @Override
     public void applyOutputShift(@NotNull final RowSet subRowSetToShift, final long delta) {
         ((ObjectSparseArraySource<?>) groupRowSetSource).shift(subRowSetToShift, delta);
+        ((LongSparseArraySource) startSource).shift(subRowSetToShift, delta);
+        ((LongSparseArraySource) endSource).shift(subRowSetToShift, delta);
     }
     // endregion Shifts
 
