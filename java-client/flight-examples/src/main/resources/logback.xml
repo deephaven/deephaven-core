@@ -7,7 +7,7 @@
         </encoder>
     </appender>
 
-    <logger name="org.apache.arrow.memory" level="WARN"/>
+    <logger name="org.apache.io.deephaven.extensions.arrow.memory" level="WARN"/>
 
     <root level="info">
         <appender-ref ref="STDERR" />
