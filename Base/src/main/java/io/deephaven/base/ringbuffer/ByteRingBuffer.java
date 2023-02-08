@@ -8,94 +8,105 @@
  */
 package io.deephaven.base.ringbuffer;
 
-import io.deephaven.base.ArrayUtil;
 import io.deephaven.base.verify.Assert;
 
 import java.io.Serializable;
 import java.util.NoSuchElementException;
 
 /**
- * A trivial circular buffer for primitive values, like java.util.concurrent.ArrayBlockingQueue but without all the
- * synchronization and collection cruft. Storage is between head (incl.) and tail (excl.) wrapping around the end of the
- * array. If the buffer is *not* growable, it will make room for a new element by dropping off the oldest element in the
- * buffer instead.
+ * A simple circular buffer for primitive values, like java.util.concurrent.ArrayBlockingQueue but without the
+ * synchronization and collection overhead. Storage is between head (inclusive) and tail (exclusive) using incrementing
+ * {@code long} values. Head and tail will not wrap around; instead we use storage arrays sized to 2^N to allow fast
+ * determination of storage indices through a mask operation.
  */
 public class ByteRingBuffer implements Serializable {
-    protected final boolean growable;
-    protected byte[] storage;
-    protected int head, tail, size;
-
-    private void grow(int increase) {
-        if (growable) {
-            // assert that we are not asking for the impossible
-            Assert.eqTrue(ArrayUtil.MAX_ARRAY_SIZE - increase >= size, "ByteRingBuffer size <= MAX_ARRAY_SIZE");
-
-            // make sure we cap out at ArrayUtil.MAX_ARRAY_SIZE
-            final int newLength =
-                    Math.toIntExact(Math.min(ArrayUtil.MAX_ARRAY_SIZE, Long.highestOneBit(size + increase - 1) << 1));
-            byte[] newStorage = new byte[newLength];
-
-            // three scenarios: size is zero so nothing to copy, head is before tail so only one copy needed, head
-            // after tail so two copies needed. Make two calls for simplicity and branch-prediction friendliness.
-
-            // compute the size of the first copy
-            final int firstCopyLen = Math.min(storage.length - head, size);
-
-            // do the copying
-            System.arraycopy(storage, head, newStorage, 0, firstCopyLen);
-            System.arraycopy(storage, 0, newStorage, firstCopyLen, size - firstCopyLen);
-
-            // reset the pointers
-            tail = size;
-            head = 0;
-            storage = newStorage;
-        }
-    }
-
-    private void grow() {
-        grow(1);
-    }
-
-    public boolean isFull() {
-        return size == storage.length;
-    }
+    /** Maximum capacity is the highest power of two that can be allocated (i.e. <= than ArrayUtil.MAX_ARRAY_SIZE). */
+    private final int RING_BUFFER_MAX_CAPACITY = 1 << 30; // ~1B entries
+    private final boolean growable;
+    private byte[] storage;
+    private int mask;
+    private long head;
+    private long tail;
 
     /**
-     * Create an unbounded-growth ring buffer of byte primitives
+     * Create an unbounded-growth ring buffer of byte primitives.
      *
-     * @param capacity minimum capacity of ring buffer
+     * @param capacity minimum capacity of the ring buffer
      */
     public ByteRingBuffer(int capacity) {
         this(capacity, true);
     }
 
     /**
-     * Create a ring buffer of byte primitives
+     * Create a ring buffer of byte primitives.
      *
      * @param capacity minimum capacity of ring buffer
      * @param growable whether to allow growth when the buffer is full.
      */
     public ByteRingBuffer(int capacity, boolean growable) {
-        Assert.eqTrue(capacity <= ArrayUtil.MAX_ARRAY_SIZE, "ByteRingBuffer size <= MAX_ARRAY_SIZE");
+        Assert.leq(capacity, "ByteRingBuffer capacity", RING_BUFFER_MAX_CAPACITY);
 
         this.growable = growable;
-        if (growable) {
-            // use next larger power of 2
-            storage = new byte[Integer.highestOneBit(capacity - 1) << 1];
+
+        // use next larger power of 2 for our storage
+        final int newCapacity;
+        if (capacity < 2) {
+            // sensibly handle the size=0 and size=1 cases
+            newCapacity = 1;
         } else {
-            // might as well use exact size and not over-allocate
-            storage = new byte[capacity];
+            newCapacity = Integer.highestOneBit(capacity - 1) << 1;
         }
 
+        // reset the data structure members
+        storage = new byte[newCapacity];
+        mask = storage.length - 1;
         tail = head = 0;
     }
 
+    private void grow(int increase) {
+        final int size = size();
+        final long newSize = size + increase;
+        // assert that we are not asking for the impossible
+        Assert.leq(newSize, "ByteRingBuffer capacity", RING_BUFFER_MAX_CAPACITY);
+
+        final byte[] newStorage = new byte[Integer.highestOneBit((int) newSize - 1) << 1];
+
+        // move the current data to the new buffer
+        copyRingBufferToArray(newStorage);
+
+        // reset the data structure members
+        storage = newStorage;
+        mask = storage.length - 1;
+        tail = size;
+        head = 0;
+    }
+
+    private void copyRingBufferToArray(byte[] dest) {
+        final int size = size();
+        final int storageHead = (int) (head & mask);
+
+        // firstCopyLen is either the size of the ring buffer, the distance from head to the end, or the size
+        // of the destination buffer, whichever is smallest.
+        final int firstCopyLen = Math.min(Math.min(storage.length - storageHead, size), dest.length);
+
+        // secondCopyLen is either the number of uncopied elements remaining from the first copy,
+        // or the amount of space remaining in the dest array, whichever is smaller.
+        final int secondCopyLen = Math.min(size - firstCopyLen, dest.length - firstCopyLen);
+
+        System.arraycopy(storage, storageHead, dest, 0, firstCopyLen);
+        System.arraycopy(storage, 0, dest, firstCopyLen, secondCopyLen);
+    }
+
+    public boolean isFull() {
+        return size() == storage.length;
+    }
+
     public boolean isEmpty() {
-        return size == 0;
+        return tail == head;
     }
 
     public int size() {
-        return size;
+        return (int) (tail - head);
     }
 
     public int capacity() {
@@ -103,11 +114,11 @@ public class ByteRingBuffer implements Serializable {
     }
 
     public int remaining() {
-        return storage.length - size;
+        return storage.length - size();
     }
 
     public void clear() {
-        size = tail = head = 0;
+        tail = head = 0;
     }
 
     /**
@@ -123,7 +134,7 @@ public class ByteRingBuffer implements Serializable {
             if (!growable) {
                 throw new UnsupportedOperationException("Ring buffer is full and growth is disabled");
             } else {
-                grow();
+                grow(1);
             }
         }
         addUnsafe(e);
@@ -149,15 +160,14 @@ public class ByteRingBuffer implements Serializable {
     }
 
     /**
-     * Add values unsafely (will silently overwrite values if the buffer is full). This call should be used in
-     * conjunction with {@link #ensureRemaining(int)}.
+     * Add values without overflow detection. Making this call when the buffer is full will result in this data
+     * structure becoming corrupted and unusable. This call must be used in conjunction with
+     * {@link #ensureRemaining(int)} or {@link #remaining()} to verify remaining capacity if sufficient.
      *
      * @param e the value to add to the buffer
      */
     public void addUnsafe(byte e) {
-        storage[tail] = e;
-        tail = (tail + 1) % storage.length;
-        size++;
+        storage[(int) (tail++ & mask)] = e;
     }
 
     /**
@@ -192,20 +202,12 @@ public class ByteRingBuffer implements Serializable {
     }
 
     public byte[] remove(int count) {
-        if (size < count) {
+        if (size() < count) {
             throw new NoSuchElementException();
         }
         final byte[] result = new byte[count];
-        final int firstCopyLen = storage.length - head;
-
-        if (tail >= head || firstCopyLen >= count) {
-            System.arraycopy(storage, head, result, 0, count);
-        } else {
-            System.arraycopy(storage, head, result, 0, firstCopyLen);
-            System.arraycopy(storage, 0, result, firstCopyLen, count - firstCopyLen);
-        }
-        head = (head + count) % storage.length;
-        size -= count;
+        copyRingBufferToArray(result);
+        head += count;
         return result;
     }
 
@@ -216,11 +218,15 @@ public class ByteRingBuffer implements Serializable {
         return removeUnsafe();
     }
 
+    /**
+     * Remove values without empty-buffer detection. Making this call when the buffer is empty will result in this data
+     * structure becoming corrupted and unusable. This call must be used in conjunction with {@link #size()} to verify
+     * the buffer contains the data items to retrieve.
+     *
+     * @return the value removed from the buffer
+     */
     public byte removeUnsafe() {
-        byte e = storage[head];
-        head = (head + 1) % storage.length;
-        size--;
-        return e;
+        return storage[(int) (head++ & mask)];
     }
 
     public byte poll(byte onEmpty) {
@@ -234,14 +240,14 @@ public class ByteRingBuffer implements Serializable {
         if (isEmpty()) {
             throw new NoSuchElementException();
         }
-        return storage[head];
+        return storage[(int) (head & mask)];
     }
 
     public byte peek(byte onEmpty) {
         if (isEmpty()) {
             return onEmpty;
         }
-        return storage[head];
+        return storage[(int) (head & mask)];
     }
 
     public byte front() {
@@ -249,24 +255,30 @@ public class ByteRingBuffer implements Serializable {
     }
 
     public byte front(int offset) {
-        if (offset >= size) {
+        if (offset >= size()) {
             throw new NoSuchElementException();
         }
-        return storage[(head + offset) % storage.length];
+        return storage[(int) ((head + offset) & mask)];
     }
 
     public byte back() {
         if (isEmpty()) {
             throw new NoSuchElementException();
         }
-        return tail == 0 ? storage[storage.length - 1] : storage[tail - 1];
+        return storage[(int) ((tail - 1) & mask)];
     }
 
     public byte peekBack(byte onEmpty) {
         if (isEmpty()) {
             return onEmpty;
         }
-        return tail == 0 ? storage[storage.length - 1] : storage[tail - 1];
+        return storage[(int) ((tail - 1) & mask)];
+    }
+
+    public byte[] getAll() {
+        byte[] result = new byte[size()];
+        copyRingBufferToArray(result);
+        return result;
     }
 
     public Iterator iterator() {
@@ -277,29 +289,16 @@ public class ByteRingBuffer implements Serializable {
         int count = -1;
 
         public boolean hasNext() {
-            return count + 1 < size;
+            return count + 1 < size();
         }
 
         public byte next() {
             count++;
-            return storage[(head + count) % storage.length];
+            return storage[(int) ((head + count) & mask)];
         }
 
         public void remove() {
             throw new UnsupportedOperationException();
         }
-    }
-
-    public byte[] getAll() {
-        byte[] result = new byte[size];
-        if (result.length > 0) {
-            if (tail > head) {
-                System.arraycopy(storage, head, result, 0, tail - head);
-            } else {
-                System.arraycopy(storage, head, result, 0, storage.length - head);
-                System.arraycopy(storage, 0, result, storage.length - head, tail);
-            }
-        }
-        return result;
     }
 }
