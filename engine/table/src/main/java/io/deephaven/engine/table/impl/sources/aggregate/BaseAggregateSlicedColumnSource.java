@@ -9,8 +9,10 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.sources.UngroupedColumnSource;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.vector.Vector;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import static io.deephaven.util.QueryConstants.*;
 
@@ -21,9 +23,14 @@ public abstract class BaseAggregateSlicedColumnSource<DB_ARRAY_TYPE extends Vect
         extends AbstractColumnSource<DB_ARRAY_TYPE> implements AggregateColumnSource<DB_ARRAY_TYPE, COMPONENT_TYPE> {
 
     protected final ColumnSource<COMPONENT_TYPE> aggregatedSource;
-    protected ColumnSource<? extends RowSet> groupRowSetSource;
-    protected ColumnSource<Long> startSource;
-    protected ColumnSource<Long> endSource;
+    protected final ColumnSource<? extends RowSet> groupRowSetSource;
+    @Nullable
+    protected final ColumnSource<Long> startSource;
+    @Nullable
+    protected final ColumnSource<Long> endSource;
+
+    protected final long startOffset;
+    protected final long endOffset;
 
     protected BaseAggregateSlicedColumnSource(
             @NotNull final Class<DB_ARRAY_TYPE> vectorType,
@@ -36,6 +43,25 @@ public abstract class BaseAggregateSlicedColumnSource<DB_ARRAY_TYPE extends Vect
         this.groupRowSetSource = groupRowSetSource;
         this.startSource = startSource;
         this.endSource = endSource;
+
+        startOffset = NULL_LONG;
+        endOffset = NULL_LONG;
+    }
+
+    protected BaseAggregateSlicedColumnSource(
+            @NotNull final Class<DB_ARRAY_TYPE> vectorType,
+            @NotNull final ColumnSource<COMPONENT_TYPE> aggregatedSource,
+            @NotNull final ColumnSource<? extends RowSet> groupRowSetSource,
+            final long revTicks,
+            final long fwdTicks) {
+        super(vectorType, aggregatedSource.getType());
+        this.aggregatedSource = aggregatedSource;
+        this.groupRowSetSource = groupRowSetSource;
+        this.startOffset = revTicks;
+        this.endOffset = fwdTicks;
+
+        startSource = null;
+        endSource = null;
     }
 
     @Override
@@ -54,21 +80,19 @@ public abstract class BaseAggregateSlicedColumnSource<DB_ARRAY_TYPE extends Vect
         public final GetContext endGetContext;
 
         private AggregateSlicedFillContext(@NotNull final ColumnSource<? extends RowSet> groupRowSetSource,
-                @NotNull ColumnSource<Long> startSource, @NotNull ColumnSource<Long> endSource,
+                @Nullable ColumnSource<Long> startSource, @Nullable ColumnSource<Long> endSource,
                 final int chunkCapacity, final SharedContext sharedContext) {
             // TODO: Implement a proper shareable context to use with other instances that share a RowSet source.
             // Current usage is "safe" because RowSet sources are only exposed through this wrapper, and all
             // sources at a given level will pass through their ordered keys to the RowSet source unchanged.
             groupRowSetGetContext = groupRowSetSource.makeGetContext(chunkCapacity, sharedContext);
-            startGetContext = startSource.makeGetContext(chunkCapacity, sharedContext);
-            endGetContext = endSource.makeGetContext(chunkCapacity, sharedContext);
+            startGetContext = startSource != null ? startSource.makeGetContext(chunkCapacity, sharedContext) : null;
+            endGetContext = endSource != null ? endSource.makeGetContext(chunkCapacity, sharedContext) : null;
         }
 
         @Override
         public void close() {
-            groupRowSetGetContext.close();
-            startGetContext.close();
-            endGetContext.close();
+            SafeCloseable.closeArray(groupRowSetGetContext, startGetContext, endGetContext);
         }
     }
 

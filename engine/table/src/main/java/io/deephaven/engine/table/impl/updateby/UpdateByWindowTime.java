@@ -266,8 +266,11 @@ class UpdateByWindowTime extends UpdateByWindow {
         }
 
         if (upstream.added().isNonempty()) {
+            // add the new rows and any cascading changes from inserting rows
+            final long prev = Math.max(0, prevUnits);
+            final long fwd = Math.max(0, fwdUnits);
             try (final RowSet addedAffected =
-                    computeAffectedRowsTime(ctx, upstream.added(), prevUnits, fwdUnits, false)) {
+                    computeAffectedRowsTime(ctx, upstream.added(), prev, fwd, false)) {
                 tmpAffected.insert(addedAffected);
             }
             // compute all new rows
@@ -276,8 +279,10 @@ class UpdateByWindowTime extends UpdateByWindow {
 
         // other rows can be affected by removes
         if (upstream.removed().isNonempty()) {
+            final long prev = Math.max(0, prevUnits);
+            final long fwd = Math.max(0, fwdUnits);
             try (final WritableRowSet removedAffected =
-                    computeAffectedRowsTime(ctx, upstream.removed(), prevUnits, fwdUnits, true)) {
+                    computeAffectedRowsTime(ctx, upstream.removed(), prev, fwd, true)) {
                 // we used the SSA (post-shift) to get these keys, no need to shift
                 // retain only the rows that still exist in the sourceRowSet
                 removedAffected.retain(ctx.timestampValidRowSet);
@@ -329,6 +334,18 @@ class UpdateByWindowTime extends UpdateByWindow {
                 final LongColumnIterator influencerTsTailIt =
                         new LongColumnIterator(context.timestampColumnSource, context.influencerRows);
                 final RowSequence.Iterator influencerRowsIt = ctx.influencerRows.getRowSequenceIterator();
+                final RowSet affectedPosRs = operatorsRequireKeys
+                        ? ctx.timestampValidRowSet.invert(ctx.affectedRows)
+                        : null;
+                final RowSequence.Iterator affectedPosRsIt = operatorsRequireKeys
+                        ? affectedPosRs.getRowSequenceIterator()
+                        : null;
+                final RowSet influencerPosRs = operatorsRequireKeys
+                        ? ctx.timestampValidRowSet.invert(ctx.influencerRows)
+                        : null;
+                final RowSequence.Iterator influencerPosIt = operatorsRequireKeys
+                        ? influencerPosRs.getRowSequenceIterator()
+                        : null;
                 final WritableIntChunk<? extends Values> pushChunk =
                         WritableIntChunk.makeWritableChunk(ctx.workingChunkSize);
                 final WritableIntChunk<? extends Values> popChunk =
@@ -401,40 +418,57 @@ class UpdateByWindowTime extends UpdateByWindow {
 
                     affectedTs = affectedTsIt.hasNext() ? affectedTsIt.nextLong() : EXHAUSTED;
                 }
-                final RowSequence chunkAffectedRows = affectedRowsIt.getNextRowSequenceWithLength(affectedRowIndex);
-                final RowSequence chunkInfluencerRows = influencerRowsIt.getNextRowSequenceWithLength(totalPushCount);
-                final LongChunk<OrderedRowKeys> influencerKeyChunk =
-                        operatorsRequireKeys ? chunkInfluencerRows.asRowKeyChunk() : null;
+                if (affectedRowIndex > 0) {
+                    final RowSequence chunkAffectedRows = affectedRowsIt.getNextRowSequenceWithLength(affectedRowIndex);
+                    final RowSequence chunkInfluencerRows =
+                            influencerRowsIt.getNextRowSequenceWithLength(totalPushCount);
 
-                // execute the operators
-                ensureGetContextSize(ctx, chunkInfluencerRows.size());
-
-                Arrays.fill(ctx.inputSourceChunks, null);
-                for (int opIdx : context.dirtyOperatorIndices) {
-                    UpdateByOperator.Context opCtx = context.opContexts[opIdx];
-                    // prep the chunk array needed by the accumulate call
-                    final int[] srcIndices = operatorInputSourceSlots[opIdx];
-                    for (int ii = 0; ii < srcIndices.length && ii < opCtx.chunkArr.length; ii++) {
-                        int srcIdx = srcIndices[ii];
-                        // chunk prep
-                        prepareValuesChunkForSource(ctx, srcIdx, chunkInfluencerRows);
-                        opCtx.chunkArr[ii] = ctx.inputSourceChunks[srcIdx];
+                    // create influencer position chunks when needed
+                    final LongChunk<OrderedRowKeys> affectedPosChunk;
+                    final LongChunk<OrderedRowKeys> influencePosChunk;
+                    if (operatorsRequireKeys) {
+                        final RowSequence chunkAffectedPosRs =
+                                affectedPosRsIt.getNextRowSequenceWithLength(affectedRowIndex);
+                        affectedPosChunk = chunkAffectedPosRs.asRowKeyChunk();
+                        final RowSequence chunkInfluencerPosRs =
+                                influencerPosIt.getNextRowSequenceWithLength(totalPushCount);
+                        influencePosChunk = chunkInfluencerPosRs.asRowKeyChunk();
+                    } else {
+                        affectedPosChunk = null;
+                        influencePosChunk = null;
                     }
 
-                    // assign the bucket rowsets before we accumulate
-                    if (ctx.opContexts[opIdx] instanceof RollingGroupOperator.Context) {
-                        ((RollingGroupOperator.Context) ctx.opContexts[opIdx])
-                                .assignBucketRowSource(context.timestampValidRowSet, chunkAffectedRows);
-                    }
+                    // execute the operators
+                    ensureGetContextSize(ctx, chunkInfluencerRows.size());
 
-                    // make the specialized call for windowed operators
-                    ctx.opContexts[opIdx].accumulateRolling(
-                            chunkAffectedRows,
-                            opCtx.chunkArr,
-                            influencerKeyChunk,
-                            pushChunk,
-                            popChunk,
-                            chunkAffectedRows.intSize());
+                    Arrays.fill(ctx.inputSourceChunks, null);
+                    for (int opIdx : context.dirtyOperatorIndices) {
+                        UpdateByOperator.Context opCtx = context.opContexts[opIdx];
+                        // prep the chunk array needed by the accumulate call
+                        final int[] srcIndices = operatorInputSourceSlots[opIdx];
+                        for (int ii = 0; ii < srcIndices.length && ii < opCtx.chunkArr.length; ii++) {
+                            int srcIdx = srcIndices[ii];
+                            // chunk prep
+                            prepareValuesChunkForSource(ctx, srcIdx, chunkInfluencerRows);
+                            opCtx.chunkArr[ii] = ctx.inputSourceChunks[srcIdx];
+                        }
+
+                        // assign the bucket rowsets before we accumulate
+                        if (ctx.opContexts[opIdx] instanceof RollingGroupOperator.Context) {
+                            ((RollingGroupOperator.Context) ctx.opContexts[opIdx])
+                                    .assignBucketRowSource(context.timestampValidRowSet, chunkAffectedRows);
+                        }
+
+                        // make the specialized call for windowed operators
+                        ctx.opContexts[opIdx].accumulateRolling(
+                                chunkAffectedRows,
+                                opCtx.chunkArr,
+                                affectedPosChunk,
+                                influencePosChunk,
+                                pushChunk,
+                                popChunk,
+                                affectedRowIndex);
+                    }
                 }
 
                 // dump these rows
@@ -442,6 +476,11 @@ class UpdateByWindowTime extends UpdateByWindow {
                     final long pos = context.influencerRows.find(influencerRowsIt.peekNextKey()) + skipCount;
                     final long key = context.influencerRows.get(pos);
                     influencerRowsIt.advance(key);
+
+                    if (operatorsRequireKeys) {
+                        influencerPosIt.advance(
+                                influencerPosRs.get(influencerPosRs.find(influencerPosIt.peekNextKey()) + skipCount));
+                    }
                 }
             }
         }

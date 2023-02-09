@@ -28,8 +28,9 @@ import java.util.Map;
  * <li>{@link UpdateByOperator#initializeCumulative(Context, long, long)} for cumulative operators or
  * {@link UpdateByOperator#initializeRolling(Context)} (Context)} for windowed operators</li>
  * <li>{@link UpdateByOperator.Context#accumulateCumulative(RowSequence, Chunk[], LongChunk, int)} for cumulative
- * operators or {@link UpdateByOperator.Context#accumulateRolling(RowSequence, Chunk[], IntChunk, IntChunk, int)} for
- * windowed operators</li>
+ * operators or
+ * {@link UpdateByOperator.Context#accumulateRolling(RowSequence, Chunk[], LongChunk, LongChunk, IntChunk, IntChunk, int)}
+ * for windowed operators</li>
  * <li>{@link #finishUpdate(UpdateByOperator.Context)}</li>
  * </ol>
  */
@@ -61,7 +62,8 @@ public abstract class UpdateByOperator {
     public abstract static class Context implements SafeCloseable {
         protected final Chunk<? extends Values>[] chunkArr;
         protected int nullCount = 0;
-        protected LongChunk<OrderedRowKeys> keyChunk;
+        protected LongChunk<OrderedRowKeys> affectedPosChunk;
+        protected LongChunk<OrderedRowKeys> influencerPosChunk;
 
         public Context(int chunkCount) {
             chunkArr = new Chunk[chunkCount];
@@ -77,8 +79,10 @@ public abstract class UpdateByOperator {
 
         protected abstract void setValuesChunk(@NotNull Chunk<? extends Values> valuesChunk);
 
-        protected void setKeyChunk(final LongChunk<OrderedRowKeys> keyChunk) {
-            this.keyChunk = keyChunk;
+        protected void setPosChunks(final LongChunk<OrderedRowKeys> affectedPosChunk,
+                final LongChunk<OrderedRowKeys> influencerPosChunk) {
+            this.affectedPosChunk = affectedPosChunk;
+            this.influencerPosChunk = influencerPosChunk;
         }
 
         /**
@@ -108,7 +112,8 @@ public abstract class UpdateByOperator {
 
         public abstract void accumulateRolling(RowSequence inputKeys,
                 Chunk<? extends Values>[] influencerValueChunkArr,
-                LongChunk<OrderedRowKeys> influencerKeyChunk,
+                LongChunk<OrderedRowKeys> affectedPosChunk,
+                LongChunk<OrderedRowKeys> influencerPosChunk,
                 IntChunk<? extends Values> pushChunk,
                 IntChunk<? extends Values> popChunk,
                 int len);

@@ -14,7 +14,7 @@ import io.deephaven.engine.table.impl.updateby.ema.*;
 import io.deephaven.engine.table.impl.updateby.fill.*;
 import io.deephaven.engine.table.impl.updateby.minmax.*;
 import io.deephaven.engine.table.impl.updateby.prod.*;
-import io.deephaven.engine.table.impl.updateby.rollinggroup.ShortRollingGroupOperator;
+import io.deephaven.engine.table.impl.updateby.rollinggroup.*;
 import io.deephaven.engine.table.impl.updateby.rollingsum.*;
 import io.deephaven.engine.table.impl.updateby.sum.*;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
@@ -442,51 +442,39 @@ public class UpdateByOperatorFactory {
             final long prevWindowScaleUnits = rs.revWindowScale().timescaleUnits();
             final long fwdWindowScaleUnits = rs.fwdWindowScale().timescaleUnits();
 
-            if (csType == short.class || csType == Short.class) {
+            if (csType == Boolean.class || csType == boolean.class) {
+                return new BooleanRollingGroupOperator(pair, affectingColumns, rowRedirection,
+                        rs.revWindowScale().timestampCol(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits, columnSource);
+            } else if (csType == byte.class || csType == Byte.class) {
+                return new ByteRollingGroupOperator(pair, affectingColumns, rowRedirection,
+                        rs.revWindowScale().timestampCol(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits, columnSource);
+            } else if (csType == short.class || csType == Short.class) {
                 return new ShortRollingGroupOperator(pair, affectingColumns, rowRedirection,
                         rs.revWindowScale().timestampCol(),
                         prevWindowScaleUnits, fwdWindowScaleUnits, columnSource);
+            } else if (csType == int.class || csType == Integer.class) {
+                return new IntRollingGroupOperator(pair, affectingColumns, rowRedirection,
+                        rs.revWindowScale().timestampCol(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits, columnSource);
+            } else if (csType == long.class || csType == Long.class) {
+                return new LongRollingGroupOperator(pair, affectingColumns, rowRedirection,
+                        rs.revWindowScale().timestampCol(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits, columnSource);
+            } else if (csType == float.class || csType == Float.class) {
+                return new FloatRollingGroupOperator(pair, affectingColumns, rowRedirection,
+                        rs.revWindowScale().timestampCol(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits, columnSource);
+            } else if (csType == double.class || csType == Double.class) {
+                return new DoubleRollingGroupOperator(pair, affectingColumns, rowRedirection,
+                        rs.revWindowScale().timestampCol(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits, columnSource);
+            } else {
+                return new ObjectRollingGroupOperator<>(pair, affectingColumns, rowRedirection,
+                        rs.revWindowScale().timestampCol(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits, columnSource, csType);
             }
-
-            // if (csType == Boolean.class || csType == boolean.class) {
-            // return new ByteRollingSumOperator(pair, affectingColumns, rowRedirection,
-            // rs.revWindowScale().timestampCol(),
-            // prevWindowScaleUnits, fwdWindowScaleUnits, NULL_BOOLEAN_AS_BYTE);
-            // } else if (csType == byte.class || csType == Byte.class) {
-            // return new ByteRollingSumOperator(pair, affectingColumns, rowRedirection,
-            // rs.revWindowScale().timestampCol(),
-            // prevWindowScaleUnits, fwdWindowScaleUnits, NULL_BYTE);
-            // } else if (csType == short.class || csType == Short.class) {
-            // return new ShortRollingSumOperator(pair, affectingColumns, rowRedirection,
-            // rs.revWindowScale().timestampCol(),
-            // prevWindowScaleUnits, fwdWindowScaleUnits);
-            // } else if (csType == int.class || csType == Integer.class) {
-            // return new IntRollingSumOperator(pair, affectingColumns, rowRedirection,
-            // rs.revWindowScale().timestampCol(),
-            // prevWindowScaleUnits, fwdWindowScaleUnits);
-            // } else if (csType == long.class || csType == Long.class) {
-            // return new LongRollingSumOperator(pair, affectingColumns, rowRedirection,
-            // rs.revWindowScale().timestampCol(),
-            // prevWindowScaleUnits, fwdWindowScaleUnits);
-            // } else if (csType == float.class || csType == Float.class) {
-            // return new FloatRollingSumOperator(pair, affectingColumns, rowRedirection,
-            // rs.revWindowScale().timestampCol(),
-            // prevWindowScaleUnits, fwdWindowScaleUnits);
-            // } else if (csType == double.class || csType == Double.class) {
-            // return new DoubleRollingSumOperator(pair, affectingColumns, rowRedirection,
-            // rs.revWindowScale().timestampCol(),
-            // prevWindowScaleUnits, fwdWindowScaleUnits);
-            // } else if (csType == BigDecimal.class) {
-            // return new BigDecimalRollingSumOperator(pair, affectingColumns, rowRedirection,
-            // rs.revWindowScale().timestampCol(),
-            // prevWindowScaleUnits, fwdWindowScaleUnits, control.mathContextOrDefault());
-            // } else if (csType == BigInteger.class) {
-            // return new BigIntegerRollingSumOperator(pair, affectingColumns, rowRedirection,
-            // rs.revWindowScale().timestampCol(),
-            // prevWindowScaleUnits, fwdWindowScaleUnits);
-            // }
-
-            throw new IllegalArgumentException("Can not perform RollingGroup on type " + csType);
         }
 
     }

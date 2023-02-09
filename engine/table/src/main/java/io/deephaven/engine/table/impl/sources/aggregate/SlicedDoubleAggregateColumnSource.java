@@ -18,9 +18,9 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.impl.vector.ShortVectorColumnWrapper;
-import io.deephaven.engine.table.impl.vector.PrevShortVectorColumnWrapper;
-import io.deephaven.vector.ShortVector;
+import io.deephaven.engine.table.impl.vector.DoubleVectorColumnWrapper;
+import io.deephaven.engine.table.impl.vector.PrevDoubleVectorColumnWrapper;
+import io.deephaven.vector.DoubleVector;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;
@@ -28,25 +28,25 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
 /**
  * {@link ColumnSource} implementation for aggregation result short columns.
  */
-public final class SlicedShortAggregateColumnSource extends BaseAggregateSlicedColumnSource<ShortVector, Short> {
-    public SlicedShortAggregateColumnSource(
-            @NotNull final ColumnSource<Short> aggregatedSource,
+public final class SlicedDoubleAggregateColumnSource extends BaseAggregateSlicedColumnSource<DoubleVector, Double> {
+    public SlicedDoubleAggregateColumnSource(
+            @NotNull final ColumnSource<Double> aggregatedSource,
             @NotNull final ColumnSource<? extends RowSet> groupRowSetSource,
             @NotNull final ColumnSource<Long> startSource,
             @NotNull final ColumnSource<Long> endSource) {
-        super(ShortVector.class, aggregatedSource, groupRowSetSource, startSource, endSource);
+        super(DoubleVector.class, aggregatedSource, groupRowSetSource, startSource, endSource);
     }
 
-    public SlicedShortAggregateColumnSource(
-            @NotNull final ColumnSource<Short> aggregatedSource,
+    public SlicedDoubleAggregateColumnSource(
+            @NotNull final ColumnSource<Double> aggregatedSource,
             @NotNull final ColumnSource<? extends RowSet> groupRowSetSource,
             final long revTicks,
             final long fwdTicks) {
-        super(ShortVector.class, aggregatedSource, groupRowSetSource, revTicks, fwdTicks);
+        super(DoubleVector.class, aggregatedSource, groupRowSetSource, revTicks, fwdTicks);
     }
 
     @Override
-    public ShortVector get(final long rowKey) {
+    public DoubleVector get(final long rowKey) {
         if (rowKey == RowSequence.NULL_ROW_KEY) {
             return null;
         }
@@ -67,11 +67,11 @@ public final class SlicedShortAggregateColumnSource extends BaseAggregateSlicedC
 
         // Determine the slice of the groupRowSetSource from start to end.
         final RowSet rowSetSlice = bucketRowSet.subSetByPositionRange(start, end);
-        return rowSetSlice.isEmpty() ? null : new ShortVectorColumnWrapper(aggregatedSource, rowSetSlice);
+        return rowSetSlice.isEmpty() ? null : new DoubleVectorColumnWrapper(aggregatedSource, rowSetSlice);
     }
 
     @Override
-    public ShortVector getPrev(final long rowKey) {
+    public DoubleVector getPrev(final long rowKey) {
         if (rowKey == RowSequence.NULL_ROW_KEY) {
             return null;
         }
@@ -92,7 +92,7 @@ public final class SlicedShortAggregateColumnSource extends BaseAggregateSlicedC
 
         // Determine the slice of the groupRowSetSource from start to end.
         final RowSet rowSetSlice = bucketRowSet.subSetByPositionRange(start, end);
-        return rowSetSlice.isEmpty() ? null : new PrevShortVectorColumnWrapper(aggregatedSource, rowSetSlice);
+        return rowSetSlice.isEmpty() ? null : new PrevDoubleVectorColumnWrapper(aggregatedSource, rowSetSlice);
     }
 
     @Override
@@ -110,7 +110,7 @@ public final class SlicedShortAggregateColumnSource extends BaseAggregateSlicedC
                 endSource.getChunk(ctx.endGetContext, rowSequence).asLongChunk()
                 : null;
 
-        final WritableObjectChunk<ShortVector, ? super Values> typedDestination = destination.asWritableObjectChunk();
+        final WritableObjectChunk<DoubleVector, ? super Values> typedDestination = destination.asWritableObjectChunk();
         final int size = rowSequence.intSize();
         for (int di = 0; di < size; ++di) {
             // Transition from revTicks that include the current row to strict position offsets.
@@ -130,7 +130,7 @@ public final class SlicedShortAggregateColumnSource extends BaseAggregateSlicedC
 
                 // Determine the slice of the groupRowSetSource from start to end.
                 final RowSet rowSetSlice = bucketRowSet.subSetByPositionRange(start, end);
-                typedDestination.set(di, rowSetSlice.isEmpty() ? null : new ShortVectorColumnWrapper(aggregatedSource, rowSetSlice));
+                typedDestination.set(di, rowSetSlice.isEmpty() ? null : new DoubleVectorColumnWrapper(aggregatedSource, rowSetSlice));
             }
         }
         typedDestination.setSize(size);
@@ -151,7 +151,7 @@ public final class SlicedShortAggregateColumnSource extends BaseAggregateSlicedC
                 endSource.getPrevChunk(ctx.endGetContext, rowSequence).asLongChunk()
                 : null;
 
-        final WritableObjectChunk<ShortVector, ? super Values> typedDestination = destination.asWritableObjectChunk();
+        final WritableObjectChunk<DoubleVector, ? super Values> typedDestination = destination.asWritableObjectChunk();
         final int size = rowSequence.intSize();
         for (int di = 0; di < size; ++di) {
             final long startPos = startPrevChunk != null ? startPrevChunk.get(di) : startOffset;
@@ -173,7 +173,7 @@ public final class SlicedShortAggregateColumnSource extends BaseAggregateSlicedC
 
                 // Determine the slice of the groupRowSetSource from start to end.
                 final RowSet rowSetSlice = groupRowSetToUse.subSetByPositionRange(start, end);
-                typedDestination.set(di, rowSetSlice.isEmpty() ? null : new PrevShortVectorColumnWrapper(aggregatedSource, rowSetSlice));
+                typedDestination.set(di, rowSetSlice.isEmpty() ? null : new PrevDoubleVectorColumnWrapper(aggregatedSource, rowSetSlice));
             }
         }
         typedDestination.setSize(size);

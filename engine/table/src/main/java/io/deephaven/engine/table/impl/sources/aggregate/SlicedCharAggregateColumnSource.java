@@ -1,11 +1,6 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit SlicedCharAggregateColumnSource and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
 package io.deephaven.engine.table.impl.sources.aggregate;
 
 import io.deephaven.base.ClampUtil;
@@ -18,9 +13,9 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.impl.vector.ShortVectorColumnWrapper;
-import io.deephaven.engine.table.impl.vector.PrevShortVectorColumnWrapper;
-import io.deephaven.vector.ShortVector;
+import io.deephaven.engine.table.impl.vector.CharVectorColumnWrapper;
+import io.deephaven.engine.table.impl.vector.PrevCharVectorColumnWrapper;
+import io.deephaven.vector.CharVector;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;
@@ -28,25 +23,25 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
 /**
  * {@link ColumnSource} implementation for aggregation result short columns.
  */
-public final class SlicedShortAggregateColumnSource extends BaseAggregateSlicedColumnSource<ShortVector, Short> {
-    public SlicedShortAggregateColumnSource(
-            @NotNull final ColumnSource<Short> aggregatedSource,
+public final class SlicedCharAggregateColumnSource extends BaseAggregateSlicedColumnSource<CharVector, Character> {
+    public SlicedCharAggregateColumnSource(
+            @NotNull final ColumnSource<Character> aggregatedSource,
             @NotNull final ColumnSource<? extends RowSet> groupRowSetSource,
             @NotNull final ColumnSource<Long> startSource,
             @NotNull final ColumnSource<Long> endSource) {
-        super(ShortVector.class, aggregatedSource, groupRowSetSource, startSource, endSource);
+        super(CharVector.class, aggregatedSource, groupRowSetSource, startSource, endSource);
     }
 
-    public SlicedShortAggregateColumnSource(
-            @NotNull final ColumnSource<Short> aggregatedSource,
+    public SlicedCharAggregateColumnSource(
+            @NotNull final ColumnSource<Character> aggregatedSource,
             @NotNull final ColumnSource<? extends RowSet> groupRowSetSource,
             final long revTicks,
             final long fwdTicks) {
-        super(ShortVector.class, aggregatedSource, groupRowSetSource, revTicks, fwdTicks);
+        super(CharVector.class, aggregatedSource, groupRowSetSource, revTicks, fwdTicks);
     }
 
     @Override
-    public ShortVector get(final long rowKey) {
+    public CharVector get(final long rowKey) {
         if (rowKey == RowSequence.NULL_ROW_KEY) {
             return null;
         }
@@ -67,11 +62,11 @@ public final class SlicedShortAggregateColumnSource extends BaseAggregateSlicedC
 
         // Determine the slice of the groupRowSetSource from start to end.
         final RowSet rowSetSlice = bucketRowSet.subSetByPositionRange(start, end);
-        return rowSetSlice.isEmpty() ? null : new ShortVectorColumnWrapper(aggregatedSource, rowSetSlice);
+        return rowSetSlice.isEmpty() ? null : new CharVectorColumnWrapper(aggregatedSource, rowSetSlice);
     }
 
     @Override
-    public ShortVector getPrev(final long rowKey) {
+    public CharVector getPrev(final long rowKey) {
         if (rowKey == RowSequence.NULL_ROW_KEY) {
             return null;
         }
@@ -92,7 +87,7 @@ public final class SlicedShortAggregateColumnSource extends BaseAggregateSlicedC
 
         // Determine the slice of the groupRowSetSource from start to end.
         final RowSet rowSetSlice = bucketRowSet.subSetByPositionRange(start, end);
-        return rowSetSlice.isEmpty() ? null : new PrevShortVectorColumnWrapper(aggregatedSource, rowSetSlice);
+        return rowSetSlice.isEmpty() ? null : new PrevCharVectorColumnWrapper(aggregatedSource, rowSetSlice);
     }
 
     @Override
@@ -110,7 +105,7 @@ public final class SlicedShortAggregateColumnSource extends BaseAggregateSlicedC
                 endSource.getChunk(ctx.endGetContext, rowSequence).asLongChunk()
                 : null;
 
-        final WritableObjectChunk<ShortVector, ? super Values> typedDestination = destination.asWritableObjectChunk();
+        final WritableObjectChunk<CharVector, ? super Values> typedDestination = destination.asWritableObjectChunk();
         final int size = rowSequence.intSize();
         for (int di = 0; di < size; ++di) {
             // Transition from revTicks that include the current row to strict position offsets.
@@ -130,7 +125,7 @@ public final class SlicedShortAggregateColumnSource extends BaseAggregateSlicedC
 
                 // Determine the slice of the groupRowSetSource from start to end.
                 final RowSet rowSetSlice = bucketRowSet.subSetByPositionRange(start, end);
-                typedDestination.set(di, rowSetSlice.isEmpty() ? null : new ShortVectorColumnWrapper(aggregatedSource, rowSetSlice));
+                typedDestination.set(di, rowSetSlice.isEmpty() ? null : new CharVectorColumnWrapper(aggregatedSource, rowSetSlice));
             }
         }
         typedDestination.setSize(size);
@@ -151,7 +146,7 @@ public final class SlicedShortAggregateColumnSource extends BaseAggregateSlicedC
                 endSource.getPrevChunk(ctx.endGetContext, rowSequence).asLongChunk()
                 : null;
 
-        final WritableObjectChunk<ShortVector, ? super Values> typedDestination = destination.asWritableObjectChunk();
+        final WritableObjectChunk<CharVector, ? super Values> typedDestination = destination.asWritableObjectChunk();
         final int size = rowSequence.intSize();
         for (int di = 0; di < size; ++di) {
             final long startPos = startPrevChunk != null ? startPrevChunk.get(di) : startOffset;
@@ -173,7 +168,7 @@ public final class SlicedShortAggregateColumnSource extends BaseAggregateSlicedC
 
                 // Determine the slice of the groupRowSetSource from start to end.
                 final RowSet rowSetSlice = groupRowSetToUse.subSetByPositionRange(start, end);
-                typedDestination.set(di, rowSetSlice.isEmpty() ? null : new PrevShortVectorColumnWrapper(aggregatedSource, rowSetSlice));
+                typedDestination.set(di, rowSetSlice.isEmpty() ? null : new PrevCharVectorColumnWrapper(aggregatedSource, rowSetSlice));
             }
         }
         typedDestination.setSize(size);

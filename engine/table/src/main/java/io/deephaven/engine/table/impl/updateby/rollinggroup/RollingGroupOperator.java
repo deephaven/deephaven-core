@@ -20,14 +20,24 @@ import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 import static io.deephaven.util.QueryConstants.NULL_INT;
+import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 public abstract class RollingGroupOperator extends UpdateByOperator {
-    /** Store a mapping from row keys to bucket RowSets for rolling group operator */
+    /** Store a mapping from row keys to bucket RowSets */
     protected final WritableColumnSource<? extends RowSet> groupRowSetSource;
     protected final ObjectArraySource<? extends RowSet> innerGroupRowSetSource;
-    /** these sources will retain the start and end keys (inclusive) for the window */
+
+    /**
+     * These sources will retain the position offsets from the current row position for the source and end of this
+     * window. A primary benefit of storing offsets in position space vs. row keys is eliminating the need to shift keys
+     * stored inside these column sources. Also, any insertion/modification/remove that occurs within this specified
+     * window will trigger re-computation of these position offsets.
+     *
+     * NOTE: these offsets are inclusive and are stored as simple relative positions where start==0 or end==0 implies
+     * the current row is included in the window. A start/end range of [-5,-3] defines a window including exactly 3 rows
+     * beginning 4 rows earlier than this one and continuing through 2 rows earlier than this (inclusive).
+     */
     protected final WritableColumnSource<Long> startSource;
     protected final LongArraySource innerStartSource;
     protected final WritableColumnSource<Long> endSource;
@@ -42,20 +52,27 @@ public abstract class RollingGroupOperator extends UpdateByOperator {
         public final ChunkSink.FillFromContext endSourceFillContext;
         public final WritableLongChunk<Values> endSourceOutputValues;
         private final LongRingBuffer windowKeys;
-        private long startKey = NULL_ROW_KEY;
-        private long endKey = NULL_ROW_KEY;
+        private long startPos = NULL_LONG;
+        private long endPos = NULL_LONG;
 
         protected Context(final int chunkSize) {
             super(0);
 
-            this.groupRowSetSourceFillContext = groupRowSetSource.makeFillFromContext(chunkSize);
-            this.groupRowSetSourceOutputValues = WritableObjectChunk.makeWritableChunk(chunkSize);
-            this.startSourceFillContext = groupRowSetSource.makeFillFromContext(chunkSize);
-            this.startSourceOutputValues = WritableLongChunk.makeWritableChunk(chunkSize);
-            this.endSourceFillContext = groupRowSetSource.makeFillFromContext(chunkSize);
-            this.endSourceOutputValues = WritableLongChunk.makeWritableChunk(chunkSize);
-
-            windowKeys = new LongRingBuffer(RING_BUFFER_INITIAL_CAPACITY, true);
+            groupRowSetSourceFillContext = groupRowSetSource.makeFillFromContext(chunkSize);
+            groupRowSetSourceOutputValues = WritableObjectChunk.makeWritableChunk(chunkSize);
+            if (timestampColumnName != null) {
+                startSourceFillContext = startSource.makeFillFromContext(chunkSize);
+                startSourceOutputValues = WritableLongChunk.makeWritableChunk(chunkSize);
+                endSourceFillContext = endSource.makeFillFromContext(chunkSize);
+                endSourceOutputValues = WritableLongChunk.makeWritableChunk(chunkSize);
+                windowKeys = new LongRingBuffer(RING_BUFFER_INITIAL_CAPACITY, true);
+            } else {
+                startSourceFillContext = null;
+                startSourceOutputValues = null;
+                endSourceFillContext = null;
+                endSourceOutputValues = null;
+                windowKeys = null;
+            }
         }
 
         @Override
@@ -78,12 +95,19 @@ public abstract class RollingGroupOperator extends UpdateByOperator {
         @Override
         public void accumulateRolling(RowSequence inputKeys,
                 Chunk<? extends Values>[] influencerValueChunkArr,
-                LongChunk<OrderedRowKeys> influencerKeyChunk,
+                LongChunk<OrderedRowKeys> affectedPosChunk,
+                LongChunk<OrderedRowKeys> influencerPosChunk,
                 IntChunk<? extends Values> pushChunk,
                 IntChunk<? extends Values> popChunk,
                 int len) {
 
-            setKeyChunk(influencerKeyChunk);
+            if (timestampColumnName == null) {
+                // The only work for ticks operators is to update the groupRowSetSource
+                groupRowSetSource.fillFromChunk(groupRowSetSourceFillContext, groupRowSetSourceOutputValues, inputKeys);
+                return;
+            }
+
+            setPosChunks(affectedPosChunk, influencerPosChunk);
             int pushIndex = 0;
 
             // chunk processing
@@ -125,10 +149,10 @@ public abstract class RollingGroupOperator extends UpdateByOperator {
             windowKeys.ensureRemaining(count);
 
             for (int ii = 0; ii < count; ii++) {
-                endKey = keyChunk.get(pos + ii);
-                windowKeys.addUnsafe(endKey);
-                if (startKey == NULL_ROW_KEY) {
-                    startKey = endKey;
+                endPos = influencerPosChunk.get(pos + ii);
+                windowKeys.addUnsafe(endPos);
+                if (startPos == NULL_LONG) {
+                    startPos = endPos;
                 }
             }
         }
@@ -140,18 +164,19 @@ public abstract class RollingGroupOperator extends UpdateByOperator {
             for (int ii = 0; ii < count; ii++) {
                 windowKeys.removeUnsafe();
                 if (!windowKeys.isEmpty()) {
-                    startKey = windowKeys.front();
+                    startPos = windowKeys.front();
                 } else {
-                    startKey = NULL_ROW_KEY;
-                    endKey = NULL_ROW_KEY;
+                    startPos = NULL_LONG;
+                    endPos = NULL_LONG;
                 }
             }
         }
 
         @Override
         public void writeToOutputChunk(int outIdx) {
-            startSourceOutputValues.set(outIdx, startKey);
-            endSourceOutputValues.set(outIdx, endKey);
+            final long affectedPos = affectedPosChunk.get(outIdx);
+            startSourceOutputValues.set(outIdx, startPos == NULL_LONG ? NULL_LONG : startPos - affectedPos);
+            endSourceOutputValues.set(outIdx, endPos == NULL_LONG ? NULL_LONG : endPos - affectedPos);
         }
 
         @Override
@@ -183,25 +208,38 @@ public abstract class RollingGroupOperator extends UpdateByOperator {
         super(pair, affectingColumns, rowRedirection, timestampColumnName, reverseWindowScaleUnits,
                 forwardWindowScaleUnits, true);
 
-        // for the sake of rolling group operators, we need to map from every row to its bucket row set (or the
+        // For the sake of rolling group operators, we need to map from every row to its bucket row set (or the
         // non-null version) and to the start and end ranges of keys for the window slice. If we are using
         // redirection, use it for these structures as well.
         if (rowRedirection != null) {
             innerGroupRowSetSource = new ObjectArraySource<>(RowSet.class);
-            innerStartSource = new LongArraySource();
-            innerEndSource = new LongArraySource();
-
             groupRowSetSource = WritableRedirectedColumnSource.maybeRedirect(rowRedirection, innerGroupRowSetSource, 0);
-            startSource = WritableRedirectedColumnSource.maybeRedirect(rowRedirection, innerStartSource, 0);
-            endSource = WritableRedirectedColumnSource.maybeRedirect(rowRedirection, innerEndSource, 0);
+
         } else {
             groupRowSetSource = new ObjectSparseArraySource<>(RowSet.class);
-            startSource = new LongSparseArraySource();
-            endSource = new LongSparseArraySource();
-
             innerGroupRowSetSource = null;
+        }
+
+        // If we are computing through ticks, we won't need sources for start and end.
+        if (timestampColumnName == null) {
             innerStartSource = null;
             innerEndSource = null;
+            startSource = null;
+            endSource = null;
+            return;
+        }
+
+        // We are computing using the timestamp columns, create the appropriate sources (potentially redirected)
+        if (rowRedirection == null) {
+            startSource = new LongSparseArraySource();
+            endSource = new LongSparseArraySource();
+            innerStartSource = null;
+            innerEndSource = null;
+        } else {
+            innerStartSource = new LongArraySource();
+            innerEndSource = new LongArraySource();
+            startSource = WritableRedirectedColumnSource.maybeRedirect(rowRedirection, innerStartSource, 0);
+            endSource = WritableRedirectedColumnSource.maybeRedirect(rowRedirection, innerEndSource, 0);
         }
     }
 
@@ -217,16 +255,22 @@ public abstract class RollingGroupOperator extends UpdateByOperator {
             assert innerGroupRowSetSource != null;
             ((WritableSourceWithPrepareForParallelPopulation) innerGroupRowSetSource)
                     .prepareForParallelPopulation(changedRows);
-            assert innerStartSource != null;
-            ((WritableSourceWithPrepareForParallelPopulation) innerStartSource)
-                    .prepareForParallelPopulation(changedRows);
-            assert innerEndSource != null;
-            ((WritableSourceWithPrepareForParallelPopulation) innerEndSource).prepareForParallelPopulation(changedRows);
+            if (timestampColumnName != null) {
+                assert innerStartSource != null;
+                ((WritableSourceWithPrepareForParallelPopulation) innerStartSource)
+                        .prepareForParallelPopulation(changedRows);
+                assert innerEndSource != null;
+                ((WritableSourceWithPrepareForParallelPopulation) innerEndSource)
+                        .prepareForParallelPopulation(changedRows);
+            }
         } else {
             ((WritableSourceWithPrepareForParallelPopulation) groupRowSetSource)
                     .prepareForParallelPopulation(changedRows);
-            ((WritableSourceWithPrepareForParallelPopulation) startSource).prepareForParallelPopulation(changedRows);
-            ((WritableSourceWithPrepareForParallelPopulation) endSource).prepareForParallelPopulation(changedRows);
+            if (timestampColumnName != null) {
+                ((WritableSourceWithPrepareForParallelPopulation) startSource)
+                        .prepareForParallelPopulation(changedRows);
+                ((WritableSourceWithPrepareForParallelPopulation) endSource).prepareForParallelPopulation(changedRows);
+            }
         }
     }
 
@@ -234,8 +278,10 @@ public abstract class RollingGroupOperator extends UpdateByOperator {
     @Override
     public void applyOutputShift(@NotNull final RowSet subRowSetToShift, final long delta) {
         ((ObjectSparseArraySource<?>) groupRowSetSource).shift(subRowSetToShift, delta);
-        ((LongSparseArraySource) startSource).shift(subRowSetToShift, delta);
-        ((LongSparseArraySource) endSource).shift(subRowSetToShift, delta);
+        if (timestampColumnName != null) {
+            ((LongSparseArraySource) startSource).shift(subRowSetToShift, delta);
+            ((LongSparseArraySource) endSource).shift(subRowSetToShift, delta);
+        }
     }
     // endregion Shifts
 
@@ -255,8 +301,22 @@ public abstract class RollingGroupOperator extends UpdateByOperator {
     @Override
     public void startTrackingPrev() {
         groupRowSetSource.startTrackingPrevValues();
-        startSource.startTrackingPrevValues();
-        endSource.startTrackingPrevValues();
+        if (rowRedirection != null) {
+            assert innerGroupRowSetSource != null;
+            innerGroupRowSetSource.startTrackingPrevValues();
+        }
+
+        // If we are time-based, track the start/end sources as well
+        if (timestampColumnName != null) {
+            startSource.startTrackingPrevValues();
+            endSource.startTrackingPrevValues();
+            if (rowRedirection != null) {
+                assert innerStartSource != null;
+                innerStartSource.startTrackingPrevValues();
+                assert innerEndSource != null;
+                innerEndSource.startTrackingPrevValues();
+            }
+        }
     }
 
     @Override

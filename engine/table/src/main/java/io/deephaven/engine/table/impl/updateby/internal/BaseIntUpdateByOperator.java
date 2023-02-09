@@ -66,13 +66,15 @@ public abstract class BaseIntUpdateByOperator extends UpdateByOperator {
         @Override
         public void accumulateRolling(RowSequence inputKeys,
                                       Chunk<? extends Values>[] influencerValueChunkArr,
-                                      LongChunk<OrderedRowKeys> influencerKeyChunk,
+                                      LongChunk<OrderedRowKeys> affectedPosChunk,
+                                      LongChunk<OrderedRowKeys> influencerPosChunk,
                                       IntChunk<? extends Values> pushChunk,
                                       IntChunk<? extends Values> popChunk,
                                       int len) {
 
             setValuesChunk(influencerValueChunkArr[0]);
-            setKeyChunk(influencerKeyChunk);
+            setPosChunks(affectedPosChunk, influencerPosChunk);
+
             int pushIndex = 0;
 
             // chunk processing

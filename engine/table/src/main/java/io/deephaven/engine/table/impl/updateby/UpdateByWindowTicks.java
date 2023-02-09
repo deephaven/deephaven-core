@@ -293,6 +293,7 @@ class UpdateByWindowTicks extends UpdateByWindow {
                 final RowSequence.Iterator posIt = ctx.affectedRowPositions.getRowSequenceIterator();
                 final RowSequence.Iterator influencerPosHeadIt = ctx.influencerPositions.getRowSequenceIterator();
                 final RowSequence.Iterator influencerPosTailIt = ctx.influencerPositions.getRowSequenceIterator();
+                final RowSequence.Iterator influencerPosIt = ctx.influencerPositions.getRowSequenceIterator();
                 final RowSequence.Iterator influencerKeyIt = ctx.influencerRows.getRowSequenceIterator();
                 final WritableIntChunk<? extends Values> pushChunk =
                         WritableIntChunk.makeWritableChunk(ctx.workingChunkSize);
@@ -307,14 +308,14 @@ class UpdateByWindowTicks extends UpdateByWindow {
                 final RowSequence chunkPosRs = posIt.getNextRowSequenceWithLength(ctx.workingChunkSize);
                 final int chunkRsSize = chunkRs.intSize();
 
-                final LongChunk<OrderedRowKeys> posChunk = chunkPosRs.asRowKeyChunk();
+                final LongChunk<OrderedRowKeys> affectedPosChunk = chunkPosRs.asRowKeyChunk();
 
                 // chunk processing
                 long totalCount = 0;
 
                 for (int ii = 0; ii < chunkRsSize; ii++) {
                     // read the current position
-                    final long currentPos = posChunk.get(ii);
+                    final long currentPos = affectedPosChunk.get(ii);
 
                     // compute the head and tail positions (inclusive)
                     final long head = Math.max(0, currentPos - prevUnits + 1);
@@ -335,8 +336,15 @@ class UpdateByWindowTicks extends UpdateByWindow {
 
                 // execute the operators
                 final RowSequence chunkInfluencerRs = influencerKeyIt.getNextRowSequenceWithLength(totalCount);
-                final LongChunk<OrderedRowKeys> influencerKeyChunk =
-                        operatorsRequireKeys ? chunkInfluencerRs.asRowKeyChunk() : null;
+
+                // create influencer position chunks when needed
+                final LongChunk<OrderedRowKeys> influencePosChunk;
+                if (operatorsRequireKeys) {
+                    final RowSequence chunkInfluencerPosRs = influencerPosIt.getNextRowSequenceWithLength(totalCount);
+                    influencePosChunk = chunkInfluencerPosRs.asRowKeyChunk();
+                } else {
+                    influencePosChunk = null;
+                }
 
                 ensureGetContextSize(ctx, chunkInfluencerRs.size());
 
@@ -362,7 +370,8 @@ class UpdateByWindowTicks extends UpdateByWindow {
                     ctx.opContexts[opIdx].accumulateRolling(
                             chunkRs,
                             opCtx.chunkArr,
-                            influencerKeyChunk,
+                            affectedPosChunk,
+                            influencePosChunk,
                             pushChunk,
                             popChunk,
                             chunkRsSize);

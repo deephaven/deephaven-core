@@ -132,8 +132,15 @@ public class TestUpdateByGeneral extends BaseUpdateByTest implements UpdateError
                                         makeOpColNames(columnNamesArray, "_rollsumticksfwdrev", "Sym", "ts",
                                                 "boolCol")),
                                 UpdateByOperation.RollingSum("ts", Duration.ofMinutes(5), Duration.ofMinutes(5),
-                                        makeOpColNames(columnNamesArray, "_rollsumtimebothfwdrev", "Sym", "ts",
+                                        makeOpColNames(columnNamesArray, "_rollsumtimefwdrev", "Sym", "ts",
                                                 "boolCol")),
+
+                                UpdateByOperation.RollingGroup(50, 50,
+                                        makeOpColNames(columnNamesArray, "_rollgroupfwdrev", "Sym", "ts")),
+                                UpdateByOperation.RollingGroup(-50, 100,
+                                        makeOpColNames(columnNamesArray, "_rollgroupticksfwdex", "Sym", "ts")),
+                                UpdateByOperation.RollingGroup("ts", Duration.ofMinutes(5), Duration.ofMinutes(5),
+                                        makeOpColNames(columnNamesArray, "_rollgrouptimefwdrev", "Sym", "ts")),
 
                                 UpdateByOperation.Ema(skipControl, "ts", 10 * MINUTE,
                                         makeOpColNames(columnNamesArray, "_ema", "Sym", "ts", "boolCol")),
@@ -240,6 +247,13 @@ public class TestUpdateByGeneral extends BaseUpdateByTest implements UpdateError
                 UpdateByOperation.RollingSum("ts", Duration.ofMinutes(5), Duration.ofMinutes(5),
                         makeOpColNames(columnNamesArray, "_rollsumtimebothfwdrev", "Sym", "ts",
                                 "boolCol")),
+
+                UpdateByOperation.RollingGroup(50, 50,
+                        makeOpColNames(columnNamesArray, "_rollgroupfwdrev", "Sym", "ts")),
+                UpdateByOperation.RollingGroup(-50, 100,
+                        makeOpColNames(columnNamesArray, "_rollgroupticksfwdex", "Sym", "ts")),
+                UpdateByOperation.RollingGroup("ts", Duration.ofMinutes(5), Duration.ofMinutes(5),
+                        makeOpColNames(columnNamesArray, "_rollgrouptimefwdrev", "Sym", "ts")),
 
                 UpdateByOperation.Ema(skipControl, "ts", 10 * MINUTE,
                         makeOpColNames(columnNamesArray, "_ema", "Sym", "ts", "boolCol")),

@@ -159,10 +159,7 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
 
                         // If we have removed all the nulls, we can reset to mirror the source. Otherwise, need to
                         // remove these rows from the non-null set.
-                        if (nullTimestampCount == 0) {
-                            // Reset this to match the source row set.
-                            timestampValidRowSet.writableCast().resetTo(source.getRowSet());
-                        } else {
+                        if (nullTimestampCount > 0) {
                             // Update the non-null set with these removes.
                             timestampValidRowSet.writableCast().remove(ssaKeys, 0, ssaKeys.size());
                         }
@@ -225,7 +222,6 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
                                 nullTsKeys, lastTimestamp);
                         timestampSsa.insert(ssaValues, ssaKeys);
 
-
                         if (nullTimestampCount > 0) {
                             if (prevCount == 0) {
                                 // Transition from a clone of source by removing the nulls.
@@ -235,14 +231,17 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
                                 // Maintain this set by adding the new non-null values.
                                 timestampValidRowSet.writableCast().insert(ssaKeys, 0, ssaKeys.size());
                             }
-                        } else {
-                            // Reset this to match the source row set.
-                            timestampValidRowSet.writableCast().resetTo(source.getRowSet());
                         }
                     }
                 }
             }
         }
+
+        if (nullTimestampCount == 0) {
+            // Reset this to match the source row set.
+            timestampValidRowSet.writableCast().resetTo(source.getRowSet());
+        }
+
         Assert.eq(nullTimestampCount, "nullTimestampCount", source.size() - timestampValidRowSet.size());
     }
 
