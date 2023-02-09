@@ -49,7 +49,11 @@ final class BearerHandler extends CallCredentials implements ClientInterceptor {
 
     // exposed for flight
     void setBearerToken(String bearerToken) {
-        this.bearerToken = Objects.requireNonNull(bearerToken);
+        String localBearerToken = this.bearerToken;
+        // Only follow through with the volatile write if it's a different value.
+        if (!Objects.equals(localBearerToken, bearerToken)) {
+            this.bearerToken = Objects.requireNonNull(bearerToken);
+        }
     }
 
     private void handleMetadata(Metadata metadata) {
