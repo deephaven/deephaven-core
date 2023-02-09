@@ -56,7 +56,8 @@ final class BearerHandler extends CallCredentials implements ClientInterceptor {
         parseBearerToken(metadata).ifPresent(BearerHandler.this::setBearerToken);
     }
 
-    public String authenticationValue() {
+    // exposed for flight
+    String authenticationValue() {
         return BEARER_PREFIX + bearerToken;
     }
 
