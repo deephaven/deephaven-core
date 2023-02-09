@@ -5,6 +5,7 @@ package io.deephaven.web.client.api;
 
 import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
+import jsinterop.annotations.JsConstructor;
 import jsinterop.annotations.JsMethod;
 
 @TsName(namespace = "dh", name = "LongWrapper")
@@ -20,6 +21,8 @@ public class LongWrapper {
         return of(Long.parseLong(str));
     }
 
+    @JsConstructor
+    @SuppressWarnings("unusable-by-js")
     protected LongWrapper(long value) {
         this.value = value;
     }
