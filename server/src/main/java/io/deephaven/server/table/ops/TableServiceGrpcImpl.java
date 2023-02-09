@@ -319,7 +319,7 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
             if (BigInteger.class.isAssignableFrom(dataType)) {
                 return new BigInteger(literal.getStringValue());
             }
-            if (!String.class.isAssignableFrom(dataType)) {
+            if (!String.class.isAssignableFrom(dataType) && dataType != char.class) {
                 throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
                         "Invalid String type for seek: " + dataType);
             }
@@ -388,7 +388,6 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
             if (sourceId.getTicket().isEmpty()) {
                 throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "No consoleId supplied");
             }
-
             SessionState.ExportObject<Table> exportedTable =
                     ticketRouter.resolve(session, sourceId, "sourceId");
             session.nonExport()
@@ -396,6 +395,8 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
                     .onError(responseObserver)
                     .submit(() -> {
                         final Table table = exportedTable.get();
+                        authWiring.checkPermissionSeekRow(session.getAuthContext(), request,
+                                Collections.singletonList(table));
                         final String columnName = request.getColumnName();
                         final Class<?> dataType = table.getDefinition().getColumn(columnName).getDataType();
                         final Object seekValue = getSeekValue(request.getSeekValue(), dataType);

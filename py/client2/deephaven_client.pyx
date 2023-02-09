@@ -28,7 +28,7 @@ cdef class Client:
         result.client = move(CClient.connect(bytes))
         return result
 
-    def getManager(self) -> TableHandleManager:
+    def get_manager(self) -> TableHandleManager:
         result = TableHandleManager()
         result.manager = self.client.getManager()
         return result
@@ -37,174 +37,173 @@ cdef class Client:
 cdef class TableHandleManager:
     cdef CTableHandleManager manager
 
-    def fetchTable(self, tableName: str) -> TableHandle:
-        bytes = tableName.encode()
-        tableHandle = self.manager.fetchTable(bytes)
-        return TableHandle.create(move(tableHandle))
+    def fetch_table(self, table_name: str) -> TableHandle:
+        bytes = table_name.encode()
+        table_handle = self.manager.fetchTable(bytes)
+        return TableHandle.create(move(table_handle))
 
-    def emptyTable(self, numRows: size_t) -> TableHandle:
-        tableHandle = self.manager.emptyTable(numRows)
-        return TableHandle.create(move(tableHandle))
+    def empty_table(self, numRows: size_t) -> TableHandle:
+        table_handle = self.manager.emptyTable(numRows)
+        return TableHandle.create(move(table_handle))
 
-    def timeTable(self, start: size_t, nanos: size_t) -> TableHandle:
-        tableHandle = self.manager.timeTable(start, nanos)
-        return TableHandle.create(move(tableHandle))
+    def time_table(self, start: size_t, nanos: size_t) -> TableHandle:
+        table_handle = self.manager.timeTable(start, nanos)
+        return TableHandle.create(move(table_handle))
 
 # Python trampoline functions. By the time we get to this point, the
 # user-supplied Python callback is in a void*. We cast it back to a Python
-# object and invoke its onTick method.
-cdef void onTickCallback(CTickingUpdate update, void *userData) with gil:
+# object and invoke its on_tick method.
+cdef void _on_tick_callback(CTickingUpdate update, void *user_data) with gil:
     ptu = TickingUpdate.create(move(update))
-    (<object>userData).onTick(ptu)
+    (<object>user_data).on_tick(ptu)
 
 # Python trampoline functions. By the time we get to this point, the
 # user-supplied Python callback is in a void*. We cast it back to a Python
-# object and invoke its onError method.
-cdef void onErrorCallback(string error, void *userData) with gil:
-    (<object>userData).onError(error)
+# object and invoke its on_error method.
+cdef void _on_error_callback(string error, void *userData) with gil:
+    (<object>userData).on_error(error)
 
-cdef checkHasMethod(o, methodName: str):
+cdef _check_has_method(o, methodName: str):
     if not callable(getattr(o, methodName, None)):
         raise RuntimeError(
             f"Provided callback does not have an {methodName}() method")
 
 # Wrapper of the corresponding C++ TableHandle class.
 cdef class TableHandle:
-    cdef CTableHandle tableHandle
+    cdef CTableHandle table_handle
 
     @staticmethod
-    cdef TableHandle create(CTableHandle tableHandle):
+    cdef TableHandle create(CTableHandle table_handle):
         result = TableHandle()
-        result.tableHandle = tableHandle
+        result.table_handle = table_handle
         return result
 	
-    cpdef update(self, columnSpecs: [str]):
-        cdef vector[string] cColumnSpecs
-        for item in columnSpecs:
+    cpdef update(self, column_specs: [str]):
+        cdef vector[string] c_column_specs
+        for item in column_specs:
             encoded = item.encode()
-            cColumnSpecs.push_back(encoded)
-        result = self.tableHandle.update(move(cColumnSpecs))
+            c_column_specs.push_back(encoded)
+        result = self.table_handle.update(move(c_column_specs))
         return TableHandle.create(move(result))
 
-    def tail(self, size_t numRows):
-        result = self.tableHandle.tail(numRows)
+    def tail(self, size_t num_rows):
+        result = self.table_handle.tail(num_rows)
         return TableHandle.create(move(result))
 
-    def toString(self, wantHeaders: bool) -> str:
-        result = self.tableHandle.toString(wantHeaders)
+    def toString(self, want_headers: bool) -> str:
+        result = self.table_handle.toString(want_headers)
         return result.decode()
     
-    # 'callback' is a Python object that defines an onTick and onError method,
+    # 'callback' is a Python object that defines an on_tick and on_error method,
     # like so
     #
     # class MyCallback:
-    #     def onTick(self, update: dh.TickingUpdate):
+    #     def on_tick(self, update: dh.TickingUpdate):
     #         ...
-    #     def onError(self, message: str)
+    #     def on_error(self, message: str)
     #         ...
-    def subscribe(self, callback) -> SubscriptionOuterHandle:
-        checkHasMethod(callback, "onTick")
-        checkHasMethod(callback, "onError")
+    def subscribe(self, callback) -> SubscriptionHandle:
+        _check_has_method(callback, "on_tick")
+        _check_has_method(callback, "on_error")
         
-        subHandle = self.tableHandle.subscribe(onTickCallback, <void*>callback,
-            onErrorCallback, <void*>callback)
+        c_handle = self.table_handle.subscribe(_on_tick_callback, <void*>callback,
+            _on_error_callback, <void*>callback)
         # Take special care to hold our own a reference to 'callback' so it
         # doesn't deallocated before the C++ library is done using it
-        inner = SubscriptionInnerHandle.create(self.tableHandle, callback,
-            subHandle)
-        return SubscriptionOuterHandle(inner)
+        inner = SubscriptionHandleImpl.create(self.table_handle, callback, c_handle)
+        return SubscriptionHandle(inner)
 
-    def unsubscribe(self, outerHandle: SubscriptionOuterHandle):
-        outerHandle.innerHandle.shutdown()
+    def unsubscribe(self, handle: SubscriptionHandle):
+        handle.impl.shutdown()
 
 # This is a normal Python class that exists solely to have a finalizer that
-# calls shutdown on the inner class that it owns.
-class SubscriptionOuterHandle:
-    def __init__(self, innerHandle):
-        self.innerHandle = innerHandle
+# calls shutdown() on the impl class that it owns.
+class SubscriptionHandle:
+    def __init__(self, impl):
+        self.impl = impl
 
     def __del__(self):
-        self.innerHandle.shutdown()
+        self.impl.shutdown()
 
-# Objects of this class are typically owned by SubscriptionOuterHandle
-cdef class SubscriptionInnerHandle:
+# Objects of this class are typically owned by SubscriptionHandle
+cdef class SubscriptionHandleImpl:
     # The C++ TableHandle. We need this so we can unsubscribe.
-    cdef CTableHandle tableHandle
+    cdef CTableHandle table_handle
     # The caller's callback. We hold a reference here so it is not destroyed
     # until such time as we unsubscribe.
     cdef object callback
     # The C++ subcriptionHandle. Needed as a parameter to unsubcribe.
-    cdef shared_ptr[CSubscriptionHandle] subscriptionHandle
+    cdef shared_ptr[CSubscriptionHandle] subscription_handle
 
     @staticmethod
-    cdef SubscriptionInnerHandle create(CTableHandle tableHandle,
-        object callback, shared_ptr[CSubscriptionHandle] subscriptionHandle):
-        result = SubscriptionInnerHandle()
-        result.tableHandle = move(tableHandle)
+    cdef SubscriptionHandleImpl create(CTableHandle table_handle,
+                                       object callback, shared_ptr[CSubscriptionHandle] subscription_handle):
+        result = SubscriptionHandleImpl()
+        result.table_handle = move(table_handle)
         result.callback = callback
-        result.subscriptionHandle = move(subscriptionHandle)
-        return result;
+        result.subscription_handle = move(subscription_handle)
+        return result
 
     def shutdown(self):
-        self.tableHandle.unsubscribe(self.subscriptionHandle)
+        self.table_handle.unsubscribe(self.subscription_handle)
 
 # Simple wrapper of the corresponding C++ TickingUpdate class.
 cdef class TickingUpdate:
-    cdef CTickingUpdate tickingUpdate
+    cdef CTickingUpdate ticking_update
 
     @staticmethod
     cdef TickingUpdate create(CTickingUpdate update):
         result = TickingUpdate()
-        result.tickingUpdate = move(update)
-        return result;
+        result.ticking_update = move(update)
+        return result
 
     @property
     def prev(self) -> Table:
-        return Table.create(self.tickingUpdate.prev())
+        return Table.create(self.ticking_update.prev())
 
     @property
-    def beforeRemoves(self) -> Table:
-        return Table.create(self.tickingUpdate.beforeRemoves())
+    def before_removes(self) -> Table:
+        return Table.create(self.ticking_update.beforeRemoves())
 
     @property
-    def removedRows(self) -> RowSequence:
-        return RowSequence.create(self.tickingUpdate.removedRows())
+    def removed_rows(self) -> RowSequence:
+        return RowSequence.create(self.ticking_update.removedRows())
 
     @property
-    def afterRemoves(self) -> Table:
-        return Table.create(self.tickingUpdate.afterRemoves())
+    def after_removes(self) -> Table:
+        return Table.create(self.ticking_update.afterRemoves())
 
     @property
-    def beforeAdds(self) -> Table:
-        return Table.create(self.tickingUpdate.beforeAdds())
+    def before_adds(self) -> Table:
+        return Table.create(self.ticking_update.beforeAdds())
 
     @property
-    def addedRows(self) -> RowSequence:
-        return RowSequence.create(self.tickingUpdate.addedRows())
+    def added_rows(self) -> RowSequence:
+        return RowSequence.create(self.ticking_update.addedRows())
 
     @property
-    def afterAdds(self) -> Table:
-        return Table.create(self.tickingUpdate.afterAdds())
+    def after_adds(self) -> Table:
+        return Table.create(self.ticking_update.afterAdds())
 
     @property
-    def beforeModifies(self) -> Table:
-        return Table.create(self.tickingUpdate.beforeModifies())
+    def before_modifies(self) -> Table:
+        return Table.create(self.ticking_update.beforeModifies())
 
     @property
-    def afterModifies(self) -> Table:
-        return Table.create(self.tickingUpdate.afterModifies())
+    def after_modifies(self) -> Table:
+        return Table.create(self.ticking_update.afterModifies())
 
     @property
-    def modifiedRows(self) -> [RowSequence]:
+    def modified_rows(self) -> [RowSequence]:
         result = []
-        modRows = self.tickingUpdate.modifiedRows()
-        for i in range(modRows.size()):
-            result.append(RowSequence.create(modRows[i]))  
+        mod_rows = self.ticking_update.modifiedRows()
+        for i in range(mod_rows.size()):
+            result.append(RowSequence.create(mod_rows[i]))  
         return result
 
     @property
     def current(self) -> Table:
-        return Table.create(self.tickingUpdate.current())
+        return Table.create(self.ticking_update.current())
 
 # Simple wrapper of the corresponding C++ Table class.
 cdef class Table:
@@ -220,63 +219,63 @@ cdef class Table:
         cs = deref(self.table).getColumn(columnIndex)
         return ColumnSource.create(move(cs))
 
-    def getColumnByName(self, name: str, strict: bool) -> ColumnSource:
-        nameBytes = name.encode()
-        result = deref(self.table).getColumn(nameBytes, strict)
+    def get_column_by_name(self, name: str, strict: bool) -> ColumnSource:
+        name_bytes = name.encode()
+        result = deref(self.table).getColumn(name_bytes, strict)
         if (result == NULL):
             return None
         return ColumnSource.create(move(result))
 
-    def getColumnIndex(self, name: unicode, strict: bool) -> size_t:
-        nameAsString = <string>name.encode()
-        return deref(self.table).getColumnIndex(nameAsString, strict)
+    def get_column_index(self, name: unicode, strict: bool) -> size_t:
+        name_as_string = <string>name.encode()
+        return deref(self.table).getColumnIndex(name_as_string, strict)
 
-    def getRowSequence(self) -> RowSequence:
+    def get_row_sequence(self) -> RowSequence:
         result = deref(self.table).getRowSequence()
         return RowSequence.create(move(result))
         
     @property
-    def numRows(self) -> size_t:
+    def num_rows(self) -> size_t:
         return deref(self.table).numRows()
 
     @property
-    def numColumns(self) -> size_t:
+    def num_columns(self) -> size_t:
         return deref(self.table).numColumns()
 
-    def toString(self, wantHeaders: bool, wantRowNumbers: bool, rowSequence = None) -> str:
-        if rowSequence is None:
-            result = deref(self.table).toString(wantHeaders, wantRowNumbers)
-        elif isinstance(rowSequence, list):
+    def to_string(self, want_headers: bool, want_row_numbers: bool, row_sequence = None) -> str:
+        if row_sequence is None:
+            result = deref(self.table).toString(want_headers, want_row_numbers)
+        elif isinstance(row_sequence, list):
             print("TODO")
-        elif isinstance(rowSequence, RowSequence):
-            result = deref(self.table).toString(wantHeaders, wantRowNumbers, (<RowSequence>rowSequence).rowSequence)
+        elif isinstance(row_sequence, RowSequence):
+            result = deref(self.table).toString(want_headers, want_row_numbers, (<RowSequence>row_sequence).row_sequence)
         return result.decode()
     
 # Simple wrapper of the corresponding C++ RowSequence class.
 cdef class RowSequence:
-    cdef shared_ptr[CRowSequence] rowSequence
+    cdef shared_ptr[CRowSequence] row_sequence
 
     @staticmethod
-    cdef RowSequence create(shared_ptr[CRowSequence] rowSequence):
+    cdef RowSequence create(shared_ptr[CRowSequence] row_sequence):
         result = RowSequence()
-        result.rowSequence = move(rowSequence)
-        return result;
+        result.row_sequence = move(row_sequence)
+        return result
 
     def take(self, size: size_t) -> RowSequence:
-        rowSequence = deref(self.rowSequence).take(size)
-        return RowSequence.create(move(rowSequence))
+        row_sequence = deref(self.row_sequence).take(size)
+        return RowSequence.create(move(row_sequence))
 
     def drop(self, size: size_t) -> RowSequence:
-        rowSequence = deref(self.rowSequence).drop(size)
-        return RowSequence.create(move(rowSequence))
+        row_sequence = deref(self.row_sequence).drop(size)
+        return RowSequence.create(move(row_sequence))
 
     @property
     def size(self) -> size_t:
-        return deref(self.rowSequence).size()
+        return deref(self.row_sequence).size()
 	
     @property
     def empty(self) -> bool:
-        return deref(self.rowSequence).empty()
+        return deref(self.row_sequence).empty()
 
 # A Cython fused type indicating all the valid element types for ColumnSource. For the C++
 # "string" type we use object. The C++ DateTime type is not yet implemented.
@@ -301,93 +300,93 @@ ctypedef fused column_source_primitive_element_type_t:
     float
     double
 
-# Confirm that the element type of destData is the same as the element type of Column Source.
+# Confirm that the element type of dest_data is the same as the element type of columnSource.
 # Technically we don't need to do this check, as the C++ library has its own error checking,
 # but this gives us an opportunity to provide a more friendly error message here.
-cdef checkCompatibility(const CColumnSource &columnSource,
-    column_source_element_type_t[::1] destData):
-    cdef const char *csName = HumanReadableElementTypeName.getName(columnSource)
-    cdef const char *ddNameForComparison = NULL
+cdef _check_compatibility(const CColumnSource &column_source,
+    column_source_element_type_t[::1] dest_data):
+    cdef const char *cs_name = HumanReadableElementTypeName.getName(column_source)
+    cdef const char *dd_name_for_comparison = NULL
 
     if column_source_element_type_t is object:
         # "object" is a special case. If the user passes us an array of objects, then
         # the user expects the column source to be of type string. So the name for comparison
         # is "string" but (if they don't match) the name we put in the error message will be
         # "object".
-        ddNameForComparison = HumanReadableStaticTypeName[string].getName()
-        ddNameForRendering = "object"
+        dd_name_for_comparison = HumanReadableStaticTypeName[string].getName()
+        dd_name_for_rendering = "object"
     else:
-        ddNameForComparison = HumanReadableStaticTypeName[column_source_element_type_t].getName()
-        ddNameForRendering = ddNameForComparison.decode()
+        dd_name_for_comparison = HumanReadableStaticTypeName[column_source_element_type_t].getName()
+        dd_name_for_rendering = dd_name_for_comparison.decode()
 
-    if csName != ddNameForComparison:
-        csNameForRendering = csName.decode()
-        raise RuntimeError(f"columnSource has element type {csNameForRendering} but caller buffer has element type {ddNameForRendering}")
+    if cs_name != dd_name_for_comparison:
+        cs_name_for_rendering = cs_name.decode()
+        raise RuntimeError(f"column_source has element type {cs_name_for_rendering} but caller buffer has element type {dd_name_for_rendering}")
 
 # Wrapper of the corresponding C++ ColumnSource class. Does a little bit of
-# extra work to support the fillChunk method.
+# extra work to support the fill_chunk method.
 cdef class ColumnSource:
-    cdef shared_ptr[CColumnSource] columnSource
+    cdef shared_ptr[CColumnSource] column_source
 
     @staticmethod
-    cdef ColumnSource create(shared_ptr[CColumnSource] columnSource):
+    cdef ColumnSource create(shared_ptr[CColumnSource] column_source):
         result = ColumnSource()
-        result.columnSource = move(columnSource)
-        return result;
+        result.column_source = move(column_source)
+        return result
 
-    # The fillChunk method uses a Cython "fused type" which is sort of like a C++ template with
-    # explicit template instantiation. 'destData' is a memory view of some caller data structure
+    # The fill_chunk method uses a Cython "fused type" which is sort of like a C++ template with
+    # explicit template instantiation. 'dest_data' is a memory view of some caller data structure
     # (perhaps a NumPy array or a compact array created by the Python array module) whose element
     # type is one of the types defined by column_source_element_type_t: int8_t, int16_t, etc.
-    cpdef fillChunk(self, rows: RowSequence,
-        column_source_element_type_t[::1] destData,
+    cpdef fill_chunk(self, rows: RowSequence,
+        column_source_element_type_t[::1] dest_data,
         bool[::1] optionalDestNullFlags):
 
-        checkCompatibility(deref(self.columnSource), destData)        
+        _check_compatibility(deref(self.column_source), dest_data)
         
-        rsSize = rows.size
-        destSize = destData.shape[0]
+        rs_size = rows.size
+        dest_size = dest_data.shape[0]
 
-        if (destSize < rsSize):
-            raise RuntimeError(f"size of destData {destSize} < row sequence size {rsSize}")
+        if (dest_size < rs_size):
+            raise RuntimeError(f"size of dest_data {dest_size} < row sequence size {rs_size}")
 
         if optionalDestNullFlags is not None:
             boolSize = optionalDestNullFlags.shape[0]
-            if (boolSize < rsSize):
+            if (boolSize < rs_size):
                 raise RuntimeError(
-                    f"size of optionalDestNullFlags {boolSize} < row sequence size {rsSize}")
+                    f"size of optionalDestNullFlags {boolSize} < row sequence size {rs_size}")
 
         # get a pointer to the dest null flags, if the parameter is not None
         cdef CGenericChunk[bool] optionalBooleanChunk
-        cdef CGenericChunk[bool] *nullFlagsPtr = NULL
+        cdef CGenericChunk[bool] *null_flags_ptr = NULL
         if optionalDestNullFlags is not None:
-            optionalBooleanChunk = CGenericChunk[bool].createView(&optionalDestNullFlags[0], rsSize)
-            nullFlagsPtr = &optionalBooleanChunk
+            optionalBooleanChunk = CGenericChunk[bool].createView(&optionalDestNullFlags[0], rs_size)
+            null_flags_ptr = &optionalBooleanChunk
 
         if column_source_element_type_t is object:
-            self.fillStringChunk(rows, destData, nullFlagsPtr)
+            self._fill_string_chunk(rows, dest_data, null_flags_ptr)
         else:
-            self.fillOtherChunk(rows, destData, nullFlagsPtr)
+            self._fill_other_chunk(rows, dest_data, null_flags_ptr)
 
-    # Helper method for fillChunk when the destData element type is "object" (and the ColumnSource
+    # Helper method for fill_chunk when the dest_data element type is "object" (and the ColumnSource
     # is a string type). In this case we have to allocate a temporary chunk of strings, fill it, and
     # then copy the data out of it to Python strings.
-    cdef fillStringChunk(self, rows: RowSequence, object[::1] destData,
-        CGenericChunk[bool] *nullFlagsPtr): 
+    cdef _fill_string_chunk(self, rows: RowSequence, object[::1] dest_data,
+        CGenericChunk[bool] *null_flags_ptr): 
         rsSize = rows.size
-        destChunk = CGenericChunk[string].create(rsSize)
-        deref(self.columnSource).fillChunk(deref(rows.rowSequence), &destChunk, nullFlagsPtr)
+        dest_chunk = CGenericChunk[string].create(rsSize)
+        deref(self.column_source).fillChunk(deref(rows.row_sequence), &dest_chunk, null_flags_ptr)
         i: ssize_t = 0
         for i in range(rsSize):
-            destData[i] = destChunk.data()[i]
+            dest_data[i] = dest_chunk.data()[i]
 
-    # Helper method for fillChunk when the destData element type is any type except "object".
-    # In this case we point a Chunk directly to the destData buffer, and then the C++ library
+    # Helper method for fill_chunk when the dest_data element type is any type except "object".
+    # In this case we point a Chunk directly to the dest_data buffer, and then the C++ library
     # fills that chunk directly.
-    cdef fillOtherChunk(self, rows: RowSequence,
-        column_source_primitive_element_type_t[::1] destData,
-        CGenericChunk[bool] *nullFlagsPtr):
+    cdef _fill_other_chunk(self, rows: RowSequence,
+        column_source_primitive_element_type_t[::1] dest_data,
+        CGenericChunk[bool] *null_flags_ptr):
         rsSize = rows.size
-        dataChunk = CGenericChunk[column_source_primitive_element_type_t].createView(
-	    &destData[0], rsSize)
-        deref(self.columnSource).fillChunk(deref(rows.rowSequence), &dataChunk, nullFlagsPtr)
+        data_chunk = CGenericChunk[column_source_primitive_element_type_t].createView(
+	        &dest_data[0], rsSize)
+        deref(self.column_source).fillChunk(deref(rows.row_sequence), &data_chunk, null_flags_ptr)
