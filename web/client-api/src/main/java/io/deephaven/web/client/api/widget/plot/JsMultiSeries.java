@@ -3,8 +3,8 @@
  */
 package io.deephaven.web.client.api.widget.plot;
 
-import com.vertispan.samples.annotations.TsInterface;
-import com.vertispan.samples.annotations.TsName;
+import com.vertispan.tsdefs.annotations.TsInterface;
+import com.vertispan.tsdefs.annotations.TsName;
 import elemental2.dom.CustomEvent;
 import elemental2.dom.CustomEventInit;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.*;

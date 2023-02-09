@@ -4,8 +4,8 @@
 package io.deephaven.web.client.api;
 
 import com.google.gwt.i18n.client.NumberFormat;
-import com.vertispan.samples.annotations.TsInterface;
-import com.vertispan.samples.annotations.TsName;
+import com.vertispan.tsdefs.annotations.TsInterface;
+import com.vertispan.tsdefs.annotations.TsName;
 import io.deephaven.web.shared.data.LocalTime;
 import jsinterop.annotations.JsMethod;
 

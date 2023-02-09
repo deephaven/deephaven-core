@@ -3,7 +3,7 @@
  */
 package io.deephaven.web.client.api.subscription;
 
-import com.vertispan.samples.annotations.TsName;
+import com.vertispan.tsdefs.annotations.TsName;
 import elemental2.core.JsArray;
 import io.deephaven.web.client.api.Column;
 import io.deephaven.web.client.api.Format;

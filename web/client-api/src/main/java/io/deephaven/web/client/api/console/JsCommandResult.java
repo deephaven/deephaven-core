@@ -3,8 +3,8 @@
  */
 package io.deephaven.web.client.api.console;
 
-import com.vertispan.samples.annotations.TsInterface;
-import com.vertispan.samples.annotations.TsName;
+import com.vertispan.tsdefs.annotations.TsInterface;
+import com.vertispan.tsdefs.annotations.TsName;
 import jsinterop.annotations.JsProperty;
 
 @TsInterface

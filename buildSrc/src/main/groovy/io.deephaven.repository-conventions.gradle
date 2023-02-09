@@ -13,5 +13,7 @@ repositories {
             includeGroup 'org.apache.kafka'
         }
     }
-    mavenLocal()
+    maven {
+        url 'https://oss.sonatype.org/content/repositories/snapshots/'
+    }
 }

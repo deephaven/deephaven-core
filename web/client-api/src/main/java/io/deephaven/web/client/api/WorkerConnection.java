@@ -3,8 +3,8 @@
  */
 package io.deephaven.web.client.api;
 
-import com.vertispan.samples.annotations.TsInterface;
-import com.vertispan.samples.annotations.TsName;
+import com.vertispan.tsdefs.annotations.TsInterface;
+import com.vertispan.tsdefs.annotations.TsName;
 import elemental2.core.JsArray;
 import elemental2.core.JsSet;
 import elemental2.core.JsWeakMap;
@@ -90,7 +90,6 @@ import io.deephaven.web.client.state.ClientTableState;
 import io.deephaven.web.client.state.HasTableBinding;
 import io.deephaven.web.client.state.TableReviver;
 import io.deephaven.web.shared.data.DeltaUpdates;
-import io.deephaven.web.shared.data.LogItem;
 import io.deephaven.web.shared.data.RangeSet;
 import io.deephaven.web.shared.data.TableSnapshot;
 import io.deephaven.web.shared.data.TableSubscriptionRequest;

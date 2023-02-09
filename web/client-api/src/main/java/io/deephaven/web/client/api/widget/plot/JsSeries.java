@@ -3,7 +3,7 @@
  */
 package io.deephaven.web.client.api.widget.plot;
 
-import com.vertispan.samples.annotations.TsInterface;
+import com.vertispan.tsdefs.annotations.TsInterface;
 import elemental2.core.JsObject;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.SeriesDescriptor;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.SourceDescriptor;

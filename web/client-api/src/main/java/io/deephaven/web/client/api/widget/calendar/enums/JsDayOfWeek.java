@@ -3,7 +3,7 @@
  */
 package io.deephaven.web.client.api.widget.calendar.enums;
 
-import com.vertispan.samples.annotations.TsTypeDef;
+import com.vertispan.tsdefs.annotations.TsTypeDef;
 import elemental2.core.JsObject;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsType;

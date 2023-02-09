@@ -3,8 +3,8 @@
  */
 package io.deephaven.web.client.api.tree;
 
-import com.vertispan.samples.annotations.TsInterface;
-import com.vertispan.samples.annotations.TsName;
+import com.vertispan.tsdefs.annotations.TsInterface;
+import com.vertispan.tsdefs.annotations.TsName;
 import elemental2.core.JsArray;
 import elemental2.core.JsObject;
 import elemental2.core.Uint8Array;
@@ -113,7 +113,7 @@ public class JsTreeTable extends HasEventHandling {
 
     @TsInterface
     @TsName(namespace = "dh")
-    class TreeViewportData {
+    public class TreeViewportData {
         private final Boolean[] expandedColumn;
         private final int[] depthColumn;
         private final double offset;

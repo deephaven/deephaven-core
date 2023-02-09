@@ -3,7 +3,7 @@
  */
 package io.deephaven.web.client.api.widget.plot.enums;
 
-import com.vertispan.samples.annotations.TsTypeDef;
+import com.vertispan.tsdefs.annotations.TsTypeDef;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.AxisDescriptor;
 import jsinterop.annotations.JsType;
 

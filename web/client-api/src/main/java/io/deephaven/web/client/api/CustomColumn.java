@@ -3,7 +3,7 @@
  */
 package io.deephaven.web.client.api;
 
-import com.vertispan.samples.annotations.TsName;
+import com.vertispan.tsdefs.annotations.TsName;
 import io.deephaven.web.shared.data.CustomColumnDescriptor;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsProperty;

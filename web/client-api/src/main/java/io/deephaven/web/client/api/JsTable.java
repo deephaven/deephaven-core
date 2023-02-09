@@ -3,8 +3,8 @@
  */
 package io.deephaven.web.client.api;
 
-import com.vertispan.samples.annotations.TsInterface;
-import com.vertispan.samples.annotations.TsName;
+import com.vertispan.tsdefs.annotations.TsInterface;
+import com.vertispan.tsdefs.annotations.TsName;
 import elemental2.core.JsArray;
 import elemental2.dom.CustomEventInit;
 import elemental2.dom.DomGlobal;

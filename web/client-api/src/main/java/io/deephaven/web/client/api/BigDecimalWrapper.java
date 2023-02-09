@@ -3,7 +3,7 @@
  */
 package io.deephaven.web.client.api;
 
-import com.vertispan.samples.annotations.TsName;
+import com.vertispan.tsdefs.annotations.TsName;
 import jsinterop.annotations.JsMethod;
 
 import javax.annotation.Nonnull;

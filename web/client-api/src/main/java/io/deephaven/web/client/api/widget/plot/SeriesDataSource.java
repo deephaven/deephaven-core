@@ -3,9 +3,9 @@
  */
 package io.deephaven.web.client.api.widget.plot;
 
-import com.vertispan.samples.annotations.TsInterface;
-import com.vertispan.samples.annotations.TsName;
-import com.vertispan.samples.annotations.TsTypeRef;
+import com.vertispan.tsdefs.annotations.TsInterface;
+import com.vertispan.tsdefs.annotations.TsName;
+import com.vertispan.tsdefs.annotations.TsTypeRef;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.SourceDescriptor;
 import io.deephaven.web.client.api.JsTable;
 import jsinterop.annotations.JsIgnore;

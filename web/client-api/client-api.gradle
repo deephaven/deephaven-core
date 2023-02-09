@@ -12,8 +12,8 @@ dependencies {
     implementation project(':web-shared-beans')
     implementation project(':web-client-backplane')
 
-    api 'com.vertispan.samples:tsinterop-annotations:1.0-SNAPSHOT'
-    annotationProcessor 'com.vertispan.samples:tsinterop-processor:1.0-SNAPSHOT'
+    implementation 'com.vertispan.tsdefs:jsinterop-ts-defs-annotations:HEAD-SNAPSHOT'
+    annotationProcessor 'com.vertispan.tsdefs:jsinterop-ts-defs-processor:HEAD-SNAPSHOT'
 
     implementation 'com.vertispan.nio:gwt-nio:1.0-alpha-1'
 

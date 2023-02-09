@@ -1,7 +1,7 @@
 package io.deephaven.web.client.api;
 
-import com.vertispan.samples.annotations.TsInterface;
-import com.vertispan.samples.annotations.TsName;
+import com.vertispan.tsdefs.annotations.TsInterface;
+import com.vertispan.tsdefs.annotations.TsName;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.GetHeapInfoResponse;
 import jsinterop.annotations.JsProperty;
 
