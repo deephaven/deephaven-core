@@ -428,6 +428,7 @@ public class TstUtils {
                 }
                 en[i].validate(ctxt + " en_i = " + i);
             }
+            en[i].releaseRecomputed();
         }
     }
 

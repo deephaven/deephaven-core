@@ -2,12 +2,7 @@ package io.deephaven.client.impl;
 
 import io.deephaven.api.updateby.BadDataBehavior;
 import io.deephaven.api.updateby.OperationControl;
-import io.deephaven.api.updateby.spec.CumMinMaxSpec;
-import io.deephaven.api.updateby.spec.CumProdSpec;
-import io.deephaven.api.updateby.spec.CumSumSpec;
-import io.deephaven.api.updateby.spec.EmaSpec;
-import io.deephaven.api.updateby.spec.FillBySpec;
-import io.deephaven.api.updateby.spec.UpdateBySpec;
+import io.deephaven.api.updateby.spec.*;
 import io.deephaven.api.updateby.spec.UpdateBySpec.Visitor;
 import io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn;
 import io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByCumulativeMax;
@@ -71,6 +66,12 @@ public class UpdateBySpecBuilderTest {
         public UpdateByColumn.UpdateBySpec visit(CumProdSpec p) {
             return UpdateByColumn.UpdateBySpec.newBuilder().setProduct(UpdateByCumulativeProduct.getDefaultInstance())
                     .build();
+        }
+
+        // TODO: add this correctly (DHC #3392)
+        @Override
+        public UpdateByColumn.UpdateBySpec visit(RollingSumSpec p) {
+            return null;
         }
     }
 

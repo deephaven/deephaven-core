@@ -11,6 +11,9 @@ import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer;
 import io.deephaven.engine.updategraph.TerminalNotification;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
+import io.deephaven.engine.table.impl.util.JobScheduler;
+import io.deephaven.engine.table.impl.util.UpdateGraphProcessorJobScheduler;
 
 import java.util.BitSet;
 import java.util.Map;
@@ -75,12 +78,12 @@ class SelectOrUpdateListener extends BaseTable.ListenerImpl {
         final SelectAndViewAnalyzer.UpdateHelper updateHelper =
                 new SelectAndViewAnalyzer.UpdateHelper(resultRowSet, acquiredUpdate);
         toClear.remove(resultRowSet);
-        SelectAndViewAnalyzer.JobScheduler jobScheduler;
+        JobScheduler jobScheduler;
 
         if (enableParallelUpdate) {
-            jobScheduler = new SelectAndViewAnalyzer.UpdateGraphProcessorJobScheduler();
+            jobScheduler = new UpdateGraphProcessorJobScheduler();
         } else {
-            jobScheduler = SelectAndViewAnalyzer.ImmediateJobScheduler.INSTANCE;
+            jobScheduler = ImmediateJobScheduler.INSTANCE;
         }
 
         analyzer.applyUpdate(acquiredUpdate, toClear, updateHelper, jobScheduler, this,
@@ -102,7 +105,7 @@ class SelectOrUpdateListener extends BaseTable.ListenerImpl {
         updateInProgress = false;
     }
 
-    private void completionRoutine(TableUpdate upstream, SelectAndViewAnalyzer.JobScheduler jobScheduler,
+    private void completionRoutine(TableUpdate upstream, JobScheduler jobScheduler,
             WritableRowSet toClear, SelectAndViewAnalyzer.UpdateHelper updateHelper) {
         final TableUpdateImpl downstream = new TableUpdateImpl(upstream.added().copy(), upstream.removed().copy(),
                 upstream.modified().copy(), upstream.shifted(), dependent.getModifiedColumnSetForUpdates());

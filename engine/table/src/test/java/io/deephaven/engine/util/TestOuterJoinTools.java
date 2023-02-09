@@ -215,4 +215,20 @@ public class TestOuterJoinTools {
         assertEquals(Arrays.asList("a", "a", "b", "b", "c", null), Arrays.asList(result.getColumn("X").get(0, 6)));
         assertEquals(Arrays.asList("a", "a", "b", "b", null, "d"), Arrays.asList(result.getColumn("Y").get(0, 6)));
     }
+
+    @Test
+    public void testFullOuterJoinIdentityMatchWithAddColumn() {
+        Table lTable = TableTools.emptyTable(4).update("a = i", "b = i * 2");
+        Table rTable = TableTools.emptyTable(4).update("a = i", "c = i * 3");
+        Table result = OuterJoinTools.fullOuterJoin(lTable, rTable, "a", "c");
+
+        assertEquals(4, result.size());
+        assertEquals(3, result.getColumns().length);
+        assertEquals("a", result.getColumns()[0].getName());
+        assertEquals("b", result.getColumns()[1].getName());
+        assertEquals("c", result.getColumns()[2].getName());
+        assertEquals(Arrays.asList(0, 1, 2, 3), Arrays.asList(result.getColumn("a").get(0, 9)));
+        assertEquals(Arrays.asList(0, 2, 4, 6), Arrays.asList(result.getColumn("b").get(0, 9)));
+        assertEquals(Arrays.asList(0, 3, 6, 9), Arrays.asList(result.getColumn("c").get(0, 9)));
+    }
 }

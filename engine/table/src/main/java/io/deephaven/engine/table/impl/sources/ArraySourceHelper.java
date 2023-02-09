@@ -3,30 +3,39 @@
  */
 package io.deephaven.engine.table.impl.sources;
 
-import io.deephaven.base.verify.Assert;
-import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.table.SharedContext;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.util.datastructures.LongSizedDataStructure;
-import io.deephaven.chunk.*;
-import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.updategraph.UpdateCommitter;
-import io.deephaven.engine.table.impl.util.copy.CopyKernel;
-import io.deephaven.util.SoftRecycler;
 import gnu.trove.list.array.TIntArrayList;
+import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.ChunkType;
+import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.SharedContext;
+import io.deephaven.engine.table.WritableSourceWithPrepareForParallelPopulation;
+import io.deephaven.engine.table.impl.util.copy.CopyKernel;
+import io.deephaven.engine.updategraph.UpdateCommitter;
+import io.deephaven.util.SoftRecycler;
+import io.deephaven.util.datastructures.LongSizedDataStructure;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 
-abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T> {
+abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T>
+        implements WritableSourceWithPrepareForParallelPopulation {
     /**
      * The presence of a prevFlusher means that this ArraySource wants to track previous values. If prevFlusher is null,
      * the ArraySource does not want (or does not yet want) to track previous values. Deserialized ArraySources never
      * track previous values.
      */
     protected transient UpdateCommitter<ArraySourceHelper<T, UArray>> prevFlusher = null;
-    private transient TIntArrayList prevAllocated = null;
+    protected transient TIntArrayList prevAllocated = null;
+
+    /**
+     * If ensure previous has been called, we need not check previous values when filling.
+     */
+    protected transient long ensurePreviousClockCycle = -1;
 
     ArraySourceHelper(Class<T> type) {
         super(type);

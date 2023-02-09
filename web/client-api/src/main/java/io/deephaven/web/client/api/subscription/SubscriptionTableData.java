@@ -272,7 +272,7 @@ public class SubscriptionTableData {
         switch (type) {
             case "long":
                 return (destArray, destPos, srcArray, srcPos) -> {
-                    long value = Js.asArrayLike(srcArray).getAtAsAny(srcPos).asLong();
+                    final long value = Js.asArrayLike(srcArray).getAtAsAny(srcPos).asLong();
                     if (value == QueryConstants.NULL_LONG) {
                         Js.asArrayLike(destArray).setAt((int) destPos, null);
                     } else {
@@ -326,18 +326,19 @@ public class SubscriptionTableData {
                 };
             case "java.lang.Boolean":
                 return (destArray, destPos, srcArray, srcPos) -> {
-                    int value = Js.asArrayLike(srcArray).getAtAsAny(srcPos).asInt();
-                    if (value == 1) {
-                        Js.asArrayLike(destArray).setAt((int) destPos, true);
-                    } else if (value == 0) {
-                        Js.asArrayLike(destArray).setAt((int) destPos, false);
-                    } else {
+                    final Any value = Js.asArrayLike(srcArray).getAtAsAny(srcPos);
+
+                    if (value == null) {
                         Js.asArrayLike(destArray).setAt((int) destPos, null);
+                    } else if (value.asBoolean()) {
+                        Js.asArrayLike(destArray).setAt((int) destPos, true);
+                    } else {
+                        Js.asArrayLike(destArray).setAt((int) destPos, false);
                     }
                 };
             case "int":
                 return (destArray, destPos, srcArray, srcPos) -> {
-                    int value = Js.asArrayLike(srcArray).getAtAsAny(srcPos).asInt();
+                    final int value = Js.asArrayLike(srcArray).getAtAsAny(srcPos).asInt();
                     if (value == QueryConstants.NULL_INT) {
                         Js.asArrayLike(destArray).setAt((int) destPos, null);
                     } else {
@@ -346,7 +347,7 @@ public class SubscriptionTableData {
                 };
             case "byte":
                 return (destArray, destPos, srcArray, srcPos) -> {
-                    byte value = Js.asArrayLike(srcArray).getAtAsAny(srcPos).asByte();
+                    final byte value = Js.asArrayLike(srcArray).getAtAsAny(srcPos).asByte();
                     if (value == QueryConstants.NULL_BYTE) {
                         Js.asArrayLike(destArray).setAt((int) destPos, null);
                     } else {
@@ -355,7 +356,7 @@ public class SubscriptionTableData {
                 };
             case "short":
                 return (destArray, destPos, srcArray, srcPos) -> {
-                    short value = Js.asArrayLike(srcArray).getAtAsAny(srcPos).asShort();
+                    final short value = Js.asArrayLike(srcArray).getAtAsAny(srcPos).asShort();
                     if (value == QueryConstants.NULL_SHORT) {
                         Js.asArrayLike(destArray).setAt((int) destPos, null);
                     } else {
@@ -364,7 +365,7 @@ public class SubscriptionTableData {
                 };
             case "double":
                 return (destArray, destPos, srcArray, srcPos) -> {
-                    double value = Js.asArrayLike(srcArray).getAtAsAny(srcPos).asDouble();
+                    final double value = Js.asArrayLike(srcArray).getAtAsAny(srcPos).asDouble();
                     if (value == QueryConstants.NULL_DOUBLE) {
                         Js.asArrayLike(destArray).setAt((int) destPos, null);
                     } else {
@@ -373,7 +374,7 @@ public class SubscriptionTableData {
                 };
             case "float":
                 return (destArray, destPos, srcArray, srcPos) -> {
-                    float value = Js.asArrayLike(srcArray).getAtAsAny(srcPos).asFloat();
+                    final float value = Js.asArrayLike(srcArray).getAtAsAny(srcPos).asFloat();
                     if (value == QueryConstants.NULL_FLOAT) {
                         Js.asArrayLike(destArray).setAt((int) destPos, null);
                     } else {
@@ -382,7 +383,7 @@ public class SubscriptionTableData {
                 };
             case "char":
                 return (destArray, destPos, srcArray, srcPos) -> {
-                    char value = Js.asArrayLike(srcArray).getAtAsAny(srcPos).asChar();
+                    final char value = Js.asArrayLike(srcArray).getAtAsAny(srcPos).asChar();
                     if (value == QueryConstants.NULL_CHAR) {
                         Js.asArrayLike(destArray).setAt((int) destPos, null);
                     } else {

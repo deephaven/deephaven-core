@@ -70,13 +70,6 @@ public class BooleanSingleValueSource extends SingleValueColumnSource<Boolean> i
     }
 
     @Override
-    public final void setNull(long key) {
-        // region null set
-        set(NULL_BOOLEAN);
-        // endregion null set
-    }
-
-    @Override
     public final Boolean get(long rowKey) {
         if (rowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_BOOLEAN;

@@ -10,6 +10,13 @@
 #include "deephaven/client/container/row_sequence.h"
 
 namespace deephaven::client::table {
+/**
+ * Declaration provided in deephaven/client/table/table.h
+ */
+class Schema;
+/**
+ * Forward declaration (provided below).
+ */
 class Table;
 
 namespace internal {
@@ -34,40 +41,6 @@ private:
   friend std::ostream &operator<<(std::ostream &s, const TableStreamAdaptor &o);
 };
 }  // namespace internal
-
-/**
- * The table schema that goes along with a Table class. This Schema object tells you about
- * the names and data types of the table columns.
- */
-class Schema {
-public:
-  /**
-   * Constructor.
-   */
-  explicit Schema(std::vector<std::pair<std::string, std::shared_ptr<arrow::DataType>>> columns);
-  /**
-   * Move constructor.
-   */
-  Schema(Schema &&other) noexcept;
-  /**
-   * Move assignment operator.
-   */
-  Schema &operator=(Schema &&other) noexcept;
-  /**
-   * Destructor.
-   */
-  ~Schema();
-
-  /**
-   * The schema (represented as a pair of name, column type) for each column in your Table.
-   */
-  const std::vector<std::pair<std::string, std::shared_ptr<arrow::DataType>>> &columns() const {
-    return columns_;
-  }
-
-private:
-  std::vector<std::pair<std::string, std::shared_ptr<arrow::DataType>>> columns_;
-};
 
 /**
  * An abstract base class representing a Deephaven table. This is used for example in
@@ -154,6 +127,23 @@ public:
    * std::cout << myTable.stream(true, false, rowSequences).
    */
   internal::TableStreamAdaptor stream(bool wantHeaders, bool wantRowNumbers,
+      std::vector<std::shared_ptr<RowSequence>> rowSequences) const;
+
+  /**
+   * For debugging and demos.
+   */
+   std::string toString(bool wantHeaders, bool wantRowNumbers) const;
+
+  /**
+   * For debugging and demos.
+   */
+  std::string toString(bool wantHeaders, bool wantRowNumbers,
+      std::shared_ptr<RowSequence> rowSequence) const;
+
+  /**
+   * For debugging and demos.
+   */
+  std::string toString(bool wantHeaders, bool wantRowNumbers,
       std::vector<std::shared_ptr<RowSequence>> rowSequences) const;
 };
 }  // namespace deephaven::client::table

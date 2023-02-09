@@ -214,7 +214,7 @@ public class ArrowToTableConverter {
 
             if (acd.data.get(0).size() != numRowsAdded) {
                 throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
-                        "Inconsistent num records per column: " + numRowsAdded + " != " + acd.data.size());
+                        "Inconsistent num records per column: " + numRowsAdded + " != " + acd.data.get(0).size());
             }
             acd.type = columnTypes[ci];
             acd.componentType = componentTypes[ci];

@@ -23,6 +23,7 @@ import org.eclipse.jetty.http2.parser.RateControl;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
+import org.eclipse.jetty.server.ForwardedRequestCustomizer;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
@@ -224,6 +225,7 @@ public class JettyBackedGrpcServer implements GrpcServer {
     private static ServerConnector createConnector(Server server, JettyConfig config) {
         // https://www.eclipse.org/jetty/documentation/jetty-11/programming-guide/index.html#pg-server-http-connector-protocol-http2-tls
         final HttpConfiguration httpConfig = new HttpConfiguration();
+        httpConfig.addCustomizer(new ForwardedRequestCustomizer());
         final HttpConnectionFactory http11 = config.http1OrDefault() ? new HttpConnectionFactory(httpConfig) : null;
         final ServerConnector serverConnector;
         if (config.ssl().isPresent()) {

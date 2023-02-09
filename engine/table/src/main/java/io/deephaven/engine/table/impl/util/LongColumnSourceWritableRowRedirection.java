@@ -8,9 +8,7 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
-import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.Chunk;
-import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
 
@@ -45,23 +43,18 @@ public final class LongColumnSourceWritableRowRedirection
         if (previous == QueryConstants.NULL_LONG) {
             return RowSequence.NULL_ROW_KEY;
         }
-        columnSource.set(outerRowKey, QueryConstants.NULL_LONG);
+        columnSource.setNull(outerRowKey);
         return previous;
     }
 
     @Override
     public void removeVoid(long outerRowKey) {
-        columnSource.set(outerRowKey, QueryConstants.NULL_LONG);
+        columnSource.setNull(outerRowKey);
     }
 
     @Override
-    public void removeAll(final RowSequence outerRowKeys) {
-        final int numKeys = outerRowKeys.intSize();
-        try (final ChunkSink.FillFromContext fillFromContext = columnSource.makeFillFromContext(numKeys);
-             final WritableLongChunk<Values> values = WritableLongChunk.makeWritableChunk(numKeys)) {
-            values.fillWithNullValue(0, numKeys);
-            columnSource.fillFromChunk(fillFromContext, values, outerRowKeys);
-        }
+    public void removeAll(final RowSequence rowSequence) {
+        columnSource.setNull(rowSequence);
     }
 
     @Override

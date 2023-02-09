@@ -9,6 +9,7 @@ import elemental2.core.JsArray;
 import elemental2.core.JsSet;
 import elemental2.core.JsWeakMap;
 import elemental2.core.Uint8Array;
+import elemental2.dom.CustomEventInit;
 import elemental2.dom.DomGlobal;
 import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.message_generated.org.apache.arrow.flatbuf.FieldNode;
@@ -22,11 +23,12 @@ import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.schema_gene
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.schema_generated.org.apache.arrow.flatbuf.Schema;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.browserflight_pb_service.BrowserFlightServiceClient;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.FlightData;
+import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.HandshakeRequest;
+import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.HandshakeResponse;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb_service.FlightServiceClient;
 import io.deephaven.javascript.proto.dhinternal.browserheaders.BrowserHeaders;
 import io.deephaven.javascript.proto.dhinternal.flatbuffers.Builder;
 import io.deephaven.javascript.proto.dhinternal.flatbuffers.Long;
-import io.deephaven.javascript.proto.dhinternal.grpcweb.Grpc;
 import io.deephaven.javascript.proto.dhinternal.grpcweb.grpc.Code;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
@@ -47,8 +49,6 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.inputtable_pb
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb.FetchObjectRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb_service.ObjectServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.partitionedtable_pb_service.PartitionedTableServiceClient;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.HandshakeRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.HandshakeResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.ReleaseRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.TerminationNotificationRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.terminationnotificationresponse.StackTrace;
@@ -70,26 +70,30 @@ import io.deephaven.web.client.api.barrage.WebBarrageUtils;
 import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
 import io.deephaven.web.client.api.barrage.def.InitialTableDefinition;
 import io.deephaven.web.client.api.barrage.stream.BiDiStream;
+import io.deephaven.web.client.api.barrage.stream.HandshakeStreamFactory;
 import io.deephaven.web.client.api.barrage.stream.ResponseStreamWrapper;
 import io.deephaven.web.client.api.batch.RequestBatcher;
 import io.deephaven.web.client.api.batch.TableConfig;
 import io.deephaven.web.client.api.console.JsVariableChanges;
 import io.deephaven.web.client.api.console.JsVariableDefinition;
-import io.deephaven.web.client.api.grpc.MultiplexedWebsocketTransport;
 import io.deephaven.web.client.api.i18n.JsTimeZone;
 import io.deephaven.web.client.api.lifecycle.HasLifecycle;
 import io.deephaven.web.client.api.parse.JsDataHandler;
 import io.deephaven.web.client.api.state.StateCache;
 import io.deephaven.web.client.api.tree.JsTreeTable;
-import io.deephaven.web.client.api.widget.plot.JsFigure;
 import io.deephaven.web.client.api.widget.JsWidget;
+import io.deephaven.web.client.api.widget.plot.JsFigure;
 import io.deephaven.web.client.fu.JsItr;
 import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.client.fu.LazyPromise;
 import io.deephaven.web.client.state.ClientTableState;
 import io.deephaven.web.client.state.HasTableBinding;
 import io.deephaven.web.client.state.TableReviver;
-import io.deephaven.web.shared.data.*;
+import io.deephaven.web.shared.data.DeltaUpdates;
+import io.deephaven.web.shared.data.LogItem;
+import io.deephaven.web.shared.data.RangeSet;
+import io.deephaven.web.shared.data.TableSnapshot;
+import io.deephaven.web.shared.data.TableSubscriptionRequest;
 import io.deephaven.web.shared.fu.JsConsumer;
 import io.deephaven.web.shared.fu.JsRunnable;
 import jsinterop.annotations.JsMethod;
@@ -99,7 +103,6 @@ import jsinterop.base.JsPropertyMap;
 
 import javax.annotation.Nullable;
 import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
@@ -111,10 +114,16 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import static io.deephaven.web.client.api.barrage.WebBarrageUtils.*;
+import static io.deephaven.web.client.api.CoreClient.EVENT_REFRESH_TOKEN_UPDATED;
+import static io.deephaven.web.client.api.barrage.WebBarrageUtils.DeltaUpdatesBuilder;
+import static io.deephaven.web.client.api.barrage.WebBarrageUtils.createSnapshot;
+import static io.deephaven.web.client.api.barrage.WebBarrageUtils.deltaUpdates;
+import static io.deephaven.web.client.api.barrage.WebBarrageUtils.makeUint8ArrayFromBitset;
+import static io.deephaven.web.client.api.barrage.WebBarrageUtils.serializeRanges;
+import static io.deephaven.web.client.api.barrage.WebBarrageUtils.typedArrayToLittleEndianByteBuffer;
+import static io.deephaven.web.client.api.barrage.WebGrpcUtils.CLIENT_OPTIONS;
 
 /**
  * Non-exported class, manages the connection to a given worker server. Exported types like QueryInfo and Table will
@@ -134,24 +143,14 @@ import static io.deephaven.web.client.api.barrage.WebBarrageUtils.*;
 @TsName(namespace = "dh.internal")
 @TsInterface
 public class WorkerConnection {
-    private static final boolean useWebsockets;
 
-    static {
-        // TODO configurable, let us support this even when ssl?
-        if (DomGlobal.window.location.protocol.equals("http:")) {
-            useWebsockets = true;
-            Grpc.setDefaultTransport.onInvoke(options -> new MultiplexedWebsocketTransport(options, () -> {
-                Grpc.setDefaultTransport.onInvoke(Grpc.WebsocketTransport.onInvoke());
-            }));
-        } else {
-            useWebsockets = false;
-        }
-    }
-
-    private String sessionToken;
 
     // All calls to the server should share this metadata instance, or copy from it if they need something custom
     private BrowserHeaders metadata = new BrowserHeaders();
+
+    private Double scheduledAuthUpdate;
+    // default to 10s, the actual value is almost certainly higher than that
+    private double sessionTimeoutMs = 10_000;
 
     /**
      * States the connection can be in. If non-requested disconnect occurs, transition to reconnecting. If reconnect
@@ -218,35 +217,32 @@ public class WorkerConnection {
     private long lastSuccessResponseTime = 0;
     private static final long GIVE_UP_TIMEOUT_MS = 10_000;
 
-    public WorkerConnection(QueryConnectable<?> info, Supplier<Promise<ConnectToken>> authTokenPromiseSupplier) {
+    public WorkerConnection(QueryConnectable<?> info) {
         this.info = info;
         this.config = new ClientConfiguration();
         state = State.Connecting;
         this.reviver = new TableReviver(this);
-        boolean debugGrpc = false;
-        sessionServiceClient = new SessionServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
-        tableServiceClient = new TableServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
-        consoleServiceClient = new ConsoleServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
-        flightServiceClient = new FlightServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
+        sessionServiceClient = new SessionServiceClient(info.getServerUrl(), CLIENT_OPTIONS);
+        tableServiceClient = new TableServiceClient(info.getServerUrl(), CLIENT_OPTIONS);
+        consoleServiceClient = new ConsoleServiceClient(info.getServerUrl(), CLIENT_OPTIONS);
+        flightServiceClient = new FlightServiceClient(info.getServerUrl(), CLIENT_OPTIONS);
         applicationServiceClient =
-                new ApplicationServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
+                new ApplicationServiceClient(info.getServerUrl(), CLIENT_OPTIONS);
         browserFlightServiceClient =
-                new BrowserFlightServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
+                new BrowserFlightServiceClient(info.getServerUrl(), CLIENT_OPTIONS);
         inputTableServiceClient =
-                new InputTableServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
-        objectServiceClient = new ObjectServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
+                new InputTableServiceClient(info.getServerUrl(), CLIENT_OPTIONS);
+        objectServiceClient = new ObjectServiceClient(info.getServerUrl(), CLIENT_OPTIONS);
         partitionedTableServiceClient =
-                new PartitionedTableServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
-        storageServiceClient = new StorageServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
-        configServiceClient = new ConfigServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
+                new PartitionedTableServiceClient(info.getServerUrl(), CLIENT_OPTIONS);
+        storageServiceClient = new StorageServiceClient(info.getServerUrl(), CLIENT_OPTIONS);
+        configServiceClient = new ConfigServiceClient(info.getServerUrl(), CLIENT_OPTIONS);
         hierarchicalTableServiceClient =
-                new HierarchicalTableServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
+                new HierarchicalTableServiceClient(info.getServerUrl(), CLIENT_OPTIONS);
 
         // builder.setConnectionErrorHandler(msg -> info.failureHandled(String.valueOf(msg)));
 
-        newSessionReconnect = new ReconnectState(() -> {
-            connectToWorker(authTokenPromiseSupplier);
-        });
+        newSessionReconnect = new ReconnectState(this::connectToWorker);
 
         // start connection
         newSessionReconnect.initialConnection();
@@ -266,25 +262,16 @@ public class WorkerConnection {
      * Once the table has been successfully fetched, after each reconnect until the table is close()d we'll attempt to
      * restore the table by re-fetching the table, then reapplying all operations on it.
      */
-    private void connectToWorker(Supplier<Promise<ConnectToken>> authTokenPromiseSupplier) {
+    private void connectToWorker() {
         info.running()
                 .then(queryWorkerRunning -> {
                     // get the auth token
-                    return authTokenPromiseSupplier.get();
+                    return info.getConnectToken();
                 }).then(authToken -> {
-                    // create a new session
-                    HandshakeRequest handshakeRequest = new HandshakeRequest();
-                    if (authToken != null) {
-                        Uint8Array token = new Uint8Array(authToken.getBytes().length);
-                        handshakeRequest.setPayload(token);
-                    }
-                    handshakeRequest.setAuthProtocol(1);
-
-                    return Callbacks.<HandshakeResponse, Object>grpcUnaryPromise(
-                            c -> sessionServiceClient.newSession(handshakeRequest, (BrowserHeaders) null, c::apply));
+                    // set the proposed initial token and make the first call
+                    metadata.set("authorization", (authToken.getType() + " " + authToken.getValue()).trim());
+                    return authUpdate();
                 }).then(handshakeResponse -> {
-                    // start the reauth cycle
-                    authUpdate(handshakeResponse);
                     // subscribe to fatal errors
                     subscribeToTerminationNotification();
 
@@ -297,7 +284,6 @@ public class WorkerConnection {
                     // nuke pending callbacks, we'll remake them
                     handleCallbacks = new JsWeakMap<>();
                     definitionCallbacks = new JsWeakMap<>();
-
 
                     // for each cts in the cache, get all with active subs
                     ClientTableState[] hasActiveSubs = cache.getAllStates().stream()
@@ -368,6 +354,10 @@ public class WorkerConnection {
                 });
     }
 
+    private boolean checkStatus(ResponseStreamWrapper.ServiceError fail) {
+        return checkStatus(ResponseStreamWrapper.Status.of(fail.getCode(), fail.getMessage(), fail.getMetadata()));
+    }
+
     public boolean checkStatus(ResponseStreamWrapper.Status status) {
         // TODO provide simpler hooks to retry auth, restart the stream
         final long now = System.currentTimeMillis();
@@ -418,37 +408,63 @@ public class WorkerConnection {
         exportNotifications.onStatus(this::checkStatus);
     }
 
-    private void authUpdate(HandshakeResponse handshakeResponse) {
-        // store the token and schedule refresh calls to keep it alive
-        sessionToken = new String(Js.uncheckedCast(handshakeResponse.getSessionToken_asU8()), Charset.forName("UTF-8"));
-        String sessionHeaderName =
-                new String(Js.uncheckedCast(handshakeResponse.getMetadataHeader_asU8()), Charset.forName("UTF-8"));
-        metadata.set(sessionHeaderName, sessionToken);
-
-        // TODO maybe accept server advice on refresh rates, or just do our own thing
-        DomGlobal.setTimeout((ignore) -> {
-            HandshakeRequest req = new HandshakeRequest();
-            req.setAuthProtocol(0);
-            req.setPayload(handshakeResponse.getSessionToken_asU8());
-            sessionServiceClient.refreshSessionToken(req, metadata, (fail, success) -> {
-                if (fail != null) {
-                    // TODO set a flag so others know not to try until we re-trigger initial auth
-                    // TODO re-trigger auth; but for now let's try again using our last successful auth
-                    checkStatus((ResponseStreamWrapper.Status) fail);
-                    authUpdate(handshakeResponse);
-                    return;
+    /**
+     * Manages auth token update and rotation. A typical grpc/grpc-web client would support something like an
+     * interceptor to be able to tweak requests and responses slightly, but our client doesn't have an easy way to add
+     * something like that. Instead, this client will continue to call FlightService/Handshake at the specified
+     * interval, with empty payloads.
+     *
+     * @return a promise for when this auth is completed
+     */
+    private Promise<Void> authUpdate() {
+        if (scheduledAuthUpdate != null) {
+            DomGlobal.clearTimeout(scheduledAuthUpdate);
+            scheduledAuthUpdate = null;
+        }
+        return new Promise<>((resolve, reject) -> {
+            // the streamfactory will automatically reference our existing metadata, but we can listen to update it
+            BiDiStream<HandshakeRequest, HandshakeResponse> handshake = HandshakeStreamFactory.create(this);
+            handshake.onHeaders(headers -> {
+                // unchecked cast is required here due to "aliasing" in ts/webpack resulting in BrowserHeaders !=
+                // Metadata
+                JsArray<String> authorization = Js.<BrowserHeaders>uncheckedCast(headers).get("authorization");
+                if (authorization.length > 0) {
+                    JsArray<String> existing = metadata().get("authorization");
+                    if (!existing.getAt(0).equals(authorization.getAt(0))) {
+                        // use this new token
+                        metadata().set("authorization", authorization);
+                        CustomEventInit init = CustomEventInit.create();
+                        init.setDetail(new JsRefreshToken(authorization.getAt(0), sessionTimeoutMs));
+                        info.fireEvent(EVENT_REFRESH_TOKEN_UPDATED, init);
+                    }
                 }
-                // mark the new token, schedule a new check
-                authUpdate(success);
+                handshake.end();
             });
-        }, 2500);
+            handshake.onStatus(status -> {
+                if (status.isOk()) {
+                    // schedule an update based on our currently configured delay
+                    scheduledAuthUpdate = DomGlobal.setTimeout(ignore -> {
+                        authUpdate();
+                    }, sessionTimeoutMs / 2);
+
+                    resolve.onInvoke((Void) null);
+                } else {
+                    // token is no longer valid, signal deauth for re-login
+                    // TODO deephaven-core#2564 fire an event for the UI to re-auth
+                    checkStatus(status);
+                    reject.onInvoke(status.getDetails());
+                }
+            });
+
+            handshake.send(new HandshakeRequest());
+        });
     }
 
     private void subscribeToTerminationNotification() {
         sessionServiceClient.terminationNotification(new TerminationNotificationRequest(), metadata(),
                 (fail, success) -> {
                     if (fail != null) {
-                        if (checkStatus((ResponseStreamWrapper.Status) fail)) {
+                        if (checkStatus((ResponseStreamWrapper.ServiceError) fail)) {
                             // restart the termination notification
                             subscribeToTerminationNotification();
                         } else {
@@ -461,7 +477,7 @@ public class WorkerConnection {
                     // welp; the server is gone -- let everyone know
                     info.notifyConnectionError(new ResponseStreamWrapper.Status() {
                         @Override
-                        public double getCode() {
+                        public int getCode() {
                             return Code.Unavailable;
                         }
 
@@ -662,6 +678,10 @@ public class WorkerConnection {
         // }
         newSessionReconnect.disconnected();
         DomGlobal.clearTimeout(killTimerCancelation);
+    }
+
+    public void setSessionTimeoutMs(double sessionTimeoutMs) {
+        this.sessionTimeoutMs = sessionTimeoutMs;
     }
 
     // @Override
@@ -968,7 +988,7 @@ public class WorkerConnection {
     }
 
     public <ReqT, RespT> BiDiStream.Factory<ReqT, RespT> streamFactory() {
-        return new BiDiStream.Factory<>(this::metadata, config::newTicketInt, useWebsockets);
+        return new BiDiStream.Factory<>(this::metadata, config::newTicketInt);
     }
 
     public Promise<JsTable> newTable(String[] columnNames, String[] types, Object[][] data, String userTimeZone,

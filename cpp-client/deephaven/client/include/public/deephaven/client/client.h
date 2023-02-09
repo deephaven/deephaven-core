@@ -3,90 +3,61 @@
  */
 #pragma once
 
-#include <future>
 #include <memory>
 #include <string_view>
-#include <arrow/flight/client.h>
 #include "deephaven/client/columns.h"
 #include "deephaven/client/expressions.h"
 #include "deephaven/client/ticking.h"
 #include "deephaven/client/utility/callbacks.h"
 
+/**
+ * Arrow-related classes, used by TableHandleManager::newTableHandleAndFlightDescriptor() and
+ * TableHandleManager::createFlightWrapper. Callers that use those methods need to include
+ * deephaven/client/flight.h
+ */
 namespace deephaven::client {
-namespace impl {
+class FlightWrapper;
+class TableHandleAndFlightDescriptor;
+}  // namespace deephaven::client
+
+/**
+ * Internal impl classes. Their definitions are opaque here.
+ */
+namespace deephaven::client::impl {
 class AggregateComboImpl;
 class AggregateImpl;
 class ClientImpl;
 class TableHandleImpl;
 class TableHandleManagerImpl;
-}  // namespace impl
+}  // namespace deephaven::client::impl
 
-namespace subscription {
+/**
+ * Forward reference to arrow's FlightStreamReader
+ */
+namespace arrow::flight {
+class FlightStreamReader;
+}  // namespace arrow::flight
+
+/**
+ * Opaque class used as a handle to a subscription
+ */
+namespace deephaven::client::subscription {
 class SubscriptionHandle;
-}  // namespace subscription
+} // namespace deephaven::client::subscription
 
+/**
+ * Forward references
+ */
+namespace deephaven::client {
 class Client;
 class TableHandle;
 class TableHandleManager;
-
 namespace internal {
 class TableHandleStreamAdaptor;
 }  // namespace internal
+}  // namespace deephaven::client
 
-/**
- * This class provides an interface to Arrow Flight, which is the main way to push data into and
- * get data out of the system.
- */
-class FlightWrapper {
-public:
-  /**
-   * Constructor. Used internally.
-   */
-  explicit FlightWrapper(std::shared_ptr<impl::TableHandleManagerImpl> impl);
-  /**
-   * Destructor
-   */
-  ~FlightWrapper();
-
-  /**
-   * Construct an Arrow FlightStreamReader that is set up to read the given TableHandle.
-   * @param table The table to read from.
-   * @return An Arrow FlightStreamReader
-   */
-  std::shared_ptr<arrow::flight::FlightStreamReader> getFlightStreamReader(
-      const TableHandle &table) const;
-
-  /**
-   * Add Deephaven authentication headers to Arrow FlightCallOptions.
-   * This is a bit of a hack, and is used in the scenario where the caller is rolling
-   * their own Arrow Flight `DoPut` operation. Example code might look like this:
-   * @code
-   *   // Get a FlightWrapper
-   *   auto wrapper = manager.createFlightWrapper();
-   *   // Get a
-   *   auto [result, fd] = manager.newTableHandleAndFlightDescriptor();
-   *   // Empty FlightCallOptions
-   *   arrow::flight::FlightCallOptions options;
-   *   // add Deephaven auth headers to the FlightCallOptions
-   *   wrapper.addAuthHeaders(&options);
-   *   std::unique_ptr<arrow::flight::FlightStreamWriter> fsw;
-   *   std::unique_ptr<arrow::flight::FlightMetadataReader> fmr;
-   *   auto status = wrapper.flightClient()->DoPut(options, fd, schema, &fsw, &fmr);
-   * @endcode
-   * @param options Destination object where the authentication headers should be written.
-   */
-  void addAuthHeaders(arrow::flight::FlightCallOptions *options);
-
-  /**
-   * Gets the underlying FlightClient
-   * @return A pointer to the FlightClient.
-   */
-  arrow::flight::FlightClient *flightClient() const;
-
-private:
-  std::shared_ptr<impl::TableHandleManagerImpl> impl_;
-};
-
+namespace deephaven::client {
 /**
  * This class is the main way to get access to new TableHandle objects, via methods like emptyTable()
  * and fetchTable(). A TableHandleManager is created by Client::getManager(). You can have more than
@@ -97,6 +68,10 @@ private:
  */
 class TableHandleManager {
 public:
+  /*
+   * Default constructor. Creates a (useless) empty client object.
+   */
+  TableHandleManager();
   /**
    * Constructor. Used internally.
    */
@@ -143,13 +118,16 @@ public:
   /**
    * Allocate a fresh TableHandle and return both it and its corresponding Arrow FlightDescriptor.
    * This is used when the caller wants to do an Arrow DoPut operation.
+   * The object returned is only forward-referenced in this file. If you want to use it, you will
+   * also need to include deephaven/client/flight.h.
    * @return A TableHandle and Arrow FlightDescriptor referring to the new table.
    */
-  std::tuple<TableHandle, arrow::flight::FlightDescriptor>
-  newTableHandleAndFlightDescriptor() const;
+  TableHandleAndFlightDescriptor newTableHandleAndFlightDescriptor() const;
   /**
    * Creates a FlightWrapper that is used for Arrow Flight integration. Arrow Flight is the primary
-   * way to push data into or pull data out of the system.
+   * way to push data into or pull data out of the system. The object returned is only
+   * forward-referenced in this file. If you want to use it, you will also need to include
+   * deephaven/client/flight.h.
    * @return A FlightWrapper object.
    */
   FlightWrapper createFlightWrapper() const;
@@ -167,6 +145,12 @@ class Client {
   using SFCallback = deephaven::client::utility::SFCallback<Args...>;
 
 public:
+  typedef void (*CCallback)(TickingUpdate, void *);
+
+  /*
+   * Default constructor. Creates a (useless) empty client object.
+   */
+  Client();
   /**
    * Factory method to connect to a Deephaven server
    * @param target A connection string in the format host:port. For example "localhost:10000".
@@ -1292,6 +1276,11 @@ public:
   internal::TableHandleStreamAdaptor stream(bool wantHeaders) const;
 
   /**
+   * Used internally, for demo purposes.
+   */
+  std::string toString(bool wantHeaders) const;
+
+  /**
    * Used internally, for debugging.
    */
   void observe() const;
@@ -1311,6 +1300,14 @@ public:
    * Subscribe to a ticking table.
    */
   std::shared_ptr<SubscriptionHandle> subscribe(std::shared_ptr<TickingCallback> callback);
+
+  typedef void (*onTickCallback_t)(TickingUpdate update, void *userData);
+  typedef void (*onErrorCallback_t)(std::string errorMessage, void *userData);
+  /**
+   * Subscribe to a ticking table (C-style).
+   */
+  std::shared_ptr<SubscriptionHandle> subscribe(onTickCallback_t onTick, void *onTickUserData,
+      onErrorCallback_t onError, void *onErrorUserData);
   /**
    * Unsubscribe from the table.
    */

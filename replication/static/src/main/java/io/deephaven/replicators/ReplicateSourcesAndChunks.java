@@ -702,7 +702,8 @@ public class ReplicateSourcesAndChunks {
                 "import io.deephaven.engine.table.impl.AbstractColumnSource;",
                 "import io.deephaven.engine.table.WritableColumnSource;",
                 "import io.deephaven.util.BooleanUtils;",
-                "import static io.deephaven.util.BooleanUtils.NULL_BOOLEAN_AS_BYTE;");
+                "import static io.deephaven.util.BooleanUtils.NULL_BOOLEAN_AS_BYTE;",
+                "import io.deephaven.engine.table.WritableSourceWithPrepareForParallelPopulation;");
         lines = globalReplacements(lines, "BooleanOneOrN", "ByteOneOrN");
         lines = globalReplacements(lines, "WritableBooleanChunk", "WritableObjectChunk",
                 "asBooleanChunk", "asObjectChunk",
@@ -714,6 +715,8 @@ public class ReplicateSourcesAndChunks {
                 "ObjectChunk<[?] super Values>", "ObjectChunk<Boolean, ? super Values>");
         lines = simpleFixup(lines, "primitive get", "NULL_BOOLEAN", "NULL_BOOLEAN_AS_BYTE", "getBoolean", "getByte",
                 "getPrevBoolean", "getPrevByte");
+        lines = simpleFixup(lines, "nullByKeys", "NULL_BOOLEAN", "NULL_BOOLEAN_AS_BYTE");
+        lines = simpleFixup(lines, "nullByRanges", "NULL_BOOLEAN", "NULL_BOOLEAN_AS_BYTE");
         lines = simpleFixup(lines, "setNull", "NULL_BOOLEAN", "NULL_BOOLEAN_AS_BYTE");
 
         lines = replaceRegion(lines, "copyFromTypedArray", Arrays.asList(
@@ -773,7 +776,7 @@ public class ReplicateSourcesAndChunks {
                 "        return (ColumnSource<ALTERNATE_DATA_TYPE>) new BooleanSparseArraySource.ReinterpretedAsByte(this);",
                 "    }",
                 "",
-                "    public static class ReinterpretedAsByte extends AbstractColumnSource<Byte> implements MutableColumnSourceGetDefaults.ForByte, FillUnordered<Values>, WritableColumnSource<Byte> {",
+                "    public static class ReinterpretedAsByte extends AbstractColumnSource<Byte> implements MutableColumnSourceGetDefaults.ForByte, FillUnordered<Values>, WritableColumnSource<Byte>, WritableSourceWithPrepareForParallelPopulation {",
                 "        private final BooleanSparseArraySource wrapped;",
                 "",
                 "        private ReinterpretedAsByte(BooleanSparseArraySource wrapped) {",
@@ -979,9 +982,9 @@ public class ReplicateSourcesAndChunks {
                 "            final ByteChunk<? extends Values> chunk = src.asByteChunk();",
                 "            final LongChunk<OrderedRowKeys> keys = RowSequence.asRowKeyChunk();",
                 "",
-                "            final boolean hasPrev = wrapped.prevFlusher != null;",
+                "            final boolean trackPrevious = wrapped.prevFlusher != null && wrapped.ensurePreviousClockCycle != LogicalClock.DEFAULT.currentStep();",
                 "",
-                "            if (hasPrev) {",
+                "            if (trackPrevious) {",
                 "                wrapped.prevFlusher.maybeActivate();",
                 "            }",
                 "",
@@ -1003,13 +1006,13 @@ public class ReplicateSourcesAndChunks {
                 "                }",
                 "",
                 "                // This conditional with its constant condition should be very friendly to the branch predictor.",
-                "                final byte[] prevBlock = hasPrev ? wrapped.ensurePrevBlock(firstRowKey, block0, block1, block2) : null;",
-                "                final long[] inUse = hasPrev ? wrapped.prevInUse.get(block0).get(block1).get(block2) : null;",
+                "                final byte[] prevBlock = trackPrevious ? wrapped.ensurePrevBlock(firstRowKey, block0, block1, block2) : null;",
+                "                final long[] inUse = trackPrevious ? wrapped.prevInUse.get(block0).get(block1).get(block2) : null;",
                 "",
                 "                while (ii <= lastII) {",
                 "                    final int indexWithinBlock = (int) (keys.get(ii) & INDEX_MASK);",
                 "                    // This 'if' with its constant condition should be very friendly to the branch predictor.",
-                "                    if (hasPrev) {",
+                "                    if (trackPrevious) {",
                 "                        assert inUse != null;",
                 "                        assert prevBlock != null;",
                 "",
@@ -1025,6 +1028,11 @@ public class ReplicateSourcesAndChunks {
                 "                    ++ii;",
                 "                }",
                 "            }",
+                "        }",
+                "",
+                "        @Override",
+                "        public void prepareForParallelPopulation(RowSet rowSet) {",
+                "           wrapped.prepareForParallelPopulation(rowSet);",
                 "        }",
                 "    }"));
         FileUtils.writeLines(booleanFile, lines);
@@ -1057,7 +1065,8 @@ public class ReplicateSourcesAndChunks {
                 "recycler2.borrowItem\\(\\)", "(T[][])recycler2.borrowItem()",
                 "recycler1.borrowItem\\(\\)", "(T[][][])recycler1.borrowItem()",
                 "recycler0.borrowItem\\(\\)", "(T[][][][])recycler0.borrowItem()",
-                "public final void set\\(long key, Object value\\) \\{", "public final void set(long key, T value) {");
+                "public final void set\\(long key, Object value\\) \\{", "public final void set(long key, T value) {",
+                "Object oldValue", "T oldValue");
 
         lines = replaceRegion(lines, "recyclers", Arrays.asList(
                 "    private static final SoftRecycler recycler = new SoftRecycler<>(DEFAULT_RECYCLER_CAPACITY,",

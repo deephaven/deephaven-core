@@ -7,14 +7,17 @@ import io.deephaven.ssl.config.SSLConfig;
 import io.deephaven.ssl.config.TrustJdk;
 import io.deephaven.ssl.config.impl.KickstartUtils;
 import io.grpc.ManagedChannel;
+import io.grpc.Metadata;
 import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NettyChannelBuilder;
+import io.grpc.stub.MetadataUtils;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SupportedCipherSuiteFilter;
 import nl.altindag.ssl.SSLFactory;
 import nl.altindag.ssl.util.NettySslUtils;
 
 import javax.net.ssl.SSLException;
+import java.util.Map;
 
 public final class ChannelHelper {
 
@@ -62,6 +65,15 @@ public final class ChannelHelper {
             channelBuilder.usePlaintext();
         }
         clientConfig.userAgent().ifPresent(channelBuilder::userAgent);
+        if (!clientConfig.extraHeaders().isEmpty()) {
+            channelBuilder.intercept(MetadataUtils.newAttachHeadersInterceptor(of(clientConfig.extraHeaders())));
+        }
         return channelBuilder.build();
+    }
+
+    private static Metadata of(Map<String, String> map) {
+        final Metadata metadata = new Metadata();
+        map.forEach((k, v) -> metadata.put(Metadata.Key.of(k, Metadata.ASCII_STRING_MARSHALLER), v));
+        return metadata;
     }
 }

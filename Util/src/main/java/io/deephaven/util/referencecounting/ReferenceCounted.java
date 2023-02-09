@@ -95,6 +95,12 @@ public abstract class ReferenceCounted implements LogOutputAppendable, Serializa
         referenceCount = initialValue == 0 ? INITIAL_ZERO_VALUE : initialValue;
     }
 
+    public static String getReferenceCountDebug(Object maybeReferenceCounted) {
+        return maybeReferenceCounted instanceof ReferenceCounted
+                ? Integer.toString(((ReferenceCounted) maybeReferenceCounted).getCurrentReferenceCount())
+                : "not reference counted";
+    }
+
     private int getCurrentReferenceCount() {
         return referenceCount;
     }
@@ -184,14 +190,20 @@ public abstract class ReferenceCounted implements LogOutputAppendable, Serializa
      * normally, but subsequent invocations of {@link #decrementReferenceCount()} and
      * {@link #tryDecrementReferenceCount()} will act as if the reference count was successfully decremented until
      * {@link #resetReferenceCount()} is invoked.
+     *
+     * @return Whether this invocation actually forced the reference count to zero (and invoked
+     *         {@link #onReferenceCountAtZero()}. {@code false} means that this ReferenceCounted reached a zero through
+     *         other means.
      */
-    public final void forceReferenceCountToZero() {
+    public final boolean forceReferenceCountToZero() {
         int currentReferenceCount;
         while (!isZero(currentReferenceCount = getCurrentReferenceCount())) {
             if (tryUpdateReferenceCount(currentReferenceCount, FORCED_TERMINAL_ZERO_VALUE)) {
                 onReferenceCountAtZero();
+                return true;
             }
         }
+        return false;
     }
 
     /**

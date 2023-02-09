@@ -15,6 +15,7 @@
 #include "deephaven/client/subscription/classic_table_state.h"
 #include "deephaven/client/subscription/immer_table_state.h"
 #include "deephaven/client/subscription/index_decoder.h"
+#include "deephaven/client/utility/arrow_util.h"
 #include "deephaven/client/utility/utility.h"
 #include "deephaven/client/ticking.h"
 #include "deephaven/flatbuf/Barrage_generated.h"
@@ -88,24 +89,31 @@ std::shared_ptr<UpdateProcessor> UpdateProcessor::startThread(
     std::unique_ptr<arrow::flight::FlightStreamReader> fsr,
     std::shared_ptr<ColumnDefinitions> colDefs,
     std::shared_ptr<TickingCallback> callback) {
-  auto result = std::make_shared<UpdateProcessor>(std::move(fsw), std::move(fsr),
+  auto result = std::make_shared<UpdateProcessor>(Private(), std::move(fsw), std::move(fsr),
       std::move(colDefs), std::move(callback));
   std::thread t(&UpdateProcessor::runForever, result);
   t.detach();
   return result;
 }
 
-UpdateProcessor::UpdateProcessor(std::unique_ptr<arrow::flight::FlightStreamWriter> fsw,
+UpdateProcessor::UpdateProcessor(Private, std::unique_ptr<arrow::flight::FlightStreamWriter> fsw,
     std::unique_ptr<arrow::flight::FlightStreamReader> fsr,
     std::shared_ptr<ColumnDefinitions> colDefs, std::shared_ptr<TickingCallback> callback) :
     fsw_(std::move(fsw)), fsr_(std::move(fsr)), colDefs_(std::move(colDefs)),
-    callback_(std::move(callback)), cancelled_(false) {}
+    callback_(std::move(callback)), cancelled_(false), threadAlive_(true) {}
 
 UpdateProcessor::~UpdateProcessor() = default;
 
-void UpdateProcessor::cancel() {
+void UpdateProcessor::cancel(bool wait) {
   cancelled_ = true;
   fsr_->Cancel();
+  if (!wait) {
+    return;
+  }
+  std::unique_lock guard(mutex_);
+  while (threadAlive_) {
+    condVar_.wait(guard);
+  }
 }
 
 void UpdateProcessor::runForever(const std::shared_ptr<UpdateProcessor> &self) {
@@ -117,6 +125,9 @@ void UpdateProcessor::runForever(const std::shared_ptr<UpdateProcessor> &self) {
       self->callback_->onFailure(std::current_exception());
     }
   }
+  std::unique_lock guard(self->mutex_);
+  self->threadAlive_ = false;
+  self->condVar_.notify_all();
 }
 
 void UpdateProcessor::runForeverHelper() {

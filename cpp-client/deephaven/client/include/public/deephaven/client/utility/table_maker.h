@@ -18,6 +18,7 @@
 #include <arrow/util/key_value_metadata.h>
 
 #include "deephaven/client/client.h"
+#include "deephaven/client/utility/arrow_util.h"
 #include "deephaven/client/utility/utility.h"
 
 namespace deephaven::client::utility {
