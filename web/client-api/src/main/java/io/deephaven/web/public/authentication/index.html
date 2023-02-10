@@ -3,8 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <title>Deephaven JS API Authentication samples</title>
-    <script src="../dh-internal.js" type="text/javascript"></script>
-    <script src="../dh-core.js" type="text/javascript"></script>
 </head>
 <body>
 <p>
@@ -15,6 +13,7 @@
     <li><a href="basic.html">Example demonstrating username/password login</a></li>
     <li><a href="mtls.html">Example demonstrating mTLS login</a></li>
     <li><a href="oidc.html">Example demonstrating OpenID Connect with Keycloak</a></li>
+    <li><a id="psk" href="psk.html">Example demonstrating a Pre-Shared Key</a></li>
 </ul>
 
 <h3>Authentication details reported by the server:</h3>
@@ -27,8 +26,16 @@
     </thead>
     <tbody id="details"></tbody>
 </table>
-<script>
-    var client = new dh.CoreClient(window.location.protocol + "//" + window.location.host);
+<script type="module">
+    var urlPsk = new URL(window.location).searchParams.get('psk');
+    if (urlPsk) {
+        document.getElementById('psk').href += "?psk=" + urlPsk;
+    }
+    import dh from '../dh-core.js';
+
+    const {CoreClient} = dh;
+
+    var client = new CoreClient(window.location.protocol + "//" + window.location.host);
     var details = document.getElementById('details');
     client.getAuthConfigValues().then(values => {
         for (var config of values) {
