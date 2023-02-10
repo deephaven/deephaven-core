@@ -564,6 +564,7 @@ class Docker {
 
         String imageName = project.property('deephaven.registry.imageName')
         String imageId = project.property('deephaven.registry.imageId')
+        String platform = project.findProperty('deephaven.registry.platform')
         boolean ignoreOutOfDate = project.hasProperty('deephaven.registry.ignoreOutOfDate') ?
                 'true' == project.property('deephaven.registry.ignoreOutOfDate') :
                 false
@@ -578,6 +579,9 @@ class Docker {
             pull.group = 'Docker Registry'
             pull.description = "Release management task: Pulls '${imageName}'"
             pull.image.set imageName
+            if (platform != null) {
+                pull.platform.set platform
+            }
         }
 
         def bumpImage = project.tasks.register('bumpImage', DockerInspectImage) {inspect ->
