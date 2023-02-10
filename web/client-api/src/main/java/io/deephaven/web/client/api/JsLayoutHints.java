@@ -56,6 +56,7 @@ public class JsLayoutHints {
                 color = null;
             }
         }
+
         @JsProperty
         public String getName() {
             return name;
@@ -65,6 +66,7 @@ public class JsLayoutHints {
         public String[] getChildren() {
             return children;
         }
+
         @JsProperty
         public String getColor() {
             return color;

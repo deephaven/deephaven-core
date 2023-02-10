@@ -79,7 +79,6 @@ import static io.deephaven.web.client.fu.LazyPromise.logError;
  * TODO provide hooks into the event handlers so we can see if no one is listening any more and release the table
  * handle/viewport.
  */
-//@TsInterface
 @TsName(namespace = "dh", name = "Table")
 public class JsTable extends HasEventHandling implements HasTableBinding, HasLifecycle {
     @JsProperty(namespace = "dh.Table")
@@ -742,7 +741,8 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
 
     // TODO: #37: Need SmartKey support for this functionality
     // @JsMethod
-    public Promise<JsTotalsTable> getGrandTotalsTable(/* @JsOptional */@TsTypeRef(JsTotalsTableConfig.class) Object config) {
+    public Promise<JsTotalsTable> getGrandTotalsTable(
+            /* @JsOptional */@TsTypeRef(JsTotalsTableConfig.class) Object config) {
         // As in getTotalsTable, but this time we want to skip any filters - this could mean use the
         // most-derived table which has no filter, or the least-derived table which has all custom columns.
         // Currently, these two mean the same thing.
