@@ -579,9 +579,6 @@ class Docker {
             pull.group = 'Docker Registry'
             pull.description = "Release management task: Pulls '${imageName}'"
             pull.image.set imageName
-            if (platform != null) {
-                pull.platform.set platform
-            }
         }
 
         def bumpImage = project.tasks.register('bumpImage', DockerInspectImage) {inspect ->
@@ -677,6 +674,9 @@ class Docker {
             build.inputs.files dockerFileTask.outputs.files
             build.dockerFile.set dockerFileTask.outputs.files.singleFile
             build.images.add("deephaven/${project.projectDir.name}:local-build".toString())
+            if (platform != null) {
+                build.platform.set platform
+            }
         }
     }
 
