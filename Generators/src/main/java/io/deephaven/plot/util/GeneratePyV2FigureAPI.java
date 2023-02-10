@@ -913,14 +913,14 @@ public class GeneratePyV2FigureAPI {
                 final boolean mskUsed = Arrays.stream(an).anyMatch("multi_series_key"::equals);
 
                 validateArgNames(an, alreadyGenerated, signatures, pyArgMap);
-                final String[] quoted_an = Arrays.stream(an).map(s -> "\"" + s + "\"").toArray(String[]::new);
+                final String[] quotedAn = Arrays.stream(an).map(s -> "\"" + s + "\"").toArray(String[]::new);
 
                 // prevent removal of multi_series_key until after it's been fully used
-                final String[] filtered_quoted_an = Arrays.stream(quoted_an)
+                final String[] filteredQuotedAn = Arrays.stream(quotedAn)
                         .filter(s -> !s.equals("\"multi_series_key\""))
                         .toArray(String[]::new);
 
-                if (quoted_an.length == 0) {
+                if (quotedAn.length == 0) {
                     sb.append(INDENT)
                             .append(INDENT)
                             .append("if set()")
@@ -929,7 +929,7 @@ public class GeneratePyV2FigureAPI {
                     sb.append(INDENT)
                             .append(INDENT)
                             .append("if {")
-                            .append(String.join(", ", quoted_an))
+                            .append(String.join(", ", quotedAn))
                             .append("}.issubset(non_null_args):\n");
                 }
                 sb.append(INDENT)
@@ -944,7 +944,7 @@ public class GeneratePyV2FigureAPI {
                         .append(INDENT)
                         .append(INDENT)
                         .append("non_null_args = non_null_args.difference({")
-                        .append(String.join(", ", filtered_quoted_an))
+                        .append(String.join(", ", filteredQuotedAn))
                         .append("})\n")
                         .append(INDENT)
                         .append(INDENT)
