@@ -510,7 +510,7 @@ public class SubscriptionTableData {
      * in columns) either by index, or scanning the complete present index.
      */
     @TsInterface
-    @TsName(namespace = "dh")
+    @TsName(name = "SubscriptionTableData", namespace = "dh")
     public class UpdateEventData implements TableData {
         private JsRangeSet added;
         private JsRangeSet removed;

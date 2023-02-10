@@ -6,7 +6,7 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.Ge
 import jsinterop.annotations.JsProperty;
 
 @TsInterface
-@TsName(namespace = "dh")
+@TsName(name = "WorkerHeapInfo", namespace = "dh")
 public class JsWorkerHeapInfo {
     private long maximumHeapSize;
     private long freeMemory;
@@ -28,6 +28,9 @@ public class JsWorkerHeapInfo {
         return freeMemory;
     }
 
+    /**
+     * Total heap size available for this worker.
+     */
     @JsProperty
     public double getTotalHeapSize() {
         return totalHeapSize;

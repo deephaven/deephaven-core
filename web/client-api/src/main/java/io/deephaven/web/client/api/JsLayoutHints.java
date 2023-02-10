@@ -14,20 +14,20 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @TsInterface
-@TsName(namespace = "dh")
+@TsName(name = "LayoutHints", namespace = "dh")
 public class JsLayoutHints {
     @TsInterface
     @TsName(namespace = "dh")
     public static class ColumnGroup {
-        @JsProperty
-        public String name;
-        @JsProperty
-        public String[] children;
-        @JsProperty
-        public String color;
+        private String name;
+        private String[] children;
+        private String color;
 
         public ColumnGroup(String groupStr) {
             if (groupStr == null || groupStr.isEmpty()) {
+                name = null;
+                children = null;
+                color = null;
                 return;
             }
 
@@ -38,17 +38,51 @@ public class JsLayoutHints {
             final String nameStr = options.get("name");
             if (nameStr != null && !nameStr.isEmpty()) {
                 name = nameStr;
+            } else {
+                name = null;
             }
 
             final String childrenStr = options.get("children");
             if (childrenStr != null && !childrenStr.isEmpty()) {
                 children = JsObject.freeze(childrenStr.split(","));
+            } else {
+                children = null;
             }
 
             final String colorStr = options.get("color");
             if (colorStr != null && !colorStr.isEmpty()) {
                 color = colorStr;
+            } else {
+                color = null;
             }
+        }
+        @JsProperty
+        public String getName() {
+            return name;
+        }
+
+        @JsProperty
+        public String[] getChildren() {
+            return children;
+        }
+        @JsProperty
+        public String getColor() {
+            return color;
+        }
+
+        @JsProperty
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        @JsProperty
+        public void setChildren(String[] children) {
+            this.children = children;
+        }
+
+        @JsProperty
+        public void setColor(String color) {
+            this.color = color;
         }
     }
 

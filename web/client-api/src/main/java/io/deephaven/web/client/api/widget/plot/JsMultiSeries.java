@@ -16,7 +16,7 @@ import java.util.Collections;
 import java.util.Map;
 
 @TsInterface
-@TsName(namespace = "dh.plot")
+@TsName(name = "MultiSeries", namespace = "dh.plot")
 public class JsMultiSeries {
     private final MultiSeriesDescriptor descriptor;
     private final JsFigure figure;

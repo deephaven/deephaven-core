@@ -55,6 +55,7 @@ public interface TableData {
 
     Format getFormat(long index, Column column);
 
+    @TsName(namespace = "dh")
     public interface Row {
         @JsProperty
         LongWrapper getIndex();

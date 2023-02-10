@@ -3,6 +3,7 @@
  */
 package io.deephaven.web.client.api;
 
+import com.vertispan.tsdefs.annotations.TsIgnore;
 import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
 import elemental2.core.JsArray;
@@ -35,8 +36,7 @@ import static io.deephaven.web.shared.fu.PromiseLike.CANCELLATION_MESSAGE;
  * JS-exposed supertype handling details about connecting to a deephaven query worker. Wraps the WorkerConnection
  * instance, which manages the connection to the API server.
  */
-@TsName(namespace = "dh.internal")
-@TsInterface
+@TsIgnore
 public abstract class QueryConnectable<Self extends QueryConnectable<Self>> extends HasEventHandling {
 
     @JsProperty(namespace = "dh.QueryInfo") // "legacy" location

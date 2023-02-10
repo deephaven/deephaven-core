@@ -1,5 +1,6 @@
 package io.deephaven.web.client.api;
 
+import com.vertispan.tsdefs.annotations.TsTypeRef;
 import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.config_pb.AuthenticationConstantsRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.config_pb.AuthenticationConstantsResponse;
@@ -115,7 +116,7 @@ public class CoreClient extends HasEventHandling {
         return login;
     }
 
-    public Promise<Void> relogin(Object token) {
+    public Promise<Void> relogin(@TsTypeRef(JsRefreshToken.class) Object token) {
         return login(LoginCredentials.reconnect(JsRefreshToken.fromObject(token).getBytes()));
     }
 

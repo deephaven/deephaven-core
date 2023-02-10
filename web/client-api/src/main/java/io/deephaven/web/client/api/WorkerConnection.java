@@ -3,6 +3,7 @@
  */
 package io.deephaven.web.client.api;
 
+import com.vertispan.tsdefs.annotations.TsIgnore;
 import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
 import elemental2.core.JsArray;
@@ -139,8 +140,7 @@ import static io.deephaven.web.client.api.barrage.WebGrpcUtils.CLIENT_OPTIONS;
  * Responsible for reconnecting to the query server when required - when that server disappears, and at least one table
  * is left un-closed.
  */
-@TsName(namespace = "dh.internal")
-@TsInterface
+@TsIgnore
 public class WorkerConnection {
 
 

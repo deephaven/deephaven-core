@@ -35,10 +35,7 @@ public class ChartData {
         this.table = table;
     }
 
-    public void update(Object eventDetail) {
-        assert eventDetail instanceof UpdateEventData : "update() can only take table subscription event instances";
-
-        UpdateEventData tableData = (UpdateEventData) eventDetail;
+    public void update(UpdateEventData tableData) {
         Iterator<Range> addedIterator = tableData.getAdded().getRange().rangeIterator();
         Iterator<Range> removedIterator = tableData.getRemoved().getRange().rangeIterator();
         Iterator<Range> modifiedIterator = tableData.getModified().getRange().rangeIterator();

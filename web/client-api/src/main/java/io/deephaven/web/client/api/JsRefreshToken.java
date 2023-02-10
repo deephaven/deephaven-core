@@ -1,9 +1,13 @@
 package io.deephaven.web.client.api;
 
+import com.vertispan.tsdefs.annotations.TsInterface;
+import com.vertispan.tsdefs.annotations.TsName;
 import elemental2.core.JsDate;
 import jsinterop.annotations.JsProperty;
 import jsinterop.base.JsPropertyMap;
 
+@TsInterface
+@TsName(name = "RefreshToken", namespace = "dh")
 public class JsRefreshToken {
 
     public static JsRefreshToken fromObject(Object token) {

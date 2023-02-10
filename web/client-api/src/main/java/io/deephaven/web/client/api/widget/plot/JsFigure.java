@@ -85,9 +85,9 @@ public class JsFigure extends HasEventHandling {
         Object error;
 
         @JsProperty
-        JsArray<? extends Object> errors;
+        JsArray<String> errors;
 
-        FigureFetchError(Object error, JsArray<? extends Object> errors) {
+        FigureFetchError(Object error, JsArray<String> errors) {
             this.error = error;
             this.errors = errors;
         }

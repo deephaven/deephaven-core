@@ -17,7 +17,7 @@ import jsinterop.base.Any;
 import java.util.Arrays;
 
 @TsInterface
-@TsName(namespace = "dh.plot")
+@TsName(name = "FigureDataUpdatedEvent", namespace = "dh.plot")
 public class DataUpdateEvent {
 
     public static final DataUpdateEvent empty(JsSeries... series) {

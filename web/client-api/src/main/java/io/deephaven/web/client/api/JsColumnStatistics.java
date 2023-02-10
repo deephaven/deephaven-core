@@ -20,7 +20,7 @@ import java.util.Map;
  * Javascript wrapper for {@link ColumnStatistics}
  */
 @TsInterface
-@TsName(namespace = "dh")
+@TsName(name="ColumnStatistics", namespace = "dh")
 public class JsColumnStatistics {
 
     public enum StatType {
