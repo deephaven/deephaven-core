@@ -17,11 +17,11 @@ postgres account is `password`.
 To test this when building from gradle with `:server-jetty-app:run`, specify `-Psql-username-password` to enable this.
 
 To use this from a pre-built installation:
-* Add the psk-authentication-provider jar to your Deephaven installation's classpath:
+* Add the sql-username-password-authentication-provider jar to your Deephaven installation's classpath:
     * If running the `bin/start` script, this can be accomplished by adding it to the `EXTRA_CLASSPATH` environment variable.
     * If running from docker, add the jar to the `/apps/lib/` directory.
 * Configure the server to use this by specifying that the `AuthHandlers` configuration should include
-  `io.deephaven.authentication.psk.PskAuthenticationHandler`. AuthHandlers is a comma-separated string, more than one
+  `io.deephaven.authentication.sql.BasicSqlAuthenticationHandler`. AuthHandlers is a comma-separated string, more than one
   can be specified to enable multiple authentication handlers.
 
 ## Testing from the browser
