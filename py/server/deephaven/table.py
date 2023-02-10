@@ -346,7 +346,7 @@ class Table(JObjectWrapper):
             j_map = j_hashmap(attrs)
             return Table(j_table=jpy.cast(self.j_table, _JLiveAttributeMap).withAttributes(j_map))
         except Exception as e:
-            raise DHError(e, "failed to TODO") from e
+            raise DHError(e, "failed to create a table with attributes.") from e
 
     def to_string(self, num_rows: int = 10, cols: Union[str, Sequence[str]] = None) -> str:
         """Returns the first few rows of a table as a pipe-delimited string.

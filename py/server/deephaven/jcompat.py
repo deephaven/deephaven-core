@@ -9,7 +9,7 @@ from typing import Any, Iterable, Dict, Set, TypeVar, Callable, Union, Sequence
 
 import jpy
 
-from deephaven._wrapper import unwrap
+from deephaven._wrapper import unwrap, wrap_j_object
 from deephaven.dtypes import DType
 
 
@@ -67,7 +67,7 @@ def j_map_to_dict(m) -> Dict[Any, Any]:
     if not m:
         return {}
 
-    return {e.getKey(): e.getValue() for e in m.entrySet().toArray()}
+    return {e.getKey(): wrap_j_object(e.getValue()) for e in m.entrySet().toArray()}
 
 
 T = TypeVar("T")
@@ -132,6 +132,6 @@ def to_sequence(v: Union[T, Sequence[T]] = None) -> Sequence[Union[T, jpy.JType]
     if not v:
         return ()
     if not isinstance(v, Sequence) or isinstance(v, str):
-        return unwrap(v),
+        return (unwrap(v), )
     else:
         return tuple((unwrap(o) for o in v))
