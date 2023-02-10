@@ -4,15 +4,16 @@
     <meta charset="utf-8" />
 
     <title>Deephaven JS API Console Interaction</title>
-    <script src="dh-internal.js" type="text/javascript"></script>
-    <script src="dh-core.js" type="text/javascript"></script>
 </head>
 <body>
 <div id="logs"></div>
 <div id="tools">
     <textarea id="command" placeholder="waiting for connection..." rows="1" cols="80" autofocus="autofocus" disabled="disabled" style="resize:vertical"></textarea><button id="run">Run</button>
 </div>
-<script type="text/javascript">
+<script type="module">
+    import dh from './dh-core.js';
+
+    const {CoreClient} = dh;
     var client;
     var connection;
     var ide;
@@ -20,8 +21,8 @@
     (async () => {
         var url = new URL(window.location);
         // create a connection to the server
-        client = new dh.CoreClient(url.protocol + "//" + url.host);
-        await client.login({type:dh.CoreClient.LOGIN_TYPE_ANONYMOUS, token:url.searchParams.get('psk')});
+        client = new CoreClient(url.protocol + "//" + url.host);
+        await client.login({type:CoreClient.LOGIN_TYPE_ANONYMOUS});
         connection = await client.getAsIdeConnection();
 
         // check if a language was specified
