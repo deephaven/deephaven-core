@@ -4,6 +4,7 @@ plugins {
   id 'java'
   id 'signing'
   id 'maven-publish'
+  id 'com.github.johnrengelman.shadow'
 }
 
 java {
@@ -19,8 +20,9 @@ tasks.withType(Javadoc) {
   options.addStringOption('sourcepath', sourceSets.main.allJava.getSourceDirectories().getAsPath())
 }
 
-PublishingTools.setupPublications(project) {
-  from components.java
+PublishingTools.setupPublications(project) { publication ->
+  // This assumes that the shadow plugin is enabled
+  project.shadow.component(publication)
 }
 
 PublishingTools.setupRepositories(project)

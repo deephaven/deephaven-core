@@ -1,4 +1,5 @@
 configurations {
+    // Add a configuration so that password generation has a working logger at runtime
     pwGen
 }
 dependencies {
@@ -15,10 +16,11 @@ dependencies {
 
 shadowJar {
     relocate 'org', 'io.deephaven.authentication.sql.rebased'
+    mergeServiceFiles()
 }
 
 // Usage:
-// ./gradlew :authentication:example-providers:sql-username-password:generatePassword --args=password
+// ./gradlew :authentication:example-providers:sql-username-password:generatePassword --args=newPasswordGoesHere
 tasks.register('generatePassword', JavaExec) {
     classpath(configurations.shadow.files)
     classpath(configurations.pwGen.files)

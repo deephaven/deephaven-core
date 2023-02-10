@@ -65,7 +65,7 @@ if (hasProperty('devCerts') || hasProperty('devMTLS')) {
                 '-Dssl.clientAuthentication=NEEDED',
         ]
         authHandlers += ['io.deephaven.authentication.mtls.MTlsAuthenticationHandler']
-        dependencies.implementation(project(':authentication:example-providers:mtls'))
+        dependencies.implementation(dependencies.project(path: ':authentication:example-providers:mtls', configuration:'shadow'))
     }
 }
 
@@ -87,7 +87,7 @@ if (hasProperty('quiet')) {
 
 if (hasProperty('psk')) {
     authHandlers += ['io.deephaven.authentication.psk.PskAuthenticationHandler']
-    dependencies.implementation(project(':authentication:example-providers:psk'))
+    dependencies.implementation(dependencies.project(path: ':authentication:example-providers:psk', configuration:'shadow'))
     if (project.getProperty('psk')) {
         // if there is a non-empty value assigned, use that for the key
         extraJvmArgs += ["-Dauthentication.psk=${getProperty('psk')}"]
@@ -100,7 +100,7 @@ if (hasProperty('sql-username-password')) {
             '-Dauthentication.basic.sql.jdbc.user=postgres',
             '-Dauthentication.basic.sql.jdbc.password=password',
     ]
-    dependencies.implementation(project(':authentication:example-providers:sql-username-password'))
+    dependencies.implementation(dependencies.project(path: ':authentication:example-providers:sql-username-password', configuration:'shadow'))
 }
 if (hasProperty('oidc')) {
     authHandlers += ['io.deephaven.authentication.oidc.OidcAuthenticationHandler']
@@ -115,7 +115,7 @@ if (hasProperty('oidc')) {
             'authentication.oidc.keycloak.clientId',
     ]
     extraJvmArgs += ['-Dauthentication.client.configuration.list=AuthHandlers,authentication.oidc.keycloak.url,authentication.oidc.keycloak.realm,authentication.oidc.keycloak.clientId']
-    dependencies.implementation(project(':authentication:example-providers:oidc'))
+    dependencies.implementation(dependencies.project(path: ':authentication:example-providers:oidc', configuration:'shadow'))
 }
 
 if (!authHandlers.isEmpty()) {
