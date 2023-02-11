@@ -35,7 +35,7 @@ public class ArrowIntVectorTest {
     private static QueryTable loadTable() {
         //noinspection ConstantConditions;
         final File dataFile = new File(ArrowIntVectorTest.class.getResource("/int_vector.arrow").getFile());
-        return ArrowWrapperTools.readArrow(dataFile.getPath());
+        return ArrowWrapperTools.readFeather(dataFile.getPath());
     }
 
     @Test

@@ -26,8 +26,8 @@ import org.jetbrains.annotations.NotNull;
  */
 public class ArrowDateTimeColumnSource extends AbstractArrowColumnSource<DateTime> implements ImmutableColumnSourceGetDefaults.ForObject<DateTime> {
     public ArrowDateTimeColumnSource(final int highBit, final @NotNull Field field,
-            final ArrowWrapperTools. @NotNull Helper arrowHelper) {
-        super(DateTime.class, highBit, field, arrowHelper);
+            final ArrowWrapperTools. @NotNull ArrowTableContext arrowTableContext) {
+        super(DateTime.class, highBit, field, arrowTableContext);
     }
 
     @Override
@@ -42,7 +42,7 @@ public class ArrowDateTimeColumnSource extends AbstractArrowColumnSource<DateTim
 
     @Override
     public final DateTime get(final long rowKey) {
-        try (ArrowWrapperTools.FillContext fc = (ArrowWrapperTools.FillContext) makeFillContext(1)) {
+        try (ArrowWrapperTools.FillContext fc = (ArrowWrapperTools.FillContext) makeFillContext(0)) {
             fc.ensureLoadingBlock(getBlockNo(rowKey));
             return extract(getPositionInBlock(rowKey), fc.getVector(field));
         }

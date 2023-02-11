@@ -35,7 +35,7 @@ public class ArrowTimestampVectorTest {
     private static QueryTable loadTable() {
         //noinspection ConstantConditions;
         final File dataFile = new File(ArrowTimestampVectorTest.class.getResource("/timestamp_vector.arrow").getFile());
-        return ArrowWrapperTools.readArrow(dataFile.getPath());
+        return ArrowWrapperTools.readFeather(dataFile.getPath());
     }
 
     @Test

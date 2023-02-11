@@ -13,7 +13,11 @@ import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
+import io.deephaven.engine.table.impl.remote.InitialSnapshotTable;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseableArray;
 import org.apache.arrow.memory.BufferAllocator;
@@ -38,7 +42,11 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
 
+import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static java.util.Arrays.asList;
 
 public class ArrowWrapperToolsTest {
@@ -51,7 +59,7 @@ public class ArrowWrapperToolsTest {
         // noinspection ConstantConditions
         File file = new File(this.getClass().getResource("/three_vectors.arrow").getFile());
         String path = file.getPath();
-        Table table = ArrowWrapperTools.readArrow(path);
+        Table table = ArrowWrapperTools.readFeather(path);
         Collection<? extends ColumnSource<?>> columnSources = table.getColumnSources();
         List<? extends ColumnSource<?>> list = new ArrayList<>(columnSources);
 
@@ -63,8 +71,7 @@ public class ArrowWrapperToolsTest {
             Assert.assertEquals(expectedRowSet, table.getRowSet());
         }
 
-        // noinspection unchecked
-        final ColumnSource<String> column0 = (ColumnSource<String>) list.get(0);
+        final ColumnSource<String> column0 = table.getColumnSource("name");
         try (final ChunkSource.FillContext fillContext = column0.makeFillContext(table.intSize());
                 final WritableObjectChunk<String, Values> chunk =
                         WritableObjectChunk.makeWritableChunk(table.intSize())) {
@@ -86,8 +93,7 @@ public class ArrowWrapperToolsTest {
             }
         }
 
-        // noinspection unchecked
-        final ColumnSource<Double> column1 = (ColumnSource<Double>) list.get(1);
+        final ColumnSource<Double> column1 = table.getColumnSource("salary");
         try (final ChunkSource.FillContext fillContext = column1.makeFillContext(table.intSize());
                 final WritableDoubleChunk<Values> chunk = WritableDoubleChunk.makeWritableChunk(table.intSize())) {
             ArrowWrapperTools.Shareable.resetNumBlocksLoaded();
@@ -110,7 +116,7 @@ public class ArrowWrapperToolsTest {
         }
 
         // noinspection unchecked
-        final ColumnSource<Integer> column2 = (ColumnSource<Integer>) list.get(2);
+        final ColumnSource<Integer> column2 = table.getColumnSource("age");
         try (final ChunkSource.FillContext fillContext = column2.makeFillContext(table.intSize());
                 WritableIntChunk<Values> chunk = WritableIntChunk.makeWritableChunk(table.intSize())) {
             ArrowWrapperTools.Shareable.resetNumBlocksLoaded();
@@ -139,8 +145,8 @@ public class ArrowWrapperToolsTest {
         try {
             final int totalAmount = 10000;
             final int stepSize = 1024;
-            generateMultiVectorFile(file.getPath(), totalAmount / 2, totalAmount);
-            Table table = ArrowWrapperTools.readArrow(file.getPath());
+            final Table expected = generateMultiVectorFile(file.getPath(), totalAmount / 2, totalAmount);
+            final Table table = ArrowWrapperTools.readFeather(file.getPath());
             List<? extends ColumnSource<?>> columnSources = new ArrayList<>(table.getColumnSources());
 
             final ChunkSource.FillContext[] fcs = new ChunkSource.FillContext[columnSources.size()];
@@ -179,6 +185,7 @@ public class ArrowWrapperToolsTest {
                     i += stepSize;
                 }
                 Assert.assertEquals(6, ArrowWrapperTools.Shareable.numBlocksLoaded());
+                assertTableEquals(expected, table);
             }
         } finally {
             // noinspection ResultOfMethodCallIgnored
@@ -193,7 +200,7 @@ public class ArrowWrapperToolsTest {
             final int totalAmount = 10000;
             final int stepSize = 1024;
             generateMultiVectorFile(file.getPath(), totalAmount / 2, totalAmount);
-            Table table = ArrowWrapperTools.readArrow(file.getPath());
+            Table table = ArrowWrapperTools.readFeather(file.getPath());
             List<? extends ColumnSource<?>> columnSources = new ArrayList<>(table.getColumnSources());
 
             final ChunkSource.FillContext[] fcs = new ChunkSource.FillContext[columnSources.size()];
@@ -267,8 +274,54 @@ public class ArrowWrapperToolsTest {
         }
     }
 
+    @Test
+    public void testConcurrentSnapshots() {
+        File file = new File("file.arrow");
+        try {
+            final int totalAmount = 10000;
+            final Table expected = generateMultiVectorFile(file.getPath(), totalAmount / 2, totalAmount);
+            final QueryTable readback = ArrowWrapperTools.readFeather(file.getPath());
+
+            final Thread[] threads = new Thread[10];
+            final Table[] results = new Table[10];
+
+            // Lets simulate 10 threads trying to snapshot the table at the same time.
+            // Each thread will start up and wait for the barrier, then they will all attempt
+            // a snapshot at the same time and poke the countdown latch to release the test thread
+            // Then we'll validate all the results and life will be great
+            final CyclicBarrier barrier = new CyclicBarrier(10);
+            final CountDownLatch latch = new CountDownLatch(10);
+            for (int ii = 0; ii < 10; ii++) {
+                final int threadNo = ii;
+                threads[ii] = new Thread(() -> {
+                    try {
+                        barrier.await();
+                        results[threadNo] =
+                                InitialSnapshotTable.setupInitialSnapshotTable(expected,
+                                        ConstructSnapshot.constructInitialSnapshot(new Object(), readback));
+                    } catch (InterruptedException | BrokenBarrierException e) {
+                        throw new RuntimeException(e);
+                    } finally {
+                        latch.countDown();
+                    }
+                });
+                threads[ii].start();
+            }
+
+            latch.await();
+            for (int ii = 0; ii < 10; ii++) {
+                assertTableEquals(expected, results[ii]);
+            }
+            readback.close();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        } finally {
+            file.delete();
+        }
+    }
+
     @SuppressWarnings("SameParameterValue")
-    private void generateMultiVectorFile(final String path, final int batchSize, final int totalAmount) {
+    private Table generateMultiVectorFile(final String path, final int batchSize, final int totalAmount) {
         try (BufferAllocator allocator = new RootAllocator()) {
             Field strs = new Field("strs", FieldType.nullable(new ArrowType.Utf8()), null);
             Field ints = new Field("ints", FieldType.nullable(new ArrowType.Int(32, true)), null);
@@ -305,6 +358,12 @@ public class ArrowWrapperToolsTest {
                     e.printStackTrace();
                 }
             }
+
+            // now generate a comparison table
+            return TableTools.emptyTable(totalAmount)
+                    .update("strs=Long.toString(ii)",
+                            "ints=(int)ii",
+                            "doubles=ii/10.0d");
         }
     }
 }

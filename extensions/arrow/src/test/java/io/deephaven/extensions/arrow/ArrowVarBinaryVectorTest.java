@@ -34,7 +34,7 @@ public class ArrowVarBinaryVectorTest {
     private static QueryTable loadTable() {
         //noinspection ConstantConditions;
         final File dataFile = new File(ArrowVarBinaryVectorTest.class.getResource("/var_binary_vector.arrow").getFile());
-        return ArrowWrapperTools.readArrow(dataFile.getPath());
+        return ArrowWrapperTools.readFeather(dataFile.getPath());
     }
 
     @Test

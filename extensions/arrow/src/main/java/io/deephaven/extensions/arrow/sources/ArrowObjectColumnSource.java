@@ -25,8 +25,9 @@ import org.jetbrains.annotations.NotNull;
  */
 public class ArrowObjectColumnSource<T> extends AbstractArrowColumnSource<T> implements ImmutableColumnSourceGetDefaults.ForObject<T> {
     public ArrowObjectColumnSource(final @NotNull Class<T> type, final int highBit,
-            final @NotNull Field field, final ArrowWrapperTools. @NotNull Helper arrowHelper) {
-        super(type, highBit, field, arrowHelper);
+            final @NotNull Field field,
+            final ArrowWrapperTools. @NotNull ArrowTableContext arrowTableContext) {
+        super(type, highBit, field, arrowTableContext);
     }
 
     @Override
@@ -41,7 +42,7 @@ public class ArrowObjectColumnSource<T> extends AbstractArrowColumnSource<T> imp
 
     @Override
     public final T get(final long rowKey) {
-        try (ArrowWrapperTools.FillContext fc = (ArrowWrapperTools.FillContext) makeFillContext(1)) {
+        try (ArrowWrapperTools.FillContext fc = (ArrowWrapperTools.FillContext) makeFillContext(0)) {
             fc.ensureLoadingBlock(getBlockNo(rowKey));
             return extract(getPositionInBlock(rowKey), fc.getVector(field));
         }

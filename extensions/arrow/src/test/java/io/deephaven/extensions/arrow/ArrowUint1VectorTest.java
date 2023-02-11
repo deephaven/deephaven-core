@@ -35,7 +35,7 @@ public class ArrowUint1VectorTest {
     private static QueryTable loadTable() {
         //noinspection ConstantConditions;
         final File dataFile = new File(ArrowUint1VectorTest.class.getResource("/uint1_vector.arrow").getFile());
-        return ArrowWrapperTools.readArrow(dataFile.getPath());
+        return ArrowWrapperTools.readFeather(dataFile.getPath());
     }
 
     @Test

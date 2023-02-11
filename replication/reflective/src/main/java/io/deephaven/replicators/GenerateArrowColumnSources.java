@@ -9,6 +9,14 @@ import com.squareup.javapoet.TypeName;
 import com.squareup.javapoet.TypeSpec;
 import com.squareup.javapoet.TypeVariableName;
 import com.squareup.javapoet.WildcardTypeName;
+import io.deephaven.chunk.WritableByteChunk;
+import io.deephaven.chunk.WritableCharChunk;
+import io.deephaven.chunk.WritableDoubleChunk;
+import io.deephaven.chunk.WritableFloatChunk;
+import io.deephaven.chunk.WritableIntChunk;
+import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.chunk.WritableObjectChunk;
+import io.deephaven.chunk.WritableShortChunk;
 import org.apache.arrow.vector.BigIntVector;
 import org.apache.arrow.vector.BitVector;
 import org.apache.arrow.vector.Float4Vector;
@@ -50,51 +58,51 @@ public class GenerateArrowColumnSources {
 
     public static void main(String[] args) {
         generateArrowColumnSource("ArrowIntColumnSource", Integer.class, int.class, IntVector.class,
-                "getInt", "ForInt", "WritableIntChunk", List.of(
+                "getInt", "ForInt", WritableIntChunk.class, List.of(
                         generatePrivateExtractMethod(int.class, IntVector.class, "NULL_INT")));
 
         generateArrowColumnSource("ArrowLongColumnSource", Long.class, long.class, BigIntVector.class,
-                "getLong", "ForLong", "WritableLongChunk", List.of(
+                "getLong", "ForLong", WritableLongChunk.class, List.of(
                         generatePrivateExtractMethod(long.class, BigIntVector.class, "NULL_LONG")));
 
         generateArrowColumnSource("ArrowDoubleColumnSource", Double.class, double.class, Float8Vector.class,
-                "getDouble", "ForDouble", "WritableDoubleChunk", List.of(
+                "getDouble", "ForDouble", WritableDoubleChunk.class, List.of(
                         generatePrivateExtractMethod(double.class, Float8Vector.class, "NULL_DOUBLE")));
 
         generateArrowColumnSource("ArrowFloatColumnSource", Float.class, float.class, Float4Vector.class,
-                "getFloat", "ForFloat", "WritableFloatChunk", List.of(
+                "getFloat", "ForFloat", WritableFloatChunk.class, List.of(
                         generatePrivateExtractMethod(float.class, Float4Vector.class, "NULL_FLOAT")));
 
         generateArrowColumnSource("ArrowCharColumnSource", Character.class, char.class, UInt2Vector.class,
-                "getChar", "ForChar", "WritableCharChunk", List.of(
+                "getChar", "ForChar", WritableCharChunk.class, List.of(
                         generatePrivateExtractMethod(char.class, UInt2Vector.class, "NULL_CHAR")));
 
         generateArrowColumnSource("ArrowShortColumnSource", Short.class, short.class, SmallIntVector.class,
-                "getShort", "ForShort", "WritableShortChunk", List.of(
+                "getShort", "ForShort", WritableShortChunk.class, List.of(
                         generatePrivateExtractMethod(short.class, SmallIntVector.class, "NULL_SHORT")));
 
         generateArrowColumnSource("ArrowByteColumnSource", Byte.class, byte.class, TinyIntVector.class,
-                "getByte", "ForByte", "WritableByteChunk", List.of(
+                "getByte", "ForByte", WritableByteChunk.class, List.of(
                         generatePrivateExtractMethod(byte.class, TinyIntVector.class, "NULL_BYTE")));
 
         generateArrowColumnSource("ArrowBooleanColumnSource", Boolean.class, boolean.class, BitVector.class,
-                "get", "ForBoolean", "WritableObjectChunk", List.of(
+                "get", "ForBoolean", WritableObjectChunk.class, List.of(
                         generatePrivateObjectExtractMethod(Boolean.class, BitVector.class)));
 
         generateArrowColumnSource("ArrowUInt1ColumnSource", Short.class, short.class, UInt1Vector.class,
-                "getShort", "ForShort", "WritableShortChunk", List.of(
+                "getShort", "ForShort", WritableShortChunk.class, List.of(
                         generatePrivateExtractMethod(short.class, UInt1Vector.class, "NULL_SHORT", true)));
 
         generateArrowColumnSource("ArrowUInt4ColumnSource", Long.class, long.class, UInt4Vector.class,
-                "getLong", "ForLong", "WritableLongChunk", List.of(
+                "getLong", "ForLong", WritableLongChunk.class, List.of(
                         generatePrivateExtractMethod(long.class, UInt4Vector.class, "NULL_LONG", true)));
 
         generateArrowColumnSource("ArrowUInt8ColumnSource", BigInteger.class, BigInteger.class, UInt8Vector.class,
-                "get", "ForObject", "WritableObjectChunk", List.of(
+                "get", "ForObject", WritableObjectChunk.class, List.of(
                         generatePrivateExtractMethod(BigInteger.class, UInt8Vector.class, null, true)));
 
         generateArrowColumnSource("ArrowStringColumnSource", String.class, String.class, VarCharVector.class,
-                "get", "ForObject", "WritableObjectChunk", List.of(
+                "get", "ForObject", WritableObjectChunk.class, List.of(
                         preparePrivateExtractMethod(String.class, VarCharVector.class)
                                 .addStatement(
                                         "return vector.isSet(posInBlock) == 0 ? null : new $T(vector.get(posInBlock))",
@@ -102,11 +110,11 @@ public class GenerateArrowColumnSources {
                                 .build()));
 
         generateArrowColumnSource("ArrowObjectColumnSource", (Class<?>) null, null, ValueVector.class,
-                "get", "ForObject", "WritableObjectChunk", List.of(
+                "get", "ForObject", WritableObjectChunk.class, List.of(
                         generatePrivateObjectExtractMethod(null, ValueVector.class)));
 
         generateArrowColumnSource("ArrowLocalTimeColumnSource", LocalTime.class, LocalTime.class, TimeMilliVector.class,
-                "get", "ForObject", "WritableObjectChunk", List.of(
+                "get", "ForObject", WritableObjectChunk.class, List.of(
                         preparePrivateExtractMethod(LocalTime.class, TimeMilliVector.class)
                                 .addStatement("$T localDateTime = vector.getObject(posInBlock)", LocalDateTime.class)
                                 .addStatement("return localDateTime != null ? localDateTime.toLocalTime() : null")
@@ -114,7 +122,7 @@ public class GenerateArrowColumnSources {
 
         final ClassName dateTime = ClassName.get("io.deephaven.time", "DateTime");
         generateArrowColumnSource("ArrowDateTimeColumnSource", dateTime, dateTime, TimeStampVector.class,
-                "get", "ForObject", "WritableObjectChunk", List.of(
+                "get", "ForObject", WritableObjectChunk.class, List.of(
                         preparePrivateExtractMethod(dateTime, TimeStampVector.class)
                                 .addStatement(
                                         "return vector.isSet(posInBlock) == 0 ? null : new $T(vector.get(posInBlock))",
@@ -182,7 +190,7 @@ public class GenerateArrowColumnSources {
                 .addAnnotation(Override.class)
                 .returns(returns)
                 .addParameter(TypeName.LONG, "rowKey", Modifier.FINAL)
-                .beginControlFlow("try ($T fc = ($T) makeFillContext(1))", fillContext(), fillContext())
+                .beginControlFlow("try ($T fc = ($T) makeFillContext(0))", fillContext(), fillContext())
                 .addStatement("fc.ensureLoadingBlock(getBlockNo(rowKey))")
                 .addStatement("return extract(getPositionInBlock(rowKey), fc.getVector(field))")
                 .endControlFlow()
@@ -208,7 +216,7 @@ public class GenerateArrowColumnSources {
             final Class<?> vectorType,
             final String getterName,
             final String getDefaultsInnerType,
-            final String writableChunkType,
+            final Class<?> writableChunkType,
             final List<MethodSpec> methods) {
         final TypeName boxedType = boxedTypeCls != null ? TypeName.get(boxedTypeCls) : TypeVariableName.get("T");
         final TypeName type = typeCls != null ? TypeName.get(typeCls) : TypeName.get(Object.class);
@@ -223,7 +231,7 @@ public class GenerateArrowColumnSources {
             final Class<?> vectorType,
             final String getterName,
             final String getDefaultsInnerType,
-            final String writableChunkType,
+            final Class<?> writableChunkType,
             final List<MethodSpec> methods) {
         final AnnotationSpec notNull = AnnotationSpec.builder(NotNull.class).build();
 
@@ -243,21 +251,22 @@ public class GenerateArrowColumnSources {
                 .addSuperinterface(defaultsImpl)
                 .addModifiers(Modifier.PUBLIC);
 
-        final ClassName helper = ClassName.get("io.deephaven.extensions.arrow", "ArrowWrapperTools", "Helper");
+        final ClassName arrowTableContext = ClassName.get("io.deephaven.extensions.arrow", "ArrowWrapperTools",
+                "ArrowTableContext");
         MethodSpec.Builder constructor = MethodSpec.constructorBuilder();
         if (className.contains("Object")) {
             columnSourceBuilder.addTypeVariable(TypeVariableName.get("T"));
             constructor.addParameter(
                     ParameterizedTypeName.get(ClassName.get(Class.class), TypeVariableName.get("T")).annotated(notNull),
                     "type", Modifier.FINAL);
-            constructor.addStatement("super(type, highBit, field, arrowHelper)");
+            constructor.addStatement("super(type, highBit, field, arrowTableContext)");
         } else {
-            constructor.addStatement("super($T.class, highBit, field, arrowHelper)", type);
+            constructor.addStatement("super($T.class, highBit, field, arrowTableContext)", type);
         }
         constructor
                 .addParameter(int.class, "highBit", Modifier.FINAL)
                 .addParameter(TypeName.get(Field.class).annotated(notNull), "field", Modifier.FINAL)
-                .addParameter(helper.annotated(notNull), "arrowHelper", Modifier.FINAL)
+                .addParameter(arrowTableContext.annotated(notNull), "arrowTableContext", Modifier.FINAL)
                 .addModifiers(Modifier.PUBLIC);
 
         columnSourceBuilder.addMethod(constructor.build());
@@ -266,11 +275,11 @@ public class GenerateArrowColumnSources {
         final TypeName writableChunk = ParameterizedTypeName.get(
                 ClassName.get("io.deephaven.chunk", "WritableChunk"), WildcardTypeName.supertypeOf(attributeValues));
         final TypeName typedWritableChunk;
-        if (writableChunkType.contains("Object")) {
-            typedWritableChunk = ParameterizedTypeName.get(ClassName.get("io.deephaven.chunk", writableChunkType),
-                    boxedType, WildcardTypeName.supertypeOf(attributeValues));
+        if (writableChunkType.getSimpleName().contains("Object")) {
+            typedWritableChunk = ParameterizedTypeName.get(ClassName.get(writableChunkType), boxedType,
+                    WildcardTypeName.supertypeOf(attributeValues));
         } else {
-            typedWritableChunk = ParameterizedTypeName.get(ClassName.get("io.deephaven.chunk", writableChunkType),
+            typedWritableChunk = ParameterizedTypeName.get(ClassName.get(writableChunkType),
                     WildcardTypeName.supertypeOf(attributeValues));
         }
         final ClassName rowSequence = ClassName.get("io.deephaven.engine.rowset", "RowSequence");
@@ -280,7 +289,8 @@ public class GenerateArrowColumnSources {
                 .addParameter(superFillContext().annotated(notNull), "context", Modifier.FINAL)
                 .addParameter(writableChunk.annotated(notNull), "destination", Modifier.FINAL)
                 .addParameter(rowSequence.annotated(notNull), "rowSequence", Modifier.FINAL)
-                .addStatement("final $T chunk = destination.as$L()", typedWritableChunk, writableChunkType)
+                .addStatement("final $T chunk = destination.as$L()", typedWritableChunk,
+                        writableChunkType.getSimpleName())
                 .addStatement("final $T arrowContext = ($T) context", fillContext(), fillContext())
                 .addStatement("chunk.setSize(0)")
                 .addStatement(

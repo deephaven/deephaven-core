@@ -26,8 +26,8 @@ import org.jetbrains.annotations.NotNull;
  */
 public class ArrowByteColumnSource extends AbstractArrowColumnSource<Byte> implements ImmutableColumnSourceGetDefaults.ForByte {
     public ArrowByteColumnSource(final int highBit, final @NotNull Field field,
-            final ArrowWrapperTools. @NotNull Helper arrowHelper) {
-        super(byte.class, highBit, field, arrowHelper);
+            final ArrowWrapperTools. @NotNull ArrowTableContext arrowTableContext) {
+        super(byte.class, highBit, field, arrowTableContext);
     }
 
     @Override
@@ -42,7 +42,7 @@ public class ArrowByteColumnSource extends AbstractArrowColumnSource<Byte> imple
 
     @Override
     public final byte getByte(final long rowKey) {
-        try (ArrowWrapperTools.FillContext fc = (ArrowWrapperTools.FillContext) makeFillContext(1)) {
+        try (ArrowWrapperTools.FillContext fc = (ArrowWrapperTools.FillContext) makeFillContext(0)) {
             fc.ensureLoadingBlock(getBlockNo(rowKey));
             return extract(getPositionInBlock(rowKey), fc.getVector(field));
         }

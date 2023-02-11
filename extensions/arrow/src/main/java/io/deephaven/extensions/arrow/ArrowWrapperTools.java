@@ -1,5 +1,11 @@
 package io.deephaven.extensions.arrow;
 
+import io.deephaven.base.reference.WeakCleanupReference;
+import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.table.ResettableContext;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.util.file.TrackedFileHandleFactory;
+import io.deephaven.engine.util.reference.CleanupReferenceProcessorInstance;
 import io.deephaven.extensions.arrow.sources.ArrowByteColumnSource;
 import io.deephaven.extensions.arrow.sources.ArrowCharColumnSource;
 import io.deephaven.extensions.arrow.sources.ArrowDateTimeColumnSource;
@@ -10,7 +16,6 @@ import io.deephaven.extensions.arrow.sources.ArrowObjectColumnSource;
 import io.deephaven.extensions.arrow.sources.ArrowStringColumnSource;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
@@ -25,14 +30,14 @@ import io.deephaven.extensions.arrow.sources.ArrowUInt4ColumnSource;
 import io.deephaven.extensions.arrow.sources.ArrowUInt8ColumnSource;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.lang.ref.WeakReference;
 import java.math.BigDecimal;
-import java.math.BigInteger;
+import java.nio.channels.SeekableByteChannel;
 import java.time.LocalDateTime;
 import java.util.Deque;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -40,7 +45,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import io.deephaven.util.QueryConstants;
-import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.util.annotations.TestUseOnly;
 import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.memory.RootAllocator;
@@ -73,148 +78,130 @@ import org.jetbrains.annotations.NotNull;
 /**
  * <pre>
  * This class contains tools for dealing apache arrow data.
- * {@link ArrowBooleanColumnSource} - uses {@link BitVector} under the hood, returns Boolean
- * {@link ArrowByteColumnSource} - uses {@link TinyIntVector} under the hood, returns byte
- * {@link ArrowCharColumnSource} - uses {@link UInt2Vector} under the hood, returns long
- * {@link ArrowFloatColumnSource} - uses {@link Float4Vector} under the hood, returns float
- * {@link ArrowDoubleColumnSource} - uses {@link Float8Vector} under the hood, returns double
- * {@link ArrowShortColumnSource} - uses {@link SmallIntVector} under the hood, returns short
- * {@link ArrowIntColumnSource} - uses {@link IntVector} under the hood, returns int
- * {@link ArrowLongColumnSource} - uses {@link BigIntVector} under the hood, returns long
- * {@link ArrowUInt1ColumnSource} - uses {@link UInt1Vector} under the hood, returns short
- * {@link ArrowUInt4ColumnSource} - uses {@link UInt4Vector} under the hood, returns long
- * {@link ArrowObjectColumnSource<BigInteger>} - uses {@link UInt8Vector} under the hood, returns BigInteger
- * {@link ArrowLocalTimeColumnSource} - uses {@link TimeMilliVector} under the hood, returns LocalTime
- * {@link ArrowDateTimeColumnSource} - uses {@link TimeStampVector} under the hood, returns DateTime
- * {@link ArrowStringColumnSource} - uses {@link VarCharVector} under the hood, returns String
- * {@link ArrowObjectColumnSource<byte[]>} - uses {@link FixedSizeBinaryVector} under the hood, returns byte[]
- * {@link ArrowObjectColumnSource<byte[]>} - uses {@link VarBinaryVector} under the hood, returns byte[]
- * {@link ArrowObjectColumnSource<BigDecimal>} - uses {@link DecimalVector} under the hood, returns BigDecimal
- * {@link ArrowObjectColumnSource<BigDecimal>} - uses {@link Decimal256Vector} under the hood, returns BigDecimal
- * {@link ArrowObjectColumnSource<LocalDateTime>} - uses {@link DateMilliVector} under the hood, returns LocalDateTime
+ * <ul>
+ * <li>{@link ArrowBooleanColumnSource} - uses {@link BitVector} under the hood, returns Boolean</li>
+ * <li>{@link ArrowByteColumnSource} - uses {@link TinyIntVector} under the hood, returns byte</li>
+ * <li>{@link ArrowCharColumnSource} - uses {@link UInt2Vector} under the hood, returns long</li>
+ * <li>{@link ArrowFloatColumnSource} - uses {@link Float4Vector} under the hood, returns float</li>
+ * <li>{@link ArrowDoubleColumnSource} - uses {@link Float8Vector} under the hood, returns double</li>
+ * <li>{@link ArrowShortColumnSource} - uses {@link SmallIntVector} under the hood, returns short</li>
+ * <li>{@link ArrowIntColumnSource} - uses {@link IntVector} under the hood, returns int</li>
+ * <li>{@link ArrowLongColumnSource} - uses {@link BigIntVector} under the hood, returns long</li>
+ * <li>{@link ArrowUInt1ColumnSource} - uses {@link UInt1Vector} under the hood, returns short</li>
+ * <li>{@link ArrowUInt4ColumnSource} - uses {@link UInt4Vector} under the hood, returns long</li>
+ * <li>{@link ArrowObjectColumnSource ArrowObjectColumnSource&lt;BigInteger&gt;} - uses {@link UInt8Vector} under the hood, returns BigInteger</li>
+ * <li>{@link ArrowLocalTimeColumnSource} - uses {@link TimeMilliVector} under the hood, returns LocalTime</li>
+ * <li>{@link ArrowDateTimeColumnSource} - uses {@link TimeStampVector} under the hood, returns DateTime</li>
+ * <li>{@link ArrowStringColumnSource} - uses {@link VarCharVector} under the hood, returns String</li>
+ * <li>{@link ArrowObjectColumnSource ArrowObjectColumnSource&lt;byte[]&gt;} - uses {@link FixedSizeBinaryVector} under the hood, returns byte[]</li>
+ * <li>{@link ArrowObjectColumnSource ArrowObjectColumnSource&lt;byte[]&gt;} - uses {@link VarBinaryVector} under the hood, returns byte[]</li>
+ * <li>{@link ArrowObjectColumnSource ArrowObjectColumnSource&lt;BigDecimal&gt;} - uses {@link DecimalVector} under the hood, returns BigDecimal</li>
+ * <li>{@link ArrowObjectColumnSource ArrowObjectColumnSource&lt;BigDecimal&gt;} - uses {@link Decimal256Vector} under the hood, returns BigDecimal</li>
+ * <li>{@link ArrowObjectColumnSource ArrowObjectColumnSource&lt;LocalDateTime&gt;} - uses {@link DateMilliVector} under the hood, returns LocalDateTime</li>
+ * </ul>
  * </pre>
  */
 public class ArrowWrapperTools {
+    private static final int MAX_POOL_SIZE = Math.max(UpdateGraphProcessor.DEFAULT.getUpdateThreads(),
+            Configuration.getInstance().getIntegerWithDefault("ArrowWrapperTools.defaultMaxPooledContext", 4));
+
     private static final BufferAllocator rootAllocator = new RootAllocator();
 
     /**
-     * Reads arrow data from file and returns a query table
+     * Reads arrow data from a feather-formatted file and returns a query table
      */
-    public static QueryTable readArrow(final @NotNull String path) {
-        final Helper helper = new Helper(path, rootAllocator);
-        final Shareable context = helper.newShareable();
-        final ArrowFileReader reader = context.getReader();
-        try {
+    public static QueryTable readFeather(final @NotNull String path) {
+        final ArrowTableContext arrowTableContext = new ArrowTableContext(path, rootAllocator);
+        try (final Shareable context = arrowTableContext.newShareable();
+                final SeekableByteChannel channel = arrowTableContext.openChannel()) {
+            final ArrowFileReader reader = context.getReader();
             int biggestBlock = 0;
             final List<ArrowBlock> recordBlocks = reader.getRecordBlocks();
             final int[] blocks = new int[recordBlocks.size()];
-            for (int i = 0; i < recordBlocks.size(); i++) {
-                reader.loadRecordBatch(recordBlocks.get(i));
+            // TODO: load only the metadata to speed up initial read time
+            for (int ii = 0; reader.loadNextBatch(); ++ii) {
                 final int schemaRowCount = reader.getVectorSchemaRoot().getRowCount();
-                blocks[i] = schemaRowCount;
-                if (schemaRowCount > biggestBlock) {
-                    biggestBlock = schemaRowCount;
-                }
+                blocks[ii] = schemaRowCount;
+                biggestBlock = Math.max(biggestBlock, schemaRowCount);
             }
-            final int highBit = Integer.highestOneBit(biggestBlock) << 1;
+
+            // note we can use `0` to index the first row of each block; e.g. 16 rows needs only 4 bits
+            final int highBit = Integer.highestOneBit(biggestBlock - 1) << 1;
             final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
-            for (int i = 0; i < blocks.length; i++) {
-                final long rangeStart = (long) highBit * i;
-                builder.appendRange(rangeStart, rangeStart + blocks[i] - 1);
+            for (int bi = 0; bi < blocks.length; bi++) {
+                final long rangeStart = (long) highBit * bi;
+                builder.appendRange(rangeStart, rangeStart + blocks[bi] - 1);
             }
-            return getQueryTable(context, highBit, builder.build().toTracking(), helper);
+
+            final VectorSchemaRoot root = context.getReader().getVectorSchemaRoot();
+            final Map<String, AbstractColumnSource<?>> sources = root.getSchema()
+                    .getFields().stream().collect(Collectors.toMap(
+                            Field::getName,
+                            f -> generateColumnSource(root.getVector(f), f, highBit, arrowTableContext),
+                            (u, v) -> {
+                                throw new IllegalStateException(String.format("Duplicate key %s", u));
+                            },
+                            LinkedHashMap::new));
+
+            return new QueryTable(builder.build().toTracking(), sources) {
+                @Override
+                public void releaseCachedResources() {
+                    arrowTableContext.releaseCachedResources();
+                }
+            };
         } catch (IOException e) {
             throw new UncheckedIOException(e);
-        } finally {
-            helper.addToPool(context);
         }
     }
 
-    private static QueryTable getQueryTable(
-            final Shareable context,
-            final int highBit,
-            final TrackingRowSet rowSet,
-            final Helper helper) throws IOException {
-        VectorSchemaRoot vectorSchemaRoot = context.getReader().getVectorSchemaRoot();
-        Map<String, AbstractColumnSource<?>> sources = vectorSchemaRoot.getSchema().getFields().stream()
-                .collect(Collectors.toMap(Field::getName,
-                        f -> generateColumnSource(context, f, highBit, helper)));
-        return new ArrowWrappedTable(rowSet, sources, helper);
-    }
-
-    private static AbstractColumnSource<?> generateColumnSource(final Shareable context,
-            final Field field, final int highBit, final Helper arrowHelper) {
-        FieldVector vector;
-        try {
-            vector = context.getReader().getVectorSchemaRoot().getVector(field);
-            if (vector instanceof BitVector) {
-                return new ArrowBooleanColumnSource(highBit, field, arrowHelper);
-            } else if (vector instanceof TinyIntVector) {
-                return new ArrowByteColumnSource(highBit, field, arrowHelper);
-            } else if (vector instanceof SmallIntVector) {
-                return new ArrowShortColumnSource(highBit, field, arrowHelper);
-            } else if (vector instanceof IntVector) {
-                return new ArrowIntColumnSource(highBit, field, arrowHelper);
-            } else if (vector instanceof BigIntVector) {
-                return new ArrowLongColumnSource(highBit, field, arrowHelper);
-            } else if (vector instanceof Float4Vector) {
-                return new ArrowFloatColumnSource(highBit, field, arrowHelper);
-            } else if (vector instanceof Float8Vector) {
-                return new ArrowDoubleColumnSource(highBit, field, arrowHelper);
-            } else if (vector instanceof VarCharVector) {
-                return new ArrowStringColumnSource(highBit, field, arrowHelper);
-            } else if (vector instanceof UInt1Vector) {
-                return new ArrowUInt1ColumnSource(highBit, field, arrowHelper);
-            } else if (vector instanceof UInt2Vector) {
-                return new ArrowCharColumnSource(highBit, field, arrowHelper);
-            } else if (vector instanceof UInt4Vector) {
-                return new ArrowUInt4ColumnSource(highBit, field, arrowHelper);
-            } else if (vector instanceof UInt8Vector) {
-                return new ArrowUInt8ColumnSource(highBit, field, arrowHelper);
-            } else if (vector instanceof FixedSizeBinaryVector) {
-                return new ArrowObjectColumnSource<>(byte[].class, highBit, field, arrowHelper);
-            } else if (vector instanceof VarBinaryVector) {
-                return new ArrowObjectColumnSource<>(byte[].class, highBit, field, arrowHelper);
-            } else if (vector instanceof DecimalVector) {
-                return new ArrowObjectColumnSource<>(BigDecimal.class, highBit, field, arrowHelper);
-            } else if (vector instanceof Decimal256Vector) {
-                return new ArrowObjectColumnSource<>(BigDecimal.class, highBit, field, arrowHelper);
-            } else if (vector instanceof DateMilliVector) {
-                return new ArrowObjectColumnSource<>(LocalDateTime.class, highBit, field, arrowHelper);
-            } else if (vector instanceof TimeMilliVector) {
-                return new ArrowLocalTimeColumnSource(highBit, field, arrowHelper);
-            } else if (vector instanceof TimeStampVector) {
-                return new ArrowDateTimeColumnSource(highBit, field, arrowHelper);
-            }
-            throw new TableDataException(
-                    String.format("Unsupported vector: name: %s type: %s", vector.getName(), vector.getMinorType()));
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        } finally {
-            arrowHelper.addToPool(context);
+    private static AbstractColumnSource<?> generateColumnSource(
+            final FieldVector vector, final Field field, final int highBit, final ArrowTableContext arrowHelper) {
+        // TODO: use switch expression on MinorType
+        if (vector instanceof BitVector) {
+            return new ArrowBooleanColumnSource(highBit, field, arrowHelper);
+        } else if (vector instanceof TinyIntVector) {
+            return new ArrowByteColumnSource(highBit, field, arrowHelper);
+        } else if (vector instanceof SmallIntVector) {
+            return new ArrowShortColumnSource(highBit, field, arrowHelper);
+        } else if (vector instanceof IntVector) {
+            return new ArrowIntColumnSource(highBit, field, arrowHelper);
+        } else if (vector instanceof BigIntVector) {
+            return new ArrowLongColumnSource(highBit, field, arrowHelper);
+        } else if (vector instanceof Float4Vector) {
+            return new ArrowFloatColumnSource(highBit, field, arrowHelper);
+        } else if (vector instanceof Float8Vector) {
+            return new ArrowDoubleColumnSource(highBit, field, arrowHelper);
+        } else if (vector instanceof VarCharVector) {
+            return new ArrowStringColumnSource(highBit, field, arrowHelper);
+        } else if (vector instanceof UInt1Vector) {
+            return new ArrowUInt1ColumnSource(highBit, field, arrowHelper);
+        } else if (vector instanceof UInt2Vector) {
+            return new ArrowCharColumnSource(highBit, field, arrowHelper);
+        } else if (vector instanceof UInt4Vector) {
+            return new ArrowUInt4ColumnSource(highBit, field, arrowHelper);
+        } else if (vector instanceof UInt8Vector) {
+            return new ArrowUInt8ColumnSource(highBit, field, arrowHelper);
+        } else if (vector instanceof FixedSizeBinaryVector) {
+            return new ArrowObjectColumnSource<>(byte[].class, highBit, field, arrowHelper);
+        } else if (vector instanceof VarBinaryVector) {
+            return new ArrowObjectColumnSource<>(byte[].class, highBit, field, arrowHelper);
+        } else if (vector instanceof DecimalVector) {
+            return new ArrowObjectColumnSource<>(BigDecimal.class, highBit, field, arrowHelper);
+        } else if (vector instanceof Decimal256Vector) {
+            return new ArrowObjectColumnSource<>(BigDecimal.class, highBit, field, arrowHelper);
+        } else if (vector instanceof DateMilliVector) {
+            return new ArrowObjectColumnSource<>(LocalDateTime.class, highBit, field, arrowHelper);
+        } else if (vector instanceof TimeMilliVector) {
+            return new ArrowLocalTimeColumnSource(highBit, field, arrowHelper);
+        } else if (vector instanceof TimeStampVector) {
+            return new ArrowDateTimeColumnSource(highBit, field, arrowHelper);
         }
-    }
-
-    private static class ArrowWrappedTable extends QueryTable {
-        private final ArrowWrapperTools.Helper helper;
-
-        public ArrowWrappedTable(
-                final TrackingRowSet rowSet,
-                final Map<String, ? extends ColumnSource<?>> columns,
-                final ArrowWrapperTools.Helper helper) {
-            super(rowSet, columns);
-            this.helper = helper;
-        }
-
-        @Override
-        public void close() {
-            super.close();
-            this.helper.close();
-        }
+        throw new TableDataException(
+                String.format("Unsupported vector: name: %s type: %s", vector.getName(), vector.getMinorType()));
     }
 
     private static final class SharingKey extends SharedContext.ExactReferenceSharingKey<Shareable> {
-        public SharingKey(@NotNull final Helper arrowHelper) {
+        public SharingKey(@NotNull final ArrowWrapperTools.ArrowTableContext arrowHelper) {
             super(arrowHelper);
         }
     }
@@ -222,10 +209,8 @@ public class ArrowWrapperTools {
     public static class FillContext implements ColumnSource.FillContext {
         private final boolean shared;
         private final Shareable shareable;
-        private final Helper helper;
 
-        public FillContext(final Helper helper, final SharedContext sharedContext) {
-            this.helper = helper;
+        public FillContext(final ArrowTableContext helper, final SharedContext sharedContext) {
             this.shared = sharedContext != null;
             shareable = sharedContext == null ? helper.newShareable()
                     : sharedContext.getOrCreate(new SharingKey(helper), helper::newShareable);
@@ -247,19 +232,26 @@ public class ArrowWrapperTools {
         @Override
         public void close() {
             if (!shared) {
-                helper.addToPool(shareable);
+                shareable.close();
             }
         }
     }
 
-    public static final class Shareable extends SharedContext {
-        private final ArrowFileReader reader;
-        private int blockNo = QueryConstants.NULL_INT;
-
+    public static final class Shareable implements ResettableContext {
         private static final AtomicInteger numBlocksLoaded = new AtomicInteger();
 
-        Shareable(ArrowFileReader reader) {
+        private final WeakReference<ArrowTableContext> tableContext;
+        private final ArrowFileReader reader;
+        @ReferentialIntegrity
+        private final ReaderCleanup cleanup;
+
+        private int blockNo = QueryConstants.NULL_INT;
+
+
+        Shareable(ArrowTableContext tableContext, ArrowFileReader reader) {
+            this.tableContext = new WeakReference<>(tableContext);
             this.reader = reader;
+            this.cleanup = new ReaderCleanup(this);
         }
 
         public ArrowFileReader getReader() {
@@ -277,8 +269,21 @@ public class ArrowWrapperTools {
         }
 
         @Override
+        public void reset() {
+            // Nothing to do here.
+        }
+
+        @Override
         public void close() {
-            super.close();
+            ArrowTableContext tableContext = this.tableContext.get();
+            if (tableContext != null) {
+                tableContext.addToPool(this);
+            } else {
+                destroy();
+            }
+        }
+
+        public void destroy() {
             try {
                 this.reader.close();
             } catch (IOException e) {
@@ -288,7 +293,6 @@ public class ArrowWrapperTools {
 
         void ensureLoadingBlock(final int blockNumber) {
             if (blockNumber != blockNo) {
-                ArrowFileReader reader = this.getReader();
                 try {
                     reader.loadRecordBatch(reader.getRecordBlocks().get(blockNumber));
                 } catch (IOException e) {
@@ -300,41 +304,64 @@ public class ArrowWrapperTools {
         }
     }
 
-    public static class Helper implements SafeCloseable {
+    public static class ArrowTableContext {
         private final String path;
 
         private final BufferAllocator rootAllocator;
 
         private final Deque<Shareable> readerStack = new ConcurrentLinkedDeque<>();
 
-        public Helper(final String path, final BufferAllocator rootAllocator) {
+        public ArrowTableContext(final String path, final BufferAllocator rootAllocator) {
             this.path = path;
             this.rootAllocator = rootAllocator;
         }
 
-        public Shareable newShareable() {
+        private Shareable newShareable() {
             Shareable reader = readerStack.poll();
             if (reader != null) {
                 return reader;
             }
-            File file = new File(path);
-            FileInputStream fileInputStream;
+            final SeekableByteChannel channel;
             try {
-                // this input stream is closed when the ArrowFileReader is closed
-                fileInputStream = new FileInputStream(file);
-            } catch (FileNotFoundException e) {
+                channel = TrackedFileHandleFactory.getInstance().readOnlyHandleCreator.invoke(new File(path));
+            } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
-            return new Shareable(new ArrowFileReader(fileInputStream.getChannel(), rootAllocator));
+            return new Shareable(this, new ArrowFileReader(channel, rootAllocator));
         }
 
         private void addToPool(final Shareable context) {
-            this.readerStack.push(context);
+            // this comparison is not atomic, but it is ok to be close enough
+            if (readerStack.size() >= MAX_POOL_SIZE) {
+                context.destroy();
+            } else {
+                readerStack.push(context);
+            }
         }
 
-        public void close() {
-            readerStack.forEach(Shareable::close);
-            readerStack.clear();
+        public void releaseCachedResources() {
+            Shareable toDestroy;
+            while ((toDestroy = readerStack.poll()) != null) {
+                toDestroy.destroy();
+            }
+        }
+    }
+
+    private static final class ReaderCleanup extends WeakCleanupReference<Shareable> {
+        private final ArrowFileReader reader;
+
+        private ReaderCleanup(final Shareable shareable) {
+            super(shareable, CleanupReferenceProcessorInstance.DEFAULT.getReferenceQueue());
+            this.reader = shareable.getReader();
+        }
+
+        @Override
+        public void cleanup() {
+            try {
+                reader.close();
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
         }
     }
 }

@@ -322,7 +322,7 @@ public class GenerateArrowColumnSourceTests {
                 .addStatement("//noinspection ConstantConditions")
                 .addStatement("final $T dataFile = new $T($T.class.getResource($S).getFile())",
                         File.class, File.class, testClass, fileName)
-                .addStatement("return $T.readArrow(dataFile.getPath())", arrowWrapperTools())
+                .addStatement("return $T.readFeather(dataFile.getPath())", arrowWrapperTools())
                 .build();
     }
 

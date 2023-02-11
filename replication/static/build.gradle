@@ -11,12 +11,6 @@ dependencies {
     implementation project(':replication-util')
     implementation depTrove3
     implementation depCommonsIo
-
-    implementation 'com.squareup:javapoet:1.13.0'
-
-    // These are dependencies used by javapoet generators:
-    implementation depCommonsLang3
-    Classpaths.inheritArrow(project, 'arrow-vector', 'implementation')
 }
 
 // These replicators do not require any manual fix-up and may be run without supervision
@@ -87,9 +81,6 @@ task replicateAllSafe {
     dependsOn Tasks.registerMainExecTask(project, 'replicateRingBuffers', 'io.deephaven.replicators.ReplicateRingBuffers')
 
     dependsOn Tasks.registerMainExecTask(project, 'replicatePrimitiveInterfaces', 'io.deephaven.replicators.ReplicatePrimitiveInterfaces')
-
-    dependsOn Tasks.registerMainExecTask(project, 'generateArrowColumnSources', 'io.deephaven.replicators.GenerateArrowColumnSources')
-    dependsOn Tasks.registerMainExecTask(project, 'generateArrowColumnTestSources', 'io.deephaven.replicators.GenerateArrowColumnTestSources')
 
 }
 

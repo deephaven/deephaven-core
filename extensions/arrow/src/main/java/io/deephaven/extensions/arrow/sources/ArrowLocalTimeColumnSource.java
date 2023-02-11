@@ -27,8 +27,8 @@ import org.jetbrains.annotations.NotNull;
  */
 public class ArrowLocalTimeColumnSource extends AbstractArrowColumnSource<LocalTime> implements ImmutableColumnSourceGetDefaults.ForObject<LocalTime> {
     public ArrowLocalTimeColumnSource(final int highBit, final @NotNull Field field,
-            final ArrowWrapperTools. @NotNull Helper arrowHelper) {
-        super(LocalTime.class, highBit, field, arrowHelper);
+            final ArrowWrapperTools. @NotNull ArrowTableContext arrowTableContext) {
+        super(LocalTime.class, highBit, field, arrowTableContext);
     }
 
     @Override
@@ -43,7 +43,7 @@ public class ArrowLocalTimeColumnSource extends AbstractArrowColumnSource<LocalT
 
     @Override
     public final LocalTime get(final long rowKey) {
-        try (ArrowWrapperTools.FillContext fc = (ArrowWrapperTools.FillContext) makeFillContext(1)) {
+        try (ArrowWrapperTools.FillContext fc = (ArrowWrapperTools.FillContext) makeFillContext(0)) {
             fc.ensureLoadingBlock(getBlockNo(rowKey));
             return extract(getPositionInBlock(rowKey), fc.getVector(field));
         }

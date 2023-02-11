@@ -34,7 +34,7 @@ public class ArrowFixedSizeBinaryVectorTest {
     private static QueryTable loadTable() {
         //noinspection ConstantConditions;
         final File dataFile = new File(ArrowFixedSizeBinaryVectorTest.class.getResource("/fixed_size_binary_vector.arrow").getFile());
-        return ArrowWrapperTools.readArrow(dataFile.getPath());
+        return ArrowWrapperTools.readFeather(dataFile.getPath());
     }
 
     @Test

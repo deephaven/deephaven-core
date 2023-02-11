@@ -3,33 +3,16 @@ plugins {
     id 'io.deephaven.project.register'
 }
 
-sourceSets {
-    main {
-        resources {
-            srcDir 'src/main/resources'
-            include '**'
-        }
-    }
-}
-
-configurations {
-    implementation.extendsFrom irisDb
-    testImplementation.extendsFrom irisDbTest
-}
-
 description = 'An extension integrating Arrow sources with Deephaven\'s Table Model'
 
 dependencies {
+    api project(':Configuration')
     api project(':engine-table')
 
-    implementation project(':Base')
-    implementation project(':Util')
-    implementation project(':Configuration')
-    implementation project(':proto:proto-backplane-grpc-flight')
-    implementation project(':log-factory')
     implementation depCommonsLang3
 
     Classpaths.inheritArrow(project, 'arrow-format', 'implementation')
+    Classpaths.inheritArrow(project, 'arrow-vector', 'implementation')
 
     testImplementation TestTools.projectDependency(project, 'engine-table'),
             TestTools.projectDependency(project, 'Util')
