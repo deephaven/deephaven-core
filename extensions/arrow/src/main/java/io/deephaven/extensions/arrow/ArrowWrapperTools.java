@@ -4,6 +4,7 @@ import io.deephaven.base.reference.WeakCleanupReference;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.ResettableContext;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.util.file.FileHandle;
 import io.deephaven.engine.util.file.TrackedFileHandleFactory;
 import io.deephaven.engine.util.reference.CleanupReferenceProcessorInstance;
 import io.deephaven.extensions.arrow.sources.ArrowByteColumnSource;
@@ -34,6 +35,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.ref.WeakReference;
 import java.math.BigDecimal;
+import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
 import java.time.LocalDateTime;
 import java.util.Deque;
@@ -47,6 +49,10 @@ import java.util.stream.Collectors;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.util.annotations.TestUseOnly;
+import io.deephaven.util.datastructures.LongSizedDataStructure;
+import org.apache.arrow.flatbuf.Message;
+import org.apache.arrow.flatbuf.RecordBatch;
+import org.apache.arrow.memory.ArrowBuf;
 import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.memory.RootAllocator;
 import org.apache.arrow.vector.BigIntVector;
@@ -74,6 +80,8 @@ import org.apache.arrow.vector.ipc.ArrowFileReader;
 import org.apache.arrow.vector.ipc.message.ArrowBlock;
 import org.apache.arrow.vector.types.pojo.Field;
 import org.jetbrains.annotations.NotNull;
+
+import static org.apache.arrow.vector.ipc.message.MessageSerializer.IPC_CONTINUATION_TOKEN;
 
 /**
  * <pre>
@@ -119,10 +127,35 @@ public class ArrowWrapperTools {
             final List<ArrowBlock> recordBlocks = reader.getRecordBlocks();
             final int[] blocks = new int[recordBlocks.size()];
             // TODO: load only the metadata to speed up initial read time
-            for (int ii = 0; reader.loadNextBatch(); ++ii) {
-                final int schemaRowCount = reader.getVectorSchemaRoot().getRowCount();
-                blocks[ii] = schemaRowCount;
-                biggestBlock = Math.max(biggestBlock, schemaRowCount);
+
+            int metadataBufLen = 1024;
+            byte[] rawMetadataBuf = new byte[metadataBufLen];
+            for (int ii = 0; ii < blocks.length; ++ii) {
+                final ArrowBlock block = recordBlocks.get(ii);
+                while (block.getMetadataLength() > metadataBufLen) {
+                    metadataBufLen *= 2;
+                    rawMetadataBuf = new byte[metadataBufLen];
+                }
+
+                channel.position(block.getOffset());
+
+                final ByteBuffer metadataBuf = ByteBuffer.wrap(rawMetadataBuf, 0, block.getMetadataLength());
+                int numRead = channel.read(metadataBuf);
+                if (numRead != block.getMetadataLength()) {
+                    throw new IOException("Unexpected end of input trying to read batch.");
+                }
+
+                metadataBuf.flip();
+                if (metadataBuf.getInt() == IPC_CONTINUATION_TOKEN) {
+                    // if the continuation token is present, skip the length
+                    metadataBuf.getInt();
+                }
+                final Message message = Message.getRootAsMessage(metadataBuf.asReadOnlyBuffer());
+                final RecordBatch batch = (RecordBatch) message.header(new RecordBatch());
+
+                final int rowCount = LongSizedDataStructure.intSize("ArrowWrapperTools#readFeather", batch.length());
+                blocks[ii] = rowCount;
+                biggestBlock = Math.max(biggestBlock, rowCount);
             }
 
             // note we can use `0` to index the first row of each block; e.g. 16 rows needs only 4 bits
@@ -323,11 +356,16 @@ public class ArrowWrapperTools {
             }
             final SeekableByteChannel channel;
             try {
-                channel = TrackedFileHandleFactory.getInstance().readOnlyHandleCreator.invoke(new File(path));
+                channel = openChannel();
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
             return new Shareable(this, new ArrowFileReader(channel, rootAllocator));
+        }
+
+        @NotNull
+        private FileHandle openChannel() throws IOException {
+            return TrackedFileHandleFactory.getInstance().readOnlyHandleCreator.invoke(new File(path));
         }
 
         private void addToPool(final Shareable context) {
