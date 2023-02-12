@@ -860,16 +860,16 @@ class TableTestCase(BaseTestCase):
         tree_table = self.test_table.tail(10).tree(id_col='a', parent_col='c', promote_orphans=True)
         self.assertIsNotNone(tree_table)
 
-    def test_table_attributes(self):
-        attrs = self.test_table.get_table_attributes()
+    def test_attributes(self):
+        attrs = self.test_table.attributes()
         self.assertTrue(attrs == {})
 
         attrs["PluginName"] = "@deephaven/js-plugin-table-example"
         attrs["PluginType"] = "@deephaven/auth-plugin"
         attrs["PluginPrivate"] = True
         attrs["PluginAttrs"] = j_hashmap({1: 2, 3: 4})
-        rt = self.test_table.with_table_attributes(attrs)
-        rt_attrs = rt.get_table_attributes()
+        rt = self.test_table.with_attributes(attrs)
+        rt_attrs = rt.attributes()
         self.assertEqual(attrs, rt_attrs)
         self.assertTrue(rt.j_table is not self.test_table.j_table)
 

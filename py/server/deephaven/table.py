@@ -320,12 +320,12 @@ class Table(JObjectWrapper):
     def j_object(self) -> jpy.JType:
         return self.j_table
 
-    def get_table_attributes(self) -> Dict[str, Any]:
+    def attributes(self) -> Dict[str, Any]:
         """Returns all the attributes defined on the table."""
         j_map = jpy.cast(self.j_table, _JLiveAttributeMap).getAttributes()
         return j_map_to_dict(j_map)
 
-    def with_table_attributes(self, attrs: Dict[str, Any]) -> Table:
+    def with_attributes(self, attrs: Dict[str, Any]) -> Table:
         """Returns a new Table that has the provided attributes defined on it and shares the underlying data and schema
         with this table.
 
