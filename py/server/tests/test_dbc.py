@@ -5,7 +5,8 @@ import unittest
 
 import turbodbc
 
-from deephaven.dbc import odbc as dhodbc, adbc as dhadbc
+from deephaven import DHError
+from deephaven.dbc import odbc as dhodbc, adbc as dhadbc, read_sql
 from tests.testbase import BaseTestCase
 
 
@@ -31,6 +32,13 @@ class DbcTestCase(BaseTestCase):
                 # This is not ideal but ADBC might have a bug regarding cursor.rowcount it currently returns -1
                 # instead of the actual size
                 self.assertEqual(table.size, 10)
+
+    def test_read_sql(self):
+        postgres_url = "postgresql://test:test@postgres:5432/test"
+        query = "SELECT t_ts, t_id, t_instrument, t_exchange, t_price, t_size FROM CRYPTO_TRADES LIMIT 10"
+        dh_table = read_sql(conn=postgres_url, query=query)
+        self.assertEqual(len(dh_table.columns), 6)
+        self.assertEqual(dh_table.size, 10)
 
 
 if __name__ == '__main__':
