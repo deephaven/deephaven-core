@@ -39,9 +39,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collector;
-import java.util.stream.Collectors;
 
 @JsType(name = "RollupConfig", namespace = "dh")
 public class JsRollupConfig {

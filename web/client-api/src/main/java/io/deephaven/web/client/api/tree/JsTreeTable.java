@@ -234,6 +234,7 @@ public class JsTreeTable extends HasEventHandling {
          * Row implementation that also provides additional read-only properties.
          */
         @TsInterface
+        @TsName(namespace = "dh")
         public class TreeRow extends ViewportRow {
             public TreeRow(int offsetInSnapshot, Object[] dataColumns, Object rowStyleColumn) {
                 super(offsetInSnapshot, dataColumns, rowStyleColumn);

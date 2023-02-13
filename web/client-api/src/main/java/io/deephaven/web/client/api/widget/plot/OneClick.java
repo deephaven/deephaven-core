@@ -15,7 +15,6 @@ import io.deephaven.web.client.api.JsTable;
 import io.deephaven.web.shared.fu.RemoverFn;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsProperty;
-import jsinterop.annotations.JsType;
 import jsinterop.base.Any;
 import jsinterop.base.JsPropertyMap;
 

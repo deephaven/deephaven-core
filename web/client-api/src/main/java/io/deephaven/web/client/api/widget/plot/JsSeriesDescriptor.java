@@ -8,7 +8,6 @@ import io.deephaven.web.client.fu.JsData;
 import jsinterop.annotations.JsConstructor;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsType;
-import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 import java.util.Map;

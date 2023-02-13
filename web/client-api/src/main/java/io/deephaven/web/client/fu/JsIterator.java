@@ -9,7 +9,6 @@ import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsProperty;
-import jsinterop.annotations.JsType;
 import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
@@ -42,7 +41,7 @@ public class JsIterator<T> {
     }
 
 
-    @JsType(name = "IIterableResult", namespace = JsPackage.GLOBAL)
+    @TsName(name = "IIterableResult", namespace = JsPackage.GLOBAL)
     @TsInterface
     public interface JsIIterableResult<T> {
         @JsIgnore

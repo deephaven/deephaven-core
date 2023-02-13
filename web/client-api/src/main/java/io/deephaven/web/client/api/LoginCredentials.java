@@ -4,6 +4,7 @@ import jsinterop.annotations.JsOverlay;
 import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsType;
 
+//TODO make this a real type
 @JsType(namespace = JsPackage.GLOBAL, name = "Object", isNative = true)
 public class LoginCredentials {
 

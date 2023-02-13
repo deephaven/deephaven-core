@@ -124,7 +124,7 @@ public class ChartData {
         }
 
         if (JsSettings.isDevMode()) {
-            assert ((UpdateEventData) eventDetail).getRows().length == indexes.length;
+            assert tableData.getRows().length == indexes.length;
             assert cachedData.values().stream().flatMap(m -> m.values().stream())
                     .allMatch(arr -> arr.length == indexes.length);
             assert cachedData.values().stream().flatMap(m -> m.values().stream()).allMatch(arr -> arr

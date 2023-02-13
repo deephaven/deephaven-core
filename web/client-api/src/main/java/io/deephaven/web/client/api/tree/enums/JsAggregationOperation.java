@@ -3,8 +3,6 @@
  */
 package io.deephaven.web.client.api.tree.enums;
 
-import io.deephaven.web.client.fu.JsLog;
-import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
 
 @JsType(name = "AggregationOperation", namespace = "dh")
