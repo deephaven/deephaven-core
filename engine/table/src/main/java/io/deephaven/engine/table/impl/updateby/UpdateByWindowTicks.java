@@ -44,10 +44,8 @@ class UpdateByWindowTicks extends UpdateByWindow {
         @Override
         public void close() {
             super.close();
-            try (final SafeCloseable ignoredRs1 = affectedRowPositions;
-                    final SafeCloseable ignoredRs2 =
-                            influencerPositions == affectedRowPositions ? null : influencerPositions) {
-            }
+            Assert.eqNull(affectedRowPositions, "affectedRowPositions");
+            Assert.eqNull(influencerPositions, "influencerPositions");
         }
     }
 
@@ -63,7 +61,9 @@ class UpdateByWindowTicks extends UpdateByWindow {
         }
     }
 
-    private void makeOperatorContexts(UpdateByWindowBucketContext context) {
+    @Override
+    void allocateResources(UpdateByWindowBucketContext context) {
+        super.allocateResources(context);
         UpdateByWindowTicksBucketContext ctx = (UpdateByWindowTicksBucketContext) context;
 
         ctx.workingChunkSize = WINDOW_CHUNK_SIZE;
@@ -74,6 +74,18 @@ class UpdateByWindowTicks extends UpdateByWindow {
             context.opContexts[opIdx] = operators[opIdx].makeUpdateContext(context.workingChunkSize,
                     operatorInputSourceSlots[opIdx].length);
         }
+    }
+
+    @Override
+    void releaseResources(UpdateByWindowBucketContext context) {
+        UpdateByWindowTicksBucketContext ctx = (UpdateByWindowTicksBucketContext) context;
+        try (final SafeCloseable ignoredRs1 = ctx.affectedRowPositions;
+             final SafeCloseable ignoredRs2 =
+                     ctx.influencerPositions == ctx.affectedRowPositions ? null : ctx.influencerPositions) {
+            ctx.affectedRowPositions = null;
+            ctx.influencerPositions = null;
+        }
+        super.releaseResources(context);
     }
 
     @Override
@@ -174,6 +186,8 @@ class UpdateByWindowTicks extends UpdateByWindow {
         UpdateByWindowTicksBucketContext ctx = (UpdateByWindowTicksBucketContext) context;
 
         if (upstream.empty() || context.sourceRowSet.isEmpty()) {
+            // No further work will be done on this context
+            releaseResources(context);
             return;
         }
 
@@ -203,7 +217,6 @@ class UpdateByWindowTicks extends UpdateByWindow {
             context.dirtyOperatorIndices = IntStream.range(0, operators.length).toArray();
             context.dirtySourceIndices = getUniqueSourceIndices();
 
-            makeOperatorContexts(ctx);
             ctx.isDirty = true;
             return;
         }
@@ -212,6 +225,8 @@ class UpdateByWindowTicks extends UpdateByWindow {
         processUpdateForContext(context, upstream);
 
         if (!ctx.isDirty) {
+            // No further work will be done on this context
+            releaseResources(context);
             return;
         }
 
@@ -259,7 +274,8 @@ class UpdateByWindowTicks extends UpdateByWindow {
         ctx.affectedRows = tmpAffected;
 
         if (ctx.affectedRows.isEmpty()) {
-            // we really aren't dirty if no rows are affected by the update
+            // No further work will be done on this context
+            releaseResources(context);
             ctx.isDirty = false;
             return;
         }
@@ -271,9 +287,6 @@ class UpdateByWindowTicks extends UpdateByWindow {
         ctx.influencerRows = computeInfluencerRowsTicks(ctx.sourceRowSet, ctx.affectedRowPositions,
                 prevUnits, fwdUnits);
         ctx.influencerPositions = ctx.sourceRowSet.invert(ctx.influencerRows);
-
-        makeOperatorContexts(ctx);
-
     }
 
     @Override

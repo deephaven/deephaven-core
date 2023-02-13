@@ -354,10 +354,9 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
      * @param initialStep indicates whether this is part of the creation phase
      */
     public void processWindow(final int winIdx, final boolean initialStep) {
-        if (!windows[winIdx].isWindowBucketDirty(windowContexts[winIdx])) {
-            return; // no work to do for this bucket window
-        }
+        windows[winIdx].allocateResources(windowContexts[winIdx]);
         windows[winIdx].processRows(windowContexts[winIdx], initialStep);
+        windows[winIdx].releaseResources(windowContexts[winIdx]);
     }
 
     /**

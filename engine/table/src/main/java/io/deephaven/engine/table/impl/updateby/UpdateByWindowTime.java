@@ -34,14 +34,13 @@ class UpdateByWindowTime extends UpdateByWindow {
      */
     private static final double CONTEXT_GROWTH_PERCENTAGE = 0.25;
     private static final int WINDOW_CHUNK_SIZE = 4096;
-    private static final int RING_BUFFER_INITIAL_SIZE = 512;
+    private static final int RING_BUFFER_INITIAL_SIZE = 128;
     protected final long prevUnits;
     protected final long fwdUnits;
 
     public class UpdateByWindowTimeBucketContext extends UpdateByWindowBucketContext {
-        protected final ChunkSource.GetContext influencerTimestampContext;
-        final ChunkSource.GetContext timestampColumnGetContext;
-        final LongRingBuffer timestampWindowBuffer;
+        ChunkSource.GetContext timestampColumnGetContext;
+        LongRingBuffer timestampWindowBuffer;
         protected int currentGetContextSize;
 
         public UpdateByWindowTimeBucketContext(final TrackingRowSet sourceRowSet,
@@ -53,21 +52,16 @@ class UpdateByWindowTime extends UpdateByWindow {
                 final boolean initialStep) {
             super(sourceRowSet, timestampColumnSource, timestampSsa, timestampValidRowSet, timestampsModified,
                     chunkSize, initialStep);
-
-            influencerTimestampContext = timestampColumnSource.makeGetContext(WINDOW_CHUNK_SIZE);
+            // This is needed during by computeAffectedRowsAndOperators()
             timestampColumnGetContext = timestampColumnSource.makeGetContext(WINDOW_CHUNK_SIZE);
-            timestampWindowBuffer = new LongRingBuffer(RING_BUFFER_INITIAL_SIZE, true);
         }
 
         @Override
         public void close() {
             super.close();
-            try (final SafeCloseable ignoreCtx1 = influencerTimestampContext;
-                    final SafeCloseable ignoreCtx2 = timestampColumnGetContext) {
-                // leveraging try with resources to auto-close
-            }
+            Assert.eqNull(timestampColumnGetContext, "timestampColumnGetContext");
+            Assert.eqNull(timestampWindowBuffer, "timestampWindowBuffer");
         }
-
     }
 
     UpdateByWindowTime(UpdateByOperator[] operators, int[][] operatorSourceSlots, @Nullable String timestampColumnName,
@@ -77,9 +71,12 @@ class UpdateByWindowTime extends UpdateByWindow {
         this.fwdUnits = fwdUnits;
     }
 
-    protected void makeOperatorContexts(UpdateByWindowBucketContext context) {
+    @Override
+    void allocateResources(UpdateByWindowBucketContext context) {
+        super.allocateResources(context);
         UpdateByWindowTimeBucketContext ctx = (UpdateByWindowTimeBucketContext) context;
 
+        ctx.timestampWindowBuffer = new LongRingBuffer(RING_BUFFER_INITIAL_SIZE, true);
         ctx.workingChunkSize = WINDOW_CHUNK_SIZE;
         ctx.currentGetContextSize = ctx.workingChunkSize;
 
@@ -88,6 +85,16 @@ class UpdateByWindowTime extends UpdateByWindow {
             context.opContexts[opIdx] = operators[opIdx].makeUpdateContext(context.workingChunkSize,
                     operatorInputSourceSlots[opIdx].length);
         }
+    }
+
+    @Override
+    void releaseResources(UpdateByWindowBucketContext context) {
+        UpdateByWindowTimeBucketContext ctx = (UpdateByWindowTimeBucketContext) context;
+        ctx.timestampColumnGetContext.close();
+        ctx.timestampColumnGetContext = null;
+        ctx.timestampWindowBuffer = null;
+
+        super.releaseResources(context);
     }
 
     @Override
@@ -211,6 +218,8 @@ class UpdateByWindowTime extends UpdateByWindow {
         UpdateByWindowTimeBucketContext ctx = (UpdateByWindowTimeBucketContext) context;
 
         if (upstream.empty() || ctx.sourceRowSet.isEmpty()) {
+            // No further work will be done on this context
+            releaseResources(context);
             return;
         }
 
@@ -224,7 +233,6 @@ class UpdateByWindowTime extends UpdateByWindow {
             context.dirtyOperatorIndices = IntStream.range(0, operators.length).toArray();
             context.dirtySourceIndices = getUniqueSourceIndices();
 
-            makeOperatorContexts(ctx);
             ctx.isDirty = true;
             return;
         }
@@ -233,6 +241,8 @@ class UpdateByWindowTime extends UpdateByWindow {
         processUpdateForContext(context, upstream);
 
         if (!ctx.isDirty) {
+            // No further work will be done on this context
+            releaseResources(context);
             return;
         }
 
@@ -287,15 +297,14 @@ class UpdateByWindowTime extends UpdateByWindow {
         ctx.affectedRows = tmpAffected;
 
         if (ctx.affectedRows.isEmpty()) {
-            // we really aren't dirty if no rows are affected by the update
+            // No further work will be done on this context
+            releaseResources(context);
             ctx.isDirty = false;
             return;
         }
 
         // now get influencer rows for the affected rows
         ctx.influencerRows = computeInfluencerRowsTime(ctx, ctx.affectedRows, prevUnits, fwdUnits, false);
-
-        makeOperatorContexts(ctx);
     }
 
     private long nextLongOrMax(LongColumnIterator it) {

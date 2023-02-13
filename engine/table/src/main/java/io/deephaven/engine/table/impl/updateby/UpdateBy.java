@@ -536,14 +536,18 @@ public abstract class UpdateBy {
                         0, dirtyBuckets.length,
                         (context, bucketIdx) -> {
                             UpdateByBucketHelper bucket = dirtyBuckets[bucketIdx];
-                            bucket.assignInputSources(winIdx, maybeCachedInputSources);
-                            bucket.processWindow(winIdx, initialStep);
+                            if (bucket.windowContexts[winIdx].isDirty) {
+                                bucket.assignInputSources(winIdx, maybeCachedInputSources);
+                                bucket.processWindow(winIdx, initialStep);
+                            }
                         }, resumeAction, this::onError);
             } else {
                 // minimize overhead when running serially
                 for (UpdateByBucketHelper bucket : dirtyBuckets) {
-                    bucket.assignInputSources(winIdx, maybeCachedInputSources);
-                    bucket.processWindow(winIdx, initialStep);
+                    if (bucket.windowContexts[winIdx].isDirty) {
+                        bucket.assignInputSources(winIdx, maybeCachedInputSources);
+                        bucket.processWindow(winIdx, initialStep);
+                    }
                 }
                 resumeAction.run();
             }

@@ -1,6 +1,7 @@
 package io.deephaven.engine.table.impl.updateby;
 
 import gnu.trove.set.hash.TIntHashSet;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
@@ -15,6 +16,7 @@ import io.deephaven.util.SafeCloseableArray;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Objects;
@@ -47,11 +49,11 @@ abstract class UpdateByWindow {
 
         /** Were any timestamps modified in the current update? */
         protected final boolean timestampsModified;
-        /** An array of context objects for each underlying operator */
-        protected final UpdateByOperator.Context[] opContexts;
         /** Whether this is the creation phase of this window */
         protected final boolean initialStep;
 
+        /** An array of context objects for each underlying operator */
+        protected UpdateByOperator.Context[] opContexts;
         /** An array of ColumnSources for each underlying operator */
         protected ColumnSource<?>[] inputSources;
         /** An array of {@link ChunkSource.GetContext}s for each input column */
@@ -86,28 +88,20 @@ abstract class UpdateByWindow {
             this.timestampValidRowSet = timestampValidRowSet;
             this.timestampsModified = timestampsModified;
 
-            this.opContexts = new UpdateByOperator.Context[operators.length];
-
-            this.workingChunkSize = chunkSize;
+            workingChunkSize = chunkSize;
             this.initialStep = initialStep;
         }
 
         @Override
         public void close() {
-            // For efficiency, we occasionally use the source rowsets. Must be careful not to close in these cases
-            try (final SafeCloseable ignoredRs1 = affectedRows == sourceRowSet ? null : affectedRows;
-                    final SafeCloseable ignoredRs2 =
-                            influencerRows == affectedRows || influencerRows == timestampValidRowSet ? null
-                                    : influencerRows) {
+            try (final SafeCloseable ignoredRs1 = affectedRows == sourceRowSet ? null : affectedRows) {
+                affectedRows = null;
             }
-            SafeCloseableArray.close(opContexts);
-
-            if (inputSourceGetContexts != null) {
-                SafeCloseableArray.close(inputSourceGetContexts);
-            }
+            Assert.eqNull(influencerRows, "influencerRows");
+            Assert.eqNull(opContexts, "opContexts");
+            Assert.eqNull(inputSourceGetContexts, "inputSourceGetContexts");
         }
     }
-
 
     abstract UpdateByWindowBucketContext makeWindowContext(final TrackingRowSet sourceRowSet,
             final ColumnSource<?> timestampColumnSource,
@@ -159,6 +153,29 @@ abstract class UpdateByWindow {
                     timestampColumnName,
                     operators[0].getPrevWindowUnits(),
                     operators[0].getFwdWindowUnits());
+        }
+    }
+
+    @OverridingMethodsMustInvokeSuper
+    void allocateResources(UpdateByWindowBucketContext context) {
+        context.opContexts = new UpdateByOperator.Context[operators.length];
+    }
+    @OverridingMethodsMustInvokeSuper
+    void releaseResources(UpdateByWindowBucketContext context) {
+        // For efficiency, we occasionally use the source rowsets. Must be careful not to close in these cases.
+        // Note that we are not closing affectedRows until the downstream update has been created.
+        try (final SafeCloseable ignoredRs2 =
+                     context.influencerRows == context.affectedRows || context.influencerRows == context.timestampValidRowSet ? null
+                             : context.influencerRows) {
+            context.influencerRows = null;
+        }
+        if (context.opContexts != null) {
+            SafeCloseableArray.close(context.opContexts);
+            context.opContexts = null;
+        }
+        if (context.inputSourceGetContexts != null) {
+            SafeCloseableArray.close(context.inputSourceGetContexts);
+            context.inputSourceGetContexts = null;
         }
     }
 

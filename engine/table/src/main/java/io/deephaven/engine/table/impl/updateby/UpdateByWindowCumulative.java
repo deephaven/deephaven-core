@@ -28,7 +28,10 @@ class UpdateByWindowCumulative extends UpdateByWindow {
         super(operators, operatorSourceSlots, timestampColumnName);
     }
 
-    private void makeOperatorContexts(UpdateByWindowBucketContext context) {
+    @Override
+    void allocateResources(UpdateByWindowBucketContext context) {
+        super.allocateResources(context);
+
         // working chunk size need not be larger than affectedRows.size()
         context.workingChunkSize = Math.toIntExact(Math.min(context.workingChunkSize, context.affectedRows.size()));
 
@@ -37,6 +40,11 @@ class UpdateByWindowCumulative extends UpdateByWindow {
             context.opContexts[opIdx] = operators[opIdx].makeUpdateContext(context.workingChunkSize,
                     operatorInputSourceSlots[opIdx].length);
         }
+    }
+
+    @Override
+    void releaseResources(UpdateByWindowBucketContext context) {
+        super.releaseResources(context);
     }
 
     @Override
@@ -54,6 +62,8 @@ class UpdateByWindowCumulative extends UpdateByWindow {
     @Override
     void computeAffectedRowsAndOperators(UpdateByWindowBucketContext context, @NotNull TableUpdate upstream) {
         if (upstream.empty() || context.sourceRowSet.isEmpty()) {
+            // No further work will be done on this context
+            releaseResources(context);
             return;
         }
 
@@ -65,8 +75,6 @@ class UpdateByWindowCumulative extends UpdateByWindow {
             // mark all operators as affected by this update
             context.dirtyOperatorIndices = IntStream.range(0, operators.length).toArray();
             context.dirtySourceIndices = getUniqueSourceIndices();
-
-            makeOperatorContexts(context);
             context.isDirty = true;
             return;
         }
@@ -75,6 +83,8 @@ class UpdateByWindowCumulative extends UpdateByWindow {
         processUpdateForContext(context, upstream);
 
         if (!context.isDirty) {
+            // No further work will be done on this context
+            releaseResources(context);
             return;
         }
 
@@ -88,14 +98,13 @@ class UpdateByWindowCumulative extends UpdateByWindow {
                 : context.sourceRowSet.subSetByKeyRange(smallestModifiedKey, context.sourceRowSet.lastRowKey());
 
         if (context.affectedRows.isEmpty()) {
-            // we really aren't dirty if no rows are affected by the update
+            // No further work will be done on this context
+            releaseResources(context);
             context.isDirty = false;
             return;
         }
 
         context.influencerRows = context.affectedRows;
-
-        makeOperatorContexts(context);
     }
 
     @Override
