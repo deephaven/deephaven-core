@@ -279,7 +279,8 @@ public class ShortRingBuffer implements Serializable {
     }
 
     /**
-     * If the ring buffer is non-empty, returns the element at the head of the ring buffer. Otherwise returns the specified element.
+     * If the ring buffer is non-empty, returns the element at the head of the ring buffer. Otherwise returns the
+     * specified element.
      *
      * @param onEmpty the value to return if the ring buffer is empty
      * @return The head element if the ring buffer is non-empty, otherwise the value of 'onEmpty'
@@ -316,6 +317,7 @@ public class ShortRingBuffer implements Serializable {
 
     /**
      * Returns the element at the tail of the ring buffer
+     * 
      * @throws NoSuchElementException if the buffer is empty
      * @return The element at the tail of the ring buffer
      */
@@ -342,6 +344,7 @@ public class ShortRingBuffer implements Serializable {
 
     /**
      * Make a copy of the elements in the ring buffer.
+     * 
      * @return An array containing a copy of the elements in the ring buffer.
      */
     public short[] getAll() {
