@@ -8,6 +8,7 @@
  */
 package io.deephaven.base.ringbuffer;
 
+import io.deephaven.base.ArrayUtil;
 import io.deephaven.base.verify.Assert;
 
 import java.io.Serializable;
@@ -21,7 +22,7 @@ import java.util.NoSuchElementException;
  */
 public class DoubleRingBuffer implements Serializable {
     /** Maximum capacity is the highest power of two that can be allocated (i.e. <= than ArrayUtil.MAX_ARRAY_SIZE). */
-    private final int RING_BUFFER_MAX_CAPACITY = 1 << 30; // ~1B entries
+    private final int RING_BUFFER_MAX_CAPACITY = Integer.highestOneBit(ArrayUtil.MAX_ARRAY_SIZE);
     private final boolean growable;
     private double[] storage;
     private int mask;
@@ -63,13 +64,18 @@ public class DoubleRingBuffer implements Serializable {
         tail = head = 0;
     }
 
+    /**
+     * Increase the capacity of the ring buffer.
+     * 
+     * @param increase Increase amount. The ring buffer's capacity will be increased by at least this amount.
+     */
     private void grow(int increase) {
         final int size = size();
-        final long newSize = size + increase;
+        final long newCapacity = (long) storage.length + increase;
         // assert that we are not asking for the impossible
-        Assert.leq(newSize, "DoubleRingBuffer capacity", RING_BUFFER_MAX_CAPACITY);
+        Assert.leq(newCapacity, "DoubleRingBuffer capacity", RING_BUFFER_MAX_CAPACITY);
 
-        final double[] newStorage = new double[Integer.highestOneBit((int) newSize - 1) << 1];
+        final double[] newStorage = new double[Integer.highestOneBit((int) newCapacity - 1) << 1];
 
         // move the current data to the new buffer
         copyRingBufferToArray(newStorage);
@@ -81,6 +87,12 @@ public class DoubleRingBuffer implements Serializable {
         head = 0;
     }
 
+    /**
+     * Copy the contents of the buffer to a destination buffer. If the destination buffer capacity is smaller than
+     * {@code size()}, the copy will not fail but will terminate after the buffer is full.
+     * 
+     * @param dest The destination buffer.
+     */
     private void copyRingBufferToArray(double[] dest) {
         final int size = size();
         final int storageHead = (int) (head & mask);
@@ -160,9 +172,9 @@ public class DoubleRingBuffer implements Serializable {
     }
 
     /**
-     * Add values without overflow detection. Making this call when the buffer is full will result in this data
-     * structure becoming corrupted and unusable. This call must be used in conjunction with
-     * {@link #ensureRemaining(int)} or {@link #remaining()} to verify remaining capacity if sufficient.
+     * Add values without overflow detection. The caller *must* ensure that there is at least one element of free space
+     * in the ring buffer before calling this method. The caller may use {@link #ensureRemaining(int)} or
+     * {@link #remaining()} for this purpose.
      *
      * @param e the value to add to the buffer
      */
@@ -187,8 +199,8 @@ public class DoubleRingBuffer implements Serializable {
     }
 
     /**
-     * Attempt to add an entry to the ring buffer. If the buffer is full, the write will fail and the buffer will not
-     * grow even if allowed.
+     * Attempt to add an entry to the ring buffer. If the buffer is full, the add will fail and the buffer will not grow
+     * even if growable.
      *
      * @param e the double to be added to the buffer
      * @return true if the value was added successfully, false otherwise
@@ -201,6 +213,12 @@ public class DoubleRingBuffer implements Serializable {
         return true;
     }
 
+    /**
+     * Remove multiple elements from the front of the ring buffer
+     *
+     * @param count The number of elements to remove.
+     * @throws NoSuchElementException if the buffer is empty
+     */
     public double[] remove(int count) {
         if (size() < count) {
             throw new NoSuchElementException();
@@ -211,6 +229,11 @@ public class DoubleRingBuffer implements Serializable {
         return result;
     }
 
+    /**
+     * Remove one element from the front of the ring buffer.
+     *
+     * @throws NoSuchElementException if the buffer is empty
+     */
     public double remove() {
         if (isEmpty()) {
             throw new NoSuchElementException();
@@ -218,10 +241,10 @@ public class DoubleRingBuffer implements Serializable {
         return removeUnsafe();
     }
 
+
     /**
-     * Remove values without empty-buffer detection. Making this call when the buffer is empty will result in this data
-     * structure becoming corrupted and unusable. This call must be used in conjunction with {@link #size()} to verify
-     * the buffer contains the data items to retrieve.
+     * Remove an element without empty buffer detection. The caller *must* ensure that there is at least one element in
+     * the ring buffer. The {@link #size()} method may be used for this purpose.
      *
      * @return the value removed from the buffer
      */
@@ -229,6 +252,13 @@ public class DoubleRingBuffer implements Serializable {
         return storage[(int) (head++ & mask)];
     }
 
+    /**
+     * If the ring buffer is non-empty, removes and returns the element at the head of the ring buffer. Otherwise
+     * returns the specified element.
+     *
+     * @param onEmpty the value to return if the ring buffer is empty
+     * @return The head element if the ring buffer is non-empty, otherwise the value of 'onEmpty'
+     */
     public double poll(double onEmpty) {
         if (isEmpty()) {
             return onEmpty;
@@ -236,6 +266,12 @@ public class DoubleRingBuffer implements Serializable {
         return removeUnsafe();
     }
 
+    /**
+     * If the ring buffer is non-empty, returns the element at the head of the ring buffer.
+     *
+     * @throws NoSuchElementException if the buffer is empty
+     * @return The head element if the ring buffer is non-empty, otherwise the value of 'onEmpty'
+     */
     public double element() {
         if (isEmpty()) {
             throw new NoSuchElementException();
@@ -243,6 +279,13 @@ public class DoubleRingBuffer implements Serializable {
         return storage[(int) (head & mask)];
     }
 
+    /**
+     * If the ring buffer is non-empty, returns the element at the head of the ring buffer. Otherwise returns the
+     * specified element.
+     *
+     * @param onEmpty the value to return if the ring buffer is empty
+     * @return The head element if the ring buffer is non-empty, otherwise the value of 'onEmpty'
+     */
     public double peek(double onEmpty) {
         if (isEmpty()) {
             return onEmpty;
@@ -250,17 +293,35 @@ public class DoubleRingBuffer implements Serializable {
         return storage[(int) (head & mask)];
     }
 
+    /**
+     * Returns the element at the head of the ring buffer.
+     *
+     * @throws NoSuchElementException if the buffer is empty
+     * @return The head element if the ring buffer is non-empty, otherwise the value of 'onEmpty'
+     */
     public double front() {
         return front(0);
     }
 
-    public double front(int offset) {
-        if (offset >= size()) {
+    /**
+     * Returns the element in the buffer specified by position from the head.
+     *
+     * @param pos The position from the head of the ring buffer
+     * @throws NoSuchElementException if the buffer is empty
+     * @return The head element if the ring buffer is non-empty, otherwise the value of 'onEmpty'
+     */
+    public double front(int pos) {
+        if (pos >= size()) {
             throw new NoSuchElementException();
         }
-        return storage[(int) ((head + offset) & mask)];
+        return storage[(int) ((head + pos) & mask)];
     }
 
+    /**
+     * Returns the element at the tail of the ring buffer.
+     *
+     * @throws NoSuchElementException if the buffer is empty
+     */
     public double back() {
         if (isEmpty()) {
             throw new NoSuchElementException();
@@ -268,6 +329,13 @@ public class DoubleRingBuffer implements Serializable {
         return storage[(int) ((tail - 1) & mask)];
     }
 
+    /**
+     * If the ring buffer is non-empty, returns the element at the tail of the ring buffer. Otherwise returns the
+     * specified element.
+     *
+     * @param onEmpty the value to return if the ring buffer is empty
+     * @return The tail element if the ring buffer is non-empty, otherwise the value of 'onEmpty'
+     */
     public double peekBack(double onEmpty) {
         if (isEmpty()) {
             return onEmpty;
@@ -275,12 +343,18 @@ public class DoubleRingBuffer implements Serializable {
         return storage[(int) ((tail - 1) & mask)];
     }
 
+    /**
+     * Returns an array containing all items in the buffer.
+     */
     public double[] getAll() {
         double[] result = new double[size()];
         copyRingBufferToArray(result);
         return result;
     }
 
+    /**
+     * Returns an iterator for the items in the buffer.
+     */
     public Iterator iterator() {
         return new Iterator();
     }
