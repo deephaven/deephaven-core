@@ -132,6 +132,7 @@ public final class SessionImpl extends SessionBase {
                 pingFrequency.toNanos(), pingFrequency.toNanos(), TimeUnit.NANOSECONDS);
     }
 
+    // exposed for Flight
     BearerHandler _hackBearerHandler() {
         return bearerHandler;
     }

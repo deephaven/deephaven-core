@@ -16,7 +16,6 @@ public class AuthenticationOptions {
 
     public String toAuthenticationTypeAndValue() {
         if (mtls != null && mtls) {
-            // todo
             return "io.deephaven.authentication.mtls.MTlsAuthenticationHandler";
         }
         if (psk != null) {
