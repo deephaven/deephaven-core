@@ -97,8 +97,8 @@ public class LongRingBuffer implements Serializable {
         final int size = size();
         final int storageHead = (int) (head & mask);
 
-        // firstCopyLen is either the size of the ring buffer, the distance from head to the end, or the size
-        // of the destination buffer, whichever is smallest.
+        // firstCopyLen is either the size of the ring buffer, the distance from head to the end of the storage array,
+        // or the size of the destination buffer, whichever is smallest.
         final int firstCopyLen = Math.min(Math.min(storage.length - storageHead, size), dest.length);
 
         // secondCopyLen is either the number of uncopied elements remaining from the first copy,
@@ -253,11 +253,10 @@ public class LongRingBuffer implements Serializable {
     }
 
     /**
-     * If the ring buffer is non-empty, removes and returns the element at the head of the ring buffer. Otherwise
-     * returns the specified element.
+     * If the ring buffer is non-empty, removes the element at the head of the ring buffer. Otherwise does nothing.
      *
      * @param onEmpty the value to return if the ring buffer is empty
-     * @return The head element if the ring buffer is non-empty, otherwise the value of 'onEmpty'
+     * @return The removed element if the ring buffer was non-empty, otherwise the value of 'onEmpty'
      */
     public long poll(long onEmpty) {
         if (isEmpty()) {
@@ -280,8 +279,7 @@ public class LongRingBuffer implements Serializable {
     }
 
     /**
-     * If the ring buffer is non-empty, returns the element at the head of the ring buffer. Otherwise returns the
-     * specified element.
+     * If the ring buffer is non-empty, returns the element at the head of the ring buffer. Otherwise returns the specified element.
      *
      * @param onEmpty the value to return if the ring buffer is empty
      * @return The head element if the ring buffer is non-empty, otherwise the value of 'onEmpty'
@@ -294,33 +292,32 @@ public class LongRingBuffer implements Serializable {
     }
 
     /**
-     * Returns the element at the head of the ring buffer.
+     * Returns the element at the head of the ring buffer
      *
-     * @throws NoSuchElementException if the buffer is empty
-     * @return The head element if the ring buffer is non-empty, otherwise the value of 'onEmpty'
+     * @return The element at the head of the ring buffer
      */
     public long front() {
         return front(0);
     }
 
     /**
-     * Returns the element in the buffer specified by position from the head.
+     * Returns the element at the specified offset in the ring buffer.
      *
-     * @param pos The position from the head of the ring buffer
+     * @param offset The specified offset.
      * @throws NoSuchElementException if the buffer is empty
-     * @return The head element if the ring buffer is non-empty, otherwise the value of 'onEmpty'
+     * @return The element at the specified offset
      */
-    public long front(int pos) {
-        if (pos >= size()) {
+    public long front(int offset) {
+        if (offset < 0 || offset >= size()) {
             throw new NoSuchElementException();
         }
-        return storage[(int) ((head + pos) & mask)];
+        return storage[(int) ((head + offset) & mask)];
     }
 
     /**
-     * Returns the element at the tail of the ring buffer.
-     *
+     * Returns the element at the tail of the ring buffer
      * @throws NoSuchElementException if the buffer is empty
+     * @return The element at the tail of the ring buffer
      */
     public long back() {
         if (isEmpty()) {
@@ -344,7 +341,8 @@ public class LongRingBuffer implements Serializable {
     }
 
     /**
-     * Returns an array containing all items in the buffer.
+     * Make a copy of the elements in the ring buffer.
+     * @return An array containing a copy of the elements in the ring buffer.
      */
     public long[] getAll() {
         long[] result = new long[size()];
@@ -353,22 +351,25 @@ public class LongRingBuffer implements Serializable {
     }
 
     /**
-     * Returns an iterator for the items in the buffer.
+     * Create an iterator for the ring buffer
      */
     public Iterator iterator() {
         return new Iterator();
     }
 
     public class Iterator {
-        int count = -1;
+        int cursor = -1;
 
         public boolean hasNext() {
-            return count + 1 < size();
+            return cursor + 1 < size();
         }
 
         public long next() {
-            count++;
-            return storage[(int) ((head + count) & mask)];
+            if (!hasNext()) {
+                throw new NoSuchElementException();
+            }
+            cursor++;
+            return storage[(int) ((head + cursor) & mask)];
         }
 
         public void remove() {
