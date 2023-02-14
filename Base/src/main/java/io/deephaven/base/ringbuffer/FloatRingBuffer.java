@@ -23,6 +23,7 @@ import java.util.NoSuchElementException;
 public class FloatRingBuffer implements Serializable {
     /** Maximum capacity is the highest power of two that can be allocated (i.e. <= than ArrayUtil.MAX_ARRAY_SIZE). */
     private final int RING_BUFFER_MAX_CAPACITY = Integer.highestOneBit(ArrayUtil.MAX_ARRAY_SIZE);
+    private final long FIXUP_THRESHOLD = 1L << 62;
     private final boolean growable;
     private float[] storage;
     private int mask;
@@ -109,6 +110,19 @@ public class FloatRingBuffer implements Serializable {
         System.arraycopy(storage, 0, dest, firstCopyLen, secondCopyLen);
     }
 
+    /**
+     * This is an extremely paranoid wrap check that in all likelihood will never run. With FIXUP_THRESHOLD at 1 << 62,
+     * and the user pushing 2^32 values per second(!), it will take 68 years to wrap this counter .
+     */
+    private void maybeFixIndices() {
+        if (tail >= FIXUP_THRESHOLD) {
+            // Reset [head, tail] but force it not to overlap.
+            long thisLength = tail - head;
+            head = (head & mask) + storage.length;
+            tail = head + thisLength;
+        }
+    }
+
     public boolean isFull() {
         return size() == storage.length;
     }
@@ -126,6 +140,7 @@ public class FloatRingBuffer implements Serializable {
     }
 
     public int remaining() {
+        maybeFixIndices();
         return storage.length - size();
     }
 
@@ -149,6 +164,7 @@ public class FloatRingBuffer implements Serializable {
                 grow(1);
             }
         }
+        maybeFixIndices();
         addUnsafe(e);
         return true;
     }
@@ -168,6 +184,7 @@ public class FloatRingBuffer implements Serializable {
             } else {
                 grow(count);
             }
+            maybeFixIndices();
         }
     }
 
@@ -194,6 +211,7 @@ public class FloatRingBuffer implements Serializable {
         if (isFull()) {
             result = remove();
         }
+        maybeFixIndices();
         addUnsafe(e);
         return result;
     }
@@ -209,6 +227,7 @@ public class FloatRingBuffer implements Serializable {
         if (isFull()) {
             return false;
         }
+        maybeFixIndices();
         addUnsafe(e);
         return true;
     }
