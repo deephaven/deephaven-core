@@ -2,22 +2,19 @@ package io.deephaven.engine.table.impl.updateby;
 
 import io.deephaven.base.ringbuffer.LongRingBuffer;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.chunk.LongChunk;
-import io.deephaven.chunk.WritableIntChunk;
+import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.chunk.util.pools.ChunkPoolConstants;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.ssa.LongSegmentedSortedArray;
 import io.deephaven.engine.table.iterators.LongColumnIterator;
-import io.deephaven.util.SafeCloseable;
-import io.deephaven.util.datastructures.LongSizedDataStructure;
+import io.deephaven.util.SafeCloseableArray;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Arrays;
+import java.util.BitSet;
 import java.util.stream.IntStream;
 
 import static io.deephaven.util.QueryConstants.NULL_INT;
@@ -29,19 +26,16 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
  * a buffer of `influencer` values to add to the rolling window as the current row changes.
  */
 class UpdateByWindowTime extends UpdateByWindow {
-    /**
-     * growth rate after the contexts have exceeded the poolable chunk size
-     */
-    private static final double CONTEXT_GROWTH_PERCENTAGE = 0.25;
-    private static final int WINDOW_CHUNK_SIZE = 4096;
     private static final int RING_BUFFER_INITIAL_SIZE = 128;
     protected final long prevUnits;
     protected final long fwdUnits;
 
     public class UpdateByWindowTimeBucketContext extends UpdateByWindowBucketContext {
         ChunkSource.GetContext timestampColumnGetContext;
-        LongRingBuffer timestampWindowBuffer;
         protected int currentGetContextSize;
+        private WritableIntChunk<Values>[] pushChunks;
+        private WritableIntChunk<Values>[] popChunks;
+        private int[] influencerCounts;
 
         public UpdateByWindowTimeBucketContext(final TrackingRowSet sourceRowSet,
                 @NotNull final ColumnSource<?> timestampColumnSource,
@@ -52,15 +46,16 @@ class UpdateByWindowTime extends UpdateByWindow {
                 final boolean initialStep) {
             super(sourceRowSet, timestampColumnSource, timestampSsa, timestampValidRowSet, timestampsModified,
                     chunkSize, initialStep);
-            // This is needed during by computeAffectedRowsAndOperators()
-            timestampColumnGetContext = timestampColumnSource.makeGetContext(WINDOW_CHUNK_SIZE);
+            // This is needed by computeAffectedRowsAndOperators() before allocateResources() is called
+            timestampColumnGetContext = timestampColumnSource.makeGetContext(workingChunkSize);
         }
 
         @Override
         public void close() {
             super.close();
             Assert.eqNull(timestampColumnGetContext, "timestampColumnGetContext");
-            Assert.eqNull(timestampWindowBuffer, "timestampWindowBuffer");
+            Assert.eqNull(pushChunks, "pushChunks");
+            Assert.eqNull(popChunks, "popChunks");
         }
     }
 
@@ -72,29 +67,42 @@ class UpdateByWindowTime extends UpdateByWindow {
     }
 
     @Override
-    void allocateResources(UpdateByWindowBucketContext context) {
-        super.allocateResources(context);
+    void prepareWindowBucket(UpdateByWindowBucketContext context) {
         UpdateByWindowTimeBucketContext ctx = (UpdateByWindowTimeBucketContext) context;
 
-        ctx.timestampWindowBuffer = new LongRingBuffer(RING_BUFFER_INITIAL_SIZE, true);
-        ctx.workingChunkSize = WINDOW_CHUNK_SIZE;
+        // working chunk size need not be larger than affectedRows.size()
+        context.workingChunkSize = Math.toIntExact(Math.min(context.workingChunkSize, context.affectedRows.size()));
         ctx.currentGetContextSize = ctx.workingChunkSize;
 
-        // create contexts for the affected operators
-        for (int opIdx : context.dirtyOperatorIndices) {
-            context.opContexts[opIdx] = operators[opIdx].makeUpdateContext(context.workingChunkSize,
-                    operatorInputSourceSlots[opIdx].length);
+        // create the array of push/pop chunks
+        final long rowCount = ctx.affectedRows.size();
+        final int chunkCount = Math.toIntExact((rowCount + ctx.workingChunkSize - 1) / ctx.workingChunkSize);
+
+        ctx.pushChunks = new WritableIntChunk[chunkCount];
+        ctx.popChunks = new WritableIntChunk[chunkCount];
+        for (int ii = 0; ii < chunkCount; ii++) {
+            ctx.pushChunks[ii] = WritableIntChunk.makeWritableChunk(ctx.workingChunkSize);
+            ctx.popChunks[ii] = WritableIntChunk.makeWritableChunk(ctx.workingChunkSize);
         }
+        ctx.influencerCounts = new int[chunkCount];
+
+        computeWindows(ctx);
     }
 
     @Override
-    void releaseResources(UpdateByWindowBucketContext context) {
+    void finalizeWindowBucket(UpdateByWindowBucketContext context) {
         UpdateByWindowTimeBucketContext ctx = (UpdateByWindowTimeBucketContext) context;
         ctx.timestampColumnGetContext.close();
         ctx.timestampColumnGetContext = null;
-        ctx.timestampWindowBuffer = null;
-
-        super.releaseResources(context);
+        if (ctx.pushChunks != null) {
+            SafeCloseableArray.close(ctx.pushChunks);
+            ctx.pushChunks = null;
+        }
+        if (ctx.popChunks != null) {
+            SafeCloseableArray.close(ctx.popChunks);
+            ctx.popChunks = null;
+        }
+        super.finalizeWindowBucket(context);
     }
 
     @Override
@@ -129,7 +137,7 @@ class UpdateByWindowTime extends UpdateByWindow {
             LongSegmentedSortedArray.Iterator ssaIt = ctx.timestampSsa.iterator(false, false);
 
             while (it.hasMore() && ssaIt.hasNext()) {
-                final RowSequence rs = it.getNextRowSequenceWithLength(WINDOW_CHUNK_SIZE);
+                final RowSequence rs = it.getNextRowSequenceWithLength(ctx.workingChunkSize);
                 final int rsSize = rs.intSize();
 
                 LongChunk<? extends Values> timestamps = usePrev
@@ -173,40 +181,6 @@ class UpdateByWindowTime extends UpdateByWindow {
         }
     }
 
-    private void ensureGetContextSize(UpdateByWindowTimeBucketContext ctx, long newSize) {
-        if (ctx.currentGetContextSize < newSize) {
-            long size = ctx.currentGetContextSize;
-            while (size < newSize) {
-                size *= 2;
-            }
-
-            // if size would no longer be poolable, use percentage growth for the new contexts
-            ctx.currentGetContextSize = LongSizedDataStructure.intSize(
-                    "ensureGetContextSize exceeded Integer.MAX_VALUE",
-                    size >= ChunkPoolConstants.LARGEST_POOLED_CHUNK_CAPACITY
-                            ? (long) (newSize * (1.0 + CONTEXT_GROWTH_PERCENTAGE))
-                            : size);
-
-            // use this to track which contexts have already resized
-            boolean[] resized = new boolean[ctx.inputSources.length];
-
-            for (int opIdx : ctx.dirtyOperatorIndices) {
-                final int[] sourceIndices = operatorInputSourceSlots[opIdx];
-                for (int sourceSlot : sourceIndices) {
-                    if (!resized[sourceSlot]) {
-                        // close the existing context
-                        ctx.inputSourceGetContexts[sourceSlot].close();
-
-                        // create a new context of the larger size
-                        ctx.inputSourceGetContexts[sourceSlot] =
-                                ctx.inputSources[sourceSlot].makeGetContext(ctx.currentGetContextSize);
-                        resized[sourceSlot] = true;
-                    }
-                }
-            }
-        }
-    }
-
     /**
      * Windowed by time/ticks is complex to compute: must find all the changed rows and rows that would be affected by
      * the changes (includes newly added rows) and need to be recomputed. Then include all the rows that are affected by
@@ -219,7 +193,7 @@ class UpdateByWindowTime extends UpdateByWindow {
 
         if (upstream.empty() || ctx.sourceRowSet.isEmpty()) {
             // No further work will be done on this context
-            releaseResources(context);
+            finalizeWindowBucket(context);
             return;
         }
 
@@ -227,11 +201,14 @@ class UpdateByWindowTime extends UpdateByWindow {
         if (ctx.initialStep) {
             ctx.affectedRows = ctx.sourceRowSet;
 
-            ctx.influencerRows = ctx.timestampValidRowSet;
+            // Get the exact set of rows needed to compute the initial row set
+            ctx.influencerRows = computeInfluencerRowsTime(ctx, ctx.affectedRows, prevUnits, fwdUnits, false);
 
             // mark all operators as affected by this update
             context.dirtyOperatorIndices = IntStream.range(0, operators.length).toArray();
             context.dirtySourceIndices = getUniqueSourceIndices();
+            context.dirtyOperators = new BitSet(operators.length);
+            context.dirtyOperators.set(0, operators.length);
 
             ctx.isDirty = true;
             return;
@@ -242,10 +219,9 @@ class UpdateByWindowTime extends UpdateByWindow {
 
         if (!ctx.isDirty) {
             // No further work will be done on this context
-            releaseResources(context);
+            finalizeWindowBucket(context);
             return;
         }
-
 
         final WritableRowSet tmpAffected = RowSetFactory.empty();
 
@@ -298,7 +274,7 @@ class UpdateByWindowTime extends UpdateByWindow {
 
         if (ctx.affectedRows.isEmpty()) {
             // No further work will be done on this context
-            releaseResources(context);
+            finalizeWindowBucket(context);
             ctx.isDirty = false;
             return;
         }
@@ -311,142 +287,131 @@ class UpdateByWindowTime extends UpdateByWindow {
         return it.hasNext() ? it.nextLong() : Long.MAX_VALUE;
     }
 
-    /***
-     * This function process the affected rows chunkwise, and will advance the moving window (which is the same for all
-     * operators in this collection). For each row in the dataset the sliding window will adjust and instructions for
-     * pushing/popping data will be created for the operators. For each chunk of `affected` rows, we will identify
-     * exactly which `influencer` rows are needed and will provide those and the push/pop instructions to the operators.
-     *
-     * Downstream operators should manage local storage in a RingBuffer or other efficient structure since our pop()
-     * calls do not provide the popped data
-     */
-    @Override
-    public void processRows(UpdateByWindowBucketContext context, boolean initialStep) {
-        UpdateByWindowTimeBucketContext ctx = (UpdateByWindowTimeBucketContext) context;
-
-        for (int opIdx : context.dirtyOperatorIndices) {
-            UpdateByOperator winOp = operators[opIdx];
-            // call the specialized version of `intializeUpdate()` for these operators
-            winOp.initializeRolling(ctx.opContexts[opIdx]);
-        }
-
+    public void computeWindows(UpdateByWindowTimeBucketContext ctx) {
         try (final RowSequence.Iterator affectedRowsIt = ctx.affectedRows.getRowSequenceIterator();
-                final LongColumnIterator affectedTsIt =
-                        new LongColumnIterator(context.timestampColumnSource, ctx.affectedRows);
+                final ChunkSource.GetContext affectedTsGetContext =
+                        ctx.timestampColumnSource.makeGetContext(ctx.workingChunkSize);
                 final LongColumnIterator influencerTsTailIt =
-                        new LongColumnIterator(context.timestampColumnSource, context.influencerRows);
-                final RowSequence.Iterator influencerRowsIt = ctx.influencerRows.getRowSequenceIterator();
-                final WritableIntChunk<? extends Values> pushChunk =
-                        WritableIntChunk.makeWritableChunk(ctx.workingChunkSize);
-                final WritableIntChunk<? extends Values> popChunk =
-                        WritableIntChunk.makeWritableChunk(ctx.workingChunkSize)) {
+                        new LongColumnIterator(ctx.timestampColumnSource, ctx.influencerRows)) {
+
+            final LongRingBuffer timestampWindowBuffer = new LongRingBuffer(RING_BUFFER_INITIAL_SIZE);
+
+            int affectedChunkOffset = 0;
 
             long influencerTs = nextLongOrMax(influencerTsTailIt);
 
-            Assert.eqTrue(affectedTsIt.hasNext(), "affectedTsIt.hasNext()");
-
-            final long EXHAUSTED = -1L;
-            long affectedTs = affectedTsIt.nextLong();
-
             while (affectedRowsIt.hasMore()) {
-                // NOTE: we did not put null values into our SSA and our influencer rowset is built using the
-                // SSA. there should be no null timestamps considered in the rolling windows
+                // NOTE: We did not put null values into our SSA and our influencer rowset is built using the
+                // SSA. There should be no null timestamps considered in the rolling windows
+                final RowSequence affectedRs = affectedRowsIt.getNextRowSequenceWithLength(ctx.workingChunkSize);
+                final long chunkSize = affectedRs.intSize();
 
-                int affectedRowIndex;
                 long totalPushCount = 0;
-                long skipCount = 0;
 
-                // @formatter:off
-                for (affectedRowIndex = 0;
-                     affectedRowIndex < ctx.workingChunkSize && affectedTs != EXHAUSTED;
-                     affectedRowIndex++) {
-                    // @formatter:on
+                final LongChunk affectedTsChunk =
+                        ctx.timestampColumnSource.getChunk(affectedTsGetContext, affectedRs).asLongChunk();
+                final WritableIntChunk<Values> pushChunk = ctx.pushChunks[affectedChunkOffset];
+                final WritableIntChunk<Values> popChunk = ctx.popChunks[affectedChunkOffset];
+
+                for (int ii = 0; ii < chunkSize; ii++) {
+                    final long affectedTs = affectedTsChunk.get(ii);
+
                     if (affectedTs == NULL_LONG) {
-                        // this signifies that does not belong to a time window
-                        popChunk.set(affectedRowIndex, NULL_INT);
-                        pushChunk.set(affectedRowIndex, NULL_INT);
-                        affectedTs = affectedTsIt.hasNext() ? affectedTsIt.nextLong() : EXHAUSTED;
+                        // This signifies that does not belong to a time window.
+                        popChunk.set(ii, NULL_INT);
+                        pushChunk.set(ii, NULL_INT);
                         continue;
                     }
 
-                    // compute the head and tail timestamps (inclusive)
+                    // Compute the head and tail timestamps (inclusive).
                     final long head = affectedTs - prevUnits;
                     final long tail = affectedTs + fwdUnits;
 
-                    // advance the keyIt and timestamp iterators until we are within the window. This only happens
-                    // when initialStep == true because we have not created the minimum set of rows but include all
-                    // non-null timestamp rows in our influencer values
-                    while (influencerTs < head) {
-                        Assert.eqTrue(ctx.initialStep, "initialStep when skipping rows");
-                        influencerTs = nextLongOrMax(influencerTsTailIt);
-                        skipCount++;
-                    }
-                    if (skipCount > 0) {
-                        break;
-                    }
-
-                    // pop out all values from the current window that are not in the new window
+                    // Pop out all values from the current window that are not in the new window.
                     long popCount = 0;
-                    while (!ctx.timestampWindowBuffer.isEmpty() && ctx.timestampWindowBuffer.front() < head) {
-                        ctx.timestampWindowBuffer.remove();
+                    while (!timestampWindowBuffer.isEmpty() && timestampWindowBuffer.front() < head) {
+                        timestampWindowBuffer.remove();
                         popCount++;
                     }
 
-                    // push in all values that are in the new window (inclusive of tail)
+                    // Push in all values that are in the new window (inclusive of tail).
                     long pushCount = 0;
                     while (influencerTs <= tail) {
-                        // add this value to the buffer before advancing
-                        ctx.timestampWindowBuffer.add(influencerTs);
+                        // Add this value to the buffer before advancing.
+                        timestampWindowBuffer.add(influencerTs);
                         influencerTs = nextLongOrMax(influencerTsTailIt);
                         pushCount++;
                     }
 
-                    // write the push and pop counts to the chunks
-                    popChunk.set(affectedRowIndex, Math.toIntExact(popCount));
-                    pushChunk.set(affectedRowIndex, Math.toIntExact(pushCount));
+                    // Write the push and pop counts to the chunks.
+                    popChunk.set(ii, Math.toIntExact(popCount));
+                    pushChunk.set(ii, Math.toIntExact(pushCount));
                     totalPushCount += pushCount;
-
-                    affectedTs = affectedTsIt.hasNext() ? affectedTsIt.nextLong() : EXHAUSTED;
                 }
-                final RowSequence chunkAffectedRows = affectedRowsIt.getNextRowSequenceWithLength(affectedRowIndex);
-                final RowSequence chunkInfluencerRows = influencerRowsIt.getNextRowSequenceWithLength(totalPushCount);
+                ctx.influencerCounts[affectedChunkOffset] = Math.toIntExact(totalPushCount);
+                ctx.currentGetContextSize = Math.max(ctx.currentGetContextSize, Math.toIntExact(totalPushCount));
 
-                // execute the operators
-                ensureGetContextSize(ctx, chunkInfluencerRows.size());
-
-                Arrays.fill(ctx.inputSourceChunks, null);
-                for (int opIdx : context.dirtyOperatorIndices) {
-                    UpdateByOperator.Context opCtx = context.opContexts[opIdx];
-                    // prep the chunk array needed by the accumulate call
-                    final int[] srcIndices = operatorInputSourceSlots[opIdx];
-                    for (int ii = 0; ii < srcIndices.length; ii++) {
-                        int srcIdx = srcIndices[ii];
-                        // chunk prep
-                        prepareValuesChunkForSource(ctx, srcIdx, chunkInfluencerRows);
-                        opCtx.chunkArr[ii] = ctx.inputSourceChunks[srcIdx];
-                    }
-
-                    // make the specialized call for windowed operators
-                    ctx.opContexts[opIdx].accumulateRolling(
-                            chunkAffectedRows,
-                            opCtx.chunkArr,
-                            pushChunk,
-                            popChunk,
-                            chunkAffectedRows.intSize());
-                }
-
-                // dump these rows
-                if (skipCount > 0) {
-                    final long pos = context.influencerRows.find(influencerRowsIt.peekNextKey()) + skipCount;
-                    final long key = context.influencerRows.get(pos);
-                    influencerRowsIt.advance(key);
-                }
+                affectedChunkOffset++;
             }
         }
+    }
 
-        // call `finishUpdate()` function for each operator
-        for (int opIdx : context.dirtyOperatorIndices) {
-            operators[opIdx].finishUpdate(context.opContexts[opIdx]);
+    @Override
+    public void processBucketOperator(UpdateByWindowBucketContext context, int winOpIdx, boolean initialStep) {
+        Assert.neqNull(context.inputSources, "assignInputSources() must be called before processRow()");
+
+        UpdateByWindowTimeBucketContext ctx = (UpdateByWindowTimeBucketContext) context;
+
+        final UpdateByOperator winOp = operators[winOpIdx];
+
+        try (final UpdateByOperator.Context winOpCtx = winOp.makeUpdateContext(ctx.workingChunkSize);
+                final RowSequence.Iterator affectedRowsIt = ctx.affectedRows.getRowSequenceIterator();
+                final RowSequence.Iterator influencerRowsIt = ctx.influencerRows.getRowSequenceIterator()) {
+
+            final int[] srcIndices = operatorInputSourceSlots[winOpIdx];
+
+            // Call the specialized version of `intializeUpdate()` for this operator.
+            winOp.initializeRolling(winOpCtx);
+
+            final Chunk<? extends Values>[] chunkArr = new Chunk[srcIndices.length];
+            final ChunkSource.GetContext[] chunkContexts = new ChunkSource.GetContext[srcIndices.length];
+            for (int ii = 0; ii < srcIndices.length; ii++) {
+                final int srcIdx = srcIndices[ii];
+                chunkContexts[ii] = ctx.inputSources[srcIdx].makeGetContext(ctx.currentGetContextSize);
+            }
+
+            int affectedChunkOffset = 0;
+
+            while (affectedRowsIt.hasMore()) {
+                final int influencerCount = ctx.influencerCounts[affectedChunkOffset];
+
+                final RowSequence affectedRs = affectedRowsIt.getNextRowSequenceWithLength(ctx.workingChunkSize);
+                final RowSequence influencerRs = influencerRowsIt.getNextRowSequenceWithLength(influencerCount);
+
+                final int affectedChunkSize = affectedRs.intSize();
+
+                // Prep the chunk array needed by the accumulate call.
+                for (int ii = 0; ii < srcIndices.length; ii++) {
+                    int srcIdx = srcIndices[ii];
+                    chunkArr[ii] = ctx.inputSources[srcIdx].getChunk(chunkContexts[ii], influencerRs);
+                }
+
+                // Make the specialized call for windowed operators.
+                winOpCtx.accumulateRolling(
+                        affectedRs,
+                        chunkArr,
+                        ctx.pushChunks[affectedChunkOffset],
+                        ctx.popChunks[affectedChunkOffset],
+                        affectedChunkSize);
+
+                affectedChunkOffset++;
+            }
+
+            // Clean up the get contexts.
+            SafeCloseableArray.close(chunkContexts);
+
+            // Finalize the operator.
+            winOp.finishUpdate(winOpCtx);
         }
     }
 }

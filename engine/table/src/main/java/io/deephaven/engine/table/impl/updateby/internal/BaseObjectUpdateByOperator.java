@@ -41,8 +41,8 @@ public abstract class BaseObjectUpdateByOperator<T> extends UpdateByOperator {
 
         public T curVal = null;
 
-        protected Context(final int chunkSize, final int chunkCount) {
-            super(chunkCount);
+        protected Context(final int chunkSize) {
+            super();
             this.outputFillContext = outputSource.makeFillFromContext(chunkSize);
             this.outputValues = WritableObjectChunk.makeWritableChunk(chunkSize);
         }

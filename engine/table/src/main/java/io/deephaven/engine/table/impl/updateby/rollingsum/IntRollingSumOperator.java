@@ -29,8 +29,8 @@ public class IntRollingSumOperator extends BaseLongUpdateByOperator {
         protected IntRingBuffer intWindowValues;
 
 
-        protected Context(final int chunkSize, final int chunkCount) {
-            super(chunkSize, chunkCount);
+        protected Context(final int chunkSize) {
+            super(chunkSize);
             intWindowValues = new IntRingBuffer(RING_BUFFER_INITIAL_CAPACITY, true);
         }
 
@@ -95,8 +95,8 @@ public class IntRollingSumOperator extends BaseLongUpdateByOperator {
 
     @NotNull
     @Override
-    public UpdateByOperator.Context makeUpdateContext(final int chunkSize, final int chunkCount) {
-        return new Context(chunkSize, chunkCount);
+    public UpdateByOperator.Context makeUpdateContext(final int chunkSize) {
+        return new Context(chunkSize);
     }
 
     public IntRollingSumOperator(@NotNull final MatchPair pair,

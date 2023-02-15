@@ -36,6 +36,7 @@ import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedNode;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedQueue;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -45,6 +46,7 @@ import java.lang.ref.SoftReference;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.stream.IntStream;
 
@@ -210,11 +212,11 @@ public abstract class UpdateBy {
 
 
     /** Release the input sources that will not be needed for the rest of this update */
-    private void releaseInputSources(int winIdx, ColumnSource<?>[] maybeCachedInputSources,
-            AtomicReferenceArray<WritableRowSet> inputSourceRowSets, int[] inputSourceReferenceCounts) {
+    private void releaseInputSources(int winIdx, int winOpIdx, ColumnSource<?>[] maybeCachedInputSources,
+            AtomicReferenceArray<WritableRowSet> inputSourceRowSets, AtomicInteger[] inputSourceReferenceCounts) {
 
         final UpdateByWindow win = windows[winIdx];
-        final int[] uniqueWindowSources = win.getUniqueSourceIndices();
+        final int[] uniqueWindowSources = win.operatorInputSourceSlots[winOpIdx];
 
         try (final ResettableWritableObjectChunk<?, ?> backingChunk =
                 ResettableWritableObjectChunk.makeResettableChunk()) {
@@ -223,7 +225,7 @@ public abstract class UpdateBy {
                     continue;
                 }
 
-                if (--inputSourceReferenceCounts[srcIdx] == 0) {
+                if (inputSourceReferenceCounts[srcIdx].decrementAndGet() == 0) {
                     // Last use of this set, let's clean up
                     try (final RowSet rows = inputSourceRowSets.get(srcIdx)) {
                         // release any objects we are holding in the cache
@@ -249,36 +251,33 @@ public abstract class UpdateBy {
      * <ol>
      * <li>Create `shiftedRows`, the set of rows for the output sources that are affected by shifts</li>
      * <li>Compute a rowset for each cacheable input source identifying which rows will be needed for processing</li>
-     * <li>Process each window serially
-     * <ul>
-     * <li>Cache the input sources that are needed for this window (this can be done in parallel for each column and
-     * parallel again for a subset of the rows)</li>
-     * <li>Compute the modified rowset of output column sources and call `prepareForParallelPopulation()', this could be
-     * done in parallel with the caching</li>
+     * <li>Compute the modified rowset of output column sources and call `prepareForParallelPopulation()'</li>
      * <li>When prepareForParallelPopulation() complete, apply upstream shifts to the output sources</li>
-     * <li>When caching and shifts are complete, process the data in this window in parallel by dividing the buckets
-     * into sets (N/num_threads) and running a job for each bucket_set</li>
-     * <li>When all buckets processed, release the input source caches that will not be re-used later</li>
+     * <li>Process each window and operator serially
+     * <ul>
+     * <li>Pre-create window information for</li>
+     * <li>Cache the input sources that are needed for each window operator (in parallel by chunk of rows)</li>
+     * <li>When caching is complete, process the window operator (in parallel by bucket)</li>
+     * <li>When all buckets processed, release the input source caches that will not be re-used later by later
+     * operators</li>
      * </ul>
      * </li>
      * <li>When all windows processed, create the downstream update and notify</li>
      * <li>Release resources</li>
      * </ol>
      */
-
     class PhasedUpdateProcessor implements LogOutputAppendable {
         final TableUpdate upstream;
         final boolean initialStep;
         final UpdateByBucketHelper[] dirtyBuckets;
-        final boolean[] dirtyWindows;
-
+        final BitSet dirtyWindows;
+        final BitSet[] dirtyWindowOperators;
         /** The active set of sources to use for processing, each source may be cached or original */
         final ColumnSource<?>[] maybeCachedInputSources;
         /** For cacheable sources, the minimal rowset to cache (union of bucket influencer rows) */
         final AtomicReferenceArray<WritableRowSet> inputSourceRowSets;
         /** For cacheable sources, track how many windows require this source */
-        final int[] inputSourceReferenceCounts;
-
+        final AtomicInteger[] inputSourceReferenceCounts;
         final JobScheduler jobScheduler;
         final CompletableFuture<Void> waitForResult;
 
@@ -296,19 +295,20 @@ public abstract class UpdateBy {
         PhasedUpdateProcessor(TableUpdate upstream, boolean initialStep) {
             this.upstream = upstream;
             this.initialStep = initialStep;
+            dirtyWindows = new BitSet(windows.length);
 
             // determine which buckets we'll examine during this update
             dirtyBuckets = buckets.stream().filter(UpdateByBucketHelper::isDirty).toArray(UpdateByBucketHelper[]::new);
-            // which windows are dirty and need to be computed this cycle
-            dirtyWindows = new boolean[windows.length];
+            // which window operators need to be computed this cycle
+            dirtyWindowOperators = new BitSet[windows.length];
 
             if (inputCacheNeeded) {
                 maybeCachedInputSources = new ColumnSource[inputSources.length];
                 inputSourceRowSets = new AtomicReferenceArray<>(inputSources.length);
-                inputSourceReferenceCounts = new int[inputSources.length];
+                inputSourceReferenceCounts = new AtomicInteger[inputSources.length];
 
-                // set the uncacheable columns into the array
                 for (int ii = 0; ii < inputSources.length; ii++) {
+                    // Set the uncacheable columns into the array.
                     maybeCachedInputSources[ii] = inputSourceCacheNeeded[ii] ? null : inputSources[ii];
                 }
             } else {
@@ -317,10 +317,13 @@ public abstract class UpdateBy {
                 inputSourceReferenceCounts = null;
             }
 
-
             if (initialStep) {
                 // Set all windows as dirty and need computation
-                Arrays.fill(dirtyWindows, true);
+                dirtyWindows.set(0, windows.length);
+                for (int winIdx = 0; winIdx < windows.length; winIdx++) {
+                    dirtyWindowOperators[winIdx] = new BitSet(windows[winIdx].operators.length);
+                    dirtyWindowOperators[winIdx].set(0, windows[winIdx].operators.length);
+                }
                 // Create the proper JobScheduler for the following parallel tasks
                 if (OperationInitializationThreadPool.NUM_THREADS > 1
                         && !OperationInitializationThreadPool.isInitializationThread()) {
@@ -332,10 +335,21 @@ public abstract class UpdateBy {
             } else {
                 // Determine which windows need to be computed.
                 for (int winIdx = 0; winIdx < windows.length; winIdx++) {
-                    final int fWinIdx = winIdx;
-                    // look in the dirty buckets for the windows that need to be computed
-                    dirtyWindows[fWinIdx] = Arrays.stream(dirtyBuckets)
-                            .anyMatch(bucket -> windows[fWinIdx].isWindowBucketDirty(bucket.windowContexts[fWinIdx]));
+                    final int finalWinIdx = winIdx;
+                    if (Arrays.stream(dirtyBuckets)
+                            .anyMatch(bucket -> windows[finalWinIdx]
+                                    .isWindowBucketDirty(bucket.windowContexts[finalWinIdx]))) {
+                        dirtyWindows.set(winIdx);
+                        dirtyWindowOperators[winIdx] = new BitSet(windows[winIdx].operators.length);
+                        final int size = windows[winIdx].operators.length;
+                        for (UpdateByBucketHelper bucket : dirtyBuckets) {
+                            dirtyWindowOperators[winIdx].or(bucket.windowContexts[winIdx].dirtyOperators);
+                            if (dirtyWindowOperators[winIdx].cardinality() == size) {
+                                // all are set, we can stop checking
+                                break;
+                            }
+                        }
+                    }
                 }
                 // Create the proper JobScheduler for the following parallel tasks
                 if (UpdateGraphProcessor.DEFAULT.getUpdateThreads() > 1) {
@@ -382,56 +396,73 @@ public abstract class UpdateBy {
                         // create a RowSet to be used by `InverseWrappedRowSetWritableRowRedirection`
                         inputSourceRowSets.set(srcIdx, source.getRowSet().copy());
 
-                        // record how many windows require this input source
-                        inputSourceReferenceCounts[srcIdx] =
-                                (int) Arrays.stream(windows).filter(win -> win.isSourceInUse(srcIdx)).count();
+                        // record how many operators require this input source
+                        int useCount = 0;
+                        for (UpdateByWindow win : windows) {
+                            for (int winOpIdx = 0; winOpIdx < win.operators.length; winOpIdx++) {
+                                if (win.operatorUsesSource(winOpIdx, srcIdx)) {
+                                    useCount++;
+                                }
+                            }
+                        }
+                        inputSourceReferenceCounts[srcIdx] = new AtomicInteger(useCount);
                     }
                 }
                 resumeAction.run();
                 return;
             }
 
+            for (int srcIdx : cacheableSourceIndices) {
+                inputSourceReferenceCounts[srcIdx] = new AtomicInteger(0);
+            }
+
             jobScheduler.iterateParallel(ExecutionContext.getContextToRecord(), this,
                     JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, cacheableSourceIndices.length,
                     (context, idx) -> {
                         final int srcIdx = cacheableSourceIndices[idx];
-                        for (int winIdx = 0; winIdx < windows.length; winIdx++) {
-                            if (dirtyWindows[winIdx] && windows[winIdx].isSourceInUse(srcIdx)) {
-                                UpdateByWindow win = windows[winIdx];
-                                boolean srcNeeded = false;
-                                for (UpdateByBucketHelper bucket : dirtyBuckets) {
-                                    UpdateByWindow.UpdateByWindowBucketContext winBucketCtx =
-                                            bucket.windowContexts[winIdx];
 
-                                    if (win.isWindowBucketDirty(winBucketCtx)) {
-                                        WritableRowSet rows = inputSourceRowSets.get(srcIdx);
-                                        if (rows == null) {
-                                            final WritableRowSet influencerCopy =
-                                                    win.getInfluencerRows(winBucketCtx).copy();
-                                            if (!inputSourceRowSets.compareAndSet(srcIdx, null, influencerCopy)) {
-                                                influencerCopy.close();
-                                                rows = inputSourceRowSets.get(srcIdx);
-                                            }
-                                        }
-                                        if (rows != null) {
-                                            // if not null, then insert this window's rowset
-                                            // noinspection SynchronizationOnLocalVariableOrMethodParameter
-                                            synchronized (rows) {
-                                                rows.insert(win.getInfluencerRows(winBucketCtx));
-                                            }
-                                        }
-                                        // at least one dirty bucket will need this source
-                                        srcNeeded = true;
+                        int useCount = 0;
+                        // If any of the dirty operators use this source, then increment the use count
+                        for (int winIdx = 0; winIdx < windows.length; winIdx++) {
+                            if (!dirtyWindows.get(winIdx)) {
+                                continue;
+                            }
+
+                            UpdateByWindow win = windows[winIdx];
+                            // combine the row sets from the dirty windows
+                            for (UpdateByBucketHelper bucket : dirtyBuckets) {
+                                if (!bucket.windowContexts[winIdx].isDirty) {
+                                    continue;
+                                }
+
+                                UpdateByWindow.UpdateByWindowBucketContext winBucketCtx = bucket.windowContexts[winIdx];
+                                WritableRowSet rows = inputSourceRowSets.get(srcIdx);
+                                if (rows == null) {
+                                    final WritableRowSet influencerCopy =
+                                            win.getInfluencerRows(winBucketCtx).copy();
+                                    if (!inputSourceRowSets.compareAndSet(srcIdx, null, influencerCopy)) {
+                                        influencerCopy.close();
+                                        rows = inputSourceRowSets.get(srcIdx);
                                     }
                                 }
-                                if (srcNeeded) {
-                                    inputSourceReferenceCounts[srcIdx]++;
+                                if (rows != null) {
+                                    // if not null, then insert this window's rowset
+                                    // noinspection SynchronizationOnLocalVariableOrMethodParameter
+                                    synchronized (rows) {
+                                        rows.insert(win.getInfluencerRows(winBucketCtx));
+                                    }
                                 }
                             }
+
+                            for (int winOpIdx = 0; winOpIdx < win.operators.length; winOpIdx++) {
+                                if (win.operatorUsesSource(winOpIdx, srcIdx)
+                                        && dirtyWindowOperators[winIdx].get(winOpIdx)) {
+                                    useCount++;
+                                }
+                            }
+                            inputSourceReferenceCounts[srcIdx] = new AtomicInteger(useCount);
                         }
-                    },
-                    resumeAction,
-                    this::onError);
+                    }, resumeAction, this::onError);
         }
 
         /**
@@ -464,9 +495,6 @@ public abstract class UpdateBy {
             final WritableColumnSource<?> outputSource =
                     WritableRedirectedColumnSource.maybeRedirect(rowRedirection, innerSource, 0);
 
-            // holding this reference should protect `rowDirection` and `innerSource` from GC
-            maybeCachedInputSources[srcIdx] = outputSource;
-
             // how many batches do we need?
             final int taskCount =
                     Math.toIntExact((inputRowSet.size() + PARALLEL_CACHE_BATCH_SIZE - 1) / PARALLEL_CACHE_BATCH_SIZE);
@@ -484,7 +512,9 @@ public abstract class UpdateBy {
                 }
             }
 
-            jobScheduler.iterateParallel(ExecutionContext.getContextToRecord(), this, BatchThreadContext::new,
+            jobScheduler.iterateParallel(ExecutionContext.getContextToRecord(),
+                    this,
+                    BatchThreadContext::new,
                     0, taskCount,
                     (ctx, idx) -> {
                         // advance to the first key of this block
@@ -500,57 +530,125 @@ public abstract class UpdateBy {
                             // be exhausted and hasMore() will return false
                             remaining -= PARALLEL_CACHE_CHUNK_SIZE;
                         }
-                    }, resumeAction,
-                    this::onError);
+                    }, () -> {
+                        // assign this now
+                        maybeCachedInputSources[srcIdx] = outputSource;
+                        resumeAction.run();
+                    }, this::onError);
         }
 
         /**
          * Create cached input sources for all input needed by {@code windows[winIdx]}. Calls {@code completedAction}
          * when the work is complete
          */
-        private void cacheInputSources(final int winIdx, final Runnable resumeAction) {
-            if (inputCacheNeeded && dirtyWindows[winIdx]) {
-                final UpdateByWindow win = windows[winIdx];
-                final int[] uniqueWindowSources = win.getUniqueSourceIndices();
-
-                jobScheduler.iterateParallel(ExecutionContext.getContextToRecord(), this,
-                        JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, uniqueWindowSources.length,
-                        (context, idx, sourceComplete) -> createCachedColumnSource(uniqueWindowSources[idx],
-                                sourceComplete),
-                        resumeAction, this::onError);
-            } else {
+        private void cacheOperatorInputSources(final int winIdx, final int winOpIdx, final Runnable resumeAction) {
+            if (!inputCacheNeeded) {
                 // no work to do, continue
                 resumeAction.run();
+                return;
             }
+            final UpdateByWindow win = windows[winIdx];
+            final int[] operatorSources = win.operatorInputSourceSlots[winOpIdx];
+
+            jobScheduler.iterateParallel(ExecutionContext.getContextToRecord(), this,
+                    JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, operatorSources.length,
+                    (context, idx, sourceComplete) -> createCachedColumnSource(operatorSources[idx],
+                            sourceComplete),
+                    resumeAction, this::onError);
         }
 
         /**
-         * Process each bucket in {@code windows[winIdx]} in parallel. Calls {@code resumeAction} when the work is
-         * complete
+         * Process an operator from each bucket in {@code windows[winIdx]} in parallel. Calls {@code resumeAction} when
+         * the work is complete
          */
-        private void processWindowBuckets(int winIdx, final Runnable resumeAction) {
-            if (jobScheduler.threadCount() > 1 && dirtyBuckets.length > 1) {
-                // process the buckets in parallel
-                jobScheduler.iterateParallel(ExecutionContext.getContextToRecord(), this,
-                        JobScheduler.DEFAULT_CONTEXT_FACTORY,
-                        0, dirtyBuckets.length,
-                        (context, bucketIdx) -> {
-                            UpdateByBucketHelper bucket = dirtyBuckets[bucketIdx];
-                            if (bucket.windowContexts[winIdx].isDirty) {
-                                bucket.assignInputSources(winIdx, maybeCachedInputSources);
-                                bucket.processWindow(winIdx, initialStep);
+        private void processWindowBucketOperators(int winIdx, int winOpIdx, final Runnable resumeAction) {
+            jobScheduler.iterateParallel(ExecutionContext.getContextToRecord(), this,
+                    JobScheduler.DEFAULT_CONTEXT_FACTORY,
+                    0, dirtyBuckets.length,
+                    (context, bucketIdx) -> {
+                        UpdateByBucketHelper bucket = dirtyBuckets[bucketIdx];
+                        if (bucket.windowContexts[winIdx].isDirty
+                                && bucket.windowContexts[winIdx].dirtyOperators.get(winOpIdx)) {
+                            windows[winIdx].processBucketOperator(bucket.windowContexts[winIdx], winOpIdx, initialStep);
+                        }
+                    }, resumeAction, this::onError);
+        }
+
+        /**
+         * Prepare each operator output column for the parallel work to follow. Calls {@code completedAction} when the
+         * work is complete
+         */
+        private void prepareForParallelPopulation(final Runnable resumeAction) {
+            jobScheduler.iterateParallel(ExecutionContext.getContextToRecord(), this,
+                    JobScheduler.DEFAULT_CONTEXT_FACTORY, 0,
+                    windows.length,
+                    (context, winIdx) -> {
+                        UpdateByWindow win = windows[winIdx];
+                        // Prepare each operator for the parallel updates to come.
+                        if (initialStep) {
+                            // Prepare the entire set of rows on the initial step.
+                            try (final RowSet changedRows = redirHelper.isRedirected()
+                                    ? RowSetFactory.flat(redirHelper.requiredCapacity())
+                                    : source.getRowSet().copy()) {
+                                win.prepareForParallelPopulation(changedRows);
                             }
-                        }, resumeAction, this::onError);
-            } else {
-                // minimize overhead when running serially
-                for (UpdateByBucketHelper bucket : dirtyBuckets) {
-                    if (bucket.windowContexts[winIdx].isDirty) {
-                        bucket.assignInputSources(winIdx, maybeCachedInputSources);
-                        bucket.processWindow(winIdx, initialStep);
-                    }
-                }
-                resumeAction.run();
-            }
+                        } else {
+                            // Get the minimal set of rows to be updated for this window (shiftedRows is empty when
+                            // using redirection).
+                            try (final WritableRowSet windowRowSet = changedRows.copy()) {
+                                for (UpdateByBucketHelper bucket : dirtyBuckets) {
+                                    if (win.isWindowBucketDirty(bucket.windowContexts[winIdx])) {
+                                        windowRowSet.insert(win.getAffectedRows(bucket.windowContexts[winIdx]));
+                                    }
+                                }
+                                try (final RowSet windowChangedRows = redirHelper.isRedirected()
+                                        ? redirHelper.getInnerKeys(windowRowSet)
+                                        : null) {
+                                    final RowSet rowsToUse =
+                                            windowChangedRows == null ? windowRowSet : windowChangedRows;
+                                    win.prepareForParallelPopulation(rowsToUse);
+                                }
+                            }
+                        }
+
+                        if (!redirHelper.isRedirected() && upstream.shifted().nonempty()) {
+                            // Shift the non-redirected output sources now, after parallelPopulation.
+                            try (final RowSet prevIdx = source.getRowSet().copyPrev()) {
+                                upstream.shifted().apply((begin, end, delta) -> {
+                                    try (final RowSet subRowSet = prevIdx.subSetByKeyRange(begin, end)) {
+                                        for (UpdateByOperator op : win.getOperators()) {
+                                            op.applyOutputShift(subRowSet, delta);
+                                        }
+                                    }
+                                });
+                            }
+                        }
+                    }, resumeAction, this::onError);
+        }
+
+        private void processWindowOperators(final int winIdx, final Runnable resumeAction) {
+            final UpdateByWindow win = windows[winIdx];
+
+            // Arrange the dirty operators to increase the chance that the input caches can be released early
+            final Integer[] dirtyOperators = ArrayUtils.toObject(dirtyWindowOperators[winIdx].stream().toArray());
+            Arrays.sort(dirtyOperators, Comparator.comparingInt(o -> win.operatorInputSourceSlots[o][0]));
+
+            // Process each operator in this window serially
+            jobScheduler.iterateSerial(ExecutionContext.getContextToRecord(), this,
+                    JobScheduler.DEFAULT_CONTEXT_FACTORY, 0,
+                    dirtyOperators.length,
+                    (context, idx, opComplete) -> {
+                        int opIdx = dirtyOperators[idx];
+                        // Cache the input sources for this operator
+                        cacheOperatorInputSources(winIdx, opIdx, () -> {
+                            processWindowBucketOperators(winIdx, opIdx, () -> {
+                                // release the cached sources that are no longer needed
+                                releaseInputSources(winIdx, opIdx, maybeCachedInputSources, inputSourceRowSets,
+                                        inputSourceReferenceCounts);
+                                opComplete.run();
+                            });
+                        });
+                    }, resumeAction, this::onError);
         }
 
         /**
@@ -563,65 +661,28 @@ public abstract class UpdateBy {
                     JobScheduler.DEFAULT_CONTEXT_FACTORY, 0,
                     windows.length,
                     (context, winIdx, windowComplete) -> {
-                        UpdateByWindow win = windows[winIdx];
+                        // This window might not be dirty
+                        if (!dirtyWindows.get(winIdx)) {
+                            windowComplete.run();
+                            return;
+                        }
 
-                        // this is a chain of calls: cache, then shift, then process the dirty buckets for this window
-                        cacheInputSources(winIdx, () -> {
-                            // prepare each operator for the parallel updates to come
-                            if (initialStep) {
-                                // prepare the entire set of rows on the initial step
-                                try (final RowSet changedRows = redirHelper.isRedirected()
-                                        ? RowSetFactory.flat(redirHelper.requiredCapacity())
-                                        : source.getRowSet().copy()) {
-                                    win.prepareForParallelPopulation(changedRows);
-                                }
-                            } else {
-                                // get the minimal set of rows to be updated for this window (shiftedRows is empty when
-                                // using redirection)
-                                try (final WritableRowSet windowRowSet = changedRows.copy()) {
-                                    for (UpdateByBucketHelper bucket : dirtyBuckets) {
-                                        if (win.isWindowBucketDirty(bucket.windowContexts[winIdx])) {
-                                            windowRowSet.insert(win.getAffectedRows(bucket.windowContexts[winIdx]));
-                                        }
-                                    }
-                                    try (final RowSet windowChangedRows = redirHelper.isRedirected()
-                                            ? redirHelper.getInnerKeys(windowRowSet)
-                                            : null) {
-                                        final RowSet rowsToUse =
-                                                windowChangedRows == null ? windowRowSet : windowChangedRows;
-                                        win.prepareForParallelPopulation(rowsToUse);
-                                    }
+                        // assign the input sources and allocate resources to the bucket contexts
+                        for (UpdateByBucketHelper bucket : dirtyBuckets) {
+                            if (bucket.windowContexts[winIdx].isDirty) {
+                                windows[winIdx].assignInputSources(bucket.windowContexts[winIdx],
+                                        maybeCachedInputSources);
+                                windows[winIdx].prepareWindowBucket(bucket.windowContexts[winIdx]);
+                            }
+                        }
+
+                        processWindowOperators(winIdx, () -> {
+                            for (UpdateByBucketHelper bucket : dirtyBuckets) {
+                                if (bucket.windowContexts[winIdx].isDirty) {
+                                    windows[winIdx].finalizeWindowBucket(bucket.windowContexts[winIdx]);
                                 }
                             }
-
-                            if (!redirHelper.isRedirected() && upstream.shifted().nonempty()) {
-                                // shift the non-redirected output sources now, after parallelPopulation
-                                try (final RowSet prevIdx = source.getRowSet().copyPrev()) {
-                                    upstream.shifted().apply((begin, end, delta) -> {
-                                        try (final RowSet subRowSet = prevIdx.subSetByKeyRange(begin, end)) {
-                                            for (UpdateByOperator op : win.getOperators()) {
-                                                op.applyOutputShift(subRowSet, delta);
-                                            }
-                                        }
-                                    });
-                                }
-                            }
-
-                            if (dirtyWindows[winIdx]) {
-                                processWindowBuckets(winIdx, () -> {
-                                    if (inputCacheNeeded) {
-                                        // release the cached sources that are no longer needed
-                                        releaseInputSources(winIdx, maybeCachedInputSources, inputSourceRowSets,
-                                                inputSourceReferenceCounts);
-                                    }
-
-                                    // signal that the work for this window is complete (will iterate to the next window
-                                    // sequentially)
-                                    windowComplete.run();
-                                });
-                            } else {
-                                windowComplete.run();
-                            }
+                            windowComplete.run();
                         });
                     }, resumeAction, this::onError);
         }
@@ -794,14 +855,15 @@ public abstract class UpdateBy {
             // this is where we leave single-threaded calls and rely on the scheduler to continue the work. Each
             // call will chain to another until the sequence is complete
             computeCachedColumnRowsets(
-                    () -> processWindows(
-                            () -> cleanUpAndNotify(
-                                    () -> {
-                                        // signal to the main task that we have completed our work
-                                        if (waitForResult != null) {
-                                            waitForResult.complete(null);
-                                        }
-                                    })));
+                    () -> prepareForParallelPopulation(
+                            () -> processWindows(
+                                    () -> cleanUpAndNotify(
+                                            () -> {
+                                                // signal to the main task that we have completed our work
+                                                if (waitForResult != null) {
+                                                    waitForResult.complete(null);
+                                                }
+                                            }))));
 
             if (waitForResult != null) {
                 try {

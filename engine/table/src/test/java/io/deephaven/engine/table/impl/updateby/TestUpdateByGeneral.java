@@ -256,7 +256,6 @@ public class TestUpdateByGeneral extends BaseUpdateByTest implements UpdateError
         TstUtils.assertTableEquals("msg", table, memoryTable, TableDiff.DiffItems.DoublesExact);
     }
 
-
     @Override
     public void reportUpdateError(Throwable t) {
         UpdateGraphProcessor.DEFAULT.addNotification(new TerminalNotification() {

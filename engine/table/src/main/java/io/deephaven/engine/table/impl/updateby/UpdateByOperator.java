@@ -58,12 +58,9 @@ public abstract class UpdateByOperator {
      * A context item for use with updateBy operators
      */
     public abstract static class Context implements SafeCloseable {
-        protected final Chunk<? extends Values>[] chunkArr;
         protected int nullCount = 0;
 
-        public Context(int chunkCount) {
-            chunkArr = new Chunk[chunkCount];
-        }
+        public Context() {}
 
         public boolean isValueValid(long atKey) {
             throw new UnsupportedOperationException(
@@ -225,11 +222,10 @@ public abstract class UpdateByOperator {
      * Make an {@link Context} suitable for use with updates.
      *
      * @param chunkSize The expected size of chunks that will be provided during the update,
-     * @param chunkCount The number of chunks that will be provided during the update,
      * @return a new context
      */
     @NotNull
-    public abstract Context makeUpdateContext(final int chunkSize, final int chunkCount);
+    public abstract Context makeUpdateContext(final int chunkSize);
 
     /**
      * Perform any bookkeeping required at the end of a single part of the update. This is always preceded with a call

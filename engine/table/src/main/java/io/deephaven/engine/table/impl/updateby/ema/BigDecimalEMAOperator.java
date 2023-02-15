@@ -18,8 +18,8 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 public class BigDecimalEMAOperator extends BigNumberEMAOperator<BigDecimal> {
     public class Context extends BigNumberEMAOperator<BigDecimal>.Context {
-        protected Context(final int chunkSize, final int chunkCount) {
-            super(chunkSize, chunkCount);
+        protected Context(final int chunkSize) {
+            super(chunkSize);
         }
 
         @Override
@@ -118,7 +118,7 @@ public class BigDecimalEMAOperator extends BigNumberEMAOperator<BigDecimal> {
 
     @NotNull
     @Override
-    public UpdateByOperator.Context makeUpdateContext(final int chunkSize, final int chunkCount) {
-        return new Context(chunkSize, chunkCount);
+    public UpdateByOperator.Context makeUpdateContext(final int chunkSize) {
+        return new Context(chunkSize);
     }
 }

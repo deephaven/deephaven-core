@@ -1,6 +1,7 @@
 package io.deephaven.engine.table.impl.updateby;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.*;
@@ -8,10 +9,11 @@ import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.ssa.LongSegmentedSortedArray;
+import io.deephaven.util.SafeCloseableArray;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Arrays;
+import java.util.BitSet;
 import java.util.stream.IntStream;
 
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
@@ -29,22 +31,14 @@ class UpdateByWindowCumulative extends UpdateByWindow {
     }
 
     @Override
-    void allocateResources(UpdateByWindowBucketContext context) {
-        super.allocateResources(context);
-
+    void prepareWindowBucket(UpdateByWindowBucketContext context) {
         // working chunk size need not be larger than affectedRows.size()
         context.workingChunkSize = Math.toIntExact(Math.min(context.workingChunkSize, context.affectedRows.size()));
-
-        // create contexts for the affected operators
-        for (int opIdx : context.dirtyOperatorIndices) {
-            context.opContexts[opIdx] = operators[opIdx].makeUpdateContext(context.workingChunkSize,
-                    operatorInputSourceSlots[opIdx].length);
-        }
     }
 
     @Override
-    void releaseResources(UpdateByWindowBucketContext context) {
-        super.releaseResources(context);
+    void finalizeWindowBucket(UpdateByWindowBucketContext context) {
+        super.finalizeWindowBucket(context);
     }
 
     @Override
@@ -63,7 +57,7 @@ class UpdateByWindowCumulative extends UpdateByWindow {
     void computeAffectedRowsAndOperators(UpdateByWindowBucketContext context, @NotNull TableUpdate upstream) {
         if (upstream.empty() || context.sourceRowSet.isEmpty()) {
             // No further work will be done on this context
-            releaseResources(context);
+            finalizeWindowBucket(context);
             return;
         }
 
@@ -75,6 +69,9 @@ class UpdateByWindowCumulative extends UpdateByWindow {
             // mark all operators as affected by this update
             context.dirtyOperatorIndices = IntStream.range(0, operators.length).toArray();
             context.dirtySourceIndices = getUniqueSourceIndices();
+            context.dirtyOperators = new BitSet(operators.length);
+            context.dirtyOperators.set(0, operators.length);
+
             context.isDirty = true;
             return;
         }
@@ -84,7 +81,7 @@ class UpdateByWindowCumulative extends UpdateByWindow {
 
         if (!context.isDirty) {
             // No further work will be done on this context
-            releaseResources(context);
+            finalizeWindowBucket(context);
             return;
         }
 
@@ -99,7 +96,7 @@ class UpdateByWindowCumulative extends UpdateByWindow {
 
         if (context.affectedRows.isEmpty()) {
             // No further work will be done on this context
-            releaseResources(context);
+            finalizeWindowBucket(context);
             context.isDirty = false;
             return;
         }
@@ -108,92 +105,89 @@ class UpdateByWindowCumulative extends UpdateByWindow {
     }
 
     @Override
-    void processRows(UpdateByWindowBucketContext context, final boolean initialStep) {
+    void processBucketOperator(UpdateByWindowBucketContext context, int winOpIdx, boolean initialStep) {
         Assert.neqNull(context.inputSources, "assignInputSources() must be called before processRow()");
 
-        if (initialStep) {
-            // always at the beginning of the RowSet at creation phase
-            for (int opIdx : context.dirtyOperatorIndices) {
-                UpdateByOperator cumOp = operators[opIdx];
-                cumOp.initializeCumulative(context.opContexts[opIdx], NULL_ROW_KEY, NULL_LONG);
-            }
-        } else {
-            // find the key before the first affected row
-            final long pos = context.sourceRowSet.find(context.affectedRows.firstRowKey());
-            final long keyBefore = pos == 0 ? NULL_ROW_KEY : context.sourceRowSet.get(pos - 1);
+        UpdateByOperator cumOp = operators[winOpIdx];
+        try (final UpdateByOperator.Context winOpCtx = cumOp.makeUpdateContext(context.workingChunkSize);
+                final RowSequence.Iterator affectedIt = context.affectedRows.getRowSequenceIterator();
+                ChunkSource.GetContext tsGetContext =
+                        context.timestampColumnSource == null ? null
+                                : context.timestampColumnSource.makeGetContext(context.workingChunkSize)) {
+            if (initialStep) {
+                // We are always at the beginning of the RowSet at creation phase.
+                cumOp.initializeCumulative(winOpCtx, NULL_ROW_KEY, NULL_LONG);
+            } else {
+                // Find the key before the first affected row.
+                final long pos = context.sourceRowSet.find(context.affectedRows.firstRowKey());
+                final long keyBefore = pos == 0 ? NULL_ROW_KEY : context.sourceRowSet.get(pos - 1);
 
-            // and preload that data for these operators
-            for (int opIdx : context.dirtyOperatorIndices) {
-                UpdateByOperator cumOp = operators[opIdx];
+                // Preload that data for these operators.
                 if (cumOp.getTimestampColumnName() == null || keyBefore == NULL_ROW_KEY) {
-                    // this operator doesn't care about timestamps or we know we are at the beginning of the rowset
-                    cumOp.initializeCumulative(context.opContexts[opIdx], keyBefore, NULL_LONG);
+                    // This operator doesn't care about timestamps or we know we are at the beginning of the rowset
+                    cumOp.initializeCumulative(winOpCtx, keyBefore, NULL_LONG);
                 } else {
-                    // this operator cares about timestamps, so make sure it is starting from a valid value and
-                    // valid timestamp by looking backward until the conditions are met
-                    UpdateByOperator.Context cumOpContext = context.opContexts[opIdx];
+                    // This operator cares about timestamps, so make sure it is starting from a valid value and
+                    // valid timestamp by looking backward until the conditions are met.
                     long potentialResetTimestamp = context.timestampColumnSource.getLong(keyBefore);
 
-                    if (potentialResetTimestamp == NULL_LONG || !cumOpContext.isValueValid(keyBefore)) {
+                    if (potentialResetTimestamp == NULL_LONG || !winOpCtx.isValueValid(keyBefore)) {
                         try (final RowSet.SearchIterator rIt = context.sourceRowSet.reverseIterator()) {
                             if (rIt.advance(keyBefore)) {
                                 while (rIt.hasNext()) {
                                     final long nextKey = rIt.nextLong();
                                     potentialResetTimestamp = context.timestampColumnSource.getLong(nextKey);
                                     if (potentialResetTimestamp != NULL_LONG &&
-                                            cumOpContext.isValueValid(nextKey)) {
+                                            winOpCtx.isValueValid(nextKey)) {
                                         break;
                                     }
                                 }
                             }
                         }
                     }
-                    // call the specialized version of `intializeUpdate()` for these operators
-                    cumOp.initializeCumulative(context.opContexts[opIdx], keyBefore, potentialResetTimestamp);
+                    // Call the specialized version of `intializeUpdate()` for these operators.
+                    cumOp.initializeCumulative(winOpCtx, keyBefore, potentialResetTimestamp);
                 }
             }
-        }
 
-        try (final RowSequence.Iterator it = context.affectedRows.getRowSequenceIterator();
-                ChunkSource.GetContext tsGetCtx =
-                        context.timestampColumnSource == null ? null
-                                : context.timestampColumnSource.makeGetContext(context.workingChunkSize)) {
-            while (it.hasMore()) {
-                final RowSequence rs = it.getNextRowSequenceWithLength(context.workingChunkSize);
-                final int size = rs.intSize();
-                Arrays.fill(context.inputSourceChunks, null);
+            final int[] srcIndices = operatorInputSourceSlots[winOpIdx];
 
-                // create the timestamp chunk if needed
+            final Chunk<? extends Values>[] chunkArr = new Chunk[srcIndices.length];
+            final ChunkSource.GetContext[] chunkContexts = new ChunkSource.GetContext[srcIndices.length];
+
+            for (int ii = 0; ii < srcIndices.length; ii++) {
+                int srcIdx = srcIndices[ii];
+                chunkContexts[ii] = context.inputSources[srcIdx].makeGetContext(context.workingChunkSize);
+            }
+
+            while (affectedIt.hasMore()) {
+                final RowSequence affectedRs = affectedIt.getNextRowSequenceWithLength(context.workingChunkSize);
+
+                // Create the timestamp chunk if needed.
                 LongChunk<? extends Values> tsChunk = context.timestampColumnSource == null ? null
-                        : context.timestampColumnSource.getChunk(tsGetCtx, rs).asLongChunk();
+                        : context.timestampColumnSource.getChunk(tsGetContext, affectedRs).asLongChunk();
 
-                for (int opIdx : context.dirtyOperatorIndices) {
-                    UpdateByOperator.Context opCtx = context.opContexts[opIdx];
-                    // prep the chunk array needed by the accumulate call
-                    final int[] srcIndices = operatorInputSourceSlots[opIdx];
-                    for (int ii = 0; ii < srcIndices.length; ii++) {
-                        int srcIdx = srcIndices[ii];
-                        // chunk prep
-                        prepareValuesChunkForSource(context, srcIdx, rs);
-                        opCtx.chunkArr[ii] = context.inputSourceChunks[srcIdx];
-                    }
-
-                    // make the specialized call for cumulative operators
-                    context.opContexts[opIdx].accumulateCumulative(
-                            rs,
-                            opCtx.chunkArr,
-                            tsChunk,
-                            size);
+                // Prep the chunk array needed by the accumulate call.
+                for (int ii = 0; ii < srcIndices.length; ii++) {
+                    int srcIdx = srcIndices[ii];
+                    chunkArr[ii] = context.inputSources[srcIdx].getChunk(chunkContexts[ii], affectedRs);
                 }
-            }
-        }
 
-        // call `finishUpdate()` function for each operator
-        for (int opIdx : context.dirtyOperatorIndices) {
-            operators[opIdx].finishUpdate(context.opContexts[opIdx]);
+                // Make the specialized call for windowed operators.
+                winOpCtx.accumulateCumulative(
+                        affectedRs,
+                        chunkArr,
+                        tsChunk,
+                        affectedRs.intSize());
+            }
+
+            // Clean up the temporary contexts.
+            SafeCloseableArray.close(chunkContexts);
+
+            // Finalize the operator.
+            cumOp.finishUpdate(winOpCtx);
         }
     }
-
 
     /**
      * Find the smallest valued key that participated in the upstream {@link TableUpdate}.

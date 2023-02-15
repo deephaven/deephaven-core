@@ -28,8 +28,8 @@ public class DoubleRollingSumOperator extends BaseDoubleUpdateByOperator {
         protected DoubleChunk<? extends Values> doubleInfluencerValuesChunk;
         protected PairwiseDoubleRingBuffer doublePairwiseSum;
 
-        protected Context(final int chunkSize, final int chunkCount) {
-            super(chunkSize, chunkCount);
+        protected Context(final int chunkSize) {
+            super(chunkSize);
             doublePairwiseSum = new PairwiseDoubleRingBuffer(PAIRWISE_BUFFER_INITIAL_SIZE, 0.0f, (a, b) -> {
                 if (a == NULL_DOUBLE) {
                     return b;
@@ -90,8 +90,8 @@ public class DoubleRollingSumOperator extends BaseDoubleUpdateByOperator {
 
     @NotNull
     @Override
-    public UpdateByOperator.Context makeUpdateContext(final int chunkSize, final int chunkCount) {
-        return new Context(chunkSize, chunkCount);
+    public UpdateByOperator.Context makeUpdateContext(final int chunkSize) {
+        return new Context(chunkSize);
     }
 
     public DoubleRollingSumOperator(@NotNull final MatchPair pair,
