@@ -52,7 +52,6 @@ import io.deephaven.util.annotations.TestUseOnly;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import org.apache.arrow.flatbuf.Message;
 import org.apache.arrow.flatbuf.RecordBatch;
-import org.apache.arrow.memory.ArrowBuf;
 import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.memory.RootAllocator;
 import org.apache.arrow.vector.BigIntVector;
@@ -189,45 +188,70 @@ public class ArrowWrapperTools {
 
     private static AbstractColumnSource<?> generateColumnSource(
             final FieldVector vector, final Field field, final int highBit, final ArrowTableContext arrowHelper) {
-        // TODO: use switch expression on MinorType
-        if (vector instanceof BitVector) {
-            return new ArrowBooleanColumnSource(highBit, field, arrowHelper);
-        } else if (vector instanceof TinyIntVector) {
-            return new ArrowByteColumnSource(highBit, field, arrowHelper);
-        } else if (vector instanceof SmallIntVector) {
-            return new ArrowShortColumnSource(highBit, field, arrowHelper);
-        } else if (vector instanceof IntVector) {
-            return new ArrowIntColumnSource(highBit, field, arrowHelper);
-        } else if (vector instanceof BigIntVector) {
-            return new ArrowLongColumnSource(highBit, field, arrowHelper);
-        } else if (vector instanceof Float4Vector) {
-            return new ArrowFloatColumnSource(highBit, field, arrowHelper);
-        } else if (vector instanceof Float8Vector) {
-            return new ArrowDoubleColumnSource(highBit, field, arrowHelper);
-        } else if (vector instanceof VarCharVector) {
-            return new ArrowStringColumnSource(highBit, field, arrowHelper);
-        } else if (vector instanceof UInt1Vector) {
-            return new ArrowUInt1ColumnSource(highBit, field, arrowHelper);
-        } else if (vector instanceof UInt2Vector) {
-            return new ArrowCharColumnSource(highBit, field, arrowHelper);
-        } else if (vector instanceof UInt4Vector) {
-            return new ArrowUInt4ColumnSource(highBit, field, arrowHelper);
-        } else if (vector instanceof UInt8Vector) {
-            return new ArrowUInt8ColumnSource(highBit, field, arrowHelper);
-        } else if (vector instanceof FixedSizeBinaryVector) {
-            return new ArrowObjectColumnSource<>(byte[].class, highBit, field, arrowHelper);
-        } else if (vector instanceof VarBinaryVector) {
-            return new ArrowObjectColumnSource<>(byte[].class, highBit, field, arrowHelper);
-        } else if (vector instanceof DecimalVector) {
-            return new ArrowObjectColumnSource<>(BigDecimal.class, highBit, field, arrowHelper);
-        } else if (vector instanceof Decimal256Vector) {
-            return new ArrowObjectColumnSource<>(BigDecimal.class, highBit, field, arrowHelper);
-        } else if (vector instanceof DateMilliVector) {
-            return new ArrowObjectColumnSource<>(LocalDateTime.class, highBit, field, arrowHelper);
-        } else if (vector instanceof TimeMilliVector) {
-            return new ArrowLocalTimeColumnSource(highBit, field, arrowHelper);
-        } else if (vector instanceof TimeStampVector) {
-            return new ArrowDateTimeColumnSource(highBit, field, arrowHelper);
+        switch(vector.getMinorType()) {
+            case TINYINT:
+                return new ArrowByteColumnSource(highBit, field, arrowHelper);
+            case SMALLINT:
+                return new ArrowShortColumnSource(highBit, field, arrowHelper);
+            case INT:
+                return new ArrowIntColumnSource(highBit, field, arrowHelper);
+            case BIGINT:
+                return new ArrowLongColumnSource(highBit, field, arrowHelper);
+            case DATEMILLI:
+                return new ArrowObjectColumnSource<>(LocalDateTime.class, highBit, field, arrowHelper);
+            case TIMEMILLI:
+                return new ArrowLocalTimeColumnSource(highBit, field, arrowHelper);
+            case FLOAT4:
+                return new ArrowFloatColumnSource(highBit, field, arrowHelper);
+            case FLOAT8:
+                return new ArrowDoubleColumnSource(highBit, field, arrowHelper);
+            case BIT:
+                return new ArrowBooleanColumnSource(highBit, field, arrowHelper);
+            case VARCHAR:
+                return new ArrowStringColumnSource(highBit, field, arrowHelper);
+            case VARBINARY:
+            case FIXEDSIZEBINARY:
+                return new ArrowObjectColumnSource<>(byte[].class, highBit, field, arrowHelper);
+            case DECIMAL:
+            case DECIMAL256:
+                return new ArrowObjectColumnSource<>(BigDecimal.class, highBit, field, arrowHelper);
+            case UINT1:
+                return new ArrowUInt1ColumnSource(highBit, field, arrowHelper);
+            case UINT2:
+                return new ArrowCharColumnSource(highBit, field, arrowHelper);
+            case UINT4:
+                return new ArrowUInt4ColumnSource(highBit, field, arrowHelper);
+            case UINT8:
+                return new ArrowUInt8ColumnSource(highBit, field, arrowHelper);
+            case TIMESTAMPMICRO:
+            case TIMESTAMPMICROTZ:
+            case TIMESTAMPMILLI:
+            case TIMESTAMPMILLITZ:
+            case TIMESTAMPNANO:
+            case TIMESTAMPNANOTZ:
+            case TIMESTAMPSEC:
+            case TIMESTAMPSECTZ:
+                return new ArrowDateTimeColumnSource(highBit, field, arrowHelper);
+            case NULL:
+            case STRUCT:
+            case DATEDAY:
+            case TIMESEC:
+            case TIMEMICRO:
+            case TIMENANO:
+            case INTERVALDAY:
+            case INTERVALMONTHDAYNANO:
+            case DURATION:
+            case INTERVALYEAR:
+            case LARGEVARCHAR:
+            case LARGEVARBINARY:
+            case LIST:
+            case LARGELIST:
+            case FIXED_SIZE_LIST:
+            case UNION:
+            case DENSEUNION:
+            case MAP:
+            case EXTENSIONTYPE:
+                break;
         }
         throw new TableDataException(
                 String.format("Unsupported vector: name: %s type: %s", vector.getName(), vector.getMinorType()));
