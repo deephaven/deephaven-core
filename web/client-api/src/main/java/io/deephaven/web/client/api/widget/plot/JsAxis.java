@@ -5,10 +5,14 @@ package io.deephaven.web.client.api.widget.plot;
 
 import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
+import com.vertispan.tsdefs.annotations.TsTypeRef;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.AxisDescriptor;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.BusinessCalendarDescriptor;
 import io.deephaven.web.client.api.i18n.JsDateTimeFormat;
 import io.deephaven.web.client.api.widget.calendar.JsBusinessCalendar;
+import io.deephaven.web.client.api.widget.plot.enums.JsAxisFormatType;
+import io.deephaven.web.client.api.widget.plot.enums.JsAxisPosition;
+import io.deephaven.web.client.api.widget.plot.enums.JsAxisType;
 import io.deephaven.web.client.fu.JsLog;
 import jsinterop.annotations.*;
 import jsinterop.base.Js;
@@ -47,19 +51,19 @@ public class JsAxis {
     }
 
     @JsProperty
-    @SuppressWarnings("unusable-by-js")
+    @TsTypeRef(JsAxisFormatType.class)
     public int getFormatType() {
         return axis.getFormatType();
     }
 
     @JsProperty
-    @SuppressWarnings("unusable-by-js")
+    @TsTypeRef(JsAxisType.class)
     public int getType() {
         return axis.getType();
     }
 
     @JsProperty
-    @SuppressWarnings("unusable-by-js")
+    @TsTypeRef(JsAxisPosition.class)
     public int getPosition() {
         return axis.getPosition();
     }

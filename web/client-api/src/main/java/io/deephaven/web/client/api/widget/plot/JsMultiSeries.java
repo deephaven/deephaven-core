@@ -5,10 +5,12 @@ package io.deephaven.web.client.api.widget.plot;
 
 import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
+import com.vertispan.tsdefs.annotations.TsTypeRef;
 import elemental2.dom.CustomEvent;
 import elemental2.dom.CustomEventInit;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.*;
 import io.deephaven.web.client.api.JsPartitionedTable;
+import io.deephaven.web.client.api.widget.plot.enums.JsSeriesPlotStyle;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsProperty;
 
@@ -131,6 +133,7 @@ public class JsMultiSeries {
     }
 
     @JsProperty
+    @TsTypeRef(JsSeriesPlotStyle.class)
     public int getPlotStyle() {
         return descriptor.getPlotStyle();
     }

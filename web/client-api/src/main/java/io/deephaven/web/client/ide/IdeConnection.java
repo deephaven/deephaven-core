@@ -3,10 +3,12 @@
  */
 package io.deephaven.web.client.ide;
 
+import com.vertispan.tsdefs.annotations.TsTypeRef;
 import elemental2.promise.Promise;
 import io.deephaven.web.client.api.QueryConnectable;
 import io.deephaven.web.client.api.WorkerConnection;
 import io.deephaven.web.client.api.console.JsVariableChanges;
+import io.deephaven.web.client.api.console.JsVariableDefinition;
 import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.shared.data.ConnectToken;
 import io.deephaven.web.shared.fu.JsConsumer;
@@ -26,6 +28,7 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
 
     private final ConnectToken token = new ConnectToken();
 
+    @Deprecated
     @JsConstructor
     public IdeConnection(String serverUrl, @JsOptional Boolean fromJava) {
         this.serverUrl = serverUrl;
@@ -81,7 +84,7 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
         }
     }
 
-    public Promise<?> getObject(JsPropertyMap<Object> definitionObject) {
+    public Promise<?> getObject(@TsTypeRef(JsVariableDefinition.class) JsPropertyMap<Object> definitionObject) {
         WorkerConnection conn = connection.get();
         return onConnected().then(e -> conn.getJsObject(definitionObject));
     }

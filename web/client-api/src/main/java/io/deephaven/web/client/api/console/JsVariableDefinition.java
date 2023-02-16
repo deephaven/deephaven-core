@@ -5,6 +5,7 @@ package io.deephaven.web.client.api.console;
 
 import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
+import com.vertispan.tsdefs.annotations.TsTypeRef;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_pb.FieldInfo;
 import jsinterop.annotations.JsProperty;
 
@@ -20,7 +21,7 @@ public class JsVariableDefinition {
     private final String applicationId;
     private final String applicationName;
 
-    public JsVariableDefinition(String type, String title, String id, String description) {
+    public JsVariableDefinition(@TsTypeRef(JsVariableType.class) String type, String title, String id, String description) {
         this.type = type;
         this.title = title == null ? JS_UNAVAILABLE : title;
         this.id = id;
@@ -39,6 +40,7 @@ public class JsVariableDefinition {
     }
 
     @JsProperty
+    @TsTypeRef(JsVariableType.class)
     public String getType() {
         return type;
     }

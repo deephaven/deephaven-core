@@ -67,7 +67,6 @@ public class JsChart extends HasEventHandling {
     }
 
     @JsProperty
-    @SuppressWarnings("unusable-by-js")
     @TsTypeRef(JsChartType.class)
     public int getChartType() {
         return descriptor.getChartType();

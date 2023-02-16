@@ -77,6 +77,7 @@ import io.deephaven.web.client.api.batch.RequestBatcher;
 import io.deephaven.web.client.api.batch.TableConfig;
 import io.deephaven.web.client.api.console.JsVariableChanges;
 import io.deephaven.web.client.api.console.JsVariableDefinition;
+import io.deephaven.web.client.api.console.JsVariableType;
 import io.deephaven.web.client.api.i18n.JsTimeZone;
 import io.deephaven.web.client.api.lifecycle.HasLifecycle;
 import io.deephaven.web.client.api.parse.JsDataHandler;
@@ -756,23 +757,23 @@ public class WorkerConnection {
     }
 
     public Promise<?> getObject(JsVariableDefinition definition) {
-        if (JsVariableChanges.TABLE.equals(definition.getType())) {
+        if (JsVariableType.TABLE.equals(definition.getType())) {
             return getTable(definition, null);
-        } else if (JsVariableChanges.FIGURE.equals(definition.getType())) {
+        } else if (JsVariableType.FIGURE.equals(definition.getType())) {
             return getFigure(definition);
-        } else if (JsVariableChanges.PANDAS.equals(definition.getType())) {
+        } else if (JsVariableType.PANDAS.equals(definition.getType())) {
             return getWidget(definition)
                     .then(widget -> widget.getExportedObjects()[0].fetch());
-        } else if (JsVariableChanges.PARTITIONEDTABLE.equals(definition.getType())) {
+        } else if (JsVariableType.PARTITIONEDTABLE.equals(definition.getType())) {
             return getPartitionedTable(definition);
-        } else if (JsVariableChanges.HIERARCHICALTABLE.equals(definition.getType())) {
+        } else if (JsVariableType.HIERARCHICALTABLE.equals(definition.getType())) {
             return getHierarchicalTable(definition);
         } else {
-            if (JsVariableChanges.TABLEMAP.equals(definition.getType())) {
+            if (JsVariableType.TABLEMAP.equals(definition.getType())) {
                 JsLog.warn(
                         "TableMap is now known as PartitionedTable, fetching as a plain widget. To fetch as a PartitionedTable use that as the type.");
             }
-            if (JsVariableChanges.TREETABLE.equals(definition.getType())) {
+            if (JsVariableType.TREETABLE.equals(definition.getType())) {
                 JsLog.warn(
                         "TreeTable is now HierarchicalTable, fetching as a plain widget. To fetch as a HierarchicalTable use that as this type.");
             }

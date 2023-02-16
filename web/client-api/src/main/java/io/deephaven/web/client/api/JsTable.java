@@ -36,6 +36,7 @@ import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
 import io.deephaven.web.client.api.barrage.def.TableAttributesDefinition;
 import io.deephaven.web.client.api.batch.RequestBatcher;
 import io.deephaven.web.client.api.console.JsVariableChanges;
+import io.deephaven.web.client.api.console.JsVariableType;
 import io.deephaven.web.client.api.filter.FilterCondition;
 import io.deephaven.web.client.api.input.JsInputTable;
 import io.deephaven.web.client.api.lifecycle.HasLifecycle;
@@ -781,7 +782,7 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
         JsWidget widget = new JsWidget(workerConnection, c -> {
             FetchObjectRequest partitionedTableRequest = new FetchObjectRequest();
             partitionedTableRequest.setSourceId(new TypedTicket());
-            partitionedTableRequest.getSourceId().setType(JsVariableChanges.HIERARCHICALTABLE);
+            partitionedTableRequest.getSourceId().setType(JsVariableType.HIERARCHICALTABLE);
             partitionedTableRequest.getSourceId().setTicket(rollupTicket);
             workerConnection.objectServiceClient().fetchObject(partitionedTableRequest,
                     workerConnection.metadata(), (fail, success) -> {
@@ -820,7 +821,7 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
         JsWidget widget = new JsWidget(workerConnection, c -> {
             FetchObjectRequest partitionedTableRequest = new FetchObjectRequest();
             partitionedTableRequest.setSourceId(new TypedTicket());
-            partitionedTableRequest.getSourceId().setType(JsVariableChanges.HIERARCHICALTABLE);
+            partitionedTableRequest.getSourceId().setType(JsVariableType.HIERARCHICALTABLE);
             partitionedTableRequest.getSourceId().setTicket(treeTicket);
             workerConnection.objectServiceClient().fetchObject(partitionedTableRequest,
                     workerConnection.metadata(), (fail, success) -> {
@@ -1016,7 +1017,7 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
                 new JsPartitionedTable(workerConnection, new JsWidget(workerConnection, c -> {
                     FetchObjectRequest partitionedTableRequest = new FetchObjectRequest();
                     partitionedTableRequest.setSourceId(new TypedTicket());
-                    partitionedTableRequest.getSourceId().setType(JsVariableChanges.PARTITIONEDTABLE);
+                    partitionedTableRequest.getSourceId().setType(JsVariableType.PARTITIONEDTABLE);
                     partitionedTableRequest.getSourceId().setTicket(partitionedTableTicket);
                     workerConnection.objectServiceClient().fetchObject(partitionedTableRequest,
                             workerConnection.metadata(), (fail, success) -> {

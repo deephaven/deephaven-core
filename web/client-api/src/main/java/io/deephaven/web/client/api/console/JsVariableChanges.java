@@ -16,16 +16,6 @@ import jsinterop.base.Js;
 @TsInterface
 @TsName(namespace = "dh.ide", name = "VariableChanges")
 public class JsVariableChanges {
-    @JsProperty(namespace = "dh.VariableType")
-    public static final String TABLE = "Table",
-            TREETABLE = "TreeTable",
-            HIERARCHICALTABLE = "HierarchicalTable",
-            TABLEMAP = "TableMap",
-            PARTITIONEDTABLE = "PartitionedTable",
-            FIGURE = "Figure",
-            OTHERWIDGET = "OtherWidget",
-            PANDAS = "pandas.DataFrame",
-            TREEMAP = "Treemap";
 
     private final JsVariableDefinition[] created;
     private final JsVariableDefinition[] updated;

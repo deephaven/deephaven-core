@@ -4,11 +4,13 @@
 package io.deephaven.web.client.api.widget.plot;
 
 import com.vertispan.tsdefs.annotations.TsInterface;
+import com.vertispan.tsdefs.annotations.TsTypeRef;
 import elemental2.core.JsObject;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.SeriesDescriptor;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.SourceDescriptor;
 import io.deephaven.web.client.api.JsPartitionedTable;
 import io.deephaven.web.client.api.JsTable;
+import io.deephaven.web.client.api.widget.plot.enums.JsSeriesPlotStyle;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsOptional;
@@ -106,7 +108,7 @@ public class JsSeries {
     }
 
     @JsProperty
-    @SuppressWarnings("unusable-by-js")
+    @TsTypeRef(JsSeriesPlotStyle.class)
     public int getPlotStyle() {
         return descriptor.getPlotStyle();
     }
