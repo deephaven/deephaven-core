@@ -24,6 +24,7 @@ import io.deephaven.web.client.fu.LazyPromise;
 import io.deephaven.web.client.state.ClientTableState;
 import io.deephaven.web.shared.fu.JsBiConsumer;
 import jsinterop.annotations.JsIgnore;
+import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
@@ -183,6 +184,7 @@ public class JsFigure extends HasEventHandling {
     }
 
     @JsProperty
+    @JsNullable
     public String getTitle() {
         if (descriptor.hasTitle()) {
             return descriptor.getTitle();

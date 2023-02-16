@@ -91,6 +91,7 @@ public class JsAxis {
     // }
 
     @JsProperty
+    @JsNullable
     public String getFormatPattern() {
         if (axis.hasFormatPattern()) {
             return axis.getFormatPattern();
@@ -129,8 +130,12 @@ public class JsAxis {
     }
 
     @JsProperty
-    public double getGapBetweenMajorTicks() {
-        return axis.getGapBetweenMajorTicks();
+    @JsNullable
+    public Double getGapBetweenMajorTicks() {
+        if (axis.hasGapBetweenMajorTicks()) {
+            return axis.getGapBetweenMajorTicks();
+        }
+        return null;
     }
 
     @JsProperty
@@ -160,7 +165,7 @@ public class JsAxis {
     }
 
     @JsMethod
-    public void range(@JsOptional Double pixelCount, @JsOptional Object min, @JsOptional Object max) {
+    public void range(@JsOptional @JsNullable Double pixelCount, @JsOptional @JsNullable Object min, @JsOptional @JsNullable Object max) {
         if (pixelCount == null || !Js.typeof(Js.asAny(pixelCount)).equals("number")) {
             if (this.pixels != null) {
                 JsLog.warn("Turning off downsampling on a chart where it is running is not currently supported");

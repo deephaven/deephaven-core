@@ -10,6 +10,7 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.fi
 import io.deephaven.web.client.api.HasEventHandling;
 import io.deephaven.web.client.api.widget.plot.enums.JsChartType;
 import jsinterop.annotations.JsIgnore;
+import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
 import jsinterop.base.Js;
@@ -73,6 +74,7 @@ public class JsChart extends HasEventHandling {
     }
 
     @JsProperty
+    @JsNullable
     public String getTitle() {
         if (descriptor.hasTitle()) {
             return descriptor.getTitle();

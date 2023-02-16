@@ -64,6 +64,7 @@ import io.deephaven.web.shared.fu.JsProvider;
 import io.deephaven.web.shared.fu.JsRunnable;
 import io.deephaven.web.shared.fu.RemoverFn;
 import jsinterop.annotations.JsMethod;
+import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsProperty;
 import jsinterop.base.Js;
@@ -336,6 +337,7 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
     }
 
     @JsProperty
+    @JsNullable
     public JsLayoutHints getLayoutHints() {
         return lastVisibleState().getLayoutHints();
     }
@@ -354,6 +356,7 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
     }
 
     @JsProperty
+    @JsNullable
     public String getDescription() {
         return lastVisibleState().getTableDef().getAttributes().getDescription();
     }
@@ -1368,6 +1371,7 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
     }
 
     @JsProperty
+    @JsNullable
     public String getPluginName() {
         return lastVisibleState().getTableDef().getAttributes().getPluginName();
     }

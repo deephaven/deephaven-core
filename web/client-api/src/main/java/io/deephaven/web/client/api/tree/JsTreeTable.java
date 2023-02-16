@@ -48,6 +48,7 @@ import io.deephaven.web.client.fu.LazyPromise;
 import io.deephaven.web.shared.data.*;
 import io.deephaven.web.shared.data.columns.ColumnData;
 import jsinterop.annotations.JsMethod;
+import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsProperty;
 import jsinterop.base.Any;
@@ -892,6 +893,7 @@ public class JsTreeTable extends HasEventHandling {
     }
 
     @JsProperty
+    @JsNullable
     public String getDescription() {
         return tableDefinition.getAttributes().getDescription();
     }

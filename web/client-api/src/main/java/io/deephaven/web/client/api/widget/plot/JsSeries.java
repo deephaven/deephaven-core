@@ -10,6 +10,7 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.fi
 import io.deephaven.web.client.api.JsPartitionedTable;
 import io.deephaven.web.client.api.JsTable;
 import jsinterop.annotations.JsIgnore;
+import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
@@ -116,6 +117,7 @@ public class JsSeries {
     }
 
     @JsProperty(name = "isLinesVisible")
+    @JsNullable
     public Boolean getLinesVisible() {
         if (descriptor.hasLinesVisible()) {
             return descriptor.getLinesVisible();
@@ -124,6 +126,7 @@ public class JsSeries {
     }
 
     @JsProperty(name = "isShapesVisible")
+    @JsNullable
     public Boolean getShapesVisible() {
         if (descriptor.hasShapesVisible()) {
             return descriptor.getShapesVisible();
@@ -148,6 +151,7 @@ public class JsSeries {
     // }
 
     @JsProperty
+    @JsNullable
     public String getPointLabelFormat() {
         if (descriptor.hasPointLabelFormat()) {
             return descriptor.getPointLabelFormat();
@@ -156,6 +160,7 @@ public class JsSeries {
     }
 
     @JsProperty
+    @JsNullable
     public String getXToolTipPattern() {
         if (descriptor.hasXToolTipPattern()) {
             return descriptor.getXToolTipPattern();
@@ -164,6 +169,7 @@ public class JsSeries {
     }
 
     @JsProperty
+    @JsNullable
     public String getYToolTipPattern() {
         if (descriptor.hasYToolTipPattern()) {
             return descriptor.getYToolTipPattern();
@@ -177,6 +183,7 @@ public class JsSeries {
     }
 
     @JsProperty
+    @JsNullable
     public Double getShapeSize() {
         if (descriptor.hasShapeSize()) {
             return descriptor.getShapeSize();
