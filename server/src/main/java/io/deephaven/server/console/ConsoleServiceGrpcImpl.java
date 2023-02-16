@@ -67,6 +67,8 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
     public static final int SUBSCRIBE_TO_LOGS_BUFFER_SIZE =
             Configuration.getInstance().getIntegerWithDefault(SUBSCRIBE_TO_LOGS_BUFFER_SIZE_PROP, 32768);
 
+    private static final AtomicBoolean autocompleteNotInstalledWarning = new AtomicBoolean(false);
+
     private final TicketRouter ticketRouter;
     private final SessionService sessionService;
     private final Provider<ScriptSession> scriptSessionProvider;
@@ -277,9 +279,11 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                     settings[0] = (PyObject) scriptSession.getVariable("jedi_settings");
                 } catch (Exception err) {
                     if (err.getMessage().contains("No module named 'jedi'")) {
-                        log.info().append(
-                                "Autocomplete not installed. If you wish to enable, please install deephaven-core with the 'autocomplete' feature: `pip install \"deephaven-core[autocomplete]\"`")
-                                .endl();
+                        if (autocompleteNotInstalledWarning.compareAndSet(false, true)) {
+                            log.warn().append(
+                                    "Autocomplete not installed. If you wish to enable, please install deephaven-core with the 'autocomplete' feature: `pip install \"deephaven-core[autocomplete]\"`")
+                                    .endl();
+                        }
                     } else {
                         log.error().append("Error trying to enable jedi autocomplete").append(err).endl();
                     }
