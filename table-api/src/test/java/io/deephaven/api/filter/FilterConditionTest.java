@@ -4,6 +4,7 @@
 package io.deephaven.api.filter;
 
 import io.deephaven.api.ColumnName;
+import io.deephaven.api.RawString;
 import io.deephaven.api.Strings;
 import io.deephaven.api.filter.FilterCondition.Operator;
 import io.deephaven.api.value.Value;
@@ -16,6 +17,7 @@ public class FilterConditionTest {
     static final ColumnName FOO = ColumnName.of("Foo");
     static final ColumnName BAR = ColumnName.of("Bar");
     static final Value V42 = Value.of(42L);
+    static final RawString E42 = RawString.of("41 + 1");
 
     static final FilterCondition FOO_EQ_42 = FilterCondition.eq(FOO, V42);
     static final FilterCondition FOO_GT_42 = FilterCondition.gt(FOO, V42);
@@ -30,6 +32,13 @@ public class FilterConditionTest {
     static final FilterCondition FOO_LT_BAR = FilterCondition.lt(FOO, BAR);
     static final FilterCondition FOO_LTE_BAR = FilterCondition.lte(FOO, BAR);
     static final FilterCondition FOO_NEQ_BAR = FilterCondition.neq(FOO, BAR);
+
+    static final FilterCondition FOO_EQ_E42 = FilterCondition.eq(FOO, E42);
+    static final FilterCondition FOO_GT_E42 = FilterCondition.gt(FOO, E42);
+    static final FilterCondition FOO_GTE_E42 = FilterCondition.gte(FOO, E42);
+    static final FilterCondition FOO_LT_E42 = FilterCondition.lt(FOO, E42);
+    static final FilterCondition FOO_LTE_E42 = FilterCondition.lte(FOO, E42);
+    static final FilterCondition FOO_NEQ_E42 = FilterCondition.neq(FOO, E42);
 
     @Test
     void lhs() {
@@ -46,6 +55,13 @@ public class FilterConditionTest {
         assertThat(FOO_LT_BAR.lhs()).isEqualTo(FOO);
         assertThat(FOO_LTE_BAR.lhs()).isEqualTo(FOO);
         assertThat(FOO_NEQ_BAR.lhs()).isEqualTo(FOO);
+
+        assertThat(FOO_EQ_E42.lhs()).isEqualTo(FOO);
+        assertThat(FOO_GT_E42.lhs()).isEqualTo(FOO);
+        assertThat(FOO_GTE_E42.lhs()).isEqualTo(FOO);
+        assertThat(FOO_LT_E42.lhs()).isEqualTo(FOO);
+        assertThat(FOO_LTE_E42.lhs()).isEqualTo(FOO);
+        assertThat(FOO_NEQ_E42.lhs()).isEqualTo(FOO);
     }
 
     @Test
@@ -63,6 +79,13 @@ public class FilterConditionTest {
         assertThat(FOO_LT_BAR.rhs()).isEqualTo(BAR);
         assertThat(FOO_LTE_BAR.rhs()).isEqualTo(BAR);
         assertThat(FOO_NEQ_BAR.rhs()).isEqualTo(BAR);
+
+        assertThat(FOO_EQ_E42.rhs()).isEqualTo(E42);
+        assertThat(FOO_GT_E42.rhs()).isEqualTo(E42);
+        assertThat(FOO_GTE_E42.rhs()).isEqualTo(E42);
+        assertThat(FOO_LT_E42.rhs()).isEqualTo(E42);
+        assertThat(FOO_LTE_E42.rhs()).isEqualTo(E42);
+        assertThat(FOO_NEQ_E42.rhs()).isEqualTo(E42);
     }
 
     @Test
@@ -80,26 +103,43 @@ public class FilterConditionTest {
         assertThat(FOO_LT_BAR.operator()).isEqualTo(Operator.LESS_THAN);
         assertThat(FOO_LTE_BAR.operator()).isEqualTo(Operator.LESS_THAN_OR_EQUAL);
         assertThat(FOO_NEQ_BAR.operator()).isEqualTo(Operator.NOT_EQUALS);
+
+        assertThat(FOO_EQ_E42.operator()).isEqualTo(Operator.EQUALS);
+        assertThat(FOO_GT_E42.operator()).isEqualTo(Operator.GREATER_THAN);
+        assertThat(FOO_GTE_E42.operator()).isEqualTo(Operator.GREATER_THAN_OR_EQUAL);
+        assertThat(FOO_LT_E42.operator()).isEqualTo(Operator.LESS_THAN);
+        assertThat(FOO_LTE_E42.operator()).isEqualTo(Operator.LESS_THAN_OR_EQUAL);
+        assertThat(FOO_NEQ_E42.operator()).isEqualTo(Operator.NOT_EQUALS);
     }
 
     @Test
     void columnAndLongStrings() {
-        toString(FOO_EQ_42, "Foo == 42");
-        toString(FOO_GT_42, "Foo > 42");
-        toString(FOO_GTE_42, "Foo >= 42");
-        toString(FOO_LT_42, "Foo < 42");
-        toString(FOO_LTE_42, "Foo <= 42");
-        toString(FOO_NEQ_42, "Foo != 42");
+        toString(FOO_EQ_42, "(Foo) == (42)");
+        toString(FOO_GT_42, "(Foo) > (42)");
+        toString(FOO_GTE_42, "(Foo) >= (42)");
+        toString(FOO_LT_42, "(Foo) < (42)");
+        toString(FOO_LTE_42, "(Foo) <= (42)");
+        toString(FOO_NEQ_42, "(Foo) != (42)");
     }
 
     @Test
     void columnAndColumnStrings() {
-        toString(FOO_EQ_BAR, "Foo == Bar");
-        toString(FOO_GT_BAR, "Foo > Bar");
-        toString(FOO_GTE_BAR, "Foo >= Bar");
-        toString(FOO_LT_BAR, "Foo < Bar");
-        toString(FOO_LTE_BAR, "Foo <= Bar");
-        toString(FOO_NEQ_BAR, "Foo != Bar");
+        toString(FOO_EQ_BAR, "(Foo) == (Bar)");
+        toString(FOO_GT_BAR, "(Foo) > (Bar)");
+        toString(FOO_GTE_BAR, "(Foo) >= (Bar)");
+        toString(FOO_LT_BAR, "(Foo) < (Bar)");
+        toString(FOO_LTE_BAR, "(Foo) <= (Bar)");
+        toString(FOO_NEQ_BAR, "(Foo) != (Bar)");
+    }
+
+    @Test
+    void columnAndExpressionStrings() {
+        toString(FOO_EQ_E42, "(Foo) == (41 + 1)");
+        toString(FOO_GT_E42, "(Foo) > (41 + 1)");
+        toString(FOO_GTE_E42, "(Foo) >= (41 + 1)");
+        toString(FOO_LT_E42, "(Foo) < (41 + 1)");
+        toString(FOO_LTE_E42, "(Foo) <= (41 + 1)");
+        toString(FOO_NEQ_E42, "(Foo) != (41 + 1)");
     }
 
     @Test
@@ -110,6 +150,13 @@ public class FilterConditionTest {
         assertThat(FOO_GTE_42.invert()).isEqualTo(FOO_LT_42);
         assertThat(FOO_LT_42.invert()).isEqualTo(FOO_GTE_42);
         assertThat(FOO_LTE_42.invert()).isEqualTo(FOO_GT_42);
+
+        assertThat(FOO_EQ_E42.invert()).isEqualTo(FOO_NEQ_E42);
+        assertThat(FOO_NEQ_E42.invert()).isEqualTo(FOO_EQ_E42);
+        assertThat(FOO_GT_E42.invert()).isEqualTo(FOO_LTE_E42);
+        assertThat(FOO_GTE_E42.invert()).isEqualTo(FOO_LT_E42);
+        assertThat(FOO_LT_E42.invert()).isEqualTo(FOO_GTE_E42);
+        assertThat(FOO_LTE_E42.invert()).isEqualTo(FOO_GT_E42);
     }
 
     @Test
@@ -144,6 +191,13 @@ public class FilterConditionTest {
         assertThat(FilterCondition.lte(V42, FOO).maybeTranspose()).isEqualTo(FOO_GTE_42);
         assertThat(FilterCondition.gt(V42, FOO).maybeTranspose()).isEqualTo(FOO_LT_42);
         assertThat(FilterCondition.gte(V42, FOO).maybeTranspose()).isEqualTo(FOO_LTE_42);
+
+        assertThat(FOO_EQ_E42.maybeTranspose()).isEqualTo(FOO_EQ_E42);
+        assertThat(FOO_NEQ_E42.maybeTranspose()).isEqualTo(FOO_NEQ_E42);
+        assertThat(FOO_GT_E42.maybeTranspose()).isEqualTo(FOO_GT_E42);
+        assertThat(FOO_GTE_E42.maybeTranspose()).isEqualTo(FOO_GTE_E42);
+        assertThat(FOO_LT_E42.maybeTranspose()).isEqualTo(FOO_LT_E42);
+        assertThat(FOO_LTE_E42.maybeTranspose()).isEqualTo(FOO_LTE_E42);
     }
 
     private static void toString(FilterCondition condition, String expected) {

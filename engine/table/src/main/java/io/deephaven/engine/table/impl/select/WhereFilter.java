@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl.select;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.RawString;
 import io.deephaven.api.Strings;
+import io.deephaven.api.expression.Expression;
 import io.deephaven.api.filter.*;
 import io.deephaven.api.value.Value;
 import io.deephaven.engine.context.QueryCompiler;
@@ -280,7 +281,7 @@ public interface WhereFilter extends Filter {
             return new MatchFilter(MatchType.Inverted, columnName.name(), new Object[] {null});
         }
 
-        private static class FilterConditionAdapter implements Value.Visitor {
+        private static class FilterConditionAdapter implements Expression.Visitor, Value.Visitor {
 
             public static WhereFilter of(FilterCondition condition) {
                 FilterCondition preferred = condition.maybeTranspose();
@@ -303,38 +304,57 @@ public interface WhereFilter extends Filter {
 
             @Override
             public void visit(ColumnName lhs) {
-                preferred.rhs().walk(new Value.Visitor() {
-                    @Override
-                    public void visit(ColumnName rhs) {
-                        out = WhereFilterFactory.getExpression(Strings.of(original));
-                    }
+                preferred.rhs().walk(new PreferredLhsColumnRhsVisitor(lhs));
+            }
 
-                    @Override
-                    public void visit(long rhs) {
-                        switch (preferred.operator()) {
-                            case LESS_THAN:
-                                out = new LongRangeFilter(lhs.name(), Long.MIN_VALUE, rhs, true, false);
-                                break;
-                            case LESS_THAN_OR_EQUAL:
-                                out = new LongRangeFilter(lhs.name(), Long.MIN_VALUE, rhs, true, true);
-                                break;
-                            case GREATER_THAN:
-                                out = new LongRangeFilter(lhs.name(), rhs, Long.MAX_VALUE, false, true);
-                                break;
-                            case GREATER_THAN_OR_EQUAL:
-                                out = new LongRangeFilter(lhs.name(), rhs, Long.MAX_VALUE, true, true);
-                                break;
-                            case EQUALS:
-                                out = new MatchFilter(lhs.name(), rhs);
-                                break;
-                            case NOT_EQUALS:
-                                out = new MatchFilter(MatchType.Inverted, lhs.name(), rhs);
-                                break;
-                            default:
-                                throw new IllegalStateException("Unexpected operator " + original.operator());
-                        }
+            private class PreferredLhsColumnRhsVisitor implements Expression.Visitor, Value.Visitor {
+                private final ColumnName lhs;
+
+                public PreferredLhsColumnRhsVisitor(ColumnName lhs) {
+                    this.lhs = Objects.requireNonNull(lhs);
+                }
+
+                @Override
+                public void visit(ColumnName rhs) {
+                    // LHS column = RHS column
+                    out = WhereFilterFactory.getExpression(Strings.of(original));
+                }
+
+                @Override
+                public void visit(long rhs) {
+                    switch (preferred.operator()) {
+                        case LESS_THAN:
+                            out = new LongRangeFilter(lhs.name(), Long.MIN_VALUE, rhs, true, false);
+                            break;
+                        case LESS_THAN_OR_EQUAL:
+                            out = new LongRangeFilter(lhs.name(), Long.MIN_VALUE, rhs, true, true);
+                            break;
+                        case GREATER_THAN:
+                            out = new LongRangeFilter(lhs.name(), rhs, Long.MAX_VALUE, false, true);
+                            break;
+                        case GREATER_THAN_OR_EQUAL:
+                            out = new LongRangeFilter(lhs.name(), rhs, Long.MAX_VALUE, true, true);
+                            break;
+                        case EQUALS:
+                            out = new MatchFilter(lhs.name(), rhs);
+                            break;
+                        case NOT_EQUALS:
+                            out = new MatchFilter(MatchType.Inverted, lhs.name(), rhs);
+                            break;
+                        default:
+                            throw new IllegalStateException("Unexpected operator " + original.operator());
                     }
-                });
+                }
+
+                @Override
+                public void visit(Value value) {
+                    value.walk((Value.Visitor) this);
+                }
+
+                @Override
+                public void visit(RawString rawString) {
+                    out = WhereFilterFactory.getExpression(Strings.of(original));
+                }
             }
 
             // Note for all remaining cases: since we are walking the preferred object, we know we don't have to handle
@@ -342,6 +362,16 @@ public interface WhereFilter extends Filter {
 
             @Override
             public void visit(long lhs) {
+                out = WhereFilterFactory.getExpression(Strings.of(original));
+            }
+
+            @Override
+            public void visit(Value lhs) {
+                lhs.walk((Value.Visitor) this);
+            }
+
+            @Override
+            public void visit(RawString lhs) {
                 out = WhereFilterFactory.getExpression(Strings.of(original));
             }
         }

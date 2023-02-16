@@ -36,17 +36,17 @@ public class Strings {
         String rhs = of(condition.rhs());
         switch (condition.operator()) {
             case LESS_THAN:
-                return String.format("%s < %s", lhs, rhs);
+                return String.format("(%s) < (%s)", lhs, rhs);
             case LESS_THAN_OR_EQUAL:
-                return String.format("%s <= %s", lhs, rhs);
+                return String.format("(%s) <= (%s)", lhs, rhs);
             case GREATER_THAN:
-                return String.format("%s > %s", lhs, rhs);
+                return String.format("(%s) > (%s)", lhs, rhs);
             case GREATER_THAN_OR_EQUAL:
-                return String.format("%s >= %s", lhs, rhs);
+                return String.format("(%s) >= (%s)", lhs, rhs);
             case EQUALS:
-                return String.format("%s == %s", lhs, rhs);
+                return String.format("(%s) == (%s)", lhs, rhs);
             case NOT_EQUALS:
-                return String.format("%s != %s", lhs, rhs);
+                return String.format("(%s) != (%s)", lhs, rhs);
             default:
                 throw new IllegalStateException(
                         "Unexpected condition operator: " + condition.operator());

@@ -5,14 +5,14 @@ package io.deephaven.api.filter;
 
 import io.deephaven.annotations.BuildableStyle;
 import io.deephaven.api.ColumnName;
-import io.deephaven.api.value.Value;
+import io.deephaven.api.expression.Expression;
 import org.immutables.value.Value.Immutable;
 
 import java.io.Serializable;
 
 /**
  * Evaluates to true based on the specific {@link #operator() operator} applied to the {@link #lhs() left-hand side} and
- * {@link #rhs() right-hand side}.
+ * {@link #rhs() right-hand side} {@link Expression expressions}.
  */
 @Immutable
 @BuildableStyle
@@ -49,7 +49,7 @@ public abstract class FilterCondition extends FilterBase implements Serializable
          */
         NOT_EQUALS;
 
-        public final FilterCondition of(Value lhs, Value rhs) {
+        public final FilterCondition of(Expression lhs, Expression rhs) {
             return FilterCondition.builder().operator(this).lhs(lhs).rhs(rhs).build();
         }
 
@@ -106,27 +106,27 @@ public abstract class FilterCondition extends FilterBase implements Serializable
         return ImmutableFilterCondition.builder();
     }
 
-    public static FilterCondition lt(Value lhs, Value rhs) {
+    public static FilterCondition lt(Expression lhs, Expression rhs) {
         return Operator.LESS_THAN.of(lhs, rhs);
     }
 
-    public static FilterCondition lte(Value lhs, Value rhs) {
+    public static FilterCondition lte(Expression lhs, Expression rhs) {
         return Operator.LESS_THAN_OR_EQUAL.of(lhs, rhs);
     }
 
-    public static FilterCondition gt(Value lhs, Value rhs) {
+    public static FilterCondition gt(Expression lhs, Expression rhs) {
         return Operator.GREATER_THAN.of(lhs, rhs);
     }
 
-    public static FilterCondition gte(Value lhs, Value rhs) {
+    public static FilterCondition gte(Expression lhs, Expression rhs) {
         return Operator.GREATER_THAN_OR_EQUAL.of(lhs, rhs);
     }
 
-    public static FilterCondition eq(Value lhs, Value rhs) {
+    public static FilterCondition eq(Expression lhs, Expression rhs) {
         return Operator.EQUALS.of(lhs, rhs);
     }
 
-    public static FilterCondition neq(Value lhs, Value rhs) {
+    public static FilterCondition neq(Expression lhs, Expression rhs) {
         return Operator.NOT_EQUALS.of(lhs, rhs);
     }
 
@@ -138,18 +138,18 @@ public abstract class FilterCondition extends FilterBase implements Serializable
     public abstract Operator operator();
 
     /**
-     * The left-hand side value.
+     * The left-hand side expression.
      * 
-     * @return the left-hand side value
+     * @return the left-hand side expression
      */
-    public abstract Value lhs();
+    public abstract Expression lhs();
 
     /**
-     * The right-hand side value.
+     * The right-hand side expression.
      * 
-     * @return the right-hand side value
+     * @return the right-hand side expression
      */
-    public abstract Value rhs();
+    public abstract Expression rhs();
 
     /**
      * The logically equivalent transposed filter.
@@ -204,9 +204,9 @@ public abstract class FilterCondition extends FilterBase implements Serializable
     public interface Builder {
         Builder operator(Operator operator);
 
-        Builder lhs(Value lhs);
+        Builder lhs(Expression lhs);
 
-        Builder rhs(Value rhs);
+        Builder rhs(Expression rhs);
 
         FilterCondition build();
     }

@@ -604,11 +604,17 @@ class BatchTableRequestBuilder {
 
         @Override
         public void visit(FilterCondition condition) {
+            if (!(condition.lhs() instanceof Value) || !(condition.rhs() instanceof Value)) {
+                // We don't expect this, higher level checks io.deephaven.qst.table.WhereTable#hasRawFilter
+                throw new UnsupportedOperationException("gRPC CompareCondition only supports values, not expressions");
+            }
             FilterCondition preferred = condition.maybeTranspose();
             out = Condition.newBuilder()
-                    .setCompare(CompareCondition.newBuilder().setOperation(adapt(preferred.operator()))
-                            .setLhs(ValueAdapter.adapt(preferred.lhs()))
-                            .setRhs(ValueAdapter.adapt(preferred.rhs())).build())
+                    .setCompare(CompareCondition.newBuilder()
+                            .setOperation(adapt(preferred.operator()))
+                            .setLhs(ValueAdapter.adapt((Value) preferred.lhs()))
+                            .setRhs(ValueAdapter.adapt((Value) preferred.rhs()))
+                            .build())
                     .build();
         }
 

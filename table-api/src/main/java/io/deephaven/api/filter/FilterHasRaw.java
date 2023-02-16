@@ -3,12 +3,19 @@
  */
 package io.deephaven.api.filter;
 
+import io.deephaven.api.ColumnName;
 import io.deephaven.api.RawString;
+import io.deephaven.api.expression.Expression;
+import io.deephaven.api.value.Value;
 
-public class FilterHasRaw implements Filter.Visitor {
+public class FilterHasRaw implements Filter.Visitor, Expression.Visitor, Value.Visitor {
 
     public static boolean of(Filter filter) {
         return filter.walk(new FilterHasRaw()).out();
+    }
+
+    public static boolean of(Expression expression) {
+        return expression.walk(new FilterHasRaw()).out();
     }
 
     public Boolean hasRaw;
@@ -31,7 +38,7 @@ public class FilterHasRaw implements Filter.Visitor {
 
     @Override
     public void visit(FilterCondition condition) {
-        hasRaw = false;
+        hasRaw = of(condition.lhs()) || of(condition.rhs());
     }
 
     @Override
@@ -52,5 +59,20 @@ public class FilterHasRaw implements Filter.Visitor {
     @Override
     public void visit(RawString rawString) {
         hasRaw = true;
+    }
+
+    @Override
+    public void visit(Value value) {
+        value.walk((Value.Visitor) this);
+    }
+
+    @Override
+    public void visit(ColumnName x) {
+        hasRaw = false;
+    }
+
+    @Override
+    public void visit(long x) {
+        hasRaw = false;
     }
 }

@@ -936,6 +936,7 @@ message CompareCondition {
   }
   CompareOperation operation = 1;
   CaseSensitivity case_sensitivity = 2;
+  // Todo: gRPC expression support
   Value lhs = 3;
   Value rhs = 4;
 }
