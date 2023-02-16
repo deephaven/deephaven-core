@@ -4,7 +4,7 @@ A pre-shared key is a simple way to easily configure a server and demonstrate th
 to do so. Most people are familiar with this in the context of using a WiFi password, via WPA-PSK, where every user
 enters the same password into all of their devices to connect to the wireless network.
 
-Like WiFi, in the context of Deephaven, this is a simple alternative to permitting any user to anonymously connect and 
+Like WiFi, in the context of Deephaven, this is a simple alternative to permitting any user to anonymously connect and
 consume any resources. If enabled with no parameters, the server will generate a new password on each startup and log
 it for the user to see. Alternatively, a password can be configured, and this will always be used.
 

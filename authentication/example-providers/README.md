@@ -2,7 +2,7 @@ This directory contains several example authentication providers, which can be a
 and configured to authenticate the user. 
 
 As these are only examples and not intended to replace actual integrations, they may have some limitations in how
-they can be configured and deployed, but also are built as a single `.jar` file with no external dependencies or 
+they can be configured and deployed, but also are built as a single `.jar` file with no external dependencies or
 conflicts to manage.
 
 ### [Pre-Shared Key](psk)

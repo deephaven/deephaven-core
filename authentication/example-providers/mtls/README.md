@@ -16,12 +16,12 @@ To use this from a pre-built installation:
  * Add the mtls-authentication-provider jar to your Deephaven installation's classpath:
     * If running the `bin/start` script, this can be accomplished by adding it to the `EXTRA_CLASSPATH` environment variable.
     * If running from docker, add the jar to the `/apps/lib/` directory.
- * Configure the server to use this by specifying that the `AuthHandlers` configuration should include 
-   `io.deephaven.authentication.mtls.MTlsAuthenticationHandler`. AuthHandlers is a comma-separated string, more than one 
+ * Configure the server to use this by specifying that the `AuthHandlers` configuration should include
+   `io.deephaven.authentication.mtls.MTlsAuthenticationHandler`. AuthHandlers is a comma-separated string, more than one
    can be specified to enable multiple authentication handlers.
 
 ## Testing from the browser
-First install a client certificate in the browser. This process depends on the browser in use. Connect to 
+First install a client certificate in the browser. This process depends on the browser in use. Connect to
 https://<server-hostname>/jsapi/authentication/mtls.html and click "Go" for a simple test to confirm that the server
 accepts the certificate.
 
