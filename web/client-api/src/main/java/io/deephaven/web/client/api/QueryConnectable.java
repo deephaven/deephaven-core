@@ -45,7 +45,12 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>> exte
     @JsProperty(namespace = "dh.QueryInfo")
     public static final String EVENT_CONNECT = "connect";
 
+    /**
+     * Removed in favor of a proper disconnect/reconnect. Event listeners should switch to the "disconnect" and
+     * "reconnect" events instead.
+     */
     @JsProperty(namespace = "dh.IdeConnection")
+    @Deprecated
     public static final String HACK_CONNECTION_FAILURE = "hack-connection-failure";
 
     private final List<IdeSession> sessions = new ArrayList<>();
@@ -64,6 +69,7 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>> exte
 
     public abstract Promise<ConnectToken> getConnectToken();
 
+    @Deprecated
     public void notifyConnectionError(ResponseStreamWrapper.Status status) {
         if (notifiedConnectionError) {
             return;
@@ -102,6 +108,20 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>> exte
         throw new UnsupportedOperationException();
     }
 
+    /**
+     * Internal method to permit delegating to some orchestration tool to see if this worker can be connected to yet.
+     */
+    @JsIgnore
+    public Promise<Self> onReady() {
+        // noinspection unchecked
+        return Promise.resolve((Self) this);
+    }
+
+    /**
+     * Promise that resolves when this worker instance can be connected to, or rejects if it can't be used.
+     * 
+     * @return A promise that resolves with this instance.
+     */
     public abstract Promise<Self> running();
 
     @JsMethod

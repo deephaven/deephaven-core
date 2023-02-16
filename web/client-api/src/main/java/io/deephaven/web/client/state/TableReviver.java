@@ -65,7 +65,7 @@ public class TableReviver implements HasTableBinding {
         List<ClientTableState> reviveLast = new ArrayList<>();
 
         for (ClientTableState state : states) {
-            (state.getPrevious() == null ? reviveFirst : reviveLast).add(state);
+            reviveFirst.add(state);
         }
         JsLog.debug("Reviving states; roots:", reviveFirst, "leaves:", reviveLast);
         // MRU-ordered revivification preferences.

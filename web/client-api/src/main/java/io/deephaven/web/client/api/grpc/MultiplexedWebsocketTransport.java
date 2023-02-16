@@ -177,6 +177,10 @@ public class MultiplexedWebsocketTransport implements Transport {
                     }
                 }
             });
+            webSocket.addEventListener("close", event -> {
+                // socket is closed, make room for another to be created
+                activeSockets.remove(key);
+            });
         }
 
         private void retain() {
@@ -305,6 +309,8 @@ public class MultiplexedWebsocketTransport implements Transport {
         cleanup.run();
         cleanup = JsRunnable.doNothing();
 
+        // release our reference to the transport, last one out will close the socket (if needed)
+        // TODO ensure this is called once per instance
         transport.release();
     }
 

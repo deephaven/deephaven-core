@@ -87,6 +87,7 @@ import io.deephaven.web.client.fu.LazyPromise;
 import io.deephaven.web.client.state.ClientTableState;
 import io.deephaven.web.client.state.HasTableBinding;
 import io.deephaven.web.client.state.TableReviver;
+import io.deephaven.web.shared.data.ConnectToken;
 import io.deephaven.web.shared.data.DeltaUpdates;
 import io.deephaven.web.shared.data.LogItem;
 import io.deephaven.web.shared.data.RangeSet;
@@ -139,7 +140,7 @@ import static io.deephaven.web.client.api.barrage.WebGrpcUtils.CLIENT_OPTIONS;
  * is left un-closed.
  */
 public class WorkerConnection {
-
+    private static final String FLIGHT_AUTH_HEADER_NAME = "authorization";
 
     // All calls to the server should share this metadata instance, or copy from it if they need something custom
     private BrowserHeaders metadata = new BrowserHeaders();
@@ -210,9 +211,6 @@ public class WorkerConnection {
     private Map<String, JsVariableDefinition> knownFields = new HashMap<>();
     private ResponseStreamWrapper<FieldsChangeUpdate> fieldsChangeUpdateStream;
 
-    private long lastSuccessResponseTime = 0;
-    private static final long GIVE_UP_TIMEOUT_MS = 10_000;
-
     public WorkerConnection(QueryConnectable<?> info) {
         this.info = info;
         this.config = new ClientConfiguration();
@@ -259,15 +257,25 @@ public class WorkerConnection {
      * restore the table by re-fetching the table, then reapplying all operations on it.
      */
     private void connectToWorker() {
-        info.running()
+        info.onReady()
                 .then(queryWorkerRunning -> {
+                    // if there is already a token, use that
+                    if (metadata.has(FLIGHT_AUTH_HEADER_NAME)) {
+                        JsArray<String> value = metadata.get(FLIGHT_AUTH_HEADER_NAME);
+                        ConnectToken token = new ConnectToken();
+                        token.setType(value.getAt(0));
+                        token.setValue("");
+                        return Promise.resolve(token);
+                    }
                     // get the auth token
                     return info.getConnectToken();
                 }).then(authToken -> {
+                    JsLog.warn("setting auth ", authToken.getType());
                     // set the proposed initial token and make the first call
-                    metadata.set("authorization", (authToken.getType() + " " + authToken.getValue()).trim());
-                    return authUpdate();
-                }).then(handshakeResponse -> {
+                    metadata.set(FLIGHT_AUTH_HEADER_NAME, (authToken.getType() + " " + authToken.getValue()).trim());
+                    return authUpdate().then(ignore -> Promise.resolve(Boolean.FALSE));
+                }).then(newSession -> {
+                    JsLog.warn("have session");
                     // subscribe to fatal errors
                     subscribeToTerminationNotification();
 
@@ -277,41 +285,68 @@ public class WorkerConnection {
                     // mark that we succeeded
                     newSessionReconnect.success();
 
-                    // nuke pending callbacks, we'll remake them
-                    handleCallbacks = new JsWeakMap<>();
-                    definitionCallbacks = new JsWeakMap<>();
+                    if (newSession) {
+                        assert false : "Can't yet rebuild connections with new auth, please log in again";
+                        // nuke pending callbacks, we'll remake them
+                        handleCallbacks = new JsWeakMap<>();
+                        definitionCallbacks = new JsWeakMap<>();
 
-                    // for each cts in the cache, get all with active subs
-                    ClientTableState[] hasActiveSubs = cache.getAllStates().stream()
-                            .peek(cts -> {
-                                cts.getHandle().setConnected(false);
-                                cts.setSubscribed(false);
-                                cts.forActiveLifecycles(item -> {
-                                    assert !(item instanceof JsTable) ||
-                                            ((JsTable) item).state() == cts
-                                            : "Invalid table state " + item + " does not point to state " + cts;
-                                    item.suppressEvents();
-                                });
-                            })
-                            .filter(cts -> !cts.isEmpty())
-                            .peek(cts -> {
-                                cts.forActiveTables(t -> {
-                                    assert t.state().isAncestor(cts)
-                                            : "Invalid binding " + t + " (" + t.state() + ") does not contain " + cts;
-                                });
-                            })
-                            .toArray(ClientTableState[]::new);
-                    // clear caches
-                    List<ClientTableState> inactiveStatesToRemove = cache.getAllStates().stream()
-                            .filter(ClientTableState::isEmpty)
-                            .collect(Collectors.toList());
-                    inactiveStatesToRemove.forEach(cache::release);
+                        // for each cts in the cache, get all with active subs
+                        ClientTableState[] hasActiveSubs = cache.getAllStates().stream()
+                                .peek(cts -> {
+                                    cts.getHandle().setConnected(false);
+                                    cts.setSubscribed(false);
+                                    cts.forActiveLifecycles(item -> {
+                                        assert !(item instanceof JsTable) ||
+                                                ((JsTable) item).state() == cts
+                                                : "Invalid table state " + item + " does not point to state " + cts;
+                                        item.suppressEvents();
+                                    });
+                                })
+                                .filter(cts -> !cts.isEmpty())
+                                .peek(cts -> {
+                                    cts.forActiveTables(t -> {
+                                        assert t.state().isAncestor(cts)
+                                                : "Invalid binding " + t + " (" + t.state() + ") does not contain " + cts;
+                                    });
+                                })
+                                .toArray(ClientTableState[]::new);
+                        // clear caches
+                        List<ClientTableState> inactiveStatesToRemove = cache.getAllStates().stream()
+                                .filter(ClientTableState::isEmpty)
+                                .collect(Collectors.toList());
+                        inactiveStatesToRemove.forEach(cache::release);
 
-                    flushable.clear();
+                        flushable.clear();
 
-                    reviver.revive(metadata, hasActiveSubs);
+                        reviver.revive(metadata, hasActiveSubs);
 
-                    figures.forEach((p0, p1, p2) -> p0.refetch());
+                        figures.forEach((p0, p1, p2) -> p0.refetch());
+                    } else {
+                        //only notify that we're back, no need to re-create or re-fetch anything
+                        ClientTableState[] hasActiveSubs = cache.getAllStates().stream()
+//                                .peek(cts -> {
+//                                    cts.getHandle().setConnected(false);
+//                                    cts.setSubscribed(false);
+//                                    cts.forActiveLifecycles(item -> {
+//                                        assert !(item instanceof JsTable) ||
+//                                                ((JsTable) item).state() == cts
+//                                                : "Invalid table state " + item + " does not point to state " + cts;
+//                                        item.suppressEvents();
+//                                    });
+//                                })
+                                .filter(cts -> !cts.isEmpty())
+//                                .peek(cts -> {
+//                                    cts.forActiveTables(t -> {
+//                                        assert t.state().isAncestor(cts)
+//                                                : "Invalid binding " + t + " (" + t.state() + ") does not contain " + cts;
+//                                    });
+//                                })
+                                .toArray(ClientTableState[]::new);
+
+                        reviver.revive(metadata, hasActiveSubs);
+
+                    }
 
                     info.connected();
 
@@ -323,7 +358,7 @@ public class WorkerConnection {
                     // ping(success.getAuthSessionToken());
                     startExportNotificationsStream();
 
-                    return Promise.resolve(handshakeResponse);
+                    return Promise.resolve((Object) null);
                 }, fail -> {
                     // this is non-recoverable, connection/auth/registration failed, but we'll let it start again when
                     // state changes
@@ -342,7 +377,7 @@ public class WorkerConnection {
                     // }
 
                     // signal that we should try again
-                    newSessionReconnect.failed();
+                    connectionLost();
 
                     // inform the UI that it failed to connect
                     info.failureHandled("Failed to connect: " + failure);
@@ -359,27 +394,18 @@ public class WorkerConnection {
         final long now = System.currentTimeMillis();
         if (status.isOk()) {
             // success, ignore
-            lastSuccessResponseTime = now;
             return true;
         } else if (status.getCode() == Code.Unauthenticated) {
-            // TODO re-create session once?
-            // for now treating this as fatal, UI should encourage refresh to try again
-            info.notifyConnectionError(status);
-        } else if (status.getCode() == Code.Internal || status.getCode() == Code.Unknown) {
-            // for now treating these as fatal also
-            info.notifyConnectionError(status);
-        } else if (status.getCode() == Code.Unavailable) {
-            // TODO skip re-authing for now, just backoff and try again
-            if (lastSuccessResponseTime == 0) {
-                lastSuccessResponseTime = now;
-                return true;
-            } else if (now - lastSuccessResponseTime >= GIVE_UP_TIMEOUT_MS) {
-                // this actually seems to be a problem; likely the worker has unexpectedly exited
-                // UI should encourage refresh to try again (which will probably fail; but at least doesn't look "OK")
-                info.notifyConnectionError(status);
-            } else {
-                return true;
-            }
+            // TODO re-create session once before signaling failure?
+            info.fireEvent(CoreClient.EVENT_RECONNECT_AUTH_FAILED);
+//            info.notifyConnectionError(status);
+        } else if (status.getCode() == Code.Internal || status.getCode() == Code.Unknown
+                || status.getCode() == Code.Unavailable) {
+            // signal that there has been a connection failure of some kind and attempt to reconnect
+            info.fireEvent(CoreClient.EVENT_DISCONNECT);
+
+            // Try again after a backoff, this may happen several times
+            connectionLost();
         } // others probably are meaningful to the caller
         return false;
     }
@@ -423,13 +449,13 @@ public class WorkerConnection {
             handshake.onHeaders(headers -> {
                 // unchecked cast is required here due to "aliasing" in ts/webpack resulting in BrowserHeaders !=
                 // Metadata
-                JsArray<String> authorization = Js.<BrowserHeaders>uncheckedCast(headers).get("authorization");
+                JsArray<String> authorization = Js.<BrowserHeaders>uncheckedCast(headers).get(FLIGHT_AUTH_HEADER_NAME);
                 if (authorization.length > 0) {
-                    JsArray<String> existing = metadata().get("authorization");
+                    JsArray<String> existing = metadata().get(FLIGHT_AUTH_HEADER_NAME);
                     if (!existing.getAt(0).equals(authorization.getAt(0))) {
                         // use this new token
-                        metadata().set("authorization", authorization);
-                        CustomEventInit init = CustomEventInit.create();
+                        metadata().set(FLIGHT_AUTH_HEADER_NAME, authorization);
+                        CustomEventInit<JsRefreshToken> init = CustomEventInit.create();
                         init.setDetail(new JsRefreshToken(authorization.getAt(0), sessionTimeoutMs));
                         info.fireEvent(EVENT_REFRESH_TOKEN_UPDATED, init);
                     }
@@ -445,7 +471,17 @@ public class WorkerConnection {
 
                     resolve.onInvoke((Void) null);
                 } else {
-                    // token is no longer valid, signal deauth for re-login
+                    if (status.getCode() == Code.Unauthenticated) {
+                        // explicitly clear out any metadata for authentication, and signal that auth failed
+                        metadata = new BrowserHeaders();
+
+                        // TODO this failure might be due to an expired session, which we can try to re-create
+                        // instead of firing this yet
+
+                        // Fire an event for the UI to attempt to re-auth
+                        info.fireEvent(CoreClient.EVENT_RECONNECT_AUTH_FAILED);
+                        return;
+                    }
                     // TODO deephaven-core#2564 fire an event for the UI to re-auth
                     checkStatus(status);
                     reject.onInvoke(status.getDetails());
@@ -464,57 +500,60 @@ public class WorkerConnection {
                             // restart the termination notification
                             subscribeToTerminationNotification();
                         } else {
-                            info.notifyConnectionError(Js.cast(fail));
+                            connectionLost();
+        //                            info.notifyConnectionError(Js.cast(fail));
                         }
                         return;
                     }
                     assert success != null;
 
                     // welp; the server is gone -- let everyone know
-                    info.notifyConnectionError(new ResponseStreamWrapper.Status() {
-                        @Override
-                        public int getCode() {
-                            return Code.Unavailable;
-                        }
+                    connectionLost();
 
-                        @SuppressWarnings("StringConcatenationInLoop")
-                        @Override
-                        public String getDetails() {
-                            if (!success.getAbnormalTermination()) {
-                                return "Server exited normally.";
-                            }
-
-                            String retval;
-                            if (!success.getReason().isEmpty()) {
-                                retval = success.getReason();
-                            } else {
-                                retval = "Server exited abnormally.";
-                            }
-
-                            final JsArray<StackTrace> traces = success.getStackTracesList();
-                            for (int ii = 0; ii < traces.length; ++ii) {
-                                final StackTrace trace = traces.getAt(ii);
-                                retval += "\n\n";
-                                if (ii != 0) {
-                                    retval += "Caused By: " + trace.getType() + ": " + trace.getMessage();
-                                } else {
-                                    retval += trace.getType() + ": " + trace.getMessage();
-                                }
-
-                                final JsArray<String> elements = trace.getElementsList();
-                                for (int jj = 0; jj < elements.length; ++jj) {
-                                    retval += "\n" + elements.getAt(jj);
-                                }
-                            }
-
-                            return retval;
-                        }
-
-                        @Override
-                        public BrowserHeaders getMetadata() {
-                            return new BrowserHeaders(); // nothing to offer
-                        }
-                    });
+//                    info.notifyConnectionError(new ResponseStreamWrapper.Status() {
+//                        @Override
+//                        public int getCode() {
+//                            return Code.Unavailable;
+//                        }
+//
+//                        @SuppressWarnings("StringConcatenationInLoop")
+//                        @Override
+//                        public String getDetails() {
+//                            if (!success.getAbnormalTermination()) {
+//                                return "Server exited normally.";
+//                            }
+//
+//                            String retval;
+//                            if (!success.getReason().isEmpty()) {
+//                                retval = success.getReason();
+//                            } else {
+//                                retval = "Server exited abnormally.";
+//                            }
+//
+//                            final JsArray<StackTrace> traces = success.getStackTracesList();
+//                            for (int ii = 0; ii < traces.length; ++ii) {
+//                                final StackTrace trace = traces.getAt(ii);
+//                                retval += "\n\n";
+//                                if (ii != 0) {
+//                                    retval += "Caused By: " + trace.getType() + ": " + trace.getMessage();
+//                                } else {
+//                                    retval += trace.getType() + ": " + trace.getMessage();
+//                                }
+//
+//                                final JsArray<String> elements = trace.getElementsList();
+//                                for (int jj = 0; jj < elements.length; ++jj) {
+//                                    retval += "\n" + elements.getAt(jj);
+//                                }
+//                            }
+//
+//                            return retval;
+//                        }
+//
+//                        @Override
+//                        public BrowserHeaders getMetadata() {
+//                            return new BrowserHeaders(); // nothing to offer
+//                        }
+//                    });
                 });
     }
 
@@ -588,8 +627,7 @@ public class WorkerConnection {
                 : "WorkerConnection.onOpen() should not be invoked directly, check the stack trace to see how this was triggered";
     }
 
-    // @Override
-    public void onClose(int code, String message) {
+    public void connectionLost() {
         // notify all active tables and figures that the connection is closed
         figures.forEach((p0, p1, p2) -> {
             try {
@@ -618,7 +656,7 @@ public class WorkerConnection {
         newSessionReconnect.failed();
 
         // fail outstanding promises, if any
-        onOpen.forEach(c -> c.onFailure("Connection to server closed (" + code + "): " + message));
+        onOpen.forEach(c -> c.onFailure("Connection to server closed"));
         onOpen.clear();
     }
 
