@@ -276,7 +276,13 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                             "from deephaven_internal.auto_completer import jedi_settings ; jedi_settings.set_scope(globals())");
                     settings[0] = (PyObject) scriptSession.getVariable("jedi_settings");
                 } catch (Exception err) {
-                    log.error().append("Error trying to enable jedi autocomplete").append(err).endl();
+                    if (err.getMessage().contains("No module named 'jedi'")) {
+                        log.info().append(
+                                "Autocomplete not installed. If you wish to enable, please install deephaven-core with the 'autocomplete' feature: `pip install \"deephaven-core[autocomplete]\"`")
+                                .endl();
+                    } else {
+                        log.error().append("Error trying to enable jedi autocomplete").append(err).endl();
+                    }
                 }
                 boolean canJedi = settings[0] != null && settings[0].call("can_jedi").getBooleanValue();
                 log.info().append(canJedi ? "Using jedi for python autocomplete"
