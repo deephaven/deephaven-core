@@ -3,8 +3,6 @@
  */
 package io.deephaven.web.client.api;
 
-import com.vertispan.tsdefs.annotations.TsIgnore;
-import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
 import com.vertispan.tsdefs.annotations.TsTypeRef;
 import elemental2.core.JsArray;
@@ -28,14 +26,12 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.Seek
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SelectDistinctRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SnapshotTableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SnapshotWhenTableRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.comboaggregaterequest.Aggregate;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.runchartdownsamplerequest.ZoomRange;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.TypedTicket;
 import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
 import io.deephaven.web.client.api.barrage.def.TableAttributesDefinition;
 import io.deephaven.web.client.api.batch.RequestBatcher;
-import io.deephaven.web.client.api.console.JsVariableChanges;
 import io.deephaven.web.client.api.console.JsVariableType;
 import io.deephaven.web.client.api.filter.FilterCondition;
 import io.deephaven.web.client.api.input.JsInputTable;
@@ -100,14 +96,6 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
 
     @JsProperty(namespace = "dh.Table")
     public static final double SIZE_UNCOALESCED = -2;
-
-    @JsProperty(namespace = "dh.ValueType")
-    public static final String STRING = "String",
-            NUMBER = "Number",
-            DOUBLE = "Double",
-            LONG = "Long",
-            DATETIME = "Datetime",
-            BOOLEAN = "Boolean";
 
     // indicates that the CTS has changed, "downstream" tables should take note
     public static final String INTERNAL_EVENT_STATECHANGED = "statechanged-internal",
@@ -1054,19 +1042,19 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
             literal.setBoolValue((Boolean) value);
         } else {
             switch (valueType) {
-                case STRING:
+                case ValueType.STRING:
                     literal.setStringValue(value.toString());
                     break;
-                case NUMBER:
+                case ValueType.NUMBER:
                     literal.setDoubleValue(Double.parseDouble(value.toString()));
                     break;
-                case LONG:
+                case ValueType.LONG:
                     literal.setLongValue(value.toString());
                     break;
-                case DATETIME:
+                case ValueType.DATETIME:
                     literal.setNanoTimeValue(value.toString());
                     break;
-                case BOOLEAN:
+                case ValueType.BOOLEAN:
                     literal.setBoolValue(Boolean.parseBoolean(value.toString()));
                     break;
                 default:
@@ -1093,11 +1081,11 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
     public Promise<Double> seekRow(
             double startingRow,
             Column column,
-            String valueType,
+            @TsTypeRef(ValueType.class) String valueType,
             Object seekValue,
-            @JsOptional Boolean insensitive,
-            @JsOptional Boolean contains,
-            @JsOptional Boolean isBackwards) {
+            @JsOptional @JsNullable Boolean insensitive,
+            @JsOptional @JsNullable Boolean contains,
+            @JsOptional @JsNullable Boolean isBackwards) {
         SeekRowRequest seekRowRequest = new SeekRowRequest();
         seekRowRequest.setSourceId(state().getHandle().makeTicket());
         seekRowRequest.setStartingRow(String.valueOf(startingRow));

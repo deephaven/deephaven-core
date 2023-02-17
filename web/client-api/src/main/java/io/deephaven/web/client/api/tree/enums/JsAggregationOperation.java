@@ -3,9 +3,11 @@
  */
 package io.deephaven.web.client.api.tree.enums;
 
+import com.vertispan.tsdefs.annotations.TsTypeDef;
 import jsinterop.annotations.JsType;
 
 @JsType(name = "AggregationOperation", namespace = "dh")
+@TsTypeDef(tsType = "string")
 public class JsAggregationOperation {
     public static final String COUNT = "Count",
             COUNT_DISTINCT = "CountDistinct",

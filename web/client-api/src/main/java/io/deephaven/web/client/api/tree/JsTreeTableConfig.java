@@ -3,6 +3,7 @@
  */
 package io.deephaven.web.client.api.tree;
 
+import jsinterop.annotations.JsConstructor;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsType;
 import jsinterop.base.Js;

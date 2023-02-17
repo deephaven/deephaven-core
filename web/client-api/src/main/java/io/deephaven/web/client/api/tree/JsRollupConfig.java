@@ -3,6 +3,7 @@
  */
 package io.deephaven.web.client.api.tree;
 
+import com.vertispan.tsdefs.annotations.TsTypeRef;
 import elemental2.core.JsArray;
 import elemental2.core.JsObject;
 import elemental2.core.JsString;
@@ -45,7 +46,7 @@ import java.util.stream.Collector;
 public class JsRollupConfig {
 
     public JsArray<JsString> groupingColumns = null;
-    public JsPropertyMap<JsArray<JsString>> aggregations = Js.cast(JsObject.create(null));
+    public JsPropertyMap<JsArray<@TsTypeRef(JsAggregationOperation.class) JsString>> aggregations = Js.cast(JsObject.create(null));
     public boolean includeConstituents = false;
     public boolean includeOriginalColumns = false;
     public boolean includeDescriptions = true;
