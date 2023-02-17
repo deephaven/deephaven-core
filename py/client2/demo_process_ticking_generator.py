@@ -124,9 +124,9 @@ class CallbackHandler:
 # from deephaven import time_table
 # demo3m = time_table("00:00:00.000001").update(["Int64Value = (long)(Math.random() * 1000)", "Bucket  = (long)(ii % 1_000_000)"]).last_by("Bucket")
 # sum3m = demo3m.view(["Int64Value"]).sum_by()
+
 client = dh.Client.connect("localhost:10000")
 manager = client.get_manager()
-# handle = manager.time_table(0, 1000000000).update(["Int64Value = ii"])
 handle = manager.fetch_table("demo3m")
 subHandle = handle.subscribe(CallbackHandler())
 
