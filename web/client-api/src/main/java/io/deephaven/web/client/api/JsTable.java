@@ -94,7 +94,9 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
             EVENT_CUSTOMCOLUMNSCHANGED = "customcolumnschanged",
             EVENT_DISCONNECT = "disconnect",
             EVENT_RECONNECT = "reconnect",
-            EVENT_RECONNECTFAILED = "reconnectfailed";
+            EVENT_RECONNECTFAILED = "reconnectfailed",
+            EVENT_REQUEST_FAILED = "requestfailed",
+            EVENT_REQUEST_SUCCEEDED = "requestsucceeded";
 
     @JsProperty(namespace = "dh.Table")
     public static final double SIZE_UNCOALESCED = -2;

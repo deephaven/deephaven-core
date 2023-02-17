@@ -28,14 +28,6 @@ import jsinterop.base.JsPropertyMap;
 @TsInterface
 @TsName(namespace = "dh")
 public class HasEventHandling {
-
-    @JsProperty(namespace = "dh.Client")
-    public static final String EVENT_REQUEST_FAILED = "requestfailed";
-    @JsProperty(namespace = "dh.Client")
-    public static final String EVENT_REQUEST_STARTED = "requeststarted";
-    @JsProperty(namespace = "dh.Client")
-    public static final String EVENT_REQUEST_SUCCEEDED = "requestsucceeded";
-
     public static final String INTERNAL_EVENT_RELEASED = "released-internal";
 
     private final JsPropertyMap<JsArray<EventFn>> map = Js.uncheckedCast(JsObject.create(null));
@@ -186,10 +178,10 @@ public class HasEventHandling {
 
     public boolean failureHandled(String failure) {
         if (failure != null) {
-            if (hasListeners(EVENT_REQUEST_FAILED)) {
+            if (hasListeners(CoreClient.EVENT_REQUEST_FAILED)) {
                 final CustomEventInit event = CustomEventInit.create();
                 event.setDetail(failure);
-                fireEvent(EVENT_REQUEST_FAILED, event);
+                fireEvent(CoreClient.EVENT_REQUEST_FAILED, event);
             } else {
                 DomGlobal.console.error(logPrefix() + failure);
             }

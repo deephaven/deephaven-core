@@ -213,7 +213,7 @@ public class RequestBatcher {
                     boolean sortChanged = !prevState.getSorts().equals(active.getSorts());
                     boolean filterChanged = !prevState.getFilters().equals(active.getFilters());
                     boolean customColumnChanged = !prevState.getCustomColumns().equals(active.getCustomColumns());
-                    table.fireEvent(HasEventHandling.EVENT_REQUEST_SUCCEEDED);
+                    table.fireEvent(JsTable.EVENT_REQUEST_SUCCEEDED);
                     // TODO think more about the order of events, and what kinds of things one might bind to each
                     if (sortChanged) {
                         table.fireEvent(JsTable.EVENT_SORTCHANGED);
@@ -311,7 +311,7 @@ public class RequestBatcher {
                     boolean sortChanged = !lastVisibleState.getSorts().equals(state.getSorts());
                     boolean filterChanged = !lastVisibleState.getFilters().equals(state.getFilters());
                     boolean customColumnChanged = !lastVisibleState.getCustomColumns().equals(state.getCustomColumns());
-                    table.fireEvent(HasEventHandling.EVENT_REQUEST_SUCCEEDED);
+                    table.fireEvent(JsTable.EVENT_REQUEST_SUCCEEDED);
                     // TODO think more about the order of events, and what kinds of things one might bind to each
                     if (sortChanged) {
                         table.fireEvent(JsTable.EVENT_SORTCHANGED);
@@ -360,7 +360,7 @@ public class RequestBatcher {
                     "An exception occurred trying to rollback the table. This means that there will be no ticking data until the table configuration is applied again in a way that makes sense. See IDS-5199 for more detail.",
                     e);
         }
-        t.fireEvent(HasEventHandling.EVENT_REQUEST_FAILED, event);
+        t.fireEvent(CoreClient.EVENT_REQUEST_FAILED, event);
     }
 
     private void failed(RejectCallbackFn reject, String fail) {

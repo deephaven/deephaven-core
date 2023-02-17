@@ -79,7 +79,8 @@ public class JsTreeTable extends HasEventHandling {
     public static final String EVENT_UPDATED = "updated",
             EVENT_DISCONNECT = "disconnect",
             EVENT_RECONNECT = "reconnect",
-            EVENT_RECONNECTFAILED = "reconnectfailed";
+            EVENT_RECONNECTFAILED = "reconnectfailed",
+            EVENT_REQUEST_FAILED = "requestfailed";
 
     private static final double ACTION_EXPAND = 0b001;
     private static final double ACTION_EXPAND_WITH_DESCENDENTS = 0b011;

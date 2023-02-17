@@ -16,6 +16,7 @@ import io.deephaven.web.shared.data.ConnectToken;
 import io.deephaven.web.shared.fu.JsBiConsumer;
 import io.deephaven.web.shared.fu.JsFunction;
 import jsinterop.annotations.JsOptional;
+import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
 
 import java.util.Objects;
@@ -29,7 +30,10 @@ public class CoreClient extends HasEventHandling {
             EVENT_DISCONNECT = "disconnect",
             EVENT_RECONNECT = "reconnect",
             EVENT_RECONNECT_AUTH_FAILED = "reconnectauthfailed",
-            EVENT_REFRESH_TOKEN_UPDATED = "refreshtokenupdated";
+            EVENT_REFRESH_TOKEN_UPDATED = "refreshtokenupdated",
+            EVENT_REQUEST_FAILED = "requestfailed",
+            EVENT_REQUEST_STARTED = "requeststarted",
+            EVENT_REQUEST_SUCCEEDED = "requestsucceeded";
 
     public static final String LOGIN_TYPE_PASSWORD = "password",
             LOGIN_TYPE_ANONYMOUS = "anonymous";

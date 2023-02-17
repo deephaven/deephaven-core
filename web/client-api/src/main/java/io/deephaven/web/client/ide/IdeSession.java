@@ -46,7 +46,8 @@ import static io.deephaven.web.client.api.QueryConnectable.EVENT_TABLE_OPENED;
 public class IdeSession extends HasEventHandling {
     private static final int AUTOCOMPLETE_STREAM_TIMEOUT = 30_000;
 
-    public static final String EVENT_COMMANDSTARTED = "commandstarted";
+    public static final String EVENT_COMMANDSTARTED = "commandstarted",
+            EVENT_REQUEST_FAILED = "requestfailed";
 
     private final Ticket result;
 
