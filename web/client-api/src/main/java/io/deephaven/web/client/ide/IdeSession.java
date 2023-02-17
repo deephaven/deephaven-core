@@ -38,7 +38,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
 
-import static io.deephaven.web.client.api.QueryConnectable.EVENT_TABLE_OPENED;
+import static io.deephaven.web.client.api.QueryInfoConstants.EVENT_TABLE_OPENED;
 
 /**
  */

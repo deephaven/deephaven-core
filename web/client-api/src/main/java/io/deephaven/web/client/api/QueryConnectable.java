@@ -4,13 +4,12 @@
 package io.deephaven.web.client.api;
 
 import com.vertispan.tsdefs.annotations.TsIgnore;
-import com.vertispan.tsdefs.annotations.TsInterface;
-import com.vertispan.tsdefs.annotations.TsName;
 import elemental2.core.JsArray;
 import elemental2.core.JsSet;
 import elemental2.dom.CustomEventInit;
 import elemental2.dom.DomGlobal;
 import elemental2.promise.Promise;
+import io.deephaven.web.client.ide.IdeConnection;
 import io.deephaven.web.client.ide.IdeSession;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.*;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
@@ -24,7 +23,6 @@ import io.deephaven.web.shared.fu.JsRunnable;
 import io.deephaven.web.shared.fu.RemoverFn;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
-import jsinterop.annotations.JsProperty;
 import jsinterop.base.JsPropertyMap;
 
 import java.util.ArrayList;
@@ -38,18 +36,6 @@ import static io.deephaven.web.shared.fu.PromiseLike.CANCELLATION_MESSAGE;
  */
 @TsIgnore
 public abstract class QueryConnectable<Self extends QueryConnectable<Self>> extends HasEventHandling {
-
-    @JsProperty(namespace = "dh.QueryInfo") // "legacy" location
-    public static final String EVENT_TABLE_OPENED = "tableopened";
-    @JsProperty(namespace = "dh.QueryInfo")
-    public static final String EVENT_DISCONNECT = "disconnect";
-    @JsProperty(namespace = "dh.QueryInfo")
-    public static final String EVENT_RECONNECT = "reconnect";
-    @JsProperty(namespace = "dh.QueryInfo")
-    public static final String EVENT_CONNECT = "connect";
-
-    @JsProperty(namespace = "dh.IdeConnection")
-    public static final String HACK_CONNECTION_FAILURE = "hack-connection-failure";
 
     private final List<IdeSession> sessions = new ArrayList<>();
     private final JsSet<Ticket> cancelled = new JsSet<>();
@@ -78,7 +64,7 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>> exte
                 "status", status.getCode(),
                 "details", status.getDetails(),
                 "metadata", status.getMetadata()));
-        fireEvent(HACK_CONNECTION_FAILURE, event);
+        fireEvent(IdeConnection.HACK_CONNECTION_FAILURE, event);
     }
 
     @Override
@@ -96,8 +82,8 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>> exte
         }
 
         return new Promise<>((resolve, reject) -> addEventListenerOneShot(
-                EventPair.of(EVENT_CONNECT, e -> resolve.onInvoke((Void) null)),
-                EventPair.of(EVENT_DISCONNECT, e -> reject.onInvoke("Connection disconnected"))));
+                EventPair.of(QueryInfoConstants.EVENT_CONNECT, e -> resolve.onInvoke((Void) null)),
+                EventPair.of(QueryInfoConstants.EVENT_DISCONNECT, e -> reject.onInvoke("Connection disconnected"))));
     }
 
     @JsIgnore
@@ -205,11 +191,11 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>> exte
 
         connected = true;
 
-        fireEvent(EVENT_CONNECT);
+        fireEvent(QueryInfoConstants.EVENT_CONNECT);
 
         if (hasDisconnected) {
-            if (hasListeners(EVENT_RECONNECT)) {
-                fireEvent(EVENT_RECONNECT);
+            if (hasListeners(QueryInfoConstants.EVENT_RECONNECT)) {
+                fireEvent(QueryInfoConstants.EVENT_RECONNECT);
             } else {
                 DomGlobal.console.log(logPrefix()
                         + "Query reconnected (to prevent this log message, handle the EVENT_RECONNECT event)");
@@ -237,8 +223,8 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>> exte
 
         hasDisconnected = true;
 
-        if (hasListeners(EVENT_DISCONNECT)) {
-            this.fireEvent(QueryConnectable.EVENT_DISCONNECT);
+        if (hasListeners(QueryInfoConstants.EVENT_DISCONNECT)) {
+            this.fireEvent(QueryInfoConstants.EVENT_DISCONNECT);
         } else {
             DomGlobal.console.log(logPrefix()
                     + "Query disconnected (to prevent this log message, handle the EVENT_DISCONNECT event)");

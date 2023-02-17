@@ -16,6 +16,7 @@ import io.deephaven.web.shared.fu.JsRunnable;
 import jsinterop.annotations.JsConstructor;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsOptional;
+import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
 import jsinterop.base.JsPropertyMap;
 
@@ -23,6 +24,7 @@ import jsinterop.base.JsPropertyMap;
  */
 @JsType(namespace = "dh")
 public class IdeConnection extends QueryConnectable<IdeConnection> {
+    public static final String HACK_CONNECTION_FAILURE = "hack-connection-failure";
     private final JsRunnable deathListenerCleanup;
     private final String serverUrl;
 
