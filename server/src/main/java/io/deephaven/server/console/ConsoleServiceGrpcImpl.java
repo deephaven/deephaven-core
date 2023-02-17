@@ -67,6 +67,8 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
     public static final int SUBSCRIBE_TO_LOGS_BUFFER_SIZE =
             Configuration.getInstance().getIntegerWithDefault(SUBSCRIBE_TO_LOGS_BUFFER_SIZE_PROP, 32768);
 
+    private static final AtomicBoolean autocompleteFirstRun = new AtomicBoolean(false);
+
     private final TicketRouter ticketRouter;
     private final SessionService sessionService;
     private final Provider<ScriptSession> scriptSessionProvider;
@@ -269,6 +271,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                 return new NoopAutoCompleteObserver(session, responseObserver);
             }
             if (PythonDeephavenSession.SCRIPT_TYPE.equals(scriptSessionProvider.get().scriptType())) {
+                final boolean firstRun = autocompleteFirstRun.compareAndSet(false, true);
                 PyObject[] settings = new PyObject[1];
                 try {
                     final ScriptSession scriptSession = scriptSessionProvider.get();
@@ -276,11 +279,23 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                             "from deephaven_internal.auto_completer import jedi_settings ; jedi_settings.set_scope(globals())");
                     settings[0] = (PyObject) scriptSession.getVariable("jedi_settings");
                 } catch (Exception err) {
-                    log.error().append("Error trying to enable jedi autocomplete").append(err).endl();
+                    if (err.getMessage().contains("No module named 'jedi'")) {
+                        if (firstRun) {
+                            log.warn().append(
+                                    "Autocomplete not installed. If you wish to enable, please install deephaven-core with the 'autocomplete' feature: `pip install \"deephaven-core[autocomplete]\"`")
+                                    .endl();
+                        }
+                    } else {
+                        log.error().append("Error trying to enable jedi autocomplete").append(err).endl();
+                    }
                 }
                 boolean canJedi = settings[0] != null && settings[0].call("can_jedi").getBooleanValue();
-                log.info().append(canJedi ? "Using jedi for python autocomplete"
-                        : "No jedi dependency available in python environment; disabling autocomplete.").endl();
+                if (firstRun) {
+                    log.info()
+                            .append(canJedi ? "Using jedi for python autocomplete"
+                                    : "No jedi dependency available in python environment; disabling autocomplete.")
+                            .endl();
+                }
                 return canJedi ? new PythonAutoCompleteObserver(responseObserver, scriptSessionProvider, session)
                         : new NoopAutoCompleteObserver(session, responseObserver);
             }
