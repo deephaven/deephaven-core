@@ -14,6 +14,7 @@ import java.util.Map;
 
 @JsType(name = "SeriesDescriptor", namespace = "dh.plot")
 public class JsSeriesDescriptor {
+    // TODO (deephaven-core#3442) change to some kind of String+int union type
     public String plotStyle;
     public String name;
 

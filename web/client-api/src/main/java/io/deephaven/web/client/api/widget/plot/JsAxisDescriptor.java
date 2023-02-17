@@ -12,8 +12,11 @@ import jsinterop.base.JsPropertyMap;
 
 @JsType(name = "AxisDescriptor", namespace = "dh.plot")
 public class JsAxisDescriptor {
+    // TODO (deephaven-core#3442) change to some kind of String+int union type
     public String formatType;
+    // TODO (deephaven-core#3442) change to some kind of String+int union type
     public String type;
+    // TODO (deephaven-core#3442) change to some kind of String+int union type
     public String position;
 
     public boolean log = false;
