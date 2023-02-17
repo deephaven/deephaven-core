@@ -51,7 +51,7 @@ public class JsTotalsTableConfig {
     public boolean showTotalsByDefault = false;
     public boolean showGrandTotalsByDefault = false;
     @TsTypeRef(JsAggregationOperation.class)
-    public String defaultOperation = SUM;
+    public String defaultOperation = JsAggregationOperation.SUM;
     public JsPropertyMap<JsArray<@TsTypeRef(JsAggregationOperation.class) JsString>> operationMap = Js.cast(JsObject.create(null));
 
     public JsArray<JsString> groupBy = new JsArray<>();
