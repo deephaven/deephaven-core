@@ -22,6 +22,8 @@ import static io.deephaven.util.QueryConstants.*;
 
 public class IntEMAOperator extends BasePrimitiveEMAOperator {
     public final ColumnSource<?> valueSource;
+    // region extra-fields
+    // endregion extra-fields
 
     protected class Context extends BasePrimitiveEMAOperator.Context {
 

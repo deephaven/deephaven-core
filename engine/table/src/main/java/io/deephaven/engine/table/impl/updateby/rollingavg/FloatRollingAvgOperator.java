@@ -1,68 +1,61 @@
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit ShortRollingSumOperator and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
-package io.deephaven.engine.table.impl.updateby.rollingsum;
+package io.deephaven.engine.table.impl.updateby.rollingavg;
 
-import io.deephaven.base.ringbuffer.ByteRingBuffer;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
-import io.deephaven.chunk.ByteChunk;
+import io.deephaven.chunk.FloatChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
-import io.deephaven.engine.table.impl.updateby.internal.BaseLongUpdateByOperator;
+import io.deephaven.engine.table.impl.updateby.internal.BaseDoubleUpdateByOperator;
+import io.deephaven.engine.table.impl.updateby.internal.PairwiseFloatRingBuffer;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static io.deephaven.util.QueryConstants.*;
 
-public class ByteRollingSumOperator extends BaseLongUpdateByOperator {
-    private static final int RING_BUFFER_INITIAL_CAPACITY = 512;
+public class FloatRollingAvgOperator extends BaseDoubleUpdateByOperator {
+    private static final int PAIRWISE_BUFFER_INITIAL_SIZE = 128;
     // region extra-fields
-    final byte nullValue;
     // endregion extra-fields
 
-    protected class Context extends BaseLongUpdateByOperator.Context {
-        protected ByteChunk<? extends Values> byteInfluencerValuesChunk;
-        protected ByteRingBuffer byteWindowValues;
-
+    protected class Context extends BaseDoubleUpdateByOperator.Context {
+        protected FloatChunk<? extends Values> floatInfluencerValuesChunk;
+        protected PairwiseFloatRingBuffer floatPairwiseSum;
 
         protected Context(final int chunkSize, final int chunkCount) {
             super(chunkSize, chunkCount);
-            byteWindowValues = new ByteRingBuffer(RING_BUFFER_INITIAL_CAPACITY, true);
+            floatPairwiseSum = new PairwiseFloatRingBuffer(PAIRWISE_BUFFER_INITIAL_SIZE, 0.0f, (a, b) -> {
+                if (a == NULL_FLOAT) {
+                    return b;
+                } else if (b == NULL_FLOAT) {
+                    return  a;
+                }
+                return a + b;
+            });
         }
 
         @Override
         public void close() {
             super.close();
-            byteWindowValues = null;
+            floatPairwiseSum.close();
+            floatPairwiseSum = null;
         }
-
 
         @Override
         public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            byteInfluencerValuesChunk = valuesChunk.asByteChunk();
+            floatInfluencerValuesChunk = valuesChunk.asFloatChunk();
         }
 
         @Override
         public void push(int pos, int count) {
-            byteWindowValues.ensureRemaining(count);
+            floatPairwiseSum.ensureRemaining(count);
 
             for (int ii = 0; ii < count; ii++) {
-                byte val = byteInfluencerValuesChunk.get(pos + ii);
-                byteWindowValues.addUnsafe(val);
+                final float val = floatInfluencerValuesChunk.get(pos + ii);
+                floatPairwiseSum.pushUnsafe(val);
 
-                // increase the running sum
-                if (val != nullValue) {
-                    if (curVal == NULL_LONG) {
-                        curVal = val;
-                    } else {
-                        curVal += val;
-                    }
-                } else {
+                if (val == NULL_FLOAT) {
                     nullCount++;
                 }
             }
@@ -70,15 +63,12 @@ public class ByteRollingSumOperator extends BaseLongUpdateByOperator {
 
         @Override
         public void pop(int count) {
-            Assert.geq(byteWindowValues.size(), "byteWindowValues.size()", count);
+            Assert.geq(floatPairwiseSum.size(), "floatWindowValues.size()", count);
 
             for (int ii = 0; ii < count; ii++) {
-                byte val = byteWindowValues.removeUnsafe();
+                float val = floatPairwiseSum.popUnsafe();
 
-                // reduce the running sum
-                if (val != nullValue) {
-                    curVal -= val;
-                } else {
+                if (val == NULL_FLOAT) {
                     nullCount--;
                 }
             }
@@ -86,10 +76,11 @@ public class ByteRollingSumOperator extends BaseLongUpdateByOperator {
 
         @Override
         public void writeToOutputChunk(int outIdx) {
-            if (byteWindowValues.size() == nullCount) {
-                outputValues.set(outIdx, NULL_LONG);
+            if (floatPairwiseSum.size() == 0) {
+                outputValues.set(outIdx, NULL_DOUBLE);
             } else {
-                outputValues.set(outIdx, curVal);
+                final int count = floatPairwiseSum.size() - nullCount;
+                outputValues.set(outIdx, floatPairwiseSum.evaluate() / (double)count);
             }
         }
     }
@@ -100,19 +91,17 @@ public class ByteRollingSumOperator extends BaseLongUpdateByOperator {
         return new Context(chunkSize, chunkCount);
     }
 
-    public ByteRollingSumOperator(@NotNull final MatchPair pair,
+    public FloatRollingAvgOperator(@NotNull final MatchPair pair,
                                    @NotNull final String[] affectingColumns,
                                    @Nullable final RowRedirection rowRedirection,
                                    @Nullable final String timestampColumnName,
                                    final long reverseWindowScaleUnits,
                                    final long forwardWindowScaleUnits
                                    // region extra-constructor-args
-                               ,final byte nullValue
                                    // endregion extra-constructor-args
     ) {
         super(pair, affectingColumns, rowRedirection, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true);
         // region constructor
-        this.nullValue = nullValue;
         // endregion constructor
     }
 }

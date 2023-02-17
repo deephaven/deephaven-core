@@ -80,7 +80,7 @@ public class ReplicateUpdateBy {
                 fixupInteger(f);
             }
 
-            if (f.contains("Byte") && (f.contains("CumSum") || f.contains("RollingSum"))) {
+            if (f.contains("Byte")) {
                 fixupByte(f);
             }
 
@@ -123,6 +123,10 @@ public class ReplicateUpdateBy {
                 "final SlicedObjectAggregateColumnSource<T> outputSource",
                 "ColumnSource<Object> valueSource", "ColumnSource<T> valueSource",
                 "SlicedObjectAggregateColumnSource\\(", "SlicedObjectAggregateColumnSource<>\\(");
+
+        replicateNumericOperator(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingavg/ShortRollingAvgOperator.java",
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingavg/FloatRollingAvgOperator.java");
     }
 
     private static void replicateNumericOperator(@NotNull final String shortClass, @NotNull final String floatClass)
@@ -132,7 +136,7 @@ public class ReplicateUpdateBy {
                 fixupInteger(f);
             }
 
-            if (f.contains("Byte") && (f.contains("CumSum") || f.contains("RollingSum"))) {
+            if (f.contains("Byte")) {
                 fixupByte(f);
             }
 
@@ -254,8 +258,8 @@ public class ReplicateUpdateBy {
                 Collections.singletonList("                               ,final byte nullValue"));
         lines = replaceRegion(lines, "constructor", Collections.singletonList("        this.nullValue = nullValue;"));
         lines = ReplicationUtils.globalReplacements(lines,
-                "isCurrentNull = BytePrimitives\\.isNull\\(currentVal\\)", "isCurrentNull = currentVal == nullValue",
-                "!BytePrimitives\\.isNull\\(currentVal\\)", "currentVal != nullValue");
+                "!= NULL_BYTE", "!= nullValue",
+                "== NULL_BYTE", "== nullValue");
         FileUtils.writeLines(objectFile, lines);
     }
 
