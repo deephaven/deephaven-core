@@ -4,6 +4,7 @@
 package io.deephaven.web.client.ide;
 
 import elemental2.promise.Promise;
+import io.deephaven.web.client.api.ConnectOptions;
 import io.deephaven.web.client.api.QueryConnectable;
 import io.deephaven.web.client.api.WorkerConnection;
 import io.deephaven.web.client.api.console.JsVariableChanges;
@@ -25,11 +26,19 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
     private final String serverUrl;
 
     private final ConnectToken token = new ConnectToken();
+    private final ConnectOptions options;
 
+    @Deprecated
     @JsConstructor
-    public IdeConnection(String serverUrl, @JsOptional Boolean fromJava) {
+    public IdeConnection(String serverUrl, @JsOptional Object connectOptions, @JsOptional Boolean fromJava) {
         this.serverUrl = serverUrl;
         deathListenerCleanup = JsRunnable.doNothing();
+
+        if (connectOptions != null) {
+            options = new ConnectOptions(connectOptions);
+        } else {
+            options = new ConnectOptions();
+        }
 
         if (fromJava != Boolean.TRUE) {
             JsLog.warn(
@@ -57,6 +66,12 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
     @Override
     public Promise<ConnectToken> getConnectToken() {
         return Promise.resolve(token);
+    }
+
+    @JsIgnore
+    @Override
+    public Promise<ConnectOptions> getConnectOptions() {
+        return Promise.resolve(options);
     }
 
     public void close() {
