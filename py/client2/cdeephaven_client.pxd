@@ -5,6 +5,7 @@ from libc.stdint cimport int32_t
 from libcpp cimport bool
 from libcpp.memory cimport shared_ptr, unique_ptr
 from libcpp.string cimport string
+from libcpp.utility cimport pair
 from libcpp.vector cimport vector
 
 ctypedef void (*CCallback)(CTickingUpdate, void *)
@@ -55,12 +56,13 @@ cdef extern from "deephaven/client/client.h" namespace "deephaven::client":
         shared_ptr[CTable] afterAdds()
         shared_ptr[CTable] beforeModifies()
         vector[shared_ptr[CRowSequence]] modifiedRows()
+        shared_ptr[CRowSequence] allModifiedRows()
         shared_ptr[CTable] afterModifies()
         shared_ptr[CTable] current()
 
     cdef cppclass CSubscriptionHandle "deephaven::client::subscription::SubscriptionHandle":
         pass
-        
+
     cdef cppclass CTable "deephaven::client::table::Table":
         CTable()
         CTable(CTable &&other)
@@ -107,11 +109,30 @@ cdef extern from "deephaven/client/column/column_source.h" namespace "deephaven:
             CGenericChunk[bool] *optionalDestNullFlags) except +
 
 cdef extern from "deephaven/client/column/column_source_helpers.h" namespace "deephaven::client::column":
-    cdef cppclass HumanReadableElementTypeName:
+    cdef cppclass CHumanReadableElementTypeName "deephaven::client::column::HumanReadableElementTypeName":
         @staticmethod
         const char *getName(const CColumnSource &columnSource)
 
 cdef extern from "deephaven/client/column/column_source_helpers.h" namespace "deephaven::client::column":
-    cdef cppclass HumanReadableStaticTypeName [T]:
+    cdef cppclass CHumanReadableStaticTypeName "deephaven::client::column::HumanReadableStaticTypeName" [T]:
         @staticmethod
         const char *getName()
+
+cdef extern from "deephaven/client/utility/cython_support.h" namespace "deephaven::client::utility":
+    cdef cppclass CCythonSupport "deephaven::client::utility::CythonSupport":
+        ctypedef enum ElementTypeId:
+            CHAR "deephaven::client::utility::CythonSupport::ElementTypeId::CHAR"
+            INT8 "deephaven::client::utility::CythonSupport::ElementTypeId::INT8"
+            INT16 "deephaven::client::utility::CythonSupport::ElementTypeId::INT16"
+            INT32 "deephaven::client::utility::CythonSupport::ElementTypeId::INT32"
+            INT64 "deephaven::client::utility::CythonSupport::ElementTypeId::INT64"
+            FLOAT "deephaven::client::utility::CythonSupport::ElementTypeId::FLOAT"
+            DOUBLE "deephaven::client::utility::CythonSupport::ElementTypeId::DOUBLE"
+            BOOL "deephaven::client::utility::CythonSupport::ElementTypeId::BOOL"
+            STRING "deephaven::client::utility::CythonSupport::ElementTypeId::STRING"
+            TIMESTAMP "deephaven::client::utility::CythonSupport::ElementTypeId::TIMESTAMP"
+
+        @staticmethod
+        vector[string] getColumnNames(const CTable &table)
+        @staticmethod
+        vector[ElementTypeId] getColumnTypes(const CTable &table)
