@@ -143,7 +143,7 @@ public class WorkerConnection {
     private static final String FLIGHT_AUTH_HEADER_NAME = "authorization";
 
     // All calls to the server should share this metadata instance, or copy from it if they need something custom
-    private BrowserHeaders metadata = new BrowserHeaders();
+    private final BrowserHeaders metadata = new BrowserHeaders();
 
     private Double scheduledAuthUpdate;
     // default to 10s, the actual value is almost certainly higher than that
@@ -260,20 +260,20 @@ public class WorkerConnection {
         info.onReady()
                 .then(queryWorkerRunning -> {
                     // if there is already a token, use that
-                    if (metadata.has(FLIGHT_AUTH_HEADER_NAME)) {
-                        JsArray<String> value = metadata.get(FLIGHT_AUTH_HEADER_NAME);
-                        ConnectToken token = new ConnectToken();
-                        token.setType(value.getAt(0));
-                        token.setValue("");
-                        return Promise.resolve(token);
-                    }
+//                    if (metadata.has(FLIGHT_AUTH_HEADER_NAME)) {
+//                        JsArray<String> value = metadata.get(FLIGHT_AUTH_HEADER_NAME);
+//                        ConnectToken token = new ConnectToken();
+//                        token.setType(value.getAt(0));
+//                        token.setValue("");
+//                        return Promise.resolve(token);
+//                    }
                     // get the auth token
                     return info.getConnectToken();
                 }).then(authToken -> {
                     JsLog.warn("setting auth ", authToken.getType());
                     // set the proposed initial token and make the first call
                     metadata.set(FLIGHT_AUTH_HEADER_NAME, (authToken.getType() + " " + authToken.getValue()).trim());
-                    return authUpdate().then(ignore -> Promise.resolve(Boolean.FALSE));
+                    return authUpdate().then(ignore -> Promise.resolve(Boolean.TRUE));
                 }).then(newSession -> {
                     JsLog.warn("have session");
                     // subscribe to fatal errors
@@ -286,7 +286,7 @@ public class WorkerConnection {
                     newSessionReconnect.success();
 
                     if (newSession) {
-                        assert false : "Can't yet rebuild connections with new auth, please log in again";
+//                        assert false : "Can't yet rebuild connections with new auth, please log in again";
                         // nuke pending callbacks, we'll remake them
                         handleCallbacks = new JsWeakMap<>();
                         definitionCallbacks = new JsWeakMap<>();
@@ -307,11 +307,13 @@ public class WorkerConnection {
                                 .peek(cts -> {
                                     cts.forActiveTables(t -> {
                                         assert t.state().isAncestor(cts)
-                                                : "Invalid binding " + t + " (" + t.state() + ") does not contain " + cts;
+                                                : "Invalid binding " + t + " (" + t.state() + ") does not contain "
+                                                        + cts;
                                     });
                                 })
                                 .toArray(ClientTableState[]::new);
                         // clear caches
+                        // TODO verify we still need to do this, it seems like it might signify a leak
                         List<ClientTableState> inactiveStatesToRemove = cache.getAllStates().stream()
                                 .filter(ClientTableState::isEmpty)
                                 .collect(Collectors.toList());
@@ -323,25 +325,9 @@ public class WorkerConnection {
 
                         figures.forEach((p0, p1, p2) -> p0.refetch());
                     } else {
-                        //only notify that we're back, no need to re-create or re-fetch anything
+                        // only notify that we're back, no need to re-create or re-fetch anything
                         ClientTableState[] hasActiveSubs = cache.getAllStates().stream()
-//                                .peek(cts -> {
-//                                    cts.getHandle().setConnected(false);
-//                                    cts.setSubscribed(false);
-//                                    cts.forActiveLifecycles(item -> {
-//                                        assert !(item instanceof JsTable) ||
-//                                                ((JsTable) item).state() == cts
-//                                                : "Invalid table state " + item + " does not point to state " + cts;
-//                                        item.suppressEvents();
-//                                    });
-//                                })
                                 .filter(cts -> !cts.isEmpty())
-//                                .peek(cts -> {
-//                                    cts.forActiveTables(t -> {
-//                                        assert t.state().isAncestor(cts)
-//                                                : "Invalid binding " + t + " (" + t.state() + ") does not contain " + cts;
-//                                    });
-//                                })
                                 .toArray(ClientTableState[]::new);
 
                         reviver.revive(metadata, hasActiveSubs);
@@ -398,7 +384,7 @@ public class WorkerConnection {
         } else if (status.getCode() == Code.Unauthenticated) {
             // TODO re-create session once before signaling failure?
             info.fireEvent(CoreClient.EVENT_RECONNECT_AUTH_FAILED);
-//            info.notifyConnectionError(status);
+            // info.notifyConnectionError(status);
         } else if (status.getCode() == Code.Internal || status.getCode() == Code.Unknown
                 || status.getCode() == Code.Unavailable) {
             // signal that there has been a connection failure of some kind and attempt to reconnect
@@ -473,7 +459,7 @@ public class WorkerConnection {
                 } else {
                     if (status.getCode() == Code.Unauthenticated) {
                         // explicitly clear out any metadata for authentication, and signal that auth failed
-                        metadata = new BrowserHeaders();
+                        metadata.delete(FLIGHT_AUTH_HEADER_NAME);
 
                         // TODO this failure might be due to an expired session, which we can try to re-create
                         // instead of firing this yet
@@ -501,7 +487,7 @@ public class WorkerConnection {
                             subscribeToTerminationNotification();
                         } else {
                             connectionLost();
-        //                            info.notifyConnectionError(Js.cast(fail));
+                            // info.notifyConnectionError(Js.cast(fail));
                         }
                         return;
                     }
@@ -510,50 +496,50 @@ public class WorkerConnection {
                     // welp; the server is gone -- let everyone know
                     connectionLost();
 
-//                    info.notifyConnectionError(new ResponseStreamWrapper.Status() {
-//                        @Override
-//                        public int getCode() {
-//                            return Code.Unavailable;
-//                        }
-//
-//                        @SuppressWarnings("StringConcatenationInLoop")
-//                        @Override
-//                        public String getDetails() {
-//                            if (!success.getAbnormalTermination()) {
-//                                return "Server exited normally.";
-//                            }
-//
-//                            String retval;
-//                            if (!success.getReason().isEmpty()) {
-//                                retval = success.getReason();
-//                            } else {
-//                                retval = "Server exited abnormally.";
-//                            }
-//
-//                            final JsArray<StackTrace> traces = success.getStackTracesList();
-//                            for (int ii = 0; ii < traces.length; ++ii) {
-//                                final StackTrace trace = traces.getAt(ii);
-//                                retval += "\n\n";
-//                                if (ii != 0) {
-//                                    retval += "Caused By: " + trace.getType() + ": " + trace.getMessage();
-//                                } else {
-//                                    retval += trace.getType() + ": " + trace.getMessage();
-//                                }
-//
-//                                final JsArray<String> elements = trace.getElementsList();
-//                                for (int jj = 0; jj < elements.length; ++jj) {
-//                                    retval += "\n" + elements.getAt(jj);
-//                                }
-//                            }
-//
-//                            return retval;
-//                        }
-//
-//                        @Override
-//                        public BrowserHeaders getMetadata() {
-//                            return new BrowserHeaders(); // nothing to offer
-//                        }
-//                    });
+                    // info.notifyConnectionError(new ResponseStreamWrapper.Status() {
+                    // @Override
+                    // public int getCode() {
+                    // return Code.Unavailable;
+                    // }
+                    //
+                    // @SuppressWarnings("StringConcatenationInLoop")
+                    // @Override
+                    // public String getDetails() {
+                    // if (!success.getAbnormalTermination()) {
+                    // return "Server exited normally.";
+                    // }
+                    //
+                    // String retval;
+                    // if (!success.getReason().isEmpty()) {
+                    // retval = success.getReason();
+                    // } else {
+                    // retval = "Server exited abnormally.";
+                    // }
+                    //
+                    // final JsArray<StackTrace> traces = success.getStackTracesList();
+                    // for (int ii = 0; ii < traces.length; ++ii) {
+                    // final StackTrace trace = traces.getAt(ii);
+                    // retval += "\n\n";
+                    // if (ii != 0) {
+                    // retval += "Caused By: " + trace.getType() + ": " + trace.getMessage();
+                    // } else {
+                    // retval += trace.getType() + ": " + trace.getMessage();
+                    // }
+                    //
+                    // final JsArray<String> elements = trace.getElementsList();
+                    // for (int jj = 0; jj < elements.length; ++jj) {
+                    // retval += "\n" + elements.getAt(jj);
+                    // }
+                    // }
+                    //
+                    // return retval;
+                    // }
+                    //
+                    // @Override
+                    // public BrowserHeaders getMetadata() {
+                    // return new BrowserHeaders(); // nothing to offer
+                    // }
+                    // });
                 });
     }
 
