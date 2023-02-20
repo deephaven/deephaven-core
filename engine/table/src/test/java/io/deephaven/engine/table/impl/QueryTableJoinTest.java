@@ -339,7 +339,7 @@ public class QueryTableJoinTest {
 
         for (int step = 0; step < maxSteps; step++) {
             // System.out.println("Date Step = " + step + ", leftSize=" + leftSize + ", rightSize=" + rightSize
-            //         + ", seed = " + seed + ", step=" + joinIncrement);
+            // + ", seed = " + seed + ", step=" + joinIncrement);
             joinIncrement.step(leftSize, rightSize, leftTable, rightTable, leftColumnInfo, rightColumnInfo, en, random);
         }
     }
