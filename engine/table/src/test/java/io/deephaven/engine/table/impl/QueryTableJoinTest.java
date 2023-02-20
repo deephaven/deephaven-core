@@ -6,10 +6,13 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.testutil.*;
-import io.deephaven.engine.testutil.generator.DateGenerator;
 import io.deephaven.engine.testutil.generator.IntGenerator;
 import io.deephaven.engine.testutil.generator.SetGenerator;
 import io.deephaven.engine.testutil.generator.SortedIntGenerator;
+import io.deephaven.engine.testutil.generator.UnsortedDateTimeGenerator;
+import io.deephaven.time.DateTime;
+import io.deephaven.time.DateTimeFormatter;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.vector.IntVector;
 import io.deephaven.vector.ObjectVector;
 import io.deephaven.vector.DoubleVector;
@@ -22,7 +25,7 @@ import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.util.TableTools;
 
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
+import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.Random;
 
@@ -233,20 +236,24 @@ public class QueryTableJoinTest {
 
     private void testAjIncremental(int leftSize, int rightSize, QueryTableTestBase.JoinIncrement joinIncrement,
             long seed,
-            @SuppressWarnings("SameParameterValue") long maxSteps) throws ParseException {
+            @SuppressWarnings("SameParameterValue") long maxSteps) {
         final Random random = new Random(seed);
-        QueryScope.addParam("f", new SimpleDateFormat("dd HH:mm:ss"));
+        QueryScope.addParam("f", new DateTimeFormatter("dd HH:mm:ss"));
 
+        final DateTime start = DateTimeUtils.toDateTime(
+                DateTimeUtils.convertDate("2011-02-02").atStartOfDay().atZone(ZoneId.of("America/New_York")));
+        final DateTime end = DateTimeUtils.toDateTime(
+                DateTimeUtils.convertDate("2011-02-03").atStartOfDay().atZone(ZoneId.of("America/New_York")));
         final ColumnInfo<?, ?>[] leftColumnInfo;
         final QueryTable leftTable = getTable(leftSize, random,
                 leftColumnInfo = initColumnInfos(new String[] {"Date", "C1", "C2"},
-                        new DateGenerator(base.format.parse("2011-02-02"), base.format.parse("2011-02-03")),
+                        new UnsortedDateTimeGenerator(start, end),
                         new SetGenerator<>("a", "b"),
                         new SetGenerator<>(10, 20, 30)));
         final ColumnInfo<?, ?>[] rightColumnInfo;
         final QueryTable rightTable = getTable(rightSize, random,
                 rightColumnInfo = initColumnInfos(new String[] {"Date", "C1", "C2"},
-                        new DateGenerator(base.format.parse("2011-02-02"), base.format.parse("2011-02-03")),
+                        new UnsortedDateTimeGenerator(start, end),
                         new SetGenerator<>("a", "b", "c"),
                         new SetGenerator<>(20, 30, 40)));
 
@@ -331,8 +338,8 @@ public class QueryTableJoinTest {
         };
 
         for (int step = 0; step < maxSteps; step++) {
-            // System.out.println("Date Step = " + step + ", leftSize=" + leftSize + ", rightSize=" + rightSize + ",
-            // seed = " + seed + ", step=" + joinIncrement);
+            // System.out.println("Date Step = " + step + ", leftSize=" + leftSize + ", rightSize=" + rightSize
+            //         + ", seed = " + seed + ", step=" + joinIncrement);
             joinIncrement.step(leftSize, rightSize, leftTable, rightTable, leftColumnInfo, rightColumnInfo, en, random);
         }
     }
