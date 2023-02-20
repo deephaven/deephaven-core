@@ -37,7 +37,7 @@ public class PythonAutoCompleteObserver extends SessionCloseableObserver<AutoCom
     private final Provider<ScriptSession> scriptSession;
 
     public PythonAutoCompleteObserver(StreamObserver<AutoCompleteResponse> responseObserver,
-                                      Provider<ScriptSession> scriptSession, final SessionState session) {
+            Provider<ScriptSession> scriptSession, final SessionState session) {
         super(session, responseObserver);
         this.scriptSession = scriptSession;
     }
@@ -98,8 +98,8 @@ public class PythonAutoCompleteObserver extends SessionCloseableObserver<AutoCom
     }
 
     private void getCompletionItems(GetCompletionItemsRequest request,
-                                    SessionState.ExportObject<ScriptSession> exportedConsole,
-                                    StreamObserver<AutoCompleteResponse> responseObserver) {
+            SessionState.ExportObject<ScriptSession> exportedConsole,
+            StreamObserver<AutoCompleteResponse> responseObserver) {
         final ScriptSession scriptSession = exportedConsole.get();
         try (final SafeCloseable ignored = scriptSession.getExecutionContext().open()) {
 
