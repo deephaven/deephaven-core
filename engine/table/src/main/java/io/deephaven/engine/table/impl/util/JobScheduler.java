@@ -130,6 +130,11 @@ public interface JobScheduler {
 
         @Override
         public void run() {
+            // Handle the (possibly rare) case where earlier threads have already done all the work before this task
+            // can start.
+            if (nextIndex.get() >= start + count) {
+                return;
+            }
             try (final CONTEXT_TYPE taskThreadContext = taskThreadContextFactory.get()) {
                 while (true) {
                     if (exception.get() != null) {

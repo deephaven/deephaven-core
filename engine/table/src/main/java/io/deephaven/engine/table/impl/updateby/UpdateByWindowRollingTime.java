@@ -309,7 +309,7 @@ class UpdateByWindowRollingTime extends UpdateByWindowRollingBase {
                     totalPushCount += pushCount;
                 }
                 ctx.influencerCounts[affectedChunkOffset] = Math.toIntExact(totalPushCount);
-                ctx.currentGetContextSize = Math.max(ctx.currentGetContextSize, Math.toIntExact(totalPushCount));
+                ctx.maxGetContextSize = Math.max(ctx.maxGetContextSize, Math.toIntExact(totalPushCount));
 
                 affectedChunkOffset++;
             }

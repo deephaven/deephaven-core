@@ -1,8 +1,11 @@
 package io.deephaven.engine.table.impl.updateby;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.TrackingRowSet;
+import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.ssa.LongSegmentedSortedArray;
@@ -217,7 +220,8 @@ abstract class UpdateByWindow {
      * @param winOpIdx the index of the operator within this window to process.
      * @param initialStep whether this is the creation step of this bucket.
      */
-    abstract void processBucketOperator(UpdateByWindowBucketContext context, int winOpIdx, boolean initialStep);
+    abstract void processBucketOperator(UpdateByWindowBucketContext context, int winOpIdx, boolean initialStep,
+                                        Chunk<? extends Values>[] chunkArr, ChunkSource.GetContext[] chunkContexts);
 
     /**
      * Returns `true` if the window for this bucket needs to be processed this cycle.

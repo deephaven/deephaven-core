@@ -104,7 +104,11 @@ class UpdateByWindowCumulative extends UpdateByWindow {
     }
 
     @Override
-    void processBucketOperator(UpdateByWindowBucketContext context, int winOpIdx, boolean initialStep) {
+    void processBucketOperator(final UpdateByWindowBucketContext context,
+                               final int winOpIdx,
+                               final boolean initialStep,
+                               final Chunk<? extends Values>[] chunkArr,
+                               final ChunkSource.GetContext[] chunkContexts) {
         Assert.neqNull(context.inputSources, "assignInputSources() must be called before processRow()");
 
         UpdateByOperator cumOp = operators[winOpIdx];
@@ -151,14 +155,6 @@ class UpdateByWindowCumulative extends UpdateByWindow {
 
             final int[] srcIndices = operatorInputSourceSlots[winOpIdx];
 
-            final Chunk<? extends Values>[] chunkArr = new Chunk[srcIndices.length];
-            final ChunkSource.GetContext[] chunkContexts = new ChunkSource.GetContext[srcIndices.length];
-
-            for (int ii = 0; ii < srcIndices.length; ii++) {
-                int srcIdx = srcIndices[ii];
-                chunkContexts[ii] = context.inputSources[srcIdx].makeGetContext(context.workingChunkSize);
-            }
-
             while (affectedIt.hasMore()) {
                 final RowSequence affectedRs = affectedIt.getNextRowSequenceWithLength(context.workingChunkSize);
 
@@ -179,9 +175,6 @@ class UpdateByWindowCumulative extends UpdateByWindow {
                         tsChunk,
                         affectedRs.intSize());
             }
-
-            // Clean up the temporary contexts.
-            SafeCloseableArray.close(chunkContexts);
 
             // Finalize the operator.
             cumOp.finishUpdate(winOpCtx);

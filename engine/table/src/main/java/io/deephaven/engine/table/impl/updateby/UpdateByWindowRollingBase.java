@@ -25,7 +25,7 @@ abstract class UpdateByWindowRollingBase extends UpdateByWindow {
     final long fwdUnits;
 
     static class UpdateByWindowRollingBucketContext extends UpdateByWindowBucketContext {
-        int currentGetContextSize;
+        int maxGetContextSize;
         WritableIntChunk<Values>[] pushChunks;
         WritableIntChunk<Values>[] popChunks;
         int[] influencerCounts;
@@ -71,7 +71,7 @@ abstract class UpdateByWindowRollingBase extends UpdateByWindow {
 
         // working chunk size need not be larger than affectedRows.size()
         ctx.workingChunkSize = Math.toIntExact(Math.min(ctx.workingChunkSize, ctx.affectedRows.size()));
-        ctx.currentGetContextSize = ctx.workingChunkSize;
+        ctx.maxGetContextSize = ctx.workingChunkSize;
 
         // create the array of push/pop chunks
         final long rowCount = ctx.affectedRows.size();
@@ -108,7 +108,11 @@ abstract class UpdateByWindowRollingBase extends UpdateByWindow {
 
 
     @Override
-    void processBucketOperator(UpdateByWindowBucketContext context, int winOpIdx, boolean initialStep) {
+    void processBucketOperator(final UpdateByWindowBucketContext context,
+                               final int winOpIdx,
+                               final boolean initialStep,
+                               final Chunk<? extends Values>[] chunkArr,
+                               final ChunkSource.GetContext[] chunkContexts) {
         Assert.neqNull(context.inputSources, "assignInputSources() must be called before processRow()");
 
         UpdateByWindowRollingBucketContext ctx = (UpdateByWindowRollingBucketContext) context;
@@ -123,14 +127,6 @@ abstract class UpdateByWindowRollingBase extends UpdateByWindow {
 
             // Call the specialized version of `intializeUpdate()` for these operators.
             winOp.initializeRolling(winOpCtx);
-
-            // Create the contexts we'll use for this operator.
-            final Chunk<? extends Values>[] chunkArr = new Chunk[srcIndices.length];
-            final ChunkSource.GetContext[] chunkContexts = new ChunkSource.GetContext[srcIndices.length];
-            for (int ii = 0; ii < srcIndices.length; ii++) {
-                int srcIdx = srcIndices[ii];
-                chunkContexts[ii] = ctx.inputSources[srcIdx].makeGetContext(ctx.currentGetContextSize);
-            }
 
             int affectedChunkOffset = 0;
 
@@ -158,9 +154,6 @@ abstract class UpdateByWindowRollingBase extends UpdateByWindow {
 
                 affectedChunkOffset++;
             }
-
-            // Clean up the temporary contexts.
-            SafeCloseableArray.close(chunkContexts);
 
             // Finalize the operator.
             winOp.finishUpdate(winOpCtx);
