@@ -1,5 +1,6 @@
 package io.deephaven.extensions.arrow;
 
+import io.deephaven.base.ArrayUtil;
 import io.deephaven.base.reference.WeakCleanupReference;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.ResettableContext;
@@ -50,6 +51,7 @@ import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.util.annotations.TestUseOnly;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
+import io.deephaven.util.datastructures.SizeException;
 import org.apache.arrow.flatbuf.Message;
 import org.apache.arrow.flatbuf.RecordBatch;
 import org.apache.arrow.memory.BufferAllocator;
@@ -83,7 +85,6 @@ import org.jetbrains.annotations.NotNull;
 import static org.apache.arrow.vector.ipc.message.MessageSerializer.IPC_CONTINUATION_TOKEN;
 
 /**
- * <pre>
  * This class contains tools for dealing apache arrow data.
  * <ul>
  * <li>{@link ArrowBooleanColumnSource} - uses {@link BitVector} under the hood, returns Boolean</li>
@@ -106,7 +107,6 @@ import static org.apache.arrow.vector.ipc.message.MessageSerializer.IPC_CONTINUA
  * <li>{@link ArrowObjectColumnSource ArrowObjectColumnSource&lt;BigDecimal&gt;} - uses {@link Decimal256Vector} under the hood, returns BigDecimal</li>
  * <li>{@link ArrowObjectColumnSource ArrowObjectColumnSource&lt;LocalDateTime&gt;} - uses {@link DateMilliVector} under the hood, returns LocalDateTime</li>
  * </ul>
- * </pre>
  */
 public class ArrowWrapperTools {
     private static final int MAX_POOL_SIZE = Math.max(UpdateGraphProcessor.DEFAULT.getUpdateThreads(),
@@ -125,14 +125,18 @@ public class ArrowWrapperTools {
             int biggestBlock = 0;
             final List<ArrowBlock> recordBlocks = reader.getRecordBlocks();
             final int[] blocks = new int[recordBlocks.size()];
-            // TODO: load only the metadata to speed up initial read time
 
             int metadataBufLen = 1024;
             byte[] rawMetadataBuf = new byte[metadataBufLen];
+            final RecordBatch recordBatch = new RecordBatch();
             for (int ii = 0; ii < blocks.length; ++ii) {
                 final ArrowBlock block = recordBlocks.get(ii);
+                if (block.getMetadataLength() > ArrayUtil.MAX_ARRAY_SIZE) {
+                    throw new SizeException("Metadata length exceeds maximum array size.", block.getMetadataLength(),
+                            ArrayUtil.MAX_ARRAY_SIZE);
+                }
                 while (block.getMetadataLength() > metadataBufLen) {
-                    metadataBufLen *= 2;
+                    metadataBufLen = Math.min(2 * metadataBufLen, ArrayUtil.MAX_ARRAY_SIZE);
                     rawMetadataBuf = new byte[metadataBufLen];
                 }
 
@@ -147,10 +151,10 @@ public class ArrowWrapperTools {
                 metadataBuf.flip();
                 if (metadataBuf.getInt() == IPC_CONTINUATION_TOKEN) {
                     // if the continuation token is present, skip the length
-                    metadataBuf.getInt();
+                    metadataBuf.position(metadataBuf.position() + Integer.BYTES);
                 }
                 final Message message = Message.getRootAsMessage(metadataBuf.asReadOnlyBuffer());
-                final RecordBatch batch = (RecordBatch) message.header(new RecordBatch());
+                final RecordBatch batch = (RecordBatch) message.header(recordBatch);
 
                 final int rowCount = LongSizedDataStructure.intSize("ArrowWrapperTools#readFeather", batch.length());
                 blocks[ii] = rowCount;
