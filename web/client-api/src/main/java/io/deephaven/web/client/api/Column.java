@@ -3,7 +3,6 @@
  */
 package io.deephaven.web.client.api;
 
-import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
 import io.deephaven.web.client.api.filter.FilterValue;
 import jsinterop.annotations.JsMethod;
@@ -13,7 +12,6 @@ import jsinterop.base.Any;
 import java.util.stream.IntStream;
 import java.util.stream.IntStream.Builder;
 
-@TsInterface
 @TsName(namespace = "dh")
 public class Column {
     private final int index;
@@ -41,12 +39,10 @@ public class Column {
     private String description;
     private final boolean isInputTableKeyColumn;
 
-    @JsMethod(namespace = "dh.Column")
     public static CustomColumn formatRowColor(String expression) {
         return new CustomColumn(CustomColumn.ROW_FORMAT_NAME, CustomColumn.TYPE_FORMAT_COLOR, expression);
     }
 
-    @JsMethod(namespace = "dh.Column")
     public static CustomColumn createCustomColumn(String name, String expression) {
         return new CustomColumn(name, CustomColumn.TYPE_NEW, expression);
     }

@@ -814,8 +814,8 @@ public class JsTreeTable extends HasEventHandling {
 
     // JsTable-like methods
     @JsMethod
-    public void setViewport(double firstRow, double lastRow, @JsOptional JsArray<Column> columns,
-            @JsOptional Double updateInterval) {
+    public void setViewport(double firstRow, double lastRow, @JsOptional @JsNullable JsArray<Column> columns,
+                            @JsNullable @JsOptional Double updateInterval) {
         this.firstRow = firstRow;
         this.lastRow = lastRow;
         this.columns = columns != null ? Js.uncheckedCast(columns.slice()) : visibleColumns;

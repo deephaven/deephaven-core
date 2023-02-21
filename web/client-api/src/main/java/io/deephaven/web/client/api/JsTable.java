@@ -483,8 +483,8 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
     }
 
     @JsMethod
-    public TableViewportSubscription setViewport(double firstRow, double lastRow, @JsOptional JsArray<Column> columns,
-            @JsOptional Double updateIntervalMs) {
+    public TableViewportSubscription setViewport(double firstRow, double lastRow, @JsOptional @JsNullable JsArray<Column> columns,
+            @JsOptional @JsNullable Double updateIntervalMs) {
         Column[] columnsCopy = columns != null ? Js.uncheckedCast(columns.slice()) : null;
         ClientTableState currentState = state();
         TableViewportSubscription activeSubscription = subscriptions.get(getHandle());
