@@ -3,8 +3,8 @@
  */
 package io.deephaven.web.client.api;
 
-import com.vertispan.tsdefs.annotations.TsName;
-import jsinterop.annotations.JsMethod;
+import jsinterop.annotations.JsIgnore;
+import jsinterop.annotations.JsType;
 
 import javax.annotation.Nonnull;
 import java.math.BigDecimal;
@@ -12,7 +12,7 @@ import java.math.BigDecimal;
 /**
  * Wrap BigDecimal values for use in JS. Provides text formatting for display and access to the underlying value.
  */
-@TsName(namespace = "dh")
+@JsType(namespace = "dh")
 public class BigDecimalWrapper {
     private final BigDecimal value;
 
@@ -24,17 +24,15 @@ public class BigDecimalWrapper {
         return value;
     }
 
-    @JsMethod
+    @JsIgnore
     public double asNumber() {
         return getWrapped().doubleValue();
     }
 
-    @JsMethod
     public String valueOf() {
         return toString();
     }
 
-    @JsMethod
     @Override
     public String toString() {
         return value.toString();

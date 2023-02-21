@@ -3,6 +3,7 @@
  */
 package io.deephaven.web.client.api;
 
+import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
 import io.deephaven.web.client.api.filter.FilterValue;
 import jsinterop.annotations.JsMethod;
@@ -12,6 +13,7 @@ import jsinterop.base.Any;
 import java.util.stream.IntStream;
 import java.util.stream.IntStream.Builder;
 
+@TsInterface
 @TsName(namespace = "dh")
 public class Column {
     private final int index;

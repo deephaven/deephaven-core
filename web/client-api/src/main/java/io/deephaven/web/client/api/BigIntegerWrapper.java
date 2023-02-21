@@ -12,7 +12,7 @@ import java.math.BigInteger;
 /**
  * Wrap BigInteger values for use in JS. Provides text formatting for display and access to the underlying value.
  */
-@JsType(namespace = "dh") // TODO instead make a factory method?
+@JsType(namespace = "dh")
 public class BigIntegerWrapper {
     private final BigInteger value;
 
