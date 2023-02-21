@@ -39,7 +39,6 @@ public abstract class BaseFloatUpdateByOperator extends UpdateByOperator {
         public float curVal = NULL_FLOAT;
 
         protected Context(final int chunkSize) {
-            super();
             this.outputFillContext = outputSource.makeFillFromContext(chunkSize);
             this.outputValues = WritableFloatChunk.makeWritableChunk(chunkSize);
         }

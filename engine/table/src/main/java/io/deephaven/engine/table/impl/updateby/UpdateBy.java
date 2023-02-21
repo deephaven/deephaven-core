@@ -46,7 +46,7 @@ import java.lang.ref.SoftReference;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.stream.IntStream;
 
@@ -211,41 +211,6 @@ public abstract class UpdateBy {
     }
 
 
-    /** Release the input sources that will not be needed for the rest of this update */
-    private void releaseInputSources(int winIdx, int winOpIdx, ColumnSource<?>[] maybeCachedInputSources,
-            AtomicReferenceArray<WritableRowSet> inputSourceRowSets, AtomicInteger[] inputSourceReferenceCounts) {
-
-        final UpdateByWindow win = windows[winIdx];
-        final int[] uniqueWindowSources = win.operatorInputSourceSlots[winOpIdx];
-
-        try (final ResettableWritableObjectChunk<?, ?> backingChunk =
-                ResettableWritableObjectChunk.makeResettableChunk()) {
-            for (int srcIdx : uniqueWindowSources) {
-                if (!inputSourceCacheNeeded[srcIdx]) {
-                    continue;
-                }
-
-                if (inputSourceReferenceCounts[srcIdx].decrementAndGet() == 0) {
-                    // Last use of this set, let's clean up
-                    try (final RowSet rows = inputSourceRowSets.get(srcIdx)) {
-                        // release any objects we are holding in the cache
-                        if (maybeCachedInputSources[srcIdx] instanceof ObjectArraySource) {
-                            final long targetCapacity = rows.size();
-                            for (long positionToNull = 0; positionToNull < targetCapacity; positionToNull +=
-                                    backingChunk.size()) {
-                                ((ObjectArraySource<?>) maybeCachedInputSources[srcIdx])
-                                        .resetWritableChunkToBackingStore(backingChunk, positionToNull);
-                                backingChunk.fillWithNullValue(0, backingChunk.size());
-                            }
-                        }
-                        inputSourceRowSets.set(srcIdx, null);
-                        maybeCachedInputSources[srcIdx] = null;
-                    }
-                }
-            }
-        }
-    }
-
     /**
      * Overview of work performed by {@link PhasedUpdateProcessor}:
      * <ol>
@@ -255,7 +220,7 @@ public abstract class UpdateBy {
      * <li>When prepareForParallelPopulation() complete, apply upstream shifts to the output sources</li>
      * <li>Process each window and operator serially
      * <ul>
-     * <li>Pre-create window information for</li>
+     * <li>Pre-create window information for windowed operators (push/pop counts)</li>
      * <li>Cache the input sources that are needed for each window operator (in parallel by chunk of rows)</li>
      * <li>When caching is complete, process the window operator (in parallel by bucket)</li>
      * <li>When all buckets processed, release the input source caches that will not be re-used later by later
@@ -277,7 +242,7 @@ public abstract class UpdateBy {
         /** For cacheable sources, the minimal rowset to cache (union of bucket influencer rows) */
         final AtomicReferenceArray<WritableRowSet> inputSourceRowSets;
         /** For cacheable sources, track how many windows require this source */
-        final AtomicInteger[] inputSourceReferenceCounts;
+        final AtomicIntegerArray inputSourceReferenceCounts;
         final JobScheduler jobScheduler;
         final CompletableFuture<Void> waitForResult;
 
@@ -305,7 +270,7 @@ public abstract class UpdateBy {
             if (inputCacheNeeded) {
                 maybeCachedInputSources = new ColumnSource[inputSources.length];
                 inputSourceRowSets = new AtomicReferenceArray<>(inputSources.length);
-                inputSourceReferenceCounts = new AtomicInteger[inputSources.length];
+                inputSourceReferenceCounts = new AtomicIntegerArray(inputSources.length);
 
                 for (int ii = 0; ii < inputSources.length; ii++) {
                     // Set the uncacheable columns into the array.
@@ -335,19 +300,21 @@ public abstract class UpdateBy {
             } else {
                 // Determine which windows need to be computed.
                 for (int winIdx = 0; winIdx < windows.length; winIdx++) {
-                    final int finalWinIdx = winIdx;
-                    if (Arrays.stream(dirtyBuckets)
-                            .anyMatch(bucket -> windows[finalWinIdx]
-                                    .isWindowBucketDirty(bucket.windowContexts[finalWinIdx]))) {
-                        dirtyWindows.set(winIdx);
-                        dirtyWindowOperators[winIdx] = new BitSet(windows[winIdx].operators.length);
+                    for (UpdateByBucketHelper bucket : dirtyBuckets) {
+                        final UpdateByWindow.UpdateByWindowBucketContext bucketWindowCtx =
+                                bucket.windowContexts[winIdx];
+                        if (!bucketWindowCtx.isDirty) {
+                            continue;
+                        }
+                        if (dirtyWindowOperators[winIdx] == null) {
+                            dirtyWindows.set(winIdx);
+                            dirtyWindowOperators[winIdx] = new BitSet(windows[winIdx].operators.length);
+                        }
                         final int size = windows[winIdx].operators.length;
-                        for (UpdateByBucketHelper bucket : dirtyBuckets) {
-                            dirtyWindowOperators[winIdx].or(bucket.windowContexts[winIdx].dirtyOperators);
-                            if (dirtyWindowOperators[winIdx].cardinality() == size) {
-                                // all are set, we can stop checking
-                                break;
-                            }
+                        dirtyWindowOperators[winIdx].or(bucketWindowCtx.dirtyOperators);
+                        if (dirtyWindowOperators[winIdx].cardinality() == size) {
+                            // all are set, we can stop checking
+                            break;
                         }
                     }
                 }
@@ -405,15 +372,11 @@ public abstract class UpdateBy {
                                 }
                             }
                         }
-                        inputSourceReferenceCounts[srcIdx] = new AtomicInteger(useCount);
+                        inputSourceReferenceCounts.set(srcIdx, useCount);
                     }
                 }
                 resumeAction.run();
                 return;
-            }
-
-            for (int srcIdx : cacheableSourceIndices) {
-                inputSourceReferenceCounts[srcIdx] = new AtomicInteger(0);
             }
 
             jobScheduler.iterateParallel(ExecutionContext.getContextToRecord(), this,
@@ -422,12 +385,13 @@ public abstract class UpdateBy {
                         final int srcIdx = cacheableSourceIndices[idx];
 
                         int useCount = 0;
-                        // If any of the dirty operators use this source, then increment the use count
-                        for (int winIdx = 0; winIdx < windows.length; winIdx++) {
-                            if (!dirtyWindows.get(winIdx)) {
-                                continue;
-                            }
+                        if (dirtyWindows.isEmpty()) {
+                            return;
+                        }
 
+                        final int[] dirtyWindowIndices = dirtyWindows.stream().toArray();
+                        // If any of the dirty operators use this source, then increment the use count
+                        for (int winIdx : dirtyWindowIndices) {
                             UpdateByWindow win = windows[winIdx];
                             // combine the row sets from the dirty windows
                             for (UpdateByBucketHelper bucket : dirtyBuckets) {
@@ -460,7 +424,7 @@ public abstract class UpdateBy {
                                     useCount++;
                                 }
                             }
-                            inputSourceReferenceCounts[srcIdx] = new AtomicInteger(useCount);
+                            inputSourceReferenceCounts.set(srcIdx, useCount);
                         }
                     }, resumeAction, this::onError);
         }
@@ -535,6 +499,40 @@ public abstract class UpdateBy {
                         maybeCachedInputSources[srcIdx] = outputSource;
                         resumeAction.run();
                     }, this::onError);
+        }
+
+        /** Release the input sources that will not be needed for the rest of this update */
+        private void releaseInputSources(int winIdx, int winOpIdx) {
+
+            final UpdateByWindow win = windows[winIdx];
+            final int[] uniqueWindowSources = win.operatorInputSourceSlots[winOpIdx];
+
+            try (final ResettableWritableObjectChunk<?, ?> backingChunk =
+                    ResettableWritableObjectChunk.makeResettableChunk()) {
+                for (int srcIdx : uniqueWindowSources) {
+                    if (!inputSourceCacheNeeded[srcIdx]) {
+                        continue;
+                    }
+
+                    if (inputSourceReferenceCounts.decrementAndGet(srcIdx) == 0) {
+                        // Last use of this set, let's clean up
+                        try (final RowSet rows = inputSourceRowSets.get(srcIdx)) {
+                            // release any objects we are holding in the cache
+                            if (maybeCachedInputSources[srcIdx] instanceof ObjectArraySource) {
+                                final long targetCapacity = rows.size();
+                                for (long positionToNull = 0; positionToNull < targetCapacity; positionToNull +=
+                                        backingChunk.size()) {
+                                    ((ObjectArraySource<?>) maybeCachedInputSources[srcIdx])
+                                            .resetWritableChunkToBackingStore(backingChunk, positionToNull);
+                                    backingChunk.fillWithNullValue(0, backingChunk.size());
+                                }
+                            }
+                            inputSourceRowSets.set(srcIdx, null);
+                            maybeCachedInputSources[srcIdx] = null;
+                        }
+                    }
+                }
+            }
         }
 
         /**
@@ -643,8 +641,7 @@ public abstract class UpdateBy {
                         cacheOperatorInputSources(winIdx, opIdx, () -> {
                             processWindowBucketOperators(winIdx, opIdx, () -> {
                                 // release the cached sources that are no longer needed
-                                releaseInputSources(winIdx, opIdx, maybeCachedInputSources, inputSourceRowSets,
-                                        inputSourceReferenceCounts);
+                                releaseInputSources(winIdx, opIdx);
                                 opComplete.run();
                             });
                         });
@@ -657,15 +654,18 @@ public abstract class UpdateBy {
          * cached columns before starting the next window. Calls {@code completedAction} when the work is complete
          */
         private void processWindows(final Runnable resumeAction) {
+            if (dirtyWindows.isEmpty()) {
+                resumeAction.run();
+                return;
+            }
+
+            final int[] dirtyWindowIndices = dirtyWindows.stream().toArray();
+
             jobScheduler.iterateSerial(ExecutionContext.getContextToRecord(), this,
                     JobScheduler.DEFAULT_CONTEXT_FACTORY, 0,
-                    windows.length,
-                    (context, winIdx, windowComplete) -> {
-                        // This window might not be dirty
-                        if (!dirtyWindows.get(winIdx)) {
-                            windowComplete.run();
-                            return;
-                        }
+                    dirtyWindowIndices.length,
+                    (context, idx, windowComplete) -> {
+                        final int winIdx = dirtyWindowIndices[idx];
 
                         // assign the input sources and allocate resources to the bucket contexts
                         for (UpdateByBucketHelper bucket : dirtyBuckets) {

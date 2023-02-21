@@ -68,7 +68,6 @@ class UpdateByWindowCumulative extends UpdateByWindow {
 
             // mark all operators as affected by this update
             context.dirtyOperatorIndices = IntStream.range(0, operators.length).toArray();
-            context.dirtySourceIndices = getUniqueSourceIndices();
             context.dirtyOperators = new BitSet(operators.length);
             context.dirtyOperators.set(0, operators.length);
 

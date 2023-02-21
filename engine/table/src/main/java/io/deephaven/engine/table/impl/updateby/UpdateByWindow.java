@@ -1,6 +1,5 @@
 package io.deephaven.engine.table.impl.updateby;
 
-import gnu.trove.set.hash.TIntHashSet;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.TrackingRowSet;
@@ -26,8 +25,6 @@ abstract class UpdateByWindow {
 
     /** The indices in the UpdateBy input source collection for each operator input slots */
     protected final int[][] operatorInputSourceSlots;
-
-    protected int[] uniqueInputSourceIndices;
 
     /** This context will store the necessary info to process a single window for a single bucket */
     static class UpdateByWindowBucketContext implements SafeCloseable {
@@ -60,8 +57,6 @@ abstract class UpdateByWindow {
         /** Indicate which operators need to be processed */
         protected BitSet dirtyOperators;
         protected int[] dirtyOperatorIndices;
-        /** Indicates which sources are needed to process this window context */
-        protected int[] dirtySourceIndices;
         /** Were any input columns modified in the current update? */
         protected boolean inputModified;
 
@@ -131,12 +126,12 @@ abstract class UpdateByWindow {
                     operatorSourceSlots,
                     timestampColumnName);
         } else if (timestampColumnName == null) {
-            return new UpdateByWindowTicks(operators,
+            return new UpdateByWindowRollingTicks(operators,
                     operatorSourceSlots,
                     operators[0].getPrevWindowUnits(),
                     operators[0].getFwdWindowUnits());
         } else {
-            return new UpdateByWindowTime(operators,
+            return new UpdateByWindowRollingTime(operators,
                     operatorSourceSlots,
                     timestampColumnName,
                     operators[0].getPrevWindowUnits(),
@@ -165,26 +160,14 @@ abstract class UpdateByWindow {
         return operators;
     }
 
-    int[] getUniqueSourceIndices() {
-        if (uniqueInputSourceIndices == null) {
-            final TIntHashSet set = new TIntHashSet();
-            for (int opIdx = 0; opIdx < operators.length; opIdx++) {
-                set.addAll(operatorInputSourceSlots[opIdx]);
-            }
-            uniqueInputSourceIndices = set.toArray();
-        }
-        return uniqueInputSourceIndices;
-    }
-
     /**
      * Returns `true` if the input source is used by this window's operators
      *
      * @param srcIdx the index of the input source
      */
     boolean operatorUsesSource(int winOpIdx, int srcIdx) {
-        // this looks worse than it actually is, windows are defined by their input sources so there will be only
-        // one or two entries in `getUniqueSourceIndices()`. Iterating will be faster than building a lookup table
-        // or a hashset
+        // this looks worse than it actually is, most operators have exactly one input source and iterating will be
+        // faster than building a lookup table or a hashset
         for (int winSrcIdx : operatorInputSourceSlots[winOpIdx]) {
             if (winSrcIdx == srcIdx) {
                 return true;
@@ -285,7 +268,6 @@ abstract class UpdateByWindow {
             context.dirtyOperators = new BitSet(operators.length);
             context.dirtyOperators.set(0, operators.length);
             context.dirtyOperatorIndices = IntStream.range(0, operators.length).toArray();
-            context.dirtySourceIndices = getUniqueSourceIndices();
             context.isDirty = true;
             // still need to compute whether any input columns were modified
             if (upstream.modifiedColumnSet().empty()) {
@@ -315,7 +297,6 @@ abstract class UpdateByWindow {
             }
             context.isDirty = !context.dirtyOperators.isEmpty();
             context.dirtyOperatorIndices = context.dirtyOperators.stream().toArray();
-            context.dirtySourceIndices = dirtySourceIndices.stream().toArray();
         }
     }
 
@@ -324,12 +305,10 @@ abstract class UpdateByWindow {
     /**
      * Returns a hash code to help distinguish between windows on the same UpdateBy call
      */
-    private static int hashCode(boolean windowed, @NotNull String[] inputColumnNames,
-            @Nullable String timestampColumnName, long prevUnits,
+    private static int hashCode(boolean windowed, @Nullable String timestampColumnName, long prevUnits,
             long fwdUnits) {
 
-        int hash = 0;
-        hash = 31 * hash + Boolean.hashCode(windowed);
+        int hash = Boolean.hashCode(windowed);
 
         // treat all cumulative ops with the same input columns as identical, even if they rely on timestamps
         if (!windowed) {
@@ -348,7 +327,6 @@ abstract class UpdateByWindow {
      */
     static int hashCodeFromOperator(final UpdateByOperator op) {
         return hashCode(op.isWindowed,
-                op.getInputColumnNames(),
                 op.getTimestampColumnName(),
                 op.getPrevWindowUnits(),
                 op.getFwdWindowUnits());
