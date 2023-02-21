@@ -157,7 +157,7 @@ public class PythonAutoCompleteObserver extends SessionCloseableObserver<AutoCom
                 item.setLabel(completionName);
                 item.setLength(completionName.length());
                 range.getStartBuilder().setLine(pos.getLine()).setCharacter(start);
-                range.getEndBuilder().setLine(pos.getLine()).setCharacter(start + completionName.length());
+                range.getEndBuilder().setLine(pos.getLine()).setCharacter(pos.getCharacter());
                 item.setInsertTextFormat(2);
                 item.setSortText(ChunkerCompleter.sortable(finalItems.size()));
                 finalItems.add(item.build());
