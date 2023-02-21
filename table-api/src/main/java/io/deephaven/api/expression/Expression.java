@@ -5,6 +5,7 @@ package io.deephaven.api.expression;
 
 import io.deephaven.api.RawString;
 import io.deephaven.api.Selectable;
+import io.deephaven.api.filter.Filter;
 import io.deephaven.api.value.Value;
 
 import java.io.Serializable;
@@ -22,6 +23,8 @@ public interface Expression extends Serializable {
         // TODO (deephaven-core#830): Add more table api Expression structuring
 
         void visit(Value value);
+
+        void visit(Filter filter);
 
         void visit(RawString rawString);
     }

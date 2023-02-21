@@ -17,8 +17,8 @@ import io.deephaven.api.Strings;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.filter.FilterAnd;
-import io.deephaven.api.filter.FilterCondition;
-import io.deephaven.api.filter.FilterCondition.Operator;
+import io.deephaven.api.filter.FilterComparison;
+import io.deephaven.api.filter.FilterComparison.Operator;
 import io.deephaven.api.filter.FilterIsNotNull;
 import io.deephaven.api.filter.FilterIsNull;
 import io.deephaven.api.filter.FilterNot;
@@ -603,12 +603,12 @@ class BatchTableRequestBuilder {
         }
 
         @Override
-        public void visit(FilterCondition condition) {
+        public void visit(FilterComparison condition) {
             if (!(condition.lhs() instanceof Value) || !(condition.rhs() instanceof Value)) {
                 // We don't expect this, higher level checks io.deephaven.qst.table.WhereTable#hasRawFilter
                 throw new UnsupportedOperationException("gRPC CompareCondition only supports values, not expressions");
             }
-            FilterCondition preferred = condition.maybeTranspose();
+            FilterComparison preferred = condition.maybeTranspose();
             out = Condition.newBuilder()
                     .setCompare(CompareCondition.newBuilder()
                             .setOperation(adapt(preferred.operator()))

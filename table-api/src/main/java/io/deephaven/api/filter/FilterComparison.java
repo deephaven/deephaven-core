@@ -16,7 +16,7 @@ import java.io.Serializable;
  */
 @Immutable
 @BuildableStyle
-public abstract class FilterCondition extends FilterBase implements Serializable {
+public abstract class FilterComparison extends FilterBase implements Serializable {
 
     public enum Operator {
         /**
@@ -49,8 +49,8 @@ public abstract class FilterCondition extends FilterBase implements Serializable
          */
         NOT_EQUALS;
 
-        public final FilterCondition of(Expression lhs, Expression rhs) {
-            return FilterCondition.builder().operator(this).lhs(lhs).rhs(rhs).build();
+        public final FilterComparison of(Expression lhs, Expression rhs) {
+            return FilterComparison.builder().operator(this).lhs(lhs).rhs(rhs).build();
         }
 
         /**
@@ -103,30 +103,30 @@ public abstract class FilterCondition extends FilterBase implements Serializable
     }
 
     public static Builder builder() {
-        return ImmutableFilterCondition.builder();
+        return ImmutableFilterComparison.builder();
     }
 
-    public static FilterCondition lt(Expression lhs, Expression rhs) {
+    public static FilterComparison lt(Expression lhs, Expression rhs) {
         return Operator.LESS_THAN.of(lhs, rhs);
     }
 
-    public static FilterCondition lte(Expression lhs, Expression rhs) {
+    public static FilterComparison lte(Expression lhs, Expression rhs) {
         return Operator.LESS_THAN_OR_EQUAL.of(lhs, rhs);
     }
 
-    public static FilterCondition gt(Expression lhs, Expression rhs) {
+    public static FilterComparison gt(Expression lhs, Expression rhs) {
         return Operator.GREATER_THAN.of(lhs, rhs);
     }
 
-    public static FilterCondition gte(Expression lhs, Expression rhs) {
+    public static FilterComparison gte(Expression lhs, Expression rhs) {
         return Operator.GREATER_THAN_OR_EQUAL.of(lhs, rhs);
     }
 
-    public static FilterCondition eq(Expression lhs, Expression rhs) {
+    public static FilterComparison eq(Expression lhs, Expression rhs) {
         return Operator.EQUALS.of(lhs, rhs);
     }
 
-    public static FilterCondition neq(Expression lhs, Expression rhs) {
+    public static FilterComparison neq(Expression lhs, Expression rhs) {
         return Operator.NOT_EQUALS.of(lhs, rhs);
     }
 
@@ -162,7 +162,7 @@ public abstract class FilterCondition extends FilterBase implements Serializable
      *
      * @return the transposed filter
      */
-    public final FilterCondition transpose() {
+    public final FilterComparison transpose() {
         return operator().transpose().of(rhs(), lhs());
     }
 
@@ -176,7 +176,7 @@ public abstract class FilterCondition extends FilterBase implements Serializable
      *
      * @return the filter, potentially transposed
      */
-    public final FilterCondition maybeTranspose() {
+    public final FilterComparison maybeTranspose() {
         if (lhs() instanceof ColumnName) {
             return this;
         }
@@ -191,7 +191,7 @@ public abstract class FilterCondition extends FilterBase implements Serializable
      *
      * @return the inverted filter
      */
-    public final FilterCondition invert() {
+    public final FilterComparison invert() {
         return operator().invert().of(lhs(), rhs());
     }
 
@@ -208,6 +208,6 @@ public abstract class FilterCondition extends FilterBase implements Serializable
 
         Builder rhs(Expression rhs);
 
-        FilterCondition build();
+        FilterComparison build();
     }
 }

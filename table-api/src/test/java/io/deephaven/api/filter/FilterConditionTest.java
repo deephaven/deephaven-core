@@ -6,7 +6,7 @@ package io.deephaven.api.filter;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.RawString;
 import io.deephaven.api.Strings;
-import io.deephaven.api.filter.FilterCondition.Operator;
+import io.deephaven.api.filter.FilterComparison.Operator;
 import io.deephaven.api.value.Value;
 import org.junit.jupiter.api.Test;
 
@@ -19,26 +19,26 @@ public class FilterConditionTest {
     static final Value V42 = Value.of(42L);
     static final RawString E42 = RawString.of("41 + 1");
 
-    static final FilterCondition FOO_EQ_42 = FilterCondition.eq(FOO, V42);
-    static final FilterCondition FOO_GT_42 = FilterCondition.gt(FOO, V42);
-    static final FilterCondition FOO_GTE_42 = FilterCondition.gte(FOO, V42);
-    static final FilterCondition FOO_LT_42 = FilterCondition.lt(FOO, V42);
-    static final FilterCondition FOO_LTE_42 = FilterCondition.lte(FOO, V42);
-    static final FilterCondition FOO_NEQ_42 = FilterCondition.neq(FOO, V42);
+    static final FilterComparison FOO_EQ_42 = FilterComparison.eq(FOO, V42);
+    static final FilterComparison FOO_GT_42 = FilterComparison.gt(FOO, V42);
+    static final FilterComparison FOO_GTE_42 = FilterComparison.gte(FOO, V42);
+    static final FilterComparison FOO_LT_42 = FilterComparison.lt(FOO, V42);
+    static final FilterComparison FOO_LTE_42 = FilterComparison.lte(FOO, V42);
+    static final FilterComparison FOO_NEQ_42 = FilterComparison.neq(FOO, V42);
 
-    static final FilterCondition FOO_EQ_BAR = FilterCondition.eq(FOO, BAR);
-    static final FilterCondition FOO_GT_BAR = FilterCondition.gt(FOO, BAR);
-    static final FilterCondition FOO_GTE_BAR = FilterCondition.gte(FOO, BAR);
-    static final FilterCondition FOO_LT_BAR = FilterCondition.lt(FOO, BAR);
-    static final FilterCondition FOO_LTE_BAR = FilterCondition.lte(FOO, BAR);
-    static final FilterCondition FOO_NEQ_BAR = FilterCondition.neq(FOO, BAR);
+    static final FilterComparison FOO_EQ_BAR = FilterComparison.eq(FOO, BAR);
+    static final FilterComparison FOO_GT_BAR = FilterComparison.gt(FOO, BAR);
+    static final FilterComparison FOO_GTE_BAR = FilterComparison.gte(FOO, BAR);
+    static final FilterComparison FOO_LT_BAR = FilterComparison.lt(FOO, BAR);
+    static final FilterComparison FOO_LTE_BAR = FilterComparison.lte(FOO, BAR);
+    static final FilterComparison FOO_NEQ_BAR = FilterComparison.neq(FOO, BAR);
 
-    static final FilterCondition FOO_EQ_E42 = FilterCondition.eq(FOO, E42);
-    static final FilterCondition FOO_GT_E42 = FilterCondition.gt(FOO, E42);
-    static final FilterCondition FOO_GTE_E42 = FilterCondition.gte(FOO, E42);
-    static final FilterCondition FOO_LT_E42 = FilterCondition.lt(FOO, E42);
-    static final FilterCondition FOO_LTE_E42 = FilterCondition.lte(FOO, E42);
-    static final FilterCondition FOO_NEQ_E42 = FilterCondition.neq(FOO, E42);
+    static final FilterComparison FOO_EQ_E42 = FilterComparison.eq(FOO, E42);
+    static final FilterComparison FOO_GT_E42 = FilterComparison.gt(FOO, E42);
+    static final FilterComparison FOO_GTE_E42 = FilterComparison.gte(FOO, E42);
+    static final FilterComparison FOO_LT_E42 = FilterComparison.lt(FOO, E42);
+    static final FilterComparison FOO_LTE_E42 = FilterComparison.lte(FOO, E42);
+    static final FilterComparison FOO_NEQ_E42 = FilterComparison.neq(FOO, E42);
 
     @Test
     void lhs() {
@@ -161,19 +161,19 @@ public class FilterConditionTest {
 
     @Test
     void transpose() {
-        assertThat(FOO_EQ_42.transpose()).isEqualTo(FilterCondition.eq(V42, FOO));
-        assertThat(FOO_NEQ_42.transpose()).isEqualTo(FilterCondition.neq(V42, FOO));
-        assertThat(FOO_GT_42.transpose()).isEqualTo(FilterCondition.lt(V42, FOO));
-        assertThat(FOO_GTE_42.transpose()).isEqualTo(FilterCondition.lte(V42, FOO));
-        assertThat(FOO_LT_42.transpose()).isEqualTo(FilterCondition.gt(V42, FOO));
-        assertThat(FOO_LTE_42.transpose()).isEqualTo(FilterCondition.gte(V42, FOO));
+        assertThat(FOO_EQ_42.transpose()).isEqualTo(FilterComparison.eq(V42, FOO));
+        assertThat(FOO_NEQ_42.transpose()).isEqualTo(FilterComparison.neq(V42, FOO));
+        assertThat(FOO_GT_42.transpose()).isEqualTo(FilterComparison.lt(V42, FOO));
+        assertThat(FOO_GTE_42.transpose()).isEqualTo(FilterComparison.lte(V42, FOO));
+        assertThat(FOO_LT_42.transpose()).isEqualTo(FilterComparison.gt(V42, FOO));
+        assertThat(FOO_LTE_42.transpose()).isEqualTo(FilterComparison.gte(V42, FOO));
 
-        assertThat(FilterCondition.eq(V42, FOO).transpose()).isEqualTo(FOO_EQ_42);
-        assertThat(FilterCondition.neq(V42, FOO).transpose()).isEqualTo(FOO_NEQ_42);
-        assertThat(FilterCondition.lt(V42, FOO).transpose()).isEqualTo(FOO_GT_42);
-        assertThat(FilterCondition.lte(V42, FOO).transpose()).isEqualTo(FOO_GTE_42);
-        assertThat(FilterCondition.gt(V42, FOO).transpose()).isEqualTo(FOO_LT_42);
-        assertThat(FilterCondition.gte(V42, FOO).transpose()).isEqualTo(FOO_LTE_42);
+        assertThat(FilterComparison.eq(V42, FOO).transpose()).isEqualTo(FOO_EQ_42);
+        assertThat(FilterComparison.neq(V42, FOO).transpose()).isEqualTo(FOO_NEQ_42);
+        assertThat(FilterComparison.lt(V42, FOO).transpose()).isEqualTo(FOO_GT_42);
+        assertThat(FilterComparison.lte(V42, FOO).transpose()).isEqualTo(FOO_GTE_42);
+        assertThat(FilterComparison.gt(V42, FOO).transpose()).isEqualTo(FOO_LT_42);
+        assertThat(FilterComparison.gte(V42, FOO).transpose()).isEqualTo(FOO_LTE_42);
     }
 
     @Test
@@ -185,12 +185,12 @@ public class FilterConditionTest {
         assertThat(FOO_LT_42.maybeTranspose()).isEqualTo(FOO_LT_42);
         assertThat(FOO_LTE_42.maybeTranspose()).isEqualTo(FOO_LTE_42);
 
-        assertThat(FilterCondition.eq(V42, FOO).maybeTranspose()).isEqualTo(FOO_EQ_42);
-        assertThat(FilterCondition.neq(V42, FOO).maybeTranspose()).isEqualTo(FOO_NEQ_42);
-        assertThat(FilterCondition.lt(V42, FOO).maybeTranspose()).isEqualTo(FOO_GT_42);
-        assertThat(FilterCondition.lte(V42, FOO).maybeTranspose()).isEqualTo(FOO_GTE_42);
-        assertThat(FilterCondition.gt(V42, FOO).maybeTranspose()).isEqualTo(FOO_LT_42);
-        assertThat(FilterCondition.gte(V42, FOO).maybeTranspose()).isEqualTo(FOO_LTE_42);
+        assertThat(FilterComparison.eq(V42, FOO).maybeTranspose()).isEqualTo(FOO_EQ_42);
+        assertThat(FilterComparison.neq(V42, FOO).maybeTranspose()).isEqualTo(FOO_NEQ_42);
+        assertThat(FilterComparison.lt(V42, FOO).maybeTranspose()).isEqualTo(FOO_GT_42);
+        assertThat(FilterComparison.lte(V42, FOO).maybeTranspose()).isEqualTo(FOO_GTE_42);
+        assertThat(FilterComparison.gt(V42, FOO).maybeTranspose()).isEqualTo(FOO_LT_42);
+        assertThat(FilterComparison.gte(V42, FOO).maybeTranspose()).isEqualTo(FOO_LTE_42);
 
         assertThat(FOO_EQ_E42.maybeTranspose()).isEqualTo(FOO_EQ_E42);
         assertThat(FOO_NEQ_E42.maybeTranspose()).isEqualTo(FOO_NEQ_E42);
@@ -200,11 +200,11 @@ public class FilterConditionTest {
         assertThat(FOO_LTE_E42.maybeTranspose()).isEqualTo(FOO_LTE_E42);
     }
 
-    private static void toString(FilterCondition condition, String expected) {
+    private static void toString(FilterComparison condition, String expected) {
         assertThat(toString(condition)).isEqualTo(expected);
     }
 
-    private static String toString(FilterCondition filterCondition) {
+    private static String toString(FilterComparison filterCondition) {
         return Strings.of(filterCondition);
     }
 }

@@ -50,11 +50,13 @@ public interface Filter extends Serializable {
     interface Visitor {
         // TODO (deephaven-core#829): Add more table api Filter structuring
 
+        // todo: this is just specific of expression is null
         void visit(FilterIsNull isNull);
 
+        // todo: this is just specific of expression is null
         void visit(FilterIsNotNull isNotNull);
 
-        void visit(FilterCondition condition);
+        void visit(FilterComparison condition);
 
         void visit(FilterNot not);
 

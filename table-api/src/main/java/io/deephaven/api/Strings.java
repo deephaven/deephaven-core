@@ -7,7 +7,7 @@ import io.deephaven.api.agg.Pair;
 import io.deephaven.api.expression.Expression;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.filter.FilterAnd;
-import io.deephaven.api.filter.FilterCondition;
+import io.deephaven.api.filter.FilterComparison;
 import io.deephaven.api.filter.FilterIsNotNull;
 import io.deephaven.api.filter.FilterIsNull;
 import io.deephaven.api.filter.FilterNot;
@@ -31,7 +31,7 @@ public class Strings {
         return rawString.value();
     }
 
-    public static String of(FilterCondition condition) {
+    public static String of(FilterComparison condition) {
         String lhs = of(condition.lhs());
         String rhs = of(condition.rhs());
         switch (condition.operator()) {
@@ -145,7 +145,12 @@ public class Strings {
         }
 
         @Override
-        public void visit(FilterCondition condition) {
+        public void visit(Filter filter) {
+            filter.walk(this);
+        }
+
+        @Override
+        public void visit(FilterComparison condition) {
             out = of(condition);
         }
 

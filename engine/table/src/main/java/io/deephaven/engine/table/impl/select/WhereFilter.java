@@ -215,7 +215,7 @@ public interface WhereFilter extends Filter {
         }
 
         @Override
-        public void visit(FilterCondition condition) {
+        public void visit(FilterComparison condition) {
             out = FilterConditionAdapter.of(inverted ? condition.invert() : condition);
         }
 
@@ -283,17 +283,17 @@ public interface WhereFilter extends Filter {
 
         private static class FilterConditionAdapter implements Expression.Visitor, Value.Visitor {
 
-            public static WhereFilter of(FilterCondition condition) {
-                FilterCondition preferred = condition.maybeTranspose();
+            public static WhereFilter of(FilterComparison condition) {
+                FilterComparison preferred = condition.maybeTranspose();
                 return preferred.lhs().walk(new FilterConditionAdapter(condition, preferred)).getOut();
             }
 
-            private final FilterCondition original;
-            private final FilterCondition preferred;
+            private final FilterComparison original;
+            private final FilterComparison preferred;
 
             private WhereFilter out;
 
-            private FilterConditionAdapter(FilterCondition original, FilterCondition preferred) {
+            private FilterConditionAdapter(FilterComparison original, FilterComparison preferred) {
                 this.original = Objects.requireNonNull(original);
                 this.preferred = Objects.requireNonNull(preferred);
             }
