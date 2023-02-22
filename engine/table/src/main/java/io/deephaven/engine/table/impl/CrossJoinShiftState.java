@@ -61,20 +61,20 @@ public class CrossJoinShiftState {
         return leftOuterJoin;
     }
 
-    public long getShifted(long index) {
-        return index >> getNumShiftBits();
+    public long getShifted(long rowKey) {
+        return rowKey >> getNumShiftBits();
     }
 
-    public long getPrevShifted(long index) {
-        return index >> getPrevNumShiftBits();
+    public long getPrevShifted(long rowKey) {
+        return rowKey >> getPrevNumShiftBits();
     }
 
-    public long getMasked(long index) {
-        return index & getMask();
+    public long getMasked(long rowKey) {
+        return rowKey & getMask();
     }
 
-    public long getPrevMasked(long index) {
-        return index & getPrevMask();
+    public long getPrevMasked(long rowKey) {
+        return rowKey & getPrevMask();
     }
 
     private long getMask() {

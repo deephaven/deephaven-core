@@ -46,13 +46,13 @@ public abstract class UnboxedTimeBackedColumnSource<TIME_TYPE> extends AbstractC
     protected abstract long toEpochNano(TIME_TYPE val);
 
     @Override
-    public long getLong(long index) {
-        return toEpochNano(alternateColumnSource.get(index));
+    public long getLong(long rowKey) {
+        return toEpochNano(alternateColumnSource.get(rowKey));
     }
 
     @Override
-    public long getPrevLong(long index) {
-        return toEpochNano(alternateColumnSource.getPrev(index));
+    public long getPrevLong(long rowKey) {
+        return toEpochNano(alternateColumnSource.getPrev(rowKey));
     }
 
     @Override

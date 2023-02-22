@@ -76,8 +76,8 @@ public abstract class NanosBasedTimeArraySource<TIME_TYPE> extends AbstractDefer
         return nanoSource.getPrevLong(rowKey);
     }
 
-    public final long getAndSetUnsafe(long index, long newValue) {
-        return nanoSource.getAndSetUnsafe(index, newValue);
+    public final long getAndSetUnsafe(long rowKey, long newValue) {
+        return nanoSource.getAndSetUnsafe(rowKey, newValue);
     }
 
     @Override

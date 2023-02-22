@@ -77,13 +77,13 @@ public class ImmutableByteArraySource extends AbstractDeferredGroupingColumnSour
         return getUnsafe(rowKey);
     }
 
-    public final byte getUnsafe(long index) {
-        return data[(int)index];
+    public final byte getUnsafe(long rowKey) {
+        return data[(int)rowKey];
     }
 
-    public final byte getAndSetUnsafe(long index, byte newValue) {
-        byte oldValue = data[(int)index];
-        data[(int)index] = newValue;
+    public final byte getAndSetUnsafe(long rowKey, byte newValue) {
+        byte oldValue = data[(int)rowKey];
+        data[(int)rowKey] = newValue;
         return oldValue;
     }
 

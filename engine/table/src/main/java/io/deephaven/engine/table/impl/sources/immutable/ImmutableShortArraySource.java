@@ -75,13 +75,13 @@ public class ImmutableShortArraySource extends AbstractDeferredGroupingColumnSou
         return getUnsafe(rowKey);
     }
 
-    public final short getUnsafe(long index) {
-        return data[(int)index];
+    public final short getUnsafe(long rowKey) {
+        return data[(int)rowKey];
     }
 
-    public final short getAndSetUnsafe(long index, short newValue) {
-        short oldValue = data[(int)index];
-        data[(int)index] = newValue;
+    public final short getAndSetUnsafe(long rowKey, short newValue) {
+        short oldValue = data[(int)rowKey];
+        data[(int)rowKey] = newValue;
         return oldValue;
     }
 

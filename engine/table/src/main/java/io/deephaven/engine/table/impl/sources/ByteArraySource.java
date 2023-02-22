@@ -154,18 +154,18 @@ public class ByteArraySource extends ArraySourceHelper<Byte, byte[]>
         return getUnsafe(rowKey);
     }
 
-    public final byte getUnsafe(long index) {
-        final int blockIndex = (int) (index >> LOG_BLOCK_SIZE);
-        final int indexWithinBlock = (int) (index & INDEX_MASK);
+    public final byte getUnsafe(long rowKey) {
+        final int blockIndex = (int) (rowKey >> LOG_BLOCK_SIZE);
+        final int indexWithinBlock = (int) (rowKey & INDEX_MASK);
         return blocks[blockIndex][indexWithinBlock];
     }
 
-    public final byte getAndSetUnsafe(long index, byte newValue) {
-        final int blockIndex = (int) (index >> LOG_BLOCK_SIZE);
-        final int indexWithinBlock = (int) (index & INDEX_MASK);
+    public final byte getAndSetUnsafe(long rowKey, byte newValue) {
+        final int blockIndex = (int) (rowKey >> LOG_BLOCK_SIZE);
+        final int indexWithinBlock = (int) (rowKey & INDEX_MASK);
         final byte oldValue = blocks[blockIndex][indexWithinBlock];
         if (!ByteComparisons.eq(oldValue, newValue)) {
-            if (shouldRecordPrevious(index, prevBlocks, recycler)) {
+            if (shouldRecordPrevious(rowKey, prevBlocks, recycler)) {
                 prevBlocks[blockIndex][indexWithinBlock] = oldValue;
             }
             blocks[blockIndex][indexWithinBlock] = newValue;

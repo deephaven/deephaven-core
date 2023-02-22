@@ -70,15 +70,15 @@ public class LocalDateWrapperSource extends AbstractColumnSource<LocalDate>
 
     @Nullable
     @Override
-    public LocalDate get(long index) {
-        final ZonedDateTime innerVal = adjustZone(inner.get(index));
+    public LocalDate get(long rowKey) {
+        final ZonedDateTime innerVal = adjustZone(inner.get(rowKey));
         return innerVal == null ? null : innerVal.toLocalDate();
     }
 
     @Nullable
     @Override
-    public LocalDate getPrev(long index) {
-        final ZonedDateTime innerVal = adjustZone(inner.getPrev(index));
+    public LocalDate getPrev(long rowKey) {
+        final ZonedDateTime innerVal = adjustZone(inner.getPrev(rowKey));
         return innerVal == null ? null : innerVal.toLocalDate();
     }
 

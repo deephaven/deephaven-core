@@ -195,12 +195,12 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T>
      * @return true if the inheritor should return a value from its "prev" data structure; false if it should return a
      *         value from its "current" data structure.
      */
-    final boolean shouldUsePrevious(final long index) {
+    final boolean shouldUsePrevious(final long rowKey) {
         if (prevFlusher == null) {
             return false;
         }
-        final int blockIndex = (int) (index >> LOG_BLOCK_SIZE);
-        final int indexWithinBlock = (int) (index & INDEX_MASK);
+        final int blockIndex = (int) (rowKey >> LOG_BLOCK_SIZE);
+        final int indexWithinBlock = (int) (rowKey & INDEX_MASK);
         final int indexWithinInUse = indexWithinBlock >> LOG_INUSE_BITSET_SIZE;
         final long maskWithinInUse = 1L << (indexWithinBlock & IN_USE_MASK);
         final long[] inUse = prevInUse[blockIndex];

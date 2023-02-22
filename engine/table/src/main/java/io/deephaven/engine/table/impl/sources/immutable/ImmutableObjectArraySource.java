@@ -74,13 +74,13 @@ public class ImmutableObjectArraySource<T> extends AbstractDeferredGroupingColum
         return getUnsafe(rowKey);
     }
 
-    public final T getUnsafe(long index) {
-        return (T)data[(int)index];
+    public final T getUnsafe(long rowKey) {
+        return (T)data[(int)rowKey];
     }
 
-    public final Object getAndSetUnsafe(long index, Object newValue) {
-        Object oldValue = data[(int)index];
-        data[(int)index] = newValue;
+    public final Object getAndSetUnsafe(long rowKey, Object newValue) {
+        Object oldValue = data[(int)rowKey];
+        data[(int)rowKey] = newValue;
         return oldValue;
     }
 

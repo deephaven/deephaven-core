@@ -409,8 +409,8 @@ public final class ColumnSourceGetDefaults {
     public interface ForLongAsInstant extends LongBacked<Instant> {
         @Nullable
         @Override
-        default Instant get(long index) {
-            return DateTimeUtils.makeInstant(getLong(index));
+        default Instant get(long rowKey) {
+            return DateTimeUtils.makeInstant(getLong(rowKey));
         }
     }
 

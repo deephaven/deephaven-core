@@ -411,8 +411,8 @@ public final class MutableColumnSourceGetDefaults {
     public interface ForLongAsInstant extends ColumnSourceGetDefaults.ForLongAsInstant, LongBacked<Instant> {
         @Nullable
         @Override
-        default Instant getPrev(long index) {
-            return DateTimeUtils.makeInstant(getPrevLong(index));
+        default Instant getPrev(long rowKey) {
+            return DateTimeUtils.makeInstant(getPrevLong(rowKey));
         }
     }
 

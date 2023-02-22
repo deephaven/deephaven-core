@@ -154,18 +154,18 @@ public class IntegerArraySource extends ArraySourceHelper<Integer, int[]>
         return getUnsafe(rowKey);
     }
 
-    public final int getUnsafe(long index) {
-        final int blockIndex = (int) (index >> LOG_BLOCK_SIZE);
-        final int indexWithinBlock = (int) (index & INDEX_MASK);
+    public final int getUnsafe(long rowKey) {
+        final int blockIndex = (int) (rowKey >> LOG_BLOCK_SIZE);
+        final int indexWithinBlock = (int) (rowKey & INDEX_MASK);
         return blocks[blockIndex][indexWithinBlock];
     }
 
-    public final int getAndSetUnsafe(long index, int newValue) {
-        final int blockIndex = (int) (index >> LOG_BLOCK_SIZE);
-        final int indexWithinBlock = (int) (index & INDEX_MASK);
+    public final int getAndSetUnsafe(long rowKey, int newValue) {
+        final int blockIndex = (int) (rowKey >> LOG_BLOCK_SIZE);
+        final int indexWithinBlock = (int) (rowKey & INDEX_MASK);
         final int oldValue = blocks[blockIndex][indexWithinBlock];
         if (!IntComparisons.eq(oldValue, newValue)) {
-            if (shouldRecordPrevious(index, prevBlocks, recycler)) {
+            if (shouldRecordPrevious(rowKey, prevBlocks, recycler)) {
                 prevBlocks[blockIndex][indexWithinBlock] = oldValue;
             }
             blocks[blockIndex][indexWithinBlock] = newValue;

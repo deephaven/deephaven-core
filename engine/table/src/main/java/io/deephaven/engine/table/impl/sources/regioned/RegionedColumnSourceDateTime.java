@@ -35,10 +35,11 @@ final class RegionedColumnSourceDateTime
     }
 
     @Override
-    public void convertRegion(WritableChunk<? super Values> destination,
-            Chunk<? extends Values> source, RowSequence rowSequence) {
-        WritableObjectChunk<DateTime, ? super Values> objectChunk = destination.asWritableObjectChunk();
-        LongChunk<? extends Values> longChunk = source.asLongChunk();
+    public void convertRegion(
+            @NotNull final WritableChunk<? super Values> destination,
+            @NotNull final Chunk<? extends Values> source, RowSequence rowSequence) {
+        final WritableObjectChunk<DateTime, ? super Values> objectChunk = destination.asWritableObjectChunk();
+        final LongChunk<? extends Values> longChunk = source.asLongChunk();
 
         final int size = objectChunk.size();
         final int length = longChunk.size();
@@ -50,7 +51,7 @@ final class RegionedColumnSourceDateTime
     }
 
     @Override
-    public DateTime get(long rowKey) {
+    public DateTime get(final long rowKey) {
         return rowKey == RowSequence.NULL_ROW_KEY ? null
                 : DateTimeUtils.nanosToTime(getNativeSource().lookupRegion(rowKey).getLong(rowKey));
     }

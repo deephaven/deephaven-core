@@ -70,15 +70,15 @@ public class LocalTimeWrapperSource extends AbstractColumnSource<LocalTime>
 
     @Nullable
     @Override
-    public LocalTime get(long index) {
-        final ZonedDateTime innerVal = adjustZone(inner.get(index));
+    public LocalTime get(long rowKey) {
+        final ZonedDateTime innerVal = adjustZone(inner.get(rowKey));
         return innerVal == null ? null : innerVal.toLocalTime();
     }
 
     @Nullable
     @Override
-    public LocalTime getPrev(long index) {
-        final ZonedDateTime innerVal = adjustZone(inner.getPrev(index));
+    public LocalTime getPrev(long rowKey) {
+        final ZonedDateTime innerVal = adjustZone(inner.getPrev(rowKey));
         return innerVal == null ? null : innerVal.toLocalTime();
     }
 

@@ -468,7 +468,7 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean>
      * @return true if the inheritor should return a value from its "prev" data structure; false if it should return a
      * value from its "current" data structure.
      */
-    private boolean shouldUsePrevious(final long index) {
+    private boolean shouldUsePrevious(final long rowKey) {
         if (prevFlusher == null) {
             return false;
         }
@@ -477,12 +477,12 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean>
             return false;
         }
 
-        final long [] inUse = prevInUse.getInnermostBlockByKeyOrNull(index);
+        final long [] inUse = prevInUse.getInnermostBlockByKeyOrNull(rowKey);
         if (inUse == null) {
             return false;
         }
 
-        final int indexWithinBlock = (int) (index & INDEX_MASK);
+        final int indexWithinBlock = (int) (rowKey & INDEX_MASK);
         final int indexWithinInUse = indexWithinBlock >> LOG_INUSE_BITSET_SIZE;
         final long maskWithinInUse = 1L << (indexWithinBlock & IN_USE_MASK);
 

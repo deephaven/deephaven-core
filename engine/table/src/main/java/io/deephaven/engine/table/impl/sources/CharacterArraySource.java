@@ -149,18 +149,18 @@ public class CharacterArraySource extends ArraySourceHelper<Character, char[]>
         return getUnsafe(rowKey);
     }
 
-    public final char getUnsafe(long index) {
-        final int blockIndex = (int) (index >> LOG_BLOCK_SIZE);
-        final int indexWithinBlock = (int) (index & INDEX_MASK);
+    public final char getUnsafe(long rowKey) {
+        final int blockIndex = (int) (rowKey >> LOG_BLOCK_SIZE);
+        final int indexWithinBlock = (int) (rowKey & INDEX_MASK);
         return blocks[blockIndex][indexWithinBlock];
     }
 
-    public final char getAndSetUnsafe(long index, char newValue) {
-        final int blockIndex = (int) (index >> LOG_BLOCK_SIZE);
-        final int indexWithinBlock = (int) (index & INDEX_MASK);
+    public final char getAndSetUnsafe(long rowKey, char newValue) {
+        final int blockIndex = (int) (rowKey >> LOG_BLOCK_SIZE);
+        final int indexWithinBlock = (int) (rowKey & INDEX_MASK);
         final char oldValue = blocks[blockIndex][indexWithinBlock];
         if (!CharComparisons.eq(oldValue, newValue)) {
-            if (shouldRecordPrevious(index, prevBlocks, recycler)) {
+            if (shouldRecordPrevious(rowKey, prevBlocks, recycler)) {
                 prevBlocks[blockIndex][indexWithinBlock] = oldValue;
             }
             blocks[blockIndex][indexWithinBlock] = newValue;

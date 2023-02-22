@@ -75,13 +75,13 @@ public class ImmutableFloatArraySource extends AbstractDeferredGroupingColumnSou
         return getUnsafe(rowKey);
     }
 
-    public final float getUnsafe(long index) {
-        return data[(int)index];
+    public final float getUnsafe(long rowKey) {
+        return data[(int)rowKey];
     }
 
-    public final float getAndSetUnsafe(long index, float newValue) {
-        float oldValue = data[(int)index];
-        data[(int)index] = newValue;
+    public final float getAndSetUnsafe(long rowKey, float newValue) {
+        float oldValue = data[(int)rowKey];
+        data[(int)rowKey] = newValue;
         return oldValue;
     }
 

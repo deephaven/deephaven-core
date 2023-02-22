@@ -103,12 +103,12 @@ public class Immutable2DLongArraySource extends AbstractDeferredGroupingColumnSo
         return getUnsafe(rowKey);
     }
 
-    private int keyToSegment(long index) {
-        return (int)(index >> segmentShift);
+    private int keyToSegment(long rowKey) {
+        return (int)(rowKey >> segmentShift);
     }
 
-    private int keyToOffset(long index) {
-        return (int)(index & segmentMask);
+    private int keyToOffset(long rowKey) {
+        return (int)(rowKey & segmentMask);
     }
 
     public final long getUnsafe(long key) {

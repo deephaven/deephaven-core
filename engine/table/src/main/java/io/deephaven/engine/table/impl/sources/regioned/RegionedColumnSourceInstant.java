@@ -30,17 +30,17 @@ final class RegionedColumnSourceInstant
         this(new RegionedColumnSourceLong.AsValues());
     }
 
-    public RegionedColumnSourceInstant(final @NotNull RegionedColumnSourceLong<Values> inner) {
+    public RegionedColumnSourceInstant(@NotNull final RegionedColumnSourceLong<Values> inner) {
         super(ColumnRegionLong.createNull(PARAMETERS.regionMask), Instant.class, inner);
     }
 
     @Override
     public void convertRegion(
-            WritableChunk<? super Values> destination,
-            Chunk<? extends Values> source,
-            RowSequence rowSequence) {
-        WritableObjectChunk<Instant, ? super Values> objectChunk = destination.asWritableObjectChunk();
-        LongChunk<? extends Values> longChunk = source.asLongChunk();
+            @NotNull final WritableChunk<? super Values> destination,
+            @NotNull final Chunk<? extends Values> source,
+            @NotNull final RowSequence rowSequence) {
+        final WritableObjectChunk<Instant, ? super Values> objectChunk = destination.asWritableObjectChunk();
+        final LongChunk<? extends Values> longChunk = source.asLongChunk();
 
         final int size = objectChunk.size();
         final int length = longChunk.size();
@@ -52,9 +52,9 @@ final class RegionedColumnSourceInstant
     }
 
     @Override
-    public Instant get(long elementIndex) {
-        return elementIndex == RowSequence.NULL_ROW_KEY ? null
-                : DateTimeUtils.makeInstant(getNativeSource().lookupRegion(elementIndex).getLong(elementIndex));
+    public Instant get(final long rowKey) {
+        return rowKey == RowSequence.NULL_ROW_KEY ? null
+                : DateTimeUtils.makeInstant(getNativeSource().lookupRegion(rowKey).getLong(rowKey));
     }
 
     @Override
@@ -68,7 +68,7 @@ final class RegionedColumnSourceInstant
     }
 
     @Override
-    public ColumnSource<ZonedDateTime> toZonedDateTime(final @NotNull ZoneId zone) {
+    public ColumnSource<ZonedDateTime> toZonedDateTime(@NotNull final ZoneId zone) {
         return new RegionedColumnSourceZonedDateTime(zone, (RegionedColumnSourceLong<Values>) getNativeSource());
     }
 

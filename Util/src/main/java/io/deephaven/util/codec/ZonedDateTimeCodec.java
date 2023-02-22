@@ -6,6 +6,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -29,7 +30,7 @@ public class ZonedDateTimeCodec implements ObjectCodec<ZonedDateTime> {
 
         final String zone = input.getZone().getId();
         bb.putInt(zone.length());
-        bb.put(zone.getBytes());
+        bb.put(zone.getBytes(StandardCharsets.UTF_8));
 
         return buf;
     }
@@ -47,7 +48,7 @@ public class ZonedDateTimeCodec implements ObjectCodec<ZonedDateTime> {
 
         final byte[] zidBytes = new byte[zidLen];
         buf.get(zidBytes, 0, zidLen);
-        final String zid = new String(zidBytes);
+        final String zid = new String(zidBytes, StandardCharsets.UTF_8);
 
         return ZonedDateTime.ofInstant(Instant.ofEpochSecond(0, nanos), ZoneId.of(zid));
     }
@@ -76,7 +77,7 @@ public class ZonedDateTimeCodec implements ObjectCodec<ZonedDateTime> {
         return Long.BYTES + Integer.BYTES + val.getZone().getId().length();
     }
 
-    // Sadly, this is copied from DBTimeUtils since that lives in the DB package and this cannot.
+    // Sadly, this is copied from DateTimeUtils, since we cannot depend on the engine-time package.
     private static long toEpochNano(@Nullable final ZonedDateTime value) {
         if (value == null) {
             return QueryConstants.NULL_LONG;
@@ -91,6 +92,6 @@ public class ZonedDateTimeCodec implements ObjectCodec<ZonedDateTime> {
                     "Numeric overflow detected during conversion of " + epochSecond + " to nanoseconds");
         }
 
-        return epochSecond * 1_000_000_000L + nanoOfSecond;
+        return Math.addExact(epochSecond * 1_000_000_000L, nanoOfSecond);
     }
 }

@@ -166,18 +166,18 @@ public class LongArraySource extends ArraySourceHelper<Long, long[]>
         return getUnsafe(rowKey);
     }
 
-    public final long getUnsafe(long index) {
-        final int blockIndex = (int) (index >> LOG_BLOCK_SIZE);
-        final int indexWithinBlock = (int) (index & INDEX_MASK);
+    public final long getUnsafe(long rowKey) {
+        final int blockIndex = (int) (rowKey >> LOG_BLOCK_SIZE);
+        final int indexWithinBlock = (int) (rowKey & INDEX_MASK);
         return blocks[blockIndex][indexWithinBlock];
     }
 
-    public final long getAndSetUnsafe(long index, long newValue) {
-        final int blockIndex = (int) (index >> LOG_BLOCK_SIZE);
-        final int indexWithinBlock = (int) (index & INDEX_MASK);
+    public final long getAndSetUnsafe(long rowKey, long newValue) {
+        final int blockIndex = (int) (rowKey >> LOG_BLOCK_SIZE);
+        final int indexWithinBlock = (int) (rowKey & INDEX_MASK);
         final long oldValue = blocks[blockIndex][indexWithinBlock];
         if (!LongComparisons.eq(oldValue, newValue)) {
-            if (shouldRecordPrevious(index, prevBlocks, recycler)) {
+            if (shouldRecordPrevious(rowKey, prevBlocks, recycler)) {
                 prevBlocks[blockIndex][indexWithinBlock] = oldValue;
             }
             blocks[blockIndex][indexWithinBlock] = newValue;

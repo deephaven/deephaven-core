@@ -38,17 +38,19 @@ final class RegionedColumnSourceZonedDateTime
         return new LocalTimeWrapperSource(new RegionedColumnSourceZonedDateTime(zone, inner), zone);
     }
 
-    public RegionedColumnSourceZonedDateTime(final @NotNull ZoneId zone,
-            final @NotNull RegionedColumnSourceLong<Values> inner) {
+    public RegionedColumnSourceZonedDateTime(
+            @NotNull final ZoneId zone,
+            @NotNull final RegionedColumnSourceLong<Values> inner) {
         super(ColumnRegionLong.createNull(PARAMETERS.regionMask), ZonedDateTime.class, inner);
         this.zone = zone;
     }
 
     @Override
-    public void convertRegion(WritableChunk<? super Values> destination,
-            Chunk<? extends Values> source, RowSequence rowSequence) {
-        WritableObjectChunk<ZonedDateTime, ? super Values> objectChunk = destination.asWritableObjectChunk();
-        LongChunk<? extends Values> longChunk = source.asLongChunk();
+    public void convertRegion(
+            @NotNull final WritableChunk<? super Values> destination,
+            @NotNull final Chunk<? extends Values> source, RowSequence rowSequence) {
+        final WritableObjectChunk<ZonedDateTime, ? super Values> objectChunk = destination.asWritableObjectChunk();
+        final LongChunk<? extends Values> longChunk = source.asLongChunk();
 
         final int size = objectChunk.size();
         final int length = longChunk.size();
@@ -60,9 +62,9 @@ final class RegionedColumnSourceZonedDateTime
     }
 
     @Override
-    public ZonedDateTime get(long elementIndex) {
-        return elementIndex == RowSequence.NULL_ROW_KEY ? null
-                : DateTimeUtils.makeZonedDateTime(getNativeSource().lookupRegion(elementIndex).getLong(elementIndex),
+    public ZonedDateTime get(final long rowKey) {
+        return rowKey == RowSequence.NULL_ROW_KEY ? null
+                : DateTimeUtils.makeZonedDateTime(getNativeSource().lookupRegion(rowKey).getLong(rowKey),
                         zone);
     }
 
@@ -77,7 +79,7 @@ final class RegionedColumnSourceZonedDateTime
     }
 
     @Override
-    public ColumnSource<ZonedDateTime> toZonedDateTime(final @NotNull ZoneId zone) {
+    public ColumnSource<ZonedDateTime> toZonedDateTime(@NotNull final ZoneId zone) {
         if (this.zone.equals(zone)) {
             return this;
         }

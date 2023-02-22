@@ -95,6 +95,7 @@ import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.ShortChunkedUni
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.unique.ShortRollupUniqueOperator;
 import io.deephaven.engine.table.impl.by.ssmminmax.SsmChunkedMinMaxOperator;
 import io.deephaven.engine.table.impl.by.ssmpercentile.SsmChunkedPercentileOperator;
+import io.deephaven.engine.table.impl.sources.ConvertableTimeSource;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet;
 import io.deephaven.engine.table.impl.util.freezeby.FreezeByCountOperator;
@@ -108,6 +109,8 @@ import org.jetbrains.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -235,7 +238,7 @@ public class AggregationProcessor implements AggregationContextFactory {
 
     /**
      * Create a trivial {@link AggregationContextFactory} to implement {@link Table#selectDistinct select distinct}.
-     * 
+     *
      * @return The {@link AggregationContextFactory}
      */
     public static AggregationContextFactory forSelectDistinct() {
@@ -506,6 +509,9 @@ public class AggregationProcessor implements AggregationContextFactory {
                     addOperator(minMaxOperator.makeSecondaryOperator(isMin, resultName), null, inputName);
                     return;
                 }
+            }
+            if (rawInputSource instanceof ConvertableTimeSource.Zoned) {
+                ZoneId id = ((ConvertableTimeSource.Zoned) rawInputSource).getZone();
             }
             addOperator(makeMinOrMaxOperator(type, resultName, isMin, isAddOnly || isStream), inputSource, inputName);
         }
