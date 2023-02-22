@@ -284,7 +284,7 @@ public interface WhereFilter extends Filter {
             if (expression instanceof ColumnName) {
                 return new MatchFilter(((ColumnName) expression).name(), new Object[] {null});
             }
-            return WhereFilterFactory.getExpression(String.format("isNull(%s)", Strings.of(expression)));
+            return WhereFilterFactory.getExpression(Strings.of(FilterIsNull.of(expression)));
         }
 
         private static WhereFilter isNotNull(Expression expression) {
@@ -292,7 +292,7 @@ public interface WhereFilter extends Filter {
             if (expression instanceof ColumnName) {
                 return new MatchFilter(MatchType.Inverted, ((ColumnName) expression).name(), new Object[] {null});
             }
-            return WhereFilterFactory.getExpression(String.format("!isNull(%s)", Strings.of(expression)));
+            return WhereFilterFactory.getExpression(Strings.of(FilterIsNotNull.of(expression)));
         }
 
         private static class FilterComparisonAdapter implements Expression.Visitor, Value.Visitor {
