@@ -8,7 +8,6 @@ import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
 
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Spliterator;
@@ -40,6 +39,20 @@ public abstract class FilterOr extends FilterBase implements Iterable<Filter> {
      */
     @Parameter
     public abstract List<Filter> filters();
+
+    /**
+     * Equivalent to an {@link FilterAnd and-filter} with all {@link #filters() filters} inverted.
+     *
+     * @return the inverse filter
+     */
+    @Override
+    public FilterAnd inverse() {
+        final FilterAnd.Builder builder = FilterAnd.builder();
+        for (Filter filter : filters()) {
+            builder.addFilters(filter.inverse());
+        }
+        return builder.build();
+    }
 
     @Override
     public final <V extends Visitor> V walk(V visitor) {

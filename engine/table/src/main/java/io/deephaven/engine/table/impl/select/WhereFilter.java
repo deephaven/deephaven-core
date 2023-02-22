@@ -222,7 +222,7 @@ public interface WhereFilter extends Filter {
 
         @Override
         public void visit(FilterComparison comparison) {
-            out = FilterComparisonAdapter.of(inverted ? comparison.invert() : comparison);
+            out = FilterComparisonAdapter.of(inverted ? comparison.inverse() : comparison);
         }
 
         @Override
@@ -429,8 +429,8 @@ public interface WhereFilter extends Filter {
     // region Filter impl
 
     @Override
-    default FilterNot not() {
-        throw new UnsupportedOperationException("WhereFilters do not implement not");
+    default Filter inverse() {
+        throw new UnsupportedOperationException("WhereFilters do not implement inverse");
     }
 
     @Override

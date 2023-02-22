@@ -35,7 +35,7 @@ public class FilterTest {
     @Test
     void ands() {
         toString(
-                FilterAnd.of(Filter.isNotNull(ColumnName.of("Foo")),
+                Filter.and(Filter.isNotNull(ColumnName.of("Foo")),
                         FilterComparison.gt(ColumnName.of("Foo"), Literal.of(42L))),
                 "(!isNull(Foo)) && ((Foo) > (42))");
     }
@@ -43,7 +43,7 @@ public class FilterTest {
     @Test
     void ors() {
         toString(
-                FilterOr.of(Filter.isNull(ColumnName.of("Foo")),
+                Filter.or(Filter.isNull(ColumnName.of("Foo")),
                         FilterComparison.eq(ColumnName.of("Foo"), Literal.of(42L))),
                 "(isNull(Foo)) || ((Foo) == (42))");
     }

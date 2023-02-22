@@ -40,6 +40,20 @@ public abstract class FilterAnd extends FilterBase implements Iterable<Filter> {
     @Parameter
     public abstract List<Filter> filters();
 
+    /**
+     * Equivalent to an {@link FilterOr or-filter} with all {@link #filters() filters} inverted.
+     *
+     * @return the inverse filter
+     */
+    @Override
+    public final FilterOr inverse() {
+        final FilterOr.Builder builder = FilterOr.builder();
+        for (Filter filter : filters()) {
+            builder.addFilters(filter.inverse());
+        }
+        return builder.build();
+    }
+
     @Override
     public final <V extends Visitor> V walk(V visitor) {
         visitor.visit(this);

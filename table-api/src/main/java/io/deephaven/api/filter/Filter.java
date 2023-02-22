@@ -32,29 +32,115 @@ public interface Filter extends Expression, Serializable {
         return from(expressions);
     }
 
+    /**
+     * Creates an is-null-filter.
+     *
+     * @param expression the expression
+     * @return the is-null-filter
+     */
     static FilterIsNull isNull(Expression expression) {
-        // todo: comparison?
         return FilterIsNull.of(expression);
     }
 
+    /**
+     * Creates an is-not-null-filter.
+     *
+     * @param expression the expression
+     * @return the is-not-null-filter
+     */
     static FilterIsNotNull isNotNull(Expression expression) {
-        // todo: comparison?
         return FilterIsNotNull.of(expression);
     }
 
-    static Filter isTrue(Expression expression) {
+    /**
+     * Creates an is-true-filter.
+     *
+     * <p>
+     * Equivalent to {@code FilterComparison.eq(expression, Literal.of(true))}.
+     *
+     * @param expression the expression
+     * @return the equals-true-filter
+     */
+    static FilterComparison isTrue(Expression expression) {
         return FilterComparison.eq(expression, Literal.of(true));
     }
 
-    static Filter isFalse(Expression expression) {
+    /**
+     * Creates an is-false-filter.
+     *
+     * <p>
+     * Equivalent to {@code FilterComparison.eq(expression, Literal.of(false))}.
+     *
+     * @param expression the expression
+     * @return @return the equals-false-filter
+     */
+    static FilterComparison isFalse(Expression expression) {
         return FilterComparison.eq(expression, Literal.of(false));
     }
 
+    /**
+     * Creates a {@link FilterNot not-filter} from {@code filter}. Callers should typically prefer
+     * {@link Filter#inverse()}, unless the "not" context needs to be preserved.
+     *
+     * <p>
+     * {@code filter.equals(Filter.not(filter).inverse())} is {@code true}.
+     *
+     * @param filter the filter
+     * @return the not-filter
+     */
     static FilterNot not(Filter filter) {
         return FilterNot.of(filter);
     }
 
-    FilterNot not();
+    /**
+     * Creates an {@link FilterOr or-filter}.
+     *
+     * @param filters the filters
+     * @return the or-filter
+     */
+    static FilterOr or(Filter... filters) {
+        return FilterOr.of(filters);
+    }
+
+    /**
+     * Creates an {@link FilterOr or-filter}.
+     *
+     * @param filters the filters
+     * @return the or-filter
+     */
+    static FilterOr or(Iterable<? extends Filter> filters) {
+        return FilterOr.of(filters);
+    }
+
+    /**
+     * Creates an {@link FilterAnd and-filter}.
+     *
+     * @param filters the filters
+     * @return the and-filter
+     */
+    static FilterAnd and(Filter... filters) {
+        return FilterAnd.of(filters);
+    }
+
+    /**
+     * Creates an {@link FilterAnd and-filter}.
+     *
+     * @param filters the filters
+     * @return the and-filter
+     */
+    static FilterAnd and(Iterable<? extends Filter> filters) {
+        return FilterAnd.of(filters);
+    }
+
+    /**
+     * The logical inversion of {@code this}.
+     *
+     * <p>
+     * {@code filter.equals(filter.inverse().inverse())} is {@code true}.
+     *
+     * @return the inverse filter
+     */
+    Filter inverse();
 
     <V extends Visitor> V walk(V visitor);
 

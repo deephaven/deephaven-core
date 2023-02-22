@@ -640,11 +640,7 @@ class BatchTableRequestBuilder {
 
         @Override
         public void visit(FilterIsNotNull isNotNull) {
-            if (!(isNotNull.expression() instanceof ColumnName)) {
-                // todo
-                throw new UnsupportedOperationException("Only supports null checking a reference to a column");
-            }
-            out = of(Filter.isNull(isNotNull.expression()).not());
+            visit(Filter.not(isNotNull.inverse()));
         }
 
         @Override

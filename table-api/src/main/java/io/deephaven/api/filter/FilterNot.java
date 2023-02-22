@@ -26,6 +26,16 @@ public abstract class FilterNot extends FilterBase {
     @Parameter
     public abstract Filter filter();
 
+    /**
+     * Equivalent to {@code filter()}.
+     *
+     * @return the inverse filter
+     */
+    @Override
+    public final Filter inverse() {
+        return filter();
+    }
+
     @Override
     public final <V extends Visitor> V walk(V visitor) {
         visitor.visit(this);

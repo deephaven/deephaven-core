@@ -27,6 +27,16 @@ public abstract class FilterIsNotNull extends FilterBase {
     @Parameter
     public abstract Expression expression();
 
+    /**
+     * Equivalent to {@code Filter.isNull(expression())}.
+     *
+     * @return the inverse filter
+     */
+    @Override
+    public final FilterIsNull inverse() {
+        return Filter.isNull(expression());
+    }
+
     @Override
     public final <V extends Visitor> V walk(V visitor) {
         visitor.visit(this);
