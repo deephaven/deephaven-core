@@ -92,6 +92,12 @@ public class ByteRollingSumOperator extends BaseLongUpdateByOperator {
                 outputValues.set(outIdx, curVal);
             }
         }
+
+        @Override
+        public void reset() {
+            super.reset();
+            byteWindowValues.clear();
+        }
     }
 
     @NotNull

@@ -126,6 +126,7 @@ public abstract class BaseByteUpdateByOperator extends UpdateByOperator {
         @Override
         public void reset() {
             curVal = NULL_BYTE;
+            nullCount = 0;
         }
 
         @Override
@@ -214,10 +215,9 @@ public abstract class BaseByteUpdateByOperator extends UpdateByOperator {
     @Override
     public void initializeCumulative(@NotNull UpdateByOperator.Context context, long firstUnmodifiedKey, long firstUnmodifiedTimestamp) {
         Context ctx = (Context) context;
+        ctx.reset();
         if (firstUnmodifiedKey != NULL_ROW_KEY) {
             ctx.curVal = outputSource.getByte(firstUnmodifiedKey);
-        } else {
-            ctx.reset();
         }
     }
 

@@ -109,24 +109,26 @@ abstract class UpdateByWindowRollingBase extends UpdateByWindow {
 
     @Override
     void processBucketOperator(final UpdateByWindowBucketContext context,
-                               final int winOpIdx,
-                               final boolean initialStep,
-                               final Chunk<? extends Values>[] chunkArr,
-                               final ChunkSource.GetContext[] chunkContexts) {
+            final int[] winOpArr,
+            final UpdateByOperator.Context[] winOpContexts,
+            final Chunk<? extends Values>[] chunkArr,
+            final ChunkSource.GetContext[] chunkContexts,
+            final boolean initialStep) {
         Assert.neqNull(context.inputSources, "assignInputSources() must be called before processRow()");
 
         UpdateByWindowRollingBucketContext ctx = (UpdateByWindowRollingBucketContext) context;
 
-        final UpdateByOperator winOp = operators[winOpIdx];
-
-        try (final UpdateByOperator.Context winOpCtx = winOp.makeUpdateContext(ctx.workingChunkSize);
-                final RowSequence.Iterator affectedRowsIt = ctx.affectedRows.getRowSequenceIterator();
+        try (final RowSequence.Iterator affectedRowsIt = ctx.affectedRows.getRowSequenceIterator();
                 final RowSequence.Iterator influencerRowsIt = ctx.influencerRows.getRowSequenceIterator()) {
 
-            final int[] srcIndices = operatorInputSourceSlots[winOpIdx];
+            // All operators in the bin share input sources
+            final int[] srcIndices = operatorInputSourceSlots[winOpArr[0]];
 
             // Call the specialized version of `intializeUpdate()` for these operators.
-            winOp.initializeRolling(winOpCtx);
+            for (int ii = 0; ii < winOpArr.length; ii++) {
+                UpdateByOperator rollingOp = operators[winOpArr[ii]];
+                rollingOp.initializeRolling(winOpContexts[ii]);
+            }
 
             int affectedChunkOffset = 0;
 
@@ -145,18 +147,23 @@ abstract class UpdateByWindowRollingBase extends UpdateByWindow {
                 }
 
                 // Make the specialized call for windowed operators.
-                winOpCtx.accumulateRolling(
-                        affectedRs,
-                        chunkArr,
-                        ctx.pushChunks[affectedChunkOffset],
-                        ctx.popChunks[affectedChunkOffset],
-                        affectedChunkSize);
+                for (int ii = 0; ii < winOpArr.length; ii++) {
+                    winOpContexts[ii].accumulateRolling(
+                            affectedRs,
+                            chunkArr,
+                            ctx.pushChunks[affectedChunkOffset],
+                            ctx.popChunks[affectedChunkOffset],
+                            affectedChunkSize);
+                }
 
                 affectedChunkOffset++;
             }
 
-            // Finalize the operator.
-            winOp.finishUpdate(winOpCtx);
+            // Finalize the operators.
+            for (int ii = 0; ii < winOpArr.length; ii++) {
+                UpdateByOperator rollingOp = operators[winOpArr[ii]];
+                rollingOp.finishUpdate(winOpContexts[ii]);
+            }
         }
     }
 }

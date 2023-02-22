@@ -120,6 +120,7 @@ public abstract class BaseShortUpdateByOperator extends UpdateByOperator {
         @Override
         public void reset() {
             curVal = NULL_SHORT;
+            nullCount = 0;
         }
 
         @Override
@@ -195,10 +196,9 @@ public abstract class BaseShortUpdateByOperator extends UpdateByOperator {
     @Override
     public void initializeCumulative(@NotNull UpdateByOperator.Context context, long firstUnmodifiedKey, long firstUnmodifiedTimestamp) {
         Context ctx = (Context) context;
+        ctx.reset();
         if (firstUnmodifiedKey != NULL_ROW_KEY) {
             ctx.curVal = outputSource.getShort(firstUnmodifiedKey);
-        } else {
-            ctx.reset();
         }
     }
 

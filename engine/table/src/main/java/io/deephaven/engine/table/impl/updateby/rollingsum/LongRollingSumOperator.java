@@ -91,6 +91,12 @@ public class LongRollingSumOperator extends BaseLongUpdateByOperator {
                 outputValues.set(outIdx, curVal);
             }
         }
+
+        @Override
+        public void reset() {
+            super.reset();
+            longWindowValues.clear();
+        }
     }
 
     @NotNull

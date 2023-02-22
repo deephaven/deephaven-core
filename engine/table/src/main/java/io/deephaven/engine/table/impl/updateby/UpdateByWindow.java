@@ -217,11 +217,15 @@ abstract class UpdateByWindow {
      * Perform the computations and store the results in the operator output sources
      *
      * @param context the window context that will manage the results.
-     * @param winOpIdx the index of the operator within this window to process.
+     * @param winOpArr an array containing indices of the operator within this window to process.
+     * @param winOpContexts the contexts of the operators to process.
+     * @param chunkArr an array of chunks to pass to the operators
+     * @param chunkContexts get contexts from the input sources for the operators
      * @param initialStep whether this is the creation step of this bucket.
      */
-    abstract void processBucketOperator(UpdateByWindowBucketContext context, int winOpIdx, boolean initialStep,
-                                        Chunk<? extends Values>[] chunkArr, ChunkSource.GetContext[] chunkContexts);
+    abstract void processBucketOperator(UpdateByWindowBucketContext context, int[] winOpArr,
+            UpdateByOperator.Context[] winOpContexts, Chunk<? extends Values>[] chunkArr,
+            ChunkSource.GetContext[] chunkContexts, boolean initialStep);
 
     /**
      * Returns `true` if the window for this bucket needs to be processed this cycle.
@@ -316,6 +320,7 @@ abstract class UpdateByWindow {
 
         // treat all cumulative ops with the same input columns as identical, even if they rely on timestamps
         if (!windowed) {
+            hash = 31 * hash + Objects.hashCode(timestampColumnName);
             return hash;
         }
 
@@ -342,7 +347,7 @@ abstract class UpdateByWindow {
     static boolean isEquivalentWindow(final UpdateByOperator opA, final UpdateByOperator opB) {
         // equivalent if both are cumulative, not equivalent if only one is cumulative
         if (!opA.isWindowed && !opB.isWindowed) {
-            return true;
+            return opA.timestampColumnName == opB.timestampColumnName;
         } else if (opA.isWindowed != opB.isWindowed) {
             return false;
         }

@@ -83,6 +83,12 @@ public final class BigDecimalRollingSumOperator extends BaseObjectUpdateByOperat
                 outputValues.set(outIdx, curVal);
             }
         }
+
+        @Override
+        public void reset() {
+            super.reset();
+            objectWindowValues.clear();
+        }
     }
 
     @NotNull

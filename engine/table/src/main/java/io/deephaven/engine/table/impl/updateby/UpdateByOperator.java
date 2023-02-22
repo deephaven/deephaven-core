@@ -144,12 +144,16 @@ public abstract class UpdateByOperator {
      * Initialize the bucket context for a cumulative operator
      */
     public void initializeCumulative(@NotNull final Context context, final long firstUnmodifiedKey,
-            long firstUnmodifiedTimestamp) {}
+            long firstUnmodifiedTimestamp) {
+        context.reset();
+    }
 
     /**
      * Initialize the bucket context for a windowed operator
      */
-    public void initializeRolling(@NotNull final Context context) {}
+    public void initializeRolling(@NotNull final Context context) {
+        context.reset();
+    }
 
     /**
      * Get the names of the input column(s) for this operator.

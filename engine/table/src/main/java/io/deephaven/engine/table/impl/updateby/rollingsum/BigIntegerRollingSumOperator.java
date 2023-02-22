@@ -80,6 +80,12 @@ public final class BigIntegerRollingSumOperator extends BaseObjectUpdateByOperat
                 outputValues.set(outIdx, curVal);
             }
         }
+
+        @Override
+        public void reset() {
+            super.reset();
+            objectWindowValues.clear();
+        }
     }
 
     @NotNull

@@ -86,6 +86,12 @@ public class DoubleRollingSumOperator extends BaseDoubleUpdateByOperator {
                 outputValues.set(outIdx, doublePairwiseSum.evaluate());
             }
         }
+
+        @Override
+        public void reset() {
+            super.reset();
+            doublePairwiseSum.clear();
+        }
     }
 
     @NotNull

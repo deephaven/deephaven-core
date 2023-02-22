@@ -86,6 +86,12 @@ public class ShortRollingSumOperator extends BaseLongUpdateByOperator {
                 outputValues.set(outIdx, curVal);
             }
         }
+
+        @Override
+        public void reset() {
+            super.reset();
+            shortWindowValues.clear();
+        }
     }
 
     @NotNull

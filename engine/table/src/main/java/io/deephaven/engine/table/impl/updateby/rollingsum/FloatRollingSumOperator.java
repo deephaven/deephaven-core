@@ -81,6 +81,12 @@ public class FloatRollingSumOperator extends BaseFloatUpdateByOperator {
                 outputValues.set(outIdx, floatPairwiseSum.evaluate());
             }
         }
+
+        @Override
+        public void reset() {
+            super.reset();
+            floatPairwiseSum.clear();
+        }
     }
 
     @NotNull
