@@ -132,10 +132,23 @@ public interface JobScheduler {
         public void run() {
             // Handle the (possibly rare) case where earlier threads have already done all the work before this task
             // can start.
-            if (nextIndex.get() >= start + count) {
+            final int firstIdx = nextIndex.getAndIncrement();
+            if (firstIdx >= start + count) {
                 return;
             }
             try (final CONTEXT_TYPE taskThreadContext = taskThreadContextFactory.get()) {
+                if (!tryIncrementReferenceCount()) {
+                    // We raced with the exception consumer
+                    return;
+                }
+                try {
+                    // do the work
+                    action.run(taskThreadContext, firstIdx, resumeAction);
+                } finally {
+                    decrementReferenceCount();
+                }
+
+                // Loop while there is additional work to perform
                 while (true) {
                     if (exception.get() != null) {
                         return;
