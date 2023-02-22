@@ -685,7 +685,7 @@ class BatchTableRequestBuilder {
 
         @Override
         public void visit(RawString rawString) {
-            throw new IllegalStateException("Can't build Condition with raw string");
+            throw new UnsupportedOperationException("Can't build Condition with raw string");
         }
     }
 }
