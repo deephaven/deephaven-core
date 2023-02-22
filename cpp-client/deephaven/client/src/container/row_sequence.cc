@@ -136,81 +136,44 @@ void RowSequenceBuilder::addInterval(uint64_t begin, uint64_t end) {
     return;
   }
 
-  // First we look to the right to see if this range can be combined with the next range.
-  ranges_t::node_type node;
-  auto ip = ranges_.upper_bound(begin);
-  // We will use this below.
-  std::optional<ranges_t::iterator> prevIp;
-  if (ip != ranges_.begin()) {
-    prevIp = std::prev(ip);
-  }
   // ip points to the first element greater than begin, or it is end()
-  if (ip != ranges_.end()) {
-    // ip points to the first element greater than begin
-    //
-    // Example:
-    // Assuming our input [begin, end) is [3, 5)
-    // If the range to the right is [6, 9), then they are not connected.
-    // If the range to the right is [5, 9) then they abut and can be merged.
-    // If the range to the right is [4, 9] then this is an error. Our caller is not allowed to
-    // call us with overlapping ranges.
-    if (end > ip->first) {
-      // This is the [4, 9) error case from the example.
-      auto message = stringf("Looking right: new range [%o,%o) would overlap with existing range [%o, %o)",
-          begin, end, ip->first, ip->second);
-      throw std::runtime_error(message);
-    }
-    if (end == ip->first) {
-      // This is the [5, 9) "abutting" case in the example.
-      // Extend the range we are adding to include this range.
-      end = ip->second;
-      // Then extract the node. Ultimately we will either discard this node or change its key
-      // (the begin part of the range) and reinsert it.
-      node = ranges_.extract(ip);
-      // Now our input is [3, 9) and we've got "node" in a temporary variable whose heap storage
-      // we might reuse if we can.
+  auto ip = ranges_.upper_bound(begin);
+
+  // Reusable storage for the node we will ultimately insert.
+  ranges_t::node_type node;
+
+  // The start point `begin` might fall inside an existing interval, or it might be outside all
+  // intervals. If it's inside any interval, it will be the one just prior to ip.
+  if (ip != ranges_.begin()) {
+    auto prevIp = std::prev(ip);
+    if (begin <= prevIp->second) {
+      // Remove that interval from the map (but, reuse its storage later) and extend the range
+      // we are inserting to include the start of the interval.
+      begin = prevIp->first;
+      size_ -= prevIp->second - prevIp->first;
+      node = ranges_.extract(prevIp);
     }
   }
 
-  // At this point our input range is either the original or modified [begin, end), and we might
-  // have node storage that we can reuse.
-
-  // Now we look to the left to see if the input range can be combined with the previous range.
-  if (prevIp.has_value()) {
-    ip = *prevIp;  // convenient to move to this temporary
-
-    // Example: our input is [3, 5)
-    // If the range to the left is [0, 2) then they are not connected.
-    // If the range to the left is [0, 3) then they abut, and we can just reset the right
-    // side of the left range to [0, 5].
-    // If the range to the left is [0, 4) then this is an error due to overlap.
-    if (ip->second > begin) {
-      // This is the [0, 4) error case from the example.
-      auto message = stringf(
-          "Looking left: new range [%o,%o) would overlap with existing range [%o, %o)",
-          begin, end, ip->first, ip->second);
-      throw std::runtime_error(message);
-    }
-
-    if (ip->second == begin) {
-      // This is the [0, 3) "abutting" case in the example.
-      // Extend the range we are adding to include this range.
-      // In our example we just reset the range to be [0, 5).
-      ip->second = end;
-      size_ += end - begin;
-      return;
-    }
+  // Now 'begin' is not inside any existing interval. Determine what to do about 'end' by repeating
+  // the below:
+  // 1. If it falls short of the next interval, we are done
+  // 2. If it falls inside the next interval, remove that interval and extend 'end' to the end of
+  //    that interval, and repeat
+  // 3. If it falls past the end of the next interval, remove that interval, and repeat
+  while (ip != ranges_.end() && end >= ip->first) {
+    end = std::max(end, ip->second);
+    auto temp = ip++;
+    size_ -= temp->second - temp->first;
+    node = ranges_.extract(temp);
   }
 
-  // If we get here, we were not able to merge with the left node. So we have an interval that
-  // needs to be inserted and we may or may not be able to reuse heap storage previous extracted
-  // from the right.
+  // Now we can insert 'node' into the map, reusing existing storage if possible.
   if (node.empty()) {
     // We were not able to reuse any nodes
     ranges_.insert(std::make_pair(begin, end));
   } else {
-    // We were able to reuse at least one node (if we merged on both sides, then we can reuse
-    // one node and discard one node).
+    // We were able to reuse one node.
     node.key() = begin;
     node.mapped() = end;
     ranges_.insert(std::move(node));
