@@ -1729,7 +1729,8 @@ public class DateTimeUtils {
         final Period period = convertPeriodQuiet(s);
         if (period != null) {
             try {
-                return StrictMath.multiplyExact(period.getJodaPeriod().toStandardDuration().getMillis(), 1_000_000L);
+                return StrictMath.multiplyExact(period.getJodaPeriod().toStandardDuration().getMillis(),
+                        period.isPositive() ? 1_000_000L : -1_000_000L);
             } catch (ArithmeticException ex) {
                 throw new DateTimeOverflowException("Period length in nanoseconds exceeds Long.MAX_VALUE : " + s, ex);
             }
