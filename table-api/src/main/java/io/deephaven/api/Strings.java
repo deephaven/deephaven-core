@@ -31,10 +31,10 @@ public class Strings {
         return rawString.value();
     }
 
-    public static String of(FilterComparison condition) {
-        String lhs = of(condition.lhs());
-        String rhs = of(condition.rhs());
-        switch (condition.operator()) {
+    public static String of(FilterComparison comparison) {
+        String lhs = of(comparison.lhs());
+        String rhs = of(comparison.rhs());
+        switch (comparison.operator()) {
             case LESS_THAN:
                 return String.format("(%s) < (%s)", lhs, rhs);
             case LESS_THAN_OR_EQUAL:
@@ -49,7 +49,7 @@ public class Strings {
                 return String.format("(%s) != (%s)", lhs, rhs);
             default:
                 throw new IllegalStateException(
-                        "Unexpected condition operator: " + condition.operator());
+                        "Unexpected comparison operator: " + comparison.operator());
         }
     }
 
@@ -58,11 +58,11 @@ public class Strings {
     }
 
     public static String of(FilterIsNull isNull) {
-        return String.format("isNull(%s)", of(isNull.column()));
+        return String.format("isNull(%s)", of(isNull.expression()));
     }
 
     public static String of(FilterIsNotNull isNotNull) {
-        return String.format("!isNull(%s)", of(isNotNull.column()));
+        return String.format("!isNull(%s)", of(isNotNull.expression()));
     }
 
     public static String of(FilterOr filterOr) {
@@ -110,17 +110,21 @@ public class Strings {
     }
 
     public static String of(Expression expression) {
-        return expression.walk(new UniversalAdapter()).getOut();
+        final UniversalAdapter visitor = new UniversalAdapter();
+        expression.walk((Expression.Visitor) visitor);
+        return visitor.getOut();
     }
 
     public static String of(Filter filter) {
-        return filter.walk(new UniversalAdapter()).getOut();
+        final UniversalAdapter visitor = new UniversalAdapter();
+        filter.walk((Filter.Visitor) visitor);
+        return visitor.getOut();
     }
 
     public static String of(Value value) {
-        UniversalAdapter universalAdapter = new UniversalAdapter();
-        value.walk((Value.Visitor) universalAdapter);
-        return universalAdapter.getOut();
+        final UniversalAdapter visitor = new UniversalAdapter();
+        value.walk((Value.Visitor) visitor);
+        return visitor.getOut();
     }
 
     /**
@@ -146,7 +150,7 @@ public class Strings {
 
         @Override
         public void visit(Filter filter) {
-            filter.walk(this);
+            filter.walk((Filter.Visitor) this);
         }
 
         @Override
@@ -181,7 +185,7 @@ public class Strings {
 
         @Override
         public void visit(Value value) {
-            out = of(value);
+            value.walk((Value.Visitor) this);
         }
 
         @Override

@@ -6,7 +6,9 @@ package io.deephaven.engine.table.impl.select;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.RawString;
 import io.deephaven.api.Selectable;
+import io.deephaven.api.Strings;
 import io.deephaven.api.expression.Expression;
+import io.deephaven.api.filter.Filter;
 import io.deephaven.api.value.Value;
 import io.deephaven.engine.context.QueryCompiler;
 import io.deephaven.engine.table.*;
@@ -200,12 +202,17 @@ public interface SelectColumn extends Selectable {
 
         @Override
         public void visit(RawString rhs) {
-            out = SelectColumnFactory.getExpression(String.format("%s=%s", lhs.name(), rhs.value()));
+            out = SelectColumnFactory.getExpression(String.format("%s=(%s)", lhs.name(), rhs.value()));
         }
 
         @Override
         public void visit(long rhs) {
             out = SelectColumnFactory.getExpression(String.format("%s=%dL", lhs.name(), rhs));
+        }
+
+        @Override
+        public void visit(Filter rhs) {
+            out = SelectColumnFactory.getExpression(String.format("%s=(%s)", lhs.name(), Strings.of(rhs)));
         }
     }
 

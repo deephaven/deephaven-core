@@ -68,6 +68,7 @@ import io.deephaven.proto.backplane.grpc.UnstructuredFilterTableRequest;
 import io.deephaven.proto.backplane.grpc.UpdateByRequest;
 import io.deephaven.proto.backplane.grpc.WhereInRequest;
 import io.deephaven.proto.util.ExportTicketHelper;
+import io.deephaven.qst.column.Column;
 import io.deephaven.qst.table.AggregateAllTable;
 import io.deephaven.qst.table.AggregateTable;
 import io.deephaven.qst.table.AsOfJoinTable;
@@ -591,15 +592,23 @@ class BatchTableRequestBuilder {
 
         @Override
         public void visit(FilterIsNull isNull) {
+            if (!(isNull.expression() instanceof ColumnName)) {
+                // todo
+                throw new UnsupportedOperationException("Only supports null checking a reference to a column");
+            }
             out = Condition.newBuilder()
-                    .setIsNull(
-                            IsNullCondition.newBuilder().setReference(reference(isNull.column())).build())
+                    .setIsNull(IsNullCondition.newBuilder().setReference(reference((ColumnName) isNull.expression()))
+                            .build())
                     .build();
         }
 
         @Override
         public void visit(FilterIsNotNull isNotNull) {
-            out = of(FilterIsNull.of(isNotNull.column()).not());
+            if (!(isNotNull.expression() instanceof ColumnName)) {
+                // todo
+                throw new UnsupportedOperationException("Only supports null checking a reference to a column");
+            }
+            out = of(FilterIsNull.of(isNotNull.expression()).not());
         }
 
         @Override

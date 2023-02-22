@@ -7,16 +7,22 @@ import io.deephaven.api.ColumnName;
 import io.deephaven.api.RawString;
 import io.deephaven.api.Strings;
 import io.deephaven.api.expression.Expression;
-import io.deephaven.api.filter.*;
+import io.deephaven.api.filter.Filter;
+import io.deephaven.api.filter.FilterAnd;
+import io.deephaven.api.filter.FilterComparison;
+import io.deephaven.api.filter.FilterIsNotNull;
+import io.deephaven.api.filter.FilterIsNull;
+import io.deephaven.api.filter.FilterNot;
+import io.deephaven.api.filter.FilterOr;
 import io.deephaven.api.value.Value;
 import io.deephaven.engine.context.QueryCompiler;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.select.MatchFilter.MatchType;
-import io.deephaven.engine.rowset.RowSet;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
@@ -216,7 +222,7 @@ public interface WhereFilter extends Filter {
 
         @Override
         public void visit(FilterComparison condition) {
-            out = FilterConditionAdapter.of(inverted ? condition.invert() : condition);
+            out = FilterComparisonAdapter.of(inverted ? condition.invert() : condition);
         }
 
         @Override
@@ -227,18 +233,18 @@ public interface WhereFilter extends Filter {
         @Override
         public void visit(FilterIsNull isNull) {
             if (inverted) {
-                out = isNotNull(isNull.column());
+                out = isNotNull(isNull.expression());
             } else {
-                out = isNull(isNull.column());
+                out = isNull(isNull.expression());
             }
         }
 
         @Override
         public void visit(FilterIsNotNull isNotNull) {
             if (inverted) {
-                out = isNull(isNotNull.column());
+                out = isNull(isNotNull.expression());
             } else {
-                out = isNotNull(isNotNull.column());
+                out = isNotNull(isNotNull.expression());
             }
         }
 
@@ -273,19 +279,27 @@ public interface WhereFilter extends Filter {
             }
         }
 
-        private static MatchFilter isNull(ColumnName columnName) {
-            return new MatchFilter(columnName.name(), new Object[] {null});
+        private static WhereFilter isNull(Expression expression) {
+            // todo: use a visitor
+            if (expression instanceof ColumnName) {
+                return new MatchFilter(((ColumnName) expression).name(), new Object[] {null});
+            }
+            return WhereFilterFactory.getExpression(String.format("isNull(%s)", Strings.of(expression)));
         }
 
-        private static MatchFilter isNotNull(ColumnName columnName) {
-            return new MatchFilter(MatchType.Inverted, columnName.name(), new Object[] {null});
+        private static WhereFilter isNotNull(Expression expression) {
+            // todo: use a visitor
+            if (expression instanceof ColumnName) {
+                return new MatchFilter(MatchType.Inverted, ((ColumnName) expression).name(), new Object[] {null});
+            }
+            return WhereFilterFactory.getExpression(String.format("!isNull(%s)", Strings.of(expression)));
         }
 
-        private static class FilterConditionAdapter implements Expression.Visitor, Value.Visitor {
+        private static class FilterComparisonAdapter implements Expression.Visitor, Value.Visitor {
 
             public static WhereFilter of(FilterComparison condition) {
                 FilterComparison preferred = condition.maybeTranspose();
-                return preferred.lhs().walk(new FilterConditionAdapter(condition, preferred)).getOut();
+                return preferred.lhs().walk(new FilterComparisonAdapter(condition, preferred)).getOut();
             }
 
             private final FilterComparison original;
@@ -293,7 +307,7 @@ public interface WhereFilter extends Filter {
 
             private WhereFilter out;
 
-            private FilterConditionAdapter(FilterComparison original, FilterComparison preferred) {
+            private FilterComparisonAdapter(FilterComparison original, FilterComparison preferred) {
                 this.original = Objects.requireNonNull(original);
                 this.preferred = Objects.requireNonNull(preferred);
             }
@@ -347,6 +361,11 @@ public interface WhereFilter extends Filter {
                 }
 
                 @Override
+                public void visit(Filter rhs) {
+                    out = WhereFilterFactory.getExpression(Strings.of(original));
+                }
+
+                @Override
                 public void visit(Value value) {
                     value.walk((Value.Visitor) this);
                 }
@@ -371,6 +390,11 @@ public interface WhereFilter extends Filter {
             }
 
             @Override
+            public void visit(Filter lhs) {
+                out = WhereFilterFactory.getExpression(Strings.of(original));
+            }
+
+            @Override
             public void visit(RawString lhs) {
                 out = WhereFilterFactory.getExpression(Strings.of(original));
             }
@@ -386,6 +410,11 @@ public interface WhereFilter extends Filter {
 
     @Override
     default <V extends Visitor> V walk(V visitor) {
+        throw new UnsupportedOperationException("WhereFilters do not implement walk");
+    }
+
+    @Override
+    default <V extends Expression.Visitor> V walk(V visitor) {
         throw new UnsupportedOperationException("WhereFilters do not implement walk");
     }
 

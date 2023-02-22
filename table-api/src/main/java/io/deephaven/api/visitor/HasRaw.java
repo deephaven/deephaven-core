@@ -70,7 +70,7 @@ public final class HasRaw implements Filter.Visitor, Expression.Visitor, Value.V
 
     @Override
     public void visit(FilterNot not) {
-        not.filter().walk(this);
+        not.filter().walk((Filter.Visitor) this);
     }
 
     @Override

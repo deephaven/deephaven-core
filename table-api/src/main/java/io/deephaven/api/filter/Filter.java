@@ -5,6 +5,7 @@ package io.deephaven.api.filter;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.RawString;
+import io.deephaven.api.expression.Expression;
 
 import java.io.Serializable;
 import java.util.Arrays;
@@ -16,7 +17,7 @@ import java.util.stream.Collectors;
  *
  * @see io.deephaven.api.TableOperations#where(Collection)
  */
-public interface Filter extends Serializable {
+public interface Filter extends Expression, Serializable {
 
     static Collection<? extends Filter> from(String... expressions) {
         return from(Arrays.asList(expressions));
