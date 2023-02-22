@@ -10,10 +10,10 @@ import org.immutables.value.Value.Parameter;
 
 @Immutable
 @SimpleStyle
-abstract class ValueLong extends ValueBase {
+abstract class LiteralLong extends LiteralBase {
 
-    public static ValueLong of(long value) {
-        return ImmutableValueLong.of(value);
+    public static LiteralLong of(long value) {
+        return ImmutableLiteralLong.of(value);
     }
 
     @Parameter
@@ -27,6 +27,7 @@ abstract class ValueLong extends ValueBase {
 
     @Check
     final void checkNotDeephavenNull() {
+        // todo: should we allow this value?
         if (value() == Long.MIN_VALUE) {
             throw new IllegalArgumentException(
                     "Can't represent Long.MIN_VALUE, is Deephaven null representation");

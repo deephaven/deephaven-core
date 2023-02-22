@@ -14,7 +14,7 @@ import io.deephaven.api.filter.FilterIsNotNull;
 import io.deephaven.api.filter.FilterIsNull;
 import io.deephaven.api.filter.FilterNot;
 import io.deephaven.api.filter.FilterOr;
-import io.deephaven.api.value.Value;
+import io.deephaven.api.value.Literal;
 import io.deephaven.engine.context.QueryCompiler;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
@@ -221,8 +221,8 @@ public interface WhereFilter extends Filter {
         }
 
         @Override
-        public void visit(FilterComparison condition) {
-            out = FilterComparisonAdapter.of(inverted ? condition.invert() : condition);
+        public void visit(FilterComparison comparison) {
+            out = FilterComparisonAdapter.of(inverted ? comparison.invert() : comparison);
         }
 
         @Override
@@ -284,7 +284,7 @@ public interface WhereFilter extends Filter {
             if (expression instanceof ColumnName) {
                 return new MatchFilter(((ColumnName) expression).name(), new Object[] {null});
             }
-            return WhereFilterFactory.getExpression(Strings.of(FilterIsNull.of(expression)));
+            return WhereFilterFactory.getExpression(Strings.of(Filter.isNull(expression)));
         }
 
         private static WhereFilter isNotNull(Expression expression) {
@@ -292,10 +292,10 @@ public interface WhereFilter extends Filter {
             if (expression instanceof ColumnName) {
                 return new MatchFilter(MatchType.Inverted, ((ColumnName) expression).name(), new Object[] {null});
             }
-            return WhereFilterFactory.getExpression(Strings.of(FilterIsNotNull.of(expression)));
+            return WhereFilterFactory.getExpression(Strings.of(Filter.isNotNull(expression)));
         }
 
-        private static class FilterComparisonAdapter implements Expression.Visitor, Value.Visitor {
+        private static class FilterComparisonAdapter implements Expression.Visitor, Literal.Visitor {
 
             public static WhereFilter of(FilterComparison condition) {
                 FilterComparison preferred = condition.maybeTranspose();
@@ -321,7 +321,7 @@ public interface WhereFilter extends Filter {
                 preferred.rhs().walk(new PreferredLhsColumnRhsVisitor(lhs));
             }
 
-            private class PreferredLhsColumnRhsVisitor implements Expression.Visitor, Value.Visitor {
+            private class PreferredLhsColumnRhsVisitor implements Expression.Visitor, Literal.Visitor {
                 private final ColumnName lhs;
 
                 public PreferredLhsColumnRhsVisitor(ColumnName lhs) {
@@ -361,13 +361,33 @@ public interface WhereFilter extends Filter {
                 }
 
                 @Override
+                public void visit(boolean rhs) {
+                    switch (preferred.operator()) {
+                        case EQUALS:
+                            out = new MatchFilter(lhs.name(), rhs);
+                            break;
+                        case NOT_EQUALS:
+                            out = new MatchFilter(MatchType.Inverted, lhs.name(), rhs);
+                            break;
+                        case LESS_THAN:
+                        case LESS_THAN_OR_EQUAL:
+                        case GREATER_THAN:
+                        case GREATER_THAN_OR_EQUAL:
+                            out = WhereFilterFactory.getExpression(Strings.of(original));
+                            break;
+                        default:
+                            throw new IllegalStateException("Unexpected operator " + original.operator());
+                    }
+                }
+
+                @Override
                 public void visit(Filter rhs) {
                     out = WhereFilterFactory.getExpression(Strings.of(original));
                 }
 
                 @Override
-                public void visit(Value value) {
-                    value.walk((Value.Visitor) this);
+                public void visit(Literal value) {
+                    value.walk((Literal.Visitor) this);
                 }
 
                 @Override
@@ -385,8 +405,13 @@ public interface WhereFilter extends Filter {
             }
 
             @Override
-            public void visit(Value lhs) {
-                lhs.walk((Value.Visitor) this);
+            public void visit(boolean x) {
+                out = WhereFilterFactory.getExpression(Strings.of(original));
+            }
+
+            @Override
+            public void visit(Literal lhs) {
+                lhs.walk((Literal.Visitor) this);
             }
 
             @Override

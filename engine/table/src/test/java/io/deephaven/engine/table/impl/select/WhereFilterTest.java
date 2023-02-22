@@ -7,7 +7,7 @@ import io.deephaven.api.ColumnName;
 import io.deephaven.api.RawString;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.filter.FilterComparison;
-import io.deephaven.api.value.Value;
+import io.deephaven.api.value.Literal;
 import junit.framework.TestCase;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -16,7 +16,7 @@ public class WhereFilterTest extends TestCase {
 
     private static final ColumnName FOO = ColumnName.of("Foo");
     private static final ColumnName BAR = ColumnName.of("Bar");
-    private static final Value V42 = Value.of(42L);
+    private static final Literal V42 = Literal.of(42L);
 
     public void testIsNull() {
         expect(Filter.isNull(FOO), MatchFilter.class, "Foo in [null]");

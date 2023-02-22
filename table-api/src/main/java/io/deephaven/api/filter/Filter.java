@@ -3,9 +3,9 @@
  */
 package io.deephaven.api.filter;
 
-import io.deephaven.api.ColumnName;
 import io.deephaven.api.RawString;
 import io.deephaven.api.expression.Expression;
+import io.deephaven.api.value.Literal;
 
 import java.io.Serializable;
 import java.util.Arrays;
@@ -32,12 +32,22 @@ public interface Filter extends Expression, Serializable {
         return from(expressions);
     }
 
-    static FilterIsNull isNull(ColumnName column) {
-        return FilterIsNull.of(column);
+    static FilterIsNull isNull(Expression expression) {
+        // todo: comparison?
+        return FilterIsNull.of(expression);
     }
 
-    static FilterIsNotNull isNotNull(ColumnName column) {
-        return FilterIsNotNull.of(column);
+    static FilterIsNotNull isNotNull(Expression expression) {
+        // todo: comparison?
+        return FilterIsNotNull.of(expression);
+    }
+
+    static Filter isTrue(Expression expression) {
+        return FilterComparison.eq(expression, Literal.of(true));
+    }
+
+    static Filter isFalse(Expression expression) {
+        return FilterComparison.eq(expression, Literal.of(false));
     }
 
     static FilterNot not(Filter filter) {
@@ -51,13 +61,18 @@ public interface Filter extends Expression, Serializable {
     interface Visitor {
         // TODO (deephaven-core#829): Add more table api Filter structuring
 
-        // todo: this is just specific of expression is null
+        // note: isNull is a "special" case, as the caller doesn't technically need to know the return type of the
+        // expression (even though they should technically know, and the engine will implicitly choose the appropriate
+        // call).
+        //
+        // The same can't be said about boolean; if you want to check whether an expression is true, that will be
+        // represented with a filter comparison against a literal boolean
+
         void visit(FilterIsNull isNull);
 
-        // todo: this is just specific of expression is null
         void visit(FilterIsNotNull isNotNull);
 
-        void visit(FilterComparison condition);
+        void visit(FilterComparison comparison);
 
         void visit(FilterNot not);
 

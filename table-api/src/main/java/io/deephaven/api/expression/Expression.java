@@ -3,10 +3,11 @@
  */
 package io.deephaven.api.expression;
 
+import io.deephaven.api.ColumnName;
 import io.deephaven.api.RawString;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.filter.Filter;
-import io.deephaven.api.value.Value;
+import io.deephaven.api.value.Literal;
 
 import java.io.Serializable;
 
@@ -21,8 +22,9 @@ public interface Expression extends Serializable {
 
     interface Visitor {
         // TODO (deephaven-core#830): Add more table api Expression structuring
+        void visit(ColumnName columnName);
 
-        void visit(Value value);
+        void visit(Literal literal);
 
         void visit(Filter filter);
 

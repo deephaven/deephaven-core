@@ -12,7 +12,7 @@ import io.deephaven.api.filter.FilterIsNotNull;
 import io.deephaven.api.filter.FilterIsNull;
 import io.deephaven.api.filter.FilterNot;
 import io.deephaven.api.filter.FilterOr;
-import io.deephaven.api.value.Value;
+import io.deephaven.api.value.Literal;
 
 import java.util.Collection;
 import java.util.Objects;
@@ -32,6 +32,7 @@ public class Strings {
     }
 
     public static String of(FilterComparison comparison) {
+        // todo: consider lhs / rhs as null? translate to isNull / !isNull?
         String lhs = of(comparison.lhs());
         String rhs = of(comparison.rhs());
         switch (comparison.operator()) {
@@ -121,9 +122,9 @@ public class Strings {
         return visitor.getOut();
     }
 
-    public static String of(Value value) {
+    public static String of(Literal value) {
         final UniversalAdapter visitor = new UniversalAdapter();
-        value.walk((Value.Visitor) visitor);
+        value.walk((Literal.Visitor) visitor);
         return visitor.getOut();
     }
 
@@ -131,7 +132,7 @@ public class Strings {
      * If we ever need to provide more specificity for a type, we can create a non-universal impl.
      */
     private static class UniversalAdapter
-            implements Filter.Visitor, Expression.Visitor, Value.Visitor {
+            implements Filter.Visitor, Expression.Visitor, Literal.Visitor {
         private String out;
 
         public String getOut() {
@@ -154,8 +155,8 @@ public class Strings {
         }
 
         @Override
-        public void visit(FilterComparison condition) {
-            out = of(condition);
+        public void visit(FilterComparison comparison) {
+            out = of(comparison);
         }
 
         @Override
@@ -184,13 +185,18 @@ public class Strings {
         }
 
         @Override
-        public void visit(Value value) {
-            value.walk((Value.Visitor) this);
+        public void visit(Literal value) {
+            value.walk((Literal.Visitor) this);
         }
 
         @Override
         public void visit(long x) {
             out = Long.toString(x);
+        }
+
+        @Override
+        public void visit(boolean x) {
+            out = Boolean.toString(x);
         }
     }
 }

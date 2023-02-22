@@ -5,7 +5,7 @@ package io.deephaven.api.filter;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.Strings;
-import io.deephaven.api.value.Value;
+import io.deephaven.api.value.Literal;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -14,7 +14,7 @@ public class FilterTest {
 
     @Test
     void condition() {
-        toString(FilterComparison.gt(ColumnName.of("Foo"), Value.of(42L)), "(Foo) > (42)");
+        toString(FilterComparison.gt(ColumnName.of("Foo"), Literal.of(42L)), "(Foo) > (42)");
     }
 
     @Test
@@ -36,7 +36,7 @@ public class FilterTest {
     void ands() {
         toString(
                 FilterAnd.of(Filter.isNotNull(ColumnName.of("Foo")),
-                        FilterComparison.gt(ColumnName.of("Foo"), Value.of(42L))),
+                        FilterComparison.gt(ColumnName.of("Foo"), Literal.of(42L))),
                 "(!isNull(Foo)) && ((Foo) > (42))");
     }
 
@@ -44,7 +44,7 @@ public class FilterTest {
     void ors() {
         toString(
                 FilterOr.of(Filter.isNull(ColumnName.of("Foo")),
-                        FilterComparison.eq(ColumnName.of("Foo"), Value.of(42L))),
+                        FilterComparison.eq(ColumnName.of("Foo"), Literal.of(42L))),
                 "(isNull(Foo)) || ((Foo) == (42))");
     }
 

@@ -9,7 +9,7 @@ import io.deephaven.api.Selectable;
 import io.deephaven.api.Strings;
 import io.deephaven.api.expression.Expression;
 import io.deephaven.api.filter.Filter;
-import io.deephaven.api.value.Value;
+import io.deephaven.api.value.Literal;
 import io.deephaven.engine.context.QueryCompiler;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.WritableColumnSource;
@@ -178,7 +178,7 @@ public interface SelectColumn extends Selectable {
      */
     SelectColumn copy();
 
-    class ExpressionAdapter implements Expression.Visitor, Value.Visitor {
+    class ExpressionAdapter implements Expression.Visitor, Literal.Visitor {
         private final ColumnName lhs;
         private SelectColumn out;
 
@@ -191,8 +191,8 @@ public interface SelectColumn extends Selectable {
         }
 
         @Override
-        public void visit(Value rhs) {
-            rhs.walk((Value.Visitor) this);
+        public void visit(Literal rhs) {
+            rhs.walk((Literal.Visitor) this);
         }
 
         @Override
@@ -208,6 +208,11 @@ public interface SelectColumn extends Selectable {
         @Override
         public void visit(long rhs) {
             out = SelectColumnFactory.getExpression(String.format("%s=%dL", lhs.name(), rhs));
+        }
+
+        @Override
+        public void visit(boolean rhs) {
+            out = SelectColumnFactory.getExpression(String.format("%s=%b", lhs.name(), rhs));
         }
 
         @Override

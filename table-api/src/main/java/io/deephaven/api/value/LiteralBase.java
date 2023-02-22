@@ -5,7 +5,7 @@ package io.deephaven.api.value;
 
 import io.deephaven.api.expression.Expression;
 
-public abstract class ValueBase implements Value {
+public abstract class LiteralBase implements Literal {
 
     @Override
     public final <V extends Expression.Visitor> V walk(V visitor) {

@@ -373,7 +373,7 @@ class Docker {
                     } else {
                         dependsOn createContainer
                     }
-                    finalizedBy removeContainer
+                    // finalizedBy removeContainer
 
                     // We need to declare some output so that other tasks can correctly depend on this. Whether or not
                     // there is an entrypoint, the last accessible output is the build image, so declare that
@@ -392,7 +392,7 @@ class Docker {
                 }
 
                 // once we're done copying output, delete the container
-                finalizedBy removeContainer
+                // finalizedBy removeContainer
 
                 // specify that we don't need to re-run if the imageid didn't change
                 inputs.property('imageId', makeImage.get().getImageId())

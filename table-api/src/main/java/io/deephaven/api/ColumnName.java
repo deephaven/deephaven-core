@@ -7,7 +7,6 @@ import io.deephaven.annotations.SimpleStyle;
 import io.deephaven.api.agg.Pair;
 import io.deephaven.api.expression.Expression;
 import io.deephaven.api.util.NameValidator;
-import io.deephaven.api.value.Value;
 import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
@@ -25,7 +24,7 @@ import java.util.stream.Collectors;
 @Immutable
 @SimpleStyle
 public abstract class ColumnName
-        implements Selectable, Value, Expression, Pair, JoinMatch, JoinAddition, Serializable {
+        implements Selectable, Expression, Pair, JoinMatch, JoinAddition, Serializable {
 
     public static boolean isValidParsedColumnName(String value) {
         return NameValidator.isValidColumnName(value.trim());
@@ -91,12 +90,6 @@ public abstract class ColumnName
 
     @Override
     public final <V extends Expression.Visitor> V walk(V visitor) {
-        visitor.visit(this);
-        return visitor;
-    }
-
-    @Override
-    public final <V extends Value.Visitor> V walk(V visitor) {
         visitor.visit(this);
         return visitor;
     }

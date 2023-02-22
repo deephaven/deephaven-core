@@ -7,7 +7,7 @@ import io.deephaven.api.ColumnName;
 import io.deephaven.api.TableOperations;
 import io.deephaven.api.filter.FilterAnd;
 import io.deephaven.api.filter.FilterComparison;
-import io.deephaven.api.value.Value;
+import io.deephaven.api.value.Literal;
 import io.deephaven.qst.TableCreationLogic;
 import io.deephaven.qst.TableCreator;
 import io.deephaven.qst.table.TableSpec;
@@ -28,8 +28,8 @@ class Example2 extends FlightCannedTableBase {
 
     public static <T extends TableOperations<T, T>> T create(TableCreator<T> c) {
         return c.of(TableSpec.empty(100)).view("I=i").where(Collections.singletonList(FilterAnd.of(
-                FilterComparison.gte(ColumnName.of("I"), Value.of(42L)),
-                FilterComparison.lt(ColumnName.of("I"), Value.of(55L)))));
+                FilterComparison.gte(ColumnName.of("I"), Literal.of(42L)),
+                FilterComparison.lt(ColumnName.of("I"), Literal.of(55L)))));
     }
 
     public static void main(String[] args) {

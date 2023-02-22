@@ -15,6 +15,7 @@ import io.deephaven.api.SortColumn;
 import io.deephaven.api.SortColumn.Order;
 import io.deephaven.api.Strings;
 import io.deephaven.api.agg.Aggregation;
+import io.deephaven.api.expression.Expression;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.filter.FilterAnd;
 import io.deephaven.api.filter.FilterComparison;
@@ -25,7 +26,7 @@ import io.deephaven.api.filter.FilterNot;
 import io.deephaven.api.filter.FilterOr;
 import io.deephaven.api.snapshot.SnapshotWhenOptions;
 import io.deephaven.api.snapshot.SnapshotWhenOptions.Flag;
-import io.deephaven.api.value.Value;
+import io.deephaven.api.value.Literal;
 import io.deephaven.proto.backplane.grpc.AggregateAllRequest;
 import io.deephaven.proto.backplane.grpc.AggregateRequest;
 import io.deephaven.proto.backplane.grpc.AndCondition;
@@ -47,7 +48,6 @@ import io.deephaven.proto.backplane.grpc.FetchTableRequest;
 import io.deephaven.proto.backplane.grpc.FilterTableRequest;
 import io.deephaven.proto.backplane.grpc.HeadOrTailRequest;
 import io.deephaven.proto.backplane.grpc.IsNullCondition;
-import io.deephaven.proto.backplane.grpc.Literal;
 import io.deephaven.proto.backplane.grpc.MergeTablesRequest;
 import io.deephaven.proto.backplane.grpc.NaturalJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.NotCondition;
@@ -68,7 +68,6 @@ import io.deephaven.proto.backplane.grpc.UnstructuredFilterTableRequest;
 import io.deephaven.proto.backplane.grpc.UpdateByRequest;
 import io.deephaven.proto.backplane.grpc.WhereInRequest;
 import io.deephaven.proto.util.ExportTicketHelper;
-import io.deephaven.qst.column.Column;
 import io.deephaven.qst.table.AggregateAllTable;
 import io.deephaven.qst.table.AggregateTable;
 import io.deephaven.qst.table.AsOfJoinTable;
@@ -279,22 +278,34 @@ class BatchTableRequestBuilder {
             out = op(Builder::setSnapshotWhen, builder.build());
         }
 
+        private Operation createFilterTableRequest(WhereTable whereTable) {
+            FilterTableRequest.Builder builder = FilterTableRequest.newBuilder()
+                    .setResultId(ticket)
+                    .setSourceId(ref(whereTable.parent()));
+            for (Filter filter : whereTable.filters()) {
+                builder.addFilters(FilterAdapter.of(filter));
+            }
+            return op(Builder::setFilter, builder.build());
+        }
+
+        private Operation createUnstructuredFilterTableRequest(WhereTable whereTable) {
+            UnstructuredFilterTableRequest.Builder builder = UnstructuredFilterTableRequest.newBuilder()
+                    .setResultId(ticket)
+                    .setSourceId(ref(whereTable.parent()));
+            for (Filter filter : whereTable.filters()) {
+                builder.addFilters(Strings.of(filter));
+            }
+            return op(Builder::setUnstructuredFilter, builder.build());
+        }
+
         @Override
         public void visit(WhereTable whereTable) {
-            if (whereTable.hasRawFilter()) {
-                UnstructuredFilterTableRequest.Builder builder = UnstructuredFilterTableRequest
-                        .newBuilder().setResultId(ticket).setSourceId(ref(whereTable.parent()));
-                for (Filter filter : whereTable.filters()) {
-                    builder.addFilters(Strings.of(filter));
-                }
-                out = op(Builder::setUnstructuredFilter, builder.build());
-            } else {
-                FilterTableRequest.Builder builder = FilterTableRequest.newBuilder()
-                        .setResultId(ticket).setSourceId(ref(whereTable.parent()));
-                for (Filter filter : whereTable.filters()) {
-                    builder.addFilters(FilterAdapter.of(filter));
-                }
-                out = op(Builder::setFilter, builder.build());
+            try {
+                out = createFilterTableRequest(whereTable);
+            } catch (UnsupportedOperationException uoe) {
+                // gRPC structures unable to support stronger typed versions.
+                // Ignore exception, create unstructured version.
+                out = createUnstructuredFilterTableRequest(whereTable);
             }
         }
 
@@ -531,13 +542,17 @@ class BatchTableRequestBuilder {
         return Reference.newBuilder().setColumnName(columnName.name()).build();
     }
 
-    private static Literal literal(long x) {
-        return Literal.newBuilder().setLongValue(x).build();
+    private static io.deephaven.proto.backplane.grpc.Literal literal(long x) {
+        return io.deephaven.proto.backplane.grpc.Literal.newBuilder().setLongValue(x).build();
     }
 
-    static class ValueAdapter implements Value.Visitor {
-        static io.deephaven.proto.backplane.grpc.Value adapt(Value value) {
-            return value.walk(new ValueAdapter()).out();
+    private static io.deephaven.proto.backplane.grpc.Literal literal(boolean x) {
+        return io.deephaven.proto.backplane.grpc.Literal.newBuilder().setBoolValue(x).build();
+    }
+
+    static class ExpressionAdapter implements Expression.Visitor, Literal.Visitor {
+        static io.deephaven.proto.backplane.grpc.Value adapt(Expression expression) {
+            return expression.walk(new ExpressionAdapter()).out();
         }
 
         private io.deephaven.proto.backplane.grpc.Value out;
@@ -554,8 +569,29 @@ class BatchTableRequestBuilder {
 
         @Override
         public void visit(long x) {
-            out =
-                    io.deephaven.proto.backplane.grpc.Value.newBuilder().setLiteral(literal(x)).build();
+            out = io.deephaven.proto.backplane.grpc.Value.newBuilder().setLiteral(literal(x)).build();
+        }
+
+        @Override
+        public void visit(boolean x) {
+            out = io.deephaven.proto.backplane.grpc.Value.newBuilder().setLiteral(literal(x)).build();
+        }
+
+        @Override
+        public void visit(Literal literal) {
+            literal.walk((Literal.Visitor) this);
+        }
+
+        @Override
+        public void visit(Filter filter) {
+            throw new UnsupportedOperationException(
+                    "Unable to create a io.deephaven.proto.backplane.grpc.Value from a Filter");
+        }
+
+        @Override
+        public void visit(RawString rawString) {
+            throw new UnsupportedOperationException(
+                    "Unable to create a io.deephaven.proto.backplane.grpc.Value from a raw string");
         }
     }
 
@@ -608,21 +644,17 @@ class BatchTableRequestBuilder {
                 // todo
                 throw new UnsupportedOperationException("Only supports null checking a reference to a column");
             }
-            out = of(FilterIsNull.of(isNotNull.expression()).not());
+            out = of(Filter.isNull(isNotNull.expression()).not());
         }
 
         @Override
-        public void visit(FilterComparison condition) {
-            if (!(condition.lhs() instanceof Value) || !(condition.rhs() instanceof Value)) {
-                // We don't expect this, higher level checks io.deephaven.qst.table.WhereTable#hasRawFilter
-                throw new UnsupportedOperationException("gRPC CompareCondition only supports values, not expressions");
-            }
-            FilterComparison preferred = condition.maybeTranspose();
+        public void visit(FilterComparison comparison) {
+            FilterComparison preferred = comparison.maybeTranspose();
             out = Condition.newBuilder()
                     .setCompare(CompareCondition.newBuilder()
                             .setOperation(adapt(preferred.operator()))
-                            .setLhs(ValueAdapter.adapt((Value) preferred.lhs()))
-                            .setRhs(ValueAdapter.adapt((Value) preferred.rhs()))
+                            .setLhs(ExpressionAdapter.adapt(preferred.lhs()))
+                            .setRhs(ExpressionAdapter.adapt(preferred.rhs()))
                             .build())
                     .build();
         }

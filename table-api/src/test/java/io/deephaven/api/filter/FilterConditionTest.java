@@ -7,7 +7,7 @@ import io.deephaven.api.ColumnName;
 import io.deephaven.api.RawString;
 import io.deephaven.api.Strings;
 import io.deephaven.api.filter.FilterComparison.Operator;
-import io.deephaven.api.value.Value;
+import io.deephaven.api.value.Literal;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -16,7 +16,7 @@ public class FilterConditionTest {
 
     static final ColumnName FOO = ColumnName.of("Foo");
     static final ColumnName BAR = ColumnName.of("Bar");
-    static final Value V42 = Value.of(42L);
+    static final Literal V42 = Literal.of(42L);
     static final RawString E42 = RawString.of("41 + 1");
 
     static final FilterComparison FOO_EQ_42 = FilterComparison.eq(FOO, V42);
