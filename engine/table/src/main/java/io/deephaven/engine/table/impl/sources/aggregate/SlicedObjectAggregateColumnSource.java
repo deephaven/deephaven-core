@@ -47,7 +47,7 @@ public final class SlicedObjectAggregateColumnSource<COMPONENT_TYPE> extends Bas
         }
 
         final long startPos = startSource != null ? startSource.getLong(rowKey) : startOffset;
-        final long endPos = endSource != null ? startSource.getLong(rowKey) : endOffset;
+        final long endPos = endSource != null ? endSource.getLong(rowKey) : endOffset;
 
         if (startPos == NULL_LONG || endPos == NULL_LONG) {
             return null;
@@ -72,7 +72,7 @@ public final class SlicedObjectAggregateColumnSource<COMPONENT_TYPE> extends Bas
         }
 
         final long startPos = startSource != null ? startSource.getPrevLong(rowKey) : startOffset;
-        final long endPos = endSource != null ? startSource.getPrevLong(rowKey) : endOffset;
+        final long endPos = endSource != null ? endSource.getPrevLong(rowKey) : endOffset;
 
         if (startPos == NULL_LONG || endPos == NULL_LONG) {
             return null;
@@ -98,10 +98,10 @@ public final class SlicedObjectAggregateColumnSource<COMPONENT_TYPE> extends Bas
         final LongChunk<OrderedRowKeys> keyChunk = rowSequence.asRowKeyChunk();
         final ObjectChunk<RowSet, ? extends Values> groupRowSetChunk = groupRowSetSource
                 .getChunk(ctx.groupRowSetGetContext, rowSequence).asObjectChunk();
-        final LongChunk startChunk = startSource != null ?
+        final LongChunk<? extends Values> startChunk = startSource != null ?
                 startSource.getChunk(ctx.startGetContext, rowSequence).asLongChunk()
                 : null;
-        final LongChunk endChunk = endSource != null ?
+        final LongChunk<? extends Values> endChunk = endSource != null ?
                 endSource.getChunk(ctx.endGetContext, rowSequence).asLongChunk()
                 : null;
 
@@ -138,10 +138,10 @@ public final class SlicedObjectAggregateColumnSource<COMPONENT_TYPE> extends Bas
         final LongChunk<OrderedRowKeys> keyChunk = rowSequence.asRowKeyChunk();
         final ObjectChunk<RowSet, ? extends Values> groupRowSetPrevChunk = groupRowSetSource
                 .getPrevChunk(ctx.groupRowSetGetContext, rowSequence).asObjectChunk();
-        final LongChunk startPrevChunk = startSource != null ?
+        final LongChunk<? extends Values> startPrevChunk = startSource != null ?
                 startSource.getPrevChunk(ctx.startGetContext, rowSequence).asLongChunk()
                 : null;
-        final LongChunk endPrevChunk = endSource != null ?
+        final LongChunk<? extends Values> endPrevChunk = endSource != null ?
                 endSource.getPrevChunk(ctx.endGetContext, rowSequence).asLongChunk()
                 : null;
 

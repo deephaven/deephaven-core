@@ -164,6 +164,7 @@ class UpdateByBuilder {
         public UpdateByColumn.UpdateBySpec visit(RollingGroupSpec rs) {
             return null;
         }
+
     }
 
     static UpdateByColumn.UpdateBySpec adapt(UpdateBySpec spec) {

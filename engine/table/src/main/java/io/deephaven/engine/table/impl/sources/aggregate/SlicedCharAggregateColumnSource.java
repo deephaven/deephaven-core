@@ -47,7 +47,7 @@ public final class SlicedCharAggregateColumnSource extends BaseAggregateSlicedCo
         }
 
         final long startPos = startSource != null ? startSource.getLong(rowKey) : startOffset;
-        final long endPos = endSource != null ? startSource.getLong(rowKey) : endOffset;
+        final long endPos = endSource != null ? endSource.getLong(rowKey) : endOffset;
 
         if (startPos == NULL_LONG || endPos == NULL_LONG) {
             return null;
@@ -72,7 +72,7 @@ public final class SlicedCharAggregateColumnSource extends BaseAggregateSlicedCo
         }
 
         final long startPos = startSource != null ? startSource.getPrevLong(rowKey) : startOffset;
-        final long endPos = endSource != null ? startSource.getPrevLong(rowKey) : endOffset;
+        final long endPos = endSource != null ? endSource.getPrevLong(rowKey) : endOffset;
 
         if (startPos == NULL_LONG || endPos == NULL_LONG) {
             return null;
