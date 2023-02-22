@@ -21,7 +21,7 @@ public class JsVariableDefinition {
     private final String applicationId;
     private final String applicationName;
 
-    public JsVariableDefinition(@TsTypeRef(JsVariableType.class) String type, String title, String id, String description) {
+    public JsVariableDefinition(String type, String title, String id, String description) {
         this.type = type;
         this.title = title == null ? JS_UNAVAILABLE : title;
         this.id = id;

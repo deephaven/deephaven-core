@@ -10,6 +10,7 @@ import jsinterop.annotations.JsType;
 
 @JsType(namespace = "dh")
 public class DateWrapper extends LongWrapper {
+    @JsIgnore
     public DateWrapper(long valueInNanos) {
         super(valueInNanos);
     }

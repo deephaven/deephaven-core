@@ -33,7 +33,6 @@ public class JsMultiSeries {
         this.parent = parent;
     }
 
-    @JsIgnore
     public void initSources(Map<Integer, JsPartitionedTable> plotHandlesToPartitionedTables) {
         descriptor.getDataSourcesList().asList().stream().mapToInt(MultiSeriesSourceDescriptor::getPartitionedTableId)
                 .distinct()

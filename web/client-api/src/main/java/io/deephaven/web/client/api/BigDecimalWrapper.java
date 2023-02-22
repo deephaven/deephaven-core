@@ -16,10 +16,12 @@ import java.math.BigDecimal;
 public class BigDecimalWrapper {
     private final BigDecimal value;
 
+    @JsIgnore
     public BigDecimalWrapper(@Nonnull BigDecimal value) {
         this.value = value;
     }
 
+    @JsIgnore
     public BigDecimal getWrapped() {
         return value;
     }

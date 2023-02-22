@@ -53,7 +53,6 @@ public class SeriesDataSource {
         return columnType;
     }
 
-    @JsIgnore
     public SourceDescriptor getDescriptor() {
         return sourceDescriptor;
     }

@@ -14,8 +14,8 @@ import jsinterop.annotations.JsMethod;
 import jsinterop.base.Any;
 import jsinterop.base.Js;
 
-@TsName(namespace = "dh")
 @TsInterface
+@TsName(namespace = "dh")
 public class ViewportRow implements TableData.Row {
     protected final int offsetInSnapshot;
     private final Object[] dataColumns;

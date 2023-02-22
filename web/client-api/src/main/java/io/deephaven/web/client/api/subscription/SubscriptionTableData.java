@@ -12,8 +12,10 @@ import io.deephaven.web.client.fu.JsSettings;
 import io.deephaven.web.shared.data.*;
 import io.deephaven.web.shared.data.columns.ColumnData;
 import jsinterop.annotations.JsFunction;
+import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsProperty;
+import jsinterop.annotations.JsType;
 import jsinterop.base.Any;
 import jsinterop.base.Js;
 import jsinterop.base.JsArrayLike;
@@ -29,6 +31,7 @@ import static io.deephaven.web.client.api.subscription.ViewportData.NO_ROW_FORMA
 public class SubscriptionTableData {
     @JsFunction
     private interface ArrayCopy {
+        @SuppressWarnings("unusable-by-js")
         void copyTo(Object destArray, long destPos, Object srcArray, int srcPos);
     }
 
@@ -460,7 +463,6 @@ public class SubscriptionTableData {
         }
 
         @Override
-        @JsProperty
         public LongWrapper getIndex() {
             if (indexCached == null) {
                 indexCached = LongWrapper.of(index);
@@ -469,7 +471,6 @@ public class SubscriptionTableData {
         }
 
         @Override
-        @JsMethod
         public Any get(Column column) {
             int redirectedIndex = (int) (long) redirectedIndexes.get(this.index);
             JsArrayLike<Object> columnData = Js.asArrayLike(data[column.getIndex()]);
@@ -477,7 +478,6 @@ public class SubscriptionTableData {
         }
 
         @Override
-        @JsMethod
         public Format getFormat(Column column) {
             long cellColors = 0;
             long rowColors = 0;
@@ -526,7 +526,6 @@ public class SubscriptionTableData {
         }
 
         @Override
-        @JsProperty
         public JsArray<SubscriptionRow> getRows() {
             if (allRows == null) {
                 allRows = new JsArray<>();

@@ -47,10 +47,12 @@ import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.client.fu.LazyPromise;
 import io.deephaven.web.shared.data.*;
 import io.deephaven.web.shared.data.columns.ColumnData;
+import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsProperty;
+import jsinterop.annotations.JsType;
 import jsinterop.base.Any;
 import jsinterop.base.Js;
 
@@ -73,9 +75,8 @@ import static io.deephaven.web.client.api.subscription.ViewportData.NO_ROW_FORMA
  *
  * The table size will be -1 until a viewport has been fetched.
  */
-@TsName(namespace = "dh", name = "TreeTable")
+@JsType(namespace = "dh", name = "TreeTable")
 public class JsTreeTable extends HasEventHandling {
-    @JsProperty(namespace = "dh.TreeTable")
     public static final String EVENT_UPDATED = "updated",
             EVENT_DISCONNECT = "disconnect",
             EVENT_RECONNECT = "reconnect",
@@ -325,6 +326,7 @@ public class JsTreeTable extends HasEventHandling {
 
     private boolean closed = false;
 
+    @JsIgnore
     public JsTreeTable(WorkerConnection workerConnection, JsWidget widget) {
         this.connection = workerConnection;
         this.widget = widget;
@@ -753,19 +755,14 @@ public class JsTreeTable extends HasEventHandling {
         replaceKeyTable();
     }
 
-
-
-    @JsMethod
     public void expand(Object row, @JsOptional Boolean expandDescendants) {
         setExpanded(row, true, expandDescendants);
     }
 
-    @JsMethod
     public void collapse(Object row) {
         setExpanded(row, false, false);
     }
 
-    @JsMethod
     public void setExpanded(Object row, boolean isExpanded, @JsOptional Boolean expandDescendants) {
         // TODO check row number is within bounds
         final double action;
@@ -790,17 +787,14 @@ public class JsTreeTable extends HasEventHandling {
         replaceKeyTable();
     }
 
-    @JsMethod
     public void expandAll() {
         replaceKeyTableData(ACTION_EXPAND_WITH_DESCENDENTS);
     }
 
-    @JsMethod
     public void collapseAll() {
         replaceKeyTableData(ACTION_EXPAND);
     }
 
-    @JsMethod
     public boolean isExpanded(Object row) {
         if (row instanceof Double) {
             row = currentViewportData.rows.getAt((int) ((double) row - currentViewportData.offset));
@@ -813,7 +807,6 @@ public class JsTreeTable extends HasEventHandling {
     }
 
     // JsTable-like methods
-    @JsMethod
     public void setViewport(double firstRow, double lastRow, @JsOptional @JsNullable JsArray<Column> columns,
                             @JsNullable @JsOptional Double updateInterval) {
         this.firstRow = firstRow;
@@ -824,7 +817,6 @@ public class JsTreeTable extends HasEventHandling {
         replaceSubscription(RebuildStep.SUBSCRIPTION);
     }
 
-    @JsMethod
     public Promise<TreeViewportData> getViewportData() {
         LazyPromise<TreeViewportData> promise = new LazyPromise<>();
 
@@ -839,7 +831,6 @@ public class JsTreeTable extends HasEventHandling {
         return promise.asPromise();
     }
 
-    @JsMethod
     public void close() {
         JsLog.debug("Closing tree table", this);
 
@@ -868,7 +859,6 @@ public class JsTreeTable extends HasEventHandling {
         }
     }
 
-    @JsMethod
     @SuppressWarnings("unusable-by-js")
     public JsArray<Sort> applySort(Sort[] sort) {
         for (int i = 0; i < sort.length; i++) {
@@ -883,7 +873,6 @@ public class JsTreeTable extends HasEventHandling {
         return getSort();
     }
 
-    @JsMethod
     @SuppressWarnings("unusable-by-js")
     public JsArray<FilterCondition> applyFilter(FilterCondition[] filter) {
         nextFilters = Arrays.asList(filter);
@@ -923,7 +912,6 @@ public class JsTreeTable extends HasEventHandling {
         return Js.uncheckedCast(visibleColumns);
     }
 
-    @JsMethod
     public Column findColumn(String key) {
         Column c = columnsByName.get(key);
         if (c == null) {
@@ -942,7 +930,6 @@ public class JsTreeTable extends HasEventHandling {
         return groupedColumns;
     }
 
-    @JsMethod
     public Column[] findColumns(String[] keys) {
         Column[] result = new Column[keys.length];
         for (int i = 0; i < keys.length; i++) {
@@ -962,7 +949,6 @@ public class JsTreeTable extends HasEventHandling {
      * in the resulting table.</li>
      * </ul>
      */
-    @JsMethod
     public Promise<JsTable> selectDistinct(Column[] columns) {
         return sourceTable.get().then(t -> {
             // if this is the first time it is used, it might not be filtered correctly, so check that the filters match
@@ -1080,7 +1066,6 @@ public class JsTreeTable extends HasEventHandling {
     // }
     // }
 
-    @JsMethod
     public Promise<JsTreeTable> copy() {
         return connection.newState((c, state, metadata) -> {
             // connection.getServer().reexport(this.baseTable.getHandle(), state.getHandle(), c);

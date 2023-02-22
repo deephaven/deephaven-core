@@ -4,8 +4,6 @@
 package io.deephaven.web.client.api;
 
 import com.vertispan.tsdefs.annotations.TsIgnore;
-import com.vertispan.tsdefs.annotations.TsInterface;
-import com.vertispan.tsdefs.annotations.TsName;
 import elemental2.core.JsArray;
 import elemental2.core.JsSet;
 import elemental2.core.JsWeakMap;

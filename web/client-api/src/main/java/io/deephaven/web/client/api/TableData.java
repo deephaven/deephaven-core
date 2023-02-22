@@ -7,10 +7,15 @@ import com.vertispan.tsdefs.annotations.TsName;
 import elemental2.core.JsArray;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsProperty;
-import jsinterop.annotations.JsType;
 import jsinterop.base.Any;
 import jsinterop.base.Js;
 
+/**
+ * Common interface for various ways of accessing table data and formatting.
+ *
+ * Java note: this interface contains some extra overloads that aren't available in JS. Implementations are expected
+ * to implement only abstract methods, and default methods present in this interface will dispatch accordingly.
+ */
 @TsName(namespace = "dh")
 public interface TableData {
     @JsProperty

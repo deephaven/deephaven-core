@@ -6,10 +6,11 @@ package io.deephaven.web.client.api;
 import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
 import elemental2.core.JsObject;
+import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsProperty;
+import jsinterop.annotations.JsType;
 
 import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -17,11 +18,17 @@ import java.util.stream.Collectors;
 @TsName(name = "LayoutHints", namespace = "dh")
 public class JsLayoutHints {
     @TsInterface
-    @TsName(namespace = "dh")
+    @JsType(namespace = "dh")
     public static class ColumnGroup {
-        private String name;
-        private String[] children;
-        private String color;
+        @JsNullable
+        @JsProperty
+        public final String name;
+        @JsNullable
+        @JsProperty
+        public final String[] children;
+        @JsNullable
+        @JsProperty
+        public final String color;
 
         public ColumnGroup(String groupStr) {
             if (groupStr == null || groupStr.isEmpty()) {
@@ -55,36 +62,6 @@ public class JsLayoutHints {
             } else {
                 color = null;
             }
-        }
-
-        @JsProperty
-        public String getName() {
-            return name;
-        }
-
-        @JsProperty
-        public String[] getChildren() {
-            return children;
-        }
-
-        @JsProperty
-        public String getColor() {
-            return color;
-        }
-
-        @JsProperty
-        public void setName(String name) {
-            this.name = name;
-        }
-
-        @JsProperty
-        public void setChildren(String[] children) {
-            this.children = children;
-        }
-
-        @JsProperty
-        public void setColor(String color) {
-            this.color = color;
         }
     }
 
