@@ -202,7 +202,7 @@ public interface SelectColumn extends Selectable {
 
         @Override
         public void visit(RawString rhs) {
-            out = SelectColumnFactory.getExpression(String.format("%s=(%s)", lhs.name(), rhs.value()));
+            out = SelectColumnFactory.getExpression(String.format("%s=%s", lhs.name(), rhs.value()));
         }
 
         @Override
@@ -217,7 +217,7 @@ public interface SelectColumn extends Selectable {
 
         @Override
         public void visit(Filter rhs) {
-            out = SelectColumnFactory.getExpression(String.format("%s=(%s)", lhs.name(), Strings.of(rhs)));
+            out = SelectColumnFactory.getExpression(String.format("%s=%s", lhs.name(), Strings.of(rhs)));
         }
     }
 
