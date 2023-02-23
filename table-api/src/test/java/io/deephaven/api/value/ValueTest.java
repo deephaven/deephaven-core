@@ -11,8 +11,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class ValueTest {
 
     @Test
+    void boolValue() {
+        toString(Literal.of(true), "true");
+    }
+
+    @Test
+    void intValue() {
+        toString(Literal.of(42), "42");
+    }
+
+    @Test
     void longValue() {
-        toString(Literal.of(42L), "42");
+        toString(Literal.of(42L), "42L");
     }
 
     private static void toString(Literal value, String expected) {

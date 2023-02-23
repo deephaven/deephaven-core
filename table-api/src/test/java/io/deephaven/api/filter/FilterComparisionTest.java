@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class FilterConditionTest {
+public class FilterComparisionTest {
 
     static final ColumnName FOO = ColumnName.of("Foo");
     static final ColumnName BAR = ColumnName.of("Bar");
@@ -114,12 +114,12 @@ public class FilterConditionTest {
 
     @Test
     void columnAndLongStrings() {
-        toString(FOO_EQ_42, "(Foo) == (42)");
-        toString(FOO_GT_42, "(Foo) > (42)");
-        toString(FOO_GTE_42, "(Foo) >= (42)");
-        toString(FOO_LT_42, "(Foo) < (42)");
-        toString(FOO_LTE_42, "(Foo) <= (42)");
-        toString(FOO_NEQ_42, "(Foo) != (42)");
+        toString(FOO_EQ_42, "(Foo) == (42L)");
+        toString(FOO_GT_42, "(Foo) > (42L)");
+        toString(FOO_GTE_42, "(Foo) >= (42L)");
+        toString(FOO_LT_42, "(Foo) < (42L)");
+        toString(FOO_LTE_42, "(Foo) <= (42L)");
+        toString(FOO_NEQ_42, "(Foo) != (42L)");
     }
 
     @Test

@@ -14,7 +14,7 @@ public class FilterTest {
 
     @Test
     void condition() {
-        toString(FilterComparison.gt(ColumnName.of("Foo"), Literal.of(42L)), "(Foo) > (42)");
+        toString(FilterComparison.gt(ColumnName.of("Foo"), Literal.of(42L)), "(Foo) > (42L)");
     }
 
     @Test
@@ -37,7 +37,7 @@ public class FilterTest {
         toString(
                 Filter.and(Filter.isNotNull(ColumnName.of("Foo")),
                         FilterComparison.gt(ColumnName.of("Foo"), Literal.of(42L))),
-                "(!isNull(Foo)) && ((Foo) > (42))");
+                "(!isNull(Foo)) && ((Foo) > (42L))");
     }
 
     @Test
@@ -45,7 +45,7 @@ public class FilterTest {
         toString(
                 Filter.or(Filter.isNull(ColumnName.of("Foo")),
                         FilterComparison.eq(ColumnName.of("Foo"), Literal.of(42L))),
-                "(isNull(Foo)) || ((Foo) == (42))");
+                "(isNull(Foo)) || ((Foo) == (42L))");
     }
 
     private static void toString(Filter filter, String expected) {
