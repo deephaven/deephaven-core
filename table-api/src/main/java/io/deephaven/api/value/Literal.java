@@ -12,7 +12,7 @@ import io.deephaven.api.expression.Expression;
  */
 public interface Literal extends Expression {
 
-    static Literal of(boolean value) {
+    static LiteralFilter of(boolean value) {
         return LiteralBool.of(value);
     }
 

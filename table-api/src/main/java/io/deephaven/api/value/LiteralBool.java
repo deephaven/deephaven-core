@@ -11,7 +11,7 @@ import org.immutables.value.Value.Parameter;
 
 @Immutable
 @SimpleStyle
-abstract class LiteralBool extends LiteralBase implements Filter {
+abstract class LiteralBool extends LiteralBase implements LiteralFilter {
 
     public static LiteralBool of(boolean value) {
         return ImmutableLiteralBool.of(value);
