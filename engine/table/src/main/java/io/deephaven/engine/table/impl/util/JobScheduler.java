@@ -130,7 +130,13 @@ public interface JobScheduler {
 
         @Override
         public void run() {
+            if (!tryIncrementReferenceCount()) {
+                // We started this task thread after all sub-tasks are complete or there was an error; we should
+                // not try to allocate a task thread context.
+                return;
+            }
             try (final CONTEXT_TYPE taskThreadContext = taskThreadContextFactory.get()) {
+                decrementReferenceCount();
                 while (true) {
                     if (exception.get() != null) {
                         return;
