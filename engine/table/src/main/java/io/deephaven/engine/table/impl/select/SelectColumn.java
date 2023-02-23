@@ -206,6 +206,11 @@ public interface SelectColumn extends Selectable {
         }
 
         @Override
+        public void visit(int rhs) {
+            out = SelectColumnFactory.getExpression(String.format("%s=(int)%d", lhs.name(), rhs));
+        }
+
+        @Override
         public void visit(long rhs) {
             out = SelectColumnFactory.getExpression(String.format("%s=%dL", lhs.name(), rhs));
         }

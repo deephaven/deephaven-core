@@ -21,6 +21,23 @@ import io.deephaven.util.compare.LongComparisons;
 import io.deephaven.util.type.TypeUtils;
 
 public class LongRangeFilter extends AbstractRangeFilter {
+
+    public static LongRangeFilter lt(String columnName, long x) {
+        return new LongRangeFilter(columnName, QueryConstants.NULL_LONG, x, true, false);
+    }
+
+    public static LongRangeFilter lte(String columnName, long x) {
+        return new LongRangeFilter(columnName, QueryConstants.NULL_LONG, x, true, true);
+    }
+
+    public static LongRangeFilter gt(String columnName, long x) {
+        return new LongRangeFilter(columnName, x, QueryConstants.MAX_LONG, false, true);
+    }
+
+    public static LongRangeFilter gte(String columnName, long x) {
+        return new LongRangeFilter(columnName, x, QueryConstants.MAX_LONG, true, true);
+    }
+
     final long upper;
     final long lower;
 
@@ -39,13 +56,13 @@ public class LongRangeFilter extends AbstractRangeFilter {
     static WhereFilter makeLongRangeFilter(String columnName, Condition condition, String value) {
         switch (condition) {
             case LESS_THAN:
-                return new LongRangeFilter(columnName, RangeConditionFilter.parseLongFilter(value), QueryConstants.NULL_LONG, true, false);
+                return lt(columnName, RangeConditionFilter.parseLongFilter(value));
             case LESS_THAN_OR_EQUAL:
-                return new LongRangeFilter(columnName, RangeConditionFilter.parseLongFilter(value), QueryConstants.NULL_LONG, true, true);
+                return lte(columnName, RangeConditionFilter.parseLongFilter(value));
             case GREATER_THAN:
-                return new LongRangeFilter(columnName, RangeConditionFilter.parseLongFilter(value), QueryConstants.MAX_LONG, false, true);
+                return gt(columnName, RangeConditionFilter.parseLongFilter(value));
             case GREATER_THAN_OR_EQUAL:
-                return new LongRangeFilter(columnName, RangeConditionFilter.parseLongFilter(value), QueryConstants.MAX_LONG, true, true);
+                return gte(columnName, RangeConditionFilter.parseLongFilter(value));
             default:
                 throw new IllegalArgumentException("RangeConditionFilter does not support condition " + condition);
         }

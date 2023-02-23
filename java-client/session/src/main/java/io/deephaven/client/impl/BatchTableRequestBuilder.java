@@ -564,8 +564,12 @@ class BatchTableRequestBuilder {
 
         @Override
         public void visit(ColumnName x) {
-            out = io.deephaven.proto.backplane.grpc.Value.newBuilder().setReference(reference(x))
-                    .build();
+            out = io.deephaven.proto.backplane.grpc.Value.newBuilder().setReference(reference(x)).build();
+        }
+
+        @Override
+        public void visit(int literal) {
+            throw new UnsupportedOperationException("Value does not support literal int");
         }
 
         @Override

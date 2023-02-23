@@ -190,8 +190,13 @@ public class Strings {
         }
 
         @Override
+        public void visit(int literal) {
+            out = String.format("(int)%s", literal);
+        }
+
+        @Override
         public void visit(long literal) {
-            out = Long.toString(literal);
+            out = String.format("%sL", literal);
         }
 
         @Override

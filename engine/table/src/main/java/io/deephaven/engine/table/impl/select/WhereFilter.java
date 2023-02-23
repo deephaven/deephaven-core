@@ -344,19 +344,45 @@ public interface WhereFilter extends Filter {
                 }
 
                 @Override
+                public void visit(int rhs) {
+                    switch (preferred.operator()) {
+                        case LESS_THAN:
+                            out = IntRangeFilter.lt(lhs.name(), rhs);
+                            break;
+                        case LESS_THAN_OR_EQUAL:
+                            out = IntRangeFilter.lte(lhs.name(), rhs);
+                            break;
+                        case GREATER_THAN:
+                            out = IntRangeFilter.gt(lhs.name(), rhs);
+                            break;
+                        case GREATER_THAN_OR_EQUAL:
+                            out = IntRangeFilter.gte(lhs.name(), rhs);
+                            break;
+                        case EQUALS:
+                            out = new MatchFilter(lhs.name(), rhs);
+                            break;
+                        case NOT_EQUALS:
+                            out = new MatchFilter(MatchType.Inverted, lhs.name(), rhs);
+                            break;
+                        default:
+                            throw new IllegalStateException("Unexpected operator " + original.operator());
+                    }
+                }
+
+                @Override
                 public void visit(long rhs) {
                     switch (preferred.operator()) {
                         case LESS_THAN:
-                            out = new LongRangeFilter(lhs.name(), Long.MIN_VALUE, rhs, true, false);
+                            out = LongRangeFilter.lt(lhs.name(), rhs);
                             break;
                         case LESS_THAN_OR_EQUAL:
-                            out = new LongRangeFilter(lhs.name(), Long.MIN_VALUE, rhs, true, true);
+                            out = LongRangeFilter.lte(lhs.name(), rhs);
                             break;
                         case GREATER_THAN:
-                            out = new LongRangeFilter(lhs.name(), rhs, Long.MAX_VALUE, false, true);
+                            out = LongRangeFilter.gt(lhs.name(), rhs);
                             break;
                         case GREATER_THAN_OR_EQUAL:
-                            out = new LongRangeFilter(lhs.name(), rhs, Long.MAX_VALUE, true, true);
+                            out = LongRangeFilter.gte(lhs.name(), rhs);
                             break;
                         case EQUALS:
                             out = new MatchFilter(lhs.name(), rhs);
@@ -407,6 +433,12 @@ public interface WhereFilter extends Filter {
 
             // Note for all remaining cases: since we are walking the preferred object, we know we don't have to handle
             // the case where rhs is column name.
+
+
+            @Override
+            public void visit(int literal) {
+                out = WhereFilterFactory.getExpression(Strings.of(original));
+            }
 
             @Override
             public void visit(long lhs) {
