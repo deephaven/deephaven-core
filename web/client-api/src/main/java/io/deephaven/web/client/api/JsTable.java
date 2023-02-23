@@ -3,6 +3,7 @@
  */
 package io.deephaven.web.client.api;
 
+import com.vertispan.tsdefs.annotations.TsIgnore;
 import com.vertispan.tsdefs.annotations.TsName;
 import com.vertispan.tsdefs.annotations.TsTypeRef;
 import elemental2.core.JsArray;
@@ -168,6 +169,7 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
         return Sort.reverse();
     }
 
+//    @TsIgnore
     @JsMethod
     public Promise<JsTable> batch(JsConsumer<RequestBatcher> userCode) {
         boolean rootBatch = batchDepth++ == 0;
@@ -289,6 +291,7 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
     }
 
     @JsMethod
+    @JsNullable
     public Object getAttribute(String attributeName) {
         TableAttributesDefinition attrs = lastVisibleState().getTableDef().getAttributes();
         // If the value was present as something easy to serialize, return it.
@@ -869,7 +872,7 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
     @JsMethod
     @Deprecated
     public Promise<JsTable> join(Object joinType, JsTable rightTable, JsArray<String> columnsToMatch,
-            @JsOptional JsArray<String> columnsToAdd, @JsOptional Object asOfMatchRule) {
+            @JsOptional @JsNullable JsArray<String> columnsToAdd, @JsOptional @JsNullable Object asOfMatchRule) {
         if (joinType.equals("AJ") || joinType.equals("RAJ")) {
             return asOfJoin(rightTable, columnsToMatch, columnsToAdd, (String) asOfMatchRule);
         } else if (joinType.equals("CROSS_JOIN")) {
@@ -885,7 +888,7 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
 
     @JsMethod
     public Promise<JsTable> asOfJoin(JsTable rightTable, JsArray<String> columnsToMatch,
-            @JsOptional JsArray<String> columnsToAdd, @JsOptional String asOfMatchRule) {
+            @JsOptional @JsNullable JsArray<String> columnsToAdd, @JsOptional @JsNullable String asOfMatchRule) {
         if (rightTable.workerConnection != workerConnection) {
             throw new IllegalStateException(
                     "Table argument passed to join is not from the same worker as current table");

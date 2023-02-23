@@ -24,6 +24,7 @@ import jsinterop.base.JsPropertyMap;
  */
 @JsType(namespace = "dh")
 public class IdeConnection extends QueryConnectable<IdeConnection> {
+    @Deprecated
     public static final String HACK_CONNECTION_FAILURE = "hack-connection-failure";
     private final JsRunnable deathListenerCleanup;
     private final String serverUrl;

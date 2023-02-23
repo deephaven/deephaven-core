@@ -6,6 +6,7 @@ package io.deephaven.web.client.api;
 import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
 import elemental2.core.JsObject;
+import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
@@ -15,21 +16,20 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @TsInterface
-@TsName(name = "LayoutHints", namespace = "dh")
+@JsType(name = "LayoutHints", namespace = "dh")
 public class JsLayoutHints {
-    @TsInterface
+//    @TsInterface
     @JsType(namespace = "dh")
     public static class ColumnGroup {
-        @JsNullable
-        @JsProperty
+        //TODO missing?
         public final String name;
         @JsNullable
         @JsProperty
         public final String[] children;
         @JsNullable
-        @JsProperty
         public final String color;
 
+        @JsIgnore
         public ColumnGroup(String groupStr) {
             if (groupStr == null || groupStr.isEmpty()) {
                 name = null;
@@ -73,6 +73,7 @@ public class JsLayoutHints {
 
     private ColumnGroup[] columnGroups;
 
+    @JsIgnore
     public JsLayoutHints parse(String hints) {
         if (hints == null || hints.isEmpty()) {
             return this;
@@ -124,26 +125,31 @@ public class JsLayoutHints {
         return savedLayoutsAllowed;
     }
 
+    @JsNullable
     @JsProperty
     public String[] getFrontColumns() {
         return frontColumns;
     }
 
+    @JsNullable
     @JsProperty
     public String[] getBackColumns() {
         return backColumns;
     }
 
+    @JsNullable
     @JsProperty
     public String[] getHiddenColumns() {
         return hiddenColumns;
     }
 
+    @JsNullable
     @JsProperty
     public String[] getFrozenColumns() {
         return frozenColumns;
     }
 
+    @JsNullable
     @JsProperty
     public ColumnGroup[] getColumnGroups() {
         return columnGroups;

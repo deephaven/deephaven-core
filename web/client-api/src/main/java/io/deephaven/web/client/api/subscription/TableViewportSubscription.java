@@ -39,6 +39,7 @@ import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.client.state.ClientTableState;
 import io.deephaven.web.shared.data.TableSnapshot;
 import jsinterop.annotations.JsMethod;
+import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsOptional;
 import jsinterop.base.Js;
 
@@ -187,8 +188,8 @@ public class TableViewportSubscription extends HasEventHandling {
     }
 
     @JsMethod
-    public void setViewport(double firstRow, double lastRow, @JsOptional Column[] columns,
-            @JsOptional Double updateIntervalMs) {
+    public void setViewport(double firstRow, double lastRow, @JsOptional @JsNullable Column[] columns,
+            @JsOptional @JsNullable Double updateIntervalMs) {
         retainForExternalUse();
         setInternalViewport(firstRow, lastRow, columns, updateIntervalMs);
     }

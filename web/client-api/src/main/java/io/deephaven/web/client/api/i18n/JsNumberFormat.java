@@ -9,6 +9,7 @@ import io.deephaven.web.client.api.BigIntegerWrapper;
 import io.deephaven.web.client.api.LongWrapper;
 import jsinterop.annotations.JsConstructor;
 import jsinterop.annotations.JsType;
+import jsinterop.base.Any;
 import jsinterop.base.Js;
 
 import java.math.BigDecimal;
@@ -32,7 +33,7 @@ public class JsNumberFormat {
         return getFormat(pattern).parse(text);
     }
 
-    public static String format(String pattern, Object number) {
+    public static String format(String pattern, Any number) {
         return getFormat(pattern).format(number);
     }
 
@@ -49,18 +50,19 @@ public class JsNumberFormat {
         return wrapped.parse(text);
     }
 
-    public String format(Object number) {
+    public String format(Any number) {
+        Object value = number;
         Objects.requireNonNull(number);
-        if (number instanceof Double) {// aka typeof number, and non-null
-            return wrapped.format((double) (Double) number);
+        if (value instanceof Double) {// aka typeof number, and non-null
+            return wrapped.format((double) (Double) value);
         } else if (number instanceof BigDecimalWrapper) {
-            return wrapped.format(((BigDecimalWrapper) number).getWrapped());
+            return wrapped.format(((BigDecimalWrapper) value).getWrapped());
         } else if (number instanceof BigIntegerWrapper) {
-            return wrapped.format(((BigIntegerWrapper) number).getWrapped());
+            return wrapped.format(((BigIntegerWrapper) value).getWrapped());
         } else if (number instanceof LongWrapper) {
-            return wrapped.format((Long) ((LongWrapper) number).getWrapped());
+            return wrapped.format((Long) ((LongWrapper) value).getWrapped());
         }
-        throw new IllegalStateException("Can't format non-number object of type " + Js.typeof(number));
+        throw new IllegalStateException("Can't format non-number object of type " + Js.typeof(value));
     }
 
     @Override

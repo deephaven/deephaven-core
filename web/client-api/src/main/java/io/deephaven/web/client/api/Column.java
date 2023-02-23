@@ -6,6 +6,7 @@ package io.deephaven.web.client.api;
 import com.vertispan.tsdefs.annotations.TsName;
 import io.deephaven.web.client.api.filter.FilterValue;
 import jsinterop.annotations.JsMethod;
+import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsProperty;
 import jsinterop.base.Any;
 
@@ -95,6 +96,7 @@ public class Column {
     }
 
     @JsProperty
+    @JsNullable
     public String getDescription() {
         return description;
     }
@@ -112,6 +114,7 @@ public class Column {
     }
 
     @JsProperty
+    @JsNullable
     public String getConstituentType() {
         return constituentType;
     }
