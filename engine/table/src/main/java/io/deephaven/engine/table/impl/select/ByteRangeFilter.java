@@ -21,6 +21,22 @@ import io.deephaven.util.compare.ByteComparisons;
 import io.deephaven.util.type.TypeUtils;
 
 public class ByteRangeFilter extends AbstractRangeFilter {
+    public static ByteRangeFilter lt(String columnName, byte x) {
+        return new ByteRangeFilter(columnName, x, QueryConstants.NULL_BYTE, true, false);
+    }
+
+    public static ByteRangeFilter lte(String columnName, byte x) {
+        return new ByteRangeFilter(columnName, x, QueryConstants.NULL_BYTE, true, true);
+    }
+
+    public static ByteRangeFilter gt(String columnName, byte x) {
+        return new ByteRangeFilter(columnName, x, QueryConstants.MAX_BYTE, false, true);
+    }
+
+    public static ByteRangeFilter gte(String columnName, byte x) {
+        return new ByteRangeFilter(columnName, x, QueryConstants.MAX_BYTE, true, true);
+    }
+
     final byte upper;
     final byte lower;
 
@@ -39,13 +55,13 @@ public class ByteRangeFilter extends AbstractRangeFilter {
     static WhereFilter makeByteRangeFilter(String columnName, Condition condition, String value) {
         switch (condition) {
             case LESS_THAN:
-                return new ByteRangeFilter(columnName, RangeConditionFilter.parseByteFilter(value), QueryConstants.NULL_BYTE, true, false);
+                return lt(columnName, RangeConditionFilter.parseByteFilter(value));
             case LESS_THAN_OR_EQUAL:
-                return new ByteRangeFilter(columnName, RangeConditionFilter.parseByteFilter(value), QueryConstants.NULL_BYTE, true, true);
+                return lte(columnName, RangeConditionFilter.parseByteFilter(value));
             case GREATER_THAN:
-                return new ByteRangeFilter(columnName, RangeConditionFilter.parseByteFilter(value), QueryConstants.MAX_BYTE, false, true);
+                return gt(columnName, RangeConditionFilter.parseByteFilter(value));
             case GREATER_THAN_OR_EQUAL:
-                return new ByteRangeFilter(columnName, RangeConditionFilter.parseByteFilter(value), QueryConstants.MAX_BYTE, true, true);
+                return gte(columnName, RangeConditionFilter.parseByteFilter(value));
             default:
                 throw new IllegalArgumentException("RangeConditionFilter does not support condition " + condition);
         }

@@ -16,6 +16,22 @@ import io.deephaven.util.compare.CharComparisons;
 import io.deephaven.util.type.TypeUtils;
 
 public class CharRangeFilter extends AbstractRangeFilter {
+    public static CharRangeFilter lt(String columnName, char x) {
+        return new CharRangeFilter(columnName, x, QueryConstants.NULL_CHAR, true, false);
+    }
+
+    public static CharRangeFilter lte(String columnName, char x) {
+        return new CharRangeFilter(columnName, x, QueryConstants.NULL_CHAR, true, true);
+    }
+
+    public static CharRangeFilter gt(String columnName, char x) {
+        return new CharRangeFilter(columnName, x, QueryConstants.MAX_CHAR, false, true);
+    }
+
+    public static CharRangeFilter gte(String columnName, char x) {
+        return new CharRangeFilter(columnName, x, QueryConstants.MAX_CHAR, true, true);
+    }
+
     final char upper;
     final char lower;
 
@@ -34,13 +50,13 @@ public class CharRangeFilter extends AbstractRangeFilter {
     static WhereFilter makeCharRangeFilter(String columnName, Condition condition, String value) {
         switch (condition) {
             case LESS_THAN:
-                return new CharRangeFilter(columnName, RangeConditionFilter.parseCharFilter(value), QueryConstants.NULL_CHAR, true, false);
+                return lt(columnName, RangeConditionFilter.parseCharFilter(value));
             case LESS_THAN_OR_EQUAL:
-                return new CharRangeFilter(columnName, RangeConditionFilter.parseCharFilter(value), QueryConstants.NULL_CHAR, true, true);
+                return lte(columnName, RangeConditionFilter.parseCharFilter(value));
             case GREATER_THAN:
-                return new CharRangeFilter(columnName, RangeConditionFilter.parseCharFilter(value), QueryConstants.MAX_CHAR, false, true);
+                return gt(columnName, RangeConditionFilter.parseCharFilter(value));
             case GREATER_THAN_OR_EQUAL:
-                return new CharRangeFilter(columnName, RangeConditionFilter.parseCharFilter(value), QueryConstants.MAX_CHAR, true, true);
+                return gte(columnName, RangeConditionFilter.parseCharFilter(value));
             default:
                 throw new IllegalArgumentException("RangeConditionFilter does not support condition " + condition);
         }

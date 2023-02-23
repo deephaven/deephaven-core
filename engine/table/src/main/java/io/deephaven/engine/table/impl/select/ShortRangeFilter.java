@@ -21,6 +21,22 @@ import io.deephaven.util.compare.ShortComparisons;
 import io.deephaven.util.type.TypeUtils;
 
 public class ShortRangeFilter extends AbstractRangeFilter {
+    public static ShortRangeFilter lt(String columnName, short x) {
+        return new ShortRangeFilter(columnName, x, QueryConstants.NULL_SHORT, true, false);
+    }
+
+    public static ShortRangeFilter lte(String columnName, short x) {
+        return new ShortRangeFilter(columnName, x, QueryConstants.NULL_SHORT, true, true);
+    }
+
+    public static ShortRangeFilter gt(String columnName, short x) {
+        return new ShortRangeFilter(columnName, x, QueryConstants.MAX_SHORT, false, true);
+    }
+
+    public static ShortRangeFilter gte(String columnName, short x) {
+        return new ShortRangeFilter(columnName, x, QueryConstants.MAX_SHORT, true, true);
+    }
+
     final short upper;
     final short lower;
 
@@ -39,13 +55,13 @@ public class ShortRangeFilter extends AbstractRangeFilter {
     static WhereFilter makeShortRangeFilter(String columnName, Condition condition, String value) {
         switch (condition) {
             case LESS_THAN:
-                return new ShortRangeFilter(columnName, RangeConditionFilter.parseShortFilter(value), QueryConstants.NULL_SHORT, true, false);
+                return lt(columnName, RangeConditionFilter.parseShortFilter(value));
             case LESS_THAN_OR_EQUAL:
-                return new ShortRangeFilter(columnName, RangeConditionFilter.parseShortFilter(value), QueryConstants.NULL_SHORT, true, true);
+                return lte(columnName, RangeConditionFilter.parseShortFilter(value));
             case GREATER_THAN:
-                return new ShortRangeFilter(columnName, RangeConditionFilter.parseShortFilter(value), QueryConstants.MAX_SHORT, false, true);
+                return gt(columnName, RangeConditionFilter.parseShortFilter(value));
             case GREATER_THAN_OR_EQUAL:
-                return new ShortRangeFilter(columnName, RangeConditionFilter.parseShortFilter(value), QueryConstants.MAX_SHORT, true, true);
+                return gte(columnName, RangeConditionFilter.parseShortFilter(value));
             default:
                 throw new IllegalArgumentException("RangeConditionFilter does not support condition " + condition);
         }

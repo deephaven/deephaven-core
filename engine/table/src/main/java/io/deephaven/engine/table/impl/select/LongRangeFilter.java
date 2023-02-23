@@ -21,13 +21,12 @@ import io.deephaven.util.compare.LongComparisons;
 import io.deephaven.util.type.TypeUtils;
 
 public class LongRangeFilter extends AbstractRangeFilter {
-
     public static LongRangeFilter lt(String columnName, long x) {
-        return new LongRangeFilter(columnName, QueryConstants.NULL_LONG, x, true, false);
+        return new LongRangeFilter(columnName, x, QueryConstants.NULL_LONG, true, false);
     }
 
     public static LongRangeFilter lte(String columnName, long x) {
-        return new LongRangeFilter(columnName, QueryConstants.NULL_LONG, x, true, true);
+        return new LongRangeFilter(columnName, x, QueryConstants.NULL_LONG, true, true);
     }
 
     public static LongRangeFilter gt(String columnName, long x) {
