@@ -82,9 +82,6 @@ public interface Filter extends Expression, Serializable {
      * Creates a {@link FilterNot not-filter} from {@code filter}. Callers should typically prefer
      * {@link Filter#inverse()}, unless the "not" context needs to be preserved.
      *
-     * <p>
-     * {@code filter.equals(Filter.not(filter).inverse())} is {@code true}.
-     *
      * @param filter the filter
      * @return the not-filter
      */
@@ -134,9 +131,6 @@ public interface Filter extends Expression, Serializable {
 
     /**
      * The logical inversion of {@code this}.
-     *
-     * <p>
-     * {@code filter.equals(filter.inverse().inverse())} is {@code true}.
      *
      * @return the inverse filter
      */

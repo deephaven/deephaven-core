@@ -7,6 +7,8 @@ import io.deephaven.annotations.SimpleStyle;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
 
+import java.util.Optional;
+
 /**
  * Evaluates to {@code true} when the given {@link #filter() filter} evaluates to {@code false}.
  */
@@ -34,6 +36,11 @@ public abstract class FilterNot extends FilterBase {
     @Override
     public final Filter inverse() {
         return filter();
+    }
+
+    public final Optional<Filter> simplify() {
+        final Filter filterInverse = filter().inverse();
+        return equals(filterInverse) ? Optional.empty() : Optional.of(filterInverse);
     }
 
     @Override

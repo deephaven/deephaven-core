@@ -33,13 +33,13 @@ public class WhereFilterTest extends TestCase {
     public void testEq() {
         expect(FilterComparison.eq(FOO, V42), MatchFilter.class, "Foo in [42]");
         expect(FilterComparison.eq(V42, FOO), MatchFilter.class, "Foo in [42]");
-        expect(FilterComparison.eq(FOO, BAR), ConditionFilter.class, "Foo == Bar");
+        expect(FilterComparison.eq(FOO, BAR), ConditionFilter.class, "(Foo) == (Bar)");
     }
 
     public void testNeq() {
         expect(FilterComparison.neq(FOO, V42), MatchFilter.class, "Foo not in [42]");
         expect(FilterComparison.neq(V42, FOO), MatchFilter.class, "Foo not in [42]");
-        expect(FilterComparison.neq(FOO, BAR), ConditionFilter.class, "Foo != Bar");
+        expect(FilterComparison.neq(FOO, BAR), ConditionFilter.class, "(Foo) != (Bar)");
     }
 
     public void testGt() {
@@ -47,7 +47,7 @@ public class WhereFilterTest extends TestCase {
                 "LongRangeFilter(Foo in (42,9223372036854775807])");
         expect(FilterComparison.gt(V42, FOO), LongRangeFilter.class,
                 "LongRangeFilter(Foo in [-9223372036854775808,42))");
-        expect(FilterComparison.gt(FOO, BAR), ConditionFilter.class, "Foo > Bar");
+        expect(FilterComparison.gt(FOO, BAR), ConditionFilter.class, "(Foo) > (Bar)");
     }
 
     public void testGte() {
@@ -55,7 +55,7 @@ public class WhereFilterTest extends TestCase {
                 "LongRangeFilter(Foo in [42,9223372036854775807])");
         expect(FilterComparison.gte(V42, FOO), LongRangeFilter.class,
                 "LongRangeFilter(Foo in [-9223372036854775808,42])");
-        expect(FilterComparison.gte(FOO, BAR), ConditionFilter.class, "Foo >= Bar");
+        expect(FilterComparison.gte(FOO, BAR), ConditionFilter.class, "(Foo) >= (Bar)");
     }
 
     public void testLt() {
@@ -63,7 +63,7 @@ public class WhereFilterTest extends TestCase {
                 "LongRangeFilter(Foo in [-9223372036854775808,42))");
         expect(FilterComparison.lt(V42, FOO), LongRangeFilter.class,
                 "LongRangeFilter(Foo in (42,9223372036854775807])");
-        expect(FilterComparison.lt(FOO, BAR), ConditionFilter.class, "Foo < Bar");
+        expect(FilterComparison.lt(FOO, BAR), ConditionFilter.class, "(Foo) < (Bar)");
     }
 
     public void testLte() {
@@ -71,7 +71,7 @@ public class WhereFilterTest extends TestCase {
                 "LongRangeFilter(Foo in [-9223372036854775808,42])");
         expect(FilterComparison.lte(V42, FOO), LongRangeFilter.class,
                 "LongRangeFilter(Foo in [42,9223372036854775807])");
-        expect(FilterComparison.lte(FOO, BAR), ConditionFilter.class, "Foo <= Bar");
+        expect(FilterComparison.lte(FOO, BAR), ConditionFilter.class, "(Foo) <= (Bar)");
     }
 
     private static void expect(Filter filter, Class<? extends WhereFilter> clazz, String expected) {
