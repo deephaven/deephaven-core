@@ -190,13 +190,13 @@ public class Strings {
         }
 
         @Override
-        public void visit(long x) {
-            out = Long.toString(x);
+        public void visit(long literal) {
+            out = Long.toString(literal);
         }
 
         @Override
-        public void visit(boolean x) {
-            out = Boolean.toString(x);
+        public void visit(boolean literal) {
+            out = Boolean.toString(literal);
         }
     }
 }

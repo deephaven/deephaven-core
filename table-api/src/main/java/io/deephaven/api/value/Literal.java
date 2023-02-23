@@ -11,11 +11,11 @@ import io.deephaven.api.expression.Expression;
  * @see Expression
  */
 public interface Literal extends Expression {
-    static Literal of(long value) {
+    static LiteralLong of(long value) {
         return LiteralLong.of(value);
     }
 
-    static Literal of(boolean value) {
+    static LiteralBool of(boolean value) {
         return LiteralBool.of(value);
     }
 
@@ -23,8 +23,8 @@ public interface Literal extends Expression {
 
     interface Visitor {
         // TODO (deephaven-core#831): Add more table api Value structuring
-        void visit(long x);
+        void visit(long literal);
 
-        void visit(boolean x);
+        void visit(boolean literal);
     }
 }

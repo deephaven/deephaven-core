@@ -160,6 +160,8 @@ public interface Filter extends Expression, Serializable {
 
         void visit(FilterAnd ands);
 
+        void visit(boolean literal);
+
         void visit(RawString rawString);
     }
 }

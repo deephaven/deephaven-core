@@ -111,6 +111,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
@@ -568,13 +569,13 @@ class BatchTableRequestBuilder {
         }
 
         @Override
-        public void visit(long x) {
-            out = io.deephaven.proto.backplane.grpc.Value.newBuilder().setLiteral(literal(x)).build();
+        public void visit(long literal) {
+            out = io.deephaven.proto.backplane.grpc.Value.newBuilder().setLiteral(literal(literal)).build();
         }
 
         @Override
-        public void visit(boolean x) {
-            out = io.deephaven.proto.backplane.grpc.Value.newBuilder().setLiteral(literal(x)).build();
+        public void visit(boolean literal) {
+            out = io.deephaven.proto.backplane.grpc.Value.newBuilder().setLiteral(literal(literal)).build();
         }
 
         @Override
@@ -657,8 +658,13 @@ class BatchTableRequestBuilder {
 
         @Override
         public void visit(FilterNot not) {
-            out = Condition.newBuilder()
-                    .setNot(NotCondition.newBuilder().setFilter(of(not.filter())).build()).build();
+            final Optional<Filter> simplified = not.simplify();
+            if (simplified.isPresent()) {
+                out = of(simplified.get());
+            } else {
+                out = Condition.newBuilder()
+                        .setNot(NotCondition.newBuilder().setFilter(of(not.filter())).build()).build();
+            }
         }
 
         @Override
@@ -677,6 +683,11 @@ class BatchTableRequestBuilder {
                 builder.addFilters(of(filter));
             }
             out = Condition.newBuilder().setAnd(builder.build()).build();
+        }
+
+        @Override
+        public void visit(boolean literal) {
+            throw new UnsupportedOperationException("Can't build Condition with literal");
         }
 
         @Override

@@ -271,6 +271,15 @@ public interface WhereFilter extends Filter {
         }
 
         @Override
+        public void visit(boolean literal) {
+            if (inverted ^ literal) {
+                out = WhereFilterFactory.getExpression("true");
+            } else {
+                out = WhereFilterFactory.getExpression("false");
+            }
+        }
+
+        @Override
         public void visit(RawString rawString) {
             if (inverted) {
                 out = WhereFilterFactory.getExpression(String.format("!(%s)", rawString.value()));
@@ -405,7 +414,7 @@ public interface WhereFilter extends Filter {
             }
 
             @Override
-            public void visit(boolean x) {
+            public void visit(boolean literal) {
                 out = WhereFilterFactory.getExpression(Strings.of(original));
             }
 
