@@ -12,7 +12,7 @@ import org.immutables.value.Value.Parameter;
 @SimpleStyle
 abstract class LiteralInt extends LiteralBase {
 
-    public static LiteralInt of(long value) {
+    public static LiteralInt of(int value) {
         return ImmutableLiteralInt.of(value);
     }
 
