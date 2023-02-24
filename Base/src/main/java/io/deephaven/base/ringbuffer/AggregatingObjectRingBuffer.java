@@ -40,30 +40,48 @@ public class AggregatingObjectRingBuffer<T> extends ObjectRingBuffer<T> {
     }
 
     /**
-     * Create a ring buffer for Object values that will perform pairwise aggregation of the internal data values using an
-     * efficient binary-tree implementation to compute only changed values. The buffer will grow exponentially as items
-     * are pushed into it but will not shrink as values are removed
+     * Create a ring buffer for Object values which aggregates its contents according to a user-defined aggregation
+     * function. This aggregation calculation is performed lazily, when the user calls evaluate(). Internally the class
+     * manages a tree of intermediate aggregation values. This allows the class to efficiently update the final
+     * aggregated value when entries enter and leave the buffer, without necessarily running the calculation over the
+     * whole buffer.
+     *
+     * The buffer expands its capacity as needed, employing a capacity-doubling strategy. However, note that the data
+     * structure never gives back storage: i.e. its capacity never shrinks.
      *
      * @param capacity the minimum size for the structure to hold
-     * @param identityVal an innocuous value that will not affect the user-provided function results. for example, 0.0f
-     *        for performing addition/subtraction, 1.0f for performing multiplication/division
-     * @param aggFunction the user provided function for evaluation, takes two float parameters and returns a float.
-     *        This function will be applied repeatedly to pairs of data values until the final result is available
+     * @param identityVal The identity value associated with the aggregation function. This is a value e that satisfies
+     *        f(x,e) == x and f(e,x) == x for all x. For example, for addition, multiplication, Math.min, and Math.max,
+     *        the identity values are 0.0f, 1.0f, Float.MAX_VALUE, and -Float.MAX_VALUE respectively.
+     * @param aggFunction A function used to aggregate the data in the ring buffer. The function must be associative:
+     *        that is it must satisfy f(f(a, b), c) == f(a, f(b, c)). For example, addition is associative, because (a +
+     *        b) + c == a + (b + c). Some examples of associative functions are addition, multiplication, Math.min(),
+     *        and Math.max(). This data structure maintains a tree of partially-evaluated subranges of the data,
+     *        combining them efficiently whenever the data changes.
      */
     public AggregatingObjectRingBuffer(int capacity, T identityVal, ObjectFunction<T> aggFunction) {
         this(capacity, identityVal, aggFunction, true);
     }
 
     /**
-     * Create a ring buffer for Object values that will perform pairwise aggregation of the internal data values using an
-     * efficient binary-tree implementation to compute only changed values. The buffer can grow exponentially as items
-     * are pushed into it but will not shrink as values are removed
+     * Create a ring buffer for Object values which aggregates its contents according to a user-defined aggregation
+     * function. This aggregation calculation is performed lazily, when the user calls evaluate(). Internally the class
+     * manages a tree of intermediate aggregation values. This allows the class to efficiently update the final
+     * aggregated value when entries enter and leave the buffer, without necessarily running the calculation over the
+     * whole buffer.
+     *
+     * If {@code growable = true}, the buffer expands its capacity as needed, employing a capacity-doubling strategy.
+     * However, note that the data structure never gives back storage: i.e. its capacity never shrinks.
      *
      * @param capacity the minimum size for the structure to hold
-     * @param identityVal an innocuous value that will not affect the user-provided function results. for example, 0.0f
-     *        for performing addition/subtraction, 1.0f for performing multiplication/division
-     * @param aggFunction the user provided function for evaluation, takes two float parameters and returns a float.
-     *        This function will be applied repeatedly to pairs of data values until the final result is available
+     * @param identityVal The identity value associated with the aggregation function. This is a value e that satisfies
+     *        f(x,e) == x and f(e,x) == x for all x. For example, for addition, multiplication, Math.min, and Math.max,
+     *        the identity values are 0.0f, 1.0f, Float.MAX_VALUE, and -Float.MAX_VALUE respectively.
+     * @param aggFunction A function used to aggregate the data in the ring buffer. The function must be associative:
+     *        that is it must satisfy f(f(a, b), c) == f(a, f(b, c)). For example, addition is associative, because (a +
+     *        b) + c == a + (b + c). Some examples of associative functions are addition, multiplication, Math.min(),
+     *        and Math.max(). This data structure maintains a tree of partially-evaluated subranges of the data,
+     *        combining them efficiently whenever the data changes.
      * @param growable whether to allow growth when the buffer is full.
      */
     public AggregatingObjectRingBuffer(int capacity, T identityVal, ObjectFunction<T> aggFunction, boolean growable) {
