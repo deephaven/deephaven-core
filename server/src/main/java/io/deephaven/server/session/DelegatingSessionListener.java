@@ -1,11 +1,15 @@
 package io.deephaven.server.session;
 
+import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.io.logger.Logger;
+
 import java.util.Collection;
 
 /**
  * Utility class to fan out session events to multiple handlers.
  */
 public class DelegatingSessionListener implements SessionListener {
+    private static final Logger log = LoggerFactory.getLogger(DelegatingSessionListener.class);
     private final Collection<SessionListener> sessionListeners;
 
     public DelegatingSessionListener(Collection<SessionListener> sessionListeners) {
@@ -15,21 +19,12 @@ public class DelegatingSessionListener implements SessionListener {
     @Override
     public void onSessionCreate(SessionState session) {
         for (SessionListener listener : sessionListeners) {
-            listener.onSessionCreate(session);
-        }
-    }
-
-    @Override
-    public void onSessionRefresh(SessionState session) {
-        for (SessionListener listener : sessionListeners) {
-            listener.onSessionRefresh(session);
-        }
-    }
-
-    @Override
-    public void onSessionEnd(SessionState session) {
-        for (SessionListener listener : sessionListeners) {
-            listener.onSessionEnd(session);
+            try {
+                listener.onSessionCreate(session);
+            } catch (Exception e) {
+                log.error().append("Error invoking session listener ").append(listener.getClass().getName()).append(e)
+                        .endl();
+            }
         }
     }
 }
