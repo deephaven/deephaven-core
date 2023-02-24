@@ -142,7 +142,7 @@ public interface JobScheduler {
             try (final CONTEXT_TYPE taskThreadContext = taskThreadContextFactory.get()) {
                 do {
                     action.run(taskThreadContext, idx, resumeAction);
-                } while((idx = nextIndex.getAndIncrement()) < start + count && exception.get() == null);
+                } while ((idx = nextIndex.getAndIncrement()) < start + count && exception.get() == null);
             } finally {
                 decrementReferenceCount();
             }
