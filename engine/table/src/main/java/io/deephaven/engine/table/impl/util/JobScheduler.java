@@ -124,38 +124,27 @@ public interface JobScheduler {
 
         @Override
         public void accept(Exception e) {
-            exception.compareAndSet(null, e);
-            decrementReferenceCount();
+            if (exception.compareAndSet(null, e)) {
+                decrementReferenceCount();
+            }
         }
 
         @Override
         public void run() {
-            if (!tryIncrementReferenceCount()) {
+            int idx;
+            if (!((idx = nextIndex.getAndIncrement()) < start + count
+                    && exception.get() == null
+                    && tryIncrementReferenceCount())) {
                 // We started this task thread after all sub-tasks are complete or there was an error; we should
                 // not try to allocate a task thread context.
                 return;
             }
             try (final CONTEXT_TYPE taskThreadContext = taskThreadContextFactory.get()) {
+                do {
+                    action.run(taskThreadContext, idx, resumeAction);
+                } while((idx = nextIndex.getAndIncrement()) < start + count && exception.get() == null);
+            } finally {
                 decrementReferenceCount();
-                while (true) {
-                    if (exception.get() != null) {
-                        return;
-                    }
-                    final int idx = nextIndex.getAndIncrement();
-                    if (idx >= start + count) {
-                        return;
-                    }
-                    if (!tryIncrementReferenceCount()) {
-                        // We raced with the exception consumer
-                        return;
-                    }
-                    try {
-                        // do the work
-                        action.run(taskThreadContext, idx, resumeAction);
-                    } finally {
-                        decrementReferenceCount();
-                    }
-                }
             }
         }
     }
