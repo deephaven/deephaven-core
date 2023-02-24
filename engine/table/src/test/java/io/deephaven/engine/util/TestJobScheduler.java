@@ -8,9 +8,7 @@ import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.table.impl.util.UpdateGraphProcessorJobScheduler;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.test.types.OutOfBandTest;
 import org.junit.Test;
-import org.junit.experimental.categories.Category;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -34,7 +32,7 @@ public final class TestJobScheduler {
                     JobScheduler.DEFAULT_CONTEXT_FACTORY,
                     0,
                     50,
-                    (context, idx) -> {
+                    (context, idx, nec) -> {
                         completed[idx] = true;
                     },
                     () -> {
@@ -83,7 +81,7 @@ public final class TestJobScheduler {
                     JobScheduler.DEFAULT_CONTEXT_FACTORY,
                     0,
                     50,
-                    (context, idx, resume) -> {
+                    (context, idx, nec, resume) -> {
                         completed[idx] = true;
                         resume.run();
                     },
@@ -146,7 +144,7 @@ public final class TestJobScheduler {
                     TestJobThreadContext::new,
                     0,
                     50,
-                    (context, idx, resume) -> {
+                    (context, idx, nec, resume) -> {
                         // verify the type is correct
                         Assert.instanceOf(context, "context", TestJobThreadContext.class);
 
@@ -202,7 +200,7 @@ public final class TestJobScheduler {
                     JobScheduler.DEFAULT_CONTEXT_FACTORY,
                     0,
                     50,
-                    (context, idx, resume) -> {
+                    (context, idx, nec, resume) -> {
                         completed[idx] = true;
                         resume.run();
                     },
@@ -266,7 +264,7 @@ public final class TestJobScheduler {
                     TestJobThreadContext::new,
                     0,
                     50,
-                    (context, idx, resume) -> {
+                    (context, idx, nec, resume) -> {
                         // verify the type is correct
                         Assert.instanceOf(context, "context", TestJobThreadContext.class);
 
@@ -321,7 +319,7 @@ public final class TestJobScheduler {
                     JobScheduler.DEFAULT_CONTEXT_FACTORY,
                     0,
                     0,
-                    (context, idx, resume) -> {
+                    (context, idx, nec, resume) -> {
                         // nop
                     },
                     () -> {
@@ -416,7 +414,7 @@ public final class TestJobScheduler {
                     TestJobThreadContext::new,
                     0,
                     50,
-                    (context, idx) -> {
+                    (context, idx, nec) -> {
                         // verify the type is correct
                         Assert.instanceOf(context, "context", TestJobThreadContext.class);
 
@@ -487,7 +485,7 @@ public final class TestJobScheduler {
                     TestJobThreadContext::new,
                     0,
                     50,
-                    (context, idx, resume) -> {
+                    (context, idx, nec, resume) -> {
                         // verify the type is correct
                         Assert.instanceOf(context, "context", TestJobThreadContext.class);
 
@@ -534,6 +532,85 @@ public final class TestJobScheduler {
             } else {
                 // rethrow the error
                 throw new UncheckedDeephavenException("failure while processing test", e.getCause());
+            }
+        }
+    }
+
+    @Test
+    public void testNestedParallelError() {
+        final CompletableFuture<Void> waitForResult = new CompletableFuture<>();
+        final AtomicInteger openCount = new AtomicInteger(0);
+
+        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
+        UpdateGraphProcessor.DEFAULT.resetForUnitTests(false, true, 0, 4, 10, 5);
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            final boolean[][] completed = new boolean[50][60];
+
+            class TestJobThreadContext implements JobScheduler.JobThreadContext {
+                TestJobThreadContext() {
+                    openCount.incrementAndGet();
+                }
+
+                @Override
+                public void close() {
+                    openCount.decrementAndGet();
+                }
+            }
+
+            final JobScheduler scheduler = new UpdateGraphProcessorJobScheduler();
+            scheduler.iterateParallel(
+                    ExecutionContext.getContext(),
+                    null,
+                    TestJobThreadContext::new,
+                    0,
+                    50,
+                    (context1, idx1, nec1, r1) -> {
+                        scheduler.iterateParallel(
+                                ExecutionContext.getContext(),
+                                null,
+                                TestJobThreadContext::new,
+                                0,
+                                60,
+                                (context2, idx2, nec2) -> {
+                                    // verify the type is correct
+                                    Assert.instanceOf(context2, "context2", TestJobThreadContext.class);
+
+                                    // throw before "doing work" to make verification easy
+                                    if (idx1 == 10 && idx2 == 10) {
+                                        throw new IndexOutOfBoundsException("Test error");
+                                    }
+
+                                    completed[idx1][idx2] = true;
+                                }, r1, nec1);
+                    },
+                    () -> {
+                        // if this is called, we failed the test
+                        waitForResult.completeExceptionally(new AssertionFailure("Exception not thrown"));
+                    },
+                    exception -> {
+                        if (!(exception instanceof IndexOutOfBoundsException)) {
+                            waitForResult.completeExceptionally(new AssertionFailure("Unexpected exception thrown"));
+                        }
+                        if (completed[10][10]) {
+                            waitForResult.completeExceptionally(new AssertionFailure("Processed unexpected index"));
+                        }
+                        waitForResult.complete(null);
+                    });
+        });
+
+        try {
+            // need to wait until this future is complete
+            waitForResult.get();
+            // make sure all the contexts were closed
+            Assert.eqZero(openCount.get(), "openCount");
+        } catch (InterruptedException e) {
+            throw new CancellationException("Interrupted while processing test");
+        } catch (ExecutionException e) {
+            if (e.getCause() instanceof RuntimeException) {
+                throw (RuntimeException) e.getCause();
+            } else {
+                // rethrow the error
+                throw new UncheckedDeephavenException("Failure while processing test", e.getCause());
             }
         }
     }

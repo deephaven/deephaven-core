@@ -62,7 +62,14 @@ public interface JobScheduler {
      */
     @FunctionalInterface
     interface IterateAction<CONTEXT_TYPE extends JobThreadContext> {
-        void run(CONTEXT_TYPE taskThreadContext, int index);
+        /**
+         * Iteration action to be invoked.
+         *
+         * @param taskThreadContext The context, unique to this task-thread
+         * @param index The iteration number
+         * @param nestedErrorConsumer A consumer to pass to directly-nested iterative jobs
+         */
+        void run(CONTEXT_TYPE taskThreadContext, int index, Consumer<Exception> nestedErrorConsumer);
     }
 
     /**
@@ -76,7 +83,15 @@ public interface JobScheduler {
      */
     @FunctionalInterface
     interface IterateResumeAction<CONTEXT_TYPE extends JobThreadContext> {
-        void run(CONTEXT_TYPE taskThreadContext, int index, Runnable resume);
+        /**
+         * Iteration action to be invoked.
+         *
+         * @param taskThreadContext The context, unique to this task-thread
+         * @param index The iteration number
+         * @param nestedErrorConsumer A consumer to pass to directly-nested iterative jobs
+         * @param resume A function to call to move on to the next iteration
+         */
+        void run(CONTEXT_TYPE taskThreadContext, int index, Consumer<Exception> nestedErrorConsumer, Runnable resume);
     }
 
     class ErrorAccounter<CONTEXT_TYPE extends JobThreadContext> extends ReferenceCounted
@@ -141,7 +156,7 @@ public interface JobScheduler {
             }
             try (final CONTEXT_TYPE taskThreadContext = taskThreadContextFactory.get()) {
                 do {
-                    action.run(taskThreadContext, idx, resumeAction);
+                    action.run(taskThreadContext, idx, this, resumeAction);
                 } while ((idx = nextIndex.getAndIncrement()) < start + count && exception.get() == null);
             } finally {
                 decrementReferenceCount();
@@ -173,8 +188,11 @@ public interface JobScheduler {
             Runnable completeAction,
             Consumer<Exception> onError) {
         iterateParallel(executionContext, description, taskThreadContextFactory, start, count,
-                (final CONTEXT_TYPE taskThreadContext, final int idx, final Runnable resume) -> {
-                    action.run(taskThreadContext, idx);
+                (final CONTEXT_TYPE taskThreadContext,
+                        final int idx,
+                        final Consumer<Exception> nestedErrorConsumer,
+                        final Runnable resume) -> {
+                    action.run(taskThreadContext, idx, nestedErrorConsumer);
                     resume.run();
                 },
                 completeAction, onError);
@@ -279,7 +297,7 @@ public interface JobScheduler {
                             () -> {
                                 int idx = nextIndex++;
                                 // do the work
-                                action.run(taskThreadContext, idx, this);
+                                action.run(taskThreadContext, idx, localError, this);
                             },
                             description,
                             localError);
@@ -290,7 +308,7 @@ public interface JobScheduler {
 
         // create a single task
         submit(executionContext,
-                () -> action.run(taskThreadContext, start, resumeAction),
+                () -> action.run(taskThreadContext, start, localError, resumeAction),
                 description,
                 localError);
     }
