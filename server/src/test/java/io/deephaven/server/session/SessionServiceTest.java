@@ -14,6 +14,9 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Collections;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 
 public class SessionServiceTest {
 
@@ -23,6 +26,7 @@ public class SessionServiceTest {
     private SafeCloseable livenessScope;
     private TestControlledScheduler scheduler;
     private SessionService sessionService;
+    private Consumer<SessionState> sessionStateCallable;
 
     @Before
     public void setup() {
@@ -30,7 +34,13 @@ public class SessionServiceTest {
         scheduler = new TestControlledScheduler();
         sessionService = new SessionService(scheduler,
                 authContext -> new SessionState(scheduler, TestExecutionContext::createForUnitTests, authContext),
-                TOKEN_EXPIRE_MS, Collections.emptyMap(), Collections.emptySet());
+                TOKEN_EXPIRE_MS, Collections.emptyMap(), Collections.singleton(this::sessionCreatedCallback));
+    }
+
+    private void sessionCreatedCallback(SessionState sessionState) {
+        if (sessionStateCallable != null) {
+            sessionStateCallable.accept(sessionState);
+        }
     }
 
     @After
@@ -40,6 +50,22 @@ public class SessionServiceTest {
         scheduler = null;
         sessionService = null;
         livenessScope = null;
+    }
+
+    @Test
+    public void testSessionCreationCallback() {
+        AtomicReference<SessionState> sessionReference = new AtomicReference<>(null);
+        AtomicInteger count = new AtomicInteger(0);
+
+        sessionStateCallable = newValue -> {
+            sessionReference.set(newValue);
+            count.incrementAndGet();
+        };
+
+        final SessionState session = sessionService.newSession(AUTH_CONTEXT);
+
+        Assert.eq(sessionReference.get(), "sessionReference.get()", session, "session");
+        Assert.eq(count.get(), "count.get()", 1);
     }
 
     @Test
