@@ -170,8 +170,7 @@ public class SessionService {
      * @return the most recent token expiration
      */
     public TokenExpiration refreshToken(final SessionState session) {
-        TokenExpiration tokenExpiration = checkTokenAndRotate(session, false);
-        return tokenExpiration;
+        return checkTokenAndRotate(session, false);
     }
 
     @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
@@ -360,11 +359,8 @@ public class SessionService {
                 // token expiration time.
                 outstandingCookies.poll();
 
-                synchronized (next.session) {
-                    final TokenExpiration tokenExpiration = next.session.getExpiration();
-                    if (tokenExpiration != null && tokenExpiration.deadlineMillis <= nowMillis) {
-                        next.session.onExpired();
-                    }
+                if (next.session.isExpired()) {
+                    next.session.onExpired();
                 }
             } while (true);
 

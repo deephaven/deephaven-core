@@ -451,8 +451,8 @@ public class SessionState {
         log.info().append(logPrefix).append("releasing outstanding exports").endl();
         synchronized (exportMap) {
             exportMap.forEach(ExportObject::cancel);
+            exportMap.clear();
         }
-        exportMap.clear();
 
         log.info().append(logPrefix).append("outstanding exports released").endl();
         synchronized (exportListeners) {
