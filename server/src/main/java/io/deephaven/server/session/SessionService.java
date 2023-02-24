@@ -171,7 +171,6 @@ public class SessionService {
      */
     public TokenExpiration refreshToken(final SessionState session) {
         TokenExpiration tokenExpiration = checkTokenAndRotate(session, false);
-        sessionListener.onSessionRefresh(session);
         return tokenExpiration;
     }
 
@@ -311,14 +310,12 @@ public class SessionService {
         if (session.isExpired()) {
             return;
         }
-        sessionListener.onSessionEnd(session);
         session.onExpired();
     }
 
     public void closeAllSessions() {
         for (final TokenExpiration token : outstandingCookies) {
             // close all exports/resources acquired by the session
-            sessionListener.onSessionEnd(token.session);
             token.session.onExpired();
         }
     }
@@ -366,7 +363,6 @@ public class SessionService {
                 synchronized (next.session) {
                     final TokenExpiration tokenExpiration = next.session.getExpiration();
                     if (tokenExpiration != null && tokenExpiration.deadlineMillis <= nowMillis) {
-                        sessionListener.onSessionEnd(next.session);
                         next.session.onExpired();
                     }
                 }
