@@ -20,13 +20,13 @@ import java.util.NoSuchElementException;
  * determination of storage indices through a mask operation.
  *
  * Aggregation is performed by calling the aggregation function on pairs of values from the circular buffer. The results
- * of the aggregations are stored into a parallel tree of result values where the root node contains the overall
+ * of the aggregations are stored into a separate tree of result values where the root node contains the overall
  * aggregation of all the leaf nodes. Performance is improved by performing aggregation over only those values which
  * have changed since the most recent evaluation.
  */
 
 public class AggregatingObjectRingBuffer<T> extends ObjectRingBuffer<T> {
-    private final ObjectFunction pairwiseFunction;
+    private final ObjectFunction<T> aggFunction;
     private final T identityVal;
     private Object[] treeStorage;
     private long calcHead = 0; // inclusive
@@ -74,7 +74,7 @@ public class AggregatingObjectRingBuffer<T> extends ObjectRingBuffer<T> {
     public AggregatingObjectRingBuffer(int capacity, T identityVal, ObjectFunction<T> aggFunction, boolean growable) {
         super(capacity, growable);
 
-        this.pairwiseFunction = aggFunction;
+        this.aggFunction = aggFunction;
         this.identityVal = identityVal;
 
         treeStorage = new Object[storage.length];
@@ -365,11 +365,11 @@ public class AggregatingObjectRingBuffer<T> extends ObjectRingBuffer<T> {
             final int parent = left / 2;
 
             // load the data values
-            final Object leftVal = src[left];
-            final Object rightVal = src[right];
+            final T leftVal = (T) src[left];
+            final T rightVal = (T) src[right];
 
             // compute & store (always in the tree area)
-            final Object computeVal = pairwiseFunction.apply(leftVal, rightVal);
+            final Object computeVal = aggFunction.apply(leftVal, rightVal);
             treeStorage[parent + dstOffset] = computeVal;
         }
     }

@@ -20,13 +20,13 @@ import java.util.NoSuchElementException;
  * determination of storage indices through a mask operation.
  *
  * Aggregation is performed by calling the aggregation function on pairs of values from the circular buffer. The results
- * of the aggregations are stored into a parallel tree of result values where the root node contains the overall
+ * of the aggregations are stored into a separate tree of result values where the root node contains the overall
  * aggregation of all the leaf nodes. Performance is improved by performing aggregation over only those values which
  * have changed since the most recent evaluation.
  */
 
 public class AggregatingDoubleRingBuffer extends DoubleRingBuffer {
-    private final DoubleFunction pairwiseFunction;
+    private final DoubleFunction aggFunction;
     private final double identityVal;
     private double[] treeStorage;
     private long calcHead = 0; // inclusive
@@ -74,7 +74,7 @@ public class AggregatingDoubleRingBuffer extends DoubleRingBuffer {
     public AggregatingDoubleRingBuffer(int capacity, double identityVal, DoubleFunction aggFunction, boolean growable) {
         super(capacity, growable);
 
-        this.pairwiseFunction = aggFunction;
+        this.aggFunction = aggFunction;
         this.identityVal = identityVal;
 
         treeStorage = new double[storage.length];
@@ -369,7 +369,7 @@ public class AggregatingDoubleRingBuffer extends DoubleRingBuffer {
             final double rightVal = src[right];
 
             // compute & store (always in the tree area)
-            final double computeVal = pairwiseFunction.apply(leftVal, rightVal);
+            final double computeVal = aggFunction.apply(leftVal, rightVal);
             treeStorage[parent + dstOffset] = computeVal;
         }
     }

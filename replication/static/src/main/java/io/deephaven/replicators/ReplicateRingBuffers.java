@@ -15,7 +15,6 @@ import java.util.List;
 
 import static io.deephaven.replication.ReplicatePrimitiveCode.*;
 import static io.deephaven.replication.ReplicationUtils.*;
-import static io.deephaven.replication.ReplicationUtils.replaceRegion;
 
 public class ReplicateRingBuffers {
 
@@ -75,6 +74,8 @@ public class ReplicateRingBuffers {
                 "Object identityVal", "T identityVal",
                 "public Object removeUnsafe", "public T removeUnsafe",
                 "return val;", "return (T)val;",
+                "final Object leftVal = src", "final T leftVal = (T)src",
+                "final Object rightVal = src", "final T rightVal = (T)src",
                 "public interface ObjectFunction \\{", "public interface ObjectFunction<T> {",
                 "Object apply\\(Object a, Object b\\);", "T apply(T a, T b);",
                 "public Object evaluate", "public T evaluate",

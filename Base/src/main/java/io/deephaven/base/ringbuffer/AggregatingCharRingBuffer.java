@@ -15,13 +15,13 @@ import java.util.NoSuchElementException;
  * determination of storage indices through a mask operation.
  *
  * Aggregation is performed by calling the aggregation function on pairs of values from the circular buffer. The results
- * of the aggregations are stored into a parallel tree of result values where the root node contains the overall
+ * of the aggregations are stored into a separate tree of result values where the root node contains the overall
  * aggregation of all the leaf nodes. Performance is improved by performing aggregation over only those values which
  * have changed since the most recent evaluation.
  */
 
 public class AggregatingCharRingBuffer extends CharRingBuffer {
-    private final CharFunction pairwiseFunction;
+    private final CharFunction aggFunction;
     private final char identityVal;
     private char[] treeStorage;
     private long calcHead = 0; // inclusive
@@ -69,7 +69,7 @@ public class AggregatingCharRingBuffer extends CharRingBuffer {
     public AggregatingCharRingBuffer(int capacity, char identityVal, CharFunction aggFunction, boolean growable) {
         super(capacity, growable);
 
-        this.pairwiseFunction = aggFunction;
+        this.aggFunction = aggFunction;
         this.identityVal = identityVal;
 
         treeStorage = new char[storage.length];
@@ -364,7 +364,7 @@ public class AggregatingCharRingBuffer extends CharRingBuffer {
             final char rightVal = src[right];
 
             // compute & store (always in the tree area)
-            final char computeVal = pairwiseFunction.apply(leftVal, rightVal);
+            final char computeVal = aggFunction.apply(leftVal, rightVal);
             treeStorage[parent + dstOffset] = computeVal;
         }
     }
