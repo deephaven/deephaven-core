@@ -30,7 +30,7 @@ public class SessionServiceTest {
         scheduler = new TestControlledScheduler();
         sessionService = new SessionService(scheduler,
                 authContext -> new SessionState(scheduler, TestExecutionContext::createForUnitTests, authContext),
-                TOKEN_EXPIRE_MS, Collections.emptyMap());
+                TOKEN_EXPIRE_MS, Collections.emptyMap(), Collections.emptySet());
     }
 
     @After
