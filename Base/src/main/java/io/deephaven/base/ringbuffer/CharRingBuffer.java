@@ -17,13 +17,13 @@ import java.util.NoSuchElementException;
  */
 public class CharRingBuffer implements Serializable {
     /** Maximum capacity is the highest power of two that can be allocated (i.e. <= than ArrayUtil.MAX_ARRAY_SIZE). */
-    private final int RING_BUFFER_MAX_CAPACITY = Integer.highestOneBit(ArrayUtil.MAX_ARRAY_SIZE);
-    private final long FIXUP_THRESHOLD = 1L << 62;
-    private final boolean growable;
-    private char[] storage;
-    private int mask;
-    private long head;
-    private long tail;
+    protected final int RING_BUFFER_MAX_CAPACITY = Integer.highestOneBit(ArrayUtil.MAX_ARRAY_SIZE);
+    protected final long FIXUP_THRESHOLD = 1L << 62;
+    protected final boolean growable;
+    protected char[] storage;
+    protected int mask;
+    protected long head;
+    protected long tail;
 
     /**
      * Create an unbounded-growth ring buffer of char primitives.
@@ -65,7 +65,7 @@ public class CharRingBuffer implements Serializable {
      * 
      * @param increase Increase amount. The ring buffer's capacity will be increased by at least this amount.
      */
-    private void grow(int increase) {
+    protected void grow(int increase) {
         final int size = size();
         final long newCapacity = (long) storage.length + increase;
         // assert that we are not asking for the impossible
@@ -89,7 +89,7 @@ public class CharRingBuffer implements Serializable {
      * 
      * @param dest The destination buffer.
      */
-    private void copyRingBufferToArray(char[] dest) {
+    protected void copyRingBufferToArray(char[] dest) {
         final int size = size();
         final int storageHead = (int) (head & mask);
 
@@ -109,7 +109,7 @@ public class CharRingBuffer implements Serializable {
      * This is an extremely paranoid wrap check that in all likelihood will never run. With FIXUP_THRESHOLD at 1 << 62,
      * and the user pushing 2^32 values per second(!), it will take 68 years to wrap this counter .
      */
-    private void maybeFixIndices() {
+    protected void maybeFixIndices() {
         if (tail >= FIXUP_THRESHOLD) {
             // Reset [head, tail] but force it not to overlap.
             long thisLength = tail - head;
@@ -127,7 +127,7 @@ public class CharRingBuffer implements Serializable {
     }
 
     public int size() {
-        return (int) (tail - head);
+        return Math.toIntExact(tail - head);
     }
 
     public int capacity() {
@@ -202,13 +202,13 @@ public class CharRingBuffer implements Serializable {
      * @return the overwritten entry if the buffer is full, the provided value otherwise
      */
     public char addOverwrite(char e, char notFullResult) {
-        char result = notFullResult;
+        char val = notFullResult;
         if (isFull()) {
-            result = remove();
+            val = remove();
         }
         maybeFixIndices();
         addUnsafe(e);
-        return result;
+        return val;
     }
 
     /**
@@ -234,11 +234,14 @@ public class CharRingBuffer implements Serializable {
      * @throws NoSuchElementException if the buffer is empty
      */
     public char[] remove(int count) {
-        if (size() < count) {
+        final int size = size();
+        if (size < count) {
             throw new NoSuchElementException();
         }
         final char[] result = new char[count];
+        // region object-bulk-remove
         copyRingBufferToArray(result);
+        // endregion object-bulk-remove
         head += count;
         return result;
     }
@@ -263,7 +266,11 @@ public class CharRingBuffer implements Serializable {
      * @return the value removed from the buffer
      */
     public char removeUnsafe() {
-        return storage[(int) (head++ & mask)];
+        final int idx = (int) (head++ & mask);
+        char val = storage[idx];
+        // region object-remove
+        // endregion object-remove
+        return val;
     }
 
     /**
