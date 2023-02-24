@@ -17,8 +17,8 @@ import java.util.NoSuchElementException;
  */
 public class CharRingBuffer implements Serializable {
     /** Maximum capacity is the highest power of two that can be allocated (i.e. <= than ArrayUtil.MAX_ARRAY_SIZE). */
-    protected final int RING_BUFFER_MAX_CAPACITY = Integer.highestOneBit(ArrayUtil.MAX_ARRAY_SIZE);
-    protected final long FIXUP_THRESHOLD = 1L << 62;
+    protected static final int RING_BUFFER_MAX_CAPACITY = Integer.highestOneBit(ArrayUtil.MAX_ARRAY_SIZE);
+    protected static final long FIXUP_THRESHOLD = 1L << 62;
     protected final boolean growable;
     protected char[] storage;
     protected int mask;
@@ -105,19 +105,6 @@ public class CharRingBuffer implements Serializable {
         System.arraycopy(storage, 0, dest, firstCopyLen, secondCopyLen);
     }
 
-    /**
-     * This is an extremely paranoid wrap check that in all likelihood will never run. With FIXUP_THRESHOLD at 1 << 62,
-     * and the user pushing 2^32 values per second(!), it will take 68 years to wrap this counter .
-     */
-    protected void maybeFixIndices() {
-        if (tail >= FIXUP_THRESHOLD) {
-            // Reset [head, tail] but force it not to overlap.
-            long thisLength = tail - head;
-            head = (head & mask) + storage.length;
-            tail = head + thisLength;
-        }
-    }
-
     public boolean isFull() {
         return size() == storage.length;
     }
@@ -135,7 +122,6 @@ public class CharRingBuffer implements Serializable {
     }
 
     public int remaining() {
-        maybeFixIndices();
         return storage.length - size();
     }
 
@@ -159,7 +145,6 @@ public class CharRingBuffer implements Serializable {
                 grow(1);
             }
         }
-        maybeFixIndices();
         addUnsafe(e);
         return true;
     }
@@ -179,7 +164,6 @@ public class CharRingBuffer implements Serializable {
             } else {
                 grow(count);
             }
-            maybeFixIndices();
         }
     }
 
@@ -192,6 +176,14 @@ public class CharRingBuffer implements Serializable {
      */
     public void addUnsafe(char e) {
         storage[(int) (tail++ & mask)] = e;
+        // This is an extremely paranoid wrap check that in all likelihood will never run. With FIXUP_THRESHOLD at
+        // 1 << 62, and the user pushing 2^32 values per second(!), it will take 68 years to wrap this counter .
+        if (tail >= FIXUP_THRESHOLD) {
+            // Reset [head, tail]
+            final long thisLength = tail - head;
+            head = head & mask;
+            tail = head + thisLength;
+        }
     }
 
     /**
@@ -206,7 +198,6 @@ public class CharRingBuffer implements Serializable {
         if (isFull()) {
             val = remove();
         }
-        maybeFixIndices();
         addUnsafe(e);
         return val;
     }
@@ -222,7 +213,6 @@ public class CharRingBuffer implements Serializable {
         if (isFull()) {
             return false;
         }
-        maybeFixIndices();
         addUnsafe(e);
         return true;
     }

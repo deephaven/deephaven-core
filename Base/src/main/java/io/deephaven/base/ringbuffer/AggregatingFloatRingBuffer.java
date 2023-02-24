@@ -14,15 +14,10 @@ import java.util.Arrays;
 import java.util.NoSuchElementException;
 
 /**
- * An aggregating circular buffer for primitive values, like java.util.concurrent.ArrayBlockingQueue but without the
- * synchronization and collection overhead. Storage is between head (inclusive) and tail (exclusive) using incrementing
- * {@code long} values. Head and tail will not wrap around; instead we use storage arrays sized to 2^N to allow fast
- * determination of storage indices through a mask operation.
- *
- * Aggregation is performed by calling the aggregation function on pairs of values from the circular buffer. The results
- * of the aggregations are stored into a separate tree of result values where the root node contains the overall
- * aggregation of all the leaf nodes. Performance is improved by performing aggregation over only those values which
- * have changed since the most recent evaluation.
+ * A ring buffer which aggregates its contents according to a user-defined aggregation function. This aggregation
+ * calculation is performed lazily, when the user calls evaluate(). Internally the class manages a tree of intermediate
+ * aggregation values. This allows the class to efficiently update the final aggregated value when entries enter and
+ * leave the buffer, without necessarily running the calculation over the whole buffer.
  */
 
 public class AggregatingFloatRingBuffer extends FloatRingBuffer {
@@ -102,11 +97,16 @@ public class AggregatingFloatRingBuffer extends FloatRingBuffer {
     }
 
     /**
-     * This is an extremely paranoid wrap check that in all likelihood will never run. With FIXUP_THRESHOLD at 1 << 62,
-     * and the user pushing 2^32 values per second(!), it will take 68 years to wrap this counter .
+     * Add values without overflow detection. The caller *must* ensure that there is at least one element of free space
+     * in the ring buffer before calling this method. The caller may use {@link #ensureRemaining(int)} or
+     * {@link #remaining()} for this purpose.
+     *
+     * @param e the value to add to the buffer
      */
-    @Override
-    protected void maybeFixIndices() {
+    public void addUnsafe(float e) {
+        storage[(int) (tail++ & mask)] = e;
+        // This is an extremely paranoid wrap check that in all likelihood will never run. With FIXUP_THRESHOLD at
+        // 1 << 62, and the user pushing 2^32 values per second(!), it will take 68 years to wrap this counter .
         if (tail >= FIXUP_THRESHOLD) {
             // Reset calc[head, tail]
             long length = calcTail - calcHead;
@@ -382,7 +382,6 @@ public class AggregatingFloatRingBuffer extends FloatRingBuffer {
             // compute the new parents
             startA /= 2;
             endA /= 2;
-
         }
         return treeStorage[endA];
     }

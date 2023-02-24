@@ -24,8 +24,8 @@ import java.util.NoSuchElementException;
  */
 public class ObjectRingBuffer<T> implements Serializable {
     /** Maximum capacity is the highest power of two that can be allocated (i.e. <= than ArrayUtil.MAX_ARRAY_SIZE). */
-    protected final int RING_BUFFER_MAX_CAPACITY = Integer.highestOneBit(ArrayUtil.MAX_ARRAY_SIZE);
-    protected final long FIXUP_THRESHOLD = 1L << 62;
+    protected static final int RING_BUFFER_MAX_CAPACITY = Integer.highestOneBit(ArrayUtil.MAX_ARRAY_SIZE);
+    protected static final long FIXUP_THRESHOLD = 1L << 62;
     protected final boolean growable;
     protected Object[] storage;
     protected int mask;
@@ -112,19 +112,6 @@ public class ObjectRingBuffer<T> implements Serializable {
         System.arraycopy(storage, 0, dest, firstCopyLen, secondCopyLen);
     }
 
-    /**
-     * This is an extremely paranoid wrap check that in all likelihood will never run. With FIXUP_THRESHOLD at 1 << 62,
-     * and the user pushing 2^32 values per second(!), it will take 68 years to wrap this counter .
-     */
-    protected void maybeFixIndices() {
-        if (tail >= FIXUP_THRESHOLD) {
-            // Reset [head, tail] but force it not to overlap.
-            long thisLength = tail - head;
-            head = (head & mask) + storage.length;
-            tail = head + thisLength;
-        }
-    }
-
     public boolean isFull() {
         return size() == storage.length;
     }
@@ -142,7 +129,6 @@ public class ObjectRingBuffer<T> implements Serializable {
     }
 
     public int remaining() {
-        maybeFixIndices();
         return storage.length - size();
     }
 
@@ -166,7 +152,6 @@ public class ObjectRingBuffer<T> implements Serializable {
                 grow(1);
             }
         }
-        maybeFixIndices();
         addUnsafe(e);
         return true;
     }
@@ -186,7 +171,6 @@ public class ObjectRingBuffer<T> implements Serializable {
             } else {
                 grow(count);
             }
-            maybeFixIndices();
         }
     }
 
@@ -199,6 +183,14 @@ public class ObjectRingBuffer<T> implements Serializable {
      */
     public void addUnsafe(T e) {
         storage[(int) (tail++ & mask)] = e;
+        // This is an extremely paranoid wrap check that in all likelihood will never run. With FIXUP_THRESHOLD at
+        // 1 << 62, and the user pushing 2^32 values per second(!), it will take 68 years to wrap this counter .
+        if (tail >= FIXUP_THRESHOLD) {
+            // Reset [head, tail]
+            final long thisLength = tail - head;
+            head = head & mask;
+            tail = head + thisLength;
+        }
     }
 
     /**
@@ -213,7 +205,6 @@ public class ObjectRingBuffer<T> implements Serializable {
         if (isFull()) {
             val = remove();
         }
-        maybeFixIndices();
         addUnsafe(e);
         return val;
     }
@@ -229,7 +220,6 @@ public class ObjectRingBuffer<T> implements Serializable {
         if (isFull()) {
             return false;
         }
-        maybeFixIndices();
         addUnsafe(e);
         return true;
     }
@@ -288,7 +278,7 @@ public class ObjectRingBuffer<T> implements Serializable {
      */
     public T removeUnsafe() {
         final int idx = (int) (head++ & mask);
-        T val = (T) storage[idx];
+        T val = (T)storage[idx];
         // region object-remove
         storage[idx] = null;
         // endregion object-remove
@@ -318,7 +308,7 @@ public class ObjectRingBuffer<T> implements Serializable {
         if (isEmpty()) {
             throw new NoSuchElementException();
         }
-        return (T) storage[(int) (head & mask)];
+        return (T)storage[(int) (head & mask)];
     }
 
     /**
@@ -332,7 +322,7 @@ public class ObjectRingBuffer<T> implements Serializable {
         if (isEmpty()) {
             return onEmpty;
         }
-        return (T) storage[(int) (head & mask)];
+        return (T)storage[(int) (head & mask)];
     }
 
     /**
@@ -355,7 +345,7 @@ public class ObjectRingBuffer<T> implements Serializable {
         if (offset < 0 || offset >= size()) {
             throw new NoSuchElementException();
         }
-        return (T) storage[(int) ((head + offset) & mask)];
+        return (T)storage[(int) ((head + offset) & mask)];
     }
 
     /**
@@ -368,7 +358,7 @@ public class ObjectRingBuffer<T> implements Serializable {
         if (isEmpty()) {
             throw new NoSuchElementException();
         }
-        return (T) storage[(int) ((tail - 1) & mask)];
+        return (T)storage[(int) ((tail - 1) & mask)];
     }
 
     /**
@@ -382,7 +372,7 @@ public class ObjectRingBuffer<T> implements Serializable {
         if (isEmpty()) {
             return onEmpty;
         }
-        return (T) storage[(int) ((tail - 1) & mask)];
+        return (T)storage[(int) ((tail - 1) & mask)];
     }
 
     /**
@@ -415,7 +405,7 @@ public class ObjectRingBuffer<T> implements Serializable {
                 throw new NoSuchElementException();
             }
             cursor++;
-            return (T) storage[(int) ((head + cursor) & mask)];
+            return (T)storage[(int) ((head + cursor) & mask)];
         }
 
         public void remove() {

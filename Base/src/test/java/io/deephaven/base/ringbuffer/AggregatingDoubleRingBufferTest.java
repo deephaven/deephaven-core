@@ -35,8 +35,7 @@ public class AggregatingDoubleRingBufferTest extends TestCase {
     }
 
     public void testLargeAmounts() {
-        final AggregatingDoubleRingBuffer rb =
-                new AggregatingDoubleRingBuffer(3, (double) 0, (a, b) -> (double) (a + b));
+        final AggregatingDoubleRingBuffer rb = new AggregatingDoubleRingBuffer(3, (double) 0, (a, b) -> (double) (a + b));
 
         // move the head and tail off zero
         for (int i = 0; i < 1000; i++) {
@@ -92,8 +91,7 @@ public class AggregatingDoubleRingBufferTest extends TestCase {
     // region non-byte-tests
 
     public void testEvaluateSumLargeAmounts() {
-        final AggregatingDoubleRingBuffer rb =
-                new AggregatingDoubleRingBuffer(3, (double) 0, (a, b) -> (double) (a + b));
+        final AggregatingDoubleRingBuffer rb = new AggregatingDoubleRingBuffer(3, (double) 0, (a, b) -> (double) (a + b));
         double runningSum = (double) 0;
 
         for (double i = 0; i < 1_000; i++) {
@@ -268,8 +266,7 @@ public class AggregatingDoubleRingBufferTest extends TestCase {
     }
 
     public void testPopMultiple() {
-        final AggregatingDoubleRingBuffer rb =
-                new AggregatingDoubleRingBuffer(3, (double) 0, (a, b) -> (double) (a + b));
+        final AggregatingDoubleRingBuffer rb = new AggregatingDoubleRingBuffer(3, (double) 0, (a, b) -> (double) (a + b));
 
         for (int step = 0; step < 10; step++) {
             rb.ensureRemaining(100);
@@ -328,8 +325,7 @@ public class AggregatingDoubleRingBufferTest extends TestCase {
 
     public void testSpecialCaseA() {
         // overlapping push and pop ranges with popTail < pushTail
-        final AggregatingDoubleRingBuffer rb =
-                new AggregatingDoubleRingBuffer(4, (double) 0, (a, b) -> (double) (a + b));
+        final AggregatingDoubleRingBuffer rb = new AggregatingDoubleRingBuffer(4, (double) 0, (a, b) -> (double) (a + b));
         rb.add((double) 1);
         assertEquals((double) 1, rb.remove());
         rb.add((double) 2);
@@ -339,8 +335,7 @@ public class AggregatingDoubleRingBufferTest extends TestCase {
 
     public void testSpecialCaseB() {
         // push the full capacity while wrapped
-        final AggregatingDoubleRingBuffer rb =
-                new AggregatingDoubleRingBuffer(64, (double) 0, (a, b) -> (double) (a + b));
+        final AggregatingDoubleRingBuffer rb = new AggregatingDoubleRingBuffer(64, (double) 0, (a, b) -> (double) (a + b));
         rb.add((double) 1);
         assertEquals((double) 1, rb.remove());
 
@@ -352,8 +347,7 @@ public class AggregatingDoubleRingBufferTest extends TestCase {
 
     public void testSpecialCaseC() {
         // overlapping push and pop ranges with popTail < pushTail
-        final AggregatingDoubleRingBuffer rb =
-                new AggregatingDoubleRingBuffer(16, (double) 0, (a, b) -> (double) (a + b));
+        final AggregatingDoubleRingBuffer rb = new AggregatingDoubleRingBuffer(16, (double) 0, (a, b) -> (double) (a + b));
         // move pointers to middle of storage
         for (int i = 0; i < 8; i++) {
             rb.add((double) 1);
