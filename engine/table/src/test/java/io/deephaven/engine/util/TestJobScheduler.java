@@ -16,11 +16,10 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 
-@Category(OutOfBandTest.class)
 public final class TestJobScheduler {
 
     @Test
-    public void TestParallel() {
+    public void testParallel() {
         final CompletableFuture<Void> waitForResult = new CompletableFuture<>();
 
         UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
@@ -69,7 +68,7 @@ public final class TestJobScheduler {
     }
 
     @Test
-    public void TestParallelWithResume() {
+    public void testParallelWithResume() {
         final CompletableFuture<Void> waitForResult = new CompletableFuture<>();
 
         UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
@@ -119,7 +118,7 @@ public final class TestJobScheduler {
     }
 
     @Test
-    public void TestParallelWithContext() {
+    public void testParallelWithContext() {
         final CompletableFuture<Void> waitForResult = new CompletableFuture<>();
         final AtomicInteger openCount = new AtomicInteger(0);
 
@@ -188,7 +187,7 @@ public final class TestJobScheduler {
     }
 
     @Test
-    public void TestSerialWithResume() {
+    public void testSerialWithResume() {
         final CompletableFuture<Void> waitForResult = new CompletableFuture<>();
 
         UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
@@ -239,7 +238,7 @@ public final class TestJobScheduler {
     }
 
     @Test
-    public void TestSerialWithContext() {
+    public void testSerialWithContext() {
         final CompletableFuture<Void> waitForResult = new CompletableFuture<>();
         final AtomicInteger openCount = new AtomicInteger(0);
 
@@ -308,7 +307,7 @@ public final class TestJobScheduler {
     }
 
     @Test
-    public void TestSerialEmpty() {
+    public void testSerialEmpty() {
         final CompletableFuture<Void> waitForResult = new CompletableFuture<>();
 
         UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
@@ -349,7 +348,7 @@ public final class TestJobScheduler {
     }
 
     @Test
-    public void TestParallelEmpty() {
+    public void testParallelEmpty() {
         final CompletableFuture<Void> waitForResult = new CompletableFuture<>();
 
         UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
@@ -390,14 +389,14 @@ public final class TestJobScheduler {
     }
 
     @Test
-    public void TestParallelError() {
+    public void testParallelError() {
         final CompletableFuture<Void> waitForResult = new CompletableFuture<>();
         final AtomicInteger openCount = new AtomicInteger(0);
 
         UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
         UpdateGraphProcessor.DEFAULT.resetForUnitTests(false, true, 0, 4, 10, 5);
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            final boolean[] completed = new boolean[100];
+            final boolean[] completed = new boolean[50];
 
             class TestJobThreadContext implements JobScheduler.JobThreadContext {
                 TestJobThreadContext() {
@@ -421,31 +420,25 @@ public final class TestJobScheduler {
                         // verify the type is correct
                         Assert.instanceOf(context, "context", TestJobThreadContext.class);
 
-                        completed[idx] = true;
-                        // throw after this is set to make verification easy
+                        // throw before "doing work" to make verification easy
                         if (idx == 10) {
-                            throw new IndexOutOfBoundsException("test error");
+                            throw new IndexOutOfBoundsException("Test error");
                         }
+
+                        completed[idx] = true;
                     },
                     () -> {
                         // if this is called, we failed the test
-                        waitForResult
-                                .completeExceptionally(new AssertionFailure("IndexOutOfBoundsException not thrown"));
+                        waitForResult.completeExceptionally(new AssertionFailure("Exception not thrown"));
                     },
                     exception -> {
                         if (!(exception instanceof IndexOutOfBoundsException)) {
-                            waitForResult.completeExceptionally(
-                                    new AssertionFailure("IndexOutOfBoundsException not thrown"));
+                            waitForResult.completeExceptionally(new AssertionFailure("Unexpected exception thrown"));
                         }
-
-                        // assert that the job was terminated before all tasks were executed (one is still false)
-                        for (int ii = 0; ii < 50; ii++) {
-                            if (!completed[ii]) {
-                                waitForResult.complete(null);
-                                return;
-                            }
+                        if (completed[10]) {
+                            waitForResult.completeExceptionally(new AssertionFailure("Processed unexpected index"));
                         }
-                        waitForResult.completeExceptionally(new AssertionFailure("Tasks not terminated"));
+                        waitForResult.complete(null);
                     });
         });
 
@@ -455,19 +448,19 @@ public final class TestJobScheduler {
             // make sure all the contexts were closed
             Assert.eqZero(openCount.get(), "openCount");
         } catch (InterruptedException e) {
-            throw new CancellationException("interrupted while processing test");
+            throw new CancellationException("Interrupted while processing test");
         } catch (ExecutionException e) {
             if (e.getCause() instanceof RuntimeException) {
                 throw (RuntimeException) e.getCause();
             } else {
                 // rethrow the error
-                throw new UncheckedDeephavenException("failure while processing test", e.getCause());
+                throw new UncheckedDeephavenException("Failure while processing test", e.getCause());
             }
         }
     }
 
     @Test
-    public void TestSerialError() {
+    public void testSerialError() {
         final CompletableFuture<Void> waitForResult = new CompletableFuture<>();
         final AtomicInteger openCount = new AtomicInteger(0);
 
