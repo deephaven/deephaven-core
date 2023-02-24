@@ -22,11 +22,11 @@ import io.deephaven.util.type.TypeUtils;
 
 public class IntRangeFilter extends AbstractRangeFilter {
     public static IntRangeFilter lt(String columnName, int x) {
-        return new IntRangeFilter(columnName, x, QueryConstants.NULL_INT, true, false);
+        return new IntRangeFilter(columnName, QueryConstants.NULL_INT, x, true, false);
     }
 
     public static IntRangeFilter lte(String columnName, int x) {
-        return new IntRangeFilter(columnName, x, QueryConstants.NULL_INT, true, true);
+        return new IntRangeFilter(columnName, QueryConstants.NULL_INT, x, true, true);
     }
 
     public static IntRangeFilter gt(String columnName, int x) {

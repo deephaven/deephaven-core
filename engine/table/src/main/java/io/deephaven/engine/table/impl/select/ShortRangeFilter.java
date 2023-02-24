@@ -22,11 +22,11 @@ import io.deephaven.util.type.TypeUtils;
 
 public class ShortRangeFilter extends AbstractRangeFilter {
     public static ShortRangeFilter lt(String columnName, short x) {
-        return new ShortRangeFilter(columnName, x, QueryConstants.NULL_SHORT, true, false);
+        return new ShortRangeFilter(columnName, QueryConstants.NULL_SHORT, x, true, false);
     }
 
     public static ShortRangeFilter lte(String columnName, short x) {
-        return new ShortRangeFilter(columnName, x, QueryConstants.NULL_SHORT, true, true);
+        return new ShortRangeFilter(columnName, QueryConstants.NULL_SHORT, x, true, true);
     }
 
     public static ShortRangeFilter gt(String columnName, short x) {

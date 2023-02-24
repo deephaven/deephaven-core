@@ -22,11 +22,11 @@ import io.deephaven.util.type.TypeUtils;
 
 public class ByteRangeFilter extends AbstractRangeFilter {
     public static ByteRangeFilter lt(String columnName, byte x) {
-        return new ByteRangeFilter(columnName, x, QueryConstants.NULL_BYTE, true, false);
+        return new ByteRangeFilter(columnName, QueryConstants.NULL_BYTE, x, true, false);
     }
 
     public static ByteRangeFilter lte(String columnName, byte x) {
-        return new ByteRangeFilter(columnName, x, QueryConstants.NULL_BYTE, true, true);
+        return new ByteRangeFilter(columnName, QueryConstants.NULL_BYTE, x, true, true);
     }
 
     public static ByteRangeFilter gt(String columnName, byte x) {

@@ -17,11 +17,11 @@ import io.deephaven.util.type.TypeUtils;
 
 public class CharRangeFilter extends AbstractRangeFilter {
     public static CharRangeFilter lt(String columnName, char x) {
-        return new CharRangeFilter(columnName, x, QueryConstants.NULL_CHAR, true, false);
+        return new CharRangeFilter(columnName, QueryConstants.NULL_CHAR, x, true, false);
     }
 
     public static CharRangeFilter lte(String columnName, char x) {
-        return new CharRangeFilter(columnName, x, QueryConstants.NULL_CHAR, true, true);
+        return new CharRangeFilter(columnName, QueryConstants.NULL_CHAR, x, true, true);
     }
 
     public static CharRangeFilter gt(String columnName, char x) {
