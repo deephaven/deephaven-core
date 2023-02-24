@@ -52,9 +52,9 @@ public class JsTotalsTableConfig {
     public boolean showGrandTotalsByDefault = false;
     @TsTypeRef(JsAggregationOperation.class)
     public String defaultOperation = JsAggregationOperation.SUM;
-    public JsPropertyMap<JsArray<@TsTypeRef(JsAggregationOperation.class) JsString>> operationMap = Js.cast(JsObject.create(null));
+    public JsPropertyMap<JsArray<@TsTypeRef(JsAggregationOperation.class) String>> operationMap = Js.cast(JsObject.create(null));
 
-    public JsArray<JsString> groupBy = new JsArray<>();
+    public JsArray<String> groupBy = new JsArray<>();
 
     @JsConstructor
     public JsTotalsTableConfig() {}
@@ -125,7 +125,7 @@ public class JsTotalsTableConfig {
                 builder.operationMap.set(kv[0], new JsArray<>());
                 for (String op : operations) {
                     checkOperation(op);
-                    builder.operationMap.get(kv[0]).push(Js.<JsString>cast(op));
+                    builder.operationMap.get(kv[0]).push(op);
                 }
             }
         }

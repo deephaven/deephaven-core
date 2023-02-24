@@ -20,6 +20,7 @@ import io.deephaven.web.client.api.LongWrapper;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsType;
+import jsinterop.base.Any;
 import jsinterop.base.Js;
 
 import java.util.Arrays;
@@ -30,11 +31,11 @@ public class FilterValue {
     protected final Value descriptor;
 
     @JsMethod(namespace = "dh.FilterValue")
-    public static FilterValue ofString(Object input) {
+    public static FilterValue ofString(Any input) {
         Objects.requireNonNull(input);
         final String string;
         if (Js.typeof(input).equals("string")) {
-            string = (String) input;
+            string = input.asString();
         } else {
             string = input.toString();
         }
@@ -44,7 +45,7 @@ public class FilterValue {
     }
 
     @JsMethod(namespace = "dh.FilterValue")
-    public static FilterValue ofNumber(Object input) {
+    public static FilterValue ofNumber(Any input) {
         Objects.requireNonNull(input);
         if (input instanceof DateWrapper) {
             Literal lit = new Literal();

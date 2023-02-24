@@ -10,7 +10,7 @@ import jsinterop.annotations.JsType;
 
 @JsType(name = "DayOfWeek", namespace = "dh.calendar")
 @SuppressWarnings("unusable-by-js")
-@TsTypeDef(tsType = "String", name = "DayOfWeekType")
+@TsTypeDef(tsType = "string", name = "DayOfWeekType")
 public class JsDayOfWeek {
     public static final String SUNDAY = "SUNDAY";
     public static final String MONDAY = "MONDAY";
@@ -30,6 +30,7 @@ public class JsDayOfWeek {
             SATURDAY
     });
 
+    // TODO missing?
     @JsMethod
     public static String[] values() {
         return VALUES;

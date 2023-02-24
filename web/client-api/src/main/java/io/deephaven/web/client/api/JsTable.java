@@ -65,6 +65,7 @@ import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsProperty;
+import jsinterop.base.Any;
 import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
@@ -433,6 +434,7 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
 
     @JsMethod
     @SuppressWarnings("unusable-by-js")
+    //TODO union this
     public JsArray<CustomColumn> applyCustomColumns(Object[] customColumns) {
         String[] customColumnStrings = Arrays.stream(customColumns).map(obj -> {
             if (obj instanceof String || obj instanceof CustomColumn) {
@@ -1085,7 +1087,7 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
             double startingRow,
             Column column,
             @TsTypeRef(ValueType.class) String valueType,
-            Object seekValue,
+            Any seekValue,
             @JsOptional @JsNullable Boolean insensitive,
             @JsOptional @JsNullable Boolean contains,
             @JsOptional @JsNullable Boolean isBackwards) {

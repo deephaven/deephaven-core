@@ -114,6 +114,7 @@ public class JsTreeTable extends HasEventHandling {
         }
     }
 
+    //TODO extend TableData?
     @TsInterface
     @TsName(namespace = "dh")
     public class TreeViewportData {
@@ -755,15 +756,15 @@ public class JsTreeTable extends HasEventHandling {
         replaceKeyTable();
     }
 
-    public void expand(Object row, @JsOptional Boolean expandDescendants) {
+    public void expand(Any row, @JsOptional Boolean expandDescendants) {
         setExpanded(row, true, expandDescendants);
     }
 
-    public void collapse(Object row) {
+    public void collapse(Any row) {
         setExpanded(row, false, false);
     }
 
-    public void setExpanded(Object row, boolean isExpanded, @JsOptional Boolean expandDescendants) {
+    public void setExpanded(Any row, boolean isExpanded, @JsOptional Boolean expandDescendants) {
         // TODO check row number is within bounds
         final double action;
         if (!isExpanded) {
@@ -775,8 +776,8 @@ public class JsTreeTable extends HasEventHandling {
         }
 
         final TreeRow r;
-        if (row instanceof Double) {
-            r = currentViewportData.rows.getAt((int) ((double) row - currentViewportData.offset));
+        if ("number".equals(Js.typeof(row))) {
+            r = currentViewportData.rows.getAt((int) (row.asDouble() - currentViewportData.offset));
         } else if (row instanceof TreeRow) {
             r = (TreeRow) row;
         } else {

@@ -87,6 +87,7 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
         }
     }
 
+    //TODO this typeref is wrong
     public Promise<?> getObject(@TsTypeRef(JsVariableDefinition.class) JsPropertyMap<Object> definitionObject) {
         WorkerConnection conn = connection.get();
         return onConnected().then(e -> conn.getJsObject(definitionObject));

@@ -118,6 +118,7 @@ public class IdeSession extends HasEventHandling {
                 .then(connection::getTreeTable);
     }
 
+    //TODO this typeref is wrong
     public Promise<?> getObject(@TsTypeRef(JsVariableDefinition.class) JsPropertyMap<Object> definitionObject) {
         return connection.getJsObject(definitionObject);
     }

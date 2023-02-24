@@ -43,7 +43,7 @@ public class JsTotalsTable {
      * Table is wrapped to let us delegate calls to it, the directive is a serialized string, and the groupBy is copied
      * when passed in, as well as when it is accessed, to prevent accidental mutation of the array.
      */
-    public JsTotalsTable(JsTable wrappedTable, String directive, JsArray<JsString> groupBy) {
+    public JsTotalsTable(JsTable wrappedTable, String directive, JsArray<String> groupBy) {
         this.wrappedTable = wrappedTable;
         this.directive = directive;
         this.groupBy = Js.uncheckedCast(groupBy.slice());

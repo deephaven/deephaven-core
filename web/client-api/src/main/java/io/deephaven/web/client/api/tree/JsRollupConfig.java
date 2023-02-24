@@ -46,8 +46,9 @@ import java.util.stream.Collector;
 public class JsRollupConfig {
 
     public JsArray<JsString> groupingColumns = null;
-    public JsPropertyMap<JsArray<@TsTypeRef(JsAggregationOperation.class) JsString>> aggregations = Js.cast(JsObject.create(null));
+    public JsPropertyMap<JsArray<@TsTypeRef(JsAggregationOperation.class) String>> aggregations = Js.cast(JsObject.create(null));
     public boolean includeConstituents = false;
+    //TODO optional
     public boolean includeOriginalColumns = false;
     public boolean includeDescriptions = true;
 

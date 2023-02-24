@@ -18,13 +18,12 @@ import java.util.stream.Collectors;
 @TsInterface
 @JsType(name = "LayoutHints", namespace = "dh")
 public class JsLayoutHints {
-//    @TsInterface
+    @TsInterface
     @JsType(namespace = "dh")
     public static class ColumnGroup {
-        //TODO missing?
+        @JsNullable
         public final String name;
         @JsNullable
-        @JsProperty
         public final String[] children;
         @JsNullable
         public final String color;
