@@ -89,8 +89,22 @@ $ git checkout -b release/vX.Y.Z
 $ git commit --allow-empty -m "Cut for X.Y.Z"
 ```
 
-Note: for patch releases, typically the branch will be based off of the previous release branch, and not `upstream/main`, and the necessary patch fixes can be cherry-picked from the `upstream/main` branch.
+#### Procedure for patch releases
+
+For patch releases, typically the branch will be based off of the previous release tag, and not `upstream/main`, and the necessary patch fixes can be cherry-picked from the `upstream/main` branch.
 The patch release manager is also responsible for bumping the patch version numbers as appropriate.
+
+Here is an example going from `X.Y.0` to `X.Y.1`:
+
+```shell
+$ git fetch upstream
+$ git checkout vX.Y.0
+$ git checkout -b release/vX.Y.1
+$ git cherry-pick <...>
+# Edit files, updating from `X.Y.0` to `X.Y.1`, and git add them
+$ ...
+$ git commit -m "Bump to X.Y.1"
+```
 
 ### 3. Push to upstream
 
@@ -143,7 +157,7 @@ cyclonedx diff /tmp/A.B.C.cyclonedx.json /tmp/X.Y.Z.cyclonedx.json --component-v
 
 Please post the difference to the Deephaven team to ensure there are no unexpected new dependencies, removed dependencies, or updated dependencies.
 
-### 5. Maven Central jars
+### 7. Maven Central jars
 
 The jars are put into a [Maven Central Repository Manager](https://s01.oss.sonatype.org) staging repository.
 You'll need your own username and password to sign in (to ensure auditability).
@@ -159,7 +173,7 @@ Once the staging repository has been "Released", there is no going back.
 The jars will be visible after release at [https://repo1.maven.org/maven2/io/deephaven/](https://repo1.maven.org/maven2/io/deephaven/).
 Sometimes it takes a little bit of time for the jars to appear.
 
-### 6. Tag upstream
+### 8. Tag upstream
 
 The `vX.Y.Z` tag is primarily meant for an immutable reference point in the future.
 It does not kick off any additional jobs.
@@ -171,7 +185,7 @@ $ git show vX.Y.Z
 $ git push upstream vX.Y.Z
 ```
 
-### 7. GitHub release
+### 9. GitHub release
 
 Create a new [GitHub release](https://github.com/deephaven/deephaven-core/releases/new) and use the `vX.Y.Z` tag as reference.
 
@@ -181,7 +195,7 @@ Upload the Deephaven server application, deephaven-core wheel, and SBOM artifact
 
 Hit the GitHub "Publish release" button.
 
-### 8. Deephaven go client
+### 10. Deephaven go client
 
 The go client release consists of simply tagging and pushing to upstream:
 
@@ -191,16 +205,16 @@ $ git show go/vX.Y.Z
 $ git push upstream go/vX.Y.Z
 ```
 
-### 9. Deephaven python client
+### 11. Deephaven python client
 
 To be filled in by Jianfeng.
 
-### 10. Deephaven.io release
+### 12. Deephaven.io release
 
 The (non-public) [deephaven.io](https://github.com/deephaven/deephaven.io) `next` branch needs to be merged into `main`.
 Ping Margaret.
 
-### 11. Deephaven images
+### 13. Deephaven images
 
 Navigate to your checkout of [deephaven/deephaven-server-docker](https://github.com/deephaven/deephaven-server-docker).
 Like before, `upstream` is expected to be the proper remote repository - in this case, `git@github.com:deephaven/deephaven-server-docker.git`. 
@@ -236,7 +250,7 @@ If something goes wrong during this stage, it can easily be corrected.
 
 Follow-up, and create a PR to merge `release/vX.Y.Z` into `main`.
 
-### 12. Let everybody know
+### 14. Let everybody know
 
 Ping team, ping community, ping friends - the latest Deephaven has been released!
 
