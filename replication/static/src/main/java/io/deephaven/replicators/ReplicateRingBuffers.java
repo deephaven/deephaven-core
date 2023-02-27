@@ -34,9 +34,11 @@ public class ReplicateRingBuffers {
                 "public Object ", "public T ",
                 "Object onEmpty", "T onEmpty",
                 "Object notFullResult", "T notFullResult",
-                "return storage\\[", "return (T)storage[",
-                "Object val = notFullResult", "T val = notFullResult",
-                "Object val = storage", "T val = (T)storage");
+                "Object\\[\\]", "T[]",
+                "new Object\\[", "(T[]) new Object[",
+                "Object val = storage\\[", "T val = storage[",
+                "Object val = notFullResult", "T val = notFullResult");
+
         lines = ReplicationUtils.replaceRegion(lines, "object-remove",
                 Collections.singletonList("        storage[idx] = null;"));
 
@@ -73,16 +75,23 @@ public class ReplicateRingBuffers {
         lines = ReplicationUtils.globalReplacements(lines,
                 "Object identityVal", "T identityVal",
                 "public Object removeUnsafe", "public T removeUnsafe",
-                "return val;", "return (T)val;",
-                "final Object leftVal = src", "final T leftVal = (T)src",
-                "final Object rightVal = src", "final T rightVal = (T)src",
                 "public interface ObjectFunction \\{", "public interface ObjectFunction<T> {",
                 "Object apply\\(Object a, Object b\\);", "T apply(T a, T b);",
                 "public Object evaluate", "public T evaluate",
                 "ObjectFunction aggFunction", "ObjectFunction<T> aggFunction",
-                "return treeStorage\\[1\\]", "return (T)treeStorage[1]",
-                "class AggregatingObjectRingBuffer extends ObjectRingBuffer",
-                "class AggregatingObjectRingBuffer<T> extends ObjectRingBuffer<T>");
+                "private Object\\[\\] treeStorage", "private T[] treeStorage",
+                "new Object\\[", "(T[]) new Object[",
+                "Object\\[\\]", "T[]",
+                "Object e", "T e",
+                "Object val = storage\\[", "T val = storage[",
+                "public Object\\[\\] remove\\(", "public T[] remove(",
+                "final Object leftVal", "final T leftVal",
+                "final Object rightVal", "final T rightVal",
+                "final Object computeVal", "final T computeVal",
+                "final ObjectRingBuffer internalBuffer", "final ObjectRingBuffer<T> internalBuffer",
+
+
+                "class AggregatingObjectRingBuffer", "class AggregatingObjectRingBuffer<T>");
         FileUtils.writeLines(objectFile, lines);
 
 

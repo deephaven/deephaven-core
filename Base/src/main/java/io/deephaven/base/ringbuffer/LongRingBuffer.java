@@ -22,13 +22,13 @@ import java.util.NoSuchElementException;
  */
 public class LongRingBuffer implements Serializable {
     /** Maximum capacity is the highest power of two that can be allocated (i.e. <= than ArrayUtil.MAX_ARRAY_SIZE). */
-    protected static final int RING_BUFFER_MAX_CAPACITY = Integer.highestOneBit(ArrayUtil.MAX_ARRAY_SIZE);
-    protected static final long FIXUP_THRESHOLD = 1L << 62;
-    protected final boolean growable;
-    protected long[] storage;
-    protected int mask;
-    protected long head;
-    protected long tail;
+    static final int RING_BUFFER_MAX_CAPACITY = Integer.highestOneBit(ArrayUtil.MAX_ARRAY_SIZE);
+    static final long FIXUP_THRESHOLD = 1L << 62;
+    final boolean growable;
+    long[] storage;
+    int mask;
+    long head;
+    long tail;
 
     /**
      * Create an unbounded-growth ring buffer of long primitives.
@@ -180,7 +180,6 @@ public class LongRingBuffer implements Serializable {
      * @param e the value to add to the buffer
      */
     public void addUnsafe(long e) {
-        storage[(int) (tail++ & mask)] = e;
         // This is an extremely paranoid wrap check that in all likelihood will never run. With FIXUP_THRESHOLD at
         // 1 << 62, and the user pushing 2^32 values per second(!), it will take 68 years to wrap this counter .
         if (tail >= FIXUP_THRESHOLD) {
@@ -189,6 +188,8 @@ public class LongRingBuffer implements Serializable {
             head = head & mask;
             tail = head + thisLength;
         }
+
+        storage[(int) (tail++ & mask)] = e;
     }
 
     /**
