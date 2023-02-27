@@ -83,7 +83,7 @@ public class AggregatingObjectRingBuffer<T> {
      * @param growable whether to allow growth when the buffer is full.
      */
     public AggregatingObjectRingBuffer(int capacity, T identityVal, ObjectFunction<T> aggFunction, boolean growable) {
-        internalBuffer = new ObjectRingBuffer(capacity, growable);
+        internalBuffer = new ObjectRingBuffer<>(capacity, growable);
         this.aggFunction = aggFunction;
         this.identityVal = identityVal;
 

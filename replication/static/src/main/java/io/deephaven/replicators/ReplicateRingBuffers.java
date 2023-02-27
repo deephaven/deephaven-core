@@ -93,8 +93,7 @@ public class ReplicateRingBuffers {
                 "Object onEmpty", "T onEmpty",
                 "private static Object defaultValueForThisType", "private T defaultValueForThisType",
                 "final ObjectRingBuffer internalBuffer", "final ObjectRingBuffer<T> internalBuffer",
-
-
+                "internalBuffer = new ObjectRingBuffer\\(", "internalBuffer = new ObjectRingBuffer<>(",
                 "class AggregatingObjectRingBuffer", "class AggregatingObjectRingBuffer<T>");
         FileUtils.writeLines(objectFile, lines);
 
