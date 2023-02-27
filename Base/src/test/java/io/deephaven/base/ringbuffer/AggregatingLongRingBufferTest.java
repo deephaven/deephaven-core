@@ -64,13 +64,10 @@ public class AggregatingLongRingBufferTest extends TestCase {
 
         final int maxVal = (int) Math.min(Long.MAX_VALUE, 100_000_000);
 
-//        rb.evaluate();
-
         for (int i = 10_000; i < maxVal; i++) {
             rb.add((long) i);
             assertEquals((long) (i - 10_000) + 1, rb.front(1));
-            rb.evaluate();
-//            assertEquals((long) (i - 10_000), rb.evaluate()); // front of queue is min
+            assertEquals((long) (i - 10_000), rb.evaluate()); // front of queue is min
             assertEquals((long) (i - 10_000), rb.remove());
         }
     }

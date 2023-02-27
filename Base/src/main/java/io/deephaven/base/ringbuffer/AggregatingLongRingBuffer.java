@@ -8,9 +8,7 @@
  */
 package io.deephaven.base.ringbuffer;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.NoSuchElementException;
 
 /**
@@ -305,54 +303,6 @@ public class AggregatingLongRingBuffer {
         return internalBuffer.getAll();
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     /**
      * Add values without overflow detection. The caller *must* ensure that there is at least one element of free space
      * in the ring buffer before calling this method. The caller may use {@link #ensureRemaining(int)} or
@@ -362,7 +312,7 @@ public class AggregatingLongRingBuffer {
      */
     public void addUnsafe(long e) {
         // Perform a specialized version of the fix-up test.
-        if (internalBuffer.tail >= internalBuffer.FIXUP_THRESHOLD) {
+        if (internalBuffer.tail >= LongRingBuffer.FIXUP_THRESHOLD) {
             // Reset calc[head, tail]
             long length = calcTail - calcHead;
             calcHead = (calcHead & internalBuffer.mask);
@@ -389,6 +339,7 @@ public class AggregatingLongRingBuffer {
     public long removeUnsafe() {
         // NOTE: remove() for this data structure must replace the removed value with identityVal.
         final long prevHead = internalBuffer.head;
+
         long val = internalBuffer.removeUnsafe();
 
         // Reset the storage entry to the identity value
@@ -407,22 +358,24 @@ public class AggregatingLongRingBuffer {
     public long[] remove(int count) {
         // NOTE: remove() for this data structure must replace the removed value with identityVal.
         final long prevHead = internalBuffer.head;
+        final int prevSize = size();
+
         final long[] result = internalBuffer.remove(count);
 
         // Reset the cleared storage entries to the identity value
-        fillWithIdentityVal(prevHead, count, size());
+        fillWithIdentityVal(prevHead, count, prevSize);
 
         return result;
     }
 
     /**
-     * Remove all elements from the ring buffer and reset the data structure.  This may require resetting all entries
-     * in the storage buffer and evaluation tree and should be considered to be of complexity O(capacity) instead of
+     * Remove all elements from the ring buffer and reset the data structure. This may require resetting all entries in
+     * the storage buffer and evaluation tree and should be considered to be of complexity O(capacity) instead of
      * O(size).
      */
     public void clear() {
-        final int size = size();
         final long prevHead = internalBuffer.head;
+        final int prevSize = size();
 
         internalBuffer.clear();
 
@@ -431,7 +384,7 @@ public class AggregatingLongRingBuffer {
         Arrays.fill(treeStorage, identityVal);
 
         // Reset the cleared storage entries to the identity value
-        fillWithIdentityVal(prevHead, size, size);
+        fillWithIdentityVal(prevHead, prevSize, prevSize);
     }
 
     private void fillWithIdentityVal(long head, int count, int size) {
@@ -517,10 +470,8 @@ public class AggregatingLongRingBuffer {
 
         if (r1Tail - r1Head >= internalBuffer.storage.length || r2Tail - r2Head >= internalBuffer.storage.length) {
             // Evaluate everything
-//            fixTree(0, internalBuffer.storage.length, 0, 0, internalBuffer.storage.length);
             normalizeAndEvaluate(0, internalBuffer.storage.length, 0, 0);
         } else {
-//            fixTree(r1Head, r1Tail, r2Head, r2Tail, internalBuffer.storage.length);
             normalizeAndEvaluate(r1Head, r1Tail, r2Head, r2Tail);
         }
 
@@ -531,97 +482,7 @@ public class AggregatingLongRingBuffer {
         return treeStorage[1];
     }
 
-    private static class Range implements Comparable<Range> {
-        int begin;
-        int end;
-
-        public Range(int begin, int end) {
-            this.begin = begin;
-            this.end = end;
-        }
-
-        @Override
-        public int compareTo(Range o) {
-            return Integer.compare(this.begin, o.begin);
-        }
-    }
-
-    private void fixTree(long r1Head, long r1Tail, long r2Head, long r2Tail, int capacityForThisLevel) {
-//        System.out.println("Calling fixTree()");
-
-        ArrayList<Range> ranges = new ArrayList<>();
-        addRange(ranges, r1Head, r1Tail, capacityForThisLevel);
-        addRange(ranges, r2Head, r2Tail, capacityForThisLevel);
-        Collections.sort(ranges);
-
-        // We need to perform the first round of evaluation from values in the storage array and adjust the ranges
-        // properly so subsequent evaluations are over the correct subset of the tree
-        int offset = internalBuffer.storage.length / 2;
-        for (final Range r : ranges) {
-            evaluateRangeFast(r.begin,
-                    r.end - 1,
-                    internalBuffer.storage,
-                    offset);
-            r.begin = offset + (r.begin / 2);
-            r.end = offset + (r.end + 1) / 2;
-        }
-
-        while (capacityForThisLevel > 2) {
-            // Merge ranges and delete empty ranges
-            int destIndex = 0;
-            for (int srcIndex = 0; srcIndex != ranges.size(); ++srcIndex) {
-                Range rSrc = ranges.get(srcIndex);
-                if (rSrc.begin == rSrc.end) {
-                    continue;
-                }
-                if (destIndex > 0 && ranges.get(destIndex - 1).end == rSrc.begin) {
-                    ranges.get(destIndex - 1).end = rSrc.end;
-                    continue;
-                }
-                ranges.set(destIndex, ranges.get(srcIndex));
-                ++destIndex;
-            }
-            if (destIndex == 0) {
-                break;
-            }
-            if (destIndex != ranges.size()) {
-                ranges.subList(destIndex, ranges.size()).clear();
-            }
-
-            for (final Range r : ranges) {
-                evaluateRangeFast(r.begin,
-                        r.end - 1,
-                        treeStorage,
-                        0);
-
-                r.begin /= 2;  // round down
-                r.end = (r.end + 1) / 2;
-            }
-            capacityForThisLevel /= 2;
-        }
-    }
-
-    public static void addRange(ArrayList<Range> ranges, long head, long tail, int capacity) {
-        final long size = tail - head;
-        if (size == 0) {
-            return;
-        }
-        int mask = capacity - 1;
-        int normalizedHead = (int)(head & mask);
-        int normalizedTail = (int)(normalizedHead + size);
-        if (normalizedTail <= capacity) {
-            ranges.add(new Range(normalizedHead, normalizedTail));
-        } else {
-            ranges.add(new Range(0, normalizedTail - capacity));
-            ranges.add(new Range(normalizedHead, capacity));
-        }
-    }
-
-
-
     void normalizeAndEvaluate(final long head1, final long tail1, final long head2, final long tail2) {
-//        System.out.println("Calling normalizeAndEvaluate()");
-
         final long size1 = tail1 - head1;
         final long size2 = tail2 - head2;
 
@@ -631,7 +492,9 @@ public class AggregatingLongRingBuffer {
         if (size1 == 0 && size2 == 0) {
             // No ranges to compute.
             return;
-        } else if (size2 == 0) {
+        }
+
+        if (size2 == 0) {
             // Only one range to compute (although it may be wrapped).
             int head1Normal = (int) (head1 & internalBuffer.mask);
             int tail1Normal = (int) (head1Normal + size1);
@@ -643,72 +506,75 @@ public class AggregatingLongRingBuffer {
 
                 evaluateRangeFast(h1, t1, internalBuffer.storage, offset);
                 evaluateTree(offset + (h1 / 2), offset + (t1 / 2));
-            } else {
-                // Two ranges because of the wrap-around.
-                final int h1 = 0;
-                final int t1 = tail1Normal - internalBuffer.storage.length - 1; // change to inclusive
-                final int h2 = head1Normal;
-                final int t2 = internalBuffer.storage.length - 1; // change to inclusive
-
-                evaluateRangeFast(h1, t1, internalBuffer.storage, offset);
-                evaluateRangeFast(h2, t2, internalBuffer.storage, offset);
-
-                evaluateTree(offset + (h1 / 2), offset + (t1 / 2),
-                        offset + (h2 / 2), offset + (t2 / 2));
+                return;
             }
-        } else {
-            // Two ranges to compute, only one can wrap.
-            int head1Normal = (int) (head1 & internalBuffer.mask);
-            int tail1Normal = (int) (head1Normal + size1);
-            int head2Normal = (int) (head2 & internalBuffer.mask);
-            int tail2Normal = (int) (head2Normal + size2);
 
-            if (tail1Normal <= internalBuffer.storage.length && tail2Normal <= internalBuffer.storage.length) {
-                // Neither range wraps around.
-                final int h1 = head1Normal;
-                final int t1 = tail1Normal - 1; // change to inclusive
-                final int h2 = head2Normal;
-                final int t2 = tail2Normal - 1; // change to inclusive
+            // Two ranges because of the wrap-around.
+            final int h1 = 0;
+            final int t1 = tail1Normal - internalBuffer.storage.length - 1; // change to inclusive
+            final int h2 = head1Normal;
+            final int t2 = internalBuffer.storage.length - 1; // change to inclusive
 
-                evaluateRangeFast(h1, t1, internalBuffer.storage, offset);
-                evaluateRangeFast(h2, t2, internalBuffer.storage, offset);
+            evaluateRangeFast(h1, t1, internalBuffer.storage, offset);
+            evaluateRangeFast(h2, t2, internalBuffer.storage, offset);
 
-                evaluateTree(offset + (h1 / 2), offset + (t1 / 2),
-                        offset + (h2 / 2), offset + (t2 / 2));
-            } else if (tail1Normal <= internalBuffer.storage.length) {
-                // r2 wraps, r1 does not.
-                final int h1 = 0;
-                final int t1 = tail2Normal - internalBuffer.storage.length - 1; // change to inclusive
-                final int h2 = head1Normal;
-                final int t2 = tail1Normal - 1; // change to inclusive
-                final int h3 = head2Normal;
-                final int t3 = internalBuffer.storage.length - 1; // change to inclusive
-
-                evaluateRangeFast(h1, t1, internalBuffer.storage, offset);
-                evaluateRangeFast(h2, t2, internalBuffer.storage, offset);
-                evaluateRangeFast(h3, t3, internalBuffer.storage, offset);
-
-                evaluateTree(offset + (h1 / 2), offset + (t1 / 2),
-                        offset + (h2 / 2), offset + (t2 / 2),
-                        offset + (h3 / 2), offset + (t3 / 2));
-            } else {
-                // r1 wraps, r2 does not.
-                final int h1 = 0;
-                final int t1 = tail1Normal - internalBuffer.storage.length - 1; // change to inclusive
-                final int h2 = head2Normal;
-                final int t2 = tail2Normal - 1; // change to inclusive
-                final int h3 = head1Normal;
-                final int t3 = internalBuffer.storage.length - 1; // change to inclusive
-
-                evaluateRangeFast(h1, t1, internalBuffer.storage, offset);
-                evaluateRangeFast(h2, t2, internalBuffer.storage, offset);
-                evaluateRangeFast(h3, t3, internalBuffer.storage, offset);
-
-                evaluateTree(offset + (h1 / 2), offset + (t1 / 2),
-                        offset + (h2 / 2), offset + (t2 / 2),
-                        offset + (h3 / 2), offset + (t3 / 2));
-            }
+            evaluateTree(offset + (h1 / 2), offset + (t1 / 2),
+                    offset + (h2 / 2), offset + (t2 / 2));
         }
+
+        // Two ranges to compute, only one can wrap.
+        int head1Normal = (int) (head1 & internalBuffer.mask);
+        int tail1Normal = (int) (head1Normal + size1);
+        int head2Normal = (int) (head2 & internalBuffer.mask);
+        int tail2Normal = (int) (head2Normal + size2);
+
+        if (tail1Normal <= internalBuffer.storage.length && tail2Normal <= internalBuffer.storage.length) {
+            // Neither range wraps around.
+            final int h1 = head1Normal;
+            final int t1 = tail1Normal - 1; // change to inclusive
+            final int h2 = head2Normal;
+            final int t2 = tail2Normal - 1; // change to inclusive
+
+            evaluateRangeFast(h1, t1, internalBuffer.storage, offset);
+            evaluateRangeFast(h2, t2, internalBuffer.storage, offset);
+
+            evaluateTree(offset + (h1 / 2), offset + (t1 / 2),
+                    offset + (h2 / 2), offset + (t2 / 2));
+            return;
+        }
+        if (tail1Normal <= internalBuffer.storage.length) {
+            // r2 wraps, r1 does not.
+            final int h1 = 0;
+            final int t1 = tail2Normal - internalBuffer.storage.length - 1; // change to inclusive
+            final int h2 = head1Normal;
+            final int t2 = tail1Normal - 1; // change to inclusive
+            final int h3 = head2Normal;
+            final int t3 = internalBuffer.storage.length - 1; // change to inclusive
+
+            evaluateRangeFast(h1, t1, internalBuffer.storage, offset);
+            evaluateRangeFast(h2, t2, internalBuffer.storage, offset);
+            evaluateRangeFast(h3, t3, internalBuffer.storage, offset);
+
+            evaluateTree(offset + (h1 / 2), offset + (t1 / 2),
+                    offset + (h2 / 2), offset + (t2 / 2),
+                    offset + (h3 / 2), offset + (t3 / 2));
+            return;
+        }
+        // r1 wraps, r2 does not.
+        final int h1 = 0;
+        final int t1 = tail1Normal - internalBuffer.storage.length - 1; // change to inclusive
+        final int h2 = head2Normal;
+        final int t2 = tail2Normal - 1; // change to inclusive
+        final int h3 = head1Normal;
+        final int t3 = internalBuffer.storage.length - 1; // change to inclusive
+
+        evaluateRangeFast(h1, t1, internalBuffer.storage, offset);
+        evaluateRangeFast(h2, t2, internalBuffer.storage, offset);
+        evaluateRangeFast(h3, t3, internalBuffer.storage, offset);
+
+        evaluateTree(offset + (h1 / 2), offset + (t1 / 2),
+                offset + (h2 / 2), offset + (t2 / 2),
+                offset + (h3 / 2), offset + (t3 / 2));
     }
 
     public static boolean rangesCollapse(final int x1, final int y1, final int x2, final int y2) {
@@ -719,7 +585,6 @@ public class AggregatingLongRingBuffer {
     }
 
     private void evaluateRangeFast(int start, int end, long[] src, int dstOffset) {
-//        System.out.printf("Offset %d, computing [%d,%d)\n", dstOffset, start, end);
         // Everything from start to end (inclusive) should be evaluated
         for (int left = start & 0xFFFFFFFE; left <= end; left += 2) {
             final int right = left + 1;

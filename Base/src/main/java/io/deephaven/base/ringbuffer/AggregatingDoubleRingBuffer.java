@@ -8,9 +8,7 @@
  */
 package io.deephaven.base.ringbuffer;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.NoSuchElementException;
 
 /**
@@ -305,54 +303,6 @@ public class AggregatingDoubleRingBuffer {
         return internalBuffer.getAll();
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     /**
      * Add values without overflow detection. The caller *must* ensure that there is at least one element of free space
      * in the ring buffer before calling this method. The caller may use {@link #ensureRemaining(int)} or
@@ -362,7 +312,7 @@ public class AggregatingDoubleRingBuffer {
      */
     public void addUnsafe(double e) {
         // Perform a specialized version of the fix-up test.
-        if (internalBuffer.tail >= internalBuffer.FIXUP_THRESHOLD) {
+        if (internalBuffer.tail >= DoubleRingBuffer.FIXUP_THRESHOLD) {
             // Reset calc[head, tail]
             long length = calcTail - calcHead;
             calcHead = (calcHead & internalBuffer.mask);
@@ -389,6 +339,7 @@ public class AggregatingDoubleRingBuffer {
     public double removeUnsafe() {
         // NOTE: remove() for this data structure must replace the removed value with identityVal.
         final long prevHead = internalBuffer.head;
+
         double val = internalBuffer.removeUnsafe();
 
         // Reset the storage entry to the identity value
@@ -407,22 +358,24 @@ public class AggregatingDoubleRingBuffer {
     public double[] remove(int count) {
         // NOTE: remove() for this data structure must replace the removed value with identityVal.
         final long prevHead = internalBuffer.head;
+        final int prevSize = size();
+
         final double[] result = internalBuffer.remove(count);
 
         // Reset the cleared storage entries to the identity value
-        fillWithIdentityVal(prevHead, count, size());
+        fillWithIdentityVal(prevHead, count, prevSize);
 
         return result;
     }
 
     /**
-     * Remove all elements from the ring buffer and reset the data structure.  This may require resetting all entries
-     * in the storage buffer and evaluation tree and should be considered to be of complexity O(capacity) instead of
+     * Remove all elements from the ring buffer and reset the data structure. This may require resetting all entries in
+     * the storage buffer and evaluation tree and should be considered to be of complexity O(capacity) instead of
      * O(size).
      */
     public void clear() {
-        final int size = size();
         final long prevHead = internalBuffer.head;
+        final int prevSize = size();
 
         internalBuffer.clear();
 
@@ -431,7 +384,7 @@ public class AggregatingDoubleRingBuffer {
         Arrays.fill(treeStorage, identityVal);
 
         // Reset the cleared storage entries to the identity value
-        fillWithIdentityVal(prevHead, size, size);
+        fillWithIdentityVal(prevHead, prevSize, prevSize);
     }
 
     private void fillWithIdentityVal(long head, int count, int size) {
@@ -540,6 +493,7 @@ public class AggregatingDoubleRingBuffer {
             // No ranges to compute.
             return;
         }
+
         if (size2 == 0) {
             // Only one range to compute (although it may be wrapped).
             int head1Normal = (int) (head1 & internalBuffer.mask);

@@ -74,7 +74,7 @@ public class ReplicateRingBuffers {
         lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
         lines = ReplicationUtils.globalReplacements(lines,
                 "Object identityVal", "T identityVal",
-                "public Object removeUnsafe", "public T removeUnsafe",
+                "public Object ", "public T ",
                 "public interface ObjectFunction \\{", "public interface ObjectFunction<T> {",
                 "Object apply\\(Object a, Object b\\);", "T apply(T a, T b);",
                 "public Object evaluate", "public T evaluate",
@@ -88,6 +88,10 @@ public class ReplicateRingBuffers {
                 "final Object leftVal", "final T leftVal",
                 "final Object rightVal", "final T rightVal",
                 "final Object computeVal", "final T computeVal",
+                "Object val", "T val",
+                "Object notFullResult", "T notFullResult",
+                "Object onEmpty", "T onEmpty",
+                "private static Object defaultValueForThisType", "private T defaultValueForThisType",
                 "final ObjectRingBuffer internalBuffer", "final ObjectRingBuffer<T> internalBuffer",
 
 
