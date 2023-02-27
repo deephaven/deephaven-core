@@ -110,6 +110,9 @@ class SelectOrUpdateListener extends BaseTable.ListenerImpl {
             onFailure(e, getEntry());
         } finally {
             updateInProgress = false;
+            // Note that this isn't really needed, since onFailure forces reference count to zero, but it seems
+            // reasonable to pair with the tryIncrementReferenceCount invocation in onUpdate and match
+            // completionRoutine. This also has the effect of "future proofing" this code against changes to onFailure.
             decrementReferenceCount();
         }
     }
