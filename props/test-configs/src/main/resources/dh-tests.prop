@@ -103,3 +103,5 @@ authentication.anonymous.warn=false
 
 deephaven.console.type=none
 thread.initialization=
+
+ReleaseTracker.captureStackTraces=true
