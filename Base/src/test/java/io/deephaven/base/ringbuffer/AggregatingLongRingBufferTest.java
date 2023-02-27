@@ -10,6 +10,8 @@ package io.deephaven.base.ringbuffer;
 
 import junit.framework.TestCase;
 
+import java.util.Comparator;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Random;
 
@@ -59,8 +61,9 @@ public class AggregatingLongRingBufferTest extends TestCase {
     public void testEvaluateMinLargeAmounts() {
         final AggregatingLongRingBuffer rb =
                 new AggregatingLongRingBuffer(3, Long.MAX_VALUE, (a, b) -> (long) Math.min(a, b));
-        for (int i = 0; i < 10_000; i++)
+        for (int i = 0; i < 10_000; i++) {
             rb.add((long) i);
+        }
 
         final int maxVal = (int) Math.min(Long.MAX_VALUE, 100_000_000);
 

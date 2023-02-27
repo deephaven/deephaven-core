@@ -8,10 +8,7 @@
  */
 package io.deephaven.base.ringbuffer;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.NoSuchElementException;
+import java.util.*;
 
 /**
  * A ring buffer which aggregates its contents according to a user-defined aggregation function. This aggregation
@@ -24,6 +21,7 @@ public class AggregatingLongRingBuffer {
     private final LongRingBuffer internalBuffer;
     private final LongFunction aggFunction;
     private final long identityVal;
+
     private static long defaultValueForThisType;
     private long[] treeStorage;
     private long calcHead = 0; // inclusive
@@ -86,7 +84,8 @@ public class AggregatingLongRingBuffer {
      *        combining them efficiently whenever the data changes.
      * @param growable whether to allow growth when the buffer is full.
      */
-    public AggregatingLongRingBuffer(int capacity, long identityVal, LongFunction aggFunction, boolean growable) {
+    public AggregatingLongRingBuffer(int capacity, long identityVal, LongFunction aggFunction,
+                                     boolean growable) {
         internalBuffer = new LongRingBuffer(capacity, growable);
         this.aggFunction = aggFunction;
         this.identityVal = identityVal;
@@ -514,14 +513,14 @@ public class AggregatingLongRingBuffer {
         r1Tail += newBase;
         r2Head += newBase;
         r2Tail += newBase;
-
+        // KOSAK: I wouldn't bother with this 'if' statement because the range code merges right away anyway
         if (r1Tail - r1Head >= internalBuffer.storage.length || r2Tail - r2Head >= internalBuffer.storage.length) {
             // Evaluate everything
-//            fixTree(0, internalBuffer.storage.length, 0, 0, internalBuffer.storage.length);
-            normalizeAndEvaluate(0, internalBuffer.storage.length, 0, 0);
+            fixTree(0, internalBuffer.storage.length, 0, 0, internalBuffer.storage.length);
+            // normalizeAndEvaluate(0, internalBuffer.storage.length, 0, 0);
         } else {
-//            fixTree(r1Head, r1Tail, r2Head, r2Tail, internalBuffer.storage.length);
-            normalizeAndEvaluate(r1Head, r1Tail, r2Head, r2Tail);
+            fixTree(r1Head, r1Tail, r2Head, r2Tail, internalBuffer.storage.length);
+            // normalizeAndEvaluate(r1Head, r1Tail, r2Head, r2Tail);
         }
 
         // Store our computed range
@@ -531,93 +530,127 @@ public class AggregatingLongRingBuffer {
         return treeStorage[1];
     }
 
-    private static class Range implements Comparable<Range> {
-        int begin;
-        int end;
+    private static class Range {
+        public static final Range zero = new Range(0, 0);
+
+        final int begin;
+        final int end;
 
         public Range(int begin, int end) {
             this.begin = begin;
             this.end = end;
         }
-
-        @Override
-        public int compareTo(Range o) {
-            return Integer.compare(this.begin, o.begin);
-        }
     }
 
     private void fixTree(long r1Head, long r1Tail, long r2Head, long r2Tail, int capacityForThisLevel) {
-//        System.out.println("Calling fixTree()");
+        final Range[] r1s = maybeSplit(r1Head, r1Tail, capacityForThisLevel);
+        final Range[] r2s = maybeSplit(r2Head, r2Tail, capacityForThisLevel);
 
-        ArrayList<Range> ranges = new ArrayList<>();
-        addRange(ranges, r1Head, r1Tail, capacityForThisLevel);
-        addRange(ranges, r2Head, r2Tail, capacityForThisLevel);
-        Collections.sort(ranges);
+        final Range r1, r2, r3;
+        if (r1s.length == 1) {
+            if (r2s.length == 1) {
+                if (r1s[0].begin < r2s[0].begin) {
+                    r1 = r1s[0];
+                    r2 = r2s[0];
+                } else {
+                    r2 = r1s[0];
+                    r1 = r2s[0];
+                }
+                r3 = Range.zero;
+            } else {
+                assert(r2s.length == 2);
+                // r2 is split but r1 is not.
+                r1 = r2s[0];
+                r2 = r1s[0];
+                r3 = r2s[1];
+            }
+        } else {
+            // r1 is split but r2 is not
+            assert(r1s.length == 2);
+            assert(r2s.length == 1);
+            r1 = r1s[0];
+            r2 = r2s[0];
+            r3 = r1s[1];
+        }
+
+        int r1h = r1.begin, r1t = r1.end;
+        int r2h = r2.begin, r2t = r2.end;
+        int r3h = r3.begin, r3t = r3.end;
+
+//        System.out.println("Calling fixTree()");
 
         // We need to perform the first round of evaluation from values in the storage array and adjust the ranges
         // properly so subsequent evaluations are over the correct subset of the tree
         int offset = internalBuffer.storage.length / 2;
-        for (final Range r : ranges) {
-            evaluateRangeFast(r.begin,
-                    r.end - 1,
-                    internalBuffer.storage,
-                    offset);
-            r.begin = offset + (r.begin / 2);
-            r.end = offset + (r.end + 1) / 2;
-        }
+        evaluateRangeFast(r1h, r1t - 1, internalBuffer.storage, offset);
+        evaluateRangeFast(r2h, r2t - 1, internalBuffer.storage, offset);
+        evaluateRangeFast(r3h, r3t - 1, internalBuffer.storage, offset);
+        r1h = offset + (r1h / 2);
+        r1t = offset + ((r1t + 1) / 2);
+        r2h = offset + (r2h / 2);
+        r2t = offset + ((r2t + 1) / 2);
+        r3h = offset + (r3h / 2);
+        r3t = offset + ((r3t + 1) / 2);
 
         while (capacityForThisLevel > 2) {
-            // Merge ranges and delete empty ranges
-            int destIndex = 0;
-            for (int srcIndex = 0; srcIndex != ranges.size(); ++srcIndex) {
-                Range rSrc = ranges.get(srcIndex);
-                if (rSrc.begin == rSrc.end) {
-                    continue;
-                }
-                if (destIndex > 0 && ranges.get(destIndex - 1).end == rSrc.begin) {
-                    ranges.get(destIndex - 1).end = rSrc.end;
-                    continue;
-                }
-                ranges.set(destIndex, ranges.get(srcIndex));
-                ++destIndex;
-            }
-            if (destIndex == 0) {
-                break;
-            }
-            if (destIndex != ranges.size()) {
-                ranges.subList(destIndex, ranges.size()).clear();
+            if (r2h == r2t) {
+                // r2 empty: take over and clear r3
+                r2h = r3h;
+                r2t = r3t;
+                r3h = 0;
+                r3t = 0;
+            } else if (r2t == r3h) {
+                // r2 abuts r3: extend r2 to r3 and clear r3
+                r2t = r3t;
+                r3h = 0;
+                r3t = 0;
             }
 
-            for (final Range r : ranges) {
-                evaluateRangeFast(r.begin,
-                        r.end - 1,
-                        treeStorage,
-                        0);
-
-                r.begin /= 2;  // round down
-                r.end = (r.end + 1) / 2;
+            if (r1h == r1t) {
+                // r2 empty: take over and clear r2
+                r1h = r2h;
+                r1t = r2t;
+                r2h = 0;
+                r2t = 0;
+            } else if (r1t == r2h) {
+                // r1 abuts r2: extend r1 to r2 and clear r2
+                r1t = r2t;
+                r2h = 0;
+                r2t = 0;
             }
+            evaluateRangeFast(r1h, r1t - 1, treeStorage, 0);
+            evaluateRangeFast(r2h, r2t - 1, treeStorage, 0);
+            evaluateRangeFast(r3h, r3t - 1, treeStorage, 0);
+
+            r1h /= 2;  //round down
+            r1t = (r1t + 1) / 2;  // round up
+
+            r2h /= 2;  //round down
+            r2t = (r2t + 1) / 2;  // round up
+
+            r3h /= 2;  //round down
+            r3t = (r3t + 1) / 2;  // round up
+
             capacityForThisLevel /= 2;
         }
     }
 
-    public static void addRange(ArrayList<Range> ranges, long head, long tail, int capacity) {
+    Range[] maybeSplit(final long head, final long tail, final int capacity) {
         final long size = tail - head;
         if (size == 0) {
-            return;
+            return new Range[]{Range.zero};
         }
         int mask = capacity - 1;
-        int normalizedHead = (int)(head & mask);
-        int normalizedTail = (int)(normalizedHead + size);
+        int normalizedHead = (int) (head & mask);
+        int normalizedTail = (int) (normalizedHead + size);
         if (normalizedTail <= capacity) {
-            ranges.add(new Range(normalizedHead, normalizedTail));
-        } else {
-            ranges.add(new Range(0, normalizedTail - capacity));
-            ranges.add(new Range(normalizedHead, capacity));
+            return new Range[]{new Range(normalizedHead, normalizedTail)};
         }
+        return new Range[] {
+                new Range(0, normalizedTail - capacity),
+                new Range(normalizedHead, capacity)
+        };
     }
-
-
 
     void normalizeAndEvaluate(final long head1, final long tail1, final long head2, final long tail2) {
 //        System.out.println("Calling normalizeAndEvaluate()");
@@ -719,7 +752,10 @@ public class AggregatingLongRingBuffer {
     }
 
     private void evaluateRangeFast(int start, int end, long[] src, int dstOffset) {
-//        System.out.printf("Offset %d, computing [%d,%d)\n", dstOffset, start, end);
+        if (end < start) {
+            return;
+        }
+        // System.out.printf("Offset %d, computing [%d,%d)\n", dstOffset, start, end);
         // Everything from start to end (inclusive) should be evaluated
         for (int left = start & 0xFFFFFFFE; left <= end; left += 2) {
             final int right = left + 1;
