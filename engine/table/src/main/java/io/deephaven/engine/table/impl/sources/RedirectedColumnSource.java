@@ -670,9 +670,6 @@ public class RedirectedColumnSource<T> extends AbstractDeferredGroupingColumnSou
 
             @Override
             public void close() {
-                SafeCloseable.closeArray(sortKernelContext, mappedKeysOrder, compactedMappedKeys,
-                        nonNullCompactedMappedKeys, runLengths);
-
                 if (innerRowSequence != null) {
                     innerRowSequence.close();
                     innerRowSequence = null;
@@ -684,6 +681,8 @@ public class RedirectedColumnSource<T> extends AbstractDeferredGroupingColumnSou
                 if (sortedMappedKeys != null && sortedMappedKeys != mappedKeys) {
                     sortedMappedKeys.close();
                 }
+                SafeCloseable.closeArray(sortKernelContext, mappedKeysOrder, compactedMappedKeys,
+                        nonNullCompactedMappedKeys, runLengths);
 
                 super.close();
             }

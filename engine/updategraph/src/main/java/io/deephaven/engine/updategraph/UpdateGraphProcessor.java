@@ -1286,8 +1286,8 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
             log.error().append(Thread.currentThread().getName())
                     .append(": Exception while executing UpdateGraphProcessor notification: ").append(notification)
                     .append(": ").append(e).endl();
-            // ProcessEnvironment.getGlobalFatalErrorReporter()
-            // .report("Exception while processing UpdateGraphProcessor notification", e);
+            ProcessEnvironment.getGlobalFatalErrorReporter()
+                    .report("Exception while processing UpdateGraphProcessor notification", e);
         }
     }
 

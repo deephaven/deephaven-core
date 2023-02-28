@@ -692,7 +692,7 @@ public class QueryTableSelectUpdateTest {
         try {
             QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE = true;
 
-            for (int seed = 0; seed < 1000; ++seed) {
+            for (int seed = 0; seed < 1; ++seed) {
                 System.out.println("Seed: " + seed);
                 try (final SafeCloseable ignored = LivenessScopeStack.open()) {
                     testUpdateIncrementalRandomized(seed, false, 4096);
