@@ -308,6 +308,7 @@ public final class BarrageTableResolver implements UriResolver {
     }
 
     private BarrageSession newSession(ManagedChannel channel) {
+        // TODO(deephaven-core#3421): DH URI / BarrageTableResolver authentication support
         return builder
                 .allocator(allocator)
                 .managedChannel(channel)

@@ -204,10 +204,8 @@ public class SessionState {
             throw GrpcUtil.statusRuntimeException(Code.UNAUTHENTICATED, "session has expired");
         }
 
-        log.info().append(logPrefix)
-                .append("token rotating to '").append(expiration.token.toString())
-                .append("' which expires at ").append(MILLIS_FROM_EPOCH_FORMATTER, expiration.deadlineMillis)
-                .append(".").endl();
+        log.info().append(logPrefix).append("token, expires at ")
+                .append(MILLIS_FROM_EPOCH_FORMATTER, expiration.deadlineMillis).append(".").endl();
     }
 
     /**
