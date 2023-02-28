@@ -98,8 +98,7 @@ public class ColumnPreviewManager {
                 // Always wrap arrays
                 selectColumns.add(arrayPreviewFactory.makeColumn(name));
                 originalTypes.put(name, typeName);
-            } else if (!isColumnTypeDisplayable(type)
-                    || !io.deephaven.util.type.TypeUtils.isPrimitiveOrSerializable(type)) {
+            } else if (!isColumnTypeDisplayable(type)) {
                 // Always wrap non-displayable and non-serializable types
                 selectColumns.add(nonDisplayableFactory.makeColumn(name));
                 originalTypes.put(name, typeName);

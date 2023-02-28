@@ -535,8 +535,10 @@ public abstract class FlightMessageRoundTripTest {
     }
 
     @Test
-    public void testTimestampColumn() throws Exception {
+    public void testTimestampColumns() throws Exception {
         assertRoundTripDataEqual(TableTools.emptyTable(10).update("tm = DateTime.now()"));
+        assertRoundTripDataEqual(TableTools.emptyTable(10).update("instant = java.time.Instant.now()"));
+        assertRoundTripDataEqual(TableTools.emptyTable(10).update("zonedDateTime = java.time.ZonedDateTime.now()"));
     }
 
     @Test

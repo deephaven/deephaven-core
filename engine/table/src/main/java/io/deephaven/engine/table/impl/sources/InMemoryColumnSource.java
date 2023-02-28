@@ -18,6 +18,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.time.Instant;
+import java.time.ZonedDateTime;
 
 /**
  * This is a marker interface for a column source that is entirely within memory; therefore select operations should not

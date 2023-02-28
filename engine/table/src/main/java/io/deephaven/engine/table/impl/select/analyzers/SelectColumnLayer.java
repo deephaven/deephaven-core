@@ -76,7 +76,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
             boolean flattenedResult, boolean alreadyFlattenedSources) {
         super(inner, name, sc, ws, underlying, deps, mcsBuilder);
         this.parentRowSet = parentRowSet;
-        this.writableSource = (WritableColumnSource<?>) ReinterpretUtils.maybeConvertToPrimitive(ws);
+        this.writableSource = ReinterpretUtils.maybeConvertToWritablePrimitive(ws);
         this.isRedirected = isRedirected;
         this.executionContext = ExecutionContext.getContextToRecord();
 
@@ -109,7 +109,13 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
 
     private ChunkSource<Values> getChunkSource() {
         if (chunkSource == null) {
-            chunkSource = ReinterpretUtils.maybeConvertToPrimitive(selectColumn.getDataView());
+            ColumnSource<?> dataSource = selectColumn.getDataView();
+            if (dataSource.getType() != writableSource.getType()) {
+                // this should only occur when using primitives internally and the user has requested a non-primitive
+                chunkSource = ReinterpretUtils.maybeConvertToPrimitive(dataSource);
+            } else {
+                chunkSource = dataSource;
+            }
             if (selectColumnHoldsVector) {
                 chunkSource = new VectorChunkAdapter<>(chunkSource);
             }

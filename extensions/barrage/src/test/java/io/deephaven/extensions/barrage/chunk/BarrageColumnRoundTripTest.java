@@ -24,8 +24,10 @@ import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.WritableShortChunk;
 import io.deephaven.extensions.barrage.util.BarrageProtoUtil;
+import io.deephaven.time.DateTime;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.vector.LongVector;
 import io.deephaven.vector.LongVectorDirect;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -34,6 +36,7 @@ import org.jetbrains.annotations.Nullable;
 import java.io.ByteArrayInputStream;
 import java.io.DataInput;
 import java.io.IOException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Random;
 import java.util.function.Consumer;
@@ -261,6 +264,30 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         }
     }
 
+    public void testDateTimeChunkSerialization() throws IOException {
+        final Random random = new Random(0);
+        for (final BarrageSubscriptionOptions opts : options) {
+            testRoundTripSerialization(opts, DateTime.class, (utO) -> {
+                final WritableObjectChunk<DateTime, Values> chunk = utO.asWritableObjectChunk();
+                for (int i = 0; i < chunk.size(); ++i) {
+                    chunk.set(i, i % 7 == 0 ? null : new DateTime(random.nextLong()));
+                }
+            }, new ObjectIdentityValidator<>());
+        }
+    }
+
+    public void testInstantChunkSerialization() throws IOException {
+        final Random random = new Random(0);
+        for (final BarrageSubscriptionOptions opts : options) {
+            testRoundTripSerialization(opts, Instant.class, (utO) -> {
+                final WritableObjectChunk<Instant, Values> chunk = utO.asWritableObjectChunk();
+                for (int i = 0; i < chunk.size(); ++i) {
+                    chunk.set(i, i % 7 == 0 ? null : Instant.ofEpochSecond(0, random.nextLong()));
+                }
+            }, new ObjectIdentityValidator<>());
+        }
+    }
+
     public void testObjectSerialization() throws IOException {
         testRoundTripSerialization(OPT_DEFAULT, Object.class, initObjectChunk(Integer::toString),
                 new ObjectIdentityValidator<>());
@@ -343,7 +370,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
     }
 
     private static void initStringArrayChunk(final WritableChunk<Values> untypedChunk) {
-        final Random random = new Random();
+        final Random random = new Random(0);
         final WritableObjectChunk<String[], Values> chunk = untypedChunk.asWritableObjectChunk();
 
         for (int i = 0; i < chunk.size(); ++i) {
@@ -361,7 +388,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
     }
 
     private static void initLongArrayChunk(final WritableChunk<Values> untypedChunk) {
-        final Random random = new Random();
+        final Random random = new Random(0);
         final WritableObjectChunk<long[], Values> chunk = untypedChunk.asWritableObjectChunk();
 
         for (int i = 0; i < chunk.size(); ++i) {
@@ -379,7 +406,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
     }
 
     private static void initLongVectorChunk(final WritableChunk<Values> untypedChunk) {
-        final Random random = new Random();
+        final Random random = new Random(0);
         final WritableObjectChunk<LongVector, Values> chunk = untypedChunk.asWritableObjectChunk();
 
         for (int i = 0; i < chunk.size(); ++i) {
@@ -536,35 +563,16 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
             chunkType = ChunkType.fromElementType(type);
         }
 
+        final WritableChunk<Values> srcData = chunkType.makeWritableChunk(4096);
+        initData.accept(srcData);
+
+        // The generator owns data; it is allowed to close it prematurely if the data needs to be converted to primitive
         final WritableChunk<Values> data = chunkType.makeWritableChunk(4096);
+        data.copyFromChunk(srcData, 0, 0, srcData.size());
 
-        initData.accept(data);
-
-        try (ChunkInputStreamGenerator generator =
-                ChunkInputStreamGenerator.makeInputStreamGenerator(chunkType, type, type.getComponentType(), data, 0)) {
-
-            // full sub logic
-            try (final BarrageProtoUtil.ExposedByteArrayOutputStream baos =
-                    new BarrageProtoUtil.ExposedByteArrayOutputStream();
-                    final ChunkInputStreamGenerator.DrainableColumn column =
-                            generator.getInputStream(options, null)) {
-
-                final ArrayList<ChunkInputStreamGenerator.FieldNodeInfo> fieldNodes = new ArrayList<>();
-                column.visitFieldNodes((numElements, nullCount) -> fieldNodes
-                        .add(new ChunkInputStreamGenerator.FieldNodeInfo(numElements, nullCount)));
-                final TLongArrayList bufferNodes = new TLongArrayList();
-                column.visitBuffers(bufferNodes::add);
-                column.drainTo(baos);
-                final DataInput dis =
-                        new LittleEndianDataInputStream(new ByteArrayInputStream(baos.peekBuffer(), 0, baos.size()));
-                try (final WritableChunk<Values> rtData =
-                        ChunkInputStreamGenerator.extractChunkFromInputStream(options,
-                                chunkType, type, type.getComponentType(), fieldNodes.iterator(), bufferNodes.iterator(),
-                                dis, null, 0, 0)) {
-                    Assert.eq(data.size(), "data.size()", rtData.size(), "rtData.size()");
-                    validator.assertExpected(data, rtData, null, 0);
-                }
-            }
+        try (SafeCloseable ignored = data;
+                ChunkInputStreamGenerator generator = ChunkInputStreamGenerator.makeInputStreamGenerator(
+                     chunkType, type, type.getComponentType(), srcData, 0)) {
 
             // empty subset
             try (final BarrageProtoUtil.ExposedByteArrayOutputStream baos =
@@ -589,7 +597,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
             }
 
             // swiss cheese subset
-            final Random random = new Random();
+            final Random random = new Random(0);
             final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
             for (int i = 0; i < data.size(); ++i) {
                 if (random.nextBoolean()) {

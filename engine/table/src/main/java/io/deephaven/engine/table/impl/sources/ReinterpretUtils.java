@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.time.DateTime;
 import org.jetbrains.annotations.NotNull;
 
@@ -99,6 +100,67 @@ public class ReinterpretUtils {
     }
 
     /**
+     * Given a DateTime column source turn it into a long column source via reinterpretation if possible.
+     *
+     * @param source the source to turn into a long source
+     *
+     * @return the long source or null if it could not be reinterpretted
+     */
+    public static WritableColumnSource<?> writableDateTimeToLongSource(WritableColumnSource<?> source) {
+        if (source.allowsReinterpret(long.class)) {
+            return (WritableColumnSource<Long>) source.reinterpret(long.class);
+        }
+        return null;
+    }
+
+    /**
+     * Given a Boolean column source turn it into a byte column source via reinterpretation if possible.
+     *
+     * @param source the source to turn into a byte source
+     *
+     * @return the byte source or null if it could not be reinterpretted
+     */
+    public static WritableColumnSource<?> writableBooleanToByteSource(WritableColumnSource<?> source) {
+        if (source.allowsReinterpret(byte.class)) {
+            return (WritableColumnSource<Byte>) source.reinterpret(byte.class);
+        }
+        return null;
+    }
+
+    /**
+     * Given an {@link Instant} column source turn it into a long column source, either via reinterpretation or
+     * wrapping.
+     *
+     * @param source the source to turn into a long source
+     *
+     * @return the long source or null if it could not be reinterpretted
+     */
+    @NotNull
+    public static WritableColumnSource<Long> writableInstantToLongSource(final @NotNull WritableColumnSource<?> source) {
+        if (source.allowsReinterpret(long.class)) {
+            return (WritableColumnSource<Long>) source.reinterpret(long.class);
+        }
+        return null;
+    }
+
+    /**
+     * Given a {@link ZonedDateTime} column source turn it into a long column source, either via reinterpretation or
+     * wrapping.
+     *
+     * @param source the source to turn into a long source
+     *
+     * @return the long source or null if it could not be reinterpretted
+     */
+    @NotNull
+    public static WritableColumnSource<Long> writableZonedDateTimeToLongSource(
+            final @NotNull WritableColumnSource<?> source) {
+        if (source.allowsReinterpret(long.class)) {
+            return (WritableColumnSource<Long>) source.reinterpret(long.class);
+        }
+        return null;
+    }
+
+    /**
      * If source is something that we prefer to handle as a primitive, do the appropriate conversion.
      *
      * @param source The source to convert
@@ -118,6 +180,27 @@ public class ReinterpretUtils {
             return zonedDateTimeToLongSource(source);
         }
         return source;
+    }
+
+
+    /**
+     * If source is something that we prefer to handle as a primitive, do the appropriate conversion.
+     *
+     * @param source The source to convert
+     * @return If possible, the source converted to a writable primitive, otherwise the source
+     */
+    public static WritableColumnSource<?> maybeConvertToWritablePrimitive(WritableColumnSource<?> source) {
+        WritableColumnSource<?> result = null;
+        if (source.getType() == Boolean.class || source.getType() == boolean.class) {
+            result = writableBooleanToByteSource(source);
+        } else if (source.getType() == DateTime.class) {
+            result = writableDateTimeToLongSource(source);
+        } else if (source.getType() == Instant.class) {
+            result = writableInstantToLongSource(source);
+        } else if (source.getType() == ZonedDateTime.class) {
+            result = writableZonedDateTimeToLongSource(source);
+        }
+        return result == null ? source : result;
     }
 
     /**
