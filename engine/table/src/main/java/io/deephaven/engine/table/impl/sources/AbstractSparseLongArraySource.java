@@ -64,9 +64,9 @@ abstract public class AbstractSparseLongArraySource<T> extends SparseArrayColumn
     protected transient UpdateCommitter<AbstractSparseLongArraySource> prevFlusher = null;
 
     /**
-     * If ensure previous has been called, we need not check previous values when filling.
+     * If prepareForParallelPopulation has been called, we need not check previous values when filling.
      */
-    private transient long ensurePreviousClockCycle = -1;
+    private transient long prepareForParallelPopulationClockCycle = -1;
 
     /**
      * Our previous page table could be very sparse, and we do not want to read through millions of nulls to find out
@@ -368,7 +368,7 @@ abstract public class AbstractSparseLongArraySource<T> extends SparseArrayColumn
     */
     final long [] shouldRecordPrevious(final long key) {
         // prevFlusher == null means we are not tracking previous values yet (or maybe ever)
-        if (prevFlusher == null) {
+        if (!shouldTrackPrevious()) {
             return null;
         }
         // If we want to track previous values, we make sure we are registered with the UpdateGraphProcessor.
@@ -396,10 +396,10 @@ abstract public class AbstractSparseLongArraySource<T> extends SparseArrayColumn
     @Override
     public void prepareForParallelPopulation(RowSet changedRows) {
         final long currentStep = LogicalClock.DEFAULT.currentStep();
-        if (ensurePreviousClockCycle == currentStep) {
-            throw new IllegalStateException("May not call ensurePrevious twice on one clock cycle!");
+        if (prepareForParallelPopulationClockCycle == currentStep) {
+            throw new IllegalStateException("May not call prepareForParallelPopulation twice on one clock cycle!");
         }
-        ensurePreviousClockCycle = currentStep;
+        prepareForParallelPopulationClockCycle = currentStep;
 
         if (changedRows.isEmpty()) {
             return;
@@ -613,7 +613,7 @@ abstract public class AbstractSparseLongArraySource<T> extends SparseArrayColumn
         final LongChunk<? extends Values> chunk = src.asLongChunk();
         final LongChunk<OrderedRowKeyRanges> ranges = rowSequence.asRowKeyRangesChunk();
 
-        final boolean trackPrevious = prevFlusher != null && ensurePreviousClockCycle != LogicalClock.DEFAULT.currentStep();
+        final boolean trackPrevious = shouldTrackPrevious();
 
         if (trackPrevious) {
             prevFlusher.maybeActivate();
@@ -671,6 +671,11 @@ abstract public class AbstractSparseLongArraySource<T> extends SparseArrayColumn
             }
         }
     }
+
+    private boolean shouldTrackPrevious() {
+        // prevFlusher == null means we are not tracking previous values yet (or maybe ever)
+        return prevFlusher != null && prepareForParallelPopulationClockCycle != LogicalClock.DEFAULT.currentStep();
+    }
     // endregion fillFromChunkByRanges
 
     // region fillFromChunkByKeys
@@ -682,7 +687,7 @@ abstract public class AbstractSparseLongArraySource<T> extends SparseArrayColumn
         final LongChunk<? extends Values> chunk = src.asLongChunk();
         final LongChunk<OrderedRowKeys> keys = rowSequence.asRowKeyChunk();
 
-        final boolean trackPrevious = prevFlusher != null && ensurePreviousClockCycle != LogicalClock.DEFAULT.currentStep();;
+        final boolean trackPrevious = shouldTrackPrevious();;
 
         if (trackPrevious) {
             prevFlusher.maybeActivate();
@@ -870,7 +875,7 @@ abstract public class AbstractSparseLongArraySource<T> extends SparseArrayColumn
         }
         final LongChunk<? extends Values> chunk = src.asLongChunk();
 
-        final boolean trackPrevious = prevFlusher != null && ensurePreviousClockCycle != LogicalClock.DEFAULT.currentStep();;
+        final boolean trackPrevious = shouldTrackPrevious();;
 
         if (trackPrevious) {
             prevFlusher.maybeActivate();

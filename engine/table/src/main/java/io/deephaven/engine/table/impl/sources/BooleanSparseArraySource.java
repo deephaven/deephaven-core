@@ -71,9 +71,9 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
     protected transient UpdateCommitter<BooleanSparseArraySource> prevFlusher = null;
 
     /**
-     * If ensure previous has been called, we need not check previous values when filling.
+     * If prepareForParallelPopulation has been called, we need not check previous values when filling.
      */
-    private transient long ensurePreviousClockCycle = -1;
+    private transient long prepareForParallelPopulationClockCycle = -1;
 
     /**
      * Our previous page table could be very sparse, and we do not want to read through millions of nulls to find out
@@ -389,7 +389,7 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
     */
     final byte [] shouldRecordPrevious(final long key) {
         // prevFlusher == null means we are not tracking previous values yet (or maybe ever)
-        if (prevFlusher == null) {
+        if (!shouldTrackPrevious()) {
             return null;
         }
         // If we want to track previous values, we make sure we are registered with the UpdateGraphProcessor.
@@ -417,10 +417,10 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
     @Override
     public void prepareForParallelPopulation(RowSet changedRows) {
         final long currentStep = LogicalClock.DEFAULT.currentStep();
-        if (ensurePreviousClockCycle == currentStep) {
-            throw new IllegalStateException("May not call ensurePrevious twice on one clock cycle!");
+        if (prepareForParallelPopulationClockCycle == currentStep) {
+            throw new IllegalStateException("May not call prepareForParallelPopulation twice on one clock cycle!");
         }
-        ensurePreviousClockCycle = currentStep;
+        prepareForParallelPopulationClockCycle = currentStep;
 
         if (changedRows.isEmpty()) {
             return;
@@ -636,7 +636,7 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
         final ObjectChunk<Boolean, ? extends Values> chunk = src.asObjectChunk();
         final LongChunk<OrderedRowKeyRanges> ranges = rowSequence.asRowKeyRangesChunk();
 
-        final boolean trackPrevious = prevFlusher != null && ensurePreviousClockCycle != LogicalClock.DEFAULT.currentStep();
+        final boolean trackPrevious = shouldTrackPrevious();
 
         if (trackPrevious) {
             prevFlusher.maybeActivate();
@@ -696,6 +696,11 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
             }
         }
     }
+
+    private boolean shouldTrackPrevious() {
+        // prevFlusher == null means we are not tracking previous values yet (or maybe ever)
+        return prevFlusher != null && prepareForParallelPopulationClockCycle != LogicalClock.DEFAULT.currentStep();
+    }
     // endregion fillFromChunkByRanges
 
     // region fillFromChunkByKeys
@@ -707,7 +712,7 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
         final ObjectChunk<Boolean, ? extends Values> chunk = src.asObjectChunk();
         final LongChunk<OrderedRowKeys> keys = rowSequence.asRowKeyChunk();
 
-        final boolean trackPrevious = prevFlusher != null && ensurePreviousClockCycle != LogicalClock.DEFAULT.currentStep();;
+        final boolean trackPrevious = shouldTrackPrevious();;
 
         if (trackPrevious) {
             prevFlusher.maybeActivate();
@@ -895,7 +900,7 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
         }
         final ObjectChunk<Boolean, ? extends Values> chunk = src.asObjectChunk();
 
-        final boolean trackPrevious = prevFlusher != null && ensurePreviousClockCycle != LogicalClock.DEFAULT.currentStep();;
+        final boolean trackPrevious = shouldTrackPrevious();;
 
         if (trackPrevious) {
             prevFlusher.maybeActivate();
@@ -1182,7 +1187,7 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
             final ByteChunk<? extends Values> chunk = src.asByteChunk();
             final LongChunk<OrderedRowKeys> keys = RowSequence.asRowKeyChunk();
 
-            final boolean trackPrevious = wrapped.prevFlusher != null && wrapped.ensurePreviousClockCycle != LogicalClock.DEFAULT.currentStep();
+            final boolean trackPrevious = wrapped.shouldTrackPrevious();
 
             if (trackPrevious) {
                 wrapped.prevFlusher.maybeActivate();
