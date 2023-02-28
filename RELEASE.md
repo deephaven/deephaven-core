@@ -101,7 +101,8 @@ $ git fetch upstream
 $ git checkout vX.Y.0
 $ git checkout -b release/vX.Y.1
 $ git cherry-pick <...>
-# Edit files, updating from `X.Y.0` to `X.Y.1`, and git add them
+# Edit files, updating from `X.Y.0` to `X.Y.1`, and git add them.
+# See https://github.com/deephaven/deephaven-core/issues/3466 for future improvements to this process.
 $ ...
 $ git commit -m "Bump to X.Y.1"
 ```
@@ -114,6 +115,8 @@ Triple-check things look correct, the release is a "GO", and then start the rele
 $ git show release/vX.Y.Z
 $ git push -u upstream release/vX.Y.Z
 ```
+
+Note: release branches are _not_ typically merged back into `main`.
 
 ### 4. Monitor release
 
@@ -229,6 +232,8 @@ Checkout the appropriate commit, create a release branch, update `DEEPHAVEN_VERS
 ```shell
 $ git fetch upstream
 $ git checkout upstream/main
+# If doing a patch release, instead check out the appropriate <sha>
+# $ git checkout <sha>
 $ git checkout -b release/vX.Y.Z
 # edit files `server.hcl` and `server-slim.hcl` and update the `DEEPHAVEN_VERSION`
 $ git add server.hcl server-slim.hcl
@@ -248,11 +253,17 @@ $ docker run --rm --name deephaven -p 10000:10000 ghcr.io/deephaven/server:X.Y.Z
 The docker image release process is more forgiving than releasing jar artifacts.
 If something goes wrong during this stage, it can easily be corrected.
 
-Follow-up, and create a PR to merge `release/vX.Y.Z` into `main`.
+If applicable (typically, during a normal release), follow-up, and create a PR to merge `release/vX.Y.Z` into `main`.
+Patch releases will not typically be merged back into main.
 
 ### 14. Let everybody know
 
 Ping team, ping community, ping friends - the latest Deephaven has been released!
+
+### 15. Clean-up
+
+The release branches serve a purpose for kicking off CI jobs, but aren't special in other ways.
+Sometime after a release, old release branches can be safely deleted.
 
 ## External dependencies
 
