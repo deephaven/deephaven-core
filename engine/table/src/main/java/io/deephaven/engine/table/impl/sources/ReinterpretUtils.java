@@ -136,7 +136,8 @@ public class ReinterpretUtils {
      * @return the long source or null if it could not be reinterpretted
      */
     @NotNull
-    public static WritableColumnSource<Long> writableInstantToLongSource(final @NotNull WritableColumnSource<?> source) {
+    public static WritableColumnSource<Long> writableInstantToLongSource(
+            final @NotNull WritableColumnSource<?> source) {
         if (source.allowsReinterpret(long.class)) {
             return (WritableColumnSource<Long>) source.reinterpret(long.class);
         }

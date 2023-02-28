@@ -572,7 +572,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
 
         try (SafeCloseable ignored = data;
                 ChunkInputStreamGenerator generator = ChunkInputStreamGenerator.makeInputStreamGenerator(
-                     chunkType, type, type.getComponentType(), srcData, 0)) {
+                        chunkType, type, type.getComponentType(), srcData, 0)) {
 
             // empty subset
             try (final BarrageProtoUtil.ExposedByteArrayOutputStream baos =
