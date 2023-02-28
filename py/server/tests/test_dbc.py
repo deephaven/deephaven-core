@@ -1,6 +1,7 @@
 #
 # Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
+import platform
 import unittest
 
 import turbodbc
@@ -33,6 +34,7 @@ class DbcTestCase(BaseTestCase):
                 # instead of the actual size
                 self.assertEqual(table.size, 10)
 
+    @unittest.skipIf(platform.machine() != "x86_64", reason="connectorx not available on Linux/Arm64")
     def test_read_sql(self):
         postgres_url = "postgresql://test:test@postgres:5432/test"
         query = "SELECT t_ts, t_id, t_instrument, t_exchange, t_price, t_size FROM CRYPTO_TRADES LIMIT 10"
