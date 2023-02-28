@@ -1,11 +1,14 @@
 package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.base.log.LogOutputAppendable;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Context;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.FinalDefault;
 import io.deephaven.util.referencecounting.ReferenceCounted;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -94,72 +97,144 @@ public interface JobScheduler {
         void run(CONTEXT_TYPE taskThreadContext, int index, Consumer<Exception> nestedErrorConsumer, Runnable resume);
     }
 
-    class ErrorAccounter<CONTEXT_TYPE extends JobThreadContext> extends ReferenceCounted
-            implements Consumer<Exception>, Runnable {
-        private final Supplier<CONTEXT_TYPE> taskThreadContextFactory;
+    final class IterationManager<CONTEXT_TYPE extends JobThreadContext> extends ReferenceCounted {
+
         private final int start;
         private final int count;
-        private final Consumer<Exception> finalErrorConsumer;
+        private final Consumer<Exception> onError;
         private final IterateResumeAction<CONTEXT_TYPE> action;
-        private final AtomicInteger nextIndex;
-        private final AtomicInteger remaining;
-        private final Runnable resumeAction;
+        private final Runnable onComplete;
 
-        private final AtomicReference<Exception> exception = new AtomicReference<>();
+        private final AtomicInteger nextAvailableTaskIndex;
+        private final AtomicInteger remainingTaskCount;
+        private final AtomicReference<Exception> exception;
 
-        ErrorAccounter(final Supplier<CONTEXT_TYPE> taskThreadContextFactory,
-                final int start, final int count, final Consumer<Exception> finalErrorConsumer,
-                final IterateResumeAction<CONTEXT_TYPE> action, final Runnable completeAction) {
-            this.taskThreadContextFactory = taskThreadContextFactory;
+        IterationManager(final int start,
+                final int count,
+                @NotNull final Consumer<Exception> onError,
+                @NotNull final IterateResumeAction<CONTEXT_TYPE> action,
+                @NotNull final Runnable onComplete) {
             this.start = start;
             this.count = count;
-            this.finalErrorConsumer = finalErrorConsumer;
+            this.onError = onError;
             this.action = action;
+            this.onComplete = onComplete;
 
-            nextIndex = new AtomicInteger(start);
-            remaining = new AtomicInteger(count);
-
-            resumeAction = () -> {
-                // check for completion
-                if (remaining.decrementAndGet() == 0) {
-                    completeAction.run();
-                }
-            };
-            // pre-increment this once so we maintain >=1 under normal conditions
-            incrementReferenceCount();
+            nextAvailableTaskIndex = new AtomicInteger(start);
+            remainingTaskCount = new AtomicInteger(count);
+            exception = new AtomicReference<>();
         }
 
-        @Override
-        protected void onReferenceCountAtZero() {
-            final Exception localException = exception.get();
-            if (localException != null) {
-                finalErrorConsumer.accept(localException);
+        private void startTasks(
+                @NotNull final JobScheduler scheduler,
+                @NotNull final ExecutionContext executionContext,
+                @NotNull final LogOutputAppendable description,
+                @NotNull final Supplier<CONTEXT_TYPE> taskThreadContextFactory,
+                final int maxThreads) {
+            // Increment this once in order to maintain >=1 until completed
+            incrementReferenceCount();
+            final int numTaskInvokers = Math.min(maxThreads, scheduler.threadCount());
+            for (int tii = 0; tii < numTaskInvokers; ++tii) {
+                final int initialTaskIndex = nextAvailableTaskIndex.getAndIncrement();
+                if (initialTaskIndex >= start + count || exception.get() != null) {
+                    break;
+                }
+                final CONTEXT_TYPE context = taskThreadContextFactory.get();
+                if (!tryIncrementReferenceCount()) {
+                    context.close();
+                    break;
+                }
+                final TaskInvoker taskInvoker = new TaskInvoker(context, initialTaskIndex);
+                scheduler.submit(executionContext, taskInvoker, description, taskInvoker);
             }
         }
 
-        @Override
-        public void accept(Exception e) {
+        private void onTaskComplete() {
+            if (remainingTaskCount.decrementAndGet() == 0) {
+                Assert.eqNull(exception.get(), "exception.get()");
+                decrementReferenceCount();
+            }
+        }
+
+        private void onTaskError(@NotNull final Exception e) {
             if (exception.compareAndSet(null, e)) {
                 decrementReferenceCount();
             }
         }
 
         @Override
-        public void run() {
-            int idx;
-            if (!((idx = nextIndex.getAndIncrement()) < start + count
-                    && exception.get() == null
-                    && tryIncrementReferenceCount())) {
-                // We started this task thread after all sub-tasks are complete or there was an error; we should
-                // not try to allocate a task thread context.
-                return;
+        protected void onReferenceCountAtZero() {
+            final Exception localException = exception.get();
+            if (localException != null) {
+                onError.accept(localException);
+            } else {
+                onComplete.run();
             }
-            try (final CONTEXT_TYPE taskThreadContext = taskThreadContextFactory.get()) {
+        }
+
+        private class TaskInvoker implements Runnable, Consumer<Exception>, SafeCloseable {
+
+            private final CONTEXT_TYPE context;
+
+            private volatile boolean closed;
+
+            private int acquiredTaskIndex;
+            private boolean running;
+
+            /**
+             * Construct a TaskInvoker which will iteratively reschedule itself to perform parallel tasks as needed.
+             * This constructor "transfers ownership" to a single reference count on the enclosing IterationManager to
+             * the result TaskInvoker, to be released on error or work exhaustion.
+             *
+             * @param context The context to be used for all tasks performed by this TaskInvoker
+             * @param initialTaskIndex The index of the initial task to perform
+             */
+            private TaskInvoker(@NotNull final CONTEXT_TYPE context, final int initialTaskIndex) {
+                this.context = context;
+                acquiredTaskIndex = initialTaskIndex;
+            }
+
+            @Override
+            public synchronized void run() {
+                int runningTaskIndex;
                 do {
-                    action.run(taskThreadContext, idx, this, resumeAction);
-                } while ((idx = nextIndex.getAndIncrement()) < start + count && exception.get() == null);
-            } finally {
-                decrementReferenceCount();
+                    if (exception.get() != null) {
+                        // We acquired a task index, but the operation is aborting
+                        close();
+                        return;
+                    }
+                    runningTaskIndex = acquiredTaskIndex;
+                    running = true;
+                    action.run(context, runningTaskIndex, this, this::onTaskDone);
+                    running = false;
+                } while (runningTaskIndex != acquiredTaskIndex && !closed);
+            }
+
+            private synchronized void onTaskDone() {
+                onTaskComplete();
+                if ((acquiredTaskIndex = nextAvailableTaskIndex.getAndIncrement()) >= start + count
+                        || exception.get() != null) {
+                    close();
+                } else if (!running) {
+                    run();
+                }
+            }
+
+            @Override
+            public void accept(@NotNull final Exception e) {
+                try (final SafeCloseable ignored = this) {
+                    onTaskError(e);
+                }
+            }
+
+            @Override
+            public void close() {
+                Assert.eqFalse(closed, "closed");
+                try (final SafeCloseable ignored = context) {
+                    closed = true;
+                } finally {
+                    decrementReferenceCount();
+                }
             }
         }
     }
@@ -174,28 +249,28 @@ public interface JobScheduler {
      * @param start the integer value from which to start iterating
      * @param count the number of times this task should be called
      * @param action the task to perform, the current iteration index is provided as a parameter
-     * @param completeAction this will be called when all iterations are complete
+     * @param onComplete this will be called when all iterations are complete
      * @param onError error handler for the scheduler to use while iterating
      */
     @FinalDefault
     default <CONTEXT_TYPE extends JobThreadContext> void iterateParallel(
-            ExecutionContext executionContext,
-            LogOutputAppendable description,
-            Supplier<CONTEXT_TYPE> taskThreadContextFactory,
-            int start,
-            int count,
-            IterateAction<CONTEXT_TYPE> action,
-            Runnable completeAction,
-            Consumer<Exception> onError) {
+            @NotNull final ExecutionContext executionContext,
+            @NotNull final LogOutputAppendable description,
+            @NotNull final Supplier<CONTEXT_TYPE> taskThreadContextFactory,
+            final int start,
+            final int count,
+            @NotNull final IterateAction<CONTEXT_TYPE> action,
+            @NotNull final Runnable onComplete,
+            @NotNull final Consumer<Exception> onError) {
         iterateParallel(executionContext, description, taskThreadContextFactory, start, count,
                 (final CONTEXT_TYPE taskThreadContext,
-                        final int idx,
+                        final int taskIndex,
                         final Consumer<Exception> nestedErrorConsumer,
                         final Runnable resume) -> {
-                    action.run(taskThreadContext, idx, nestedErrorConsumer);
+                    action.run(taskThreadContext, taskIndex, nestedErrorConsumer);
                     resume.run();
                 },
-                completeAction, onError);
+                onComplete, onError);
     }
 
     /**
@@ -210,35 +285,28 @@ public interface JobScheduler {
      * @param start the integer value from which to start iterating
      * @param count the number of times this task should be called
      * @param action the task to perform, the current iteration index and a resume Runnable are parameters
-     * @param completeAction this will be called when all iterations are complete
+     * @param onComplete this will be called when all iterations are complete
      * @param onError error handler for the scheduler to use while iterating
      */
     @FinalDefault
     default <CONTEXT_TYPE extends JobThreadContext> void iterateParallel(
-            ExecutionContext executionContext,
-            LogOutputAppendable description,
-            Supplier<CONTEXT_TYPE> taskThreadContextFactory,
-            int start,
-            int count,
-            IterateResumeAction<CONTEXT_TYPE> action,
-            Runnable completeAction,
-            Consumer<Exception> onError) {
+            @NotNull final ExecutionContext executionContext,
+            @NotNull final LogOutputAppendable description,
+            @NotNull final Supplier<CONTEXT_TYPE> taskThreadContextFactory,
+            final int start,
+            final int count,
+            @NotNull final IterateResumeAction<CONTEXT_TYPE> action,
+            @NotNull final Runnable onComplete,
+            @NotNull final Consumer<Exception> onError) {
 
         if (count == 0) {
             // no work to do
-            completeAction.run();
+            onComplete.run();
         }
 
-        final ErrorAccounter<CONTEXT_TYPE> ea =
-                new ErrorAccounter<>(taskThreadContextFactory, start, count, onError, action, completeAction);
-
-        // create multiple tasks but not more than one per scheduler thread
-        for (int i = 0; i < Math.min(count, threadCount()); i++) {
-            submit(executionContext,
-                    ea,
-                    description,
-                    ea);
-        }
+        final IterationManager<CONTEXT_TYPE> iterationManager =
+                new IterationManager<>(start, count, onError, action, onComplete);
+        iterationManager.startTasks(this, executionContext, description, taskThreadContextFactory, count);
     }
 
     /**
@@ -253,63 +321,27 @@ public interface JobScheduler {
      * @param start the integer value from which to start iterating
      * @param count the number of times this task should be called
      * @param action the task to perform, the current iteration index and a resume Runnable are parameters
-     * @param completeAction this will be called when all iterations are complete
+     * @param onComplete this will be called when all iterations are complete
      * @param onError error handler for the scheduler to use while iterating
      */
     @FinalDefault
-    default <CONTEXT_TYPE extends JobThreadContext> void iterateSerial(ExecutionContext executionContext,
-            LogOutputAppendable description,
-            Supplier<CONTEXT_TYPE> taskThreadContextFactory,
-            int start,
-            int count,
-            IterateResumeAction<CONTEXT_TYPE> action,
-            Runnable completeAction,
-            Consumer<Exception> onError) {
+    default <CONTEXT_TYPE extends JobThreadContext> void iterateSerial(
+            @NotNull final ExecutionContext executionContext,
+            @NotNull final LogOutputAppendable description,
+            @NotNull final Supplier<CONTEXT_TYPE> taskThreadContextFactory,
+            final int start,
+            final int count,
+            @NotNull final IterateResumeAction<CONTEXT_TYPE> action,
+            @NotNull final Runnable onComplete,
+            @NotNull final Consumer<Exception> onError) {
 
         if (count == 0) {
             // no work to do
-            completeAction.run();
+            onComplete.run();
         }
 
-        // create a single execution context for all iterations
-        final CONTEXT_TYPE taskThreadContext = taskThreadContextFactory.get();
-
-        final Consumer<Exception> localError = exception -> {
-            taskThreadContext.close();
-            onError.accept(exception);
-        };
-
-        // no lambda, need the `this` reference to re-execute
-        final Runnable resumeAction = new Runnable() {
-            int nextIndex = start + 1;
-            int remaining = count;
-
-            @Override
-            public void run() {
-                // check for completion
-                if (--remaining == 0) {
-                    taskThreadContext.close();
-                    completeAction.run();
-                } else {
-
-                    // schedule the next task
-                    submit(executionContext,
-                            () -> {
-                                int idx = nextIndex++;
-                                // do the work
-                                action.run(taskThreadContext, idx, localError, this);
-                            },
-                            description,
-                            localError);
-                }
-
-            }
-        };
-
-        // create a single task
-        submit(executionContext,
-                () -> action.run(taskThreadContext, start, localError, resumeAction),
-                description,
-                localError);
+        final IterationManager<CONTEXT_TYPE> iterationManager =
+                new IterationManager<>(start, count, onError, action, onComplete);
+        iterationManager.startTasks(this, executionContext, description, taskThreadContextFactory, 1);
     }
 }
