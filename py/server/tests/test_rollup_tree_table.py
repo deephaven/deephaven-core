@@ -7,7 +7,7 @@ from deephaven import read_csv, empty_table
 from deephaven.agg import sum_, avg, count_, first, last, max_, min_, std, abs_sum, \
     var
 from deephaven.filters import Filter
-from deephaven.rollup_table import NodeType
+from deephaven.table import NodeType
 from tests.testbase import BaseTestCase
 
 
