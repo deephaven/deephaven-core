@@ -7,6 +7,7 @@ import io.deephaven.engine.table.Context;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.FinalDefault;
+import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.util.referencecounting.ReferenceCounted;
 import org.jetbrains.annotations.NotNull;
 
@@ -99,6 +100,10 @@ public interface JobScheduler {
 
     final class IterationManager<CONTEXT_TYPE extends JobThreadContext> extends ReferenceCounted {
 
+        private static void onUnexpectedJobError(@NotNull final Exception exception) {
+            ProcessEnvironment.getGlobalFatalErrorReporter().report("Unexpected iteration job error", exception);
+        }
+
         private final int start;
         private final int count;
         private final Consumer<Exception> onError;
@@ -109,11 +114,12 @@ public interface JobScheduler {
         private final AtomicInteger remainingTaskCount;
         private final AtomicReference<Exception> exception;
 
-        IterationManager(final int start,
+        IterationManager(
+                final int start,
                 final int count,
-                @NotNull final Consumer<Exception> onError,
                 @NotNull final IterateResumeAction<CONTEXT_TYPE> action,
-                @NotNull final Runnable onComplete) {
+                @NotNull final Runnable onComplete,
+                @NotNull final Consumer<Exception> onError) {
             this.start = start;
             this.count = count;
             this.onError = onError;
@@ -145,7 +151,7 @@ public interface JobScheduler {
                     break;
                 }
                 final TaskInvoker taskInvoker = new TaskInvoker(context, initialTaskIndex);
-                scheduler.submit(executionContext, taskInvoker, description, taskInvoker);
+                scheduler.submit(executionContext, taskInvoker, description, IterationManager::onUnexpectedJobError);
             }
         }
 
@@ -199,18 +205,32 @@ public interface JobScheduler {
                 int runningTaskIndex;
                 do {
                     if (exception.get() != null) {
-                        // We acquired a task index, but the operation is aborting
+                        // We acquired a task index, but the operation is aborting because some other thread reported
+                        // an error.
                         close();
                         return;
                     }
                     runningTaskIndex = acquiredTaskIndex;
-                    running = true;
-                    action.run(context, runningTaskIndex, this, this::onTaskDone);
-                    running = false;
+                    try {
+                        running = true;
+                        action.run(context, runningTaskIndex, this, this::reportTaskCompleteAndResumeIteration);
+                    } catch (Exception e) {
+                        accept(e);
+                        return;
+                    } finally {
+                        running = false;
+                    }
                 } while (runningTaskIndex != acquiredTaskIndex && !closed);
             }
 
-            private synchronized void onTaskDone() {
+            private synchronized void reportTaskCompleteAndResumeIteration() {
+                // This might be called from the original thread that ran our action for acquiredTaskIndex, *or* from
+                // a thread that completed that task asynchronously. Regardless, we always try to acquire a new task,
+                // freeing our resources if there are no tasks remaining or an error was reported asynchronously.
+                // If we *do* have a task to execute, if we're on the original thread (running == true) we return in
+                // order to allow the enclosing loop to execute our task in an orderly fashion without any recursion
+                // in the thread stack, else we run it here, hijacking the thread that reported the prior iteration's
+                // completion.
                 onTaskComplete();
                 if ((acquiredTaskIndex = nextAvailableTaskIndex.getAndIncrement()) >= start + count
                         || exception.get() != null) {
@@ -305,7 +325,7 @@ public interface JobScheduler {
         }
 
         final IterationManager<CONTEXT_TYPE> iterationManager =
-                new IterationManager<>(start, count, onError, action, onComplete);
+                new IterationManager<>(start, count, action, onComplete, onError);
         iterationManager.startTasks(this, executionContext, description, taskThreadContextFactory, count);
     }
 
@@ -341,7 +361,7 @@ public interface JobScheduler {
         }
 
         final IterationManager<CONTEXT_TYPE> iterationManager =
-                new IterationManager<>(start, count, onError, action, onComplete);
+                new IterationManager<>(start, count, action, onComplete, onError);
         iterationManager.startTasks(this, executionContext, description, taskThreadContextFactory, 1);
     }
 }

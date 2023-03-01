@@ -532,12 +532,12 @@ public abstract class UpdateBy {
         }
 
         /**
-         * Process each bucket in {@code windows[winIdx]} in parallel. Calls {@code onWindowBucketComplete} when the
+         * Process each bucket in {@code windows[winIdx]} in parallel. Calls {@code onWindowBucketsComplete} when the
          * work is complete.
          */
         private void processWindowBuckets(
                 final int winIdx,
-                final Runnable onWindowBucketComplete,
+                final Runnable onWindowBucketsComplete,
                 final Consumer<Exception> onWindowBucketError) {
             if (jobScheduler.threadCount() > 1 && dirtyBuckets.length > 1) {
                 // process the buckets in parallel
@@ -548,14 +548,19 @@ public abstract class UpdateBy {
                             UpdateByBucketHelper bucket = dirtyBuckets[bucketIdx];
                             bucket.assignInputSources(winIdx, maybeCachedInputSources);
                             bucket.processWindow(winIdx, initialStep);
-                        }, onWindowBucketComplete, onWindowBucketError);
+                        }, onWindowBucketsComplete, onWindowBucketError);
             } else {
-                // minimize overhead when running serially
-                for (UpdateByBucketHelper bucket : dirtyBuckets) {
-                    bucket.assignInputSources(winIdx, maybeCachedInputSources);
-                    bucket.processWindow(winIdx, initialStep);
+                try {
+                    // minimize overhead when running serially
+                    for (UpdateByBucketHelper bucket : dirtyBuckets) {
+                        bucket.assignInputSources(winIdx, maybeCachedInputSources);
+                        bucket.processWindow(winIdx, initialStep);
+                    }
+                } catch (Exception e) {
+                    onWindowBucketError.accept(e);
+                    return;
                 }
-                onWindowBucketComplete.run();
+                onWindowBucketsComplete.run();
             }
         }
 

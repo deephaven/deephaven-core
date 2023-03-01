@@ -614,4 +614,80 @@ public final class TestJobScheduler {
             }
         }
     }
+
+    @Test
+    public void testNestedParallelChainedError() {
+        final CompletableFuture<Void> waitForResult = new CompletableFuture<>();
+        final AtomicInteger openCount = new AtomicInteger(0);
+
+        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
+        UpdateGraphProcessor.DEFAULT.resetForUnitTests(false, true, 0, 4, 10, 5);
+        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            final boolean[][] completed = new boolean[50][60];
+
+            class TestJobThreadContext implements JobScheduler.JobThreadContext {
+                TestJobThreadContext() {
+                    openCount.incrementAndGet();
+                }
+
+                @Override
+                public void close() {
+                    openCount.decrementAndGet();
+                }
+            }
+
+            final JobScheduler scheduler = new UpdateGraphProcessorJobScheduler();
+            scheduler.iterateParallel(
+                    ExecutionContext.getContext(),
+                    null,
+                    TestJobThreadContext::new,
+                    0,
+                    50,
+                    (context1, idx1, nec1, r1) -> {
+                        if (idx1 == 40) {
+                            throw new IndexOutOfBoundsException("Test error");
+                        }
+                        scheduler.iterateParallel(
+                                ExecutionContext.getContext(),
+                                null,
+                                TestJobThreadContext::new,
+                                0,
+                                60,
+                                (context2, idx2, nec2) -> {
+                                    // verify the type is correct
+                                    Assert.instanceOf(context2, "context2", TestJobThreadContext.class);
+                                    completed[idx1][idx2] = true;
+                                }, r1, nec1);
+                    },
+                    () -> {
+                        // if this is called, we failed the test
+                        waitForResult.completeExceptionally(new AssertionFailure("Exception not thrown"));
+                    },
+                    exception -> {
+                        if (!(exception instanceof IndexOutOfBoundsException)) {
+                            waitForResult.completeExceptionally(new AssertionFailure("Unexpected exception thrown"));
+                        }
+                        if (completed[40][0]) {
+                            waitForResult.completeExceptionally(new AssertionFailure("Processed unexpected index"));
+                        }
+                        waitForResult.complete(null);
+                    });
+        });
+
+        try {
+            // need to wait until this future is complete
+            waitForResult.get();
+            // make sure all the contexts were closed
+            Assert.eqZero(openCount.get(), "openCount");
+        } catch (InterruptedException e) {
+            throw new CancellationException("Interrupted while processing test");
+        } catch (ExecutionException e) {
+            if (e.getCause() instanceof RuntimeException) {
+                throw (RuntimeException) e.getCause();
+            } else {
+                // rethrow the error
+                throw new UncheckedDeephavenException("Failure while processing test", e.getCause());
+            }
+        }
+    }
 }
