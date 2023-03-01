@@ -24,7 +24,7 @@ def j_array_list(values: Iterable = None) -> jpy.JType:
         return None
     r = jpy.get_type("java.util.ArrayList")(len(list(values)))
     for v in values:
-        r.add(v)
+        r.add(unwrap(v))
     return r
 
 

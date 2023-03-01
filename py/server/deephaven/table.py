@@ -60,7 +60,6 @@ _test_vectorization = False
 _vectorized_count = 0
 
 # Rollup Table and Tree Table
-_JRollupTable = jpy.get_type("io.deephaven.engine.table.hierarchical.RollupTable")
 _JTreeTable = jpy.get_type("io.deephaven.engine.table.hierarchical.TreeTable")
 
 
@@ -219,42 +218,6 @@ def _td_to_columns(table_definition):
             )
         )
     return cols
-
-
-class RollupTable(JObjectWrapper):
-    """ A RollupTable is generated as a result of applying the :meth:`~Table.rollup` method on a Table.
-
-    Note: RollupTable should not be instantiated directly by user code.
-    """
-    j_object_type = _JRollupTable
-
-    @property
-    def j_object(self) -> jpy.JType:
-        return self.j_rollup_table
-
-    def __init__(self, j_rollup_table: jpy.JType, aggs: Sequence[Aggregation], include_constituents: bool,
-                 by: Sequence[str]):
-        self.j_rollup_table = j_rollup_table
-        self.aggs = aggs
-        self.include_constituents = include_constituents
-        self.by = by
-
-
-class TreeTable(JObjectWrapper):
-    """ A TreeTable is generated as a result of applying the :meth:`~Table.tree` method on a Table.
-
-    Note: TreeTable should not be instantiated directly by user code.
-    """
-    j_object_type = _JTreeTable
-
-    @property
-    def j_object(self) -> jpy.JType:
-        return self.j_tree_table
-
-    def __init__(self, j_tree_table: jpy.JType, id_col: str, parent_col: str):
-        self.j_tree_table = j_tree_table
-        self.id_col = id_col
-        self.parent_col = parent_col
 
 
 class Table(JObjectWrapper):
@@ -1703,7 +1666,7 @@ class Table(JObjectWrapper):
         """Extracts a subset of a table by row positions into a new Table.
 
           If both the start and the stop are positive, then both are counted from the beginning of the table.
-          The start is inclusive, and the stop is exclusive. slice(0, N) is equivalent to :meth:`~Table.head(N)`
+          The start is inclusive, and the stop is exclusive. slice(0, N) is equivalent to :meth:`~Table.head` (N)
           The start must be less than or equal to the stop.
 
           If the start is positive and the stop is negative, then the start is counted from the beginning of the
@@ -1711,7 +1674,7 @@ class Table(JObjectWrapper):
           rows but the first and last. If the stop is before the start, the result is an empty table.
 
           If the start is negative, and the stop is zero, then the start is counted from the end of the table,
-          and the end of the slice is the size of the table. slice(-N, 0) is equivalent to :meth:`~Table.tail(N)`.
+          and the end of the slice is the size of the table. slice(-N, 0) is equivalent to :meth:`~Table.tail` (N).
 
           If the start is negative and the stop is negative, they are both counted from the end of the
           table. For example, slice(-2, -1) returns the second to last row of the table.
