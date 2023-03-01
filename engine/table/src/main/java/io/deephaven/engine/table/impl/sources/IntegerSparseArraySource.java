@@ -382,7 +382,6 @@ public class IntegerSparseArraySource extends SparseArrayColumnSource<Integer> i
      * record values), returns null.
     */
     final int [] shouldRecordPrevious(final long key) {
-        // prevFlusher == null means we are not tracking previous values yet (or maybe ever)
         if (!shouldTrackPrevious()) {
             return null;
         }
@@ -688,7 +687,9 @@ public class IntegerSparseArraySource extends SparseArrayColumnSource<Integer> i
     }
 
     private boolean shouldTrackPrevious() {
-        // prevFlusher == null means we are not tracking previous values yet (or maybe ever)
+        // prevFlusher == null means we are not tracking previous values yet (or maybe ever).
+        // If prepareForParallelPopulation was called on this cycle, it's assumed that all previous values have already
+        // been recorded.
         return prevFlusher != null && prepareForParallelPopulationClockCycle != LogicalClock.DEFAULT.currentStep();
     }
     // endregion fillFromChunkByRanges

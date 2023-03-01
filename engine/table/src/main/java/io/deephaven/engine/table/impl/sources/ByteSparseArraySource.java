@@ -382,7 +382,6 @@ public class ByteSparseArraySource extends SparseArrayColumnSource<Byte> impleme
      * record values), returns null.
     */
     final byte [] shouldRecordPrevious(final long key) {
-        // prevFlusher == null means we are not tracking previous values yet (or maybe ever)
         if (!shouldTrackPrevious()) {
             return null;
         }
@@ -688,7 +687,9 @@ public class ByteSparseArraySource extends SparseArrayColumnSource<Byte> impleme
     }
 
     private boolean shouldTrackPrevious() {
-        // prevFlusher == null means we are not tracking previous values yet (or maybe ever)
+        // prevFlusher == null means we are not tracking previous values yet (or maybe ever).
+        // If prepareForParallelPopulation was called on this cycle, it's assumed that all previous values have already
+        // been recorded.
         return prevFlusher != null && prepareForParallelPopulationClockCycle != LogicalClock.DEFAULT.currentStep();
     }
     // endregion fillFromChunkByRanges
