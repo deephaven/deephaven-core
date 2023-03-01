@@ -296,36 +296,6 @@ public class AggregatingDoubleRingBufferTest extends TestCase {
         }
     }
 
-    public void testRangesCollapse() {
-        // overlapping
-        assertTrue(AggregatingDoubleRingBuffer.rangesCollapse(0, 2, 1, 3));
-        assertTrue(AggregatingDoubleRingBuffer.rangesCollapse(1, 3, 0, 2));
-
-        assertTrue(AggregatingDoubleRingBuffer.rangesCollapse(0, 10, 1, 3));
-        assertTrue(AggregatingDoubleRingBuffer.rangesCollapse(1, 3, 0, 10));
-
-        // fully contained
-        assertTrue(AggregatingDoubleRingBuffer.rangesCollapse(0, 3, 1, 2));
-        assertTrue(AggregatingDoubleRingBuffer.rangesCollapse(1, 2, 0, 3));
-
-        assertTrue(AggregatingDoubleRingBuffer.rangesCollapse(1, 2, 1, 1));
-        assertTrue(AggregatingDoubleRingBuffer.rangesCollapse(1, 1, 1, 2));
-
-        assertTrue(AggregatingDoubleRingBuffer.rangesCollapse(1, 2, 2, 2));
-        assertTrue(AggregatingDoubleRingBuffer.rangesCollapse(2, 2, 1, 2));
-
-        // consecutive
-        assertTrue(AggregatingDoubleRingBuffer.rangesCollapse(0, 1, 2, 3));
-        assertTrue(AggregatingDoubleRingBuffer.rangesCollapse(2, 3, 0, 1));
-
-        // non-overlapping, non consecutive
-        assertFalse(AggregatingDoubleRingBuffer.rangesCollapse(0, 1, 3, 4));
-        assertFalse(AggregatingDoubleRingBuffer.rangesCollapse(3, 4, 0, 1));
-
-        assertFalse(AggregatingDoubleRingBuffer.rangesCollapse(0, 1, 9, 10));
-        assertFalse(AggregatingDoubleRingBuffer.rangesCollapse(9, 10, 0, 1));
-    }
-
     public void testSpecialCaseA() {
         // overlapping push and pop ranges with popTail < pushTail
         final AggregatingDoubleRingBuffer rb =

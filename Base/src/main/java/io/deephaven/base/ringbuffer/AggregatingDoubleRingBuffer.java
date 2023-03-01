@@ -403,6 +403,12 @@ public class AggregatingDoubleRingBuffer {
     }
 
     // region evaluation
+
+    /**
+     * Return the result of aggregation function applied to the contents of the aggregating ring buffer.
+     *
+     * @return The result of (@code aggFunction()} applied to each value in the buffer
+     */
     public double evaluate() {
         // [calcedHead, calcedTail) is the interval that was calculated the last time
         // that evaluate() was called.
@@ -470,121 +476,229 @@ public class AggregatingDoubleRingBuffer {
 
         if (r1Tail - r1Head >= internalBuffer.storage.length || r2Tail - r2Head >= internalBuffer.storage.length) {
             // Evaluate everything
-            normalizeAndEvaluate(0, internalBuffer.storage.length, 0, 0);
+            fixupTree(0, internalBuffer.storage.length, 0, 0);
         } else {
-            normalizeAndEvaluate(r1Head, r1Tail, r2Head, r2Tail);
+            fixupTree(r1Head, r1Tail, r2Head, r2Tail);
         }
 
-        // Store our computed range
+        // Store the range of items that have been computed.
         calcHead = internalBuffer.head;
         calcTail = internalBuffer.tail;
 
+        // Return the root of the tree.
         return treeStorage[1];
     }
 
-    void normalizeAndEvaluate(final long head1, final long tail1, final long head2, final long tail2) {
-        final long size1 = tail1 - head1;
-        final long size2 = tail2 - head2;
+    /**
+     * This function will accept the two un-normalized dirty ranges and apply the aggregation function to those ranges
+     * in the storage ring buffer and successively to the tree of evaluation results until a single result is available
+     * at the root of the tree.
+     */
+    void fixupTree(final long r1Head, final long r1Tail, final long r2Head, final long r2Tail) {
+        final long r1Size = r1Tail - r1Head;
+        final long r2Size = r2Tail - r2Head;
 
         // Compute the offset to store the results from the storage array to the tree array.
         final int offset = internalBuffer.storage.length / 2;
 
-        if (size1 == 0 && size2 == 0) {
+        if (r1Size == 0 && r2Size == 0) {
             // No ranges to compute.
             return;
         }
 
-        if (size2 == 0) {
-            // Only one range to compute (although it may be wrapped).
-            int head1Normal = (int) (head1 & internalBuffer.mask);
-            int tail1Normal = (int) (head1Normal + size1);
+        if (r2Size == 0) {
+            // Only r1 to compute.
+            final int r1HeadNormal = (int) (r1Head & internalBuffer.mask);
+            final int r1TailNormal = (int) (r1HeadNormal + r1Size);
 
-            if (tail1Normal <= internalBuffer.storage.length) {
-                // Single non-wrapping range.
-                final int h1 = head1Normal;
-                final int t1 = tail1Normal - 1; // change to inclusive
+            if (r1TailNormal <= internalBuffer.storage.length) {
+                // r1 did not wrap, single range to compute
+                final int r1h = r1HeadNormal;
+                final int r1t = r1TailNormal - 1; // change to inclusive
 
-                evaluateRangeFast(h1, t1, internalBuffer.storage, offset);
-                evaluateTree(offset + (h1 / 2), offset + (t1 / 2));
+                // Evaluate the values in the storage buffer (results stored in the tree)
+                computeAndStoreResults(r1h, r1t, internalBuffer.storage, offset);
+                // Evaluate the single range in the tree.
+                evaluateRange(offset + (r1h / 2), offset + (r1t / 2));
                 return;
             }
 
-            // Two ranges because of the wrap-around.
-            final int h1 = 0;
-            final int t1 = tail1Normal - internalBuffer.storage.length - 1; // change to inclusive
-            final int h2 = head1Normal;
-            final int t2 = internalBuffer.storage.length - 1; // change to inclusive
+            // r1 wraps the ring buffer boundary, process as two ranges.
+            final int r1h = 0;
+            final int r1t = r1TailNormal - internalBuffer.storage.length - 1; // change to inclusive
+            final int r2h = r1HeadNormal;
+            final int r2t = internalBuffer.storage.length - 1; // change to inclusive
 
-            evaluateRangeFast(h1, t1, internalBuffer.storage, offset);
-            evaluateRangeFast(h2, t2, internalBuffer.storage, offset);
+            // Evaluate the values in the storage buffer (results stored in the tree)
+            computeAndStoreResults(r1h, r1t, internalBuffer.storage, offset);
+            computeAndStoreResults(r2h, r2t, internalBuffer.storage, offset);
 
-            evaluateTree(offset + (h1 / 2), offset + (t1 / 2),
-                    offset + (h2 / 2), offset + (t2 / 2));
+            // Evaluate the two ranges in the tree.
+            evaluateTwoRanges(offset + (r1h / 2), offset + (r1t / 2),
+                    offset + (r2h / 2), offset + (r2t / 2));
         }
 
-        // Two ranges to compute, only one can wrap.
-        int head1Normal = (int) (head1 & internalBuffer.mask);
-        int tail1Normal = (int) (head1Normal + size1);
-        int head2Normal = (int) (head2 & internalBuffer.mask);
-        int tail2Normal = (int) (head2Normal + size2);
+        // r1 and r2 both need to be evaluated, take advantage of the fact that at most one will wrap. Also sort the
+        // ranges now to be more efficient through the rest of the algorithm
+        final int r1HeadTmp = (int) (r1Head & internalBuffer.mask);
+        final int r1TailTmp = (int) (r1HeadTmp + r1Size);
+        final int r2HeadTmp = (int) (r2Head & internalBuffer.mask);
+        final int r2TailTmp = (int) (r2HeadTmp + r2Size);
 
-        if (tail1Normal <= internalBuffer.storage.length && tail2Normal <= internalBuffer.storage.length) {
-            // Neither range wraps around.
-            final int h1 = head1Normal;
-            final int t1 = tail1Normal - 1; // change to inclusive
-            final int h2 = head2Normal;
-            final int t2 = tail2Normal - 1; // change to inclusive
+        final int r1HeadNormal;
+        final int r1TailNormal;
+        final int r2HeadNormal;
+        final int r2TailNormal;
 
-            evaluateRangeFast(h1, t1, internalBuffer.storage, offset);
-            evaluateRangeFast(h2, t2, internalBuffer.storage, offset);
+        if (r1HeadTmp <= r2HeadTmp) {
+            r1HeadNormal = r1HeadTmp;
+            r1TailNormal = r1TailTmp;
+            r2HeadNormal = r2HeadTmp;
+            r2TailNormal = r2TailTmp;
+        } else {
+            r1HeadNormal = r2HeadTmp;
+            r1TailNormal = r2TailTmp;
+            r2HeadNormal = r1HeadTmp;
+            r2TailNormal = r1TailTmp;
+        }
 
-            evaluateTree(offset + (h1 / 2), offset + (t1 / 2),
-                    offset + (h2 / 2), offset + (t2 / 2));
+        if (r1TailNormal <= internalBuffer.storage.length && r2TailNormal <= internalBuffer.storage.length) {
+            // Neither range wraps and r1h <= r2h so we can evaluate directly.
+            final int r1h = r1HeadNormal;
+            final int r1t = r1TailNormal - 1; // change to inclusive
+            final int r2h = r2HeadNormal;
+            final int r2t = r2TailNormal - 1; // change to inclusive
+
+            // Evaluate the values from the storage buffer and store into the evaluation tree.
+            computeAndStoreResults(r1h, r1t, internalBuffer.storage, offset);
+            computeAndStoreResults(r2h, r2t, internalBuffer.storage, offset);
+
+            // Evaluate the two unique ranges in the tree.
+            evaluateTwoRanges(offset + (r1h / 2), offset + (r1t / 2),
+                    offset + (r2h / 2), offset + (r2t / 2));
             return;
         }
-        if (tail1Normal <= internalBuffer.storage.length) {
-            // r2 wraps, r1 does not.
-            final int h1 = 0;
-            final int t1 = tail2Normal - internalBuffer.storage.length - 1; // change to inclusive
-            final int h2 = head1Normal;
-            final int t2 = tail1Normal - 1; // change to inclusive
-            final int h3 = head2Normal;
-            final int t3 = internalBuffer.storage.length - 1; // change to inclusive
+        if (r1TailNormal <= internalBuffer.storage.length) {
+            // r2 wraps, but r1 does not.
+            final int r1h = 0;
+            final int r1t = r2TailNormal - internalBuffer.storage.length - 1; // change to inclusive
+            final int r2h = r1HeadNormal;
+            final int r2t = r1TailNormal - 1; // change to inclusive
+            final int r3h = r2HeadNormal;
+            final int r3t = internalBuffer.storage.length - 1; // change to inclusive
 
-            evaluateRangeFast(h1, t1, internalBuffer.storage, offset);
-            evaluateRangeFast(h2, t2, internalBuffer.storage, offset);
-            evaluateRangeFast(h3, t3, internalBuffer.storage, offset);
+            // Evaluate the values from the storage buffer and store into the evaluation tree.
+            computeAndStoreResults(r1h, r1t, internalBuffer.storage, offset);
+            computeAndStoreResults(r2h, r2t, internalBuffer.storage, offset);
+            computeAndStoreResults(r3h, r3t, internalBuffer.storage, offset);
 
-            evaluateTree(offset + (h1 / 2), offset + (t1 / 2),
-                    offset + (h2 / 2), offset + (t2 / 2),
-                    offset + (h3 / 2), offset + (t3 / 2));
+            // Evaluate the three unique ranges in the tree.
+            evaluateThreeRanges(offset + (r1h / 2), offset + (r1t / 2),
+                    offset + (r2h / 2), offset + (r2t / 2),
+                    offset + (r3h / 2), offset + (r3t / 2));
             return;
         }
         // r1 wraps, r2 does not.
-        final int h1 = 0;
-        final int t1 = tail1Normal - internalBuffer.storage.length - 1; // change to inclusive
-        final int h2 = head2Normal;
-        final int t2 = tail2Normal - 1; // change to inclusive
-        final int h3 = head1Normal;
-        final int t3 = internalBuffer.storage.length - 1; // change to inclusive
+        final int r1h = 0;
+        final int r1t = r1TailNormal - internalBuffer.storage.length - 1; // change to inclusive
+        final int r2h = r2HeadNormal;
+        final int r2t = r2TailNormal - 1; // change to inclusive
+        final int r3h = r1HeadNormal;
+        final int r3t = internalBuffer.storage.length - 1; // change to inclusive
 
-        evaluateRangeFast(h1, t1, internalBuffer.storage, offset);
-        evaluateRangeFast(h2, t2, internalBuffer.storage, offset);
-        evaluateRangeFast(h3, t3, internalBuffer.storage, offset);
+        // Evaluate the values from the storage buffer and store into the evaluation tree.
+        computeAndStoreResults(r1h, r1t, internalBuffer.storage, offset);
+        computeAndStoreResults(r2h, r2t, internalBuffer.storage, offset);
+        computeAndStoreResults(r3h, r3t, internalBuffer.storage, offset);
 
-        evaluateTree(offset + (h1 / 2), offset + (t1 / 2),
-                offset + (h2 / 2), offset + (t2 / 2),
-                offset + (h3 / 2), offset + (t3 / 2));
+        // Evaluate the three unique ranges in the tree.
+        evaluateThreeRanges(offset + (r1h / 2), offset + (r1t / 2),
+                offset + (r2h / 2), offset + (r2t / 2),
+                offset + (r3h / 2), offset + (r3t / 2));
     }
 
-    public static boolean rangesCollapse(final int x1, final int y1, final int x2, final int y2) {
-        // Ranges overlap when the start of one range is <= the end of the other. In this case, we want to extend
-        // detection to when the ranges are consecutive as well. Do this by adding one to the range ends before
-        // comparison.
-        return x1 <= (y2 + 1) && x2 <= (y1 + 1);
+    /**
+     * This function accepts three unique ranges in the evaluation tree and iteratively computes aggregation results of
+     * value pairs in the range which are stored in parent nodes. Each iteration will shrink the ranges by a factor of
+     * 2. As the ranges shrink, an overlap will occur and this function will transfer to
+     * {@link #evaluateTwoRanges(int, int, int, int)} for better performance.
+     */
+    private void evaluateThreeRanges(int r1h, int r1t, int r2h, int r2t, int r3h, int r3t) {
+        while (true) {
+            if (r1t >= r2h) {
+                // r1 and r2 overlap, collapse them together and call the two range version.
+                evaluateTwoRanges(r1h, r2t, r3h, r3t);
+                return;
+            }
+            if (r2t >= r3h) {
+                // r2 and r3 overlap, collapse them together and call the two range version.
+                evaluateTwoRanges(r1h, r1t, r2h, r3t);
+                return;
+            }
+
+            // No collapse is possible, compute the unique ranges.
+            computeAndStoreResults(r1h, r1t, treeStorage, 0);
+            computeAndStoreResults(r2h, r2t, treeStorage, 0);
+            computeAndStoreResults(r3h, r3t, treeStorage, 0);
+
+            // Determine the new parents and loop until two ranges collapse
+            r1h /= 2;
+            r1t /= 2;
+            r2h /= 2;
+            r2t /= 2;
+            r3h /= 2;
+            r3t /= 2;
+        }
     }
 
-    private void evaluateRangeFast(int start, int end, double[] src, int dstOffset) {
+    /**
+     * This function accepts two unique ranges in the evaluation tree and iteratively computes aggregation results of
+     * value pairs in the range which are stored in parent nodes. Each iteration will shrink the ranges by a factor of
+     * 2. As the ranges shrink, an overlap will occur and this function will transfer to
+     * {@link #evaluateRange(int, int)} for better performance.
+     */
+    private void evaluateTwoRanges(int r1h, int r1t, int r2h, int r2t) {
+        while (true) {
+            if (r1t >= r2h) {
+                // r1 and r2 overlap, collapse them together and call the single range version.
+                evaluateRange(r1h, r2t);
+                return;
+            }
+
+            // No collapse is possible, compute the unique ranges.
+            computeAndStoreResults(r1h, r1t, treeStorage, 0);
+            computeAndStoreResults(r2h, r2t, treeStorage, 0);
+
+            // Determine the new parents and loop until two ranges collapse
+            r1h /= 2;
+            r1t /= 2;
+            r2h /= 2;
+            r2t /= 2;
+        }
+    }
+
+    /**
+     * This function accepts a range in the evaluation tree and iteratively computes aggregation results of value pairs
+     * in the range which are stored in parent nodes. Each iteration will shrink the range by a factor of 2. When the
+     * tail of the range reaches 1, we have computed the root of the tree and can stop evaluating.
+     */
+    private void evaluateRange(int r1h, int r1t) {
+        while (r1t > 1) {
+            // Compute the single range
+            computeAndStoreResults(r1h, r1t, treeStorage, 0);
+
+            // Determine the new parents and loop until the tail
+            r1h /= 2;
+            r1t /= 2;
+        }
+    }
+
+    /**
+     * This function aggregates pairs of values from the provided buffer and stores the results in parent nodes of the
+     * evaluation tree. To populate of the leaf nodes of the tree (which are the results of aggregation from the storage
+     * buffer) the source array and an offset can be specified.
+     */
+    private void computeAndStoreResults(int start, int end, double[] src, int dstOffset) {
         // Everything from start to end (inclusive) should be evaluated
         for (int left = start & 0xFFFFFFFE; left <= end; left += 2) {
             final int right = left + 1;
@@ -597,64 +711,6 @@ public class AggregatingDoubleRingBuffer {
             // compute & store (always in the tree area)
             final double computeVal = aggFunction.apply(leftVal, rightVal);
             treeStorage[parent + dstOffset] = computeVal;
-        }
-    }
-
-    private void evaluateTree(int startA, int endA) {
-        while (endA > 1) {
-            // compute this level
-            evaluateRangeFast(startA, endA, treeStorage, 0);
-
-            // compute the new parents
-            startA /= 2;
-            endA /= 2;
-        }
-    }
-
-    private void evaluateTree(int startA, int endA, int startB, int endB) {
-        while (endB > 1) {
-            if (rangesCollapse(startA, endA, startB, endB)) {
-                // all collapse together into a single range
-                evaluateTree(Math.min(startA, startB), Math.max(endA, endB));
-                return;
-            } else {
-                // compute this level
-                evaluateRangeFast(startA, endA, treeStorage, 0);
-                evaluateRangeFast(startB, endB, treeStorage, 0);
-
-                // compute the new parents
-                startA /= 2;
-                endA /= 2;
-                startB /= 2;
-                endB /= 2;
-            }
-        }
-    }
-
-    private void evaluateTree(int startA, int endA, int startB, int endB, int startC, int endC) {
-        while (endC > 1) {
-            if (rangesCollapse(startA, endA, startB, endB)) {
-                // A and B overlap
-                evaluateTree(Math.min(startA, startB), Math.max(endA, endB), startC, endC);
-                return;
-            } else if (rangesCollapse(startB, endB, startC, endC)) {
-                // B and C overlap
-                evaluateTree(startA, endA, Math.min(startB, startC), Math.max(endB, endC));
-                return;
-            } else {
-                // no collapse
-                evaluateRangeFast(startA, endA, treeStorage, 0);
-                evaluateRangeFast(startB, endB, treeStorage, 0);
-                evaluateRangeFast(startC, endC, treeStorage, 0);
-
-                // compute the new parents
-                startA /= 2;
-                endA /= 2;
-                startB /= 2;
-                endB /= 2;
-                startC /= 2;
-                endC /= 2;
-            }
         }
     }
     // endregion evaluation
