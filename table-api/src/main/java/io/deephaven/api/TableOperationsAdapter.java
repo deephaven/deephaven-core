@@ -697,7 +697,7 @@ public abstract class TableOperationsAdapter<TOPS_1 extends TableOperations<TOPS
     }
 
     @Override
-    public final TOPS_1 dropColumns(ColumnName[] columnNames) {
+    public final TOPS_1 dropColumns(ColumnName... columnNames) {
         return adapt(delegate.dropColumns(columnNames));
     }
 }

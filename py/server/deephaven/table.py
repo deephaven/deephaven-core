@@ -440,7 +440,7 @@ class Table(JObjectWrapper):
         """
         try:
             cols = to_sequence(cols)
-            return Table(j_table=self.j_table.dropColumns(j_array_list(cols)))
+            return Table(j_table=self.j_table.dropColumns(*cols))
         except Exception as e:
             raise DHError(e, "table drop_columns operation failed.") from e
 

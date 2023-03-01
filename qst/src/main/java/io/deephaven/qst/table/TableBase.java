@@ -953,7 +953,7 @@ public abstract class TableBase implements TableSpec {
     }
 
     @Override
-    public final DropColumnsTable dropColumns(ColumnName[] columnNames) {
+    public final DropColumnsTable dropColumns(ColumnName... columnNames) {
         return DropColumnsTable.builder().parent(this).addDropColumns(columnNames).build();
     }
 

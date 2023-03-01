@@ -698,7 +698,7 @@ public interface TableOperationsDefaults<TOPS extends TableOperations<TOPS, TABL
 
     @Override
     @ConcurrentMethod
-    default TOPS dropColumns(ColumnName[] columnNames) {
+    default TOPS dropColumns(ColumnName... columnNames) {
         return dropColumns(Arrays.stream(columnNames).map(ColumnName::name).toArray(String[]::new));
     }
 

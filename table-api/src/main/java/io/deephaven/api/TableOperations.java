@@ -1323,7 +1323,7 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * @param columnNames the columns to drop
      * @return the table
      */
-    TOPS dropColumns(ColumnName[] columnNames);
+    TOPS dropColumns(ColumnName... columnNames);
 
     // -------------------------------------------------------------------------------------------
 
