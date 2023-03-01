@@ -36,7 +36,7 @@ public abstract class DropColumnsTable extends TableBase implements SingleParent
         }
     }
 
-    interface Builder {
+    public interface Builder {
         Builder parent(TableSpec parent);
 
         Builder addDropColumns(ColumnName element);
