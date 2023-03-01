@@ -13,7 +13,8 @@ def read_sql(conn: Any, query: str, driver: str = "connectorx") -> Table:
     """Executes the provided SQL query via a supported driver and returns a Deephaven table.
 
     Args:
-        conn (Any): must either be a connection string for the given driver or a Turbodbc/ADBC DBAPI Connection object
+        conn (Any): must either be a connection string for the given driver or a Turbodbc/ADBC DBAPI Connection
+            object; when it is a Connection object, the driver argument will be ignored.
         query (str): SQL query statement
         driver: (str): the driver to use, supported drivers are "odbc", "adbc", "connectorx", default is "connectorx"
 
@@ -46,10 +47,10 @@ def read_sql(conn: Any, query: str, driver: str = "connectorx") -> Table:
             from deephaven.dbc.adbc import read_cursor
             if not conn:
                 import adbc_driver_sqlite.dbapi as dbapi
-            elif conn.strip().startswith("postgresql"):
+            elif conn.strip().startswith("postgresql:"):
                 import adbc_driver_postgresql.dbapi as dbapi
             else:
-                raise DHError(message="not supported ADBC connection string")
+                raise DHError(message=f"unsupported ADBC connection string {conn}")
 
             with dbapi.connect(conn) as dbconn:
                 with dbconn.cursor() as cursor:
@@ -78,7 +79,7 @@ def read_sql(conn: Any, query: str, driver: str = "connectorx") -> Table:
         except ImportError:
             pass
 
-        raise DHError(message="invalid conn argument")
+        raise DHError(message=f"invalid conn argument {conn}")
 
 
 
