@@ -14,7 +14,6 @@ import io.deephaven.web.client.ide.IdeConnection;
 import io.deephaven.web.shared.data.ConnectToken;
 import io.deephaven.web.shared.fu.JsBiConsumer;
 import io.deephaven.web.shared.fu.JsFunction;
-import jsinterop.annotations.JsConstructor;
 import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsType;
 
@@ -36,9 +35,8 @@ public class CoreClient extends HasEventHandling {
 
     private final IdeConnection ideConnection;
 
-    @JsConstructor
-    public CoreClient(String serverUrl) {
-        ideConnection = new IdeConnection(serverUrl, true);
+    public CoreClient(String serverUrl, Object connectOptions) {
+        ideConnection = new IdeConnection(serverUrl, connectOptions, true);
 
         // For now the only real connection is the IdeConnection, so we re-fire the auth token refresh
         // event here for the UI to listen to

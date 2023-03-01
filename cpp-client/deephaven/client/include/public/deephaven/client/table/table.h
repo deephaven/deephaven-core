@@ -107,7 +107,7 @@ public:
   /**
    * The table schema.
    */
-  virtual const Schema &schema() const = 0;
+  virtual std::shared_ptr<Schema> schema() const = 0;
 
   /**
    * Creates an 'ostream adaptor' to use when printing the table. Example usage:

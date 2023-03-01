@@ -1,18 +1,22 @@
 # distutils: language = c++
 # cython: language_level = 3
 # cython: cpp_locals=True
-
+import numpy as np
+import numpy.typing as npt
 from cdeephaven_client cimport CClient, CColumnSource, CGenericChunk, CRowSequence
 from cdeephaven_client cimport CSubscriptionHandle, CTable, CTableHandle
 from cdeephaven_client cimport CTableHandleManager, CTickingUpdate
-from cdeephaven_client cimport HumanReadableElementTypeName, HumanReadableStaticTypeName
+from cdeephaven_client cimport CHumanReadableElementTypeName, CHumanReadableStaticTypeName
+from cdeephaven_client cimport CCythonSupport
 from cython.operator cimport dereference as deref
+from inspect import signature
 from libc.stdint cimport int8_t, int16_t, int32_t, int64_t
 from libcpp cimport bool
 from libcpp.memory cimport shared_ptr, unique_ptr
 from libcpp.string cimport string
-from libcpp.utility cimport move
+from libcpp.utility cimport move, pair
 from libcpp.vector cimport vector
+from typing import Dict, Sequence, Union
 
 # Simple wrapper of the corresponding C++ Client class. The only job here is
 # to make a connection to the database and for the caller to make a
@@ -50,23 +54,28 @@ cdef class TableHandleManager:
         table_handle = self.manager.timeTable(start, nanos)
         return TableHandle.create(move(table_handle))
 
-# Python trampoline functions. By the time we get to this point, the
+# A trampoline function. By the time we get to this point, the
 # user-supplied Python callback is in a void*. We cast it back to a Python
 # object and invoke its on_tick method.
 cdef void _on_tick_callback(CTickingUpdate update, void *user_data) with gil:
     ptu = TickingUpdate.create(move(update))
     (<object>user_data).on_tick(ptu)
 
-# Python trampoline functions. By the time we get to this point, the
+# A trampoline function. By the time we get to this point, the
 # user-supplied Python callback is in a void*. We cast it back to a Python
 # object and invoke its on_error method.
 cdef void _on_error_callback(string error, void *userData) with gil:
     (<object>userData).on_error(error)
 
-cdef _check_has_method(o, methodName: str):
-    if not callable(getattr(o, methodName, None)):
+cdef _check_has_method(callback, methodName: str, expected_num_params: int):
+    attr =  getattr(callback, methodName, None)
+    if not callable(attr):
         raise RuntimeError(
-            f"Provided callback does not have an {methodName}() method")
+            f"Provided callback object does not have an {methodName}() method")
+    num_params = len(signature(attr).parameters)
+    if expected_num_params != num_params:
+        raise RuntimeError(
+            f"Callback method {methodName}() needs to take {expected_num_params} parameters, but takes {num_params}")
 
 # Wrapper of the corresponding C++ TableHandle class.
 cdef class TableHandle:
@@ -103,8 +112,8 @@ cdef class TableHandle:
     #     def on_error(self, message: str)
     #         ...
     def subscribe(self, callback) -> SubscriptionHandle:
-        _check_has_method(callback, "on_tick")
-        _check_has_method(callback, "on_error")
+        _check_has_method(callback, "on_tick", 1)
+        _check_has_method(callback, "on_error", 1)
         
         c_handle = self.table_handle.subscribe(_on_tick_callback, <void*>callback,
             _on_error_callback, <void*>callback)
@@ -202,6 +211,11 @@ cdef class TickingUpdate:
         return result
 
     @property
+    def all_modified_rows(self) -> RowSequence:
+        rs = self.ticking_update.allModifiedRows()
+        return RowSequence.create(rs)
+
+    @property
     def current(self) -> Table:
         return Table.create(self.ticking_update.current())
 
@@ -215,16 +229,21 @@ cdef class Table:
         result.table = move(table)
         return result
 
-    def getColumn(self, columnIndex: size_t) -> ColumnSource:
+    def get_column(self, columnIndex: size_t) -> ColumnSource:
         cs = deref(self.table).getColumn(columnIndex)
         return ColumnSource.create(move(cs))
 
-    def get_column_by_name(self, name: str, strict: bool) -> ColumnSource:
+    def get_column_by_name(self, name: str, strict: bool) -> ColumnSource | None:
         name_bytes = name.encode()
         result = deref(self.table).getColumn(name_bytes, strict)
-        if (result == NULL):
+        if result == NULL:
             return None
         return ColumnSource.create(move(result))
+
+    @property
+    def columns(self) -> [ColumnSource]:
+        ncols = deref(self.table).numColumns()
+        return [ColumnSource.create(deref(self.table).getColumn(i)) for i in range(ncols)]
 
     def get_column_index(self, name: unicode, strict: bool) -> size_t:
         name_as_string = <string>name.encode()
@@ -242,15 +261,108 @@ cdef class Table:
     def num_columns(self) -> size_t:
         return deref(self.table).numColumns()
 
+    @property
+    def schema(self) -> Schema:
+        return Schema.create(self.table)
+
     def to_string(self, want_headers: bool, want_row_numbers: bool, row_sequence = None) -> str:
         if row_sequence is None:
             result = deref(self.table).toString(want_headers, want_row_numbers)
         elif isinstance(row_sequence, list):
-            print("TODO")
+            raise RuntimeError("TODO")
         elif isinstance(row_sequence, RowSequence):
             result = deref(self.table).toString(want_headers, want_row_numbers, (<RowSequence>row_sequence).row_sequence)
         return result.decode()
-    
+
+# cdef object _determine_numpy_type(type: CythonSupport.ElementTypeId):
+#     # Put this dict somewhere so we are not initializing it every time
+#     type_map = {
+#         CythonSupport.ElementTypeId.BOOL: np.bool_(),
+#         CythonSupport.ElementTypeId.INT8: np.int8(),
+#         CythonSupport.ElementTypeId.INT16: np.int16(),
+#         CythonSupport.ElementTypeId.INT32: np.int32(),
+#         CythonSupport.ElementTypeId.INT64: np.int64(),
+#         CythonSupport.ElementTypeId.FLOAT: np.float32(),
+#         CythonSupport.ElementTypeId.DOUBLE: np.float64(),
+#     }
+#
+#     # TODO: deal with CHAR and STRING
+#     result = type_map[type]
+#     type_as_int = <int>type
+#     if result is None:
+#         raise RuntimeError(f"Couldn't find mapping for type code {type_as_int}")
+#     return result
+
+cdef _dh_type_to_np_type(dh_type: CCythonSupport.ElementTypeId):
+    if dh_type == CCythonSupport.ElementTypeId.INT8:
+        return np.int8()
+    if dh_type == CCythonSupport.ElementTypeId.INT16:
+        return np.int16()
+    if dh_type == CCythonSupport.ElementTypeId.INT32:
+        return np.int32()
+    if dh_type == CCythonSupport.ElementTypeId.INT64:
+        return np.int64()
+    if dh_type == CCythonSupport.ElementTypeId.FLOAT:
+        return np.float32()
+    if dh_type == CCythonSupport.ElementTypeId.DOUBLE:
+        return np.float64()
+    if dh_type == CCythonSupport.ElementTypeId.BOOL:
+        return np.bool()
+    if dh_type == CCythonSupport.ElementTypeId.CHAR:
+        return np.uint16()
+    if dh_type == CCythonSupport.ElementTypeId.STRING:
+        return None  # TODO
+    if dh_type == CCythonSupport.ElementTypeId.TIMESTAMP:
+        return None  # TODO
+    return None
+
+cdef class Schema:
+    _names: Sequence[str]
+    _numpy_types: Sequence[npt.DTypeLike]
+    _numpy_dict: Dict[str, npt.DTypeLike]
+
+    @staticmethod
+    cdef Schema create(shared_ptr[CTable] table):
+        c_names = CCythonSupport.getColumnNames(deref(table))
+        c_types = CCythonSupport.getColumnTypes(deref(table))
+        names: [str] = []
+        types: [npt.DTypeLike] = []
+        dict: Dict[str, npt.DTypeLike] = {}
+        cdef size_t i
+        for i in range(c_names.size()):
+            name = c_names[i].decode()
+            type = c_types[i]
+
+            names.append(name)
+            np_type = _dh_type_to_np_type(type)
+            if np_type is not None:
+                dict[name] = np_type
+
+        result = Schema()
+        result._names = names
+        result._numpy_types = types
+        result._numpy_dict = dict
+        return result
+
+    def get_numpy_type_by_name(self, name: str, strict: bool):
+        if strict:
+            return self._numpy_dict[name]
+        else:
+            return self._numpy_dict.get(name)
+
+    @property
+    def names(self) -> Sequence[str]:
+        return self._names
+
+    @property
+    def numpy_types(self) -> Sequence[npt.DTypeLike]:
+        return self._numpy_types
+
+    @property
+    def dict(self):
+        return self._numpy_dict
+
+
 # Simple wrapper of the corresponding C++ RowSequence class.
 cdef class RowSequence:
     cdef shared_ptr[CRowSequence] row_sequence
@@ -305,7 +417,7 @@ ctypedef fused column_source_primitive_element_type_t:
 # but this gives us an opportunity to provide a more friendly error message here.
 cdef _check_compatibility(const CColumnSource &column_source,
     column_source_element_type_t[::1] dest_data):
-    cdef const char *cs_name = HumanReadableElementTypeName.getName(column_source)
+    cdef const char *cs_name = CHumanReadableElementTypeName.getName(column_source)
     cdef const char *dd_name_for_comparison = NULL
 
     if column_source_element_type_t is object:
@@ -313,10 +425,10 @@ cdef _check_compatibility(const CColumnSource &column_source,
         # the user expects the column source to be of type string. So the name for comparison
         # is "string" but (if they don't match) the name we put in the error message will be
         # "object".
-        dd_name_for_comparison = HumanReadableStaticTypeName[string].getName()
+        dd_name_for_comparison = CHumanReadableStaticTypeName[string].getName()
         dd_name_for_rendering = "object"
     else:
-        dd_name_for_comparison = HumanReadableStaticTypeName[column_source_element_type_t].getName()
+        dd_name_for_comparison = CHumanReadableStaticTypeName[column_source_element_type_t].getName()
         dd_name_for_rendering = dd_name_for_comparison.decode()
 
     if cs_name != dd_name_for_comparison:

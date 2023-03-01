@@ -204,10 +204,8 @@ public class SessionState {
             throw GrpcUtil.statusRuntimeException(Code.UNAUTHENTICATED, "session has expired");
         }
 
-        log.debug().append(logPrefix)
-                .append("token rotating to '").append(expiration.token.toString())
-                .append("' which expires at ").append(MILLIS_FROM_EPOCH_FORMATTER, expiration.deadlineMillis)
-                .append(".").endl();
+        log.debug().append(logPrefix).append("token, expires at ")
+                .append(MILLIS_FROM_EPOCH_FORMATTER, expiration.deadlineMillis).append(".").endl();
     }
 
     /**
@@ -451,8 +449,8 @@ public class SessionState {
         log.debug().append(logPrefix).append("releasing outstanding exports").endl();
         synchronized (exportMap) {
             exportMap.forEach(ExportObject::cancel);
+            exportMap.clear();
         }
-        exportMap.clear();
 
         log.debug().append(logPrefix).append("outstanding exports released").endl();
         synchronized (exportListeners) {

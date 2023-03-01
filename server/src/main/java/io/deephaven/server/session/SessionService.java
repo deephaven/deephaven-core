@@ -31,6 +31,7 @@ import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -65,10 +66,13 @@ public class SessionService {
 
     private final Map<String, AuthenticationRequestHandler> authRequestHandlers;
 
+    private final SessionListener sessionListener;
+
     @Inject
     public SessionService(final Scheduler scheduler, final SessionState.Factory sessionFactory,
             @Named("session.tokenExpireMs") final long tokenExpireMs,
-            Map<String, AuthenticationRequestHandler> authRequestHandlers) {
+            Map<String, AuthenticationRequestHandler> authRequestHandlers,
+            Set<SessionListener> sessionListeners) {
         this.scheduler = scheduler;
         this.sessionFactory = sessionFactory;
         this.tokenExpireMs = tokenExpireMs;
@@ -90,6 +94,8 @@ public class SessionService {
         if (ProcessEnvironment.tryGet() != null) {
             ProcessEnvironment.getGlobalFatalErrorReporter().addInterceptor(this::onFatalError);
         }
+
+        this.sessionListener = new DelegatingSessionListener(sessionListeners);
     }
 
     private synchronized void onFatalError(
@@ -155,7 +161,8 @@ public class SessionService {
      */
     public SessionState newSession(final AuthContext authContext) {
         final SessionState session = sessionFactory.create(authContext);
-        refreshToken(session, true);
+        checkTokenAndRotate(session, true);
+        sessionListener.onSessionCreate(session);
         return session;
     }
 
@@ -166,11 +173,11 @@ public class SessionService {
      * @return the most recent token expiration
      */
     public TokenExpiration refreshToken(final SessionState session) {
-        return refreshToken(session, false);
+        return checkTokenAndRotate(session, false);
     }
 
     @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
-    private TokenExpiration refreshToken(final SessionState session, boolean initialToken) {
+    private TokenExpiration checkTokenAndRotate(final SessionState session, boolean initialToken) {
         UUID newUUID;
         TokenExpiration expiration;
         final long nowMillis = scheduler.currentTimeMillis();
@@ -356,11 +363,8 @@ public class SessionService {
                 // token expiration time.
                 outstandingCookies.poll();
 
-                synchronized (next.session) {
-                    final TokenExpiration tokenExpiration = next.session.getExpiration();
-                    if (tokenExpiration != null && tokenExpiration.deadlineMillis <= nowMillis) {
-                        next.session.onExpired();
-                    }
+                if (next.session.isExpired()) {
+                    next.session.onExpired();
                 }
             } while (true);
 

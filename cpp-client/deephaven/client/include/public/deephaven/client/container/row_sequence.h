@@ -126,14 +126,14 @@ public:
    */
   ~RowSequenceBuilder();
 
-
   /**
-   * Adds the half-open interval [begin, end) to the RowSequence.
+   * Adds the half-open interval [begin, end) to the RowSequence. The added interval need not be
+   * disjoint.
    */
   void addInterval(uint64_t begin, uint64_t end);
 
   /**
-   * Adds 'key' to the RowSequence.
+   * Adds 'key' to the RowSequence. If the key is already present, does nothing.
    */
   void add(uint64_t key) {
     addInterval(key, key + 1);
