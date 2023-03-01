@@ -75,6 +75,8 @@ public interface UpdateBySpec {
         T visit(RollingSumSpec p);
 
         T visit(RollingGroupSpec p);
+
+        T visit(RollingWAvgSpec w);
     }
     // endregion
 }
