@@ -266,13 +266,6 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
     @Override
     @ConcurrentMethod
     @FinalDefault
-    default Table dropColumns(Collection<String> columnNames) {
-        return dropColumns(columnNames.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
-    }
-
-    @Override
-    @ConcurrentMethod
-    @FinalDefault
     default Table dropColumnFormats() {
         String[] columnAry = getDefinition().getColumnStream()
                 .map(ColumnDefinition::getName)

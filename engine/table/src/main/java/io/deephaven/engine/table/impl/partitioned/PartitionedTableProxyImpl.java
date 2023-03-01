@@ -15,6 +15,7 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.PartitionedTable;
+import io.deephaven.engine.table.PartitionedTable.Proxy;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.TableUpdate;
@@ -569,6 +570,11 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
     @Override
     public PartitionedTable.Proxy ungroup(boolean nullFill, Collection<? extends ColumnName> columnsToUngroup) {
         return basicTransform(ct -> ct.ungroup(nullFill, columnsToUngroup));
+    }
+
+    @Override
+    public PartitionedTable.Proxy dropColumns(String... columnNames) {
+        return basicTransform(ct -> ct.dropColumns(columnNames));
     }
 
     // endregion TableOperations Implementation

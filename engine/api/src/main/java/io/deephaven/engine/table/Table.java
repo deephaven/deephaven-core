@@ -304,12 +304,6 @@ public interface Table extends
     Table updateView(Selectable... newColumns);
 
     @ConcurrentMethod
-    Table dropColumns(Collection<String> columnNames);
-
-    @ConcurrentMethod
-    Table dropColumns(String... columnNames);
-
-    @ConcurrentMethod
     Table dropColumnFormats();
 
     Table renameColumns(MatchPair... pairs);

@@ -685,4 +685,19 @@ public abstract class TableOperationsAdapter<TOPS_1 extends TableOperations<TOPS
     public final TOPS_1 ungroup(boolean nullFill, Collection<? extends ColumnName> columnsToUngroup) {
         return adapt(delegate.ungroup(nullFill, columnsToUngroup));
     }
+
+    @Override
+    public final TOPS_1 dropColumns(String... columnNames) {
+        return adapt(delegate.dropColumns(columnNames));
+    }
+
+    @Override
+    public final TOPS_1 dropColumns(Collection<String> columnNames) {
+        return adapt(delegate.dropColumns(columnNames));
+    }
+
+    @Override
+    public final TOPS_1 dropColumns(ColumnName[] columnNames) {
+        return adapt(delegate.dropColumns(columnNames));
+    }
 }

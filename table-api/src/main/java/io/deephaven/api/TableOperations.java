@@ -1300,4 +1300,31 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
     TOPS ungroup(boolean nullFill, Collection<? extends ColumnName> columnsToUngroup);
 
     // -------------------------------------------------------------------------------------------
+
+    /**
+     * Drop the {@code columnNames} from {@code this} table.
+     *
+     * @param columnNames the columns to drop
+     * @return the table
+     */
+    TOPS dropColumns(String... columnNames);
+
+    /**
+     * Drop the {@code columnNames} from {@code this} table.
+     *
+     * @param columnNames the columns to drop
+     * @return the table
+     */
+    TOPS dropColumns(Collection<String> columnNames);
+
+    /**
+     * Drop the {@code columnNames} from {@code this} table.
+     *
+     * @param columnNames the columns to drop
+     * @return the table
+     */
+    TOPS dropColumns(ColumnName[] columnNames);
+
+    // -------------------------------------------------------------------------------------------
+
 }
