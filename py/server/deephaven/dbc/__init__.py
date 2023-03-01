@@ -25,7 +25,7 @@ def read_sql(conn: str, query: str) -> Table:
     try:
         import connectorx as cx
     except ImportError:
-        raise DHError(message="import ConnectorX failed, please install it first.")
+        raise DHError(message="import connectorx failed, please install it first.")
 
     try:
         pa_table = cx.read_sql(conn=conn, query=query, return_type="arrow")
