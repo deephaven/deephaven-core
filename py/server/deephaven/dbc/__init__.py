@@ -2,19 +2,20 @@
 #     Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
 """The dbc package includes the modules and functions for using external databases with Deephaven."""
+from typing import Any
 
+import deephaven.arrow as dharrow
 from deephaven import DHError
 from deephaven.table import Table
-import deephaven.arrow as dharrow
 
 
-def read_sql(conn: str, query: str) -> Table:
-    """Executes the provided SQL query via ConnectorX and returns a Deephaven table.
+def read_sql(conn: Any, query: str, driver: str = "connectorx") -> Table:
+    """Executes the provided SQL query via a supported driver and returns a Deephaven table.
 
     Args:
-        conn (str): a connection string URI, please refer to https://sfu-db.github.io/connector-x/databases.html for
-            database specific format
+        conn (Any): must either be a connection string for the given driver or a Turbodbc/ADBC DBAPI Connection object
         query (str): SQL query statement
+        driver: (str): the driver to use, supported drivers are "odbc", "adbc", "connectorx", default is "connectorx"
 
     Returns:
         a new Table
@@ -22,14 +23,64 @@ def read_sql(conn: str, query: str) -> Table:
     Raises:
         DHError
     """
-    try:
-        import connectorx as cx
-    except ImportError:
-        raise DHError(message="import connectorx failed, please install it first.")
+    if isinstance(conn, str):
+        if driver == "connectorx":
+            try:
+                import connectorx as cx
+            except ImportError:
+                raise DHError(message="import connectorx failed, please install it first.")
 
-    try:
-        pa_table = cx.read_sql(conn=conn, query=query, return_type="arrow")
-    except Exception as e:
-        raise DHError(e, message="failed to get a Arrow table from ConnectorX.") from e
+            try:
+                pa_table = cx.read_sql(conn=conn, query=query, return_type="arrow")
+                return dharrow.to_table(pa_table)
+            except Exception as e:
+                raise DHError(e, message="failed to get a Arrow table from ConnectorX.") from e
+        elif driver == "odbc":
+            from deephaven.dbc.odbc import read_cursor
+            import turbodbc
+            with turbodbc.connect(connection_string=conn) as conn:
+                with conn.cursor() as cursor:
+                    cursor.execute(query)
+                    return read_cursor(cursor)
+        elif driver == "adbc":
+            from deephaven.dbc.adbc import read_cursor
+            if not conn:
+                import adbc_driver_sqlite.dbapi as dbapi
+            elif conn.strip().startswith("postgresql"):
+                import adbc_driver_postgresql.dbapi as dbapi
+            else:
+                raise DHError(message="not supported ADBC connection string")
 
-    return dharrow.to_table(pa_table)
+            with dbapi.connect(conn) as dbconn:
+                with dbconn.cursor() as cursor:
+                    cursor.execute(query)
+                    return read_cursor(cursor)
+        else:
+            raise DHError(message=f"unsupported driver {driver}")
+    else:
+        try:
+            import adbc_driver_manager.dbapi as dbapi
+            if isinstance(conn, dbapi.Connection):
+                from deephaven.dbc.adbc import read_cursor
+                with conn.cursor() as cursor:
+                    cursor.execute(query)
+                    return read_cursor(cursor)
+        except ImportError:
+            pass
+
+        try:
+            import turbodbc.connection
+            if isinstance(conn, turbodbc.connection.Connection):
+                from deephaven.dbc.odbc import read_cursor
+                with conn.cursor() as cursor:
+                    cursor.execute(query)
+                    return read_cursor(cursor)
+        except ImportError:
+            pass
+
+        raise DHError(message="invalid conn argument")
+
+
+
+
+
