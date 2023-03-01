@@ -573,6 +573,29 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         try (SafeCloseable ignored = data;
                 ChunkInputStreamGenerator generator = ChunkInputStreamGenerator.makeInputStreamGenerator(
                         chunkType, type, type.getComponentType(), srcData, 0)) {
+            // full sub logic
+            try (final BarrageProtoUtil.ExposedByteArrayOutputStream baos =
+                    new BarrageProtoUtil.ExposedByteArrayOutputStream();
+                    final ChunkInputStreamGenerator.DrainableColumn column =
+                            generator.getInputStream(options, null)) {
+
+
+                final ArrayList<ChunkInputStreamGenerator.FieldNodeInfo> fieldNodes = new ArrayList<>();
+                column.visitFieldNodes((numElements, nullCount) -> fieldNodes
+                        .add(new ChunkInputStreamGenerator.FieldNodeInfo(numElements, nullCount)));
+                final TLongArrayList bufferNodes = new TLongArrayList();
+                column.visitBuffers(bufferNodes::add);
+                column.drainTo(baos);
+                final DataInput dis =
+                        new LittleEndianDataInputStream(new ByteArrayInputStream(baos.peekBuffer(), 0, baos.size()));
+                try (final WritableChunk<Values> rtData =
+                        ChunkInputStreamGenerator.extractChunkFromInputStream(options,
+                                chunkType, type, type.getComponentType(), fieldNodes.iterator(), bufferNodes.iterator(),
+                                dis, null, 0, 0)) {
+                    Assert.eq(data.size(), "data.size()", rtData.size(), "rtData.size()");
+                    validator.assertExpected(data, rtData, null, 0);
+                }
+            }
 
             // empty subset
             try (final BarrageProtoUtil.ExposedByteArrayOutputStream baos =
