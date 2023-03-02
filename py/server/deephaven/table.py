@@ -162,6 +162,9 @@ class RollupTable(JObjectWrapper):
     """ A RollupTable is generated as a result of applying the :meth:`~deephaven.table.Table.rollup` operation on a
     :class:`~deephaven.table.Table`.
 
+    A RollupTable aggregates by the grouping columns, and then creates a hierarchical table which re-aggregates
+    using one less grouping column on each level.
+
     Note: RollupTable should not be instantiated directly by user code.
     """
     j_object_type = _JRollupTable
@@ -178,9 +181,9 @@ class RollupTable(JObjectWrapper):
         self.by = by
 
     def node_operation_recorder(self, node_type: NodeType) -> RollupNodeOperationsRecorder:
-        """Creates a RollupNodeOperationsRecorder for per-node operations to apply during snapshotting of this
-        RollupTable. The recorded node operations will be applied only to the node of the provided NodeType. See
-        :class:`NodeType` for details.
+        """Creates a RollupNodeOperationsRecorder for per-node operations to apply during Deephaven UI driven
+        snapshotting of this RollupTable. The recorded node operations will be applied only to the node of the
+        provided NodeType. See :class:`NodeType` for details.
 
         Args:
             node_type (NodeType): the type of node tables that the recorded operations will be applied to; if it is
@@ -200,7 +203,7 @@ class RollupTable(JObjectWrapper):
 
     def with_node_operations(self, recorders: List[RollupNodeOperationsRecorder]) -> RollupTable:
         """Returns a new RollupTable that will apply the recorded node operations to nodes when gathering
-        snapshots.
+        snapshots requested by Deephaven UI.
 
         Args:
             recorders (List[RollupNodeOperationsRecorder]): a list of RollupNodeOperationsRecorder containing
@@ -222,8 +225,7 @@ class RollupTable(JObjectWrapper):
             raise DHError(e, "with_node_operations on RollupTable failed.") from e
 
     def with_filters(self, filters: Union[str, Filter, Sequence[str], Sequence[Filter]]) -> RollupTable:
-        """Applies a set of filters to the group-by columns of this RollupTable to produce and return a new
-        RollupTable
+        """Returns a new RollupTable by applying the given set of filters to the group-by columns of this RollupTable.
 
         Args:
             filters (Union[str, Filter, Sequence[str], Sequence[Filter]], optional): the filter condition
@@ -270,6 +272,10 @@ class TreeTable(JObjectWrapper):
     """ A TreeTable is generated as a result of applying the :meth:`~Table.tree` method on a
     :class:`~deephaven.table.Table`.
 
+    A TreeTable is a hierarchical table and its structure is a tree where the parent-child relationships are realized
+    by an "id" and a "parent" column. The id column should represent a unique identifier for a given row, and the parent
+    column indicates which row is the parent for a given row.
+
     Note: TreeTable should not be instantiated directly by user code.
     """
     j_object_type = _JTreeTable
@@ -284,7 +290,8 @@ class TreeTable(JObjectWrapper):
         self.parent_col = parent_col
 
     def node_operation_recorder(self) -> TreeNodeOperationsRecorder:
-        """Creates a TreepNodeOperationsRecorder for per-node operations to apply during snapshotting of this TreeTable.
+        """Creates a TreepNodeOperationsRecorder for per-node operations to apply during Deephaven UI driven
+        snapshotting of this TreeTable.
 
         Returns:
             a TreeNodeOperationsRecorder
@@ -292,7 +299,8 @@ class TreeTable(JObjectWrapper):
         return TreeNodeOperationsRecorder(j_node_ops_recorder=self.j_tree_table.makeNodeOperationsRecorder())
 
     def with_node_operations(self, recorder: TreeNodeOperationsRecorder) -> TreeTable:
-        """Returns a new TreeTable that will apply the recorded node operations to nodes when gathering snapshots.
+        """Returns a new TreeTable that will apply the recorded node operations to nodes when gathering snapshots
+        requested by Deephaven UI.
 
         Args:
             recorder (TreeNodeOperationsRecorder): the TreeNodeOperationsRecorder containing the node operations to be
@@ -313,7 +321,7 @@ class TreeTable(JObjectWrapper):
             raise DHError(e, "with_node_operations on TreeTable failed.") from e
 
     def with_filters(self, filters: Union[str, Filter, Sequence[str], Sequence[Filter]]) -> TreeTable:
-        """Applies a set of filters to the columns of this TreeTable to produce and return a new TreeTable
+        """Returns a new TreeTable by applying the given set of filters to the columns of this TreeTable.
 
         Args:
             filters (Union[str, Filter, Sequence[str], Sequence[Filter]], optional): the filter condition
