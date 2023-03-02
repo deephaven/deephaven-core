@@ -39,7 +39,12 @@ class NaturalJoinHelper {
                 naturalJoinInternal(leftTable, rightTable, columnsToMatch, columnsToAdd, exactMatch, control);
         leftTable.maybeCopyColumnDescriptions(result, rightTable, columnsToMatch, columnsToAdd);
         leftTable.copyAttributes(result, BaseTable.CopyAttributeOperation.Join);
-        if (exactMatch && leftTable.isAppendOnly() && rightTable.isAppendOnly()) {
+        // note in exact match we require that the right table can match as soon as a row is added to the left
+        boolean rightDoesNotGenerateModifies = !rightTable.isRefreshing() || (exactMatch && rightTable.isAddOnly());
+        if (leftTable.isAddOnly() && rightDoesNotGenerateModifies) {
+            result.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, true);
+        }
+        if (leftTable.isAppendOnly() && rightDoesNotGenerateModifies) {
             result.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, true);
         }
         return result;

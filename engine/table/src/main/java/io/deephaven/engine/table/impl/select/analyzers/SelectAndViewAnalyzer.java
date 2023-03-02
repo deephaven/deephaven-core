@@ -133,7 +133,8 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
                 continue;
             }
 
-            // shifted columns appear to not be safe for refresh, so we do not validate them
+            // shifted columns appear to not be safe for refresh, so we do not validate them until they are rewritten
+            // using the intermediary shifted column
             if (sourceTable.isRefreshing()) {
                 sc.validateSafeForRefresh(sourceTable);
             }
