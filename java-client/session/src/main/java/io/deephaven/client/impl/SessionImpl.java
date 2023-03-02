@@ -6,38 +6,30 @@ package io.deephaven.client.impl;
 import com.google.protobuf.ByteString;
 import io.deephaven.client.impl.script.Changes;
 import io.deephaven.proto.DeephavenChannel;
-import io.deephaven.proto.DeephavenChannelMixin;
 import io.deephaven.proto.backplane.grpc.AddTableRequest;
 import io.deephaven.proto.backplane.grpc.AddTableResponse;
-import io.deephaven.proto.backplane.grpc.ApplicationServiceGrpc.ApplicationServiceStub;
 import io.deephaven.proto.backplane.grpc.CloseSessionResponse;
+import io.deephaven.proto.backplane.grpc.ConfigValue;
+import io.deephaven.proto.backplane.grpc.ConfigurationConstantsRequest;
+import io.deephaven.proto.backplane.grpc.ConfigurationConstantsResponse;
 import io.deephaven.proto.backplane.grpc.DeleteTableRequest;
 import io.deephaven.proto.backplane.grpc.DeleteTableResponse;
 import io.deephaven.proto.backplane.grpc.FetchObjectRequest;
 import io.deephaven.proto.backplane.grpc.FetchObjectResponse;
 import io.deephaven.proto.backplane.grpc.FieldsChangeUpdate;
 import io.deephaven.proto.backplane.grpc.HandshakeRequest;
-import io.deephaven.proto.backplane.grpc.HandshakeResponse;
-import io.deephaven.proto.backplane.grpc.InputTableServiceGrpc.InputTableServiceStub;
 import io.deephaven.proto.backplane.grpc.ListFieldsRequest;
-import io.deephaven.proto.backplane.grpc.ObjectServiceGrpc.ObjectServiceStub;
 import io.deephaven.proto.backplane.grpc.ReleaseRequest;
 import io.deephaven.proto.backplane.grpc.ReleaseResponse;
-import io.deephaven.proto.backplane.grpc.SessionServiceGrpc.SessionServiceStub;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.backplane.grpc.TypedTicket;
 import io.deephaven.proto.backplane.script.grpc.BindTableToVariableRequest;
 import io.deephaven.proto.backplane.script.grpc.BindTableToVariableResponse;
-import io.deephaven.proto.backplane.script.grpc.ConsoleServiceGrpc.ConsoleServiceStub;
 import io.deephaven.proto.backplane.script.grpc.ExecuteCommandRequest;
 import io.deephaven.proto.backplane.script.grpc.ExecuteCommandResponse;
 import io.deephaven.proto.backplane.script.grpc.StartConsoleRequest;
 import io.deephaven.proto.backplane.script.grpc.StartConsoleResponse;
 import io.deephaven.proto.util.ExportTicketHelper;
-import io.grpc.CallCredentials;
-import io.grpc.Metadata;
-import io.grpc.Metadata.Key;
-import io.grpc.stub.AbstractStub;
 import io.grpc.stub.ClientCallStreamObserver;
 import io.grpc.stub.ClientResponseObserver;
 import io.grpc.stub.StreamObserver;
@@ -49,12 +41,14 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
@@ -69,156 +63,78 @@ import java.util.stream.Collectors;
 public final class SessionImpl extends SessionBase {
     private static final Logger log = LoggerFactory.getLogger(SessionImpl.class);
 
-    private static final int REFRESH_RETRIES = 5;
-
-    public interface Handler {
-        void onRefreshSuccess();
-
-        void onRefreshTokenError(Throwable t, Runnable invokeForRetry);
-
-        void onCloseSessionError(Throwable t);
-
-        void onClosed();
+    public static SessionImpl create(SessionImplConfig config) throws InterruptedException {
+        final Authentication authentication =
+                Authentication.authenticate(config.channel(), config.authenticationTypeAndValue());
+        authentication.awaitOrCancel();
+        return create(config, authentication);
     }
 
-    private static class Retrying implements Handler {
-        private static final Logger log = LoggerFactory.getLogger(Retrying.class);
-
-        private final int maxRefreshes;
-        private int remainingRefreshes;
-
-        Retrying(int maxRefreshes) {
-            this.maxRefreshes = maxRefreshes;
+    public static SessionImpl create(SessionImplConfig config, Authentication authentication) {
+        authentication.throwOnError();
+        final DeephavenChannel bearerChannel = authentication.bearerChannel().orElseThrow(IllegalStateException::new);
+        final ConfigurationConstantsResponse response =
+                authentication.configurationConstants().orElseThrow(IllegalStateException::new);
+        final Optional<Duration> httpSessionDuration = parseHttpSessionDuration(response);
+        if (!httpSessionDuration.isPresent()) {
+            log.warn(
+                    "Server did not return an 'http.session.durationMs', defaulting to pinging the server every minute.");
         }
-
-        @Override
-        public void onRefreshSuccess() {
-            remainingRefreshes = maxRefreshes;
-        }
-
-        @Override
-        public void onRefreshTokenError(Throwable t, Runnable invokeForRetry) {
-            if (remainingRefreshes > 0) {
-                remainingRefreshes--;
-                log.warn("Error refreshing token, trying again", t);
-                invokeForRetry.run();
-                return;
-            }
-            log.error("Error refreshing token, giving up", t);
-        }
-
-        @Override
-        public void onCloseSessionError(Throwable t) {
-            log.error("onCloseSessionError", t);
-        }
-
-        @Override
-        public void onClosed() {
-
-        }
+        final Duration pingFrequency = httpSessionDuration.map(d -> d.dividedBy(3)).orElse(Duration.ofMinutes(1));
+        return new SessionImpl(config, bearerChannel, pingFrequency, authentication.bearerHandler());
     }
 
-    public static SessionImpl create(SessionImplConfig config) {
-        final HandshakeRequest request = initialHandshake();
-        final HandshakeResponse response = config.channel().sessionBlocking().newSession(request);
-        final AuthenticationInfo initialAuth = AuthenticationInfo.of(response);
-        final SessionImpl session =
-                new SessionImpl(config, new Retrying(REFRESH_RETRIES), initialAuth);
-
-
-        session.scheduleRefreshSessionToken(response);
-        return session;
+    private static Optional<Duration> parseHttpSessionDuration(ConfigurationConstantsResponse response) {
+        return getHttpSessionDurationMs(response).map(SessionImpl::stringValue).flatMap(SessionImpl::parseMillis);
     }
 
-    public static CompletableFuture<SessionImpl> createFuture(SessionImplConfig config) {
-        final HandshakeRequest request = initialHandshake();
-        final SessionObserver sessionObserver = new SessionObserver(config);
-        config.channel().session().newSession(request, sessionObserver);
-        return sessionObserver.future;
+    private static String stringValue(ConfigValue value) {
+        if (!value.hasStringValue()) {
+            throw new IllegalArgumentException("Expected string value");
+        }
+        return value.getStringValue();
     }
 
-    private static HandshakeRequest initialHandshake() {
-        return HandshakeRequest.newBuilder().setAuthProtocol(1).build();
+    private static Optional<ConfigValue> getHttpSessionDurationMs(ConfigurationConstantsResponse response) {
+        return Optional.ofNullable(response.getConfigValuesMap().get("http.session.durationMs"));
     }
 
-    private static class SessionObserver
-            implements ClientResponseObserver<HandshakeRequest, HandshakeResponse> {
-
-        private final SessionImplConfig config;
-        private final CompletableFuture<SessionImpl> future = new CompletableFuture<>();
-
-        SessionObserver(SessionImplConfig config) {
-            this.config = Objects.requireNonNull(config);
-        }
-
-        @Override
-        public void beforeStart(ClientCallStreamObserver<HandshakeRequest> requestStream) {
-            future.whenComplete((session, throwable) -> {
-                if (future.isCancelled()) {
-                    requestStream.cancel("User cancelled", null);
-                }
-            });
-        }
-
-        @Override
-        public void onNext(HandshakeResponse response) {
-            AuthenticationInfo initialAuth = AuthenticationInfo.of(response);
-            SessionImpl session =
-                    new SessionImpl(config, new Retrying(REFRESH_RETRIES), initialAuth);
-            if (future.complete(session)) {
-                session.scheduleRefreshSessionToken(response);
-            } else {
-                // Make sure we don't leak a session if we aren't able to pass it off to the user
-                session.close();
-            }
-        }
-
-        @Override
-        public void onError(Throwable t) {
-            future.completeExceptionally(t);
-        }
-
-        @Override
-        public void onCompleted() {
-            if (!future.isDone()) {
-                future.completeExceptionally(
-                        new IllegalStateException("Observer completed without response"));
-            }
+    private static Optional<Duration> parseMillis(String x) {
+        try {
+            return Optional.of(Duration.ofMillis(Long.parseLong(x)));
+        } catch (NumberFormatException e) {
+            return Optional.empty();
         }
     }
 
     private final SessionImplConfig config;
-    private final SessionServiceStub sessionService;
-    private final ConsoleServiceStub consoleService;
-    private final ObjectServiceStub objectService;
-    private final InputTableServiceStub inputTableService;
-    private final ApplicationServiceStub applicationServiceStub;
-    private final Handler handler;
+    private final DeephavenChannel bearerChannel;
+    // Needed for downstream flight workarounds
+    private final BearerHandler bearerHandler;
     private final ExportTicketCreator exportTicketCreator;
     private final ExportStates states;
-    private volatile AuthenticationInfo auth;
     private final TableHandleManagerSerial serialManager;
     private final TableHandleManagerBatch batchManager;
+    private final ScheduledFuture<?> pingJob;
 
-    private SessionImpl(SessionImplConfig config, Handler handler, AuthenticationInfo auth) {
-        SessionCallCredentials credentials = new SessionCallCredentials();
-        this.auth = Objects.requireNonNull(auth);
-        this.handler = Objects.requireNonNull(handler);
+    private SessionImpl(SessionImplConfig config, DeephavenChannel bearerChannel, Duration pingFrequency,
+            BearerHandler bearerHandler) {
         this.config = Objects.requireNonNull(config);
-        this.sessionService = config.channel().session().withCallCredentials(credentials);
-        this.consoleService = config.channel().console().withCallCredentials(credentials);
-        this.objectService = config.channel().object().withCallCredentials(credentials);
-        this.inputTableService = config.channel().inputTable().withCallCredentials(credentials);
-        this.applicationServiceStub = config.channel().application().withCallCredentials(credentials);
+        this.bearerChannel = Objects.requireNonNull(bearerChannel);
+        this.bearerHandler = Objects.requireNonNull(bearerHandler);
         this.exportTicketCreator = new ExportTicketCreator();
-        this.states = new ExportStates(this, sessionService, config.channel().table().withCallCredentials(credentials),
-                exportTicketCreator);
+        this.states = new ExportStates(this, bearerChannel.session(), bearerChannel.table(), exportTicketCreator);
         this.serialManager = TableHandleManagerSerial.of(this);
         this.batchManager = TableHandleManagerBatch.of(this, config.mixinStacktrace());
+        this.pingJob = config.executor().scheduleAtFixedRate(
+                () -> bearerChannel.config().getConfigurationConstants(
+                        ConfigurationConstantsRequest.getDefaultInstance(), PingObserverNoOp.INSTANCE),
+                pingFrequency.toNanos(), pingFrequency.toNanos(), TimeUnit.NANOSECONDS);
     }
 
-    public AuthenticationInfo auth() {
-        return auth;
+    // exposed for Flight
+    BearerHandler _hackBearerHandler() {
+        return bearerHandler;
     }
 
     @Override
@@ -232,7 +148,7 @@ public final class SessionImpl extends SessionBase {
         final StartConsoleRequest request = StartConsoleRequest.newBuilder().setSessionType(type)
                 .setResultId(consoleId.ticketId().ticket()).build();
         final ConsoleHandler handler = new ConsoleHandler(request);
-        consoleService.startConsole(request, handler);
+        bearerChannel.console().startConsole(request, handler);
         return handler.future();
     }
 
@@ -242,7 +158,7 @@ public final class SessionImpl extends SessionBase {
             throw new IllegalArgumentException("Invalid name");
         }
         PublishObserver observer = new PublishObserver();
-        consoleService.bindTableToVariable(BindTableToVariableRequest.newBuilder()
+        bearerChannel.console().bindTableToVariable(BindTableToVariableRequest.newBuilder()
                 .setVariableName(name).setTableId(ticketId.ticketId().ticket()).build(), observer);
         return observer.future;
     }
@@ -256,7 +172,7 @@ public final class SessionImpl extends SessionBase {
                         .build())
                 .build();
         final FetchObserver observer = new FetchObserver();
-        objectService.fetchObject(request, observer);
+        bearerChannel.object().fetchObject(request, observer);
         return observer.future;
     }
 
@@ -276,10 +192,10 @@ public final class SessionImpl extends SessionBase {
 
     @Override
     public CompletableFuture<Void> closeFuture() {
-        HandshakeRequest handshakeRequest = HandshakeRequest.newBuilder().setAuthProtocol(0)
-                .setPayload(ByteString.copyFromUtf8(auth.session())).build();
+        pingJob.cancel(false);
+        HandshakeRequest handshakeRequest = HandshakeRequest.getDefaultInstance();
         CloseSessionHandler handler = new CloseSessionHandler();
-        sessionService.closeSession(handshakeRequest, handler);
+        bearerChannel.session().closeSession(handshakeRequest, handler);
         return handler.future;
     }
 
@@ -314,14 +230,14 @@ public final class SessionImpl extends SessionBase {
     @Override
     public CompletableFuture<Void> release(ExportId exportId) {
         final ReleaseTicketObserver observer = new ReleaseTicketObserver();
-        sessionService.release(
+        bearerChannel.session().release(
                 ReleaseRequest.newBuilder().setId(exportId.ticketId().ticket()).build(), observer);
         return observer.future;
     }
 
     @Override
     public DeephavenChannel channel() {
-        return new DeephavenChannelWithCredentials();
+        return bearerChannel;
     }
 
     @Override
@@ -331,7 +247,7 @@ public final class SessionImpl extends SessionBase {
                 .setTableToAdd(source.ticketId().ticket())
                 .build();
         final AddToInputTableObserver observer = new AddToInputTableObserver();
-        inputTableService.addTableToInputTable(request, observer);
+        bearerChannel.inputTable().addTableToInputTable(request, observer);
         return observer.future;
     }
 
@@ -342,7 +258,7 @@ public final class SessionImpl extends SessionBase {
                 .setTableToRemove(source.ticketId().ticket())
                 .build();
         final DeleteFromInputTableObserver observer = new DeleteFromInputTableObserver();
-        inputTableService.deleteTableFromInputTable(request, observer);
+        bearerChannel.inputTable().deleteTableFromInputTable(request, observer);
         return observer.future;
     }
 
@@ -350,7 +266,7 @@ public final class SessionImpl extends SessionBase {
     public Cancel subscribeToFields(Listener listener) {
         final ListFieldsRequest request = ListFieldsRequest.newBuilder().build();
         final ListFieldsObserver observer = new ListFieldsObserver(listener);
-        applicationServiceStub.listFields(request, observer);
+        bearerChannel.application().listFields(request, observer);
         return observer;
     }
 
@@ -364,26 +280,6 @@ public final class SessionImpl extends SessionBase {
 
     public long releaseCount() {
         return states.releaseCount();
-    }
-
-    private void scheduleRefreshSessionToken(HandshakeResponse response) {
-        final long now = System.currentTimeMillis();
-        final long targetRefreshTime = Math.min(
-                now + response.getTokenExpirationDelayMillis() / 3,
-                response.getTokenDeadlineTimeMillis() - response.getTokenExpirationDelayMillis() / 10);
-        final long refreshDelayMs = Math.max(targetRefreshTime - now, 0);
-        config.executor().schedule(SessionImpl.this::refreshSessionToken, refreshDelayMs, TimeUnit.MILLISECONDS);
-    }
-
-    private void scheduleRefreshSessionTokenNow() {
-        config.executor().schedule(SessionImpl.this::refreshSessionToken, 0, TimeUnit.MILLISECONDS);
-    }
-
-    private void refreshSessionToken() {
-        HandshakeRequest handshakeRequest = HandshakeRequest.newBuilder().setAuthProtocol(0)
-                .setPayload(ByteString.copyFromUtf8(auth.session())).build();
-        HandshakeHandler handler = new HandshakeHandler();
-        sessionService.refreshSessionToken(handshakeRequest, handler);
     }
 
     private static class PublishObserver
@@ -467,56 +363,17 @@ public final class SessionImpl extends SessionBase {
         }
     }
 
-    private class SessionCallCredentials extends CallCredentials {
-
-        @Override
-        public void applyRequestMetadata(RequestInfo requestInfo, Executor appExecutor,
-                MetadataApplier applier) {
-            AuthenticationInfo localAuth = auth;
-            Metadata metadata = new Metadata();
-            metadata.put(Key.of(localAuth.sessionHeaderKey(), Metadata.ASCII_STRING_MARSHALLER),
-                    localAuth.session());
-            applier.apply(metadata);
-        }
-
-        @Override
-        public void thisUsesUnstableApi() {
-
-        }
-    }
-
-    private class HandshakeHandler implements StreamObserver<HandshakeResponse> {
-
-        @Override
-        public void onNext(HandshakeResponse value) {
-            auth = AuthenticationInfo.of(value);
-            scheduleRefreshSessionToken(value);
-            handler.onRefreshSuccess();
-        }
-
-        @Override
-        public void onError(Throwable t) {
-            handler.onRefreshTokenError(t, SessionImpl.this::scheduleRefreshSessionTokenNow);
-        }
-
-        @Override
-        public void onCompleted() {
-            // ignore
-        }
-    }
-
-    private class CloseSessionHandler implements StreamObserver<CloseSessionResponse> {
+    private static class CloseSessionHandler implements StreamObserver<CloseSessionResponse> {
 
         private final CompletableFuture<Void> future = new CompletableFuture<>();
 
         @Override
         public void onNext(CloseSessionResponse value) {
-            handler.onClosed();
+
         }
 
         @Override
         public void onError(Throwable t) {
-            handler.onCloseSessionError(t);
             future.completeExceptionally(t);
         }
 
@@ -623,7 +480,7 @@ public final class SessionImpl extends SessionBase {
             final ExecuteCommandRequest request =
                     ExecuteCommandRequest.newBuilder().setConsoleId(ticket()).setCode(code).build();
             final ExecuteCommandHandler handler = new ExecuteCommandHandler();
-            consoleService.executeCommand(request, handler);
+            bearerChannel.console().executeCommand(request, handler);
             return handler.future;
         }
 
@@ -636,7 +493,7 @@ public final class SessionImpl extends SessionBase {
         @Override
         public CompletableFuture<Void> closeFuture() {
             final ConsoleCloseHandler handler = new ConsoleCloseHandler();
-            sessionService.release(ReleaseRequest.newBuilder().setId(request.getResultId()).build(), handler);
+            bearerChannel.session().release(ReleaseRequest.newBuilder().setId(request.getResultId()).build(), handler);
             return handler.future();
         }
 
@@ -815,14 +672,22 @@ public final class SessionImpl extends SessionBase {
         }
     }
 
-    private final class DeephavenChannelWithCredentials extends DeephavenChannelMixin {
-        public DeephavenChannelWithCredentials() {
-            super(config.channel());
+    private enum PingObserverNoOp implements StreamObserver<ConfigurationConstantsResponse> {
+        INSTANCE;
+
+        @Override
+        public void onNext(ConfigurationConstantsResponse value) {
+
         }
 
         @Override
-        protected <S extends AbstractStub<S>> S mixin(S stub) {
-            return stub.withCallCredentials(new SessionCallCredentials());
+        public void onError(Throwable t) {
+
+        }
+
+        @Override
+        public void onCompleted() {
+
         }
     }
 }

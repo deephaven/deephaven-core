@@ -97,7 +97,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
         final ClientCall<FlightData, BarrageMessage> call;
         final Context previous = Context.ROOT.attach();
         try {
-            call = session.channel().newCall(subscribeDescriptor, CallOptions.DEFAULT);
+            call = session.channel().channel().newCall(subscribeDescriptor, CallOptions.DEFAULT);
         } finally {
             Context.ROOT.detach(previous);
         }

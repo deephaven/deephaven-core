@@ -18,7 +18,7 @@ public class OperationInitializationThreadPool {
 
     static {
         final int numThreads =
-                Configuration.getInstance().getIntegerWithDefault("OperationInitializationThreadPool.threads", 1);
+                Configuration.getInstance().getIntegerWithDefault("OperationInitializationThreadPool.threads", -1);
         if (numThreads <= 0) {
             NUM_THREADS = Runtime.getRuntime().availableProcessors();
         } else {

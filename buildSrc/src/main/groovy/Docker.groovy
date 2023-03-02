@@ -564,6 +564,7 @@ class Docker {
 
         String imageName = project.property('deephaven.registry.imageName')
         String imageId = project.property('deephaven.registry.imageId')
+        String platform = project.findProperty('deephaven.registry.platform')
         boolean ignoreOutOfDate = project.hasProperty('deephaven.registry.ignoreOutOfDate') ?
                 'true' == project.property('deephaven.registry.ignoreOutOfDate') :
                 false
@@ -673,6 +674,9 @@ class Docker {
             build.inputs.files dockerFileTask.outputs.files
             build.dockerFile.set dockerFileTask.outputs.files.singleFile
             build.images.add("deephaven/${project.projectDir.name}:local-build".toString())
+            if (platform != null) {
+                build.platform.set platform
+            }
         }
     }
 

@@ -56,7 +56,7 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
     private final SessionService service;
     private final TicketRouter ticketRouter;
 
-    @Inject()
+    @Inject
     public SessionServiceGrpcImpl(
             final SessionService service,
             final TicketRouter ticketRouter) {
@@ -266,8 +266,10 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
     @Singleton
     public static class AuthServerInterceptor implements ServerInterceptor {
         private final SessionService service;
+        private static final Status authenticationDetailsInvalid =
+                Status.UNAUTHENTICATED.withDescription("Authentication details invalid");
 
-        @Inject()
+        @Inject
         public AuthServerInterceptor(final SessionService service) {
             this.service = service;
         }
@@ -294,7 +296,7 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
                     session = service.getSessionForAuthToken(token);
                 } catch (AuthenticationException e) {
                     try {
-                        call.close(Status.UNAUTHENTICATED, new Metadata());
+                        call.close(authenticationDetailsInvalid, new Metadata());
                     } catch (IllegalStateException ignored) {
                         // could be thrown if the call was already closed. As an interceptor, we can't throw,
                         // so ignoring this and just returning the no-op listener.
