@@ -106,6 +106,7 @@ import com.github.javaparser.ast.type.VoidType;
 import com.github.javaparser.ast.type.WildcardType;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 import com.google.common.collect.Streams;
+import io.deephaven.api.ColumnName;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.base.Pair;
@@ -258,13 +259,22 @@ public class ShiftedColumnsFactory extends VoidVisitorAdapter<ShiftedColumnsFact
             // hold the current columns to be displayed in table
             List<String> currColumns = source.getDefinition().getColumnNames();
             for (Map.Entry<Long, List<MatchPair>> entry : formulaMapPair.getSecond().entrySet()) {
-                // Add formulaColName as prefix to ShiftedCols
-                MatchPair[] colPairs = entry.getValue().stream()
-                        .map(matchPair -> new MatchPair(formulaColumn.getName() + matchPair.leftColumn,
-                                matchPair.rightColumn))
-                        .toArray(MatchPair[]::new);
-
-                tableSoFar = ShiftedColumnOperation.addShiftedColumns(tableSoFar, entry.getKey(), colPairs);
+                if (entry.getKey() == 0) {
+                    // if there is no shift, then just add an alias to the table
+                    Selectable[] colPairs = entry.getValue().stream()
+                            .map(matchPair -> Selectable.of(
+                                    ColumnName.of(formulaColumn.getName() + matchPair.leftColumn),
+                                    ColumnName.of(matchPair.rightColumn)))
+                            .toArray(Selectable[]::new);
+                    tableSoFar = tableSoFar.updateView(colPairs);
+                } else {
+                    // Add formulaColName as prefix to ShiftedCols
+                    MatchPair[] colPairs = entry.getValue().stream()
+                            .map(matchPair -> new MatchPair(formulaColumn.getName() + matchPair.leftColumn,
+                                    matchPair.rightColumn))
+                            .toArray(MatchPair[]::new);
+                    tableSoFar = ShiftedColumnOperation.addShiftedColumns(tableSoFar, entry.getKey(), colPairs);
+                }
             }
             String resultColFormula = formulaColumn.getName() + " = " + formulaMapPair.getFirst()
                     .replaceAll(SHIFTED_COL_PREFIX, formulaColumn.getName() + SHIFTED_COL_PREFIX);
@@ -325,7 +335,7 @@ public class ShiftedColumnsFactory extends VoidVisitorAdapter<ShiftedColumnsFact
         }
 
         Pair<Long, String> attributePair = parseForConstantArrayAccessAttributes(expr);
-        if (attributePair != null && attributePair.getFirst() != 0) {
+        if (attributePair != null) {
             final String shiftedColName = SHIFTED_COL_PREFIX + attributes.index.getAndIncrement();
             MatchPair matchPair = new MatchPair(shiftedColName, attributePair.getSecond());
             attributes.formulaBuilder.append(shiftedColName);
