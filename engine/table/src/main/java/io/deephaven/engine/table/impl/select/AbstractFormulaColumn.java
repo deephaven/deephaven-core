@@ -9,6 +9,7 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.context.QueryScopeParam;
+import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.vector.Vector;
 import io.deephaven.engine.table.impl.vector.*;
 import io.deephaven.engine.table.impl.select.formula.*;
@@ -66,13 +67,6 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
 
     @Override
     public List<String> initInputs(Table table) {
-//        if (!ALLOW_UNSAFE_REFRESHING_FORMULAS) {
-//            if (table.isAppendOnly() && !disallowRefresh(
-//            !usesI && !usesII && !usesK && usedColumnArrays.isEmpty();
-//        }
-//        if (disallowRefresh()) {
-//
-//        }
         return initInputs(table.getRowSet(), table.getColumnSourceMap());
     }
 
@@ -82,7 +76,9 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
     }
 
     @Override
-    public List<String> initInputs(TrackingRowSet rowSet, Map<String, ? extends ColumnSource<?>> columnsOfInterest) {
+    public List<String> initInputs(
+            @NotNull final TrackingRowSet rowSet,
+            @NotNull final Map<String, ? extends ColumnSource<?>> columnsOfInterest) {
         this.rowSet = rowSet;
 
         this.columnSources = columnsOfInterest;
@@ -90,6 +86,22 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
             return usedColumns;
         }
         return initDef(extractDefinitions(columnsOfInterest));
+    }
+
+    @Override
+    public void validateSafeForRefresh(BaseTable<?> sourceTable) {
+        if (sourceTable.isRefreshing() && !ALLOW_UNSAFE_REFRESHING_FORMULAS) {
+            // note that constant offset array accesss does not use i/ii or end up in usedColumnArrays
+            boolean isUnsafe = !sourceTable.isAppendOnly() && (usesI || usesII);
+            isUnsafe |= !sourceTable.isAddOnly() && usesK;
+            isUnsafe |= !usedColumnArrays.isEmpty();
+            if (isUnsafe) {
+                throw new IllegalArgumentException("Formula " + formulaString + " uses i, ii, k, or column array " +
+                        "variables, and is not safe to refresh. Note that some usages, such as on an append-only " +
+                        "table are safe. To allow unsafe refreshing formulas, set the system property" +
+                        "io.deephaven.engine.table.impl.select.AbstractFormulaColumn.allowUnsafeRefreshingFormulas.");
+            }
+        }
     }
 
     protected void applyUsedVariables(Map<String, ColumnDefinition<?>> columnDefinitionMap, Set<String> variablesUsed) {
@@ -299,11 +311,6 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
     @Override
     public WritableColumnSource<?> newFlatDestInstance(long size) {
         return InMemoryColumnSource.getImmutableMemoryColumnSource(size, returnedType, null);
-    }
-
-    @Override
-    public boolean disallowRefresh() {
-        return !ALLOW_UNSAFE_REFRESHING_FORMULAS && !usesI && !usesII && !usesK && usedColumnArrays.isEmpty();
     }
 
     static class ColumnArrayParameter {

@@ -11,6 +11,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.select.FormulaColumn;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.SourceColumn;
@@ -48,16 +49,24 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
         }
     }
 
-    public static SelectAndViewAnalyzerWrapper create(Mode mode, Map<String, ColumnSource<?>> columnSources,
+    public static SelectAndViewAnalyzerWrapper create(
+            QueryTable sourceTable, Mode mode, Map<String, ColumnSource<?>> columnSources,
             TrackingRowSet rowSet, ModifiedColumnSet parentMcs, boolean publishTheseSources, boolean useShiftedColumns,
             SelectColumn... selectColumns) {
-        return create(mode, columnSources, rowSet, parentMcs, publishTheseSources, useShiftedColumns, true,
-                selectColumns);
+        return create(sourceTable, mode, columnSources, rowSet, parentMcs, publishTheseSources, useShiftedColumns,
+                true, selectColumns);
     }
 
-    public static SelectAndViewAnalyzerWrapper create(final Mode mode, final Map<String, ColumnSource<?>> columnSources,
-            TrackingRowSet rowSet, final ModifiedColumnSet parentMcs, final boolean publishTheseSources,
-            boolean useShiftedColumns, final boolean allowInternalFlatten, final SelectColumn... selectColumns) {
+    public static SelectAndViewAnalyzerWrapper create(
+            final QueryTable sourceTable,
+            final Mode mode,
+            final Map<String, ColumnSource<?>> columnSources,
+            TrackingRowSet rowSet,
+            final ModifiedColumnSet parentMcs,
+            final boolean publishTheseSources,
+            boolean useShiftedColumns,
+            final boolean allowInternalFlatten,
+            final SelectColumn... selectColumns) {
         SelectAndViewAnalyzer analyzer = createBaseLayer(columnSources, publishTheseSources);
         final Map<String, ColumnDefinition<?>> columnDefinitions = new LinkedHashMap<>();
         final WritableRowRedirection rowRedirection;
@@ -124,6 +133,11 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
                 continue;
             }
 
+            // shifted columns appear to not be safe for refresh, so we do not validate them
+            if (sourceTable.isRefreshing()) {
+                sc.validateSafeForRefresh(sourceTable);
+            }
+
             processedCols.add(sc);
 
             if (hasConstantValue(sc)) {
@@ -139,8 +153,8 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
                 if (numberOfInternallyFlattenedColumns > 0) {
                     // we must preserve this column, but have already created an analyzer for the internally flattened
                     // column, therefore must start over without permitting internal flattening
-                    return create(mode, columnSources, originalRowSet, parentMcs, publishTheseSources, false,
-                            selectColumns);
+                    return create(sourceTable, mode, columnSources, originalRowSet, parentMcs, publishTheseSources,
+                            false, selectColumns);
                 }
                 analyzer =
                         analyzer.createLayerForPreserve(sc.getName(), sc, sc.getDataView(), distinctDeps, mcsBuilder);

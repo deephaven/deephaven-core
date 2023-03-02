@@ -67,11 +67,6 @@ abstract class BaseTableTransformationColumn implements SelectColumn {
     }
 
     @Override
-    public final boolean disallowRefresh() {
-        return false;
-    }
-
-    @Override
     public final boolean isStateless() {
         return true;
     }

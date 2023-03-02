@@ -1188,7 +1188,7 @@ public class QueryTable extends BaseTable<QueryTable> {
     public SelectValidationResult validateSelect(final SelectColumn... selectColumns) {
         final SelectColumn[] clones = SelectColumn.copyFrom(selectColumns);
         SelectAndViewAnalyzerWrapper analyzerWrapper = SelectAndViewAnalyzer.create(
-                SelectAndViewAnalyzer.Mode.SELECT_STATIC, columns, rowSet, getModifiedColumnSetForUpdates(), true,
+                this, SelectAndViewAnalyzer.Mode.SELECT_STATIC, columns, rowSet, getModifiedColumnSetForUpdates(), true,
                 false, clones);
         return new SelectValidationResult(analyzerWrapper.getAnalyzer(), clones);
     }
@@ -1216,7 +1216,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                     }
                     final boolean publishTheseSources = flavor == Flavor.Update;
                     final SelectAndViewAnalyzerWrapper analyzerWrapper = SelectAndViewAnalyzer.create(
-                            mode, columns, rowSet, getModifiedColumnSetForUpdates(), publishTheseSources, true,
+                            this, mode, columns, rowSet, getModifiedColumnSetForUpdates(), publishTheseSources, true,
                             selectColumns);
 
                     final SelectAndViewAnalyzer analyzer = analyzerWrapper.getAnalyzer();
@@ -1404,7 +1404,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                             initializeWithSnapshot(humanReadablePrefix, swapListener, (usePrev, beforeClockValue) -> {
                                 final boolean publishTheseSources = flavor == Flavor.UpdateView;
                                 final SelectAndViewAnalyzerWrapper analyzerWrapper = SelectAndViewAnalyzer.create(
-                                        SelectAndViewAnalyzer.Mode.VIEW_EAGER, columns, rowSet,
+                                        this, SelectAndViewAnalyzer.Mode.VIEW_EAGER, columns, rowSet,
                                         getModifiedColumnSetForUpdates(), publishTheseSources, true, viewColumns);
                                 final SelectColumn[] processedViewColumns = analyzerWrapper.getProcessedColumns()
                                         .toArray(SelectColumn[]::new);
@@ -1492,7 +1492,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                     checkInitiateOperation();
 
                     final SelectAndViewAnalyzerWrapper analyzerWrapper = SelectAndViewAnalyzer.create(
-                            SelectAndViewAnalyzer.Mode.VIEW_LAZY, columns, rowSet, getModifiedColumnSetForUpdates(),
+                            this, SelectAndViewAnalyzer.Mode.VIEW_LAZY, columns, rowSet, getModifiedColumnSetForUpdates(),
                             true, false, selectColumns);
                     final SelectColumn[] processedColumns = analyzerWrapper.getProcessedColumns()
                             .toArray(SelectColumn[]::new);

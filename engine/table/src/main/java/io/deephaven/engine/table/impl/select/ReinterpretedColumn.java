@@ -330,11 +330,6 @@ public class ReinterpretedColumn<S, D> implements SelectColumn {
     }
 
     @Override
-    public boolean disallowRefresh() {
-        return false;
-    }
-
-    @Override
     public boolean isStateless() {
         return sourceColumnSource.isStateless();
     }
