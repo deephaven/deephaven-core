@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl.select.analyzers;
 
+import io.deephaven.base.Pair;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.liveness.LivenessNode;
@@ -81,6 +82,7 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
         List<SelectColumn> processedCols = new LinkedList<>();
         List<SelectColumn> remainingCols = null;
         FormulaColumn shiftColumn = null;
+        boolean shiftColumnHasPositiveOffset = false;
 
         final HashSet<String> resultColumns = flattenedResult ? new HashSet<>() : null;
         for (final SelectColumn sc : selectColumns) {
@@ -118,6 +120,7 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
                 shiftColumn = sc instanceof FormulaColumn
                         ? (FormulaColumn) sc
                         : (FormulaColumn) ((SwitchColumn) sc).getRealColumn();
+                shiftColumnHasPositiveOffset = hasPositiveOffsetConstantArrayAccess(sc);
                 continue;
             }
 
@@ -203,7 +206,8 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
                     throw new UnsupportedOperationException("Unsupported case " + mode);
             }
         }
-        return new SelectAndViewAnalyzerWrapper(analyzer, shiftColumn, remainingCols, processedCols);
+        return new SelectAndViewAnalyzerWrapper(analyzer, shiftColumn, shiftColumnHasPositiveOffset, remainingCols,
+                processedCols);
     }
 
     private static boolean hasConstantArrayAccess(final SelectColumn sc) {
@@ -217,6 +221,23 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
         }
         return false;
     }
+
+    private static boolean hasPositiveOffsetConstantArrayAccess(final SelectColumn sc) {
+        Pair<String, Map<Long, List<MatchPair>>> shifts = null;
+        if (sc instanceof FormulaColumn) {
+            shifts = ((FormulaColumn) sc).getFormulaShiftColPair();
+        } else if (sc instanceof SwitchColumn) {
+            final SelectColumn realColumn = ((SwitchColumn) sc).getRealColumn();
+            if (realColumn instanceof FormulaColumn) {
+                shifts = ((FormulaColumn) realColumn).getFormulaShiftColPair();
+            }
+        }
+        if (shifts == null) {
+            throw new IllegalStateException("Column " + sc.getName() + " does not have constant array access");
+        }
+        return shifts.getSecond().keySet().stream().max(Long::compareTo).orElse(0L) > 0;
+    }
+
 
     private static boolean hasConstantValue(final SelectColumn sc) {
         if (sc instanceof FormulaColumn) {

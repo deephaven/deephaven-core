@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.select.analyzers;
 
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.ShiftedColumnsFactory;
 import io.deephaven.engine.table.impl.select.FormulaColumn;
@@ -22,16 +23,19 @@ public class SelectAndViewAnalyzerWrapper {
 
     private final SelectAndViewAnalyzer analyzer;
     private final FormulaColumn shiftColumn;
+    private final boolean shiftColumnHasPositiveOffset;
     private final List<SelectColumn> remainingCols;
     private final List<SelectColumn> processedColumns;
 
     SelectAndViewAnalyzerWrapper(
             SelectAndViewAnalyzer analyzer,
             FormulaColumn shiftColumn,
+            boolean shiftColumnHasPositiveOffset,
             List<SelectColumn> remainingCols,
             List<SelectColumn> processedColumns) {
         this.analyzer = analyzer;
         this.shiftColumn = shiftColumn;
+        this.shiftColumnHasPositiveOffset = shiftColumnHasPositiveOffset;
         this.remainingCols = remainingCols;
         this.processedColumns = processedColumns;
     }
@@ -56,9 +60,19 @@ public class SelectAndViewAnalyzerWrapper {
         return processedColumns;
     }
 
-    public QueryTable applyShiftsAndRemainingColumns(@NotNull QueryTable queryTable, UpdateFlavor updateFlavor) {
+    public QueryTable applyShiftsAndRemainingColumns(
+            @NotNull QueryTable sourceTable, @NotNull QueryTable queryTable, UpdateFlavor updateFlavor) {
         if (shiftColumn != null) {
             queryTable = (QueryTable) ShiftedColumnsFactory.getShiftedColumnsTable(queryTable, shiftColumn);
+        }
+
+        // shift columns may introduce modifies that are not present in the original table; set these before using
+        if (shiftColumn == null && sourceTable.isAddOnly()) {
+            queryTable.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, true);
+        }
+        if ((shiftColumn == null || !shiftColumnHasPositiveOffset) && sourceTable.isAppendOnly()) {
+            // note if the shift offset is non-positive, then this result is still append-only
+            queryTable.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, true);
         }
 
         if (remainingCols != null) {

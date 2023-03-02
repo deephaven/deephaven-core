@@ -66,6 +66,13 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
 
     @Override
     public List<String> initInputs(Table table) {
+//        if (!ALLOW_UNSAFE_REFRESHING_FORMULAS) {
+//            if (table.isAppendOnly() && !disallowRefresh(
+//            !usesI && !usesII && !usesK && usedColumnArrays.isEmpty();
+//        }
+//        if (disallowRefresh()) {
+//
+//        }
         return initInputs(table.getRowSet(), table.getColumnSourceMap());
     }
 

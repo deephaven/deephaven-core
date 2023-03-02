@@ -1019,8 +1019,14 @@ public class QueryTable extends BaseTable<QueryTable> {
                                     final boolean refreshingFilters =
                                             Arrays.stream(filters).anyMatch(WhereFilter::isRefreshing);
                                     copyAttributes(filteredTable, CopyAttributeOperation.Filter);
-                                    if (!refreshingFilters && isAddOnly()) {
-                                        filteredTable.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
+                                    // as long as filters do not change, we can propagate add-only/append-only attrs
+                                    if (!refreshingFilters) {
+                                        if (isAddOnly()) {
+                                            filteredTable.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
+                                        }
+                                        if (isAppendOnly()) {
+                                            filteredTable.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
+                                        }
                                     }
 
                                     final List<NotificationQueue.Dependency> dependencies = Stream.concat(
@@ -1308,7 +1314,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                         maybeCopyColumnDescriptions(resultTable);
                     }
                     return analyzerWrapper.applyShiftsAndRemainingColumns(
-                            resultTable, SelectAndViewAnalyzerWrapper.UpdateFlavor.Update);
+                            this, resultTable, SelectAndViewAnalyzerWrapper.UpdateFlavor.Update);
                 }));
     }
 
@@ -1426,7 +1432,8 @@ public class QueryTable extends BaseTable<QueryTable> {
                                         flavor == Flavor.UpdateView
                                                 ? SelectAndViewAnalyzerWrapper.UpdateFlavor.UpdateView
                                                 : SelectAndViewAnalyzerWrapper.UpdateFlavor.View;
-                                queryTable = analyzerWrapper.applyShiftsAndRemainingColumns(queryTable, updateFlavor);
+                                queryTable = analyzerWrapper.applyShiftsAndRemainingColumns(
+                                        this, queryTable, updateFlavor);
 
                                 result.setValue(queryTable);
 
@@ -1501,7 +1508,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                     maybeCopyColumnDescriptions(result, processedColumns);
 
                     return analyzerWrapper.applyShiftsAndRemainingColumns(
-                            result, SelectAndViewAnalyzerWrapper.UpdateFlavor.LazyUpdate);
+                            this, result, SelectAndViewAnalyzerWrapper.UpdateFlavor.LazyUpdate);
                 });
     }
 
@@ -2899,8 +2906,17 @@ public class QueryTable extends BaseTable<QueryTable> {
                     }
                     final MemoizedOperationKey aggKey =
                             MemoizedOperationKey.aggBy(Collections.emptyList(), false, null, columnNames);
-                    return memoizeResult(aggKey,
-                            () -> aggNoMemo(AggregationProcessor.forSelectDistinct(), false, null, columnNames));
+                    return memoizeResult(aggKey, () -> {
+                        final QueryTable result =
+                                aggNoMemo(AggregationProcessor.forSelectDistinct(), false, null, columnNames);
+                        if (isAddOnly()) {
+                            result.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, true);
+                        }
+                        if (isAppendOnly()) {
+                            result.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, true);
+                        }
+                        return result;
+                    });
                 });
     }
 

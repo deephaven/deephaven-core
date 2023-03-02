@@ -12,6 +12,7 @@ import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
@@ -161,6 +162,10 @@ public class ArrowToTableConverter {
 
         final BarrageUtil.ConvertedArrowSchema result = BarrageUtil.convertArrowSchema(header);
         resultTable = BarrageTable.make(null, result.tableDef, result.attributes, -1);
+        resultTable.setFlat();
+        resultTable.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, true);
+        resultTable.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, true);
+
         columnConversionFactors = result.conversionFactors;
         columnChunkTypes = resultTable.getWireChunkTypes();
         columnTypes = resultTable.getWireTypes();

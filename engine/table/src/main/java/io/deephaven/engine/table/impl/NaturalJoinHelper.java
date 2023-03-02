@@ -39,6 +39,9 @@ class NaturalJoinHelper {
                 naturalJoinInternal(leftTable, rightTable, columnsToMatch, columnsToAdd, exactMatch, control);
         leftTable.maybeCopyColumnDescriptions(result, rightTable, columnsToMatch, columnsToAdd);
         leftTable.copyAttributes(result, BaseTable.CopyAttributeOperation.Join);
+        if (exactMatch && leftTable.isAppendOnly() && rightTable.isAppendOnly()) {
+            result.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, true);
+        }
         return result;
     }
 

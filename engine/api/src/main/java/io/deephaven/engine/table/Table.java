@@ -123,6 +123,7 @@ public interface Table extends
     String FILTERABLE_COLUMNS_ATTRIBUTE = "FilterableColumns";
     String TOTALS_TABLE_ATTRIBUTE = "TotalsTable";
     String ADD_ONLY_TABLE_ATTRIBUTE = "AddOnly";
+    String APPEND_ONLY_TABLE_ATTRIBUTE = "AppendOnly";
     /**
      * <p>
      * If this attribute is present with value {@code true}, this Table is a "stream table".

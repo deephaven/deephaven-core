@@ -325,7 +325,7 @@ public class ShiftedColumnsFactory extends VoidVisitorAdapter<ShiftedColumnsFact
         }
 
         Pair<Long, String> attributePair = parseForConstantArrayAccessAttributes(expr);
-        if (attributePair != null) {
+        if (attributePair != null && attributePair.getFirst() != 0) {
             final String shiftedColName = SHIFTED_COL_PREFIX + attributes.index.getAndIncrement();
             MatchPair matchPair = new MatchPair(shiftedColName, attributePair.getSecond());
             attributes.formulaBuilder.append(shiftedColName);
