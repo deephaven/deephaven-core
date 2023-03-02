@@ -80,14 +80,16 @@ _vectorized_count = 0
 class NodeType(Enum):
     """An enum of node types for RollupTable"""
     AGGREGATED = _JNodeType.Aggregated
-    """Nodes at an aggregated (rolled up) level in the RollupTable. An aggregated level is above the constituent (leaf) level. 
-    These nodes have column names and types that result from applying aggregations on the source table of the RollupTable."""
+    """Nodes at an aggregated (rolled up) level in the RollupTable. An aggregated level is above the constituent (
+    leaf) level. These nodes have column names and types that result from applying aggregations on the source table 
+    of the RollupTable. """
     CONSTITUENT = _JNodeType.Constituent
     """Nodes at the leaf level when meth:`~deephaven.table.Table.rollup` method is called with 
-    include_constituent=True. The constituent level is the lowest in a rollup table. These nodes have column names and types from the source table of the RollupTable."""
+    include_constituent=True. The constituent level is the lowest in a rollup table. These nodes have column names 
+    and types from the source table of the RollupTable. """
 
 
-class FormatOperationsRecorder(Protocol):
+class _FormatOperationsRecorder(Protocol):
     """A mixin for creating format operations to be applied to individual nodes of either RollupTable or TreeTable."""
 
     def format_column(self, formulas: Union[str, List[str]]):
@@ -109,7 +111,7 @@ class FormatOperationsRecorder(Protocol):
         return self.__class__(j_format_ops_recorder.formatColumnWhere(col, cond, formula))
 
 
-class SortOperationsRecorder(Protocol):
+class _SortOperationsRecorder(Protocol):
     """A mixin for creating sort operations to be applied to individual nodes of either RollupTable or
     TreeTable."""
 
@@ -126,7 +128,7 @@ class SortOperationsRecorder(Protocol):
         return self.__class__(j_sort_ops_recorder.sortDescending(order_by))
 
 
-class FilterOperationsRecorder(Protocol):
+class _FilterOperationsRecorder(Protocol):
     """A mixin for creating filter operations to be applied to individual nodes of either RollupTable or
     TreeTable."""
 
@@ -137,8 +139,8 @@ class FilterOperationsRecorder(Protocol):
         return self.__class__(j_filter_ops_recorder.where(filters))
 
 
-class RollupNodeOperationsRecorder(JObjectWrapper, FormatOperationsRecorder,
-                                   SortOperationsRecorder):
+class RollupNodeOperationsRecorder(JObjectWrapper, _FormatOperationsRecorder,
+                                   _SortOperationsRecorder):
     """Recorder for node-level operations to be applied when gathering snapshots of RollupTable. Supported operations
     include column formatting and sorting.
 
@@ -196,13 +198,14 @@ class RollupTable(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "failed to create a RollupNodeOperationsRecorder.") from e
 
-    def with_node_operations(self, node_ops_recorders: List[RollupNodeOperationsRecorder]) -> RollupTable:
+    def with_node_operations(self, recorders: List[RollupNodeOperationsRecorder]) -> RollupTable:
         """Returns a new RollupTable that will apply the recorded node operations to nodes when gathering
         snapshots.
 
         Args:
-            node_ops_recorders (List[RollupNodeOperationsRecorder]): a list of RollupNodeOperationsRecorder containing
-                the node operations to be applied
+            recorders (List[RollupNodeOperationsRecorder]): a list of RollupNodeOperationsRecorder containing
+                the node operations to be applied, they must be ones created by calling the 'node_operation_recorder'
+                method on the same table.
 
         Returns:
             a new RollupTable
@@ -213,7 +216,7 @@ class RollupTable(JObjectWrapper):
         try:
             return RollupTable(
                 j_rollup_table=self.j_rollup_table.withNodeOperations(
-                    [op.j_node_ops_recorder for op in node_ops_recorders]),
+                    [op.j_node_ops_recorder for op in recorders]),
                 include_constituents=self.include_constituents, aggs=self.aggs, by=self.by)
         except Exception as e:
             raise DHError(e, "with_node_operations on RollupTable failed.") from e
@@ -244,8 +247,8 @@ class RollupTable(JObjectWrapper):
             raise DHError(e, "with_filters operation on RollupTable failed.") from e
 
 
-class TreeNodeOperationsRecorder(JObjectWrapper, FormatOperationsRecorder,
-                                 SortOperationsRecorder, FilterOperationsRecorder):
+class TreeNodeOperationsRecorder(JObjectWrapper, _FormatOperationsRecorder,
+                                 _SortOperationsRecorder, _FilterOperationsRecorder):
     """Recorder for node-level operations to be applied when gathering snapshots of TreeTable. Supported operations
     include column formatting, sorting, and filtering.
 
@@ -288,12 +291,12 @@ class TreeTable(JObjectWrapper):
         """
         return TreeNodeOperationsRecorder(j_node_ops_recorder=self.j_tree_table.makeNodeOperationsRecorder())
 
-    def with_node_operations(self, node_ops: TreeNodeOperationsRecorder) -> TreeTable:
+    def with_node_operations(self, recorder: TreeNodeOperationsRecorder) -> TreeTable:
         """Returns a new TreeTable that will apply the recorded node operations to nodes when gathering snapshots.
 
         Args:
-            node_ops (TreeNodeOperationsRecorder): the TreeNodeOperationsRecorder containing the node operations to be
-                applied
+            recorder (TreeNodeOperationsRecorder): the TreeNodeOperationsRecorder containing the node operations to be
+                applied, it must be created by calling the 'node_operation_recorder' method on the same table.
 
         Returns:
             a new TreeTable
@@ -304,7 +307,7 @@ class TreeTable(JObjectWrapper):
 
         try:
             return TreeTable(
-                j_tree_table=self.j_tree_table.withNodeOperations(node_ops.j_node_ops_recorder),
+                j_tree_table=self.j_tree_table.withNodeOperations(recorder.j_node_ops_recorder),
                 id_col=self.id_col, parent_col=self.parent_col)
         except Exception as e:
             raise DHError(e, "with_node_operations on TreeTable failed.") from e
