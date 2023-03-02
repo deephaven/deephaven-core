@@ -501,16 +501,16 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
          */
         void onLayerCompleted(int completedColumn) {
             if (!fired) {
-                final boolean readyToFire;
+                boolean readyToFire = false;
                 synchronized (completedColumns) {
-                    completedColumns.set(completedColumn);
-                    if (requiredColumns.get(completedColumn) || requiredColumns.isEmpty()) {
-                        readyToFire = requiredColumns.stream().allMatch(completedColumns::get);
-                        if (readyToFire) {
-                            fired = true;
+                    if (!fired) {
+                        completedColumns.set(completedColumn);
+                        if (requiredColumns.get(completedColumn) || requiredColumns.isEmpty()) {
+                            readyToFire = requiredColumns.stream().allMatch(completedColumns::get);
+                            if (readyToFire) {
+                                fired = true;
+                            }
                         }
-                    } else {
-                        readyToFire = false;
                     }
                 }
                 if (readyToFire) {

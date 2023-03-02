@@ -32,7 +32,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.LongToIntFunction;
 import java.util.stream.StreamSupport;
@@ -212,23 +211,33 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
 
         prepareSourcesForParallelPopulation(upstream);
 
-        final AtomicInteger divisions = new AtomicInteger(splitUpdates.size());
-
-        long destinationOffset = 0;
-        for (TableUpdate splitUpdate : splitUpdates) {
-            final long fdest = destinationOffset;
-            jobScheduler.submit(
-                    executionContext,
-                    () -> doParallelApplyUpdate(splitUpdate, toClear, helper, liveResultOwner, onCompletion,
-                            checkTableOperations, divisions, fdest),
-                    SelectColumnLayer.this, onError);
-            if (flattenedResult) {
+        final int numTasks = splitUpdates.size();
+        final long[] destinationOffsets = new long[numTasks];
+        if (flattenedResult) {
+            Assert.assertion(upstream.removed().isEmpty(), "upstream.removed().isEmpty()");
+            Assert.assertion(upstream.modified().isEmpty(), "upstream.modified().isEmpty()");
+            Assert.assertion(upstream.shifted().empty(), "upstream.shifted().empty()");
+            long destinationOffset = 0;
+            for (int ti = 0; ti < numTasks; ++ti) {
+                final TableUpdate splitUpdate = splitUpdates.get(ti);
+                Assert.assertion(splitUpdate.removed().isEmpty(), "splitUpdate.removed().isEmpty()");
+                Assert.assertion(splitUpdate.modified().isEmpty(), "splitUpdate.modified().isEmpty()");
+                Assert.assertion(splitUpdate.shifted().empty(), "splitUpdate.shifted().empty()");
+                destinationOffsets[ti] = destinationOffset;
                 destinationOffset += splitUpdate.added().size();
-                Assert.assertion(upstream.removed().isEmpty(), "upstream.removed().isEmpty()");
-                Assert.assertion(upstream.modified().isEmpty(), "upstream.modified().isEmpty()");
-                Assert.assertion(upstream.shifted().empty(), "upstream.shifted().empty()");
             }
         }
+        jobScheduler.iterateParallel(
+                executionContext, SelectColumnLayer.this, JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, numTasks,
+                (ctx, ti, nec) -> doParallelApplyUpdate(
+                        splitUpdates.get(ti), helper, liveResultOwner, checkTableOperations, destinationOffsets[ti]),
+                () -> {
+                    if (!isRedirected) {
+                        clearObjectsAtThisLevel(toClear);
+                    }
+                    onCompletion.onLayerCompleted(getLayerIndex());
+                },
+                onError);
     }
 
     private void doSerialApplyUpdate(final TableUpdate upstream, final RowSet toClear, final UpdateHelper helper,
@@ -248,9 +257,8 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         onCompletion.onLayerCompleted(getLayerIndex());
     }
 
-    private void doParallelApplyUpdate(final TableUpdate upstream, final RowSet toClear, final UpdateHelper helper,
-            @Nullable final LivenessNode liveResultOwner, final SelectLayerCompletionHandler onCompletion,
-            final boolean checkTableOperations, final AtomicInteger divisions, final long startOffset) {
+    private void doParallelApplyUpdate(final TableUpdate upstream, final UpdateHelper helper,
+            @Nullable final LivenessNode liveResultOwner, final boolean checkTableOperations, final long startOffset) {
         final boolean oldCheck = UpdateGraphProcessor.DEFAULT.setCheckTableOperations(checkTableOperations);
         try {
             SystemicObjectTracker.executeSystemically(isSystemic,
@@ -259,13 +267,6 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
             UpdateGraphProcessor.DEFAULT.setCheckTableOperations(oldCheck);
         }
         upstream.release();
-
-        if (divisions.decrementAndGet() == 0) {
-            if (!isRedirected) {
-                clearObjectsAtThisLevel(toClear);
-            }
-            onCompletion.onLayerCompleted(getLayerIndex());
-        }
     }
 
     private Boolean doApplyUpdate(final TableUpdate upstream, final UpdateHelper helper,

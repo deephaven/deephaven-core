@@ -46,6 +46,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReferenceArray;
+import java.util.function.Consumer;
 import java.util.stream.IntStream;
 
 /**
@@ -99,6 +100,7 @@ public abstract class UpdateBy {
 
         private UpdateByRedirectionHelper(@Nullable final WritableRowRedirection rowRedirection) {
             this.rowRedirection = rowRedirection;
+            // noinspection resource
             this.freeRows = rowRedirection == null ? null : RowSetFactory.empty().toTracking();
             this.maxInnerRowKey = 0;
         }
@@ -352,6 +354,20 @@ public abstract class UpdateBy {
             return logOutput.append("UpdateBy.PhasedUpdateProcessor");
         }
 
+        private LogOutputAppendable stringToAppendable(@NotNull final String toAppend) {
+            return logOutput -> logOutput.append(toAppend);
+        }
+
+        private LogOutputAppendable stringAndIndexToAppendable(@NotNull final String string, final int index) {
+            return logOutput -> logOutput.append(string).append('-').append(index);
+        }
+
+        private LogOutputAppendable chainAppendables(
+                @NotNull final LogOutputAppendable prefix,
+                @NotNull final LogOutputAppendable toAppend) {
+            return logOutput -> logOutput.append(prefix).append(toAppend);
+        }
+
         private void onError(@NotNull final Exception error) {
             if (waitForResult != null) {
                 // Use the Future to signal that an exception has occurred. Cleanup will be done by the waiting thread.
@@ -365,13 +381,13 @@ public abstract class UpdateBy {
         }
 
         /**
-         * Accumulate in parallel the dirty bucket rowsets for the cacheable input sources. Calls
-         * {@code completedAction} when the work is complete
+         * Accumulate in parallel the dirty bucket RowSets for the cacheable input sources. Calls
+         * {@code onComputeComplete} when the work is complete.
          */
-        private void computeCachedColumnRowsets(final Runnable resumeAction) {
+        private void computeCachedColumnRowSets(final Runnable onComputeComplete) {
             // We have nothing to cache, so we can exit early.
             if (!inputCacheNeeded) {
-                resumeAction.run();
+                onComputeComplete.run();
                 return;
             }
 
@@ -387,13 +403,14 @@ public abstract class UpdateBy {
                                 (int) Arrays.stream(windows).filter(win -> win.isSourceInUse(srcIdx)).count();
                     }
                 }
-                resumeAction.run();
+                onComputeComplete.run();
                 return;
             }
 
-            jobScheduler.iterateParallel(ExecutionContext.getContextToRecord(), this,
+            jobScheduler.iterateParallel(ExecutionContext.getContextToRecord(),
+                    chainAppendables(this, stringToAppendable("-computeCachedColumnRowSets")),
                     JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, cacheableSourceIndices.length,
-                    (context, idx) -> {
+                    (context, idx, nec) -> {
                         final int srcIdx = cacheableSourceIndices[idx];
                         for (int winIdx = 0; winIdx < windows.length; winIdx++) {
                             if (dirtyWindows[winIdx] && windows[winIdx].isSourceInUse(srcIdx)) {
@@ -430,20 +447,23 @@ public abstract class UpdateBy {
                             }
                         }
                     },
-                    resumeAction,
+                    onComputeComplete,
                     this::onError);
         }
 
         /**
-         * Create a new input source cache and populate the required rows in parallel. Calls {@code completedAction}
-         * when the work is complete
+         * Create a new input source cache and populate the required rows in parallel. Calls {@code onSourceComplete}
+         * when the work is complete.
          */
-        private void createCachedColumnSource(int srcIdx, final Runnable resumeAction) {
+        private void createCachedColumnSource(
+                int srcIdx,
+                final Runnable onSourceComplete,
+                final Consumer<Exception> onSourceError) {
             final WritableRowSet inputRowSet = inputSourceRowSets.get(srcIdx);
 
             if (maybeCachedInputSources[srcIdx] != null || inputRowSet == null) {
                 // already cached from another operator (or caching not needed)
-                resumeAction.run();
+                onSourceComplete.run();
                 return;
             }
 
@@ -484,9 +504,10 @@ public abstract class UpdateBy {
                 }
             }
 
-            jobScheduler.iterateParallel(ExecutionContext.getContextToRecord(), this, BatchThreadContext::new,
-                    0, taskCount,
-                    (ctx, idx) -> {
+            jobScheduler.iterateParallel(ExecutionContext.getContextToRecord(),
+                    chainAppendables(this, stringToAppendable("-createCachedColumnSource")),
+                    BatchThreadContext::new, 0, taskCount,
+                    (ctx, idx, nec) -> {
                         // advance to the first key of this block
                         ctx.rsIt.advance(inputRowSet.get((long) idx * PARALLEL_CACHE_BATCH_SIZE));
                         int remaining = PARALLEL_CACHE_BATCH_SIZE;
@@ -500,65 +521,70 @@ public abstract class UpdateBy {
                             // be exhausted and hasMore() will return false
                             remaining -= PARALLEL_CACHE_CHUNK_SIZE;
                         }
-                    }, resumeAction,
-                    this::onError);
+                    }, onSourceComplete, onSourceError);
         }
 
         /**
-         * Create cached input sources for all input needed by {@code windows[winIdx]}. Calls {@code completedAction}
-         * when the work is complete
+         * Create cached input sources for all input needed by {@code windows[winIdx]}. Calls {@code onCachingComplete}
+         * when the work is complete.
          */
-        private void cacheInputSources(final int winIdx, final Runnable resumeAction) {
+        private void cacheInputSources(
+                final int winIdx,
+                final Runnable onCachingComplete,
+                final Consumer<Exception> onCachingError) {
             if (inputCacheNeeded && dirtyWindows[winIdx]) {
                 final UpdateByWindow win = windows[winIdx];
                 final int[] uniqueWindowSources = win.getUniqueSourceIndices();
 
-                jobScheduler.iterateParallel(ExecutionContext.getContextToRecord(), this,
+                jobScheduler.iterateParallel(ExecutionContext.getContextToRecord(),
+                        chainAppendables(this, stringAndIndexToAppendable("-cacheInputSources", winIdx)),
                         JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, uniqueWindowSources.length,
-                        (context, idx, sourceComplete) -> createCachedColumnSource(uniqueWindowSources[idx],
-                                sourceComplete),
-                        resumeAction, this::onError);
+                        (context, idx, nestedErrorConsumer, sourceComplete) -> createCachedColumnSource(
+                                uniqueWindowSources[idx], sourceComplete, nestedErrorConsumer),
+                        onCachingComplete, onCachingError);
             } else {
                 // no work to do, continue
-                resumeAction.run();
+                onCachingComplete.run();
             }
         }
 
         /**
-         * Process each bucket in {@code windows[winIdx]} in parallel. Calls {@code resumeAction} when the work is
-         * complete
+         * Process each bucket in {@code windows[winIdx]} in parallel. Calls {@code onWindowBucketsComplete} when the
+         * work is complete.
          */
-        private void processWindowBuckets(int winIdx, final Runnable resumeAction) {
+        private void processWindowBuckets(
+                final int winIdx,
+                final Runnable onWindowBucketsComplete,
+                final Consumer<Exception> onWindowBucketError) {
             if (jobScheduler.threadCount() > 1 && dirtyBuckets.length > 1) {
                 // process the buckets in parallel
-                jobScheduler.iterateParallel(ExecutionContext.getContextToRecord(), this,
-                        JobScheduler.DEFAULT_CONTEXT_FACTORY,
-                        0, dirtyBuckets.length,
-                        (context, bucketIdx) -> {
+                jobScheduler.iterateParallel(ExecutionContext.getContextToRecord(),
+                        chainAppendables(this, stringAndIndexToAppendable("-processWindowBuckets", winIdx)),
+                        JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, dirtyBuckets.length,
+                        (context, bucketIdx, nec) -> {
                             UpdateByBucketHelper bucket = dirtyBuckets[bucketIdx];
                             bucket.assignInputSources(winIdx, maybeCachedInputSources);
                             bucket.processWindow(winIdx, initialStep);
-                        }, resumeAction, this::onError);
+                        }, onWindowBucketsComplete, onWindowBucketError);
             } else {
-                // minimize overhead when running serially
                 for (UpdateByBucketHelper bucket : dirtyBuckets) {
                     bucket.assignInputSources(winIdx, maybeCachedInputSources);
                     bucket.processWindow(winIdx, initialStep);
                 }
-                resumeAction.run();
+                onWindowBucketsComplete.run();
             }
         }
 
         /**
          * Process all {@code windows} in a serial manner (to minimize cache memory usage and to protect against races
          * to fill the cached input sources). Will create cached input sources, process the buckets, then release the
-         * cached columns before starting the next window. Calls {@code completedAction} when the work is complete
+         * cached columns before starting the next window. Calls {@code onWindowsComplete} when the work is complete.
          */
-        private void processWindows(final Runnable resumeAction) {
-            jobScheduler.iterateSerial(ExecutionContext.getContextToRecord(), this,
-                    JobScheduler.DEFAULT_CONTEXT_FACTORY, 0,
-                    windows.length,
-                    (context, winIdx, windowComplete) -> {
+        private void processWindows(final Runnable onWindowsComplete) {
+            jobScheduler.iterateSerial(ExecutionContext.getContextToRecord(),
+                    chainAppendables(this, stringToAppendable("-processWindows")),
+                    JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, windows.length,
+                    (context, winIdx, nestedErrorConsumer, windowComplete) -> {
                         UpdateByWindow win = windows[winIdx];
 
                         // this is a chain of calls: cache, then shift, then process the dirty buckets for this window
@@ -614,19 +640,19 @@ public abstract class UpdateBy {
                                     // signal that the work for this window is complete (will iterate to the next window
                                     // sequentially)
                                     windowComplete.run();
-                                });
+                                }, nestedErrorConsumer);
                             } else {
                                 windowComplete.run();
                             }
-                        });
-                    }, resumeAction, this::onError);
+                        }, nestedErrorConsumer);
+                    }, onWindowsComplete, this::onError);
         }
 
         /**
          * Clean up the resources created during this update and notify downstream if applicable. Calls
-         * {@code completedAction} when the work is complete
+         * {@code onCleanupComplete} when the work is complete
          */
-        private void cleanUpAndNotify(final Runnable resumeAction) {
+        private void cleanUpAndNotify(final Runnable onCleanupComplete) {
             // create the downstream before calling finalize() on the buckets (which releases resources)
             final TableUpdate downstream = initialStep ? null : computeDownstreamUpdate();
 
@@ -672,7 +698,7 @@ public abstract class UpdateBy {
             }
 
             // continue
-            resumeAction.run();
+            onCleanupComplete.run();
         }
 
         /**
@@ -789,7 +815,7 @@ public abstract class UpdateBy {
 
             // this is where we leave single-threaded calls and rely on the scheduler to continue the work. Each
             // call will chain to another until the sequence is complete
-            computeCachedColumnRowsets(
+            computeCachedColumnRowSets(
                     () -> processWindows(
                             () -> cleanUpAndNotify(
                                     () -> {
