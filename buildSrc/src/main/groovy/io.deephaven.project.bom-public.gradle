@@ -1,5 +1,5 @@
 import io.deephaven.project.util.JavaDependencies
-import io.deephaven.project.util.PublishingConstants
+import io.deephaven.project.util.PublishingTools
 
 plugins {
     id 'io.deephaven.common-conventions'
@@ -24,9 +24,9 @@ publishing {
     }
 }
 
-PublishingConstants.setupRepositories(project)
-PublishingConstants.setupMavenPublication(project, publishing.publications.myPlatform)
-PublishingConstants.setupSigning(project, publishing.publications.myPlatform)
+PublishingTools.setupRepositories(project)
+PublishingTools.setupMavenPublication(project, publishing.publications.myPlatform)
+PublishingTools.setupSigning(project, publishing.publications.myPlatform)
 
 project.tasks
         .getByName('quick')
