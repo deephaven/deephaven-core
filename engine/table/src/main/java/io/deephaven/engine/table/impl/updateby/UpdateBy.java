@@ -574,11 +574,9 @@ public abstract class UpdateBy {
             final UpdateByWindow win = windows[winIdx];
 
             // Create a unique set of all column input sources.
-//            final TIntSet uniqueSources = new TIntHashSet();
-//            Arrays.stream(winOpIndices).forEach(opIdx -> uniqueSources.addAll(win.operatorInputSourceSlots[opIdx]));
-//            final int[] operatorSources = uniqueSources.toArray();
-
-            final int[] operatorSources = win.operatorInputSourceSlots[winOpIndices[0]];
+            final TIntSet uniqueSources = new TIntHashSet();
+            Arrays.stream(winOpIndices).forEach(opIdx -> uniqueSources.addAll(win.operatorInputSourceSlots[opIdx]));
+            final int[] operatorSources = uniqueSources.toArray();
 
             jobScheduler.iterateParallel(ExecutionContext.getContextToRecord(),
                     chainAppendables(this, stringAndIndexToAppendable("-cacheOperatorInputSources", winIdx)),
@@ -696,12 +694,12 @@ public abstract class UpdateBy {
         }
 
         /**
-         * Process the operators for a given window in a serial manner.  For efficiency, this function organizes the
+         * Process the operators for a given window in a serial manner. For efficiency, this function organizes the
          * operators into sets of operators that share input sources and that can be computed together efficiently. It
          * also arranges these sets of operators in an order that (hopefully) minimizes the memory footprint of the
          * cached operator input columns.
          *
-         * Before each operator set is processed, the sources for the input columns are cached.  After the set is
+         * Before each operator set is processed, the sources for the input columns are cached. After the set is
          * processed, the cached sources are released if they will not be used by following operators.
          */
         private void processWindowOperators(
@@ -758,7 +756,7 @@ public abstract class UpdateBy {
         /**
          * Process all {@code windows} in a serial manner (to minimize cached column memory usage). This function will
          * prepare the shared window resources (e.g. push/pop chunks for Rolling operators) for each dirty bucket in the
-         * current window then call {@link #processWindowOperators}.  When all operators have been processed then all
+         * current window then call {@link #processWindowOperators}. When all operators have been processed then all
          * resources for this window are released before iterating.
          */
         private void processWindows(final Runnable onWindowsComplete) {
@@ -795,7 +793,7 @@ public abstract class UpdateBy {
                             }
                         }
 
-                        processWindowOperators(winIdx,maxAffectedChunkSize, maxInfluencerChunkSize, () -> {
+                        processWindowOperators(winIdx, maxAffectedChunkSize, maxInfluencerChunkSize, () -> {
                             for (UpdateByBucketHelper bucket : dirtyBuckets) {
                                 if (bucket.windowContexts[winIdx].isDirty) {
                                     windows[winIdx].finalizeWindowBucket(bucket.windowContexts[winIdx]);
@@ -975,13 +973,13 @@ public abstract class UpdateBy {
             // call will chain to another until the sequence is complete
             computeCachedColumnRowSets(
                     () -> prepareForParallelPopulation(
-                        () -> processWindows(
-                                () -> cleanUpAndNotify(
-                                        () -> {
-                                            // signal to the main task that we have completed our work
-                                            if (waitForResult != null) {
-                                                waitForResult.complete(null);
-                                            }
+                            () -> processWindows(
+                                    () -> cleanUpAndNotify(
+                                            () -> {
+                                                // signal to the main task that we have completed our work
+                                                if (waitForResult != null) {
+                                                    waitForResult.complete(null);
+                                                }
                                             }))));
 
             if (waitForResult != null) {
