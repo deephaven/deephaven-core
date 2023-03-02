@@ -354,6 +354,20 @@ public abstract class UpdateBy {
             return logOutput.append("UpdateBy.PhasedUpdateProcessor");
         }
 
+        private LogOutputAppendable stringToAppendable(@NotNull final String toAppend) {
+            return logOutput -> logOutput.append(toAppend);
+        }
+
+        private LogOutputAppendable stringAndIndexToAppendable(@NotNull final String string, final int index) {
+            return logOutput -> logOutput.append(string).append('-').append(index);
+        }
+
+        private LogOutputAppendable chainAppendables(
+                @NotNull final LogOutputAppendable prefix,
+                @NotNull final LogOutputAppendable toAppend) {
+            return logOutput -> logOutput.append(prefix).append(toAppend);
+        }
+
         private void onError(@NotNull final Exception error) {
             if (waitForResult != null) {
                 // Use the Future to signal that an exception has occurred. Cleanup will be done by the waiting thread.
@@ -367,10 +381,10 @@ public abstract class UpdateBy {
         }
 
         /**
-         * Accumulate in parallel the dirty bucket rowsets for the cacheable input sources. Calls
+         * Accumulate in parallel the dirty bucket RowSets for the cacheable input sources. Calls
          * {@code onComputeComplete} when the work is complete.
          */
-        private void computeCachedColumnRowsets(final Runnable onComputeComplete) {
+        private void computeCachedColumnRowSets(final Runnable onComputeComplete) {
             // We have nothing to cache, so we can exit early.
             if (!inputCacheNeeded) {
                 onComputeComplete.run();
@@ -393,7 +407,8 @@ public abstract class UpdateBy {
                 return;
             }
 
-            jobScheduler.iterateParallel(ExecutionContext.getContextToRecord(), this,
+            jobScheduler.iterateParallel(ExecutionContext.getContextToRecord(),
+                    chainAppendables(this, stringToAppendable("-computeCachedColumnRowSets")),
                     JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, cacheableSourceIndices.length,
                     (context, idx, nec) -> {
                         final int srcIdx = cacheableSourceIndices[idx];
@@ -489,8 +504,9 @@ public abstract class UpdateBy {
                 }
             }
 
-            jobScheduler.iterateParallel(ExecutionContext.getContextToRecord(), this, BatchThreadContext::new,
-                    0, taskCount,
+            jobScheduler.iterateParallel(ExecutionContext.getContextToRecord(),
+                    chainAppendables(this, stringToAppendable("-createCachedColumnSource")),
+                    BatchThreadContext::new, 0, taskCount,
                     (ctx, idx, nec) -> {
                         // advance to the first key of this block
                         ctx.rsIt.advance(inputRowSet.get((long) idx * PARALLEL_CACHE_BATCH_SIZE));
@@ -520,7 +536,8 @@ public abstract class UpdateBy {
                 final UpdateByWindow win = windows[winIdx];
                 final int[] uniqueWindowSources = win.getUniqueSourceIndices();
 
-                jobScheduler.iterateParallel(ExecutionContext.getContextToRecord(), this,
+                jobScheduler.iterateParallel(ExecutionContext.getContextToRecord(),
+                        chainAppendables(this, stringAndIndexToAppendable("-cacheInputSources", winIdx)),
                         JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, uniqueWindowSources.length,
                         (context, idx, nestedErrorConsumer, sourceComplete) -> createCachedColumnSource(
                                 uniqueWindowSources[idx], sourceComplete, nestedErrorConsumer),
@@ -541,24 +558,18 @@ public abstract class UpdateBy {
                 final Consumer<Exception> onWindowBucketError) {
             if (jobScheduler.threadCount() > 1 && dirtyBuckets.length > 1) {
                 // process the buckets in parallel
-                jobScheduler.iterateParallel(ExecutionContext.getContextToRecord(), this,
-                        JobScheduler.DEFAULT_CONTEXT_FACTORY,
-                        0, dirtyBuckets.length,
+                jobScheduler.iterateParallel(ExecutionContext.getContextToRecord(),
+                        chainAppendables(this, stringAndIndexToAppendable("-processWindowBuckets", winIdx)),
+                        JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, dirtyBuckets.length,
                         (context, bucketIdx, nec) -> {
                             UpdateByBucketHelper bucket = dirtyBuckets[bucketIdx];
                             bucket.assignInputSources(winIdx, maybeCachedInputSources);
                             bucket.processWindow(winIdx, initialStep);
                         }, onWindowBucketsComplete, onWindowBucketError);
             } else {
-                try {
-                    // minimize overhead when running serially
-                    for (UpdateByBucketHelper bucket : dirtyBuckets) {
-                        bucket.assignInputSources(winIdx, maybeCachedInputSources);
-                        bucket.processWindow(winIdx, initialStep);
-                    }
-                } catch (Exception e) {
-                    onWindowBucketError.accept(e);
-                    return;
+                for (UpdateByBucketHelper bucket : dirtyBuckets) {
+                    bucket.assignInputSources(winIdx, maybeCachedInputSources);
+                    bucket.processWindow(winIdx, initialStep);
                 }
                 onWindowBucketsComplete.run();
             }
@@ -570,9 +581,9 @@ public abstract class UpdateBy {
          * cached columns before starting the next window. Calls {@code onWindowsComplete} when the work is complete.
          */
         private void processWindows(final Runnable onWindowsComplete) {
-            jobScheduler.iterateSerial(ExecutionContext.getContextToRecord(), this,
-                    JobScheduler.DEFAULT_CONTEXT_FACTORY, 0,
-                    windows.length,
+            jobScheduler.iterateSerial(ExecutionContext.getContextToRecord(),
+                    chainAppendables(this, stringToAppendable("-processWindows")),
+                    JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, windows.length,
                     (context, winIdx, nestedErrorConsumer, windowComplete) -> {
                         UpdateByWindow win = windows[winIdx];
 
@@ -804,7 +815,7 @@ public abstract class UpdateBy {
 
             // this is where we leave single-threaded calls and rely on the scheduler to continue the work. Each
             // call will chain to another until the sequence is complete
-            computeCachedColumnRowsets(
+            computeCachedColumnRowSets(
                     () -> processWindows(
                             () -> cleanUpAndNotify(
                                     () -> {

@@ -1,15 +1,18 @@
 package io.deephaven.engine.table.impl.util;
 
+import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Context;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
+import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.FinalDefault;
 import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.util.referencecounting.ReferenceCounted;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -98,12 +101,14 @@ public interface JobScheduler {
         void run(CONTEXT_TYPE taskThreadContext, int index, Consumer<Exception> nestedErrorConsumer, Runnable resume);
     }
 
-    final class IterationManager<CONTEXT_TYPE extends JobThreadContext> extends ReferenceCounted {
+    final class IterationManager<CONTEXT_TYPE extends JobThreadContext> extends ReferenceCounted
+            implements LogOutputAppendable {
 
         private static void onUnexpectedJobError(@NotNull final Exception exception) {
             ProcessEnvironment.getGlobalFatalErrorReporter().report("Unexpected iteration job error", exception);
         }
 
+        private final LogOutputAppendable description;
         private final int start;
         private final int count;
         private final Consumer<Exception> onError;
@@ -115,11 +120,13 @@ public interface JobScheduler {
         private final AtomicReference<Exception> exception;
 
         IterationManager(
+                @Nullable final LogOutputAppendable description,
                 final int start,
                 final int count,
                 @NotNull final IterateResumeAction<CONTEXT_TYPE> action,
                 @NotNull final Runnable onComplete,
                 @NotNull final Consumer<Exception> onError) {
+            this.description = description;
             this.start = start;
             this.count = count;
             this.onError = onError;
@@ -133,8 +140,7 @@ public interface JobScheduler {
 
         private void startTasks(
                 @NotNull final JobScheduler scheduler,
-                @NotNull final ExecutionContext executionContext,
-                @NotNull final LogOutputAppendable description,
+                @Nullable final ExecutionContext executionContext,
                 @NotNull final Supplier<CONTEXT_TYPE> taskThreadContextFactory,
                 final int maxThreads) {
             // Increment this once in order to maintain >=1 until completed
@@ -150,7 +156,7 @@ public interface JobScheduler {
                     context.close();
                     break;
                 }
-                final TaskInvoker taskInvoker = new TaskInvoker(context, initialTaskIndex);
+                final TaskInvoker taskInvoker = new TaskInvoker(context, tii, initialTaskIndex);
                 scheduler.submit(executionContext, taskInvoker, description, IterationManager::onUnexpectedJobError);
             }
         }
@@ -173,17 +179,38 @@ public interface JobScheduler {
             final Exception localException = exception.get();
             if (localException != null) {
                 onError.accept(localException);
-            } else {
+                return;
+            }
+            try {
                 onComplete.run();
+            } catch (Exception e) {
+                onError.accept(e);
             }
         }
 
-        private class TaskInvoker implements Runnable, Consumer<Exception>, SafeCloseable {
+        @Override
+        public LogOutput append(@NotNull final LogOutput logOutput) {
+            return logOutput.append(description)
+                    .append("-IterationManager[start=").append(start)
+                    .append(",count=").append(count)
+                    .append(",nextAvailableTaskIndex=").append(nextAvailableTaskIndex.get())
+                    .append(",remainingTaskCount=").append(remainingTaskCount.get())
+                    .append(",exceptionSet=").append(exception.get() != null)
+                    .append(']');
+        }
+
+        @Override
+        public String toString() {
+            return new LogOutputStringImpl().append(this).toString();
+        }
+
+        private class TaskInvoker implements Runnable, Consumer<Exception>, SafeCloseable, LogOutputAppendable {
 
             private final CONTEXT_TYPE context;
 
             private volatile boolean closed;
 
+            private final int invokerIndex;
             private int acquiredTaskIndex;
             private boolean running;
 
@@ -193,10 +220,16 @@ public interface JobScheduler {
              * the result TaskInvoker, to be released on error or work exhaustion.
              *
              * @param context The context to be used for all tasks performed by this TaskInvoker
+             * @param invokerIndex The index of this TaskInvoker within the IterationManager, for debugging and logging
+             *        purposes
              * @param initialTaskIndex The index of the initial task to perform
              */
-            private TaskInvoker(@NotNull final CONTEXT_TYPE context, final int initialTaskIndex) {
+            private TaskInvoker(
+                    @NotNull final CONTEXT_TYPE context,
+                    final int invokerIndex,
+                    final int initialTaskIndex) {
                 this.context = context;
+                this.invokerIndex = invokerIndex;
                 acquiredTaskIndex = initialTaskIndex;
             }
 
@@ -256,6 +289,20 @@ public interface JobScheduler {
                     decrementReferenceCount();
                 }
             }
+
+            @Override
+            public LogOutput append(@NotNull final LogOutput logOutput) {
+                return logOutput.append(IterationManager.this)
+                        .append("-TaskInvoker[invokerIndex=").append(invokerIndex)
+                        .append(",acquiredTaskIndex=").append(acquiredTaskIndex)
+                        .append(",closed=").append(closed)
+                        .append(']');
+            }
+
+            @Override
+            public String toString() {
+                return new LogOutputStringImpl().append(this).toString();
+            }
         }
     }
 
@@ -274,8 +321,8 @@ public interface JobScheduler {
      */
     @FinalDefault
     default <CONTEXT_TYPE extends JobThreadContext> void iterateParallel(
-            @NotNull final ExecutionContext executionContext,
-            @NotNull final LogOutputAppendable description,
+            @Nullable final ExecutionContext executionContext,
+            @Nullable final LogOutputAppendable description,
             @NotNull final Supplier<CONTEXT_TYPE> taskThreadContextFactory,
             final int start,
             final int count,
@@ -310,8 +357,8 @@ public interface JobScheduler {
      */
     @FinalDefault
     default <CONTEXT_TYPE extends JobThreadContext> void iterateParallel(
-            @NotNull final ExecutionContext executionContext,
-            @NotNull final LogOutputAppendable description,
+            @Nullable final ExecutionContext executionContext,
+            @Nullable final LogOutputAppendable description,
             @NotNull final Supplier<CONTEXT_TYPE> taskThreadContextFactory,
             final int start,
             final int count,
@@ -325,8 +372,8 @@ public interface JobScheduler {
         }
 
         final IterationManager<CONTEXT_TYPE> iterationManager =
-                new IterationManager<>(start, count, action, onComplete, onError);
-        iterationManager.startTasks(this, executionContext, description, taskThreadContextFactory, count);
+                new IterationManager<>(description, start, count, action, onComplete, onError);
+        iterationManager.startTasks(this, executionContext, taskThreadContextFactory, count);
     }
 
     /**
@@ -346,8 +393,8 @@ public interface JobScheduler {
      */
     @FinalDefault
     default <CONTEXT_TYPE extends JobThreadContext> void iterateSerial(
-            @NotNull final ExecutionContext executionContext,
-            @NotNull final LogOutputAppendable description,
+            @Nullable final ExecutionContext executionContext,
+            @Nullable final LogOutputAppendable description,
             @NotNull final Supplier<CONTEXT_TYPE> taskThreadContextFactory,
             final int start,
             final int count,
@@ -361,7 +408,7 @@ public interface JobScheduler {
         }
 
         final IterationManager<CONTEXT_TYPE> iterationManager =
-                new IterationManager<>(start, count, action, onComplete, onError);
-        iterationManager.startTasks(this, executionContext, description, taskThreadContextFactory, 1);
+                new IterationManager<>(description, start, count, action, onComplete, onError);
+        iterationManager.startTasks(this, executionContext, taskThreadContextFactory, 1);
     }
 }
