@@ -7,6 +7,7 @@ import dagger.Component;
 import dagger.Module;
 import dagger.Provides;
 import io.deephaven.server.arrow.ArrowModule;
+import io.deephaven.server.config.ConfigServiceModule;
 import io.deephaven.server.console.ConsoleModule;
 import io.deephaven.server.log.LogModule;
 import io.deephaven.server.runner.ExecutionContextUnitTestModule;
@@ -35,6 +36,7 @@ public class NettyFlightRoundTripTest extends FlightMessageRoundTripTest {
     @Singleton
     @Component(modules = {
             ArrowModule.class,
+            ConfigServiceModule.class,
             ConsoleModule.class,
             ExecutionContextUnitTestModule.class,
             FlightTestModule.class,

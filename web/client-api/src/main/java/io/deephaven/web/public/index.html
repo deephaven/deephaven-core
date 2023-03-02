@@ -20,7 +20,13 @@ Welcome to the Deephaven JS API. This page has the api loaded, open the browser 
     <li><a href="input_table.html">Create and manipulate an input table</a></li>
     <li><a href="rollup.html">Create a rollup from a simple table</a></li>
     <li><a href="treetable.html">Create a simple tree table</a></li>
+    <li><a id="auth" href="authentication">Authentication samples</a></li>
 </ul>
-
+<script>
+    var urlPsk = new URL(window.location).searchParams.get('psk');
+    if (urlPsk) {
+        document.getElementById('auth').href += "?psk=" + urlPsk;
+    }
+</script>
 </body>
 </html>

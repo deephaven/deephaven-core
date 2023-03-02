@@ -4,6 +4,7 @@
 package io.deephaven.web.client.api;
 
 import elemental2.core.JsArray;
+import elemental2.core.JsObject;
 import elemental2.core.JsSet;
 import elemental2.core.JsWeakMap;
 import elemental2.core.Uint8Array;
@@ -87,7 +88,6 @@ import io.deephaven.web.client.fu.LazyPromise;
 import io.deephaven.web.client.state.ClientTableState;
 import io.deephaven.web.client.state.HasTableBinding;
 import io.deephaven.web.client.state.TableReviver;
-import io.deephaven.web.shared.data.ConnectToken;
 import io.deephaven.web.shared.data.DeltaUpdates;
 import io.deephaven.web.shared.data.LogItem;
 import io.deephaven.web.shared.data.RangeSet;
@@ -259,23 +259,23 @@ public class WorkerConnection {
     private void connectToWorker() {
         info.onReady()
                 .then(queryWorkerRunning -> {
-                    // if there is already a token, use that
-//                    if (metadata.has(FLIGHT_AUTH_HEADER_NAME)) {
-//                        JsArray<String> value = metadata.get(FLIGHT_AUTH_HEADER_NAME);
-//                        ConnectToken token = new ConnectToken();
-//                        token.setType(value.getAt(0));
-//                        token.setValue("");
-//                        return Promise.resolve(token);
-//                    }
-                    // get the auth token
-                    return info.getConnectToken();
-                }).then(authToken -> {
-                    JsLog.warn("setting auth ", authToken.getType());
-                    // set the proposed initial token and make the first call
-                    metadata.set(FLIGHT_AUTH_HEADER_NAME, (authToken.getType() + " " + authToken.getValue()).trim());
-                    return authUpdate().then(ignore -> Promise.resolve(Boolean.TRUE));
+                    return Promise.all(
+                            info.getConnectToken().then(authToken -> {
+                                JsLog.warn("setting auth ", authToken.getType());
+                                // set the proposed initial token and make the first call
+                                metadata.set(FLIGHT_AUTH_HEADER_NAME,
+                                        (authToken.getType() + " " + authToken.getValue()).trim());
+                                return Promise.resolve(authToken);
+                            }),
+                            info.getConnectOptions().then(options -> {
+                                // set other specified headers, if any
+                                JsObject.keys(options.headers).forEach((key, index, arr) -> {
+                                    metadata.set(key, options.headers.get(key));
+                                    return null;
+                                });
+                                return Promise.resolve(options);
+                            })).then(ignore -> authUpdate()).then(ignore -> Promise.resolve(Boolean.TRUE));
                 }).then(newSession -> {
-                    JsLog.warn("have session");
                     // subscribe to fatal errors
                     subscribeToTerminationNotification();
 

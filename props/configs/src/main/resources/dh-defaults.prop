@@ -52,8 +52,7 @@ http.session.durationMs=300000
 
 # Default to allowing anonymous access, but don't yet warn users that it is unsafe by default
 AuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler
-# TODO(deephaven-core#2934): Change default to true when other providers are easy to use
-authentication.anonymous.warn=false
+authentication.anonymous.warn=true
 
 # List of configuration properties to provide to unauthenticated clients, so that they can decide how best to prove their
 # identity to the server.

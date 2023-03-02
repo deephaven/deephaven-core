@@ -69,6 +69,8 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>> exte
 
     public abstract Promise<ConnectToken> getConnectToken();
 
+    public abstract Promise<ConnectOptions> getConnectOptions();
+
     @Deprecated
     public void notifyConnectionError(ResponseStreamWrapper.Status status) {
         if (notifiedConnectionError) {
