@@ -2,8 +2,6 @@ package io.deephaven.engine.table.impl.updateby;
 
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.hash.TObjectIntHashMap;
-import gnu.trove.set.TIntSet;
-import gnu.trove.set.hash.TIntHashSet;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.updateby.UpdateByControl;
@@ -266,11 +264,10 @@ public abstract class UpdateBy {
         PhasedUpdateProcessor(TableUpdate upstream, boolean initialStep) {
             this.upstream = upstream;
             this.initialStep = initialStep;
-            dirtyWindows = new BitSet(windows.length);
 
-            // determine which buckets we'll examine during this update
+            // What items need to be computed this cycle?
             dirtyBuckets = buckets.stream().filter(UpdateByBucketHelper::isDirty).toArray(UpdateByBucketHelper[]::new);
-            // which window operators need to be computed this cycle
+            dirtyWindows = new BitSet(windows.length);
             dirtyWindowOperators = new BitSet[windows.length];
 
             if (inputCacheNeeded) {
@@ -371,7 +368,7 @@ public abstract class UpdateBy {
          */
         private void computeCachedColumnRowSets(final Runnable onComputeComplete) {
             // We have nothing to cache, so we can exit early.
-            if (!inputCacheNeeded) {
+            if (!inputCacheNeeded || dirtyWindows.isEmpty()) {
                 onComputeComplete.run();
                 return;
             }
@@ -399,6 +396,8 @@ public abstract class UpdateBy {
                 return;
             }
 
+            final int[] dirtyWindowIndices = dirtyWindows.stream().toArray();
+
             jobScheduler.iterateParallel(ExecutionContext.getContextToRecord(),
                     chainAppendables(this, stringToAppendable("-computeCachedColumnRowSets")),
                     JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, cacheableSourceIndices.length,
@@ -406,11 +405,6 @@ public abstract class UpdateBy {
                         final int srcIdx = cacheableSourceIndices[idx];
 
                         int useCount = 0;
-                        if (dirtyWindows.isEmpty()) {
-                            return;
-                        }
-
-                        final int[] dirtyWindowIndices = dirtyWindows.stream().toArray();
                         // If any of the dirty operators use this source, then increment the use count
                         for (int winIdx : dirtyWindowIndices) {
                             UpdateByWindow win = windows[winIdx];
@@ -525,13 +519,10 @@ public abstract class UpdateBy {
         }
 
         /** Release the input sources that will not be needed for the rest of this update */
-        private void releaseInputSources(int winIdx, int winOpIdx) {
-            final UpdateByWindow win = windows[winIdx];
-            final int[] uniqueWindowSources = win.operatorInputSourceSlots[winOpIdx];
-
+        private void releaseInputSources(int[] sources) {
             try (final ResettableWritableObjectChunk<?, ?> backingChunk =
                     ResettableWritableObjectChunk.makeResettableChunk()) {
-                for (int srcIdx : uniqueWindowSources) {
+                for (int srcIdx : sources) {
                     if (!inputSourceCacheNeeded[srcIdx]) {
                         continue;
                     }
@@ -563,7 +554,7 @@ public abstract class UpdateBy {
          */
         private void cacheOperatorInputSources(
                 final int winIdx,
-                final int[] winOpIndices,
+                final int[] srcIndices,
                 final Runnable onCachingComplete,
                 final Consumer<Exception> onCachingError) {
             if (!inputCacheNeeded) {
@@ -571,48 +562,44 @@ public abstract class UpdateBy {
                 onCachingComplete.run();
                 return;
             }
-            final UpdateByWindow win = windows[winIdx];
-
-            // Create a unique set of all column input sources.
-            final TIntSet uniqueSources = new TIntHashSet();
-            Arrays.stream(winOpIndices).forEach(opIdx -> uniqueSources.addAll(win.operatorInputSourceSlots[opIdx]));
-            final int[] operatorSources = uniqueSources.toArray();
 
             jobScheduler.iterateParallel(ExecutionContext.getContextToRecord(),
                     chainAppendables(this, stringAndIndexToAppendable("-cacheOperatorInputSources", winIdx)),
-                    JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, operatorSources.length,
+                    JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, srcIndices.length,
                     (context, idx, nestedErrorConsumer, sourceComplete) -> createCachedColumnSource(
-                            operatorSources[idx], sourceComplete, nestedErrorConsumer),
-                    onCachingComplete, onCachingError);
+                            srcIndices[idx], sourceComplete, nestedErrorConsumer),
+                    onCachingComplete,
+                    onCachingError);
         }
 
         /**
-         * Process a set of operators from each bucket in {@code windows[winIdx]} in parallel. Calls
-         * {@code onWindowBucketOperatorsComplete} when the work is complete
+         * Process a subset of operators from {@code windows[winIdx]} in parallel by bucket. Calls
+         * {@code onProcessWindowOperatorSetComplete} when the work is complete
          */
-        private void processWindowBucketOperators(final int winIdx,
-                final int[] winOpArr,
+        private void processWindowOperatorSet(final int winIdx,
+                final int[] opIndices,
+                final int[] srcIndices,
                 final int maxAffectedChunkSize,
                 final int maxInfluencerChunkSize,
-                final Runnable onWindowBucketOperatorsComplete,
-                final Consumer<Exception> onWindowBucketOperatorError) {
+                final Runnable onProcessWindowOperatorSetComplete,
+                final Consumer<Exception> onProcessWindowOperatorSetError) {
             final class OperatorThreadContext implements JobScheduler.JobThreadContext {
                 final Chunk<? extends Values>[] chunkArr;
                 final ChunkSource.GetContext[] chunkContexts;
                 final UpdateByOperator.Context[] winOpContexts;
 
                 OperatorThreadContext() {
-                    winOpContexts = new UpdateByOperator.Context[winOpArr.length];
+                    winOpContexts = new UpdateByOperator.Context[opIndices.length];
 
-                    for (int ii = 0; ii < winOpArr.length; ii++) {
-                        final int opIdx = winOpArr[ii];
+                    for (int ii = 0; ii < opIndices.length; ii++) {
+                        final int opIdx = opIndices[ii];
                         winOpContexts[ii] = windows[winIdx].operators[opIdx].makeUpdateContext(maxAffectedChunkSize);
                     }
 
-                    final int[] srcIndices = windows[winIdx].operatorInputSourceSlots[winOpArr[0]];
                     chunkArr = new Chunk[srcIndices.length];
                     chunkContexts = new ChunkSource.GetContext[srcIndices.length];
 
+                    // All operators in this bin have identical input source sets
                     for (int ii = 0; ii < srcIndices.length; ii++) {
                         int srcIdx = srcIndices[ii];
                         chunkContexts[ii] = maybeCachedInputSources[srcIdx].makeGetContext(maxInfluencerChunkSize);
@@ -633,10 +620,16 @@ public abstract class UpdateBy {
                     (context, bucketIdx, nec) -> {
                         UpdateByBucketHelper bucket = dirtyBuckets[bucketIdx];
                         if (bucket.windowContexts[winIdx].isDirty) {
-                            windows[winIdx].processBucketOperator(bucket.windowContexts[winIdx], winOpArr,
-                                    context.winOpContexts, context.chunkArr, context.chunkContexts, initialStep);
+                            windows[winIdx].processWindowBucketOperatorSet(
+                                    bucket.windowContexts[winIdx],
+                                    opIndices,
+                                    srcIndices,
+                                    context.winOpContexts,
+                                    context.chunkArr,
+                                    context.chunkContexts,
+                                    initialStep);
                         }
-                    }, onWindowBucketOperatorsComplete, onWindowBucketOperatorError);
+                    }, onProcessWindowOperatorSetComplete, onProcessWindowOperatorSetError);
         }
 
         /**
@@ -710,15 +703,17 @@ public abstract class UpdateBy {
                 final Consumer<Exception> onProcessWindowOperatorsError) {
             final UpdateByWindow win = windows[winIdx];
 
-            // Order the dirty operators to increase the chance that the input caches can be released early
+            // Organize the dirty operators to increase the chance that the input caches can be released early. This
+            // currently must produce sets of operators with identical sets of input sources.
             final Integer[] dirtyOperators = ArrayUtils.toObject(dirtyWindowOperators[winIdx].stream().toArray());
             Arrays.sort(dirtyOperators,
                     Comparator.comparingInt(o -> win.operatorInputSourceSlots[(int) o][0])
                             .thenComparingInt(o -> win.operatorInputSourceSlots[(int) o].length < 2 ? -1
                                     : win.operatorInputSourceSlots[(int) o][1]));
 
-            final List<int[]> operatorBins = new ArrayList<>(dirtyOperators.length);
-            final TIntArrayList opList = new TIntArrayList();
+            final List<int[]> operatorSets = new ArrayList<>(dirtyOperators.length);
+            final TIntArrayList opList = new TIntArrayList(dirtyOperators.length);
+
             opList.add(dirtyOperators[0]);
             int lastOpIdx = dirtyOperators[0];
             for (int ii = 1; ii < dirtyOperators.length; ii++) {
@@ -726,27 +721,33 @@ public abstract class UpdateBy {
                 if (Arrays.equals(win.operatorInputSourceSlots[opIdx], win.operatorInputSourceSlots[lastOpIdx])) {
                     opList.add(opIdx);
                 } else {
-                    operatorBins.add(opList.toArray());
+                    operatorSets.add(opList.toArray());
                     opList.clear(dirtyOperators.length);
                     opList.add(opIdx);
                 }
                 lastOpIdx = opIdx;
             }
-            operatorBins.add(opList.toArray());
-            final int[][] dirtyOperatorBins = operatorBins.toArray(int[][]::new);
+            operatorSets.add(opList.toArray());
 
             // Process each set of similar operators in this window serially.
-            jobScheduler.iterateSerial(ExecutionContext.getContextToRecord(), this,
+            jobScheduler.iterateSerial(ExecutionContext.getContextToRecord(),
+                    chainAppendables(this, stringAndIndexToAppendable("-processWindowOperators", winIdx)),
                     JobScheduler.DEFAULT_CONTEXT_FACTORY, 0,
-                    dirtyOperatorBins.length,
+                    operatorSets.size(),
                     (context, idx, nestedErrorConsumer, opSetComplete) -> {
-                        final int[] winOpArr = dirtyOperatorBins[idx];
+                        final int[] opIndices = operatorSets.get(idx);
+
+                        // All operators in this bin have identical input source sets
+                        final int[] srcIndices = windows[winIdx].operatorInputSourceSlots[opIndices[0]];
+
                         // Cache the input sources for these operators.
-                        cacheOperatorInputSources(winIdx, winOpArr, () -> {
-                            processWindowBucketOperators(winIdx, winOpArr, maxAffectedChunkSize, maxInfluencerChunkSize,
+                        cacheOperatorInputSources(winIdx, srcIndices, () -> {
+                            // Process the subset of operators for this window.
+                            processWindowOperatorSet(winIdx, opIndices, srcIndices, maxAffectedChunkSize,
+                                    maxInfluencerChunkSize,
                                     () -> {
-                                        // release the cached sources that are no longer needed
-                                        releaseInputSources(winIdx, winOpArr[0]);
+                                        // Release the cached sources that are no longer needed.
+                                        releaseInputSources(srcIndices);
                                         opSetComplete.run();
                                     }, nestedErrorConsumer);
                         }, nestedErrorConsumer);
@@ -774,16 +775,20 @@ public abstract class UpdateBy {
                     (context, idx, nestedErrorConsumer, windowComplete) -> {
                         final int winIdx = dirtyWindowIndices[idx];
 
-                        // Determine the largest chunk that we will need to load using these contexts
                         int maxAffectedChunkSize = 0;
                         int maxInfluencerChunkSize = 0;
 
-                        // assign the input sources and allocate resources to the bucket contexts
                         for (UpdateByBucketHelper bucket : dirtyBuckets) {
                             if (bucket.windowContexts[winIdx].isDirty) {
+                                // Assign the (maybe cached) input sources.
                                 windows[winIdx].assignInputSources(bucket.windowContexts[winIdx],
                                         maybeCachedInputSources);
+
+                                // Prepare this bucket for processing this window. This allocates window context
+                                // resources and rolling ops pre-computes push/pop chunks.
                                 windows[winIdx].prepareWindowBucket(bucket.windowContexts[winIdx]);
+
+                                // Determine the largest chunk sizes needed to process the window buckets.
                                 maxAffectedChunkSize =
                                         Math.max(maxAffectedChunkSize, bucket.windowContexts[winIdx].workingChunkSize);
                                 maxInfluencerChunkSize = Math.max(maxInfluencerChunkSize,
@@ -793,7 +798,9 @@ public abstract class UpdateBy {
                             }
                         }
 
+                        // Process all the operators in this window
                         processWindowOperators(winIdx, maxAffectedChunkSize, maxInfluencerChunkSize, () -> {
+                            // This window has been fully processed, release the resources we allocated
                             for (UpdateByBucketHelper bucket : dirtyBuckets) {
                                 if (bucket.windowContexts[winIdx].isDirty) {
                                     windows[winIdx].finalizeWindowBucket(bucket.windowContexts[winIdx]);

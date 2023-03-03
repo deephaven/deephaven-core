@@ -217,13 +217,14 @@ abstract class UpdateByWindow {
      * Perform the computations and store the results in the operator output sources
      *
      * @param context the window context that will manage the results.
-     * @param winOpArr an array containing indices of the operator within this window to process.
+     * @param opIndices an array containing indices of the operator within this window to process.
+     * @param srcIndices an array containing indices of the operator input sources needed for processing.
      * @param winOpContexts the contexts of the operators to process.
      * @param chunkArr an array of chunks to pass to the operators
      * @param chunkContexts get contexts from the input sources for the operators
      * @param initialStep whether this is the creation step of this bucket.
      */
-    abstract void processBucketOperator(UpdateByWindowBucketContext context, int[] winOpArr,
+    abstract void processWindowBucketOperatorSet(UpdateByWindowBucketContext context, int[] opIndices, int[] srcIndices,
             UpdateByOperator.Context[] winOpContexts, Chunk<? extends Values>[] chunkArr,
             ChunkSource.GetContext[] chunkContexts, boolean initialStep);
 
@@ -318,7 +319,7 @@ abstract class UpdateByWindow {
 
         int hash = Boolean.hashCode(windowed);
 
-        // treat all cumulative ops with the same input columns as identical, even if they rely on timestamps
+        // Time-based cumulative ops are not included with regular cumulative ops
         if (!windowed) {
             hash = 31 * hash + Objects.hashCode(timestampColumnName);
             return hash;
@@ -345,18 +346,16 @@ abstract class UpdateByWindow {
      * Returns `true` if two operators are compatible and can be executed as part of the same window
      */
     static boolean isEquivalentWindow(final UpdateByOperator opA, final UpdateByOperator opB) {
-        // equivalent if both are cumulative, not equivalent if only one is cumulative
         if (!opA.isWindowed && !opB.isWindowed) {
-            return opA.timestampColumnName == opB.timestampColumnName;
+            // These are both cumulative. Equivalent when they share a time or row based accumulation
+            return Objects.equals(opA.timestampColumnName, opB.timestampColumnName);
         } else if (opA.isWindowed != opB.isWindowed) {
+            // These are different types (Cumulative and Rolling)
             return false;
         }
 
-        final boolean aTimeWindowed = opA.getTimestampColumnName() != null;
-        final boolean bTimeWindowed = opB.getTimestampColumnName() != null;
-
-        // must have same time/tick base to be equivalent
-        if (aTimeWindowed != bTimeWindowed) {
+        // Rolling ops are equivalent when they share a time or row based accumulation and the same fwd/prev units
+        if (!Objects.equals(opA.timestampColumnName, opB.timestampColumnName)) {
             return false;
         }
         return opA.getPrevWindowUnits() == opB.getPrevWindowUnits() &&

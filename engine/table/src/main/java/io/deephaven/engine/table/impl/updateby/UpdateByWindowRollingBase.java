@@ -1,5 +1,6 @@
 package io.deephaven.engine.table.impl.updateby;
 
+import gnu.trove.list.array.TIntArrayList;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.WritableIntChunk;
@@ -14,11 +15,10 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.OverridingMethodsMustInvokeSuper;
+import java.util.stream.IntStream;
 
 /**
- * This is the specialization of {@link UpdateByWindow} that handles tick based `windowed` operators. These operators
- * maintain a window of data based on row distance rather than timestamps. Window-based operators must maintain a buffer
- * of `influencer` values to add to the rolling window as the current row changes.
+ * This is the base class of {@link UpdateByWindowRollingTicks} and {@link UpdateByWindowRollingTime}.
  */
 abstract class UpdateByWindowRollingBase extends UpdateByWindow {
     final long prevUnits;
@@ -108,25 +108,39 @@ abstract class UpdateByWindowRollingBase extends UpdateByWindow {
 
 
     @Override
-    void processBucketOperator(final UpdateByWindowBucketContext context,
-            final int[] winOpArr,
+    void processWindowBucketOperatorSet(final UpdateByWindowBucketContext context,
+            final int[] opIndices,
+            final int[] srcIndices,
             final UpdateByOperator.Context[] winOpContexts,
             final Chunk<? extends Values>[] chunkArr,
             final ChunkSource.GetContext[] chunkContexts,
             final boolean initialStep) {
         Assert.neqNull(context.inputSources, "assignInputSources() must be called before processRow()");
 
+        final int[] dirtyOpIndices;
+        if (initialStep) {
+            dirtyOpIndices = IntStream.range(0, opIndices.length).toArray();
+        } else {
+            // Don't waste resources by considering the operators that are not dirty
+            final TIntArrayList dirtyOpList = new TIntArrayList(opIndices.length);
+            for (int ii = 0; ii < opIndices.length; ii++) {
+                final int opIdx = opIndices[ii];
+                if (context.dirtyOperators.get(opIdx)) {
+                    // add the index of the dirty operator in opIndices
+                    dirtyOpList.add(ii);
+                }
+            }
+            dirtyOpIndices = dirtyOpList.toArray();
+        }
+
         UpdateByWindowRollingBucketContext ctx = (UpdateByWindowRollingBucketContext) context;
 
         try (final RowSequence.Iterator affectedRowsIt = ctx.affectedRows.getRowSequenceIterator();
                 final RowSequence.Iterator influencerRowsIt = ctx.influencerRows.getRowSequenceIterator()) {
 
-            // All operators in the bin share input sources
-            final int[] srcIndices = operatorInputSourceSlots[winOpArr[0]];
-
             // Call the specialized version of `intializeUpdate()` for these operators.
-            for (int ii = 0; ii < winOpArr.length; ii++) {
-                UpdateByOperator rollingOp = operators[winOpArr[ii]];
+            for (int ii : dirtyOpIndices) {
+                UpdateByOperator rollingOp = operators[opIndices[ii]];
                 rollingOp.initializeRolling(winOpContexts[ii]);
             }
 
@@ -147,7 +161,7 @@ abstract class UpdateByWindowRollingBase extends UpdateByWindow {
                 }
 
                 // Make the specialized call for windowed operators.
-                for (int ii = 0; ii < winOpArr.length; ii++) {
+                for (int ii : dirtyOpIndices) {
                     winOpContexts[ii].accumulateRolling(
                             affectedRs,
                             chunkArr,
@@ -160,8 +174,8 @@ abstract class UpdateByWindowRollingBase extends UpdateByWindow {
             }
 
             // Finalize the operators.
-            for (int ii = 0; ii < winOpArr.length; ii++) {
-                UpdateByOperator rollingOp = operators[winOpArr[ii]];
+            for (int ii : dirtyOpIndices) {
+                UpdateByOperator rollingOp = operators[opIndices[ii]];
                 rollingOp.finishUpdate(winOpContexts[ii]);
             }
         }
