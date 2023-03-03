@@ -16,7 +16,8 @@ import io.deephaven.engine.table.hierarchical.TreeTable;
 import io.deephaven.engine.table.impl.PrevColumnSource;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
-import io.deephaven.engine.table.impl.hierarchical.TreeTableFilter;
+import io.deephaven.engine.table.impl.select.WhereFilter;
+import io.deephaven.engine.table.impl.select.WhereFilterFactory;
 import io.deephaven.engine.testutil.ColumnInfo;
 import io.deephaven.engine.testutil.EvalNuggetInterface;
 import io.deephaven.engine.testutil.QueryTableTestBase;
@@ -36,13 +37,13 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Function;
-import java.util.function.UnaryOperator;
 
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ReflexiveUse;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableInt;
+import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;
 import org.junit.experimental.categories.Category;
 
@@ -72,45 +73,43 @@ public class QueryTableTreeTest extends QueryTableTestBase {
                         new SetGenerator<>("AAPL", "TSLA", "VXX", "SPY")));
 
         final Table prepared = table.update("ID=IDPair.getId()", "Parent=IDPair.getParent()").dropColumns("IDPair");
-        final Table tree = prepared.tree("ID", "Parent");
+        final TreeTable tree = prepared.tree("ID", "Parent");
 
         final boolean old = QueryTable.setMemoizeResults(true);
         try {
-            testMemoize(tree, t -> TreeTableFilter.rawFilterTree(t, "Sym in `AAPL`, `TSLA`"));
-            testMemoize(tree, t -> TreeTableFilter.rawFilterTree(t, "Sym in `AAPL`, `TSLA`", "Sentinel == 500000000"));
-            testNoMemoize(tree, t -> TreeTableFilter.rawFilterTree(t, "Sentinel > Sentinel2/4"));
-            testNoMemoize(tree, t -> TreeTableFilter.rawFilterTree(t, "Sym in `AAPL`, `TSLA`"),
-                    t -> TreeTableFilter.rawFilterTree(t, "Sym in `AAPL`"));
+            testMemoize(tree, t -> filterTreeSource(t, "Sym in `AAPL`, `TSLA`"));
+            testMemoize(tree, t -> filterTreeSource(t, "Sym in `AAPL`, `TSLA`", "Sentinel == 500000000"));
+            testNoMemoize(tree, t -> filterTreeSource(t, "Sentinel > Sentinel2/4"));
+            testNoMemoize(tree, t -> filterTreeSource(t, "Sym in `AAPL`, `TSLA`"),
+                    t -> filterTreeSource(t, "Sym in `AAPL`"));
         } finally {
             QueryTable.setMemoizeResults(old);
         }
     }
 
-    private void testMemoize(Table source, UnaryOperator<Table> op) {
-        final Table result = op.apply(source);
-        final Table result2 = op.apply(source);
-        Assert.assertSame(result, result2);
+    private void testMemoize(TreeTable treeTable, Function<TreeTable, Table> op) {
+        final Table result1 = op.apply(treeTable);
+        final Table result2 = op.apply(treeTable);
+        Assert.assertSame(result1, result2);
     }
 
-    private void testNoMemoize(Table source, UnaryOperator<Table> op1, UnaryOperator<Table> op2) {
-        final Table result = op1.apply(source);
-        final Table result2 = op2.apply(source);
-        Assert.assertNotSame(result, result2);
+    private void testNoMemoize(TreeTable treeTable, Function<TreeTable, Table> op1, Function<TreeTable, Table> op2) {
+        final Table result1 = op1.apply(treeTable);
+        final Table result2 = op2.apply(treeTable);
+        Assert.assertNotSame(result1, result2);
     }
 
-    private void testNoMemoize(Table source, UnaryOperator<Table> op) {
-        final Table result = op.apply(source);
-        final Table result2 = op.apply(source);
-        Assert.assertNotSame(result, result2);
+    private void testNoMemoize(TreeTable treeTable, Function<TreeTable, Table> op) {
+        final Table result1 = op.apply(treeTable);
+        final Table result2 = op.apply(treeTable);
+        Assert.assertNotSame(result1, result2);
     }
 
     public void testTreeTableSimple() {
         final Table source = TableTools.newTable(col("Sentinel", 1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
                 col("Parent", NULL_INT, NULL_INT, 1, 1, 2, 3, 5, 5, 3, 2));
 
-        final Table treed =
-                UpdateGraphProcessor.DEFAULT.exclusiveLock()
-                        .computeLocked(() -> source.tree("Sentinel", "Parent"));
+        final TreeTable treed = source.tree("Sentinel", "Parent");
         final String hierarchicalColumnName = getHierarchicalColumnName(treed);
         TableTools.showWithRowSet(treed);
 
@@ -256,7 +255,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
             UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
 
             final Table backwards1 =
-                    pool.submit(() -> TreeTableFilter.rawFilterTree(treed1, "!isNull(Extra)").sortDescending("Extra"))
+                    pool.submit(() -> filterTreeSource(treed1, "!isNull(Extra)").sortDescending("Extra"))
                             .get();
             final Table backwardsTree1a = pool.submit(() -> backwards1.tree("Sentinel", "Parent")).get();
 
@@ -265,7 +264,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
             addToTable(source, i(12), col("Sentinel", 12), col("Parent", 11), col("Extra", "l"));
 
             final Table backwards2 =
-                    pool.submit(() -> TreeTableFilter.rawFilterTree(treed1, "!isNull(Extra)").sortDescending("Extra"))
+                    pool.submit(() -> filterTreeSource(treed1, "!isNull(Extra)").sortDescending("Extra"))
                             .get();
             final Table backwardsTree1b = pool.submit(() -> backwards1.tree("Sentinel", "Parent")).get();
             final Table backwardsTree2a = pool.submit(() -> backwards2.tree("Sentinel", "Parent")).get();
@@ -289,7 +288,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
             final Table backwardsTree1c = pool.submit(() -> backwards1.tree("Sentinel", "Parent")).get();
             final Table backwardsTree2b = pool.submit(() -> backwards2.tree("Sentinel", "Parent")).get();
             final Table backwards3 =
-                    pool.submit(() -> TreeTableFilter.rawFilterTree(treed1, "!isNull(Extra)").sortDescending("Extra"))
+                    pool.submit(() -> filterTreeSource(treed1, "!isNull(Extra)").sortDescending("Extra"))
                             .get();
             final Table backwardsTree3 = pool.submit(() -> backwards3.tree("Sentinel", "Parent")).get();
 
@@ -647,7 +646,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
                     protected Table e() {
                         return UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(() -> {
                             final Table treed = source.tree("Sentinel", "Parent");
-                            return TreeTableFilter.rawFilterTree(treed, "Filter in 1");
+                            return filterTreeSource(treed, "Filter in 1");
                         });
                     }
                 },
@@ -1054,7 +1053,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
                     }
                 },
                 EvalNugget.from(
-                        () -> TreeTableFilter.rawFilterTree(prepared.tree("ID", "Parent"), "Sentinel % 2 == 1")),
+                        () -> filterTreeSource(prepared.tree("ID", "Parent"), "Sentinel % 2 == 1")),
         };
 
         final int maxSteps = numSteps.intValue();
@@ -2089,5 +2088,13 @@ public class QueryTableTreeTest extends QueryTableTestBase {
 
         assertTableEquals(aExpect, a.view("G1", "Val"));
         assertTableEquals(bExpect, b.view("G1", "Val"));
+    }
+
+    private static Table filterTreeSource(@NotNull final TreeTable tree, @NotNull final String... filters) {
+        final WhereFilter[] whereFilters = Arrays.stream(filters)
+                .map(WhereFilterFactory::getExpression)
+                .peek(wf -> wf.init(tree.getSource().getDefinition()))
+                .toArray(WhereFilter[]::new);
+        return new TreeTableFilter.Operator((TreeTableImpl) tree, whereFilters).apply(tree.getSource());
     }
 }
