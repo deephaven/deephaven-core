@@ -272,7 +272,7 @@ class TreeTable(JObjectWrapper):
     """ A TreeTable is generated as a result of applying the :meth:`~Table.tree` method on a
     :class:`~deephaven.table.Table`.
 
-    A TreeTable is a hierarchical table and its structure is a tree where the parent-child relationships are realized
+    A TreeTable presents a hierarchically structured  "tree" view of a table where parent-child relationships are expressed
     by an "id" and a "parent" column. The id column should represent a unique identifier for a given row, and the parent
     column indicates which row is the parent for a given row.
 
