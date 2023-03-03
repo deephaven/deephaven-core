@@ -698,4 +698,12 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         final String iso8601 = "2022-04-26T00:30:31.087360Z";
         assertEquals(DateTime.of(Instant.parse(iso8601)), DateTimeUtils.convertDateTime(iso8601));
     }
+
+
+    public void testISO8601_druation() {
+        final long dayNanos = 1_000_000_000L * 60 * 60 * 24;
+
+        assertEquals(7 * dayNanos, DateTimeUtils.expressionToNanos("1W"));
+        assertEquals(-7 * dayNanos, DateTimeUtils.expressionToNanos("-1W"));
+    }
 }

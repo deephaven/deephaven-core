@@ -392,17 +392,11 @@ public class AggregatingFloatRingBuffer {
 
         internalBuffer.clear();
 
+        calcHead = calcTail = 0;
         // Reset the cleared storage entries to the identity value
         fillWithIdentityVal(prevHead, prevSize);
-
-        calcHead = calcTail = 0;
         // Reset the tree buffer with the identity value
-        if (prevSize < treeStorage.length / 4) {
-            // This section is small enough to profit from a surgical resetting
-            fixupTree(prevHead, prevHead + prevSize, 0, 0);
-        } else {
-            Arrays.fill(treeStorage, identityVal);
-        }
+        Arrays.fill(treeStorage, identityVal);
     }
 
     /**

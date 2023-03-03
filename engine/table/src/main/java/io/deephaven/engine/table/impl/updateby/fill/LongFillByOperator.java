@@ -33,8 +33,8 @@ public class LongFillByOperator extends BaseLongUpdateByOperator {
     protected class Context extends BaseLongUpdateByOperator.Context {
         public LongChunk<? extends Values> longValueChunk;
 
-        protected Context(final int chunkSize, final int chunkCount) {
-            super(chunkSize, chunkCount);
+        protected Context(final int chunkSize) {
+            super(chunkSize);
         }
 
         @Override
@@ -67,8 +67,8 @@ public class LongFillByOperator extends BaseLongUpdateByOperator {
 
     @NotNull
     @Override
-    public UpdateByOperator.Context makeUpdateContext(final int chunkSize, final int chunkCount) {
-        return new Context(chunkSize, chunkCount);
+    public UpdateByOperator.Context makeUpdateContext(final int chunkSize) {
+        return new Context(chunkSize);
     }
 
     // region extra-methods

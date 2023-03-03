@@ -22,8 +22,8 @@ public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperato
     public abstract class Context extends BaseDoubleUpdateByOperator.Context {
         long lastStamp = NULL_LONG;
 
-        Context(final int chunkSize, final int chunkCount) {
-            super(chunkSize, chunkCount);
+        Context(final int chunkSize) {
+            super(chunkSize);
         }
 
         @Override

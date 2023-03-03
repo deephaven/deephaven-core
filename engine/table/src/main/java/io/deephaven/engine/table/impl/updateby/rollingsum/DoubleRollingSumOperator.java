@@ -20,7 +20,7 @@ import org.jetbrains.annotations.Nullable;
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 
 public class DoubleRollingSumOperator extends BaseDoubleUpdateByOperator {
-    private static final int PAIRWISE_BUFFER_INITIAL_SIZE = 64;
+    private static final int BUFFER_INITIAL_SIZE = 64;
     // region extra-fields
     // endregion extra-fields
 
@@ -28,9 +28,9 @@ public class DoubleRollingSumOperator extends BaseDoubleUpdateByOperator {
         protected DoubleChunk<? extends Values> doubleInfluencerValuesChunk;
         protected AggregatingDoubleRingBuffer aggSum;
 
-        protected Context(final int chunkSize, final int chunkCount) {
-            super(chunkSize, chunkCount);
-            aggSum = new AggregatingDoubleRingBuffer(PAIRWISE_BUFFER_INITIAL_SIZE, 0.0f, (a, b) -> {
+        protected Context(final int chunkSize) {
+            super(chunkSize);
+            aggSum = new AggregatingDoubleRingBuffer(BUFFER_INITIAL_SIZE, 0.0f, (a, b) -> {
                 if (a == NULL_DOUBLE) {
                     return b;
                 } else if (b == NULL_DOUBLE) {
@@ -85,12 +85,18 @@ public class DoubleRollingSumOperator extends BaseDoubleUpdateByOperator {
                 outputValues.set(outIdx, aggSum.evaluate());
             }
         }
+
+        @Override
+        public void reset() {
+            super.reset();
+            aggSum.clear();
+        }
     }
 
     @NotNull
     @Override
-    public UpdateByOperator.Context makeUpdateContext(final int chunkSize, final int chunkCount) {
-        return new Context(chunkSize, chunkCount);
+    public UpdateByOperator.Context makeUpdateContext(final int chunkSize) {
+        return new Context(chunkSize);
     }
 
     public DoubleRollingSumOperator(@NotNull final MatchPair pair,
