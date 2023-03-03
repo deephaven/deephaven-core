@@ -1156,7 +1156,8 @@ public class TableTools {
     private static void processColumnForFingerprint(RowSequence ok, ColumnSource<?> col, DataOutputStream outputStream)
             throws IOException {
         if (col.getType() == DateTime.class) {
-            col = ReinterpretUtils.dateTimeToLongSource(col);
+            // noinspection unchecked
+            col = ReinterpretUtils.dateTimeToLongSource((ColumnSource<DateTime>) col);
         }
 
         final int chunkSize = 1 << 16;

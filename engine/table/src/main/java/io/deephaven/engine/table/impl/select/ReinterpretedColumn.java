@@ -240,11 +240,14 @@ public class ReinterpretedColumn<S, D> implements SelectColumn {
         // directly.
         final ColumnSource<Long> intermediate;
         if (sourceDataType == DateTime.class) {
-            intermediate = ReinterpretUtils.dateTimeToLongSource(sourceColumnSource);
+            // noinspection unchecked
+            intermediate = ReinterpretUtils.dateTimeToLongSource((ColumnSource<DateTime>) sourceColumnSource);
         } else if (sourceDataType == Instant.class) {
-            intermediate = ReinterpretUtils.instantToLongSource(sourceColumnSource);
+            // noinspection unchecked
+            intermediate = ReinterpretUtils.instantToLongSource((ColumnSource<Instant>) sourceColumnSource);
         } else if (sourceDataType == ZonedDateTime.class) {
-            intermediate = ReinterpretUtils.zonedDateTimeToLongSource(sourceColumnSource);
+            // noinspection unchecked
+            intermediate = ReinterpretUtils.zonedDateTimeToLongSource((ColumnSource<ZonedDateTime>) sourceColumnSource);
         } else if (sourceDataType == long.class || sourceDataType == Long.class) {
             // noinspection unchecked
             intermediate = (ColumnSource<Long>) sourceColumnSource;

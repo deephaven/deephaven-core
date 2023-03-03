@@ -112,10 +112,11 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
             ColumnSource<?> dataSource = selectColumn.getDataView();
             if (dataSource.getType() != writableSource.getType()) {
                 // this should only occur when using primitives internally and the user has requested a non-primitive
-                chunkSource = ReinterpretUtils.maybeConvertToPrimitive(dataSource);
-            } else {
-                chunkSource = dataSource;
+                dataSource = ReinterpretUtils.maybeConvertToPrimitive(dataSource);
+                Assert.eq(dataSource.getType(), "dataSource.getType()",
+                        writableSource.getType(), "writableSource.getType()");
             }
+            chunkSource = dataSource;
             if (selectColumnHoldsVector) {
                 chunkSource = new VectorChunkAdapter<>(chunkSource);
             }
