@@ -203,7 +203,7 @@ class RollupTable(JObjectWrapper):
 
     def with_node_operations(self, recorders: List[RollupNodeOperationsRecorder]) -> RollupTable:
         """Returns a new RollupTable that will apply the recorded node operations to nodes when gathering
-        snapshots requested by Deephaven UI.
+        snapshots requested by the Deephaven UI.
 
         Args:
             recorders (List[RollupNodeOperationsRecorder]): a list of RollupNodeOperationsRecorder containing
@@ -300,7 +300,7 @@ class TreeTable(JObjectWrapper):
 
     def with_node_operations(self, recorder: TreeNodeOperationsRecorder) -> TreeTable:
         """Returns a new TreeTable that will apply the recorded node operations to nodes when gathering snapshots
-        requested by Deephaven UI.
+        requested by the Deephaven UI.
 
         Args:
             recorder (TreeNodeOperationsRecorder): the TreeNodeOperationsRecorder containing the node operations to be
