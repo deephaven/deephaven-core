@@ -65,9 +65,9 @@ public class FloatSparseArraySource extends SparseArrayColumnSource<Float> imple
     protected transient UpdateCommitter<FloatSparseArraySource> prevFlusher = null;
 
     /**
-     * If ensure previous has been called, we need not check previous values when filling.
+     * If prepareForParallelPopulation has been called, we need not check previous values when filling.
      */
-    private transient long ensurePreviousClockCycle = -1;
+    private transient long prepareForParallelPopulationClockCycle = -1;
 
     /**
      * Our previous page table could be very sparse, and we do not want to read through millions of nulls to find out
@@ -382,8 +382,7 @@ public class FloatSparseArraySource extends SparseArrayColumnSource<Float> imple
      * record values), returns null.
     */
     final float [] shouldRecordPrevious(final long key) {
-        // prevFlusher == null means we are not tracking previous values yet (or maybe ever)
-        if (prevFlusher == null) {
+        if (!shouldTrackPrevious()) {
             return null;
         }
         // If we want to track previous values, we make sure we are registered with the UpdateGraphProcessor.
@@ -411,10 +410,10 @@ public class FloatSparseArraySource extends SparseArrayColumnSource<Float> imple
     @Override
     public void prepareForParallelPopulation(RowSet changedRows) {
         final long currentStep = LogicalClock.DEFAULT.currentStep();
-        if (ensurePreviousClockCycle == currentStep) {
-            throw new IllegalStateException("May not call ensurePrevious twice on one clock cycle!");
+        if (prepareForParallelPopulationClockCycle == currentStep) {
+            throw new IllegalStateException("May not call prepareForParallelPopulation twice on one clock cycle!");
         }
-        ensurePreviousClockCycle = currentStep;
+        prepareForParallelPopulationClockCycle = currentStep;
 
         if (changedRows.isEmpty()) {
             return;
@@ -628,7 +627,7 @@ public class FloatSparseArraySource extends SparseArrayColumnSource<Float> imple
         final FloatChunk<? extends Values> chunk = src.asFloatChunk();
         final LongChunk<OrderedRowKeyRanges> ranges = rowSequence.asRowKeyRangesChunk();
 
-        final boolean trackPrevious = prevFlusher != null && ensurePreviousClockCycle != LogicalClock.DEFAULT.currentStep();
+        final boolean trackPrevious = shouldTrackPrevious();
 
         if (trackPrevious) {
             prevFlusher.maybeActivate();
@@ -686,6 +685,13 @@ public class FloatSparseArraySource extends SparseArrayColumnSource<Float> imple
             }
         }
     }
+
+    private boolean shouldTrackPrevious() {
+        // prevFlusher == null means we are not tracking previous values yet (or maybe ever).
+        // If prepareForParallelPopulation was called on this cycle, it's assumed that all previous values have already
+        // been recorded.
+        return prevFlusher != null && prepareForParallelPopulationClockCycle != LogicalClock.DEFAULT.currentStep();
+    }
     // endregion fillFromChunkByRanges
 
     // region fillFromChunkByKeys
@@ -697,7 +703,7 @@ public class FloatSparseArraySource extends SparseArrayColumnSource<Float> imple
         final FloatChunk<? extends Values> chunk = src.asFloatChunk();
         final LongChunk<OrderedRowKeys> keys = rowSequence.asRowKeyChunk();
 
-        final boolean trackPrevious = prevFlusher != null && ensurePreviousClockCycle != LogicalClock.DEFAULT.currentStep();;
+        final boolean trackPrevious = shouldTrackPrevious();;
 
         if (trackPrevious) {
             prevFlusher.maybeActivate();
@@ -885,7 +891,7 @@ public class FloatSparseArraySource extends SparseArrayColumnSource<Float> imple
         }
         final FloatChunk<? extends Values> chunk = src.asFloatChunk();
 
-        final boolean trackPrevious = prevFlusher != null && ensurePreviousClockCycle != LogicalClock.DEFAULT.currentStep();;
+        final boolean trackPrevious = shouldTrackPrevious();;
 
         if (trackPrevious) {
             prevFlusher.maybeActivate();

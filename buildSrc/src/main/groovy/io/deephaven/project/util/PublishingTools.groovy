@@ -1,6 +1,8 @@
 package io.deephaven.project.util
 
 import groovy.transform.CompileStatic
+import io.deephaven.tools.License
+import org.gradle.api.Action
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository
@@ -8,12 +10,14 @@ import org.gradle.api.artifacts.repositories.PasswordCredentials
 import org.gradle.api.plugins.BasePluginConvention
 import org.gradle.api.publish.Publication
 import org.gradle.api.publish.PublishingExtension
+import org.gradle.api.publish.internal.DefaultPublishingExtension
 import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.plugins.signing.SigningExtension
+import org.gradle.util.ConfigureUtil
 
 @CompileStatic
-class PublishingConstants {
+class PublishingTools {
     static final String DEVELOPER_ID = 'deephaven'
     static final String DEVELOPER_NAME = 'Deephaven Developers'
     static final String DEVELOPER_EMAIL = 'developers@deephaven.io'
@@ -32,6 +36,29 @@ class PublishingConstants {
     static final String REPO_NAME = 'ossrh'
     static final String SNAPSHOT_REPO = 'https://s01.oss.sonatype.org/content/repositories/snapshots/'
     static final String RELEASE_REPO = 'https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/'
+
+    static void setupPublications(Project project, Closure closure) {
+        setupPublications(project, ConfigureUtil.configureUsing(closure))
+    }
+
+    static void setupPublications(Project project, Action<MavenPublication> action) {
+        def projectLicense = project.extensions.extraProperties.get('license') as License
+
+        project.extensions.findByType(PublishingExtension).publications { container ->
+            container.create('mavenJava', MavenPublication) { publication ->
+                action.execute(publication)
+                publication.pom {pom ->
+                    pom.licenses { licenses ->
+                        licenses.license { license ->
+                            license.name.set projectLicense.name
+                            license.url.set projectLicense.url
+                        }
+                    }
+
+                }
+            }
+        }
+    }
 
     static void setupRepositories(Project project) {
         PublishingExtension publishingExtension = project.extensions.getByType(PublishingExtension)

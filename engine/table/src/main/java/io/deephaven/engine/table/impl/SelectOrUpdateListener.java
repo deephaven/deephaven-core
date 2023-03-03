@@ -66,6 +66,11 @@ class SelectOrUpdateListener extends BaseTable.ListenerImpl {
 
     @Override
     public void onUpdate(final TableUpdate upstream) {
+        if (!tryIncrementReferenceCount()) {
+            // If we're no longer live, there's no work to do here.
+            return;
+        }
+
         // Attempt to minimize work by sharing computation across all columns:
         // - clear only the keys that no longer exist
         // - create parallel arrays of pre-shift-keys and post-shift-keys so we can move them in chunks
@@ -101,33 +106,44 @@ class SelectOrUpdateListener extends BaseTable.ListenerImpl {
     }
 
     private void handleException(Exception e) {
-        onFailure(e, getEntry());
-        updateInProgress = false;
+        try {
+            onFailure(e, getEntry());
+        } finally {
+            updateInProgress = false;
+            // Note that this isn't really needed, since onFailure forces reference count to zero, but it seems
+            // reasonable to pair with the tryIncrementReferenceCount invocation in onUpdate and match
+            // completionRoutine. This also has the effect of "future proofing" this code against changes to onFailure.
+            decrementReferenceCount();
+        }
     }
 
     private void completionRoutine(TableUpdate upstream, JobScheduler jobScheduler,
             WritableRowSet toClear, SelectAndViewAnalyzer.UpdateHelper updateHelper) {
-        final TableUpdateImpl downstream = new TableUpdateImpl(upstream.added().copy(), upstream.removed().copy(),
-                upstream.modified().copy(), upstream.shifted(), dependent.getModifiedColumnSetForUpdates());
-        transformer.clearAndTransform(upstream.modifiedColumnSet(), downstream.modifiedColumnSet);
-        dependent.notifyListeners(downstream);
-        upstream.release();
-        toClear.close();
-        updateHelper.close();
-        final BasePerformanceEntry accumulated = jobScheduler.getAccumulatedPerformance();
-        // if the entry exists, then we install a terminal notification so that we don't lose the performance from this
-        // execution
-        if (accumulated != null) {
-            UpdateGraphProcessor.DEFAULT.addNotification(new TerminalNotification() {
-                @Override
-                public void run() {
-                    synchronized (accumulated) {
-                        getEntry().accumulate(accumulated);
+        try {
+            final TableUpdateImpl downstream = new TableUpdateImpl(upstream.added().copy(), upstream.removed().copy(),
+                    upstream.modified().copy(), upstream.shifted(), dependent.getModifiedColumnSetForUpdates());
+            transformer.clearAndTransform(upstream.modifiedColumnSet(), downstream.modifiedColumnSet);
+            dependent.notifyListeners(downstream);
+            upstream.release();
+            toClear.close();
+            updateHelper.close();
+            final BasePerformanceEntry accumulated = jobScheduler.getAccumulatedPerformance();
+            // if the entry exists, then we install a terminal notification so that we don't lose the performance from
+            // this execution
+            if (accumulated != null) {
+                UpdateGraphProcessor.DEFAULT.addNotification(new TerminalNotification() {
+                    @Override
+                    public void run() {
+                        synchronized (accumulated) {
+                            getEntry().accumulate(accumulated);
+                        }
                     }
-                }
-            });
+                });
+            }
+        } finally {
+            updateInProgress = false;
+            decrementReferenceCount();
         }
-        updateInProgress = false;
     }
 
     @Override

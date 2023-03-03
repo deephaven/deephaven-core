@@ -982,7 +982,7 @@ public class ReplicateSourcesAndChunks {
                 "            final ByteChunk<? extends Values> chunk = src.asByteChunk();",
                 "            final LongChunk<OrderedRowKeys> keys = RowSequence.asRowKeyChunk();",
                 "",
-                "            final boolean trackPrevious = wrapped.prevFlusher != null && wrapped.ensurePreviousClockCycle != LogicalClock.DEFAULT.currentStep();",
+                "            final boolean trackPrevious = wrapped.shouldTrackPrevious();",
                 "",
                 "            if (trackPrevious) {",
                 "                wrapped.prevFlusher.maybeActivate();",

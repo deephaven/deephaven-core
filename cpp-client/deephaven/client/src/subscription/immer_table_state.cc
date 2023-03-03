@@ -58,8 +58,8 @@ public:
     return sources_.size();
   }
 
-  const Schema &schema() const final {
-    return *schema_;
+  std::shared_ptr<Schema> schema() const final {
+    return schema_;
   }
 
 private:

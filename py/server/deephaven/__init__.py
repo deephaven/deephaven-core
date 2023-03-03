@@ -24,3 +24,4 @@ from .stream.kafka import producer as kafka_producer
 from .table_factory import empty_table, time_table, merge, merge_sorted, new_table, DynamicTableWriter, input_table
 from .replay import TableReplayer
 from ._gc import garbage_collect
+from .dbc import read_sql

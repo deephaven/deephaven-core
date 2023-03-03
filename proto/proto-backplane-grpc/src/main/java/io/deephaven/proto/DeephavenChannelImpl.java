@@ -7,6 +7,10 @@ import io.deephaven.proto.backplane.grpc.ApplicationServiceGrpc;
 import io.deephaven.proto.backplane.grpc.ApplicationServiceGrpc.ApplicationServiceBlockingStub;
 import io.deephaven.proto.backplane.grpc.ApplicationServiceGrpc.ApplicationServiceFutureStub;
 import io.deephaven.proto.backplane.grpc.ApplicationServiceGrpc.ApplicationServiceStub;
+import io.deephaven.proto.backplane.grpc.ConfigServiceGrpc;
+import io.deephaven.proto.backplane.grpc.ConfigServiceGrpc.ConfigServiceBlockingStub;
+import io.deephaven.proto.backplane.grpc.ConfigServiceGrpc.ConfigServiceFutureStub;
+import io.deephaven.proto.backplane.grpc.ConfigServiceGrpc.ConfigServiceStub;
 import io.deephaven.proto.backplane.grpc.InputTableServiceGrpc;
 import io.deephaven.proto.backplane.grpc.InputTableServiceGrpc.InputTableServiceBlockingStub;
 import io.deephaven.proto.backplane.grpc.InputTableServiceGrpc.InputTableServiceFutureStub;
@@ -43,6 +47,7 @@ public final class DeephavenChannelImpl implements DeephavenChannel {
         this.channel = Objects.requireNonNull(channel);
     }
 
+    @Override
     public Channel channel() {
         return channel;
     }
@@ -78,6 +83,11 @@ public final class DeephavenChannelImpl implements DeephavenChannel {
     }
 
     @Override
+    public ConfigServiceStub config() {
+        return ConfigServiceGrpc.newStub(channel);
+    }
+
+    @Override
     public SessionServiceBlockingStub sessionBlocking() {
         return SessionServiceGrpc.newBlockingStub(channel);
     }
@@ -108,6 +118,11 @@ public final class DeephavenChannelImpl implements DeephavenChannel {
     }
 
     @Override
+    public ConfigServiceBlockingStub configBlocking() {
+        return ConfigServiceGrpc.newBlockingStub(channel);
+    }
+
+    @Override
     public SessionServiceFutureStub sessionFuture() {
         return SessionServiceGrpc.newFutureStub(channel);
     }
@@ -135,5 +150,10 @@ public final class DeephavenChannelImpl implements DeephavenChannel {
     @Override
     public InputTableServiceFutureStub inputTableFuture() {
         return InputTableServiceGrpc.newFutureStub(channel);
+    }
+
+    @Override
+    public ConfigServiceFutureStub configFuture() {
+        return ConfigServiceGrpc.newFutureStub(channel);
     }
 }
