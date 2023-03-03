@@ -1,6 +1,5 @@
 package io.deephaven.engine.table.impl.updateby;
 
-import gnu.trove.list.array.TIntArrayList;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
@@ -124,14 +123,11 @@ class UpdateByWindowCumulative extends UpdateByWindow {
 
             final long rowKey;
             final long timestamp;
-            final int[] dirtyOpIndices;
 
             if (initialStep) {
                 // We are always at the beginning of the RowSet at creation phase.
                 rowKey = NULL_ROW_KEY;
                 timestamp = NULL_LONG;
-
-                dirtyOpIndices = IntStream.range(0, opIndices.length).toArray();
             } else {
                 // Find the key before the first affected row.
                 final long pos = context.sourceRowSet.find(context.affectedRows.firstRowKey());
@@ -164,22 +160,16 @@ class UpdateByWindowCumulative extends UpdateByWindow {
                     rowKey = keyBefore;
                     timestamp = potentialResetTimestamp;
                 }
-
-                // Don't waste resources by considering the operators that are not dirty
-                final TIntArrayList dirtyOpList = new TIntArrayList(opIndices.length);
-                for (int ii = 0; ii < opIndices.length; ii++) {
-                    final int opIdx = opIndices[ii];
-                    if (context.dirtyOperators.get(opIdx)) {
-                        // add the index of the dirty operator in opIndices
-                        dirtyOpList.add(ii);
-                    }
-                }
-                dirtyOpIndices = dirtyOpList.toArray();
             }
 
             // Call the specialized version of `intializeUpdate()` for these operators.
-            for (int ii : dirtyOpIndices) {
-                UpdateByOperator cumOp = operators[opIndices[ii]];
+            for (int ii = 0; ii < opIndices.length; ii++) {
+                final int opIdx = opIndices[ii];
+                if (!context.dirtyOperators.get(opIdx)) {
+                    // Skip if not dirty.
+                    continue;
+                }
+                UpdateByOperator cumOp = operators[opIdx];
                 cumOp.initializeCumulative(winOpContexts[ii], rowKey, timestamp);
             }
 
@@ -197,7 +187,12 @@ class UpdateByWindowCumulative extends UpdateByWindow {
                 }
 
                 // Make the specialized call for windowed operators.
-                for (int ii : dirtyOpIndices) {
+                for (int ii = 0; ii < opIndices.length; ii++) {
+                    final int opIdx = opIndices[ii];
+                    if (!context.dirtyOperators.get(opIdx)) {
+                        // Skip if not dirty.
+                        continue;
+                    }
                     winOpContexts[ii].accumulateCumulative(
                             affectedRs,
                             chunkArr,
@@ -207,8 +202,13 @@ class UpdateByWindowCumulative extends UpdateByWindow {
             }
 
             // Finalize the operator.
-            for (int ii : dirtyOpIndices) {
-                UpdateByOperator cumOp = operators[opIndices[ii]];
+            for (int ii = 0; ii < opIndices.length; ii++) {
+                final int opIdx = opIndices[ii];
+                if (!context.dirtyOperators.get(opIdx)) {
+                    // Skip if not dirty.
+                    continue;
+                }
+                UpdateByOperator cumOp = operators[opIdx];
                 cumOp.finishUpdate(winOpContexts[ii]);
             }
         }

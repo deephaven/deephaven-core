@@ -633,7 +633,7 @@ public abstract class UpdateBy {
          * operators into sets of operators that share input sources and that can be computed together efficiently. It
          * also arranges these sets of operators in an order that (hopefully) minimizes the memory footprint of the
          * cached operator input columns.
-         *
+         * <p>
          * Before each operator set is processed, the sources for the input columns are cached. After the set is
          * processed, the cached sources are released if they will not be used by following operators.
          */
@@ -1003,7 +1003,14 @@ public abstract class UpdateBy {
          */
         private void cleanUpAfterError() {
             // allow the helpers to release their resources
+            final int[] dirtyWindowIndices = dirtyWindows.stream().toArray();
+
             for (UpdateByBucketHelper bucket : dirtyBuckets) {
+                for (int winIdx : dirtyWindowIndices) {
+                    if (bucket.windowContexts[winIdx].isDirty) {
+                        windows[winIdx].finalizeWindowBucket(bucket.windowContexts[winIdx]);
+                    }
+                }
                 bucket.finalizeUpdate();
             }
 
