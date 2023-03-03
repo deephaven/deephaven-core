@@ -35,7 +35,8 @@ def j_hashmap(d: Dict = None) -> jpy.JType:
 
     r = jpy.get_type("java.util.HashMap")()
     for k, v in d.items():
-        v = "" if v is None else unwrap(v)
+        k = unwrap(k)
+        v = unwrap(v)
         r.put(k, v)
     return r
 
@@ -57,7 +58,8 @@ def j_properties(d: Dict = None) -> jpy.JType:
         return None
     r = jpy.get_type("java.util.Properties")()
     for k, v in d.items():
-        v = "" if v is None else unwrap(v)
+        k = unwrap(k)
+        v = unwrap(v)
         r.setProperty(k, v)
     return r
 
