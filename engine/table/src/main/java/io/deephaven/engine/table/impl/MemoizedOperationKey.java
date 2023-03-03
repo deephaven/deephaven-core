@@ -174,19 +174,7 @@ public abstract class MemoizedOperationKey {
 
         @Override
         BaseTable.CopyAttributeOperation copyType() {
-            switch (flavor) {
-                case View:
-                case UpdateView:
-                    return BaseTable.CopyAttributeOperation.View;
-
-                case Select:
-                case Update:
-                    // turns out select doesn't copy attributes, maybe we should more accurately codify that
-                    return BaseTable.CopyAttributeOperation.None;
-
-                default:
-                    throw new UnsupportedOperationException("Unexpected flavor " + flavor);
-            }
+            return BaseTable.CopyAttributeOperation.View;
         }
     }
 

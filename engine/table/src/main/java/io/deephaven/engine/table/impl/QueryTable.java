@@ -1283,6 +1283,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                     }
                     propagateFlatness(resultTable);
                     copySortableColumns(resultTable, selectColumns);
+                    copyAttributes(resultTable, CopyAttributeOperation.View);
                     if (publishTheseSources) {
                         maybeCopyColumnDescriptions(resultTable, selectColumns);
                     } else {
@@ -1392,9 +1393,7 @@ public class QueryTable extends BaseTable<QueryTable> {
 
                                 propagateFlatness(queryTable);
 
-                                copyAttributes(queryTable,
-                                        flavor == Flavor.UpdateView ? CopyAttributeOperation.UpdateView
-                                                : CopyAttributeOperation.View);
+                                copyAttributes(queryTable, CopyAttributeOperation.View);
                                 copySortableColumns(queryTable, viewColumns);
                                 if (publishTheseSources) {
                                     maybeCopyColumnDescriptions(queryTable, viewColumns);
@@ -1467,7 +1466,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                                 "lazyUpdate(" + Arrays.deepToString(selectColumns) + ')', this, result));
                     }
                     propagateFlatness(result);
-                    copyAttributes(result, CopyAttributeOperation.UpdateView);
+                    copyAttributes(result, CopyAttributeOperation.View);
                     copySortableColumns(result, selectColumns);
                     maybeCopyColumnDescriptions(result, selectColumns);
 

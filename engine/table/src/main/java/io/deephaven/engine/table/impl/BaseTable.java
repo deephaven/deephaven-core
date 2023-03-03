@@ -156,7 +156,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         None,
 
         // legacy attributes
-        Flatten, Sort, UpdateView, Join, Filter,
+        Flatten, Sort, Join, Filter,
         // new attributes
         DropColumns, View, Reverse,
         /**
@@ -177,7 +177,6 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
     private static final EnumSet<CopyAttributeOperation> LEGACY_COPY_ATTRIBUTES = EnumSet.of(
             CopyAttributeOperation.Flatten,
             CopyAttributeOperation.Sort,
-            CopyAttributeOperation.UpdateView,
             CopyAttributeOperation.Join,
             CopyAttributeOperation.Filter);
     static {
@@ -271,7 +270,6 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
 
         tempMap.put(ADD_ONLY_TABLE_ATTRIBUTE, EnumSet.of(
                 CopyAttributeOperation.DropColumns,
-                CopyAttributeOperation.UpdateView,
                 CopyAttributeOperation.View,
                 CopyAttributeOperation.PartitionBy,
                 CopyAttributeOperation.Coalesce));
@@ -309,8 +307,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
                 CopyAttributeOperation.Flatten,
                 CopyAttributeOperation.PartitionBy,
                 CopyAttributeOperation.Preview,
-                CopyAttributeOperation.View, // and Select, if added
-                CopyAttributeOperation.UpdateView, // and Update, if added
+                CopyAttributeOperation.View, // Select, UpdateView, and Update
                 CopyAttributeOperation.DropColumns,
                 CopyAttributeOperation.Join,
                 CopyAttributeOperation.WouldMatch));
