@@ -12,7 +12,6 @@ import java.util.NoSuchElementException;
  * aggregation values. This allows the class to efficiently update the final aggregated value when entries enter and
  * leave the buffer, without necessarily running the calculation over the whole buffer.
  */
-
 public class AggregatingCharRingBuffer {
     private final CharRingBuffer internalBuffer;
     private final CharFunction aggFunction;
@@ -35,19 +34,20 @@ public class AggregatingCharRingBuffer {
     }
 
     /**
-     * Create a ring buffer for char values which aggregates its contents according to a user-defined aggregation
+     * Creates a ring buffer for char values which aggregates its contents according to a user-defined aggregation
      * function. This aggregation calculation is performed lazily, when the user calls evaluate(). Internally the class
      * manages a tree of intermediate aggregation values. This allows the class to efficiently update the final
      * aggregated value when entries enter and leave the buffer, without necessarily running the calculation over the
      * whole buffer.
-     *
+     * <p>
      * The buffer expands its capacity as needed, employing a capacity-doubling strategy. However, note that the data
      * structure never gives back storage: i.e. its capacity never shrinks.
      *
      * @param capacity the minimum size for the structure to hold
      * @param identityVal The identity value associated with the aggregation function. This is a value e that satisfies
-     *        f(x,e) == x and f(e,x) == x for all x. For example, for addition, multiplication, Math.min, and Math.max,
-     *        the identity values are 0.0f, 1.0f, Float.MAX_VALUE, and -Float.MAX_VALUE respectively.
+     *        f(x,e) == x and f(e,x) == x for all x. For example, for the AggregatingFloatRingBuffer, if the aggFunction
+     *        is addition, multiplication, Math.min, or Math.max, the corresponding identity values would be 0.0f, 1.0f,
+     *        Float.MAX_VALUE, and -Float.MAX_VALUE respectively.
      * @param aggFunction A function used to aggregate the data in the ring buffer. The function must be associative:
      *        that is it must satisfy f(f(a, b), c) == f(a, f(b, c)). For example, addition is associative, because (a +
      *        b) + c == a + (b + c). Some examples of associative functions are addition, multiplication, Math.min(),
@@ -59,19 +59,20 @@ public class AggregatingCharRingBuffer {
     }
 
     /**
-     * Create a ring buffer for char values which aggregates its contents according to a user-defined aggregation
+     * Creates a ring buffer for char values which aggregates its contents according to a user-defined aggregation
      * function. This aggregation calculation is performed lazily, when the user calls evaluate(). Internally the class
      * manages a tree of intermediate aggregation values. This allows the class to efficiently update the final
      * aggregated value when entries enter and leave the buffer, without necessarily running the calculation over the
      * whole buffer.
-     *
+     * <p>
      * If {@code growable = true}, the buffer expands its capacity as needed, employing a capacity-doubling strategy.
      * However, note that the data structure never gives back storage: i.e. its capacity never shrinks.
      *
      * @param capacity the minimum size for the structure to hold
      * @param identityVal The identity value associated with the aggregation function. This is a value e that satisfies
-     *        f(x,e) == x and f(e,x) == x for all x. For example, for addition, multiplication, Math.min, and Math.max,
-     *        the identity values are 0.0f, 1.0f, Float.MAX_VALUE, and -Float.MAX_VALUE respectively.
+     *        f(x,e) == x and f(e,x) == x for all x. For example, for the AggregatingFloatRingBuffer, if the aggFunction
+     *        is addition, multiplication, Math.min, or Math.max, the corresponding identity values would be 0.0f, 1.0f,
+     *        Float.MAX_VALUE, and -Float.MAX_VALUE respectively.
      * @param aggFunction A function used to aggregate the data in the ring buffer. The function must be associative:
      *        that is it must satisfy f(f(a, b), c) == f(a, f(b, c)). For example, addition is associative, because (a +
      *        b) + c == a + (b + c). Some examples of associative functions are addition, multiplication, Math.min(),
@@ -95,7 +96,7 @@ public class AggregatingCharRingBuffer {
     }
 
     /**
-     * Increase the capacity of the aggregating ring buffer.
+     * Increases the capacity of the aggregating ring buffer.
      *
      * @param increase Increase amount. The ring buffer's capacity will be increased by at least this amount.
      */
@@ -134,14 +135,13 @@ public class AggregatingCharRingBuffer {
     }
 
     /**
-     * Adds an entry to the ring buffer, will throw an exception if buffer is full. For a graceful failure, use
-     * {@link #offer(char)}
+     * Adds an entry to the ring buffer. Throws an exception if buffer is full and growth is disabled. For a graceful
+     * failure, use {@link #offer(char)}
      *
      * @param e the char to be added to the buffer
      * @throws UnsupportedOperationException when {@code growable} is {@code false} and buffer is full
-     * @return {@code true} if the char was added successfully
      */
-    public boolean add(char e) {
+    public void add(char e) {
         if (isFull()) {
             if (!internalBuffer.growable) {
                 throw new UnsupportedOperationException("Ring buffer is full and growth is disabled");
@@ -150,16 +150,16 @@ public class AggregatingCharRingBuffer {
             }
         }
         addUnsafe(e);
-        return true;
     }
 
     /**
-     * Ensure that there is sufficient empty space to store {@code count} items in the buffer. If the buffer is
-     * {@code growable}, this may result in an internal growth operation. This call should be used in conjunction with
-     * {@link #addUnsafe(char)}.
+     * Ensures that there is sufficient empty space to store {@code count} additional items in the buffer. If the buffer
+     * is {@code growable}, this may result in an internal growth operation. This call should be used in conjunction
+     * with {@link #addUnsafe(char)}.
      *
      * @param count the minimum number of empty entries in the buffer after this call
-     * @throws UnsupportedOperationException when {@code growable} is {@code false} and buffer is full
+     * @throws UnsupportedOperationException when {@code growable} is {@code false} and the buffer's available space is
+     *         less than {@code count}
      */
     public void ensureRemaining(int count) {
         if (remaining() < count) {
@@ -172,10 +172,10 @@ public class AggregatingCharRingBuffer {
     }
 
     /**
-     * Add an entry to the ring buffer. If the buffer is full, will overwrite the oldest entry with the new one.
+     * Adds an entry to the ring buffer. If the buffer is full, overwrites the oldest entry with the new one.
      *
      * @param e the char to be added to the buffer
-     * @param notFullResult value to return is the buffer is not full
+     * @param notFullResult value to return if the buffer is not full
      * @return the overwritten entry if the buffer is full, the provided value otherwise
      */
     public char addOverwrite(char e, char notFullResult) {
@@ -188,7 +188,7 @@ public class AggregatingCharRingBuffer {
     }
 
     /**
-     * Attempt to add an entry to the ring buffer. If the buffer is full, the add will fail and the buffer will not grow
+     * Attempts to add an entry to the ring buffer. If the buffer is full, the add fails and the buffer will not grow
      * even if growable.
      *
      * @param e the char to be added to the buffer
@@ -203,8 +203,9 @@ public class AggregatingCharRingBuffer {
     }
 
     /**
-     * Remove one element from the front of the ring buffer.
+     * Removes one element from the head of the ring buffer.
      *
+     * @return The removed element if the ring buffer was non-empty
      * @throws NoSuchElementException if the buffer is empty
      */
     public char remove() {
@@ -215,10 +216,11 @@ public class AggregatingCharRingBuffer {
     }
 
     /**
-     * If the ring buffer is non-empty, removes the element at the head of the ring buffer. Otherwise does nothing.
+     * Removes the element at the head of the ring buffer if the ring buffer is non-empty. Otherwise returns
+     * {@code onEmpty}.
      *
      * @param onEmpty the value to return if the ring buffer is empty
-     * @return The removed element if the ring buffer was non-empty, otherwise the value of 'onEmpty'
+     * @return The removed element if the ring buffer was non-empty, otherwise the value of {@code onEmpty}.
      */
     public char poll(char onEmpty) {
         if (isEmpty()) {
@@ -228,21 +230,21 @@ public class AggregatingCharRingBuffer {
     }
 
     /**
-     * If the ring buffer is non-empty, returns the element at the head of the ring buffer.
+     * Returns the element at the head of the ring buffer if the ring buffer is non-empty.
      *
+     * @return The head element if the ring buffer is non-empty
      * @throws NoSuchElementException if the buffer is empty
-     * @return The head element if the ring buffer is non-empty, otherwise the value of 'onEmpty'
      */
     public char element() {
         return internalBuffer.element();
     }
 
     /**
-     * If the ring buffer is non-empty, returns the element at the head of the ring buffer. Otherwise returns the
-     * specified element.
+     * Returns the element at the head of the ring buffer if the ring buffer is non-empty. Otherwise returns
+     * {@code onEmpty}.
      *
      * @param onEmpty the value to return if the ring buffer is empty
-     * @return The head element if the ring buffer is non-empty, otherwise the value of 'onEmpty'
+     * @return The head element if the ring buffer is non-empty
      */
     public char peek(char onEmpty) {
         return internalBuffer.peek(onEmpty);
@@ -252,17 +254,18 @@ public class AggregatingCharRingBuffer {
      * Returns the element at the head of the ring buffer
      *
      * @return The element at the head of the ring buffer
+     * @throws NoSuchElementException if the buffer is empty
      */
     public char front() {
         return front(0);
     }
 
     /**
-     * Returns the element at the specified offset in the ring buffer.
+     * Returns the element at the specified offset from the head in the ring buffer.
      *
      * @param offset The specified offset.
-     * @throws NoSuchElementException if the buffer is empty
      * @return The element at the specified offset
+     * @throws NoSuchElementException if the buffer is empty
      */
     public char front(int offset) {
         return internalBuffer.front(offset);
@@ -271,26 +274,26 @@ public class AggregatingCharRingBuffer {
     /**
      * Returns the element at the tail of the ring buffer
      *
-     * @throws NoSuchElementException if the buffer is empty
      * @return The element at the tail of the ring buffer
+     * @throws NoSuchElementException if the buffer is empty
      */
     public char back() {
         return internalBuffer.back();
     }
 
     /**
-     * If the ring buffer is non-empty, returns the element at the tail of the ring buffer. Otherwise returns the
-     * specified element.
+     * Returns the element at the tail of the ring buffer if the ring buffer is non-empty. Otherwise returns
+     * {@code onEmpty}.
      *
      * @param onEmpty the value to return if the ring buffer is empty
-     * @return The tail element if the ring buffer is non-empty, otherwise the value of 'onEmpty'
+     * @return The element at the tail of the ring buffer, otherwise the value of {@code onEmpty}.
      */
     public char peekBack(char onEmpty) {
         return internalBuffer.peekBack(onEmpty);
     }
 
     /**
-     * Make a copy of the elements in the ring buffer.
+     * Returns an array containing all elements in the ring buffer.
      *
      * @return An array containing a copy of the elements in the ring buffer.
      */
@@ -299,7 +302,7 @@ public class AggregatingCharRingBuffer {
     }
 
     /**
-     * Add values without overflow detection. The caller *must* ensure that there is at least one element of free space
+     * Adds a value without overflow detection. The caller must ensure that there is at least one element of free space
      * in the ring buffer before calling this method. The caller may use {@link #ensureRemaining(int)} or
      * {@link #remaining()} for this purpose.
      *
@@ -308,12 +311,18 @@ public class AggregatingCharRingBuffer {
     public void addUnsafe(char e) {
         // Perform a specialized version of the fix-up test.
         if (internalBuffer.tail >= CharRingBuffer.FIXUP_THRESHOLD) {
-            // Reset calc[head, tail]
+            // Reset calc[Head, Tail] so that they have a smaller absolute value but still represent the
+            // same position that they did before (modulo internalBuffer.storage.length) . Furthermore
+            // arrange things so that calc[Head, Tail] is ahead of (and therefore does not overlap)
+            // [head, tail]. The rationale for this is that if the two ranges did not intersect before the
+            // adjustment, we do not want them to intersect after the adjustment. However if they *did*
+            // intersect before the adjustment, we will lose that relationship. The downside in that case
+            // is that the next evalute() may do more work than is necessary. This case is so unlikely
+            // and infrequent that it is not worth the programming effort of trying to do better.
             long length = calcTail - calcHead;
             calcHead = (calcHead & internalBuffer.mask);
             calcTail = calcHead + length;
 
-            // Reset [head, tail] but force it not to overlap with calc[head, tail]
             length = internalBuffer.tail - internalBuffer.head;
             internalBuffer.head = (internalBuffer.head & internalBuffer.mask) + internalBuffer.storage.length;
             internalBuffer.tail = internalBuffer.head + length;
@@ -321,21 +330,26 @@ public class AggregatingCharRingBuffer {
         internalBuffer.addUnsafe(e);
     }
 
+    /**
+     * Adds the identity element to the ring buffer. Throws an exception if the buffer is full and not growable.
+     *
+     * @throws UnsupportedOperationException when {@code growable} is {@code false} and buffer is full
+     */
     public void addIdentityValue() {
         add(identityVal);
     }
 
     /**
-     * Remove an element without empty buffer detection. The caller *must* ensure that there is at least one element in
+     * Removes an element without empty buffer detection. The caller must ensure that there is at least one element in
      * the ring buffer. The {@link #size()} method may be used for this purpose.
      *
      * @return the value removed from the buffer
      */
     public char removeUnsafe() {
-        // NOTE: remove() for this data structure must replace the removed value with identityVal.
+        // NOTE: remove() calls for this data structure must replace the removed value with identityVal.
         final long prevHead = internalBuffer.head;
 
-        char val = internalBuffer.removeUnsafe();
+        final char val = internalBuffer.removeUnsafe();
 
         // Reset the storage entry to the identity value
         final int idx = (int) (prevHead & internalBuffer.mask);
@@ -345,27 +359,26 @@ public class AggregatingCharRingBuffer {
     }
 
     /**
-     * Remove multiple elements from the front of the ring buffer
+     * Removes multiple elements from the front of the ring buffer and returns the items as an array.
      *
      * @param count The number of elements to remove.
      * @throws NoSuchElementException if the buffer is empty
      */
     public char[] remove(int count) {
-        // NOTE: remove() for this data structure must replace the removed value with identityVal.
+        // NOTE: remove() calls for this data structure must replace the removed value with identityVal.
         final long prevHead = internalBuffer.head;
-        final int prevSize = size();
 
         final char[] result = internalBuffer.remove(count);
 
         // Reset the cleared storage entries to the identity value
-        fillWithIdentityVal(prevHead, count, prevSize);
+        fillWithIdentityVal(prevHead, count);
 
         return result;
     }
 
     /**
-     * Remove all elements from the ring buffer and reset the data structure. This may require resetting all entries in
-     * the storage buffer and evaluation tree and should be considered to be of complexity O(capacity) instead of
+     * Removes all elements from the ring buffer and resets the data structure. This may require resetting all entries
+     * in the storage buffer and evaluation tree and should be considered to be of complexity O(capacity) instead of
      * O(size).
      */
     public void clear() {
@@ -374,24 +387,35 @@ public class AggregatingCharRingBuffer {
 
         internalBuffer.clear();
 
-        calcHead = calcTail = 0;
-        // Fill the tree buffer with the identity value
-        Arrays.fill(treeStorage, identityVal);
-
         // Reset the cleared storage entries to the identity value
-        fillWithIdentityVal(prevHead, prevSize, prevSize);
+        fillWithIdentityVal(prevHead, prevSize);
+
+        calcHead = calcTail = 0;
+        // Reset the tree buffer with the identity value
+        if (prevSize < treeStorage.length / 4) {
+            // This section is small enough to profit from a surgical resetting
+            fixupTree(prevHead, prevHead + prevSize, 0, 0);
+        } else {
+            Arrays.fill(treeStorage, identityVal);
+        }
     }
 
-    private void fillWithIdentityVal(long head, int count, int size) {
+    /**
+     * Fills a range of elements with the identity value.
+     *
+     * @param head The un-normalized starting point for the fill operation
+     * @param count The number of elements to fill
+     */
+    private void fillWithIdentityVal(long head, int count) {
         final int storageHead = (int) (head & internalBuffer.mask);
 
         // firstCopyLen is either the size of the ring buffer, the distance from head to the end of the storage array,
         // or the count, whichever is smallest.
-        final int firstCopyLen = Math.min(Math.min(internalBuffer.storage.length - storageHead, size), count);
+        final int firstCopyLen = Math.min(internalBuffer.storage.length - storageHead, count);
 
         // secondCopyLen is either the number of uncopied elements remaining from the first copy,
         // or the remaining to copy from count, whichever is smaller.
-        final int secondCopyLen = Math.min(size - firstCopyLen, count - firstCopyLen);
+        final int secondCopyLen = count - firstCopyLen;
 
         Arrays.fill(internalBuffer.storage, storageHead, storageHead + firstCopyLen, identityVal);
         Arrays.fill(internalBuffer.storage, 0, secondCopyLen, identityVal);
@@ -488,6 +512,8 @@ public class AggregatingCharRingBuffer {
      * This function will accept the two un-normalized dirty ranges and apply the aggregation function to those ranges
      * in the storage ring buffer and successively to the tree of evaluation results until a single result is available
      * at the root of the tree.
+     * <p>
+     * The provided ranges are half-open intervals. The head is included but the tail is excluded from consideration.
      */
     void fixupTree(final long r1Head, final long r1Tail, final long r2Head, final long r2Tail) {
         final long r1Size = r1Tail - r1Head;
@@ -507,54 +533,55 @@ public class AggregatingCharRingBuffer {
             final int r1TailNormal = (int) (r1HeadNormal + r1Size);
 
             if (r1TailNormal <= internalBuffer.storage.length) {
-                // r1 did not wrap, single range to compute
+                // r1 did not wrap. Single range to compute
                 final int r1h = r1HeadNormal;
                 final int r1t = r1TailNormal - 1; // change to inclusive
 
                 // Evaluate the values in the storage buffer (results stored in the tree)
-                computeAndStoreResults(r1h, r1t, internalBuffer.storage, offset);
+                evaluateAndStoreResults(r1h, r1t, internalBuffer.storage, offset);
                 // Evaluate the single range in the tree.
                 evaluateRange(offset + (r1h / 2), offset + (r1t / 2));
                 return;
             }
 
-            // r1 wraps the ring buffer boundary, process as two ranges.
+            // r1 wraps the ring buffer boundary. Process as two ranges.
             final int r1h = 0;
             final int r1t = r1TailNormal - internalBuffer.storage.length - 1; // change to inclusive
             final int r2h = r1HeadNormal;
             final int r2t = internalBuffer.storage.length - 1; // change to inclusive
 
             // Evaluate the values in the storage buffer (results stored in the tree)
-            computeAndStoreResults(r1h, r1t, internalBuffer.storage, offset);
-            computeAndStoreResults(r2h, r2t, internalBuffer.storage, offset);
+            evaluateAndStoreResults(r1h, r1t, internalBuffer.storage, offset);
+            evaluateAndStoreResults(r2h, r2t, internalBuffer.storage, offset);
 
             // Evaluate the two ranges in the tree.
             evaluateTwoRanges(offset + (r1h / 2), offset + (r1t / 2),
                     offset + (r2h / 2), offset + (r2t / 2));
         }
 
-        // r1 and r2 both need to be evaluated, take advantage of the fact that at most one will wrap. Also sort the
+        // r1 and r2 both need to be evaluated. Take advantage of the fact that at most one will wrap. Also sort the
         // ranges now to be more efficient through the rest of the algorithm
-        final int r1HeadTmp = (int) (r1Head & internalBuffer.mask);
-        final int r1TailTmp = (int) (r1HeadTmp + r1Size);
-        final int r2HeadTmp = (int) (r2Head & internalBuffer.mask);
-        final int r2TailTmp = (int) (r2HeadTmp + r2Size);
-
         final int r1HeadNormal;
         final int r1TailNormal;
         final int r2HeadNormal;
         final int r2TailNormal;
+        {
+            final int r1HeadTmp = (int) (r1Head & internalBuffer.mask);
+            final int r1TailTmp = (int) (r1HeadTmp + r1Size);
+            final int r2HeadTmp = (int) (r2Head & internalBuffer.mask);
+            final int r2TailTmp = (int) (r2HeadTmp + r2Size);
 
-        if (r1HeadTmp <= r2HeadTmp) {
-            r1HeadNormal = r1HeadTmp;
-            r1TailNormal = r1TailTmp;
-            r2HeadNormal = r2HeadTmp;
-            r2TailNormal = r2TailTmp;
-        } else {
-            r1HeadNormal = r2HeadTmp;
-            r1TailNormal = r2TailTmp;
-            r2HeadNormal = r1HeadTmp;
-            r2TailNormal = r1TailTmp;
+            if (r1HeadTmp <= r2HeadTmp) {
+                r1HeadNormal = r1HeadTmp;
+                r1TailNormal = r1TailTmp;
+                r2HeadNormal = r2HeadTmp;
+                r2TailNormal = r2TailTmp;
+            } else {
+                r1HeadNormal = r2HeadTmp;
+                r1TailNormal = r2TailTmp;
+                r2HeadNormal = r1HeadTmp;
+                r2TailNormal = r1TailTmp;
+            }
         }
 
         if (r1TailNormal <= internalBuffer.storage.length && r2TailNormal <= internalBuffer.storage.length) {
@@ -565,10 +592,10 @@ public class AggregatingCharRingBuffer {
             final int r2t = r2TailNormal - 1; // change to inclusive
 
             // Evaluate the values from the storage buffer and store into the evaluation tree.
-            computeAndStoreResults(r1h, r1t, internalBuffer.storage, offset);
-            computeAndStoreResults(r2h, r2t, internalBuffer.storage, offset);
+            evaluateAndStoreResults(r1h, r1t, internalBuffer.storage, offset);
+            evaluateAndStoreResults(r2h, r2t, internalBuffer.storage, offset);
 
-            // Evaluate the two unique ranges in the tree.
+            // Evaluate the two disjoint ranges in the tree.
             evaluateTwoRanges(offset + (r1h / 2), offset + (r1t / 2),
                     offset + (r2h / 2), offset + (r2t / 2));
             return;
@@ -583,11 +610,11 @@ public class AggregatingCharRingBuffer {
             final int r3t = internalBuffer.storage.length - 1; // change to inclusive
 
             // Evaluate the values from the storage buffer and store into the evaluation tree.
-            computeAndStoreResults(r1h, r1t, internalBuffer.storage, offset);
-            computeAndStoreResults(r2h, r2t, internalBuffer.storage, offset);
-            computeAndStoreResults(r3h, r3t, internalBuffer.storage, offset);
+            evaluateAndStoreResults(r1h, r1t, internalBuffer.storage, offset);
+            evaluateAndStoreResults(r2h, r2t, internalBuffer.storage, offset);
+            evaluateAndStoreResults(r3h, r3t, internalBuffer.storage, offset);
 
-            // Evaluate the three unique ranges in the tree.
+            // Evaluate the three disjoint ranges in the tree.
             evaluateThreeRanges(offset + (r1h / 2), offset + (r1t / 2),
                     offset + (r2h / 2), offset + (r2t / 2),
                     offset + (r3h / 2), offset + (r3t / 2));
@@ -602,41 +629,43 @@ public class AggregatingCharRingBuffer {
         final int r3t = internalBuffer.storage.length - 1; // change to inclusive
 
         // Evaluate the values from the storage buffer and store into the evaluation tree.
-        computeAndStoreResults(r1h, r1t, internalBuffer.storage, offset);
-        computeAndStoreResults(r2h, r2t, internalBuffer.storage, offset);
-        computeAndStoreResults(r3h, r3t, internalBuffer.storage, offset);
+        evaluateAndStoreResults(r1h, r1t, internalBuffer.storage, offset);
+        evaluateAndStoreResults(r2h, r2t, internalBuffer.storage, offset);
+        evaluateAndStoreResults(r3h, r3t, internalBuffer.storage, offset);
 
-        // Evaluate the three unique ranges in the tree.
+        // Evaluate the three disjoint ranges in the tree.
         evaluateThreeRanges(offset + (r1h / 2), offset + (r1t / 2),
                 offset + (r2h / 2), offset + (r2t / 2),
                 offset + (r3h / 2), offset + (r3t / 2));
     }
 
     /**
-     * This function accepts three unique ranges in the evaluation tree and iteratively computes aggregation results of
-     * value pairs in the range which are stored in parent nodes. Each iteration will shrink the ranges by a factor of
-     * 2. As the ranges shrink, an overlap will occur and this function will transfer to
+     * This function accepts three disjoint ranges in the evaluation tree and iteratively computes aggregation results
+     * of value pairs in the range which are stored in parent nodes. Each iteration will shrink the ranges by a factor
+     * of 2. As the ranges shrink, they will eventually overlap. When this happens, this function will transfer to
      * {@link #evaluateTwoRanges(int, int, int, int)} for better performance.
+     * <p>
+     * The provided ranges ore closed-interval. The head and tail are both included in the range.
      */
     private void evaluateThreeRanges(int r1h, int r1t, int r2h, int r2t, int r3h, int r3t) {
         while (true) {
             if (r1t >= r2h) {
-                // r1 and r2 overlap, collapse them together and call the two range version.
+                // r1 and r2 overlap. Collapse them together and call the two range version.
                 evaluateTwoRanges(r1h, r2t, r3h, r3t);
                 return;
             }
             if (r2t >= r3h) {
-                // r2 and r3 overlap, collapse them together and call the two range version.
+                // r2 and r3 overlap. Collapse them together and call the two range version.
                 evaluateTwoRanges(r1h, r1t, r2h, r3t);
                 return;
             }
 
-            // No collapse is possible, compute the unique ranges.
-            computeAndStoreResults(r1h, r1t, treeStorage, 0);
-            computeAndStoreResults(r2h, r2t, treeStorage, 0);
-            computeAndStoreResults(r3h, r3t, treeStorage, 0);
+            // No collapse is possible. Evaluate the disjoint ranges.
+            evaluateAndStoreResults(r1h, r1t, treeStorage, 0);
+            evaluateAndStoreResults(r2h, r2t, treeStorage, 0);
+            evaluateAndStoreResults(r3h, r3t, treeStorage, 0);
 
-            // Determine the new parents and loop until two ranges collapse
+            // Determine the new parent ranges and loop until two ranges collapse
             r1h /= 2;
             r1t /= 2;
             r2h /= 2;
@@ -647,24 +676,26 @@ public class AggregatingCharRingBuffer {
     }
 
     /**
-     * This function accepts two unique ranges in the evaluation tree and iteratively computes aggregation results of
+     * This function accepts two disjoint ranges in the evaluation tree and iteratively computes aggregation results of
      * value pairs in the range which are stored in parent nodes. Each iteration will shrink the ranges by a factor of
-     * 2. As the ranges shrink, an overlap will occur and this function will transfer to
+     * 2. As the ranges shrink, they will eventually overlap. When this happens, this function will transfer to
      * {@link #evaluateRange(int, int)} for better performance.
+     * <p>
+     * The provided ranges ore closed-interval. The head and tail are both included in the range.
      */
     private void evaluateTwoRanges(int r1h, int r1t, int r2h, int r2t) {
         while (true) {
             if (r1t >= r2h) {
-                // r1 and r2 overlap, collapse them together and call the single range version.
+                // r1 and r2 overlap. Collapse them together and call the single range version.
                 evaluateRange(r1h, r2t);
                 return;
             }
 
-            // No collapse is possible, compute the unique ranges.
-            computeAndStoreResults(r1h, r1t, treeStorage, 0);
-            computeAndStoreResults(r2h, r2t, treeStorage, 0);
+            // No collapse is possible. Evaluate the disjoint ranges.
+            evaluateAndStoreResults(r1h, r1t, treeStorage, 0);
+            evaluateAndStoreResults(r2h, r2t, treeStorage, 0);
 
-            // Determine the new parents and loop until two ranges collapse
+            // Determine the new parent ranges and loop until two ranges collapse
             r1h /= 2;
             r1t /= 2;
             r2h /= 2;
@@ -675,14 +706,17 @@ public class AggregatingCharRingBuffer {
     /**
      * This function accepts a range in the evaluation tree and iteratively computes aggregation results of value pairs
      * in the range which are stored in parent nodes. Each iteration will shrink the range by a factor of 2. When the
-     * tail of the range reaches 1, we have computed the root of the tree and can stop evaluating.
+     * tail of the range reaches 1, we have computed the root of the tree (stored in position 1) and can stop
+     * evaluating. Position 0 is not used.
+     * <p>
+     * The provided range is closed-interval. The head and tail are both included in the range.
      */
     private void evaluateRange(int r1h, int r1t) {
         while (r1t > 1) {
-            // Compute the single range
-            computeAndStoreResults(r1h, r1t, treeStorage, 0);
+            // Evaluate the single range
+            evaluateAndStoreResults(r1h, r1t, treeStorage, 0);
 
-            // Determine the new parents and loop until the tail
+            // Determine the new parent range and loop until the range reaches the root (tail = 1).
             r1h /= 2;
             r1t /= 2;
         }
@@ -692,18 +726,22 @@ public class AggregatingCharRingBuffer {
      * This function aggregates pairs of values from the provided buffer and stores the results in parent nodes of the
      * evaluation tree. To populate of the leaf nodes of the tree (which are the results of aggregation from the storage
      * buffer) the source array and an offset can be specified.
+     * <p>
+     * The source of the data is either the storage buffer (when we are evaluating the bottommost row of the tree) or
+     * the tree area (at all other times). The destination is always the tree area.
      */
-    private void computeAndStoreResults(int start, int end, char[] src, int dstOffset) {
+    private void evaluateAndStoreResults(int start, int end, char[] src, int dstOffset) {
         // Everything from start to end (inclusive) should be evaluated
         for (int left = start & 0xFFFFFFFE; left <= end; left += 2) {
             final int right = left + 1;
             final int parent = left / 2;
 
-            // load the data values
+            // Load the data values from either the storage buffer or the tree area
             final char leftVal = src[left];
             final char rightVal = src[right];
 
-            // compute & store (always in the tree area)
+            // Compute and store. Unlike src, which may be point to the storage buffer or tree area,
+            // the destination is always in the tree area.
             final char computeVal = aggFunction.apply(leftVal, rightVal);
             treeStorage[parent + dstOffset] = computeVal;
         }
