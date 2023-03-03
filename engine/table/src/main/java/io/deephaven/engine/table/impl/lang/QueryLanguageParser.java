@@ -958,9 +958,11 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                         expressions[ei] = new CastExpr(
                                 new ClassOrInterfaceType("java.lang.Object"),
                                 expressions[ei]);
+                        expressionTypes[ei] = Object.class;
+                    } else {
+                        expressionTypes[ei] = convertVector(expressionTypes[ei],
+                                parameterizedTypes[ei] == null ? null : parameterizedTypes[ei][0]);
                     }
-                    expressionTypes[ei] = convertVector(expressionTypes[ei],
-                            parameterizedTypes[ei] == null ? null : parameterizedTypes[ei][0]);
                 }
             }
         }
