@@ -39,7 +39,6 @@ import java.util.concurrent.TimeoutException;
  */
 public class DeephavenApiServer {
     private static final Logger log = LoggerFactory.getLogger(DeephavenApiServer.class);
-
     private final GrpcServer server;
     private final UpdateGraphProcessor ugp;
     private final LogInit logInit;
@@ -87,7 +86,6 @@ public class DeephavenApiServer {
     SessionService sessionService() {
         return sessionService;
     }
-
 
     /**
      * Starts the various server components, and returns without blocking. Shutdown is mediated by the ShutdownManager,
@@ -165,6 +163,32 @@ public class DeephavenApiServer {
         server.join();
     }
 
+    /**
+     * <p>
+     * Start shutting down the server by disallowing new connections.
+     * </p>
+     *
+     * <p>
+     * See {@link io.deephaven.server.runner.GrpcServer#beginShutdown()} for details.
+     * </p>
+     */
+    public void beginShutdown() {
+        server.beginShutdown();
+    }
+
+    /**
+     * <p>
+     * Stops the server, using the specified timeout as a deadline. Returns immediately. Call {@link #join()} to block
+     * until this is completed.
+     * </p>
+     *
+     * <p>
+     * See {@link io.deephaven.server.runner.GrpcServer#stopWithTimeout(long, TimeUnit)} for details.
+     * </p>
+     */
+    public void stopWithTimeout(final long timeout, final TimeUnit unit) {
+        server.stopWithTimeout(timeout, unit);
+    }
 
     void startForUnitTests() throws Exception {
         pluginRegistration.registerAll();
