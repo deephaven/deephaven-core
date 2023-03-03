@@ -378,7 +378,7 @@ public abstract class UpdateBy {
                 // shifts and include them in our parallel update preparations
                 if (upstream.shifted().nonempty()) {
                     try (final RowSet prev = source.getRowSet().copyPrev();
-                         final RowSequence.Iterator it = prev.getRowSequenceIterator()) {
+                            final RowSequence.Iterator it = prev.getRowSequenceIterator()) {
 
                         final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
                         final int size = upstream.shifted().size();
@@ -799,12 +799,12 @@ public abstract class UpdateBy {
          * {@code onProcessWindowOperatorSetComplete} when the work is complete
          */
         private void processWindowOperatorSet(final int winIdx,
-                                              final int[] opIndices,
-                                              final int[] srcIndices,
-                                              final int maxAffectedChunkSize,
-                                              final int maxInfluencerChunkSize,
-                                              final Runnable onProcessWindowOperatorSetComplete,
-                                              final Consumer<Exception> onProcessWindowOperatorSetError) {
+                final int[] opIndices,
+                final int[] srcIndices,
+                final int maxAffectedChunkSize,
+                final int maxInfluencerChunkSize,
+                final Runnable onProcessWindowOperatorSetComplete,
+                final Consumer<Exception> onProcessWindowOperatorSetError) {
             final class OperatorThreadContext implements JobScheduler.JobThreadContext {
                 final Chunk<? extends Values>[] chunkArr;
                 final ChunkSource.GetContext[] chunkContexts;
@@ -858,7 +858,7 @@ public abstract class UpdateBy {
         /** Release the input sources that will not be needed for the rest of this update */
         private void releaseInputSources(int[] sources) {
             try (final ResettableWritableObjectChunk<?, ?> backingChunk =
-                         ResettableWritableObjectChunk.makeResettableChunk()) {
+                    ResettableWritableObjectChunk.makeResettableChunk()) {
                 for (int srcIdx : sources) {
                     if (!inputSourceCacheNeeded[srcIdx]) {
                         continue;
