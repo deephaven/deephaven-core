@@ -331,6 +331,7 @@ public abstract class UpdateBy {
             }
         }
 
+        // region helper-functions
         @Override
         public LogOutput append(LogOutput logOutput) {
             return logOutput.append("UpdateBy.PhasedUpdateProcessor");
@@ -349,16 +350,88 @@ public abstract class UpdateBy {
                 @NotNull final LogOutputAppendable toAppend) {
             return logOutput -> logOutput.append(prefix).append(toAppend);
         }
+        // endregion helper-functions
 
-        private void onError(@NotNull final Exception error) {
-            if (waitForResult != null) {
-                // Use the Future to signal that an exception has occurred. Cleanup will be done by the waiting thread.
-                waitForResult.completeExceptionally(error);
+        /**
+         * Process the {@link TableUpdate update} provided in the constructor. This performs much work in parallel and
+         * leverages {@link JobScheduler} extensively
+         */
+        public void processUpdate() {
+            if (redirHelper.isRedirected()) {
+                // this call does all the work needed for redirected output sources, returns the set of rows we need
+                // to clear from our Object array output sources
+                toClear = redirHelper.processUpdateForRedirection(upstream, source.getRowSet());
+                changedRows = RowSetFactory.empty();
+
+                // clear them now and let them set their own prev states
+                if (!initialStep && !toClear.isEmpty()) {
+                    for (UpdateByOperator op : operators) {
+                        op.clearOutputRows(toClear);
+                    }
+                }
             } else {
-                // This error was delivered as part of update processing, we need to ensure that cleanup happens and
-                // a notification is dispatched downstream.
-                cleanUpAfterError();
-                deliverUpdateError(error, sourceListener().getEntry(), false);
+                // identify which rows we need to clear in our Object columns (actual clearing will be performed later)
+                toClear = source.getRowSet().copyPrev();
+                toClear.remove(source.getRowSet());
+
+                // for our sparse array output sources, we need to identify which rows will be affected by the upstream
+                // shifts and include them in our parallel update preparations
+                if (upstream.shifted().nonempty()) {
+                    try (final RowSet prev = source.getRowSet().copyPrev();
+                         final RowSequence.Iterator it = prev.getRowSequenceIterator()) {
+
+                        final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
+                        final int size = upstream.shifted().size();
+
+                        // get these in ascending order and use a sequential builder
+                        for (int ii = 0; ii < size; ii++) {
+                            final long begin = upstream.shifted().getBeginRange(ii);
+                            final long end = upstream.shifted().getEndRange(ii);
+                            final long delta = upstream.shifted().getShiftDelta(ii);
+
+                            it.advance(begin);
+                            final RowSequence rs = it.getNextRowSequenceThrough(end);
+                            builder.appendRowSequenceWithOffset(rs, delta);
+                        }
+                        changedRows = builder.build();
+                    }
+                } else {
+                    changedRows = RowSetFactory.empty();
+                }
+                // include the cleared rows in the calls to `prepareForParallelPopulation()`
+                changedRows.insert(toClear);
+            }
+
+            // this is where we leave single-threaded calls and rely on the scheduler to continue the work. Each
+            // call will chain to another until the sequence is complete
+            computeCachedColumnRowSets(
+                    () -> prepareForParallelPopulation(
+                            () -> processWindows(
+                                    () -> cleanUpAndNotify(
+                                            () -> {
+                                                // signal to the main task that we have completed our work
+                                                if (waitForResult != null) {
+                                                    waitForResult.complete(null);
+                                                }
+                                            }))));
+
+            if (waitForResult != null) {
+                try {
+                    // need to wait until this future is complete
+                    waitForResult.get();
+                } catch (InterruptedException e) {
+                    cleanUpAfterError();
+                    throw new CancellationException("interrupted while processing updateBy");
+                } catch (ExecutionException e) {
+                    cleanUpAfterError();
+                    if (e.getCause() instanceof RuntimeException) {
+                        throw (RuntimeException) e.getCause();
+                    } else {
+                        // rethrow the error
+                        throw new UncheckedDeephavenException("Failure while processing updateBy",
+                                e.getCause());
+                    }
+                }
             }
         }
 
@@ -445,6 +518,209 @@ public abstract class UpdateBy {
         }
 
         /**
+         * Prepare each operator output column for the parallel work to follow. Calls
+         * {@code onParallelPopulationComplete} when the work is complete
+         */
+        private void prepareForParallelPopulation(
+                final Runnable onParallelPopulationComplete) {
+            jobScheduler.iterateParallel(ExecutionContext.getContextToRecord(),
+                    chainAppendables(this, stringToAppendable("-prepareForParallelPopulation")),
+                    JobScheduler.DEFAULT_CONTEXT_FACTORY, 0,
+                    windows.length,
+                    (context, winIdx, nec) -> {
+                        UpdateByWindow win = windows[winIdx];
+                        // Prepare each operator for the parallel updates to come.
+                        if (initialStep) {
+                            // Prepare the entire set of rows on the initial step.
+                            try (final RowSet changedRows = redirHelper.isRedirected()
+                                    ? RowSetFactory.flat(redirHelper.requiredCapacity())
+                                    : source.getRowSet().copy()) {
+                                win.prepareForParallelPopulation(changedRows);
+                            }
+                        } else {
+                            // Get the minimal set of rows to be updated for this window (shiftedRows is empty when
+                            // using redirection).
+                            try (final WritableRowSet windowRowSet = changedRows.copy()) {
+                                for (UpdateByBucketHelper bucket : dirtyBuckets) {
+                                    if (win.isWindowBucketDirty(bucket.windowContexts[winIdx])) {
+                                        windowRowSet.insert(win.getAffectedRows(bucket.windowContexts[winIdx]));
+                                    }
+                                }
+                                try (final RowSet windowChangedRows = redirHelper.isRedirected()
+                                        ? redirHelper.getInnerKeys(windowRowSet)
+                                        : null) {
+                                    final RowSet rowsToUse =
+                                            windowChangedRows == null ? windowRowSet : windowChangedRows;
+                                    win.prepareForParallelPopulation(rowsToUse);
+                                }
+                            }
+                        }
+
+                        if (!redirHelper.isRedirected() && upstream.shifted().nonempty()) {
+                            // Shift the non-redirected output sources now, after parallelPopulation.
+                            try (final RowSet prevIdx = source.getRowSet().copyPrev()) {
+                                upstream.shifted().apply((begin, end, delta) -> {
+                                    try (final RowSet subRowSet = prevIdx.subSetByKeyRange(begin, end)) {
+                                        for (UpdateByOperator op : win.getOperators()) {
+                                            op.applyOutputShift(subRowSet, delta);
+                                        }
+                                    }
+                                });
+                            }
+                        }
+                    }, onParallelPopulationComplete, this::onError);
+        }
+
+        /**
+         * Process all {@code windows} in a serial manner (to minimize cached column memory usage). This function will
+         * prepare the shared window resources (e.g. push/pop chunks for Rolling operators) for each dirty bucket in the
+         * current window then call {@link #processWindowOperators}. When all operators have been processed then all
+         * resources for this window are released before iterating.
+         */
+        private void processWindows(final Runnable onWindowsComplete) {
+            if (dirtyWindows.isEmpty()) {
+                onWindowsComplete.run();
+                return;
+            }
+
+            final int[] dirtyWindowIndices = dirtyWindows.stream().toArray();
+
+            jobScheduler.iterateSerial(ExecutionContext.getContextToRecord(),
+                    chainAppendables(this, stringToAppendable("-processWindows")),
+                    JobScheduler.DEFAULT_CONTEXT_FACTORY, 0,
+                    dirtyWindowIndices.length,
+                    (context, idx, nestedErrorConsumer, windowComplete) -> {
+                        final int winIdx = dirtyWindowIndices[idx];
+
+                        int maxAffectedChunkSize = 0;
+                        int maxInfluencerChunkSize = 0;
+
+                        for (UpdateByBucketHelper bucket : dirtyBuckets) {
+                            if (bucket.windowContexts[winIdx].isDirty) {
+                                // Assign the (maybe cached) input sources.
+                                windows[winIdx].assignInputSources(bucket.windowContexts[winIdx],
+                                        maybeCachedInputSources);
+
+                                // Prepare this bucket for processing this window. This allocates window context
+                                // resources and rolling ops pre-computes push/pop chunks.
+                                windows[winIdx].prepareWindowBucket(bucket.windowContexts[winIdx]);
+
+                                // Determine the largest chunk sizes needed to process the window buckets.
+                                maxAffectedChunkSize =
+                                        Math.max(maxAffectedChunkSize, bucket.windowContexts[winIdx].workingChunkSize);
+                                maxInfluencerChunkSize = Math.max(maxInfluencerChunkSize,
+                                        bucket.windowContexts[winIdx] instanceof UpdateByWindowRollingBase.UpdateByWindowRollingBucketContext
+                                                ? ((UpdateByWindowRollingBase.UpdateByWindowRollingBucketContext) bucket.windowContexts[winIdx]).maxGetContextSize
+                                                : bucket.windowContexts[winIdx].workingChunkSize);
+                            }
+                        }
+
+                        // Process all the operators in this window
+                        processWindowOperators(winIdx, maxAffectedChunkSize, maxInfluencerChunkSize, () -> {
+                            // This window has been fully processed, release the resources we allocated
+                            for (UpdateByBucketHelper bucket : dirtyBuckets) {
+                                if (bucket.windowContexts[winIdx].isDirty) {
+                                    windows[winIdx].finalizeWindowBucket(bucket.windowContexts[winIdx]);
+                                }
+                            }
+                            windowComplete.run();
+                        }, nestedErrorConsumer);
+                    }, onWindowsComplete, this::onError);
+        }
+
+        /**
+         * Process the operators for a given window in a serial manner. For efficiency, this function organizes the
+         * operators into sets of operators that share input sources and that can be computed together efficiently. It
+         * also arranges these sets of operators in an order that (hopefully) minimizes the memory footprint of the
+         * cached operator input columns.
+         *
+         * Before each operator set is processed, the sources for the input columns are cached. After the set is
+         * processed, the cached sources are released if they will not be used by following operators.
+         */
+        private void processWindowOperators(
+                final int winIdx,
+                final int maxAffectedChunkSize,
+                final int maxInfluencerChunkSize,
+                final Runnable onProcessWindowOperatorsComplete,
+                final Consumer<Exception> onProcessWindowOperatorsError) {
+            final UpdateByWindow win = windows[winIdx];
+
+            // Organize the dirty operators to increase the chance that the input caches can be released early. This
+            // currently must produce sets of operators with identical sets of input sources.
+            final Integer[] dirtyOperators = ArrayUtils.toObject(dirtyWindowOperators[winIdx].stream().toArray());
+            Arrays.sort(dirtyOperators,
+                    Comparator.comparingInt(o -> win.operatorInputSourceSlots[(int) o][0])
+                            .thenComparingInt(o -> win.operatorInputSourceSlots[(int) o].length < 2 ? -1
+                                    : win.operatorInputSourceSlots[(int) o][1]));
+
+            final List<int[]> operatorSets = new ArrayList<>(dirtyOperators.length);
+            final TIntArrayList opList = new TIntArrayList(dirtyOperators.length);
+
+            opList.add(dirtyOperators[0]);
+            int lastOpIdx = dirtyOperators[0];
+            for (int ii = 1; ii < dirtyOperators.length; ii++) {
+                final int opIdx = dirtyOperators[ii];
+                if (Arrays.equals(win.operatorInputSourceSlots[opIdx], win.operatorInputSourceSlots[lastOpIdx])) {
+                    opList.add(opIdx);
+                } else {
+                    operatorSets.add(opList.toArray());
+                    opList.clear(dirtyOperators.length);
+                    opList.add(opIdx);
+                }
+                lastOpIdx = opIdx;
+            }
+            operatorSets.add(opList.toArray());
+
+            // Process each set of similar operators in this window serially.
+            jobScheduler.iterateSerial(ExecutionContext.getContextToRecord(),
+                    chainAppendables(this, stringAndIndexToAppendable("-processWindowOperators", winIdx)),
+                    JobScheduler.DEFAULT_CONTEXT_FACTORY, 0,
+                    operatorSets.size(),
+                    (context, idx, nestedErrorConsumer, opSetComplete) -> {
+                        final int[] opIndices = operatorSets.get(idx);
+
+                        // All operators in this bin have identical input source sets
+                        final int[] srcIndices = windows[winIdx].operatorInputSourceSlots[opIndices[0]];
+
+                        // Cache the input sources for these operators.
+                        cacheOperatorInputSources(winIdx, srcIndices, () -> {
+                            // Process the subset of operators for this window.
+                            processWindowOperatorSet(winIdx, opIndices, srcIndices, maxAffectedChunkSize,
+                                    maxInfluencerChunkSize,
+                                    () -> {
+                                        // Release the cached sources that are no longer needed.
+                                        releaseInputSources(srcIndices);
+                                        opSetComplete.run();
+                                    }, nestedErrorConsumer);
+                        }, nestedErrorConsumer);
+                    }, onProcessWindowOperatorsComplete, onProcessWindowOperatorsError);
+        }
+
+        /**
+         * Create cached input sources for source indices provided. Calls {@code onCachingComplete} when the work is
+         * complete.
+         */
+        private void cacheOperatorInputSources(
+                final int winIdx,
+                final int[] srcIndices,
+                final Runnable onCachingComplete,
+                final Consumer<Exception> onCachingError) {
+            if (!inputCacheNeeded) {
+                // no work to do, continue
+                onCachingComplete.run();
+                return;
+            }
+
+            jobScheduler.iterateParallel(ExecutionContext.getContextToRecord(),
+                    chainAppendables(this, stringAndIndexToAppendable("-cacheOperatorInputSources", winIdx)),
+                    JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, srcIndices.length,
+                    (context, idx, nestedErrorConsumer, sourceComplete) -> createCachedColumnSource(
+                            srcIndices[idx], sourceComplete, nestedErrorConsumer),
+                    onCachingComplete,
+                    onCachingError);
+        }
+
+        /**
          * Create a new input source cache and populate the required rows in parallel. Calls {@code onSourceComplete}
          * when the work is complete.
          */
@@ -518,71 +794,17 @@ public abstract class UpdateBy {
                     }, onSourceError);
         }
 
-        /** Release the input sources that will not be needed for the rest of this update */
-        private void releaseInputSources(int[] sources) {
-            try (final ResettableWritableObjectChunk<?, ?> backingChunk =
-                    ResettableWritableObjectChunk.makeResettableChunk()) {
-                for (int srcIdx : sources) {
-                    if (!inputSourceCacheNeeded[srcIdx]) {
-                        continue;
-                    }
-
-                    if (inputSourceReferenceCounts.decrementAndGet(srcIdx) == 0) {
-                        // Last use of this set, let's clean up
-                        try (final RowSet rows = inputSourceRowSets.get(srcIdx)) {
-                            // release any objects we are holding in the cache
-                            if (maybeCachedInputSources[srcIdx] instanceof ObjectArraySource) {
-                                final long targetCapacity = rows.size();
-                                for (long positionToNull = 0; positionToNull < targetCapacity; positionToNull +=
-                                        backingChunk.size()) {
-                                    ((ObjectArraySource<?>) maybeCachedInputSources[srcIdx])
-                                            .resetWritableChunkToBackingStore(backingChunk, positionToNull);
-                                    backingChunk.fillWithNullValue(0, backingChunk.size());
-                                }
-                            }
-                            inputSourceRowSets.set(srcIdx, null);
-                            maybeCachedInputSources[srcIdx] = null;
-                        }
-                    }
-                }
-            }
-        }
-
-        /**
-         * Create cached input sources for all input needed by the specified operator set. Calls
-         * {@code onCachingComplete} when the work is complete.
-         */
-        private void cacheOperatorInputSources(
-                final int winIdx,
-                final int[] srcIndices,
-                final Runnable onCachingComplete,
-                final Consumer<Exception> onCachingError) {
-            if (!inputCacheNeeded) {
-                // no work to do, continue
-                onCachingComplete.run();
-                return;
-            }
-
-            jobScheduler.iterateParallel(ExecutionContext.getContextToRecord(),
-                    chainAppendables(this, stringAndIndexToAppendable("-cacheOperatorInputSources", winIdx)),
-                    JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, srcIndices.length,
-                    (context, idx, nestedErrorConsumer, sourceComplete) -> createCachedColumnSource(
-                            srcIndices[idx], sourceComplete, nestedErrorConsumer),
-                    onCachingComplete,
-                    onCachingError);
-        }
-
         /**
          * Process a subset of operators from {@code windows[winIdx]} in parallel by bucket. Calls
          * {@code onProcessWindowOperatorSetComplete} when the work is complete
          */
         private void processWindowOperatorSet(final int winIdx,
-                final int[] opIndices,
-                final int[] srcIndices,
-                final int maxAffectedChunkSize,
-                final int maxInfluencerChunkSize,
-                final Runnable onProcessWindowOperatorSetComplete,
-                final Consumer<Exception> onProcessWindowOperatorSetError) {
+                                              final int[] opIndices,
+                                              final int[] srcIndices,
+                                              final int maxAffectedChunkSize,
+                                              final int maxInfluencerChunkSize,
+                                              final Runnable onProcessWindowOperatorSetComplete,
+                                              final Consumer<Exception> onProcessWindowOperatorSetError) {
             final class OperatorThreadContext implements JobScheduler.JobThreadContext {
                 final Chunk<? extends Values>[] chunkArr;
                 final ChunkSource.GetContext[] chunkContexts;
@@ -632,183 +854,35 @@ public abstract class UpdateBy {
                     }, onProcessWindowOperatorSetComplete, onProcessWindowOperatorSetError);
         }
 
-        /**
-         * Prepare each operator output column for the parallel work to follow. Calls
-         * {@code onParallelPopulationComplete} when the work is complete
-         */
-        private void prepareForParallelPopulation(
-                final Runnable onParallelPopulationComplete) {
-            jobScheduler.iterateParallel(ExecutionContext.getContextToRecord(),
-                    chainAppendables(this, stringToAppendable("-prepareForParallelPopulation")),
-                    JobScheduler.DEFAULT_CONTEXT_FACTORY, 0,
-                    windows.length,
-                    (context, winIdx, nec) -> {
-                        UpdateByWindow win = windows[winIdx];
-                        // Prepare each operator for the parallel updates to come.
-                        if (initialStep) {
-                            // Prepare the entire set of rows on the initial step.
-                            try (final RowSet changedRows = redirHelper.isRedirected()
-                                    ? RowSetFactory.flat(redirHelper.requiredCapacity())
-                                    : source.getRowSet().copy()) {
-                                win.prepareForParallelPopulation(changedRows);
-                            }
-                        } else {
-                            // Get the minimal set of rows to be updated for this window (shiftedRows is empty when
-                            // using redirection).
-                            try (final WritableRowSet windowRowSet = changedRows.copy()) {
-                                for (UpdateByBucketHelper bucket : dirtyBuckets) {
-                                    if (win.isWindowBucketDirty(bucket.windowContexts[winIdx])) {
-                                        windowRowSet.insert(win.getAffectedRows(bucket.windowContexts[winIdx]));
-                                    }
-                                }
-                                try (final RowSet windowChangedRows = redirHelper.isRedirected()
-                                        ? redirHelper.getInnerKeys(windowRowSet)
-                                        : null) {
-                                    final RowSet rowsToUse =
-                                            windowChangedRows == null ? windowRowSet : windowChangedRows;
-                                    win.prepareForParallelPopulation(rowsToUse);
+
+        /** Release the input sources that will not be needed for the rest of this update */
+        private void releaseInputSources(int[] sources) {
+            try (final ResettableWritableObjectChunk<?, ?> backingChunk =
+                         ResettableWritableObjectChunk.makeResettableChunk()) {
+                for (int srcIdx : sources) {
+                    if (!inputSourceCacheNeeded[srcIdx]) {
+                        continue;
+                    }
+
+                    if (inputSourceReferenceCounts.decrementAndGet(srcIdx) == 0) {
+                        // Last use of this set, let's clean up
+                        try (final RowSet rows = inputSourceRowSets.get(srcIdx)) {
+                            // release any objects we are holding in the cache
+                            if (maybeCachedInputSources[srcIdx] instanceof ObjectArraySource) {
+                                final long targetCapacity = rows.size();
+                                for (long positionToNull = 0; positionToNull < targetCapacity; positionToNull +=
+                                        backingChunk.size()) {
+                                    ((ObjectArraySource<?>) maybeCachedInputSources[srcIdx])
+                                            .resetWritableChunkToBackingStore(backingChunk, positionToNull);
+                                    backingChunk.fillWithNullValue(0, backingChunk.size());
                                 }
                             }
+                            inputSourceRowSets.set(srcIdx, null);
+                            maybeCachedInputSources[srcIdx] = null;
                         }
-
-                        if (!redirHelper.isRedirected() && upstream.shifted().nonempty()) {
-                            // Shift the non-redirected output sources now, after parallelPopulation.
-                            try (final RowSet prevIdx = source.getRowSet().copyPrev()) {
-                                upstream.shifted().apply((begin, end, delta) -> {
-                                    try (final RowSet subRowSet = prevIdx.subSetByKeyRange(begin, end)) {
-                                        for (UpdateByOperator op : win.getOperators()) {
-                                            op.applyOutputShift(subRowSet, delta);
-                                        }
-                                    }
-                                });
-                            }
-                        }
-                    }, onParallelPopulationComplete, this::onError);
-        }
-
-        /**
-         * Process the operators for a given window in a serial manner. For efficiency, this function organizes the
-         * operators into sets of operators that share input sources and that can be computed together efficiently. It
-         * also arranges these sets of operators in an order that (hopefully) minimizes the memory footprint of the
-         * cached operator input columns.
-         *
-         * Before each operator set is processed, the sources for the input columns are cached. After the set is
-         * processed, the cached sources are released if they will not be used by following operators.
-         */
-        private void processWindowOperators(
-                final int winIdx,
-                final int maxAffectedChunkSize,
-                final int maxInfluencerChunkSize,
-                final Runnable onProcessWindowOperatorsComplete,
-                final Consumer<Exception> onProcessWindowOperatorsError) {
-            final UpdateByWindow win = windows[winIdx];
-
-            // Organize the dirty operators to increase the chance that the input caches can be released early. This
-            // currently must produce sets of operators with identical sets of input sources.
-            final Integer[] dirtyOperators = ArrayUtils.toObject(dirtyWindowOperators[winIdx].stream().toArray());
-            Arrays.sort(dirtyOperators,
-                    Comparator.comparingInt(o -> win.operatorInputSourceSlots[(int) o][0])
-                            .thenComparingInt(o -> win.operatorInputSourceSlots[(int) o].length < 2 ? -1
-                                    : win.operatorInputSourceSlots[(int) o][1]));
-
-            final List<int[]> operatorSets = new ArrayList<>(dirtyOperators.length);
-            final TIntArrayList opList = new TIntArrayList(dirtyOperators.length);
-
-            opList.add(dirtyOperators[0]);
-            int lastOpIdx = dirtyOperators[0];
-            for (int ii = 1; ii < dirtyOperators.length; ii++) {
-                final int opIdx = dirtyOperators[ii];
-                if (Arrays.equals(win.operatorInputSourceSlots[opIdx], win.operatorInputSourceSlots[lastOpIdx])) {
-                    opList.add(opIdx);
-                } else {
-                    operatorSets.add(opList.toArray());
-                    opList.clear(dirtyOperators.length);
-                    opList.add(opIdx);
+                    }
                 }
-                lastOpIdx = opIdx;
             }
-            operatorSets.add(opList.toArray());
-
-            // Process each set of similar operators in this window serially.
-            jobScheduler.iterateSerial(ExecutionContext.getContextToRecord(),
-                    chainAppendables(this, stringAndIndexToAppendable("-processWindowOperators", winIdx)),
-                    JobScheduler.DEFAULT_CONTEXT_FACTORY, 0,
-                    operatorSets.size(),
-                    (context, idx, nestedErrorConsumer, opSetComplete) -> {
-                        final int[] opIndices = operatorSets.get(idx);
-
-                        // All operators in this bin have identical input source sets
-                        final int[] srcIndices = windows[winIdx].operatorInputSourceSlots[opIndices[0]];
-
-                        // Cache the input sources for these operators.
-                        cacheOperatorInputSources(winIdx, srcIndices, () -> {
-                            // Process the subset of operators for this window.
-                            processWindowOperatorSet(winIdx, opIndices, srcIndices, maxAffectedChunkSize,
-                                    maxInfluencerChunkSize,
-                                    () -> {
-                                        // Release the cached sources that are no longer needed.
-                                        releaseInputSources(srcIndices);
-                                        opSetComplete.run();
-                                    }, nestedErrorConsumer);
-                        }, nestedErrorConsumer);
-                    }, onProcessWindowOperatorsComplete, onProcessWindowOperatorsError);
-        }
-
-        /**
-         * Process all {@code windows} in a serial manner (to minimize cached column memory usage). This function will
-         * prepare the shared window resources (e.g. push/pop chunks for Rolling operators) for each dirty bucket in the
-         * current window then call {@link #processWindowOperators}. When all operators have been processed then all
-         * resources for this window are released before iterating.
-         */
-        private void processWindows(final Runnable onWindowsComplete) {
-            if (dirtyWindows.isEmpty()) {
-                onWindowsComplete.run();
-                return;
-            }
-
-            final int[] dirtyWindowIndices = dirtyWindows.stream().toArray();
-
-            jobScheduler.iterateSerial(ExecutionContext.getContextToRecord(),
-                    chainAppendables(this, stringToAppendable("-processWindows")),
-                    JobScheduler.DEFAULT_CONTEXT_FACTORY, 0,
-                    dirtyWindowIndices.length,
-                    (context, idx, nestedErrorConsumer, windowComplete) -> {
-                        final int winIdx = dirtyWindowIndices[idx];
-
-                        int maxAffectedChunkSize = 0;
-                        int maxInfluencerChunkSize = 0;
-
-                        for (UpdateByBucketHelper bucket : dirtyBuckets) {
-                            if (bucket.windowContexts[winIdx].isDirty) {
-                                // Assign the (maybe cached) input sources.
-                                windows[winIdx].assignInputSources(bucket.windowContexts[winIdx],
-                                        maybeCachedInputSources);
-
-                                // Prepare this bucket for processing this window. This allocates window context
-                                // resources and rolling ops pre-computes push/pop chunks.
-                                windows[winIdx].prepareWindowBucket(bucket.windowContexts[winIdx]);
-
-                                // Determine the largest chunk sizes needed to process the window buckets.
-                                maxAffectedChunkSize =
-                                        Math.max(maxAffectedChunkSize, bucket.windowContexts[winIdx].workingChunkSize);
-                                maxInfluencerChunkSize = Math.max(maxInfluencerChunkSize,
-                                        bucket.windowContexts[winIdx] instanceof UpdateByWindowRollingBase.UpdateByWindowRollingBucketContext
-                                                ? ((UpdateByWindowRollingBase.UpdateByWindowRollingBucketContext) bucket.windowContexts[winIdx]).maxGetContextSize
-                                                : bucket.windowContexts[winIdx].workingChunkSize);
-                            }
-                        }
-
-                        // Process all the operators in this window
-                        processWindowOperators(winIdx, maxAffectedChunkSize, maxInfluencerChunkSize, () -> {
-                            // This window has been fully processed, release the resources we allocated
-                            for (UpdateByBucketHelper bucket : dirtyBuckets) {
-                                if (bucket.windowContexts[winIdx].isDirty) {
-                                    windows[winIdx].finalizeWindowBucket(bucket.windowContexts[winIdx]);
-                                }
-                            }
-                            windowComplete.run();
-                        }, nestedErrorConsumer);
-                    }, onWindowsComplete, this::onError);
         }
 
         /**
@@ -865,20 +939,6 @@ public abstract class UpdateBy {
         }
 
         /**
-         * Clean up the resources created during this update.
-         */
-        private void cleanUpAfterError() {
-            // allow the helpers to release their resources
-            for (UpdateByBucketHelper bucket : dirtyBuckets) {
-                bucket.finalizeUpdate();
-            }
-
-            SafeCloseable.closeArray(changedRows, toClear);
-
-            upstream.release();
-        }
-
-        /**
          * Create the update for downstream listeners. This combines all bucket updates/modifies into a unified update
          */
         private TableUpdate computeDownstreamUpdate() {
@@ -926,87 +986,30 @@ public abstract class UpdateBy {
             return downstream;
         }
 
-        /**
-         * Process the {@link TableUpdate update} provided in the constructor. This performs much work in parallel and
-         * leverages {@link JobScheduler} extensively
-         */
-        public void processUpdate() {
-            if (redirHelper.isRedirected()) {
-                // this call does all the work needed for redirected output sources, returns the set of rows we need
-                // to clear from our Object array output sources
-                toClear = redirHelper.processUpdateForRedirection(upstream, source.getRowSet());
-                changedRows = RowSetFactory.empty();
-
-                // clear them now and let them set their own prev states
-                if (!initialStep && !toClear.isEmpty()) {
-                    for (UpdateByOperator op : operators) {
-                        op.clearOutputRows(toClear);
-                    }
-                }
-            } else {
-                // identify which rows we need to clear in our Object columns (actual clearing will be performed later)
-                toClear = source.getRowSet().copyPrev();
-                toClear.remove(source.getRowSet());
-
-                // for our sparse array output sources, we need to identify which rows will be affected by the upstream
-                // shifts and include them in our parallel update preparations
-                if (upstream.shifted().nonempty()) {
-                    try (final RowSet prev = source.getRowSet().copyPrev();
-                            final RowSequence.Iterator it = prev.getRowSequenceIterator()) {
-
-                        final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
-                        final int size = upstream.shifted().size();
-
-                        // get these in ascending order and use a sequential builder
-                        for (int ii = 0; ii < size; ii++) {
-                            final long begin = upstream.shifted().getBeginRange(ii);
-                            final long end = upstream.shifted().getEndRange(ii);
-                            final long delta = upstream.shifted().getShiftDelta(ii);
-
-                            it.advance(begin);
-                            final RowSequence rs = it.getNextRowSequenceThrough(end);
-                            builder.appendRowSequenceWithOffset(rs, delta);
-                        }
-                        changedRows = builder.build();
-                    }
-                } else {
-                    changedRows = RowSetFactory.empty();
-                }
-                // include the cleared rows in the calls to `prepareForParallelPopulation()`
-                changedRows.insert(toClear);
-            }
-
-            // this is where we leave single-threaded calls and rely on the scheduler to continue the work. Each
-            // call will chain to another until the sequence is complete
-            computeCachedColumnRowSets(
-                    () -> prepareForParallelPopulation(
-                            () -> processWindows(
-                                    () -> cleanUpAndNotify(
-                                            () -> {
-                                                // signal to the main task that we have completed our work
-                                                if (waitForResult != null) {
-                                                    waitForResult.complete(null);
-                                                }
-                                            }))));
-
+        private void onError(@NotNull final Exception error) {
             if (waitForResult != null) {
-                try {
-                    // need to wait until this future is complete
-                    waitForResult.get();
-                } catch (InterruptedException e) {
-                    cleanUpAfterError();
-                    throw new CancellationException("interrupted while processing updateBy");
-                } catch (ExecutionException e) {
-                    cleanUpAfterError();
-                    if (e.getCause() instanceof RuntimeException) {
-                        throw (RuntimeException) e.getCause();
-                    } else {
-                        // rethrow the error
-                        throw new UncheckedDeephavenException("Failure while processing updateBy",
-                                e.getCause());
-                    }
-                }
+                // Use the Future to signal that an exception has occurred. Cleanup will be done by the waiting thread.
+                waitForResult.completeExceptionally(error);
+            } else {
+                // This error was delivered as part of update processing, we need to ensure that cleanup happens and
+                // a notification is dispatched downstream.
+                cleanUpAfterError();
+                deliverUpdateError(error, sourceListener().getEntry(), false);
             }
+        }
+
+        /**
+         * Clean up the resources created during this update.
+         */
+        private void cleanUpAfterError() {
+            // allow the helpers to release their resources
+            for (UpdateByBucketHelper bucket : dirtyBuckets) {
+                bucket.finalizeUpdate();
+            }
+
+            SafeCloseable.closeArray(changedRows, toClear);
+
+            upstream.release();
         }
     }
 
