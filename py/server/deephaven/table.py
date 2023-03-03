@@ -9,19 +9,24 @@ from __future__ import annotations
 
 import contextlib
 import inspect
-from enum import Enum, auto
-from typing import Union, Sequence, List, Any, Optional, Callable, Dict
+from enum import Enum
+from enum import auto
+from typing import Any, Optional, Callable, Dict
+from typing import Sequence, List, Union, Protocol
 
 import jpy
 import numpy as np
 
-from deephaven import DHError, dtypes
+from deephaven import DHError
+from deephaven import dtypes
 from deephaven._jpy import strict_cast
-from deephaven._wrapper import JObjectWrapper, unwrap
+from deephaven._wrapper import JObjectWrapper
+from deephaven._wrapper import unwrap
 from deephaven.agg import Aggregation
 from deephaven.column import Column, ColumnType
 from deephaven.filters import Filter
-from deephaven.jcompat import j_array_list, to_sequence, j_unary_operator, j_binary_operator, j_map_to_dict, j_hashmap
+from deephaven.jcompat import j_unary_operator, j_binary_operator, j_map_to_dict, j_hashmap
+from deephaven.jcompat import to_sequence, j_array_list
 from deephaven.ugp import auto_locking_ctx
 from deephaven.updateby import UpdateByOperation
 
@@ -55,13 +60,290 @@ _JExecutionContext = jpy.get_type("io.deephaven.engine.context.ExecutionContext"
 _JScriptSessionQueryScope = jpy.get_type("io.deephaven.engine.util.AbstractScriptSession$ScriptSessionQueryScope")
 _JPythonScriptSession = jpy.get_type("io.deephaven.integrations.python.PythonDeephavenSession")
 
+# Rollup Table and Tree Table
+_JRollupTable = jpy.get_type("io.deephaven.engine.table.hierarchical.RollupTable")
+_JTreeTable = jpy.get_type("io.deephaven.engine.table.hierarchical.TreeTable")
+_JRollupTableNodeOperationsRecorder = jpy.get_type(
+    "io.deephaven.engine.table.hierarchical.RollupTable$NodeOperationsRecorder")
+_JTreeTableNodeOperationsRecorder = jpy.get_type(
+    "io.deephaven.engine.table.hierarchical.TreeTable$NodeOperationsRecorder")
+_JNodeType = jpy.get_type("io.deephaven.engine.table.hierarchical.RollupTable$NodeType")
+_JFormatOperationsRecorder = jpy.get_type("io.deephaven.engine.table.hierarchical.FormatOperationsRecorder")
+_JSortOperationsRecorder = jpy.get_type("io.deephaven.engine.table.hierarchical.SortOperationsRecorder")
+_JFilterOperationsRecorder = jpy.get_type("io.deephaven.engine.table.hierarchical.FilterOperationsRecorder")
+
 # For unittest vectorization
 _test_vectorization = False
 _vectorized_count = 0
 
-# Rollup Table and Tree Table
-_JRollupTable = jpy.get_type("io.deephaven.engine.table.hierarchical.RollupTable")
-_JTreeTable = jpy.get_type("io.deephaven.engine.table.hierarchical.TreeTable")
+
+class NodeType(Enum):
+    """An enum of node types for RollupTable"""
+    AGGREGATED = _JNodeType.Aggregated
+    """Nodes at an aggregated (rolled up) level in the RollupTable. An aggregated level is above the constituent (
+    leaf) level. These nodes have column names and types that result from applying aggregations on the source table 
+    of the RollupTable. """
+    CONSTITUENT = _JNodeType.Constituent
+    """Nodes at the leaf level when meth:`~deephaven.table.Table.rollup` method is called with 
+    include_constituent=True. The constituent level is the lowest in a rollup table. These nodes have column names 
+    and types from the source table of the RollupTable. """
+
+
+class _FormatOperationsRecorder(Protocol):
+    """A mixin for creating format operations to be applied to individual nodes of either RollupTable or TreeTable."""
+
+    def format_column(self, formulas: Union[str, List[str]]):
+        """Returns a new recorder with the :meth:`~deephaven.table.Table.format_columns` operation applied to nodes."""
+        formulas = to_sequence(formulas)
+        j_format_ops_recorder = jpy.cast(self.j_node_ops_recorder, _JFormatOperationsRecorder)
+        return self.__class__(j_format_ops_recorder.formatColumns(formulas))
+
+    def format_row_where(self, cond: str, formula: str):
+        """Returns a new recorder with the :meth:`~deephaven.table.Table.format_row_where` operation applied to
+        nodes."""
+        j_format_ops_recorder = jpy.cast(self.j_node_ops_recorder, _JFormatOperationsRecorder)
+        return self.__class__(j_format_ops_recorder.formatRowWhere(cond, formula))
+
+    def format_column_where(self, col: str, cond: str, formula: str):
+        """Returns a new recorder with the :meth:`~deephaven.table.Table.format_column_where` operation applied to
+        nodes."""
+        j_format_ops_recorder = jpy.cast(self.j_node_ops_recorder, _JFormatOperationsRecorder)
+        return self.__class__(j_format_ops_recorder.formatColumnWhere(col, cond, formula))
+
+
+class _SortOperationsRecorder(Protocol):
+    """A mixin for creating sort operations to be applied to individual nodes of either RollupTable or
+    TreeTable."""
+
+    def sort(self, order_by: Union[str, Sequence[str]]):
+        """Returns a new recorder with the :meth:`~deephaven.table.Table.sort` operation applied to nodes."""
+        order_by = to_sequence(order_by)
+        j_sort_ops_recorder = jpy.cast(self.j_node_ops_recorder, _JSortOperationsRecorder)
+        return self.__class__(j_sort_ops_recorder.sort(order_by))
+
+    def sort_descending(self, order_by: Union[str, Sequence[str]]):
+        """Returns a new recorder with the :meth:`~deephaven.table.Table.sort_descending` applied to nodes."""
+        order_by = to_sequence(order_by)
+        j_sort_ops_recorder = jpy.cast(self.j_node_ops_recorder, _JSortOperationsRecorder)
+        return self.__class__(j_sort_ops_recorder.sortDescending(order_by))
+
+
+class _FilterOperationsRecorder(Protocol):
+    """A mixin for creating filter operations to be applied to individual nodes of either RollupTable or
+    TreeTable."""
+
+    def where(self, filters: Union[str, Filter, Sequence[str], Sequence[Filter]]):
+        """Returns a new recorder with the :meth:`~deephaven.table.Table.where` operation applied to nodes."""
+        filters = to_sequence(filters)
+        j_filter_ops_recorder = jpy.cast(self.j_node_ops_recorder, _JFilterOperationsRecorder)
+        return self.__class__(j_filter_ops_recorder.where(filters))
+
+
+class RollupNodeOperationsRecorder(JObjectWrapper, _FormatOperationsRecorder,
+                                   _SortOperationsRecorder):
+    """Recorder for node-level operations to be applied when gathering snapshots of RollupTable. Supported operations
+    include column formatting and sorting.
+
+    Note: It should not be instantiated directly. User code must call :meth:`~RollupTable.node_operation_recorder` to
+    create an instance of the recorder.
+    """
+
+    j_object_type = _JRollupTableNodeOperationsRecorder
+
+    @property
+    def j_object(self) -> jpy.JType:
+        return self.j_node_ops_recorder
+
+    def __init__(self, j_node_ops_recorder: jpy.JType):
+        self.j_node_ops_recorder = j_node_ops_recorder
+
+
+class RollupTable(JObjectWrapper):
+    """ A RollupTable is generated as a result of applying the :meth:`~deephaven.table.Table.rollup` operation on a
+    :class:`~deephaven.table.Table`.
+
+    A RollupTable aggregates by the grouping columns, and then creates a hierarchical table which re-aggregates
+    using one less grouping column on each level.
+
+    Note: RollupTable should not be instantiated directly by user code.
+    """
+    j_object_type = _JRollupTable
+
+    @property
+    def j_object(self) -> jpy.JType:
+        return self.j_rollup_table
+
+    def __init__(self, j_rollup_table: jpy.JType, aggs: Sequence[Aggregation], include_constituents: bool,
+                 by: Sequence[str]):
+        self.j_rollup_table = j_rollup_table
+        self.aggs = aggs
+        self.include_constituents = include_constituents
+        self.by = by
+
+    def node_operation_recorder(self, node_type: NodeType) -> RollupNodeOperationsRecorder:
+        """Creates a RollupNodeOperationsRecorder for per-node operations to apply during Deephaven UI driven
+        snapshotting of this RollupTable. The recorded node operations will be applied only to the node of the
+        provided NodeType. See :class:`NodeType` for details.
+
+        Args:
+            node_type (NodeType): the type of node tables that the recorded operations will be applied to; if it is
+                :attr:`NodeType.CONSTITUENT`, the RollupTable must be created with include_constituents=True.
+
+        Returns:
+            a RollupNodeOperationsRecorder
+
+        Raises:
+            DHError
+        """
+        try:
+            return RollupNodeOperationsRecorder(j_node_ops_recorder=self.j_rollup_table.makeNodeOperationsRecorder(
+                node_type.value))
+        except Exception as e:
+            raise DHError(e, "failed to create a RollupNodeOperationsRecorder.") from e
+
+    def with_node_operations(self, recorders: List[RollupNodeOperationsRecorder]) -> RollupTable:
+        """Returns a new RollupTable that will apply the recorded node operations to nodes when gathering
+        snapshots requested by the Deephaven UI.
+
+        Args:
+            recorders (List[RollupNodeOperationsRecorder]): a list of RollupNodeOperationsRecorder containing
+                the node operations to be applied, they must be ones created by calling the 'node_operation_recorder'
+                method on the same table.
+
+        Returns:
+            a new RollupTable
+
+        Raises:
+            DHError
+        """
+        try:
+            return RollupTable(
+                j_rollup_table=self.j_rollup_table.withNodeOperations(
+                    [op.j_node_ops_recorder for op in recorders]),
+                include_constituents=self.include_constituents, aggs=self.aggs, by=self.by)
+        except Exception as e:
+            raise DHError(e, "with_node_operations on RollupTable failed.") from e
+
+    def with_filters(self, filters: Union[str, Filter, Sequence[str], Sequence[Filter]]) -> RollupTable:
+        """Returns a new RollupTable by applying the given set of filters to the group-by columns of this RollupTable.
+
+        Args:
+            filters (Union[str, Filter, Sequence[str], Sequence[Filter]], optional): the filter condition
+                expression(s) or Filter object(s)
+
+        Returns:
+            a new RollupTable
+
+        Raises:
+            DHError
+        """
+        try:
+            filters = to_sequence(filters)
+            if filters and isinstance(filters[0], str):
+                filters = Filter.from_(filters)
+            filters = j_array_list(filters)
+
+            return RollupTable(j_rollup_table=self.j_rollup_table.withFilters(filters),
+                               include_constituents=self.include_constituents, aggs=self.aggs, by=self.by)
+        except Exception as e:
+            raise DHError(e, "with_filters operation on RollupTable failed.") from e
+
+
+class TreeNodeOperationsRecorder(JObjectWrapper, _FormatOperationsRecorder,
+                                 _SortOperationsRecorder, _FilterOperationsRecorder):
+    """Recorder for node-level operations to be applied when gathering snapshots of TreeTable. Supported operations
+    include column formatting, sorting, and filtering.
+
+    Note: It should not be instantiated directly. User code must call :meth:`~TreeTable.node_operation_recorder` to
+    create an instance of the recorder.
+    """
+
+    j_object_type = _JTreeTableNodeOperationsRecorder
+
+    @property
+    def j_object(self) -> jpy.JType:
+        return self.j_node_ops_recorder
+
+    def __init__(self, j_node_ops_recorder: jpy.JType):
+        self.j_node_ops_recorder = j_node_ops_recorder
+
+
+class TreeTable(JObjectWrapper):
+    """ A TreeTable is generated as a result of applying the :meth:`~Table.tree` method on a
+    :class:`~deephaven.table.Table`.
+
+    A TreeTable presents a hierarchically structured  "tree" view of a table where parent-child relationships are expressed
+    by an "id" and a "parent" column. The id column should represent a unique identifier for a given row, and the parent
+    column indicates which row is the parent for a given row.
+
+    Note: TreeTable should not be instantiated directly by user code.
+    """
+    j_object_type = _JTreeTable
+
+    @property
+    def j_object(self) -> jpy.JType:
+        return self.j_tree_table
+
+    def __init__(self, j_tree_table: jpy.JType, id_col: str, parent_col: str):
+        self.j_tree_table = j_tree_table
+        self.id_col = id_col
+        self.parent_col = parent_col
+
+    def node_operation_recorder(self) -> TreeNodeOperationsRecorder:
+        """Creates a TreepNodeOperationsRecorder for per-node operations to apply during Deephaven UI driven
+        snapshotting of this TreeTable.
+
+        Returns:
+            a TreeNodeOperationsRecorder
+        """
+        return TreeNodeOperationsRecorder(j_node_ops_recorder=self.j_tree_table.makeNodeOperationsRecorder())
+
+    def with_node_operations(self, recorder: TreeNodeOperationsRecorder) -> TreeTable:
+        """Returns a new TreeTable that will apply the recorded node operations to nodes when gathering snapshots
+        requested by the Deephaven UI.
+
+        Args:
+            recorder (TreeNodeOperationsRecorder): the TreeNodeOperationsRecorder containing the node operations to be
+                applied, it must be created by calling the 'node_operation_recorder' method on the same table.
+
+        Returns:
+            a new TreeTable
+
+        Raises:
+            DHError
+        """
+
+        try:
+            return TreeTable(
+                j_tree_table=self.j_tree_table.withNodeOperations(recorder.j_node_ops_recorder),
+                id_col=self.id_col, parent_col=self.parent_col)
+        except Exception as e:
+            raise DHError(e, "with_node_operations on TreeTable failed.") from e
+
+    def with_filters(self, filters: Union[str, Filter, Sequence[str], Sequence[Filter]]) -> TreeTable:
+        """Returns a new TreeTable by applying the given set of filters to the columns of this TreeTable.
+
+        Args:
+            filters (Union[str, Filter, Sequence[str], Sequence[Filter]], optional): the filter condition
+                expression(s) or Filter object(s)
+
+        Returns:
+            a new TreeTable
+
+        Raises:
+            DHError
+        """
+
+        try:
+            filters = to_sequence(filters)
+            if filters and isinstance(filters[0], str):
+                filters = Filter.from_(filters)
+            filters = j_array_list(filters)
+
+            return TreeTable(j_tree_table=self.j_tree_table.withFilters(filters), id_col=self.id_col,
+                             parent_col=self.parent_col)
+        except Exception as e:
+            raise DHError(e, "with_filters operation on TreeTable failed.") from e
 
 
 def _j_py_script_session() -> _JPythonScriptSession:
@@ -219,42 +501,6 @@ def _td_to_columns(table_definition):
             )
         )
     return cols
-
-
-class RollupTable(JObjectWrapper):
-    """ A RollupTable is generated as a result of applying the :meth:`~Table.rollup` method on a Table.
-
-    Note: RollupTable should not be instantiated directly by user code.
-    """
-    j_object_type = _JRollupTable
-
-    @property
-    def j_object(self) -> jpy.JType:
-        return self.j_rollup_table
-
-    def __init__(self, j_rollup_table: jpy.JType, aggs: Sequence[Aggregation], include_constituents: bool,
-                 by: Sequence[str]):
-        self.j_rollup_table = j_rollup_table
-        self.aggs = aggs
-        self.include_constituents = include_constituents
-        self.by = by
-
-
-class TreeTable(JObjectWrapper):
-    """ A TreeTable is generated as a result of applying the :meth:`~Table.tree` method on a Table.
-
-    Note: TreeTable should not be instantiated directly by user code.
-    """
-    j_object_type = _JTreeTable
-
-    @property
-    def j_object(self) -> jpy.JType:
-        return self.j_tree_table
-
-    def __init__(self, j_tree_table: jpy.JType, id_col: str, parent_col: str):
-        self.j_tree_table = j_tree_table
-        self.id_col = id_col
-        self.parent_col = parent_col
 
 
 class Table(JObjectWrapper):
@@ -1703,7 +1949,7 @@ class Table(JObjectWrapper):
         """Extracts a subset of a table by row positions into a new Table.
 
           If both the start and the stop are positive, then both are counted from the beginning of the table.
-          The start is inclusive, and the stop is exclusive. slice(0, N) is equivalent to :meth:`~Table.head(N)`
+          The start is inclusive, and the stop is exclusive. slice(0, N) is equivalent to :meth:`~Table.head` (N)
           The start must be less than or equal to the stop.
 
           If the start is positive and the stop is negative, then the start is counted from the beginning of the
@@ -1711,7 +1957,7 @@ class Table(JObjectWrapper):
           rows but the first and last. If the stop is before the start, the result is an empty table.
 
           If the start is negative, and the stop is zero, then the start is counted from the end of the table,
-          and the end of the slice is the size of the table. slice(-N, 0) is equivalent to :meth:`~Table.tail(N)`.
+          and the end of the slice is the size of the table. slice(-N, 0) is equivalent to :meth:`~Table.tail` (N).
 
           If the start is negative and the stop is negative, they are both counted from the end of the
           table. For example, slice(-2, -1) returns the second to last row of the table.

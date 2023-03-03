@@ -8,6 +8,8 @@
  */
 package io.deephaven.base.ringbuffer;
 
+import java.util.Arrays;
+
 import io.deephaven.base.ArrayUtil;
 import io.deephaven.base.verify.Assert;
 
@@ -20,33 +22,33 @@ import java.util.NoSuchElementException;
  * {@code long} values. Head and tail will not wrap around; instead we use storage arrays sized to 2^N to allow fast
  * determination of storage indices through a mask operation.
  */
-public class DoubleRingBuffer implements Serializable {
+public class ObjectRingBuffer<T> implements Serializable {
     /** Maximum capacity is the highest power of two that can be allocated (i.e. <= than ArrayUtil.MAX_ARRAY_SIZE). */
     static final int RING_BUFFER_MAX_CAPACITY = Integer.highestOneBit(ArrayUtil.MAX_ARRAY_SIZE);
     static final long FIXUP_THRESHOLD = 1L << 62;
     final boolean growable;
-    double[] storage;
+    T[] storage;
     int mask;
     long head;
     long tail;
 
     /**
-     * Create an unbounded-growth ring buffer of double primitives.
+     * Create an unbounded-growth ring buffer of Object primitives.
      *
      * @param capacity minimum capacity of the ring buffer
      */
-    public DoubleRingBuffer(int capacity) {
+    public ObjectRingBuffer(int capacity) {
         this(capacity, true);
     }
 
     /**
-     * Create a ring buffer of double primitives.
+     * Create a ring buffer of Object primitives.
      *
      * @param capacity minimum capacity of ring buffer
      * @param growable whether to allow growth when the buffer is full.
      */
-    public DoubleRingBuffer(int capacity, boolean growable) {
-        Assert.leq(capacity, "DoubleRingBuffer capacity", RING_BUFFER_MAX_CAPACITY);
+    public ObjectRingBuffer(int capacity, boolean growable) {
+        Assert.leq(capacity, "ObjectRingBuffer capacity", RING_BUFFER_MAX_CAPACITY);
 
         this.growable = growable;
 
@@ -60,7 +62,7 @@ public class DoubleRingBuffer implements Serializable {
         }
 
         // reset the data structure members
-        storage = new double[newCapacity];
+        storage = (T[]) new Object[newCapacity];
         mask = storage.length - 1;
         tail = head = 0;
     }
@@ -74,9 +76,9 @@ public class DoubleRingBuffer implements Serializable {
         final int size = size();
         final long newCapacity = (long) storage.length + increase;
         // assert that we are not asking for the impossible
-        Assert.leq(newCapacity, "DoubleRingBuffer capacity", RING_BUFFER_MAX_CAPACITY);
+        Assert.leq(newCapacity, "ObjectRingBuffer capacity", RING_BUFFER_MAX_CAPACITY);
 
-        final double[] newStorage = new double[Integer.highestOneBit((int) newCapacity - 1) << 1];
+        final T[] newStorage = (T[]) new Object[Integer.highestOneBit((int) newCapacity - 1) << 1];
 
         // move the current data to the new buffer
         copyRingBufferToArray(newStorage);
@@ -94,7 +96,7 @@ public class DoubleRingBuffer implements Serializable {
      * 
      * @param dest The destination buffer.
      */
-    protected void copyRingBufferToArray(double[] dest) {
+    protected void copyRingBufferToArray(T[] dest) {
         final int size = size();
         final int storageHead = (int) (head & mask);
 
@@ -136,13 +138,13 @@ public class DoubleRingBuffer implements Serializable {
 
     /**
      * Adds an entry to the ring buffer, will throw an exception if buffer is full. For a graceful failure, use
-     * {@link #offer(double)}
+     * {@link #offer(Object)}
      *
-     * @param e the double to be added to the buffer
+     * @param e the Object to be added to the buffer
      * @throws UnsupportedOperationException when {@code growable} is {@code false} and buffer is full
-     * @return {@code true} if the double was added successfully
+     * @return {@code true} if the Object was added successfully
      */
-    public boolean add(double e) {
+    public boolean add(T e) {
         if (isFull()) {
             if (!growable) {
                 throw new UnsupportedOperationException("Ring buffer is full and growth is disabled");
@@ -157,7 +159,7 @@ public class DoubleRingBuffer implements Serializable {
     /**
      * Ensure that there is sufficient empty space to store {@code count} items in the buffer. If the buffer is
      * {@code growable}, this may result in an internal growth operation. This call should be used in conjunction with
-     * {@link #addUnsafe(double)}.
+     * {@link #addUnsafe(Object)}.
      *
      * @param count the minimum number of empty entries in the buffer after this call
      * @throws UnsupportedOperationException when {@code growable} is {@code false} and buffer is full
@@ -179,7 +181,7 @@ public class DoubleRingBuffer implements Serializable {
      *
      * @param e the value to add to the buffer
      */
-    public void addUnsafe(double e) {
+    public void addUnsafe(T e) {
         // This is an extremely paranoid wrap check that in all likelihood will never run. With FIXUP_THRESHOLD at
         // 1 << 62, and the user pushing 2^32 values per second(!), it will take 68 years to wrap this counter .
         if (tail >= FIXUP_THRESHOLD) {
@@ -195,12 +197,12 @@ public class DoubleRingBuffer implements Serializable {
     /**
      * Add an entry to the ring buffer. If the buffer is full, will overwrite the oldest entry with the new one.
      *
-     * @param e the double to be added to the buffer
+     * @param e the Object to be added to the buffer
      * @param notFullResult value to return is the buffer is not full
      * @return the overwritten entry if the buffer is full, the provided value otherwise
      */
-    public double addOverwrite(double e, double notFullResult) {
-        double val = notFullResult;
+    public T addOverwrite(T e, T notFullResult) {
+        T val = notFullResult;
         if (isFull()) {
             val = remove();
         }
@@ -212,10 +214,10 @@ public class DoubleRingBuffer implements Serializable {
      * Attempt to add an entry to the ring buffer. If the buffer is full, the add will fail and the buffer will not grow
      * even if growable.
      *
-     * @param e the double to be added to the buffer
+     * @param e the Object to be added to the buffer
      * @return true if the value was added successfully, false otherwise
      */
-    public boolean offer(double e) {
+    public boolean offer(T e) {
         if (isFull()) {
             return false;
         }
@@ -229,14 +231,28 @@ public class DoubleRingBuffer implements Serializable {
      * @param count The number of elements to remove.
      * @throws NoSuchElementException if the buffer is empty
      */
-    public double[] remove(int count) {
+    public T[] remove(int count) {
         final int size = size();
         if (size < count) {
             throw new NoSuchElementException();
         }
-        final double[] result = new double[count];
+        final T[] result = (T[]) new Object[count];
         // region object-bulk-remove
-        copyRingBufferToArray(result);
+        final int storageHead = (int) (head & mask);
+
+        // firstCopyLen is either the size of the ring buffer, the distance from head to the end of the storage array,
+        // or the size of the destination buffer, whichever is smallest.
+        final int firstCopyLen = Math.min(Math.min(storage.length - storageHead, size), result.length);
+
+        // secondCopyLen is either the number of uncopied elements remaining from the first copy,
+        // or the amount of space remaining in the dest array, whichever is smaller.
+        final int secondCopyLen = Math.min(size - firstCopyLen, result.length - firstCopyLen);
+
+        System.arraycopy(storage, storageHead, result, 0, firstCopyLen);
+        Arrays.fill(storage, storageHead, storageHead + firstCopyLen, null);
+        System.arraycopy(storage, 0, result, firstCopyLen, secondCopyLen);
+        Arrays.fill(storage, 0, secondCopyLen, null);
+
         // endregion object-bulk-remove
         head += count;
         return result;
@@ -247,7 +263,7 @@ public class DoubleRingBuffer implements Serializable {
      *
      * @throws NoSuchElementException if the buffer is empty
      */
-    public double remove() {
+    public T remove() {
         if (isEmpty()) {
             throw new NoSuchElementException();
         }
@@ -261,10 +277,11 @@ public class DoubleRingBuffer implements Serializable {
      *
      * @return the value removed from the buffer
      */
-    public double removeUnsafe() {
+    public T removeUnsafe() {
         final int idx = (int) (head++ & mask);
-        double val = storage[idx];
+        T val = storage[idx];
         // region object-remove
+        storage[idx] = null;
         // endregion object-remove
         return val;
     }
@@ -275,7 +292,7 @@ public class DoubleRingBuffer implements Serializable {
      * @param onEmpty the value to return if the ring buffer is empty
      * @return The removed element if the ring buffer was non-empty, otherwise the value of 'onEmpty'
      */
-    public double poll(double onEmpty) {
+    public T poll(T onEmpty) {
         if (isEmpty()) {
             return onEmpty;
         }
@@ -288,7 +305,7 @@ public class DoubleRingBuffer implements Serializable {
      * @throws NoSuchElementException if the buffer is empty
      * @return The head element if the ring buffer is non-empty, otherwise the value of 'onEmpty'
      */
-    public double element() {
+    public T element() {
         if (isEmpty()) {
             throw new NoSuchElementException();
         }
@@ -302,7 +319,7 @@ public class DoubleRingBuffer implements Serializable {
      * @param onEmpty the value to return if the ring buffer is empty
      * @return The head element if the ring buffer is non-empty, otherwise the value of 'onEmpty'
      */
-    public double peek(double onEmpty) {
+    public T peek(T onEmpty) {
         if (isEmpty()) {
             return onEmpty;
         }
@@ -314,7 +331,7 @@ public class DoubleRingBuffer implements Serializable {
      *
      * @return The element at the head of the ring buffer
      */
-    public double front() {
+    public T front() {
         return front(0);
     }
 
@@ -325,7 +342,7 @@ public class DoubleRingBuffer implements Serializable {
      * @throws NoSuchElementException if the buffer is empty
      * @return The element at the specified offset
      */
-    public double front(int offset) {
+    public T front(int offset) {
         if (offset < 0 || offset >= size()) {
             throw new NoSuchElementException();
         }
@@ -338,7 +355,7 @@ public class DoubleRingBuffer implements Serializable {
      * @throws NoSuchElementException if the buffer is empty
      * @return The element at the tail of the ring buffer
      */
-    public double back() {
+    public T back() {
         if (isEmpty()) {
             throw new NoSuchElementException();
         }
@@ -352,7 +369,7 @@ public class DoubleRingBuffer implements Serializable {
      * @param onEmpty the value to return if the ring buffer is empty
      * @return The tail element if the ring buffer is non-empty, otherwise the value of 'onEmpty'
      */
-    public double peekBack(double onEmpty) {
+    public T peekBack(T onEmpty) {
         if (isEmpty()) {
             return onEmpty;
         }
@@ -364,8 +381,8 @@ public class DoubleRingBuffer implements Serializable {
      * 
      * @return An array containing a copy of the elements in the ring buffer.
      */
-    public double[] getAll() {
-        double[] result = new double[size()];
+    public T[] getAll() {
+        T[] result = (T[]) new Object[size()];
         copyRingBufferToArray(result);
         return result;
     }
@@ -384,7 +401,7 @@ public class DoubleRingBuffer implements Serializable {
             return cursor + 1 < size();
         }
 
-        public double next() {
+        public T next() {
             if (!hasNext()) {
                 throw new NoSuchElementException();
             }
