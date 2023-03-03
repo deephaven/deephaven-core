@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl.sources;
 
+import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.time.DateTime;
 import io.deephaven.qst.array.Array;
 import io.deephaven.qst.array.GenericArray;
@@ -84,7 +85,7 @@ public class ArrayBackedColumnSourceTest {
 
     private static <T> void check(PrimitiveType<T> type, T... values) {
         PrimitiveArray<T> array = PrimitiveArray.of(type, values);
-        ArrayBackedColumnSource<T> columnSource = ArrayBackedColumnSource.from(array);
+        WritableColumnSource<T> columnSource = ArrayBackedColumnSource.from(array);
         int ix = 0;
         for (T left : values) {
             assertThat(columnSource.get(ix++)).isEqualTo(left);
@@ -98,7 +99,7 @@ public class ArrayBackedColumnSourceTest {
 
     private static <T> void check(BiPredicate<T, Object> comparison, GenericType<T> type, T... values) {
         GenericArray<T> array = GenericArray.of(type, values);
-        ArrayBackedColumnSource<?> columnSource = ArrayBackedColumnSource.from(array);
+        WritableColumnSource<?> columnSource = ArrayBackedColumnSource.from(array);
         int ix = 0;
         for (T left : values) {
             assertThat(columnSource.get(ix++)).matches((Predicate<Object>) right -> comparison.test(left, right));
@@ -108,7 +109,7 @@ public class ArrayBackedColumnSourceTest {
 
     private static <T> void check(BiPredicate<T, Object> comparison, Type<T> type, T... values) {
         Array<T> array = Array.of(type, values);
-        ArrayBackedColumnSource<?> columnSource = ArrayBackedColumnSource.from(array);
+        WritableColumnSource<?> columnSource = ArrayBackedColumnSource.from(array);
         int ix = 0;
         for (T left : values) {
             assertThat(columnSource.get(ix++)).matches((Predicate<Object>) right -> comparison.test(left, right));

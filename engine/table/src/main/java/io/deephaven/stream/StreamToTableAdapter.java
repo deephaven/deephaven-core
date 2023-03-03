@@ -32,6 +32,7 @@ import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.ref.WeakReference;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -206,6 +207,9 @@ public class StreamToTableAdapter extends ReferenceCountedLivenessNode
             if (columnDefinition.getDataType() == DateTime.class) {
                 // noinspection unchecked
                 visibleSource = new LongAsDateTimeColumnSource((ColumnSource<Long>) switchSource);
+            } else if (columnDefinition.getDataType() == Instant.class) {
+                // noinspection unchecked
+                visibleSource = new LongAsInstantColumnSource((ColumnSource<Long>) switchSource);
             } else if (columnDefinition.getDataType() == Boolean.class) {
                 // noinspection unchecked
                 visibleSource = new ByteAsBooleanColumnSource((ColumnSource<Byte>) switchSource);
@@ -233,7 +237,7 @@ public class StreamToTableAdapter extends ReferenceCountedLivenessNode
      * @return the type of the inner column
      */
     private static Class<?> replacementType(Class<?> columnType) {
-        if (columnType == DateTime.class) {
+        if (columnType == DateTime.class || columnType == Instant.class) {
             return long.class;
         } else if (columnType == Boolean.class) {
             return byte.class;

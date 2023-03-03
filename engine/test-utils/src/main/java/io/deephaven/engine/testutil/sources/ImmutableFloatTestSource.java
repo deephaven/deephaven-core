@@ -26,7 +26,7 @@ import java.util.function.LongConsumer;
 /**
  * A test column source that ignores modifications, throws on removals, and adds when requested.
  * <p>
- * It uses a fastutil open addressed hash map from long RowSet keys to float values. If an uninitialized key is
+ * It uses a fastutil open addressed hash map from long RowSet keys to column values. If an uninitialized key is
  * accessed; then an IllegalStateException is thrown. If the test framework attempts to remove or shift values, then an
  * UnsupportedOperationException is thrown.
  */

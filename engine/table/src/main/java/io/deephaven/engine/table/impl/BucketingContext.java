@@ -73,11 +73,15 @@ class BucketingContext implements SafeCloseable {
             }
 
             if (leftType == DateTime.class) {
-                leftSources[ii] = ReinterpretUtils.dateTimeToLongSource(leftSources[ii]);
-                rightSources[ii] = ReinterpretUtils.dateTimeToLongSource(rightSources[ii]);
+                // noinspection unchecked
+                leftSources[ii] = ReinterpretUtils.dateTimeToLongSource((ColumnSource<DateTime>) leftSources[ii]);
+                // noinspection unchecked
+                rightSources[ii] = ReinterpretUtils.dateTimeToLongSource((ColumnSource<DateTime>) rightSources[ii]);
             } else if (leftType == boolean.class || leftType == Boolean.class) {
-                leftSources[ii] = ReinterpretUtils.booleanToByteSource(leftSources[ii]);
-                rightSources[ii] = ReinterpretUtils.booleanToByteSource(rightSources[ii]);
+                // noinspection unchecked
+                leftSources[ii] = ReinterpretUtils.booleanToByteSource((ColumnSource<Boolean>) leftSources[ii]);
+                // noinspection unchecked
+                rightSources[ii] = ReinterpretUtils.booleanToByteSource((ColumnSource<Boolean>) rightSources[ii]);
                 if (leftSources.length == 1) {
                     uniqueValues = true;
                     maximumUniqueValue = BooleanUtils.TRUE_BOOLEAN_AS_BYTE;

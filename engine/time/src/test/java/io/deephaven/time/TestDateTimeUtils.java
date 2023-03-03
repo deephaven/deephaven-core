@@ -593,13 +593,6 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
                 DateTimeUtils.upperBin(DateTimeUtils.upperBin(time, second, second), second, second));
     }
 
-    public void testConvertJimDateTimeQuiet() {
-        String s = "2010-09-02T08:17:17.502-0400";
-        DateTime known = DateTimeUtils.convertDateTimeQuiet(s);
-        DateTime trial = DateTimeUtils.convertJimDateTimeQuiet(s);
-        TestCase.assertEquals(known, trial);
-    }
-
     public void testGetExcelDate() {
         DateTime time = DateTimeUtils.convertDateTime("2010-06-15T16:00:00 NY");
         TestCase.assertTrue(CompareUtils.doubleEquals(40344.666666666664, DateTimeUtils.getExcelDateTime(time)));
@@ -610,7 +603,7 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
 
     /**
      * Test autoEpcohTime with the given epoch time.
-     * 
+     *
      * @param epoch Epoch time (in seconds)
      * @return The year (in the New York timezone) in which the given time falls.
      */

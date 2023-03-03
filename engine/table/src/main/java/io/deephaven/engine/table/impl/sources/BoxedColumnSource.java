@@ -16,6 +16,9 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import org.jetbrains.annotations.NotNull;
 
+import java.time.Instant;
+import java.time.ZonedDateTime;
+
 /**
  * {@link ColumnSource} implementation for explicitly boxing a primitive into a more complex type, e.g. {@code byte} as
  * {@link Boolean} or {@code long} as {@link DateTime}.
@@ -49,7 +52,7 @@ public abstract class BoxedColumnSource<DATA_TYPE> extends AbstractColumnSource<
         }
 
         @Override
-        public final void close() {
+        public void close() {
             originalGetContext.close();
         }
     }
@@ -100,17 +103,17 @@ public abstract class BoxedColumnSource<DATA_TYPE> extends AbstractColumnSource<
         }
 
         @Override
-        public final Boolean get(final long rowKey) {
+        public Boolean get(final long rowKey) {
             return BooleanUtils.byteAsBoolean(originalSource.getByte(rowKey));
         }
 
         @Override
-        public final Boolean getPrev(final long rowKey) {
+        public Boolean getPrev(final long rowKey) {
             return BooleanUtils.byteAsBoolean(originalSource.getPrevByte(rowKey));
         }
 
         @Override
-        final void transformChunk(@NotNull final Chunk<? extends Values> source,
+        void transformChunk(@NotNull final Chunk<? extends Values> source,
                 @NotNull final WritableChunk<? super Values> destination) {
             final ByteChunk<? extends Values> typedSource = source.asByteChunk();
             final WritableObjectChunk<Boolean, ? super Values> typedDestination = destination.asWritableObjectChunk();
@@ -131,17 +134,17 @@ public abstract class BoxedColumnSource<DATA_TYPE> extends AbstractColumnSource<
         }
 
         @Override
-        public final DateTime get(final long rowKey) {
+        public DateTime get(final long rowKey) {
             return DateTimeUtils.nanosToTime(originalSource.getLong(rowKey));
         }
 
         @Override
-        public final DateTime getPrev(final long rowKey) {
+        public DateTime getPrev(final long rowKey) {
             return DateTimeUtils.nanosToTime(originalSource.getPrevLong(rowKey));
         }
 
         @Override
-        final void transformChunk(@NotNull final Chunk<? extends Values> source,
+        void transformChunk(@NotNull final Chunk<? extends Values> source,
                 @NotNull final WritableChunk<? super Values> destination) {
             final LongChunk<? extends Values> typedSource = source.asLongChunk();
             final WritableObjectChunk<DateTime, ? super Values> typedDestination =
@@ -150,6 +153,38 @@ public abstract class BoxedColumnSource<DATA_TYPE> extends AbstractColumnSource<
             final int sourceSize = typedSource.size();
             for (int pi = 0; pi < sourceSize; ++pi) {
                 typedDestination.set(pi, DateTimeUtils.nanosToTime(typedSource.get(pi)));
+            }
+            typedDestination.setSize(sourceSize);
+        }
+    }
+
+    public static final class OfInstant extends BoxedColumnSource<Instant> {
+
+        public OfInstant(@NotNull final ColumnSource<Long> originalSource) {
+            super(Instant.class, originalSource);
+            Assert.eq(originalSource.getType(), "originalSource.getType()", long.class);
+        }
+
+        @Override
+        public Instant get(final long rowKey) {
+            return DateTimeUtils.makeInstant(originalSource.getLong(rowKey));
+        }
+
+        @Override
+        public Instant getPrev(final long rowKey) {
+            return DateTimeUtils.makeInstant(originalSource.getPrevLong(rowKey));
+        }
+
+        @Override
+        void transformChunk(@NotNull final Chunk<? extends Values> source,
+                @NotNull final WritableChunk<? super Values> destination) {
+            final LongChunk<? extends Values> typedSource = source.asLongChunk();
+            final WritableObjectChunk<Instant, ? super Values> typedDestination =
+                    destination.asWritableObjectChunk();
+
+            final int sourceSize = typedSource.size();
+            for (int pi = 0; pi < sourceSize; ++pi) {
+                typedDestination.set(pi, DateTimeUtils.makeInstant(typedSource.get(pi)));
             }
             typedDestination.setSize(sourceSize);
         }

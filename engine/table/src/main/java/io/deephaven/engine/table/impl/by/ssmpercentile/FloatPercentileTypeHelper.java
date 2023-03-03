@@ -10,8 +10,8 @@ package io.deephaven.engine.table.impl.by.ssmpercentile;
 
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.util.compare.FloatComparisons;
-import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.FloatArraySource;
 import io.deephaven.chunk.FloatChunk;
 import io.deephaven.chunk.Chunk;
@@ -26,7 +26,7 @@ public class FloatPercentileTypeHelper implements SsmChunkedPercentileOperator.P
     private final double percentile;
     private final FloatArraySource resultColumn;
 
-    FloatPercentileTypeHelper(double percentile, ArrayBackedColumnSource resultColumn) {
+    FloatPercentileTypeHelper(double percentile, WritableColumnSource resultColumn) {
         this.percentile = percentile;
         // region resultColumn
         this.resultColumn = (FloatArraySource) resultColumn;
