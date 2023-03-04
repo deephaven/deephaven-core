@@ -76,13 +76,6 @@ public class CharacterSingleValueSource extends SingleValueColumnSource<Characte
     }
 
     @Override
-    public final void setNull(long key) {
-        // region null set
-        set(NULL_CHAR);
-        // endregion null set
-    }
-
-    @Override
     public final char getChar(long rowKey) {
         if (rowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_CHAR;

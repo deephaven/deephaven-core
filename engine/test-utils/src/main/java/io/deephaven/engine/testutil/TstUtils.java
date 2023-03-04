@@ -32,10 +32,12 @@ import io.deephaven.engine.testutil.sources.ImmutableColumnHolder;
 import io.deephaven.engine.testutil.sources.CharTestSource;
 import io.deephaven.engine.testutil.sources.ImmutableDoubleTestSource;
 import io.deephaven.engine.testutil.sources.ImmutableFloatTestSource;
+import io.deephaven.engine.testutil.sources.ImmutableInstantTestSource;
 import io.deephaven.engine.testutil.sources.ImmutableIntTestSource;
 import io.deephaven.engine.testutil.sources.ImmutableLongTestSource;
 import io.deephaven.engine.testutil.sources.ImmutableObjectTestSource;
 import io.deephaven.engine.testutil.sources.ImmutableShortTestSource;
+import io.deephaven.engine.testutil.sources.InstantTestSource;
 import io.deephaven.engine.testutil.sources.IntTestSource;
 import io.deephaven.engine.testutil.sources.LongTestSource;
 import io.deephaven.engine.testutil.sources.ObjectTestSource;
@@ -63,6 +65,7 @@ import java.io.PrintStream;
 import java.lang.reflect.Array;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.*;
 import java.util.function.BiConsumer;
 
@@ -428,6 +431,7 @@ public class TstUtils {
                 }
                 en[i].validate(ctxt + " en_i = " + i);
             }
+            en[i].releaseRecomputed();
         }
     }
 
@@ -623,6 +627,9 @@ public class TstUtils {
             } else if (unboxedType == DateTime.class) {
                 // noinspection unchecked
                 result = (AbstractColumnSource<T>) new ImmutableDateTimeTestSource(rowSet, chunkData);
+            } else if (unboxedType == Instant.class) {
+                // noinspection unchecked
+                result = (AbstractColumnSource<T>) new ImmutableInstantTestSource(rowSet, chunkData);
             } else {
                 result = new ImmutableObjectTestSource<>(columnHolder.dataType, rowSet, chunkData);
             }
@@ -652,6 +659,9 @@ public class TstUtils {
             } else if (unboxedType == DateTime.class) {
                 // noinspection unchecked
                 result = (AbstractColumnSource<T>) new DateTimeTestSource(rowSet, chunkData);
+            } else if (unboxedType == Instant.class) {
+                // noinspection unchecked
+                result = (AbstractColumnSource<T>) new InstantTestSource(rowSet, chunkData);
             } else {
                 result = new ObjectTestSource<>(columnHolder.dataType, rowSet, chunkData);
             }

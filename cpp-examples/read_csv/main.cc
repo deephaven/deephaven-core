@@ -11,6 +11,8 @@
 #include "arrow/status.h"
 #include "arrow/pretty_print.h"
 #include "deephaven/client/client.h"
+#include "deephaven/client/flight.h"
+#include "deephaven/client/utility/arrow_util.h"
 #include "deephaven/client/utility/utility.h"
 
 using deephaven::client::TableHandleManager;

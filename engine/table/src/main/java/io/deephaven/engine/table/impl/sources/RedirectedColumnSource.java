@@ -3,12 +3,14 @@
  */
 package io.deephaven.engine.table.impl.sources;
 
+import io.deephaven.base.text.Convert;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.util.RowRedirection;
+import io.deephaven.time.DateTime;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.engine.table.impl.join.dupexpand.DupExpandKernel;
 import io.deephaven.engine.table.impl.sort.permute.PermuteKernel;
@@ -25,6 +27,13 @@ import org.jetbrains.annotations.NotNull;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 
 import io.deephaven.chunk.attributes.Values;
+
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+
 import static io.deephaven.util.QueryConstants.*;
 
 /**
@@ -34,7 +43,7 @@ import static io.deephaven.util.QueryConstants.*;
  * @param <T>
  */
 public class RedirectedColumnSource<T> extends AbstractDeferredGroupingColumnSource<T>
-        implements UngroupableColumnSource {
+        implements UngroupableColumnSource, ConvertableTimeSource {
     /**
      * Redirect the innerSource if it is not agnostic to redirection. Otherwise, return the innerSource.
      *
@@ -366,17 +375,77 @@ public class RedirectedColumnSource<T> extends AbstractDeferredGroupingColumnSou
     @Override
     public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(
             @NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {
+        if ((alternateDataType == long.class
+                || alternateDataType == Long.class
+                || alternateDataType == DateTime.class
+                || alternateDataType == Instant.class)
+                && supportsTimeConversion()) {
+            return true;
+        }
+
         return innerSource.allowsReinterpret(alternateDataType);
     }
 
+    @Override
+    public boolean supportsTimeConversion() {
+        return innerSource instanceof ConvertableTimeSource
+                && ((ConvertableTimeSource) innerSource).supportsTimeConversion();
+    }
+
+    @Override
+    public ColumnSource<Long> toEpochNano() {
+        return new RedirectedColumnSource<>(this.rowRedirection, ((ConvertableTimeSource) innerSource)
+                .toEpochNano());
+    }
+
+    @Override
+    public ColumnSource<DateTime> toDateTime() {
+        return new RedirectedColumnSource<>(this.rowRedirection, ((ConvertableTimeSource) innerSource)
+                .toDateTime());
+    }
+
+    @Override
+    public ColumnSource<Instant> toInstant() {
+        return new RedirectedColumnSource<>(this.rowRedirection, ((ConvertableTimeSource) innerSource)
+                .toInstant());
+    }
+
+    @Override
+    public ColumnSource<ZonedDateTime> toZonedDateTime(ZoneId zone) {
+        return new RedirectedColumnSource<>(this.rowRedirection, ((ConvertableTimeSource) innerSource)
+                .toZonedDateTime(zone));
+    }
+
+    @Override
+    public ColumnSource<LocalDate> toLocalDate(ZoneId zone) {
+        return new RedirectedColumnSource<>(this.rowRedirection, ((ConvertableTimeSource) innerSource)
+                .toLocalDate(zone));
+    }
+
+    @Override
+    public ColumnSource<LocalTime> toLocalTime(ZoneId zone) {
+        return new RedirectedColumnSource<>(this.rowRedirection, ((ConvertableTimeSource) innerSource)
+                .toLocalTime(zone));
+    }
+
+    @SuppressWarnings("unchecked")
     @Override
     protected <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(
             @NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {
         if (TypeUtils.getUnboxedTypeIfBoxed(alternateDataType) == byte.class && getType() == Boolean.class) {
             return new ReinterpretToOriginalForBoolean<>(alternateDataType);
         }
-        // noinspection unchecked
-        return new ReinterpretToOriginal(alternateDataType);
+
+        if (supportsTimeConversion()) {
+            if (alternateDataType == long.class || alternateDataType == Long.class) {
+                return (ColumnSource<ALTERNATE_DATA_TYPE>) toEpochNano();
+            } else if (alternateDataType == DateTime.class) {
+                return (ColumnSource<ALTERNATE_DATA_TYPE>) toDateTime();
+            } else if (alternateDataType == Instant.class) {
+                return (ColumnSource<ALTERNATE_DATA_TYPE>) toInstant();
+            }
+        }
+        return new ReinterpretToOriginal<>(alternateDataType);
     }
 
     private class ReinterpretToOriginal<ALTERNATE_DATA_TYPE>

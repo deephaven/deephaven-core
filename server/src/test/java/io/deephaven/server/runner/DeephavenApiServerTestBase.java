@@ -11,6 +11,7 @@ import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.io.logger.LogBuffer;
 import io.deephaven.io.logger.LogBufferGlobal;
 import io.deephaven.proto.DeephavenChannel;
+import io.deephaven.proto.DeephavenChannelImpl;
 import io.deephaven.server.auth.AuthorizationProvider;
 import io.deephaven.server.auth.CommunityAuthorizationProvider;
 import io.deephaven.server.config.ServerConfig;
@@ -119,6 +120,10 @@ public abstract class DeephavenApiServerTestBase {
         return server;
     }
 
+    public LogBuffer logBuffer() {
+        return logBuffer;
+    }
+
     /**
      * The session token expiration
      *
@@ -141,6 +146,6 @@ public abstract class DeephavenApiServerTestBase {
     public DeephavenChannel createChannel() {
         ManagedChannel channel = channelBuilder().build();
         register(channel);
-        return new DeephavenChannel(channel);
+        return new DeephavenChannelImpl(channel);
     }
 }

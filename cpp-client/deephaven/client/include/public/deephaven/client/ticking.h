@@ -5,15 +5,35 @@
 
 #include <cstdlib>
 #include <map>
+#include <mutex>
+#include <optional>
 #include <set>
-#include <arrow/type.h>
 #include "deephaven/client/utility/callbacks.h"
 #include "deephaven/client/container/row_sequence.h"
 #include "deephaven/client/table/table.h"
-#include "immer/flex_vector.hpp"
 
 namespace deephaven::client {
 class TickingUpdate;
+
+namespace internal {
+class OnDemandState {
+  /**
+   * Alias.
+   */
+  typedef deephaven::client::container::RowSequence RowSequence;
+public:
+  OnDemandState();
+  ~OnDemandState();
+
+  const std::shared_ptr<RowSequence> &allModifiedRows(
+      const std::vector<std::shared_ptr<RowSequence>> &modifiedRows);
+
+private:
+  std::mutex mutex_;
+  std::shared_ptr<RowSequence> allModifiedRows_;
+};
+}  // namespace internal
+
 /**
  * Abstract base class used to define the caller's ticking callback object. This object is passed
  * to the TableHandle::subscribe() method.
@@ -21,6 +41,8 @@ class TickingUpdate;
 
 class TickingCallback {
 public:
+  virtual ~TickingCallback();
+
   /**
    * Invoked on each update to the subscription.
    */
@@ -52,12 +74,25 @@ public:
   typedef deephaven::client::table::Table Table;
 
   /**
+   * Default constructor.
+   */
+   TickingUpdate();
+
+  /**
    * Constructor. Used internally.
    */
   TickingUpdate(std::shared_ptr<Table> prev,
       std::shared_ptr<RowSequence> removedRows, std::shared_ptr<Table> afterRemoves,
       std::shared_ptr<RowSequence> addedRows, std::shared_ptr<Table> afterAdds,
       std::vector<std::shared_ptr<RowSequence>> modifiedRows, std::shared_ptr<Table> afterModifies);
+  /**
+   * Copy constructor.
+   */
+  TickingUpdate(const TickingUpdate &other);
+  /**
+   * Assignment operator.
+   */
+  TickingUpdate &operator=(const TickingUpdate &other);
   /**
    * Move constructor.
    */
@@ -123,6 +158,12 @@ public:
    */
   const std::vector<std::shared_ptr<RowSequence>> &modifiedRows() const { return modifiedRows_; }
   /**
+   * A RowSequence which represents the union of the RowSequences returned by modifiedRows().
+   */
+  const std::shared_ptr<RowSequence> &allModifiedRows() const {
+    return onDemandState_->allModifiedRows(modifiedRows_);
+  }
+  /**
    * A snapshot of the table after cells (if any) were modified in this cycle.
    */
   const std::shared_ptr<Table> &afterModifies() const { return afterModifies_; }
@@ -143,5 +184,6 @@ private:
   std::shared_ptr<Table> afterAdds_;
   std::vector<std::shared_ptr<RowSequence>> modifiedRows_;
   std::shared_ptr<Table> afterModifies_;
+  std::shared_ptr<internal::OnDemandState> onDemandState_;
 };
 }  // namespace deephaven::client

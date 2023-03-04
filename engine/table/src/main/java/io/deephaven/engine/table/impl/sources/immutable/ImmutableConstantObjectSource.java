@@ -31,7 +31,7 @@ import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 public class ImmutableConstantObjectSource<T>
         extends AbstractColumnSource<T>
         implements ImmutableColumnSourceGetDefaults.ForObject<T>, ShiftData.ShiftCallback, InMemoryColumnSource,
-        RowKeyAgnosticChunkSource<Values> {
+        RowKeyAgnosticChunkSource<Values> /* MIXIN_IMPLS */ {
 
     private final T value;
 
@@ -71,9 +71,6 @@ public class ImmutableConstantObjectSource<T>
     @Override
     public final void shift(final long start, final long end, final long offset) {}
 
-    // region reinterpret
-    // endregion reinterpret
-
     @Override
     public void fillChunkUnordered(
             @NotNull FillContext context,
@@ -98,4 +95,7 @@ public class ImmutableConstantObjectSource<T>
     public boolean providesFillUnordered() {
         return true;
     }
+
+    // region reinterpretation
+    // endregion reinterpretation
 }

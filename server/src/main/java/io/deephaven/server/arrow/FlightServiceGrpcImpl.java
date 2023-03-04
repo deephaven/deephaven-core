@@ -109,7 +109,7 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
 
             if (auth.isEmpty()) {
                 responseObserver.onError(GrpcUtil.statusRuntimeException(Code.UNAUTHENTICATED,
-                        "authentication details invalid"));
+                        "Authentication details invalid"));
                 return;
             }
 
@@ -121,6 +121,7 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
                 AuthenticationRequestHandler.HandshakeResponseListener listener) throws AuthenticationException {
             AuthenticationRequestHandler handler = authRequestHandlers.get(type);
             if (handler == null) {
+                log.info().append("No AuthenticationRequestHandler registered for type ").append(type).endl();
                 return Optional.empty();
             }
             return handler.login(version, payload.asReadOnlyByteBuffer(), listener);

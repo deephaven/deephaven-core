@@ -5,6 +5,7 @@ package io.deephaven.client.impl;
 
 import io.deephaven.client.impl.ExportRequest.Listener;
 import io.deephaven.proto.DeephavenChannel;
+import io.deephaven.proto.DeephavenChannelImpl;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
@@ -89,7 +90,7 @@ public class ExportStatesTest {
         ManagedChannel channel = grpcCleanup
                 .register(InProcessChannelBuilder.forName(serverName).directExecutor().build());
 
-        DeephavenChannel deephavenChannel = new DeephavenChannel(channel);
+        DeephavenChannel deephavenChannel = new DeephavenChannelImpl(channel);
 
         states = new ExportStates(deephavenChannel.session(), deephavenChannel.table(), new ExportTicketCreator());
     }

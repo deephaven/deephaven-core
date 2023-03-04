@@ -6,10 +6,10 @@ package io.deephaven.client.impl;
 import io.deephaven.annotations.BuildableStyle;
 import io.deephaven.ssl.config.SSLConfig;
 import io.deephaven.uri.DeephavenTarget;
-import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -41,6 +41,11 @@ public abstract class ClientConfig {
     public abstract Optional<String> userAgent();
 
     /**
+     * The extra headers.
+     */
+    public abstract Map<String, String> extraHeaders();
+
+    /**
      * The maximum inbound message size. Defaults to 100MiB.
      */
     @Default
@@ -55,6 +60,10 @@ public abstract class ClientConfig {
         Builder ssl(SSLConfig ssl);
 
         Builder userAgent(String userAgent);
+
+        Builder putExtraHeaders(String key, String value);
+
+        Builder putAllExtraHeaders(Map<String, ? extends String> entries);
 
         Builder maxInboundMessageSize(int maxInboundMessageSize);
 

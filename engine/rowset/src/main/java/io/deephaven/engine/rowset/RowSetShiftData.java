@@ -329,6 +329,26 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
     }
 
     /**
+     * Apply all shifts to {@code keyToShift}. Moves the single row key from pre-shift keyspace to post-shift keyspace.
+     *
+     * @param keyToShift The single row key to shift
+     * @return the key in post-shift space
+     */
+    public long apply(final long keyToShift) {
+        for (int shiftIdx = 0; shiftIdx < size(); shiftIdx++) {
+            if (getBeginRange(shiftIdx) > keyToShift) {
+                // no shift applies so we are already in post-shift space
+                return keyToShift;
+            }
+            if (getEndRange(shiftIdx) >= keyToShift) {
+                // this shift applies, add the delta to get post-shift
+                return keyToShift + getShiftDelta(shiftIdx);
+            }
+        }
+        return keyToShift;
+    }
+
+    /**
      * Apply a shift to the provided rowSet. Moves rowSet from pre-shift keyspace to post-shift keyspace.
      *
      * @param rowSet The rowSet to apply the shift to

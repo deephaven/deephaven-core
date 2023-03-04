@@ -8,13 +8,8 @@ import io.deephaven.api.updateby.ColumnUpdateOperation;
 import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.api.updateby.UpdateByOperation;
-import io.deephaven.api.updateby.spec.CumMinMaxSpec;
-import io.deephaven.api.updateby.spec.CumProdSpec;
-import io.deephaven.api.updateby.spec.CumSumSpec;
-import io.deephaven.api.updateby.spec.EmaSpec;
-import io.deephaven.api.updateby.spec.FillBySpec;
-import io.deephaven.api.updateby.spec.TimeScale;
-import io.deephaven.api.updateby.spec.UpdateBySpec;
+import io.deephaven.api.updateby.spec.*;
+import io.deephaven.api.updateby.spec.WindowScale;
 import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.Table;
@@ -183,15 +178,6 @@ public final class UpdateByGrpcImpl extends GrpcTableOperation<UpdateByRequest> 
         if (options.hasOnNanValue()) {
             builder.onNanValue(adaptBadDataBehavior(options.getOnNanValue()));
         }
-        if (options.hasOnNullTime()) {
-            builder.onNullTime(adaptBadDataBehavior(options.getOnNullTime()));
-        }
-        if (options.hasOnNegativeDeltaTime()) {
-            builder.onNegativeDeltaTime(adaptBadDataBehavior(options.getOnNegativeDeltaTime()));
-        }
-        if (options.hasOnZeroDeltaTime()) {
-            builder.onZeroDeltaTime(adaptBadDataBehavior(options.getOnZeroDeltaTime()));
-        }
         if (options.hasBigValueContext()) {
             builder.bigValueContext(adaptMathContext(options.getBigValueContext()));
         }
@@ -227,12 +213,12 @@ public final class UpdateByGrpcImpl extends GrpcTableOperation<UpdateByRequest> 
         }
     }
 
-    private static TimeScale adaptTimescale(UpdateByEma.UpdateByEmaTimescale timescale) {
+    private static WindowScale adaptTimescale(UpdateByEma.UpdateByEmaTimescale timescale) {
         switch (timescale.getTypeCase()) {
             case TICKS:
-                return TimeScale.ofTicks(timescale.getTicks().getTicks());
+                return WindowScale.ofTicks(timescale.getTicks().getTicks());
             case TIME:
-                return TimeScale.ofTime(timescale.getTime().getColumn(), timescale.getTime().getPeriodNanos());
+                return WindowScale.ofTime(timescale.getTime().getColumn(), timescale.getTime().getPeriodNanos());
             case TYPE_NOT_SET:
             default:
                 throw new IllegalArgumentException("Unexpected timescale type: " + timescale.getTypeCase());

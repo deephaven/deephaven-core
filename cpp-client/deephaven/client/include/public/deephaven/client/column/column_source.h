@@ -6,7 +6,6 @@
 #include <any>
 #include <string>
 #include <vector>
-#include <arrow/array.h>
 #include "deephaven/client/chunk/chunk.h"
 #include "deephaven/client/container/row_sequence.h"
 #include "deephaven/client/types.h"

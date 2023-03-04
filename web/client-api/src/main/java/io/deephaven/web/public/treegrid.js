@@ -1,15 +1,27 @@
+import dh from './dh-core.js';
+
+const {Table, FilterValue} = dh;
 /**
  * Simple es6 class encapsulating some basic rendering for a tree table in a grid, allowing
  * expanding and collapsing nodes, and filtering and sorting columns.
  */
-class TreeGrid {
+
+export class TreeGrid {
   constructor(treeTable) {
     this.treeTable = treeTable;
-    this.treeTable.addEventListener(dh.Table.EVENT_UPDATED, e => this.repaint(e.detail));
+    this.treeTable.addEventListener(Table.EVENT_UPDATED, e => this.repaint(e.detail));
 
-    this.rootElement = document.createElement('table');
-    this.rootElement.addEventListener('click', e => this.toggle(e));
+    this.rootElement = document.createElement('div');
+    this.tableElement = document.createElement('table');
+    this.tableElement.addEventListener('click', e => this.toggle(e));
+    const expandAllButton = document.createElement('button');
+    const collapseAllButton = document.createElement('button');
+    expandAllButton.textContent = "Expand all";
+    collapseAllButton.textContent = "Collapse all";
+    expandAllButton.addEventListener('click', e => this.treeTable.expandAll());
+    collapseAllButton.addEventListener('click', e => this.treeTable.collapseAll());
 
+    this.rootElement.append(expandAllButton, collapseAllButton, this.tableElement);
     this.offset = 0;
     this.height = 100;
 
@@ -43,10 +55,10 @@ class TreeGrid {
     console.log("updated event", viewportData);
     // for the sake of the example, redrawing all headers each time,
     // should only do this when a change occurs
-    var oldHead = this.rootElement.querySelector('thead');
-    oldHead && this.rootElement.removeChild(oldHead);
-    var oldBody = this.rootElement.querySelector('tbody.body');
-    oldBody && this.rootElement.removeChild(oldBody);
+    var oldHead = this.tableElement.querySelector('thead');
+    oldHead && this.tableElement.removeChild(oldHead);
+    var oldBody = this.tableElement.querySelector('tbody.body');
+    oldBody && this.tableElement.removeChild(oldBody);
 
     var header = document.createElement('thead');
     var headerRow = document.createElement('tr');
@@ -85,7 +97,7 @@ class TreeGrid {
       headerRow.appendChild(td);
     });
     header.appendChild(headerRow);
-    this.rootElement.appendChild(header);
+    this.tableElement.appendChild(header);
 
     var tbody = document.createElement('tbody');
     tbody.className = 'body';
@@ -127,8 +139,8 @@ class TreeGrid {
       tbody.appendChild(tr);
       tbody.oncontextmenu = e => this._showFilterMenu(e);
     }
-    this.rootElement.insertBefore(tbody, this.rootElement.firstChild);
-    this.rootElement.insertBefore(header, this.rootElement.firstChild);
+    this.tableElement.insertBefore(tbody, this.tableElement.firstChild);
+    this.tableElement.insertBefore(header, this.tableElement.firstChild);
   }
 
   // Replace all current filters with this new set, update the UI list of filters, and set the viewport
@@ -179,10 +191,10 @@ class TreeGrid {
           //TODO convert value more completely
           var value = target.internalValue;
           if (typeof value === 'string') {
-            value = dh.FilterValue.ofString(value);
+            value = FilterValue.ofString(value);
           } else /*if (typeof value === 'number')*/ {
             //otherwise, we'll just assume it is a number, ofNumber will throw exceptions if not
-            value = dh.FilterValue.ofNumber(value);
+            value = FilterValue.ofNumber(value);
           }
           //TODO make editable
           current.push(buildFilter(column, value));
@@ -193,10 +205,10 @@ class TreeGrid {
           //TODO convert value more completely
           var value = target.internalValue;
           if (typeof value === 'string') {
-            value = dh.FilterValue.ofString(value);
+            value = FilterValue.ofString(value);
           } else /*if (typeof value === 'number')*/ {
             //otherwise, we'll just assume it is a number, ofNumber will throw exceptions if not
-            value = dh.FilterValue.ofNumber(value);
+            value = FilterValue.ofNumber(value);
           }
 
           //TODO make editable

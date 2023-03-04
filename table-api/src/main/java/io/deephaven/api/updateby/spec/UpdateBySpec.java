@@ -71,6 +71,8 @@ public interface UpdateBySpec {
         T visit(CumMinMaxSpec m);
 
         T visit(CumProdSpec p);
+
+        T visit(RollingSumSpec p);
     }
     // endregion
 }

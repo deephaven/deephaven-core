@@ -158,7 +158,7 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
 
     protected abstract void onFailureInternal(Throwable originalException, Entry sourceEntry);
 
-    protected final void onFailureInternalWithDependent(final BaseTable dependent, final Throwable originalException,
+    protected final void onFailureInternalWithDependent(final BaseTable<?> dependent, final Throwable originalException,
             final Entry sourceEntry) {
         dependent.notifyListenersOnError(originalException, sourceEntry);
 
@@ -168,7 +168,9 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
                 AsyncClientErrorNotifier.reportError(originalException);
             }
         } catch (IOException e) {
-            throw new UncheckedTableException("Exception in " + sourceEntry.toString(), originalException);
+            throw new UncheckedTableException(
+                    "Exception while delivering async client error notification for " + sourceEntry.toString(),
+                    originalException);
         }
     }
 

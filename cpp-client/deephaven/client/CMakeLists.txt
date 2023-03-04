@@ -42,16 +42,17 @@ set(ALL_FILES
     include/private/deephaven/client/impl/table_handle_manager_impl.h
     include/private/deephaven/client/impl/util.h
 
-    src/arrowutil/arrow_util.cc
+    src/arrowutil/arrow_flight.cc
 
     include/private/deephaven/client/arrowutil/arrow_traits.h
-    include/private/deephaven/client/arrowutil/arrow_util.h
+    include/private/deephaven/client/arrowutil/arrow_flight.h
     include/private/deephaven/client/arrowutil/arrow_visitors.h
     include/private/deephaven/client/arrowutil/arrow_value_converter.h
 
     src/columns.cc
     src/expressions.cc
     src/client.cc
+    src/flight.cc
     src/ticking.cc
     src/types.cc
     src/chunk/chunk.cc
@@ -59,12 +60,15 @@ set(ALL_FILES
     src/chunk/chunk_maker.cc
     src/column/array_column_source.cc
     src/column/column_source.cc
+    src/column/column_source_helpers.cc
     src/container/row_sequence.cc
+    src/table/schema.cc
     src/table/table.cc
 
     include/public/deephaven/client/columns.h
     include/public/deephaven/client/expressions.h
     include/public/deephaven/client/client.h
+    include/public/deephaven/client/flight.h
     include/public/deephaven/client/ticking.h
     include/public/deephaven/client/types.h
     include/public/deephaven/client/chunk/chunk.h
@@ -73,8 +77,12 @@ set(ALL_FILES
     include/public/deephaven/client/chunk/chunk_traits.h
     include/public/deephaven/client/column/array_column_source.h
     include/public/deephaven/client/column/column_source.h
+    include/public/deephaven/client/column/column_source_helpers.h
     include/public/deephaven/client/container/row_sequence.h
+    include/public/deephaven/client/table/schema.h
     include/public/deephaven/client/table/table.h
+    include/public/deephaven/client/utility/arrow_util.h
+    include/public/deephaven/client/utility/cython_support.h
 
     src/subscription/immer_table_state.cc
     src/subscription/index_decoder.cc
@@ -96,6 +104,8 @@ set(ALL_FILES
     include/private/deephaven/client/immerutil/abstract_flex_vector.h
     include/private/deephaven/client/immerutil/immer_column_source.h
 
+    src/utility/arrow_util.cc
+    src/utility/cython_support.cc
     src/utility/executor.cc
     src/utility/misc.cc
     include/private/deephaven/client/utility/executor.h
@@ -168,6 +178,9 @@ set(ALL_FILES
     )
 
 add_library(client ${ALL_FILES})
+# In order to make a shared library suitable for Cython.
+set_property(TARGET client PROPERTY POSITION_INDEPENDENT_CODE ON)
+
 # This is so deephaven::client works both when using the installed CMake config
 # and when using this project as a CMake subdirectory of your own project.
 add_library(deephaven::client ALIAS client)

@@ -8,11 +8,14 @@ import dagger.Module;
 import dagger.Provides;
 import io.deephaven.client.impl.SessionImpl;
 import io.deephaven.client.impl.SessionImplConfig;
+import io.deephaven.client.impl.SessionImplConfig.Builder;
 import io.deephaven.proto.DeephavenChannel;
+import io.deephaven.proto.DeephavenChannelImpl;
 import io.grpc.Channel;
 import io.grpc.ManagedChannel;
 
-import java.util.concurrent.CompletableFuture;
+import javax.annotation.Nullable;
+import javax.inject.Named;
 import java.util.concurrent.ScheduledExecutorService;
 
 @Module
@@ -21,22 +24,23 @@ public interface SessionImplModule {
     @Binds
     Channel bindsManagedChannel(ManagedChannel managedChannel);
 
-    @Provides
-    static SessionImpl session(DeephavenChannel channel, ScheduledExecutorService scheduler) {
-        return SessionImplConfig.builder()
-                .executor(scheduler)
-                .channel(channel)
-                .build()
-                .createSession();
-    }
+    @Binds
+    DeephavenChannel bindsDeephavenChannelImpl(DeephavenChannelImpl deephavenChannelImpl);
 
     @Provides
-    static CompletableFuture<? extends SessionImpl> sessionFuture(DeephavenChannel channel,
-            ScheduledExecutorService scheduler) {
-        return SessionImplConfig.builder()
+    static SessionImpl session(DeephavenChannel channel, ScheduledExecutorService scheduler,
+            @Nullable @Named("authenticationTypeAndValue") String authenticationTypeAndValue) {
+        final Builder builder = SessionImplConfig.builder()
                 .executor(scheduler)
-                .channel(channel)
-                .build()
-                .createSessionFuture();
+                .channel(channel);
+        if (authenticationTypeAndValue != null) {
+            builder.authenticationTypeAndValue(authenticationTypeAndValue);
+        }
+        final SessionImplConfig config = builder.build();
+        try {
+            return config.createSession();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

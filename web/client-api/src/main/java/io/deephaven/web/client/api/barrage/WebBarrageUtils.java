@@ -404,8 +404,7 @@ public class WebBarrageUtils {
                         boolArray[i] = wireValues.get(i);
                     }
                 }
-                return new ByteArrayColumnData(Js.uncheckedCast(boolArray));
-
+                return new BooleanArrayColumnData(boolArray);
             case "byte":
                 assert positions.length().toFloat64() >= size;
                 Int8Array byteArray =
@@ -429,6 +428,8 @@ public class WebBarrageUtils {
             // longs are a special case despite being java primitives
             case "long":
             case "io.deephaven.time.DateTime":
+            case "java.time.Instant":
+            case "java.time.ZonedDateTime":
                 assert positions.length().toFloat64() >= size * 8;
                 long[] longArray = new long[size];
 

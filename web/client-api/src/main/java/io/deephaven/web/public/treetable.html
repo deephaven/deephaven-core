@@ -3,9 +3,6 @@
 <head>
     <meta charset="utf-8" />
     <title>Deephaven Web API tree table example</title>
-    <script src="dh-internal.js" type="text/javascript"></script>
-    <script src="dh-core.js" type="text/javascript"></script>
-    <script src="treegrid.js" type="text/javascript"></script>
     <script src="totals.js" type="text/javascript"></script>
 
     <link href="basic.css" rel="stylesheet" type="text/css" />
@@ -16,11 +13,19 @@
     </style>
 </head>
 <body>
-<script>
+<script type="module">
+    import dh from './dh-core.js';
+    const {CoreClient} = dh;
+
+    import {TreeGrid} from "./treegrid.js";
+
     var connection;
     var ide;
     (async () => {
-        connection = new dh.IdeConnection(window.location.protocol + "//" + window.location.host);
+        var client = new CoreClient(window.location.protocol + "//" + window.location.host);
+        await client.login({type:CoreClient.LOGIN_TYPE_ANONYMOUS});
+        connection = await client.getAsIdeConnection();
+
         var types = await connection.getConsoleTypes();
 
         if (types.indexOf("python") !== -1) {

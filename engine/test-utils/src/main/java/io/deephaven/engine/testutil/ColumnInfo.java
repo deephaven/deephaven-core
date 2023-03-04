@@ -9,6 +9,7 @@ import io.deephaven.engine.testutil.generator.TestDataGenerator;
 import io.deephaven.engine.testutil.sources.ImmutableColumnHolder;
 import io.deephaven.time.DateTime;
 
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Random;
 
@@ -40,7 +41,7 @@ public class ColumnInfo<T, U> {
     public ColumnHolder<?> generateInitialColumn(RowSet rowSet, Random random) {
         final Chunk<Values> initialData = generator.populateChunk(rowSet, random);
 
-        if (dataType == Long.class && type == DateTime.class) {
+        if (dataType == Long.class && (type == DateTime.class || type == Instant.class)) {
             Require.eqFalse(immutable, "immutable");
             Require.eqFalse(grouped, "grouped");
             return ColumnHolder.getDateTimeColumnHolder(name, false, initialData);

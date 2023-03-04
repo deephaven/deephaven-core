@@ -10,7 +10,7 @@ package io.deephaven.engine.table.impl.by.ssmminmax;
 
 import java.util.Objects;
 
-import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
+import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.engine.table.impl.ssms.ObjectSegmentedSortedMultiset;
 import io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet;
@@ -20,7 +20,7 @@ public class ObjectSetResult implements SsmChunkedMinMaxOperator.SetResult {
     private final boolean minimum;
     private final ObjectArraySource resultColumn;
 
-    public ObjectSetResult(boolean minimum, ArrayBackedColumnSource resultColumn) {
+    public ObjectSetResult(boolean minimum, WritableColumnSource resultColumn) {
         this.minimum = minimum;
         this.resultColumn = (ObjectArraySource) resultColumn;
     }

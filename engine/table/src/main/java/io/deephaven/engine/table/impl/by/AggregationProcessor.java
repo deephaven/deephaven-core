@@ -235,7 +235,7 @@ public class AggregationProcessor implements AggregationContextFactory {
 
     /**
      * Create a trivial {@link AggregationContextFactory} to implement {@link Table#selectDistinct select distinct}.
-     * 
+     *
      * @return The {@link AggregationContextFactory}
      */
     public static AggregationContextFactory forSelectDistinct() {
@@ -892,12 +892,19 @@ public class AggregationProcessor implements AggregationContextFactory {
         @Override
         @FinalDefault
         default void visit(@NotNull final AggSpecWAvg wAvg) {
-            rollupUnsupported("WAvg");
+            // TODO(deephaven-core#3350): AggWAvg support for rollup()
+            rollupUnsupported("WAvg", 3350);
         }
     }
 
     private static void rollupUnsupported(@NotNull final String operationName) {
         throw new UnsupportedOperationException(String.format("Agg%s is not supported for rollup()", operationName));
+    }
+
+    private static void rollupUnsupported(@NotNull final String operationName, int ticket) {
+        throw new UnsupportedOperationException(String.format(
+                "Agg%s is not supported for rollup(), see https://github.com/deephaven/deephaven-core/issues/%d",
+                operationName, ticket));
     }
 
     // -----------------------------------------------------------------------------------------------------------------
@@ -1366,8 +1373,9 @@ public class AggregationProcessor implements AggregationContextFactory {
     }
 
     private static ColumnSource<?> maybeReinterpretDateTimeAsLong(@NotNull final ColumnSource<?> inputSource) {
+        // noinspection unchecked
         return inputSource.getType() == DateTime.class
-                ? ReinterpretUtils.dateTimeToLongSource(inputSource)
+                ? ReinterpretUtils.dateTimeToLongSource((ColumnSource<DateTime>) inputSource)
                 : inputSource;
     }
 

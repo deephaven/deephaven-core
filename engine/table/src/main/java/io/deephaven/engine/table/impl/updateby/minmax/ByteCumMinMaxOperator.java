@@ -5,19 +5,18 @@
  */
 package io.deephaven.engine.table.impl.updateby.minmax;
 
-import io.deephaven.chunk.*;
-import io.deephaven.chunk.attributes.ChunkLengths;
-import io.deephaven.chunk.attributes.ChunkPositions;
+import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.ByteChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseByteUpdateByOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static io.deephaven.util.QueryConstants.NULL_BYTE;
+import static io.deephaven.util.QueryConstants.*;
 
 public class ByteCumMinMaxOperator extends BaseByteUpdateByOperator {
     private final boolean isMax;
@@ -25,72 +24,52 @@ public class ByteCumMinMaxOperator extends BaseByteUpdateByOperator {
     // region extra-fields
     // endregion extra-fields
 
-    public ByteCumMinMaxOperator(@NotNull final MatchPair inputPair,
+    protected class Context extends BaseByteUpdateByOperator.Context {
+        public ByteChunk<? extends Values> byteValueChunk;
+
+        protected Context(final int chunkSize) {
+            super(chunkSize);
+        }
+
+        @Override
+        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
+            byteValueChunk = valuesChunk.asByteChunk();
+        }
+
+        @Override
+        public void push(long key, int pos, int count) {
+            Assert.eq(count, "push count", 1);
+
+            final byte val = byteValueChunk.get(pos);
+
+            if (curVal == NULL_BYTE) {
+                curVal = val;
+            } else if (val != NULL_BYTE) {
+                if ((isMax && val > curVal) ||
+                        (!isMax && val < curVal)) {
+                    curVal = val;
+                }
+            }
+        }
+    }
+
+    public ByteCumMinMaxOperator(@NotNull final MatchPair pair,
                                   final boolean isMax,
                                   @Nullable final RowRedirection rowRedirection
-                                  // region extra-constructor-args
-                                  // endregion extra-constructor-args
-                                  ) {
-        super(inputPair, new String[] { inputPair.rightColumn }, rowRedirection);
+                                // region extra-constructor-args
+                                // endregion extra-constructor-args
+    ) {
+        super(pair, new String[] { pair.rightColumn }, rowRedirection);
         this.isMax = isMax;
         // region constructor
         // endregion constructor
     }
-
     // region extra-methods
     // endregion extra-methods
 
+    @NotNull
     @Override
-    public void addChunk(@NotNull final UpdateContext context,
-                         @NotNull final Chunk<Values> values,
-                         @NotNull final LongChunk<? extends RowKeys> keyChunk,
-                         @NotNull final IntChunk<RowKeys> bucketPositions,
-                         @NotNull final IntChunk<ChunkPositions> startPositions,
-                         @NotNull final IntChunk<ChunkLengths> runLengths) {
-        final ByteChunk<Values> asBytes = values.asByteChunk();
-        final Context ctx = (Context) context;
-        for(int runIdx = 0; runIdx < startPositions.size(); runIdx++) {
-            final int runStart = startPositions.get(runIdx);
-            final int runLength = runLengths.get(runIdx);
-            final int bucketPosition = bucketPositions.get(runStart);
-
-            ctx.curVal = bucketLastVal.getByte(bucketPosition);
-            accumulate(asBytes, ctx, runStart, runLength);
-            bucketLastVal.set(bucketPosition, ctx.curVal);
-        }
-
-        //noinspection unchecked
-        outputSource.fillFromChunkUnordered(ctx.fillContext.get(), ctx.outputValues.get(), (LongChunk<RowKeys>) keyChunk);
-    }
-
-    @Override
-    protected void doAddChunk(@NotNull final Context ctx,
-                              @NotNull final RowSequence inputKeys,
-                              @NotNull final Chunk<Values> workingChunk,
-                              long groupPosition) {
-        ctx.curVal = groupPosition == singletonGroup ? singletonVal : NULL_BYTE;
-        accumulate(workingChunk.asByteChunk(), ctx, 0, workingChunk.size());
-        singletonGroup = groupPosition;
-        singletonVal = ctx.curVal;
-        outputSource.fillFromChunk(ctx.fillContext.get(), ctx.outputValues.get(), inputKeys);
-    }
-
-    private void accumulate(@NotNull final ByteChunk<Values> asBytes,
-                            @NotNull final Context ctx,
-                            final int runStart,
-                            final int runLength) {
-        final WritableByteChunk<Values> localOutputValues = ctx.outputValues.get();
-        for (int ii = runStart; ii < runStart + runLength; ii++) {
-            final byte currentVal = asBytes.get(ii);
-            if(ctx.curVal == NULL_BYTE) {
-                ctx.curVal = currentVal;
-            } else if(currentVal != NULL_BYTE) {
-                if((isMax && currentVal > ctx.curVal) ||
-                   (!isMax && currentVal < ctx.curVal)  ) {
-                    ctx.curVal = currentVal;
-                }
-            }
-            localOutputValues.set(ii, ctx.curVal);
-        }
+    public UpdateByOperator.Context makeUpdateContext(final int chunkSize) {
+        return new Context(chunkSize);
     }
 }

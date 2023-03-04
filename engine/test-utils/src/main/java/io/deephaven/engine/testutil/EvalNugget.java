@@ -116,7 +116,6 @@ public abstract class EvalNugget implements EvalNuggetInterface {
             recomputedTable = e();
         }
         checkDifferences(msg, recomputedTable);
-        recomputedTable = null;
     }
 
     public void showResult(String label, Table e) {
@@ -129,7 +128,7 @@ public abstract class EvalNugget implements EvalNuggetInterface {
     }
 
     @NotNull
-    EnumSet<TableDiff.DiffItems> diffItems() {
+    protected EnumSet<TableDiff.DiffItems> diffItems() {
         return EnumSet.of(TableDiff.DiffItems.DoublesExact);
     }
 
@@ -163,12 +162,22 @@ public abstract class EvalNugget implements EvalNuggetInterface {
 
             if (recomputedForComparison != recomputedTable) {
                 showResult("Recomputed Table (unmodified):", recomputedTable);
-                e();
             }
             if (originalForComparison != originalValue) {
                 showResult("Incremental Table (unmodified):", originalValue);
             }
         }
+    }
+
+    @Override
+    public void releaseRecomputed() {
+        if (recomputedTable != null && recomputedTable != originalValue) {
+            if (recomputedTable.tryRetainReference()) {
+                recomputedTable.dropReference();
+                throw new IllegalStateException("Recomputed table " + recomputedTable + " is still live upon release");
+            }
+        }
+        recomputedTable = null;
     }
 
     public abstract static class Sorted extends EvalNugget {

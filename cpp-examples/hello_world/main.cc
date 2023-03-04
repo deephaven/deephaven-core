@@ -4,6 +4,7 @@
 #include <exception>
 #include <iostream>
 #include "deephaven/client/client.h"
+#include "deephaven/client/ticking.h"
 
 using deephaven::client::Client;
 

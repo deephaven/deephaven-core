@@ -3,6 +3,8 @@
  */
 package io.deephaven.client.impl;
 
+import io.deephaven.proto.DeephavenChannel;
+
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -50,4 +52,11 @@ public interface Session
     CompletableFuture<Void> release(ExportId exportId);
 
     // ----------------------------------------------------------
+
+    /**
+     * The authenticated channel.
+     *
+     * @return the authenticated channel
+     */
+    DeephavenChannel channel();
 }

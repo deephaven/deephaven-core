@@ -30,7 +30,6 @@ String[] mods = [
 String[] webMods = [
         'web',
         'web-client-api', // compiled javascript api client
-        'web-client-ide', // IDE-only additions to open-api javascript client
         'web-client-ui', // React IDE client app
         'web-shared-beans', // shared data types and common interfaces
         'web-client-backplane', // shared data types and common interfaces
@@ -353,6 +352,12 @@ project(':hotspot-impl').projectDir = file('hotspot-impl')
 include ':authentication'
 include ':authorization-codegen'
 include ':authorization'
+
+include(':authentication:example-providers')
+include(':authentication:example-providers:mtls')
+include(':authentication:example-providers:psk')
+include(':authentication:example-providers:sql-username-password')
+include(':authentication:example-providers:oidc')
 
 include ':clock'
 include ':clock-impl'

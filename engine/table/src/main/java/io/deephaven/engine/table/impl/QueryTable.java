@@ -40,9 +40,13 @@ import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.table.impl.select.SelectColumnFactory;
+import io.deephaven.engine.table.impl.updateby.UpdateBy;
+import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
+import io.deephaven.engine.table.impl.util.JobScheduler;
+import io.deephaven.engine.table.impl.util.OperationInitializationPoolJobScheduler;
 import io.deephaven.engine.table.impl.util.FieldUtils;
 import io.deephaven.engine.updategraph.DynamicNode;
-import io.deephaven.engine.util.TableTools;
+import io.deephaven.engine.util.*;
 import io.deephaven.engine.util.systemicmarking.SystemicObject;
 import io.deephaven.qst.table.AggregateAllTable;
 import io.deephaven.vector.Vector;
@@ -51,7 +55,6 @@ import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.time.DateTime;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
-import io.deephaven.engine.util.IterableUtils;
 import io.deephaven.engine.liveness.Liveness;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.table.impl.MemoizedOperationKey.SelectUpdateViewOrUpdateView.Flavor;
@@ -1202,15 +1205,15 @@ public class QueryTable extends BaseTable<QueryTable> {
                             RowSetShiftData.EMPTY, ModifiedColumnSet.ALL);
 
                     final CompletableFuture<Void> waitForResult = new CompletableFuture<>();
-                    final SelectAndViewAnalyzer.JobScheduler jobScheduler;
+                    final JobScheduler jobScheduler;
                     if ((QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE ||
                             (QueryTable.ENABLE_PARALLEL_SELECT_AND_UPDATE
                                     && OperationInitializationThreadPool.NUM_THREADS > 1))
                             && !OperationInitializationThreadPool.isInitializationThread()
                             && analyzer.allowCrossColumnParallelization()) {
-                        jobScheduler = new SelectAndViewAnalyzer.OperationInitializationPoolJobScheduler();
+                        jobScheduler = new OperationInitializationPoolJobScheduler();
                     } else {
-                        jobScheduler = SelectAndViewAnalyzer.ImmediateJobScheduler.INSTANCE;
+                        jobScheduler = ImmediateJobScheduler.INSTANCE;
                     }
 
                     final QueryTable resultTable;
@@ -1870,9 +1873,9 @@ public class QueryTable extends BaseTable<QueryTable> {
         checkInitiateOperation();
 
         // resultColumns initially contains the trigger columns, then we insert the base columns into it
-        final Map<String, ArrayBackedColumnSource<?>> resultColumns = SnapshotUtils
+        final Map<String, WritableColumnSource<?>> resultColumns = SnapshotUtils
                 .createColumnSourceMap(this.getColumnSourceMap(), ArrayBackedColumnSource::getMemoryColumnSource);
-        final Map<String, ArrayBackedColumnSource<?>> baseColumns = SnapshotUtils.createColumnSourceMap(
+        final Map<String, WritableColumnSource<?>> baseColumns = SnapshotUtils.createColumnSourceMap(
                 baseTable.getColumnSourceMap(), ArrayBackedColumnSource::getMemoryColumnSource);
         resultColumns.putAll(baseColumns);
 
@@ -1959,7 +1962,7 @@ public class QueryTable extends BaseTable<QueryTable> {
         }
 
         // Establish the "base" columns using the same names and types as the table being snapshotted
-        final Map<String, ArrayBackedColumnSource<?>> baseColumns =
+        final Map<String, WritableColumnSource<?>> baseColumns =
                 SnapshotUtils.createColumnSourceMap(baseTable.getColumnSourceMap(),
                         ArrayBackedColumnSource::getMemoryColumnSource);
 
@@ -2040,21 +2043,21 @@ public class QueryTable extends BaseTable<QueryTable> {
                     SnapshotUtils.maybeTransformToDirectVectorColumnSource(getColumnSource(stampColumn)));
         }
 
-        final Map<String, SparseArrayColumnSource<?>> resultTriggerColumns = new LinkedHashMap<>();
+        final Map<String, WritableColumnSource<?>> resultTriggerColumns = new LinkedHashMap<>();
         for (Map.Entry<String, ColumnSource<?>> entry : triggerColumns.entrySet()) {
             final String name = entry.getKey();
             final ColumnSource<?> cs = entry.getValue();
             final Class<?> type = cs.getType();
-            final SparseArrayColumnSource<?> stampDest = Vector.class.isAssignableFrom(type)
+            final WritableColumnSource<?> stampDest = Vector.class.isAssignableFrom(type)
                     ? SparseArrayColumnSource.getSparseMemoryColumnSource(type, cs.getComponentType())
                     : SparseArrayColumnSource.getSparseMemoryColumnSource(type);
 
             resultTriggerColumns.put(name, stampDest);
         }
 
-        final Map<String, SparseArrayColumnSource<?>> resultBaseColumns = SnapshotUtils.createColumnSourceMap(
+        final Map<String, WritableColumnSource<?>> resultBaseColumns = SnapshotUtils.createColumnSourceMap(
                 baseTable.getColumnSourceMap(), SparseArrayColumnSource::getSparseMemoryColumnSource);
-        final Map<String, SparseArrayColumnSource<?>> resultColumns = new LinkedHashMap<>(resultBaseColumns);
+        final Map<String, WritableColumnSource<?>> resultColumns = new LinkedHashMap<>(resultBaseColumns);
         resultColumns.putAll(resultTriggerColumns);
         if (resultColumns.size() != resultTriggerColumns.size() + resultBaseColumns.size()) {
             throwColumnConflictMessage(resultTriggerColumns.keySet(), resultBaseColumns.keySet());
