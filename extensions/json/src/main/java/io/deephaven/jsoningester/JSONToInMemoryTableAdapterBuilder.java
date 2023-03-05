@@ -1,5 +1,6 @@
 package io.deephaven.jsoningester;
 
+import com.fasterxml.jackson.core.JsonPointer;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.deephaven.api.util.NameValidator;
 import io.deephaven.base.verify.Require;
@@ -243,6 +244,19 @@ public class JSONToInMemoryTableAdapterBuilder {
         addCol(column, returnType);
 
         jsonAdpaterBuilder.addColumnFromFunction(column, returnType, function);
+        return this;
+    }
+
+    public JSONToInMemoryTableAdapterBuilder addColumnFromPointer(final String column, final Class<?> type,
+            final String jsonPointer) {
+        return addColumnFromPointer(column, type, JsonPointer.compile(jsonPointer));
+    }
+
+    public JSONToInMemoryTableAdapterBuilder addColumnFromPointer(final String column, final Class<?> type,
+            final JsonPointer jsonPointer) {
+        addCol(column, type);
+        jsonAdpaterBuilder.addColumnFromPointer(column, jsonPointer);
+
         return this;
     }
 

@@ -1,5 +1,6 @@
 package io.deephaven.jsoningester;
 
+import com.fasterxml.jackson.core.JsonPointer;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.deephaven.base.Pair;
 import io.deephaven.io.logger.Logger;
@@ -22,6 +23,8 @@ public class JSONToTableWriterAdapterBuilder extends StringMessageToTableAdapter
 
     private StringToTableWriterAdapter stringAdapter;
     private final Map<String, String> columnToJsonField = new HashMap<>();
+
+    private final Map<String, JsonPointer> columnToJsonPointer = new HashMap<>();
     private final Map<String, String> columnToParallelField = new HashMap<>();
     private final Map<String, ToIntFunction<JsonNode>> columnToIntFunction = new HashMap<>();
     private final Map<String, ToLongFunction<JsonNode>> columnToLongFunction = new HashMap<>();
@@ -53,6 +56,7 @@ public class JSONToTableWriterAdapterBuilder extends StringMessageToTableAdapter
         this.processArrays = other.processArrays;
 
         this.columnToJsonField.putAll(other.columnToJsonField);
+        this.columnToJsonPointer.putAll(other.columnToJsonPointer);
         this.columnToParallelField.putAll(other.columnToParallelField);
         this.columnToIntFunction.putAll(other.columnToIntFunction);
         this.columnToLongFunction.putAll(other.columnToLongFunction);
@@ -296,6 +300,15 @@ public class JSONToTableWriterAdapterBuilder extends StringMessageToTableAdapter
         return this;
     }
 
+    public JSONToTableWriterAdapterBuilder addColumnFromPointer(final String column, final String jsonPointer) {
+        return addColumnFromPointer(column, JsonPointer.compile(jsonPointer));
+    }
+
+    public JSONToTableWriterAdapterBuilder addColumnFromPointer(final String column, final JsonPointer jsonPointer) {
+        columnToJsonPointer.put(column, jsonPointer);
+        return this;
+    }
+
     public void setPostProcessConsumer(BiConsumer<MessageMetadata, JsonNode> postProcessConsumer) {
         this.postProcessConsumer = postProcessConsumer;
     }
@@ -331,6 +344,9 @@ public class JSONToTableWriterAdapterBuilder extends StringMessageToTableAdapter
         } else if (columnToJsonField.containsKey(column)) {
             throw new JSONIngesterException("Column \"" + column + "\" is already defined: mapped to field \""
                     + columnToJsonField.get(column) + '"');
+        } else if (columnToJsonPointer.containsKey(column)) {
+            throw new JSONIngesterException("Column \"" + column + "\" is already defined: mapped to JsonPointer \""
+                    + columnToJsonPointer.get(column) + '"');
         } else if (columnToIntFunction.containsKey(column)) {
             throw new JSONIngesterException("Column \"" + column + "\" is already defined: mapped to int function");
         } else if (columnToLongFunction.containsKey(column)) {
@@ -350,6 +366,7 @@ public class JSONToTableWriterAdapterBuilder extends StringMessageToTableAdapter
         final List<String> definedColumns = new ArrayList<>();
         definedColumns.addAll(allowedUnmappedColumns);
         definedColumns.addAll(columnToJsonField.keySet());
+        definedColumns.addAll(columnToJsonPointer.keySet());
         definedColumns.addAll(columnToIntFunction.keySet());
         definedColumns.addAll(columnToLongFunction.keySet());
         definedColumns.addAll(columnToDoubleFunction.keySet());
@@ -451,6 +468,7 @@ public class JSONToTableWriterAdapterBuilder extends StringMessageToTableAdapter
         return new JSONToTableWriterAdapter(tw, log, allowMissingKeys, allowNullValues, processArrays,
                 nConsumerThreads,
                 columnToJsonField,
+                columnToJsonPointer,
                 columnToIntFunction,
                 columnToLongFunction,
                 columnToDoubleFunction,
@@ -481,8 +499,8 @@ public class JSONToTableWriterAdapterBuilder extends StringMessageToTableAdapter
     JSONToTableWriterAdapter makeNestedAdapter(@NotNull final Logger log,
             @NotNull final TableWriter<?> tw,
             @NotNull final Map<String, TableWriter<?>> fieldToSubtableWriters,
-            final Set<String> allUnmapped,
-            final ThreadLocal<Queue<JSONToTableWriterAdapter.SubtableData>> subtableProcessingQueue) {
+            @NotNull final Set<String> allUnmapped,
+            @NotNull final ThreadLocal<Queue<JSONToTableWriterAdapter.SubtableData>> subtableProcessingQueue) {
         final int nThreads = 0; // nested adapters don't need threads
 
         final boolean createHolders = false; // parent adapters create the holders
@@ -501,6 +519,7 @@ public class JSONToTableWriterAdapterBuilder extends StringMessageToTableAdapter
                 processArrays,
                 nThreads,
                 columnToJsonField,
+                columnToJsonPointer,
                 columnToIntFunction,
                 columnToLongFunction,
                 columnToDoubleFunction,
@@ -555,7 +574,8 @@ public class JSONToTableWriterAdapterBuilder extends StringMessageToTableAdapter
 
         return new JSONToTableWriterAdapter(tw, log, allowMissingKeys, allowNullValues, processArrays,
                 0,
-                columnToJsonField, columnToIntFunction, columnToLongFunctionForSubtableAdapter, columnToDoubleFunction,
+                columnToJsonField, columnToJsonPointer, columnToIntFunction, columnToLongFunctionForSubtableAdapter,
+                columnToDoubleFunction,
                 columnToObjectFunction,
                 nestedFieldBuilders,
                 columnToParallelField,

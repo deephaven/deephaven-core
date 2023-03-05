@@ -707,6 +707,91 @@ public class JsonAdapterTest {
                 col("A", "test"), doubleCol("B", QueryConstants.NULL_DOUBLE),
                 longCol("D", 123), stringCol("E", "Foo"), shortCol("G", (short) 456), floatCol("H", 3.14f),
                 doubleCol("I", 42.2));
+         TableTools.show(result);
+        Assert.assertEquals("", diff(result, expected, 10));
+    }
+
+    @Test
+    public void testJsonPointers() throws IOException, InterruptedException, TimeoutException {
+        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory =
+                StringMessageToTableAdapter.buildFactory(log, new JSONToTableWriterAdapterBuilder()
+                        .nConsumerThreads(0)
+                        .addColumnFromField("A0", "a")
+                        .addColumnFromField("B0", "b")
+                        .addColumnFromPointer("A", "/a")
+                        .addColumnFromPointer("B", "/b")
+                        .addColumnFromPointer("D", "/c/d")
+                        .addColumnFromPointer("E", "/c/e")
+                        .addColumnFromPointer("E", "/c/e")
+                        .addColumnFromPointer("G", "/f/g")
+                        .addColumnFromPointer("H", "/f/h")
+                        .autoValueMapping(false));
+
+        final String[] names = new String[] {"A0", "B0", "A", "B", "D", "E", "G", "H"};
+        @SuppressWarnings("rawtypes")
+        final Class[] types = new Class[] {String.class, double.class, String.class, double.class, long.class,
+                String.class, short.class, float.class, double.class};
+
+        final DynamicTableWriter writer = new DynamicTableWriter(names, Type.fromClasses(types));
+        final UpdateSourceQueryTable result = writer.getTable();
+
+        adapter = factory.apply(writer);
+
+        injectJson(
+                "{\"a\": \"test\", \"b\": 42.2, \"c\": {\"d\": 123, \"e\": \"Foo\"}, \"f\": {\"g\": 456, \"h\": 3.14 } }",
+                "id", result);
+
+        Assert.assertEquals(1, result.intSize());
+        final Table expected = newTable(
+                col("A0", "test"),
+                doubleCol("B0", 42.2),
+                col("A", "test"),
+                doubleCol("B", 42.2),
+                longCol("D", 123),
+                stringCol("E", "Foo"),
+                shortCol("G", (short) 456),
+                floatCol("H", 3.14f));
+        TableTools.show(result);
+        Assert.assertEquals("", diff(result, expected, 10));
+    }
+
+    @Test
+    public void testJsonPointers2() throws IOException, InterruptedException, TimeoutException {
+        final JSONToTableWriterAdapterBuilder factoryNestedDe = new JSONToTableWriterAdapterBuilder()
+                .addColumnFromField("D0", "d")
+                .addColumnFromField("E0", "e")
+                .autoValueMapping(false);
+
+        final Function<TableWriter<?>, StringMessageToTableAdapter<StringMessageHolder>> factory =
+                StringMessageToTableAdapter.buildFactory(log, new JSONToTableWriterAdapterBuilder()
+                        .nConsumerThreads(0)
+                        .addColumnFromField("A0", "a")
+                        .addColumnFromPointer("A1", "/a")
+                        .addNestedField("c", factoryNestedDe)
+                        .addColumnFromPointer("D1", "/c/d")
+                        .addColumnFromPointer("E1", "/c/e")
+                        .autoValueMapping(false));
+
+        final String[] names = new String[] {"A0", "A1", "D0", "E0", "D1", "E1"};
+        @SuppressWarnings("rawtypes")
+        final Class[] types =
+                new Class[] {String.class, String.class, long.class, String.class, long.class, String.class};
+
+        final DynamicTableWriter writer = new DynamicTableWriter(names, Type.fromClasses(types));
+        final UpdateSourceQueryTable result = writer.getTable();
+
+        adapter = factory.apply(writer);
+
+        injectJson("{\"a\": \"test\", \"c\": {\"d\": 123, \"e\": \"Foo\"} }", "id", result);
+
+        Assert.assertEquals(1, result.intSize());
+        final Table expected = newTable(
+                col("A0", "test"),
+                col("A1", "test"),
+                longCol("D0", 123),
+                stringCol("E0", "Foo"),
+                longCol("D1", 123),
+                stringCol("E1", "Foo"));
         TableTools.show(result);
         Assert.assertEquals("", diff(result, expected, 10));
     }
