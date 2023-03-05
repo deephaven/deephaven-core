@@ -2074,45 +2074,66 @@ public class JsonAdapterTest {
         adapter.cleanup();
 
         System.out.println("Running test...");
-        long before = System.nanoTime();
+        long beforeConsume = System.nanoTime();
         for (; msgIdx < messages.length; msgIdx++) {
             adapter.consumeMessage("id", messages[msgIdx]);
         }
-        long after = System.nanoTime();
-        long intervalNanos = after - before;
-        System.out.println("Consumed " + numMessages + " in " + intervalNanos / 1_000_000L + "ms, "
-                + NANOS_PER_SECOND * numMessages / intervalNanos + " msgs/sec");
-        before = System.nanoTime();
+        adapter.waitForProcessing(MAX_WAIT_MILLIS);
+        long afterConsume = System.nanoTime();
+        long intervalNanosConsume = afterConsume - beforeConsume;
+        System.out.println("Consumed " + numMessages + " in " + intervalNanosConsume / 1_000_000L + "ms, "
+                + NANOS_PER_SECOND * numMessages / intervalNanosConsume + " msgs/sec");
+
+
+        long beforeCleanup = System.nanoTime();
         while (result.intSize() < messages.length) {
             adapter.cleanup();
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(result::run);
             // busy-wait or else the processor threads will pause too
             // noinspection StatementWithEmptyBody
-            while (System.nanoTime() - before < 200_000_000L) {
+            while (System.nanoTime() - beforeCleanup < 200_000_000L) {
                 // Do nothing
             }
         }
-        after = System.nanoTime();
-        intervalNanos = after - before;
-        System.out.println("Processed " + numMessages + " in " + intervalNanos / 1_000_000L + "ms, "
-                + NANOS_PER_SECOND * numMessages / intervalNanos + " msgs/sec");
+        long afterCleanup = System.nanoTime();
+        long intervalNanosCleanup = afterCleanup - beforeCleanup;
+        System.out.println("Processed " + numMessages + " in " + intervalNanosCleanup / 1_000_000L + "ms, "
+                + NANOS_PER_SECOND * numMessages / intervalNanosCleanup + " msgs/sec");
 
         // Somewhat arbitrarily picking 30,000 messages per second as a minimum performance benchmark
         // - note that this test is lumping the LTM in with the imports, so actual performance should be higher.
         Assert.assertEquals(messages.length, result.intSize());
 
 
-        long minMessagesPerSecEachThread = 7500L;
-        long expectedMsgsPerSecOverall = minMessagesPerSecEachThread * numThreads;
-        long realizedMsgsPerSec = Math.round(numMessages / (intervalNanos / NANOS_PER_SECOND));
+        // log consumeMessage() performance
 
-        System.out.println("realizedMsgsPerSec=" + realizedMsgsPerSec + "; expectedMsgsPerSecOverall="
-                + expectedMsgsPerSecOverall);
+        long minConsumedMessagesPerSecEachThread = 4_000L;
+        long expectedConsumedMsgsPerSecOverall = minConsumedMessagesPerSecEachThread * numThreads;
+        long realizedConsumedMsgsPerSec = Math.round(numMessages / (intervalNanosConsume / NANOS_PER_SECOND));
 
+        System.out.println("realizedConsumedMsgsPerSec=" + realizedConsumedMsgsPerSec + "; expectedConsumedMsgsPerSecOverall="
+                + expectedConsumedMsgsPerSecOverall);
+
+        // log cleanup() performance
+
+        long minCleanupMessagesPerSecEachThread = 25_000L;
+        long expectedCleanupMsgsPerSecOverall = minCleanupMessagesPerSecEachThread * numThreads;
+        long realizedCleanupMsgsPerSec = Math.round(numMessages / (intervalNanosCleanup / NANOS_PER_SECOND));
+
+        System.out.println("realizedConsumedMsgsPerSec=" + realizedCleanupMsgsPerSec + "; expectedConsumedMsgsPerSecOverall="
+                + expectedCleanupMsgsPerSecOverall);
+
+        // check consumeMessage() performance
         Assert.assertTrue(
-                "expected realizedMsgsPerSec > expectedMsgsPerSecOverall; realizedMsgsPerSec=" + realizedMsgsPerSec
-                        + ", expectedMsgsPerSecOverall=" + expectedMsgsPerSecOverall,
-                realizedMsgsPerSec > expectedMsgsPerSecOverall);
+                "expected realizedConsumedMsgsPerSec > expectedConsumedMsgsPerSecOverall; realizedConsumedMsgsPerSec=" + realizedConsumedMsgsPerSec
+                        + ", expectedConsumedMsgsPerSecOverall=" + expectedConsumedMsgsPerSecOverall,
+                realizedConsumedMsgsPerSec > expectedConsumedMsgsPerSecOverall);
+
+        // check cleanup() performance
+        Assert.assertTrue(
+                "expected realizedConsumedMsgsPerSec > expectedConsumedMsgsPerSecOverall; realizedConsumedMsgsPerSec=" + realizedCleanupMsgsPerSec
+                        + ", expectedConsumedMsgsPerSecOverall=" + expectedCleanupMsgsPerSecOverall,
+                realizedCleanupMsgsPerSec > expectedCleanupMsgsPerSecOverall);
     }
 
     @Test
