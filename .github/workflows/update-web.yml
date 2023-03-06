@@ -1,5 +1,5 @@
 # This workflow will automatically create a PR in deephaven-core to update the WEB_VERSION when a new web version is published
-name: Update deephaven-core web version
+name: Update web version
 
 on:
   workflow_dispatch:
@@ -20,9 +20,9 @@ jobs:
       - name: Get web versions
         id: web_versions
         run: |
-          echo "WEB_VERSION<<$(npm info @deephaven/code-studio@latest version" >> $GITHUB_OUTPUT
-          echo "GRID_VERSION<<$(npm info @deephaven/embed-grid@latest version" >> $GITHUB_OUTPUT
-          echo "CHART_VERSION<<$(npm info @deephaven/embed-chart@latest version" >> $GITHUB_OUTPUT
+          echo "WEB_VERSION<<$(npm info @deephaven/code-studio@latest version)" >> $GITHUB_OUTPUT
+          echo "GRID_VERSION<<$(npm info @deephaven/embed-grid@latest version)" >> $GITHUB_OUTPUT
+          echo "CHART_VERSION<<$(npm info @deephaven/embed-chart@latest version)" >> $GITHUB_OUTPUT
       - name: Update deephaven-core
         env:
           WEB_VERSION: ${{steps.web_versions.outputs.WEB_VERSION}}
