@@ -21,7 +21,7 @@ jobs:
         id: web_versions
         run: |
           echo "npm version is $(npm --version)"
-          echo "WEB_VERSION=0.34.0" >> $GITHUB_OUTPUT
+          echo "WEB_VERSION=0.29.0" >> $GITHUB_OUTPUT
           echo "GRID_VERSION=$(npm info @deephaven/embed-grid@latest version)" >> $GITHUB_OUTPUT
           echo "CHART_VERSION=$(npm info @deephaven/embed-chart@latest version)" >> $GITHUB_OUTPUT
       - name: Update deephaven-core
