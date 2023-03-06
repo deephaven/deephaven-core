@@ -49,6 +49,7 @@ import io.deephaven.server.session.SessionServiceGrpcImpl;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.TicketResolver;
 import io.deephaven.server.session.TicketResolverBase;
+import io.deephaven.server.test.TestAuthModule.FakeBearer;
 import io.deephaven.server.util.Scheduler;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.auth.AuthContext;
@@ -372,38 +373,11 @@ public abstract class FlightMessageRoundTripTest {
         scriptSession.setVariable("test", TableTools.emptyTable(10).update("I=i"));
 
         // add the bearer token override
-        final String bearerToken = UUID.randomUUID().toString();
-        component.authRequestHandlers().put(Auth2Constants.BEARER_PREFIX.trim(), new AuthenticationRequestHandler() {
-            @Override
-            public String getAuthType() {
-                return Auth2Constants.BEARER_PREFIX.trim();
-            }
-
-            @Override
-            public Optional<AuthContext> login(long protocolVersion, ByteBuffer payload,
-                    HandshakeResponseListener listener) {
-                return Optional.empty();
-            }
-
-            @Override
-            public Optional<AuthContext> login(String payload, MetadataResponseListener listener) {
-                if (payload.equals(bearerToken)) {
-                    return Optional.of(new AuthContext.SuperUser());
-                }
-                return Optional.empty();
-            }
-
-            @Override
-            public void initialize(String targetUrl) {
-                // do nothing
-            }
-        });
-
         final MutableBoolean tokenChanged = new MutableBoolean();
         flightClient = FlightClient.builder().location(serverLocation)
                 .allocator(new RootAllocator())
                 .intercept(info -> new FlightClientMiddleware() {
-                    String currToken = Auth2Constants.BEARER_PREFIX + bearerToken;
+                    String currToken = Auth2Constants.BEARER_PREFIX + FakeBearer.TOKEN;
 
                     @Override
                     public void onBeforeSendingHeaders(CallHeaders outgoingHeaders) {
@@ -442,9 +416,6 @@ public abstract class FlightMessageRoundTripTest {
         final Ticket ticket = new Ticket("s/test".getBytes(StandardCharsets.UTF_8));
         fullyReadStream(ticket, false);
 
-        // install the auth handler
-        component.authRequestHandlers().put(ANONYMOUS, new AnonymousRequestHandler());
-
         flightClient.authenticate(new ClientAuthHandler() {
             byte[] callToken = new byte[0];
 
@@ -475,9 +446,6 @@ public abstract class FlightMessageRoundTripTest {
 
         closeClient();
         scriptSession.setVariable("test", TableTools.emptyTable(10).update("I=i"));
-
-        // install the auth handler
-        component.authRequestHandlers().put(ANONYMOUS, new AnonymousRequestHandler());
 
         final MutableBoolean tokenChanged = new MutableBoolean();
         flightClient = FlightClient.builder().location(serverLocation)
@@ -567,8 +535,10 @@ public abstract class FlightMessageRoundTripTest {
     }
 
     @Test
-    public void testTimestampColumn() throws Exception {
+    public void testTimestampColumns() throws Exception {
         assertRoundTripDataEqual(TableTools.emptyTable(10).update("tm = DateTime.now()"));
+        assertRoundTripDataEqual(TableTools.emptyTable(10).update("instant = java.time.Instant.now()"));
+        assertRoundTripDataEqual(TableTools.emptyTable(10).update("zonedDateTime = java.time.ZonedDateTime.now()"));
     }
 
     @Test
@@ -1013,35 +983,5 @@ public abstract class FlightMessageRoundTripTest {
         assertEquals(deephavenTable.getDefinition(), uploadedTable.getDefinition());
         assertEquals(0, (long) TableTools
                 .diffPair(deephavenTable, uploadedTable, 0, EnumSet.noneOf(TableDiff.DiffItems.class)).getSecond());
-    }
-
-    private static class AnonymousRequestHandler implements AuthenticationRequestHandler {
-        @Override
-        public String getAuthType() {
-            return ANONYMOUS;
-        }
-
-        @Override
-        public Optional<AuthContext> login(long protocolVersion, ByteBuffer payload,
-                AuthenticationRequestHandler.HandshakeResponseListener listener) {
-            if (!payload.hasRemaining()) {
-                return Optional.of(new AuthContext.Anonymous());
-            }
-            return Optional.empty();
-        }
-
-        @Override
-        public Optional<AuthContext> login(String payload,
-                AuthenticationRequestHandler.MetadataResponseListener listener) {
-            if (payload.isEmpty()) {
-                return Optional.of(new AuthContext.Anonymous());
-            }
-            return Optional.empty();
-        }
-
-        @Override
-        public void initialize(String targetUrl) {
-            // do nothing
-        }
     }
 }

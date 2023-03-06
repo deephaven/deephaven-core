@@ -87,12 +87,6 @@ Liveness.cleanupLogEnabled=false
 
 # Force more parallelism
 QueryTable.minimumParallelSelectRows=1024
-OperationInitializationThreadPool.threads=-1
-UpdateGraphProcessor.updateThreads=-1
-
-RefreshingTableTestCase.printTableUpdates=false
-UpdateGraphProcessor.printDependencyInformation=false
-ReleaseTracker.captureStackTraces=false
 
 BarrageMessageProducer.subscriptionGrowthEnabled=true
 BarrageMessageProducer.targetSnapshotPercentage=0.1

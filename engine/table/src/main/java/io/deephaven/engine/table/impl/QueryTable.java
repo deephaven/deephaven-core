@@ -1873,9 +1873,9 @@ public class QueryTable extends BaseTable<QueryTable> {
         checkInitiateOperation();
 
         // resultColumns initially contains the trigger columns, then we insert the base columns into it
-        final Map<String, ArrayBackedColumnSource<?>> resultColumns = SnapshotUtils
+        final Map<String, WritableColumnSource<?>> resultColumns = SnapshotUtils
                 .createColumnSourceMap(this.getColumnSourceMap(), ArrayBackedColumnSource::getMemoryColumnSource);
-        final Map<String, ArrayBackedColumnSource<?>> baseColumns = SnapshotUtils.createColumnSourceMap(
+        final Map<String, WritableColumnSource<?>> baseColumns = SnapshotUtils.createColumnSourceMap(
                 baseTable.getColumnSourceMap(), ArrayBackedColumnSource::getMemoryColumnSource);
         resultColumns.putAll(baseColumns);
 
@@ -1962,7 +1962,7 @@ public class QueryTable extends BaseTable<QueryTable> {
         }
 
         // Establish the "base" columns using the same names and types as the table being snapshotted
-        final Map<String, ArrayBackedColumnSource<?>> baseColumns =
+        final Map<String, WritableColumnSource<?>> baseColumns =
                 SnapshotUtils.createColumnSourceMap(baseTable.getColumnSourceMap(),
                         ArrayBackedColumnSource::getMemoryColumnSource);
 
@@ -2043,21 +2043,21 @@ public class QueryTable extends BaseTable<QueryTable> {
                     SnapshotUtils.maybeTransformToDirectVectorColumnSource(getColumnSource(stampColumn)));
         }
 
-        final Map<String, SparseArrayColumnSource<?>> resultTriggerColumns = new LinkedHashMap<>();
+        final Map<String, WritableColumnSource<?>> resultTriggerColumns = new LinkedHashMap<>();
         for (Map.Entry<String, ColumnSource<?>> entry : triggerColumns.entrySet()) {
             final String name = entry.getKey();
             final ColumnSource<?> cs = entry.getValue();
             final Class<?> type = cs.getType();
-            final SparseArrayColumnSource<?> stampDest = Vector.class.isAssignableFrom(type)
+            final WritableColumnSource<?> stampDest = Vector.class.isAssignableFrom(type)
                     ? SparseArrayColumnSource.getSparseMemoryColumnSource(type, cs.getComponentType())
                     : SparseArrayColumnSource.getSparseMemoryColumnSource(type);
 
             resultTriggerColumns.put(name, stampDest);
         }
 
-        final Map<String, SparseArrayColumnSource<?>> resultBaseColumns = SnapshotUtils.createColumnSourceMap(
+        final Map<String, WritableColumnSource<?>> resultBaseColumns = SnapshotUtils.createColumnSourceMap(
                 baseTable.getColumnSourceMap(), SparseArrayColumnSource::getSparseMemoryColumnSource);
-        final Map<String, SparseArrayColumnSource<?>> resultColumns = new LinkedHashMap<>(resultBaseColumns);
+        final Map<String, WritableColumnSource<?>> resultColumns = new LinkedHashMap<>(resultBaseColumns);
         resultColumns.putAll(resultTriggerColumns);
         if (resultColumns.size() != resultTriggerColumns.size() + resultBaseColumns.size()) {
             throwColumnConflictMessage(resultTriggerColumns.keySet(), resultBaseColumns.keySet());

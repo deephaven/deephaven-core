@@ -66,8 +66,6 @@ public class RollingGroupOperator extends UpdateByOperator {
         private long endPos = NULL_LONG;
 
         protected Context(final int chunkSize) {
-            super(0);
-
             groupRowSetSourceFillContext = groupRowSetSource.makeFillFromContext(chunkSize);
             groupRowSetSourceOutputValues = WritableObjectChunk.makeWritableChunk(chunkSize);
             if (timestampColumnName != null) {
@@ -337,7 +335,7 @@ public class RollingGroupOperator extends UpdateByOperator {
 
     @NotNull
     @Override
-    public UpdateByOperator.Context makeUpdateContext(final int chunkSize, final int chunkCount) {
+    public UpdateByOperator.Context makeUpdateContext(final int chunkSize) {
         return new Context(chunkSize);
     }
 

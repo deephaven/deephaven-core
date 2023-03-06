@@ -10,6 +10,7 @@ from deephaven.agg import sum_, weighted_avg, avg, pct, group, count_, first, la
     var, formula, partition
 from deephaven.execution_context import make_user_exec_ctx
 from deephaven.html import to_html
+from deephaven.jcompat import j_hashmap
 from deephaven.pandas import to_pandas
 from deephaven.table import Table
 from tests.testbase import BaseTestCase
@@ -858,6 +859,48 @@ class TableTestCase(BaseTestCase):
 
         tree_table = self.test_table.tail(10).tree(id_col='a', parent_col='c', promote_orphans=True)
         self.assertIsNotNone(tree_table)
+
+    def test_attributes(self):
+        attrs = self.test_table.attributes()
+        self.assertTrue(attrs == {})
+
+        attrs["PluginName"] = "@deephaven/js-plugin-table-example"
+        attrs["PluginType"] = "@deephaven/auth-plugin"
+        attrs["PluginPrivate"] = True
+        attrs["PluginAttrs"] = j_hashmap({1: 2, 3: 4})
+        rt = self.test_table.with_attributes(attrs)
+        rt_attrs = rt.attributes()
+        self.assertEqual(attrs, rt_attrs)
+        self.assertTrue(rt.j_table is not self.test_table.j_table)
+
+    def test_grouped_column_as_arg(self):
+        t1 = empty_table(100).update(
+            ["id = i % 10", "Person = random() > 0.5 ? true : random() > 0.5 ? false : true"]).sort(
+            ["id", "Person"]).group_by("id")
+        t2 = empty_table(100).update(
+            ["id = i % 10", "Person = random() > 0.5 ? `A` : random() > 0.5 ? `B` : `C`"]).sort(
+            ["id", "Person"]).group_by("id")
+        t3 = empty_table(100).update(["id = i % 10", "Person = random() > 0.5 ? 1 : random() > 0.5 ? 2 : 3"]).sort(
+            ["id", "Person"]).group_by("id")
+        t4 = empty_table(10).update(["id= i", "Person = new Object[]{`abc`, `def`}"])
+        t5 = empty_table(10).update(["id= i", "Person = new String[]{`abc`, `def`}"])
+
+        def make_pairs_1(a):
+            return len(a)
+
+        def make_pairs_2(tid, a):
+            return len(a) + tid
+
+        def make_pairs_3(tid, a, b):
+            return tid + len(a) + len(a)
+
+        for t in [t1, t2, t3, t4, t5]:
+            x1 = t.update("Pair=make_pairs_1(Person)")
+            x2 = t.update("Pair=make_pairs_2(id, Person)")
+            x3 = t.update("Pair=make_pairs_3(id, Person, Person)")
+            self.assertEqual(x1.size, 10)
+            self.assertEqual(x2.size, 10)
+            self.assertEqual(x3.size, 10)
 
 
 if __name__ == "__main__":

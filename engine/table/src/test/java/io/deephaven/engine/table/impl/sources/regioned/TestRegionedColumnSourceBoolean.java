@@ -36,9 +36,7 @@ public class TestRegionedColumnSourceBoolean extends TstRegionedColumnSourceRefe
                               final boolean boxed,
                               final boolean reinterpreted) {
         checking(new Expectations() {{
-            oneOf(cr[expectedRegionIndex]).getReferencedRegion();
-            will(returnValue(cr_n[expectedRegionIndex]));
-            oneOf(cr_n[expectedRegionIndex]).getByte(elementIndex);
+            oneOf(cr[expectedRegionIndex]).getByte(elementIndex);
             will(returnValue(BooleanUtils.booleanAsByte(output)));
         }});
         if (reinterpreted) {
@@ -65,7 +63,7 @@ public class TestRegionedColumnSourceBoolean extends TstRegionedColumnSourceRefe
         assertEquals(Boolean.class, SUT.getType());
         SUT_AS_BYTE = SUT.reinterpret(byte.class);
         assertEquals(byte.class, SUT_AS_BYTE.getType());
-        assertEquals(SUT, SUT_AS_BYTE.reinterpret(Boolean.class));
+        assertEquals(RegionedColumnSourceBoolean.class, SUT_AS_BYTE.reinterpret(Boolean.class).getClass());
     }
 
     @Override

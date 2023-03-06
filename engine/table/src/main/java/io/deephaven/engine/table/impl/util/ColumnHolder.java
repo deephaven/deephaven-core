@@ -17,6 +17,7 @@ import io.deephaven.chunk.ShortChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.table.ChunkSink;
+import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.vector.ObjectVector;
 import io.deephaven.time.DateTime;
 import io.deephaven.api.util.NameValidator;
@@ -24,6 +25,7 @@ import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.ColumnSource;
 
 import java.lang.reflect.Array;
+import java.time.Instant;
 import java.util.Optional;
 
 /**
@@ -150,6 +152,7 @@ public class ColumnHolder<T> {
         }
         if (!arrayData.getClass().getComponentType().isAssignableFrom(dataType)
                 && !(dataType == DateTime.class && arrayData.getClass().getComponentType() == long.class)
+                && !(dataType == Instant.class && arrayData.getClass().getComponentType() == long.class)
                 && !(dataType == Boolean.class && arrayData.getClass().getComponentType() == byte.class)) {
             throw new IllegalArgumentException(
                     "Incompatible data type: " + dataType + " can not be stored in array of type "
@@ -169,7 +172,7 @@ public class ColumnHolder<T> {
      * ColumnHolder where the official data type type does not match the data.
      *
      * @param name column name
-     * @param type abstract data type for the column
+     * @param dataType abstract data type for the column
      * @param grouped true if the column is grouped; false otherwise
      * @param chunkData column data
      */
@@ -212,7 +215,7 @@ public class ColumnHolder<T> {
      * @param name column name
      * @param grouped true if the column is grouped; false otherwise
      * @param chunkData column data (long integers representing nanos since the epoch)
-     * @return a DBDateTime column holder implemented with longs for storage
+     * @return a DateTime column holder implemented with longs for storage
      */
     public static ColumnHolder<DateTime> getDateTimeColumnHolder(String name, boolean grouped,
             Chunk<Values> chunkData) {
@@ -283,7 +286,7 @@ public class ColumnHolder<T> {
             return ArrayBackedColumnSource.getDateTimeMemoryColumnSource(chunkData.asLongChunk());
         }
 
-        final ArrayBackedColumnSource<?> cs = ArrayBackedColumnSource.getMemoryColumnSource(
+        final WritableColumnSource<?> cs = ArrayBackedColumnSource.getMemoryColumnSource(
                 chunkData.size(), dataType, componentType);
         try (final ChunkSink.FillFromContext ffc = cs.makeFillFromContext(chunkData.size())) {
             cs.fillFromChunk(ffc, chunkData, RowSequenceFactory.forRange(0, chunkData.size() - 1));

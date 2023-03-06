@@ -39,8 +39,7 @@ public abstract class BaseLongUpdateByOperator extends UpdateByOperator {
 
         public long curVal = NULL_LONG;
 
-        protected Context(final int chunkSize, final int chunkCount) {
-            super(chunkCount);
+        protected Context(final int chunkSize) {
             this.outputFillContext = outputSource.makeFillFromContext(chunkSize);
             this.outputValues = WritableLongChunk.makeWritableChunk(chunkSize);
         }
@@ -126,11 +125,11 @@ public abstract class BaseLongUpdateByOperator extends UpdateByOperator {
         @Override
         public void reset() {
             curVal = NULL_LONG;
+            nullCount = 0;
         }
 
         @Override
         public void close() {
-            super.close();
             outputValues.close();
             outputFillContext.close();
         }
@@ -201,10 +200,9 @@ public abstract class BaseLongUpdateByOperator extends UpdateByOperator {
     @Override
     public void initializeCumulative(@NotNull UpdateByOperator.Context context, long firstUnmodifiedKey, long firstUnmodifiedTimestamp) {
         Context ctx = (Context) context;
+        ctx.reset();
         if (firstUnmodifiedKey != NULL_ROW_KEY) {
             ctx.curVal = outputSource.getLong(firstUnmodifiedKey);
-        } else {
-            ctx.reset();
         }
     }
 

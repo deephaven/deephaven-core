@@ -24,7 +24,7 @@ import static io.deephaven.util.type.TypeUtils.unbox;
  */
 abstract class RegionedColumnSourceFloat<ATTR extends Values>
         extends RegionedColumnSourceArray<Float, ATTR, ColumnRegionFloat<ATTR>>
-        implements ColumnSourceGetDefaults.ForFloat {
+        implements ColumnSourceGetDefaults.ForFloat /* MIXIN_INTERFACES */ {
 
     RegionedColumnSourceFloat(@NotNull final ColumnRegionFloat<ATTR> nullRegion,
                              @NotNull final MakeDeferred<ATTR, ColumnRegionFloat<ATTR>> makeDeferred) {
@@ -48,35 +48,12 @@ abstract class RegionedColumnSourceFloat<ATTR extends Values>
         }
     }
 
+    // region reinterpretation
+    // endregion reinterpretation
+
     static final class AsValues extends RegionedColumnSourceFloat<Values> implements MakeRegionDefault {
         AsValues() {
             super(ColumnRegionFloat.createNull(PARAMETERS.regionMask), DeferredColumnRegionFloat::new);
-        }
-    }
-
-    /**
-     * These are used by {@link RegionedColumnSourceReferencing} subclass who want a native float type.  This class does
-     * <em>not</em> hold an array of regions, but rather derives from {@link RegionedColumnSourceBase}, accessing its
-     * regions by looking into the delegate instance's region array.
-     */
-    @SuppressWarnings("unused")
-    static abstract class NativeType<DATA_TYPE, ATTR extends Values>
-            extends RegionedColumnSourceReferencing.NativeColumnSource<DATA_TYPE, ATTR, Float, ColumnRegionFloat<ATTR>>
-            implements ColumnSourceGetDefaults.ForFloat {
-
-        NativeType(@NotNull final RegionedColumnSourceBase<DATA_TYPE, ATTR, ColumnRegionReferencing<ATTR, ColumnRegionFloat<ATTR>>> outerColumnSource) {
-            super(Float.class, outerColumnSource);
-        }
-
-        @Override
-        public float getFloat(final long rowKey) {
-            return (rowKey == RowSequence.NULL_ROW_KEY ? getNullRegion() : lookupRegion(rowKey)).getFloat(rowKey);
-        }
-
-        static final class AsValues<DATA_TYPE> extends NativeType<DATA_TYPE, Values> implements MakeRegionDefault {
-            AsValues(@NotNull final RegionedColumnSourceBase<DATA_TYPE, Values, ColumnRegionReferencing<Values, ColumnRegionFloat<Values>>> outerColumnSource) {
-                super(outerColumnSource);
-            }
         }
     }
 

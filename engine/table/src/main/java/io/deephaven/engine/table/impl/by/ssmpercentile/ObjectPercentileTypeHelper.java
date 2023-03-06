@@ -12,8 +12,8 @@ import java.util.Objects;
 
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.util.compare.ObjectComparisons;
-import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.Chunk;
@@ -27,7 +27,7 @@ public class ObjectPercentileTypeHelper implements SsmChunkedPercentileOperator.
     private final double percentile;
     private final ObjectArraySource resultColumn;
 
-    ObjectPercentileTypeHelper(double percentile, ArrayBackedColumnSource resultColumn) {
+    ObjectPercentileTypeHelper(double percentile, WritableColumnSource resultColumn) {
         this.percentile = percentile;
         // region resultColumn
         this.resultColumn = (ObjectArraySource) resultColumn;

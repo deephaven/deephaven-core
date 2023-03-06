@@ -879,6 +879,7 @@ public class GeneratePyV2FigureAPI {
                     .append(INDENT)
                     .append("j_figure = self.j_figure\n\n");
 
+            boolean needsMskCheck = false;
 
             final Set<Set<String>> alreadyGenerated = new HashSet<>();
 
@@ -890,9 +891,16 @@ public class GeneratePyV2FigureAPI {
                 final List<String[]> argNames = pyArgNames(sigs, pyArgMap);
 
                 for (String[] argName : argNames) {
+                    needsMskCheck = needsMskCheck || Arrays.stream(argName).anyMatch("multi_series_key"::equals);
                     final Pair<Key, String[]> e = new Pair<>(key, argName);
                     items.add(e);
                 }
+            }
+
+            if (needsMskCheck) {
+                sb.append(INDENT)
+                        .append(INDENT)
+                        .append("multi_series_key_used = False\n\n");
             }
 
             // sort from largest number of args to smallest number of args so that the most specific method is called
@@ -902,10 +910,17 @@ public class GeneratePyV2FigureAPI {
                 final Key key = item.first;
                 final String[] an = item.second;
 
-                validateArgNames(an, alreadyGenerated, signatures, pyArgMap);
-                final String[] quoted_an = Arrays.stream(an).map(s -> "\"" + s + "\"").toArray(String[]::new);
+                final boolean mskUsed = Arrays.stream(an).anyMatch("multi_series_key"::equals);
 
-                if (quoted_an.length == 0) {
+                validateArgNames(an, alreadyGenerated, signatures, pyArgMap);
+                final String[] quotedAn = Arrays.stream(an).map(s -> "\"" + s + "\"").toArray(String[]::new);
+
+                // prevent removal of multi_series_key until after it's been fully used
+                final String[] filteredQuotedAn = Arrays.stream(quotedAn)
+                        .filter(s -> !s.equals("\"multi_series_key\""))
+                        .toArray(String[]::new);
+
+                if (quotedAn.length == 0) {
                     sb.append(INDENT)
                             .append(INDENT)
                             .append("if set()")
@@ -914,7 +929,7 @@ public class GeneratePyV2FigureAPI {
                     sb.append(INDENT)
                             .append(INDENT)
                             .append("if {")
-                            .append(String.join(", ", quoted_an))
+                            .append(String.join(", ", quotedAn))
                             .append("}.issubset(non_null_args):\n");
                 }
                 sb.append(INDENT)
@@ -929,12 +944,31 @@ public class GeneratePyV2FigureAPI {
                         .append(INDENT)
                         .append(INDENT)
                         .append("non_null_args = non_null_args.difference({")
-                        .append(String.join(", ", quoted_an))
+                        .append(String.join(", ", filteredQuotedAn))
                         .append("})\n")
                         .append(INDENT)
                         .append(INDENT)
                         .append(INDENT)
-                        .append("f_called = True\n\n");
+                        .append("f_called = True\n");
+
+                if (mskUsed) {
+                    sb.append(INDENT)
+                            .append(INDENT)
+                            .append(INDENT)
+                            .append("multi_series_key_used = True\n");
+                }
+
+                sb.append("\n");
+            }
+
+            if (needsMskCheck) {
+                sb.append(INDENT)
+                        .append(INDENT)
+                        .append("if multi_series_key_used:\n")
+                        .append(INDENT)
+                        .append(INDENT)
+                        .append(INDENT)
+                        .append("non_null_args = non_null_args.difference({\"multi_series_key\"})\n\n");
             }
 
             sb.append(INDENT)

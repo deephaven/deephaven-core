@@ -8,8 +8,6 @@ Turbodbc is DB-API 2.0 compliant, provides access to relational databases via th
 importantly it has optimized, built-in Apache Arrow support when fetching ODBC result sets. This enables Deephaven to
 achieve maximum efficiency when ingesting relational data. """
 
-from typing import Any
-
 from deephaven import DHError
 from deephaven import arrow as dharrow
 from deephaven.table import Table
@@ -25,8 +23,8 @@ def read_cursor(cursor: turbodbc.cursor.Cursor) -> Table:
     """Converts the result set of the provided cursor into a Deephaven table.
 
     Args:
-        cursor (Any): a Turbodbc cursor. Prior to it being passed in, its execute() method must be called to run a query
-            operation that produces a result set
+        cursor (turbodbc.cursor.Cursor): a Turbodbc cursor. Prior to it being passed in, its execute() method must be
+            called to run a query operation that produces a result set
 
     Returns:
         a new Table

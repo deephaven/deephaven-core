@@ -6,6 +6,9 @@ package io.deephaven.proto;
 import io.deephaven.proto.backplane.grpc.ApplicationServiceGrpc.ApplicationServiceBlockingStub;
 import io.deephaven.proto.backplane.grpc.ApplicationServiceGrpc.ApplicationServiceFutureStub;
 import io.deephaven.proto.backplane.grpc.ApplicationServiceGrpc.ApplicationServiceStub;
+import io.deephaven.proto.backplane.grpc.ConfigServiceGrpc.ConfigServiceBlockingStub;
+import io.deephaven.proto.backplane.grpc.ConfigServiceGrpc.ConfigServiceFutureStub;
+import io.deephaven.proto.backplane.grpc.ConfigServiceGrpc.ConfigServiceStub;
 import io.deephaven.proto.backplane.grpc.InputTableServiceGrpc.InputTableServiceBlockingStub;
 import io.deephaven.proto.backplane.grpc.InputTableServiceGrpc.InputTableServiceFutureStub;
 import io.deephaven.proto.backplane.grpc.InputTableServiceGrpc.InputTableServiceStub;
@@ -21,6 +24,7 @@ import io.deephaven.proto.backplane.grpc.TableServiceGrpc.TableServiceStub;
 import io.deephaven.proto.backplane.script.grpc.ConsoleServiceGrpc.ConsoleServiceBlockingStub;
 import io.deephaven.proto.backplane.script.grpc.ConsoleServiceGrpc.ConsoleServiceFutureStub;
 import io.deephaven.proto.backplane.script.grpc.ConsoleServiceGrpc.ConsoleServiceStub;
+import io.grpc.Channel;
 import io.grpc.stub.AbstractStub;
 
 import java.util.Objects;
@@ -33,6 +37,13 @@ public abstract class DeephavenChannelMixin implements DeephavenChannel {
     }
 
     protected abstract <S extends AbstractStub<S>> S mixin(S stub);
+
+    protected abstract Channel mixinChannel(Channel channel);
+
+    @Override
+    public Channel channel() {
+        return mixinChannel(delegate.channel());
+    }
 
     @Override
     public final SessionServiceStub session() {
@@ -62,6 +73,11 @@ public abstract class DeephavenChannelMixin implements DeephavenChannel {
     @Override
     public final InputTableServiceStub inputTable() {
         return mixin(delegate.inputTable());
+    }
+
+    @Override
+    public ConfigServiceStub config() {
+        return mixin(delegate.config());
     }
 
     @Override
@@ -95,6 +111,11 @@ public abstract class DeephavenChannelMixin implements DeephavenChannel {
     }
 
     @Override
+    public ConfigServiceBlockingStub configBlocking() {
+        return mixin(delegate.configBlocking());
+    }
+
+    @Override
     public final SessionServiceFutureStub sessionFuture() {
         return mixin(delegate.sessionFuture());
     }
@@ -122,5 +143,10 @@ public abstract class DeephavenChannelMixin implements DeephavenChannel {
     @Override
     public final InputTableServiceFutureStub inputTableFuture() {
         return mixin(delegate.inputTableFuture());
+    }
+
+    @Override
+    public ConfigServiceFutureStub configFuture() {
+        return mixin(delegate.configFuture());
     }
 }

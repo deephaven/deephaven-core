@@ -13,6 +13,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -94,6 +95,8 @@ public enum CodecCache {
             return BigDecimalCodec.class.getName();
         } else if (dataType.equals(BigInteger.class)) {
             return BigIntegerCodec.class.getName();
+        } else if (dataType.equals(ZonedDateTime.class)) {
+            return ZonedDateTimeCodec.class.getName();
         } else {
             return null;
         }
