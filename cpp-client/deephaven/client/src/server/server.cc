@@ -63,6 +63,10 @@ std::optional<std::chrono::milliseconds> extractExpirationInterval(
 const char *authorizationKey = "authorization";
 const char *anonymousAuthorizationValue = "Anonymous";
 const char *timeoutKey = "http.session.durationMs";
+
+// (Potentially) re-send a handshake this often *until* the server responds to the handshake.
+// The server will typically respond quickly so the resend will typically never happen.
+const size_t handshakeResendIntervalMillis = 5 * 1000;
 }  // namespace
 
 std::shared_ptr<Server> Server::createFromTarget(const std::string &target) {
@@ -91,6 +95,7 @@ std::shared_ptr<Server> Server::createFromTarget(const std::string &target) {
 
   std::string sessionToken;
   std::chrono::milliseconds expirationInterval;
+  auto sendTime = std::chrono::system_clock::now();
   {
     ConfigurationConstantsRequest ccReq;
     ConfigurationConstantsResponse ccResp;
@@ -121,9 +126,11 @@ std::shared_ptr<Server> Server::createFromTarget(const std::string &target) {
     }
   }
 
+  auto nextHandshakeTime = sendTime + expirationInterval;
+
   auto result = std::make_shared<Server>(Private(), std::move(as), std::move(cs),
       std::move(ss), std::move(ts), std::move(cfs), std::move(fc), std::move(sessionToken),
-      expirationInterval);
+      expirationInterval, nextHandshakeTime);
   std::thread t1(&processCompletionQueueForever, result);
   std::thread t2(&sendKeepaliveMessages, result);
   t1.detach();
@@ -138,7 +145,8 @@ Server::Server(Private,
     std::unique_ptr<TableService::Stub> tableStub,
     std::unique_ptr<ConfigService::Stub> configStub,
     std::unique_ptr<arrow::flight::FlightClient> flightClient,
-    std::string sessionToken, std::chrono::milliseconds expirationInterval) :
+    std::string sessionToken, std::chrono::milliseconds expirationInterval,
+    std::chrono::system_clock::time_point nextHandshakeTime) :
     applicationStub_(std::move(applicationStub)),
     consoleStub_(std::move(consoleStub)),
     sessionStub_(std::move(sessionStub)),
@@ -148,7 +156,7 @@ Server::Server(Private,
     nextFreeTicketId_(1),
     sessionToken_(std::move(sessionToken)),
     expirationInterval_(expirationInterval),
-    expirationTime_(std::chrono::system_clock::now() + expirationInterval_) {
+    nextHandshakeTime_(nextHandshakeTime) {
 }
 
 Server::~Server() = default;
@@ -442,10 +450,9 @@ std::pair<std::string, std::string> Server::getAuthHeader() const {
   return std::make_pair(authorizationKey, sessionToken_);
 }
 
-void Server::addSessionTokenAndExtendExpirationTime(grpc::ClientContext *ctx) {
+void Server::addSessionToken(grpc::ClientContext *ctx) {
   std::lock_guard guard(mutex_);
   ctx->AddMetadata(authorizationKey, sessionToken_);
-  expirationTime_ = std::chrono::system_clock::now() + expirationInterval_;
 }
 
 void Server::processCompletionQueueForever(const std::shared_ptr<Server> &self) {
@@ -483,18 +490,17 @@ bool Server::processNextCompletionQueueItem() {
       return true;
     }
 
-    // Authorization token housekeeping
+    // Authorization token and timeout housekeeping
     const auto &metadata = cqcb->ctx_.GetServerInitialMetadata();
     auto ip = metadata.find(authorizationKey);
-    if (ip != metadata.end()) {
-      // Overwrite session token. In the common case it will be the same as the old value, but
-      // that's ok.
-      mutex_.lock();
-      const auto &val = ip->second;
-      sessionToken_.assign(val.begin(), val.end());
-      mutex_.unlock();
+    {
+      std::unique_lock lock(mutex_);
+      if (ip != metadata.end()) {
+        const auto &val = ip->second;
+        sessionToken_.assign(val.begin(), val.end());
+      }
+      nextHandshakeTime_ = cqcb->sendTime_ + expirationInterval_;
     }
-
     cqcb->onSuccess();
   } catch (const std::exception &e) {
     std::cerr << "Caught exception on callback, aborting: " << e.what() << "\n";
@@ -541,25 +547,27 @@ bool Server::keepaliveHelper() {
     std::unique_lock guard(mutex_);
     std::chrono::system_clock::time_point now;
     while (true) {
-      (void) condVar_.wait_until(guard, expirationTime_);
+      (void) condVar_.wait_until(guard, nextHandshakeTime_);
       if (cancelled_) {
         return false;
       }
       now = std::chrono::system_clock::now();
-      // Spurious condition variable wakeups can happen, and also we will get a deliberate wakeup
-      // in the hypothetical case where the server reduces the expiration interval and effectively
-      // moves the expiration time forward. So we only break out of the loop if we've actually
-      // passed the deadline.
-      if (now >= expirationTime_) {
+      // We can have spurious wakeups and also nextHandshakeTime_ can change while we are waiting.
+      // So don't leave the while loop until wall clock time has moved past nextHandshakeTime_.
+      if (now >= nextHandshakeTime_) {
         break;
       }
     }
 
-    // Calculate new expiration time
-    expirationTime_ = now + expirationInterval_;
+    // Pessimistically set nextHandshakeTime_ to a short interval from now (say about 5 seconds).
+    // If there are no responses from the server in the meantime (including no response to the very
+    // handshake we are about to send), then we will send another handshake after this interval.
+    nextHandshakeTime_ = now + std::chrono::milliseconds(handshakeResendIntervalMillis);
   }
 
-  // Send a 'GetConfigurationConstants' as a handshake.
+  // Send a 'GetConfigurationConstants' as a handshake. On the way out, we note our local time.
+  // When (if) the server responds to this, the nextHandshakeTime_ will be set to that local time
+  // plus the expirationInterval_ (which will typically be an interval like 5 minutes).
   auto callback = std::make_shared<KeepAliveCallback>(shared_from_this());
   getConfigurationConstantsAsync(std::move(callback));
   return true;
@@ -568,17 +576,18 @@ bool Server::keepaliveHelper() {
 void Server::setExpirationInterval(std::chrono::milliseconds interval) {
   std::unique_lock guard(mutex_);
   expirationInterval_ = interval;
+
+  // In the unlikely event that the server reduces the expirationInterval_ (probably never happens),
+  // we need to wake up the keepalive thread so it can assess what to do.
   auto expirationTimeEstimate = std::chrono::system_clock::now() + expirationInterval_;
-  if (expirationTimeEstimate < expirationTime_) {
-    // If we happen to move the expiration time forward (if the server happens to reduce the
-    // expiration interval) then we need to wake up the thread. This probably doesn't happen in
-    // practice.
-    expirationTime_ = expirationTimeEstimate;
+  if (expirationTimeEstimate < nextHandshakeTime_) {
+    nextHandshakeTime_ = expirationTimeEstimate;
     condVar_.notify_all();
   }
 }
 
-CompletionQueueCallback::CompletionQueueCallback() = default;
+CompletionQueueCallback::CompletionQueueCallback(std::chrono::system_clock::time_point sendTime) :
+    sendTime_(sendTime) {}
 CompletionQueueCallback::~CompletionQueueCallback() = default;
 
 namespace {

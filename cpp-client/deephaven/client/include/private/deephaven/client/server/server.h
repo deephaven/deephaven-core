@@ -31,7 +31,7 @@
 namespace deephaven::client::server {
 struct CompletionQueueCallback {
 public:
-  CompletionQueueCallback();
+  explicit CompletionQueueCallback(std::chrono::system_clock::time_point sendTime);
   CompletionQueueCallback(const CompletionQueueCallback &other) = delete;
   CompletionQueueCallback(CompletionQueueCallback &&other) = delete;
   virtual ~CompletionQueueCallback();
@@ -39,6 +39,7 @@ public:
   virtual void onSuccess() = 0;
   virtual void onFailure(std::exception_ptr eptr) = 0;
 
+  std::chrono::system_clock::time_point sendTime_;
   grpc::ClientContext ctx_;
   grpc::Status status_;
 };
@@ -49,7 +50,8 @@ struct ServerResponseHolder final : public CompletionQueueCallback {
   using SFCallback = deephaven::client::utility::SFCallback<T>;
 
 public:
-  explicit ServerResponseHolder(std::shared_ptr<SFCallback<Response>> callback) :
+  ServerResponseHolder(std::chrono::system_clock::time_point sendTime,
+      std::shared_ptr<SFCallback<Response>> callback) : CompletionQueueCallback(sendTime),
       callback_(std::move(callback)) {}
 
   ~ServerResponseHolder() final = default;
@@ -104,7 +106,9 @@ public:
       std::unique_ptr<TableService::Stub> tableStub,
       std::unique_ptr<ConfigService::Stub> configStub,
       std::unique_ptr<arrow::flight::FlightClient> flightClient,
-      std::string sessionToken, std::chrono::milliseconds expirationInterval);
+      std::string sessionToken,
+      std::chrono::milliseconds expirationInterval,
+      std::chrono::system_clock::time_point nextHandshakeTime);
   ~Server();
 
   ApplicationService::Stub *applicationStub() const { return applicationStub_.get(); }
@@ -223,7 +227,7 @@ private:
   Ticket selectOrUpdateHelper(Ticket parentTicket, std::vector<std::string> columnSpecs,
       std::shared_ptr<EtcCallback> etcCallback, selectOrUpdateMethod_t method);
 
-  void addSessionTokenAndExtendExpirationTime(grpc::ClientContext *ctx);
+  void addSessionToken(grpc::ClientContext *ctx);
 
   static void processCompletionQueueForever(const std::shared_ptr<Server> &self);
   bool processNextCompletionQueueItem();
@@ -246,15 +250,16 @@ private:
   bool cancelled_ = false;
   std::string sessionToken_;
   std::chrono::milliseconds expirationInterval_;
-  std::chrono::system_clock::time_point expirationTime_;
+  std::chrono::system_clock::time_point nextHandshakeTime_;
 };
 
 template<typename TReq, typename TResp, typename TStub, typename TPtrToMember>
 void Server::sendRpc(const TReq &req, std::shared_ptr<SFCallback<TResp>> responseCallback,
     TStub *stub, const TPtrToMember &pm) {
+  auto now = std::chrono::system_clock::now();
   // Keep this in a unique_ptr at first, for cleanup in case addAuthToken throws an exception.
-  auto response = std::make_unique<ServerResponseHolder<TResp>>(std::move(responseCallback));
-  addSessionTokenAndExtendExpirationTime(&response->ctx_);
+  auto response = std::make_unique<ServerResponseHolder<TResp>>(now, std::move(responseCallback));
+  addSessionToken(&response->ctx_);
   auto rpc = (stub->*pm)(&response->ctx_, req, &completionQueue_);
   // It is the responsibility of "processNextCompletionQueueItem" to deallocate the storage pointed
   // to by 'response'.
