@@ -13,7 +13,6 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.perf.PerformanceEntry;
 import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
@@ -36,7 +35,6 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.time.DateTime;
 import io.deephaven.util.annotations.InternalUseOnly;
 import org.HdrHistogram.Histogram;
-import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -100,11 +98,6 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
     protected boolean serverReverseViewport;
     protected BitSet serverColumns;
 
-    /** the size of the initial viewport requested from the server (-1 implies full subscription) */
-    private long initialSnapshotViewportRowCount;
-    /** have we completed the initial snapshot */
-    private boolean initialSnapshotReceived;
-
     /** synchronize access to pendingUpdates */
     private final Object pendingUpdatesLock = new Object();
 
@@ -156,7 +149,6 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
         } else {
             serverViewport = RowSetFactory.empty();
         }
-        this.initialSnapshotViewportRowCount = initialViewPortRows;
 
         this.destSources = new WritableColumnSource<?>[writableSources.length];
         for (int ii = 0; ii < writableSources.length; ++ii) {
@@ -208,10 +200,6 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
     @VisibleForTesting
     public BitSet getServerColumns() {
         return serverColumns;
-    }
-
-    public void setInitialSnapshotViewportRowCount(long rowCount) {
-        initialSnapshotViewportRowCount = rowCount;
     }
 
     /**

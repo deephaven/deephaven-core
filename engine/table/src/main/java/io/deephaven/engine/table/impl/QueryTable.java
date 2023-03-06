@@ -1283,10 +1283,10 @@ public class QueryTable extends BaseTable<QueryTable> {
 
                         final TrackingRowSet resultRowSet =
                                 analyzer.flattenedResult() ? RowSetFactory.flat(rowSet.size()).toTracking() : rowSet;
-                        resultTable = new QueryTable(resultRowSet, analyzer.getPublishedColumnSources());
+                        resultTable = new QueryTable(resultRowSet, analyzerWrapper.getPublishedColumnResources());
                         if (liveResultCapture != null) {
                             analyzer.startTrackingPrev();
-                            final Map<String, String[]> effects = analyzer.calcEffects(false);
+                            final Map<String, String[]> effects = analyzerWrapper.calcEffects();
                             final SelectOrUpdateListener soul = new SelectOrUpdateListener(updateDescription, this,
                                     resultTable, effects, analyzer);
                             liveResultCapture.transferTo(soul);
@@ -1313,8 +1313,10 @@ public class QueryTable extends BaseTable<QueryTable> {
                     } else {
                         maybeCopyColumnDescriptions(resultTable);
                     }
-                    return analyzerWrapper.applyShiftsAndRemainingColumns(
-                            this, resultTable, SelectAndViewAnalyzerWrapper.UpdateFlavor.Update);
+                    SelectAndViewAnalyzerWrapper.UpdateFlavor updateFlavor = flavor == Flavor.Update
+                            ? SelectAndViewAnalyzerWrapper.UpdateFlavor.Update
+                            : SelectAndViewAnalyzerWrapper.UpdateFlavor.Select;
+                    return analyzerWrapper.applyShiftsAndRemainingColumns(this, resultTable, updateFlavor);
                 }));
     }
 
@@ -1498,7 +1500,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                     final SelectColumn[] processedColumns = analyzerWrapper.getProcessedColumns()
                             .toArray(SelectColumn[]::new);
                     final QueryTable result = new QueryTable(
-                            rowSet, analyzerWrapper.getAnalyzer().getPublishedColumnSources());
+                            rowSet, analyzerWrapper.getPublishedColumnResources());
                     if (isRefreshing()) {
                         addUpdateListener(new ListenerImpl(
                                 "lazyUpdate(" + Arrays.deepToString(processedColumns) + ')', this, result));

@@ -124,6 +124,7 @@ public interface Table extends
     String TOTALS_TABLE_ATTRIBUTE = "TotalsTable";
     String ADD_ONLY_TABLE_ATTRIBUTE = "AddOnly";
     String APPEND_ONLY_TABLE_ATTRIBUTE = "AppendOnly";
+    String TEST_SOURCE_TABLE_ATTRIBUTE = "TestSource";
     /**
      * <p>
      * If this attribute is present with value {@code true}, this Table is a "stream table".

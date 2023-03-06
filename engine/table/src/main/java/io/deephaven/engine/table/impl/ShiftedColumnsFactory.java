@@ -291,17 +291,29 @@ public class ShiftedColumnsFactory extends VoidVisitorAdapter<ShiftedColumnsFact
      * @return null or Pair containing shift value and sourceColumn.
      */
     private static Pair<Long, String> parseForConstantArrayAccessAttributes(@NotNull ArrayAccessExpr expression) {
+        final List<String> validLeftValues = List.of("i", "ii");
+        if (expression.getIndex() instanceof NameExpr) {
+            final String name = ((NameExpr) expression.getIndex()).getNameAsString();
+            if (validLeftValues.contains(name)) {
+                String sourceCol = expression.getName().toString();
+                if (sourceCol.endsWith("_")) {
+                    sourceCol = sourceCol.substring(0, sourceCol.length() - 1);
+                    return new Pair<>(0L, sourceCol);
+                }
+            }
+            return null;
+        }
+
         if (!(expression.getIndex() instanceof BinaryExpr)) {
             return null;
         }
 
         BinaryExpr binaryExpr = (BinaryExpr) expression.getIndex();
-        final String[] validLeftValues = new String[] {"i", "ii"};
 
         boolean isExpectedLeftExpr = false;
         if (binaryExpr.getLeft() instanceof NameExpr) {
             final String leftName = ((NameExpr) binaryExpr.getLeft()).getNameAsString();
-            isExpectedLeftExpr = Arrays.asList(validLeftValues).contains(leftName);
+            isExpectedLeftExpr = validLeftValues.contains(leftName);
         }
 
         boolean isExpectedOperator =
@@ -315,6 +327,10 @@ public class ShiftedColumnsFactory extends VoidVisitorAdapter<ShiftedColumnsFact
         }
 
         String sourceCol = expression.getName().toString();
+        if (!sourceCol.endsWith("_")) {
+            return null;
+        }
+
         sourceCol = sourceCol.substring(0, sourceCol.length() - 1);
 
         long rightValue = Long.parseLong(((IntegerLiteralExpr) (binaryExpr.getRight())).getValue());

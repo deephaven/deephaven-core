@@ -18,7 +18,7 @@ import java.util.Map;
 
 public class SelectAndViewAnalyzerWrapper {
     public enum UpdateFlavor {
-        Update, UpdateView, LazyUpdate, View
+        Select, View, Update, UpdateView, LazyUpdate
     }
 
     private final SelectAndViewAnalyzer analyzer;
@@ -74,8 +74,30 @@ public class SelectAndViewAnalyzerWrapper {
             // note if the shift offset is non-positive, then this result is still append-only
             queryTable.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, true);
         }
+        if (sourceTable.hasAttribute(Table.TEST_SOURCE_TABLE_ATTRIBUTE)) {
+            // be convenient for test authors by propagating the test source table attribute
+            queryTable.setAttribute(Table.TEST_SOURCE_TABLE_ATTRIBUTE, true);
+        }
 
-        if (remainingCols != null) {
+        boolean isMultiStateSelect = shiftColumn != null || remainingCols != null;
+        if (isMultiStateSelect && (updateFlavor == UpdateFlavor.Select || updateFlavor == UpdateFlavor.View)) {
+            List<SelectColumn> newResultColumns = new LinkedList<>();
+            for (SelectColumn processed : processedColumns) {
+                newResultColumns.add(new SourceColumn(processed.getName()));
+            }
+            if (shiftColumn != null) {
+                newResultColumns.add(new SourceColumn(shiftColumn.getName()));
+            }
+            if (remainingCols != null) {
+                newResultColumns.addAll(remainingCols);
+            }
+
+            if (updateFlavor == UpdateFlavor.Select) {
+                queryTable = (QueryTable) queryTable.select(newResultColumns);
+            } else {
+                queryTable = (QueryTable) queryTable.view(newResultColumns);
+            }
+        } else if (remainingCols != null) {
             switch (updateFlavor) {
                 case Update: {
                     queryTable = (QueryTable) queryTable.update(remainingCols);
@@ -89,18 +111,8 @@ public class SelectAndViewAnalyzerWrapper {
                     queryTable = (QueryTable) queryTable.lazyUpdate(remainingCols);
                     break;
                 }
-                case View: {
-                    List<SelectColumn> newResultColumns = new LinkedList<>();
-                    for (SelectColumn processed : processedColumns) {
-                        newResultColumns.add(new SourceColumn(processed.getName()));
-                    }
-                    if (shiftColumn != null) {
-                        newResultColumns.add(new SourceColumn(shiftColumn.getName()));
-                    }
-                    newResultColumns.addAll(remainingCols);
-                    queryTable = (QueryTable) queryTable.view(newResultColumns);
-                    break;
-                }
+                default:
+                    throw new IllegalStateException("Unexpected update flavor: " + updateFlavor);
             }
         }
 

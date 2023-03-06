@@ -161,10 +161,10 @@ public class ArrowToTableConverter {
         }
 
         final BarrageUtil.ConvertedArrowSchema result = BarrageUtil.convertArrowSchema(header);
+        result.attributes.put(Table.ADD_ONLY_TABLE_ATTRIBUTE, true);
+        result.attributes.put(Table.APPEND_ONLY_TABLE_ATTRIBUTE, true);
         resultTable = BarrageTable.make(null, result.tableDef, result.attributes, -1);
         resultTable.setFlat();
-        resultTable.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, true);
-        resultTable.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, true);
 
         columnConversionFactors = result.conversionFactors;
         columnChunkTypes = resultTable.getWireChunkTypes();

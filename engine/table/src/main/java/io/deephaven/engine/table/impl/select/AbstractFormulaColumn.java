@@ -90,6 +90,10 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
 
     @Override
     public void validateSafeForRefresh(BaseTable<?> sourceTable) {
+        if (sourceTable.hasAttribute(BaseTable.TEST_SOURCE_TABLE_ATTRIBUTE)) {
+            // allow any tests to use i, ii, and k without throwing an exception; we're probably using it safely
+            return;
+        }
         if (sourceTable.isRefreshing() && !ALLOW_UNSAFE_REFRESHING_FORMULAS) {
             // note that constant offset array accesss does not use i/ii or end up in usedColumnArrays
             boolean isUnsafe = !sourceTable.isAppendOnly() && (usesI || usesII);
@@ -98,7 +102,7 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
             if (isUnsafe) {
                 throw new IllegalArgumentException("Formula " + formulaString + " uses i, ii, k, or column array " +
                         "variables, and is not safe to refresh. Note that some usages, such as on an append-only " +
-                        "table are safe. To allow unsafe refreshing formulas, set the system property" +
+                        "table are safe. To allow unsafe refreshing formulas, set the system property " +
                         "io.deephaven.engine.table.impl.select.AbstractFormulaColumn.allowUnsafeRefreshingFormulas.");
             }
         }

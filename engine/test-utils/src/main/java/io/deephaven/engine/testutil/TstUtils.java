@@ -16,10 +16,12 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.ElementSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
+import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.PrevColumnSource;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.testutil.generator.TestDataGenerator;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.testutil.rowset.RowSetTstUtils;
 import io.deephaven.engine.testutil.sources.ByteTestSource;
 import io.deephaven.engine.testutil.sources.DateTimeTestSource;
@@ -559,7 +561,9 @@ public class TstUtils {
 
     public static QueryTable testTable(TrackingRowSet rowSet, ColumnHolder<?>... columnHolders) {
         final Map<String, ColumnSource<?>> columns = getColumnSourcesFromHolders(rowSet, columnHolders);
-        return new QueryTable(rowSet, columns);
+        QueryTable queryTable = new QueryTable(rowSet, columns);
+        queryTable.setAttribute(BaseTable.TEST_SOURCE_TABLE_ATTRIBUTE, true);
+        return queryTable;
     }
 
     @NotNull
@@ -575,6 +579,7 @@ public class TstUtils {
     public static QueryTable testRefreshingTable(TrackingRowSet rowSet, ColumnHolder<?>... columnHolders) {
         final QueryTable queryTable = testTable(rowSet, columnHolders);
         queryTable.setRefreshing(true);
+        queryTable.setAttribute(BaseTable.TEST_SOURCE_TABLE_ATTRIBUTE, true);
         return queryTable;
     }
 
