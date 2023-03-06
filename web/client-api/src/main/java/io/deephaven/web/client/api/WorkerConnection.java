@@ -259,9 +259,11 @@ public class WorkerConnection {
     private void connectToWorker() {
         info.onReady()
                 .then(queryWorkerRunning -> {
+                    if (metadata().has(FLIGHT_AUTH_HEADER_NAME)) {
+                        return authUpdate().then(ignore -> Promise.resolve(Boolean.FALSE));
+                    }
                     return Promise.all(
                             info.getConnectToken().then(authToken -> {
-                                JsLog.warn("setting auth ", authToken.getType());
                                 // set the proposed initial token and make the first call
                                 metadata.set(FLIGHT_AUTH_HEADER_NAME,
                                         (authToken.getType() + " " + authToken.getValue()).trim());
@@ -614,6 +616,10 @@ public class WorkerConnection {
     }
 
     public void connectionLost() {
+        if (state != State.Connected) {
+            // already signaled disconnect
+            return;
+        }
         // notify all active tables and figures that the connection is closed
         figures.forEach((p0, p1, p2) -> {
             try {

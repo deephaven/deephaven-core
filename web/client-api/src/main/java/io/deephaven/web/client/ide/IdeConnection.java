@@ -113,14 +113,4 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
             });
         };
     }
-
-    @Override
-    public void disconnected() {
-        super.disconnected();
-
-        if (connection.isAvailable()) {
-            // Currently no way for an IdeConnect to recover, so make sure it doesn't try and reconnect
-            connection.get().forceClose();
-        }
-    }
 }
