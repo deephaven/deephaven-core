@@ -3,8 +3,6 @@
  */
 package io.deephaven.util;
 
-import io.deephaven.base.Function;
-import io.deephaven.base.Procedure;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.io.logger.Logger;
 import org.jdom2.Attribute;
@@ -36,9 +34,9 @@ public class Utils {
      *
      * @param r the stuff to run
      */
-    public static void unCheck(final Procedure.ThrowingNullary<IOException> r) {
+    public static void unCheck(final FunctionalInterfaces.ThrowingRunnable<IOException> r) {
         try {
-            r.call();
+            r.run();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -50,9 +48,9 @@ public class Utils {
      * @param r the stuff to run
      * @return the result of the stuff
      */
-    public static <T> T unCheck(final Function.ThrowingNullary<T, IOException> r) {
+    public static <T> T unCheck(final FunctionalInterfaces.ThrowingSupplier<T, IOException> r) {
         try {
-            return r.call();
+            return r.get();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -74,11 +72,13 @@ public class Utils {
      * @param thing the thing to run despite interruptions.
      * @param name what to call the thing - for logging
      */
-    public static void runWithoutInterruption(Logger log, Procedure.ThrowingNullary<InterruptedException> thing,
+    public static void runWithoutInterruption(
+            Logger log,
+            FunctionalInterfaces.ThrowingRunnable<InterruptedException> thing,
             String name) {
         do {
             try {
-                thing.call();
+                thing.run();
                 return;
             } catch (InterruptedException ignore) {
                 log.warn().append("Caught InterruptedException while running ").append(name).endl();
