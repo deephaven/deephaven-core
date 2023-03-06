@@ -5,6 +5,8 @@ package io.deephaven.util;
 
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.util.function.ThrowingRunnable;
+import io.deephaven.util.function.ThrowingSupplier;
 import org.jdom2.Attribute;
 import org.jdom2.Element;
 import org.jetbrains.annotations.NotNull;
@@ -34,7 +36,7 @@ public class Utils {
      *
      * @param r the stuff to run
      */
-    public static void unCheck(final FunctionalInterfaces.ThrowingRunnable<IOException> r) {
+    public static void unCheck(final ThrowingRunnable<IOException> r) {
         try {
             r.run();
         } catch (IOException e) {
@@ -48,7 +50,7 @@ public class Utils {
      * @param r the stuff to run
      * @return the result of the stuff
      */
-    public static <T> T unCheck(final FunctionalInterfaces.ThrowingSupplier<T, IOException> r) {
+    public static <T> T unCheck(final ThrowingSupplier<T, IOException> r) {
         try {
             return r.get();
         } catch (IOException e) {
@@ -74,7 +76,7 @@ public class Utils {
      */
     public static void runWithoutInterruption(
             Logger log,
-            FunctionalInterfaces.ThrowingRunnable<InterruptedException> thing,
+            ThrowingRunnable<InterruptedException> thing,
             String name) {
         do {
             try {

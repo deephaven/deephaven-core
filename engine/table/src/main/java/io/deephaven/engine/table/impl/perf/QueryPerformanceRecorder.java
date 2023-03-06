@@ -11,8 +11,9 @@ import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.updategraph.UpdateGraphLock;
-import io.deephaven.util.FunctionalInterfaces;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.function.ThrowingRunnable;
+import io.deephaven.util.function.ThrowingSupplier;
 import io.deephaven.util.profiling.ThreadProfiler;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
@@ -341,7 +342,7 @@ public class QueryPerformanceRecorder implements Serializable {
 
             @Override
             public void recordActionInterruptibly(@NotNull String description,
-                    @NotNull FunctionalInterfaces.ThrowingRunnable<InterruptedException> action)
+                    @NotNull ThrowingRunnable<InterruptedException> action)
                     throws InterruptedException {
                 QueryPerformanceRecorder.withNuggetThrowing(description, action);
             }
@@ -454,7 +455,7 @@ public class QueryPerformanceRecorder implements Serializable {
      */
     public static <T extends Exception> void withNuggetThrowing(
             final String name,
-            final FunctionalInterfaces.ThrowingRunnable<T> r) throws T {
+            final ThrowingRunnable<T> r) throws T {
         final boolean needClear = setCallsite();
         QueryPerformanceNugget nugget = null;
         try {
@@ -475,7 +476,7 @@ public class QueryPerformanceRecorder implements Serializable {
      */
     public static <R, ExceptionType extends Exception> R withNuggetThrowing(
             final String name,
-            final FunctionalInterfaces.ThrowingSupplier<R, ExceptionType> r) throws ExceptionType {
+            final ThrowingSupplier<R, ExceptionType> r) throws ExceptionType {
         final boolean needClear = setCallsite();
         QueryPerformanceNugget nugget = null;
         try {
@@ -531,7 +532,7 @@ public class QueryPerformanceRecorder implements Serializable {
     public static <T extends Exception> void withNuggetThrowing(
             final String name,
             final long inputSize,
-            final FunctionalInterfaces.ThrowingRunnable<T> r) throws T {
+            final ThrowingRunnable<T> r) throws T {
         final boolean needClear = setCallsite();
         QueryPerformanceNugget nugget = null;
         try {
@@ -554,7 +555,7 @@ public class QueryPerformanceRecorder implements Serializable {
     public static <R, ExceptionType extends Exception> R withNuggetThrowing(
             final String name,
             final long inputSize,
-            final FunctionalInterfaces.ThrowingSupplier<R, ExceptionType> r) throws ExceptionType {
+            final ThrowingSupplier<R, ExceptionType> r) throws ExceptionType {
         final boolean needClear = setCallsite();
         QueryPerformanceNugget nugget = null;
         try {
