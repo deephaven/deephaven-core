@@ -36,6 +36,7 @@ jobs:
         env:
           WEB_VERSION: ${{steps.web_versions.outputs.WEB_VERSION}}
         with:
+          base: main
           title: Update web version ${{ env.WEB_VERSION }}
           body: Release notes https://github.com/deephaven/web-client-ui/releases/tag/v${{ env.WEB_VERSION }}
           branch: update-web-test-${{ env.WEB_VERSION }}
