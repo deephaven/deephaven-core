@@ -5,7 +5,6 @@ on:
   workflow_dispatch:
   repository_dispatch:
     types: [update_web]
-  pull_request:
 jobs:
   update-web:
     runs-on: ubuntu-22.04
@@ -19,7 +18,7 @@ jobs:
       - name: Get web versions
         id: web_versions
         run: |
-          echo "WEB_VERSION=0.30.0" >> $GITHUB_OUTPUT
+          echo "WEB_VERSION=$(npm info @deephaven/code-studio@latest version)" >> $GITHUB_OUTPUT
           echo "GRID_VERSION=$(npm info @deephaven/embed-grid@latest version)" >> $GITHUB_OUTPUT
           echo "CHART_VERSION=$(npm info @deephaven/embed-chart@latest version)" >> $GITHUB_OUTPUT
       - name: Update deephaven-core
