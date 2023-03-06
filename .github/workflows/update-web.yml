@@ -30,36 +30,15 @@ jobs:
           GRID_VERSION: ${{steps.web_versions.outputs.GRID_VERSION}}
           CHART_VERSION: ${{steps.web_versions.outputs.CHART_VERSION}}
         run: |
-          echo "`pwd`"
-          echo "code-studio version is $WEB_VERSION, $GRID_VERSION, $CHART_VERSION"
-          git status
-          # git log
-          # git checkout -b update-web-$WEB_VERSION
           sed -i "s/^ARG WEB_VERSION=.*/ARG WEB_VERSION=$WEB_VERSION/" ./web/client-ui/Dockerfile
           sed -i "s/^ARG GRID_VERSION=.*/ARG GRID_VERSION=$GRID_VERSION/" ./web/client-ui/Dockerfile
           sed -i "s/^ARG CHART_VERSION=.*/ARG CHART_VERSION=$CHART_VERSION/" ./web/client-ui/Dockerfile
-          # if [ -z "$(git status --porcelain)" ]; then
-          #   echo "No changes, versions up to date. Exiting"
-          #   exit 0
-          # fi
-          git status
-          git diff
-          # git commit --all --message="Update web version v$WEB_VERSION"
-          # git log
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v4
         env:
           WEB_VERSION: ${{steps.web_versions.outputs.WEB_VERSION}}
-          GRID_VERSION: ${{steps.web_versions.outputs.GRID_VERSION}}
-          CHART_VERSION: ${{steps.web_versions.outputs.CHART_VERSION}}
         with:
-          # TODO: We need to add a PAT so that we can push to my fork probably... or do we?
-#          path: ./deephaven-core
-          base: main
           title: Update web version ${{ env.WEB_VERSION }}
           body: Release notes https://github.com/deephaven/web-client-ui/releases/tag/${{ env.WEB_VERSION }}
           branch: update-web-test-${{ env.WEB_VERSION }}
           delete-branch: true
-#          token: ${{ secrets.CORE_PR_TOKEN }}
-          # push-to-fork: mofojed/deephaven-core
-          draft: true
