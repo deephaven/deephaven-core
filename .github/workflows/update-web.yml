@@ -1,16 +1,15 @@
 # This workflow will automatically create a PR in deephaven-core to update the WEB_VERSION
 name: Update web version
 
-on:
-  workflow_dispatch:
-  repository_dispatch:
-    types: [update_web]
+on: workflow_dispatch
 jobs:
   update-web:
     runs-on: ubuntu-22.04
     steps:
-      - name: Checkout latest deephaven-core
+      - name: Checkout latest
         uses: actions/checkout@v3
+        with:
+          ref: main
       - name: Setup Node
         uses: actions/setup-node@v3
         with:
@@ -38,5 +37,5 @@ jobs:
           base: main
           title: Update web version ${{ env.WEB_VERSION }}
           body: Release notes https://github.com/deephaven/web-client-ui/releases/tag/v${{ env.WEB_VERSION }}
-          branch: update-web-test-${{ env.WEB_VERSION }}
+          branch: deephaven-bot/update-web-${{ env.WEB_VERSION }}
           delete-branch: true
