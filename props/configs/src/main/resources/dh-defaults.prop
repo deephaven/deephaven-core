@@ -43,7 +43,8 @@ server.timezone=America/New_York
 
 default.processEnvironmentFactory=io.deephaven.util.process.DefaultProcessEnvironment$Factory
 
-OperationInitializationThreadPool.threads=1
+OperationInitializationThreadPool.threads=10
+UpdateGraphProcessor.updateThreads=10
 
 deephaven.console.type=python
 

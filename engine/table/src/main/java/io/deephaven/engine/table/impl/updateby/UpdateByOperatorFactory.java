@@ -18,7 +18,10 @@ import io.deephaven.engine.table.impl.updateby.rollinggroup.*;
 import io.deephaven.engine.table.impl.updateby.rollingsum.*;
 import io.deephaven.engine.table.impl.updateby.sum.*;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
+import io.deephaven.hash.KeyedObjectHashMap;
+import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.time.DateTime;
+import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -52,10 +55,34 @@ public class UpdateByOperatorFactory {
         this.control = control;
     }
 
+    /**
+     * Create a collection of operators from a list of {@link UpdateByOperation operator specs}. This collection should
+     *
+     *
+     * @param specs the collection of {@link UpdateByOperation specs} to create
+     * @return a organized collection of {@link List<ColumnUpdateOperation> operation lists} where the operator specs
+     *         can share resources within the collection
+     */
     final Collection<UpdateByOperator> getOperators(@NotNull final Collection<? extends UpdateByOperation> specs) {
         final OperationVisitor v = new OperationVisitor();
         specs.forEach(s -> s.walk(v));
         return v.ops;
+    }
+
+    /**
+     * Organize the {@link UpdateByOperation operator specs} into windows so that the operators that can share
+     * processing resources are stored within the same collection. Generally, this collects cumulative operators
+     * together and collects rolling operators with the same parameters together.
+     *
+     * @param specs the collection of {@link UpdateByOperation specs} to organize
+     * @return a organized collection of {@link List<ColumnUpdateOperation> operation lists} where the operator specs
+     *         can share resources within the collection
+     */
+    final Collection<List<ColumnUpdateOperation>> getWindowOperatorSpecs(
+            @NotNull final Collection<? extends UpdateByOperation> specs) {
+        final WindowVisitor v = new WindowVisitor();
+        specs.forEach(s -> s.walk(v));
+        return v.windowMap.values();
     }
 
     static MatchPair[] parseMatchPairs(final List<Pair> columns) {
@@ -123,6 +150,89 @@ public class UpdateByOperatorFactory {
             }
 
             descriptionBuilder.append(clause.spec().toString()).append("(").append(columnStr).append("), ");
+            return null;
+        }
+    }
+
+    private class WindowVisitor implements UpdateByOperation.Visitor<Void> {
+        // We will divide the operators into similar windows for efficient processing.
+        final KeyedObjectHashMap<ColumnUpdateOperation, List<ColumnUpdateOperation>> windowMap =
+                new KeyedObjectHashMap<>(new KeyedObjectKey<>() {
+                    @Override
+                    public ColumnUpdateOperation getKey(final List<ColumnUpdateOperation> clauseList) {
+                        return clauseList.get(0);
+                    }
+
+                    @Override
+                    public int hashKey(final ColumnUpdateOperation clause) {
+                        final UpdateBySpec spec = clause.spec();
+                        int hash = 0;
+
+                        final boolean windowed = spec instanceof RollingOpSpec;
+                        hash = 31 * hash + Boolean.hashCode(windowed);
+
+                        // treat all cumulative ops with the same input columns as identical, even if they rely on
+                        // timestamps
+                        if (!windowed) {
+                            return hash;
+                        }
+
+                        final RollingOpSpec rollingSpec = (RollingOpSpec) spec;
+
+                        // windowed ops are unique per type (ticks/time-based) and window dimensions
+                        hash = 31 * hash + Objects.hashCode(rollingSpec.revWindowScale().timestampCol());
+                        hash = 31 * hash + Long.hashCode(rollingSpec.revWindowScale().timescaleUnits());
+                        hash = 31 * hash + Long.hashCode(rollingSpec.fwdWindowScale().timescaleUnits());
+                        return hash;
+                    }
+
+                    @Override
+                    public boolean equalKey(final ColumnUpdateOperation clauseA,
+                            final List<ColumnUpdateOperation> clauseList) {
+                        final ColumnUpdateOperation clauseB = clauseList.get(0);
+
+                        final UpdateBySpec specA = clauseA.spec();
+                        final UpdateBySpec specB = clauseB.spec();
+
+                        // equivalent if both are cumulative, not equivalent if only one is cumulative
+                        boolean aWindowed = specA instanceof RollingOpSpec;
+                        boolean bWindowed = specB instanceof RollingOpSpec;
+
+                        if (!aWindowed && !bWindowed) {
+                            return true;
+                        } else if (aWindowed != bWindowed) {
+                            return false;
+                        }
+
+                        final RollingOpSpec rsA = (RollingOpSpec) specA;
+                        final RollingOpSpec rsB = (RollingOpSpec) specB;
+
+                        final boolean aTimeWindowed = rsA.revWindowScale().timestampCol() != null;
+                        final boolean bTimeWindowed = rsB.revWindowScale().timestampCol() != null;
+
+                        // must have same time/tick base to be equivalent
+                        if (aTimeWindowed != bTimeWindowed) {
+                            return false;
+                        }
+                        return rsA.revWindowScale().timescaleUnits() == rsB.revWindowScale().timescaleUnits() &&
+                                rsA.fwdWindowScale().timescaleUnits() == rsB.fwdWindowScale().timescaleUnits();
+                    }
+                });
+
+        @Override
+        public Void visit(@NotNull final ColumnUpdateOperation clause) {
+
+            final MutableBoolean created = new MutableBoolean(false);
+            final List<ColumnUpdateOperation> opList = windowMap.putIfAbsent(clause,
+                    (newOpListOp) -> {
+                        final List<ColumnUpdateOperation> newOpList = new ArrayList<>();
+                        newOpList.add(clause);
+                        created.setTrue();
+                        return newOpList;
+                    });
+            if (!created.booleanValue()) {
+                opList.add(clause);
+            }
             return null;
         }
     }
@@ -213,15 +323,8 @@ public class UpdateByOperatorFactory {
 
         @Override
         public Void visit(@NotNull final RollingGroupSpec rg) {
-            final boolean isTimeBased = rg.revWindowScale().isTimeBased();
-            final String timestampCol = rg.revWindowScale().timestampCol();
-
-            Arrays.stream(pairs)
-                    .filter(p -> !isTimeBased || !p.rightColumn().equals(timestampCol))
-                    .map(fc -> makeRollingGroupOperator(fc,
-                            source,
-                            rg))
-                    .forEach(ops::add);
+            // Only one group operator needed for any number of RollingGroup that share a window
+            ops.add(makeRollingGroupOperator(pairs, source, rg));
             return null;
         }
 
@@ -425,57 +528,35 @@ public class UpdateByOperatorFactory {
             throw new IllegalArgumentException("Can not perform RollingSum on type " + csType);
         }
 
-        private UpdateByOperator makeRollingGroupOperator(@NotNull final MatchPair pair,
+        private UpdateByOperator makeRollingGroupOperator(@NotNull final MatchPair[] pairs,
                 @NotNull final TableDefaults source,
-                @NotNull final RollingGroupSpec rs) {
+                @NotNull final RollingGroupSpec rg) {
+
             // noinspection rawtypes
-            final ColumnSource columnSource = source.getColumnSource(pair.rightColumn);
-            final Class<?> csType = columnSource.getType();
-
+            final ColumnSource[] columnSources = new ColumnSource[pairs.length];
             final String[] affectingColumns;
-            if (rs.revWindowScale().timestampCol() == null) {
-                affectingColumns = new String[] {pair.rightColumn};
+            if (rg.revWindowScale().timestampCol() == null) {
+                affectingColumns = new String[pairs.length];
             } else {
-                affectingColumns = new String[] {rs.revWindowScale().timestampCol(), pair.rightColumn};
+                // We are affected by the timestamp column. Add it to the end of the list
+                affectingColumns = new String[pairs.length + 1];
+                affectingColumns[pairs.length] = rg.revWindowScale().timestampCol();
             }
 
-            final long prevWindowScaleUnits = rs.revWindowScale().timescaleUnits();
-            final long fwdWindowScaleUnits = rs.fwdWindowScale().timescaleUnits();
+            // Assemble the arrays of input and affecting sources
+            for (int ii = 0; ii < pairs.length; ii++) {
+                MatchPair pair = pairs[ii];
 
-            if (csType == Boolean.class || csType == boolean.class) {
-                return new BooleanRollingGroupOperator(pair, affectingColumns, rowRedirection,
-                        rs.revWindowScale().timestampCol(),
-                        prevWindowScaleUnits, fwdWindowScaleUnits, columnSource);
-            } else if (csType == byte.class || csType == Byte.class) {
-                return new ByteRollingGroupOperator(pair, affectingColumns, rowRedirection,
-                        rs.revWindowScale().timestampCol(),
-                        prevWindowScaleUnits, fwdWindowScaleUnits, columnSource);
-            } else if (csType == short.class || csType == Short.class) {
-                return new ShortRollingGroupOperator(pair, affectingColumns, rowRedirection,
-                        rs.revWindowScale().timestampCol(),
-                        prevWindowScaleUnits, fwdWindowScaleUnits, columnSource);
-            } else if (csType == int.class || csType == Integer.class) {
-                return new IntRollingGroupOperator(pair, affectingColumns, rowRedirection,
-                        rs.revWindowScale().timestampCol(),
-                        prevWindowScaleUnits, fwdWindowScaleUnits, columnSource);
-            } else if (csType == long.class || csType == Long.class) {
-                return new LongRollingGroupOperator(pair, affectingColumns, rowRedirection,
-                        rs.revWindowScale().timestampCol(),
-                        prevWindowScaleUnits, fwdWindowScaleUnits, columnSource);
-            } else if (csType == float.class || csType == Float.class) {
-                return new FloatRollingGroupOperator(pair, affectingColumns, rowRedirection,
-                        rs.revWindowScale().timestampCol(),
-                        prevWindowScaleUnits, fwdWindowScaleUnits, columnSource);
-            } else if (csType == double.class || csType == Double.class) {
-                return new DoubleRollingGroupOperator(pair, affectingColumns, rowRedirection,
-                        rs.revWindowScale().timestampCol(),
-                        prevWindowScaleUnits, fwdWindowScaleUnits, columnSource);
-            } else {
-                return new ObjectRollingGroupOperator<>(pair, affectingColumns, rowRedirection,
-                        rs.revWindowScale().timestampCol(),
-                        prevWindowScaleUnits, fwdWindowScaleUnits, columnSource, csType);
+                columnSources[ii] = source.getColumnSource(pair.rightColumn);
+                affectingColumns[ii] = pair.rightColumn;
             }
+
+            final long prevWindowScaleUnits = rg.revWindowScale().timescaleUnits();
+            final long fwdWindowScaleUnits = rg.fwdWindowScale().timescaleUnits();
+
+            return new RollingGroupOperator(pairs, affectingColumns, rowRedirection,
+                    rg.revWindowScale().timestampCol(),
+                    prevWindowScaleUnits, fwdWindowScaleUnits, columnSources);
         }
-
     }
 }
