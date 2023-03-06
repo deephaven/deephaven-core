@@ -13,11 +13,12 @@ jobs:
     steps:
       - name: Checkout latest deephaven-core
         uses: actions/checkout@v3
-      - name: Get web versions
-        id: web_versions
+      - name: Setup Node
         uses: actions/setup-node@v3
         with:
           node-version: '18.x'
+      - name: Get web versions
+        id: web_versions
         run: |
           echo "npm version is $(npm --version)"
           echo "WEB_VERSION<<$(npm info @deephaven/code-studio@latest version)" >> $GITHUB_OUTPUT
