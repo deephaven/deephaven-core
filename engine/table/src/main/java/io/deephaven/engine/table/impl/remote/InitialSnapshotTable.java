@@ -15,6 +15,8 @@ import io.deephaven.engine.table.impl.sources.WritableRedirectedColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.util.*;
 
+import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.util.BitSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -67,7 +69,8 @@ public class InitialSnapshotTable extends QueryTable {
             return (Setter<float[]>) (array, arrayIndex, destIndex) -> source.set(destIndex, array[arrayIndex]);
         } else if (source.getType() == int.class) {
             return (Setter<int[]>) (array, arrayIndex, destIndex) -> source.set(destIndex, array[arrayIndex]);
-        } else if (source.getType() == long.class || source.getType() == DateTime.class) {
+        } else if (source.getType() == long.class || source.getType() == DateTime.class
+                || source.getType() == Instant.class || source.getType() == ZonedDateTime.class) {
             return (Setter<long[]>) (array, arrayIndex, destIndex) -> source.set(destIndex, array[arrayIndex]);
         } else if (source.getType() == short.class) {
             return (Setter<short[]>) (array, arrayIndex, destIndex) -> source.set(destIndex, array[arrayIndex]);

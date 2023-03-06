@@ -43,7 +43,6 @@ import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.InMemoryTable;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
-import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.BooleanArraySource;
 import io.deephaven.engine.table.impl.sources.ByteArraySource;
 import io.deephaven.engine.table.impl.sources.CharacterArraySource;
@@ -970,12 +969,12 @@ public class CsvTools {
     }
 
     private static abstract class MySinkBase<TYPE, TARRAY> implements Sink<TARRAY> {
-        protected final ArrayBackedColumnSource<TYPE> result;
+        protected final WritableColumnSource<TYPE> result;
         protected long resultSize;
         protected final WritableColumnSource<?> reinterpreted;
         protected final ChunkWrapInvoker<TARRAY, Chunk<? extends Values>> chunkWrapInvoker;
 
-        public MySinkBase(ArrayBackedColumnSource<TYPE> result, Class<?> interpClass,
+        public MySinkBase(WritableColumnSource<TYPE> result, Class<?> interpClass,
                 ChunkWrapInvoker<TARRAY, Chunk<? extends Values>> chunkWrapInvoker) {
             this.result = result;
             this.resultSize = 0;
@@ -1006,7 +1005,7 @@ public class CsvTools {
 
         protected abstract void nullFlagsToValues(final TARRAY values, final boolean[] isNull, final int size);
 
-        public ArrayBackedColumnSource<TYPE> result() {
+        public WritableColumnSource<TYPE> result() {
             return result;
         }
 
@@ -1028,7 +1027,7 @@ public class CsvTools {
             implements Source<TARRAY>, Sink<TARRAY> {
         private final ChunkWrapInvoker<TARRAY, WritableChunk<? super Values>> writableChunkWrapInvoker;
 
-        public MySourceAndSinkBase(ArrayBackedColumnSource<TYPE> result, Class<?> interpClass,
+        public MySourceAndSinkBase(WritableColumnSource<TYPE> result, Class<?> interpClass,
                 ChunkWrapInvoker<TARRAY, Chunk<? extends Values>> chunkWrapInvoker,
                 ChunkWrapInvoker<TARRAY, WritableChunk<? super Values>> writeableChunkWrapInvoker) {
             super(result, interpClass, chunkWrapInvoker);

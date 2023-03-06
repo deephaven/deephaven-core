@@ -22,8 +22,8 @@ public class ShortCumMinMaxOperator extends BaseShortUpdateByOperator {
     protected class Context extends BaseShortUpdateByOperator.Context {
         public ShortChunk<? extends Values> shortValueChunk;
 
-        protected Context(final int chunkSize, final int chunkCount) {
-            super(chunkSize, chunkCount);
+        protected Context(final int chunkSize) {
+            super(chunkSize);
         }
 
         @Override
@@ -64,7 +64,7 @@ public class ShortCumMinMaxOperator extends BaseShortUpdateByOperator {
 
     @NotNull
     @Override
-    public UpdateByOperator.Context makeUpdateContext(final int chunkSize, final int chunkCount) {
-        return new Context(chunkSize, chunkCount);
+    public UpdateByOperator.Context makeUpdateContext(final int chunkSize) {
+        return new Context(chunkSize);
     }
 }

@@ -108,6 +108,9 @@ public class ShiftData {
         void shift(long start, long end, long offset);
     }
 
+    public interface RowSetShiftCallback {
+        void shift(RowSet rowSet, long offset);
+    }
 
     public void applyDataShift(ShiftCallback shiftCallback) {
         int startPos = 0;

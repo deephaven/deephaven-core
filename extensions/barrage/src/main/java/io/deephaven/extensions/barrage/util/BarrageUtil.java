@@ -55,8 +55,10 @@ import org.jetbrains.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.function.*;
 import java.util.stream.Collectors;
@@ -504,7 +506,7 @@ public class BarrageUtil {
 
     private static boolean isTypeNativelySupported(final Class<?> typ) {
         if (typ.isPrimitive() || TypeUtils.isBoxedType(typ) || supportedTypes.contains(typ)
-                || Vector.class.isAssignableFrom(typ)) {
+                || Vector.class.isAssignableFrom(typ) || TypeUtils.isDateTime(typ)) {
             return true;
         }
         if (typ.isArray()) {
@@ -570,7 +572,7 @@ public class BarrageUtil {
                         || type == BigInteger.class) {
                     return Types.MinorType.VARBINARY.getType();
                 }
-                if (type == DateTime.class) {
+                if (type == DateTime.class || type == Instant.class || type == ZonedDateTime.class) {
                     return NANO_SINCE_EPOCH_TYPE;
                 }
 

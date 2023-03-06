@@ -43,8 +43,6 @@ server.timezone=America/New_York
 
 default.processEnvironmentFactory=io.deephaven.util.process.DefaultProcessEnvironment$Factory
 
-OperationInitializationThreadPool.threads=1
-
 deephaven.console.type=python
 
 # Default session duration is 5 minutes

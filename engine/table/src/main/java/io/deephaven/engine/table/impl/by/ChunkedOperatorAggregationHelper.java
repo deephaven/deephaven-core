@@ -192,8 +192,8 @@ public class ChunkedOperatorAggregationHelper {
 
         // Gather the result key columns
         final ColumnSource[] keyColumnsRaw = new ColumnSource[keyHashTableSources.length];
-        final ArrayBackedColumnSource[] keyColumnsCopied =
-                input.isRefreshing() ? new ArrayBackedColumnSource[keyHashTableSources.length] : null;
+        final WritableColumnSource[] keyColumnsCopied =
+                input.isRefreshing() ? new WritableColumnSource[keyHashTableSources.length] : null;
         for (int kci = 0; kci < keyHashTableSources.length; ++kci) {
             ColumnSource<?> resultKeyColumnSource = keyHashTableSources[kci];
             if (keySources[kci] != reinterpretedKeySources[kci]) {
@@ -1533,7 +1533,7 @@ public class ChunkedOperatorAggregationHelper {
     @NotNull
     private static QueryTable staticGroupedAggregation(QueryTable withView, String keyName, ColumnSource<?> keySource,
             AggregationContext ac) {
-        final Pair<ArrayBackedColumnSource, ObjectArraySource<RowSet>> groupKeyIndexTable;
+        final Pair<WritableColumnSource, ObjectArraySource<RowSet>> groupKeyIndexTable;
         final Map<Object, RowSet> grouping = RowSetIndexer.of(withView.getRowSet()).getGrouping(keySource);
         // noinspection unchecked
         groupKeyIndexTable = GroupingUtils.groupingToFlatSources((ColumnSource) keySource, grouping);
@@ -1814,7 +1814,7 @@ public class ChunkedOperatorAggregationHelper {
             MutableInt outputPosition,
             RowSetBuilderRandom initialRowsBuilder,
             boolean usePrev) {
-        final Pair<ArrayBackedColumnSource, ObjectArraySource<RowSet>> groupKeyIndexTable;
+        final Pair<WritableColumnSource, ObjectArraySource<RowSet>> groupKeyIndexTable;
         final RowSetIndexer indexer = RowSetIndexer.of(input.getRowSet());
         final Map<Object, RowSet> grouping = usePrev ? indexer.getPrevGrouping(reinterpretedKeySources[0])
                 : indexer.getGrouping(reinterpretedKeySources[0]);

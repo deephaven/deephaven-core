@@ -3,7 +3,7 @@
  */
 package io.deephaven.engine.table.impl.by.ssmpercentile;
 
-import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
+import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.sources.FloatArraySource;
 import io.deephaven.engine.table.impl.ssms.FloatSegmentedSortedMultiset;
 import io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet;
@@ -14,7 +14,7 @@ public class FloatPercentileTypeMedianHelper extends FloatPercentileTypeHelper {
     private final double percentile;
     private final FloatArraySource resultColumn;
 
-    FloatPercentileTypeMedianHelper(double percentile, ArrayBackedColumnSource resultColumn) {
+    FloatPercentileTypeMedianHelper(double percentile, WritableColumnSource resultColumn) {
         super(percentile, resultColumn);
         this.percentile = percentile;
         this.resultColumn = (FloatArraySource)resultColumn;

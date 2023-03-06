@@ -83,7 +83,7 @@ public class FunctionGeneratedTableFactory {
         Table initialTable = tableGenerator.call();
         for (Map.Entry<String, ? extends ColumnSource<?>> entry : initialTable.getColumnSourceMap().entrySet()) {
             ColumnSource<?> columnSource = entry.getValue();
-            final ArrayBackedColumnSource<?> memoryColumnSource = ArrayBackedColumnSource.getMemoryColumnSource(
+            final WritableColumnSource<?> memoryColumnSource = ArrayBackedColumnSource.getMemoryColumnSource(
                     0, columnSource.getType(), columnSource.getComponentType());
             columns.put(entry.getKey(), memoryColumnSource);
             writableSources.put(entry.getKey(), memoryColumnSource);

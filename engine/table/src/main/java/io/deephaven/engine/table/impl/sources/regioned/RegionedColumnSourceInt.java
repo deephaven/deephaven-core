@@ -24,7 +24,7 @@ import static io.deephaven.util.type.TypeUtils.unbox;
  */
 abstract class RegionedColumnSourceInt<ATTR extends Values>
         extends RegionedColumnSourceArray<Integer, ATTR, ColumnRegionInt<ATTR>>
-        implements ColumnSourceGetDefaults.ForInt {
+        implements ColumnSourceGetDefaults.ForInt /* MIXIN_INTERFACES */ {
 
     RegionedColumnSourceInt(@NotNull final ColumnRegionInt<ATTR> nullRegion,
                              @NotNull final MakeDeferred<ATTR, ColumnRegionInt<ATTR>> makeDeferred) {
@@ -48,35 +48,12 @@ abstract class RegionedColumnSourceInt<ATTR extends Values>
         }
     }
 
+    // region reinterpretation
+    // endregion reinterpretation
+
     static final class AsValues extends RegionedColumnSourceInt<Values> implements MakeRegionDefault {
         AsValues() {
             super(ColumnRegionInt.createNull(PARAMETERS.regionMask), DeferredColumnRegionInt::new);
-        }
-    }
-
-    /**
-     * These are used by {@link RegionedColumnSourceReferencing} subclass who want a native int type.  This class does
-     * <em>not</em> hold an array of regions, but rather derives from {@link RegionedColumnSourceBase}, accessing its
-     * regions by looking into the delegate instance's region array.
-     */
-    @SuppressWarnings("unused")
-    static abstract class NativeType<DATA_TYPE, ATTR extends Values>
-            extends RegionedColumnSourceReferencing.NativeColumnSource<DATA_TYPE, ATTR, Integer, ColumnRegionInt<ATTR>>
-            implements ColumnSourceGetDefaults.ForInt {
-
-        NativeType(@NotNull final RegionedColumnSourceBase<DATA_TYPE, ATTR, ColumnRegionReferencing<ATTR, ColumnRegionInt<ATTR>>> outerColumnSource) {
-            super(Integer.class, outerColumnSource);
-        }
-
-        @Override
-        public int getInt(final long rowKey) {
-            return (rowKey == RowSequence.NULL_ROW_KEY ? getNullRegion() : lookupRegion(rowKey)).getInt(rowKey);
-        }
-
-        static final class AsValues<DATA_TYPE> extends NativeType<DATA_TYPE, Values> implements MakeRegionDefault {
-            AsValues(@NotNull final RegionedColumnSourceBase<DATA_TYPE, Values, ColumnRegionReferencing<Values, ColumnRegionInt<Values>>> outerColumnSource) {
-                super(outerColumnSource);
-            }
         }
     }
 

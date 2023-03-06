@@ -404,10 +404,10 @@ public class BitShiftingColumnSource<T> extends AbstractColumnSource<T> implemen
                 final MutableInt currentRunPosition = new MutableInt(0);
                 final MutableLong currentRunInnerIndexKey = new MutableLong(RowSequence.NULL_ROW_KEY);
 
-                rowSequence.forAllRowKeys((final long indexKey) -> {
+                rowSequence.forAllRowKeys((final long rowKey) -> {
                     final long lastInnerIndexKey = currentRunInnerIndexKey.longValue();
                     final long innerIndexKey =
-                            usePrev ? shiftState.getPrevShifted(indexKey) : shiftState.getShifted(indexKey);
+                            usePrev ? shiftState.getPrevShifted(rowKey) : shiftState.getShifted(rowKey);
                     if (innerIndexKey != lastInnerIndexKey) {
                         if (lastInnerIndexKey != RowSequence.NULL_ROW_KEY) {
                             uniqueIndices.set(currentRunPosition.intValue(), lastInnerIndexKey);

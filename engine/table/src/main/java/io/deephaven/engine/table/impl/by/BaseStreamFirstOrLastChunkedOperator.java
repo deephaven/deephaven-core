@@ -36,7 +36,7 @@ public abstract class BaseStreamFirstOrLastChunkedOperator
     /**
      * Result columns, parallel to {@link #inputColumns} and {@link #outputColumns}.
      */
-    private final Map<String, ArrayBackedColumnSource<?>> resultColumns;
+    private final Map<String, WritableColumnSource<?>> resultColumns;
     /**
      * <p>
      * Input columns, parallel to {@link #outputColumns} and {@link #resultColumns}.
@@ -66,11 +66,11 @@ public abstract class BaseStreamFirstOrLastChunkedOperator
         numResultColumns = resultPairs.length;
         inputColumns = new ColumnSource[numResultColumns];
         outputColumns = new WritableColumnSource[numResultColumns];
-        final Map<String, ArrayBackedColumnSource<?>> resultColumnsMutable = new LinkedHashMap<>(numResultColumns);
+        final Map<String, WritableColumnSource<?>> resultColumnsMutable = new LinkedHashMap<>(numResultColumns);
         for (int ci = 0; ci < numResultColumns; ++ci) {
             final MatchPair resultPair = resultPairs[ci];
             final ColumnSource<?> streamSource = streamTable.getColumnSource(resultPair.rightColumn());
-            final ArrayBackedColumnSource<?> resultSource = ArrayBackedColumnSource.getMemoryColumnSource(0,
+            final WritableColumnSource<?> resultSource = ArrayBackedColumnSource.getMemoryColumnSource(0,
                     streamSource.getType(), streamSource.getComponentType());
             resultColumnsMutable.put(resultPair.leftColumn(), resultSource);
             inputColumns[ci] = ReinterpretUtils.maybeConvertToPrimitive(streamSource);

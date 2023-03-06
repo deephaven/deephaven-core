@@ -235,7 +235,7 @@ public class AggregationProcessor implements AggregationContextFactory {
 
     /**
      * Create a trivial {@link AggregationContextFactory} to implement {@link Table#selectDistinct select distinct}.
-     * 
+     *
      * @return The {@link AggregationContextFactory}
      */
     public static AggregationContextFactory forSelectDistinct() {
@@ -1373,8 +1373,9 @@ public class AggregationProcessor implements AggregationContextFactory {
     }
 
     private static ColumnSource<?> maybeReinterpretDateTimeAsLong(@NotNull final ColumnSource<?> inputSource) {
+        // noinspection unchecked
         return inputSource.getType() == DateTime.class
-                ? ReinterpretUtils.dateTimeToLongSource(inputSource)
+                ? ReinterpretUtils.dateTimeToLongSource((ColumnSource<DateTime>) inputSource)
                 : inputSource;
     }
 

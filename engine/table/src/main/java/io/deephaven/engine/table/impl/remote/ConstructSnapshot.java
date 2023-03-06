@@ -39,6 +39,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Array;
+import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.stream.Stream;
 
@@ -1540,7 +1542,8 @@ public class ConstructSnapshot {
             } else if (definition.getDataType() == int.class || definition.getDataType() == float.class) {
                 sizePerRow += 4;
             } else if (definition.getDataType() == long.class || definition.getDataType() == double.class
-                    || definition.getDataType() == DateTime.class) {
+                    || definition.getDataType() == DateTime.class || definition.getDataType() == Instant.class
+                    || definition.getDataType() == ZonedDateTime.class) {
                 sizePerRow += 8;
             } else {
                 switch (definition.getName()) {
