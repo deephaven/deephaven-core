@@ -52,7 +52,7 @@ jobs:
           GRID_VERSION: ${{steps.web_versions.outputs.GRID_VERSION}}
           CHART_VERSION: ${{steps.web_versions.outputs.CHART_VERSION}}
         with:
-          # TODO: We need to add a PAT so that we can push to my fork probably
+          # TODO: We need to add a PAT so that we can push to my fork probably... or do we?
 #          path: ./deephaven-core
           base: main
           title: Update web version ${{ env.WEB_VERSION }}
