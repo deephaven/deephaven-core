@@ -16,6 +16,7 @@ import java.util.BitSet;
 import java.util.stream.IntStream;
 
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
+import static io.deephaven.util.QueryConstants.NULL_INT;
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 /**
@@ -112,9 +113,34 @@ class UpdateByWindowCumulative extends UpdateByWindow {
             final boolean initialStep) {
         Assert.neqNull(context.inputSources, "assignInputSources() must be called before processRow()");
 
-        final int firstOpIdx = opIndices[0];
-        final UpdateByOperator firstOp = operators[firstOpIdx];
-        final UpdateByOperator.Context firstOpCtx = winOpContexts[0];
+
+        // Identify an operator to use for determining initialization state.
+        final UpdateByOperator firstOp;
+        final UpdateByOperator.Context firstOpCtx;
+
+        if (initialStep || timestampColumnName == null) {
+            // We can use any operator. When initialStep==true, we are always going to start from the beginning.
+            firstOp = operators[opIndices[0]];
+            firstOpCtx = winOpContexts[0];
+        } else {
+            // Check whether we have any time-sensitive operators.
+            int match = NULL_INT;
+            for (int ii = 0; ii < opIndices.length; ii++) {
+                if (operators[opIndices[ii]].timestampColumnName != null) {
+                    match = ii;
+                    break;
+                }
+            }
+            if (match == NULL_INT) {
+                // No operators in this subset care about time. We can use any operator.
+                firstOp = operators[opIndices[0]];
+                firstOpCtx = winOpContexts[0];
+            } else {
+                // Use the first time-sensitive operator.
+                firstOp = operators[opIndices[match]];
+                firstOpCtx = winOpContexts[match];
+            }
+        }
 
         try (final RowSequence.Iterator affectedIt = context.affectedRows.getRowSequenceIterator();
                 ChunkSource.GetContext tsGetContext =

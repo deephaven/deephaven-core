@@ -4,6 +4,7 @@ import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.hash.TObjectIntHashMap;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.ColumnName;
+import io.deephaven.api.updateby.ColumnUpdateOperation;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.base.log.LogOutput;
@@ -32,8 +33,6 @@ import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.updategraph.TerminalNotification;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
-import io.deephaven.hash.KeyedObjectHashMap;
-import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableArray;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedNode;
@@ -49,6 +48,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicIntegerArray;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
@@ -69,8 +69,6 @@ public abstract class UpdateBy {
 
     /** Input sources may be reused by multiple operators, only store and cache unique ones (post-reinterpret) */
     protected final ColumnSource<?>[] inputSources;
-    /** All the operators for this UpdateBy manager */
-    protected final UpdateByOperator[] operators;
     /** All the windows for this UpdateBy manager */
     protected final UpdateByWindow[] windows;
     /** The source table for the UpdateBy operators */
@@ -181,19 +179,13 @@ public abstract class UpdateBy {
 
     protected UpdateBy(
             @NotNull final QueryTable source,
-            @NotNull final UpdateByOperator[] operators,
             @NotNull final UpdateByWindow[] windows,
             @NotNull final ColumnSource<?>[] inputSources,
             @Nullable String timestampColumnName,
             @Nullable final WritableRowRedirection rowRedirection,
             @NotNull final UpdateByControl control) {
 
-        if (operators.length == 0) {
-            throw new IllegalArgumentException("At least one operator must be specified");
-        }
-
         this.source = source;
-        this.operators = operators;
         this.windows = windows;
         this.inputSources = inputSources;
         this.timestampColumnName = timestampColumnName;
@@ -365,8 +357,10 @@ public abstract class UpdateBy {
 
                 // clear them now and let them set their own prev states
                 if (!initialStep && !toClear.isEmpty()) {
-                    for (UpdateByOperator op : operators) {
-                        op.clearOutputRows(toClear);
+                    for (UpdateByWindow win : windows) {
+                        for (UpdateByOperator op : win.operators) {
+                            op.clearOutputRows(toClear);
+                        }
                     }
                 }
             } else {
@@ -905,8 +899,10 @@ public abstract class UpdateBy {
 
             // clear the sparse output columns for rows that no longer exist
             if (!initialStep && !redirHelper.isRedirected() && !toClear.isEmpty()) {
-                for (UpdateByOperator op : operators) {
-                    op.clearOutputRows(toClear);
+                for (UpdateByWindow win : windows) {
+                    for (UpdateByOperator op : win.operators) {
+                        op.clearOutputRows(toClear);
+                    }
                 }
             }
 
@@ -1160,11 +1156,10 @@ public abstract class UpdateBy {
 
         final UpdateByOperatorFactory updateByOperatorFactory =
                 new UpdateByOperatorFactory(source, pairs, rowRedirection, control);
-        final Collection<UpdateByOperator> ops = updateByOperatorFactory.getOperators(clauses);
 
-        final UpdateByOperator[] opArr = ops.toArray(UpdateByOperator.ZERO_LENGTH_OP_ARRAY);
-
-        if (opArr.length == 0) {
+        final Collection<List<ColumnUpdateOperation>> windowSpecs =
+                updateByOperatorFactory.getWindowOperatorSpecs(clauses);
+        if (windowSpecs.size() == 0) {
             throw new IllegalArgumentException("At least one operator must be specified");
         }
 
@@ -1172,94 +1167,48 @@ public abstract class UpdateBy {
                 .append(updateByOperatorFactory.describe(clauses))
                 .append("}");
 
-        String timestampColumnName = null;
+        final AtomicReference<String> timestampColumnName = new AtomicReference<>(null);
         // create an initial set of all source columns
         final Set<String> preservedColumnSet = new LinkedHashSet<>(source.getColumnSourceMap().keySet());
 
         final Set<String> problems = new LinkedHashSet<>();
         final Map<String, ColumnSource<?>> opResultSources = new LinkedHashMap<>();
-        for (final UpdateByOperator op : opArr) {
-            op.getOutputColumns().forEach((name, col) -> {
-                if (opResultSources.putIfAbsent(name, col) != null) {
-                    problems.add(name);
-                }
-                // remove overridden source columns
-                preservedColumnSet.remove(name);
-            });
-            // verify zero or one timestamp column names
-            if (op.getTimestampColumnName() != null) {
-                if (timestampColumnName == null) {
-                    timestampColumnName = op.getTimestampColumnName();
-                } else {
-                    if (!timestampColumnName.equals(op.getTimestampColumnName())) {
-                        throw new UncheckedTableException(
-                                "Cannot reference more than one timestamp source on a single UpdateBy call {"
-                                        + timestampColumnName + ", " + op.getTimestampColumnName() + "}");
-                    }
-                }
-            }
-        }
-
-        if (!problems.isEmpty()) {
-            throw new UncheckedTableException(descriptionBuilder + ": resulting column names must be unique {" +
-                    String.join(", ", problems) + "}");
-        }
-
-        // These are the source columns that exist unchanged in the result
-        final String[] preservedColumns = preservedColumnSet.toArray(String[]::new);
-
-        // We will divide the operators into similar windows for efficient processing.
-        final KeyedObjectHashMap<UpdateByOperator, List<UpdateByOperator>> windowMap =
-                new KeyedObjectHashMap<>(new KeyedObjectKey<>() {
-                    @Override
-                    public UpdateByOperator getKey(List<UpdateByOperator> updateByOperators) {
-                        return updateByOperators.get(0);
-                    }
-
-                    @Override
-                    public int hashKey(UpdateByOperator updateByOperator) {
-                        return UpdateByWindow.hashCodeFromOperator(updateByOperator);
-                    }
-
-                    @Override
-                    public boolean equalKey(UpdateByOperator updateByOperator,
-                            List<UpdateByOperator> updateByOperators) {
-                        return UpdateByWindow.isEquivalentWindow(updateByOperator, updateByOperators.get(0));
-                    }
-                });
-        for (UpdateByOperator updateByOperator : opArr) {
-            final MutableBoolean created = new MutableBoolean(false);
-            final List<UpdateByOperator> opList = windowMap.putIfAbsent(updateByOperator,
-                    (newOpListOp) -> {
-                        final List<UpdateByOperator> newOpList = new ArrayList<>();
-                        newOpList.add(newOpListOp);
-                        created.setTrue();
-                        return newOpList;
-                    });
-            if (!created.booleanValue()) {
-                opList.add(updateByOperator);
-            }
-        }
-
-        // make the windows and create unique input sources for all the window operators
 
         final ArrayList<ColumnSource<?>> inputSourceList = new ArrayList<>();
         final TObjectIntHashMap<ChunkSource<Values>> sourceToSlotMap = new TObjectIntHashMap<>();
 
-        final UpdateByWindow[] windowArr = windowMap.values().stream().map((final List<UpdateByOperator> opList) -> {
-            // build an array from the operator indices
-            UpdateByOperator[] windowOps = new UpdateByOperator[opList.size()];
-            // local map of operators indices to input source indices
-            final int[][] windowOpSourceSlots = new int[opList.size()][];
+        final UpdateByWindow[] windowArr = windowSpecs.stream().map(clauseList -> {
+            final UpdateByOperator[] windowOps =
+                    updateByOperatorFactory.getOperators(clauseList).toArray(UpdateByOperator[]::new);
+            final int[][] windowOpSourceSlots = new int[windowOps.length][];
 
-            // do the mapping from operator input sources to unique input sources
-            for (int idx = 0; idx < opList.size(); idx++) {
-                final UpdateByOperator localOp = opList.get(idx);
-                // store this operator into an array for window creation
-                windowOps[idx] = localOp;
-                // iterate over each input column and map this operator to unique source
-                final String[] inputColumnNames = localOp.getInputColumnNames();
-                windowOpSourceSlots[idx] = new int[inputColumnNames.length];
+            for (int opIdx = 0; opIdx < windowOps.length; opIdx++) {
+                UpdateByOperator op = windowOps[opIdx];
+
+                op.getOutputColumns().forEach((name, col) -> {
+                    if (opResultSources.putIfAbsent(name, col) != null) {
+                        problems.add(name);
+                    }
+                    // remove overridden source columns
+                    preservedColumnSet.remove(name);
+                });
+                // verify zero or one timestamp column names
+                if (op.getTimestampColumnName() != null) {
+                    if (timestampColumnName.get() == null) {
+                        timestampColumnName.set(op.getTimestampColumnName());
+                    } else {
+                        if (!timestampColumnName.get().equals(op.getTimestampColumnName())) {
+                            throw new UncheckedTableException(
+                                    "Cannot reference more than one timestamp source on a single UpdateBy call {"
+                                            + timestampColumnName + ", " + op.getTimestampColumnName() + "}");
+                        }
+                    }
+                }
+
+                // Iterate over each input column and map this operator to unique source
+                final String[] inputColumnNames = op.getInputColumnNames();
+                windowOpSourceSlots[opIdx] = new int[inputColumnNames.length];
+
                 for (int colIdx = 0; colIdx < inputColumnNames.length; colIdx++) {
                     final ColumnSource<?> input = source.getColumnSource(inputColumnNames[colIdx]);
                     final int maybeExistingSlot = sourceToSlotMap.get(input);
@@ -1269,25 +1218,34 @@ public abstract class UpdateBy {
                         inputSourceList.add(ReinterpretUtils.maybeConvertToPrimitive(input));
                         sourceToSlotMap.put(input, srcIdx);
                         // map the window operator indices to this new source
-                        windowOpSourceSlots[idx][colIdx] = srcIdx;
+                        windowOpSourceSlots[opIdx][colIdx] = srcIdx;
                     } else {
                         // map the window indices to this existing source
-                        windowOpSourceSlots[idx][colIdx] = maybeExistingSlot;
+                        windowOpSourceSlots[opIdx][colIdx] = maybeExistingSlot;
                     }
                 }
             }
+
             return UpdateByWindow.createFromOperatorArray(windowOps, windowOpSourceSlots);
         }).toArray(UpdateByWindow[]::new);
+
+        if (!problems.isEmpty()) {
+            throw new UncheckedTableException(descriptionBuilder + ": resulting column names must be unique {" +
+                    String.join(", ", problems) + "}");
+        }
+
+        // These are the source columns that exist unchanged in the result
+        final String[] preservedColumns = preservedColumnSet.toArray(String[]::new);
+
         final ColumnSource<?>[] inputSourceArr = inputSourceList.toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY);
 
         final Map<String, ColumnSource<?>> resultSources = new LinkedHashMap<>(source.getColumnSourceMap());
         resultSources.putAll(opResultSources);
-        final String fTimestampColumnName = timestampColumnName;
+        final String fTimestampColumnName = timestampColumnName.get();
         if (pairs.length == 0) {
             descriptionBuilder.append(")");
             return LivenessScopeStack.computeEnclosed(() -> {
                 final ZeroKeyUpdateByManager zkm = new ZeroKeyUpdateByManager(
-                        opArr,
                         windowArr,
                         inputSourceArr,
                         source,
@@ -1302,7 +1260,11 @@ public abstract class UpdateBy {
                     if (rowRedirection != null) {
                         rowRedirection.startTrackingPrevValues();
                     }
-                    ops.forEach(UpdateByOperator::startTrackingPrev);
+                    for (UpdateByWindow win : windowArr) {
+                        for (UpdateByOperator op : win.operators) {
+                            op.startTrackingPrev();
+                        }
+                    }
                 }
                 return zkm.result();
             }, source::isRefreshing, DynamicNode::isRefreshing);
@@ -1326,7 +1288,6 @@ public abstract class UpdateBy {
 
         return LivenessScopeStack.computeEnclosed(() -> {
             final BucketedPartitionedUpdateByManager bm = new BucketedPartitionedUpdateByManager(
-                    opArr,
                     windowArr,
                     inputSourceArr,
                     source,
@@ -1342,7 +1303,11 @@ public abstract class UpdateBy {
                 if (rowRedirection != null) {
                     rowRedirection.startTrackingPrevValues();
                 }
-                ops.forEach(UpdateByOperator::startTrackingPrev);
+                for (UpdateByWindow win : windowArr) {
+                    for (UpdateByOperator op : win.operators) {
+                        op.startTrackingPrev();
+                    }
+                }
             }
             return bm.result();
         }, source::isRefreshing, DynamicNode::isRefreshing);

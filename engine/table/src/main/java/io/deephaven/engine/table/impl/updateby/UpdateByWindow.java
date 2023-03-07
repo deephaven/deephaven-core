@@ -16,7 +16,6 @@ import org.jetbrains.annotations.Nullable;
 import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.util.Arrays;
 import java.util.BitSet;
-import java.util.Objects;
 import java.util.stream.IntStream;
 
 abstract class UpdateByWindow {
@@ -28,6 +27,9 @@ abstract class UpdateByWindow {
 
     /** The indices in the UpdateBy input source collection for each operator input slots */
     protected final int[][] operatorInputSourceSlots;
+
+    /** Whether the operators for this window require row positions during accumulation */
+    protected final boolean operatorsRequirePositions;
 
     /** This context will store the necessary info to process a single window for a single bucket */
     static class UpdateByWindowBucketContext implements SafeCloseable {
@@ -97,11 +99,14 @@ abstract class UpdateByWindow {
             final int chunkSize,
             final boolean isInitializeStep);
 
-    UpdateByWindow(UpdateByOperator[] operators, int[][] operatorInputSourceSlots,
-            @Nullable String timestampColumnName) {
+    UpdateByWindow(final UpdateByOperator[] operators,
+            final int[][] operatorInputSourceSlots,
+            @Nullable final String timestampColumnName) {
         this.operators = operators;
         this.operatorInputSourceSlots = operatorInputSourceSlots;
         this.timestampColumnName = timestampColumnName;
+
+        operatorsRequirePositions = Arrays.stream(operators).anyMatch(UpdateByOperator::requiresRowPositions);
     }
 
     /**
@@ -310,55 +315,4 @@ abstract class UpdateByWindow {
     }
 
     // endregion
-
-    /**
-     * Returns a hash code to help distinguish between windows on the same UpdateBy call
-     */
-    private static int hashCode(boolean windowed, @Nullable String timestampColumnName, long prevUnits,
-            long fwdUnits) {
-
-        int hash = Boolean.hashCode(windowed);
-
-        // Time-based cumulative ops are not included with regular cumulative ops
-        if (!windowed) {
-            hash = 31 * hash + Objects.hashCode(timestampColumnName);
-            return hash;
-        }
-
-        // windowed ops are unique per type (ticks/time-based) and window dimensions
-        hash = 31 * hash + Objects.hashCode(timestampColumnName);
-        hash = 31 * hash + Long.hashCode(prevUnits);
-        hash = 31 * hash + Long.hashCode(fwdUnits);
-        return hash;
-    }
-
-    /**
-     * Returns a hash code given a particular operator
-     */
-    static int hashCodeFromOperator(final UpdateByOperator op) {
-        return hashCode(op.isWindowed,
-                op.getTimestampColumnName(),
-                op.getPrevWindowUnits(),
-                op.getFwdWindowUnits());
-    }
-
-    /**
-     * Returns `true` if two operators are compatible and can be executed as part of the same window
-     */
-    static boolean isEquivalentWindow(final UpdateByOperator opA, final UpdateByOperator opB) {
-        if (!opA.isWindowed && !opB.isWindowed) {
-            // These are both cumulative. Equivalent when they share a time or row based accumulation
-            return Objects.equals(opA.timestampColumnName, opB.timestampColumnName);
-        } else if (opA.isWindowed != opB.isWindowed) {
-            // These are different types (Cumulative and Rolling)
-            return false;
-        }
-
-        // Rolling ops are equivalent when they share a time or row based accumulation and the same fwd/prev units
-        if (!Objects.equals(opA.timestampColumnName, opB.timestampColumnName)) {
-            return false;
-        }
-        return opA.getPrevWindowUnits() == opB.getPrevWindowUnits() &&
-                opB.getFwdWindowUnits() == opB.getFwdWindowUnits();
-    }
 }

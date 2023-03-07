@@ -11,6 +11,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.ssa.LongSegmentedSortedArray;
 import io.deephaven.engine.table.iterators.LongColumnIterator;
+import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -60,8 +61,9 @@ class UpdateByWindowRollingTime extends UpdateByWindowRollingBase {
     @Override
     void finalizeWindowBucket(UpdateByWindowBucketContext context) {
         UpdateByWindowTimeBucketContext ctx = (UpdateByWindowTimeBucketContext) context;
-        ctx.timestampColumnGetContext.close();
-        ctx.timestampColumnGetContext = null;
+        try (SafeCloseable ignored = ctx.timestampColumnGetContext) {
+            ctx.timestampColumnGetContext = null;
+        }
         super.finalizeWindowBucket(context);
     }
 

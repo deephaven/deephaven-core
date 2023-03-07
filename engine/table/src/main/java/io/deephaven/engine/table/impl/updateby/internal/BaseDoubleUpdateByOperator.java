@@ -130,7 +130,6 @@ public abstract class BaseDoubleUpdateByOperator extends UpdateByOperator {
 
         @Override
         public void close() {
-            super.close();
             outputValues.close();
             outputFillContext.close();
         }
