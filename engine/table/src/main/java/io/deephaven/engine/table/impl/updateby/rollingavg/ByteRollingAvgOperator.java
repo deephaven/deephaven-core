@@ -20,7 +20,7 @@ import org.jetbrains.annotations.Nullable;
 import static io.deephaven.util.QueryConstants.*;
 
 public class ByteRollingAvgOperator extends BaseDoubleUpdateByOperator {
-    private static final int RING_BUFFER_INITIAL_CAPACITY = 128;
+    private static final int BUFFER_INITIAL_CAPACITY = 128;
     // region extra-fields
     final byte nullValue;
     // endregion extra-fields
@@ -29,9 +29,9 @@ public class ByteRollingAvgOperator extends BaseDoubleUpdateByOperator {
         protected ByteChunk<? extends Values> byteInfluencerValuesChunk;
         protected ByteRingBuffer byteWindowValues;
 
-        protected Context(final int chunkSize, final int chunkCount) {
-            super(chunkSize, chunkCount);
-            byteWindowValues = new ByteRingBuffer(RING_BUFFER_INITIAL_CAPACITY, true);
+        protected Context(final int chunkSize) {
+            super(chunkSize);
+            byteWindowValues = new ByteRingBuffer(BUFFER_INITIAL_CAPACITY, true);
         }
 
         @Override
@@ -91,12 +91,18 @@ public class ByteRollingAvgOperator extends BaseDoubleUpdateByOperator {
                 outputValues.set(outIdx, curVal / (double)count);
             }
         }
+
+        @Override
+        public void reset() {
+            super.reset();
+            byteWindowValues.clear();
+        }
     }
 
     @NotNull
     @Override
-    public UpdateByOperator.Context makeUpdateContext(final int chunkSize, final int chunkCount) {
-        return new Context(chunkSize, chunkCount);
+    public UpdateByOperator.Context makeUpdateContext(final int chunkSize) {
+        return new Context(chunkSize);
     }
 
     public ByteRollingAvgOperator(@NotNull final MatchPair pair,

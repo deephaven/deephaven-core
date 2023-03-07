@@ -15,7 +15,7 @@ import org.jetbrains.annotations.Nullable;
 import static io.deephaven.util.QueryConstants.*;
 
 public class ShortRollingAvgOperator extends BaseDoubleUpdateByOperator {
-    private static final int RING_BUFFER_INITIAL_CAPACITY = 128;
+    private static final int BUFFER_INITIAL_CAPACITY = 128;
     // region extra-fields
     // endregion extra-fields
 
@@ -23,9 +23,9 @@ public class ShortRollingAvgOperator extends BaseDoubleUpdateByOperator {
         protected ShortChunk<? extends Values> shortInfluencerValuesChunk;
         protected ShortRingBuffer shortWindowValues;
 
-        protected Context(final int chunkSize, final int chunkCount) {
-            super(chunkSize, chunkCount);
-            shortWindowValues = new ShortRingBuffer(RING_BUFFER_INITIAL_CAPACITY, true);
+        protected Context(final int chunkSize) {
+            super(chunkSize);
+            shortWindowValues = new ShortRingBuffer(BUFFER_INITIAL_CAPACITY, true);
         }
 
         @Override
@@ -85,12 +85,18 @@ public class ShortRollingAvgOperator extends BaseDoubleUpdateByOperator {
                 outputValues.set(outIdx, curVal / (double)count);
             }
         }
+
+        @Override
+        public void reset() {
+            super.reset();
+            shortWindowValues.clear();
+        }
     }
 
     @NotNull
     @Override
-    public UpdateByOperator.Context makeUpdateContext(final int chunkSize, final int chunkCount) {
-        return new Context(chunkSize, chunkCount);
+    public UpdateByOperator.Context makeUpdateContext(final int chunkSize) {
+        return new Context(chunkSize);
     }
 
     public ShortRollingAvgOperator(@NotNull final MatchPair pair,

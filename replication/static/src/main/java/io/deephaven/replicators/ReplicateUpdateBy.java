@@ -100,23 +100,6 @@ public class ReplicateUpdateBy {
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingsum/ShortRollingSumOperator.java",
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingsum/FloatRollingSumOperator.java");
 
-        files = ReplicatePrimitiveCode.charToAllButBoolean(
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollinggroup/CharRollingGroupOperator.java");
-        for (final String f : files) {
-            if (f.contains("Int")) {
-                fixupInteger(f);
-            }
-        }
-        objectResult = ReplicatePrimitiveCode.charToObject(
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollinggroup/CharRollingGroupOperator.java");
-        fixupStandardObject(objectResult, "ObjectRollingGroupOperator", false,
-                "super\\(fillPair, new String\\[\\] \\{ fillPair.rightColumn \\}, rowRedirection\\);",
-                "super(fillPair, new String[] { fillPair.rightColumn }, rowRedirection, colType);",
-                "final SlicedObjectAggregateColumnSource outputSource",
-                "final SlicedObjectAggregateColumnSource<T> outputSource",
-                "ColumnSource<Object> valueSource", "ColumnSource<T> valueSource",
-                "SlicedObjectAggregateColumnSource\\(", "SlicedObjectAggregateColumnSource<>\\(");
-
         replicateNumericOperator(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingavg/ShortRollingAvgOperator.java",
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingavg/FloatRollingAvgOperator.java");
