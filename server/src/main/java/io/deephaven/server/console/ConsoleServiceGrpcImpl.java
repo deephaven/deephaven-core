@@ -366,7 +366,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
             }
             // since the subscribe() method auto-replays all existing logs, filter to just once this consumer probably
             // hasn't seen
-            if (record.getTimestampMicros() < request.getLastSeenLogTimestamp()) {
+            if (record.getTimestampMicros() <= request.getLastSeenLogTimestamp()) {
                 return;
             }
             // Note: we can't send record off-thread without doing a deepCopy.

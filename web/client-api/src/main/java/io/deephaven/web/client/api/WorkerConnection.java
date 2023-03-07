@@ -379,8 +379,6 @@ public class WorkerConnection {
     }
 
     public boolean checkStatus(ResponseStreamWrapper.Status status) {
-        // TODO provide simpler hooks to retry auth, restart the stream
-        final long now = System.currentTimeMillis();
         if (status.isOk()) {
             // success, ignore
             return true;
@@ -389,7 +387,7 @@ public class WorkerConnection {
             info.notifyConnectionError(status);
 
             // signal that the user needs to re-authenticate, make a new session
-            // TODO in theory we could make a new session for some auth types
+            // TODO (deephaven-core#3501) in theory we could make a new session for some auth types
             info.fireEvent(CoreClient.EVENT_RECONNECT_AUTH_FAILED);
         } else if (status.getCode() == Code.Internal || status.getCode() == Code.Unknown
                 || status.getCode() == Code.Unavailable) {
@@ -412,9 +410,9 @@ public class WorkerConnection {
         if (logStream != null) {
             logStream.cancel();
         }
-        // TODO core#225 track latest message seen and only sub after that
         LogSubscriptionRequest logSubscriptionRequest = new LogSubscriptionRequest();
         if (pastLogs.size() > 0) {
+            // only ask for messages seen after the last message we recieved
             logSubscriptionRequest
                     .setLastSeenLogTimestamp(String.valueOf((long) pastLogs.get(pastLogs.size() - 1).getMicros()));
         }
