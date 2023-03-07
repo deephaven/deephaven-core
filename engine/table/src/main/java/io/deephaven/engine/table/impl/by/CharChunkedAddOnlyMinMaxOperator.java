@@ -22,6 +22,8 @@ import java.util.Map;
  */
 class CharChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationOperator {
     private final CharacterArraySource resultColumn;
+    // region actualResult
+    // endregion actualResult
     private final boolean minimum;
     private final String name;
 
@@ -148,7 +150,9 @@ class CharChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationOpe
 
     @Override
     public Map<String, ? extends ColumnSource<?>> getResultColumns() {
+        // region getResultColumns
         return Collections.<String, ColumnSource<?>>singletonMap(name, resultColumn);
+        // endregion getResultColumns
     }
 
     @Override

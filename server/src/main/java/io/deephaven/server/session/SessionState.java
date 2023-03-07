@@ -157,7 +157,7 @@ public class SessionState {
         this.scheduler = scheduler;
         this.authContext = authContext;
         this.executionContext = executionContextProvider.get().withAuthContext(authContext);
-        log.info().append(logPrefix).append("session initialized").endl();
+        log.debug().append(logPrefix).append("session initialized").endl();
     }
 
     /**
@@ -175,7 +175,7 @@ public class SessionState {
             throw new IllegalStateException("session already initialized");
         }
 
-        log.info().append(logPrefix)
+        log.debug().append(logPrefix)
                 .append("token initialized to '").append(expiration.token.toString())
                 .append("' which expires at ").append(MILLIS_FROM_EPOCH_FORMATTER, expiration.deadlineMillis)
                 .append(".").endl();
@@ -204,10 +204,8 @@ public class SessionState {
             throw GrpcUtil.statusRuntimeException(Code.UNAUTHENTICATED, "session has expired");
         }
 
-        log.info().append(logPrefix)
-                .append("token rotating to '").append(expiration.token.toString())
-                .append("' which expires at ").append(MILLIS_FROM_EPOCH_FORMATTER, expiration.deadlineMillis)
-                .append(".").endl();
+        log.debug().append(logPrefix).append("token, expires at ")
+                .append(MILLIS_FROM_EPOCH_FORMATTER, expiration.deadlineMillis).append(".").endl();
     }
 
     /**
@@ -448,13 +446,13 @@ public class SessionState {
             return;
         }
 
-        log.info().append(logPrefix).append("releasing outstanding exports").endl();
+        log.debug().append(logPrefix).append("releasing outstanding exports").endl();
         synchronized (exportMap) {
             exportMap.forEach(ExportObject::cancel);
+            exportMap.clear();
         }
-        exportMap.clear();
 
-        log.info().append(logPrefix).append("outstanding exports released").endl();
+        log.debug().append(logPrefix).append("outstanding exports released").endl();
         synchronized (exportListeners) {
             exportListeners.forEach(ExportListener::onRemove);
             exportListeners.clear();
@@ -1119,7 +1117,7 @@ public class SessionState {
          */
         private void initialize(final int versionId) {
             final String id = Integer.toHexString(System.identityHashCode(this));
-            log.info().append(logPrefix).append("refreshing listener ").append(id).endl();
+            log.debug().append(logPrefix).append("refreshing listener ").append(id).endl();
 
             for (final ExportObject<?> export : exportMap) {
                 if (!export.tryRetainReference()) {
@@ -1157,7 +1155,7 @@ public class SessionState {
                     .setExportState(ExportNotification.State.EXPORTED)
                     .setContext("run is complete")
                     .build());
-            log.info().append(logPrefix).append("run complete for listener ").append(id).endl();
+            log.debug().append(logPrefix).append("run complete for listener ").append(id).endl();
         }
 
         protected void onRemove() {

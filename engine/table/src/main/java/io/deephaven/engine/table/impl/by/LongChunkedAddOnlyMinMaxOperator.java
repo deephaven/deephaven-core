@@ -8,9 +8,13 @@
  */
 package io.deephaven.engine.table.impl.by;
 
+import java.time.Instant;
 import io.deephaven.time.DateTime;
+import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.DateTimeArraySource;
+import io.deephaven.engine.table.impl.sources.InstantArraySource;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
+import io.deephaven.engine.table.impl.sources.NanosBasedTimeArraySource;
 
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
@@ -18,7 +22,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.compare.LongComparisons;
-import io.deephaven.engine.table.impl.sources.AbstractLongArraySource;
+import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.chunk.*;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -30,7 +34,10 @@ import java.util.Map;
  * Iterative average operator.
  */
 class LongChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationOperator {
-    private final AbstractLongArraySource resultColumn;
+    private final LongArraySource resultColumn;
+    // region actualResult
+    private final ColumnSource<?> actualResult;
+    // endregion actualResult
     private final boolean minimum;
     private final String name;
 
@@ -42,7 +49,15 @@ class LongChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationOpe
         this.minimum = minimum;
         this.name = name;
         // region resultColumn initialization
-        resultColumn = type == DateTime.class ? new DateTimeArraySource() : new LongArraySource();
+        if (type == DateTime.class) {
+            actualResult = new DateTimeArraySource();
+            resultColumn = ((NanosBasedTimeArraySource<?>)actualResult).toEpochNano();
+        } else if (type == Instant.class) {
+            actualResult = new InstantArraySource();
+            resultColumn = ((NanosBasedTimeArraySource<?>)actualResult).toEpochNano();
+        } else {
+            actualResult = resultColumn = new LongArraySource();
+        }
         // endregion resultColumn initialization
     }
 
@@ -158,7 +173,9 @@ class LongChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationOpe
 
     @Override
     public Map<String, ? extends ColumnSource<?>> getResultColumns() {
-        return Collections.<String, ColumnSource<?>>singletonMap(name, resultColumn);
+        // region getResultColumns
+        return Collections.<String, ColumnSource<?>>singletonMap(name, actualResult);
+        // endregion getResultColumns
     }
 
     @Override

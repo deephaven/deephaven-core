@@ -41,9 +41,7 @@ public class TestRegionedColumnSourceDateTime
             final boolean reinterpreted) {
         checking(new Expectations() {
             {
-                oneOf(cr[expectedRegionIndex]).getReferencedRegion();
-                will(returnValue(cr_n[expectedRegionIndex]));
-                oneOf(cr_n[expectedRegionIndex]).getLong(elementIndex);
+                oneOf(cr[expectedRegionIndex]).getLong(elementIndex);
                 will(returnValue(output == null ? QueryConstants.NULL_LONG : output.getNanos()));
             }
         });
@@ -64,7 +62,7 @@ public class TestRegionedColumnSourceDateTime
         assertEquals(DateTime.class, SUT.getType());
         SUT_AS_LONG = SUT.reinterpret(long.class);
         assertEquals(long.class, SUT_AS_LONG.getType());
-        assertEquals(SUT, SUT_AS_LONG.reinterpret(DateTime.class));
+        assertEquals(RegionedColumnSourceDateTime.class, SUT_AS_LONG.reinterpret(DateTime.class).getClass());
     }
 
     @Override

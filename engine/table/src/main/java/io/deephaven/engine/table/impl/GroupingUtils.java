@@ -90,10 +90,10 @@ public class GroupingUtils {
      * @return A pair of a flat key column source and a flat RowSet column source
      */
     @SuppressWarnings("unused")
-    public static <TYPE> Pair<ArrayBackedColumnSource<TYPE>, ObjectArraySource<TrackingWritableRowSet>> groupingToFlatSources(
+    public static <TYPE> Pair<WritableColumnSource<TYPE>, ObjectArraySource<TrackingWritableRowSet>> groupingToFlatSources(
             @NotNull final ColumnSource<TYPE> originalKeyColumnSource, @NotNull final Map<TYPE, RowSet> groupToRowSet) {
         final int numGroups = groupToRowSet.size();
-        final ArrayBackedColumnSource<TYPE> resultKeyColumnSource = getMemoryColumnSource(
+        final WritableColumnSource<TYPE> resultKeyColumnSource = getMemoryColumnSource(
                 numGroups, originalKeyColumnSource.getType(), originalKeyColumnSource.getComponentType());
         final ObjectArraySource<TrackingWritableRowSet> resultIndexColumnSource =
                 new ObjectArraySource<>(TrackingWritableRowSet.class);
@@ -138,13 +138,13 @@ public class GroupingUtils {
      * @param responsiveGroups Set to the number of responsive groups on exit
      * @return A pair of a flat key column source and a flat rowSet column source
      */
-    public static <TYPE> Pair<ArrayBackedColumnSource<TYPE>, ObjectArraySource<TrackingWritableRowSet>> groupingToFlatSources(
+    public static <TYPE> Pair<WritableColumnSource<TYPE>, ObjectArraySource<TrackingWritableRowSet>> groupingToFlatSources(
             @NotNull final ColumnSource<TYPE> originalKeyColumnSource,
             @NotNull final Map<TYPE, RowSet> groupToRowSet,
             @NotNull final RowSet intersect,
             @NotNull final MutableInt responsiveGroups) {
         final int numGroups = groupToRowSet.size();
-        final ArrayBackedColumnSource<TYPE> resultKeyColumnSource = getMemoryColumnSource(
+        final WritableColumnSource<TYPE> resultKeyColumnSource = getMemoryColumnSource(
                 numGroups, originalKeyColumnSource.getType(), originalKeyColumnSource.getComponentType());
         final ObjectArraySource<TrackingWritableRowSet> resultIndexColumnSource =
                 new ObjectArraySource<>(TrackingWritableRowSet.class);

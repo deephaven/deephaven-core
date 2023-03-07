@@ -32,7 +32,7 @@ import static io.deephaven.util.QueryConstants.NULL_SHORT;
 public class ImmutableConstantShortSource
         extends AbstractColumnSource<Short>
         implements ImmutableColumnSourceGetDefaults.ForShort, ShiftData.ShiftCallback, InMemoryColumnSource,
-        RowKeyAgnosticChunkSource<Values> {
+        RowKeyAgnosticChunkSource<Values> /* MIXIN_IMPLS */ {
 
     private final short value;
 
@@ -72,9 +72,6 @@ public class ImmutableConstantShortSource
     @Override
     public final void shift(final long start, final long end, final long offset) {}
 
-    // region reinterpret
-    // endregion reinterpret
-
     @Override
     public void fillChunkUnordered(
             @NotNull FillContext context,
@@ -99,4 +96,7 @@ public class ImmutableConstantShortSource
     public boolean providesFillUnordered() {
         return true;
     }
+
+    // region reinterpretation
+    // endregion reinterpretation
 }

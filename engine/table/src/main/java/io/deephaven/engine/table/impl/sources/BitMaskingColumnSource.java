@@ -398,9 +398,9 @@ public class BitMaskingColumnSource<T> extends AbstractColumnSource<T> implement
                 }
 
                 maskedKeys.setSize(0);
-                rowSequence.forAllRowKeys((final long indexKey) -> {
+                rowSequence.forAllRowKeys((final long rowKey) -> {
                     final long innerIndexKey =
-                            usePrev ? shiftState.getPrevMasked(indexKey) : shiftState.getMasked(indexKey);
+                            usePrev ? shiftState.getPrevMasked(rowKey) : shiftState.getMasked(rowKey);
                     maskedKeys.add(innerIndexKey);
                 });
 

@@ -19,13 +19,13 @@ public class UnboxedLongBackedColumnSource<T> extends AbstractColumnSource<Long>
     }
 
     @Override
-    public long getLong(long index) {
-        return alternateColumnSource.getLong(index);
+    public long getLong(long rowKey) {
+        return alternateColumnSource.getLong(rowKey);
     }
 
     @Override
-    public long getPrevLong(long index) {
-        return alternateColumnSource.getPrevLong(index);
+    public long getPrevLong(long rowKey) {
+        return alternateColumnSource.getPrevLong(rowKey);
     }
 
     @Override

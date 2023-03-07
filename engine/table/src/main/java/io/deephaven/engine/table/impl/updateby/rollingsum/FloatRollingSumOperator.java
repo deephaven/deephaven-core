@@ -1,5 +1,6 @@
 package io.deephaven.engine.table.impl.updateby.rollingsum;
 
+import io.deephaven.base.ringbuffer.AggregatingFloatRingBuffer;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.FloatChunk;
@@ -7,7 +8,6 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseFloatUpdateByOperator;
-import io.deephaven.engine.table.impl.updateby.internal.PairwiseFloatRingBuffer;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -15,17 +15,17 @@ import org.jetbrains.annotations.Nullable;
 import static io.deephaven.util.QueryConstants.NULL_FLOAT;
 
 public class FloatRollingSumOperator extends BaseFloatUpdateByOperator {
-    private static final int PAIRWISE_BUFFER_INITIAL_SIZE = 64;
+    private static final int BUFFER_INITIAL_SIZE = 64;
     // region extra-fields
     // endregion extra-fields
 
     protected class Context extends BaseFloatUpdateByOperator.Context {
         protected FloatChunk<? extends Values> floatInfluencerValuesChunk;
-        protected PairwiseFloatRingBuffer floatPairwiseSum;
+        protected AggregatingFloatRingBuffer aggSum;
 
-        protected Context(final int chunkSize, final int chunkCount) {
-            super(chunkSize, chunkCount);
-            floatPairwiseSum = new PairwiseFloatRingBuffer(PAIRWISE_BUFFER_INITIAL_SIZE, 0.0f, (a, b) -> {
+        protected Context(final int chunkSize) {
+            super(chunkSize);
+            aggSum = new AggregatingFloatRingBuffer(BUFFER_INITIAL_SIZE, 0.0f, (a, b) -> {
                 if (a == NULL_FLOAT) {
                     return b;
                 } else if (b == NULL_FLOAT) {
@@ -38,7 +38,6 @@ public class FloatRollingSumOperator extends BaseFloatUpdateByOperator {
         @Override
         public void close() {
             super.close();
-            floatPairwiseSum.close();
         }
 
         @Override
@@ -47,12 +46,12 @@ public class FloatRollingSumOperator extends BaseFloatUpdateByOperator {
         }
 
         @Override
-        public void push(int pos, int count) {
-            floatPairwiseSum.ensureRemaining(count);
+        public void push(long key, int pos, int count) {
+            aggSum.ensureRemaining(count);
 
             for (int ii = 0; ii < count; ii++) {
                 float val = floatInfluencerValuesChunk.get(pos + ii);
-                floatPairwiseSum.pushUnsafe(val);
+                aggSum.addUnsafe(val);
 
                 if (val == NULL_FLOAT) {
                     nullCount++;
@@ -62,10 +61,10 @@ public class FloatRollingSumOperator extends BaseFloatUpdateByOperator {
 
         @Override
         public void pop(int count) {
-            Assert.geq(floatPairwiseSum.size(), "shortWindowValues.size()", count);
+            Assert.geq(aggSum.size(), "aggSum.size()", count);
 
             for (int ii = 0; ii < count; ii++) {
-                float val = floatPairwiseSum.popUnsafe();
+                float val = aggSum.removeUnsafe();
 
                 if (val == NULL_FLOAT) {
                     nullCount--;
@@ -75,18 +74,24 @@ public class FloatRollingSumOperator extends BaseFloatUpdateByOperator {
 
         @Override
         public void writeToOutputChunk(int outIdx) {
-            if (floatPairwiseSum.size() == nullCount) {
+            if (aggSum.size() == nullCount) {
                 outputValues.set(outIdx, NULL_FLOAT);
             } else {
-                outputValues.set(outIdx, floatPairwiseSum.evaluate());
+                outputValues.set(outIdx, aggSum.evaluate());
             }
+        }
+
+        @Override
+        public void reset() {
+            super.reset();
+            aggSum.clear();
         }
     }
 
     @NotNull
     @Override
-    public UpdateByOperator.Context makeUpdateContext(final int chunkSize, final int chunkCount) {
-        return new Context(chunkSize, chunkCount);
+    public UpdateByOperator.Context makeUpdateContext(final int chunkSize) {
+        return new Context(chunkSize);
     }
 
     public FloatRollingSumOperator(@NotNull final MatchPair pair,

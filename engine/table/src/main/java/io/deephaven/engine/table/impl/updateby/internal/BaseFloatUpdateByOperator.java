@@ -39,8 +39,7 @@ public abstract class BaseFloatUpdateByOperator extends UpdateByOperator {
 
         public float curVal = NULL_FLOAT;
 
-        protected Context(final int chunkSize, final int chunkCount) {
-            super(chunkCount);
+        protected Context(final int chunkSize) {
             this.outputFillContext = outputSource.makeFillFromContext(chunkSize);
             this.outputValues = WritableFloatChunk.makeWritableChunk(chunkSize);
         }
@@ -126,6 +125,7 @@ public abstract class BaseFloatUpdateByOperator extends UpdateByOperator {
         @Override
         public void reset() {
             curVal = NULL_FLOAT;
+            nullCount = 0;
         }
 
         @Override
@@ -201,10 +201,9 @@ public abstract class BaseFloatUpdateByOperator extends UpdateByOperator {
     @Override
     public void initializeCumulative(@NotNull UpdateByOperator.Context context, long firstUnmodifiedKey, long firstUnmodifiedTimestamp) {
         Context ctx = (Context) context;
+        ctx.reset();
         if (firstUnmodifiedKey != NULL_ROW_KEY) {
             ctx.curVal = outputSource.getFloat(firstUnmodifiedKey);
-        } else {
-            ctx.reset();
         }
     }
 

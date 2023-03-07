@@ -40,6 +40,8 @@ import org.jpy.PyObject;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -835,8 +837,8 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
             return true;
         }
         final Class<?> type = value.getClass();
-        if (type == String.class || type == DateTime.class || type == BigInteger.class || type == BigDecimal.class ||
-                Table.class.isAssignableFrom(type)) {
+        if (type == String.class || type == DateTime.class || type == BigInteger.class || type == BigDecimal.class
+                || type == Instant.class || type == ZonedDateTime.class || Table.class.isAssignableFrom(type)) {
             return true;
         }
         // if it is a boxed type, then it is immutable; otherwise we don't know what to do with it

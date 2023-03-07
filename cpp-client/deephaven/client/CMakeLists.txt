@@ -60,6 +60,7 @@ set(ALL_FILES
     src/chunk/chunk_maker.cc
     src/column/array_column_source.cc
     src/column/column_source.cc
+    src/column/column_source_helpers.cc
     src/container/row_sequence.cc
     src/table/schema.cc
     src/table/table.cc
@@ -81,6 +82,7 @@ set(ALL_FILES
     include/public/deephaven/client/table/schema.h
     include/public/deephaven/client/table/table.h
     include/public/deephaven/client/utility/arrow_util.h
+    include/public/deephaven/client/utility/cython_support.h
 
     src/subscription/immer_table_state.cc
     src/subscription/index_decoder.cc
@@ -103,6 +105,7 @@ set(ALL_FILES
     include/private/deephaven/client/immerutil/immer_column_source.h
 
     src/utility/arrow_util.cc
+    src/utility/cython_support.cc
     src/utility/executor.cc
     src/utility/misc.cc
     include/private/deephaven/client/utility/executor.h
@@ -172,7 +175,7 @@ set(ALL_FILES
     third_party/flatbuffers/include/flatbuffers/verifier.h
 
     third_party/roaring/include/roaring/roaring.c
-    src/column/column_source_helpers.cc)
+    )
 
 add_library(client ${ALL_FILES})
 # In order to make a shared library suitable for Cython.

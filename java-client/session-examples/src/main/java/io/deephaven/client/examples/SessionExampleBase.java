@@ -4,6 +4,7 @@
 package io.deephaven.client.examples;
 
 import io.deephaven.client.DaggerDeephavenSessionRoot;
+import io.deephaven.client.SessionSubcomponent.Builder;
 import io.deephaven.client.impl.SessionFactory;
 import io.grpc.ManagedChannel;
 import picocli.CommandLine.ArgGroup;
@@ -18,6 +19,9 @@ abstract class SessionExampleBase implements Callable<Void> {
     @ArgGroup(exclusive = false)
     ConnectOptions connectOptions;
 
+    @ArgGroup(exclusive = true)
+    AuthenticationOptions authenticationOptions;
+
     protected abstract void execute(SessionFactory sessionFactory) throws Exception;
 
     @Override
@@ -29,8 +33,13 @@ abstract class SessionExampleBase implements Callable<Void> {
         Runtime.getRuntime()
                 .addShutdownHook(new Thread(() -> onShutdown(scheduler, managedChannel)));
 
-        SessionFactory factory = DaggerDeephavenSessionRoot.create().factoryBuilder()
-                .managedChannel(managedChannel).scheduler(scheduler).build();
+        final Builder builder = DaggerDeephavenSessionRoot.create().factoryBuilder()
+                .managedChannel(managedChannel)
+                .scheduler(scheduler);
+        if (authenticationOptions != null) {
+            authenticationOptions.ifPresent(builder::authenticationTypeAndValue);
+        }
+        SessionFactory factory = builder.build();
         execute(factory);
 
         scheduler.shutdownNow();

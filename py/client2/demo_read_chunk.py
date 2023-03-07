@@ -2,7 +2,7 @@ import deephaven_client as dh
 import numpy as np
 
 class CallbackHandler:
-    def on_tick(self, update : dh.TickingUpdate):
+    def on_tick(self, update: dh.TickingUpdate):
         current = update.current
         rows = current.get_row_sequence()
         col = current.get_column_by_name("II", True)

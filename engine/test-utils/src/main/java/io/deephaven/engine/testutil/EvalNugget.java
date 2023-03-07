@@ -128,7 +128,7 @@ public abstract class EvalNugget implements EvalNuggetInterface {
     }
 
     @NotNull
-    EnumSet<TableDiff.DiffItems> diffItems() {
+    protected EnumSet<TableDiff.DiffItems> diffItems() {
         return EnumSet.of(TableDiff.DiffItems.DoublesExact);
     }
 

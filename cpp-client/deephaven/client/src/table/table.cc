@@ -32,7 +32,7 @@ void printTableData(std::ostream &stream, const Table &table,
 
 size_t Table::getColumnIndex(std::string_view name, bool strict) const {
   // TODO(kosak): improve linear search.
-  const auto &cols = schema().columns();
+  const auto &cols = schema()->columns();
   for (size_t i = 0; i < cols.size(); ++i) {
     if (cols[i].first == name) {
       return i;
@@ -205,7 +205,7 @@ void printTableData(std::ostream &stream, const Table &table,
       separator = "\t";
     }
     for (auto colIndex : whichCols) {
-      stream << separator << table.schema().columns()[colIndex].first;
+      stream << separator << table.schema()->columns()[colIndex].first;
       separator = "\t";
     }
     stream << std::endl;

@@ -944,6 +944,29 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
     private Expression[] convertParameters(final Executable executable,
             final Class<?>[] argumentTypes, final Class<?>[] expressionTypes,
             final Class<?>[][] parameterizedTypes, Expression[] expressions) {
+
+        // For Python callables, all Vector columns should be converted into arrays
+        if (executable.getDeclaringClass() == PyCallableWrapper.class) {
+            for (int ei = 0; ei < expressionTypes.length; ei++) {
+                if (isTypedVector(expressionTypes[ei])) {
+                    expressions[ei] =
+                            new MethodCallExpr(new NameExpr("VectorConversions"), "nullSafeVectorToArray",
+                                    new NodeList<>(expressions[ei]));
+                    // To prevent JPY from unpacking a non-primitive array to make sure the result array is treated
+                    // as a single argument
+                    if (expressionTypes[ei] == ObjectVector.class) {
+                        expressions[ei] = new CastExpr(
+                                new ClassOrInterfaceType("java.lang.Object"),
+                                expressions[ei]);
+                        expressionTypes[ei] = Object.class;
+                    } else {
+                        expressionTypes[ei] = convertVector(expressionTypes[ei],
+                                parameterizedTypes[ei] == null ? null : parameterizedTypes[ei][0]);
+                    }
+                }
+            }
+        }
+
         final int nArgs = argumentTypes.length; // Number of declared arguments
         for (int ai = 0; ai < (executable.isVarArgs() ? nArgs - 1 : nArgs); ai++) {
             if (argumentTypes[ai] != expressionTypes[ai] && argumentTypes[ai].isPrimitive()

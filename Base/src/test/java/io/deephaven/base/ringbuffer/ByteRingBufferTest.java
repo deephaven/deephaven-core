@@ -50,9 +50,9 @@ public class ByteRingBufferTest extends TestCase {
         assertFalse(rb.isEmpty());
         assertEquals(expectedSize, rb.size());
 
-        assertTrue(expectedHead == rb.peek(SENTINEL));
+        assertEquals(expectedHead, rb.peek(SENTINEL));
         try {
-            assertTrue(expectedHead == rb.element());
+            assertEquals(expectedHead, rb.element());
         } catch (NoSuchElementException x) {
             fail("queue should not be empty");
         }
@@ -70,13 +70,13 @@ public class ByteRingBufferTest extends TestCase {
 
     private void assertPoll(ByteRingBuffer rb, int expectedSize, byte expectedHead) {
         assertNotEmpty(rb, expectedSize, expectedHead);
-        assertTrue(expectedHead == rb.poll(SENTINEL));
+        assertEquals(expectedHead, rb.poll(SENTINEL));
     }
 
     private void assertRemove(ByteRingBuffer rb, int expectedSize, byte expectedHead) {
         assertNotEmpty(rb, expectedSize, expectedHead);
         try {
-            assertTrue(expectedHead == rb.remove());
+            assertEquals(expectedHead, rb.remove());
         } catch (NoSuchElementException x) {
             fail("queue should not be empty");
         }
@@ -122,7 +122,7 @@ public class ByteRingBufferTest extends TestCase {
         assertContents(rb, C);
 
         assertRemove(rb, 1, C);
-        assertContents(rb, new byte[0]);
+        assertContents(rb);
 
         assertEmpty(rb);
 
@@ -140,7 +140,7 @@ public class ByteRingBufferTest extends TestCase {
         assertContents(rb, C);
 
         assertRemove(rb, 1, C);
-        assertContents(rb, new byte[0]);
+        assertContents(rb);
 
         assertEmpty(rb);
 
@@ -180,7 +180,7 @@ public class ByteRingBufferTest extends TestCase {
         assertRemove(rb, 3, D);
         assertRemove(rb, 2, E);
         assertRemove(rb, 1, F);
-        assertContents(rb, new byte[0]);
+        assertContents(rb);
         assertEmpty(rb);
     }
 
@@ -351,7 +351,7 @@ public class ByteRingBufferTest extends TestCase {
         final ByteRingBuffer.Iterator iterFinal = rb.iterator();
 
         assertThrows(UnsupportedOperationException.class,
-                () -> iterFinal.remove());
+                iterFinal::remove);
     }
 
     public void testBack() {
@@ -383,7 +383,6 @@ public class ByteRingBufferTest extends TestCase {
         assertAdd(rb, C, 3, A);
         assertAdd(rb, D, 4, A);
         assertAdd(rb, E, 5, A);
-        assertFull(rb);
 
         assertRemove(rb, 5, A);
         assertAdd(rb, F, 5, B);
@@ -410,39 +409,44 @@ public class ByteRingBufferTest extends TestCase {
     }
 
     public void testAddExceptionWhenFull() {
-        ByteRingBuffer rb = new ByteRingBuffer(3, false);
+        ByteRingBuffer rb = new ByteRingBuffer(4, false);
         assert (rb.add(A));
         assert (rb.add(B));
         assert (rb.add(C));
+        assert (rb.add(D));
 
         // this should throw
         assertThrows(UnsupportedOperationException.class,
-                () -> rb.add(D));
+                () -> rb.add(E));
     }
 
     public void testAddOverwriteAndOffer() {
-        ByteRingBuffer rb = new ByteRingBuffer(3, false);
-        assert (3 == rb.remaining());
+        ByteRingBuffer rb = new ByteRingBuffer(4, false);
+        assert (4 == rb.remaining());
 
         assert (F == rb.addOverwrite(A, F));
-        assert (2 == rb.remaining());
+        assert (3 == rb.remaining());
 
         assert (F == rb.addOverwrite(B, F));
-        assert (1 == rb.remaining());
+        assert (2 == rb.remaining());
 
         assert (F == rb.addOverwrite(C, F));
+        assert (1 == rb.remaining());
+
+        assert (F == rb.addOverwrite(D, F));
         assert (0 == rb.remaining());
+
         assert (rb.isFull());
 
         // now full, should return first value
-        assert (A == rb.addOverwrite(D, F));
-        assert (B == rb.addOverwrite(E, F));
+        assert (A == rb.addOverwrite(E, F));
+        assert (B == rb.addOverwrite(F, F));
         assert (rb.isFull());
 
         // offer() testing
-        assert (false == rb.offer(F));
+        assert (!rb.offer(A));
         assert (C == rb.remove());
-        assert (true == rb.offer(F));
+        assert (rb.offer(A));
 
         // peek testing
         assert (D == rb.front());
@@ -452,7 +456,7 @@ public class ByteRingBufferTest extends TestCase {
         assertThrows(NoSuchElementException.class,
                 () -> rb.front(99));
 
-        assert (F == rb.peekBack(A));
+        assert (A == rb.peekBack(B));
 
         // clear() testing
         rb.clear();
@@ -467,7 +471,7 @@ public class ByteRingBufferTest extends TestCase {
 
         // this should throw
         assertThrows(NoSuchElementException.class,
-                () -> rb.remove());
+                rb::remove);
 
         // this should throw
         assertThrows(NoSuchElementException.class,

@@ -710,7 +710,7 @@ public class SortListener extends BaseTable.ListenerImpl {
 
             // assert that the buffers are not overwritten
             Assert.eqTrue(writes.offer(numWrites), "writes.offer(numWrites)");
-            Assert.eqTrue(requestedAdds.add(numRequestedAdds), "requestedAdds.add(numRequestedAdds)");
+            Assert.eqTrue(requestedAdds.offer(numRequestedAdds), "requestedAdds.offer(numRequestedAdds)");
         }
 
         String summarize() {

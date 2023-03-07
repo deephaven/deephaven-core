@@ -174,7 +174,7 @@ public class LivenessScopeStack {
             @NotNull final Predicate<RESULT_TYPE> shouldManageResult) {
         final LivenessManager enclosingLivenessManager = LivenessScopeStack.peek();
         try (final SafeCloseable ignored = shouldEnclose.getAsBoolean()
-                ? LivenessScopeStack.open(new LivenessScope(true), true)
+                ? LivenessScopeStack.open(new LivenessScope(), true)
                 : null) {
             final RESULT_TYPE result = computation.get();
             if (shouldManageResult.test(result)) {
@@ -202,7 +202,7 @@ public class LivenessScopeStack {
             @NotNull final Predicate<RESULT_TYPE> shouldManageResult) {
         final LivenessManager enclosingLivenessManager = LivenessScopeStack.peek();
         try (final SafeCloseable ignored = shouldEnclose.getAsBoolean()
-                ? LivenessScopeStack.open(new LivenessScope(true), true)
+                ? LivenessScopeStack.open(new LivenessScope(), true)
                 : null) {
             final RESULT_TYPE[] results = computation.get();
             for (final RESULT_TYPE result : results) {

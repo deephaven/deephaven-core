@@ -160,7 +160,7 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
 
         this.destSources = new WritableColumnSource<?>[writableSources.length];
         for (int ii = 0; ii < writableSources.length; ++ii) {
-            destSources[ii] = (WritableColumnSource<?>) ReinterpretUtils.maybeConvertToPrimitive(writableSources[ii]);
+            destSources[ii] = ReinterpretUtils.maybeConvertToWritablePrimitive(writableSources[ii]);
         }
 
         // we always start empty, and can be notified this cycle if we are refreshed
