@@ -13,7 +13,6 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.impl.ShiftedColumnsFactory;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
 import io.deephaven.engine.table.impl.select.python.ArgumentsChunked;
 import io.deephaven.engine.table.impl.select.python.DeephavenCompatibleFunction;
@@ -156,6 +155,24 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
             formulaShiftColPair = result.getFormulaShiftColPair();
             if (formulaShiftColPair != null) {
                 log.debug("Formula (after shift conversion) : " + formulaShiftColPair.getFirst());
+
+                // apply renames to shift column pairs immediately
+                if (!outerToInnerNames.isEmpty()) {
+                    final Map<Long, List<MatchPair>> shifts = formulaShiftColPair.getSecond();
+                    for (Map.Entry<Long, List<MatchPair>> entry : shifts.entrySet()) {
+                        List<MatchPair> pairs = entry.getValue();
+                        ArrayList<MatchPair> resultPairs = new ArrayList<>(pairs.size());
+                        for (MatchPair pair : pairs) {
+                            if (outerToInnerNames.containsKey(pair.rightColumn())) {
+                                final String newRightColumn = outerToInnerNames.get(pair.rightColumn());
+                                resultPairs.add(new MatchPair(pair.leftColumn(), newRightColumn));
+                            } else {
+                                resultPairs.add(pair);
+                            }
+                        }
+                        entry.setValue(resultPairs);
+                    }
+                }
             }
 
             log.debug("Expression (after language conversion) : " + result.getConvertedExpression());

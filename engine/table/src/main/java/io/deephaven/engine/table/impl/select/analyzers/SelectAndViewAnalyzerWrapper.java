@@ -67,16 +67,18 @@ public class SelectAndViewAnalyzerWrapper {
         }
 
         // shift columns may introduce modifies that are not present in the original table; set these before using
-        if (shiftColumn == null && sourceTable.isAddOnly()) {
-            queryTable.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, true);
-        }
-        if ((shiftColumn == null || !shiftColumnHasPositiveOffset) && sourceTable.isAppendOnly()) {
-            // note if the shift offset is non-positive, then this result is still append-only
-            queryTable.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, true);
-        }
-        if (sourceTable.hasAttribute(Table.TEST_SOURCE_TABLE_ATTRIBUTE)) {
-            // be convenient for test authors by propagating the test source table attribute
-            queryTable.setAttribute(Table.TEST_SOURCE_TABLE_ATTRIBUTE, true);
+        if (sourceTable.isRefreshing()) {
+            if (shiftColumn == null && sourceTable.isAddOnly()) {
+                queryTable.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, true);
+            }
+            if ((shiftColumn == null || !shiftColumnHasPositiveOffset) && sourceTable.isAppendOnly()) {
+                // note if the shift offset is non-positive, then this result is still append-only
+                queryTable.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, true);
+            }
+            if (sourceTable.hasAttribute(Table.TEST_SOURCE_TABLE_ATTRIBUTE)) {
+                // be convenient for test authors by propagating the test source table attribute
+                queryTable.setAttribute(Table.TEST_SOURCE_TABLE_ATTRIBUTE, true);
+            }
         }
 
         boolean isMultiStateSelect = shiftColumn != null || remainingCols != null;

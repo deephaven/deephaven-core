@@ -220,15 +220,19 @@ public class ShiftedColumnsFactory extends VoidVisitorAdapter<ShiftedColumnsFact
             @NotNull List<Pair<String, Map<Long, List<MatchPair>>>> shiftColPairs) {
         List<String> filterFormulas = new LinkedList<>();
         Map<Long, Set<MatchPair>> allShiftToColPairs = new LinkedHashMap<>();
-        for (Pair<String, Map<Long, List<MatchPair>>> pair : shiftColPairs) {
-            String updatedFormula = pair.first;
-            for (Map.Entry<Long, List<MatchPair>> entry : pair.getSecond().entrySet()) {
+        for (Pair<String, Map<Long, List<MatchPair>>> formulaMapPair : shiftColPairs) {
+            String updatedFormula = formulaMapPair.first;
+            for (Map.Entry<Long, List<MatchPair>> entry : formulaMapPair.getSecond().entrySet()) {
                 for (MatchPair matchPair : entry.getValue()) {
-                    String shift = entry.getKey() < 0 ? MINUS + -entry.getKey() : PLUS + entry.getKey();
-                    String shiftedColName = matchPair.rightColumn + shift + matchPair.leftColumn;
-                    updatedFormula = updatedFormula.replaceAll(matchPair.leftColumn, shiftedColName);
-                    allShiftToColPairs.computeIfAbsent(entry.getKey(), dummy -> new LinkedHashSet<>())
-                            .add(new MatchPair(shiftedColName, matchPair.rightColumn));
+                    if (entry.getKey() == 0) {
+                        updatedFormula = updatedFormula.replaceAll(matchPair.leftColumn, matchPair.rightColumn);
+                    } else {
+                        String shift = entry.getKey() < 0 ? MINUS + -entry.getKey() : PLUS + entry.getKey();
+                        String shiftedColName = matchPair.rightColumn + shift + matchPair.leftColumn;
+                        updatedFormula = updatedFormula.replaceAll(matchPair.leftColumn, shiftedColName);
+                        allShiftToColPairs.computeIfAbsent(entry.getKey(), dummy -> new LinkedHashSet<>())
+                                .add(new MatchPair(shiftedColName, matchPair.rightColumn));
+                    }
                 }
             }
             filterFormulas.add(updatedFormula);
