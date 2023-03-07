@@ -189,7 +189,11 @@ public class RollingGroupOperator extends UpdateByOperator {
 
         @Override
         public void reset() {
-            // NOP
+            startPos = NULL_LONG;
+            endPos = NULL_LONG;
+            if (windowKeys != null) {
+                windowKeys.clear();
+            }
         }
 
         @Override

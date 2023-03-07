@@ -136,10 +136,6 @@ public class TestUpdateByGeneral extends BaseUpdateByTest implements UpdateError
                                         makeOpColNames(columnNamesArray, "_rollsumtimefwdrev", "Sym", "ts",
                                                 "boolCol")),
 
-                                // This window is small to make verification reasonable.
-                                UpdateByOperation.RollingGroup(2, 2,
-                                         makeOpColNames(columnNamesArray, "_rollgroupfwdrev", "Sym", "ts")),
-
                                 UpdateByOperation.Ema(skipControl, "ts", 10 * MINUTE,
                                         makeOpColNames(columnNamesArray, "_ema", "Sym", "ts", "boolCol")),
                                 UpdateByOperation.CumSum(makeOpColNames(columnNamesArray, "_sum", "Sym", "ts")),

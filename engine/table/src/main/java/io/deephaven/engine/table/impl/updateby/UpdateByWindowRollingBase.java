@@ -120,18 +120,23 @@ abstract class UpdateByWindowRollingBase extends UpdateByWindow {
 
         UpdateByWindowRollingBucketContext ctx = (UpdateByWindowRollingBucketContext) context;
 
-        final TrackingRowSet bucketRowSet = ctx.timestampValidRowSet != null ? ctx.timestampValidRowSet : ctx.sourceRowSet;
+        final TrackingRowSet bucketRowSet =
+                ctx.timestampValidRowSet != null ? ctx.timestampValidRowSet : ctx.sourceRowSet;
 
         try (final RowSequence.Iterator affectedRowsIt = ctx.affectedRows.getRowSequenceIterator();
                 final RowSequence.Iterator influencerRowsIt = ctx.influencerRows.getRowSequenceIterator();
                 final RowSet affectedPosRs = operatorsRequireKeys
-                     ? bucketRowSet.invert(ctx.affectedRows) : null;
+                        ? bucketRowSet.invert(ctx.affectedRows)
+                        : null;
                 final RowSequence.Iterator affectedPosRsIt = operatorsRequireKeys
-                     ? affectedPosRs.getRowSequenceIterator() : null;
+                        ? affectedPosRs.getRowSequenceIterator()
+                        : null;
                 final RowSet influencerPosRs = operatorsRequireKeys
-                     ? bucketRowSet.invert(ctx.influencerRows) : null;
+                        ? bucketRowSet.invert(ctx.influencerRows)
+                        : null;
                 final RowSequence.Iterator influencerPosIt = operatorsRequireKeys
-                     ? influencerPosRs.getRowSequenceIterator() : null;) {
+                        ? influencerPosRs.getRowSequenceIterator()
+                        : null) {
 
             // Call the specialized version of `intializeUpdate()` for these operators.
             for (int ii = 0; ii < opIndices.length; ii++) {
@@ -185,12 +190,12 @@ abstract class UpdateByWindowRollingBase extends UpdateByWindow {
                     }
 
                     // assign the bucket rowsets before we accumulate
-                    if (winOpContexts[opIdx] instanceof RollingGroupOperator.Context) {
-                        ((RollingGroupOperator.Context) winOpContexts[opIdx])
+                    if (winOpContexts[ii] instanceof RollingGroupOperator.Context) {
+                        ((RollingGroupOperator.Context) winOpContexts[ii])
                                 .assignBucketRowSource(bucketRowSet, affectedRs);
                     }
 
-                    winOpContexts[opIdx].accumulateRolling(
+                    winOpContexts[ii].accumulateRolling(
                             affectedRs,
                             chunkArr,
                             affectedPosChunk,

@@ -58,7 +58,6 @@ public class UpdateByOperatorFactory {
     /**
      * Create a collection of operators from a list of {@link UpdateByOperation operator specs}. This collection should
      *
-     *
      * @param specs the collection of {@link UpdateByOperation specs} to create
      * @return a organized collection of {@link List<ColumnUpdateOperation> operation lists} where the operator specs
      *         can share resources within the collection
@@ -154,7 +153,7 @@ public class UpdateByOperatorFactory {
         }
     }
 
-    private class WindowVisitor implements UpdateByOperation.Visitor<Void> {
+    private static class WindowVisitor implements UpdateByOperation.Visitor<Void> {
         // We will divide the operators into similar windows for efficient processing.
         final KeyedObjectHashMap<ColumnUpdateOperation, List<ColumnUpdateOperation>> windowMap =
                 new KeyedObjectHashMap<>(new KeyedObjectKey<>() {
@@ -166,10 +165,9 @@ public class UpdateByOperatorFactory {
                     @Override
                     public int hashKey(final ColumnUpdateOperation clause) {
                         final UpdateBySpec spec = clause.spec();
-                        int hash = 0;
 
                         final boolean windowed = spec instanceof RollingOpSpec;
-                        hash = 31 * hash + Boolean.hashCode(windowed);
+                        int hash = Boolean.hashCode(windowed);
 
                         // treat all cumulative ops with the same input columns as identical, even if they rely on
                         // timestamps
@@ -195,23 +193,21 @@ public class UpdateByOperatorFactory {
                         final UpdateBySpec specB = clauseB.spec();
 
                         // equivalent if both are cumulative, not equivalent if only one is cumulative
-                        boolean aWindowed = specA instanceof RollingOpSpec;
-                        boolean bWindowed = specB instanceof RollingOpSpec;
+                        boolean aRolling = specA instanceof RollingOpSpec;
+                        boolean bRolling = specB instanceof RollingOpSpec;
 
-                        if (!aWindowed && !bWindowed) {
+                        if (!aRolling && !bRolling) {
                             return true;
-                        } else if (aWindowed != bWindowed) {
+                        } else if (aRolling != bRolling) {
                             return false;
                         }
 
                         final RollingOpSpec rsA = (RollingOpSpec) specA;
                         final RollingOpSpec rsB = (RollingOpSpec) specB;
 
-                        final boolean aTimeWindowed = rsA.revWindowScale().timestampCol() != null;
-                        final boolean bTimeWindowed = rsB.revWindowScale().timestampCol() != null;
-
-                        // must have same time/tick base to be equivalent
-                        if (aTimeWindowed != bTimeWindowed) {
+                        // Rolling ops are equivalent when they share a time or row based accumulation and the same
+                        // fwd/prev units
+                        if (!Objects.equals(rsA.revWindowScale().timestampCol(), rsB.revWindowScale().timestampCol())) {
                             return false;
                         }
                         return rsA.revWindowScale().timescaleUnits() == rsB.revWindowScale().timescaleUnits() &&

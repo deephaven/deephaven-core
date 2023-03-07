@@ -6,13 +6,12 @@ import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.*;
-import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.ssa.LongSegmentedSortedArray;
-import io.deephaven.engine.table.impl.updateby.rollinggroup.RollingGroupOperator;
 import io.deephaven.engine.table.iterators.LongColumnIterator;
+import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -62,8 +61,9 @@ class UpdateByWindowRollingTime extends UpdateByWindowRollingBase {
     @Override
     void finalizeWindowBucket(UpdateByWindowBucketContext context) {
         UpdateByWindowTimeBucketContext ctx = (UpdateByWindowTimeBucketContext) context;
-        ctx.timestampColumnGetContext.close();
-        ctx.timestampColumnGetContext = null;
+        try (SafeCloseable ignored = ctx.timestampColumnGetContext) {
+            ctx.timestampColumnGetContext = null;
+        }
         super.finalizeWindowBucket(context);
     }
 
