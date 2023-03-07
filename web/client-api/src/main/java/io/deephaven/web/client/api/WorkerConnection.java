@@ -50,7 +50,6 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb_ser
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.partitionedtable_pb_service.PartitionedTableServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.ReleaseRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.TerminationNotificationRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.terminationnotificationresponse.StackTrace;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb_service.SessionServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.storage_pb_service.StorageServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ApplyPreviewColumnsRequest;
@@ -342,9 +341,9 @@ public class WorkerConnection {
                     onOpen.forEach(c -> c.onSuccess(null));
                     onOpen.clear();
 
-                    // // start a heartbeat to check if connection is properly alive
-                    // ping(success.getAuthSessionToken());
                     startExportNotificationsStream();
+
+                    maybeRestartLogStream();
 
                     return Promise.resolve((Object) null);
                 }, fail -> {
@@ -373,6 +372,7 @@ public class WorkerConnection {
                 });
     }
 
+
     private boolean checkStatus(ResponseStreamWrapper.ServiceError fail) {
         return checkStatus(ResponseStreamWrapper.Status.of(fail.getCode(), fail.getMessage(), fail.getMetadata()));
     }
@@ -398,6 +398,33 @@ public class WorkerConnection {
         return false;
     }
 
+    private void maybeRestartLogStream() {
+        if (logCallbacks.size == 0) {
+            return;
+        }
+        if (logStream != null) {
+            logStream.cancel();
+        }
+        // TODO core#225 track latest message seen and only sub after that
+        LogSubscriptionRequest logSubscriptionRequest = new LogSubscriptionRequest();
+        if (pastLogs.size() > 0) {
+            logSubscriptionRequest.setLastSeenLogTimestamp(String.valueOf((long) pastLogs.get(pastLogs.size() - 1).getMicros()));
+        }
+        logStream = ResponseStreamWrapper
+                .of(consoleServiceClient.subscribeToLogs(logSubscriptionRequest, metadata));
+        logStream.onData(data -> {
+            LogItem logItem = new LogItem();
+            logItem.setLogLevel(data.getLogLevel());
+            logItem.setMessage(data.getMessage());
+            logItem.setMicros((double) java.lang.Long.parseLong(data.getMicros()));
+
+            for (JsConsumer<LogItem> callback : JsItr.iterate(logCallbacks.keys())) {
+                callback.apply(logItem);
+            }
+        });
+        logStream.onEnd(this::checkStatus);
+    }
+
     private void startExportNotificationsStream() {
         if (exportNotifications != null) {
             exportNotifications.cancel();
@@ -406,8 +433,9 @@ public class WorkerConnection {
                 .of(tableServiceClient.exportedTableUpdates(new ExportedTableUpdatesRequest(), metadata()));
         exportNotifications.onData(update -> {
             if (update.getUpdateFailureMessage() != null && !update.getUpdateFailureMessage().isEmpty()) {
-                exportedTableUpdateMessageError(new TableTicket(update.getExportId().getTicket_asU8()),
-                        update.getUpdateFailureMessage());
+                cache.get(new TableTicket(update.getExportId().getTicket_asU8())).ifPresent(state1 -> {
+                    state1.forActiveTables(t -> t.failureHandled(update.getUpdateFailureMessage()));
+                });
             } else {
                 exportedTableUpdateMessage(new TableTicket(update.getExportId().getTicket_asU8()),
                         java.lang.Long.parseLong(update.getSize()));
@@ -462,9 +490,6 @@ public class WorkerConnection {
                     if (status.getCode() == Code.Unauthenticated) {
                         // explicitly clear out any metadata for authentication, and signal that auth failed
                         metadata.delete(FLIGHT_AUTH_HEADER_NAME);
-
-                        // TODO this failure might be due to an expired session, which we can try to re-create
-                        // instead of firing this yet
 
                         // Fire an event for the UI to attempt to re-auth
                         info.fireEvent(CoreClient.EVENT_RECONNECT_AUTH_FAILED);
@@ -545,12 +570,6 @@ public class WorkerConnection {
                 });
     }
 
-    private void notifyLog(LogItem log) {
-        for (JsConsumer<LogItem> callback : JsItr.iterate(logCallbacks.keys())) {
-            callback.apply(log);
-        }
-    }
-
     // @Override
     public void initialSnapshot(TableTicket handle, TableSnapshot snapshot) {
         LazyPromise.runLater(() -> {
@@ -601,25 +620,8 @@ public class WorkerConnection {
     }
 
     // @Override
-    public void exportedTableUpdateMessageError(TableTicket clientId, String errorMessage) {
-        cache.get(clientId).ifPresent(state -> {
-            state.forActiveTables(t -> t.failureHandled(errorMessage));
-        });
-    }
-
-    // @Override
-    public void onOpen() {
-        // never actually called - this instance isn't configured to be the "client" in the connection until auth
-        // has succeeded.
-        assert false
-                : "WorkerConnection.onOpen() should not be invoked directly, check the stack trace to see how this was triggered";
-    }
 
     public void connectionLost() {
-        if (state != State.Connected) {
-            // already signaled disconnect
-            return;
-        }
         // notify all active tables and figures that the connection is closed
         figures.forEach((p0, p1, p2) -> {
             try {
@@ -1550,18 +1552,7 @@ public class WorkerConnection {
         logCallbacks.add(callback);
         if (mustSub) {
             logCallbacks.add(recordLog);
-            // TODO core#225 track latest message seen and only sub after that
-            logStream = ResponseStreamWrapper
-                    .of(consoleServiceClient.subscribeToLogs(new LogSubscriptionRequest(), metadata));
-            logStream.onData(data -> {
-                LogItem logItem = new LogItem();
-                logItem.setLogLevel(data.getLogLevel());
-                logItem.setMessage(data.getMessage());
-                logItem.setMicros((double) java.lang.Long.parseLong(data.getMicros()));
-
-                notifyLog(logItem);
-            });
-            logStream.onEnd(this::checkStatus);
+            maybeRestartLogStream();
         } else {
             pastLogs.forEach(callback::apply);
         }
