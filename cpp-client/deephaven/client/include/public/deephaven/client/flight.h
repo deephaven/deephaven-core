@@ -51,7 +51,7 @@ public:
    * @endcode
    * @param options Destination object where the authentication headers should be written.
    */
-  void addAuthHeaders(arrow::flight::FlightCallOptions *options);
+  void addAuthHeaders(arrow::flight::FlightCallOptions *options) const;
 
   /**
    * Gets the underlying FlightClient
