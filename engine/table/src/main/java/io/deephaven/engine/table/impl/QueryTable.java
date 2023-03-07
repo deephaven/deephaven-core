@@ -1013,6 +1013,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                                     }
 
                                     for (final WhereFilter filter : filters) {
+                                        filter.validateSafeForRefresh(this);
                                         filter.setRecomputeListener(filteredTable);
                                     }
 

@@ -13,6 +13,7 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
 import io.deephaven.engine.table.impl.select.python.ArgumentsChunked;
 import io.deephaven.engine.table.impl.select.python.DeephavenCompatibleFunction;
@@ -219,6 +220,26 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
             }
         } catch (Exception e) {
             throw new FormulaCompilationException("Formula compilation error for: " + formula, e);
+        }
+    }
+
+    @Override
+    public void validateSafeForRefresh(BaseTable<?> sourceTable) {
+        if (sourceTable.hasAttribute(BaseTable.TEST_SOURCE_TABLE_ATTRIBUTE)) {
+            // allow any tests to use i, ii, and k without throwing an exception; we're probably using it safely
+            return;
+        }
+        if (sourceTable.isRefreshing() && !AbstractFormulaColumn.ALLOW_UNSAFE_REFRESHING_FORMULAS) {
+            // note that constant offset array accesss does not use i/ii or end up in usedColumnArrays
+            boolean isUnsafe = !sourceTable.isAppendOnly() && (usesI || usesII);
+            isUnsafe |= !sourceTable.isAddOnly() && usesK;
+            isUnsafe |= !usedColumnArrays.isEmpty();
+            if (isUnsafe) {
+                throw new IllegalArgumentException("Formula '" + formula + "' uses i, ii, k, or column array " +
+                        "variables, and is not safe to refresh. Note that some usages, such as on an append-only " +
+                        "table are safe. To allow unsafe refreshing formulas, set the system property " +
+                        "io.deephaven.engine.table.impl.select.AbstractFormulaColumn.allowUnsafeRefreshingFormulas.");
+            }
         }
     }
 

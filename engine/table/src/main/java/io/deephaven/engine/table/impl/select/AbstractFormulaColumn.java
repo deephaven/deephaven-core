@@ -30,7 +30,7 @@ import java.util.function.Consumer;
 public abstract class AbstractFormulaColumn implements FormulaColumn {
     private static final Logger log = LoggerFactory.getLogger(AbstractFormulaColumn.class);
 
-    private static final boolean ALLOW_UNSAFE_REFRESHING_FORMULAS = Configuration.getInstance()
+    public static final boolean ALLOW_UNSAFE_REFRESHING_FORMULAS = Configuration.getInstance()
             .getBooleanForClassWithDefault(AbstractFormulaColumn.class, "allowUnsafeRefreshingFormulas", false);
 
 
@@ -100,7 +100,7 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
             isUnsafe |= !sourceTable.isAddOnly() && usesK;
             isUnsafe |= !usedColumnArrays.isEmpty();
             if (isUnsafe) {
-                throw new IllegalArgumentException("Formula " + formulaString + " uses i, ii, k, or column array " +
+                throw new IllegalArgumentException("Formula '" + formulaString + "' uses i, ii, k, or column array " +
                         "variables, and is not safe to refresh. Note that some usages, such as on an append-only " +
                         "table are safe. To allow unsafe refreshing formulas, set the system property " +
                         "io.deephaven.engine.table.impl.select.AbstractFormulaColumn.allowUnsafeRefreshingFormulas.");

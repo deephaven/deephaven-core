@@ -157,7 +157,7 @@ public interface SelectColumn extends Selectable {
     boolean isRetain();
 
     /**
-     * Validate that this SelectColumn is safe to use in the context of the provided sourceTable.
+     * Validate that this {@code SelectColumn} is safe to use in the context of the provided sourceTable.
      *
      * @param sourceTable the source table
      */
