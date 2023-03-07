@@ -15,7 +15,6 @@ import io.deephaven.web.shared.fu.JsRunnable;
 import jsinterop.annotations.JsConstructor;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsOptional;
-import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
 import jsinterop.base.JsPropertyMap;
 
