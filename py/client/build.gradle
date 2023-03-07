@@ -86,7 +86,7 @@ tasks.getByName('check').dependsOn(Docker.registerDockerTask(project, 'testPyCli
         from('tests') {
             into 'project/tests'
         }
-        from ('requirements.txt') {
+        from ('requirements-dev.txt') {
             into 'project/'
         }
     }
@@ -100,7 +100,7 @@ tasks.getByName('check').dependsOn(Docker.registerDockerTask(project, 'testPyCli
         runCommand '''set -eux; \\
                       mkdir -p /out/report; \\
                       pip3 install --upgrade pip; \\
-                      pip3 install -r requirements.txt'''
+                      pip3 install -r requirements-dev.txt'''
         environmentVariable 'DH_HOST', deephavenDocker.containerName.get()
         environmentVariable 'DH_PORT', '8080'
     }
