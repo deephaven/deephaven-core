@@ -457,9 +457,9 @@ public class WorkerConnection {
                     // TODO deephaven-core#2564 fire an event for the UI to re-auth
                     checkStatus(status);
                     if (status.getDetails() == null || status.getDetails().isEmpty()) {
-                        reject.onInvoke(status.getDetails());
-                    } else {
                         reject.onInvoke("Error occurred while authenticating, gRPC status " + status.getCode());
+                    } else {
+                        reject.onInvoke(status.getDetails());
                     }
                 }
             });
