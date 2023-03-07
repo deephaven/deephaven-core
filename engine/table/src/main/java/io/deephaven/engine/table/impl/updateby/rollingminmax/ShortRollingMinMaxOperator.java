@@ -1,40 +1,57 @@
 package io.deephaven.engine.table.impl.updateby.rollingminmax;
 
-import io.deephaven.base.ringbuffer.ShortRingBuffer;
+import io.deephaven.base.ringbuffer.AggregatingShortRingBuffer;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ShortChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
-import io.deephaven.engine.table.impl.updateby.internal.BaseLongUpdateByOperator;
+import io.deephaven.engine.table.impl.updateby.internal.BaseShortUpdateByOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static io.deephaven.util.QueryConstants.NULL_LONG;
 import static io.deephaven.util.QueryConstants.NULL_SHORT;
 
-public class ShortRollingMinMaxOperator extends BaseLongUpdateByOperator {
+public class ShortRollingMinMaxOperator extends BaseShortUpdateByOperator {
     private final boolean isMax;
-    private static final int RING_BUFFER_INITIAL_CAPACITY = 512;
+    private static final int BUFFER_INITIAL_CAPACITY = 128;
     // region extra-fields
     // endregion extra-fields
 
-    protected class Context extends BaseLongUpdateByOperator.Context {
+    protected class Context extends BaseShortUpdateByOperator.Context {
         protected ShortChunk<? extends Values> shortInfluencerValuesChunk;
-        protected ShortRingBuffer shortWindowValues;
+        protected AggregatingShortRingBuffer aggMinMax;
 
 
         protected Context(final int chunkSize) {
             super(chunkSize);
-            shortWindowValues = new ShortRingBuffer(RING_BUFFER_INITIAL_CAPACITY, true);
+            if (isMax) {
+                aggMinMax = new AggregatingShortRingBuffer(BUFFER_INITIAL_CAPACITY, Short.MIN_VALUE, (a, b) -> {
+                    if (a == NULL_SHORT) {
+                        return b;
+                    } else if (b == NULL_SHORT) {
+                        return a;
+                    }
+                    return (short)Math.max(a, b);
+                });
+            } else {
+                aggMinMax = new AggregatingShortRingBuffer(BUFFER_INITIAL_CAPACITY, Short.MAX_VALUE, (a, b) -> {
+                    if (a == NULL_SHORT) {
+                        return b;
+                    } else if (b == NULL_SHORT) {
+                        return a;
+                    }
+                    return (short)Math.min(a, b);
+                });
+            }
         }
 
         @Override
         public void close() {
             super.close();
-            shortWindowValues = null;
+            aggMinMax = null;
         }
 
 
@@ -44,21 +61,14 @@ public class ShortRollingMinMaxOperator extends BaseLongUpdateByOperator {
         }
 
         @Override
-        public void push(long key, int pos, int count) {
-            shortWindowValues.ensureRemaining(count);
+        public void push(int pos, int count) {
+            aggMinMax.ensureRemaining(count);
 
             for (int ii = 0; ii < count; ii++) {
                 short val = shortInfluencerValuesChunk.get(pos + ii);
-                shortWindowValues.addUnsafe(val);
+                aggMinMax.addUnsafe(val);
 
-                // increase the running sum
-                if (val != NULL_SHORT) {
-                    if (curVal == NULL_LONG) {
-                        curVal = val;
-                    } else {
-                        curVal += val;
-                    }
-                } else {
+                if (val == NULL_SHORT) {
                     nullCount++;
                 }
             }
@@ -66,15 +76,12 @@ public class ShortRollingMinMaxOperator extends BaseLongUpdateByOperator {
 
         @Override
         public void pop(int count) {
-            Assert.geq(shortWindowValues.size(), "shortWindowValues.size()", count);
+            Assert.geq(aggMinMax.size(), "shortWindowValues.size()", count);
 
             for (int ii = 0; ii < count; ii++) {
-                short val = shortWindowValues.removeUnsafe();
+                short val = aggMinMax.removeUnsafe();
 
-                // reduce the running sum
-                if (val != NULL_SHORT) {
-                    curVal -= val;
-                } else {
+                if (val == NULL_SHORT) {
                     nullCount--;
                 }
             }
@@ -82,17 +89,17 @@ public class ShortRollingMinMaxOperator extends BaseLongUpdateByOperator {
 
         @Override
         public void writeToOutputChunk(int outIdx) {
-            if (shortWindowValues.size() == nullCount) {
-                outputValues.set(outIdx, NULL_LONG);
+            if (aggMinMax.size() == nullCount) {
+                outputValues.set(outIdx, NULL_SHORT);
             } else {
-                outputValues.set(outIdx, curVal);
+                outputValues.set(outIdx, aggMinMax.evaluate());
             }
         }
 
         @Override
         public void reset() {
             super.reset();
-            shortWindowValues.clear();
+            aggMinMax.clear();
         }
     }
 
