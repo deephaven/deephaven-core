@@ -73,7 +73,7 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>> exte
 
     @Deprecated
     public void notifyConnectionError(ResponseStreamWrapper.Status status) {
-        if (notifiedConnectionError) {
+        if (notifiedConnectionError || !hasListeners(HACK_CONNECTION_FAILURE)) {
             return;
         }
         notifiedConnectionError = true;
@@ -84,6 +84,8 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>> exte
                 "details", status.getDetails(),
                 "metadata", status.getMetadata()));
         fireEvent(HACK_CONNECTION_FAILURE, event);
+        JsLog.warn(
+                "The event dh.IdeConnection.HACK_CONNECTION_FAILURE is deprecated and will be removed in a later release");
     }
 
     @Override
