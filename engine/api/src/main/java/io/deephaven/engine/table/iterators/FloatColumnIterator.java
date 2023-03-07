@@ -8,7 +8,7 @@
  */
 package io.deephaven.engine.table.iterators;
 
-import io.deephaven.base.Procedure;
+import io.deephaven.engine.primitive.function.FloatConsumer;
 import io.deephaven.chunk.FloatChunk;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ChunkType;
@@ -27,7 +27,7 @@ import java.util.function.Consumer;
  */
 public final class FloatColumnIterator
         extends ColumnIterator<Float, FloatChunk<? extends Any>>
-        implements PrimitiveIterator<Float, Procedure.UnaryFloat> {
+        implements PrimitiveIterator<Float, FloatConsumer> {
 
     /**
      * Create a new FloatColumnIterator.
@@ -84,11 +84,11 @@ public final class FloatColumnIterator
     }
 
     @Override
-    public void forEachRemaining(@NotNull final Procedure.UnaryFloat action) {
+    public void forEachRemaining(@NotNull final FloatConsumer action) {
         consumeRemainingByChunks(() -> {
             final int currentSize = currentData.size();
             while (currentOffset < currentSize) {
-                action.call(currentData.get(currentOffset++));
+                action.accept(currentData.get(currentOffset++));
             }
         });
     }

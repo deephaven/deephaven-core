@@ -3,7 +3,7 @@
  */
 package io.deephaven.engine.table.iterators;
 
-import io.deephaven.base.Procedure;
+import io.deephaven.engine.primitive.function.CharConsumer;
 import io.deephaven.chunk.CharChunk;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ChunkType;
@@ -22,7 +22,7 @@ import java.util.function.Consumer;
  */
 public final class CharacterColumnIterator
         extends ColumnIterator<Character, CharChunk<? extends Any>>
-        implements PrimitiveIterator<Character, Procedure.UnaryChar> {
+        implements PrimitiveIterator<Character, CharConsumer> {
 
     /**
      * Create a new CharacterColumnIterator.
@@ -79,11 +79,11 @@ public final class CharacterColumnIterator
     }
 
     @Override
-    public void forEachRemaining(@NotNull final Procedure.UnaryChar action) {
+    public void forEachRemaining(@NotNull final CharConsumer action) {
         consumeRemainingByChunks(() -> {
             final int currentSize = currentData.size();
             while (currentOffset < currentSize) {
-                action.call(currentData.get(currentOffset++));
+                action.accept(currentData.get(currentOffset++));
             }
         });
     }

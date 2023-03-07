@@ -8,7 +8,7 @@
  */
 package io.deephaven.engine.table.iterators;
 
-import io.deephaven.base.Procedure;
+import io.deephaven.engine.primitive.function.ShortConsumer;
 import io.deephaven.chunk.ShortChunk;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ChunkType;
@@ -27,7 +27,7 @@ import java.util.function.Consumer;
  */
 public final class ShortColumnIterator
         extends ColumnIterator<Short, ShortChunk<? extends Any>>
-        implements PrimitiveIterator<Short, Procedure.UnaryShort> {
+        implements PrimitiveIterator<Short, ShortConsumer> {
 
     /**
      * Create a new ShortColumnIterator.
@@ -84,11 +84,11 @@ public final class ShortColumnIterator
     }
 
     @Override
-    public void forEachRemaining(@NotNull final Procedure.UnaryShort action) {
+    public void forEachRemaining(@NotNull final ShortConsumer action) {
         consumeRemainingByChunks(() -> {
             final int currentSize = currentData.size();
             while (currentOffset < currentSize) {
-                action.call(currentData.get(currentOffset++));
+                action.accept(currentData.get(currentOffset++));
             }
         });
     }

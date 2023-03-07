@@ -10,6 +10,7 @@ dependencies {
     api project(':qst')
     api project(':engine-chunk')
     api project(':engine-context')
+    api project(':engine-primitive')
     api project(':engine-vector')
     api project(':engine-time')
     api project(':engine-updategraph')

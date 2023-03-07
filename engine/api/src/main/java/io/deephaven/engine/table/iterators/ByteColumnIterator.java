@@ -8,7 +8,7 @@
  */
 package io.deephaven.engine.table.iterators;
 
-import io.deephaven.base.Procedure;
+import io.deephaven.engine.primitive.function.ByteConsumer;
 import io.deephaven.chunk.ByteChunk;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ChunkType;
@@ -27,7 +27,7 @@ import java.util.function.Consumer;
  */
 public final class ByteColumnIterator
         extends ColumnIterator<Byte, ByteChunk<? extends Any>>
-        implements PrimitiveIterator<Byte, Procedure.UnaryByte> {
+        implements PrimitiveIterator<Byte, ByteConsumer> {
 
     /**
      * Create a new ByteColumnIterator.
@@ -84,11 +84,11 @@ public final class ByteColumnIterator
     }
 
     @Override
-    public void forEachRemaining(@NotNull final Procedure.UnaryByte action) {
+    public void forEachRemaining(@NotNull final ByteConsumer action) {
         consumeRemainingByChunks(() -> {
             final int currentSize = currentData.size();
             while (currentOffset < currentSize) {
-                action.call(currentData.get(currentOffset++));
+                action.accept(currentData.get(currentOffset++));
             }
         });
     }
