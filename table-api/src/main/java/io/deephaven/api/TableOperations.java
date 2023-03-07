@@ -1302,27 +1302,30 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
     // -------------------------------------------------------------------------------------------
 
     /**
-     * Drop the {@code columnNames} from {@code this} table.
+     * Creates a new table without the {@code columnNames} from {@code this}.
      *
      * @param columnNames the columns to drop
      * @return the table
      */
+    @ConcurrentMethod
     TOPS dropColumns(String... columnNames);
 
     /**
-     * Drop the {@code columnNames} from {@code this} table.
+     * Creates a new table without the {@code columnNames} from {@code this}.
      *
      * @param columnNames the columns to drop
      * @return the table
      */
+    @ConcurrentMethod
     TOPS dropColumns(Collection<String> columnNames);
 
     /**
-     * Drop the {@code columnNames} from {@code this} table.
+     * Creates a new table without the {@code columnNames} from {@code this}.
      *
      * @param columnNames the columns to drop
      * @return the table
      */
+    @ConcurrentMethod
     TOPS dropColumns(ColumnName... columnNames);
 
     // -------------------------------------------------------------------------------------------
