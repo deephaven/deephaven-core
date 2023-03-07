@@ -1,48 +1,53 @@
+/*
+ * ---------------------------------------------------------------------------------------------------------------------
+ * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit ShortRollingMinMaxOperator and regenerate
+ * ---------------------------------------------------------------------------------------------------------------------
+ */
 package io.deephaven.engine.table.impl.updateby.rollingminmax;
 
-import io.deephaven.base.ringbuffer.AggregatingShortRingBuffer;
+import io.deephaven.base.ringbuffer.AggregatingByteRingBuffer;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
-import io.deephaven.chunk.ShortChunk;
+import io.deephaven.chunk.ByteChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
-import io.deephaven.engine.table.impl.updateby.internal.BaseShortUpdateByOperator;
+import io.deephaven.engine.table.impl.updateby.internal.BaseByteUpdateByOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static io.deephaven.util.QueryConstants.NULL_SHORT;
+import static io.deephaven.util.QueryConstants.NULL_BYTE;
 
-public class ShortRollingMinMaxOperator extends BaseShortUpdateByOperator {
+public class ByteRollingMinMaxOperator extends BaseByteUpdateByOperator {
     private final boolean isMax;
     private static final int BUFFER_INITIAL_CAPACITY = 128;
     // region extra-fields
     // endregion extra-fields
 
-    protected class Context extends BaseShortUpdateByOperator.Context {
-        protected ShortChunk<? extends Values> shortInfluencerValuesChunk;
-        protected AggregatingShortRingBuffer aggMinMax;
+    protected class Context extends BaseByteUpdateByOperator.Context {
+        protected ByteChunk<? extends Values> byteInfluencerValuesChunk;
+        protected AggregatingByteRingBuffer aggMinMax;
 
         protected Context(final int chunkSize) {
             super(chunkSize);
             if (isMax) {
-                aggMinMax = new AggregatingShortRingBuffer(BUFFER_INITIAL_CAPACITY, Short.MIN_VALUE, (a, b) -> {
-                    if (a == NULL_SHORT) {
+                aggMinMax = new AggregatingByteRingBuffer(BUFFER_INITIAL_CAPACITY, Byte.MIN_VALUE, (a, b) -> {
+                    if (a == NULL_BYTE) {
                         return b;
-                    } else if (b == NULL_SHORT) {
+                    } else if (b == NULL_BYTE) {
                         return a;
                     }
-                    return (short)Math.max(a, b);
+                    return (byte)Math.max(a, b);
                 });
             } else {
-                aggMinMax = new AggregatingShortRingBuffer(BUFFER_INITIAL_CAPACITY, Short.MAX_VALUE, (a, b) -> {
-                    if (a == NULL_SHORT) {
+                aggMinMax = new AggregatingByteRingBuffer(BUFFER_INITIAL_CAPACITY, Byte.MAX_VALUE, (a, b) -> {
+                    if (a == NULL_BYTE) {
                         return b;
-                    } else if (b == NULL_SHORT) {
+                    } else if (b == NULL_BYTE) {
                         return a;
                     }
-                    return (short)Math.min(a, b);
+                    return (byte)Math.min(a, b);
                 });
             }
         }
@@ -53,9 +58,10 @@ public class ShortRollingMinMaxOperator extends BaseShortUpdateByOperator {
             aggMinMax = null;
         }
 
+
         @Override
         public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            shortInfluencerValuesChunk = valuesChunk.asShortChunk();
+            byteInfluencerValuesChunk = valuesChunk.asByteChunk();
         }
 
         @Override
@@ -63,10 +69,10 @@ public class ShortRollingMinMaxOperator extends BaseShortUpdateByOperator {
             aggMinMax.ensureRemaining(count);
 
             for (int ii = 0; ii < count; ii++) {
-                short val = shortInfluencerValuesChunk.get(pos + ii);
+                byte val = byteInfluencerValuesChunk.get(pos + ii);
                 aggMinMax.addUnsafe(val);
 
-                if (val == NULL_SHORT) {
+                if (val == NULL_BYTE) {
                     nullCount++;
                 }
             }
@@ -74,12 +80,12 @@ public class ShortRollingMinMaxOperator extends BaseShortUpdateByOperator {
 
         @Override
         public void pop(int count) {
-            Assert.geq(aggMinMax.size(), "shortWindowValues.size()", count);
+            Assert.geq(aggMinMax.size(), "byteWindowValues.size()", count);
 
             for (int ii = 0; ii < count; ii++) {
-                short val = aggMinMax.removeUnsafe();
+                byte val = aggMinMax.removeUnsafe();
 
-                if (val == NULL_SHORT) {
+                if (val == NULL_BYTE) {
                     nullCount--;
                 }
             }
@@ -88,7 +94,7 @@ public class ShortRollingMinMaxOperator extends BaseShortUpdateByOperator {
         @Override
         public void writeToOutputChunk(int outIdx) {
             if (aggMinMax.size() == nullCount) {
-                outputValues.set(outIdx, NULL_SHORT);
+                outputValues.set(outIdx, NULL_BYTE);
             } else {
                 outputValues.set(outIdx, aggMinMax.evaluate());
             }
@@ -107,7 +113,7 @@ public class ShortRollingMinMaxOperator extends BaseShortUpdateByOperator {
         return new Context(chunkSize);
     }
 
-    public ShortRollingMinMaxOperator(@NotNull final MatchPair pair,
+    public ByteRollingMinMaxOperator(@NotNull final MatchPair pair,
                                       @NotNull final String[] affectingColumns,
                                       @Nullable final RowRedirection rowRedirection,
                                       @Nullable final String timestampColumnName,

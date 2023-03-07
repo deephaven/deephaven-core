@@ -10,10 +10,13 @@ public abstract class RollingOpSpec extends UpdateBySpecBase {
     // We would like to use jdk.internal.util.ArraysSupport.MAX_ARRAY_LENGTH, but it is not exported
     final static int MAX_ARRAY_SIZE = Integer.MAX_VALUE - 8;
 
-    // these are the values the Immutable builders will populate
-    public abstract WindowScale revWindowScale();
+    // Provide a default reverse-looking timescale
+    @Value.Default
+    public WindowScale revWindowScale() {
+        return WindowScale.ofTicks(0);
+    }
 
-    // provide a default forward-looking timescale
+    // Provide a default forward-looking timescale
     @Value.Default
     public WindowScale fwdWindowScale() {
         return WindowScale.ofTicks(0);
