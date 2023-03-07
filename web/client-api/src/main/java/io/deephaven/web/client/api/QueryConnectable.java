@@ -252,8 +252,6 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>> exte
     public void disconnected() {
         JsLog.debug(getClass(), " disconnected");
 
-        // TODO offer option to suppress this
-
         connected = false;
 
         hasDisconnected = true;
