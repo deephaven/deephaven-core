@@ -10,3 +10,15 @@ dependencies {
 
     compileOnly depAnnotations
 }
+
+spotless {
+    java {
+        targetExclude(
+                '**/*Boolean*.java',
+                '**/*Byte*.java',
+                '**/*Char*.java',
+                '**/*Short*.java',
+                '**/*Float*.java',
+        )
+    }
+}
