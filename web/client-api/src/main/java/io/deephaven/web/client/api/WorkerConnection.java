@@ -50,6 +50,7 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb_ser
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.partitionedtable_pb_service.PartitionedTableServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.ReleaseRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.TerminationNotificationRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.terminationnotificationresponse.StackTrace;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb_service.SessionServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.storage_pb_service.StorageServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ApplyPreviewColumnsRequest;
@@ -287,7 +288,7 @@ public class WorkerConnection {
                     newSessionReconnect.success();
 
                     if (newSession) {
-//                        assert false : "Can't yet rebuild connections with new auth, please log in again";
+                        // assert false : "Can't yet rebuild connections with new auth, please log in again";
                         // nuke pending callbacks, we'll remake them
                         handleCallbacks = new JsWeakMap<>();
                         definitionCallbacks = new JsWeakMap<>();
@@ -384,11 +385,17 @@ public class WorkerConnection {
             // success, ignore
             return true;
         } else if (status.getCode() == Code.Unauthenticated) {
-            // TODO re-create session once before signaling failure?
+            // fire deprecated event for now
+            info.notifyConnectionError(status);
+
+            // signal that the user needs to re-authenticate, make a new session
+            // TODO in theory we could make a new session for some auth types
             info.fireEvent(CoreClient.EVENT_RECONNECT_AUTH_FAILED);
-            // info.notifyConnectionError(status);
         } else if (status.getCode() == Code.Internal || status.getCode() == Code.Unknown
                 || status.getCode() == Code.Unavailable) {
+            // fire deprecated event for now
+            info.notifyConnectionError(status);
+
             // signal that there has been a connection failure of some kind and attempt to reconnect
             info.fireEvent(CoreClient.EVENT_DISCONNECT);
 
@@ -408,7 +415,8 @@ public class WorkerConnection {
         // TODO core#225 track latest message seen and only sub after that
         LogSubscriptionRequest logSubscriptionRequest = new LogSubscriptionRequest();
         if (pastLogs.size() > 0) {
-            logSubscriptionRequest.setLastSeenLogTimestamp(String.valueOf((long) pastLogs.get(pastLogs.size() - 1).getMicros()));
+            logSubscriptionRequest
+                    .setLastSeenLogTimestamp(String.valueOf((long) pastLogs.get(pastLogs.size() - 1).getMicros()));
         }
         logStream = ResponseStreamWrapper
                 .of(consoleServiceClient.subscribeToLogs(logSubscriptionRequest, metadata));
@@ -513,8 +521,8 @@ public class WorkerConnection {
                             // restart the termination notification
                             subscribeToTerminationNotification();
                         } else {
+                            info.notifyConnectionError(Js.cast(fail));
                             connectionLost();
-                            // info.notifyConnectionError(Js.cast(fail));
                         }
                         return;
                     }
@@ -523,50 +531,50 @@ public class WorkerConnection {
                     // welp; the server is gone -- let everyone know
                     connectionLost();
 
-                    // info.notifyConnectionError(new ResponseStreamWrapper.Status() {
-                    // @Override
-                    // public int getCode() {
-                    // return Code.Unavailable;
-                    // }
-                    //
-                    // @SuppressWarnings("StringConcatenationInLoop")
-                    // @Override
-                    // public String getDetails() {
-                    // if (!success.getAbnormalTermination()) {
-                    // return "Server exited normally.";
-                    // }
-                    //
-                    // String retval;
-                    // if (!success.getReason().isEmpty()) {
-                    // retval = success.getReason();
-                    // } else {
-                    // retval = "Server exited abnormally.";
-                    // }
-                    //
-                    // final JsArray<StackTrace> traces = success.getStackTracesList();
-                    // for (int ii = 0; ii < traces.length; ++ii) {
-                    // final StackTrace trace = traces.getAt(ii);
-                    // retval += "\n\n";
-                    // if (ii != 0) {
-                    // retval += "Caused By: " + trace.getType() + ": " + trace.getMessage();
-                    // } else {
-                    // retval += trace.getType() + ": " + trace.getMessage();
-                    // }
-                    //
-                    // final JsArray<String> elements = trace.getElementsList();
-                    // for (int jj = 0; jj < elements.length; ++jj) {
-                    // retval += "\n" + elements.getAt(jj);
-                    // }
-                    // }
-                    //
-                    // return retval;
-                    // }
-                    //
-                    // @Override
-                    // public BrowserHeaders getMetadata() {
-                    // return new BrowserHeaders(); // nothing to offer
-                    // }
-                    // });
+                    info.notifyConnectionError(new ResponseStreamWrapper.Status() {
+                        @Override
+                        public int getCode() {
+                            return Code.Unavailable;
+                        }
+
+                        @SuppressWarnings("StringConcatenationInLoop")
+                        @Override
+                        public String getDetails() {
+                            if (!success.getAbnormalTermination()) {
+                                return "Server exited normally.";
+                            }
+
+                            String retval;
+                            if (!success.getReason().isEmpty()) {
+                                retval = success.getReason();
+                            } else {
+                                retval = "Server exited abnormally.";
+                            }
+
+                            final JsArray<StackTrace> traces = success.getStackTracesList();
+                            for (int ii = 0; ii < traces.length; ++ii) {
+                                final StackTrace trace = traces.getAt(ii);
+                                retval += "\n\n";
+                                if (ii != 0) {
+                                    retval += "Caused By: " + trace.getType() + ": " + trace.getMessage();
+                                } else {
+                                    retval += trace.getType() + ": " + trace.getMessage();
+                                }
+
+                                final JsArray<String> elements = trace.getElementsList();
+                                for (int jj = 0; jj < elements.length; ++jj) {
+                                    retval += "\n" + elements.getAt(jj);
+                                }
+                            }
+
+                            return retval;
+                        }
+
+                        @Override
+                        public BrowserHeaders getMetadata() {
+                            return new BrowserHeaders(); // nothing to offer
+                        }
+                    });
                 });
     }
 

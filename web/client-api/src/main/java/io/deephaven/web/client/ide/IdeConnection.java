@@ -15,6 +15,7 @@ import io.deephaven.web.shared.fu.JsRunnable;
 import jsinterop.annotations.JsConstructor;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsOptional;
+import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
 import jsinterop.base.JsPropertyMap;
 
@@ -22,6 +23,9 @@ import jsinterop.base.JsPropertyMap;
  */
 @JsType(namespace = "dh")
 public class IdeConnection extends QueryConnectable<IdeConnection> {
+    public static final String EVENT_DISCONNECT = "disconnect";
+    public static final String EVENT_RECONNECT = "reconnect";
+
     private final JsRunnable deathListenerCleanup;
     private final String serverUrl;
 
