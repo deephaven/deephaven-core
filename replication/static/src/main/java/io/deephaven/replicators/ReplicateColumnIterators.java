@@ -28,7 +28,7 @@ public class ReplicateColumnIterators {
     public static void main(String... args) throws IOException {
         charToByte(CHAR_PATH, Collections.emptyMap());
         charToShort(CHAR_PATH, Collections.emptyMap());
-        charToFloat(CHAR_PATH, Collections.emptyMap());
+        fixupIntToDouble(charToFloat(CHAR_PATH, Collections.emptyMap()));
 
         fixupChunkSize(intToLong(INT_PATH, Collections.emptyMap()), "long");
         fixupChunkSize(intToDouble(INT_PATH, Collections.emptyMap()), "double");
@@ -43,5 +43,26 @@ public class ReplicateColumnIterators {
                                 "chunkSize", primitive + " chunkSize", "int chunkSize"),
                         "currentSize", primitive + " currentSize", "int currentSize");
         FileUtils.writeLines(file, outputLines);
+    }
+
+    private static String fixupIntToDouble(@NotNull final String path) throws IOException {
+        final File file = new File(path);
+        final List<String> lines = ReplicationUtils.globalReplacements(
+                FileUtils.readLines(file, Charset.defaultCharset()),
+                "IntStream", "DoubleStream",
+                "NULL_INT", "NULL_DOUBLE",
+                "\\(int\\)", "(double)",
+                "\\{@code int\\}", "{@code double}",
+                "OfInt", "OfDouble",
+                "IntToLongFunction", "IntToDoubleFunction",
+                "FloatToIntFunction", "FloatToDoubleFunction",
+                "applyAsLong", "applyAsDouble",
+                "applyAsInt", "applyAsDouble",
+                "primitive int", "primitive double",
+                "IntStream", "DoubleStream",
+                "intStream", "doubleStream",
+                "streamAsInt", "streamAsDouble");
+        FileUtils.writeLines(file, lines);
+        return path;
     }
 }

@@ -121,9 +121,12 @@ public final class IntegerColumnIterator
      * @return A {@link IntStream} over the remaining contents of this iterator. Must be {@link Stream#close() closed}.
      */
     public IntStream stream() {
-        return StreamSupport.intStream(Spliterators.spliterator(
-                this, size(), Spliterator.IMMUTABLE | Spliterator.ORDERED),
-                false)
+        return StreamSupport.intStream(
+                        Spliterators.spliterator(
+                                this,
+                                size(),
+                                Spliterator.IMMUTABLE | Spliterator.ORDERED),
+                        false)
                 .onClose(this::close);
     }
 }

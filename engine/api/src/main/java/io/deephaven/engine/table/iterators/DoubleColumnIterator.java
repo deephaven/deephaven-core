@@ -126,9 +126,12 @@ public final class DoubleColumnIterator
      * @return A {@link DoubleStream} over the remaining contents of this iterator. Must be {@link Stream#close() closed}.
      */
     public DoubleStream stream() {
-        return StreamSupport.doubleStream(Spliterators.spliterator(
-                this, size(), Spliterator.IMMUTABLE | Spliterator.ORDERED),
-                false)
+        return StreamSupport.doubleStream(
+                        Spliterators.spliterator(
+                                this,
+                                size(),
+                                Spliterator.IMMUTABLE | Spliterator.ORDERED),
+                        false)
                 .onClose(this::close);
     }
 }

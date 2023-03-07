@@ -126,9 +126,12 @@ public final class LongColumnIterator
      * @return A {@link LongStream} over the remaining contents of this iterator. Must be {@link Stream#close() closed}.
      */
     public LongStream stream() {
-        return StreamSupport.longStream(Spliterators.spliterator(
-                this, size(), Spliterator.IMMUTABLE | Spliterator.ORDERED),
-                false)
+        return StreamSupport.longStream(
+                        Spliterators.spliterator(
+                                this,
+                                size(),
+                                Spliterator.IMMUTABLE | Spliterator.ORDERED),
+                        false)
                 .onClose(this::close);
     }
 }
