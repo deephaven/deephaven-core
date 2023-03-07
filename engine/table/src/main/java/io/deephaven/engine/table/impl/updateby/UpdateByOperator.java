@@ -35,8 +35,6 @@ import java.util.Map;
  * </ol>
  */
 public abstract class UpdateByOperator {
-    protected static UpdateByOperator[] ZERO_LENGTH_OP_ARRAY = new UpdateByOperator[0];
-
     protected final MatchPair pair;
     protected final String[] affectingColumns;
     protected final RowRedirection rowRedirection;
@@ -289,9 +287,10 @@ public abstract class UpdateByOperator {
     protected abstract void clearOutputRows(RowSet toClear);
 
     /**
-     * Return whether the operator needs row keys during accumulation. Defaults to {@code false}.
+     * Return whether the operator needs affected and influencer row positions during accumulation. Defaults to
+     * {@code false}.
      */
-    protected boolean requiresKeys() {
+    protected boolean requiresRowPositions() {
         return false;
     }
 }

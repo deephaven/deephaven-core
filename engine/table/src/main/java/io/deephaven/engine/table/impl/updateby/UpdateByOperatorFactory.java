@@ -56,7 +56,9 @@ public class UpdateByOperatorFactory {
     }
 
     /**
-     * Create a collection of operators from a list of {@link UpdateByOperation operator specs}. This collection should
+     * Create a collection of operators from a list of {@link UpdateByOperation operator specs}. This operation assumes
+     * that the {@link UpdateByOperation specs} are window-compatible, i.e. will share cumulative vs. rolling properties
+     * and window parameters.
      *
      * @param specs the collection of {@link UpdateByOperation specs} to create
      * @return a organized collection of {@link List<ColumnUpdateOperation> operation lists} where the operator specs
@@ -169,7 +171,7 @@ public class UpdateByOperatorFactory {
                         final boolean windowed = spec instanceof RollingOpSpec;
                         int hash = Boolean.hashCode(windowed);
 
-                        // treat all cumulative ops with the same input columns as identical, even if they rely on
+                        // Treat all cumulative ops with the same input columns as identical, even if they rely on
                         // timestamps
                         if (!windowed) {
                             return hash;
@@ -177,7 +179,7 @@ public class UpdateByOperatorFactory {
 
                         final RollingOpSpec rollingSpec = (RollingOpSpec) spec;
 
-                        // windowed ops are unique per type (ticks/time-based) and window dimensions
+                        // Windowed ops are unique per type (ticks/time-based) and window dimensions
                         hash = 31 * hash + Objects.hashCode(rollingSpec.revWindowScale().timestampCol());
                         hash = 31 * hash + Long.hashCode(rollingSpec.revWindowScale().timescaleUnits());
                         hash = 31 * hash + Long.hashCode(rollingSpec.fwdWindowScale().timescaleUnits());
@@ -192,7 +194,7 @@ public class UpdateByOperatorFactory {
                         final UpdateBySpec specA = clauseA.spec();
                         final UpdateBySpec specB = clauseB.spec();
 
-                        // equivalent if both are cumulative, not equivalent if only one is cumulative
+                        // Equivalent if both are cumulative, not equivalent if only one is cumulative
                         boolean aRolling = specA instanceof RollingOpSpec;
                         boolean bRolling = specB instanceof RollingOpSpec;
 

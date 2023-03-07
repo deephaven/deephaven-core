@@ -125,16 +125,16 @@ abstract class UpdateByWindowRollingBase extends UpdateByWindow {
 
         try (final RowSequence.Iterator affectedRowsIt = ctx.affectedRows.getRowSequenceIterator();
                 final RowSequence.Iterator influencerRowsIt = ctx.influencerRows.getRowSequenceIterator();
-                final RowSet affectedPosRs = operatorsRequireKeys
+                final RowSet affectedPosRs = operatorsRequirePositions
                         ? bucketRowSet.invert(ctx.affectedRows)
                         : null;
-                final RowSequence.Iterator affectedPosRsIt = operatorsRequireKeys
+                final RowSequence.Iterator affectedPosRsIt = operatorsRequirePositions
                         ? affectedPosRs.getRowSequenceIterator()
                         : null;
-                final RowSet influencerPosRs = operatorsRequireKeys
+                final RowSet influencerPosRs = operatorsRequirePositions
                         ? bucketRowSet.invert(ctx.influencerRows)
                         : null;
-                final RowSequence.Iterator influencerPosIt = operatorsRequireKeys
+                final RowSequence.Iterator influencerPosIt = operatorsRequirePositions
                         ? influencerPosRs.getRowSequenceIterator()
                         : null) {
 
@@ -162,7 +162,7 @@ abstract class UpdateByWindowRollingBase extends UpdateByWindow {
                 // create influencer position chunks when needed
                 final LongChunk<OrderedRowKeys> affectedPosChunk;
                 final LongChunk<OrderedRowKeys> influencePosChunk;
-                if (operatorsRequireKeys) {
+                if (operatorsRequirePositions) {
                     final RowSequence chunkAffectedPosRs =
                             affectedPosRsIt.getNextRowSequenceWithLength(affectedChunkSize);
                     affectedPosChunk = chunkAffectedPosRs.asRowKeyChunk();

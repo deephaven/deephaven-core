@@ -449,10 +449,11 @@ public class RollingGroupOperator extends UpdateByOperator {
     }
 
     /**
-     * Return whether the operator needs row keys during accumulation. Defaults to {@code false}.
+     * Return whether the operator needs affected and influencer row positions during accumulation. RollingGroup sets
+     * this to {@code true}.
      */
     @Override
-    protected boolean requiresKeys() {
+    protected boolean requiresRowPositions() {
         return true;
     }
 }
