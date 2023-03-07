@@ -593,13 +593,6 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
                 DateTimeUtils.upperBin(DateTimeUtils.upperBin(time, second, second), second, second));
     }
 
-    public void testConvertJimDateTimeQuiet() {
-        String s = "2010-09-02T08:17:17.502-0400";
-        DateTime known = DateTimeUtils.convertDateTimeQuiet(s);
-        DateTime trial = DateTimeUtils.convertJimDateTimeQuiet(s);
-        TestCase.assertEquals(known, trial);
-    }
-
     public void testGetExcelDate() {
         DateTime time = DateTimeUtils.convertDateTime("2010-06-15T16:00:00 NY");
         TestCase.assertTrue(CompareUtils.doubleEquals(40344.666666666664, DateTimeUtils.getExcelDateTime(time)));
@@ -610,7 +603,7 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
 
     /**
      * Test autoEpcohTime with the given epoch time.
-     * 
+     *
      * @param epoch Epoch time (in seconds)
      * @return The year (in the New York timezone) in which the given time falls.
      */
@@ -706,51 +699,11 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         assertEquals(DateTime.of(Instant.parse(iso8601)), DateTimeUtils.convertDateTime(iso8601));
     }
 
-    public void testExpresionToNanos() {
-        final long SECOND_NANOS = 1_000_000_000;
-        final long MINUTE_NANOS = 60 * SECOND_NANOS;
-        final long HOUR_NANOS = 60 * MINUTE_NANOS;
 
-        // second fractions
-        assertEquals(1_000_000L, DateTimeUtils.expressionToNanos("00:00:00.001"));
-        assertEquals(-1_000_000L, DateTimeUtils.expressionToNanos("-00:00:00.001"));
-        assertEquals(100_000_000L, DateTimeUtils.expressionToNanos("00:00:00.1"));
-        assertEquals(-100_000_000L, DateTimeUtils.expressionToNanos("-00:00:00.1"));
+    public void testISO8601_druation() {
+        final long dayNanos = 1_000_000_000L * 60 * 60 * 24;
 
-        // seconds
-        assertEquals(1 * SECOND_NANOS, DateTimeUtils.expressionToNanos("00:00:01.00"));
-        assertEquals(-1 * SECOND_NANOS, DateTimeUtils.expressionToNanos("-00:00:01.00"));
-        assertEquals(11 * SECOND_NANOS, DateTimeUtils.expressionToNanos("00:00:11.00"));
-        assertEquals(-11 * SECOND_NANOS, DateTimeUtils.expressionToNanos("-00:00:11.00"));
-        // non-standard but functional (> 60 seconds)
-        assertEquals(150 * SECOND_NANOS, DateTimeUtils.expressionToNanos("00:00:150.00"));
-        assertEquals(-150 * SECOND_NANOS, DateTimeUtils.expressionToNanos("-00:00:150.00"));
-
-        // minutes
-        assertEquals(1 * MINUTE_NANOS, DateTimeUtils.expressionToNanos("00:01:00"));
-        assertEquals(-1 * MINUTE_NANOS, DateTimeUtils.expressionToNanos("-00:01:00"));
-        assertEquals(11 * MINUTE_NANOS, DateTimeUtils.expressionToNanos("00:11:00"));
-        assertEquals(-11 * MINUTE_NANOS, DateTimeUtils.expressionToNanos("-00:11:00"));
-        // non-standard but functional (> 60 minutes)
-        assertEquals(150 * MINUTE_NANOS, DateTimeUtils.expressionToNanos("00:150:00"));
-        assertEquals(-150 * MINUTE_NANOS, DateTimeUtils.expressionToNanos("-00:150:00"));
-
-        // hours
-        assertEquals(1 * HOUR_NANOS, DateTimeUtils.expressionToNanos("01:00:00"));
-        assertEquals(-1 * HOUR_NANOS, DateTimeUtils.expressionToNanos("-01:00:00"));
-        assertEquals(11 * HOUR_NANOS, DateTimeUtils.expressionToNanos("11:00:00"));
-        assertEquals(-11 * HOUR_NANOS, DateTimeUtils.expressionToNanos("-11:00:00"));
-
-        // days are multiples of hours
-        assertEquals(24 * HOUR_NANOS, DateTimeUtils.expressionToNanos("24:00:00"));
-        assertEquals(-24 * HOUR_NANOS, DateTimeUtils.expressionToNanos("-24:00:00"));
-
-        // weeks are multiples of hours
-        assertEquals(168 * HOUR_NANOS, DateTimeUtils.expressionToNanos("168:00:00"));
-        assertEquals(-168 * HOUR_NANOS, DateTimeUtils.expressionToNanos("-168:00:00"));
-
-        // very large time period (>69 years)
-        assertEquals(100_000 * HOUR_NANOS, DateTimeUtils.expressionToNanos("100000:00:00"));
-        assertEquals(-100_000 * HOUR_NANOS, DateTimeUtils.expressionToNanos("-100000:00:00"));
+        assertEquals(7 * dayNanos, DateTimeUtils.expressionToNanos("1W"));
+        assertEquals(-7 * dayNanos, DateTimeUtils.expressionToNanos("-1W"));
     }
 }

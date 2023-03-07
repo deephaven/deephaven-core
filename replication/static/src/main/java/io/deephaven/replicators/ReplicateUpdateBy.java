@@ -96,13 +96,6 @@ public class ReplicateUpdateBy {
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/ema/ShortEMAOperator.java",
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/ema/FloatEMAOperator.java");
 
-        ReplicatePrimitiveCode.floatToAllFloatingPoints(
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/internal/PairwiseFloatRingBuffer.java",
-                exemptions);
-        ReplicatePrimitiveCode.floatToAllFloatingPoints(
-                "engine/table/src/test/java/io/deephaven/engine/table/impl/updateby/internal/PairwiseFloatRingBufferTest.java",
-                exemptions);
-
         replicateNumericOperator(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingsum/ShortRollingSumOperator.java",
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingsum/FloatRollingSumOperator.java");

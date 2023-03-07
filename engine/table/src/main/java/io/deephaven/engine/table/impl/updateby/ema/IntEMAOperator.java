@@ -29,8 +29,8 @@ public class IntEMAOperator extends BasePrimitiveEMAOperator {
 
         public IntChunk<? extends Values> intValueChunk;
 
-        protected Context(final int chunkSize, final int chunkCount) {
-            super(chunkSize, chunkCount);
+        protected Context(final int chunkSize) {
+            super(chunkSize);
         }
 
         @Override
@@ -136,7 +136,7 @@ public class IntEMAOperator extends BasePrimitiveEMAOperator {
 
     @NotNull
     @Override
-    public UpdateByOperator.Context makeUpdateContext(final int chunkSize, final int chunkCount) {
-        return new Context(chunkSize, chunkCount);
+    public UpdateByOperator.Context makeUpdateContext(final int chunkSize) {
+        return new Context(chunkSize);
     }
 }

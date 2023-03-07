@@ -8,6 +8,7 @@
  */
 package io.deephaven.engine.table.impl.sources;
 
+import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.impl.DefaultGetContext;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
@@ -42,7 +43,8 @@ import static io.deephaven.engine.table.impl.sources.sparse.SparseConstants.*;
  *
  * (C-haracter is deliberately spelled that way in order to prevent Replicate from altering this very comment).
  */
-public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> implements MutableColumnSourceGetDefaults.ForObject<T> {
+public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T>
+        implements MutableColumnSourceGetDefaults.ForObject<T> /* MIXIN_IMPLS */ {
     // region recyclers
     private static final SoftRecycler recycler = new SoftRecycler<>(DEFAULT_RECYCLER_CAPACITY,
             () -> new Object[BLOCK_SIZE], block -> Arrays.fill(block, null)); // we'll hold onto previous values, fix that
@@ -62,9 +64,9 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
     protected transient UpdateCommitter<ObjectSparseArraySource> prevFlusher = null;
 
     /**
-     * If ensure previous has been called, we need not check previous values when filling.
+     * If prepareForParallelPopulation has been called, we need not check previous values when filling.
      */
-    private transient long ensurePreviousClockCycle = -1;
+    private transient long prepareForParallelPopulationClockCycle = -1;
 
     /**
      * Our previous page table could be very sparse, and we do not want to read through millions of nulls to find out
@@ -369,8 +371,7 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
      * record values), returns null.
     */
     final T [] shouldRecordPrevious(final long key) {
-        // prevFlusher == null means we are not tracking previous values yet (or maybe ever)
-        if (prevFlusher == null) {
+        if (!shouldTrackPrevious()) {
             return null;
         }
         // If we want to track previous values, we make sure we are registered with the UpdateGraphProcessor.
@@ -396,12 +397,12 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
     }
 
     @Override
-    public void prepareForParallelPopulation(RowSet changedRows) {
+    public void prepareForParallelPopulation(final RowSet changedRows) {
         final long currentStep = LogicalClock.DEFAULT.currentStep();
-        if (ensurePreviousClockCycle == currentStep) {
-            throw new IllegalStateException("May not call ensurePrevious twice on one clock cycle!");
+        if (prepareForParallelPopulationClockCycle == currentStep) {
+            throw new IllegalStateException("May not call prepareForParallelPopulation twice on one clock cycle!");
         }
-        ensurePreviousClockCycle = currentStep;
+        prepareForParallelPopulationClockCycle = currentStep;
 
         if (changedRows.isEmpty()) {
             return;
@@ -448,7 +449,7 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
      * @return true if the inheritor should return a value from its "prev" data structure; false if it should return a
      * value from its "current" data structure.
      */
-    private boolean shouldUsePrevious(final long index) {
+    private boolean shouldUsePrevious(final long rowKey) {
         if (prevFlusher == null) {
             return false;
         }
@@ -457,12 +458,12 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
             return false;
         }
 
-        final long [] inUse = prevInUse.getInnermostBlockByKeyOrNull(index);
+        final long [] inUse = prevInUse.getInnermostBlockByKeyOrNull(rowKey);
         if (inUse == null) {
             return false;
         }
 
-        final int indexWithinBlock = (int) (index & INDEX_MASK);
+        final int indexWithinBlock = (int) (rowKey & INDEX_MASK);
         final int indexWithinInUse = indexWithinBlock >> LOG_INUSE_BITSET_SIZE;
         final long maskWithinInUse = 1L << (indexWithinBlock & IN_USE_MASK);
 
@@ -471,8 +472,13 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
 
     // region fillByRanges
     @Override
-    void fillByRanges(@NotNull WritableChunk<? super Values> dest, @NotNull RowSequence rowSequence) {
+    /* TYPE_MIXIN */ void fillByRanges(
+            @NotNull final WritableChunk<? super Values> dest,
+            @NotNull final RowSequence rowSequence
+            /* CONVERTER */) {
+        // region chunkDecl
         final WritableObjectChunk<T, ? super Values> chunk = dest.asWritableObjectChunk();
+        // endregion chunkDecl
         final FillByContext<T []> ctx = new FillByContext<>();
         rowSequence.forAllRowKeyRanges((long firstKey, final long lastKey) -> {
             if (firstKey > ctx.maxKeyInCurrentBlock) {
@@ -508,8 +514,13 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
 
     // region fillByKeys
     @Override
-    void fillByKeys(@NotNull WritableChunk<? super Values> dest, @NotNull RowSequence rowSequence) {
+    /* TYPE_MIXIN */ void fillByKeys(
+            @NotNull final WritableChunk<? super Values> dest,
+            @NotNull final RowSequence rowSequence
+            /* CONVERTER */) {
+        // region chunkDecl
         final WritableObjectChunk<T, ? super Values> chunk = dest.asWritableObjectChunk();
+        // endregion chunkDecl
         final FillByContext<T []> ctx = new FillByContext<>();
         rowSequence.forEachRowKey((final long v) -> {
             if (v > ctx.maxKeyInCurrentBlock) {
@@ -519,7 +530,9 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
             if (ctx.block == null) {
                 chunk.fillWithNullValue(ctx.offset, 1);
             } else {
+                // region conversion
                 chunk.set(ctx.offset, ctx.block[(int) (v & INDEX_MASK)]);
+                // endregion conversion
             }
             ++ctx.offset;
             return true;
@@ -530,12 +543,17 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
 
     // region fillByUnRowSequence
     @Override
-    void fillByUnRowSequence(@NotNull WritableChunk<? super Values> dest, @NotNull LongChunk<? extends RowKeys> keys) {
-        final WritableObjectChunk<T, ? super Values> ObjectChunk = dest.asWritableObjectChunk();
+    /* TYPE_MIXIN */ void fillByUnRowSequence(
+            @NotNull final WritableChunk<? super Values> dest,
+            @NotNull final LongChunk<? extends RowKeys> keys
+            /* CONVERTER */) {
+        // region chunkDecl
+        final WritableObjectChunk<T, ? super Values> chunk = dest.asWritableObjectChunk();
+        // endregion chunkDecl
         for (int ii = 0; ii < keys.size(); ) {
             final long firstKey = keys.get(ii);
             if (firstKey == RowSequence.NULL_ROW_KEY) {
-                ObjectChunk.set(ii++, null);
+                chunk.set(ii++, null);
                 continue;
             }
             final long masked = firstKey & ~INDEX_MASK;
@@ -551,25 +569,32 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
             }
             final T [] block = blocks.getInnermostBlockByKeyOrNull(firstKey);
             if (block == null) {
-                ObjectChunk.fillWithNullValue(ii, lastII - ii + 1);
+                chunk.fillWithNullValue(ii, lastII - ii + 1);
                 ii = lastII + 1;
                 continue;
             }
             while (ii <= lastII) {
                 final int indexWithinBlock = (int) (keys.get(ii) & INDEX_MASK);
-                ObjectChunk.set(ii++, block[indexWithinBlock]);
+                // region conversion
+                chunk.set(ii++, block[indexWithinBlock]);
+                // endregion conversion
             }
         }
         dest.setSize(keys.size());
     }
 
     @Override
-    void fillPrevByUnRowSequence(@NotNull WritableChunk<? super Values> dest, @NotNull LongChunk<? extends RowKeys> keys) {
-        final WritableObjectChunk<T, ? super Values> ObjectChunk = dest.asWritableObjectChunk();
+    /* TYPE_MIXIN */ void fillPrevByUnRowSequence(
+            @NotNull final WritableChunk<? super Values> dest,
+            @NotNull final LongChunk<? extends RowKeys> keys
+            /* CONVERTER */) {
+        // region chunkDecl
+        final WritableObjectChunk<T, ? super Values> chunk = dest.asWritableObjectChunk();
+        // endregion chunkDecl
         for (int ii = 0; ii < keys.size(); ) {
             final long firstKey = keys.get(ii);
             if (firstKey == RowSequence.NULL_ROW_KEY) {
-                ObjectChunk.set(ii++, null);
+                chunk.set(ii++, null);
                 continue;
             }
             final long masked = firstKey & ~INDEX_MASK;
@@ -586,7 +611,7 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
 
             final T [] block = blocks.getInnermostBlockByKeyOrNull(firstKey);
             if (block == null) {
-                ObjectChunk.fillWithNullValue(ii, lastII - ii + 1);
+                chunk.fillWithNullValue(ii, lastII - ii + 1);
                 ii = lastII + 1;
                 continue;
             }
@@ -599,7 +624,9 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
                 final long maskWithinInUse = 1L << (indexWithinBlock & IN_USE_MASK);
 
                 final T [] blockToUse = (prevInUse != null && (prevInUse[indexWithinInUse] & maskWithinInUse) != 0) ? prevBlock : block;
-                ObjectChunk.set(ii++, blockToUse == null ? null : blockToUse[indexWithinBlock]);
+                // region conversion
+                chunk.set(ii++, blockToUse == null ? null : blockToUse[indexWithinBlock]);
+                // endregion conversion
             }
         }
         dest.setSize(keys.size());
@@ -608,14 +635,19 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
 
     // region fillFromChunkByRanges
     @Override
-    void fillFromChunkByRanges(@NotNull RowSequence rowSequence, Chunk<? extends Values> src) {
+    /* TYPE_MIXIN */ void fillFromChunkByRanges(
+            @NotNull final RowSequence rowSequence,
+            @NotNull final Chunk<? extends Values> src
+            /* CONVERTER */) {
         if (rowSequence.isEmpty()) {
             return;
         }
+        // region chunkDecl
         final ObjectChunk<T, ? extends Values> chunk = src.asObjectChunk();
+        // endregion chunkDecl
         final LongChunk<OrderedRowKeyRanges> ranges = rowSequence.asRowKeyRangesChunk();
 
-        final boolean trackPrevious = prevFlusher != null && ensurePreviousClockCycle != LogicalClock.DEFAULT.currentStep();
+        final boolean trackPrevious = shouldTrackPrevious();
 
         if (trackPrevious) {
             prevFlusher.maybeActivate();
@@ -673,18 +705,30 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
             }
         }
     }
+
+    private boolean shouldTrackPrevious() {
+        // prevFlusher == null means we are not tracking previous values yet (or maybe ever).
+        // If prepareForParallelPopulation was called on this cycle, it's assumed that all previous values have already
+        // been recorded.
+        return prevFlusher != null && prepareForParallelPopulationClockCycle != LogicalClock.DEFAULT.currentStep();
+    }
     // endregion fillFromChunkByRanges
 
     // region fillFromChunkByKeys
     @Override
-    void fillFromChunkByKeys(@NotNull RowSequence rowSequence, Chunk<? extends Values> src) {
+    /* TYPE_MIXIN */ void fillFromChunkByKeys(
+            @NotNull final RowSequence rowSequence,
+            @NotNull final Chunk<? extends Values> src
+            /* CONVERTER */) {
         if (rowSequence.isEmpty()) {
             return;
         }
+        // region chunkDecl
         final ObjectChunk<T, ? extends Values> chunk = src.asObjectChunk();
+        // endregion chunkDecl
         final LongChunk<OrderedRowKeys> keys = rowSequence.asRowKeyChunk();
 
-        final boolean trackPrevious = prevFlusher != null && ensurePreviousClockCycle != LogicalClock.DEFAULT.currentStep();;
+        final boolean trackPrevious = shouldTrackPrevious();;
 
         if (trackPrevious) {
             prevFlusher.maybeActivate();
@@ -726,7 +770,9 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
                         inUse[indexWithinInUse] |= maskWithinInUse;
                     }
                 }
+                // region conversion
                 block[indexWithinBlock] = chunk.get(ii);
+                // endregion conversion
                 ++ii;
             }
         }
@@ -735,7 +781,7 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
 
     // region nullByRanges
     @Override
-    void nullByRanges(@NotNull RowSequence rowSequence) {
+    void nullByRanges(@NotNull final RowSequence rowSequence) {
         if (rowSequence.isEmpty()) {
             return;
         }
@@ -807,7 +853,7 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
 
     // region nullByKeys
     @Override
-    void nullByKeys(@NotNull RowSequence rowSequence) {
+    void nullByKeys(@NotNull final RowSequence rowSequence) {
         if (rowSequence.isEmpty()) {
             return;
         }
@@ -866,13 +912,19 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
 
     // region fillFromChunkUnordered
     @Override
-    public void fillFromChunkUnordered(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src, @NotNull LongChunk<RowKeys> keys) {
+    public /* TYPE_MIXIN */ void fillFromChunkUnordered(
+            @NotNull final FillFromContext context,
+            @NotNull final Chunk<? extends Values> src,
+            @NotNull final LongChunk<RowKeys> keys
+            /* CONVERTER */) {
         if (keys.size() == 0) {
             return;
         }
+        // region chunkDecl
         final ObjectChunk<T, ? extends Values> chunk = src.asObjectChunk();
+        // endregion chunkDecl
 
-        final boolean trackPrevious = prevFlusher != null && ensurePreviousClockCycle != LogicalClock.DEFAULT.currentStep();;
+        final boolean trackPrevious = shouldTrackPrevious();;
 
         if (trackPrevious) {
             prevFlusher.maybeActivate();
@@ -911,7 +963,9 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
                         inUse[indexWithinInUse] |= maskWithinInUse;
                     }
                 }
+                // region conversion
                 block[indexWithinBlock] = chunk.get(ii);
+                // endregion conversion
                 ++ii;
             } while (ii < keys.size() && (key = keys.get(ii)) >= minKeyInCurrentBlock && key <= maxKeyInCurrentBlock);
         }
@@ -919,7 +973,10 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
     // endregion fillFromChunkUnordered
 
     @Override
-    public void fillPrevChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Values> dest, @NotNull RowSequence rowSequence) {
+    public void fillPrevChunk(
+            @NotNull final FillContext context,
+            @NotNull final WritableChunk<? super Values> dest,
+            @NotNull final RowSequence rowSequence) {
         if (prevFlusher == null) {
             fillChunk(context, dest, rowSequence);
             return;
@@ -929,7 +986,7 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
 
     // region getChunk
     @Override
-    public ObjectChunk<T, Values> getChunk(@NotNull GetContext context, @NotNull RowSequence rowSequence) {
+    public ObjectChunk<T, Values> getChunk(@NotNull final GetContext context, @NotNull final RowSequence rowSequence) {
         if (rowSequence.isEmpty()) {
             return ObjectChunk.getEmptyChunk();
         }
@@ -948,7 +1005,7 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
 
     // region getPrevChunk
     @Override
-    public ObjectChunk<T, Values> getPrevChunk(@NotNull GetContext context, @NotNull RowSequence rowSequence) {
+    public ObjectChunk<T, Values> getPrevChunk(@NotNull final GetContext context, @NotNull final RowSequence rowSequence) {
         if (prevFlusher == null) {
             return getChunk(context, rowSequence);
         }

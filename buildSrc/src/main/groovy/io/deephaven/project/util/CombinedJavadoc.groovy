@@ -22,6 +22,7 @@ class CombinedJavadoc {
                 return false
             case ProjectType.JAVA_EXTERNAL:
             case ProjectType.JAVA_PUBLIC:
+            case ProjectType.JAVA_PUBLIC_SHADOW:
                 return true
             default:
                 throw new IllegalStateException("Unsure if public project type '${type}' is supposed to be included in combined-javadoc.")

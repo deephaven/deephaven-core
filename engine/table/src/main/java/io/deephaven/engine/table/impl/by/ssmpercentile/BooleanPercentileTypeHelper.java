@@ -5,9 +5,9 @@ package io.deephaven.engine.table.impl.by.ssmpercentile;
 
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.util.compare.ObjectComparisons;
-import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.BooleanArraySource;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.Chunk;
@@ -21,7 +21,7 @@ public class BooleanPercentileTypeHelper implements SsmChunkedPercentileOperator
     private final double percentile;
     private final BooleanArraySource resultColumn;
 
-    BooleanPercentileTypeHelper(double percentile, ArrayBackedColumnSource resultColumn) {
+    BooleanPercentileTypeHelper(double percentile, WritableColumnSource resultColumn) {
         this.percentile = percentile;
         // region resultColumn
         this.resultColumn = (BooleanArraySource) resultColumn;

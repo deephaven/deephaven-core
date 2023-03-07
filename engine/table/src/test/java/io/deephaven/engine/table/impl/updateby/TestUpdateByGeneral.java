@@ -21,6 +21,7 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.ExceptionDetails;
 import junit.framework.TestCase;
+import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -135,13 +136,6 @@ public class TestUpdateByGeneral extends BaseUpdateByTest implements UpdateError
                                         makeOpColNames(columnNamesArray, "_rollsumtimefwdrev", "Sym", "ts",
                                                 "boolCol")),
 
-                                UpdateByOperation.RollingGroup(50, 50,
-                                        makeOpColNames(columnNamesArray, "_rollgroupfwdrev", "Sym", "ts")),
-                                UpdateByOperation.RollingGroup(-50, 100,
-                                        makeOpColNames(columnNamesArray, "_rollgroupticksfwdex", "Sym", "ts")),
-                                UpdateByOperation.RollingGroup("ts", Duration.ofMinutes(5), Duration.ofMinutes(5),
-                                        makeOpColNames(columnNamesArray, "_rollgrouptimefwdrev", "Sym", "ts")),
-
                                 UpdateByOperation.Ema(skipControl, "ts", 10 * MINUTE,
                                         makeOpColNames(columnNamesArray, "_ema", "Sym", "ts", "boolCol")),
                                 UpdateByOperation.CumSum(makeOpColNames(columnNamesArray, "_sum", "Sym", "ts")),
@@ -153,6 +147,12 @@ public class TestUpdateByGeneral extends BaseUpdateByTest implements UpdateError
                         return bucketed
                                 ? base.updateBy(control, clauses, ColumnName.from("Sym"))
                                 : base.updateBy(control, clauses);
+                    }
+
+                    @Override
+                    @NotNull
+                    public EnumSet<TableDiff.DiffItems> diffItems() {
+                        return EnumSet.of(TableDiff.DiffItems.DoublesExact, TableDiff.DiffItems.DoubleFraction);
                     }
                 },
         };
@@ -269,7 +269,6 @@ public class TestUpdateByGeneral extends BaseUpdateByTest implements UpdateError
 
         TstUtils.assertTableEquals("msg", table, memoryTable, TableDiff.DiffItems.DoublesExact);
     }
-
 
     @Override
     public void reportUpdateError(Throwable t) {

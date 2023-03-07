@@ -457,7 +457,7 @@ public class SortHelpers {
             RowSet rowSet, boolean usePrev, long sortSize) {
         final LongArraySource resultIndices = new LongArraySource();
         resultIndices.ensureCapacity(sortSize, false);
-        final ArrayBackedColumnSource<?> valuesToMerge =
+        final WritableColumnSource<?> valuesToMerge =
                 ArrayBackedColumnSource.getMemoryColumnSource(0, columnSource.getType());
         valuesToMerge.ensureCapacity(sortSize, false);
 

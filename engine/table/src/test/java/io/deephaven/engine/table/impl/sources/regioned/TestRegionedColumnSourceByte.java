@@ -16,7 +16,8 @@ import static io.deephaven.util.QueryConstants.NULL_BYTE;
  * Test class for {@link RegionedColumnSourceByte}.
  */
 @SuppressWarnings("JUnit4AnnotatedMethodInJUnit3TestCase")
-public class TestRegionedColumnSourceByte extends TstRegionedColumnSourcePrimitive<Byte, Values, ColumnRegionByte<Values>> {
+public class TestRegionedColumnSourceByte extends TstRegionedColumnSourcePrimitive<
+        Byte, Values, ColumnRegionByte<Values>, ColumnRegionByte<Values>> {
 
     public TestRegionedColumnSourceByte() {
         super(ColumnRegionByte.class);

@@ -96,7 +96,7 @@ public enum JsDataHandler {
             addNode.apply(new Node(data.length, nullCount));
         }
     },
-    DATE_TIME(Type.Int, "io.deephaven.time.DateTime", "datetime") {
+    DATE_TIME(Type.Int, "io.deephaven.time.DateTime", "datetime", "java.time.Instant", "java.time.ZonedDateTime") {
         // Ensures that the 'T' separator character is in the date time
         private String ensureSeparator(String s) {
             if (s.charAt(SEPARATOR_INDEX) == ' ') {
@@ -466,7 +466,7 @@ public enum JsDataHandler {
     /**
      * Helper to read some js value as a double, so it can be handled as some type narrower than a js number. Do not use
      * this to handle wider types, check each possible type and fallback to this.
-     * 
+     *
      * @param data the data to turn into a js number
      * @return null or a java double
      */
