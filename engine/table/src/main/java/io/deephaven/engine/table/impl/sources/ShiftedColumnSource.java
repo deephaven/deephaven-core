@@ -34,7 +34,7 @@ import java.time.*;
  * @param <T>
  */
 public class ShiftedColumnSource<T> extends AbstractColumnSource<T>
-        implements UngroupableColumnSource, ConvertableTimeSource {
+        implements UngroupableColumnSource, ConvertableTimeSource, InMemoryColumnSource {
     protected final ColumnSource<T> innerSource;
     protected final TrackingRowSet rowSet;
     protected final long shift;
@@ -45,6 +45,11 @@ public class ShiftedColumnSource<T> extends AbstractColumnSource<T>
         this.innerSource = innerSource;
         this.rowSet = rowSet;
         this.shift = shift;
+    }
+
+    @Override
+    public boolean isInMemory() {
+        return innerSource instanceof InMemoryColumnSource && ((InMemoryColumnSource) innerSource).isInMemory();
     }
 
     long getColumnIndex(long outerKey) {

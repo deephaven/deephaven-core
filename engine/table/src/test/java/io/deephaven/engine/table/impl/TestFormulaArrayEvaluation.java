@@ -591,8 +591,8 @@ public class TestFormulaArrayEvaluation {
         for (int i = 0; i < formulas.length; i++) {
             ColumnSource<?> cs = source.getColumnSource(columns[i]);
 
-            if (columns[i].equals("Z") || columns[i].equals("D") || columns[i].equals("E")
-                    || (columns[i].equals("Y") && (flavor == Flavor.UpdateView || flavor == Flavor.View))) {
+            if ((columns[i].equals("Z") || columns[i].equals("D") || columns[i].equals("E")
+                    || columns[i].equals("Y")) && (flavor == Flavor.UpdateView || flavor == Flavor.View)) {
                 Assert.assertTrue(columns[i] + " ColumnSource is a ViewColumnSource ", cs instanceof ViewColumnSource);
             } else if (columns[i].equals("X") || columns[i].equals("C")) {
                 Assert.assertTrue(columns[i] + " ColumnSource is a SingleValueColumnSource ",

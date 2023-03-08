@@ -272,7 +272,8 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
             return false;
         }
         final ColumnSource<?> sccs = sc.getDataView();
-        return sccs instanceof InMemoryColumnSource && !Vector.class.isAssignableFrom(sc.getReturnedType());
+        return sccs instanceof InMemoryColumnSource && ((InMemoryColumnSource) sccs).isInMemory()
+                && !Vector.class.isAssignableFrom(sc.getReturnedType());
     }
 
     static final int BASE_LAYER_INDEX = 0;

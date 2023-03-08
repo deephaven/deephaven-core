@@ -2653,6 +2653,7 @@ public class QueryTableTest extends QueryTableTestBase {
         final Table rightBy = right.groupBy("Letter");
 
         final Table joined = leftBy.naturalJoin(rightBy, "Letter")
+                .withAttributes(Map.of(BaseTable.TEST_SOURCE_TABLE_ATTRIBUTE, true))
                 .updateView("BValue = ((i%2) == 0) ? null : BValue");
 
         QueryTable expected = testRefreshingTable(col("Letter", 'a', 'b', 'c', 'd'),
@@ -3157,7 +3158,10 @@ public class QueryTableTest extends QueryTableTestBase {
         final Table t0 = newTable(byteCol("Q", (byte) 0));
         final QueryTable t1 = testRefreshingTable(i().toTracking(), intCol("T"));
         final Table t2 = t1.view("Q=(byte)(i%2)");
-        final Table result = merge(t0, t2).tail(1).view("Q=Q*i").sumBy();
+        final Table result = merge(t0, t2).tail(1)
+                .withAttributes(Map.of(BaseTable.TEST_SOURCE_TABLE_ATTRIBUTE, true))
+                .view("Q=Q*i")
+                .sumBy();
         int i = 1;
         for (int step = 0; step < 2; ++step) {
             final int key = i++;

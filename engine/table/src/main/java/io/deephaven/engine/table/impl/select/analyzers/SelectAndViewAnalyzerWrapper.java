@@ -63,7 +63,8 @@ public class SelectAndViewAnalyzerWrapper {
     public QueryTable applyShiftsAndRemainingColumns(
             @NotNull QueryTable sourceTable, @NotNull QueryTable queryTable, UpdateFlavor updateFlavor) {
         if (shiftColumn != null) {
-            queryTable = (QueryTable) ShiftedColumnsFactory.getShiftedColumnsTable(queryTable, shiftColumn);
+            queryTable = (QueryTable) ShiftedColumnsFactory.getShiftedColumnsTable(
+                    queryTable, shiftColumn, updateFlavor);
         }
 
         // shift columns may introduce modifies that are not present in the original table; set these before using

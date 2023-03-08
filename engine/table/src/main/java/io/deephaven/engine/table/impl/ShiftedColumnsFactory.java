@@ -118,9 +118,11 @@ import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.select.FormulaColumn;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.select.WhereFilterFactory;
+import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzerWrapper;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -255,13 +257,15 @@ public class ShiftedColumnsFactory extends VoidVisitorAdapter<ShiftedColumnsFact
      * @return new table that includes the columns from the source table plus additional column
      *         "resultColumnName=expression" built using ShiftedColumnOperation.
      */
-    public static Table getShiftedColumnsTable(@NotNull final Table source, @NotNull FormulaColumn formulaColumn) {
-        String nuggetName = "getShiftedColumnsTable ( " + formulaColumn + ") ";
+    public static Table getShiftedColumnsTable(
+            @NotNull final Table source,
+            @NotNull FormulaColumn formulaColumn,
+            @NotNull SelectAndViewAnalyzerWrapper.UpdateFlavor updateFlavor) {
+        String nuggetName = "getShiftedColumnsTable( " + formulaColumn + ", " + updateFlavor + ") ";
         return QueryPerformanceRecorder.withNugget(nuggetName, source.sizeForInstrumentation(), () -> {
             Table tableSoFar = source;
             Pair<String, Map<Long, List<MatchPair>>> formulaMapPair = formulaColumn.getFormulaShiftColPair();
-            // hold the current columns to be displayed in table
-            List<String> currColumns = source.getDefinition().getColumnNames();
+            final List<String> columnsToDrop = new ArrayList<>();
             for (Map.Entry<Long, List<MatchPair>> entry : formulaMapPair.getSecond().entrySet()) {
                 if (entry.getKey() == 0) {
                     // if there is no shift, then just add an alias to the table
@@ -270,6 +274,7 @@ public class ShiftedColumnsFactory extends VoidVisitorAdapter<ShiftedColumnsFact
                                     ColumnName.of(formulaColumn.getName() + matchPair.leftColumn),
                                     ColumnName.of(matchPair.rightColumn)))
                             .toArray(Selectable[]::new);
+                    Arrays.stream(colPairs).forEach(selectable -> columnsToDrop.add(selectable.newColumn().name()));
                     tableSoFar = tableSoFar.updateView(colPairs);
                 } else {
                     // Add formulaColName as prefix to ShiftedCols
@@ -277,13 +282,25 @@ public class ShiftedColumnsFactory extends VoidVisitorAdapter<ShiftedColumnsFact
                             .map(matchPair -> new MatchPair(formulaColumn.getName() + matchPair.leftColumn,
                                     matchPair.rightColumn))
                             .toArray(MatchPair[]::new);
+                    Arrays.stream(colPairs).forEach(matchPair -> columnsToDrop.add(matchPair.leftColumn));
                     tableSoFar = ShiftedColumnOperation.addShiftedColumns(tableSoFar, entry.getKey(), colPairs);
                 }
             }
             String resultColFormula = formulaColumn.getName() + " = " + formulaMapPair.getFirst()
                     .replaceAll(SHIFTED_COL_PREFIX, formulaColumn.getName() + SHIFTED_COL_PREFIX);
-            currColumns.add(resultColFormula);
-            return tableSoFar.view(currColumns.toArray(new String[0]));
+            switch (updateFlavor) {
+                case Select:
+                case Update:
+                    tableSoFar = tableSoFar.update(resultColFormula);
+                    break;
+                case View:
+                case UpdateView:
+                    tableSoFar = tableSoFar.updateView(resultColFormula);
+                    break;
+                case LazyUpdate:
+                    tableSoFar = tableSoFar.lazyUpdate(resultColFormula);
+            }
+            return tableSoFar.dropColumns(columnsToDrop.toArray(new String[0]));
         });
     }
 
