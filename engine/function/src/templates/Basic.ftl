@@ -741,7 +741,7 @@ public class Basic {
      *         the falseCase element if the condition element is false; or null if the condition element is null.
      *         Returns null if any of the inputs is null.
      */
-    public static <T> T[] ifelseObj(BooleanVector condition, ObjectVector<T> trueCase, ObjectVector<T> falseCase) {
+    public static <T> T[] ifelseObj(ObjectVector<Boolean> condition, ObjectVector<T> trueCase, ObjectVector<T> falseCase) {
         if (condition == null || trueCase == null || falseCase == null) {
             return null;
         }
@@ -783,7 +783,7 @@ public class Basic {
             return null;
         }
 
-        return ifelseObj(new BooleanVectorDirect(condition), new ObjectVectorDirect<T>(trueCase), new ObjectVectorDirect<T>(falseCase));
+        return ifelseObj(new ObjectVectorDirect<>(condition), new ObjectVectorDirect<T>(trueCase), new ObjectVectorDirect<T>(falseCase));
     }
 
     /**
@@ -797,7 +797,7 @@ public class Basic {
      *         falseCase if the condition element is false; or null if the condition element is null.
      *         Returns null if condition is null.
      */
-    public static <T> T[] ifelseObj(BooleanVector condition, T trueCase, T falseCase) {
+    public static <T> T[] ifelseObj(ObjectVector<Boolean> condition, T trueCase, T falseCase) {
         if (condition == null) {
             return null;
         }
@@ -839,7 +839,7 @@ public class Basic {
             return null;
         }
 
-        return ifelseObj(new BooleanVectorDirect(condition), trueCase, falseCase);
+        return ifelseObj(new ObjectVectorDirect<>(condition), trueCase, falseCase);
     }
 
     /**
@@ -888,34 +888,6 @@ public class Basic {
         final T[] result = values.toArray();
 
         T lastGood = null;
-        for (int ii = 0; ii < n; ii++) {
-            if (!isNull(values.get(ii))) {
-                lastGood = values.get(ii);
-            }
-
-            result[ii] = lastGood;
-        }
-        return result;
-    }
-
-    /**
-     * Copies the specified array, replacing elements that represent null in the Deephaven convention by the most
-     * recently encountered non-null value if one exists. Otherwise (if no such value exists), replaces those elements
-     * with null.
-     *
-     * @param values values.
-     * @return A copy of the specified array, with Deephaven null elements replaced as described above. If the specified
-     *         array is null, returns null.
-     */
-    public static Boolean[] forwardFillObj(BooleanVector values) {
-        if (values == null) {
-            return null;
-        }
-
-        final int n = values.intSize("forwardFill");
-        final Boolean[] result = values.toArray();
-
-        Boolean lastGood = null;
         for (int ii = 0; ii < n; ii++) {
             if (!isNull(values.get(ii))) {
                 lastGood = values.get(ii);
@@ -1684,7 +1656,7 @@ public class Basic {
      *         the falseCase element if the condition element is false; or the Deephaven null constant if the condition element is null.
      *         Returns null if any of the inputs is null.
      */
-    public static ${pt.primitive}[] ifelse(BooleanVector condition, ${pt.dbArray} trueCase, ${pt.dbArray} falseCase) {
+    public static ${pt.primitive}[] ifelse(ObjectVector<Boolean> condition, ${pt.dbArray} trueCase, ${pt.dbArray} falseCase) {
         if (condition == null || trueCase == null || falseCase == null) {
             return null;
         }
@@ -1722,7 +1694,7 @@ public class Basic {
             return null;
         }
 
-        return ifelse(new BooleanVectorDirect(condition), new ${pt.dbArrayDirect}(trueCase), new ${pt.dbArrayDirect}(falseCase));
+        return ifelse(new ObjectVectorDirect<>(condition), new ${pt.dbArrayDirect}(trueCase), new ${pt.dbArrayDirect}(falseCase));
     }
 
     /**
@@ -1736,7 +1708,7 @@ public class Basic {
      *         falseCase if the condition element is false; or the Deephaven null constant if the condition element is null.
      *         Returns null if condition is null.
      */
-    public static ${pt.primitive}[] ifelse(BooleanVector condition, ${pt.primitive} trueCase, ${pt.primitive} falseCase) {
+    public static ${pt.primitive}[] ifelse(ObjectVector<Boolean> condition, ${pt.primitive} trueCase, ${pt.primitive} falseCase) {
         if (condition == null) {
             return null;
         }
@@ -1769,7 +1741,7 @@ public class Basic {
             return null;
         }
 
-        return ifelse(new BooleanVectorDirect(condition), trueCase, falseCase);
+        return ifelse(new ObjectVectorDirect<>(condition), trueCase, falseCase);
     }
 
     /**
