@@ -80,6 +80,12 @@ public class UpdateBySpecBuilderTest {
             return null;
         }
 
+        // TODO: add this correctly
+        @Override
+        public UpdateByColumn.UpdateBySpec visit(RollingMinMaxSpec p) {
+            return null;
+        }
+
     }
 
     @Test
