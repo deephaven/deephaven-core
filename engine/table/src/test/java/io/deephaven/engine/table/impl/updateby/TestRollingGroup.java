@@ -478,7 +478,7 @@ public class TestRollingGroup extends BaseUpdateByTest {
                     protected Table e() {
                         return bucketed
                                 ? t.updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, columns),
-                                "Sym")
+                                        "Sym")
                                 : t.updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, columns));
                     }
                 }

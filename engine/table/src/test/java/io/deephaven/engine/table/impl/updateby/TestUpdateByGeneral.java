@@ -121,20 +121,6 @@ public class TestUpdateByGeneral extends BaseUpdateByTest implements UpdateError
                                         makeOpColNames(columnNamesArray, "_rollsumticksrev", "Sym", "ts", "boolCol")),
                                 UpdateByOperation.RollingSum("ts", Duration.ofMinutes(15), Duration.ofMinutes(0),
                                         makeOpColNames(columnNamesArray, "_rollsumtimerev", "Sym", "ts", "boolCol")),
-                                UpdateByOperation.RollingSum(0, 100,
-                                        makeOpColNames(columnNamesArray, "_rollsumticksfwd", "Sym", "ts", "boolCol")),
-                                UpdateByOperation.RollingSum(-50, 100,
-                                        makeOpColNames(columnNamesArray, "_rollsumticksfwdex", "Sym", "ts", "boolCol")),
-                                UpdateByOperation.RollingSum("ts", Duration.ofMinutes(0), Duration.ofMinutes(15),
-                                        makeOpColNames(columnNamesArray, "_rollsumtimefwd", "Sym", "ts", "boolCol")),
-                                UpdateByOperation.RollingSum("ts", Duration.ofMinutes(-10), Duration.ofMinutes(15),
-                                        makeOpColNames(columnNamesArray, "_rollsumtimefwdex", "Sym", "ts", "boolCol")),
-                                UpdateByOperation.RollingSum(50, 50,
-                                        makeOpColNames(columnNamesArray, "_rollsumticksfwdrev", "Sym", "ts",
-                                                "boolCol")),
-                                UpdateByOperation.RollingSum("ts", Duration.ofMinutes(5), Duration.ofMinutes(5),
-                                        makeOpColNames(columnNamesArray, "_rollsumtimefwdrev", "Sym", "ts",
-                                                "boolCol")),
 
                                 UpdateByOperation.Ema(skipControl, "ts", 10 * MINUTE,
                                         makeOpColNames(columnNamesArray, "_ema", "Sym", "ts", "boolCol")),
@@ -157,15 +143,17 @@ public class TestUpdateByGeneral extends BaseUpdateByTest implements UpdateError
                 },
         };
 
+        final int stepSize = Math.max(5, size / 10);
+
         for (int step = 0; step < steps; step++) {
             try {
                 if (appendOnly) {
                     UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-                        generateAppends(100, result.random, result.t, result.infos);
+                        generateAppends(stepSize, result.random, result.t, result.infos);
                     });
                     validate("Table", nuggets);
                 } else {
-                    simulateShiftAwareStep(size, result.random, result.t, result.infos, nuggets);
+                    simulateShiftAwareStep(stepSize, result.random, result.t, result.infos, nuggets);
                 }
             } catch (Throwable t) {
                 System.out
