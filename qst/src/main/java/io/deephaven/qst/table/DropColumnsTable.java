@@ -29,13 +29,6 @@ public abstract class DropColumnsTable extends TableBase implements SingleParent
         return visitor;
     }
 
-    @Check
-    final void checkNonEmpty() {
-        if (dropColumns().isEmpty()) {
-            throw new IllegalArgumentException("Expected dropColumns() to be non-empty");
-        }
-    }
-
     public interface Builder {
         Builder parent(TableSpec parent);
 
