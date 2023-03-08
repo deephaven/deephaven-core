@@ -140,13 +140,9 @@ public class ColumnDefinition<TYPE> implements LogOutputAppendable {
     }
 
     /**
-     * Base component type class for each {@link Vector} type. Note that {@link BooleanVector} is deprecated, superseded
-     * by {@link ObjectVector}.
+     * Base component type class for each {@link Vector} type.
      */
     private static Class<?> baseComponentTypeForVector(@NotNull final Class<? extends Vector<?>> vectorType) {
-        if (BooleanVector.class.isAssignableFrom(vectorType)) {
-            return Boolean.class;
-        }
         if (CharVector.class.isAssignableFrom(vectorType)) {
             return char.class;
         }

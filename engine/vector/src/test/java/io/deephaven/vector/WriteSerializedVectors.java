@@ -10,7 +10,6 @@ public class WriteSerializedVectors {
         for (String className : new String[] {
                 "Vector",
                 "ObjectVectorDirect",
-                "BooleanVectorDirect",
                 "CharVector",
                 "LongVector",
                 "IntVector",

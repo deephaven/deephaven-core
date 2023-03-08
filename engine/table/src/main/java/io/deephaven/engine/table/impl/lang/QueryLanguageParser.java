@@ -97,7 +97,6 @@ import io.deephaven.engine.util.PyCallableWrapper;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.type.TypeUtils;
-import io.deephaven.vector.BooleanVector;
 import io.deephaven.vector.ByteVector;
 import io.deephaven.vector.CharVector;
 import io.deephaven.vector.DoubleVector;
@@ -897,10 +896,6 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         }
         if (IntVector.class.isAssignableFrom(type)) {
             return int[].class;
-        }
-        // noinspection deprecation
-        if (BooleanVector.class.isAssignableFrom(type)) {
-            return Boolean[].class;
         }
         if (DoubleVector.class.isAssignableFrom(type)) {
             return double[].class;

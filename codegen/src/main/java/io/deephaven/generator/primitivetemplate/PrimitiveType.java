@@ -133,7 +133,7 @@ public class PrimitiveType {
     public static PrimitiveType[] primitiveTypes() {
         return new PrimitiveType[] {
                 new PrimitiveType("Boolean", "Boolean",
-                        "BooleanVector", "BooleanVectorDirect",
+                        "ObjectVector", "ObjectVectorDirect",
                         "NULL_BOOLEAN", null, null,
                         ValueType.BOOLEAN),
                 new PrimitiveType("char", "Character",
