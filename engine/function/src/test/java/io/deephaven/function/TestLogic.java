@@ -74,9 +74,9 @@ public class TestLogic extends BaseArrayTestCase {
     }
 
     public void testNot() {
-        //noinspection ConstantValue
+        // noinspection ConstantValue
         assertNull(not((boolean[]) null));
-        //noinspection ConstantValue
+        // noinspection ConstantValue
         assertNull(not((Boolean[]) null));
 
         assertEquals(new Boolean[] {false, false, false}, not(new Boolean[] {true, true, true}));
