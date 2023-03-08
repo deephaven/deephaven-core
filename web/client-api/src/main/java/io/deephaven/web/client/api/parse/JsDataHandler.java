@@ -58,9 +58,11 @@ public enum JsDataHandler {
     STRING(Type.Utf8, "java.lang.String", "string") {
         class AppendableBuffer {
             private final List<ByteBuffer> buffers = new ArrayList<>();
+
             public AppendableBuffer() {
                 buffers.add(ByteBuffer.allocate(1 << 16));
             }
+
             public void append(byte[] bytes) {
                 int bytesWritten = 0;
                 int remaining = bytes.length;
@@ -78,6 +80,7 @@ public enum JsDataHandler {
                 }
                 assert remaining == 0;
             }
+
             public Uint8Array build() {
                 // See how much has been written to each.
                 // We haven't flipped these, so "position" is the really the limit
@@ -96,6 +99,7 @@ public enum JsDataHandler {
                 return payload;
             }
         }
+
         @Override
         public double writeType(Builder builder) {
             return Utf8.createUtf8(builder);
