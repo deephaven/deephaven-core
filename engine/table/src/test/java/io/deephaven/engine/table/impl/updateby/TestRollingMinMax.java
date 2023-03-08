@@ -35,7 +35,8 @@ import static io.deephaven.time.DateTimeUtils.convertDateTime;
 @Category(OutOfBandTest.class)
 public class TestRollingMinMax extends BaseUpdateByTest {
     /**
-     * These are used in the static tests and leverage the Numeric class functions for verification.
+     * These are used in the static tests and leverage the Numeric class functions for verification. Additional tests
+     * are performed on BigInteger/BigDecimal columns as well.
      */
     final String[] primitiveColumns = new String[] {
             "byteCol",
@@ -49,7 +50,7 @@ public class TestRollingMinMax extends BaseUpdateByTest {
     /**
      * These are used in the ticking table evaluations where we verify dynamic vs static tables.
      */
-    final String[] allColumns = new String[] {
+    final String[] columns = new String[] {
             "byteCol",
             "shortCol",
             "intCol",
@@ -72,6 +73,7 @@ public class TestRollingMinMax extends BaseUpdateByTest {
     }
 
     // region Object Helper functions
+
     final Function<ObjectVector<BigInteger>, BigInteger> minBigInt = bigIntegerObjectVector -> {
         if (bigIntegerObjectVector == null) {
             return null;
@@ -374,7 +376,7 @@ public class TestRollingMinMax extends BaseUpdateByTest {
     }
 
     private void doTestStaticBucketedTimedBigNumbers(final QueryTable t, final Duration prevTime,
-                                                     final Duration postTime) {
+            final Duration postTime) {
         QueryScope.addParam("minBigInt", minBigInt);
         QueryScope.addParam("maxBigInt", maxBigInt);
         QueryScope.addParam("minBigDec", minBigDec);
@@ -447,12 +449,13 @@ public class TestRollingMinMax extends BaseUpdateByTest {
     // endregion Object Helper functions
 
     // region Static Zero Key Tests
+
     @Test
     public void testStaticZeroKeyRev() {
         final int prevTicks = 100;
         final int postTicks = 0;
 
-        doTestStaticZeroKey(false, prevTicks, postTicks);
+        doTestStaticZeroKey(prevTicks, postTicks);
     }
 
     @Test
@@ -460,7 +463,7 @@ public class TestRollingMinMax extends BaseUpdateByTest {
         final int prevTicks = 100;
         final int postTicks = -50;
 
-        doTestStaticZeroKey(false, prevTicks, postTicks);
+        doTestStaticZeroKey(prevTicks, postTicks);
     }
 
     @Test
@@ -468,7 +471,7 @@ public class TestRollingMinMax extends BaseUpdateByTest {
         final int prevTicks = 0;
         final int postTicks = 100;
 
-        doTestStaticZeroKey(false, prevTicks, postTicks);
+        doTestStaticZeroKey(prevTicks, postTicks);
     }
 
     @Test
@@ -476,7 +479,7 @@ public class TestRollingMinMax extends BaseUpdateByTest {
         final int prevTicks = -50;
         final int postTicks = 100;
 
-        doTestStaticZeroKey(false, prevTicks, postTicks);
+        doTestStaticZeroKey(prevTicks, postTicks);
     }
 
     @Test
@@ -484,7 +487,7 @@ public class TestRollingMinMax extends BaseUpdateByTest {
         final int prevTicks = 100;
         final int postTicks = 100;
 
-        doTestStaticZeroKey(false, prevTicks, postTicks);
+        doTestStaticZeroKey(prevTicks, postTicks);
     }
 
     @Test
@@ -492,7 +495,7 @@ public class TestRollingMinMax extends BaseUpdateByTest {
         final Duration prevTime = Duration.ofMinutes(10);
         final Duration postTime = Duration.ZERO;
 
-        doTestStaticZeroKeyTimed(false, prevTime, postTime);
+        doTestStaticZeroKeyTimed(prevTime, postTime);
     }
 
     @Test
@@ -500,7 +503,7 @@ public class TestRollingMinMax extends BaseUpdateByTest {
         final Duration prevTime = Duration.ofMinutes(10);
         final Duration postTime = Duration.ofMinutes(-5);
 
-        doTestStaticZeroKeyTimed(false, prevTime, postTime);
+        doTestStaticZeroKeyTimed(prevTime, postTime);
     }
 
     @Test
@@ -508,7 +511,7 @@ public class TestRollingMinMax extends BaseUpdateByTest {
         final Duration prevTime = Duration.ZERO;
         final Duration postTime = Duration.ofMinutes(10);
 
-        doTestStaticZeroKeyTimed(false, prevTime, postTime);
+        doTestStaticZeroKeyTimed(prevTime, postTime);
     }
 
     @Test
@@ -516,7 +519,7 @@ public class TestRollingMinMax extends BaseUpdateByTest {
         final Duration prevTime = Duration.ofMinutes(-5);
         final Duration postTime = Duration.ofMinutes(10);
 
-        doTestStaticZeroKeyTimed(false, prevTime, postTime);
+        doTestStaticZeroKeyTimed(prevTime, postTime);
     }
 
     @Test
@@ -524,11 +527,11 @@ public class TestRollingMinMax extends BaseUpdateByTest {
         final Duration prevTime = Duration.ofMinutes(10);
         final Duration postTime = Duration.ofMinutes(10);
 
-        doTestStaticZeroKeyTimed(false, prevTime, postTime);
+        doTestStaticZeroKeyTimed(prevTime, postTime);
     }
 
-    private void doTestStaticZeroKey(boolean grouped, int prevTicks, int postTicks) {
-        final QueryTable t = createTestTable(STATIC_TABLE_SIZE, true, grouped, false, 0x31313131).t;
+    private void doTestStaticZeroKey(final int prevTicks, final int postTicks) {
+        final QueryTable t = createTestTable(STATIC_TABLE_SIZE, true, false, false, 0x31313131).t;
 
         final Table actualMin = t.updateBy(UpdateByOperation.RollingMin(prevTicks, postTicks, primitiveColumns));
         final Table expectedMin = t.updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, primitiveColumns))
@@ -543,7 +546,7 @@ public class TestRollingMinMax extends BaseUpdateByTest {
         doTestStaticZeroKeyBigNumbers(t, prevTicks, postTicks);
     }
 
-    private void doTestStaticZeroKeyTimed(final boolean grouped, final Duration prevTime, final Duration postTime) {
+    private void doTestStaticZeroKeyTimed(final Duration prevTime, final Duration postTime) {
         final QueryTable t = createTestTable(STATIC_TABLE_SIZE, false, false, false, 0xFFFABBBC,
                 new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
                         convertDateTime("2022-03-09T09:00:00.000 NY"),
@@ -561,6 +564,7 @@ public class TestRollingMinMax extends BaseUpdateByTest {
 
         doTestStaticZeroKeyTimedBigNumbers(t, prevTime, postTime);
     }
+
     // endregion
 
     // region Static Bucketed Tests
@@ -859,18 +863,18 @@ public class TestRollingMinMax extends BaseUpdateByTest {
                     @Override
                     protected Table e() {
                         return bucketed
-                                ? t.updateBy(UpdateByOperation.RollingMin(prevTicks, postTicks, allColumns),
+                                ? t.updateBy(UpdateByOperation.RollingMin(prevTicks, postTicks, columns),
                                         "Sym")
-                                : t.updateBy(UpdateByOperation.RollingMin(prevTicks, postTicks, allColumns));
+                                : t.updateBy(UpdateByOperation.RollingMin(prevTicks, postTicks, columns));
                     }
                 },
                 new EvalNugget() {
                     @Override
                     protected Table e() {
                         return bucketed
-                                ? t.updateBy(UpdateByOperation.RollingMax(prevTicks, postTicks, allColumns),
+                                ? t.updateBy(UpdateByOperation.RollingMax(prevTicks, postTicks, columns),
                                         "Sym")
-                                : t.updateBy(UpdateByOperation.RollingMax(prevTicks, postTicks, allColumns));
+                                : t.updateBy(UpdateByOperation.RollingMax(prevTicks, postTicks, columns));
                     }
                 }
         };
@@ -898,18 +902,18 @@ public class TestRollingMinMax extends BaseUpdateByTest {
                     @Override
                     protected Table e() {
                         return bucketed ? t.updateBy(
-                                UpdateByOperation.RollingMin("ts", prevTime, postTime, allColumns), "Sym")
+                                UpdateByOperation.RollingMin("ts", prevTime, postTime, columns), "Sym")
                                 : t.updateBy(
-                                        UpdateByOperation.RollingMin("ts", prevTime, postTime, allColumns));
+                                        UpdateByOperation.RollingMin("ts", prevTime, postTime, columns));
                     }
                 },
                 new EvalNugget() {
                     @Override
                     protected Table e() {
                         return bucketed ? t.updateBy(
-                                UpdateByOperation.RollingMax("ts", prevTime, postTime, allColumns), "Sym")
+                                UpdateByOperation.RollingMax("ts", prevTime, postTime, columns), "Sym")
                                 : t.updateBy(
-                                        UpdateByOperation.RollingMax("ts", prevTime, postTime, allColumns));
+                                        UpdateByOperation.RollingMax("ts", prevTime, postTime, columns));
                     }
                 }
         };
@@ -925,6 +929,7 @@ public class TestRollingMinMax extends BaseUpdateByTest {
     // endregion Append Only Tests
 
     // region General Ticking Tests
+
     @Test
     public void testZeroKeyGeneralTickingRev() {
         final long prevTicks = 100;
@@ -997,41 +1002,6 @@ public class TestRollingMinMax extends BaseUpdateByTest {
         doTestTicking(true, prevTicks, postTicks);
     }
 
-    private void doTestTicking(final boolean bucketed, final long prevTicks, final long fwdTicks) {
-
-        final CreateResult result = createTestTable(DYNAMIC_TABLE_SIZE, bucketed, false, true, 0x31313131);
-        final QueryTable t = result.t;
-
-        final EvalNugget[] nuggets = new EvalNugget[] {
-                new EvalNugget() {
-                    @Override
-                    protected Table e() {
-                        return bucketed ? t.updateBy(
-                                UpdateByOperation.RollingMin(prevTicks, fwdTicks, allColumns), "Sym")
-                                : t.updateBy(
-                                        UpdateByOperation.RollingMin(prevTicks, fwdTicks, allColumns));
-                    }
-                },
-                new EvalNugget() {
-                    @Override
-                    protected Table e() {
-                        return bucketed ? t.updateBy(
-                                UpdateByOperation.RollingMax(prevTicks, fwdTicks, allColumns), "Sym")
-                                : t.updateBy(
-                                        UpdateByOperation.RollingMax(prevTicks, fwdTicks, allColumns));
-                    }
-                }
-        };
-
-
-        final Random billy = new Random(0xB177B177);
-        for (int ii = 0; ii < DYNAMIC_UPDATE_STEPS; ii++) {
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(
-                    () -> GenerateTableUpdates.generateTableUpdates(DYNAMIC_UPDATE_SIZE, billy, t, result.infos));
-            TstUtils.validate("Table - step " + ii, nuggets);
-        }
-    }
-
     @Test
     public void testBucketedGeneralTickingTimedRev() {
         final Duration prevTime = Duration.ofMinutes(10);
@@ -1072,6 +1042,41 @@ public class TestRollingMinMax extends BaseUpdateByTest {
         doTestTickingTimed(true, prevTime, postTime);
     }
 
+    private void doTestTicking(final boolean bucketed, final long prevTicks, final long fwdTicks) {
+
+        final CreateResult result = createTestTable(DYNAMIC_TABLE_SIZE, bucketed, false, true, 0x31313131);
+        final QueryTable t = result.t;
+
+        final EvalNugget[] nuggets = new EvalNugget[] {
+                new EvalNugget() {
+                    @Override
+                    protected Table e() {
+                        return bucketed ? t.updateBy(
+                                UpdateByOperation.RollingMin(prevTicks, fwdTicks, columns), "Sym")
+                                : t.updateBy(
+                                        UpdateByOperation.RollingMin(prevTicks, fwdTicks, columns));
+                    }
+                },
+                new EvalNugget() {
+                    @Override
+                    protected Table e() {
+                        return bucketed ? t.updateBy(
+                                UpdateByOperation.RollingMax(prevTicks, fwdTicks, columns), "Sym")
+                                : t.updateBy(
+                                        UpdateByOperation.RollingMax(prevTicks, fwdTicks, columns));
+                    }
+                }
+        };
+
+
+        final Random billy = new Random(0xB177B177);
+        for (int ii = 0; ii < DYNAMIC_UPDATE_STEPS; ii++) {
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(
+                    () -> GenerateTableUpdates.generateTableUpdates(DYNAMIC_UPDATE_SIZE, billy, t, result.infos));
+            TstUtils.validate("Table - step " + ii, nuggets);
+        }
+    }
+
     private void doTestTickingTimed(final boolean bucketed, final Duration prevTime, final Duration postTime) {
 
         final CreateResult result = createTestTable(DYNAMIC_TABLE_SIZE, bucketed, false, true, 0x31313131,
@@ -1086,18 +1091,18 @@ public class TestRollingMinMax extends BaseUpdateByTest {
                     @Override
                     protected Table e() {
                         return bucketed ? t.updateBy(
-                                UpdateByOperation.RollingMin("ts", prevTime, postTime, allColumns), "Sym")
+                                UpdateByOperation.RollingMin("ts", prevTime, postTime, columns), "Sym")
                                 : t.updateBy(
-                                        UpdateByOperation.RollingMin("ts", prevTime, postTime, allColumns));
+                                        UpdateByOperation.RollingMin("ts", prevTime, postTime, columns));
                     }
                 },
                 new EvalNugget() {
                     @Override
                     protected Table e() {
                         return bucketed ? t.updateBy(
-                                UpdateByOperation.RollingMax("ts", prevTime, postTime, allColumns), "Sym")
+                                UpdateByOperation.RollingMax("ts", prevTime, postTime, columns), "Sym")
                                 : t.updateBy(
-                                        UpdateByOperation.RollingMax("ts", prevTime, postTime, allColumns));
+                                        UpdateByOperation.RollingMax("ts", prevTime, postTime, columns));
                     }
                 }
         };
@@ -1126,7 +1131,7 @@ public class TestRollingMinMax extends BaseUpdateByTest {
                     @Override
                     protected Table e() {
                         return t.updateBy(control,
-                                List.of(UpdateByOperation.RollingMin(prevTicks, postTicks, allColumns)),
+                                List.of(UpdateByOperation.RollingMin(prevTicks, postTicks, columns)),
                                 ColumnName.from("Sym"));
                     }
                 }
@@ -1162,7 +1167,7 @@ public class TestRollingMinMax extends BaseUpdateByTest {
                     @Override
                     protected Table e() {
                         return t.updateBy(control,
-                                List.of(UpdateByOperation.RollingMin("ts", prevTime, postTime, allColumns)),
+                                List.of(UpdateByOperation.RollingMin("ts", prevTime, postTime, columns)),
                                 ColumnName.from("Sym"));
                     }
                 }
@@ -1179,5 +1184,5 @@ public class TestRollingMinMax extends BaseUpdateByTest {
         }
     }
 
-    // endregion General Ticking Tests
+    // endregion
 }

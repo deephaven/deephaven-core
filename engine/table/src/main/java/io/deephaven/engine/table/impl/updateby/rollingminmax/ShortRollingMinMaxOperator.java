@@ -23,6 +23,7 @@ public class ShortRollingMinMaxOperator extends BaseShortUpdateByOperator {
     protected class Context extends BaseShortUpdateByOperator.Context {
         protected ShortChunk<? extends Values> shortInfluencerValuesChunk;
         protected AggregatingShortRingBuffer aggMinMax;
+        protected boolean evaluationNeeded;
 
         protected Context(final int chunkSize) {
             super(chunkSize);
@@ -45,6 +46,8 @@ public class ShortRollingMinMaxOperator extends BaseShortUpdateByOperator {
                     return (short)Math.min(a, b);
                 });
             }
+            curVal = isMax ? Short.MIN_VALUE : Short.MAX_VALUE;
+            evaluationNeeded = false;
         }
 
         @Override
@@ -68,6 +71,15 @@ public class ShortRollingMinMaxOperator extends BaseShortUpdateByOperator {
 
                 if (val == NULL_SHORT) {
                     nullCount++;
+                } else {
+                    // If we push a new extreme, we can skip evaluation.
+                    if (isMax && curVal < val) {
+                        curVal = val;
+                        evaluationNeeded = false;
+                    } else if (!isMax && curVal > val) {
+                        curVal = val;
+                        evaluationNeeded = false;
+                    }
                 }
             }
         }
@@ -81,6 +93,12 @@ public class ShortRollingMinMaxOperator extends BaseShortUpdateByOperator {
 
                 if (val == NULL_SHORT) {
                     nullCount--;
+                } else {
+                    // Only revaluate if we pop something equal to our current value.  Otherwise we have perfect
+                    // confidence that the min/max is still in the window.
+                    if (curVal == val) {
+                        evaluationNeeded = true;
+                    }
                 }
             }
         }
@@ -90,7 +108,11 @@ public class ShortRollingMinMaxOperator extends BaseShortUpdateByOperator {
             if (aggMinMax.size() == nullCount) {
                 outputValues.set(outIdx, NULL_SHORT);
             } else {
-                outputValues.set(outIdx, aggMinMax.evaluate());
+                if (evaluationNeeded) {
+                    curVal = aggMinMax.evaluate();
+                }
+                outputValues.set(outIdx, curVal);
+                evaluationNeeded = false;
             }
         }
 
@@ -98,6 +120,8 @@ public class ShortRollingMinMaxOperator extends BaseShortUpdateByOperator {
         public void reset() {
             super.reset();
             aggMinMax.clear();
+            curVal = isMax ? Short.MIN_VALUE : Short.MAX_VALUE;
+            evaluationNeeded = false;
         }
     }
 

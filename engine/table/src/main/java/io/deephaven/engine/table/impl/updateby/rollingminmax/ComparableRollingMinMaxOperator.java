@@ -21,11 +21,12 @@ public class ComparableRollingMinMaxOperator<T extends Comparable<T>> extends Ba
     protected class Context extends BaseObjectUpdateByOperator<T>.Context {
         protected ObjectChunk<T, ? extends Values> objectInfluencerValuesChunk;
         protected AggregatingObjectRingBuffer<T> aggMinMax;
+        protected boolean evaluationNeeded;
 
         protected Context(final int chunkSize) {
             super(chunkSize);
             if (isMax) {
-                aggMinMax = new AggregatingObjectRingBuffer<T>(BUFFER_INITIAL_CAPACITY, null, (a, b) -> {
+                aggMinMax = new AggregatingObjectRingBuffer<>(BUFFER_INITIAL_CAPACITY, null, (a, b) -> {
                     if (a == null) {
                         return b;
                     } else if (b == null) {
@@ -34,7 +35,7 @@ public class ComparableRollingMinMaxOperator<T extends Comparable<T>> extends Ba
                     return a.compareTo(b) > 0 ? a : b;
                 });
             } else {
-                aggMinMax = new AggregatingObjectRingBuffer<T>(BUFFER_INITIAL_CAPACITY, null, (a, b) -> {
+                aggMinMax = new AggregatingObjectRingBuffer<>(BUFFER_INITIAL_CAPACITY, null, (a, b) -> {
                     if (a == null) {
                         return b;
                     } else if (b == null) {
@@ -43,6 +44,7 @@ public class ComparableRollingMinMaxOperator<T extends Comparable<T>> extends Ba
                     return a.compareTo(b) < 0 ? a : b;
                 });
             }
+            evaluationNeeded = false;
         }
 
         @Override
@@ -67,6 +69,16 @@ public class ComparableRollingMinMaxOperator<T extends Comparable<T>> extends Ba
 
                 if (val == null) {
                     nullCount++;
+                } else {
+                    if (curVal == null) {
+                        curVal = val;
+                    } else if (isMax && curVal.compareTo(val) < 0) {
+                        curVal = val;
+                        evaluationNeeded = false;
+                    } else if (!isMax && curVal.compareTo(val) > 0) {
+                        curVal = val;
+                        evaluationNeeded = false;
+                    }
                 }
             }
         }
@@ -80,6 +92,12 @@ public class ComparableRollingMinMaxOperator<T extends Comparable<T>> extends Ba
 
                 if (val == null) {
                     nullCount--;
+                } else {
+                    // Only revaluate if we pop something equal to our current value. Otherwise we have perfect
+                    // confidence that the min/max is still in the window.
+                    if (curVal != null && curVal.compareTo(val) == 0) {
+                        evaluationNeeded = true;
+                    }
                 }
             }
         }
@@ -89,7 +107,11 @@ public class ComparableRollingMinMaxOperator<T extends Comparable<T>> extends Ba
             if (aggMinMax.size() == nullCount) {
                 outputValues.set(outIdx, null);
             } else {
-                outputValues.set(outIdx, aggMinMax.evaluate());
+                if (evaluationNeeded) {
+                    curVal = aggMinMax.evaluate();
+                }
+                outputValues.set(outIdx, curVal);
+                evaluationNeeded = false;
             }
         }
 

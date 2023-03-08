@@ -28,6 +28,7 @@ public class DoubleRollingMinMaxOperator extends BaseDoubleUpdateByOperator {
     protected class Context extends BaseDoubleUpdateByOperator.Context {
         protected DoubleChunk<? extends Values> doubleInfluencerValuesChunk;
         protected AggregatingDoubleRingBuffer aggMinMax;
+        protected boolean evaluationNeeded;
 
         protected Context(final int chunkSize) {
             super(chunkSize);
@@ -50,6 +51,8 @@ public class DoubleRollingMinMaxOperator extends BaseDoubleUpdateByOperator {
                     return (double)Math.min(a, b);
                 });
             }
+            curVal = isMax ? Double.MIN_VALUE : Double.MAX_VALUE;
+            evaluationNeeded = false;
         }
 
         @Override
@@ -57,7 +60,6 @@ public class DoubleRollingMinMaxOperator extends BaseDoubleUpdateByOperator {
             super.close();
             aggMinMax = null;
         }
-
 
         @Override
         public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
@@ -74,6 +76,15 @@ public class DoubleRollingMinMaxOperator extends BaseDoubleUpdateByOperator {
 
                 if (val == NULL_DOUBLE) {
                     nullCount++;
+                } else {
+                    // If we push a new extreme, we can skip evaluation.
+                    if (isMax && curVal < val) {
+                        curVal = val;
+                        evaluationNeeded = false;
+                    } else if (!isMax && curVal > val) {
+                        curVal = val;
+                        evaluationNeeded = false;
+                    }
                 }
             }
         }
@@ -87,6 +98,12 @@ public class DoubleRollingMinMaxOperator extends BaseDoubleUpdateByOperator {
 
                 if (val == NULL_DOUBLE) {
                     nullCount--;
+                } else {
+                    // Only revaluate if we pop something equal to our current value.  Otherwise we have perfect
+                    // confidence that the min/max is still in the window.
+                    if (curVal == val) {
+                        evaluationNeeded = true;
+                    }
                 }
             }
         }
@@ -96,7 +113,11 @@ public class DoubleRollingMinMaxOperator extends BaseDoubleUpdateByOperator {
             if (aggMinMax.size() == nullCount) {
                 outputValues.set(outIdx, NULL_DOUBLE);
             } else {
-                outputValues.set(outIdx, aggMinMax.evaluate());
+                if (evaluationNeeded) {
+                    curVal = aggMinMax.evaluate();
+                }
+                outputValues.set(outIdx, curVal);
+                evaluationNeeded = false;
             }
         }
 
@@ -104,6 +125,8 @@ public class DoubleRollingMinMaxOperator extends BaseDoubleUpdateByOperator {
         public void reset() {
             super.reset();
             aggMinMax.clear();
+            curVal = isMax ? Double.MIN_VALUE : Double.MAX_VALUE;
+            evaluationNeeded = false;
         }
     }
 
