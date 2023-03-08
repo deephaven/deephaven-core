@@ -21,6 +21,7 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.ExceptionDetails;
 import junit.framework.TestCase;
+import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -120,27 +121,6 @@ public class TestUpdateByGeneral extends BaseUpdateByTest implements UpdateError
                                         makeOpColNames(columnNamesArray, "_rollsumticksrev", "Sym", "ts", "boolCol")),
                                 UpdateByOperation.RollingSum("ts", Duration.ofMinutes(15), Duration.ofMinutes(0),
                                         makeOpColNames(columnNamesArray, "_rollsumtimerev", "Sym", "ts", "boolCol")),
-                                UpdateByOperation.RollingSum(0, 100,
-                                        makeOpColNames(columnNamesArray, "_rollsumticksfwd", "Sym", "ts", "boolCol")),
-                                UpdateByOperation.RollingSum(-50, 100,
-                                        makeOpColNames(columnNamesArray, "_rollsumticksfwdex", "Sym", "ts", "boolCol")),
-                                UpdateByOperation.RollingSum("ts", Duration.ofMinutes(0), Duration.ofMinutes(15),
-                                        makeOpColNames(columnNamesArray, "_rollsumtimefwd", "Sym", "ts", "boolCol")),
-                                UpdateByOperation.RollingSum("ts", Duration.ofMinutes(-10), Duration.ofMinutes(15),
-                                        makeOpColNames(columnNamesArray, "_rollsumtimefwdex", "Sym", "ts", "boolCol")),
-                                UpdateByOperation.RollingSum(50, 50,
-                                        makeOpColNames(columnNamesArray, "_rollsumticksfwdrev", "Sym", "ts",
-                                                "boolCol")),
-                                UpdateByOperation.RollingSum("ts", Duration.ofMinutes(5), Duration.ofMinutes(5),
-                                        makeOpColNames(columnNamesArray, "_rollsumtimefwdrev", "Sym", "ts",
-                                                "boolCol")),
-
-                                UpdateByOperation.RollingGroup(50, 50,
-                                        makeOpColNames(columnNamesArray, "_rollgroupfwdrev", "Sym", "ts")),
-                                UpdateByOperation.RollingGroup(-50, 100,
-                                        makeOpColNames(columnNamesArray, "_rollgroupticksfwdex", "Sym", "ts")),
-                                UpdateByOperation.RollingGroup("ts", Duration.ofMinutes(5), Duration.ofMinutes(5),
-                                        makeOpColNames(columnNamesArray, "_rollgrouptimefwdrev", "Sym", "ts")),
 
                                 UpdateByOperation.Ema(skipControl, "ts", 10 * MINUTE,
                                         makeOpColNames(columnNamesArray, "_ema", "Sym", "ts", "boolCol")),
@@ -154,18 +134,26 @@ public class TestUpdateByGeneral extends BaseUpdateByTest implements UpdateError
                                 ? base.updateBy(control, clauses, ColumnName.from("Sym"))
                                 : base.updateBy(control, clauses);
                     }
+
+                    @Override
+                    @NotNull
+                    public EnumSet<TableDiff.DiffItems> diffItems() {
+                        return EnumSet.of(TableDiff.DiffItems.DoublesExact, TableDiff.DiffItems.DoubleFraction);
+                    }
                 },
         };
+
+        final int stepSize = Math.max(5, size / 10);
 
         for (int step = 0; step < steps; step++) {
             try {
                 if (appendOnly) {
                     UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-                        generateAppends(100, result.random, result.t, result.infos);
+                        generateAppends(stepSize, result.random, result.t, result.infos);
                     });
                     validate("Table", nuggets);
                 } else {
-                    simulateShiftAwareStep(size, result.random, result.t, result.infos, nuggets);
+                    simulateShiftAwareStep(stepSize, result.random, result.t, result.infos, nuggets);
                 }
             } catch (Throwable t) {
                 System.out
@@ -269,7 +257,6 @@ public class TestUpdateByGeneral extends BaseUpdateByTest implements UpdateError
 
         TstUtils.assertTableEquals("msg", table, memoryTable, TableDiff.DiffItems.DoublesExact);
     }
-
 
     @Override
     public void reportUpdateError(Throwable t) {

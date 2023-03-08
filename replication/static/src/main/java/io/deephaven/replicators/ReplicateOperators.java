@@ -64,21 +64,39 @@ public class ReplicateOperators {
         FileUtils.writeLines(objectAddOnlyMinMaxFile, lines);
     }
 
+    private static final String resultInitReplacementForLong = "" +
+            "        if (type == DateTime.class) {\n" +
+            "            actualResult = new DateTimeArraySource();\n" +
+            "            resultColumn = ((NanosBasedTimeArraySource<?>)actualResult).toEpochNano();\n" +
+            "        } else if (type == Instant.class) {\n" +
+            "            actualResult = new InstantArraySource();\n" +
+            "            resultColumn = ((NanosBasedTimeArraySource<?>)actualResult).toEpochNano();\n" +
+            "        } else {\n" +
+            "            actualResult = resultColumn = new LongArraySource();\n" +
+            "        }";
+
     private static void fixupLongAddOnlyMinMax() throws IOException {
         final File longAddOnlyMinMaxFile =
                 new File(
                         "engine/table/src/main/java/io/deephaven/engine/table/impl/by/LongChunkedAddOnlyMinMaxOperator.java");
         List<String> lines = ReplicationUtils
                 .fixupChunkAttributes(FileUtils.readLines(longAddOnlyMinMaxFile, Charset.defaultCharset()));
-        lines = ReplicationUtils.globalReplacements(lines, "LongArraySource", "AbstractLongArraySource");
+        lines = ReplicationUtils.replaceRegion(lines, "actualResult", Collections.singletonList(
+                "    private final ColumnSource<?> actualResult;"));
         lines = ReplicationUtils.replaceRegion(lines, "extra constructor params",
                 Collections.singletonList("            Class<?> type,"));
-        lines = ReplicationUtils.replaceRegion(lines, "resultColumn initialization", Collections.singletonList(
-                "        resultColumn = type == DateTime.class ? new DateTimeArraySource() : new LongArraySource();"));
         lines = ReplicationUtils.addImport(lines,
+                "import java.time.Instant;",
                 "import io.deephaven.time.DateTime;",
+                "import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;",
                 "import io.deephaven.engine.table.impl.sources.DateTimeArraySource;",
-                "import io.deephaven.engine.table.impl.sources.LongArraySource;");
+                "import io.deephaven.engine.table.impl.sources.InstantArraySource;",
+                "import io.deephaven.engine.table.impl.sources.LongArraySource;",
+                "import io.deephaven.engine.table.impl.sources.NanosBasedTimeArraySource;");
+        lines = ReplicationUtils.replaceRegion(lines, "resultColumn initialization",
+                Collections.singletonList(resultInitReplacementForLong));
+        lines = ReplicationUtils.replaceRegion(lines, "getResultColumns", Collections.singletonList(
+                "        return Collections.<String, ColumnSource<?>>singletonMap(name, actualResult);"));
         FileUtils.writeLines(longAddOnlyMinMaxFile, lines);
     }
 

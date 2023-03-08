@@ -35,8 +35,6 @@ import java.util.Map;
  * </ol>
  */
 public abstract class UpdateByOperator {
-    protected static UpdateByOperator[] ZERO_LENGTH_OP_ARRAY = new UpdateByOperator[0];
-
     protected final MatchPair pair;
     protected final String[] affectingColumns;
     protected final RowRedirection rowRedirection;
@@ -60,22 +58,14 @@ public abstract class UpdateByOperator {
      * A context item for use with updateBy operators
      */
     public abstract static class Context implements SafeCloseable {
-        protected final Chunk<? extends Values>[] chunkArr;
         protected int nullCount = 0;
         protected LongChunk<OrderedRowKeys> affectedPosChunk;
         protected LongChunk<OrderedRowKeys> influencerPosChunk;
-
-        public Context(int chunkCount) {
-            chunkArr = new Chunk[chunkCount];
-        }
 
         public boolean isValueValid(long atKey) {
             throw new UnsupportedOperationException(
                     "isValueValid() must be overridden by time-aware cumulative operators");
         }
-
-        @Override
-        public void close() {}
 
         protected abstract void setValuesChunk(@NotNull Chunk<? extends Values> valuesChunk);
 
@@ -158,12 +148,16 @@ public abstract class UpdateByOperator {
      * Initialize the bucket context for a cumulative operator
      */
     public void initializeCumulative(@NotNull final Context context, final long firstUnmodifiedKey,
-            long firstUnmodifiedTimestamp) {}
+            long firstUnmodifiedTimestamp) {
+        context.reset();
+    }
 
     /**
      * Initialize the bucket context for a windowed operator
      */
-    public void initializeRolling(@NotNull final Context context) {}
+    public void initializeRolling(@NotNull final Context context) {
+        context.reset();
+    }
 
     /**
      * Get the names of the input column(s) for this operator.
@@ -236,11 +230,10 @@ public abstract class UpdateByOperator {
      * Make an {@link Context} suitable for use with updates.
      *
      * @param chunkSize The expected size of chunks that will be provided during the update,
-     * @param chunkCount The number of chunks that will be provided during the update,
      * @return a new context
      */
     @NotNull
-    public abstract Context makeUpdateContext(final int chunkSize, final int chunkCount);
+    public abstract Context makeUpdateContext(final int chunkSize);
 
     /**
      * Perform any bookkeeping required at the end of a single part of the update. This is always preceded with a call
@@ -294,9 +287,10 @@ public abstract class UpdateByOperator {
     protected abstract void clearOutputRows(RowSet toClear);
 
     /**
-     * Return whether the operator needs row keys during accumulation. Defaults to {@code false}.
+     * Return whether the operator needs affected and influencer row positions during accumulation. Defaults to
+     * {@code false}.
      */
-    protected boolean requiresKeys() {
+    protected boolean requiresRowPositions() {
         return false;
     }
 }

@@ -276,7 +276,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
         refreshThread.setDaemon(true);
 
         final int updateThreads =
-                Configuration.getInstance().getIntegerWithDefault("UpdateGraphProcessor.updateThreads", 1);
+                Configuration.getInstance().getIntegerWithDefault("UpdateGraphProcessor.updateThreads", -1);
         if (updateThreads <= 0) {
             this.updateThreads = Runtime.getRuntime().availableProcessors();
         } else {

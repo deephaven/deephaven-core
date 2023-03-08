@@ -30,8 +30,8 @@ public class ZeroKeyUpdateByManager extends UpdateBy {
     /**
      * Perform an updateBy without any key columns.
      *
-     * @param operators the operations to perform
-     * @param windows the unique windows for this UpdateBy
+     * @param windows the unique windows for this UpdateBy, each window contains operators that can share processing
+     *        resources
      * @param inputSources the primitive input sources
      * @param preservedColumns columns from the source table that are unchanged in the result table
      * @param source the source table
@@ -41,7 +41,6 @@ public class ZeroKeyUpdateByManager extends UpdateBy {
      * @param control the control object.
      */
     protected ZeroKeyUpdateByManager(
-            @NotNull final UpdateByOperator[] operators,
             @NotNull final UpdateByWindow[] windows,
             @NotNull final ColumnSource<?>[] inputSources,
             @NotNull final QueryTable source,
@@ -50,7 +49,7 @@ public class ZeroKeyUpdateByManager extends UpdateBy {
             @Nullable final String timestampColumnName,
             @Nullable final WritableRowRedirection rowRedirection,
             @NotNull final UpdateByControl control) {
-        super(source, operators, windows, inputSources, timestampColumnName, rowRedirection, control);
+        super(source, windows, inputSources, timestampColumnName, rowRedirection, control);
         final String bucketDescription = this + "-bucket-[]";
 
         if (source.isRefreshing()) {
@@ -63,9 +62,11 @@ public class ZeroKeyUpdateByManager extends UpdateBy {
             result.addParentReference(sourceListener);
 
             // create input and output modified column sets
-            for (UpdateByOperator op : operators) {
-                op.createInputModifiedColumnSet(source);
-                op.createOutputModifiedColumnSet(result);
+            for (UpdateByWindow win : windows) {
+                for (UpdateByOperator op : win.operators) {
+                    op.createInputModifiedColumnSet(source);
+                    op.createOutputModifiedColumnSet(result);
+                }
             }
 
             // create an updateby bucket instance directly from the source table

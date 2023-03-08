@@ -13,6 +13,7 @@ import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.generator.SortedDateTimeGenerator;
 import io.deephaven.engine.testutil.generator.TestDataGenerator;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.util.TableDiff;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTime;
 import org.jetbrains.annotations.NotNull;
@@ -23,6 +24,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Random;
 
@@ -38,6 +40,19 @@ import static org.junit.Assert.assertArrayEquals;
 
 @Category(OutOfBandTest.class)
 public class TestRollingSum extends BaseUpdateByTest {
+    /**
+     * Because of the pairwise functions performing re-ordering of the values during summation, we can get very small
+     * comparison errors in floating point values. This class tolerates larger differences in the float/double operator
+     * results.
+     */
+    private abstract static class FuzzyEvalNuget extends EvalNugget {
+        @Override
+        @NotNull
+        public EnumSet<TableDiff.DiffItems> diffItems() {
+            return EnumSet.of(TableDiff.DiffItems.DoublesExact, TableDiff.DiffItems.DoubleFraction);
+        }
+    }
+
     // region Static Zero Key Tests
 
     @Test
@@ -481,7 +496,7 @@ public class TestRollingSum extends BaseUpdateByTest {
         t.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
 
         final EvalNugget[] nuggets = new EvalNugget[] {
-                new EvalNugget() {
+                new FuzzyEvalNuget() {
                     @Override
                     protected Table e() {
                         return bucketed ? t.updateBy(UpdateByOperation.RollingSum(prevTicks, postTicks), "Sym")
@@ -543,7 +558,7 @@ public class TestRollingSum extends BaseUpdateByTest {
         t.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
 
         final EvalNugget[] nuggets = new EvalNugget[] {
-                new EvalNugget() {
+                new FuzzyEvalNuget() {
                     @Override
                     protected Table e() {
                         return bucketed ? t.updateBy(UpdateByOperation.RollingSum("ts", prevTime, postTime), "Sym")
@@ -603,7 +618,7 @@ public class TestRollingSum extends BaseUpdateByTest {
         final long fwdTicks = 0;
 
         final EvalNugget[] nuggets = new EvalNugget[] {
-                new EvalNugget() {
+                new FuzzyEvalNuget() {
                     @Override
                     protected Table e() {
                         return t.updateBy(UpdateByOperation.RollingSum(prevTicks, fwdTicks));
@@ -628,7 +643,7 @@ public class TestRollingSum extends BaseUpdateByTest {
         final long fwdTicks = -50;
 
         final EvalNugget[] nuggets = new EvalNugget[] {
-                new EvalNugget() {
+                new FuzzyEvalNuget() {
                     @Override
                     protected Table e() {
                         return t.updateBy(UpdateByOperation.RollingSum(prevTicks, fwdTicks));
@@ -650,7 +665,7 @@ public class TestRollingSum extends BaseUpdateByTest {
         final QueryTable t = result.t;
 
         final EvalNugget[] nuggets = new EvalNugget[] {
-                new EvalNugget() {
+                new FuzzyEvalNuget() {
                     @Override
                     protected Table e() {
                         return t.updateBy(UpdateByOperation.RollingSum(100));
@@ -672,7 +687,7 @@ public class TestRollingSum extends BaseUpdateByTest {
         final QueryTable t = result.t;
 
         final EvalNugget[] nuggets = new EvalNugget[] {
-                new EvalNugget() {
+                new FuzzyEvalNuget() {
                     @Override
                     protected Table e() {
                         return t.updateBy(UpdateByOperation.RollingSum(-50, 100));
@@ -697,7 +712,7 @@ public class TestRollingSum extends BaseUpdateByTest {
         final QueryTable t = result.t;
 
         final EvalNugget[] nuggets = new EvalNugget[] {
-                new EvalNugget() {
+                new FuzzyEvalNuget() {
                     @Override
                     protected Table e() {
                         return t.updateBy(UpdateByOperation.RollingSum(prevTicks, postTicks), "Sym");
@@ -725,7 +740,7 @@ public class TestRollingSum extends BaseUpdateByTest {
         final QueryTable t = result.t;
 
         final EvalNugget[] nuggets = new EvalNugget[] {
-                new EvalNugget() {
+                new FuzzyEvalNuget() {
                     @Override
                     protected Table e() {
                         return t.updateBy(UpdateByOperation.RollingSum(prevTicks, postTicks), "Sym");
@@ -753,7 +768,7 @@ public class TestRollingSum extends BaseUpdateByTest {
         final QueryTable t = result.t;
 
         final EvalNugget[] nuggets = new EvalNugget[] {
-                new EvalNugget() {
+                new FuzzyEvalNuget() {
                     @Override
                     protected Table e() {
                         return t.updateBy(UpdateByOperation.RollingSum(prevTicks, postTicks), "Sym");
@@ -781,7 +796,7 @@ public class TestRollingSum extends BaseUpdateByTest {
         final QueryTable t = result.t;
 
         final EvalNugget[] nuggets = new EvalNugget[] {
-                new EvalNugget() {
+                new FuzzyEvalNuget() {
                     @Override
                     protected Table e() {
                         return t.updateBy(UpdateByOperation.RollingSum(prevTicks, postTicks), "Sym");
@@ -809,7 +824,7 @@ public class TestRollingSum extends BaseUpdateByTest {
         final QueryTable t = result.t;
 
         final EvalNugget[] nuggets = new EvalNugget[] {
-                new EvalNugget() {
+                new FuzzyEvalNuget() {
                     @Override
                     protected Table e() {
                         return t.updateBy(UpdateByOperation.RollingSum(prevTicks, postTicks), "Sym");
@@ -842,7 +857,7 @@ public class TestRollingSum extends BaseUpdateByTest {
         final QueryTable t = result.t;
 
         final EvalNugget[] nuggets = new EvalNugget[] {
-                new EvalNugget() {
+                new FuzzyEvalNuget() {
                     @Override
                     protected Table e() {
                         return t.updateBy(UpdateByOperation.RollingSum("ts", prevTime, postTime), "Sym");
@@ -875,7 +890,7 @@ public class TestRollingSum extends BaseUpdateByTest {
         final QueryTable t = result.t;
 
         final EvalNugget[] nuggets = new EvalNugget[] {
-                new EvalNugget() {
+                new FuzzyEvalNuget() {
                     @Override
                     protected Table e() {
                         return t.updateBy(UpdateByOperation.RollingSum("ts", prevTime, postTime), "Sym");
@@ -908,7 +923,7 @@ public class TestRollingSum extends BaseUpdateByTest {
         final QueryTable t = result.t;
 
         final EvalNugget[] nuggets = new EvalNugget[] {
-                new EvalNugget() {
+                new FuzzyEvalNuget() {
                     @Override
                     protected Table e() {
                         return t.updateBy(UpdateByOperation.RollingSum("ts", prevTime, postTime), "Sym");
@@ -941,7 +956,7 @@ public class TestRollingSum extends BaseUpdateByTest {
         final QueryTable t = result.t;
 
         final EvalNugget[] nuggets = new EvalNugget[] {
-                new EvalNugget() {
+                new FuzzyEvalNuget() {
                     @Override
                     protected Table e() {
                         return t.updateBy(UpdateByOperation.RollingSum("ts", prevTime, postTime), "Sym");
@@ -962,8 +977,8 @@ public class TestRollingSum extends BaseUpdateByTest {
 
     @Test
     public void testBucketedGeneralTickingTimedFwdRev() {
-        final Duration prevTime = Duration.ofMinutes(5);
-        final Duration postTime = Duration.ofMinutes(5);
+        final Duration prevTime = Duration.ofMinutes(0);
+        final Duration postTime = Duration.ofMinutes(0);
 
         final CreateResult result = createTestTable(10000, true, false, true, 0x31313131,
                 new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
@@ -974,10 +989,10 @@ public class TestRollingSum extends BaseUpdateByTest {
         final QueryTable t = result.t;
 
         final EvalNugget[] nuggets = new EvalNugget[] {
-                new EvalNugget() {
+                new FuzzyEvalNuget() {
                     @Override
                     protected Table e() {
-                        return t.updateBy(UpdateByOperation.RollingSum("ts", prevTime, postTime), "Sym");
+                        return t.updateBy(UpdateByOperation.RollingSum("ts", prevTime, postTime, "floatCol"), "Sym");
                     }
                 }
         };

@@ -96,33 +96,9 @@ public class ReplicateUpdateBy {
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/ema/ShortEMAOperator.java",
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/ema/FloatEMAOperator.java");
 
-        ReplicatePrimitiveCode.floatToAllFloatingPoints(
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/internal/PairwiseFloatRingBuffer.java",
-                exemptions);
-        ReplicatePrimitiveCode.floatToAllFloatingPoints(
-                "engine/table/src/test/java/io/deephaven/engine/table/impl/updateby/internal/PairwiseFloatRingBufferTest.java",
-                exemptions);
-
         replicateNumericOperator(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingsum/ShortRollingSumOperator.java",
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingsum/FloatRollingSumOperator.java");
-
-        files = ReplicatePrimitiveCode.charToAllButBoolean(
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollinggroup/CharRollingGroupOperator.java");
-        for (final String f : files) {
-            if (f.contains("Int")) {
-                fixupInteger(f);
-            }
-        }
-        objectResult = ReplicatePrimitiveCode.charToObject(
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollinggroup/CharRollingGroupOperator.java");
-        fixupStandardObject(objectResult, "ObjectRollingGroupOperator", false,
-                "super\\(fillPair, new String\\[\\] \\{ fillPair.rightColumn \\}, rowRedirection\\);",
-                "super(fillPair, new String[] { fillPair.rightColumn }, rowRedirection, colType);",
-                "final SlicedObjectAggregateColumnSource outputSource",
-                "final SlicedObjectAggregateColumnSource<T> outputSource",
-                "ColumnSource<Object> valueSource", "ColumnSource<T> valueSource",
-                "SlicedObjectAggregateColumnSource\\(", "SlicedObjectAggregateColumnSource<>\\(");
     }
 
     private static void replicateNumericOperator(@NotNull final String shortClass, @NotNull final String floatClass)

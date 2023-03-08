@@ -20,6 +20,10 @@ public:
   /**
    * Constructor.
    */
+  Schema();
+  /**
+   * Constructor.
+   */
   explicit Schema(std::vector<std::pair<std::string, std::shared_ptr<arrow::DataType>>> columns);
   /**
    * Move constructor.
