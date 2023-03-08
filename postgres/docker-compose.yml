@@ -1,0 +1,13 @@
+version: "3.4"
+
+services:
+  postgres:
+    build:
+      context: src
+    hostname: postgres
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_PASSWORD=test
+      - POSTGRES_USER=test
+    command: postgres -c fsync=off -c synchronous_commit=off

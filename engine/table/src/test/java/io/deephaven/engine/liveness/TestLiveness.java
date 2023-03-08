@@ -9,6 +9,7 @@ import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.util.SafeCloseable;
+import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -55,6 +56,46 @@ public class TestLiveness {
                 result = TableTools.merge(result, input).updateView("GroupedInts=GroupedInts+1")
                         .updateView("GroupedInts=GroupedInts-1");
             }
+        }
+    }
+
+    @Test
+    public void testTryManageFailure() {
+        final LivenessArtifact a1;
+        final LivenessArtifact a2;
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            a1 = new LivenessArtifact();
+            a2 = new LivenessArtifact();
+        }
+        try {
+            a1.manage(a2);
+            TestCase.fail("Expected exception");
+        } catch (LivenessStateException expected) {
+            expected.printStackTrace();
+        }
+
+        final LivenessArtifact a3;
+        final LivenessArtifact a4 = new LivenessArtifact();
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            a3 = new LivenessArtifact();
+        }
+        try {
+            a3.manage(a4);
+            TestCase.fail("Expected exception");
+        } catch (LivenessStateException expected) {
+            expected.printStackTrace();
+        }
+
+        final LivenessArtifact a5 = new LivenessArtifact();
+        final LivenessArtifact a6;
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            a6 = new LivenessArtifact();
+        }
+        try {
+            a5.manage(a6);
+            TestCase.fail("Expected exception");
+        } catch (LivenessStateException expected) {
+            expected.printStackTrace();
         }
     }
 }

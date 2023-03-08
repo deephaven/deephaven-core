@@ -78,10 +78,9 @@ public class UnionSourceManager {
         // noinspection resource
         resultRows = RowSetFactory.empty().toTracking();
         unionRedirection = new UnionRedirection(initialNumSlots, refreshing);
-        // noinspection unchecked
         resultColumnSources = partitionedTable.constituentDefinition().getColumnStream()
                 .map(cd -> new UnionColumnSource<>(cd.getDataType(), cd.getComponentType(), this, unionRedirection,
-                        new TableSourceLookup(cd.getName())))
+                        new TableSourceLookup<>(cd.getName())))
                 .toArray(UnionColumnSource[]::new);
         resultTable = new QueryTable(resultRows, getColumnSources());
         modifiedColumnSet = resultTable.getModifiedColumnSetForUpdates();

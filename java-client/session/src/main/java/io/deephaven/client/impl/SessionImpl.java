@@ -5,6 +5,8 @@ package io.deephaven.client.impl;
 
 import com.google.protobuf.ByteString;
 import io.deephaven.client.impl.script.Changes;
+import io.deephaven.proto.DeephavenChannel;
+import io.deephaven.proto.DeephavenChannelMixin;
 import io.deephaven.proto.backplane.grpc.AddTableRequest;
 import io.deephaven.proto.backplane.grpc.AddTableResponse;
 import io.deephaven.proto.backplane.grpc.ApplicationServiceGrpc.ApplicationServiceStub;
@@ -35,6 +37,7 @@ import io.deephaven.proto.util.ExportTicketHelper;
 import io.grpc.CallCredentials;
 import io.grpc.Metadata;
 import io.grpc.Metadata.Key;
+import io.grpc.stub.AbstractStub;
 import io.grpc.stub.ClientCallStreamObserver;
 import io.grpc.stub.ClientResponseObserver;
 import io.grpc.stub.StreamObserver;
@@ -46,7 +49,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -185,7 +187,7 @@ public final class SessionImpl extends SessionBase {
         }
     }
 
-    private final ScheduledExecutorService executor;
+    private final SessionImplConfig config;
     private final SessionServiceStub sessionService;
     private final ConsoleServiceStub consoleService;
     private final ObjectServiceStub objectService;
@@ -194,22 +196,15 @@ public final class SessionImpl extends SessionBase {
     private final Handler handler;
     private final ExportTicketCreator exportTicketCreator;
     private final ExportStates states;
-
     private volatile AuthenticationInfo auth;
-
-    private final boolean delegateToBatch;
-    private final boolean mixinStacktrace;
-    private final Duration executeTimeout;
-    private final Duration closeTimeout;
     private final TableHandleManagerSerial serialManager;
     private final TableHandleManagerBatch batchManager;
 
     private SessionImpl(SessionImplConfig config, Handler handler, AuthenticationInfo auth) {
-
-        CallCredentials credentials = new SessionCallCredentials();
+        SessionCallCredentials credentials = new SessionCallCredentials();
         this.auth = Objects.requireNonNull(auth);
         this.handler = Objects.requireNonNull(handler);
-        this.executor = config.executor();
+        this.config = Objects.requireNonNull(config);
         this.sessionService = config.channel().session().withCallCredentials(credentials);
         this.consoleService = config.channel().console().withCallCredentials(credentials);
         this.objectService = config.channel().object().withCallCredentials(credentials);
@@ -218,12 +213,8 @@ public final class SessionImpl extends SessionBase {
         this.exportTicketCreator = new ExportTicketCreator();
         this.states = new ExportStates(this, sessionService, config.channel().table().withCallCredentials(credentials),
                 exportTicketCreator);
-        this.delegateToBatch = config.delegateToBatch();
-        this.mixinStacktrace = config.mixinStacktrace();
-        this.executeTimeout = config.executeTimeout();
-        this.closeTimeout = config.closeTimeout();
         this.serialManager = TableHandleManagerSerial.of(this);
-        this.batchManager = TableHandleManagerBatch.of(this, mixinStacktrace);
+        this.batchManager = TableHandleManagerBatch.of(this, config.mixinStacktrace());
     }
 
     public AuthenticationInfo auth() {
@@ -272,7 +263,7 @@ public final class SessionImpl extends SessionBase {
     @Override
     public void close() {
         try {
-            closeFuture().get(closeTimeout.toNanos(), TimeUnit.NANOSECONDS);
+            closeFuture().get(config.closeTimeout().toNanos(), TimeUnit.NANOSECONDS);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             log.warn("Interrupted waiting for session close");
@@ -294,7 +285,7 @@ public final class SessionImpl extends SessionBase {
 
     @Override
     protected TableHandleManager delegate() {
-        return delegateToBatch ? batchManager : serialManager;
+        return config.delegateToBatch() ? batchManager : serialManager;
     }
 
     @Override
@@ -304,7 +295,7 @@ public final class SessionImpl extends SessionBase {
 
     @Override
     public TableHandleManager batch(boolean mixinStacktrace) {
-        if (this.mixinStacktrace == mixinStacktrace) {
+        if (this.config.mixinStacktrace() == mixinStacktrace) {
             return batchManager;
         }
         return TableHandleManagerBatch.of(this, mixinStacktrace);
@@ -326,6 +317,11 @@ public final class SessionImpl extends SessionBase {
         sessionService.release(
                 ReleaseRequest.newBuilder().setId(exportId.ticketId().ticket()).build(), observer);
         return observer.future;
+    }
+
+    @Override
+    public DeephavenChannel channel() {
+        return new DeephavenChannelWithCredentials();
     }
 
     @Override
@@ -359,7 +355,7 @@ public final class SessionImpl extends SessionBase {
     }
 
     public ScheduledExecutorService executor() {
-        return executor;
+        return config.executor();
     }
 
     public long batchCount() {
@@ -376,11 +372,11 @@ public final class SessionImpl extends SessionBase {
                 now + response.getTokenExpirationDelayMillis() / 3,
                 response.getTokenDeadlineTimeMillis() - response.getTokenExpirationDelayMillis() / 10);
         final long refreshDelayMs = Math.max(targetRefreshTime - now, 0);
-        executor.schedule(SessionImpl.this::refreshSessionToken, refreshDelayMs, TimeUnit.MILLISECONDS);
+        config.executor().schedule(SessionImpl.this::refreshSessionToken, refreshDelayMs, TimeUnit.MILLISECONDS);
     }
 
     private void scheduleRefreshSessionTokenNow() {
-        executor.schedule(SessionImpl.this::refreshSessionToken, 0, TimeUnit.MILLISECONDS);
+        config.executor().schedule(SessionImpl.this::refreshSessionToken, 0, TimeUnit.MILLISECONDS);
     }
 
     private void refreshSessionToken() {
@@ -613,13 +609,13 @@ public final class SessionImpl extends SessionBase {
 
         @Override
         public Changes executeCode(String code) throws InterruptedException, ExecutionException, TimeoutException {
-            return executeCodeFuture(code).get(executeTimeout.toNanos(), TimeUnit.NANOSECONDS);
+            return executeCodeFuture(code).get(config.executeTimeout().toNanos(), TimeUnit.NANOSECONDS);
         }
 
         @Override
         public Changes executeScript(Path path)
                 throws IOException, InterruptedException, ExecutionException, TimeoutException {
-            return executeScriptFuture(path).get(executeTimeout.toNanos(), TimeUnit.NANOSECONDS);
+            return executeScriptFuture(path).get(config.executeTimeout().toNanos(), TimeUnit.NANOSECONDS);
         }
 
         @Override
@@ -647,7 +643,7 @@ public final class SessionImpl extends SessionBase {
         @Override
         public void close() {
             try {
-                closeFuture().get(closeTimeout.toNanos(), TimeUnit.NANOSECONDS);
+                closeFuture().get(config.closeTimeout().toNanos(), TimeUnit.NANOSECONDS);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 log.warn("Interrupted waiting for console close");
@@ -816,6 +812,17 @@ public final class SessionImpl extends SessionBase {
         @Override
         public void onCompleted() {
             listener.onCompleted();
+        }
+    }
+
+    private final class DeephavenChannelWithCredentials extends DeephavenChannelMixin {
+        public DeephavenChannelWithCredentials() {
+            super(config.channel());
+        }
+
+        @Override
+        protected <S extends AbstractStub<S>> S mixin(S stub) {
+            return stub.withCallCredentials(new SessionCallCredentials());
         }
     }
 }

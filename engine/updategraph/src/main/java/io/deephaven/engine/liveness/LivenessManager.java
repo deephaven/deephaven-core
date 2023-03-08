@@ -4,6 +4,7 @@
 package io.deephaven.engine.liveness;
 
 import io.deephaven.util.annotations.FinalDefault;
+import io.deephaven.util.referencecounting.ReferenceCounted;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -20,8 +21,10 @@ public interface LivenessManager {
     @FinalDefault
     default void manage(@NotNull final LivenessReferent referent) {
         if (!tryManage(referent)) {
-            throw new LivenessStateException(this + " failed to add " + referent.getReferentDescription() +
-                    ", because either this manager or referent is no longer live");
+            throw new LivenessStateException(String.format(
+                    "%s (%s) failed to add %s (%s), because either this manager or referent is no longer live",
+                    this, ReferenceCounted.getReferenceCountDebug(this),
+                    referent, ReferenceCounted.getReferenceCountDebug(referent)));
         }
     }
 

@@ -18,6 +18,7 @@ import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.engine.table.impl.util.WrappedRowSetWritableRowRedirection;
+import io.deephaven.engine.table.impl.util.JobScheduler;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.BitSet;
