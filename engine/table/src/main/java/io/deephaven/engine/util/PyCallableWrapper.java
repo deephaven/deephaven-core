@@ -3,6 +3,7 @@ package io.deephaven.engine.util;
 import io.deephaven.engine.table.impl.select.python.ArgumentsChunked;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
+import org.jpy.PyLib;
 import org.jpy.PyModule;
 import org.jpy.PyObject;
 
@@ -11,6 +12,9 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+
+import static org.jpy.PyLib.assertPythonRuns;
 
 /**
  * When given a pyObject that is a callable, we stick it inside the callable wrapper, which implements a call() varargs
@@ -50,6 +54,14 @@ public class PyCallableWrapper {
 
     public PyCallableWrapper(PyObject pyCallable) {
         this.pyCallable = pyCallable;
+    }
+
+    public PyObject getAttribute(String name) {
+        return this.pyCallable.getAttribute(name);
+    }
+
+    public <T> T getAttribute(String name, Class<? extends T> valueType) {
+        return this.pyCallable.getAttribute(name, valueType);
     }
 
     public ArgumentsChunked buildArgumentsChunked(List<String> columnNames) {

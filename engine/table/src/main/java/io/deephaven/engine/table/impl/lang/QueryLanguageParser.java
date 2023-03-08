@@ -376,7 +376,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
 
         printer.append('(');
         for (int i = 0; i < arguments.length; i++) {
-            types.add(arguments[i].accept(this, printer));
+            types.add(arguments[i].accept(this, printer.cloneWithCastingContext(null)));
 
             if (i != arguments.length - 1) {
                 printer.append(", ");
@@ -1650,7 +1650,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                 try {
                     // For Python object, the type of the field is PyObject by default, the actual data type if
                     // primitive will only be known at runtime
-                    if (scopeType == PyObject.class) {
+                    if (scopeType == PyObject.class || scopeType == PyCallableWrapper.class) {
                         ret = PyObject.class;
                     } else {
                         ret = scopeType.getField(fieldName).getType();
