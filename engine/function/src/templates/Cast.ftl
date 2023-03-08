@@ -243,7 +243,7 @@ public class Cast {
      * @return cast array.
      */
     public static int[] castInt(${pt.primitive}[] values, boolean checkFidelity) {
-        return values == null ? null : castInt(new ${pt.dbArrayDirect}(values), checkFidelity);
+        return values == null ? null : castInt(new ${pt.vectorDirect}(values), checkFidelity);
     }
 
     /**
@@ -252,7 +252,7 @@ public class Cast {
      * @param values values
      * @return cast array.
      */
-    public static int[] castInt(${pt.dbArray} values){
+    public static int[] castInt(${pt.vector} values){
         return castInt(values, true);
     }
 
@@ -263,7 +263,7 @@ public class Cast {
      * @param checkFidelity check to see if the cast preserves the value.
      * @return cast array.
      */
-    public static int[] castInt(${pt.dbArray} values, boolean checkFidelity) {
+    public static int[] castInt(${pt.vector} values, boolean checkFidelity) {
         if (values == null) {
             return null;
         }
@@ -306,7 +306,7 @@ public class Cast {
      * @return cast array.
      */
     public static long[] castLong(${pt.primitive}[] values, boolean checkFidelity) {
-        return values == null ? null : castLong(new ${pt.dbArrayDirect}(values), checkFidelity);
+        return values == null ? null : castLong(new ${pt.vectorDirect}(values), checkFidelity);
     }
 
     /**
@@ -315,7 +315,7 @@ public class Cast {
      * @param values values
      * @return cast array.
      */
-    public static long[] castLong(${pt.dbArray} values){
+    public static long[] castLong(${pt.vector} values){
         return castLong(values, true);
     }
 
@@ -326,7 +326,7 @@ public class Cast {
      * @param checkFidelity check to see if the cast preserves the value.
      * @return cast array.
      */
-    public static long[] castLong(${pt.dbArray} values, boolean checkFidelity) {
+    public static long[] castLong(${pt.vector} values, boolean checkFidelity) {
         if (values == null) {
             return null;
         }
@@ -360,7 +360,7 @@ public class Cast {
      * @return cast array.
      */
     public static double[] castDouble(${pt.primitive}... values) {
-        return values == null ? null : castDouble(new ${pt.dbArrayDirect}(values));
+        return values == null ? null : castDouble(new ${pt.vectorDirect}(values));
     }
 
     /**
@@ -371,7 +371,7 @@ public class Cast {
      * @return cast array.
      */
     public static double[] castDouble(${pt.primitive}[] values, boolean checkFidelity) {
-        return values == null ? null : castDouble(new ${pt.dbArrayDirect}(values), checkFidelity);
+        return values == null ? null : castDouble(new ${pt.vectorDirect}(values), checkFidelity);
     }
 
     /**
@@ -380,7 +380,7 @@ public class Cast {
      * @param values values
      * @return cast array.
      */
-    public static double[] castDouble(${pt.dbArray} values) {
+    public static double[] castDouble(${pt.vector} values) {
         return castDouble(values, true);
     }
 
@@ -391,7 +391,7 @@ public class Cast {
      * @param checkFidelity check to see if the cast preserves the value.
      * @return cast array.
      */
-    public static double[] castDouble(${pt.dbArray} values, boolean checkFidelity) {
+    public static double[] castDouble(${pt.vector} values, boolean checkFidelity) {
         if (values == null) {
             return null;
         }

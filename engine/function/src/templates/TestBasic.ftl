@@ -588,7 +588,7 @@ public class TestBasic extends BaseArrayTestCase {
     }
 
     public void test${pt.boxed}ReplaceIfNullArray() {
-        assertEquals(new ${pt.primitive}[]{(${pt.primitive}) 3, (${pt.primitive}) 7, (${pt.primitive}) 11}, replaceIfNull(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{(${pt.primitive}) 3, ${pt.null}, (${pt.primitive}) 11}), (${pt.primitive}) 7));
+        assertEquals(new ${pt.primitive}[]{(${pt.primitive}) 3, (${pt.primitive}) 7, (${pt.primitive}) 11}, replaceIfNull(new ${pt.vectorDirect}(new ${pt.primitive}[]{(${pt.primitive}) 3, ${pt.null}, (${pt.primitive}) 11}), (${pt.primitive}) 7));
 
         assertEquals(new ${pt.primitive}[]{(${pt.primitive}) 3, (${pt.primitive}) 7, (${pt.primitive}) 11}, replaceIfNull(new ${pt.primitive}[]{(${pt.primitive}) 3, ${pt.null}, (${pt.primitive}) 11}, (${pt.primitive}) 7));
     }
@@ -600,11 +600,11 @@ public class TestBasic extends BaseArrayTestCase {
         assertEquals(1, len(new ${pt.primitive}[]{${pt.null}}));
         assertEquals(3, len(new ${pt.primitive}[]{5, ${pt.null},15}));
 
-        assertEquals(NULL_LONG, len((${pt.dbArray})null));
-        assertEquals(3, len(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{40,50,60})));
-        assertEquals(0, len(new ${pt.dbArrayDirect}()));
-        assertEquals(1, len(new ${pt.dbArrayDirect}(${pt.null})));
-        assertEquals(3, len(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{5, ${pt.null},15})));
+        assertEquals(NULL_LONG, len((${pt.vector})null));
+        assertEquals(3, len(new ${pt.vectorDirect}(new ${pt.primitive}[]{40,50,60})));
+        assertEquals(0, len(new ${pt.vectorDirect}()));
+        assertEquals(1, len(new ${pt.vectorDirect}(${pt.null})));
+        assertEquals(3, len(new ${pt.vectorDirect}(new ${pt.primitive}[]{5, ${pt.null},15})));
     }
 
     public void test${pt.boxed}Count(){
@@ -614,20 +614,20 @@ public class TestBasic extends BaseArrayTestCase {
         assertEquals(0,count(${pt.null}));
         assertEquals(2,count(new ${pt.primitive}[]{5, ${pt.null},15}));
 
-        assertEquals(NULL_LONG,count((${pt.dbArray})null));
-        assertEquals(3,count(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{40,50,60})));
-        assertEquals(0,count(new ${pt.dbArrayDirect}()));
-        assertEquals(0,count(new ${pt.dbArrayDirect}(${pt.null})));
-        assertEquals(2,count(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{5, ${pt.null},15})));
+        assertEquals(NULL_LONG,count((${pt.vector})null));
+        assertEquals(3,count(new ${pt.vectorDirect}(new ${pt.primitive}[]{40,50,60})));
+        assertEquals(0,count(new ${pt.vectorDirect}()));
+        assertEquals(0,count(new ${pt.vectorDirect}(${pt.null})));
+        assertEquals(2,count(new ${pt.vectorDirect}(new ${pt.primitive}[]{5, ${pt.null},15})));
     }
 
     public void test${pt.boxed}Last(){
-        assertTrue(Math.abs(60-last(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{40,50,60})))==0.0);
-        assertEquals(${pt.null},last((${pt.dbArray})null));
-        assertEquals(${pt.null},last(new ${pt.dbArrayDirect}()));
-        assertEquals(${pt.null},last(new ${pt.dbArrayDirect}(${pt.null})));
-        assertTrue(Math.abs(15-last(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{5, ${pt.null},15})))==0.0);
-        assertTrue(Math.abs(40-last(new ${pt.dbArrayDirect}((${pt.primitive})40)))==0.0);
+        assertTrue(Math.abs(60-last(new ${pt.vectorDirect}(new ${pt.primitive}[]{40,50,60})))==0.0);
+        assertEquals(${pt.null},last((${pt.vector})null));
+        assertEquals(${pt.null},last(new ${pt.vectorDirect}()));
+        assertEquals(${pt.null},last(new ${pt.vectorDirect}(${pt.null})));
+        assertTrue(Math.abs(15-last(new ${pt.vectorDirect}(new ${pt.primitive}[]{5, ${pt.null},15})))==0.0);
+        assertTrue(Math.abs(40-last(new ${pt.vectorDirect}((${pt.primitive})40)))==0.0);
 
         assertTrue(Math.abs(60-last(new ${pt.primitive}[]{40,50,60}))==0.0);
         assertEquals(${pt.null},last((${pt.primitive}[])null));
@@ -638,12 +638,12 @@ public class TestBasic extends BaseArrayTestCase {
     }
 
     public void test${pt.boxed}First(){
-        assertTrue(Math.abs(40-first(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{40,50,60})))==0.0);
-        assertEquals(${pt.null},first((${pt.dbArray})null));
-        assertEquals(${pt.null},first(new ${pt.dbArrayDirect}()));
-        assertEquals(${pt.null},first(new ${pt.dbArrayDirect}(${pt.null})));
-        assertTrue(Math.abs(5-first(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{5, ${pt.null},15})))==0.0);
-        assertTrue(Math.abs(40-first(new ${pt.dbArrayDirect}((${pt.primitive})40)))==0.0);
+        assertTrue(Math.abs(40-first(new ${pt.vectorDirect}(new ${pt.primitive}[]{40,50,60})))==0.0);
+        assertEquals(${pt.null},first((${pt.vector})null));
+        assertEquals(${pt.null},first(new ${pt.vectorDirect}()));
+        assertEquals(${pt.null},first(new ${pt.vectorDirect}(${pt.null})));
+        assertTrue(Math.abs(5-first(new ${pt.vectorDirect}(new ${pt.primitive}[]{5, ${pt.null},15})))==0.0);
+        assertTrue(Math.abs(40-first(new ${pt.vectorDirect}((${pt.primitive})40)))==0.0);
 
         assertTrue(Math.abs(40-first(new ${pt.primitive}[]{40,50,60}))==0.0);
         assertEquals(${pt.null},first((${pt.primitive}[])null));
@@ -654,11 +654,11 @@ public class TestBasic extends BaseArrayTestCase {
     }
 
     public void test${pt.boxed}Nth(){
-        assertEquals(${pt.null}, nth(-1,new ${pt.dbArrayDirect}(new ${pt.primitive}[]{40,50,60})));
-        assertEquals((${pt.primitive})40, nth(0,new ${pt.dbArrayDirect}(new ${pt.primitive}[]{40,50,60})));
-        assertEquals((${pt.primitive})50, nth(1,new ${pt.dbArrayDirect}(new ${pt.primitive}[]{40,50,60})));
-        assertEquals((${pt.primitive})60, nth(2,new ${pt.dbArrayDirect}(new ${pt.primitive}[]{40,50,60})));
-        assertEquals(${pt.null}, nth(10,new ${pt.dbArrayDirect}(new ${pt.primitive}[]{40,50,60})));
+        assertEquals(${pt.null}, nth(-1,new ${pt.vectorDirect}(new ${pt.primitive}[]{40,50,60})));
+        assertEquals((${pt.primitive})40, nth(0,new ${pt.vectorDirect}(new ${pt.primitive}[]{40,50,60})));
+        assertEquals((${pt.primitive})50, nth(1,new ${pt.vectorDirect}(new ${pt.primitive}[]{40,50,60})));
+        assertEquals((${pt.primitive})60, nth(2,new ${pt.vectorDirect}(new ${pt.primitive}[]{40,50,60})));
+        assertEquals(${pt.null}, nth(10,new ${pt.vectorDirect}(new ${pt.primitive}[]{40,50,60})));
 
         assertEquals(${pt.null}, nth(-1,new ${pt.primitive}[]{40,50,60}));
         assertEquals((${pt.primitive})40, nth(0,new ${pt.primitive}[]{40,50,60}));
@@ -668,14 +668,14 @@ public class TestBasic extends BaseArrayTestCase {
     }
 
     public void test${pt.boxed}CountDistinct() {
-        assertEquals(NULL_LONG, countDistinct((${pt.dbArrayDirect})null));
-        assertEquals(NULL_LONG, countDistinct((${pt.dbArrayDirect})null,true));
-        assertEquals(0, countDistinct(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{})));
-        assertEquals(0, countDistinct(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{${pt.null}})));
-        assertEquals(1, countDistinct(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{1})));
-        assertEquals(2, countDistinct(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{1,2,1, ${pt.null}, ${pt.null}})));
-        assertEquals(2, countDistinct(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{1,2,1, ${pt.null}, ${pt.null}}), false));
-        assertEquals(3, countDistinct(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{1,2,1, ${pt.null}, ${pt.null}}), true));
+        assertEquals(NULL_LONG, countDistinct((${pt.vectorDirect})null));
+        assertEquals(NULL_LONG, countDistinct((${pt.vectorDirect})null,true));
+        assertEquals(0, countDistinct(new ${pt.vectorDirect}(new ${pt.primitive}[]{})));
+        assertEquals(0, countDistinct(new ${pt.vectorDirect}(new ${pt.primitive}[]{${pt.null}})));
+        assertEquals(1, countDistinct(new ${pt.vectorDirect}(new ${pt.primitive}[]{1})));
+        assertEquals(2, countDistinct(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,2,1, ${pt.null}, ${pt.null}})));
+        assertEquals(2, countDistinct(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,2,1, ${pt.null}, ${pt.null}}), false));
+        assertEquals(3, countDistinct(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,2,1, ${pt.null}, ${pt.null}}), true));
 
         assertEquals(NULL_LONG, countDistinct((${pt.primitive}[])null));
         assertEquals(NULL_LONG, countDistinct((${pt.primitive}[])null,true));
@@ -690,25 +690,25 @@ public class TestBasic extends BaseArrayTestCase {
     }
 
     public void test${pt.boxed}Distinct() {
-        assertEquals(null, distinct((${pt.dbArrayDirect})null));
-        assertEquals(null, distinct((${pt.dbArrayDirect})null, true));
-        assertEquals(new ${pt.primitive}[]{}, distinct(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{})));
-        assertEquals(new ${pt.primitive}[]{}, distinct(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{${pt.null}})));
-        assertEquals(new ${pt.primitive}[]{1}, distinct(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{1})));
-        assertEquals(new ${pt.primitive}[]{}, distinct(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{}),true));
-        assertEquals(new ${pt.primitive}[]{${pt.null}}, distinct(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{${pt.null}}),true));
-        assertEquals(new ${pt.primitive}[]{1}, distinct(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{1}),true));
-        assertEquals(new ${pt.primitive}[]{}, distinct(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{}),false));
-        assertEquals(new ${pt.primitive}[]{}, distinct(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{${pt.null}}),false));
-        assertEquals(new ${pt.primitive}[]{1}, distinct(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{1}),false));
+        assertEquals(null, distinct((${pt.vectorDirect})null));
+        assertEquals(null, distinct((${pt.vectorDirect})null, true));
+        assertEquals(new ${pt.primitive}[]{}, distinct(new ${pt.vectorDirect}(new ${pt.primitive}[]{})));
+        assertEquals(new ${pt.primitive}[]{}, distinct(new ${pt.vectorDirect}(new ${pt.primitive}[]{${pt.null}})));
+        assertEquals(new ${pt.primitive}[]{1}, distinct(new ${pt.vectorDirect}(new ${pt.primitive}[]{1})));
+        assertEquals(new ${pt.primitive}[]{}, distinct(new ${pt.vectorDirect}(new ${pt.primitive}[]{}),true));
+        assertEquals(new ${pt.primitive}[]{${pt.null}}, distinct(new ${pt.vectorDirect}(new ${pt.primitive}[]{${pt.null}}),true));
+        assertEquals(new ${pt.primitive}[]{1}, distinct(new ${pt.vectorDirect}(new ${pt.primitive}[]{1}),true));
+        assertEquals(new ${pt.primitive}[]{}, distinct(new ${pt.vectorDirect}(new ${pt.primitive}[]{}),false));
+        assertEquals(new ${pt.primitive}[]{}, distinct(new ${pt.vectorDirect}(new ${pt.primitive}[]{${pt.null}}),false));
+        assertEquals(new ${pt.primitive}[]{1}, distinct(new ${pt.vectorDirect}(new ${pt.primitive}[]{1}),false));
 
 
-        assertEquals(new ${pt.primitive}[]{1,2}, distinct(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{1,2,1, ${pt.null}, ${pt.null}})));
-        assertEquals(new ${pt.primitive}[]{1,2}, distinct(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{1,2,1, ${pt.null}, ${pt.null}}), false));
-        assertEquals(new ${pt.primitive}[]{1,2, ${pt.null}}, distinct(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{1,2,1, ${pt.null}, ${pt.null}}), true));
-        assertEquals(new ${pt.primitive}[]{3,1,2}, distinct(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{3,1,2,1, ${pt.null}, ${pt.null}}), false));
-        assertEquals(new ${pt.primitive}[]{3,1,2,4}, distinct(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{3,1,2,4,1, ${pt.null}, ${pt.null}}), false));
-        assertEquals(new ${pt.primitive}[]{3,1,2,4,${pt.null}}, distinct(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{3,1,2,4,1, ${pt.null}, ${pt.null}}), true));
+        assertEquals(new ${pt.primitive}[]{1,2}, distinct(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,2,1, ${pt.null}, ${pt.null}})));
+        assertEquals(new ${pt.primitive}[]{1,2}, distinct(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,2,1, ${pt.null}, ${pt.null}}), false));
+        assertEquals(new ${pt.primitive}[]{1,2, ${pt.null}}, distinct(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,2,1, ${pt.null}, ${pt.null}}), true));
+        assertEquals(new ${pt.primitive}[]{3,1,2}, distinct(new ${pt.vectorDirect}(new ${pt.primitive}[]{3,1,2,1, ${pt.null}, ${pt.null}}), false));
+        assertEquals(new ${pt.primitive}[]{3,1,2,4}, distinct(new ${pt.vectorDirect}(new ${pt.primitive}[]{3,1,2,4,1, ${pt.null}, ${pt.null}}), false));
+        assertEquals(new ${pt.primitive}[]{3,1,2,4,${pt.null}}, distinct(new ${pt.vectorDirect}(new ${pt.primitive}[]{3,1,2,4,1, ${pt.null}, ${pt.null}}), true));
 
         assertEquals(null, distinct((${pt.primitive}[])null));
         assertEquals(null, distinct((${pt.primitive}[])null, true));
@@ -730,12 +730,12 @@ public class TestBasic extends BaseArrayTestCase {
     }
 
     public void test${pt.boxed}Array(){
-        assertEquals(new ${pt.primitive}[]{(${pt.primitive})1,(${pt.primitive})3,(${pt.primitive})5}, array(new ${pt.dbArrayDirect}((${pt.primitive})1,(${pt.primitive})3,(${pt.primitive})5)));
-        assertEquals(null, array((${pt.dbArray})null));
+        assertEquals(new ${pt.primitive}[]{(${pt.primitive})1,(${pt.primitive})3,(${pt.primitive})5}, array(new ${pt.vectorDirect}((${pt.primitive})1,(${pt.primitive})3,(${pt.primitive})5)));
+        assertEquals(null, array((${pt.vector})null));
     }
 
     public void test${pt.boxed}Vec(){
-        assertEquals(new ${pt.dbArrayDirect}((${pt.primitive})1,(${pt.primitive})3,(${pt.primitive})5), vec(new ${pt.primitive}[]{(${pt.primitive})1,(${pt.primitive})3,(${pt.primitive})5}));
+        assertEquals(new ${pt.vectorDirect}((${pt.primitive})1,(${pt.primitive})3,(${pt.primitive})5), vec(new ${pt.primitive}[]{(${pt.primitive})1,(${pt.primitive})3,(${pt.primitive})5}));
     }
 
     public void test${pt.boxed}In(){
@@ -768,17 +768,17 @@ public class TestBasic extends BaseArrayTestCase {
         assertEquals(new ${pt.primitive}[]{1,2,3,4,5,6}, concat(new ${pt.primitive}[]{1,2}, new ${pt.primitive}[]{3}, new ${pt.primitive}[]{4,5,6}));
         assertEquals(new ${pt.primitive}[]{}, concat((${pt.primitive}[])(null)));
 
-        assertEquals(new ${pt.primitive}[]{}, concat((${pt.dbArray}[])null));
-        assertEquals(new ${pt.primitive}[]{1,2,3,4,5,6}, concat(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{1,2}), new ${pt.dbArrayDirect}(new ${pt.primitive}[]{3}), new ${pt.dbArrayDirect}(new ${pt.primitive}[]{4,5,6})));
-        assertEquals(new ${pt.primitive}[]{}, concat((${pt.dbArray}) (null)));
+        assertEquals(new ${pt.primitive}[]{}, concat((${pt.vector}[])null));
+        assertEquals(new ${pt.primitive}[]{1,2,3,4,5,6}, concat(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,2}), new ${pt.vectorDirect}(new ${pt.primitive}[]{3}), new ${pt.vectorDirect}(new ${pt.primitive}[]{4,5,6})));
+        assertEquals(new ${pt.primitive}[]{}, concat((${pt.vector}) (null)));
     }
 
     public void test${pt.boxed}Reverse() {
         assertEquals(new ${pt.primitive}[]{3,2,1}, reverse((${pt.primitive})1,(${pt.primitive})2,(${pt.primitive})3));
         assertEquals(null, reverse((${pt.primitive}[])(null)));
 
-        assertEquals(new ${pt.primitive}[]{3,2,1}, reverse(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{1,2,3})));
-        assertEquals(null, reverse((${pt.dbArray}) (null)));
+        assertEquals(new ${pt.primitive}[]{3,2,1}, reverse(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,2,3})));
+        assertEquals(null, reverse((${pt.vector}) (null)));
     }
 
     public void test${pt.boxed}FirstIndexOf() {
@@ -787,10 +787,10 @@ public class TestBasic extends BaseArrayTestCase {
         assertEquals(NULL_LONG, firstIndexOf((${pt.primitive})1, new ${pt.primitive}[]{0, 40, ${pt.null}, 40, 60, 40, 0}));
         assertEquals(NULL_LONG, firstIndexOf((${pt.primitive})40, (${pt.primitive}[])null));
 
-        assertEquals(1, firstIndexOf((${pt.primitive})40, new ${pt.dbArrayDirect}(new ${pt.primitive}[]{0, 40, ${pt.null}, 40, 60, 40, 0})));
-        assertEquals(4, firstIndexOf((${pt.primitive})60, new ${pt.dbArrayDirect}(new ${pt.primitive}[]{0, 40, ${pt.null}, 40, 60, 40, 0})));
-        assertEquals(NULL_LONG, firstIndexOf((${pt.primitive})1, new ${pt.dbArrayDirect}(new ${pt.primitive}[]{0, 40, ${pt.null}, 40, 60, 40, 0})));
-        assertEquals(NULL_LONG, firstIndexOf((${pt.primitive})40, (${pt.dbArray}) null));
+        assertEquals(1, firstIndexOf((${pt.primitive})40, new ${pt.vectorDirect}(new ${pt.primitive}[]{0, 40, ${pt.null}, 40, 60, 40, 0})));
+        assertEquals(4, firstIndexOf((${pt.primitive})60, new ${pt.vectorDirect}(new ${pt.primitive}[]{0, 40, ${pt.null}, 40, 60, 40, 0})));
+        assertEquals(NULL_LONG, firstIndexOf((${pt.primitive})1, new ${pt.vectorDirect}(new ${pt.primitive}[]{0, 40, ${pt.null}, 40, 60, 40, 0})));
+        assertEquals(NULL_LONG, firstIndexOf((${pt.primitive})40, (${pt.vector}) null));
     }
 
     public void test${pt.boxed}IfelseScalar() {
@@ -801,8 +801,8 @@ public class TestBasic extends BaseArrayTestCase {
 
     public void test${pt.boxed}IfelseVec() {
         final ObjectVector<Boolean> bv = new ObjectVectorDirect<>(new Boolean[]{null, true, false});
-        final ${pt.dbArray} iv1 = new ${pt.dbArrayDirect}(new ${pt.primitive}[]{1, 2, 3});
-        final ${pt.dbArray} iv2 = new ${pt.dbArrayDirect}(new ${pt.primitive}[]{11, 12, 13});
+        final ${pt.vector} iv1 = new ${pt.vectorDirect}(new ${pt.primitive}[]{1, 2, 3});
+        final ${pt.vector} iv2 = new ${pt.vectorDirect}(new ${pt.primitive}[]{11, 12, 13});
         assertEquals(new ${pt.primitive}[]{${pt.null}, 2, 13}, ifelse(bv, iv1, iv2));
         assertEquals(null, ifelse((ObjectVector<Boolean>) null, iv1, iv2));
         assertEquals(null, ifelse(bv, null, iv2));
@@ -835,8 +835,8 @@ public class TestBasic extends BaseArrayTestCase {
     }
 
     public void test${pt.boxed}ForwardFillVec() {
-        assertEquals(null, forwardFill((${pt.dbArrayDirect})null));
-        assertEquals(new ${pt.primitive}[]{0, 0, 1, 2, 2, 3}, forwardFill(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{0, ${pt.null}, 1, 2, ${pt.null}, 3})));
+        assertEquals(null, forwardFill((${pt.vectorDirect})null));
+        assertEquals(new ${pt.primitive}[]{0, 0, 1, 2, 2, 3}, forwardFill(new ${pt.vectorDirect}(new ${pt.primitive}[]{0, ${pt.null}, 1, 2, ${pt.null}, 3})));
     }
 
     public void test${pt.boxed}ForwardFillArray() {
