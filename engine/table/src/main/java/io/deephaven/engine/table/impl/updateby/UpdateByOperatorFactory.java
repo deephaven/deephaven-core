@@ -573,8 +573,8 @@ public class UpdateByOperatorFactory {
         }
 
         private UpdateByOperator makeRollingAvgOperator(@NotNull final MatchPair pair,
-                                                        @NotNull final TableDefaults source,
-                                                        @NotNull final RollingAvgSpec rs) {
+                @NotNull final TableDefaults source,
+                @NotNull final RollingAvgSpec rs) {
             // noinspection rawtypes
             final ColumnSource columnSource = source.getColumnSource(pair.rightColumn);
             final Class<?> csType = columnSource.getType();

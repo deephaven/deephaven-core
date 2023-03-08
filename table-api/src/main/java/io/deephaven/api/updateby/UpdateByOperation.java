@@ -468,10 +468,10 @@ public interface UpdateByOperation {
     }
 
     /**
-     * Create a {@link RollingAvgSpec rolling average} for the supplied column name pairs, using time as the windowing unit.
-     * This function accepts {@link Duration duration} as the reverse window parameter. A row containing a {@code null}
-     * in the timestamp column belongs to no window and will not have a value computed or be considered in the windows
-     * of other rows.
+     * Create a {@link RollingAvgSpec rolling average} for the supplied column name pairs, using time as the windowing
+     * unit. This function accepts {@link Duration duration} as the reverse window parameter. A row containing a
+     * {@code null} in the timestamp column belongs to no window and will not have a value computed or be considered in
+     * the windows of other rows.
      *
      * Here are some examples of window values:
      * <ul>
@@ -489,11 +489,11 @@ public interface UpdateByOperation {
     }
 
     /**
-     * Create a {@link RollingAvgSpec rolling average} for the supplied column name pairs, using time as the windowing unit.
-     * This function accepts {@link Duration durations} as the reverse and forward window parameters. Negative values
-     * are allowed and can be used to generate completely forward or completely reverse windows. A row containing a
-     * {@code null} in the timestamp column belongs to no window and will not have a value computed or be considered in
-     * the windows of other rows.
+     * Create a {@link RollingAvgSpec rolling average} for the supplied column name pairs, using time as the windowing
+     * unit. This function accepts {@link Duration durations} as the reverse and forward window parameters. Negative
+     * values are allowed and can be used to generate completely forward or completely reverse windows. A row containing
+     * a {@code null} in the timestamp column belongs to no window and will not have a value computed or be considered
+     * in the windows of other rows.
      *
      * Here are some examples of window values:
      * <ul>
@@ -517,15 +517,15 @@ public interface UpdateByOperation {
      * @return The aggregation
      */
     static UpdateByOperation RollingAvg(String timestampCol, Duration revDuration, Duration fwdDuration,
-                                        String... pairs) {
+            String... pairs) {
         return RollingAvgSpec.ofTime(timestampCol, revDuration, fwdDuration).clause(pairs);
     }
 
     /**
-     * Create a {@link RollingAvgSpec rolling average} for the supplied column name pairs, using time as the windowing unit.
-     * This function accepts {@code nanoseconds} as the reverse window parameters. A row containing a {@code null} in
-     * the timestamp column belongs to no window and will not have a value computed or be considered in the windows of
-     * other rows.
+     * Create a {@link RollingAvgSpec rolling average} for the supplied column name pairs, using time as the windowing
+     * unit. This function accepts {@code nanoseconds} as the reverse window parameters. A row containing a {@code null}
+     * in the timestamp column belongs to no window and will not have a value computed or be considered in the windows
+     * of other rows.
      *
      * @param timestampCol the name of the timestamp column
      * @param revTime the look-behind window size (in nanoseconds)
@@ -537,8 +537,8 @@ public interface UpdateByOperation {
     }
 
     /**
-     * Create a {@link RollingAvgSpec rolling average} for the supplied column name pairs, using time as the windowing unit.
-     * This function accepts {@code nanoseconds} as the reverse and forward window parameters. Negative values are
+     * Create a {@link RollingAvgSpec rolling average} for the supplied column name pairs, using time as the windowing
+     * unit. This function accepts {@code nanoseconds} as the reverse and forward window parameters. Negative values are
      * allowed and can be used to generate completely forward or completely reverse windows. A row containing a
      * {@code null} in the timestamp column belongs to no window and will not have a value computed or be considered in
      * the windows of other rows.
@@ -552,8 +552,8 @@ public interface UpdateByOperation {
     static UpdateByOperation RollingAvg(String timestampCol, long revTime, long fwdTime, String... pairs) {
         return RollingAvgSpec.ofTime(timestampCol, revTime, fwdTime).clause(pairs);
     }
-    
-    
+
+
     <T> T walk(Visitor<T> visitor);
 
     interface Visitor<T> {

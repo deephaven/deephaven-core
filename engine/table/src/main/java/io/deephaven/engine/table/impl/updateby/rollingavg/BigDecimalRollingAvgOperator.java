@@ -93,12 +93,12 @@ public final class BigDecimalRollingAvgOperator extends BaseObjectUpdateByOperat
     }
 
     public BigDecimalRollingAvgOperator(@NotNull final MatchPair pair,
-                                        @NotNull final String[] affectingColumns,
-                                        @Nullable final RowRedirection rowRedirection,
-                                        @Nullable final String timestampColumnName,
-                                        final long reverseWindowScaleUnits,
-                                        final long forwardWindowScaleUnits,
-                                        @NotNull final MathContext mathContext) {
+            @NotNull final String[] affectingColumns,
+            @Nullable final RowRedirection rowRedirection,
+            @Nullable final String timestampColumnName,
+            final long reverseWindowScaleUnits,
+            final long forwardWindowScaleUnits,
+            @NotNull final MathContext mathContext) {
         super(pair, affectingColumns, rowRedirection, timestampColumnName, reverseWindowScaleUnits,
                 forwardWindowScaleUnits, true, BigDecimal.class);
         this.mathContext = mathContext;
