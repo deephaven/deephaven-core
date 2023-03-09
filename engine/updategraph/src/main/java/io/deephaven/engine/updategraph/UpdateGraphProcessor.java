@@ -33,9 +33,7 @@ import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedQueue;
 import io.deephaven.util.locks.AwareFunctionalLock;
 import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.util.thread.NamingThreadFactory;
-import io.deephaven.util.thread.ThreadDump;
 import io.deephaven.util.thread.ThreadInitializationFactory;
-import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -1100,7 +1098,6 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
         // Until then, we must delay the beginning of "normal" notification processing until all update sources are
         // done. See IDS-8039.
         notificationProcessor.doAllWork();
-        Assert.eqTrue(notificationProcessor.isHealthy(), "notificationProcessor.isHealthy()");
         sourcesLastSatisfiedStep = LogicalClock.DEFAULT.currentStep();
 
         flushNormalNotificationsAndCompleteCycle();
@@ -1259,13 +1256,6 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
          * Called before pending notifications are drained.
          */
         void beforeNotificationsDrained();
-
-        /**
-         * @return true if this processor is healthy and in an expected state
-         */
-        default boolean isHealthy() {
-            return true;
-        }
     }
 
     private void runNotification(@NotNull final Notification notification) {
@@ -1308,7 +1298,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
         private final Semaphore pendingNormalNotificationsCheckNeeded = new Semaphore(0, false);
 
         private volatile boolean running = true;
-        private volatile boolean anyThreadHasExited = false;
+        private volatile boolean isHealthy = true;
 
         public ConcurrentNotificationProcessor(@NotNull final ThreadFactory threadFactory,
                 final int updateThreadCount) {
@@ -1325,7 +1315,6 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
             Notification satisfiedNotification = null;
             try {
                 while (running) {
-                    satisfiedNotification = null;
                     synchronized (satisfiedNotifications) {
                         while (running && (satisfiedNotification = satisfiedNotifications.poll()) == null) {
                             try {
@@ -1339,13 +1328,14 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
                     }
 
                     runNotification(satisfiedNotification);
+                    satisfiedNotification = null;
                     outstandingNotifications.decrementAndGet();
                     pendingNormalNotificationsCheckNeeded.release();
                 }
             } finally {
-                anyThreadHasExited = true;
                 if (satisfiedNotification != null) {
                     // if we were thrown out of the loop; decrement / release after setting the unhealthy flag
+                    isHealthy = false;
                     outstandingNotifications.decrementAndGet();
                     pendingNormalNotificationsCheckNeeded.release();
                 }
@@ -1391,13 +1381,15 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
         public void doWork() {
             try {
                 pendingNormalNotificationsCheckNeeded.acquire();
+                // if a processing thread exits unexpectedly, propagate an error to the outer refresh thread
+                Assert.eqTrue(isHealthy, "isHealthy");
             } catch (InterruptedException ignored) {
             }
         }
 
         @Override
         public void doAllWork() {
-            while (!anyThreadHasExited && outstandingNotificationsCount() > 0) {
+            while (outstandingNotificationsCount() > 0) {
                 doWork();
             }
         }
@@ -1425,11 +1417,6 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
         @Override
         public void beforeNotificationsDrained() {
             pendingNormalNotificationsCheckNeeded.drainPermits();
-        }
-
-        @Override
-        public boolean isHealthy() {
-            return !running || !anyThreadHasExited;
         }
 
         int threadCount() {
