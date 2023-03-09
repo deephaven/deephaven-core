@@ -108,7 +108,7 @@ public class JsLayoutHints {
     }
 
     @JsProperty(namespace = "dh.SearchDisplayMode")
-    public static final String  SEARCH_DISPLAY_DEFAULT = "Default",
+    public static final String SEARCH_DISPLAY_DEFAULT = "Default",
             SEARCH_DISPLAY_HIDE = "Hide",
             SEARCH_DISPLAY_SHOW = "Show";
 
