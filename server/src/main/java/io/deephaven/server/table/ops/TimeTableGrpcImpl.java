@@ -9,9 +9,9 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.TimeTable;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.TimeTableRequest;
+import io.deephaven.proto.util.Exceptions;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.util.Scheduler;
 import io.deephaven.time.DateTimeUtils;
@@ -42,7 +42,7 @@ public class TimeTableGrpcImpl extends GrpcTableOperation<TimeTableRequest> {
     public void validateRequest(final TimeTableRequest request) throws StatusRuntimeException {
         final long periodNanos = request.getPeriodNanos();
         if (periodNanos <= 0) {
-            throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
+            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
                     "periodNanos must be >= 0 (found: " + periodNanos + ")");
         }
     }

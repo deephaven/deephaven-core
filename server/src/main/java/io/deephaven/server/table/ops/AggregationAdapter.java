@@ -12,12 +12,12 @@ import io.deephaven.api.agg.FirstRowKey;
 import io.deephaven.api.agg.LastRowKey;
 import io.deephaven.api.agg.Partition;
 import io.deephaven.api.agg.spec.AggSpec;
-import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.proto.backplane.grpc.Aggregation.AggregationColumns;
 import io.deephaven.proto.backplane.grpc.Aggregation.AggregationCount;
 import io.deephaven.proto.backplane.grpc.Aggregation.AggregationPartition;
 import io.deephaven.proto.backplane.grpc.Aggregation.AggregationRowKey;
 import io.deephaven.proto.backplane.grpc.Aggregation.TypeCase;
+import io.deephaven.proto.util.Exceptions;
 import io.deephaven.server.grpc.GrpcErrorHelper;
 
 import java.lang.reflect.InvocationTargetException;
@@ -107,10 +107,10 @@ public class AggregationAdapter {
                 return adapter;
             }
             if (unimplemented.contains(type)) {
-                throw GrpcUtil.statusRuntimeException(Code.UNIMPLEMENTED,
+                throw Exceptions.statusRuntimeException(Code.UNIMPLEMENTED,
                         String.format("Aggregation type %s is unimplemented", type));
             }
-            throw GrpcUtil.statusRuntimeException(Code.INTERNAL,
+            throw Exceptions.statusRuntimeException(Code.INTERNAL,
                     String.format("Server is missing Aggregation type %s", type));
         }
 
