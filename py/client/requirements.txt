@@ -2,5 +2,3 @@ pyarrow
 grpcio
 protobuf
 bitstring
-pandas
-wheel
