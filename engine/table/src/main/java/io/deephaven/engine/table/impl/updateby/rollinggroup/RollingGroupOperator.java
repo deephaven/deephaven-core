@@ -30,7 +30,7 @@ public class RollingGroupOperator extends UpdateByOperator {
      */
     private final String[] inputColumnNames;
     private final String[] outputColumnNames;
-    private final ColumnSource[] outputSources;
+    private final ColumnSource<?>[] outputSources;
     private final Map<String, ColumnSource<?>> outputSourceMap;
 
 
@@ -46,7 +46,8 @@ public class RollingGroupOperator extends UpdateByOperator {
      * <p>
      * NOTE: these offsets are inclusive and are stored as simple relative positions where start==0 or end==0 implies
      * the current row is included in the window. A start/end range of [-5,-3] defines a window including exactly 3 rows
-     * beginning 4 rows earlier than this one and continuing through 2 rows earlier than this (inclusive).
+     * beginning 5 rows earlier than this one and continuing through 3 rows earlier than this (inclusive). A range of
+     * [0,0] contains exactly the current row.
      */
     protected final WritableColumnSource<Long> startSource;
     protected final LongArraySource innerStartSource;
@@ -55,29 +56,29 @@ public class RollingGroupOperator extends UpdateByOperator {
 
     public class Context extends UpdateByOperator.Context {
         private static final int BUFFER_INITIAL_CAPACITY = 512;
-        public final ChunkSink.FillFromContext groupRowSetSourceFillContext;
+        public final ChunkSink.FillFromContext groupRowSetSourceFillFromContext;
         public final WritableObjectChunk<RowSet, ? extends Values> groupRowSetSourceOutputValues;
-        public final ChunkSink.FillFromContext startSourceFillContext;
+        public final ChunkSink.FillFromContext startSourceFillFromContext;
         public final WritableLongChunk<Values> startSourceOutputValues;
-        public final ChunkSink.FillFromContext endSourceFillContext;
+        public final ChunkSink.FillFromContext endSourceFillFromContext;
         public final WritableLongChunk<Values> endSourceOutputValues;
         private final LongRingBuffer windowKeys;
         private long startPos = NULL_LONG;
         private long endPos = NULL_LONG;
 
         protected Context(final int chunkSize) {
-            groupRowSetSourceFillContext = groupRowSetSource.makeFillFromContext(chunkSize);
+            groupRowSetSourceFillFromContext = groupRowSetSource.makeFillFromContext(chunkSize);
             groupRowSetSourceOutputValues = WritableObjectChunk.makeWritableChunk(chunkSize);
             if (timestampColumnName != null) {
-                startSourceFillContext = startSource.makeFillFromContext(chunkSize);
+                startSourceFillFromContext = startSource.makeFillFromContext(chunkSize);
                 startSourceOutputValues = WritableLongChunk.makeWritableChunk(chunkSize);
-                endSourceFillContext = endSource.makeFillFromContext(chunkSize);
+                endSourceFillFromContext = endSource.makeFillFromContext(chunkSize);
                 endSourceOutputValues = WritableLongChunk.makeWritableChunk(chunkSize);
                 windowKeys = new LongRingBuffer(BUFFER_INITIAL_CAPACITY, true);
             } else {
-                startSourceFillContext = null;
+                startSourceFillFromContext = null;
                 startSourceOutputValues = null;
-                endSourceFillContext = null;
+                endSourceFillFromContext = null;
                 endSourceOutputValues = null;
                 windowKeys = null;
             }
@@ -86,11 +87,11 @@ public class RollingGroupOperator extends UpdateByOperator {
         @Override
         public void close() {
             SafeCloseable.closeArray(
-                    groupRowSetSourceFillContext,
+                    groupRowSetSourceFillFromContext,
                     groupRowSetSourceOutputValues,
-                    startSourceFillContext,
+                    startSourceFillFromContext,
                     startSourceOutputValues,
-                    endSourceFillContext,
+                    endSourceFillFromContext,
                     endSourceOutputValues);
         }
 
@@ -111,7 +112,8 @@ public class RollingGroupOperator extends UpdateByOperator {
 
             if (timestampColumnName == null) {
                 // The only work for ticks operators is to update the groupRowSetSource
-                groupRowSetSource.fillFromChunk(groupRowSetSourceFillContext, groupRowSetSourceOutputValues, inputKeys);
+                groupRowSetSource.fillFromChunk(groupRowSetSourceFillFromContext, groupRowSetSourceOutputValues,
+                        inputKeys);
                 return;
             }
 
@@ -124,7 +126,7 @@ public class RollingGroupOperator extends UpdateByOperator {
                 final int popCount = popChunk.get(ii);
 
                 if (pushCount == NULL_INT) {
-                    // writeNullToOutputChunk(ii);
+                    // Skip this row and do not include it in any windows.
                     continue;
                 }
 
@@ -198,9 +200,9 @@ public class RollingGroupOperator extends UpdateByOperator {
 
         @Override
         public void writeToOutputColumn(@NotNull RowSequence inputKeys) {
-            startSource.fillFromChunk(startSourceFillContext, startSourceOutputValues, inputKeys);
-            endSource.fillFromChunk(endSourceFillContext, endSourceOutputValues, inputKeys);
-            groupRowSetSource.fillFromChunk(groupRowSetSourceFillContext, groupRowSetSourceOutputValues, inputKeys);
+            startSource.fillFromChunk(startSourceFillFromContext, startSourceOutputValues, inputKeys);
+            endSource.fillFromChunk(endSourceFillFromContext, endSourceOutputValues, inputKeys);
+            groupRowSetSource.fillFromChunk(groupRowSetSourceFillFromContext, groupRowSetSourceOutputValues, inputKeys);
         }
 
         public void assignBucketRowSource(final TrackingRowSet bucketRowSet, final RowSequence chunkRs) {
@@ -266,73 +268,19 @@ public class RollingGroupOperator extends UpdateByOperator {
             inputColumnNames[ii] = pair.rightColumn;
             outputColumnNames[ii] = pair.leftColumn;
 
-            if (csType == Boolean.class || csType == boolean.class) {
-                ColumnSource<Byte> reinterpreted =
-                        (ColumnSource<Byte>) ReinterpretUtils.maybeConvertToPrimitive(valueSources[ii]);
-
-                outputSources[ii] = timestampColumnName != null
-                        ? new SlicedByteAggregateColumnSource(reinterpreted,
-                                groupRowSetSource, startSource, endSource)
-                        // transition from revTicks (inclusive of the current row) to row offsets
-                        : new SlicedByteAggregateColumnSource(reinterpreted,
-                                groupRowSetSource, -reverseWindowScaleUnits + 1, forwardWindowScaleUnits);
-            } else if (csType == char.class || csType == Character.class) {
-                outputSources[ii] = timestampColumnName != null
-                        ? new SlicedCharAggregateColumnSource((ColumnSource<Character>) valueSources[ii],
-                                groupRowSetSource, startSource, endSource)
-                        // transition from revTicks (inclusive of the current row) to row offsets
-                        : new SlicedCharAggregateColumnSource((ColumnSource<Character>) valueSources[ii],
-                                groupRowSetSource, -reverseWindowScaleUnits + 1, forwardWindowScaleUnits);
-            } else if (csType == byte.class || csType == Byte.class) {
-                outputSources[ii] = timestampColumnName != null
-                        ? new SlicedByteAggregateColumnSource((ColumnSource<Byte>) valueSources[ii],
-                                groupRowSetSource, startSource, endSource)
-                        // transition from revTicks (inclusive of the current row) to row offsets
-                        : new SlicedByteAggregateColumnSource((ColumnSource<Byte>) valueSources[ii],
-                                groupRowSetSource, -reverseWindowScaleUnits + 1, forwardWindowScaleUnits);
-            } else if (csType == short.class || csType == Short.class) {
-                outputSources[ii] = timestampColumnName != null
-                        ? new SlicedShortAggregateColumnSource((ColumnSource<Short>) valueSources[ii],
-                                groupRowSetSource, startSource, endSource)
-                        // transition from revTicks (inclusive of the current row) to row offsets
-                        : new SlicedShortAggregateColumnSource((ColumnSource<Short>) valueSources[ii],
-                                groupRowSetSource, -reverseWindowScaleUnits + 1, forwardWindowScaleUnits);
-            } else if (csType == int.class || csType == Integer.class) {
-                outputSources[ii] = timestampColumnName != null
-                        ? new SlicedIntAggregateColumnSource((ColumnSource<Integer>) valueSources[ii],
-                                groupRowSetSource, startSource, endSource)
-                        // transition from revTicks (inclusive of the current row) to row offsets
-                        : new SlicedIntAggregateColumnSource((ColumnSource<Integer>) valueSources[ii],
-                                groupRowSetSource, -reverseWindowScaleUnits + 1, forwardWindowScaleUnits);
-            } else if (csType == long.class || csType == Long.class) {
-                outputSources[ii] = timestampColumnName != null
-                        ? new SlicedLongAggregateColumnSource((ColumnSource<Long>) valueSources[ii],
-                                groupRowSetSource, startSource, endSource)
-                        // transition from revTicks (inclusive of the current row) to row offsets
-                        : new SlicedLongAggregateColumnSource((ColumnSource<Long>) valueSources[ii],
-                                groupRowSetSource, -reverseWindowScaleUnits + 1, forwardWindowScaleUnits);
-            } else if (csType == float.class || csType == Float.class) {
-                outputSources[ii] = timestampColumnName != null
-                        ? new SlicedFloatAggregateColumnSource((ColumnSource<Float>) valueSources[ii],
-                                groupRowSetSource, startSource, endSource)
-                        // transition from revTicks (inclusive of the current row) to row offsets
-                        : new SlicedFloatAggregateColumnSource((ColumnSource<Float>) valueSources[ii],
-                                groupRowSetSource, -reverseWindowScaleUnits + 1, forwardWindowScaleUnits);
-            } else if (csType == double.class || csType == Double.class) {
-                outputSources[ii] = timestampColumnName != null
-                        ? new SlicedDoubleAggregateColumnSource((ColumnSource<Double>) valueSources[ii],
-                                groupRowSetSource, startSource, endSource)
-                        // transition from revTicks (inclusive of the current row) to row offsets
-                        : new SlicedDoubleAggregateColumnSource((ColumnSource<Double>) valueSources[ii],
-                                groupRowSetSource, -reverseWindowScaleUnits + 1, forwardWindowScaleUnits);
-            } else {
-                outputSources[ii] = timestampColumnName != null
-                        ? new SlicedObjectAggregateColumnSource<>(valueSources[ii],
-                                groupRowSetSource, startSource, endSource)
-                        // transition from revTicks (inclusive of the current row) to row offsets
-                        : new SlicedObjectAggregateColumnSource<>(valueSources[ii],
-                                groupRowSetSource, -reverseWindowScaleUnits + 1, forwardWindowScaleUnits);
-            }
+            // When timestampColumnName == null, we have a tick-based rolling window. RollingOpSpec accepts fwd/rev
+            // tick parameters and applies the constraint that the current row belongs to the reverse window. This
+            // implies that to create a group containing exactly the current row, you must provide a rev/fwd range of
+            // [1 ,0]. This constraint is useful for the user but should not propagate to the general purpose
+            // output AggregateColumnSource constructors. We are converting the Rolling windoow range of values to a
+            // simple +/- relative positional offset range where [0, 0] implies a group that contains only the current
+            // row. Similarly, a user range of [5, -3] will convert to [-4, -3] and in both cases will be a group of
+            // two rows starting 4 rows before the current row.
+            outputSources[ii] = timestampColumnName != null
+                    ? AggregateColumnSource.makeSliced((ColumnSource<Character>) valueSources[ii], groupRowSetSource,
+                            startSource, endSource)
+                    : AggregateColumnSource.makeSliced((ColumnSource<Character>) valueSources[ii], groupRowSetSource,
+                            -reverseWindowScaleUnits + 1, forwardWindowScaleUnits);
             outputSourceMap.put(outputColumnNames[ii], outputSources[ii]);
         }
     }

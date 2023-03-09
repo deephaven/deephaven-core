@@ -18,6 +18,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.OverridingMethodsMustInvokeSuper;
+import java.util.Arrays;
 
 /**
  * This is the base class of {@link UpdateByWindowRollingTicks} and {@link UpdateByWindowRollingTime}.
@@ -122,6 +123,9 @@ abstract class UpdateByWindowRollingBase extends UpdateByWindow {
 
         final TrackingRowSet bucketRowSet =
                 ctx.timestampValidRowSet != null ? ctx.timestampValidRowSet : ctx.sourceRowSet;
+
+        final boolean operatorsRequirePositions = Arrays.stream(opIndices)
+                .anyMatch(opIdx -> operators[opIdx].requiresRowPositions());
 
         try (final RowSequence.Iterator affectedRowsIt = ctx.affectedRows.getRowSequenceIterator();
                 final RowSequence.Iterator influencerRowsIt = ctx.influencerRows.getRowSequenceIterator();
