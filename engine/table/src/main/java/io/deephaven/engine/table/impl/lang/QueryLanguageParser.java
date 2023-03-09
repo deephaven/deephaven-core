@@ -483,7 +483,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                 }
             }
         } else {
-            if (scope == org.jpy.PyObject.class) {
+            if (scope == org.jpy.PyObject.class || scope == PyCallableWrapper.class) {
                 // This is a Python method call, assume it exists and wrap in PythonScopeJpyImpl.CallableWrapper
                 for (Method method : PyCallableWrapper.class.getDeclaredMethods()) {
                     possiblyAddExecutable(acceptableMethods, method, "call", paramTypes, parameterizedTypes);

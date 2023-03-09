@@ -903,7 +903,7 @@ class TableTestCase(BaseTestCase):
             self.assertEqual(x2.size, 10)
             self.assertEqual(x3.size, 10)
 
-    def test_class_attrs_in_query(self):
+    def test_callable_attrs_in_query(self):
         input_cols = [
             datetime_col(name="DTCol", data=[dtypes.DateTime(1), dtypes.DateTime(10000000)]),
         ]
@@ -913,13 +913,16 @@ class TableTestCase(BaseTestCase):
         self.assertEqual(rt.size, test_table.size)
 
         class Foo:
-            ATTR = 1
+            ATTR = 256
 
-            def __ceil__(self):
+            def __call__(self):
                 ...
 
-            def do_something(self):
-                return 1
+            def do_something(self, p=None):
+                return p if p else 1
+
+        def do_something(p=None):
+            return p if p else 1
 
         rt = empty_table(1).update("Col = Foo.ATTR")
         self.assertTrue(rt.columns[0].data_type == dtypes.PyObject)
@@ -929,6 +932,11 @@ class TableTestCase(BaseTestCase):
 
         foo = Foo()
         rt = empty_table(1).update("Col = (int)foo.do_something()")
+        self.assertTrue(rt.columns[0].data_type == dtypes.int32)
+
+        rt = empty_table(1).update("Col = (int)do_something((byte)Foo.ATTR)")
+        df = to_pandas(rt)
+        self.assertEqual(df.loc[0]['Col'], 1)
         self.assertTrue(rt.columns[0].data_type == dtypes.int32)
 
 
