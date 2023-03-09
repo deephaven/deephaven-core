@@ -1392,6 +1392,10 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
             while (outstandingNotificationsCount() > 0) {
                 doWork();
             }
+            // A successful and a failed notification may race the release of pendingNormalNotificationsCheckNeeded,
+            // causing this thread to miss a false isHealthy. Since isHealthy is set prior to decrementing
+            // outstandingNotificationsCount, we're guaranteed to read the correct value after exiting the while loop.
+            Assert.eqTrue(isHealthy, "isHealthy");
         }
 
         @Override
