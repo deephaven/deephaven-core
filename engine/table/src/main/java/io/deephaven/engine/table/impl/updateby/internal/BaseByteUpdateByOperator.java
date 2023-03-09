@@ -40,8 +40,8 @@ public abstract class BaseByteUpdateByOperator extends UpdateByOperator {
     // endregion extra-fields
 
     protected abstract class Context extends UpdateByOperator.Context {
-        public final ChunkSink.FillFromContext outputFillContext;
-        public final WritableByteChunk<Values> outputValues;
+        protected final ChunkSink.FillFromContext outputFillContext;
+        protected final WritableByteChunk<Values> outputValues;
 
         public byte curVal = NULL_BYTE;
 

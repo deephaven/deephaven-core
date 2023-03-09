@@ -28,7 +28,6 @@ public class LongRollingSumOperator extends BaseLongUpdateByOperator {
         protected LongChunk<? extends Values> longInfluencerValuesChunk;
         protected LongRingBuffer longWindowValues;
 
-
         protected Context(final int chunkSize) {
             super(chunkSize);
             longWindowValues = new LongRingBuffer(RING_BUFFER_INITIAL_CAPACITY, true);
@@ -101,8 +100,8 @@ public class LongRollingSumOperator extends BaseLongUpdateByOperator {
 
     @NotNull
     @Override
-    public UpdateByOperator.Context makeUpdateContext(final int chunkSize) {
-        return new Context(chunkSize);
+    public UpdateByOperator.Context makeUpdateContext(final int affectedChunkSize, final int influencerChunkSize) {
+        return new Context(affectedChunkSize);
     }
 
     public LongRollingSumOperator(@NotNull final MatchPair pair,

@@ -37,8 +37,8 @@ public abstract class BaseObjectUpdateByOperator<T> extends UpdateByOperator {
     // endregion extra-fields
 
     protected abstract class Context extends UpdateByOperator.Context {
-        public final ChunkSink.FillFromContext outputFillContext;
-        public final WritableObjectChunk<T, Values> outputValues;
+        protected final ChunkSink.FillFromContext outputFillContext;
+        protected final WritableObjectChunk<T, Values> outputValues;
 
         public T curVal = null;
 

@@ -34,8 +34,8 @@ public abstract class BaseLongUpdateByOperator extends UpdateByOperator {
     // endregion extra-fields
 
     protected abstract class Context extends UpdateByOperator.Context {
-        public final ChunkSink.FillFromContext outputFillContext;
-        public final WritableLongChunk<Values> outputValues;
+        protected final ChunkSink.FillFromContext outputFillContext;
+        protected final WritableLongChunk<Values> outputValues;
 
         public long curVal = NULL_LONG;
 

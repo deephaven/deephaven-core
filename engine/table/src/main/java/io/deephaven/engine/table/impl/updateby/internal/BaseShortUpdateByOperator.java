@@ -34,8 +34,8 @@ public abstract class BaseShortUpdateByOperator extends UpdateByOperator {
     // endregion extra-fields
 
     protected abstract class Context extends UpdateByOperator.Context {
-        public final ChunkSink.FillFromContext outputFillContext;
-        public final WritableShortChunk<Values> outputValues;
+        protected final ChunkSink.FillFromContext outputFillContext;
+        protected final WritableShortChunk<Values> outputValues;
 
         public short curVal = NULL_SHORT;
 

@@ -29,8 +29,8 @@ public abstract class BaseCharUpdateByOperator extends UpdateByOperator {
     // endregion extra-fields
 
     protected abstract class Context extends UpdateByOperator.Context {
-        public final ChunkSink.FillFromContext outputFillContext;
-        public final WritableCharChunk<Values> outputValues;
+        protected final ChunkSink.FillFromContext outputFillContext;
+        protected final WritableCharChunk<Values> outputValues;
 
         public char curVal = NULL_CHAR;
 

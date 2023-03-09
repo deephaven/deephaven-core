@@ -34,8 +34,8 @@ public abstract class BaseIntUpdateByOperator extends UpdateByOperator {
     // endregion extra-fields
 
     protected abstract class Context extends UpdateByOperator.Context {
-        public final ChunkSink.FillFromContext outputFillContext;
-        public final WritableIntChunk<Values> outputValues;
+        protected final ChunkSink.FillFromContext outputFillContext;
+        protected final WritableIntChunk<Values> outputValues;
 
         public int curVal = NULL_INT;
 

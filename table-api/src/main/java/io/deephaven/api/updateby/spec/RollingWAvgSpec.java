@@ -17,43 +17,43 @@ public abstract class RollingWAvgSpec extends RollingOpSpec {
     @Value.Parameter
     public abstract String weightCol();
 
-    public static RollingWAvgSpec ofTicks(final String weightCol, long revTicks) {
-        return of(weightCol, WindowScale.ofTicks(revTicks));
+    public static RollingWAvgSpec ofTicks(long revTicks, final String weightCol) {
+        return of(WindowScale.ofTicks(revTicks), weightCol);
     }
 
-    public static RollingWAvgSpec ofTicks(final String weightCol, long revTicks, long fwdTicks) {
-        return of(weightCol, WindowScale.ofTicks(revTicks), WindowScale.ofTicks(fwdTicks));
+    public static RollingWAvgSpec ofTicks(long revTicks, long fwdTicks, final String weightCol) {
+        return of(WindowScale.ofTicks(revTicks), WindowScale.ofTicks(fwdTicks), weightCol);
     }
 
-    public static RollingWAvgSpec ofTime(final String weightCol, final String timestampCol, Duration revDuration) {
-        return of(weightCol, WindowScale.ofTime(timestampCol, revDuration));
+    public static RollingWAvgSpec ofTime(final String timestampCol, Duration revDuration, final String weightCol) {
+        return of(WindowScale.ofTime(timestampCol, revDuration), weightCol);
     }
 
-    public static RollingWAvgSpec ofTime(final String weightCol, final String timestampCol, Duration revDuration, Duration fwdDuration) {
-        return of(weightCol,
-                WindowScale.ofTime(timestampCol, revDuration),
-                WindowScale.ofTime(timestampCol, fwdDuration));
+    public static RollingWAvgSpec ofTime(final String timestampCol, Duration revDuration, Duration fwdDuration, final String weightCol) {
+        return of(WindowScale.ofTime(timestampCol, revDuration),
+                WindowScale.ofTime(timestampCol, fwdDuration),
+                weightCol);
     }
 
-    public static RollingWAvgSpec ofTime(final String weightCol, final String timestampCol, long revDuration) {
-        return of(weightCol,WindowScale.ofTime(timestampCol, revDuration));
+    public static RollingWAvgSpec ofTime(final String timestampCol, long revDuration, final String weightCol) {
+        return of(WindowScale.ofTime(timestampCol, revDuration), weightCol);
     }
 
-    public static RollingWAvgSpec ofTime(final String weightCol, final String timestampCol, long revDuration, long fwdDuration) {
-        return of(weightCol,
-                WindowScale.ofTime(timestampCol, revDuration),
-                WindowScale.ofTime(timestampCol, fwdDuration));
+    public static RollingWAvgSpec ofTime(final String timestampCol, long revDuration, long fwdDuration, final String weightCol) {
+        return of(WindowScale.ofTime(timestampCol, revDuration),
+                WindowScale.ofTime(timestampCol, fwdDuration),
+                weightCol);
     }
 
     // internal use constructors
-    private static RollingWAvgSpec of(String weightCol, WindowScale revWindowScale) {
+    private static RollingWAvgSpec of(WindowScale revWindowScale, final String weightCol) {
         return ImmutableRollingWAvgSpec.builder()
                 .weightCol(weightCol)
                 .revWindowScale(revWindowScale)
                 .build();
     }
 
-    private static RollingWAvgSpec of(String weightCol, WindowScale revWindowScale, WindowScale fwdWindowScale) {
+    private static RollingWAvgSpec of(WindowScale revWindowScale, WindowScale fwdWindowScale, final String weightCol) {
         return ImmutableRollingWAvgSpec.builder()
                 .weightCol(weightCol)
                 .revWindowScale(revWindowScale)

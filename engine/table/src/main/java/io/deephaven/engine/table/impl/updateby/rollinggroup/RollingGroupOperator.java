@@ -218,7 +218,7 @@ public class RollingGroupOperator extends UpdateByOperator {
     // region extra-constructor-args
     // endregion extra-constructor-args
     ) {
-        super(pairs[0], affectingColumns, rowRedirection, timestampColumnName, reverseWindowScaleUnits,
+        super(null, affectingColumns, rowRedirection, timestampColumnName, reverseWindowScaleUnits,
                 forwardWindowScaleUnits, true);
 
         inputColumnNames = new String[pairs.length];
@@ -339,8 +339,8 @@ public class RollingGroupOperator extends UpdateByOperator {
 
     @NotNull
     @Override
-    public UpdateByOperator.Context makeUpdateContext(final int chunkSize) {
-        return new Context(chunkSize);
+    public UpdateByOperator.Context makeUpdateContext(final int affectedChunkSize, final int influencerChunkSize) {
+        return new Context(affectedChunkSize);
     }
 
     @Override

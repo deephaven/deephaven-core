@@ -38,7 +38,6 @@ import io.deephaven.util.SafeCloseableArray;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedNode;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedQueue;
 import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -809,7 +808,7 @@ public abstract class UpdateBy {
 
                     for (int ii = 0; ii < opIndices.length; ii++) {
                         final int opIdx = opIndices[ii];
-                        winOpContexts[ii] = windows[winIdx].operators[opIdx].makeUpdateContext(maxAffectedChunkSize);
+                        winOpContexts[ii] = windows[winIdx].operators[opIdx].makeUpdateContext(maxAffectedChunkSize, maxInfluencerChunkSize);
                     }
 
                     chunkArr = new Chunk[srcIndices.length];

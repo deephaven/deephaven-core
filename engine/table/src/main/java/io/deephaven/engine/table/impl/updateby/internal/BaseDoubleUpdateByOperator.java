@@ -34,8 +34,8 @@ public abstract class BaseDoubleUpdateByOperator extends UpdateByOperator {
     // endregion extra-fields
 
     protected abstract class Context extends UpdateByOperator.Context {
-        public final ChunkSink.FillFromContext outputFillContext;
-        public final WritableDoubleChunk<Values> outputValues;
+        protected final ChunkSink.FillFromContext outputFillContext;
+        protected final WritableDoubleChunk<Values> outputValues;
 
         public double curVal = NULL_DOUBLE;
 

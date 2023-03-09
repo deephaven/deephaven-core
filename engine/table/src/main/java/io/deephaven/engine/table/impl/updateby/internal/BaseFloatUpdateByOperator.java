@@ -34,8 +34,8 @@ public abstract class BaseFloatUpdateByOperator extends UpdateByOperator {
     // endregion extra-fields
 
     protected abstract class Context extends UpdateByOperator.Context {
-        public final ChunkSink.FillFromContext outputFillContext;
-        public final WritableFloatChunk<Values> outputValues;
+        protected final ChunkSink.FillFromContext outputFillContext;
+        protected final WritableFloatChunk<Values> outputValues;
 
         public float curVal = NULL_FLOAT;
 
