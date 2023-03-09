@@ -915,10 +915,20 @@ class TableTestCase(BaseTestCase):
         class Foo:
             ATTR = 1
 
+            def __ceil__(self):
+                ...
+
+            def do_something(self):
+                return 1
+
         rt = empty_table(1).update("Col = Foo.ATTR")
         self.assertTrue(rt.columns[0].data_type == dtypes.PyObject)
 
         rt = empty_table(1).update("Col = (int)Foo.ATTR")
+        self.assertTrue(rt.columns[0].data_type == dtypes.int32)
+
+        foo = Foo()
+        rt = empty_table(1).update("Col = (int)foo.do_something()")
         self.assertTrue(rt.columns[0].data_type == dtypes.int32)
 
 
