@@ -16,33 +16,34 @@ import java.util.Arrays;
 
 import static io.deephaven.util.QueryConstants.NULL_FLOAT;
 
+/**
+ * A {@link FloatVector} backed by an array.
+ */
 @ArrayType(type = float[].class)
 public class FloatVectorDirect implements FloatVector {
 
-    private final static long serialVersionUID = 3636374971797603565L;
+    public static final FloatVector ZERO_LENGTH_VECTOR = new FloatVectorDirect();
 
     private final float[] data;
 
-    public FloatVectorDirect(float... data){
+    public FloatVectorDirect(final float... data) {
         this.data = data;
     }
 
-    public static final FloatVector ZERO_LEN_VECTOR = new FloatVectorDirect();
-
     @Override
-    public float get(long i) {
-        if (i < 0 || i > data.length - 1) {
+    public float get(final long index) {
+        if (index < 0 || index > data.length - 1) {
             return NULL_FLOAT;
         }
-        return data[LongSizedDataStructure.intSize("FloatVectorDirect get",  i)];
+        return data[LongSizedDataStructure.intSize("FloatVectorDirect get", index)];
     }
 
     @Override
-    public FloatVector subVector(long fromIndex, long toIndex) {
-        return new FloatVectorSlice(this, fromIndex, toIndex - fromIndex);
+    public FloatVector subVector(final long fromIndexInclusive, final long toIndexExclusive) {
+        return new FloatVectorSlice(this, fromIndexInclusive, toIndexExclusive - fromIndexInclusive);
     }
 
-    public FloatVector subVectorByPositions(long [] positions) {
+    public FloatVector subVectorByPositions(final long[] positions) {
         return new FloatSubVector(this, positions);
     }
 
@@ -68,7 +69,7 @@ public class FloatVectorDirect implements FloatVector {
     }
 
     @Override
-    public final boolean equals(Object obj) {
+    public final boolean equals(final Object obj) {
         if (obj instanceof FloatVectorDirect) {
             return Arrays.equals(data, ((FloatVectorDirect) obj).data);
         }

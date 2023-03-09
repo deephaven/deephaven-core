@@ -12,15 +12,16 @@ import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
 
+/**
+ * A subset of a {@link DoubleVector} according to an array of positions.
+ */
 public class DoubleSubVector extends DoubleVector.Indirect {
 
-    private static final long serialVersionUID = 1L;
+    private final DoubleVector innerVector;
+    private final long[] positions;
 
-    private final DoubleVector innerArray;
-    private final long positions[];
-
-    public DoubleSubVector(@NotNull final DoubleVector innerArray, @NotNull final long[] positions) {
-        this.innerArray = innerArray;
+    public DoubleSubVector(@NotNull final DoubleVector innerVector, @NotNull final long[] positions) {
+        this.innerVector = innerVector;
         this.positions = positions;
     }
 
@@ -29,17 +30,18 @@ public class DoubleSubVector extends DoubleVector.Indirect {
         if (index < 0 || index >= positions.length) {
             return QueryConstants.NULL_DOUBLE;
         }
-        return innerArray.get(positions[LongSizedDataStructure.intSize("SubArray get", index)]);
+        return innerVector.get(positions[LongSizedDataStructure.intSize("DoubleSubVector.get", index)]);
     }
 
     @Override
-    public DoubleVector subVector(final long fromIndex, final long toIndex) {
-        return innerArray.subVectorByPositions(Vector.mapSelectedPositionRange(positions, fromIndex, toIndex));
+    public DoubleVector subVector(final long fromIndexInclusive, final long toIndexExclusive) {
+        return innerVector.subVectorByPositions(
+                Vector.mapSelectedPositionRange(positions, fromIndexInclusive, toIndexExclusive));
     }
 
     @Override
     public DoubleVector subVectorByPositions(final long[] positions) {
-        return innerArray.subVectorByPositions(Vector.mapSelectedPositions(this.positions, positions));
+        return innerVector.subVectorByPositions(Vector.mapSelectedPositions(this.positions, positions));
     }
 
     @Override

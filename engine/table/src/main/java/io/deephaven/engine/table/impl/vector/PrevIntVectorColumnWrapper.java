@@ -22,8 +22,6 @@ import static io.deephaven.util.QueryConstants.NULL_INT;
 
 public class PrevIntVectorColumnWrapper extends IntVector.Indirect {
 
-    private static final long serialVersionUID = -2715269662143763674L;
-
     private final ColumnSource<Integer> columnSource;
     private final RowSet rowSet;
     private final long startPadding;
@@ -44,26 +42,26 @@ public class PrevIntVectorColumnWrapper extends IntVector.Indirect {
     }
 
     @Override
-    public int get(long i) {
-        i -= startPadding;
+    public int get(long index) {
+        index -= startPadding;
 
-        if (i < 0 || i > rowSet.size() - 1) {
+        if (index < 0 || index > rowSet.size() - 1) {
             return NULL_INT;
         }
 
-        return columnSource.getPrevInt(rowSet.get(i));
+        return columnSource.getPrevInt(rowSet.get(index));
     }
 
     @Override
-    public IntVector subVector(long fromIndex, long toIndex) {
-        fromIndex -= startPadding;
-        toIndex -= startPadding;
+    public IntVector subVector(long fromIndexInclusive, long toIndexExclusive) {
+        fromIndexInclusive -= startPadding;
+        toIndexExclusive -= startPadding;
 
-        final long realFrom = ClampUtil.clampLong(0, rowSet.size(), fromIndex);
-        final long realTo = ClampUtil.clampLong(0, rowSet.size(), toIndex);
+        final long realFrom = ClampUtil.clampLong(0, rowSet.size(), fromIndexInclusive);
+        final long realTo = ClampUtil.clampLong(0, rowSet.size(), toIndexExclusive);
 
-        long newStartPadding = toIndex < 0 ? toIndex - fromIndex : Math.max(0, -fromIndex);
-        long newEndPadding = fromIndex >= rowSet.size() ? toIndex - fromIndex : Math.max(0, toIndex - rowSet.size());
+        long newStartPadding = toIndexExclusive < 0 ? toIndexExclusive - fromIndexInclusive : Math.max(0, -fromIndexInclusive);
+        long newEndPadding = fromIndexInclusive >= rowSet.size() ? toIndexExclusive - fromIndexInclusive : Math.max(0, toIndexExclusive - rowSet.size());
 
         return new PrevIntVectorColumnWrapper(columnSource, rowSet.subSetByPositionRange(realFrom, realTo),
                 newStartPadding, newEndPadding);

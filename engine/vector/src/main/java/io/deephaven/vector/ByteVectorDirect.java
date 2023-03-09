@@ -16,33 +16,34 @@ import java.util.Arrays;
 
 import static io.deephaven.util.QueryConstants.NULL_BYTE;
 
+/**
+ * A {@link ByteVector} backed by an array.
+ */
 @ArrayType(type = byte[].class)
 public class ByteVectorDirect implements ByteVector {
 
-    private final static long serialVersionUID = 3636374971797603565L;
+    public static final ByteVector ZERO_LENGTH_VECTOR = new ByteVectorDirect();
 
     private final byte[] data;
 
-    public ByteVectorDirect(byte... data){
+    public ByteVectorDirect(final byte... data) {
         this.data = data;
     }
 
-    public static final ByteVector ZERO_LEN_VECTOR = new ByteVectorDirect();
-
     @Override
-    public byte get(long i) {
-        if (i < 0 || i > data.length - 1) {
+    public byte get(final long index) {
+        if (index < 0 || index > data.length - 1) {
             return NULL_BYTE;
         }
-        return data[LongSizedDataStructure.intSize("ByteVectorDirect get",  i)];
+        return data[LongSizedDataStructure.intSize("ByteVectorDirect get", index)];
     }
 
     @Override
-    public ByteVector subVector(long fromIndex, long toIndex) {
-        return new ByteVectorSlice(this, fromIndex, toIndex - fromIndex);
+    public ByteVector subVector(final long fromIndexInclusive, final long toIndexExclusive) {
+        return new ByteVectorSlice(this, fromIndexInclusive, toIndexExclusive - fromIndexInclusive);
     }
 
-    public ByteVector subVectorByPositions(long [] positions) {
+    public ByteVector subVectorByPositions(final long[] positions) {
         return new ByteSubVector(this, positions);
     }
 
@@ -68,7 +69,7 @@ public class ByteVectorDirect implements ByteVector {
     }
 
     @Override
-    public final boolean equals(Object obj) {
+    public final boolean equals(final Object obj) {
         if (obj instanceof ByteVectorDirect) {
             return Arrays.equals(data, ((ByteVectorDirect) obj).data);
         }

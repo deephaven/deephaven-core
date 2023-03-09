@@ -12,15 +12,16 @@ import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
 
+/**
+ * A subset of a {@link LongVector} according to an array of positions.
+ */
 public class LongSubVector extends LongVector.Indirect {
 
-    private static final long serialVersionUID = 1L;
+    private final LongVector innerVector;
+    private final long[] positions;
 
-    private final LongVector innerArray;
-    private final long positions[];
-
-    public LongSubVector(@NotNull final LongVector innerArray, @NotNull final long[] positions) {
-        this.innerArray = innerArray;
+    public LongSubVector(@NotNull final LongVector innerVector, @NotNull final long[] positions) {
+        this.innerVector = innerVector;
         this.positions = positions;
     }
 
@@ -29,17 +30,18 @@ public class LongSubVector extends LongVector.Indirect {
         if (index < 0 || index >= positions.length) {
             return QueryConstants.NULL_LONG;
         }
-        return innerArray.get(positions[LongSizedDataStructure.intSize("SubArray get", index)]);
+        return innerVector.get(positions[LongSizedDataStructure.intSize("LongSubVector.get", index)]);
     }
 
     @Override
-    public LongVector subVector(final long fromIndex, final long toIndex) {
-        return innerArray.subVectorByPositions(Vector.mapSelectedPositionRange(positions, fromIndex, toIndex));
+    public LongVector subVector(final long fromIndexInclusive, final long toIndexExclusive) {
+        return innerVector.subVectorByPositions(
+                Vector.mapSelectedPositionRange(positions, fromIndexInclusive, toIndexExclusive));
     }
 
     @Override
     public LongVector subVectorByPositions(final long[] positions) {
-        return innerArray.subVectorByPositions(Vector.mapSelectedPositions(this.positions, positions));
+        return innerVector.subVectorByPositions(Vector.mapSelectedPositions(this.positions, positions));
     }
 
     @Override

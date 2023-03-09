@@ -7,27 +7,26 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.Serializable;
 import java.util.Arrays;
 import java.util.function.Function;
 import java.util.stream.LongStream;
 
-public interface Vector<VECTOR_TYPE extends Vector> extends Serializable, LongSizedDataStructure {
-    long serialVersionUID = -2429677814745466454L;
+/**
+ * Logical data structure representing an ordered list of elements.
+ */
+public interface Vector<VECTOR_TYPE extends Vector<VECTOR_TYPE>> extends LongSizedDataStructure {
 
     String NULL_ELEMENT_STRING = " ";
 
-    VECTOR_TYPE subVector(long fromIndex, long toIndex);
+    VECTOR_TYPE subVector(long fromIndexInclusive, long toIndexExclusive);
 
     VECTOR_TYPE subVectorByPositions(long[] positions);
 
     Object toArray();
 
-    Class getComponentType();
+    Class<?> getComponentType();
 
-    default String toString(int prefixLength) {
-        return "";
-    }
+    String toString(int prefixLength);
 
     default boolean isEmpty() {
         return size() == 0;
@@ -40,36 +39,40 @@ public interface Vector<VECTOR_TYPE extends Vector> extends Serializable, LongSi
         return index < validFromInclusive || index >= validToExclusive ? -1 : index;
     }
 
-    static long[] mapSelectedPositionRange(@NotNull final long[] currentPositions,
-            final long selectedRangeStartInclusive, final long selectedRangeEndExclusive) {
-        Assert.leq(selectedRangeStartInclusive, "selectedRangeStartInclusive", selectedRangeEndExclusive,
-                "selectedRangeEndExclusive");
+    static long[] mapSelectedPositionRange(
+            @NotNull final long[] currentPositions,
+            final long selectedRangeStartInclusive,
+            final long selectedRangeEndExclusive) {
+        Assert.leq(selectedRangeStartInclusive, "selectedRangeStartInclusive",
+                selectedRangeEndExclusive, "selectedRangeEndExclusive");
         return LongStream.range(selectedRangeStartInclusive, selectedRangeEndExclusive)
-                .map(s -> s < 0 || s >= currentPositions.length ? -1
+                .map(s -> s < 0 || s >= currentPositions.length
+                        ? -1
                         : currentPositions[LongSizedDataStructure.intSize("mapSelectedPositionRange", s)])
                 .toArray();
     }
 
-    static long[] mapSelectedPositions(@NotNull final long[] currentPositions,
+    static long[] mapSelectedPositions(
+            @NotNull final long[] currentPositions,
             @NotNull final long[] selectedPositions) {
         return Arrays.stream(selectedPositions).map(s -> s < 0 || s >= currentPositions.length ? -1
                 : currentPositions[LongSizedDataStructure.intSize("mapSelectedPositions", s)]).toArray();
     }
 
-    static Function<Object, String> classToHelper(final Class clazz) {
-        if (clazz.equals(byte.class) || clazz.equals(Byte.class)) {
+    static Function<Object, String> classToHelper(final Class<?> clazz) {
+        if (clazz == byte.class || clazz == Byte.class) {
             return ByteVector::byteValToString;
-        } else if (clazz.equals(char.class) || clazz.equals(Character.class)) {
+        } else if (clazz == char.class || clazz == Character.class) {
             return CharVector::charValToString;
-        } else if (clazz.equals(double.class) || clazz.equals(Double.class)) {
+        } else if (clazz == double.class || clazz == Double.class) {
             return DoubleVector::doubleValToString;
-        } else if (clazz.equals(float.class) || clazz.equals(Float.class)) {
+        } else if (clazz == float.class || clazz == Float.class) {
             return FloatVector::floatValToString;
-        } else if (clazz.equals(int.class) || clazz.equals(Integer.class)) {
+        } else if (clazz == int.class || clazz == Integer.class) {
             return IntVector::intValToString;
-        } else if (clazz.equals(long.class) || clazz.equals(Long.class)) {
+        } else if (clazz == long.class || clazz == Long.class) {
             return LongVector::longValToString;
-        } else if (clazz.equals(short.class) || clazz.equals(Short.class)) {
+        } else if (clazz == short.class || clazz == Short.class) {
             return ShortVector::shortValToString;
         } else {
             return ObjectVector::defaultValToString;

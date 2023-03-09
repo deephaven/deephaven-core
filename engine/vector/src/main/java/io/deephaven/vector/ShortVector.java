@@ -17,21 +17,22 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 
+/**
+ * A {@link Vector} of primitive shorts.
+ */
 public interface ShortVector extends Vector<ShortVector> {
-
-    long serialVersionUID = -1373264425081841175L;
 
     static PrimitiveVectorType<ShortVector, Short> type() {
         return PrimitiveVectorType.of(ShortVector.class, ShortType.instance());
     }
 
-    short get(long i);
+    short get(long index);
 
     @Override
-    ShortVector subVector(long fromIndex, long toIndex);
+    ShortVector subVector(long fromIndexInclusive, long toIndexExclusive);
 
     @Override
-    ShortVector subVectorByPositions(long [] positions);
+    ShortVector subVectorByPositions(long[] positions);
 
     @Override
     short[] toArray();
@@ -41,7 +42,7 @@ public interface ShortVector extends Vector<ShortVector> {
 
     @Override
     @FinalDefault
-    default Class getComponentType() {
+    default Class<?> getComponentType() {
         return short.class;
     }
 
@@ -51,12 +52,12 @@ public interface ShortVector extends Vector<ShortVector> {
         return toString(this, prefixLength);
     }
 
-    /** Return a version of this Vector that is flattened out to only reference memory.  */
+    /** Return a version of this Vector that is flattened out to only reference memory. */
     @Override
     ShortVector getDirect();
 
     static String shortValToString(final Object val) {
-        return val == null ? NULL_ELEMENT_STRING : primitiveShortValToString((Short)val);
+        return val == null ? NULL_ELEMENT_STRING : primitiveShortValToString((Short) val);
     }
 
     static String primitiveShortValToString(final short val) {
@@ -66,21 +67,21 @@ public interface ShortVector extends Vector<ShortVector> {
     /**
      * Helper method for implementing {@link Object#toString()}.
      *
-     * @param array       The ShortVector to convert to a String
-     * @param prefixLength The maximum prefix of the array to convert
-     * @return The String representation of array
+     * @param vector The ShortVector to convert to a String
+     * @param prefixLength The maximum prefix of {@code vector} to convert
+     * @return The String representation of {@code vector}
      */
-    static String toString(@NotNull final ShortVector array, final int prefixLength) {
-        if (array.isEmpty()) {
+    static String toString(@NotNull final ShortVector vector, final int prefixLength) {
+        if (vector.isEmpty()) {
             return "[]";
         }
         final StringBuilder builder = new StringBuilder("[");
-        final int displaySize = (int) Math.min(array.size(), prefixLength);
-        builder.append(primitiveShortValToString(array.get(0)));
+        final int displaySize = (int) Math.min(vector.size(), prefixLength);
+        builder.append(primitiveShortValToString(vector.get(0)));
         for (int ei = 1; ei < displaySize; ++ei) {
-            builder.append(',').append(primitiveShortValToString(array.get(ei)));
+            builder.append(',').append(primitiveShortValToString(vector.get(ei)));
         }
-        if (displaySize == array.size()) {
+        if (displaySize == vector.size()) {
             builder.append(']');
         } else {
             builder.append(", ...]");
@@ -91,25 +92,25 @@ public interface ShortVector extends Vector<ShortVector> {
     /**
      * Helper method for implementing {@link Object#equals(Object)}.
      *
-     * @param aArray The LHS of the equality test (always a ShortVector)
-     * @param b      The RHS of the equality test
+     * @param aVector The LHS of the equality test (always a ShortVector)
+     * @param bObj The RHS of the equality test
      * @return Whether the two inputs are equal
      */
-    static boolean equals(@NotNull final ShortVector aArray, @Nullable final Object b) {
-        if (aArray == b) {
+    static boolean equals(@NotNull final ShortVector aVector, @Nullable final Object bObj) {
+        if (aVector == bObj) {
             return true;
         }
-        if (!(b instanceof ShortVector)) {
+        if (!(bObj instanceof ShortVector)) {
             return false;
         }
-        final ShortVector bArray = (ShortVector) b;
-        final long size = aArray.size();
-        if (size != bArray.size()) {
+        final ShortVector bVector = (ShortVector) bObj;
+        final long size = aVector.size();
+        if (size != bVector.size()) {
             return false;
         }
         for (long ei = 0; ei < size; ++ei) {
             // region elementEquals
-            if (aArray.get(ei) != bArray.get(ei)) {
+            if (aVector.get(ei) != bVector.get(ei)) {
                 return false;
             }
             // endregion elementEquals
@@ -118,17 +119,17 @@ public interface ShortVector extends Vector<ShortVector> {
     }
 
     /**
-     * Helper method for implementing {@link Object#hashCode()}. Follows the pattern in
-     * {@link Arrays#hashCode(Object[])}.
+     * Helper method for implementing {@link Object#hashCode()}. Follows the pattern
+     * in {@link Arrays#hashCode(short[])}.
      *
-     * @param array The ShortVector to hash
+     * @param vector The ShortVector to hash
      * @return The hash code
      */
-    static int hashCode(@NotNull final ShortVector array) {
-        final long size = array.size();
+    static int hashCode(@NotNull final ShortVector vector) {
+        final long size = vector.size();
         int result = 1;
         for (long ei = 0; ei < size; ++ei) {
-            result = 31 * result + Short.hashCode(array.get(ei));
+            result = 31 * result + Short.hashCode(vector.get(ei));
         }
         return result;
     }
@@ -137,8 +138,6 @@ public interface ShortVector extends Vector<ShortVector> {
      * Base class for all "indirect" ShortVector implementations.
      */
     abstract class Indirect implements ShortVector {
-
-        private static final long serialVersionUID = 1L;
 
         @Override
         public ShortVector getDirect() {
@@ -159,10 +158,6 @@ public interface ShortVector extends Vector<ShortVector> {
         @Override
         public final int hashCode() {
             return ShortVector.hashCode(this);
-        }
-
-        protected final Object writeReplace() {
-            return new ShortVectorDirect(toArray());
         }
     }
 }

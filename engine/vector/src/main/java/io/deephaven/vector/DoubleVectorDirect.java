@@ -16,33 +16,34 @@ import java.util.Arrays;
 
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 
+/**
+ * A {@link DoubleVector} backed by an array.
+ */
 @ArrayType(type = double[].class)
 public class DoubleVectorDirect implements DoubleVector {
 
-    private final static long serialVersionUID = 3636374971797603565L;
+    public static final DoubleVector ZERO_LENGTH_VECTOR = new DoubleVectorDirect();
 
     private final double[] data;
 
-    public DoubleVectorDirect(double... data){
+    public DoubleVectorDirect(final double... data) {
         this.data = data;
     }
 
-    public static final DoubleVector ZERO_LEN_VECTOR = new DoubleVectorDirect();
-
     @Override
-    public double get(long i) {
-        if (i < 0 || i > data.length - 1) {
+    public double get(final long index) {
+        if (index < 0 || index > data.length - 1) {
             return NULL_DOUBLE;
         }
-        return data[LongSizedDataStructure.intSize("DoubleVectorDirect get",  i)];
+        return data[LongSizedDataStructure.intSize("DoubleVectorDirect get", index)];
     }
 
     @Override
-    public DoubleVector subVector(long fromIndex, long toIndex) {
-        return new DoubleVectorSlice(this, fromIndex, toIndex - fromIndex);
+    public DoubleVector subVector(final long fromIndexInclusive, final long toIndexExclusive) {
+        return new DoubleVectorSlice(this, fromIndexInclusive, toIndexExclusive - fromIndexInclusive);
     }
 
-    public DoubleVector subVectorByPositions(long [] positions) {
+    public DoubleVector subVectorByPositions(final long[] positions) {
         return new DoubleSubVector(this, positions);
     }
 
@@ -68,7 +69,7 @@ public class DoubleVectorDirect implements DoubleVector {
     }
 
     @Override
-    public final boolean equals(Object obj) {
+    public final boolean equals(final Object obj) {
         if (obj instanceof DoubleVectorDirect) {
             return Arrays.equals(data, ((DoubleVectorDirect) obj).data);
         }

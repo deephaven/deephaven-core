@@ -13,23 +13,25 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.Function;
 
-public interface ObjectVector<T> extends Vector<ObjectVector<T>> {
+/**
+ * A {@link Vector} of {@link Object objects}.
+ */
+public interface ObjectVector<COMPONENT_TYPE> extends Vector<ObjectVector<COMPONENT_TYPE>> {
 
-    long serialVersionUID = 2691131699080413017L;
-
-    static <T> GenericVectorType<ObjectVector, T> type(GenericType<T> genericType) {
-        return GenericVectorType.of(ObjectVector.class, genericType);
+    static <T> GenericVectorType<ObjectVector<T>, T> type(GenericType<T> genericType) {
+        // noinspection unchecked
+        return GenericVectorType.of((Class<ObjectVector<T>>) (Class<?>) ObjectVector.class, genericType);
     }
 
-    T get(long i);
+    COMPONENT_TYPE get(long index);
 
-    ObjectVector<T> subVector(long fromIndexInclusive, long toIndexExclusive);
+    ObjectVector<COMPONENT_TYPE> subVector(long fromIndexInclusive, long toIndexExclusive);
 
-    ObjectVector<T> subVectorByPositions(long[] positions);
+    ObjectVector<COMPONENT_TYPE> subVectorByPositions(long[] positions);
 
-    T[] toArray();
+    COMPONENT_TYPE[] toArray();
 
-    Class<T> getComponentType();
+    Class<COMPONENT_TYPE> getComponentType();
 
     @Override
     @FinalDefault
@@ -37,7 +39,7 @@ public interface ObjectVector<T> extends Vector<ObjectVector<T>> {
         return toString(this, prefixLength);
     }
 
-    ObjectVector<T> getDirect();
+    ObjectVector<COMPONENT_TYPE> getDirect();
 
     static String defaultValToString(final Object val) {
         return val == null ? NULL_ELEMENT_STRING : val.toString();
@@ -46,24 +48,24 @@ public interface ObjectVector<T> extends Vector<ObjectVector<T>> {
     /**
      * Helper method for implementing {@link Object#toString()}.
      *
-     * @param array The Vector to convert to a String
-     * @param prefixLength The maximum prefix of the array to convert
-     * @return The String representation of array
+     * @param vector The ObjectVector to convert to a String
+     * @param prefixLength The maximum prefix of {@code vector} to convert
+     * @return The String representation of {@code vector}
      */
-    static String toString(@NotNull final ObjectVector<?> array, final int prefixLength) {
-        if (array.isEmpty()) {
+    static String toString(@NotNull final ObjectVector<?> vector, final int prefixLength) {
+        if (vector.isEmpty()) {
             return "[]";
         }
 
-        final Function<Object, String> valToString = Vector.classToHelper(array.getComponentType());
+        final Function<Object, String> valToString = Vector.classToHelper(vector.getComponentType());
 
         final StringBuilder builder = new StringBuilder("[");
-        final int displaySize = (int) Math.min(array.size(), prefixLength);
-        builder.append(valToString.apply(array.get(0)));
+        final int displaySize = (int) Math.min(vector.size(), prefixLength);
+        builder.append(valToString.apply(vector.get(0)));
         for (int ei = 1; ei < displaySize; ++ei) {
-            builder.append(',').append(valToString.apply(array.get(ei)));
+            builder.append(',').append(valToString.apply(vector.get(ei)));
         }
-        if (displaySize == array.size()) {
+        if (displaySize == vector.size()) {
             builder.append(']');
         } else {
             builder.append(", ...]");
@@ -74,24 +76,24 @@ public interface ObjectVector<T> extends Vector<ObjectVector<T>> {
     /**
      * Helper method for implementing {@link Object#equals(Object)}.
      *
-     * @param aVector The LHS of the equality test (always a Vector)
-     * @param b The RHS of the equality test
+     * @param aVector The LHS of the equality test (always an ObjectVector)
+     * @param bObj The RHS of the equality test
      * @return Whether the two inputs are equal
      */
-    static boolean equals(@NotNull final ObjectVector aVector, @Nullable final Object b) {
-        if (aVector == b) {
+    static boolean equals(@NotNull final ObjectVector<?> aVector, @Nullable final Object bObj) {
+        if (aVector == bObj) {
             return true;
         }
-        if (!(b instanceof ObjectVector)) {
+        if (!(bObj instanceof ObjectVector)) {
             return false;
         }
-        final ObjectVector bArray = (ObjectVector) b;
+        final ObjectVector<?> bVector = (ObjectVector<?>) bObj;
         final long size = aVector.size();
-        if (size != bArray.size()) {
+        if (size != bVector.size()) {
             return false;
         }
         for (long ei = 0; ei < size; ++ei) {
-            if (!Objects.equals(aVector.get(ei), bArray.get(ei))) {
+            if (!Objects.equals(aVector.get(ei), bVector.get(ei))) {
                 return false;
             }
         }
@@ -102,24 +104,27 @@ public interface ObjectVector<T> extends Vector<ObjectVector<T>> {
      * Helper method for implementing {@link Object#hashCode()}. Follows the pattern in
      * {@link Arrays#hashCode(Object[])}.
      *
-     * @param array The Vector to hash
+     * @param vector The ObjectVector to hash
      * @return The hash code
      */
-    static int hashCode(@NotNull final ObjectVector array) {
-        final long size = array.size();
+    static int hashCode(@NotNull final ObjectVector<?> vector) {
+        final long size = vector.size();
         int result = 1;
         for (long ei = 0; ei < size; ++ei) {
-            result = 31 * result + Objects.hashCode(array.get(ei));
+            result = 31 * result + Objects.hashCode(vector.get(ei));
         }
         return result;
     }
 
     /**
-     * Base class for all "indirect" Vector implementations.
+     * Base class for all "indirect" ObjectVector implementations.
      */
-    abstract class Indirect<T> implements ObjectVector<T> {
+    abstract class Indirect<COMPONENT_TYPE> implements ObjectVector<COMPONENT_TYPE> {
 
-        private static final long serialVersionUID = 1L;
+        @Override
+        public ObjectVector<COMPONENT_TYPE> getDirect() {
+            return new ObjectVectorDirect<>(toArray());
+        }
 
         @Override
         public final String toString() {
@@ -128,17 +133,13 @@ public interface ObjectVector<T> extends Vector<ObjectVector<T>> {
 
         @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")
         @Override
-        public final boolean equals(Object obj) {
+        public final boolean equals(final Object obj) {
             return ObjectVector.equals(this, obj);
         }
 
         @Override
         public final int hashCode() {
             return ObjectVector.hashCode(this);
-        }
-
-        protected final Object writeReplace() {
-            return new ObjectVectorDirect<>(toArray());
         }
     }
 }

@@ -8,6 +8,8 @@ description 'Engine Vectors: Array-like data structures for in-place data access
 dependencies {
     api project(':Util')
     api project(':qst')
+    api project(':engine-primitive')
+
     implementation project(':Base')
 
     compileOnly depAnnotations

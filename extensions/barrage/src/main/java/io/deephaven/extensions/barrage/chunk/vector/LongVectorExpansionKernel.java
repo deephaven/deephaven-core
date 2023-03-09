@@ -23,7 +23,7 @@ import io.deephaven.vector.LongVector;
 import io.deephaven.vector.LongVectorDirect;
 import io.deephaven.vector.Vector;
 
-import static io.deephaven.vector.LongVectorDirect.ZERO_LEN_VECTOR;
+import static io.deephaven.vector.LongVectorDirect.ZERO_LENGTH_VECTOR;
 
 public class LongVectorExpansionKernel implements VectorExpansionKernel {
     public final static LongVectorExpansionKernel INSTANCE = new LongVectorExpansionKernel();
@@ -83,7 +83,7 @@ public class LongVectorExpansionKernel implements VectorExpansionKernel {
         for (int i = 0; i < itemsInBatch; ++i) {
             final int ROW_LEN = perElementLengthDest.get(i + 1) - perElementLengthDest.get(i);
             if (ROW_LEN == 0) {
-                result.set(outOffset + i, ZERO_LEN_VECTOR);
+                result.set(outOffset + i, ZERO_LENGTH_VECTOR);
             } else {
                 final long[] row = new long[ROW_LEN];
                 for (int j = 0; j < ROW_LEN; ++j) {

@@ -12,15 +12,16 @@ import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
 
+/**
+ * A subset of a {@link FloatVector} according to an array of positions.
+ */
 public class FloatSubVector extends FloatVector.Indirect {
 
-    private static final long serialVersionUID = 1L;
+    private final FloatVector innerVector;
+    private final long[] positions;
 
-    private final FloatVector innerArray;
-    private final long positions[];
-
-    public FloatSubVector(@NotNull final FloatVector innerArray, @NotNull final long[] positions) {
-        this.innerArray = innerArray;
+    public FloatSubVector(@NotNull final FloatVector innerVector, @NotNull final long[] positions) {
+        this.innerVector = innerVector;
         this.positions = positions;
     }
 
@@ -29,17 +30,18 @@ public class FloatSubVector extends FloatVector.Indirect {
         if (index < 0 || index >= positions.length) {
             return QueryConstants.NULL_FLOAT;
         }
-        return innerArray.get(positions[LongSizedDataStructure.intSize("SubArray get", index)]);
+        return innerVector.get(positions[LongSizedDataStructure.intSize("FloatSubVector.get", index)]);
     }
 
     @Override
-    public FloatVector subVector(final long fromIndex, final long toIndex) {
-        return innerArray.subVectorByPositions(Vector.mapSelectedPositionRange(positions, fromIndex, toIndex));
+    public FloatVector subVector(final long fromIndexInclusive, final long toIndexExclusive) {
+        return innerVector.subVectorByPositions(
+                Vector.mapSelectedPositionRange(positions, fromIndexInclusive, toIndexExclusive));
     }
 
     @Override
     public FloatVector subVectorByPositions(final long[] positions) {
-        return innerArray.subVectorByPositions(Vector.mapSelectedPositions(this.positions, positions));
+        return innerVector.subVectorByPositions(Vector.mapSelectedPositions(this.positions, positions));
     }
 
     @Override

@@ -22,8 +22,6 @@ import static io.deephaven.util.QueryConstants.NULL_SHORT;
 
 public class ShortVectorColumnWrapper extends ShortVector.Indirect {
 
-    private static final long serialVersionUID = -2715269662143763674L;
-
     private final ColumnSource<Short> columnSource;
     private final RowSet rowSet;
     private final long startPadding;
@@ -43,26 +41,26 @@ public class ShortVectorColumnWrapper extends ShortVector.Indirect {
     }
 
     @Override
-    public short get(long i) {
-        i-= startPadding;
+    public short get(long index) {
+        index -= startPadding;
 
-        if (i<0 || i> rowSet.size()-1) {
+        if (index <0 || index > rowSet.size()-1) {
             return NULL_SHORT;
         }
 
-        return columnSource.getShort(rowSet.get(i));
+        return columnSource.getShort(rowSet.get(index));
     }
 
     @Override
-    public ShortVector subVector(long fromIndex, long toIndex) {
-        fromIndex-=startPadding;
-        toIndex-=startPadding;
+    public ShortVector subVector(long fromIndexInclusive, long toIndexExclusive) {
+        fromIndexInclusive -=startPadding;
+        toIndexExclusive -=startPadding;
 
-        final long realFrom = ClampUtil.clampLong(0, rowSet.size(), fromIndex);
-        final long realTo = ClampUtil.clampLong(0, rowSet.size(), toIndex);
+        final long realFrom = ClampUtil.clampLong(0, rowSet.size(), fromIndexInclusive);
+        final long realTo = ClampUtil.clampLong(0, rowSet.size(), toIndexExclusive);
 
-        long newStartPadding=toIndex<0 ? toIndex-fromIndex : Math.max(0, -fromIndex);
-        long newEndPadding= fromIndex>= rowSet.size() ? toIndex-fromIndex : Math.max(0, toIndex - rowSet.size());
+        long newStartPadding= toIndexExclusive <0 ? toIndexExclusive - fromIndexInclusive : Math.max(0, -fromIndexInclusive);
+        long newEndPadding= fromIndexInclusive >= rowSet.size() ? toIndexExclusive - fromIndexInclusive : Math.max(0, toIndexExclusive - rowSet.size());
 
         return new ShortVectorColumnWrapper(columnSource, rowSet.subSetByPositionRange(realFrom, realTo), newStartPadding, newEndPadding);
     }

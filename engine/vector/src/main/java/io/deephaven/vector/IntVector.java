@@ -17,21 +17,22 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 
+/**
+ * A {@link Vector} of primitive ints.
+ */
 public interface IntVector extends Vector<IntVector> {
-
-    long serialVersionUID = -1373264425081841175L;
 
     static PrimitiveVectorType<IntVector, Integer> type() {
         return PrimitiveVectorType.of(IntVector.class, IntType.instance());
     }
 
-    int get(long i);
+    int get(long index);
 
     @Override
-    IntVector subVector(long fromIndex, long toIndex);
+    IntVector subVector(long fromIndexInclusive, long toIndexExclusive);
 
     @Override
-    IntVector subVectorByPositions(long [] positions);
+    IntVector subVectorByPositions(long[] positions);
 
     @Override
     int[] toArray();
@@ -41,7 +42,7 @@ public interface IntVector extends Vector<IntVector> {
 
     @Override
     @FinalDefault
-    default Class getComponentType() {
+    default Class<?> getComponentType() {
         return int.class;
     }
 
@@ -51,12 +52,12 @@ public interface IntVector extends Vector<IntVector> {
         return toString(this, prefixLength);
     }
 
-    /** Return a version of this Vector that is flattened out to only reference memory.  */
+    /** Return a version of this Vector that is flattened out to only reference memory. */
     @Override
     IntVector getDirect();
 
     static String intValToString(final Object val) {
-        return val == null ? NULL_ELEMENT_STRING : primitiveIntValToString((Integer)val);
+        return val == null ? NULL_ELEMENT_STRING : primitiveIntValToString((Integer) val);
     }
 
     static String primitiveIntValToString(final int val) {
@@ -66,21 +67,21 @@ public interface IntVector extends Vector<IntVector> {
     /**
      * Helper method for implementing {@link Object#toString()}.
      *
-     * @param array       The IntVector to convert to a String
-     * @param prefixLength The maximum prefix of the array to convert
-     * @return The String representation of array
+     * @param vector The IntVector to convert to a String
+     * @param prefixLength The maximum prefix of {@code vector} to convert
+     * @return The String representation of {@code vector}
      */
-    static String toString(@NotNull final IntVector array, final int prefixLength) {
-        if (array.isEmpty()) {
+    static String toString(@NotNull final IntVector vector, final int prefixLength) {
+        if (vector.isEmpty()) {
             return "[]";
         }
         final StringBuilder builder = new StringBuilder("[");
-        final int displaySize = (int) Math.min(array.size(), prefixLength);
-        builder.append(primitiveIntValToString(array.get(0)));
+        final int displaySize = (int) Math.min(vector.size(), prefixLength);
+        builder.append(primitiveIntValToString(vector.get(0)));
         for (int ei = 1; ei < displaySize; ++ei) {
-            builder.append(',').append(primitiveIntValToString(array.get(ei)));
+            builder.append(',').append(primitiveIntValToString(vector.get(ei)));
         }
-        if (displaySize == array.size()) {
+        if (displaySize == vector.size()) {
             builder.append(']');
         } else {
             builder.append(", ...]");
@@ -91,25 +92,25 @@ public interface IntVector extends Vector<IntVector> {
     /**
      * Helper method for implementing {@link Object#equals(Object)}.
      *
-     * @param aArray The LHS of the equality test (always a IntVector)
-     * @param b      The RHS of the equality test
+     * @param aVector The LHS of the equality test (always a IntVector)
+     * @param bObj The RHS of the equality test
      * @return Whether the two inputs are equal
      */
-    static boolean equals(@NotNull final IntVector aArray, @Nullable final Object b) {
-        if (aArray == b) {
+    static boolean equals(@NotNull final IntVector aVector, @Nullable final Object bObj) {
+        if (aVector == bObj) {
             return true;
         }
-        if (!(b instanceof IntVector)) {
+        if (!(bObj instanceof IntVector)) {
             return false;
         }
-        final IntVector bArray = (IntVector) b;
-        final long size = aArray.size();
-        if (size != bArray.size()) {
+        final IntVector bVector = (IntVector) bObj;
+        final long size = aVector.size();
+        if (size != bVector.size()) {
             return false;
         }
         for (long ei = 0; ei < size; ++ei) {
             // region elementEquals
-            if (aArray.get(ei) != bArray.get(ei)) {
+            if (aVector.get(ei) != bVector.get(ei)) {
                 return false;
             }
             // endregion elementEquals
@@ -118,17 +119,17 @@ public interface IntVector extends Vector<IntVector> {
     }
 
     /**
-     * Helper method for implementing {@link Object#hashCode()}. Follows the pattern in
-     * {@link Arrays#hashCode(Object[])}.
+     * Helper method for implementing {@link Object#hashCode()}. Follows the pattern
+     * in {@link Arrays#hashCode(int[])}.
      *
-     * @param array The IntVector to hash
+     * @param vector The IntVector to hash
      * @return The hash code
      */
-    static int hashCode(@NotNull final IntVector array) {
-        final long size = array.size();
+    static int hashCode(@NotNull final IntVector vector) {
+        final long size = vector.size();
         int result = 1;
         for (long ei = 0; ei < size; ++ei) {
-            result = 31 * result + Integer.hashCode(array.get(ei));
+            result = 31 * result + Integer.hashCode(vector.get(ei));
         }
         return result;
     }
@@ -137,8 +138,6 @@ public interface IntVector extends Vector<IntVector> {
      * Base class for all "indirect" IntVector implementations.
      */
     abstract class Indirect implements IntVector {
-
-        private static final long serialVersionUID = 1L;
 
         @Override
         public IntVector getDirect() {
@@ -159,10 +158,6 @@ public interface IntVector extends Vector<IntVector> {
         @Override
         public final int hashCode() {
             return IntVector.hashCode(this);
-        }
-
-        protected final Object writeReplace() {
-            return new IntVectorDirect(toArray());
         }
     }
 }

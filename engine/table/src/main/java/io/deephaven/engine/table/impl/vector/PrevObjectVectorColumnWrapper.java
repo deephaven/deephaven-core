@@ -19,8 +19,6 @@ import java.lang.reflect.Array;
 
 public class PrevObjectVectorColumnWrapper<T> extends ObjectVector.Indirect<T> {
 
-    private static final long serialVersionUID = -5944424618636079377L;
-
     private final ColumnSource<T> columnSource;
     private final RowSet rowSet;
     private final long startPadding;
@@ -40,13 +38,13 @@ public class PrevObjectVectorColumnWrapper<T> extends ObjectVector.Indirect<T> {
     }
 
     @Override
-    public T get(long i) {
-        i -= startPadding;
+    public T get(long index) {
+        index -= startPadding;
 
-        if (i < 0 || i > rowSet.size() - 1) {
+        if (index < 0 || index > rowSet.size() - 1) {
             return null;
         }
-        return columnSource.getPrev(rowSet.get(i));
+        return columnSource.getPrev(rowSet.get(index));
     }
 
     @Override

@@ -16,33 +16,34 @@ import java.util.Arrays;
 
 import static io.deephaven.util.QueryConstants.NULL_SHORT;
 
+/**
+ * A {@link ShortVector} backed by an array.
+ */
 @ArrayType(type = short[].class)
 public class ShortVectorDirect implements ShortVector {
 
-    private final static long serialVersionUID = 3636374971797603565L;
+    public static final ShortVector ZERO_LENGTH_VECTOR = new ShortVectorDirect();
 
     private final short[] data;
 
-    public ShortVectorDirect(short... data){
+    public ShortVectorDirect(final short... data) {
         this.data = data;
     }
 
-    public static final ShortVector ZERO_LEN_VECTOR = new ShortVectorDirect();
-
     @Override
-    public short get(long i) {
-        if (i < 0 || i > data.length - 1) {
+    public short get(final long index) {
+        if (index < 0 || index > data.length - 1) {
             return NULL_SHORT;
         }
-        return data[LongSizedDataStructure.intSize("ShortVectorDirect get",  i)];
+        return data[LongSizedDataStructure.intSize("ShortVectorDirect get", index)];
     }
 
     @Override
-    public ShortVector subVector(long fromIndex, long toIndex) {
-        return new ShortVectorSlice(this, fromIndex, toIndex - fromIndex);
+    public ShortVector subVector(final long fromIndexInclusive, final long toIndexExclusive) {
+        return new ShortVectorSlice(this, fromIndexInclusive, toIndexExclusive - fromIndexInclusive);
     }
 
-    public ShortVector subVectorByPositions(long [] positions) {
+    public ShortVector subVectorByPositions(final long[] positions) {
         return new ShortSubVector(this, positions);
     }
 
@@ -68,7 +69,7 @@ public class ShortVectorDirect implements ShortVector {
     }
 
     @Override
-    public final boolean equals(Object obj) {
+    public final boolean equals(final Object obj) {
         if (obj instanceof ShortVectorDirect) {
             return Arrays.equals(data, ((ShortVectorDirect) obj).data);
         }

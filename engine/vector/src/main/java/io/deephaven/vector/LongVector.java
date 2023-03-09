@@ -17,21 +17,22 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 
+/**
+ * A {@link Vector} of primitive longs.
+ */
 public interface LongVector extends Vector<LongVector> {
-
-    long serialVersionUID = -1373264425081841175L;
 
     static PrimitiveVectorType<LongVector, Long> type() {
         return PrimitiveVectorType.of(LongVector.class, LongType.instance());
     }
 
-    long get(long i);
+    long get(long index);
 
     @Override
-    LongVector subVector(long fromIndex, long toIndex);
+    LongVector subVector(long fromIndexInclusive, long toIndexExclusive);
 
     @Override
-    LongVector subVectorByPositions(long [] positions);
+    LongVector subVectorByPositions(long[] positions);
 
     @Override
     long[] toArray();
@@ -41,7 +42,7 @@ public interface LongVector extends Vector<LongVector> {
 
     @Override
     @FinalDefault
-    default Class getComponentType() {
+    default Class<?> getComponentType() {
         return long.class;
     }
 
@@ -51,12 +52,12 @@ public interface LongVector extends Vector<LongVector> {
         return toString(this, prefixLength);
     }
 
-    /** Return a version of this Vector that is flattened out to only reference memory.  */
+    /** Return a version of this Vector that is flattened out to only reference memory. */
     @Override
     LongVector getDirect();
 
     static String longValToString(final Object val) {
-        return val == null ? NULL_ELEMENT_STRING : primitiveLongValToString((Long)val);
+        return val == null ? NULL_ELEMENT_STRING : primitiveLongValToString((Long) val);
     }
 
     static String primitiveLongValToString(final long val) {
@@ -66,21 +67,21 @@ public interface LongVector extends Vector<LongVector> {
     /**
      * Helper method for implementing {@link Object#toString()}.
      *
-     * @param array       The LongVector to convert to a String
-     * @param prefixLength The maximum prefix of the array to convert
-     * @return The String representation of array
+     * @param vector The LongVector to convert to a String
+     * @param prefixLength The maximum prefix of {@code vector} to convert
+     * @return The String representation of {@code vector}
      */
-    static String toString(@NotNull final LongVector array, final int prefixLength) {
-        if (array.isEmpty()) {
+    static String toString(@NotNull final LongVector vector, final int prefixLength) {
+        if (vector.isEmpty()) {
             return "[]";
         }
         final StringBuilder builder = new StringBuilder("[");
-        final int displaySize = (int) Math.min(array.size(), prefixLength);
-        builder.append(primitiveLongValToString(array.get(0)));
+        final int displaySize = (int) Math.min(vector.size(), prefixLength);
+        builder.append(primitiveLongValToString(vector.get(0)));
         for (int ei = 1; ei < displaySize; ++ei) {
-            builder.append(',').append(primitiveLongValToString(array.get(ei)));
+            builder.append(',').append(primitiveLongValToString(vector.get(ei)));
         }
-        if (displaySize == array.size()) {
+        if (displaySize == vector.size()) {
             builder.append(']');
         } else {
             builder.append(", ...]");
@@ -91,25 +92,25 @@ public interface LongVector extends Vector<LongVector> {
     /**
      * Helper method for implementing {@link Object#equals(Object)}.
      *
-     * @param aArray The LHS of the equality test (always a LongVector)
-     * @param b      The RHS of the equality test
+     * @param aVector The LHS of the equality test (always a LongVector)
+     * @param bObj The RHS of the equality test
      * @return Whether the two inputs are equal
      */
-    static boolean equals(@NotNull final LongVector aArray, @Nullable final Object b) {
-        if (aArray == b) {
+    static boolean equals(@NotNull final LongVector aVector, @Nullable final Object bObj) {
+        if (aVector == bObj) {
             return true;
         }
-        if (!(b instanceof LongVector)) {
+        if (!(bObj instanceof LongVector)) {
             return false;
         }
-        final LongVector bArray = (LongVector) b;
-        final long size = aArray.size();
-        if (size != bArray.size()) {
+        final LongVector bVector = (LongVector) bObj;
+        final long size = aVector.size();
+        if (size != bVector.size()) {
             return false;
         }
         for (long ei = 0; ei < size; ++ei) {
             // region elementEquals
-            if (aArray.get(ei) != bArray.get(ei)) {
+            if (aVector.get(ei) != bVector.get(ei)) {
                 return false;
             }
             // endregion elementEquals
@@ -118,17 +119,17 @@ public interface LongVector extends Vector<LongVector> {
     }
 
     /**
-     * Helper method for implementing {@link Object#hashCode()}. Follows the pattern in
-     * {@link Arrays#hashCode(Object[])}.
+     * Helper method for implementing {@link Object#hashCode()}. Follows the pattern
+     * in {@link Arrays#hashCode(long[])}.
      *
-     * @param array The LongVector to hash
+     * @param vector The LongVector to hash
      * @return The hash code
      */
-    static int hashCode(@NotNull final LongVector array) {
-        final long size = array.size();
+    static int hashCode(@NotNull final LongVector vector) {
+        final long size = vector.size();
         int result = 1;
         for (long ei = 0; ei < size; ++ei) {
-            result = 31 * result + Long.hashCode(array.get(ei));
+            result = 31 * result + Long.hashCode(vector.get(ei));
         }
         return result;
     }
@@ -137,8 +138,6 @@ public interface LongVector extends Vector<LongVector> {
      * Base class for all "indirect" LongVector implementations.
      */
     abstract class Indirect implements LongVector {
-
-        private static final long serialVersionUID = 1L;
 
         @Override
         public LongVector getDirect() {
@@ -159,10 +158,6 @@ public interface LongVector extends Vector<LongVector> {
         @Override
         public final int hashCode() {
             return LongVector.hashCode(this);
-        }
-
-        protected final Object writeReplace() {
-            return new LongVectorDirect(toArray());
         }
     }
 }

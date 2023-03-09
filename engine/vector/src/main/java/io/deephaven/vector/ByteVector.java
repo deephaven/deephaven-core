@@ -17,21 +17,22 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 
+/**
+ * A {@link Vector} of primitive bytes.
+ */
 public interface ByteVector extends Vector<ByteVector> {
-
-    long serialVersionUID = -1373264425081841175L;
 
     static PrimitiveVectorType<ByteVector, Byte> type() {
         return PrimitiveVectorType.of(ByteVector.class, ByteType.instance());
     }
 
-    byte get(long i);
+    byte get(long index);
 
     @Override
-    ByteVector subVector(long fromIndex, long toIndex);
+    ByteVector subVector(long fromIndexInclusive, long toIndexExclusive);
 
     @Override
-    ByteVector subVectorByPositions(long [] positions);
+    ByteVector subVectorByPositions(long[] positions);
 
     @Override
     byte[] toArray();
@@ -41,7 +42,7 @@ public interface ByteVector extends Vector<ByteVector> {
 
     @Override
     @FinalDefault
-    default Class getComponentType() {
+    default Class<?> getComponentType() {
         return byte.class;
     }
 
@@ -51,12 +52,12 @@ public interface ByteVector extends Vector<ByteVector> {
         return toString(this, prefixLength);
     }
 
-    /** Return a version of this Vector that is flattened out to only reference memory.  */
+    /** Return a version of this Vector that is flattened out to only reference memory. */
     @Override
     ByteVector getDirect();
 
     static String byteValToString(final Object val) {
-        return val == null ? NULL_ELEMENT_STRING : primitiveByteValToString((Byte)val);
+        return val == null ? NULL_ELEMENT_STRING : primitiveByteValToString((Byte) val);
     }
 
     static String primitiveByteValToString(final byte val) {
@@ -66,21 +67,21 @@ public interface ByteVector extends Vector<ByteVector> {
     /**
      * Helper method for implementing {@link Object#toString()}.
      *
-     * @param array       The ByteVector to convert to a String
-     * @param prefixLength The maximum prefix of the array to convert
-     * @return The String representation of array
+     * @param vector The ByteVector to convert to a String
+     * @param prefixLength The maximum prefix of {@code vector} to convert
+     * @return The String representation of {@code vector}
      */
-    static String toString(@NotNull final ByteVector array, final int prefixLength) {
-        if (array.isEmpty()) {
+    static String toString(@NotNull final ByteVector vector, final int prefixLength) {
+        if (vector.isEmpty()) {
             return "[]";
         }
         final StringBuilder builder = new StringBuilder("[");
-        final int displaySize = (int) Math.min(array.size(), prefixLength);
-        builder.append(primitiveByteValToString(array.get(0)));
+        final int displaySize = (int) Math.min(vector.size(), prefixLength);
+        builder.append(primitiveByteValToString(vector.get(0)));
         for (int ei = 1; ei < displaySize; ++ei) {
-            builder.append(',').append(primitiveByteValToString(array.get(ei)));
+            builder.append(',').append(primitiveByteValToString(vector.get(ei)));
         }
-        if (displaySize == array.size()) {
+        if (displaySize == vector.size()) {
             builder.append(']');
         } else {
             builder.append(", ...]");
@@ -91,25 +92,25 @@ public interface ByteVector extends Vector<ByteVector> {
     /**
      * Helper method for implementing {@link Object#equals(Object)}.
      *
-     * @param aArray The LHS of the equality test (always a ByteVector)
-     * @param b      The RHS of the equality test
+     * @param aVector The LHS of the equality test (always a ByteVector)
+     * @param bObj The RHS of the equality test
      * @return Whether the two inputs are equal
      */
-    static boolean equals(@NotNull final ByteVector aArray, @Nullable final Object b) {
-        if (aArray == b) {
+    static boolean equals(@NotNull final ByteVector aVector, @Nullable final Object bObj) {
+        if (aVector == bObj) {
             return true;
         }
-        if (!(b instanceof ByteVector)) {
+        if (!(bObj instanceof ByteVector)) {
             return false;
         }
-        final ByteVector bArray = (ByteVector) b;
-        final long size = aArray.size();
-        if (size != bArray.size()) {
+        final ByteVector bVector = (ByteVector) bObj;
+        final long size = aVector.size();
+        if (size != bVector.size()) {
             return false;
         }
         for (long ei = 0; ei < size; ++ei) {
             // region elementEquals
-            if (aArray.get(ei) != bArray.get(ei)) {
+            if (aVector.get(ei) != bVector.get(ei)) {
                 return false;
             }
             // endregion elementEquals
@@ -118,17 +119,17 @@ public interface ByteVector extends Vector<ByteVector> {
     }
 
     /**
-     * Helper method for implementing {@link Object#hashCode()}. Follows the pattern in
-     * {@link Arrays#hashCode(Object[])}.
+     * Helper method for implementing {@link Object#hashCode()}. Follows the pattern
+     * in {@link Arrays#hashCode(byte[])}.
      *
-     * @param array The ByteVector to hash
+     * @param vector The ByteVector to hash
      * @return The hash code
      */
-    static int hashCode(@NotNull final ByteVector array) {
-        final long size = array.size();
+    static int hashCode(@NotNull final ByteVector vector) {
+        final long size = vector.size();
         int result = 1;
         for (long ei = 0; ei < size; ++ei) {
-            result = 31 * result + Byte.hashCode(array.get(ei));
+            result = 31 * result + Byte.hashCode(vector.get(ei));
         }
         return result;
     }
@@ -137,8 +138,6 @@ public interface ByteVector extends Vector<ByteVector> {
      * Base class for all "indirect" ByteVector implementations.
      */
     abstract class Indirect implements ByteVector {
-
-        private static final long serialVersionUID = 1L;
 
         @Override
         public ByteVector getDirect() {
@@ -159,10 +158,6 @@ public interface ByteVector extends Vector<ByteVector> {
         @Override
         public final int hashCode() {
             return ByteVector.hashCode(this);
-        }
-
-        protected final Object writeReplace() {
-            return new ByteVectorDirect(toArray());
         }
     }
 }

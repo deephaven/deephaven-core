@@ -12,21 +12,22 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 
+/**
+ * A {@link Vector} of primitive chars.
+ */
 public interface CharVector extends Vector<CharVector> {
-
-    long serialVersionUID = -1373264425081841175L;
 
     static PrimitiveVectorType<CharVector, Character> type() {
         return PrimitiveVectorType.of(CharVector.class, CharType.instance());
     }
 
-    char get(long i);
+    char get(long index);
 
     @Override
-    CharVector subVector(long fromIndex, long toIndex);
+    CharVector subVector(long fromIndexInclusive, long toIndexExclusive);
 
     @Override
-    CharVector subVectorByPositions(long [] positions);
+    CharVector subVectorByPositions(long[] positions);
 
     @Override
     char[] toArray();
@@ -36,7 +37,7 @@ public interface CharVector extends Vector<CharVector> {
 
     @Override
     @FinalDefault
-    default Class getComponentType() {
+    default Class<?> getComponentType() {
         return char.class;
     }
 
@@ -46,12 +47,12 @@ public interface CharVector extends Vector<CharVector> {
         return toString(this, prefixLength);
     }
 
-    /** Return a version of this Vector that is flattened out to only reference memory.  */
+    /** Return a version of this Vector that is flattened out to only reference memory. */
     @Override
     CharVector getDirect();
 
     static String charValToString(final Object val) {
-        return val == null ? NULL_ELEMENT_STRING : primitiveCharValToString((Character)val);
+        return val == null ? NULL_ELEMENT_STRING : primitiveCharValToString((Character) val);
     }
 
     static String primitiveCharValToString(final char val) {
@@ -61,21 +62,21 @@ public interface CharVector extends Vector<CharVector> {
     /**
      * Helper method for implementing {@link Object#toString()}.
      *
-     * @param array       The CharVector to convert to a String
-     * @param prefixLength The maximum prefix of the array to convert
-     * @return The String representation of array
+     * @param vector The CharVector to convert to a String
+     * @param prefixLength The maximum prefix of {@code vector} to convert
+     * @return The String representation of {@code vector}
      */
-    static String toString(@NotNull final CharVector array, final int prefixLength) {
-        if (array.isEmpty()) {
+    static String toString(@NotNull final CharVector vector, final int prefixLength) {
+        if (vector.isEmpty()) {
             return "[]";
         }
         final StringBuilder builder = new StringBuilder("[");
-        final int displaySize = (int) Math.min(array.size(), prefixLength);
-        builder.append(primitiveCharValToString(array.get(0)));
+        final int displaySize = (int) Math.min(vector.size(), prefixLength);
+        builder.append(primitiveCharValToString(vector.get(0)));
         for (int ei = 1; ei < displaySize; ++ei) {
-            builder.append(',').append(primitiveCharValToString(array.get(ei)));
+            builder.append(',').append(primitiveCharValToString(vector.get(ei)));
         }
-        if (displaySize == array.size()) {
+        if (displaySize == vector.size()) {
             builder.append(']');
         } else {
             builder.append(", ...]");
@@ -86,25 +87,25 @@ public interface CharVector extends Vector<CharVector> {
     /**
      * Helper method for implementing {@link Object#equals(Object)}.
      *
-     * @param aArray The LHS of the equality test (always a CharVector)
-     * @param b      The RHS of the equality test
+     * @param aVector The LHS of the equality test (always a CharVector)
+     * @param bObj The RHS of the equality test
      * @return Whether the two inputs are equal
      */
-    static boolean equals(@NotNull final CharVector aArray, @Nullable final Object b) {
-        if (aArray == b) {
+    static boolean equals(@NotNull final CharVector aVector, @Nullable final Object bObj) {
+        if (aVector == bObj) {
             return true;
         }
-        if (!(b instanceof CharVector)) {
+        if (!(bObj instanceof CharVector)) {
             return false;
         }
-        final CharVector bArray = (CharVector) b;
-        final long size = aArray.size();
-        if (size != bArray.size()) {
+        final CharVector bVector = (CharVector) bObj;
+        final long size = aVector.size();
+        if (size != bVector.size()) {
             return false;
         }
         for (long ei = 0; ei < size; ++ei) {
             // region elementEquals
-            if (aArray.get(ei) != bArray.get(ei)) {
+            if (aVector.get(ei) != bVector.get(ei)) {
                 return false;
             }
             // endregion elementEquals
@@ -113,17 +114,17 @@ public interface CharVector extends Vector<CharVector> {
     }
 
     /**
-     * Helper method for implementing {@link Object#hashCode()}. Follows the pattern in
-     * {@link Arrays#hashCode(Object[])}.
+     * Helper method for implementing {@link Object#hashCode()}. Follows the pattern
+     * in {@link Arrays#hashCode(char[])}.
      *
-     * @param array The CharVector to hash
+     * @param vector The CharVector to hash
      * @return The hash code
      */
-    static int hashCode(@NotNull final CharVector array) {
-        final long size = array.size();
+    static int hashCode(@NotNull final CharVector vector) {
+        final long size = vector.size();
         int result = 1;
         for (long ei = 0; ei < size; ++ei) {
-            result = 31 * result + Character.hashCode(array.get(ei));
+            result = 31 * result + Character.hashCode(vector.get(ei));
         }
         return result;
     }
@@ -132,8 +133,6 @@ public interface CharVector extends Vector<CharVector> {
      * Base class for all "indirect" CharVector implementations.
      */
     abstract class Indirect implements CharVector {
-
-        private static final long serialVersionUID = 1L;
 
         @Override
         public CharVector getDirect() {
@@ -154,10 +153,6 @@ public interface CharVector extends Vector<CharVector> {
         @Override
         public final int hashCode() {
             return CharVector.hashCode(this);
-        }
-
-        protected final Object writeReplace() {
-            return new CharVectorDirect(toArray());
         }
     }
 }

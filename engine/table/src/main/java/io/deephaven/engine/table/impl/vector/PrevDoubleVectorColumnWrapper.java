@@ -22,8 +22,6 @@ import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 
 public class PrevDoubleVectorColumnWrapper extends DoubleVector.Indirect {
 
-    private static final long serialVersionUID = -2715269662143763674L;
-
     private final ColumnSource<Double> columnSource;
     private final RowSet rowSet;
     private final long startPadding;
@@ -44,26 +42,26 @@ public class PrevDoubleVectorColumnWrapper extends DoubleVector.Indirect {
     }
 
     @Override
-    public double get(long i) {
-        i -= startPadding;
+    public double get(long index) {
+        index -= startPadding;
 
-        if (i < 0 || i > rowSet.size() - 1) {
+        if (index < 0 || index > rowSet.size() - 1) {
             return NULL_DOUBLE;
         }
 
-        return columnSource.getPrevDouble(rowSet.get(i));
+        return columnSource.getPrevDouble(rowSet.get(index));
     }
 
     @Override
-    public DoubleVector subVector(long fromIndex, long toIndex) {
-        fromIndex -= startPadding;
-        toIndex -= startPadding;
+    public DoubleVector subVector(long fromIndexInclusive, long toIndexExclusive) {
+        fromIndexInclusive -= startPadding;
+        toIndexExclusive -= startPadding;
 
-        final long realFrom = ClampUtil.clampLong(0, rowSet.size(), fromIndex);
-        final long realTo = ClampUtil.clampLong(0, rowSet.size(), toIndex);
+        final long realFrom = ClampUtil.clampLong(0, rowSet.size(), fromIndexInclusive);
+        final long realTo = ClampUtil.clampLong(0, rowSet.size(), toIndexExclusive);
 
-        long newStartPadding = toIndex < 0 ? toIndex - fromIndex : Math.max(0, -fromIndex);
-        long newEndPadding = fromIndex >= rowSet.size() ? toIndex - fromIndex : Math.max(0, toIndex - rowSet.size());
+        long newStartPadding = toIndexExclusive < 0 ? toIndexExclusive - fromIndexInclusive : Math.max(0, -fromIndexInclusive);
+        long newEndPadding = fromIndexInclusive >= rowSet.size() ? toIndexExclusive - fromIndexInclusive : Math.max(0, toIndexExclusive - rowSet.size());
 
         return new PrevDoubleVectorColumnWrapper(columnSource, rowSet.subSetByPositionRange(realFrom, realTo),
                 newStartPadding, newEndPadding);

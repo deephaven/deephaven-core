@@ -53,7 +53,7 @@ public class ObjectVectorColumnWrapperTest extends TestCase {
         assertEquals(null, vector.subVector(0, 1).get(-1));
     }
 
-    public void testSubArrayByPositions() {
+    public void testSubVectorByPositions() {
         final IntegerArraySource integerArraySource = new IntegerArraySource();
         integerArraySource.ensureCapacity(6);
         for (int ii = 0; ii < 6; ++ii) {

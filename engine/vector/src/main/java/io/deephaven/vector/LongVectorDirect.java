@@ -16,33 +16,34 @@ import java.util.Arrays;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
+/**
+ * A {@link LongVector} backed by an array.
+ */
 @ArrayType(type = long[].class)
 public class LongVectorDirect implements LongVector {
 
-    private final static long serialVersionUID = 3636374971797603565L;
+    public static final LongVector ZERO_LENGTH_VECTOR = new LongVectorDirect();
 
     private final long[] data;
 
-    public LongVectorDirect(long... data){
+    public LongVectorDirect(final long... data) {
         this.data = data;
     }
 
-    public static final LongVector ZERO_LEN_VECTOR = new LongVectorDirect();
-
     @Override
-    public long get(long i) {
-        if (i < 0 || i > data.length - 1) {
+    public long get(final long index) {
+        if (index < 0 || index > data.length - 1) {
             return NULL_LONG;
         }
-        return data[LongSizedDataStructure.intSize("LongVectorDirect get",  i)];
+        return data[LongSizedDataStructure.intSize("LongVectorDirect get", index)];
     }
 
     @Override
-    public LongVector subVector(long fromIndex, long toIndex) {
-        return new LongVectorSlice(this, fromIndex, toIndex - fromIndex);
+    public LongVector subVector(final long fromIndexInclusive, final long toIndexExclusive) {
+        return new LongVectorSlice(this, fromIndexInclusive, toIndexExclusive - fromIndexInclusive);
     }
 
-    public LongVector subVectorByPositions(long [] positions) {
+    public LongVector subVectorByPositions(final long[] positions) {
         return new LongSubVector(this, positions);
     }
 
@@ -68,7 +69,7 @@ public class LongVectorDirect implements LongVector {
     }
 
     @Override
-    public final boolean equals(Object obj) {
+    public final boolean equals(final Object obj) {
         if (obj instanceof LongVectorDirect) {
             return Arrays.equals(data, ((LongVectorDirect) obj).data);
         }

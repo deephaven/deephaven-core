@@ -3,42 +3,46 @@
  */
 package io.deephaven.vector;
 
+import io.deephaven.util.datastructures.LongSizedDataStructure;
+
 import java.util.Arrays;
 
-public class ObjectVectorDirect<T> implements ObjectVector<T> {
+/**
+ * An {@link ObjectVector} backed by an array.
+ */
+public class ObjectVectorDirect<COMPONENT_TYPE> implements ObjectVector<COMPONENT_TYPE> {
 
-    private static final long serialVersionUID = 9111886364211462917L;
+    public static final ObjectVector<?> ZERO_LENGTH_VECTOR = new ObjectVectorDirect<>();
 
-    private final T[] data;
-    private final Class<T> componentType;
+    private final COMPONENT_TYPE[] data;
+    private final Class<COMPONENT_TYPE> componentType;
 
-    public ObjectVectorDirect(T... data) {
+    @SuppressWarnings("unchecked")
+    public ObjectVectorDirect(final COMPONENT_TYPE... data) {
         this.data = data;
-        componentType = (Class<T>) (data == null ? Object.class : data.getClass().getComponentType());
+        componentType = (Class<COMPONENT_TYPE>) (data == null ? Object.class : data.getClass().getComponentType());
     }
 
-    public static final ObjectVector<?> ZERO_LEN_VECTOR = new ObjectVectorDirect<>();
-
     @Override
-    public T get(long i) {
-        if (i < 0 || i > data.length - 1) {
+    public COMPONENT_TYPE get(final long index) {
+        if (index < 0 || index > data.length - 1) {
             return null;
         }
-        return data[(int) i];
+        return data[LongSizedDataStructure.intSize("ObjectVectorDirect.get", index)];
     }
 
     @Override
-    public ObjectVector<T> subVector(long fromIndexInclusive, long toIndexExclusive) {
+    public ObjectVector<COMPONENT_TYPE> subVector(final long fromIndexInclusive, final long toIndexExclusive) {
         return new ObjectVectorSlice<>(this, fromIndexInclusive, toIndexExclusive - fromIndexInclusive);
     }
 
     @Override
-    public ObjectVector<T> subVectorByPositions(long[] positions) {
+    public ObjectVector<COMPONENT_TYPE> subVectorByPositions(final long[] positions) {
         return new ObjectSubVector<>(this, positions);
     }
 
     @Override
-    public T[] toArray() {
+    public COMPONENT_TYPE[] toArray() {
         return data;
     }
 
@@ -48,12 +52,12 @@ public class ObjectVectorDirect<T> implements ObjectVector<T> {
     }
 
     @Override
-    public Class<T> getComponentType() {
+    public Class<COMPONENT_TYPE> getComponentType() {
         return componentType;
     }
 
     @Override
-    public ObjectVectorDirect<T> getDirect() {
+    public ObjectVectorDirect<COMPONENT_TYPE> getDirect() {
         return this;
     }
 
@@ -63,9 +67,9 @@ public class ObjectVectorDirect<T> implements ObjectVector<T> {
     }
 
     @Override
-    public final boolean equals(Object obj) {
+    public final boolean equals(final Object obj) {
         if (obj instanceof ObjectVectorDirect) {
-            return Arrays.equals(data, ((ObjectVectorDirect) obj).data);
+            return Arrays.equals(data, ((ObjectVectorDirect<?>) obj).data);
         }
         return ObjectVector.equals(this, obj);
     }

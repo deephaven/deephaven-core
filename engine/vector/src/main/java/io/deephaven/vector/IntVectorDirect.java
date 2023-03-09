@@ -16,33 +16,34 @@ import java.util.Arrays;
 
 import static io.deephaven.util.QueryConstants.NULL_INT;
 
+/**
+ * A {@link IntVector} backed by an array.
+ */
 @ArrayType(type = int[].class)
 public class IntVectorDirect implements IntVector {
 
-    private final static long serialVersionUID = 3636374971797603565L;
+    public static final IntVector ZERO_LENGTH_VECTOR = new IntVectorDirect();
 
     private final int[] data;
 
-    public IntVectorDirect(int... data){
+    public IntVectorDirect(final int... data) {
         this.data = data;
     }
 
-    public static final IntVector ZERO_LEN_VECTOR = new IntVectorDirect();
-
     @Override
-    public int get(long i) {
-        if (i < 0 || i > data.length - 1) {
+    public int get(final long index) {
+        if (index < 0 || index > data.length - 1) {
             return NULL_INT;
         }
-        return data[LongSizedDataStructure.intSize("IntVectorDirect get",  i)];
+        return data[LongSizedDataStructure.intSize("IntVectorDirect get", index)];
     }
 
     @Override
-    public IntVector subVector(long fromIndex, long toIndex) {
-        return new IntVectorSlice(this, fromIndex, toIndex - fromIndex);
+    public IntVector subVector(final long fromIndexInclusive, final long toIndexExclusive) {
+        return new IntVectorSlice(this, fromIndexInclusive, toIndexExclusive - fromIndexInclusive);
     }
 
-    public IntVector subVectorByPositions(long [] positions) {
+    public IntVector subVectorByPositions(final long[] positions) {
         return new IntSubVector(this, positions);
     }
 
@@ -68,7 +69,7 @@ public class IntVectorDirect implements IntVector {
     }
 
     @Override
-    public final boolean equals(Object obj) {
+    public final boolean equals(final Object obj) {
         if (obj instanceof IntVectorDirect) {
             return Arrays.equals(data, ((IntVectorDirect) obj).data);
         }

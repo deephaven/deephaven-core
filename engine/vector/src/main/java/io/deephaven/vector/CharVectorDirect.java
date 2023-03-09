@@ -11,33 +11,34 @@ import java.util.Arrays;
 
 import static io.deephaven.util.QueryConstants.NULL_CHAR;
 
+/**
+ * A {@link CharVector} backed by an array.
+ */
 @ArrayType(type = char[].class)
 public class CharVectorDirect implements CharVector {
 
-    private final static long serialVersionUID = 3636374971797603565L;
+    public static final CharVector ZERO_LENGTH_VECTOR = new CharVectorDirect();
 
     private final char[] data;
 
-    public CharVectorDirect(char... data){
+    public CharVectorDirect(final char... data) {
         this.data = data;
     }
 
-    public static final CharVector ZERO_LEN_VECTOR = new CharVectorDirect();
-
     @Override
-    public char get(long i) {
-        if (i < 0 || i > data.length - 1) {
+    public char get(final long index) {
+        if (index < 0 || index > data.length - 1) {
             return NULL_CHAR;
         }
-        return data[LongSizedDataStructure.intSize("CharVectorDirect get",  i)];
+        return data[LongSizedDataStructure.intSize("CharVectorDirect get", index)];
     }
 
     @Override
-    public CharVector subVector(long fromIndex, long toIndex) {
-        return new CharVectorSlice(this, fromIndex, toIndex - fromIndex);
+    public CharVector subVector(final long fromIndexInclusive, final long toIndexExclusive) {
+        return new CharVectorSlice(this, fromIndexInclusive, toIndexExclusive - fromIndexInclusive);
     }
 
-    public CharVector subVectorByPositions(long [] positions) {
+    public CharVector subVectorByPositions(final long[] positions) {
         return new CharSubVector(this, positions);
     }
 
@@ -63,7 +64,7 @@ public class CharVectorDirect implements CharVector {
     }
 
     @Override
-    public final boolean equals(Object obj) {
+    public final boolean equals(final Object obj) {
         if (obj instanceof CharVectorDirect) {
             return Arrays.equals(data, ((CharVectorDirect) obj).data);
         }
