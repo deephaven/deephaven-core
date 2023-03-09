@@ -1852,7 +1852,7 @@ class Table(JObjectWrapper):
 
     def layout_hints(self, front: Union[str, List[str]] = None, back: Union[str, List[str]] = None,
                      freeze: Union[str, List[str]] = None, hide: Union[str, List[str]] = None,
-                     column_groups: List[dict] = None) -> Table:
+                     column_groups: List[dict] = None, search_display_mode: str = None) -> Table:
         """ Sets layout hints on the Table
 
         Args:
@@ -1867,6 +1867,8 @@ class Table(JObjectWrapper):
                 name (str): The group name
                 children (List[str]): The
                 color (Optional[str]): The hex color string or Deephaven color name
+            search_display_mode (str): set the search bar to explicitly be accessible or inaccessible, or use the system default.
+                Values can be one of `Show`, `Hide`, and `Default`
 
         Returns:
             a new table with the layout hints set
@@ -1893,6 +1895,10 @@ class Table(JObjectWrapper):
                 for group in column_groups:
                     _j_layout_hint_builder.columnGroup(group.get("name"), j_array_list(group.get("children")),
                                                        group.get("color", ""))
+
+            if search_display_mode is not None:
+                _j_layout_hint_builder.setSearchBarAccess(search_display_mode)
+
         except Exception as e:
             raise DHError(e, "failed to create layout hints") from e
 

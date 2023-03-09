@@ -33,6 +33,27 @@ public class LayoutHintBuilder {
     private Map<String, ColumnGroup> columnGroups;
 
     /**
+     * The display mode for the search bar.
+     */
+    public enum SearchDisplayModes {
+        /**
+         * Use the system default
+         */
+        Default,
+        /**
+         * Permit the search bar to be displayed, regardless of system settings
+         */
+        Show,
+        /**
+         * Hide the search bar, regardless of system settings.
+         */
+        Hide
+    }
+
+    private SearchDisplayModes searchDisplayMode = SearchDisplayModes.Default;
+
+
+    /**
      * Helper class to maintain sub-properties for auto filter columns
      */
     private static class AutoFilterData {
@@ -229,6 +250,11 @@ public class LayoutHintBuilder {
         if (groupableStr != null && !groupableStr.isEmpty()) {
             final String[] groupableColumns = groupableStr.split(",");
             lhb.groupableColumns(groupableColumns);
+        }
+
+        final String searchableStr = options.get("searchable");
+        if (searchableStr != null && !searchableStr.isEmpty()) {
+            lhb.setSearchBarAccess(SearchDisplayModes.valueOf(searchableStr));
         }
 
         final String columnGroupsStr = options.get("columnGroups");
@@ -555,6 +581,30 @@ public class LayoutHintBuilder {
         return this;
     }
 
+    /**
+     * Set the search bar to explicitly be accessible or inaccessible, or use system default.
+     *
+     * @param searchable The display mode to use
+     * @return This LayoutHintBuilder
+     */
+    @ScriptApi
+    public LayoutHintBuilder setSearchBarAccess(final SearchDisplayModes searchable) {
+        searchDisplayMode = searchable;
+        return this;
+    }
+
+    /**
+     * Set the search bar to explicitly be accessible or inaccessible, or use system default.
+     *
+     * @param searchable The display mode to use
+     * @return This LayoutHintBuilder
+     */
+    @ScriptApi
+    public LayoutHintBuilder setSearchBarAccess(final String searchable) {
+        searchDisplayMode = SearchDisplayModes.valueOf(searchable);
+        return this;
+    }
+
     // endregion
 
     /**
@@ -599,6 +649,10 @@ public class LayoutHintBuilder {
 
         if (groupableColumns != null && !groupableColumns.isEmpty()) {
             sb.append("groupable=").append(String.join(",", groupableColumns)).append(';');
+        }
+
+        if (searchDisplayMode != SearchDisplayModes.Default) {
+            sb.append("searchable=").append(searchDisplayMode.toString()).append(';');
         }
 
         if (columnGroups != null && !columnGroups.isEmpty()) {
@@ -710,6 +764,13 @@ public class LayoutHintBuilder {
      */
     public @NotNull Set<String> getGroupableColumns() {
         return groupableColumns == null ? Collections.emptySet() : Collections.unmodifiableSet(groupableColumns);
+    }
+
+    public @NotNull SearchDisplayModes getSearchDisplayMode() {
+        if (searchDisplayMode == null) {
+            searchDisplayMode = SearchDisplayModes.Default;
+        }
+        return searchDisplayMode;
     }
 
     /**
