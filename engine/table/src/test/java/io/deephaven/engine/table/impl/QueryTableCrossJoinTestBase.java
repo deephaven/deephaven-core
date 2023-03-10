@@ -460,12 +460,8 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
     public void testStaticVsNaturalJoin2() {
         final int size = 10000;
 
-        final QueryTable xqt = new QueryTable(RowSetFactory.flat(size).toTracking(),
-                Collections.emptyMap());
-        xqt.setRefreshing(true);
-        final QueryTable yqt = new QueryTable(RowSetFactory.flat(size).toTracking(),
-                Collections.emptyMap());
-        yqt.setRefreshing(true);
+        final QueryTable xqt = TstUtils.testRefreshingTable(RowSetFactory.flat(size).toTracking());
+        final QueryTable yqt = TstUtils.testRefreshingTable(RowSetFactory.flat(size).toTracking());
 
         final Table x = xqt.update("Col1=i");
         final Table y = yqt.update("Col2=i*2");

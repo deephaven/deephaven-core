@@ -91,6 +91,7 @@ public class StreamTableTools {
                         final QueryTable result = new QueryTable(rowSet, columns);
                         result.setRefreshing(true);
                         result.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, true);
+                        result.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, true);
                         result.setFlat();
                         resultHolder.setValue(result);
 

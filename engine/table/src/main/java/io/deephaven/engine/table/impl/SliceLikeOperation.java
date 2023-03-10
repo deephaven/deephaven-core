@@ -7,6 +7,7 @@ import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.TrackingRowSet;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.TableUpdateListener;
 
@@ -88,7 +89,7 @@ public class SliceLikeOperation implements QueryTable.Operation<QueryTable> {
     }
 
     @Override
-    public Result initialize(boolean usePrev, long beforeClock) {
+    public Result<QueryTable> initialize(boolean usePrev, long beforeClock) {
         final TrackingRowSet resultRowSet;
         final TrackingRowSet parentRowSet = parent.getRowSet();
         try (final WritableRowSet parentPrev = usePrev ? parentRowSet.copyPrev() : null) {
@@ -98,6 +99,16 @@ public class SliceLikeOperation implements QueryTable.Operation<QueryTable> {
         resultTable = parent.getSubTable(resultRowSet);
         if (isFlat) {
             resultTable.setFlat();
+        }
+
+        // if the first row is fixed (not negative), then we can propagate add-only/append-only properties
+        if (getFirstPositionInclusive() >= 0) {
+            if (parent.isAddOnly()) {
+                resultTable.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, true);
+            }
+            if (parent.isAppendOnly()) {
+                resultTable.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, true);
+            }
         }
 
         TableUpdateListener resultListener = null;
@@ -110,7 +121,7 @@ public class SliceLikeOperation implements QueryTable.Operation<QueryTable> {
             };
         }
 
-        return new Result(resultTable, resultListener);
+        return new Result<>(resultTable, resultListener);
     }
 
     private void onUpdate(final TableUpdate upstream) {
