@@ -7,26 +7,22 @@ import com.google.protobuf.ByteString;
 import io.deephaven.client.impl.script.Changes;
 import io.deephaven.proto.DeephavenChannel;
 import io.deephaven.proto.backplane.grpc.AddTableRequest;
-import io.deephaven.proto.backplane.grpc.AddTableResponse;
-import io.deephaven.proto.backplane.grpc.CloseSessionResponse;
+import io.deephaven.proto.backplane.grpc.AuthenticationConstantsRequest;
+import io.deephaven.proto.backplane.grpc.AuthenticationConstantsResponse;
 import io.deephaven.proto.backplane.grpc.ConfigValue;
 import io.deephaven.proto.backplane.grpc.ConfigurationConstantsRequest;
 import io.deephaven.proto.backplane.grpc.ConfigurationConstantsResponse;
 import io.deephaven.proto.backplane.grpc.DeleteTableRequest;
-import io.deephaven.proto.backplane.grpc.DeleteTableResponse;
 import io.deephaven.proto.backplane.grpc.FetchObjectRequest;
 import io.deephaven.proto.backplane.grpc.FetchObjectResponse;
 import io.deephaven.proto.backplane.grpc.FieldsChangeUpdate;
 import io.deephaven.proto.backplane.grpc.HandshakeRequest;
 import io.deephaven.proto.backplane.grpc.ListFieldsRequest;
 import io.deephaven.proto.backplane.grpc.ReleaseRequest;
-import io.deephaven.proto.backplane.grpc.ReleaseResponse;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.backplane.grpc.TypedTicket;
 import io.deephaven.proto.backplane.script.grpc.BindTableToVariableRequest;
-import io.deephaven.proto.backplane.script.grpc.BindTableToVariableResponse;
 import io.deephaven.proto.backplane.script.grpc.ExecuteCommandRequest;
-import io.deephaven.proto.backplane.script.grpc.ExecuteCommandResponse;
 import io.deephaven.proto.backplane.script.grpc.StartConsoleRequest;
 import io.deephaven.proto.backplane.script.grpc.StartConsoleResponse;
 import io.deephaven.proto.util.ExportTicketHelper;
@@ -43,6 +39,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -51,6 +48,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -147,9 +146,8 @@ public final class SessionImpl extends SessionBase {
         final ExportId consoleId = new ExportId("Console", exportTicketCreator.createExportId());
         final StartConsoleRequest request = StartConsoleRequest.newBuilder().setSessionType(type)
                 .setResultId(consoleId.ticketId().ticket()).build();
-        final ConsoleHandler handler = new ConsoleHandler(request);
-        bearerChannel.console().startConsole(request, handler);
-        return handler.future();
+        return UnaryObserverFuture.grpcFuture(request, channel().console()::startConsole,
+                response -> new ConsoleSessionImpl(request, response));
     }
 
     @Override
@@ -157,10 +155,10 @@ public final class SessionImpl extends SessionBase {
         if (!SourceVersion.isName(name)) {
             throw new IllegalArgumentException("Invalid name");
         }
-        PublishObserver observer = new PublishObserver();
-        bearerChannel.console().bindTableToVariable(BindTableToVariableRequest.newBuilder()
-                .setVariableName(name).setTableId(ticketId.ticketId().ticket()).build(), observer);
-        return observer.future;
+        BindTableToVariableRequest request = BindTableToVariableRequest.newBuilder()
+                .setVariableName(name).setTableId(ticketId.ticketId().ticket()).build();
+        return CancelableUnaryObserverFuture.cancelableGrpcFuture(request, channel().console()::bindTableToVariable,
+                ignore -> null);
     }
 
     @Override
@@ -171,9 +169,24 @@ public final class SessionImpl extends SessionBase {
                         .setTicket(ticketId.ticketId().ticket())
                         .build())
                 .build();
-        final FetchObserver observer = new FetchObserver();
-        bearerChannel.object().fetchObject(request, observer);
-        return observer.future;
+
+        return CancelableUnaryObserverFuture.cancelableGrpcFuture(request, channel().object()::fetchObject, response -> {
+            final String responseType = response.getType();
+            final ByteString data = response.getData();
+            final List<ExportId> exportIds = response.getTypedExportIdList().stream()
+                    .map(e -> {
+                        final String type1;
+                        if (e.getType().isEmpty()) {
+                            type1 = null;
+                        } else {
+                            type1 = e.getType();
+                        }
+                        final int exportId = ExportTicketHelper.ticketToExportId(e.getTicket(), "exportId");
+                        return new ExportId(type1, exportId);
+                    })
+                    .collect(Collectors.toList());
+            return new FetchedObject(responseType, data, exportIds);
+        });
     }
 
     @Override
@@ -194,9 +207,7 @@ public final class SessionImpl extends SessionBase {
     public CompletableFuture<Void> closeFuture() {
         pingJob.cancel(false);
         HandshakeRequest handshakeRequest = HandshakeRequest.getDefaultInstance();
-        CloseSessionHandler handler = new CloseSessionHandler();
-        bearerChannel.session().closeSession(handshakeRequest, handler);
-        return handler.future;
+        return UnaryObserverFuture.grpcFuture(handshakeRequest, channel().session()::closeSession, ignore -> null);
     }
 
     @Override
@@ -229,10 +240,9 @@ public final class SessionImpl extends SessionBase {
 
     @Override
     public CompletableFuture<Void> release(ExportId exportId) {
-        final ReleaseTicketObserver observer = new ReleaseTicketObserver();
-        bearerChannel.session().release(
-                ReleaseRequest.newBuilder().setId(exportId.ticketId().ticket()).build(), observer);
-        return observer.future;
+        ReleaseRequest request = ReleaseRequest.newBuilder().setId(exportId.ticketId().ticket()).build();
+        return CancelableUnaryObserverFuture.cancelableGrpcFuture(request, channel().session()::release,
+                ignore -> null);
     }
 
     @Override
@@ -246,9 +256,8 @@ public final class SessionImpl extends SessionBase {
                 .setInputTable(destination.ticketId().ticket())
                 .setTableToAdd(source.ticketId().ticket())
                 .build();
-        final AddToInputTableObserver observer = new AddToInputTableObserver();
-        bearerChannel.inputTable().addTableToInputTable(request, observer);
-        return observer.future;
+        return CancelableUnaryObserverFuture.cancelableGrpcFuture(request, channel().inputTable()::addTableToInputTable,
+                ignore -> null);
     }
 
     @Override
@@ -257,9 +266,8 @@ public final class SessionImpl extends SessionBase {
                 .setInputTable(destination.ticketId().ticket())
                 .setTableToRemove(source.ticketId().ticket())
                 .build();
-        final DeleteFromInputTableObserver observer = new DeleteFromInputTableObserver();
-        bearerChannel.inputTable().deleteTableFromInputTable(request, observer);
-        return observer.future;
+        return CancelableUnaryObserverFuture.cancelableGrpcFuture(request,
+                channel().inputTable()::deleteTableFromInputTable, ignore -> null);
     }
 
     @Override
@@ -282,153 +290,40 @@ public final class SessionImpl extends SessionBase {
         return states.releaseCount();
     }
 
-    private static class PublishObserver
-            implements ClientResponseObserver<BindTableToVariableRequest, BindTableToVariableResponse> {
-        private final CompletableFuture<Void> future = new CompletableFuture<>();
-
-        @Override
-        public void beforeStart(
-                ClientCallStreamObserver<BindTableToVariableRequest> requestStream) {
-            future.whenComplete((session, throwable) -> {
-                if (future.isCancelled()) {
-                    requestStream.cancel("User cancelled", null);
-                }
-            });
-        }
-
-        @Override
-        public void onNext(BindTableToVariableResponse value) {
-            future.complete(null);
-        }
-
-        @Override
-        public void onError(Throwable t) {
-            future.completeExceptionally(t);
-        }
-
-        @Override
-        public void onCompleted() {
-            if (!future.isDone()) {
-                future.completeExceptionally(
-                        new IllegalStateException("Observer completed without response"));
-            }
-        }
+    @Override
+    public CompletableFuture<Map<String, ConfigValue>> getAuthenticationConstants() {
+        return UnaryObserverFuture.grpcFuture(AuthenticationConstantsRequest.getDefaultInstance(),
+                channel().config()::getAuthenticationConstants, AuthenticationConstantsResponse::getConfigValuesMap);
     }
 
-    private static final class FetchObserver
-            implements ClientResponseObserver<FetchObjectRequest, FetchObjectResponse> {
-        private final CompletableFuture<FetchedObject> future = new CompletableFuture<>();
-
-        @Override
-        public void beforeStart(ClientCallStreamObserver<FetchObjectRequest> requestStream) {
-            future.whenComplete((session, throwable) -> {
-                if (future.isCancelled()) {
-                    requestStream.cancel("User cancelled", null);
-                }
-            });
-        }
-
-        @Override
-        public void onNext(FetchObjectResponse value) {
-            final String type = value.getType();
-            final ByteString data = value.getData();
-            final List<ExportId> exportIds = value.getTypedExportIdList().stream()
-                    .map(FetchObserver::toExportId)
-                    .collect(Collectors.toList());
-            future.complete(new FetchedObject(type, data, exportIds));
-        }
-
-        private static ExportId toExportId(TypedTicket e) {
-            final String type;
-            if (e.getType().isEmpty()) {
-                type = null;
-            } else {
-                type = e.getType();
-            }
-            final int exportId = ExportTicketHelper.ticketToExportId(e.getTicket(), "exportId");
-            return new ExportId(type, exportId);
-        }
-
-        @Override
-        public void onError(Throwable t) {
-            future.completeExceptionally(t);
-        }
-
-        @Override
-        public void onCompleted() {
-            if (!future.isDone()) {
-                future.completeExceptionally(
-                        new IllegalStateException("Observer completed without response"));
-            }
-        }
+    @Override
+    public CompletableFuture<Map<String, ConfigValue>> getConfigurationConstants() {
+        return UnaryObserverFuture.grpcFuture(ConfigurationConstantsRequest.getDefaultInstance(),
+                channel().config()::getConfigurationConstants, ConfigurationConstantsResponse::getConfigValuesMap);
     }
 
-    private static class CloseSessionHandler implements StreamObserver<CloseSessionResponse> {
-
-        private final CompletableFuture<Void> future = new CompletableFuture<>();
-
-        @Override
-        public void onNext(CloseSessionResponse value) {
-
+    public static class UnaryObserverFuture<R, V> implements StreamObserver<R> {
+        public static <REQ, RESP, V> CompletableFuture<V> grpcFuture(REQ request,
+                BiConsumer<REQ, StreamObserver<RESP>> call, Function<RESP, V> mapping) {
+            UnaryObserverFuture<RESP, V> observer = new UnaryObserverFuture<>(mapping);
+            call.accept(request, observer);
+            return observer.future();
         }
 
-        @Override
-        public void onError(Throwable t) {
-            future.completeExceptionally(t);
+        private final CompletableFuture<V> future = new CompletableFuture<>();
+        private final Function<R, V> mapping;
+
+        private UnaryObserverFuture(Function<R, V> mapping) {
+            this.mapping = mapping;
         }
 
-        @Override
-        public void onCompleted() {
-            future.complete(null);
-        }
-    }
-
-    private static class ExecuteCommandHandler implements StreamObserver<ExecuteCommandResponse> {
-
-        private final CompletableFuture<Changes> future = new CompletableFuture<>();
-
-        private static Changes of(ExecuteCommandResponse value) {
-            Changes.Builder builder = Changes.builder().changes(new FieldChanges(value.getChanges()));
-            if (!value.getErrorMessage().isEmpty()) {
-                builder.errorMessage(value.getErrorMessage());
-            }
-            return builder.build();
-        }
-
-        @Override
-        public void onNext(ExecuteCommandResponse value) {
-            future.complete(of(value));
-        }
-
-        @Override
-        public void onError(Throwable t) {
-            future.completeExceptionally(t);
-        }
-
-        @Override
-        public void onCompleted() {
-            if (!future.isDone()) {
-                future.completeExceptionally(new IllegalStateException("ExecuteCommandHandler.onNext not called"));
-            }
-        }
-    }
-
-    private class ConsoleHandler implements StreamObserver<StartConsoleResponse> {
-        private final StartConsoleRequest request;
-        private final CompletableFuture<ConsoleSession> future;
-
-        public ConsoleHandler(StartConsoleRequest request) {
-            this.request = Objects.requireNonNull(request);
-            this.future = new CompletableFuture<>();
-        }
-
-        CompletableFuture<ConsoleSession> future() {
+        public CompletableFuture<V> future() {
             return future;
         }
 
         @Override
-        public void onNext(StartConsoleResponse response) {
-            future.complete(new ConsoleSessionImpl(request, response));
+        public void onNext(R value) {
+            future.complete(mapping.apply(value));
         }
 
         @Override
@@ -439,7 +334,55 @@ public final class SessionImpl extends SessionBase {
         @Override
         public void onCompleted() {
             if (!future.isDone()) {
-                future.completeExceptionally(new IllegalStateException("ConsoleHandler.onNext not called"));
+                future.completeExceptionally(
+                        new IllegalStateException("Observer completed without response"));
+            }
+        }
+    }
+
+    public static class CancelableUnaryObserverFuture<REQ, RESP, V> implements ClientResponseObserver<REQ, RESP> {
+        public static <REQ, RESP, V> CompletableFuture<V> cancelableGrpcFuture(REQ request,
+                BiConsumer<REQ, StreamObserver<RESP>> call, Function<RESP, V> mapping) {
+            CancelableUnaryObserverFuture<REQ, RESP, V> observer = new CancelableUnaryObserverFuture<>(mapping);
+            call.accept(request, observer);
+            return observer.future();
+        }
+
+        private final CompletableFuture<V> future = new CompletableFuture<>();
+        private final Function<RESP, V> mapping;
+
+        private CancelableUnaryObserverFuture(Function<RESP, V> mapping) {
+            this.mapping = mapping;
+        }
+
+        public CompletableFuture<V> future() {
+            return future;
+        }
+
+        @Override
+        public void beforeStart(ClientCallStreamObserver<REQ> requestStream) {
+            future.whenComplete((session, throwable) -> {
+                if (future.isCancelled()) {
+                    requestStream.cancel("User cancelled", null);
+                }
+            });
+        }
+
+        @Override
+        public void onNext(RESP value) {
+            future.complete(mapping.apply(value));
+        }
+
+        @Override
+        public void onError(Throwable t) {
+            future.completeExceptionally(t);
+        }
+
+        @Override
+        public void onCompleted() {
+            if (!future.isDone()) {
+                future.completeExceptionally(
+                        new IllegalStateException("Observer completed without response"));
             }
         }
     }
@@ -479,9 +422,13 @@ public final class SessionImpl extends SessionBase {
         public CompletableFuture<Changes> executeCodeFuture(String code) {
             final ExecuteCommandRequest request =
                     ExecuteCommandRequest.newBuilder().setConsoleId(ticket()).setCode(code).build();
-            final ExecuteCommandHandler handler = new ExecuteCommandHandler();
-            bearerChannel.console().executeCommand(request, handler);
-            return handler.future;
+            return UnaryObserverFuture.grpcFuture(request, bearerChannel.console()::executeCommand, response -> {
+                Changes.Builder builder = Changes.builder().changes(new FieldChanges(response.getChanges()));
+                if (!response.getErrorMessage().isEmpty()) {
+                    builder.errorMessage(response.getErrorMessage());
+                }
+                return builder.build();
+            });
         }
 
         @Override
@@ -492,9 +439,8 @@ public final class SessionImpl extends SessionBase {
 
         @Override
         public CompletableFuture<Void> closeFuture() {
-            final ConsoleCloseHandler handler = new ConsoleCloseHandler();
-            bearerChannel.session().release(ReleaseRequest.newBuilder().setId(request.getResultId()).build(), handler);
-            return handler.future();
+            ReleaseRequest request = ReleaseRequest.newBuilder().setId(this.request.getResultId()).build();
+            return UnaryObserverFuture.grpcFuture(request, channel().session()::release, ignore -> null);
         }
 
         @Override
@@ -508,130 +454,6 @@ public final class SessionImpl extends SessionBase {
                 log.warn("Timed out waiting for console close");
             } catch (ExecutionException e) {
                 log.error("Exception waiting for console close", e);
-            }
-        }
-    }
-
-    private static class ConsoleCloseHandler implements StreamObserver<ReleaseResponse> {
-        private final CompletableFuture<Void> future = new CompletableFuture<>();
-
-        CompletableFuture<Void> future() {
-            return future;
-        }
-
-        @Override
-        public void onNext(ReleaseResponse value) {
-            future.complete(null);
-        }
-
-        @Override
-        public void onError(Throwable t) {
-            future.completeExceptionally(t);
-        }
-
-        @Override
-        public void onCompleted() {
-            if (!future.isDone()) {
-                future.completeExceptionally(new IllegalStateException("ConsoleCloseHandler.onNext not called"));
-            }
-        }
-    }
-
-    private static class ReleaseTicketObserver
-            implements ClientResponseObserver<ReleaseRequest, ReleaseResponse> {
-        private final CompletableFuture<Void> future = new CompletableFuture<>();
-
-        @Override
-        public void beforeStart(
-                ClientCallStreamObserver<ReleaseRequest> requestStream) {
-            future.whenComplete((session, throwable) -> {
-                if (future.isCancelled()) {
-                    requestStream.cancel("User cancelled", null);
-                }
-            });
-        }
-
-        @Override
-        public void onNext(ReleaseResponse value) {
-            future.complete(null);
-        }
-
-        @Override
-        public void onError(Throwable t) {
-            future.completeExceptionally(t);
-        }
-
-        @Override
-        public void onCompleted() {
-            if (!future.isDone()) {
-                future.completeExceptionally(
-                        new IllegalStateException("Observer completed without response"));
-            }
-        }
-    }
-
-    private static class AddToInputTableObserver
-            implements ClientResponseObserver<AddTableRequest, AddTableResponse> {
-        private final CompletableFuture<Void> future = new CompletableFuture<>();
-
-        @Override
-        public void beforeStart(
-                ClientCallStreamObserver<AddTableRequest> requestStream) {
-            future.whenComplete((session, throwable) -> {
-                if (future.isCancelled()) {
-                    requestStream.cancel("User cancelled", null);
-                }
-            });
-        }
-
-        @Override
-        public void onNext(AddTableResponse value) {
-            future.complete(null);
-        }
-
-        @Override
-        public void onError(Throwable t) {
-            future.completeExceptionally(t);
-        }
-
-        @Override
-        public void onCompleted() {
-            if (!future.isDone()) {
-                future.completeExceptionally(
-                        new IllegalStateException("Observer completed without response"));
-            }
-        }
-    }
-
-    private static class DeleteFromInputTableObserver
-            implements ClientResponseObserver<DeleteTableRequest, DeleteTableResponse> {
-        private final CompletableFuture<Void> future = new CompletableFuture<>();
-
-        @Override
-        public void beforeStart(
-                ClientCallStreamObserver<DeleteTableRequest> requestStream) {
-            future.whenComplete((session, throwable) -> {
-                if (future.isCancelled()) {
-                    requestStream.cancel("User cancelled", null);
-                }
-            });
-        }
-
-        @Override
-        public void onNext(DeleteTableResponse value) {
-            future.complete(null);
-        }
-
-        @Override
-        public void onError(Throwable t) {
-            future.completeExceptionally(t);
-        }
-
-        @Override
-        public void onCompleted() {
-            if (!future.isDone()) {
-                future.completeExceptionally(
-                        new IllegalStateException("Observer completed without response"));
             }
         }
     }
