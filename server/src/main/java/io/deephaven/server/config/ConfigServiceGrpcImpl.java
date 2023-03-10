@@ -1,7 +1,9 @@
+/**
+ * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.server.config;
 
 import io.deephaven.configuration.Configuration;
-import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.backplane.grpc.AuthenticationConstantsRequest;
@@ -12,6 +14,7 @@ import io.deephaven.proto.backplane.grpc.ConfigurationConstantsRequest;
 import io.deephaven.proto.backplane.grpc.ConfigurationConstantsResponse;
 import io.deephaven.server.session.SessionService;
 import io.grpc.stub.StreamObserver;
+import org.jetbrains.annotations.NotNull;
 
 import javax.inject.Inject;
 import java.util.Arrays;
@@ -62,28 +65,26 @@ public class ConfigServiceGrpcImpl extends ConfigServiceGrpc.ConfigServiceImplBa
     }
 
     @Override
-    public void getAuthenticationConstants(AuthenticationConstantsRequest request,
-            StreamObserver<AuthenticationConstantsResponse> responseObserver) {
-        GrpcUtil.rpcWrapper(log, responseObserver, () -> {
-            AuthenticationConstantsResponse.Builder builder = AuthenticationConstantsResponse.newBuilder();
-            builder.putAllConfigValues(collectConfigs(AUTH_CLIENT_CONFIG_PROPERTY));
-            responseObserver.onNext(builder.build());
-            responseObserver.onCompleted();
-        });
+    public void getAuthenticationConstants(
+            @NotNull final AuthenticationConstantsRequest request,
+            @NotNull final StreamObserver<AuthenticationConstantsResponse> responseObserver) {
+        AuthenticationConstantsResponse.Builder builder = AuthenticationConstantsResponse.newBuilder();
+        builder.putAllConfigValues(collectConfigs(AUTH_CLIENT_CONFIG_PROPERTY));
+        responseObserver.onNext(builder.build());
+        responseObserver.onCompleted();
     }
 
     @Override
-    public void getConfigurationConstants(ConfigurationConstantsRequest request,
-            StreamObserver<ConfigurationConstantsResponse> responseObserver) {
-        GrpcUtil.rpcWrapper(log, responseObserver, () -> {
-            // Read the current session so we throw if not authenticated
-            sessionService.getCurrentSession();
+    public void getConfigurationConstants(
+            @NotNull final ConfigurationConstantsRequest request,
+            @NotNull final StreamObserver<ConfigurationConstantsResponse> responseObserver) {
+        // Read the current session so we throw if not authenticated
+        sessionService.getCurrentSession();
 
-            ConfigurationConstantsResponse.Builder builder = ConfigurationConstantsResponse.newBuilder();
-            builder.putAllConfigValues(collectConfigs(CLIENT_CONFIG_PROPERTY));
-            responseObserver.onNext(builder.build());
-            responseObserver.onCompleted();
-        });
+        ConfigurationConstantsResponse.Builder builder = ConfigurationConstantsResponse.newBuilder();
+        builder.putAllConfigValues(collectConfigs(CLIENT_CONFIG_PROPERTY));
+        responseObserver.onNext(builder.build());
+        responseObserver.onCompleted();
     }
 
     private Map<String, ConfigValue> collectConfigs(String clientConfigProperty) {
