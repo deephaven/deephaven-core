@@ -918,7 +918,15 @@ class TableTestCase(BaseTestCase):
             def __call__(self):
                 ...
 
-            def do_something(self, p=None):
+            def do_something_instance(self, p=None):
+                return p if p else 1
+
+            @classmethod
+            def do_something_cls(cls, p=None):
+                return p if p else 1
+
+            @staticmethod
+            def do_something_static(p=None):
                 return p if p else 1
 
         def do_something(p=None):
@@ -931,7 +939,13 @@ class TableTestCase(BaseTestCase):
         self.assertTrue(rt.columns[0].data_type == dtypes.int32)
 
         foo = Foo()
-        rt = empty_table(1).update("Col = (int)foo.do_something()")
+        rt = empty_table(1).update("Col = (int)foo.do_something_instance()")
+        self.assertTrue(rt.columns[0].data_type == dtypes.int32)
+
+        rt = empty_table(1).update("Col = (int)Foo.do_something_cls()")
+        self.assertTrue(rt.columns[0].data_type == dtypes.int32)
+
+        rt = empty_table(1).update("Col = (int)foo.do_something_static()")
         self.assertTrue(rt.columns[0].data_type == dtypes.int32)
 
         rt = empty_table(1).update("Col = (int)do_something((byte)Foo.ATTR)")
