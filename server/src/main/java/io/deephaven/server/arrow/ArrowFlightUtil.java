@@ -133,9 +133,10 @@ public class ArrowFlightUtil {
             final MessageInfo mi;
             try {
                 mi = BarrageProtoUtil.parseProtoMessage(request);
-            } catch (IOException err) {
-                throw new UncheckedDeephavenException("Failed to parse barrage proto message", err);
+            } catch (final IOException err) {
+                throw GrpcUtil.securelyWrapError(log, err);
             }
+
             if (mi.descriptor != null) {
                 if (flightDescriptor != null) {
                     if (!flightDescriptor.equals(mi.descriptor)) {
@@ -334,8 +335,8 @@ public class ArrowFlightUtil {
             MessageInfo message;
             try {
                 message = BarrageProtoUtil.parseProtoMessage(request);
-            } catch (IOException err) {
-                throw new UncheckedDeephavenException("Unable to parse barrage proto message request", err);
+            } catch (final IOException err) {
+                throw GrpcUtil.securelyWrapError(log, err);
             }
             synchronized (this) {
 
@@ -428,8 +429,8 @@ public class ArrowFlightUtil {
                 if (requestHandler != null) {
                     requestHandler.close();
                 }
-            } catch (IOException ioException) {
-                throw new UncheckedDeephavenException("IOException closing handler", ioException);
+            } catch (final IOException err) {
+                throw GrpcUtil.securelyWrapError(log, err);
             }
 
             release();
