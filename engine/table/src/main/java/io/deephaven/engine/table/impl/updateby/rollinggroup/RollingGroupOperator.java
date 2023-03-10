@@ -186,7 +186,8 @@ public class RollingGroupOperator extends UpdateByOperator {
         public void writeToOutputChunk(int outIdx) {
             final long affectedPos = affectedPosChunk.get(outIdx);
             startSourceOutputValues.set(outIdx, startPos == NULL_LONG ? NULL_LONG : startPos - affectedPos);
-            endSourceOutputValues.set(outIdx, endPos == NULL_LONG ? NULL_LONG : endPos - affectedPos);
+            // Store endPos as an exclusive value by incrementing by one
+            endSourceOutputValues.set(outIdx, endPos == NULL_LONG ? NULL_LONG : endPos - affectedPos + 1);
         }
 
         @Override
@@ -271,16 +272,18 @@ public class RollingGroupOperator extends UpdateByOperator {
             // When timestampColumnName == null, we have a tick-based rolling window. RollingOpSpec accepts fwd/rev
             // tick parameters and applies the constraint that the current row belongs to the reverse window. This
             // implies that to create a group containing exactly the current row, you must provide a rev/fwd range of
-            // [1 ,0]. This constraint is useful for the user but should not propagate to the general purpose
-            // output AggregateColumnSource constructors. We are converting the Rolling windoow range of values to a
+            // [1, 0]. This constraint is useful for the user but should not propagate to the general purpose
+            // output AggregateColumnSource constructors. We are converting the Rolling window range of values to a
             // simple +/- relative positional offset range where [0, 0] implies a group that contains only the current
-            // row. Similarly, a user range of [5, -3] will convert to [-4, -3] and in both cases will be a group of
+            // row. Similarly, a user range of [5, -3] will convert to [-4, -2) and in both cases will be a group of
             // two rows starting 4 rows before the current row.
+            //
+            // The aggregated column source range is half-open, so we add one to the inclusive fwd units to convert.
             outputSources[ii] = timestampColumnName != null
                     ? AggregateColumnSource.makeSliced((ColumnSource<Character>) valueSources[ii], groupRowSetSource,
                             startSource, endSource)
                     : AggregateColumnSource.makeSliced((ColumnSource<Character>) valueSources[ii], groupRowSetSource,
-                            -reverseWindowScaleUnits + 1, forwardWindowScaleUnits);
+                            -reverseWindowScaleUnits + 1, forwardWindowScaleUnits + 1);
             outputSourceMap.put(outputColumnNames[ii], outputSources[ii]);
         }
     }

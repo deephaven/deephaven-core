@@ -1246,7 +1246,9 @@ public abstract class UpdateBy {
         // Add the output columns in the user-supplied order
         final Collection<String> userOutputColumns = updateByOperatorFactory.getOutputColumns(clauses);
         for (String colName : userOutputColumns) {
-            resultSources.put(colName, opResultSources.get(colName));
+            final ColumnSource<?> matchedColumn = opResultSources.get(colName);
+            Assert.neqNull(matchedColumn, "matchedColumn");
+            resultSources.put(colName, matchedColumn);
         }
         if (pairs.length == 0) {
             descriptionBuilder.append(")");

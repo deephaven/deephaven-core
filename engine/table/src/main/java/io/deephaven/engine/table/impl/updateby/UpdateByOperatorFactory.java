@@ -13,14 +13,13 @@ import io.deephaven.engine.table.impl.updateby.ema.*;
 import io.deephaven.engine.table.impl.updateby.fill.*;
 import io.deephaven.engine.table.impl.updateby.minmax.*;
 import io.deephaven.engine.table.impl.updateby.prod.*;
-import io.deephaven.engine.table.impl.updateby.rollinggroup.*;
+import io.deephaven.engine.table.impl.updateby.rollinggroup.RollingGroupOperator;
 import io.deephaven.engine.table.impl.updateby.rollingsum.*;
 import io.deephaven.engine.table.impl.updateby.sum.*;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.time.DateTime;
-import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -169,22 +168,21 @@ public class UpdateByOperatorFactory {
     private class OutputColumnVisitor implements UpdateByOperation.Visitor<Void> {
         final List<String> outputColumns = new ArrayList<>();
 
-        private MatchPair[] pairs;
 
         @Override
         public Void visit(@NotNull final ColumnUpdateOperation clause) {
             final UpdateBySpec spec = clause.spec();
-            pairs = createColumnsToAddIfMissing(source, parseMatchPairs(clause.columns()), spec, groupByColumns);
+            final MatchPair[] pairs =
+                    createColumnsToAddIfMissing(source, parseMatchPairs(clause.columns()), spec, groupByColumns);
             for (MatchPair pair : pairs) {
                 outputColumns.add(pair.leftColumn);
             }
-            pairs = null;
             return null;
         }
     }
 
     private static class WindowVisitor implements UpdateByOperation.Visitor<Void> {
-        final MutableBoolean created = new MutableBoolean(false);
+        boolean created = false;
 
         // We will divide the operators into similar windows for efficient processing.
         final KeyedObjectHashMap<ColumnUpdateOperation, List<ColumnUpdateOperation>> windowMap =
@@ -249,15 +247,15 @@ public class UpdateByOperatorFactory {
 
         @Override
         public Void visit(@NotNull final ColumnUpdateOperation clause) {
-            created.setFalse();
+            created = false;
             final List<ColumnUpdateOperation> opList = windowMap.putIfAbsent(clause,
                     (newOpListOp) -> {
                         final List<ColumnUpdateOperation> newOpList = new ArrayList<>();
                         newOpList.add(clause);
-                        created.setTrue();
+                        created = true;
                         return newOpList;
                     });
-            if (!created.booleanValue()) {
+            if (!created) {
                 opList.add(clause);
             }
             return null;

@@ -58,7 +58,7 @@ public final class SlicedObjectAggregateColumnSource<COMPONENT_TYPE> extends Bas
 
         final long size = bucketRowSet.size();
         final long start = ClampUtil.clampLong(0, size, rowPos + startPos);
-        final long end = ClampUtil.clampLong(0, size , rowPos + endPos + 1);
+        final long end = ClampUtil.clampLong(0, size , rowPos + endPos);
 
         // Determine the slice of the groupRowSetSource from start to end.
         final RowSet rowSetSlice = bucketRowSet.subSetByPositionRange(start, end);
@@ -83,7 +83,7 @@ public final class SlicedObjectAggregateColumnSource<COMPONENT_TYPE> extends Bas
 
         final long size = bucketRowSet.size();
         final long start = ClampUtil.clampLong(0, size, rowPos + startPos);
-        final long end = ClampUtil.clampLong(0, size , rowPos + endPos + 1);
+        final long end = ClampUtil.clampLong(0, size , rowPos + endPos);
 
         // Determine the slice of the groupRowSetSource from start to end.
         final RowSet rowSetSlice = bucketRowSet.subSetByPositionRange(start, end);
@@ -120,7 +120,7 @@ public final class SlicedObjectAggregateColumnSource<COMPONENT_TYPE> extends Bas
 
                 final long rowSetSize = bucketRowSet.size();
                 final long start = ClampUtil.clampLong(0, rowSetSize, rowPos + startPos);
-                final long end = ClampUtil.clampLong(0, rowSetSize , rowPos + endPos + 1);
+                final long end = ClampUtil.clampLong(0, rowSetSize , rowPos + endPos);
 
                 // Determine the slice of the groupRowSetSource from start to end.
                 final RowSet rowSetSlice = bucketRowSet.subSetByPositionRange(start, end);
@@ -163,7 +163,7 @@ public final class SlicedObjectAggregateColumnSource<COMPONENT_TYPE> extends Bas
 
                 final long rowSetSize = groupRowSetToUse.size();
                 final long start = ClampUtil.clampLong(0, rowSetSize, rowPos + startPos);
-                final long end = ClampUtil.clampLong(0, rowSetSize , rowPos + endPos + 1);
+                final long end = ClampUtil.clampLong(0, rowSetSize , rowPos + endPos);
 
                 // Determine the slice of the groupRowSetSource from start to end.
                 final RowSet rowSetSlice = groupRowSetToUse.subSetByPositionRange(start, end);

@@ -489,6 +489,13 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean>
         return (inUse[indexWithinInUse] & maskWithinInUse) != 0;
     }
 
+    private boolean shouldTrackPrevious() {
+        // prevFlusher == null means we are not tracking previous values yet (or maybe ever).
+        // If prepareForParallelPopulation was called on this cycle, it's assumed that all previous values have already
+        // been recorded.
+        return prevFlusher != null && prepareForParallelPopulationClockCycle != LogicalClock.DEFAULT.currentStep();
+    }
+
     // region fillByRanges
     @Override
     /* TYPE_MIXIN */ void fillByRanges(
@@ -727,13 +734,6 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean>
                 offset += length;
             }
         }
-    }
-
-    private boolean shouldTrackPrevious() {
-        // prevFlusher == null means we are not tracking previous values yet (or maybe ever).
-        // If prepareForParallelPopulation was called on this cycle, it's assumed that all previous values have already
-        // been recorded.
-        return prevFlusher != null && prepareForParallelPopulationClockCycle != LogicalClock.DEFAULT.currentStep();
     }
     // endregion fillFromChunkByRanges
 
