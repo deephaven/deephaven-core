@@ -14,7 +14,6 @@ import io.deephaven.proto.backplane.grpc.ConfigurationConstantsRequest;
 import io.deephaven.proto.backplane.grpc.ConfigurationConstantsResponse;
 import io.deephaven.proto.backplane.grpc.DeleteTableRequest;
 import io.deephaven.proto.backplane.grpc.FetchObjectRequest;
-import io.deephaven.proto.backplane.grpc.FetchObjectResponse;
 import io.deephaven.proto.backplane.grpc.FieldsChangeUpdate;
 import io.deephaven.proto.backplane.grpc.HandshakeRequest;
 import io.deephaven.proto.backplane.grpc.ListFieldsRequest;
@@ -146,7 +145,7 @@ public final class SessionImpl extends SessionBase {
         final ExportId consoleId = new ExportId("Console", exportTicketCreator.createExportId());
         final StartConsoleRequest request = StartConsoleRequest.newBuilder().setSessionType(type)
                 .setResultId(consoleId.ticketId().ticket()).build();
-        return UnaryObserverFuture.grpcFuture(request, channel().console()::startConsole,
+        return CancelableUnaryObserverFuture.cancelableGrpcFuture(request, channel().console()::startConsole,
                 response -> new ConsoleSessionImpl(request, response));
     }
 
@@ -207,7 +206,7 @@ public final class SessionImpl extends SessionBase {
     public CompletableFuture<Void> closeFuture() {
         pingJob.cancel(false);
         HandshakeRequest handshakeRequest = HandshakeRequest.getDefaultInstance();
-        return UnaryObserverFuture.grpcFuture(handshakeRequest, channel().session()::closeSession, ignore -> null);
+        return CancelableUnaryObserverFuture.cancelableGrpcFuture(handshakeRequest, channel().session()::closeSession, ignore -> null);
     }
 
     @Override
@@ -292,52 +291,14 @@ public final class SessionImpl extends SessionBase {
 
     @Override
     public CompletableFuture<Map<String, ConfigValue>> getAuthenticationConstants() {
-        return UnaryObserverFuture.grpcFuture(AuthenticationConstantsRequest.getDefaultInstance(),
+        return CancelableUnaryObserverFuture.cancelableGrpcFuture(AuthenticationConstantsRequest.getDefaultInstance(),
                 channel().config()::getAuthenticationConstants, AuthenticationConstantsResponse::getConfigValuesMap);
     }
 
     @Override
     public CompletableFuture<Map<String, ConfigValue>> getConfigurationConstants() {
-        return UnaryObserverFuture.grpcFuture(ConfigurationConstantsRequest.getDefaultInstance(),
+        return CancelableUnaryObserverFuture.cancelableGrpcFuture(ConfigurationConstantsRequest.getDefaultInstance(),
                 channel().config()::getConfigurationConstants, ConfigurationConstantsResponse::getConfigValuesMap);
-    }
-
-    public static class UnaryObserverFuture<R, V> implements StreamObserver<R> {
-        public static <REQ, RESP, V> CompletableFuture<V> grpcFuture(REQ request,
-                BiConsumer<REQ, StreamObserver<RESP>> call, Function<RESP, V> mapping) {
-            UnaryObserverFuture<RESP, V> observer = new UnaryObserverFuture<>(mapping);
-            call.accept(request, observer);
-            return observer.future();
-        }
-
-        private final CompletableFuture<V> future = new CompletableFuture<>();
-        private final Function<R, V> mapping;
-
-        private UnaryObserverFuture(Function<R, V> mapping) {
-            this.mapping = mapping;
-        }
-
-        public CompletableFuture<V> future() {
-            return future;
-        }
-
-        @Override
-        public void onNext(R value) {
-            future.complete(mapping.apply(value));
-        }
-
-        @Override
-        public void onError(Throwable t) {
-            future.completeExceptionally(t);
-        }
-
-        @Override
-        public void onCompleted() {
-            if (!future.isDone()) {
-                future.completeExceptionally(
-                        new IllegalStateException("Observer completed without response"));
-            }
-        }
     }
 
     public static class CancelableUnaryObserverFuture<REQ, RESP, V> implements ClientResponseObserver<REQ, RESP> {
@@ -422,7 +383,7 @@ public final class SessionImpl extends SessionBase {
         public CompletableFuture<Changes> executeCodeFuture(String code) {
             final ExecuteCommandRequest request =
                     ExecuteCommandRequest.newBuilder().setConsoleId(ticket()).setCode(code).build();
-            return UnaryObserverFuture.grpcFuture(request, bearerChannel.console()::executeCommand, response -> {
+            return CancelableUnaryObserverFuture.cancelableGrpcFuture(request, bearerChannel.console()::executeCommand, response -> {
                 Changes.Builder builder = Changes.builder().changes(new FieldChanges(response.getChanges()));
                 if (!response.getErrorMessage().isEmpty()) {
                     builder.errorMessage(response.getErrorMessage());
@@ -440,7 +401,7 @@ public final class SessionImpl extends SessionBase {
         @Override
         public CompletableFuture<Void> closeFuture() {
             ReleaseRequest request = ReleaseRequest.newBuilder().setId(this.request.getResultId()).build();
-            return UnaryObserverFuture.grpcFuture(request, channel().session()::release, ignore -> null);
+            return CancelableUnaryObserverFuture.cancelableGrpcFuture(request, channel().session()::release, ignore -> null);
         }
 
         @Override
