@@ -13,7 +13,6 @@ import io.deephaven.api.updateby.spec.WindowScale;
 import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.Table;
-import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.UpdateByRequest;
 import io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn;
@@ -25,6 +24,7 @@ import io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.Updat
 import io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaOptions;
 import io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByFill;
 import io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOptions;
+import io.deephaven.proto.util.Exceptions;
 import io.deephaven.server.session.SessionState;
 import io.grpc.StatusRuntimeException;
 
@@ -60,7 +60,7 @@ public final class UpdateByGrpcImpl extends GrpcTableOperation<UpdateByRequest> 
                 ColumnName.of(columnName);
             }
         } catch (IllegalArgumentException e) {
-            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, e.getMessage());
+            throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, e.getMessage());
         }
 
     }
