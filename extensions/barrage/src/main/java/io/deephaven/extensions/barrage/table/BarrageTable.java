@@ -13,7 +13,6 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.perf.PerformanceEntry;
 import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
@@ -36,7 +35,6 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.time.DateTime;
 import io.deephaven.util.annotations.InternalUseOnly;
 import org.HdrHistogram.Histogram;
-import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -169,8 +167,6 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
                 ? LogicalClock.getStep(currentClockValue) - 1
                 : LogicalClock.getStep(currentClockValue));
 
-        registrar.addSource(this);
-
         if (DEBUG_ENABLED) {
             processedData = new LinkedList<>();
             processedStep = new TLongLinkedList();
@@ -178,6 +174,15 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
             processedData = null;
             processedStep = null;
         }
+    }
+
+    /**
+     * Add this table to the registrar so that it can be refreshed.
+     *
+     * @implNote this cannot be performed in the constructor as the class is subclassed.
+     */
+    public void addSourceToRegistrar() {
+        registrar.addSource(this);
     }
 
     abstract protected TableUpdate applyUpdates(ArrayDeque<BarrageMessage> localPendingUpdates);
@@ -407,6 +412,7 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
         // Even if this source table will eventually be static, the data isn't here already. Static tables need to
         // have refreshing set to false after processing data but prior to publishing the object to consumers.
         table.setRefreshing(true);
+        table.addSourceToRegistrar();
 
         return table;
     }

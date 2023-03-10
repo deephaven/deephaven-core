@@ -41,8 +41,10 @@ import static io.deephaven.util.type.TypeUtils.box;
  * A TimeTable adds rows at a fixed interval with a single column named "Timestamp".
  *
  * To create a TimeTable, you should use the {@link TableTools#timeTable} family of methods.
+ *
+ * @implNote The constructor publishes {@code this} to the {@link UpdateGraphProcessor} and thus cannot be subclassed.
  */
-public class TimeTable extends QueryTable implements Runnable {
+public final class TimeTable extends QueryTable implements Runnable {
     private static final Logger log = LoggerFactory.getLogger(TimeTable.class);
 
     public static class Builder {

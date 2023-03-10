@@ -34,8 +34,10 @@ import java.util.stream.Collectors;
  * <p>
  * This class is not thread safe, you must synchronize externally. However, multiple setters may safely log
  * concurrently.
+ *
+ * @implNote The constructor publishes {@code this} to the {@link UpdateGraphProcessor} and thus cannot be subclassed.
  */
-public class DynamicTableWriter implements TableWriter {
+public final class DynamicTableWriter implements TableWriter {
     private final UpdateSourceQueryTable table;
     private final WritableColumnSource[] arrayColumnSources;
 
