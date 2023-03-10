@@ -467,7 +467,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
 
     private Method getMethod(final Class<?> scope, final String methodName, final Class<?>[] paramTypes,
             final Class<?>[][] parameterizedTypes) {
-        final ArrayList<Method> acceptableMethods = new ArrayList<>();
+        final ArrayList<CandidateExecutable<Method>> acceptableMethods = new ArrayList<>();
 
         if (scope == null) {
             for (final Class<?> classImport : staticImports) {
@@ -488,21 +488,19 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                     variablesUsed.add(methodName);
                 }
             }
+        } else if (scope == org.jpy.PyObject.class || scope == PyCallableWrapper.class) {
+            // This is a Python method call, assume it exists and wrap in PythonScopeJpyImpl.CallableWrapper
+            for (Method method : PyCallableWrapper.class.getDeclaredMethods()) {
+                possiblyAddExecutable(acceptableMethods, method, "call", paramTypes, parameterizedTypes);
+            }
         } else {
-            if (scope == org.jpy.PyObject.class || scope == PyCallableWrapper.class) {
-                // This is a Python method call, assume it exists and wrap in PythonScopeJpyImpl.CallableWrapper
-                for (Method method : PyCallableWrapper.class.getDeclaredMethods()) {
-                    possiblyAddExecutable(acceptableMethods, method, "call", paramTypes, parameterizedTypes);
-                }
-            } else {
-                for (final Method method : scope.getMethods()) {
+            for (final Method method : scope.getMethods()) {
+                possiblyAddExecutable(acceptableMethods, method, methodName, paramTypes, parameterizedTypes);
+            }
+            // If 'scope' is an interface, we must explicitly consider the methods in Object
+            if (scope.isInterface()) {
+                for (final Method method : Object.class.getMethods()) {
                     possiblyAddExecutable(acceptableMethods, method, methodName, paramTypes, parameterizedTypes);
-                }
-                // If 'scope' is an interface, we must explicitly consider the methods in Object
-                if (scope.isInterface()) {
-                    for (final Method method : Object.class.getMethods()) {
-                        possiblyAddExecutable(acceptableMethods, method, methodName, paramTypes, parameterizedTypes);
-                    }
                 }
             }
         }
@@ -512,14 +510,14 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                     + (scope != null ? " in " + scope : ""));
         }
 
-        Method bestMethod = null;
-        for (final Method method : acceptableMethods) {
+        CandidateExecutable<Method> bestMethod = null;
+        for (final CandidateExecutable<Method> method : acceptableMethods) {
             if (bestMethod == null || isMoreSpecificMethod(bestMethod, method)) {
                 bestMethod = method;
             }
         }
 
-        return bestMethod;
+        return bestMethod.executable;
     }
 
     private static boolean isPotentialImplicitCall(Class<?> methodClass) {
@@ -631,7 +629,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
     @SuppressWarnings({"ConstantConditions"})
     private Constructor<?> getConstructor(final Class<?> scope, final Class<?>[] paramTypes,
             final Class<?>[][] parameterizedTypes) {
-        final ArrayList<Constructor<?>> acceptableConstructors = new ArrayList<>();
+        final ArrayList<CandidateExecutable<Constructor<?>>> acceptableConstructors = new ArrayList<>();
 
         for (final Constructor<?> constructor : scope.getConstructors()) {
             possiblyAddExecutable(acceptableConstructors, constructor, scope.getName(), paramTypes, parameterizedTypes);
@@ -642,15 +640,14 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                     + paramsTypesToString(paramTypes) + ')' + (scope != null ? " in " + scope : ""));
         }
 
-        Constructor<?> bestConstructor = null;
-
-        for (final Constructor<?> constructor : acceptableConstructors) {
+        CandidateExecutable<Constructor<?>> bestConstructor = null;
+        for (final CandidateExecutable<Constructor<?>> constructor : acceptableConstructors) {
             if (bestConstructor == null || isMoreSpecificConstructor(bestConstructor, constructor)) {
                 bestConstructor = constructor;
             }
         }
 
-        return bestConstructor;
+        return bestConstructor.executable;
     }
 
     private String paramsTypesToString(Class<?>[] paramTypes) {
@@ -667,8 +664,25 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         return buf.toString();
     }
 
+    private static class CandidateExecutable<EXECUTABLE_TYPE extends Executable> {
+        private final EXECUTABLE_TYPE executable;
+        private final int cost;
+
+        private CandidateExecutable(final EXECUTABLE_TYPE executable, final int cost) {
+            this.executable = executable;
+            this.cost = cost;
+        }
+
+        private static final int NO_CONVERSION_POSSIBLE = -1;
+        private static final int ALREADY_EQUAL = 0;
+        private static final int BOX_CONVERSION = 1;
+        private static final int WIDEN_CONVERSION = 2;
+        private static final int UNBOX_CONVERSION = 5; // may NPE, so is more expensive
+        private static final int VECTOR_CONVERSION = 10;
+    }
+
     private static <EXECUTABLE_TYPE extends Executable> void possiblyAddExecutable(
-            final List<EXECUTABLE_TYPE> accepted,
+            final List<CandidateExecutable<EXECUTABLE_TYPE>> accepted,
             final EXECUTABLE_TYPE candidate,
             final String name, final Class<?>[] paramTypes,
             final Class<?>[][] parameterizedTypes) {
@@ -676,6 +690,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             return;
         }
 
+        int cost = 0;
         final Class<?>[] candidateParamTypes = candidate.getParameterTypes();
 
         if (candidate.isVarArgs() ? candidateParamTypes.length > paramTypes.length + 1
@@ -688,12 +703,15 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             Class<?> paramType = paramTypes[i];
 
             if (isTypedVector(paramType) && candidateParamTypes[i].isArray()) {
+                cost += CandidateExecutable.VECTOR_CONVERSION;
                 paramType = convertVector(paramType, parameterizedTypes[i] == null ? null : parameterizedTypes[i][0]);
             }
 
-            if (!canAssignType(candidateParamTypes[i], paramType)) {
+            int costToAssignArg = costToAssignType(candidateParamTypes[i], paramType);
+            if (costToAssignArg == CandidateExecutable.NO_CONVERSION_POSSIBLE) {
                 return;
             }
+            cost += costToAssignArg;
         }
 
         // If the paramTypes includes 1+ varArgs check the classes match -- no need to check if there are 0 varArgs
@@ -704,53 +722,68 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             Assert.eqTrue(candidateParamType.isArray(), "candidateParamType.isArray()");
 
             if (isTypedVector(paramType)) {
+                cost += CandidateExecutable.VECTOR_CONVERSION;
                 paramType = convertVector(paramType, parameterizedTypes[candidateParamTypes.length - 1] == null ? null
                         : parameterizedTypes[candidateParamTypes.length - 1][0]);
             }
 
+            int costToAssignVarArgs = costToAssignType(candidateParamType, paramType);
             boolean canAssignVarArgs = candidateParamTypes.length == paramTypes.length && paramType.isArray()
-                    && canAssignType(candidateParamType, paramType);
+                    && costToAssignVarArgs != CandidateExecutable.NO_CONVERSION_POSSIBLE;
+            if (canAssignVarArgs) {
+                cost += costToAssignVarArgs;
+            } else {
+                boolean canAssignParamsToVarArgs = true;
+                final Class<?> lastClass = candidateParamType.getComponentType();
 
-            boolean canAssignParamsToVarArgs = true;
-            final Class<?> lastClass = candidateParamType.getComponentType();
+                for (int i = candidateParamTypes.length - 1; i < paramTypes.length; i++) {
+                    paramType = paramTypes[i];
 
-            for (int i = candidateParamTypes.length - 1; i < paramTypes.length; i++) {
-                paramType = paramTypes[i];
+                    if (isTypedVector(paramType) && lastClass.isArray()) {
+                        cost += CandidateExecutable.VECTOR_CONVERSION;
+                        paramType = convertVector(paramType,
+                                parameterizedTypes[i] == null ? null : parameterizedTypes[i][0]);
+                    }
 
-                if (isTypedVector(paramType) && lastClass.isArray()) {
-                    paramType = convertVector(paramType,
-                            parameterizedTypes[i] == null ? null : parameterizedTypes[i][0]);
+                    int costToAssignArg = costToAssignType(lastClass, paramType);
+                    if (costToAssignArg == CandidateExecutable.NO_CONVERSION_POSSIBLE) {
+                        canAssignParamsToVarArgs = false;
+                        break;
+                    }
+                    cost += costToAssignArg;
                 }
 
-                if (!canAssignType(lastClass, paramType)) {
-                    canAssignParamsToVarArgs = false;
-                    break;
+                if (!canAssignParamsToVarArgs) {
+                    return;
                 }
-            }
-
-            if (!canAssignVarArgs && !canAssignParamsToVarArgs) {
-                return;
             }
         }
 
-        accepted.add(candidate);
+        accepted.add(new CandidateExecutable<>(candidate, cost));
     }
 
-    private static boolean canAssignType(final Class<?> candidateParamType, final Class<?> paramType) {
-        if (isAssignableFrom(candidateParamType, paramType)) {
-            return true;
+    private static int costToAssignType(final Class<?> candidateParamType, final Class<?> paramType) {
+        int assignCost = costToAssignFrom(candidateParamType, paramType);
+        if (assignCost != CandidateExecutable.NO_CONVERSION_POSSIBLE) {
+            return assignCost;
         }
 
         final Class<?> maybePrimitive = ClassUtils.wrapperToPrimitive(paramType);
         if (maybePrimitive != null && isAssignableFrom(candidateParamType, maybePrimitive)) {
-            return true;
+            return CandidateExecutable.UNBOX_CONVERSION;
         }
 
-        return maybePrimitive != null && candidateParamType.isPrimitive()
-                && isWideningPrimitiveConversion(maybePrimitive, candidateParamType);
+        if (maybePrimitive != null && candidateParamType.isPrimitive()
+                && isWideningPrimitiveConversion(maybePrimitive, candidateParamType)) {
+            return CandidateExecutable.WIDEN_CONVERSION;
+        }
+
+        return CandidateExecutable.NO_CONVERSION_POSSIBLE;
     }
 
-    private static boolean isMoreSpecificConstructor(final Constructor<?> c1, final Constructor<?> c2) {
+    private static boolean isMoreSpecificConstructor(
+            final CandidateExecutable<Constructor<?>> c1,
+            final CandidateExecutable<Constructor<?>> c2) {
         final Boolean executableResult = isMoreSpecificExecutable(c1, c2);
         if (executableResult == null) {
             throw new IllegalStateException("Ambiguous comparison between constructors " + c1 + " and " + c2);
@@ -758,34 +791,44 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         return executableResult;
     }
 
-    private static boolean isMoreSpecificMethod(final Method m1, final Method m2) {
+    private static boolean isMoreSpecificMethod(
+            final CandidateExecutable<Method> m1,
+            final CandidateExecutable<Method> m2) {
         final Boolean executableResult = isMoreSpecificExecutable(m1, m2);
-        // NB: executableResult can be null in cases where an override narrows its return type
-        return executableResult == null ? isAssignableFrom(m1.getReturnType(), m2.getReturnType()) : executableResult;
+        if (executableResult == null) {
+            // NB: executableResult can be null in cases where an override narrows its return type
+            return isAssignableFrom(m1.executable.getReturnType(), m2.executable.getReturnType());
+        }
+        return executableResult;
     }
 
     private static <EXECUTABLE_TYPE extends Executable> Boolean isMoreSpecificExecutable(
-            final EXECUTABLE_TYPE e1, final EXECUTABLE_TYPE e2) {
+            final CandidateExecutable<EXECUTABLE_TYPE> e1,
+            final CandidateExecutable<EXECUTABLE_TYPE> e2) {
+        if (e1.cost != e2.cost) {
+            return e2.cost < e1.cost;
+        }
 
         // var args (variable arity) methods always go after fixed arity methods when determining the proper overload
         // https://docs.oracle.com/javase/specs/jls/se7/html/jls-15.html#jls-15.12.2
-        if (e1.isVarArgs() && !e2.isVarArgs()) {
+        if (e1.executable.isVarArgs() && !e2.executable.isVarArgs()) {
             return true;
         }
-        if (e2.isVarArgs() && !e1.isVarArgs()) {
+        if (e2.executable.isVarArgs() && !e1.executable.isVarArgs()) {
             return false;
         }
 
-        final Class<?>[] e1ParamTypes = e1.getParameterTypes();
-        final Class<?>[] e2ParamTypes = e2.getParameterTypes();
+        final Class<?>[] e1ParamTypes = e1.executable.getParameterTypes();
+        final Class<?>[] e2ParamTypes = e2.executable.getParameterTypes();
 
-        if (e1.isVarArgs() && e2.isVarArgs()) {
+        if (e1.executable.isVarArgs() && e2.executable.isVarArgs()) {
             e1ParamTypes[e1ParamTypes.length - 1] = e1ParamTypes[e1ParamTypes.length - 1].getComponentType();
             e2ParamTypes[e2ParamTypes.length - 1] = e2ParamTypes[e2ParamTypes.length - 1].getComponentType();
         }
 
         for (int i = 0; i < e1ParamTypes.length; i++) {
-            if (!canAssignType(e1ParamTypes[i], e2ParamTypes[i]) && !isTypedVector(e2ParamTypes[i])) {
+            int costToAssign = costToAssignType(e1ParamTypes[i], e2ParamTypes[i]);
+            if (costToAssign == -1 && !isTypedVector(e2ParamTypes[i])) {
                 return false;
             }
         }
@@ -798,21 +841,36 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         return null;
     }
 
+    private static int costToAssignFrom(final Class<?> dest, final Class<?> src) {
+        if (dest == src) {
+            return CandidateExecutable.ALREADY_EQUAL;
+        }
+
+        if ((dest.isPrimitive() && dest != boolean.class) && src.isPrimitive() && src != boolean.class) {
+            if (dest == binaryNumericPromotionType(dest, src)) {
+                return CandidateExecutable.WIDEN_CONVERSION;
+            }
+            return CandidateExecutable.NO_CONVERSION_POSSIBLE;
+        } else if (!dest.isPrimitive() && src == NULL_CLASS) {
+            return CandidateExecutable.ALREADY_EQUAL;
+        }
+
+        Class<?> boxedDest = io.deephaven.util.type.TypeUtils.getBoxedType(dest);
+        Class<?> boxedSrc = io.deephaven.util.type.TypeUtils.getBoxedType(src);
+
+        if (boxedDest == src) {
+            return CandidateExecutable.BOX_CONVERSION;
+        } else if (boxedSrc == dest) {
+            return CandidateExecutable.UNBOX_CONVERSION;
+        } else if (boxedDest.isAssignableFrom(boxedSrc)) {
+            return CandidateExecutable.WIDEN_CONVERSION;
+        }
+
+        return CandidateExecutable.NO_CONVERSION_POSSIBLE;
+    }
+
     private static boolean isAssignableFrom(Class<?> classA, Class<?> classB) {
-        if (classA == classB) {
-            return true;
-        }
-
-        if ((classA.isPrimitive() && classA != boolean.class) && classB.isPrimitive() && classB != boolean.class) {
-            return classA == binaryNumericPromotionType(classA, classB);
-        } else if (!classA.isPrimitive() && classB == NULL_CLASS) {
-            return true;
-        } else {
-            classA = io.deephaven.util.type.TypeUtils.getBoxedType(classA);
-            classB = io.deephaven.util.type.TypeUtils.getBoxedType(classB);
-
-            return classA.isAssignableFrom(classB);
-        }
+        return costToAssignFrom(classA, classB) != CandidateExecutable.NO_CONVERSION_POSSIBLE;
     }
 
     private Class<?>[][] getParameterizedTypes(Expression... expressions) {
