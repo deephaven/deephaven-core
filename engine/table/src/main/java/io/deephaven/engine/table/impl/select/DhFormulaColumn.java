@@ -629,7 +629,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
     private CodeGenerator generateIntSize() {
         final CodeGenerator g = CodeGenerator.create(
                 "private int __intSize(final long l)", CodeGenerator.block(
-                        "return LongSizedDataStructure.intSize(\"FormulaColumn ii usage\", l);"));
+                        "return LongSizedDataStructure.intSize(\"FormulaColumn i usage\", l);"));
         return g.freeze();
     }
 
