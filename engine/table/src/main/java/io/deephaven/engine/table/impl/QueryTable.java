@@ -1106,10 +1106,7 @@ public class QueryTable extends BaseTable<QueryTable> {
         }
 
         if (isFlat()) {
-            if (isRefreshing()) {
-                manageWithCurrentScope();
-            }
-            return this;
+            return prepareReturnThis();
         }
 
         return getResult(new FlattenOperation(this));
@@ -1342,10 +1339,7 @@ public class QueryTable extends BaseTable<QueryTable> {
     @Override
     public Table view(final Collection<? extends Selectable> viewColumns) {
         if (viewColumns == null || viewColumns.isEmpty()) {
-            if (isRefreshing()) {
-                manageWithCurrentScope();
-            }
-            return this;
+            return prepareReturnThis();
         }
         return viewOrUpdateView(Flavor.View, SelectColumn.from(viewColumns));
     }
@@ -1357,10 +1351,7 @@ public class QueryTable extends BaseTable<QueryTable> {
 
     private Table viewOrUpdateView(Flavor flavor, final SelectColumn... viewColumns) {
         if (viewColumns == null || viewColumns.length == 0) {
-            if (isRefreshing()) {
-                manageWithCurrentScope();
-            }
-            return this;
+            return prepareReturnThis();
         }
 
         final String humanReadablePrefix = flavor.toString();
@@ -1477,6 +1468,9 @@ public class QueryTable extends BaseTable<QueryTable> {
 
     @Override
     public Table dropColumns(String... columnNames) {
+        if (columnNames == null || columnNames.length == 0) {
+            return prepareReturnThis();
+        }
         return memoizeResult(MemoizedOperationKey.dropColumns(columnNames), () -> QueryPerformanceRecorder
                 .withNugget("dropColumns(" + Arrays.toString(columnNames) + ")", sizeForInstrumentation(), () -> {
                     final Mutable<Table> result = new MutableObject<>();
@@ -1547,10 +1541,7 @@ public class QueryTable extends BaseTable<QueryTable> {
         return QueryPerformanceRecorder.withNugget("renameColumns(" + matchString(pairs) + ")",
                 sizeForInstrumentation(), () -> {
                     if (pairs == null || pairs.length == 0) {
-                        if (isRefreshing()) {
-                            manageWithCurrentScope();
-                        }
-                        return this;
+                        return prepareReturnThis();
                     }
 
                     checkInitiateOperation();
@@ -2199,18 +2190,12 @@ public class QueryTable extends BaseTable<QueryTable> {
     public Table sort(Collection<SortColumn> columnsToSortBy) {
         final SortPair[] sortPairs = SortPair.from(columnsToSortBy);
         if (sortPairs.length == 0) {
-            if (isRefreshing()) {
-                manageWithCurrentScope();
-            }
-            return this;
+            return prepareReturnThis();
         } else if (sortPairs.length == 1) {
             final String columnName = sortPairs[0].getColumn();
             final SortingOrder order = sortPairs[0].getOrder();
             if (SortedColumnsAttribute.isSortedBy(this, columnName, order)) {
-                if (isRefreshing()) {
-                    manageWithCurrentScope();
-                }
-                return this;
+                return prepareReturnThis();
             }
         }
 
@@ -2263,10 +2248,7 @@ public class QueryTable extends BaseTable<QueryTable> {
         return QueryPerformanceRecorder.withNugget("ungroup(" + Arrays.toString(columnsToUngroupBy) + ")",
                 sizeForInstrumentation(), () -> {
                     if (columnsToUngroupBy.length == 0) {
-                        if (isRefreshing()) {
-                            manageWithCurrentScope();
-                        }
-                        return this;
+                        return prepareReturnThis();
                     }
 
                     checkInitiateOperation();

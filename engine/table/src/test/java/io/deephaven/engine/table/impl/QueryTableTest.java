@@ -553,18 +553,21 @@ public class QueryTableTest extends QueryTableTestBase {
         final List<ColumnSource<?>> colSources =
                 Arrays.asList(TableTools.objColSource("c", "e", "g"), colSource(2, 4, 6), colSource(1.0, 2.0, 3.0));
         final Table table = newTable(3, colNames, colSources);
-        assertEquals(3, table.dropColumns().getColumnSources().size());
+        assertEquals(3, table.dropColumns(Collections.emptyList()).getColumnSources().size());
         Collection<? extends ColumnSource<?>> columnSourcesAfterDrop = table.getColumnSources();
         ColumnSource<?>[] columnsAfterDrop =
                 columnSourcesAfterDrop.toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY);
-        Collection<? extends ColumnSource<?>> columnSources = table.dropColumns().getColumnSources();
+        Collection<? extends ColumnSource<?>> columnSources =
+                table.dropColumns(Collections.emptyList()).getColumnSources();
         ColumnSource<?>[] columns = columnSources.toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY);
         assertSame(columns[0], columnsAfterDrop[0]);
         assertSame(columns[1], columnsAfterDrop[1]);
         assertSame(columns[2], columnsAfterDrop[2]);
-        assertSame(table.getColumnSource("String"), table.dropColumns().getColumnSource("String"));
-        assertSame(table.getColumnSource("Int"), table.dropColumns().getColumnSource("Int"));
-        assertSame(table.getColumnSource("Double"), table.dropColumns().getColumnSource("Double"));
+        assertSame(table.getColumnSource("String"),
+                table.dropColumns(Collections.emptyList()).getColumnSource("String"));
+        assertSame(table.getColumnSource("Int"), table.dropColumns(Collections.emptyList()).getColumnSource("Int"));
+        assertSame(table.getColumnSource("Double"),
+                table.dropColumns(Collections.emptyList()).getColumnSource("Double"));
 
         assertEquals(2, table.dropColumns("Int").getColumnSources().size());
         columnSourcesAfterDrop = table.dropColumns("Int").getColumnSources();
