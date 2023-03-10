@@ -228,7 +228,6 @@ public class ArrowFlightUtil {
                 final SessionState.ExportBuilder<Table> localExportBuilder = resultExportBuilder;
                 resultExportBuilder = null;
 
-
                 // gRPC is about to remove its hard reference to this observer. We must keep the result table hard
                 // referenced until the export is complete, so that the export can properly be satisfied. ExportObject's
                 // LivenessManager enforces strong reachability.

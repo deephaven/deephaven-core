@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl.select.analyzers;
 
+import io.deephaven.base.Pair;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.liveness.LivenessNode;
@@ -10,6 +11,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.select.FormulaColumn;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.SourceColumn;
@@ -47,14 +49,22 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
         }
     }
 
-    public static SelectAndViewAnalyzer create(Mode mode, Map<String, ColumnSource<?>> columnSources,
-            TrackingRowSet rowSet, ModifiedColumnSet parentMcs, boolean publishTheseSources,
+    public static SelectAndViewAnalyzerWrapper create(
+            QueryTable sourceTable, Mode mode, Map<String, ColumnSource<?>> columnSources,
+            TrackingRowSet rowSet, ModifiedColumnSet parentMcs, boolean publishTheseSources, boolean useShiftedColumns,
             SelectColumn... selectColumns) {
-        return create(mode, columnSources, rowSet, parentMcs, publishTheseSources, true, selectColumns);
+        return create(sourceTable, mode, columnSources, rowSet, parentMcs, publishTheseSources, useShiftedColumns,
+                true, selectColumns);
     }
 
-    public static SelectAndViewAnalyzer create(final Mode mode, final Map<String, ColumnSource<?>> columnSources,
-            TrackingRowSet rowSet, final ModifiedColumnSet parentMcs, final boolean publishTheseSources,
+    public static SelectAndViewAnalyzerWrapper create(
+            final QueryTable sourceTable,
+            final Mode mode,
+            final Map<String, ColumnSource<?>> columnSources,
+            TrackingRowSet rowSet,
+            final ModifiedColumnSet parentMcs,
+            final boolean publishTheseSources,
+            boolean useShiftedColumns,
             final boolean allowInternalFlatten,
             final SelectColumn... selectColumns) {
         SelectAndViewAnalyzer analyzer = createBaseLayer(columnSources, publishTheseSources);
@@ -78,8 +88,18 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
                 && mode == Mode.SELECT_STATIC;
         int numberOfInternallyFlattenedColumns = 0;
 
+        List<SelectColumn> processedCols = new LinkedList<>();
+        List<SelectColumn> remainingCols = null;
+        FormulaColumn shiftColumn = null;
+        boolean shiftColumnHasPositiveOffset = false;
+
         final HashSet<String> resultColumns = flattenedResult ? new HashSet<>() : null;
         for (final SelectColumn sc : selectColumns) {
+            if (remainingCols != null) {
+                remainingCols.add(sc);
+                continue;
+            }
+
             analyzer.updateColumnDefinitionsFromTopLayer(columnDefinitions);
             sc.initDef(columnDefinitions);
             sc.initInputs(rowSet, analyzer.getAllColumnSources());
@@ -104,6 +124,23 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
             final String[] distinctDeps = allDependencies.distinct().toArray(String[]::new);
             final ModifiedColumnSet mcsBuilder = new ModifiedColumnSet(parentMcs);
 
+            if (useShiftedColumns && hasConstantArrayAccess(sc)) {
+                remainingCols = new LinkedList<>();
+                shiftColumn = sc instanceof FormulaColumn
+                        ? (FormulaColumn) sc
+                        : (FormulaColumn) ((SwitchColumn) sc).getRealColumn();
+                shiftColumnHasPositiveOffset = hasPositiveOffsetConstantArrayAccess(sc);
+                continue;
+            }
+
+            // shifted columns appear to not be safe for refresh, so we do not validate them until they are rewritten
+            // using the intermediary shifted column
+            if (sourceTable.isRefreshing()) {
+                sc.validateSafeForRefresh(sourceTable);
+            }
+
+            processedCols.add(sc);
+
             if (hasConstantValue(sc)) {
                 final WritableColumnSource<?> constViewSource =
                         SingleValueColumnSource.getSingleValueColumnSource(sc.getReturnedType());
@@ -117,8 +154,8 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
                 if (numberOfInternallyFlattenedColumns > 0) {
                     // we must preserve this column, but have already created an analyzer for the internally flattened
                     // column, therefore must start over without permitting internal flattening
-                    return create(mode, columnSources, originalRowSet, parentMcs, publishTheseSources, false,
-                            selectColumns);
+                    return create(sourceTable, mode, columnSources, originalRowSet, parentMcs, publishTheseSources,
+                            false, selectColumns);
                 }
                 analyzer =
                         analyzer.createLayerForPreserve(sc.getName(), sc, sc.getDataView(), distinctDeps, mcsBuilder);
@@ -184,8 +221,38 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
                     throw new UnsupportedOperationException("Unsupported case " + mode);
             }
         }
-        return analyzer;
+        return new SelectAndViewAnalyzerWrapper(analyzer, shiftColumn, shiftColumnHasPositiveOffset, remainingCols,
+                processedCols);
     }
+
+    private static boolean hasConstantArrayAccess(final SelectColumn sc) {
+        if (sc instanceof FormulaColumn) {
+            return ((FormulaColumn) sc).hasConstantArrayAccess();
+        } else if (sc instanceof SwitchColumn) {
+            final SelectColumn realColumn = ((SwitchColumn) sc).getRealColumn();
+            if (realColumn instanceof FormulaColumn) {
+                return ((FormulaColumn) realColumn).hasConstantArrayAccess();
+            }
+        }
+        return false;
+    }
+
+    private static boolean hasPositiveOffsetConstantArrayAccess(final SelectColumn sc) {
+        Pair<String, Map<Long, List<MatchPair>>> shifts = null;
+        if (sc instanceof FormulaColumn) {
+            shifts = ((FormulaColumn) sc).getFormulaShiftColPair();
+        } else if (sc instanceof SwitchColumn) {
+            final SelectColumn realColumn = ((SwitchColumn) sc).getRealColumn();
+            if (realColumn instanceof FormulaColumn) {
+                shifts = ((FormulaColumn) realColumn).getFormulaShiftColPair();
+            }
+        }
+        if (shifts == null) {
+            throw new IllegalStateException("Column " + sc.getName() + " does not have constant array access");
+        }
+        return shifts.getSecond().keySet().stream().max(Long::compareTo).orElse(0L) > 0;
+    }
+
 
     private static boolean hasConstantValue(final SelectColumn sc) {
         if (sc instanceof FormulaColumn) {
@@ -205,7 +272,8 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
             return false;
         }
         final ColumnSource<?> sccs = sc.getDataView();
-        return sccs instanceof InMemoryColumnSource && !Vector.class.isAssignableFrom(sc.getReturnedType());
+        return sccs instanceof InMemoryColumnSource && ((InMemoryColumnSource) sccs).isInMemory()
+                && !Vector.class.isAssignableFrom(sc.getReturnedType());
     }
 
     static final int BASE_LAYER_INDEX = 0;
@@ -387,8 +455,8 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
      * this in two stages. In the first stage we create a map from column to (set of dependent columns). In the second
      * stage we reverse that map.
      */
-    public final Map<String, String[]> calcEffects() {
-        final Map<String, Set<String>> dependsOn = calcDependsOnRecurse();
+    public final Map<String, String[]> calcEffects(boolean forcePublishAllResources) {
+        final Map<String, Set<String>> dependsOn = calcDependsOnRecurse(forcePublishAllResources);
 
         // Now create effects, which is the inverse of dependsOn:
         // An entry W -> [X, Y, Z] in effects means that W affects X, Y, and Z
@@ -408,7 +476,7 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
         return result;
     }
 
-    abstract Map<String, Set<String>> calcDependsOnRecurse();
+    abstract Map<String, Set<String>> calcDependsOnRecurse(boolean forcePublishAllResources);
 
     public abstract SelectAndViewAnalyzer getInner();
 

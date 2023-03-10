@@ -36,6 +36,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -1203,6 +1204,8 @@ public class QueryTableAjTest {
     }
 
     private void checkAjResult(Table leftTable, Table rightTable, Table result, boolean reverse, boolean noexact) {
+        leftTable = leftTable.withAttributes(Map.of(BaseTable.TEST_SOURCE_TABLE_ATTRIBUTE, true));
+
         final TIntArrayList expectedStamp = new TIntArrayList();
         final TIntArrayList expectedSentinel = new TIntArrayList();
 
