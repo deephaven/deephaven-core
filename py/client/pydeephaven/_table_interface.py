@@ -7,13 +7,13 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import List, Any
 
-from pydeephaven.dherror import DHError
-from pydeephaven.combo_agg import ComboAggregation
+from pydeephaven._constants import AggType
 from pydeephaven._table_ops import UpdateOp, LazyUpdateOp, ViewOp, UpdateViewOp, SelectOp, DropColumnsOp, \
     SelectDistinctOp, SortOp, UnstructuredFilterOp, HeadOp, TailOp, HeadByOp, TailByOp, UngroupOp, NaturalJoinOp, \
-    ExactJoinOp, CrossJoinOp, AsOfJoinOp, DedicatedAggOp, ComboAggOp
+    ExactJoinOp, CrossJoinOp, AsOfJoinOp, DedicatedAggOp, ComboAggOp, UpdateByOp
+from pydeephaven.combo_agg import ComboAggregation
 from pydeephaven.constants import MatchRule, SortDirection
-from pydeephaven._constants import AggType
+from pydeephaven.updateby import UpdateByOperation
 
 
 class TableInterface(ABC):
@@ -276,7 +276,8 @@ class TableInterface(ABC):
         table_op = AsOfJoinOp(table=table, keys=on, columns_to_add=joins, match_rule=match_rule)
         return self.table_op_handler(table_op)
 
-    def raj(self, table: Any, on: List[str], joins: List[str] = [], match_rule: MatchRule = MatchRule.GREATER_THAN_EQUAL):
+    def raj(self, table: Any, on: List[str], joins: List[str] = [],
+            match_rule: MatchRule = MatchRule.GREATER_THAN_EQUAL):
         """ Perform a reverse as-of join between this table as the left table and another table as the right table) and
         returns the result table.
 
@@ -558,4 +559,20 @@ class TableInterface(ABC):
             DHError
         """
         table_op = ComboAggOp(column_names=by, combo_aggregation=agg)
+        return self.table_op_handler(table_op)
+
+    def update_by(self, ops: List[UpdateByOperation], by: List[str]):
+        """ Perform an update-by operation on the table and return the result table.
+
+        Args:
+            ops (List[UpdateByOperation]): the UpdateByOperations to be applied
+            by (List[str]): the group-by column names
+
+        Returns:
+            a Table object
+
+        Raises:
+            DHError
+        """
+        table_op = UpdateByOp(operations=ops, by=by)
         return self.table_op_handler(table_op)

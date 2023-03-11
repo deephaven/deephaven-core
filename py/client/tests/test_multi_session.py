@@ -1,8 +1,7 @@
 #
 # Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
-
-
+import unittest
 
 from pydeephaven import Session
 from tests.testbase import BaseTestCase
@@ -38,3 +37,7 @@ class MultiSessionTestCase(BaseTestCase):
             wait_for_table()
         except timeout_decorator.TimeoutError:
             self.fail('table did not get synced to session1')
+
+
+if __name__ == '__main__':
+    unittest.main()

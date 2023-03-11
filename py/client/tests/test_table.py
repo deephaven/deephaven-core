@@ -3,12 +3,14 @@
 #
 
 import time
+import unittest
 
 from pyarrow import csv
 
 from pydeephaven import ComboAggregation, SortDirection
 from pydeephaven import DHError
 from pydeephaven.table import Table
+from pydeephaven.updateby import cum_sum, cum_prod, cum_min, cum_max, forward_fill
 from tests.testbase import BaseTestCase
 
 
@@ -205,3 +207,7 @@ class TableTestCase(BaseTestCase):
 
         result_table = test_table.agg_by(agg=combo_agg, by=["a"])
         self.assertEqual(result_table.size, num_distinct_a)
+
+
+if __name__ == '__main__':
+    unittest.main()

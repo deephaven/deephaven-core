@@ -3,6 +3,7 @@
 #
 
 import time
+import unittest
 
 from pyarrow import csv
 
@@ -45,3 +46,7 @@ class QueryTestCase(BaseTestCase):
 
         result_table = query.exec()
         self.assertTrue(result_table.size > 0)
+
+
+if __name__ == '__main__':
+    unittest.main()
