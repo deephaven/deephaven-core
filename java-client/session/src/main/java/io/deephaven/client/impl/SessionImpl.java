@@ -14,7 +14,6 @@ import io.deephaven.proto.backplane.grpc.ConfigurationConstantsRequest;
 import io.deephaven.proto.backplane.grpc.ConfigurationConstantsResponse;
 import io.deephaven.proto.backplane.grpc.DeleteTableRequest;
 import io.deephaven.proto.backplane.grpc.FetchObjectRequest;
-import io.deephaven.proto.backplane.grpc.FieldsChangeUpdate;
 import io.deephaven.proto.backplane.grpc.HandshakeRequest;
 import io.deephaven.proto.backplane.grpc.ListFieldsRequest;
 import io.deephaven.proto.backplane.grpc.ReleaseRequest;
@@ -23,10 +22,7 @@ import io.deephaven.proto.backplane.grpc.TypedTicket;
 import io.deephaven.proto.backplane.script.grpc.BindTableToVariableRequest;
 import io.deephaven.proto.backplane.script.grpc.ExecuteCommandRequest;
 import io.deephaven.proto.backplane.script.grpc.StartConsoleRequest;
-import io.deephaven.proto.backplane.script.grpc.StartConsoleResponse;
 import io.deephaven.proto.util.ExportTicketHelper;
-import io.grpc.stub.ClientCallStreamObserver;
-import io.grpc.stub.ClientResponseObserver;
 import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,8 +43,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.function.BiConsumer;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -145,8 +139,8 @@ public final class SessionImpl extends SessionBase {
         final ExportId consoleId = new ExportId("Console", exportTicketCreator.createExportId());
         final StartConsoleRequest request = StartConsoleRequest.newBuilder().setSessionType(type)
                 .setResultId(consoleId.ticketId().ticket()).build();
-        return CancelableUnaryObserverFuture.cancelableGrpcFuture(request, channel().console()::startConsole,
-                response -> new ConsoleSessionImpl(request, response));
+        return UnaryGrpcFuture.of(request, channel().console()::startConsole,
+                response -> new ConsoleSessionImpl(request));
     }
 
     @Override
@@ -155,9 +149,10 @@ public final class SessionImpl extends SessionBase {
             throw new IllegalArgumentException("Invalid name");
         }
         BindTableToVariableRequest request = BindTableToVariableRequest.newBuilder()
-                .setVariableName(name).setTableId(ticketId.ticketId().ticket()).build();
-        return CancelableUnaryObserverFuture.cancelableGrpcFuture(request, channel().console()::bindTableToVariable,
-                ignore -> null);
+                .setVariableName(name)
+                .setTableId(ticketId.ticketId().ticket())
+                .build();
+        return UnaryGrpcFuture.ignoreResponse(request, channel().console()::bindTableToVariable);
     }
 
     @Override
@@ -169,23 +164,24 @@ public final class SessionImpl extends SessionBase {
                         .build())
                 .build();
 
-        return CancelableUnaryObserverFuture.cancelableGrpcFuture(request, channel().object()::fetchObject, response -> {
-            final String responseType = response.getType();
-            final ByteString data = response.getData();
-            final List<ExportId> exportIds = response.getTypedExportIdList().stream()
-                    .map(e -> {
-                        final String type1;
-                        if (e.getType().isEmpty()) {
-                            type1 = null;
-                        } else {
-                            type1 = e.getType();
-                        }
-                        final int exportId = ExportTicketHelper.ticketToExportId(e.getTicket(), "exportId");
-                        return new ExportId(type1, exportId);
-                    })
-                    .collect(Collectors.toList());
-            return new FetchedObject(responseType, data, exportIds);
-        });
+        return UnaryGrpcFuture.of(request, channel().object()::fetchObject,
+                response -> {
+                    final String responseType = response.getType();
+                    final ByteString data = response.getData();
+                    final List<ExportId> exportIds = response.getTypedExportIdList().stream()
+                            .map(t -> {
+                                final String ticketType;
+                                if (t.getType().isEmpty()) {
+                                    ticketType = null;
+                                } else {
+                                    ticketType = t.getType();
+                                }
+                                final int exportId = ExportTicketHelper.ticketToExportId(t.getTicket(), "exportId");
+                                return new ExportId(ticketType, exportId);
+                            })
+                            .collect(Collectors.toList());
+                    return new FetchedObject(responseType, data, exportIds);
+                });
     }
 
     @Override
@@ -206,7 +202,7 @@ public final class SessionImpl extends SessionBase {
     public CompletableFuture<Void> closeFuture() {
         pingJob.cancel(false);
         HandshakeRequest handshakeRequest = HandshakeRequest.getDefaultInstance();
-        return CancelableUnaryObserverFuture.cancelableGrpcFuture(handshakeRequest, channel().session()::closeSession, ignore -> null);
+        return UnaryGrpcFuture.ignoreResponse(handshakeRequest, channel().session()::closeSession);
     }
 
     @Override
@@ -239,9 +235,10 @@ public final class SessionImpl extends SessionBase {
 
     @Override
     public CompletableFuture<Void> release(ExportId exportId) {
-        ReleaseRequest request = ReleaseRequest.newBuilder().setId(exportId.ticketId().ticket()).build();
-        return CancelableUnaryObserverFuture.cancelableGrpcFuture(request, channel().session()::release,
-                ignore -> null);
+        ReleaseRequest request = ReleaseRequest.newBuilder()
+                .setId(exportId.ticketId().ticket())
+                .build();
+        return UnaryGrpcFuture.ignoreResponse(request, channel().session()::release);
     }
 
     @Override
@@ -255,8 +252,7 @@ public final class SessionImpl extends SessionBase {
                 .setInputTable(destination.ticketId().ticket())
                 .setTableToAdd(source.ticketId().ticket())
                 .build();
-        return CancelableUnaryObserverFuture.cancelableGrpcFuture(request, channel().inputTable()::addTableToInputTable,
-                ignore -> null);
+        return UnaryGrpcFuture.ignoreResponse(request, channel().inputTable()::addTableToInputTable);
     }
 
     @Override
@@ -265,16 +261,15 @@ public final class SessionImpl extends SessionBase {
                 .setInputTable(destination.ticketId().ticket())
                 .setTableToRemove(source.ticketId().ticket())
                 .build();
-        return CancelableUnaryObserverFuture.cancelableGrpcFuture(request,
-                channel().inputTable()::deleteTableFromInputTable, ignore -> null);
+        return UnaryGrpcFuture.ignoreResponse(request,
+                channel().inputTable()::deleteTableFromInputTable);
     }
 
     @Override
     public Cancel subscribeToFields(Listener listener) {
-        final ListFieldsRequest request = ListFieldsRequest.newBuilder().build();
-        final ListFieldsObserver observer = new ListFieldsObserver(listener);
-        bearerChannel.application().listFields(request, observer);
-        return observer;
+        CompletableFuture<Void> future = UnaryGrpcFuture
+                .ignoreResponse(ListFieldsRequest.getDefaultInstance(), channel().application()::listFields);
+        return () -> future.cancel(false);
     }
 
     public ScheduledExecutorService executor() {
@@ -291,71 +286,22 @@ public final class SessionImpl extends SessionBase {
 
     @Override
     public CompletableFuture<Map<String, ConfigValue>> getAuthenticationConstants() {
-        return CancelableUnaryObserverFuture.cancelableGrpcFuture(AuthenticationConstantsRequest.getDefaultInstance(),
+        return UnaryGrpcFuture.of(AuthenticationConstantsRequest.getDefaultInstance(),
                 channel().config()::getAuthenticationConstants, AuthenticationConstantsResponse::getConfigValuesMap);
     }
 
     @Override
     public CompletableFuture<Map<String, ConfigValue>> getConfigurationConstants() {
-        return CancelableUnaryObserverFuture.cancelableGrpcFuture(ConfigurationConstantsRequest.getDefaultInstance(),
+        return UnaryGrpcFuture.of(ConfigurationConstantsRequest.getDefaultInstance(),
                 channel().config()::getConfigurationConstants, ConfigurationConstantsResponse::getConfigValuesMap);
-    }
-
-    public static class CancelableUnaryObserverFuture<REQ, RESP, V> implements ClientResponseObserver<REQ, RESP> {
-        public static <REQ, RESP, V> CompletableFuture<V> cancelableGrpcFuture(REQ request,
-                BiConsumer<REQ, StreamObserver<RESP>> call, Function<RESP, V> mapping) {
-            CancelableUnaryObserverFuture<REQ, RESP, V> observer = new CancelableUnaryObserverFuture<>(mapping);
-            call.accept(request, observer);
-            return observer.future();
-        }
-
-        private final CompletableFuture<V> future = new CompletableFuture<>();
-        private final Function<RESP, V> mapping;
-
-        private CancelableUnaryObserverFuture(Function<RESP, V> mapping) {
-            this.mapping = mapping;
-        }
-
-        public CompletableFuture<V> future() {
-            return future;
-        }
-
-        @Override
-        public void beforeStart(ClientCallStreamObserver<REQ> requestStream) {
-            future.whenComplete((session, throwable) -> {
-                if (future.isCancelled()) {
-                    requestStream.cancel("User cancelled", null);
-                }
-            });
-        }
-
-        @Override
-        public void onNext(RESP value) {
-            future.complete(mapping.apply(value));
-        }
-
-        @Override
-        public void onError(Throwable t) {
-            future.completeExceptionally(t);
-        }
-
-        @Override
-        public void onCompleted() {
-            if (!future.isDone()) {
-                future.completeExceptionally(
-                        new IllegalStateException("Observer completed without response"));
-            }
-        }
     }
 
     private class ConsoleSessionImpl implements ConsoleSession {
 
         private final StartConsoleRequest request;
-        private final StartConsoleResponse response;
 
-        public ConsoleSessionImpl(StartConsoleRequest request, StartConsoleResponse response) {
+        public ConsoleSessionImpl(StartConsoleRequest request) {
             this.request = Objects.requireNonNull(request);
-            this.response = Objects.requireNonNull(response);
         }
 
         @Override
@@ -383,13 +329,14 @@ public final class SessionImpl extends SessionBase {
         public CompletableFuture<Changes> executeCodeFuture(String code) {
             final ExecuteCommandRequest request =
                     ExecuteCommandRequest.newBuilder().setConsoleId(ticket()).setCode(code).build();
-            return CancelableUnaryObserverFuture.cancelableGrpcFuture(request, bearerChannel.console()::executeCommand, response -> {
-                Changes.Builder builder = Changes.builder().changes(new FieldChanges(response.getChanges()));
-                if (!response.getErrorMessage().isEmpty()) {
-                    builder.errorMessage(response.getErrorMessage());
-                }
-                return builder.build();
-            });
+            return UnaryGrpcFuture.of(request, channel().console()::executeCommand,
+                    response -> {
+                        Changes.Builder builder = Changes.builder().changes(new FieldChanges(response.getChanges()));
+                        if (!response.getErrorMessage().isEmpty()) {
+                            builder.errorMessage(response.getErrorMessage());
+                        }
+                        return builder.build();
+                    });
         }
 
         @Override
@@ -400,8 +347,10 @@ public final class SessionImpl extends SessionBase {
 
         @Override
         public CompletableFuture<Void> closeFuture() {
-            ReleaseRequest request = ReleaseRequest.newBuilder().setId(this.request.getResultId()).build();
-            return CancelableUnaryObserverFuture.cancelableGrpcFuture(request, channel().session()::release, ignore -> null);
+            ReleaseRequest request = ReleaseRequest.newBuilder()
+                    .setId(this.request.getResultId())
+                    .build();
+            return UnaryGrpcFuture.ignoreResponse(request, channel().session()::release);
         }
 
         @Override
@@ -416,42 +365,6 @@ public final class SessionImpl extends SessionBase {
             } catch (ExecutionException e) {
                 log.error("Exception waiting for console close", e);
             }
-        }
-    }
-
-    private static class ListFieldsObserver
-            implements Cancel, ClientResponseObserver<ListFieldsRequest, FieldsChangeUpdate> {
-
-        private final Listener listener;
-        private ClientCallStreamObserver<?> stream;
-
-        public ListFieldsObserver(Listener listener) {
-            this.listener = Objects.requireNonNull(listener);
-        }
-
-        @Override
-        public void cancel() {
-            stream.cancel("User cancelled", null);
-        }
-
-        @Override
-        public void beforeStart(ClientCallStreamObserver<ListFieldsRequest> requestStream) {
-            stream = requestStream;
-        }
-
-        @Override
-        public void onNext(FieldsChangeUpdate value) {
-            listener.onNext(new FieldChanges(value));
-        }
-
-        @Override
-        public void onError(Throwable t) {
-            listener.onError(t);
-        }
-
-        @Override
-        public void onCompleted() {
-            listener.onCompleted();
         }
     }
 
