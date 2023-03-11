@@ -28,6 +28,16 @@ class TableOp(ABC):
 
 
 class NoneOp(TableOp):
+    def make_grpc_request_for_batch(self, result_id, source_id):
+        raise AssertionError("should never be called.")
+
+    def make_grpc_request(self, result_id, source_id=None):
+        raise AssertionError("should never be called.")
+
+    @classmethod
+    def get_stub_func(cls, table_service_stub: table_pb2_grpc.TableServiceStub):
+        raise AssertionError("should never be called.")
+
     def __init__(self, table):
         self.table = table
 
