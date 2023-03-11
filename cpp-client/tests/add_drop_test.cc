@@ -4,8 +4,8 @@
 #include "tests/third_party/catch.hpp"
 #include "tests/test_util.h"
 
-using deephaven::client::utility::streamf;
 using deephaven::client::NumericExpression;
+using deephaven::dhcore::utility::streamf;
 
 namespace deephaven::client::tests {
 

@@ -5,19 +5,14 @@
 
 #include <string>
 #include <vector>
-#include "deephaven/client/table/table.h"
+#include "deephaven/dhcore/table/table.h"
 
 namespace deephaven::client::utility {
 class CythonSupport {
-  typedef deephaven::client::table::Table Table;
-public:
-  enum class ElementTypeId : int {
-    CHAR,
-    INT8, INT16, INT32, INT64,
-    FLOAT, DOUBLE,
-    BOOL, STRING, TIMESTAMP
-  };
+  typedef deephaven::dhcore::table::Table Table;
+  typedef deephaven::dhcore::ElementTypeId ElementTypeId;
 
+public:
   static std::vector<std::string> getColumnNames(const Table &table);
   static std::vector<ElementTypeId> getColumnTypes(const Table &table);
 };

@@ -6,7 +6,7 @@
 #include <arrow/type.h>
 #include <arrow/flight/types.h>
 
-#include "deephaven/client/types.h"
+#include "deephaven/dhcore/types.h"
 
 namespace deephaven::client::arrowutil {
 class ArrowUtil {
