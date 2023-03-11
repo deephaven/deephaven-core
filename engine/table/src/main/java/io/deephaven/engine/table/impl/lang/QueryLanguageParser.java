@@ -675,10 +675,12 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
 
         private static final int NO_CONVERSION_POSSIBLE = -1;
         private static final int ALREADY_EQUAL = 0;
-        private static final int BOX_CONVERSION = 1;
-        private static final int WIDEN_CONVERSION = 2;
-        private static final int UNBOX_CONVERSION = 5; // may NPE, so is more expensive
-        private static final int VECTOR_CONVERSION = 10;
+        // note that only Booleans may NPE on unbox otherwise we use QueryConstants' null values
+        private static final int UNBOX_CONVERSION = 1;
+        private static final int BOX_CONVERSION = 2;
+        private static final int WIDEN_CONVERSION = 3;
+        // vector conversion is rather expensive, so we only do it if we have to
+        private static final int VECTOR_CONVERSION = 100;
     }
 
     private static <EXECUTABLE_TYPE extends Executable> void possiblyAddExecutable(
@@ -828,7 +830,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
 
         for (int i = 0; i < e1ParamTypes.length; i++) {
             int costToAssign = costToAssignType(e1ParamTypes[i], e2ParamTypes[i]);
-            if (costToAssign == -1 && !isTypedVector(e2ParamTypes[i])) {
+            if (costToAssign == CandidateExecutable.NO_CONVERSION_POSSIBLE && !isTypedVector(e2ParamTypes[i])) {
                 return false;
             }
         }
@@ -846,23 +848,27 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             return CandidateExecutable.ALREADY_EQUAL;
         }
 
-        if ((dest.isPrimitive() && dest != boolean.class) && src.isPrimitive() && src != boolean.class) {
+        if (dest.isPrimitive() && dest != boolean.class && src.isPrimitive() && src != boolean.class) {
             if (dest == binaryNumericPromotionType(dest, src)) {
                 return CandidateExecutable.WIDEN_CONVERSION;
             }
             return CandidateExecutable.NO_CONVERSION_POSSIBLE;
-        } else if (!dest.isPrimitive() && src == NULL_CLASS) {
-            return CandidateExecutable.ALREADY_EQUAL;
         }
 
-        Class<?> boxedDest = io.deephaven.util.type.TypeUtils.getBoxedType(dest);
-        Class<?> boxedSrc = io.deephaven.util.type.TypeUtils.getBoxedType(src);
+        if (src == NULL_CLASS) {
+            return dest.isPrimitive() ? CandidateExecutable.NO_CONVERSION_POSSIBLE : CandidateExecutable.ALREADY_EQUAL;
+        }
 
-        if (boxedDest == src) {
+        final Class<?> boxedDest = io.deephaven.util.type.TypeUtils.getBoxedType(dest);
+        final Class<?> boxedSrc = io.deephaven.util.type.TypeUtils.getBoxedType(src);
+
+        if (boxedSrc == dest) {
             return CandidateExecutable.BOX_CONVERSION;
-        } else if (boxedSrc == dest) {
+        }
+        if (boxedDest == src) {
             return CandidateExecutable.UNBOX_CONVERSION;
-        } else if (boxedDest.isAssignableFrom(boxedSrc)) {
+        }
+        if (boxedDest.isAssignableFrom(boxedSrc)) {
             return CandidateExecutable.WIDEN_CONVERSION;
         }
 
