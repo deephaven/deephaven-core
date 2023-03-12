@@ -42,6 +42,10 @@ artifacts {
     }
 }
 
+project.tasks.withType(JavaCompile) {
+    it.options.forkOptions.jvmArgs.addAll(['-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5005'])
+}
+
 project.tasks.getByName('quick').dependsOn project.tasks.withType(de.esoco.gwt.gradle.task.GwtCompileTask)
 
 apply from: "$rootDir/gradle/web-gwt-test.gradle"

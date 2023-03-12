@@ -7,6 +7,8 @@ import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
 import elemental2.core.JsArray;
 import elemental2.core.JsString;
+import elemental2.dom.CustomEvent;
+import elemental2.dom.Event;
 import elemental2.promise.Promise;
 import io.deephaven.web.client.api.filter.FilterCondition;
 import io.deephaven.web.shared.fu.RemoverFn;
@@ -108,13 +110,23 @@ public class JsTotalsTable {
     }
 
     @JsMethod
-    public RemoverFn addEventListener(String name, EventFn callback) {
+    public <T> RemoverFn addEventListener(String name, EventFn<T> callback) {
         return wrappedTable.addEventListener(name, callback);
     }
 
     @JsMethod
-    public boolean removeEventListener(String name, EventFn callback) {
+    public <T> boolean removeEventListener(String name, EventFn<T> callback) {
         return wrappedTable.removeEventListener(name, callback);
+    }
+
+    @JsMethod
+    public <T> Promise<CustomEvent<T>> nextEvent(String eventName, Double timeoutInMillis) {
+        return wrappedTable.nextEvent(eventName, timeoutInMillis);
+    }
+
+    @JsMethod
+    public boolean hasListeners(String name) {
+        return wrappedTable.hasListeners(name);
     }
 
     @JsMethod
