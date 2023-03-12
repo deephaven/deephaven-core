@@ -1,4 +1,4 @@
-import io.deephaven.project.util.PublishingConstants
+import io.deephaven.project.util.PublishingTools
 
 plugins {
   id 'java'
@@ -19,25 +19,10 @@ tasks.withType(Javadoc) {
   options.addStringOption('sourcepath', sourceSets.main.allJava.getSourceDirectories().getAsPath())
 }
 
-def licenseName = ext.license.name
-def licenseUrl = ext.license.url
-
-publishing {
-  publications {
-    mavenJava(MavenPublication) {
-      from components.java
-      pom {
-        licenses {
-          license {
-            name = licenseName
-            url = licenseUrl
-          }
-        }
-      }
-    }
-  }
+PublishingTools.setupPublications(project) {
+  from components.java
 }
 
-PublishingConstants.setupRepositories(project)
-PublishingConstants.setupMavenPublication(project, publishing.publications.mavenJava)
-PublishingConstants.setupSigning(project, publishing.publications.mavenJava)
+PublishingTools.setupRepositories(project)
+PublishingTools.setupMavenPublication(project, publishing.publications.mavenJava)
+PublishingTools.setupSigning(project, publishing.publications.mavenJava)

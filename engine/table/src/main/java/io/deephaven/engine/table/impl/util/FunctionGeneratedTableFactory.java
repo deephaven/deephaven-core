@@ -83,7 +83,7 @@ public class FunctionGeneratedTableFactory {
         Table initialTable = tableGenerator.call();
         for (Map.Entry<String, ? extends ColumnSource<?>> entry : initialTable.getColumnSourceMap().entrySet()) {
             ColumnSource<?> columnSource = entry.getValue();
-            final ArrayBackedColumnSource<?> memoryColumnSource = ArrayBackedColumnSource.getMemoryColumnSource(
+            final WritableColumnSource<?> memoryColumnSource = ArrayBackedColumnSource.getMemoryColumnSource(
                     0, columnSource.getType(), columnSource.getComponentType());
             columns.put(entry.getKey(), memoryColumnSource);
             writableSources.put(entry.getKey(), memoryColumnSource);
@@ -129,7 +129,10 @@ public class FunctionGeneratedTableFactory {
                 false);
     }
 
-    private class FunctionBackedTable extends QueryTable implements Runnable {
+    /**
+     * @implNote The constructor publishes {@code this} to the {@link UpdateGraphProcessor} and cannot be subclassed.
+     */
+    private final class FunctionBackedTable extends QueryTable implements Runnable {
         FunctionBackedTable(TrackingRowSet rowSet, Map<String, ColumnSource<?>> columns) {
             super(rowSet, columns);
             if (refreshIntervalMs >= 0) {

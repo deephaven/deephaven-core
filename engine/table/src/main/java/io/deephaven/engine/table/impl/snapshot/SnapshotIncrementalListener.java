@@ -8,11 +8,11 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.table.ChunkSource;
+import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.ListenerRecorder;
 import io.deephaven.engine.table.impl.MergedListener;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
 import io.deephaven.engine.table.impl.util.*;
 
 import java.util.Arrays;
@@ -22,7 +22,7 @@ import java.util.Map;
 public class SnapshotIncrementalListener extends MergedListener {
     private final QueryTable triggerTable;
     private final QueryTable resultTable;
-    private final Map<String, SparseArrayColumnSource<?>> resultColumns;
+    private final Map<String, WritableColumnSource<?>> resultColumns;
     private final ListenerRecorder baseListener;
     private final ListenerRecorder triggerListener;
     private final QueryTable baseTable;
@@ -36,7 +36,7 @@ public class SnapshotIncrementalListener extends MergedListener {
     public SnapshotIncrementalListener(
             QueryTable triggerTable,
             QueryTable resultTable,
-            Map<String, SparseArrayColumnSource<?>> resultColumns,
+            Map<String, WritableColumnSource<?>> resultColumns,
             ListenerRecorder baseListener,
             ListenerRecorder triggerListener,
             QueryTable baseTable,
@@ -108,7 +108,7 @@ public class SnapshotIncrementalListener extends MergedListener {
     public static void copyRowsToResult(RowSet rowsToCopy, QueryTable triggerTable,
             Map<String, ChunkSource.WithPrev<? extends Values>> snapshotDataColumns,
             Map<String, ? extends ColumnSource<?>> triggerColumns,
-            Map<String, SparseArrayColumnSource<?>> resultColumns) {
+            Map<String, WritableColumnSource<?>> resultColumns) {
         final RowSet qtRowSet = triggerTable.getRowSet();
         if (!qtRowSet.isEmpty()) {
             SnapshotUtils.copyStampColumns(triggerColumns, qtRowSet.lastRowKey(), resultColumns, rowsToCopy);

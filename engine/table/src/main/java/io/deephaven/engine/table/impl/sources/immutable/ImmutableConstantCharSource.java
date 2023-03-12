@@ -27,7 +27,7 @@ import static io.deephaven.util.QueryConstants.NULL_CHAR;
 public class ImmutableConstantCharSource
         extends AbstractColumnSource<Character>
         implements ImmutableColumnSourceGetDefaults.ForChar, ShiftData.ShiftCallback, InMemoryColumnSource,
-        RowKeyAgnosticChunkSource<Values> {
+        RowKeyAgnosticChunkSource<Values> /* MIXIN_IMPLS */ {
 
     private final char value;
 
@@ -67,9 +67,6 @@ public class ImmutableConstantCharSource
     @Override
     public final void shift(final long start, final long end, final long offset) {}
 
-    // region reinterpret
-    // endregion reinterpret
-
     @Override
     public void fillChunkUnordered(
             @NotNull FillContext context,
@@ -94,4 +91,7 @@ public class ImmutableConstantCharSource
     public boolean providesFillUnordered() {
         return true;
     }
+
+    // region reinterpretation
+    // endregion reinterpretation
 }

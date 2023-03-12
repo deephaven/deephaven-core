@@ -50,7 +50,7 @@ public class AnonymousAuthenticationHandler implements AuthenticationRequestHand
 
     @Override
     public Optional<AuthContext> login(String payload, MetadataResponseListener listener) {
-        if (payload.length() == 0) {
+        if (payload.isEmpty()) {
             return Optional.of(new AuthContext.Anonymous());
         }
         return Optional.empty();

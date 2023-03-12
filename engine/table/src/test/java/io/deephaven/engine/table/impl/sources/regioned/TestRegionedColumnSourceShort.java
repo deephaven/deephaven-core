@@ -16,7 +16,8 @@ import static io.deephaven.util.QueryConstants.NULL_SHORT;
  * Test class for {@link RegionedColumnSourceShort}.
  */
 @SuppressWarnings("JUnit4AnnotatedMethodInJUnit3TestCase")
-public class TestRegionedColumnSourceShort extends TstRegionedColumnSourcePrimitive<Short, Values, ColumnRegionShort<Values>> {
+public class TestRegionedColumnSourceShort extends TstRegionedColumnSourcePrimitive<
+        Short, Values, ColumnRegionShort<Values>, ColumnRegionShort<Values>> {
 
     public TestRegionedColumnSourceShort() {
         super(ColumnRegionShort.class);

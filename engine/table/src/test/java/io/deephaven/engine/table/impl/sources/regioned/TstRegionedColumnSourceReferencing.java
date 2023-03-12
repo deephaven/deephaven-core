@@ -4,37 +4,20 @@
 package io.deephaven.engine.table.impl.sources.regioned;
 
 import io.deephaven.chunk.attributes.Values;
-import org.junit.Before;
-
-import java.lang.reflect.Array;
 
 /**
  * Base class for testing {@link RegionedColumnSourceArray} implementations.
  */
-@SuppressWarnings({"AnonymousInnerClassMayBeStatic"})
 public abstract class TstRegionedColumnSourceReferencing<DATA_TYPE, ATTR extends Values, NATIVE_REGION_TYPE extends ColumnRegion<ATTR>>
-        extends TstRegionedColumnSourcePrimitive<DATA_TYPE, ATTR, ColumnRegionReferencing<ATTR, NATIVE_REGION_TYPE>> {
+        extends
+        TstRegionedColumnSourcePrimitive<DATA_TYPE, ATTR, NATIVE_REGION_TYPE, ColumnRegionReferencing<ATTR, NATIVE_REGION_TYPE>> {
 
-    NATIVE_REGION_TYPE[] cr_n;
-
-    private final Class<?> nativeRegionTypeClass;
-
-    TstRegionedColumnSourceReferencing(Class<?> nativeRegionTypeClass) {
-        super(ColumnRegionReferencing.class);
-        this.nativeRegionTypeClass = nativeRegionTypeClass;
+    TstRegionedColumnSourceReferencing(Class<?> regionTypeClass) {
+        super(regionTypeClass);
     }
 
-    @Before
-    public void setUp() throws Exception {
-        super.setUp();
-
-        // noinspection unchecked
-        cr_n = (NATIVE_REGION_TYPE[]) Array.newInstance(nativeRegionTypeClass, 10);
-        for (int cri = 0; cri < cr.length; ++cri) {
-            // noinspection unchecked
-            cr_n[cri] = (NATIVE_REGION_TYPE) mock(nativeRegionTypeClass, "CR_N_" + cri);
-        }
-
-        // Sub-classes are responsible for setting up SUT.
+    @Override
+    NATIVE_REGION_TYPE doLookupRegion(long index) {
+        return SUT.lookupRegion(index).getReferencedRegion();
     }
 }

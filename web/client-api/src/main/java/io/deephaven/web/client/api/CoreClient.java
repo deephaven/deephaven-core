@@ -39,8 +39,8 @@ public class CoreClient extends HasEventHandling {
 
     private final IdeConnection ideConnection;
 
-    public CoreClient(String serverUrl) {
-        ideConnection = new IdeConnection(serverUrl, true);
+    public CoreClient(String serverUrl, Object connectOptions) {
+        ideConnection = new IdeConnection(serverUrl, connectOptions, true);
 
         // For now the only real connection is the IdeConnection, so we re-fire the auth token refresh
         // event here for the UI to listen to

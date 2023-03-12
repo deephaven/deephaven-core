@@ -15,8 +15,6 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
-import io.deephaven.engine.table.ChunkSink;
-import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.DefaultGetContext;
@@ -32,7 +30,6 @@ import java.util.Random;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 import static junit.framework.TestCase.*;
-import static junit.framework.TestCase.assertEquals;
 
 public abstract class AbstractLongColumnSourceTest {
     @NotNull

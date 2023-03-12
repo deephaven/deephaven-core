@@ -32,6 +32,7 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.flight.util.MessageHelper;
 import io.deephaven.proto.flight.util.SchemaHelper;
+import io.deephaven.proto.util.Exceptions;
 import io.deephaven.time.DateTime;
 import io.deephaven.api.util.NameValidator;
 import io.deephaven.engine.util.ColumnFormatting;
@@ -55,8 +56,10 @@ import org.jetbrains.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.function.*;
 import java.util.stream.Collectors;
@@ -291,7 +294,7 @@ public class BarrageUtil {
                             return long.class;
                     }
                 }
-                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, exMsg +
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, exMsg +
                         " of intType(signed=" + intType.getIsSigned() + ", bitWidth=" + intType.getBitWidth() + ")");
             case Bool:
                 return boolean.class;
@@ -301,7 +304,7 @@ public class BarrageUtil {
                 if (maybeConvertForTimeUnit(durationUnit, result, i)) {
                     return long.class;
                 }
-                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, exMsg +
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, exMsg +
                         " of durationType(unit=" + durationUnit.toString() + ")");
             case Timestamp:
                 final ArrowType.Timestamp timestampType = (ArrowType.Timestamp) arrowType;
@@ -312,7 +315,7 @@ public class BarrageUtil {
                         return DateTime.class;
                     }
                 }
-                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, exMsg +
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, exMsg +
                         " of timestampType(Timezone=" + tz +
                         ", Unit=" + timestampUnit.toString() + ")");
             case FloatingPoint:
@@ -324,13 +327,13 @@ public class BarrageUtil {
                         return double.class;
                     case HALF:
                     default:
-                        throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, exMsg +
+                        throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, exMsg +
                                 " of floatingPointType(Precision=" + floatingPointType.getPrecision().toString() + ")");
                 }
             case Utf8:
                 return java.lang.String.class;
             default:
-                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, exMsg +
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, exMsg +
                         " of type " + arrowType.getTypeID().toString());
         }
     }
@@ -504,7 +507,7 @@ public class BarrageUtil {
 
     private static boolean isTypeNativelySupported(final Class<?> typ) {
         if (typ.isPrimitive() || TypeUtils.isBoxedType(typ) || supportedTypes.contains(typ)
-                || Vector.class.isAssignableFrom(typ)) {
+                || Vector.class.isAssignableFrom(typ) || TypeUtils.isDateTime(typ)) {
             return true;
         }
         if (typ.isArray()) {
@@ -570,7 +573,7 @@ public class BarrageUtil {
                         || type == BigInteger.class) {
                     return Types.MinorType.VARBINARY.getType();
                 }
-                if (type == DateTime.class) {
+                if (type == DateTime.class || type == Instant.class || type == ZonedDateTime.class) {
                     return NANO_SINCE_EPOCH_TYPE;
                 }
 

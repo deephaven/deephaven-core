@@ -23,7 +23,7 @@ public class IdeClient {
     @Deprecated
     public static CancellablePromise<IdeSession> getExistingSession(String websocketUrl, String authToken,
             String serviceId, String language) {
-        IdeConnection ideConnection = new IdeConnection(websocketUrl, true);
+        IdeConnection ideConnection = new IdeConnection(websocketUrl, null, true);
         return ideConnection.startSession(language);
     }
 }

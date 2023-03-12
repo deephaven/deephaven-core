@@ -5,8 +5,8 @@ package io.deephaven.engine.table.impl.by.ssmpercentile;
 
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.util.compare.CharComparisons;
-import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.CharacterArraySource;
 import io.deephaven.chunk.CharChunk;
 import io.deephaven.chunk.Chunk;
@@ -21,7 +21,7 @@ public class CharPercentileTypeHelper implements SsmChunkedPercentileOperator.Pe
     private final double percentile;
     private final CharacterArraySource resultColumn;
 
-    CharPercentileTypeHelper(double percentile, ArrayBackedColumnSource resultColumn) {
+    CharPercentileTypeHelper(double percentile, WritableColumnSource resultColumn) {
         this.percentile = percentile;
         // region resultColumn
         this.resultColumn = (CharacterArraySource) resultColumn;

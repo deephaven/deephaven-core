@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl.select;
 import io.deephaven.api.JoinAddition;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.api.util.NameValidator;
 import io.deephaven.engine.table.impl.NoSuchColumnException;
@@ -165,12 +166,6 @@ public class SourceColumn implements SelectColumn {
         int result = sourceName.hashCode();
         result = 31 * result + destName.hashCode();
         return result;
-    }
-
-
-    @Override
-    public boolean disallowRefresh() {
-        return false;
     }
 
     @Override

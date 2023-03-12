@@ -21,6 +21,7 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.ExceptionDetails;
 import junit.framework.TestCase;
+import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -147,6 +148,12 @@ public class TestUpdateByGeneral extends BaseUpdateByTest implements UpdateError
                                 ? base.updateBy(control, clauses, ColumnName.from("Sym"))
                                 : base.updateBy(control, clauses);
                     }
+
+                    @Override
+                    @NotNull
+                    public EnumSet<TableDiff.DiffItems> diffItems() {
+                        return EnumSet.of(TableDiff.DiffItems.DoublesExact, TableDiff.DiffItems.DoubleFraction);
+                    }
                 },
         };
 
@@ -255,7 +262,6 @@ public class TestUpdateByGeneral extends BaseUpdateByTest implements UpdateError
 
         TstUtils.assertTableEquals("msg", table, memoryTable, TableDiff.DiffItems.DoublesExact);
     }
-
 
     @Override
     public void reportUpdateError(Throwable t) {

@@ -140,23 +140,23 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
         return BooleanUtils.byteAsBoolean(getByte(rowKey));
     }
 
-    public Boolean getUnsafe(long index) {
-        return BooleanUtils.byteAsBoolean(getByteUnsafe(index));
+    public Boolean getUnsafe(long rowKey) {
+        return BooleanUtils.byteAsBoolean(getByteUnsafe(rowKey));
     }
 
-    public final Boolean getAndSetUnsafe(long index, Boolean newValue) {
-        return BooleanUtils.byteAsBoolean(getAndSetUnsafe(index, BooleanUtils.booleanAsByte(newValue)));
+    public final Boolean getAndSetUnsafe(long rowKey, Boolean newValue) {
+        return BooleanUtils.byteAsBoolean(getAndSetUnsafe(rowKey, BooleanUtils.booleanAsByte(newValue)));
     }
 
-    public final byte getAndSetUnsafe(long index, byte newValue) {
-        final int blockIndex = (int) (index >> LOG_BLOCK_SIZE);
-        final int indexWithinBlock = (int) (index & INDEX_MASK);
+    public final byte getAndSetUnsafe(long rowKey, byte newValue) {
+        final int blockIndex = (int) (rowKey >> LOG_BLOCK_SIZE);
+        final int indexWithinBlock = (int) (rowKey & INDEX_MASK);
         final byte oldValue = blocks[blockIndex][indexWithinBlock];
         // not a perfect comparison, but very cheap
         if (oldValue == newValue) {
             return oldValue;
         }
-        if (shouldRecordPrevious(index, prevBlocks, recycler)) {
+        if (shouldRecordPrevious(rowKey, prevBlocks, recycler)) {
             prevBlocks[blockIndex][indexWithinBlock] = oldValue;
         }
         blocks[blockIndex][indexWithinBlock] = newValue;
@@ -171,9 +171,9 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
         return getByteUnsafe(rowKey);
     }
 
-    private byte getByteUnsafe(long index) {
-        final int blockIndex = (int) (index >> LOG_BLOCK_SIZE);
-        final int indexWithinBlock = (int) (index & INDEX_MASK);
+    private byte getByteUnsafe(long rowKey) {
+        final int blockIndex = (int) (rowKey >> LOG_BLOCK_SIZE);
+        final int indexWithinBlock = (int) (rowKey & INDEX_MASK);
         return blocks[blockIndex][indexWithinBlock];
     }
 

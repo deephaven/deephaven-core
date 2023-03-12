@@ -117,6 +117,12 @@ public class ReplicatePrimitiveCode {
                 "Long", "Long", "long", "long", "LONG");
     }
 
+    public static String charToInstant(String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
+            String... exemptions) throws IOException {
+        return replicateCodeBasedOnChar(sourceClassJavaPath, serialVersionUIDs, exemptions,
+                "Instant", "Instant", "Instant", "Instant", "INSTANT");
+    }
+
     public static String charToShort(String sourceClassJavaPath, Map<String, Long> serialVersionUIDs,
             String... exemptions) throws IOException {
         return replicateCodeBasedOnChar(sourceClassJavaPath, serialVersionUIDs, exemptions,
@@ -309,6 +315,10 @@ public class ReplicatePrimitiveCode {
 
     public static String charToLong(String sourceClassJavaPath, String... exemptions) throws IOException {
         return charToLong(sourceClassJavaPath, null, exemptions);
+    }
+
+    public static String charToInstant(String sourceClassJavaPath, String... exemptions) throws IOException {
+        return charToInstant(sourceClassJavaPath, null, exemptions);
     }
 
     public static void charToAllButBooleanAndLong(String sourceClassJavaPath, String... exemptions)

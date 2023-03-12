@@ -17,11 +17,21 @@ import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.time.Instant;
+
 /**
- * This is a marker interface for a column source that is entirely within memory; therefore select operations should not
- * try to copy it into memory a second time.
+ * This is a marker interface for a column source that might be entirely within memory; therefore select operations
+ * should not try to copy it into memory a second time.
  */
 public interface InMemoryColumnSource {
+
+    /**
+     * @return true if this column source is entirely in memory.
+     */
+    default boolean isInMemory() {
+        return true;
+    }
+
     // We would like to use jdk.internal.util.ArraysSupport.MAX_ARRAY_LENGTH, but it is not exported
     int TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD = ArrayUtil.MAX_ARRAY_SIZE;
 
@@ -66,7 +76,9 @@ public interface InMemoryColumnSource {
         } else if (dataType == short.class || dataType == Short.class) {
             result = new ImmutableShortArraySource();
         } else if (dataType == DateTime.class) {
-            result = new WritableLongAsDateTimeColumnSource(new ImmutableLongArraySource());
+            result = new ImmutableDateTimeArraySource();
+        } else if (dataType == Instant.class) {
+            result = new ImmutableInstantArraySource();
         } else {
             result = new ImmutableObjectArraySource<>(dataType, componentType);
         }
@@ -95,7 +107,9 @@ public interface InMemoryColumnSource {
         } else if (dataType == short.class || dataType == Short.class) {
             result = new Immutable2DShortArraySource();
         } else if (dataType == DateTime.class) {
-            result = new WritableLongAsDateTimeColumnSource(new Immutable2DLongArraySource());
+            result = new Immutable2DDateTimeArraySource();
+        } else if (dataType == Instant.class) {
+            result = new Immutable2DInstantArraySource();
         } else {
             result = new Immutable2DObjectArraySource<>(dataType, componentType);
         }
@@ -127,8 +141,9 @@ public interface InMemoryColumnSource {
         } else if (dataType == short.class || dataType == Short.class) {
             result = new ImmutableConstantShortSource(TypeUtils.unbox((Short) value));
         } else if (dataType == DateTime.class) {
-            result = new LongAsDateTimeColumnSource(
-                    new ImmutableConstantLongSource(DateTimeUtils.nanos((DateTime) value)));
+            result = new ImmutableConstantDateTimeSource(DateTimeUtils.nanos((DateTime) value));
+        } else if (dataType == Instant.class) {
+            result = new ImmutableConstantInstantSource(DateTimeUtils.nanos((DateTime) value));
         } else {
             result = new ImmutableConstantObjectSource<>(dataType, componentType, value);
         }
@@ -207,7 +222,9 @@ public interface InMemoryColumnSource {
         } else if (dataType == Short.class) {
             result = new ImmutableShortArraySource(ArrayTypeUtils.getUnboxedArray((Short[]) dataArray));
         } else if (dataType == DateTime.class && dataArray instanceof long[]) {
-            result = new LongAsDateTimeColumnSource(new ImmutableLongArraySource((long[]) dataArray));
+            result = new ImmutableDateTimeArraySource((long[]) dataArray);
+        } else if (dataType == Instant.class && dataArray instanceof long[]) {
+            result = new ImmutableInstantArraySource((long[]) dataArray);
         } else {
             // noinspection unchecked
             result = new ImmutableObjectArraySource<>(dataType, componentType, (T[]) dataArray);

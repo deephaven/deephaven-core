@@ -9,11 +9,9 @@ ADBC defines a standard API to fetch data in Arrow format from databases that su
 from databases that only support ODBC/JDBC. By relying on ADBC, Deephaven is able to ingest data efficiently from a
 wide variety of data sources. """
 
-from typing import Any
-
-from deephaven.table import Table
-from deephaven import arrow as dharrow
 from deephaven import DHError
+from deephaven import arrow as dharrow
+from deephaven.table import Table
 
 try:
     import adbc_driver_manager.dbapi
@@ -26,8 +24,8 @@ def read_cursor(cursor: adbc_driver_manager.dbapi.Cursor) -> Table:
     """Converts the result set of the provided cursor into a Deephaven table.
 
     Args:
-        cursor (Any): an ADBC DB-API cursor. Prior to it being passed in, its execute() method must be called to
-            run a query operation that produces an Arrow table
+        cursor (adbc_driver_manager.dbapi.Cursor): an ADBC DB-API cursor. Prior to it being passed in, its execute()
+            method must be called to run a query operation that produces an Arrow table
 
     Returns:
         a new Table

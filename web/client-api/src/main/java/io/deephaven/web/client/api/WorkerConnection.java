@@ -5,6 +5,7 @@ package io.deephaven.web.client.api;
 
 import com.vertispan.tsdefs.annotations.TsIgnore;
 import elemental2.core.JsArray;
+import elemental2.core.JsObject;
 import elemental2.core.JsSet;
 import elemental2.core.JsWeakMap;
 import elemental2.core.Uint8Array;
@@ -144,7 +145,7 @@ public class WorkerConnection {
 
 
     // All calls to the server should share this metadata instance, or copy from it if they need something custom
-    private BrowserHeaders metadata = new BrowserHeaders();
+    private final BrowserHeaders metadata = new BrowserHeaders();
 
     private Double scheduledAuthUpdate;
     // default to 10s, the actual value is almost certainly higher than that
@@ -263,12 +264,19 @@ public class WorkerConnection {
     private void connectToWorker() {
         info.running()
                 .then(queryWorkerRunning -> {
-                    // get the auth token
-                    return info.getConnectToken();
-                }).then(authToken -> {
-                    // set the proposed initial token and make the first call
-                    metadata.set("authorization", (authToken.getType() + " " + authToken.getValue()).trim());
-                    return authUpdate();
+                    return Promise.all(
+                            info.getConnectToken().then(authToken -> {
+                                metadata.set("authorization",
+                                        (authToken.getType() + " " + authToken.getValue()).trim());
+                                return Promise.resolve(authToken);
+                            }),
+                            info.getConnectOptions().then(options -> {
+                                JsObject.keys(options.headers).forEach((key, index, arr) -> {
+                                    metadata.set(key, options.headers.get(key));
+                                    return null;
+                                });
+                                return Promise.resolve(options);
+                            })).then(ignore -> authUpdate());
                 }).then(handshakeResponse -> {
                     // subscribe to fatal errors
                     subscribeToTerminationNotification();
@@ -450,7 +458,11 @@ public class WorkerConnection {
                     // token is no longer valid, signal deauth for re-login
                     // TODO deephaven-core#2564 fire an event for the UI to re-auth
                     checkStatus(status);
-                    reject.onInvoke(status.getDetails());
+                    if (status.getDetails() == null || status.getDetails().isEmpty()) {
+                        reject.onInvoke("Error occurred while authenticating, gRPC status " + status.getCode());
+                    } else {
+                        reject.onInvoke(status.getDetails());
+                    }
                 }
             });
 

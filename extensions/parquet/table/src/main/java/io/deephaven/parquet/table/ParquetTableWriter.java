@@ -86,7 +86,7 @@ public class ParquetTableWriter {
     /**
      * Classes that implement this interface are responsible for converting data from individual DH columns into buffers
      * to be written out to the Parquet file.
-     * 
+     *
      * @param <B>
      */
     interface TransferObject<B> extends SafeCloseable {
@@ -514,11 +514,13 @@ public class ParquetTableWriter {
         Class<DATA_TYPE> columnType = columnSource.getType();
         if (columnType == DateTime.class) {
             // noinspection unchecked
-            columnSource = (ColumnSource<DATA_TYPE>) ReinterpretUtils.dateTimeToLongSource(columnSource);
+            columnSource = (ColumnSource<DATA_TYPE>) ReinterpretUtils.dateTimeToLongSource(
+                    (ColumnSource<DateTime>) columnSource);
             columnType = columnSource.getType();
         } else if (columnType == Boolean.class) {
             // noinspection unchecked
-            columnSource = (ColumnSource<DATA_TYPE>) ReinterpretUtils.booleanToByteSource(columnSource);
+            columnSource = (ColumnSource<DATA_TYPE>) ReinterpretUtils.booleanToByteSource(
+                    (ColumnSource<Boolean>) columnSource);
         }
 
         try (final ColumnWriter columnWriter = rowGroupWriter.addColumn(

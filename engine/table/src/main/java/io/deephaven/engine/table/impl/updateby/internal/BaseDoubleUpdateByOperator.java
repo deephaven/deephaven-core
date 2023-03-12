@@ -38,8 +38,7 @@ public abstract class BaseDoubleUpdateByOperator extends UpdateByOperator {
 
         public double curVal = NULL_DOUBLE;
 
-        protected Context(final int chunkSize, final int chunkCount) {
-            super(chunkCount);
+        protected Context(final int chunkSize) {
             this.outputFillContext = outputSource.makeFillFromContext(chunkSize);
             this.outputValues = WritableDoubleChunk.makeWritableChunk(chunkSize);
         }
@@ -121,6 +120,7 @@ public abstract class BaseDoubleUpdateByOperator extends UpdateByOperator {
         @Override
         public void reset() {
             curVal = NULL_DOUBLE;
+            nullCount = 0;
         }
 
         @Override
@@ -196,10 +196,9 @@ public abstract class BaseDoubleUpdateByOperator extends UpdateByOperator {
     @Override
     public void initializeCumulative(@NotNull UpdateByOperator.Context context, long firstUnmodifiedKey, long firstUnmodifiedTimestamp) {
         Context ctx = (Context) context;
+        ctx.reset();
         if (firstUnmodifiedKey != NULL_ROW_KEY) {
             ctx.curVal = outputSource.getDouble(firstUnmodifiedKey);
-        } else {
-            ctx.reset();
         }
     }
 

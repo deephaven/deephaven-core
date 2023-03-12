@@ -7,6 +7,7 @@ import io.deephaven.api.Strings;
 import io.deephaven.qst.table.AggregateAllTable;
 import io.deephaven.qst.table.AggregateTable;
 import io.deephaven.qst.table.AsOfJoinTable;
+import io.deephaven.qst.table.DropColumnsTable;
 import io.deephaven.qst.table.EmptyTable;
 import io.deephaven.qst.table.ExactJoinTable;
 import io.deephaven.qst.table.HeadTable;
@@ -195,6 +196,13 @@ public class LabelBuilder extends TableVisitorGeneric {
     public void visit(UngroupTable ungroupTable) {
         sb.append("ungroup(").append(ungroupTable.nullFill()).append(",[");
         append(Strings::of, ungroupTable.ungroupColumns(), sb);
+        sb.append("])");
+    }
+
+    @Override
+    public void visit(DropColumnsTable dropColumnsTable) {
+        sb.append("dropColumns([");
+        append(Strings::of, dropColumnsTable.dropColumns(), sb);
         sb.append("])");
     }
 

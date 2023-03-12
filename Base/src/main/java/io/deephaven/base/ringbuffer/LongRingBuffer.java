@@ -15,87 +15,111 @@ import java.io.Serializable;
 import java.util.NoSuchElementException;
 
 /**
- * A trivial circular buffer for primitive values, like java.util.concurrent.ArrayBlockingQueue but without all the
- * synchronization and collection cruft. Storage is between head (incl.) and tail (excl.) wrapping around the end of the
- * array. If the buffer is *not* growable, it will make room for a new element by dropping off the oldest element in the
- * buffer instead.
+ * A simple circular buffer for primitive values, like java.util.concurrent.ArrayBlockingQueue but without the
+ * synchronization and collection overhead. Storage is between head (inclusive) and tail (exclusive) using incrementing
+ * {@code long} values. Head and tail will not wrap around; instead we use storage arrays sized to 2^N to allow fast
+ * determination of storage indices through a mask operation.
  */
 public class LongRingBuffer implements Serializable {
-    protected final boolean growable;
-    protected long[] storage;
-    protected int head, tail, size;
-
-    private void grow(int increase) {
-        if (growable) {
-            // assert that we are not asking for the impossible
-            Assert.eqTrue(ArrayUtil.MAX_ARRAY_SIZE - increase >= size, "LongRingBuffer size <= MAX_ARRAY_SIZE");
-
-            // make sure we cap out at ArrayUtil.MAX_ARRAY_SIZE
-            final int newLength =
-                    Math.toIntExact(Math.min(ArrayUtil.MAX_ARRAY_SIZE, Long.highestOneBit(size + increase - 1) << 1));
-            long[] newStorage = new long[newLength];
-
-            // three scenarios: size is zero so nothing to copy, head is before tail so only one copy needed, head
-            // after tail so two copies needed. Make two calls for simplicity and branch-prediction friendliness.
-
-            // compute the size of the first copy
-            final int firstCopyLen = Math.min(storage.length - head, size);
-
-            // do the copying
-            System.arraycopy(storage, head, newStorage, 0, firstCopyLen);
-            System.arraycopy(storage, 0, newStorage, firstCopyLen, size - firstCopyLen);
-
-            // reset the pointers
-            tail = size;
-            head = 0;
-            storage = newStorage;
-        }
-    }
-
-    private void grow() {
-        grow(1);
-    }
-
-    public boolean isFull() {
-        return size == storage.length;
-    }
+    /** Maximum capacity is the highest power of two that can be allocated (i.e. <= than ArrayUtil.MAX_ARRAY_SIZE). */
+    static final int RING_BUFFER_MAX_CAPACITY = Integer.highestOneBit(ArrayUtil.MAX_ARRAY_SIZE);
+    static final long FIXUP_THRESHOLD = 1L << 62;
+    final boolean growable;
+    long[] storage;
+    int mask;
+    long head;
+    long tail;
 
     /**
-     * Create an unbounded-growth ring buffer of long primitives
+     * Create an unbounded-growth ring buffer of long primitives.
      *
-     * @param capacity minimum capacity of ring buffer
+     * @param capacity minimum capacity of the ring buffer
      */
     public LongRingBuffer(int capacity) {
         this(capacity, true);
     }
 
     /**
-     * Create a ring buffer of long primitives
+     * Create a ring buffer of long primitives.
      *
      * @param capacity minimum capacity of ring buffer
      * @param growable whether to allow growth when the buffer is full.
      */
     public LongRingBuffer(int capacity, boolean growable) {
-        Assert.eqTrue(capacity <= ArrayUtil.MAX_ARRAY_SIZE, "LongRingBuffer size <= MAX_ARRAY_SIZE");
+        Assert.leq(capacity, "LongRingBuffer capacity", RING_BUFFER_MAX_CAPACITY);
 
         this.growable = growable;
-        if (growable) {
-            // use next larger power of 2
-            storage = new long[Integer.highestOneBit(capacity - 1) << 1];
+
+        // use next larger power of 2 for our storage
+        final int newCapacity;
+        if (capacity < 2) {
+            // sensibly handle the size=0 and size=1 cases
+            newCapacity = 1;
         } else {
-            // might as well use exact size and not over-allocate
-            storage = new long[capacity];
+            newCapacity = Integer.highestOneBit(capacity - 1) << 1;
         }
 
+        // reset the data structure members
+        storage = new long[newCapacity];
+        mask = storage.length - 1;
         tail = head = 0;
     }
 
+    /**
+     * Increase the capacity of the ring buffer.
+     * 
+     * @param increase Increase amount. The ring buffer's capacity will be increased by at least this amount.
+     */
+    protected void grow(int increase) {
+        final int size = size();
+        final long newCapacity = (long) storage.length + increase;
+        // assert that we are not asking for the impossible
+        Assert.leq(newCapacity, "LongRingBuffer capacity", RING_BUFFER_MAX_CAPACITY);
+
+        final long[] newStorage = new long[Integer.highestOneBit((int) newCapacity - 1) << 1];
+
+        // move the current data to the new buffer
+        copyRingBufferToArray(newStorage);
+
+        // reset the data structure members
+        storage = newStorage;
+        mask = storage.length - 1;
+        tail = size;
+        head = 0;
+    }
+
+    /**
+     * Copy the contents of the buffer to a destination buffer. If the destination buffer capacity is smaller than
+     * {@code size()}, the copy will not fail but will terminate after the buffer is full.
+     * 
+     * @param dest The destination buffer.
+     */
+    protected void copyRingBufferToArray(long[] dest) {
+        final int size = size();
+        final int storageHead = (int) (head & mask);
+
+        // firstCopyLen is either the size of the ring buffer, the distance from head to the end of the storage array,
+        // or the size of the destination buffer, whichever is smallest.
+        final int firstCopyLen = Math.min(Math.min(storage.length - storageHead, size), dest.length);
+
+        // secondCopyLen is either the number of uncopied elements remaining from the first copy,
+        // or the amount of space remaining in the dest array, whichever is smaller.
+        final int secondCopyLen = Math.min(size - firstCopyLen, dest.length - firstCopyLen);
+
+        System.arraycopy(storage, storageHead, dest, 0, firstCopyLen);
+        System.arraycopy(storage, 0, dest, firstCopyLen, secondCopyLen);
+    }
+
+    public boolean isFull() {
+        return size() == storage.length;
+    }
+
     public boolean isEmpty() {
-        return size == 0;
+        return tail == head;
     }
 
     public int size() {
-        return size;
+        return Math.toIntExact(tail - head);
     }
 
     public int capacity() {
@@ -103,11 +127,11 @@ public class LongRingBuffer implements Serializable {
     }
 
     public int remaining() {
-        return storage.length - size;
+        return storage.length - size();
     }
 
     public void clear() {
-        size = tail = head = 0;
+        tail = head = 0;
     }
 
     /**
@@ -123,7 +147,7 @@ public class LongRingBuffer implements Serializable {
             if (!growable) {
                 throw new UnsupportedOperationException("Ring buffer is full and growth is disabled");
             } else {
-                grow();
+                grow(1);
             }
         }
         addUnsafe(e);
@@ -149,15 +173,23 @@ public class LongRingBuffer implements Serializable {
     }
 
     /**
-     * Add values unsafely (will silently overwrite values if the buffer is full). This call should be used in
-     * conjunction with {@link #ensureRemaining(int)}.
+     * Add values without overflow detection. The caller *must* ensure that there is at least one element of free space
+     * in the ring buffer before calling this method. The caller may use {@link #ensureRemaining(int)} or
+     * {@link #remaining()} for this purpose.
      *
      * @param e the value to add to the buffer
      */
     public void addUnsafe(long e) {
-        storage[tail] = e;
-        tail = (tail + 1) % storage.length;
-        size++;
+        // This is an extremely paranoid wrap check that in all likelihood will never run. With FIXUP_THRESHOLD at
+        // 1 << 62, and the user pushing 2^32 values per second(!), it will take 68 years to wrap this counter .
+        if (tail >= FIXUP_THRESHOLD) {
+            // Reset [head, tail]
+            final long thisLength = tail - head;
+            head = head & mask;
+            tail = head + thisLength;
+        }
+
+        storage[(int) (tail++ & mask)] = e;
     }
 
     /**
@@ -168,17 +200,17 @@ public class LongRingBuffer implements Serializable {
      * @return the overwritten entry if the buffer is full, the provided value otherwise
      */
     public long addOverwrite(long e, long notFullResult) {
-        long result = notFullResult;
+        long val = notFullResult;
         if (isFull()) {
-            result = remove();
+            val = remove();
         }
         addUnsafe(e);
-        return result;
+        return val;
     }
 
     /**
-     * Attempt to add an entry to the ring buffer. If the buffer is full, the write will fail and the buffer will not
-     * grow even if allowed.
+     * Attempt to add an entry to the ring buffer. If the buffer is full, the add will fail and the buffer will not grow
+     * even if growable.
      *
      * @param e the long to be added to the buffer
      * @return true if the value was added successfully, false otherwise
@@ -191,24 +223,30 @@ public class LongRingBuffer implements Serializable {
         return true;
     }
 
+    /**
+     * Remove multiple elements from the front of the ring buffer
+     *
+     * @param count The number of elements to remove.
+     * @throws NoSuchElementException if the buffer is empty
+     */
     public long[] remove(int count) {
+        final int size = size();
         if (size < count) {
             throw new NoSuchElementException();
         }
         final long[] result = new long[count];
-        final int firstCopyLen = storage.length - head;
-
-        if (tail >= head || firstCopyLen >= count) {
-            System.arraycopy(storage, head, result, 0, count);
-        } else {
-            System.arraycopy(storage, head, result, 0, firstCopyLen);
-            System.arraycopy(storage, 0, result, firstCopyLen, count - firstCopyLen);
-        }
-        head = (head + count) % storage.length;
-        size -= count;
+        // region object-bulk-remove
+        copyRingBufferToArray(result);
+        // endregion object-bulk-remove
+        head += count;
         return result;
     }
 
+    /**
+     * Remove one element from the front of the ring buffer.
+     *
+     * @throws NoSuchElementException if the buffer is empty
+     */
     public long remove() {
         if (isEmpty()) {
             throw new NoSuchElementException();
@@ -216,13 +254,27 @@ public class LongRingBuffer implements Serializable {
         return removeUnsafe();
     }
 
+
+    /**
+     * Remove an element without empty buffer detection. The caller *must* ensure that there is at least one element in
+     * the ring buffer. The {@link #size()} method may be used for this purpose.
+     *
+     * @return the value removed from the buffer
+     */
     public long removeUnsafe() {
-        long e = storage[head];
-        head = (head + 1) % storage.length;
-        size--;
-        return e;
+        final int idx = (int) (head++ & mask);
+        long val = storage[idx];
+        // region object-remove
+        // endregion object-remove
+        return val;
     }
 
+    /**
+     * If the ring buffer is non-empty, removes the element at the head of the ring buffer. Otherwise does nothing.
+     *
+     * @param onEmpty the value to return if the ring buffer is empty
+     * @return The removed element if the ring buffer was non-empty, otherwise the value of 'onEmpty'
+     */
     public long poll(long onEmpty) {
         if (isEmpty()) {
             return onEmpty;
@@ -230,76 +282,118 @@ public class LongRingBuffer implements Serializable {
         return removeUnsafe();
     }
 
+    /**
+     * If the ring buffer is non-empty, returns the element at the head of the ring buffer.
+     *
+     * @throws NoSuchElementException if the buffer is empty
+     * @return The head element if the ring buffer is non-empty, otherwise the value of 'onEmpty'
+     */
     public long element() {
         if (isEmpty()) {
             throw new NoSuchElementException();
         }
-        return storage[head];
+        return storage[(int) (head & mask)];
     }
 
+    /**
+     * If the ring buffer is non-empty, returns the element at the head of the ring buffer. Otherwise returns the
+     * specified element.
+     *
+     * @param onEmpty the value to return if the ring buffer is empty
+     * @return The head element if the ring buffer is non-empty, otherwise the value of 'onEmpty'
+     */
     public long peek(long onEmpty) {
         if (isEmpty()) {
             return onEmpty;
         }
-        return storage[head];
+        return storage[(int) (head & mask)];
     }
 
+    /**
+     * Returns the element at the head of the ring buffer
+     *
+     * @return The element at the head of the ring buffer
+     */
     public long front() {
         return front(0);
     }
 
+    /**
+     * Returns the element at the specified offset in the ring buffer.
+     *
+     * @param offset The specified offset.
+     * @throws NoSuchElementException if the buffer is empty
+     * @return The element at the specified offset
+     */
     public long front(int offset) {
-        if (offset >= size) {
+        if (offset < 0 || offset >= size()) {
             throw new NoSuchElementException();
         }
-        return storage[(head + offset) % storage.length];
+        return storage[(int) ((head + offset) & mask)];
     }
 
+    /**
+     * Returns the element at the tail of the ring buffer
+     * 
+     * @throws NoSuchElementException if the buffer is empty
+     * @return The element at the tail of the ring buffer
+     */
     public long back() {
         if (isEmpty()) {
             throw new NoSuchElementException();
         }
-        return tail == 0 ? storage[storage.length - 1] : storage[tail - 1];
+        return storage[(int) ((tail - 1) & mask)];
     }
 
+    /**
+     * If the ring buffer is non-empty, returns the element at the tail of the ring buffer. Otherwise returns the
+     * specified element.
+     *
+     * @param onEmpty the value to return if the ring buffer is empty
+     * @return The tail element if the ring buffer is non-empty, otherwise the value of 'onEmpty'
+     */
     public long peekBack(long onEmpty) {
         if (isEmpty()) {
             return onEmpty;
         }
-        return tail == 0 ? storage[storage.length - 1] : storage[tail - 1];
+        return storage[(int) ((tail - 1) & mask)];
     }
 
+    /**
+     * Make a copy of the elements in the ring buffer.
+     * 
+     * @return An array containing a copy of the elements in the ring buffer.
+     */
+    public long[] getAll() {
+        long[] result = new long[size()];
+        copyRingBufferToArray(result);
+        return result;
+    }
+
+    /**
+     * Create an iterator for the ring buffer
+     */
     public Iterator iterator() {
         return new Iterator();
     }
 
     public class Iterator {
-        int count = -1;
+        int cursor = -1;
 
         public boolean hasNext() {
-            return count + 1 < size;
+            return cursor + 1 < size();
         }
 
         public long next() {
-            count++;
-            return storage[(head + count) % storage.length];
+            if (!hasNext()) {
+                throw new NoSuchElementException();
+            }
+            cursor++;
+            return storage[(int) ((head + cursor) & mask)];
         }
 
         public void remove() {
             throw new UnsupportedOperationException();
         }
-    }
-
-    public long[] getAll() {
-        long[] result = new long[size];
-        if (result.length > 0) {
-            if (tail > head) {
-                System.arraycopy(storage, head, result, 0, tail - head);
-            } else {
-                System.arraycopy(storage, head, result, 0, storage.length - head);
-                System.arraycopy(storage, 0, result, storage.length - head, tail);
-            }
-        }
-        return result;
     }
 }

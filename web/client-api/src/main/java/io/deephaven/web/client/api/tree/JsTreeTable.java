@@ -370,7 +370,7 @@ public class JsTreeTable extends HasEventHandling {
             if (definition.isVisible()) {
                 columns[columns.length] = column;
             }
-            if (definition.isRollupGroupByColumn()) {
+            if (definition.isRollupGroupByColumn() && !definition.isRollupConstituentNodeColumn()) {
                 groupedColumns.push(column);
 
                 if (hasConstituentColumns) {

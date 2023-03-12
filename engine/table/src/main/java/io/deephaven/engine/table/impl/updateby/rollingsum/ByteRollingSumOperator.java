@@ -30,8 +30,8 @@ public class ByteRollingSumOperator extends BaseLongUpdateByOperator {
         protected ByteRingBuffer byteWindowValues;
 
 
-        protected Context(final int chunkSize, final int chunkCount) {
-            super(chunkSize, chunkCount);
+        protected Context(final int chunkSize) {
+            super(chunkSize);
             byteWindowValues = new ByteRingBuffer(RING_BUFFER_INITIAL_CAPACITY, true);
         }
 
@@ -92,12 +92,18 @@ public class ByteRollingSumOperator extends BaseLongUpdateByOperator {
                 outputValues.set(outIdx, curVal);
             }
         }
+
+        @Override
+        public void reset() {
+            super.reset();
+            byteWindowValues.clear();
+        }
     }
 
     @NotNull
     @Override
-    public UpdateByOperator.Context makeUpdateContext(final int chunkSize, final int chunkCount) {
-        return new Context(chunkSize, chunkCount);
+    public UpdateByOperator.Context makeUpdateContext(final int chunkSize) {
+        return new Context(chunkSize);
     }
 
     public ByteRollingSumOperator(@NotNull final MatchPair pair,

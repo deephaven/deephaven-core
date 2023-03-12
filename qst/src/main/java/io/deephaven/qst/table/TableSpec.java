@@ -157,5 +157,7 @@ public interface TableSpec extends TableOperations<TableSpec, TableSpec>, TableS
         void visit(UpdateByTable updateByTable);
 
         void visit(UngroupTable ungroupTable);
+
+        void visit(DropColumnsTable dropColumnsTable);
     }
 }

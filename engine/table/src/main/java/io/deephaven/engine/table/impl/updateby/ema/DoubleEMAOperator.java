@@ -27,8 +27,8 @@ public class DoubleEMAOperator extends BasePrimitiveEMAOperator {
     protected class Context extends BasePrimitiveEMAOperator.Context {
         public DoubleChunk<? extends Values> doubleValueChunk;
 
-        protected Context(final int chunkSize, final int chunkCount) {
-            super(chunkSize, chunkCount);
+        protected Context(final int chunkSize) {
+            super(chunkSize);
         }
 
         @Override
@@ -142,7 +142,7 @@ public class DoubleEMAOperator extends BasePrimitiveEMAOperator {
 
     @NotNull
     @Override
-    public UpdateByOperator.Context makeUpdateContext(final int chunkSize, final int chunkCount) {
-        return new Context(chunkSize, chunkCount);
+    public UpdateByOperator.Context makeUpdateContext(final int chunkSize) {
+        return new Context(chunkSize);
     }
 }
