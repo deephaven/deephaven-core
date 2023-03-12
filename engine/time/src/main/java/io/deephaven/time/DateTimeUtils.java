@@ -439,20 +439,6 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns a {@link DateTime} representing midnight in New York time zone on the date specified by the a number of
-     * milliseconds from Epoch.
-     *
-     * @param millis A long value of the number of milliseconds from Epoch for which the {@link DateTime} is to be
-     *        calculated.
-     * @return A {@link DateTime} rounded down to midnight in the New York time zone for the specified number of
-     *         milliseconds from Epoch.
-     */
-    @SuppressWarnings("WeakerAccess")
-    public static DateTime millisToDateAtMidnightNy(final long millis) {
-        return millisToDateAtMidnight(millis, TimeZone.TZ_NY);
-    }
-
-    /**
      * Returns a {@link DateTime} representing midnight in a selected time zone on the date specified by a number of
      * milliseconds from Epoch.
      *
@@ -488,16 +474,6 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns a String date/time representation of a {@link DateTime} interpreted for the New York time zone.
-     *
-     * @param dateTime The {@link DateTime} to format as a String.
-     * @return A null String if the input is null, otherwise a String formatted as yyyy-MM-ddThh:mm:ss.nnnnnnnnn NY.
-     */
-    public static String formatNy(DateTime dateTime) {
-        return format(dateTime, TimeZone.TZ_NY);
-    }
-
-    /**
      * Returns a String date representation of a {@link DateTime} interpreted for a specified time zone.
      *
      * @param dateTime The {@link DateTime} to format as a String.
@@ -511,16 +487,6 @@ public class DateTimeUtils {
         }
 
         return dateTime.toDateString(timeZone);
-    }
-
-    /**
-     * Returns a String date representation of a {@link DateTime} interpreted for the New York time zone.
-     *
-     * @param dateTime The {@link DateTime} to format as a String.
-     * @return A null String if the input is null, otherwise a String formatted as yyyy-MM-dd.
-     */
-    public static String formatDateNy(DateTime dateTime) {
-        return formatDate(dateTime, TimeZone.TZ_NY);
     }
 
     /**
@@ -603,17 +569,6 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns an int value of the day of the month for a {@link DateTime} in the New York time zone.
-     *
-     * @param dateTime The {@link DateTime} for which to find the day of the month.
-     * @return A {@link QueryConstants#NULL_INT} if the input is null, otherwise, an int value of the day of the month
-     *         represented by the {@link DateTime} when interpreted in the New York time zone.
-     */
-    public static int dayOfMonthNy(DateTime dateTime) {
-        return dayOfMonth(dateTime, TimeZone.TZ_NY);
-    }
-
-    /**
      * Returns an int value of the day of the week for a {@link DateTime} in the specified time zone, with 1 being
      * Monday and 7 being Sunday.
      *
@@ -631,18 +586,6 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns an int value of the day of the week for a {@link DateTime} in the New York time zone, with 1 being Monday
-     * and 7 being Sunday.
-     *
-     * @param dateTime The {@link DateTime} for which to find the day of the week.
-     * @return A {@link QueryConstants#NULL_INT} if the input is null, otherwise, an int value of the day of the week
-     *         represented by the {@link DateTime} when interpreted in the New York time zone.
-     */
-    public static int dayOfWeekNy(DateTime dateTime) {
-        return dayOfWeek(dateTime, TimeZone.TZ_NY);
-    }
-
-    /**
      * Returns an int value of the day of the year (Julian date) for a {@link DateTime} in the specified time zone.
      *
      * @param dateTime The {@link DateTime} for which to find the day of the year.
@@ -656,17 +599,6 @@ public class DateTimeUtils {
         }
 
         return dateTime.getJodaDateTime(timeZone).getDayOfYear();
-    }
-
-    /**
-     * Returns an int value of the day of the year (Julian date) for a {@link DateTime} in the New York time zone.
-     *
-     * @param dateTime The {@link DateTime} for which to find the day of the year.
-     * @return A {@link QueryConstants#NULL_INT} if the input is null, otherwise, an int value of the day of the year
-     *         represented by the {@link DateTime} when interpreted in the New York time zone.
-     */
-    public static int dayOfYearNy(DateTime dateTime) {
-        return dayOfYear(dateTime, TimeZone.TZ_NY);
     }
 
     /**
@@ -688,18 +620,6 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns an int value of the hour of the day for a {@link DateTime} in the New York time zone. The hour is on a 24
-     * hour clock (0 - 23).
-     *
-     * @param dateTime The {@link DateTime} for which to find the hour of the day.
-     * @return A {@link QueryConstants#NULL_INT} if the input is null, otherwise, an int value of the hour of the day
-     *         represented by the {@link DateTime} when interpreted in the New York time zone.
-     */
-    public static int hourOfDayNy(DateTime dateTime) {
-        return hourOfDay(dateTime, TimeZone.TZ_NY);
-    }
-
-    /**
      * Returns an int value of milliseconds since midnight for a {@link DateTime} in the specified time zone.
      *
      * @param dateTime The {@link DateTime} for which to find the milliseconds since midnight.
@@ -715,18 +635,6 @@ public class DateTimeUtils {
         }
 
         return dateTime.getJodaDateTime(timeZone).getMillisOfDay();
-    }
-
-    /**
-     * Returns an int value of milliseconds since midnight for a {@link DateTime} in the New York time zone.
-     *
-     * @param dateTime The {@link DateTime} for which to find the milliseconds since midnight.
-     * @return A {@link QueryConstants#NULL_INT} if the input is null, otherwise, an int value of milliseconds since
-     *         midnight for the date/time represented by the {@link DateTime} when interpreted in the New York time
-     *         zone.
-     */
-    public static int millisOfDayNy(DateTime dateTime) {
-        return millisOfDay(dateTime, TimeZone.TZ_NY);
     }
 
     /**
@@ -749,19 +657,6 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns an int value of milliseconds since the top of the second for a {@link DateTime} in the New York time
-     * zone.
-     *
-     * @param dateTime The {@link DateTime} for which to find the milliseconds.
-     * @return A {@link QueryConstants#NULL_INT} if the input is null, otherwise, an int value of milliseconds since the
-     *         top of the second for the date/time represented by the {@link DateTime} when interpreted in the New York
-     *         time zone.
-     */
-    public static int millisOfSecondNy(DateTime dateTime) {
-        return millisOfSecond(dateTime, TimeZone.TZ_NY);
-    }
-
-    /**
      * Returns a long value of nanoseconds since midnight for a {@link DateTime} in the specified time zone.
      *
      * @param dateTime The {@link DateTime} for which to find the nanoseconds since midnight.
@@ -777,18 +672,6 @@ public class DateTimeUtils {
         }
 
         return millisToNanos(dateTime.getJodaDateTime(timeZone).getMillisOfDay()) + dateTime.getNanosPartial();
-    }
-
-    /**
-     * Returns a long value of nanoseconds since midnight for a {@link DateTime} in the New York time zone.
-     *
-     * @param dateTime The {@link DateTime} for which to find the nanoseconds since midnight.
-     * @return A {@link QueryConstants#NULL_LONG} if the input is null, otherwise, a long value of nanoseconds since
-     *         midnight for the date/time represented by the {@link DateTime} when interpreted in the New York time
-     *         zone.
-     */
-    public static long nanosOfDayNy(DateTime dateTime) {
-        return nanosOfDay(dateTime, TimeZone.TZ_NY);
     }
 
     /**
@@ -808,18 +691,6 @@ public class DateTimeUtils {
         }
 
         return millisToNanos(dateTime.getJodaDateTime(timeZone).getMillisOfSecond()) + dateTime.getNanosPartial();
-    }
-
-    /**
-     * Returns a long value of nanoseconds since the top of the second for a {@link DateTime} in the New York time zone.
-     *
-     * @param dateTime The {@link DateTime} for which to find the nanoseconds.
-     * @return A {@link QueryConstants#NULL_LONG} if the input is null, otherwise, a long value of nanoseconds since the
-     *         top of the second for the date/time represented by the {@link DateTime} when interpreted in the New York
-     *         time zone.
-     */
-    public static long nanosOfSecondNy(DateTime dateTime) {
-        return nanosOfSecond(dateTime, TimeZone.TZ_NY);
     }
 
     /**
@@ -843,21 +714,6 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns the number of microseconds that have elapsed since the start of the millisecond represented by the
-     * provided {@code dateTime} in the New York time zone. Nanoseconds are rounded, not dropped -- '20:41:39.123456700'
-     * has 457 micros, not 456.
-     *
-     * @param dateTime The {@link DateTime} for which to find the microseconds.
-     * @return A {@link QueryConstants#NULL_INT} if the input is null, otherwise, an int value of microseconds since the
-     *         top of the millisecond for the date/time represented by the {@link DateTime} when interpreted in the New
-     *         York time zone.
-     */
-    @SuppressWarnings("WeakerAccess")
-    public static int microsOfMilliNy(DateTime dateTime) {
-        return microsOfMilli(dateTime, TimeZone.TZ_NY);
-    }
-
-    /**
      * Returns an int value of minutes since midnight for a {@link DateTime} in the specified time zone.
      *
      * @param dateTime The {@link DateTime} for which to find the minutes.
@@ -873,17 +729,6 @@ public class DateTimeUtils {
         }
 
         return dateTime.getJodaDateTime(timeZone).getMinuteOfDay();
-    }
-
-    /**
-     * Returns an int value of minutes since midnight for a {@link DateTime} in the New York time zone.
-     *
-     * @param dateTime The {@link DateTime} for which to find the milliseconds since midnight.
-     * @return A {@link QueryConstants#NULL_INT} if the input is null, otherwise, an int value of minutes since midnight
-     *         for the date/time represented by the {@link DateTime} when interpreted in the New York time zone.
-     */
-    public static int minuteOfDayNy(DateTime dateTime) {
-        return minuteOfDay(dateTime, TimeZone.TZ_NY);
     }
 
     /**
@@ -905,18 +750,6 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns an int value of minutes since the top of the hour for a {@link DateTime} in the New York time zone.
-     *
-     * @param dateTime The {@link DateTime} for which to find the minutes.
-     * @return A {@link QueryConstants#NULL_INT} if the input is null, otherwise, an int value of minutes since the top
-     *         of the hour for the date/time represented by the {@link DateTime} when interpreted in the New York time
-     *         zone.
-     */
-    public static int minuteOfHourNy(DateTime dateTime) {
-        return minuteOfHour(dateTime, TimeZone.TZ_NY);
-    }
-
-    /**
      * Returns an int value for the month of a {@link DateTime} in the specified time zone.
      *
      * @param dateTime The {@link DateTime} for which to find the month.
@@ -932,17 +765,6 @@ public class DateTimeUtils {
         }
 
         return dateTime.getJodaDateTime(timeZone).getMonthOfYear();
-    }
-
-    /**
-     * Returns an int value for the month of a {@link DateTime} in the New York time zone.
-     *
-     * @param dateTime The {@link DateTime} for which to find the month.
-     * @return A {@link QueryConstants#NULL_INT} if the input is null, otherwise, an int value of the month for the
-     *         date/time represented by the {@link DateTime} when interpreted in the New York time zone.
-     */
-    public static int monthOfYearNy(DateTime dateTime) {
-        return monthOfYear(dateTime, TimeZone.TZ_NY);
     }
 
     /**
@@ -964,18 +786,6 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns an int value of seconds since midnight for a {@link DateTime} in the New York time zone.
-     *
-     * @param dateTime The {@link DateTime} for which to find the seconds.
-     * @return A {@link QueryConstants#NULL_INT} if either input is null, otherwise, an int value of seconds since
-     *         midnight for the date/time represented by the {@link DateTime} when interpreted in the New York time
-     *         zone.
-     */
-    public static int secondOfDayNy(DateTime dateTime) {
-        return secondOfDay(dateTime, TimeZone.TZ_NY);
-    }
-
-    /**
      * Returns an int value of seconds since the top of the minute for a {@link DateTime} in the specified time zone.
      *
      * @param dateTime The {@link DateTime} for which to find the seconds.
@@ -991,18 +801,6 @@ public class DateTimeUtils {
         }
 
         return dateTime.getJodaDateTime(timeZone).getSecondOfMinute();
-    }
-
-    /**
-     * Returns an int value of seconds since the top of the minute for a {@link DateTime} in the New York time zone.
-     *
-     * @param dateTime The {@link DateTime} for which to find the seconds.
-     * @return A {@link QueryConstants#NULL_INT} if the input is null, otherwise, an int value of seconds since the top
-     *         of the minute for the date/time represented by the {@link DateTime} when interpreted in the New York time
-     *         zone.
-     */
-    public static int secondOfMinuteNy(DateTime dateTime) {
-        return secondOfMinute(dateTime, TimeZone.TZ_NY);
     }
 
     /**
@@ -1022,18 +820,6 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns an int value of the year for a {@link DateTime} in the New York time zone.
-     *
-     * @param dateTime The {@link DateTime} for which to find the year.
-     * @return A {@link QueryConstants#NULL_INT} if either input is null, otherwise, an int value of the year for the
-     *         date/time represented by the {@link DateTime} when interpreted in the New York time zone.
-     */
-    @SuppressWarnings("WeakerAccess")
-    public static int yearNy(DateTime dateTime) {
-        return year(dateTime, TimeZone.TZ_NY);
-    }
-
-    /**
      * Returns an int value of the two-digit year for a {@link DateTime} in the specified time zone.
      *
      * @param dateTime The {@link DateTime} for which to find the year.
@@ -1048,17 +834,6 @@ public class DateTimeUtils {
         }
 
         return dateTime.getJodaDateTime(timeZone).getYearOfCentury();
-    }
-
-    /**
-     * Returns an int value of the two-digit year for a {@link DateTime} in the New York time zone.
-     *
-     * @param dateTime The {@link DateTime} for which to find the year.
-     * @return A {@link QueryConstants#NULL_INT} if either input is null, otherwise, an int value of the two-digit year
-     *         for the date/time represented by the {@link DateTime} when interpreted in the New York time zone.
-     */
-    public static int yearOfCenturyNy(DateTime dateTime) {
-        return yearOfCentury(dateTime, TimeZone.TZ_NY);
     }
     // endregion
 

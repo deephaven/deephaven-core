@@ -43,7 +43,8 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
         this.innerSet = Objects.requireNonNull(innerSet);
     }
 
-    protected final OrderedLongSet getInnerSet() {
+    @VisibleForTesting
+    public final OrderedLongSet getInnerSet() {
         return innerSet;
     }
 

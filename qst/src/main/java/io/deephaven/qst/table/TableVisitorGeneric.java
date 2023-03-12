@@ -151,4 +151,9 @@ public abstract class TableVisitorGeneric implements TableSpec.Visitor {
     public void visit(UngroupTable ungroupTable) {
         accept(ungroupTable);
     }
+
+    @Override
+    public void visit(DropColumnsTable dropColumnsTable) {
+        accept(dropColumnsTable);
+    }
 }

@@ -49,9 +49,10 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
 
         TestCase.assertEquals(jodaMidnight.getMillis(), DateTimeUtils.millis(midnight));
         TestCase.assertEquals(jodaMidnight.getMillis(),
-                DateTimeUtils.millisToDateAtMidnightNy(dateTime.getMillis()).getMillis());
+                DateTimeUtils.millisToDateAtMidnight(dateTime.getMillis(), TimeZone.TZ_NY).getMillis());
 
-        TestCase.assertNull(DateTimeUtils.millisToDateAtMidnightNy(io.deephaven.util.QueryConstants.NULL_LONG));
+        TestCase.assertNull(DateTimeUtils.millisToDateAtMidnight(io.deephaven.util.QueryConstants.NULL_LONG,
+                TimeZone.TZ_NY));
     }
 
     public void testIsBefore() throws Exception {
@@ -629,7 +630,7 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         TestCase.assertEquals(DateTimeUtils.autoEpochToTime(nanoValue).getMicros(), microValue);
         TestCase.assertEquals(DateTimeUtils.autoEpochToTime(nanoValue).getNanos(), nanoValue);
 
-        return DateTimeUtils.yearNy(DateTimeUtils.autoEpochToTime(nanoValue));
+        return DateTimeUtils.year(DateTimeUtils.autoEpochToTime(nanoValue), TimeZone.TZ_NY);
     }
 
     public void testAutoEpochToTime() {
@@ -656,28 +657,27 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
     }
 
     public void testMicrosOfMilli() {
-        TestCase.assertEquals(0, DateTimeUtils.microsOfMilliNy(DateTimeUtils.convertDateTime("2015-07-31T20:40 NY")));
         TestCase.assertEquals(0,
-                DateTimeUtils.microsOfMilliNy(DateTimeUtils.convertDateTime("2015-07-31T20:40:00 NY")));
+                DateTimeUtils.microsOfMilli(DateTimeUtils.convertDateTime("2015-07-31T20:40 NY"), TimeZone.TZ_NY));
         TestCase.assertEquals(0,
-                DateTimeUtils.microsOfMilliNy(DateTimeUtils.convertDateTime("2015-07-31T20:40:00.123 NY")));
+                DateTimeUtils.microsOfMilli(DateTimeUtils.convertDateTime("2015-07-31T20:40:00 NY"), TimeZone.TZ_NY));
+        TestCase.assertEquals(0,
+                DateTimeUtils.microsOfMilli(DateTimeUtils.convertDateTime("2015-07-31T20:40:00.123 NY"),
+                        TimeZone.TZ_NY));
         TestCase.assertEquals(400,
-                DateTimeUtils.microsOfMilliNy(DateTimeUtils.convertDateTime("2015-07-31T20:40:00.1234 NY")));
+                DateTimeUtils.microsOfMilli(DateTimeUtils.convertDateTime("2015-07-31T20:40:00.1234 NY"),
+                        TimeZone.TZ_NY));
         TestCase.assertEquals(456,
-                DateTimeUtils.microsOfMilliNy(DateTimeUtils.convertDateTime("2015-07-31T20:40:00.123456 NY")));
+                DateTimeUtils.microsOfMilli(DateTimeUtils.convertDateTime("2015-07-31T20:40:00.123456 NY"),
+                        TimeZone.TZ_NY));
+        // this one should round up
         TestCase.assertEquals(457,
-                DateTimeUtils.microsOfMilliNy(DateTimeUtils.convertDateTime("2015-07-31T20:40:00.1234567 NY"))); // this
-        // one
-        // should
-        // round
-        // up
+                DateTimeUtils.microsOfMilli(DateTimeUtils.convertDateTime("2015-07-31T20:40:00.1234567 NY"),
+                        TimeZone.TZ_NY));
+        // this one should round up
         TestCase.assertEquals(457,
-                DateTimeUtils.microsOfMilliNy(DateTimeUtils.convertDateTime("2015-07-31T20:40:00.123456789 NY"))); // this
-        // one
-        // should
-        // round
-        // up
-
+                DateTimeUtils.microsOfMilli(DateTimeUtils.convertDateTime("2015-07-31T20:40:00.123456789 NY"),
+                        TimeZone.TZ_NY));
     }
 
     public void testZonedDateTime() {

@@ -31,6 +31,7 @@ import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.proto.util.Exceptions;
 import io.deephaven.proto.util.ExportTicketHelper;
 import io.deephaven.server.barrage.BarrageMessageProducer;
 import io.deephaven.extensions.barrage.BarrageStreamGeneratorImpl;
@@ -129,53 +130,57 @@ public class ArrowFlightUtil {
         // this is the entry point for client-streams
         @Override
         public void onNext(final InputStream request) {
-            GrpcUtil.rpcWrapper(log, observer, () -> {
-                final MessageInfo mi = BarrageProtoUtil.parseProtoMessage(request);
-                if (mi.descriptor != null) {
-                    if (flightDescriptor != null) {
-                        if (!flightDescriptor.equals(mi.descriptor)) {
-                            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
-                                    "additional flight descriptor sent does not match original descriptor");
-                        }
-                    } else {
-                        flightDescriptor = mi.descriptor;
-                        resultExportBuilder = ticketRouter
-                                .<Table>publish(session, mi.descriptor, "Flight.Descriptor")
-                                .onError(observer);
+            final MessageInfo mi;
+            try {
+                mi = BarrageProtoUtil.parseProtoMessage(request);
+            } catch (final IOException err) {
+                throw GrpcUtil.securelyWrapError(log, err);
+            }
+
+            if (mi.descriptor != null) {
+                if (flightDescriptor != null) {
+                    if (!flightDescriptor.equals(mi.descriptor)) {
+                        throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                                "additional flight descriptor sent does not match original descriptor");
                     }
+                } else {
+                    flightDescriptor = mi.descriptor;
+                    resultExportBuilder = ticketRouter
+                            .<Table>publish(session, mi.descriptor, "Flight.Descriptor")
+                            .onError(observer);
                 }
+            }
 
-                if (mi.app_metadata != null
-                        && mi.app_metadata.msgType() == BarrageMessageType.BarrageSerializationOptions) {
-                    options = BarrageSubscriptionOptions.of(BarrageSubscriptionRequest
-                            .getRootAsBarrageSubscriptionRequest(mi.app_metadata.msgPayloadAsByteBuffer()));
-                }
+            if (mi.app_metadata != null
+                    && mi.app_metadata.msgType() == BarrageMessageType.BarrageSerializationOptions) {
+                options = BarrageSubscriptionOptions.of(BarrageSubscriptionRequest
+                        .getRootAsBarrageSubscriptionRequest(mi.app_metadata.msgPayloadAsByteBuffer()));
+            }
 
-                if (mi.header == null) {
-                    return; // nothing to do!
-                }
+            if (mi.header == null) {
+                return; // nothing to do!
+            }
 
-                if (mi.header.headerType() == MessageHeader.Schema) {
-                    parseSchema((Schema) mi.header.header(new Schema()));
-                    return;
-                }
+            if (mi.header.headerType() == MessageHeader.Schema) {
+                parseSchema((Schema) mi.header.header(new Schema()));
+                return;
+            }
 
-                if (mi.header.headerType() != MessageHeader.RecordBatch) {
-                    throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
-                            "Only schema/record-batch messages supported");
-                }
+            if (mi.header.headerType() != MessageHeader.RecordBatch) {
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                        "Only schema/record-batch messages supported");
+            }
 
-                final int numColumns = resultTable.getColumnSources().size();
-                final BarrageMessage msg = createBarrageMessage(mi, numColumns);
-                msg.rowsAdded = RowSetFactory.fromRange(totalRowsRead, totalRowsRead + msg.length - 1);
-                msg.rowsIncluded = msg.rowsAdded.copy();
-                msg.modColumnData = BarrageMessage.ZERO_MOD_COLUMNS;
-                totalRowsRead += msg.length;
-                resultTable.handleBarrageMessage(msg);
+            final int numColumns = resultTable.getColumnSources().size();
+            final BarrageMessage msg = createBarrageMessage(mi, numColumns);
+            msg.rowsAdded = RowSetFactory.fromRange(totalRowsRead, totalRowsRead + msg.length - 1);
+            msg.rowsIncluded = msg.rowsAdded.copy();
+            msg.modColumnData = BarrageMessage.ZERO_MOD_COLUMNS;
+            totalRowsRead += msg.length;
+            resultTable.handleBarrageMessage(msg);
 
-                // no app_metadata to report; but ack the processing
-                GrpcUtil.safelyOnNext(observer, Flight.PutResult.getDefaultInstance());
-            });
+            // no app_metadata to report; but ack the processing
+            GrpcUtil.safelyOnNext(observer, Flight.PutResult.getDefaultInstance());
         }
 
         private void onCancel() {
@@ -186,7 +191,7 @@ public class ArrowFlightUtil {
             if (resultExportBuilder != null) {
                 // this thrown error propagates to observer
                 resultExportBuilder.submit(() -> {
-                    throw GrpcUtil.statusRuntimeException(Code.CANCELLED, "cancelled");
+                    throw Exceptions.statusRuntimeException(Code.CANCELLED, "cancelled");
                 });
                 resultExportBuilder = null;
             }
@@ -214,41 +219,39 @@ public class ArrowFlightUtil {
 
         @Override
         public void onCompleted() {
-            GrpcUtil.rpcWrapper(log, observer, () -> {
-                if (resultExportBuilder == null) {
-                    throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
-                            "Result flight descriptor never provided");
-                }
-                if (resultTable == null) {
-                    throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Result flight schema never provided");
-                }
+            if (resultExportBuilder == null) {
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                        "Result flight descriptor never provided");
+            }
+            if (resultTable == null) {
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                        "Result flight schema never provided");
+            }
 
-                final BarrageTable localResultTable = resultTable;
-                resultTable = null;
-                final SessionState.ExportBuilder<Table> localExportBuilder = resultExportBuilder;
-                resultExportBuilder = null;
+            final BarrageTable localResultTable = resultTable;
+            resultTable = null;
+            final SessionState.ExportBuilder<Table> localExportBuilder = resultExportBuilder;
+            resultExportBuilder = null;
 
-
-                // gRPC is about to remove its hard reference to this observer. We must keep the result table hard
-                // referenced until the export is complete, so that the export can properly be satisfied. ExportObject's
-                // LivenessManager enforces strong reachability.
-                if (!localExportBuilder.getExport().tryManage(localResultTable)) {
-                    GrpcUtil.safelyError(observer, Code.DATA_LOSS, "Result export already destroyed");
-                    localResultTable.dropReference();
-                    session.removeOnCloseCallback(this);
-                    return;
-                }
+            // gRPC is about to remove its hard reference to this observer. We must keep the result table hard
+            // referenced until the export is complete, so that the export can properly be satisfied. ExportObject's
+            // LivenessManager enforces strong reachability.
+            if (!localExportBuilder.getExport().tryManage(localResultTable)) {
+                GrpcUtil.safelyError(observer, Code.DATA_LOSS, "Result export already destroyed");
                 localResultTable.dropReference();
+                session.removeOnCloseCallback(this);
+                return;
+            }
+            localResultTable.dropReference();
 
-                // no more changes allowed; this is officially static content
-                localResultTable.sealTable(() -> localExportBuilder.submit(() -> {
-                    GrpcUtil.safelyComplete(observer);
-                    session.removeOnCloseCallback(this);
-                    return localResultTable;
-                }), () -> {
-                    GrpcUtil.safelyError(observer, Code.DATA_LOSS, "Do put could not be sealed");
-                    session.removeOnCloseCallback(this);
-                });
+            // no more changes allowed; this is officially static content
+            localResultTable.sealTable(() -> localExportBuilder.submit(() -> {
+                GrpcUtil.safelyComplete(observer);
+                session.removeOnCloseCallback(this);
+                return localResultTable;
+            }), () -> {
+                GrpcUtil.safelyError(observer, Code.DATA_LOSS, "Do put could not be sealed");
+                session.removeOnCloseCallback(this);
             });
         }
 
@@ -329,67 +332,70 @@ public class ArrowFlightUtil {
         // this entry is used for client-streaming requests
         @Override
         public void onNext(final InputStream request) {
-            GrpcUtil.rpcWrapper(log, listener, () -> {
-                MessageInfo message = BarrageProtoUtil.parseProtoMessage(request);
-                synchronized (this) {
+            MessageInfo message;
+            try {
+                message = BarrageProtoUtil.parseProtoMessage(request);
+            } catch (final IOException err) {
+                throw GrpcUtil.securelyWrapError(log, err);
+            }
+            synchronized (this) {
 
-                    // `FlightData` messages from Barrage clients will provide app_metadata describing the request but
-                    // official Flight implementations may force a NULL metadata field in the first message. In that
-                    // case, identify a valid Barrage connection by verifying the `FlightDescriptor.CMD` field contains
-                    // the `Barrage` magic bytes
+                // `FlightData` messages from Barrage clients will provide app_metadata describing the request but
+                // official Flight implementations may force a NULL metadata field in the first message. In that
+                // case, identify a valid Barrage connection by verifying the `FlightDescriptor.CMD` field contains
+                // the `Barrage` magic bytes
 
-                    if (requestHandler != null) {
-                        // rely on the handler to verify message type
-                        requestHandler.handleMessage(message);
-                        return;
+                if (requestHandler != null) {
+                    // rely on the handler to verify message type
+                    requestHandler.handleMessage(message);
+                    return;
+                }
+
+                if (message.app_metadata != null) {
+                    // handle the different message types that can come over DoExchange
+                    switch (message.app_metadata.msgType()) {
+                        case BarrageMessageType.BarrageSubscriptionRequest:
+                            requestHandler = new SubscriptionRequestHandler();
+                            break;
+                        case BarrageMessageType.BarrageSnapshotRequest:
+                            requestHandler = new SnapshotRequestHandler();
+                            break;
+                        default:
+                            throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                                    myPrefix + "received a message with unhandled BarrageMessageType");
                     }
+                    requestHandler.handleMessage(message);
+                    return;
+                }
 
-                    if (message.app_metadata != null) {
-                        // handle the different message types that can come over DoExchange
-                        switch (message.app_metadata.msgType()) {
-                            case BarrageMessageType.BarrageSubscriptionRequest:
-                                requestHandler = new SubscriptionRequestHandler();
-                                break;
-                            case BarrageMessageType.BarrageSnapshotRequest:
-                                requestHandler = new SnapshotRequestHandler();
-                                break;
-                            default:
-                                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
-                                        myPrefix + "received a message with unhandled BarrageMessageType");
-                        }
-                        requestHandler.handleMessage(message);
-                        return;
-                    }
+                // handle the possible error cases
+                if (!isFirstMsg) {
+                    // only the first messages is allowed to have null metadata
+                    throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                            myPrefix + "failed to receive Barrage request metadata");
+                }
 
-                    // handle the possible error cases
-                    if (!isFirstMsg) {
-                        // only the first messages is allowed to have null metadata
-                        throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
-                                myPrefix + "failed to receive Barrage request metadata");
-                    }
+                isFirstMsg = false;
 
-                    isFirstMsg = false;
+                // The magic value is '0x6E687064'. It is the numerical representation of the ASCII "dphn".
+                int size = message.descriptor.getCmd().size();
+                if (size == 4) {
+                    ByteBuffer bb = message.descriptor.getCmd().asReadOnlyByteBuffer();
 
-                    // The magic value is '0x6E687064'. It is the numerical representation of the ASCII "dphn".
-                    int size = message.descriptor.getCmd().size();
-                    if (size == 4) {
-                        ByteBuffer bb = message.descriptor.getCmd().asReadOnlyByteBuffer();
+                    // set the order to little-endian (FlatBuffers default)
+                    bb.order(ByteOrder.LITTLE_ENDIAN);
 
-                        // set the order to little-endian (FlatBuffers default)
-                        bb.order(ByteOrder.LITTLE_ENDIAN);
-
-                        // read and compare the value to the "magic" bytes
-                        long value = (long) bb.getInt(0) & 0xFFFFFFFFL;
-                        if (value != BarrageUtil.FLATBUFFER_MAGIC) {
-                            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
-                                    myPrefix + "expected BarrageMessageWrapper magic bytes in FlightDescriptor.cmd");
-                        }
-                    } else {
-                        throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                    // read and compare the value to the "magic" bytes
+                    long value = (long) bb.getInt(0) & 0xFFFFFFFFL;
+                    if (value != BarrageUtil.FLATBUFFER_MAGIC) {
+                        throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
                                 myPrefix + "expected BarrageMessageWrapper magic bytes in FlightDescriptor.cmd");
                     }
+                } else {
+                    throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                            myPrefix + "expected BarrageMessageWrapper magic bytes in FlightDescriptor.cmd");
                 }
-            });
+            }
         }
 
         public void onCancel() {
@@ -423,8 +429,8 @@ public class ArrowFlightUtil {
                 if (requestHandler != null) {
                     requestHandler.close();
                 }
-            } catch (IOException ioException) {
-                throw new UncheckedDeephavenException("IOException closing handler", ioException);
+            } catch (final IOException err) {
+                throw GrpcUtil.securelyWrapError(log, err);
             }
 
             release();
@@ -448,7 +454,7 @@ public class ArrowFlightUtil {
             public void handleMessage(@NotNull final BarrageProtoUtil.MessageInfo message) {
                 // verify this is the correct type of message for this handler
                 if (message.app_metadata.msgType() != BarrageMessageType.BarrageSnapshotRequest) {
-                    throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                    throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
                             "Request type cannot be changed after initialization, expected BarrageSnapshotRequest metadata");
                 }
 
@@ -523,13 +529,12 @@ public class ArrowFlightUtil {
             public void handleMessage(@NotNull final MessageInfo message) {
                 // verify this is the correct type of message for this handler
                 if (message.app_metadata.msgType() != BarrageMessageType.BarrageSubscriptionRequest) {
-                    throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                    throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
                             "Request type cannot be changed after initialization, expected BarrageSubscriptionRequest metadata");
                 }
 
                 if (message.app_metadata.msgPayloadVector() == null) {
-                    throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
-                            "Subscription request not supplied");
+                    throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "Subscription request not supplied");
                 }
 
                 // ensure synchronization with parent class functions
@@ -668,7 +673,7 @@ public class ArrowFlightUtil {
                 }
 
                 if (!subscriptionFound) {
-                    throw GrpcUtil.statusRuntimeException(Code.NOT_FOUND, "Subscription was not found.");
+                    throw Exceptions.statusRuntimeException(Code.NOT_FOUND, "Subscription was not found.");
                 }
             }
 

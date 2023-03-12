@@ -41,6 +41,7 @@ import io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind;
 import io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryAppendOnly;
 import io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryKeyBacked;
 import io.deephaven.proto.backplane.grpc.CrossJoinTablesRequest;
+import io.deephaven.proto.backplane.grpc.DropColumnsRequest;
 import io.deephaven.proto.backplane.grpc.EmptyTableRequest;
 import io.deephaven.proto.backplane.grpc.ExactJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.FetchTableRequest;
@@ -73,6 +74,7 @@ import io.deephaven.qst.table.AggregateTable;
 import io.deephaven.qst.table.AsOfJoinTable;
 import io.deephaven.qst.table.Clock.Visitor;
 import io.deephaven.qst.table.ClockSystem;
+import io.deephaven.qst.table.DropColumnsTable;
 import io.deephaven.qst.table.EmptyTable;
 import io.deephaven.qst.table.ExactJoinTable;
 import io.deephaven.qst.table.HeadTable;
@@ -503,6 +505,17 @@ class BatchTableRequestBuilder {
                 request.addColumnsToUngroup(ungroupColumn.name());
             }
             out = op(Builder::setUngroup, request);
+        }
+
+        @Override
+        public void visit(DropColumnsTable dropColumnsTable) {
+            final DropColumnsRequest.Builder request = DropColumnsRequest.newBuilder()
+                    .setResultId(ticket)
+                    .setSourceId(ref(dropColumnsTable.parent()));
+            for (ColumnName dropColumn : dropColumnsTable.dropColumns()) {
+                request.addColumnNames(dropColumn.name());
+            }
+            out = op(Builder::setDropColumns, request);
         }
 
         private SelectOrUpdateRequest selectOrUpdate(SingleParentTable x,

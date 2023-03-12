@@ -423,6 +423,7 @@ public class TableUpdateValidator implements QueryTable.Operation {
             final Chunk<? extends Values> expected =
                     expectedSource.getChunk(expectedGetContext(), toValidate);
             final Chunk<? extends Values> actual = getSourceChunk(toValidate, usePrev);
+            Assert.eq(expected.size(), "expected.size()", actual.size(), "actual.size()");
             chunkEquals.equal(expected, actual, equalValuesDest());
             MutableInt off = new MutableInt();
             toValidate.forAllRowKeys((i) -> {
