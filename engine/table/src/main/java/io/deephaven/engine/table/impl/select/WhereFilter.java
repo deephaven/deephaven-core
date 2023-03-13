@@ -6,7 +6,9 @@ package io.deephaven.engine.table.impl.select;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.RawString;
 import io.deephaven.api.Strings;
+import io.deephaven.api.expression.BinaryExpression;
 import io.deephaven.api.expression.Expression;
+import io.deephaven.api.expression.UnaryExpression;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.filter.FilterAnd;
 import io.deephaven.api.filter.FilterComparison;
@@ -431,6 +433,16 @@ public interface WhereFilter extends Filter {
                 }
 
                 @Override
+                public void visit(UnaryExpression rhs) {
+                    out = WhereFilterFactory.getExpression(Strings.of(original));
+                }
+
+                @Override
+                public void visit(BinaryExpression rhs) {
+                    out = WhereFilterFactory.getExpression(Strings.of(original));
+                }
+
+                @Override
                 public void visit(Literal value) {
                     value.walk((Literal.Visitor) this);
                 }
@@ -467,6 +479,16 @@ public interface WhereFilter extends Filter {
 
             @Override
             public void visit(Filter lhs) {
+                out = WhereFilterFactory.getExpression(Strings.of(original));
+            }
+
+            @Override
+            public void visit(UnaryExpression unaryExpression) {
+                out = WhereFilterFactory.getExpression(Strings.of(original));
+            }
+
+            @Override
+            public void visit(BinaryExpression lhs) {
                 out = WhereFilterFactory.getExpression(Strings.of(original));
             }
 

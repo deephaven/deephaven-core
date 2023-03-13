@@ -7,7 +7,9 @@ import io.deephaven.api.ColumnName;
 import io.deephaven.api.RawString;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.Strings;
+import io.deephaven.api.expression.BinaryExpression;
 import io.deephaven.api.expression.Expression;
+import io.deephaven.api.expression.UnaryExpression;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.value.Literal;
 import io.deephaven.engine.context.QueryCompiler;
@@ -224,6 +226,16 @@ public interface SelectColumn extends Selectable {
 
         @Override
         public void visit(Filter rhs) {
+            out = SelectColumnFactory.getExpression(String.format("%s=%s", lhs.name(), Strings.of(rhs)));
+        }
+
+        @Override
+        public void visit(UnaryExpression rhs) {
+            out = SelectColumnFactory.getExpression(String.format("%s=%s", lhs.name(), Strings.of(rhs)));
+        }
+
+        @Override
+        public void visit(BinaryExpression rhs) {
             out = SelectColumnFactory.getExpression(String.format("%s=%s", lhs.name(), Strings.of(rhs)));
         }
     }

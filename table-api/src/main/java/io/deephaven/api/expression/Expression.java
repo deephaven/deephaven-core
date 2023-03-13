@@ -28,6 +28,10 @@ public interface Expression extends Serializable {
 
         void visit(Filter filter);
 
+        void visit(UnaryExpression unaryExpression);
+
+        void visit(BinaryExpression binaryExpression);
+
         void visit(RawString rawString);
     }
 }
