@@ -14,6 +14,7 @@ import io.deephaven.proto.backplane.grpc.ConfigurationConstantsRequest;
 import io.deephaven.proto.backplane.grpc.ConfigurationConstantsResponse;
 import io.deephaven.proto.backplane.grpc.DeleteTableRequest;
 import io.deephaven.proto.backplane.grpc.FetchObjectRequest;
+import io.deephaven.proto.backplane.grpc.FieldsChangeUpdate;
 import io.deephaven.proto.backplane.grpc.HandshakeRequest;
 import io.deephaven.proto.backplane.grpc.ListFieldsRequest;
 import io.deephaven.proto.backplane.grpc.ReleaseRequest;
@@ -23,6 +24,8 @@ import io.deephaven.proto.backplane.script.grpc.BindTableToVariableRequest;
 import io.deephaven.proto.backplane.script.grpc.ExecuteCommandRequest;
 import io.deephaven.proto.backplane.script.grpc.StartConsoleRequest;
 import io.deephaven.proto.util.ExportTicketHelper;
+import io.grpc.stub.ClientCallStreamObserver;
+import io.grpc.stub.ClientResponseObserver;
 import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -267,9 +270,10 @@ public final class SessionImpl extends SessionBase {
 
     @Override
     public Cancel subscribeToFields(Listener listener) {
-        CompletableFuture<Void> future = UnaryGrpcFuture
-                .ignoreResponse(ListFieldsRequest.getDefaultInstance(), channel().application()::listFields);
-        return () -> future.cancel(false);
+        final ListFieldsRequest request = ListFieldsRequest.newBuilder().build();
+        final ListFieldsObserver observer = new ListFieldsObserver(listener);
+        bearerChannel.application().listFields(request, observer);
+        return observer;
     }
 
     public ScheduledExecutorService executor() {
@@ -365,6 +369,42 @@ public final class SessionImpl extends SessionBase {
             } catch (ExecutionException e) {
                 log.error("Exception waiting for console close", e);
             }
+        }
+    }
+
+    private static class ListFieldsObserver
+            implements Cancel, ClientResponseObserver<ListFieldsRequest, FieldsChangeUpdate> {
+
+        private final Listener listener;
+        private ClientCallStreamObserver<?> stream;
+
+        public ListFieldsObserver(Listener listener) {
+            this.listener = Objects.requireNonNull(listener);
+        }
+
+        @Override
+        public void cancel() {
+            stream.cancel("User cancelled", null);
+        }
+
+        @Override
+        public void beforeStart(ClientCallStreamObserver<ListFieldsRequest> requestStream) {
+            stream = requestStream;
+        }
+
+        @Override
+        public void onNext(FieldsChangeUpdate value) {
+            listener.onNext(new FieldChanges(value));
+        }
+
+        @Override
+        public void onError(Throwable t) {
+            listener.onError(t);
+        }
+
+        @Override
+        public void onCompleted() {
+            listener.onCompleted();
         }
     }
 
