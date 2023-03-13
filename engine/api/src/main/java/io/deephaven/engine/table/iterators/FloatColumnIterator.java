@@ -14,7 +14,7 @@ import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.primitive.function.FloatToDoubleFunction;
-import io.deephaven.engine.primitive.iterator.PrimitiveIteratorOfFloat;
+import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfFloat;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.Table;
@@ -35,7 +35,7 @@ import java.util.stream.StreamSupport;
  */
 public final class FloatColumnIterator
         extends ColumnIterator<Float, FloatChunk<? extends Any>>
-        implements PrimitiveIteratorOfFloat {
+        implements CloseablePrimitiveIteratorOfFloat {
 
     /**
      * Create a new FloatColumnIterator.
@@ -143,5 +143,23 @@ public final class FloatColumnIterator
     public DoubleStream streamAsDouble() {
         return streamAsDouble(
                 (final float value) -> value == QueryConstants.NULL_FLOAT ? QueryConstants.NULL_DOUBLE : (double) value);
+    }
+
+    /**
+     * Create a {@link Stream} over the remaining elements of this FloatColumnIterator. The result <em>must</em> be
+     * {@link java.util.stream.BaseStream#close() closed} in order to ensure resources are released. A
+     * try-with-resources block is strongly encouraged.
+     *
+     * @return A {@link DoubleStream} over the remaining contents of this iterator. Must be {@link Stream#close() closed}.
+     */
+    @Override
+    public Stream<Float> stream() {
+        return StreamSupport.stream(
+                Spliterators.spliterator(
+                        this,
+                        size(),
+                        Spliterator.IMMUTABLE | Spliterator.ORDERED),
+                false)
+                .onClose(this::close);
     }
 }

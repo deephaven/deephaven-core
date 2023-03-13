@@ -12,13 +12,13 @@ import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.DoubleChunk;
 import io.deephaven.chunk.attributes.Any;
+import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfDouble;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.PrimitiveIterator;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.function.Consumer;
@@ -32,7 +32,7 @@ import java.util.stream.StreamSupport;
  */
 public final class DoubleColumnIterator
         extends ColumnIterator<Double, DoubleChunk<? extends Any>>
-        implements PrimitiveIterator.OfDouble {
+        implements CloseablePrimitiveIteratorOfDouble {
 
     /**
      * Create a new DoubleColumnIterator.
@@ -125,13 +125,32 @@ public final class DoubleColumnIterator
      *
      * @return A {@link DoubleStream} over the remaining contents of this iterator. Must be {@link Stream#close() closed}.
      */
-    public DoubleStream stream() {
+    @Override
+    public DoubleStream doubleStream() {
         return StreamSupport.doubleStream(
-                        Spliterators.spliterator(
-                                this,
-                                size(),
-                                Spliterator.IMMUTABLE | Spliterator.ORDERED),
-                        false)
+                Spliterators.spliterator(
+                        this,
+                        size(),
+                        Spliterator.IMMUTABLE | Spliterator.ORDERED),
+                false)
+                .onClose(this::close);
+    }
+
+    /**
+     * Create a {@link Stream} over the remaining elements of this DoubleColumnIterator. The result <em>must</em> be
+     * {@link java.util.stream.BaseStream#close() closed} in order to ensure resources are released. A
+     * try-with-resources block is strongly encouraged.
+     *
+     * @return A {@link DoubleStream} over the remaining contents of this iterator. Must be {@link Stream#close() closed}.
+     */
+    @Override
+    public Stream<Double> stream() {
+        return StreamSupport.stream(
+                Spliterators.spliterator(
+                        this,
+                        size(),
+                        Spliterator.IMMUTABLE | Spliterator.ORDERED),
+                false)
                 .onClose(this::close);
     }
 }

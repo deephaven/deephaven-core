@@ -7,13 +7,13 @@ import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.attributes.Any;
+import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfInt;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.PrimitiveIterator;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.function.Consumer;
@@ -27,7 +27,7 @@ import java.util.stream.StreamSupport;
  */
 public final class IntegerColumnIterator
         extends ColumnIterator<Integer, IntChunk<? extends Any>>
-        implements PrimitiveIterator.OfInt {
+        implements CloseablePrimitiveIteratorOfInt {
 
     /**
      * Create a new IntegerColumnIterator.
@@ -120,13 +120,32 @@ public final class IntegerColumnIterator
      *
      * @return A {@link IntStream} over the remaining contents of this iterator. Must be {@link Stream#close() closed}.
      */
-    public IntStream stream() {
+    @Override
+    public IntStream intStream() {
         return StreamSupport.intStream(
-                        Spliterators.spliterator(
-                                this,
-                                size(),
-                                Spliterator.IMMUTABLE | Spliterator.ORDERED),
-                        false)
+                Spliterators.spliterator(
+                        this,
+                        size(),
+                        Spliterator.IMMUTABLE | Spliterator.ORDERED),
+                false)
+                .onClose(this::close);
+    }
+
+    /**
+     * Create a {@link Stream} over the remaining elements of this IntegerColumnIterator. The result <em>must</em> be
+     * {@link java.util.stream.BaseStream#close() closed} in order to ensure resources are released. A
+     * try-with-resources block is strongly encouraged.
+     *
+     * @return A {@link IntStream} over the remaining contents of this iterator. Must be {@link Stream#close() closed}.
+     */
+    @Override
+    public Stream<Integer> stream() {
+        return StreamSupport.stream(
+                Spliterators.spliterator(
+                        this,
+                        size(),
+                        Spliterator.IMMUTABLE | Spliterator.ORDERED),
+                false)
                 .onClose(this::close);
     }
 }

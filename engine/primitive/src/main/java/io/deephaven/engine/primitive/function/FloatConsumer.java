@@ -8,27 +8,31 @@ package io.deephaven.engine.primitive.function;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
-import java.util.function.DoubleConsumer;
 
 /**
- * Like {@link DoubleConsumer}, but for primitive floats.
+ * Functional interface to apply an operation to a single {@code float}.
  */
 @FunctionalInterface
 public interface FloatConsumer {
 
     /**
-     * See {@link DoubleConsumer#accept(double)}.
+     * Apply this operation to {@code value}.
+     *
+     * @param value The {@code float} to operate one
      */
     void accept(float value);
 
     /**
-     * See {@link DoubleConsumer#andThen(DoubleConsumer)}.
+     * Return a composed FloatConsumer that applies {@code this} operation followed by {@code after}.
+     *
+     * @param after The FloatConsumer to apply after applying {@code this}
+     * @return A composed FloatConsumer that applies {@code this} followed by {@code after}
      */
     default FloatConsumer andThen(@NotNull final FloatConsumer after) {
         Objects.requireNonNull(after);
-        return (float v) -> {
-            accept(v);
-            after.accept(v);
+        return (final float value) -> {
+            accept(value);
+            after.accept(value);
         };
     }
 }

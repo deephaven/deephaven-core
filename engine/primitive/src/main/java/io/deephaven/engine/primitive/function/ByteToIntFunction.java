@@ -5,16 +5,17 @@
  */
 package io.deephaven.engine.primitive.function;
 
-import java.util.function.IntToLongFunction;
-
 /**
- * Like {@link IntToLongFunction}, but for primitive bytes to primitive ints.
+ * Functional interface to apply a function to a single {@code byte} input and produce a single {@code int} result.
  */
 @FunctionalInterface
 public interface ByteToIntFunction {
 
     /**
-     * See {@link IntToLongFunction#applyAsLong(int)}.
+     * Apply this function to {@code value}.
+     *
+     * @param value The {@code byte} input
+     * @return The {@code int} result
      */
     int applyAsInt(byte value);
 }

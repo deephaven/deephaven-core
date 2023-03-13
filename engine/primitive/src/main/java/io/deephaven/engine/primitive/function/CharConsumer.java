@@ -3,27 +3,31 @@ package io.deephaven.engine.primitive.function;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
-import java.util.function.IntConsumer;
 
 /**
- * Like {@link IntConsumer}, but for primitive chars.
+ * Functional interface to apply an operation to a single {@code char}.
  */
 @FunctionalInterface
 public interface CharConsumer {
 
     /**
-     * See {@link IntConsumer#accept(int)}.
+     * Apply this operation to {@code value}.
+     *
+     * @param value The {@code char} to operate one
      */
     void accept(char value);
 
     /**
-     * See {@link IntConsumer#andThen(IntConsumer)}.
+     * Return a composed CharConsumer that applies {@code this} operation followed by {@code after}.
+     *
+     * @param after The CharConsumer to apply after applying {@code this}
+     * @return A composed CharConsumer that applies {@code this} followed by {@code after}
      */
     default CharConsumer andThen(@NotNull final CharConsumer after) {
         Objects.requireNonNull(after);
-        return (char v) -> {
-            accept(v);
-            after.accept(v);
+        return (final char value) -> {
+            accept(value);
+            after.accept(value);
         };
     }
 }

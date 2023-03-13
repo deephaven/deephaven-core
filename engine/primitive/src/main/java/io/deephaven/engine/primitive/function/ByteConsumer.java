@@ -8,27 +8,31 @@ package io.deephaven.engine.primitive.function;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
-import java.util.function.IntConsumer;
 
 /**
- * Like {@link IntConsumer}, but for primitive bytes.
+ * Functional interface to apply an operation to a single {@code byte}.
  */
 @FunctionalInterface
 public interface ByteConsumer {
 
     /**
-     * See {@link IntConsumer#accept(int)}.
+     * Apply this operation to {@code value}.
+     *
+     * @param value The {@code byte} to operate one
      */
     void accept(byte value);
 
     /**
-     * See {@link IntConsumer#andThen(IntConsumer)}.
+     * Return a composed ByteConsumer that applies {@code this} operation followed by {@code after}.
+     *
+     * @param after The ByteConsumer to apply after applying {@code this}
+     * @return A composed ByteConsumer that applies {@code this} followed by {@code after}
      */
     default ByteConsumer andThen(@NotNull final ByteConsumer after) {
         Objects.requireNonNull(after);
-        return (byte v) -> {
-            accept(v);
-            after.accept(v);
+        return (final byte value) -> {
+            accept(value);
+            after.accept(value);
         };
     }
 }

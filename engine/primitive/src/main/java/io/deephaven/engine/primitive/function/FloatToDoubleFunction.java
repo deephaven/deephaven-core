@@ -5,16 +5,17 @@
  */
 package io.deephaven.engine.primitive.function;
 
-import java.util.function.IntToDoubleFunction;
-
 /**
- * Like {@link IntToDoubleFunction}, but for primitive floats to primitive doubles.
+ * Functional interface to apply a function to a single {@code float} input and produce a single {@code double} result.
  */
 @FunctionalInterface
 public interface FloatToDoubleFunction {
 
     /**
-     * See {@link IntToDoubleFunction#applyAsDouble(int)}.
+     * Apply this function to {@code value}.
+     *
+     * @param value The {@code float} input
+     * @return The {@code double} result
      */
     double applyAsDouble(float value);
 }

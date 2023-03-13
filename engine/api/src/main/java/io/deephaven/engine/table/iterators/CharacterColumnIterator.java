@@ -9,7 +9,7 @@ import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.primitive.function.CharToIntFunction;
-import io.deephaven.engine.primitive.iterator.PrimitiveIteratorOfChar;
+import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfChar;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.Table;
@@ -30,7 +30,7 @@ import java.util.stream.StreamSupport;
  */
 public final class CharacterColumnIterator
         extends ColumnIterator<Character, CharChunk<? extends Any>>
-        implements PrimitiveIteratorOfChar {
+        implements CloseablePrimitiveIteratorOfChar {
 
     /**
      * Create a new CharacterColumnIterator.
@@ -138,5 +138,23 @@ public final class CharacterColumnIterator
     public IntStream streamAsInt() {
         return streamAsInt(
                 (final char value) -> value == QueryConstants.NULL_CHAR ? QueryConstants.NULL_INT : (int) value);
+    }
+
+    /**
+     * Create a {@link Stream} over the remaining elements of this CharColumnIterator. The result <em>must</em> be
+     * {@link java.util.stream.BaseStream#close() closed} in order to ensure resources are released. A
+     * try-with-resources block is strongly encouraged.
+     *
+     * @return A {@link IntStream} over the remaining contents of this iterator. Must be {@link Stream#close() closed}.
+     */
+    @Override
+    public Stream<Character> stream() {
+        return StreamSupport.stream(
+                Spliterators.spliterator(
+                        this,
+                        size(),
+                        Spliterator.IMMUTABLE | Spliterator.ORDERED),
+                false)
+                .onClose(this::close);
     }
 }

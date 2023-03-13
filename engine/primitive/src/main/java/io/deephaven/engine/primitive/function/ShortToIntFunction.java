@@ -5,16 +5,17 @@
  */
 package io.deephaven.engine.primitive.function;
 
-import java.util.function.IntToLongFunction;
-
 /**
- * Like {@link IntToLongFunction}, but for primitive shorts to primitive ints.
+ * Functional interface to apply a function to a single {@code short} input and produce a single {@code int} result.
  */
 @FunctionalInterface
 public interface ShortToIntFunction {
 
     /**
-     * See {@link IntToLongFunction#applyAsLong(int)}.
+     * Apply this function to {@code value}.
+     *
+     * @param value The {@code short} input
+     * @return The {@code int} result
      */
     int applyAsInt(short value);
 }

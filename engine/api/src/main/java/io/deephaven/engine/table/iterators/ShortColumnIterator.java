@@ -14,7 +14,7 @@ import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.primitive.function.ShortToIntFunction;
-import io.deephaven.engine.primitive.iterator.PrimitiveIteratorOfShort;
+import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfShort;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.Table;
@@ -35,7 +35,7 @@ import java.util.stream.StreamSupport;
  */
 public final class ShortColumnIterator
         extends ColumnIterator<Short, ShortChunk<? extends Any>>
-        implements PrimitiveIteratorOfShort {
+        implements CloseablePrimitiveIteratorOfShort {
 
     /**
      * Create a new ShortColumnIterator.
@@ -143,5 +143,23 @@ public final class ShortColumnIterator
     public IntStream streamAsInt() {
         return streamAsInt(
                 (final short value) -> value == QueryConstants.NULL_SHORT ? QueryConstants.NULL_INT : (int) value);
+    }
+
+    /**
+     * Create a {@link Stream} over the remaining elements of this ShortColumnIterator. The result <em>must</em> be
+     * {@link java.util.stream.BaseStream#close() closed} in order to ensure resources are released. A
+     * try-with-resources block is strongly encouraged.
+     *
+     * @return A {@link IntStream} over the remaining contents of this iterator. Must be {@link Stream#close() closed}.
+     */
+    @Override
+    public Stream<Short> stream() {
+        return StreamSupport.stream(
+                Spliterators.spliterator(
+                        this,
+                        size(),
+                        Spliterator.IMMUTABLE | Spliterator.ORDERED),
+                false)
+                .onClose(this::close);
     }
 }

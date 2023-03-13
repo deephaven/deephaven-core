@@ -8,27 +8,31 @@ package io.deephaven.engine.primitive.function;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
-import java.util.function.IntConsumer;
 
 /**
- * Like {@link IntConsumer}, but for primitive shorts.
+ * Functional interface to apply an operation to a single {@code short}.
  */
 @FunctionalInterface
 public interface ShortConsumer {
 
     /**
-     * See {@link IntConsumer#accept(int)}.
+     * Apply this operation to {@code value}.
+     *
+     * @param value The {@code short} to operate one
      */
     void accept(short value);
 
     /**
-     * See {@link IntConsumer#andThen(IntConsumer)}.
+     * Return a composed ShortConsumer that applies {@code this} operation followed by {@code after}.
+     *
+     * @param after The ShortConsumer to apply after applying {@code this}
+     * @return A composed ShortConsumer that applies {@code this} followed by {@code after}
      */
     default ShortConsumer andThen(@NotNull final ShortConsumer after) {
         Objects.requireNonNull(after);
-        return (short v) -> {
-            accept(v);
-            after.accept(v);
+        return (final short value) -> {
+            accept(value);
+            after.accept(value);
         };
     }
 }

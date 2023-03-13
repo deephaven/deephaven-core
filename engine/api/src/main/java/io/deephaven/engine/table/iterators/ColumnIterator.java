@@ -7,12 +7,12 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.attributes.Any;
+import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 /**
@@ -22,7 +22,7 @@ import java.util.NoSuchElementException;
  *          resource leaks.
  */
 public abstract class ColumnIterator<TYPE, CHUNK_TYPE extends Chunk<? extends Any>>
-        implements Iterator<TYPE>, SafeCloseable {
+        implements CloseableIterator<TYPE> {
 
     /**
      * The default for {@code chunkSize} used by constructors that don't accept an explicit size.

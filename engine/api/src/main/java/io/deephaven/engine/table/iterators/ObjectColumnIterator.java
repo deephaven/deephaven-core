@@ -90,13 +90,14 @@ public final class ObjectColumnIterator<TYPE> extends ColumnIterator<TYPE, Objec
      *
      * @return A {@link Stream} over the remaining contents of this iterator. Must be {@link Stream#close() closed}.
      */
+    @Override
     public Stream<TYPE> stream() {
         return StreamSupport.stream(
-                        Spliterators.spliterator(
-                                this,
-                                size(),
-                                Spliterator.IMMUTABLE | Spliterator.ORDERED),
-                        false)
+                Spliterators.spliterator(
+                        this,
+                        size(),
+                        Spliterator.IMMUTABLE | Spliterator.ORDERED),
+                false)
                 .onClose(this::close);
     }
 }
