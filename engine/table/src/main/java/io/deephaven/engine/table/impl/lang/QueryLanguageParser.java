@@ -41,6 +41,7 @@ import com.github.javaparser.ast.expr.InstanceOfExpr;
 import com.github.javaparser.ast.expr.IntegerLiteralExpr;
 import com.github.javaparser.ast.expr.LambdaExpr;
 import com.github.javaparser.ast.expr.LiteralExpr;
+import com.github.javaparser.ast.expr.LiteralStringValueExpr;
 import com.github.javaparser.ast.expr.LongLiteralExpr;
 import com.github.javaparser.ast.expr.MarkerAnnotationExpr;
 import com.github.javaparser.ast.expr.MemberValuePair;
@@ -1045,8 +1046,8 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                         .valueOf(argumentTypes[ai].getSimpleName().toUpperCase())), expressions[ai]);
             } else if (unboxArguments && argumentTypes[ai].isPrimitive() && !expressionTypes[ai].isPrimitive()) {
                 if (expressionTypes[ai] == NULL_CLASS) {
-                    expressions[ai] = new CastExpr(new PrimitiveType(PrimitiveType.Primitive
-                            .valueOf(argumentTypes[ai].getSimpleName().toUpperCase())), expressions[ai]);
+                    expressions[ai] = new FieldAccessExpr(new NameExpr("io.deephaven.util.QueryConstants"),
+                            "NULL_" + argumentTypes[ai].getSimpleName().toUpperCase());
                 } else {
                     expressions[ai] = new MethodCallExpr(expressions[ai],
                             argumentTypes[ai].getSimpleName() + "Value", new NodeList<>());
