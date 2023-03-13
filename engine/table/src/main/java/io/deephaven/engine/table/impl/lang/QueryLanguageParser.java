@@ -856,7 +856,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         }
 
         if (src == NULL_CLASS) {
-            return dest.isPrimitive() ? CandidateExecutable.NO_CONVERSION_POSSIBLE : CandidateExecutable.ALREADY_EQUAL;
+            return dest.isPrimitive() ? CandidateExecutable.UNBOX_CONVERSION : CandidateExecutable.ALREADY_EQUAL;
         }
 
         final Class<?> boxedDest = io.deephaven.util.type.TypeUtils.getBoxedType(dest);
@@ -1046,8 +1046,16 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                                 .valueOf(argumentTypes[ai].getSimpleName().toUpperCase())),
                         expressions[ai]);
             } else if (unboxArguments && argumentTypes[ai].isPrimitive() && !expressionTypes[ai].isPrimitive()) {
-                expressions[ai] = new MethodCallExpr(expressions[ai],
-                        argumentTypes[ai].getSimpleName() + "Value", new NodeList<>());
+                if (expressionTypes[ai] == NULL_CLASS) {
+                    // intentionally aim for an NPE on evaluation
+                    expressions[ai] = new CastExpr(
+                            new PrimitiveType(PrimitiveType.Primitive
+                                    .valueOf(argumentTypes[ai].getSimpleName().toUpperCase())).toBoxedType(),
+                            expressions[ai]);
+                } else {
+                    expressions[ai] = new MethodCallExpr(expressions[ai],
+                            argumentTypes[ai].getSimpleName() + "Value", new NodeList<>());
+                }
             } else if (argumentTypes[ai].isArray() && isTypedVector(expressionTypes[ai])) {
                 expressions[ai] = new MethodCallExpr(new NameExpr("VectorConversions"), "nullSafeVectorToArray",
                         new NodeList<>(expressions[ai]));
@@ -1422,13 +1430,17 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             if (!toPrimitive) {
                 // these methods look like `doStringPyCast` and `doBooleanPyCast`
                 printer.append("do");
+            } else if (exprType == NULL_CLASS) {
+                printer.append("(");
             }
             printer.append(ret.getSimpleName());
 
             if (exprType != NULL_CLASS && isAssignableFrom(PyObject.class, exprType)) {
                 printer.append("PyCast(");
-            } else {
+            } else if (exprType != NULL_CLASS) {
                 printer.append("Cast(");
+            } else {
+                printer.append(")");
             }
 
             /*
@@ -1447,7 +1459,9 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                 printer.append(')');
             }
 
-            printer.append(')');
+            if (exprType != NULL_CLASS) {
+                printer.append(')');
+            }
         } else { // Casting to a reference type or a boolean, or a redundant primitive cast
 
             /* Print the cast normally - "(targetType) (expression)" */

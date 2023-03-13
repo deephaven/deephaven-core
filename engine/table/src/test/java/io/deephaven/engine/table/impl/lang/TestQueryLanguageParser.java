@@ -207,6 +207,10 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         expression = "!false";
         resultExpression = "not(false)";
         check(expression, resultExpression, boolean.class, new String[] {});
+
+        expression = "!Boolean.FALSE";
+        resultExpression = "not(Boolean.FALSE)";
+        check(expression, resultExpression, Boolean.class, new String[] {});
     }
 
     /**
@@ -930,6 +934,10 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         expression = "!myBoolean";
         resultExpression = "not(myBoolean)";
         check(expression, resultExpression, boolean.class, new String[] {"myBoolean"});
+
+        expression = "!myBooleanObj";
+        resultExpression = "not(myBooleanObj)";
+        check(expression, resultExpression, Boolean.class, new String[] {"myBooleanObj"});
 
         expression = "(String)myString==null";
         resultExpression = "isNull((String)myString)";
