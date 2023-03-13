@@ -74,6 +74,9 @@ tasks.register('updateProtobuf', Sync) {
 // Start up a docker container for the grpc server, then run pydeephaven test
 String randomSuffix = UUID.randomUUID().toString();
 deephavenDocker {
+    envVars.set([
+        'START_OPTS':'-Xmx512m'
+    ])
     containerName.set "pydeephaven-test-container-${randomSuffix}"
     networkName.set "pydeephaven-network-${randomSuffix}"
 }
