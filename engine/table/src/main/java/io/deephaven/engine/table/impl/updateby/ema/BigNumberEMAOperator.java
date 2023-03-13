@@ -33,8 +33,8 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
         protected long lastDt = NULL_LONG;
         protected long lastStamp = NULL_LONG;
 
-        protected Context(final int chunkSize, final int chunkCount) {
-            super(chunkSize, chunkCount);
+        protected Context(final int chunkSize) {
+            super(chunkSize);
         }
 
         @Override

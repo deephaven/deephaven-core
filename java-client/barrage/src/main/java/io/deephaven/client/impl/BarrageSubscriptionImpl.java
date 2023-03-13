@@ -97,7 +97,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
         final ClientCall<FlightData, BarrageMessage> call;
         final Context previous = Context.ROOT.attach();
         try {
-            call = session.channel().newCall(subscribeDescriptor, CallOptions.DEFAULT);
+            call = session.channel().channel().newCall(subscribeDescriptor, CallOptions.DEFAULT);
         } finally {
             Context.ROOT.detach(previous);
         }
@@ -202,9 +202,6 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
             if (UpdateGraphProcessor.DEFAULT.exclusiveLock().isHeldByCurrentThread()) {
                 completedCondition = UpdateGraphProcessor.DEFAULT.exclusiveLock().newCondition();
             }
-
-            // update the viewport size for initial snapshot completion
-            resultTable.setInitialSnapshotViewportRowCount(viewport == null ? -1 : viewport.size());
 
             // Send the initial subscription:
             observer.onNext(FlightData.newBuilder()

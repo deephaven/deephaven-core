@@ -8,7 +8,6 @@ import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.time.DateTime;
-import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
@@ -31,7 +30,6 @@ import io.deephaven.qst.type.GenericType.Visitor;
 import io.deephaven.qst.type.InstantType;
 import io.deephaven.qst.type.StringType;
 import io.deephaven.util.SoftRecycler;
-import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -99,7 +97,7 @@ public abstract class ArrayBackedColumnSource<T>
             () -> new long[IN_USE_BLOCK_SIZE],
             block -> Arrays.fill(block, 0));
 
-    public static ArrayBackedColumnSource<?> from(Array<?> array) {
+    public static WritableColumnSource<?> from(Array<?> array) {
         return array.walk(new ArrayAdapter<>()).getOut();
     }
 
@@ -174,10 +172,10 @@ public abstract class ArrayBackedColumnSource<T>
      * @param componentType the component type of the resulting column source
      * @return an in-memory column source with the requested data
      */
-    public static <T> ArrayBackedColumnSource<T> getMemoryColumnSource(@NotNull final Collection<T> data,
+    public static <T> WritableColumnSource<T> getMemoryColumnSource(@NotNull final Collection<T> data,
             @NotNull final Class<T> dataType,
             @Nullable final Class<?> componentType) {
-        final ArrayBackedColumnSource<T> result = getMemoryColumnSource(data.size(), dataType, componentType);
+        final WritableColumnSource<T> result = getMemoryColumnSource(data.size(), dataType, componentType);
         long i = 0;
         for (T o : data) {
             result.set(i++, o);
@@ -193,10 +191,10 @@ public abstract class ArrayBackedColumnSource<T>
      * @param componentType the component type of the resulting column source
      * @return an in-memory column source with the requested data
      */
-    public static <T> ArrayBackedColumnSource<T> getMemoryColumnSource(@NotNull final T[] data,
+    public static <T> WritableColumnSource<T> getMemoryColumnSource(@NotNull final T[] data,
             @NotNull final Class<T> dataType,
             @Nullable final Class<?> componentType) {
-        final ArrayBackedColumnSource<T> result = getMemoryColumnSource(data.length, dataType, componentType);
+        final WritableColumnSource<T> result = getMemoryColumnSource(data.length, dataType, componentType);
         try (final FillFromContext context = result.makeFillFromContext(data.length);
                 final RowSequence range = RowSequenceFactory.forRange(0, data.length - 1)) {
             result.fillFromChunk(context, ObjectChunk.chunkWrap(data), range);
@@ -324,8 +322,8 @@ public abstract class ArrayBackedColumnSource<T>
      *        the epoch
      * @return an in-memory column source with the requested data
      */
-    public static ArrayBackedColumnSource<DateTime> getDateTimeMemoryColumnSource(LongChunk<Values> data) {
-        final ArrayBackedColumnSource<DateTime> result = new DateTimeArraySource();
+    public static WritableColumnSource<DateTime> getDateTimeMemoryColumnSource(LongChunk<Values> data) {
+        final WritableColumnSource<DateTime> result = new DateTimeArraySource();
         result.ensureCapacity(data.size());
         for (int ii = 0; ii < data.size(); ++ii) {
             result.set(ii, data.get(ii));
@@ -340,8 +338,8 @@ public abstract class ArrayBackedColumnSource<T>
      *        the epoch
      * @return an in-memory column source with the requested data
      */
-    public static ArrayBackedColumnSource<DateTime> getDateTimeMemoryColumnSource(@NotNull final long[] data) {
-        final ArrayBackedColumnSource<DateTime> result = new DateTimeArraySource();
+    public static WritableColumnSource<DateTime> getDateTimeMemoryColumnSource(@NotNull final long[] data) {
+        final WritableColumnSource<DateTime> result = new DateTimeArraySource();
         result.ensureCapacity(data.length);
         final WritableColumnSource<Long> asLong = (WritableColumnSource<Long>) result.reinterpret(long.class);
         try (final FillFromContext context = asLong.makeFillFromContext(data.length);
@@ -375,12 +373,12 @@ public abstract class ArrayBackedColumnSource<T>
      * @param <T> the type parameter for the ColumnSource's type
      * @return an in-memory column source of the requested type
      */
-    public static <T> ArrayBackedColumnSource<T> getMemoryColumnSource(final long size,
+    public static <T> WritableColumnSource<T> getMemoryColumnSource(final long size,
             @NotNull final Class<T> dataType) {
         return getMemoryColumnSource(size, dataType, null);
     }
 
-    public static <T> ArrayBackedColumnSource<T> getMemoryColumnSource(@NotNull final Class<T> dataType,
+    public static <T> WritableColumnSource<T> getMemoryColumnSource(@NotNull final Class<T> dataType,
             @Nullable final Class<?> componentType) {
         return getMemoryColumnSource(0, dataType, componentType);
     }
@@ -394,9 +392,9 @@ public abstract class ArrayBackedColumnSource<T>
      * @param <T> the type parameter for the ColumnSource's type
      * @return an in-memory column source of the requested type
      */
-    public static <T> ArrayBackedColumnSource<T> getMemoryColumnSource(final long size,
+    public static <T> WritableColumnSource<T> getMemoryColumnSource(final long size,
             @NotNull final Class<T> dataType, @Nullable final Class<?> componentType) {
-        final ArrayBackedColumnSource<?> result;
+        final WritableColumnSource<?> result;
         if (dataType == byte.class || dataType == Byte.class) {
             result = new ByteArraySource();
         } else if (dataType == char.class || dataType == Character.class) {
@@ -415,6 +413,8 @@ public abstract class ArrayBackedColumnSource<T>
             result = new BooleanArraySource();
         } else if (dataType == DateTime.class) {
             result = new DateTimeArraySource();
+        } else if (dataType == Instant.class) {
+            result = new InstantArraySource();
         } else {
             if (componentType != null) {
                 result = new ObjectArraySource<>(dataType, componentType);
@@ -426,7 +426,7 @@ public abstract class ArrayBackedColumnSource<T>
             result.ensureCapacity(size);
         }
         // noinspection unchecked
-        return (ArrayBackedColumnSource<T>) result;
+        return (WritableColumnSource<T>) result;
     }
 
     @Override
@@ -525,38 +525,6 @@ public abstract class ArrayBackedColumnSource<T>
     abstract Object getPrevBlock(int blockIndex);
 
     @Override
-    public void fillChunk(@NotNull final FillContext context, @NotNull final WritableChunk<? super Values> destination,
-            @NotNull final RowSequence rowSequence) {
-        if (rowSequence.getAverageRunLengthEstimate() < USE_RANGES_AVERAGE_RUN_LENGTH) {
-            fillSparseChunk(destination, rowSequence);
-            return;
-        }
-        MutableInt destOffset = new MutableInt(0);
-        rowSequence.forAllRowKeyRanges((final long from, final long to) -> {
-            final int fromBlock = getBlockNo(from);
-            final int toBlock = getBlockNo(to);
-            final int fromOffsetInBlock = (int) (from & INDEX_MASK);
-            if (fromBlock == toBlock) {
-                final int sz = LongSizedDataStructure.intSize("int cast", to - from + 1);
-                destination.copyFromArray(getBlock(fromBlock), fromOffsetInBlock, destOffset.intValue(), sz);
-                destOffset.add(sz);
-            } else {
-                final int sz = BLOCK_SIZE - fromOffsetInBlock;
-                destination.copyFromArray(getBlock(fromBlock), fromOffsetInBlock, destOffset.intValue(), sz);
-                destOffset.add(sz);
-                for (int blockNo = fromBlock + 1; blockNo < toBlock; ++blockNo) {
-                    destination.copyFromArray(getBlock(blockNo), 0, destOffset.intValue(), BLOCK_SIZE);
-                    destOffset.add(BLOCK_SIZE);
-                }
-                int restSz = (int) (to & INDEX_MASK) + 1;
-                destination.copyFromArray(getBlock(toBlock), 0, destOffset.intValue(), restSz);
-                destOffset.add(restSz);
-            }
-        });
-        destination.setSize(destOffset.intValue());
-    }
-
-    @Override
     public void fillChunkUnordered(@NotNull final FillContext context,
             @NotNull final WritableChunk<? super Values> destination,
             @NotNull final LongChunk<? extends RowKeys> keyIndices) {
@@ -600,9 +568,9 @@ public abstract class ArrayBackedColumnSource<T>
     }
 
     private static class ArrayAdapter<T> implements Array.Visitor, PrimitiveArray.Visitor {
-        private ArrayBackedColumnSource<?> out;
+        private WritableColumnSource<?> out;
 
-        public ArrayBackedColumnSource<?> getOut() {
+        public WritableColumnSource<?> getOut() {
             return Objects.requireNonNull(out);
         }
 

@@ -10,6 +10,7 @@ import io.deephaven.qst.TableAdapterResults.Output;
 import io.deephaven.qst.table.AggregateAllTable;
 import io.deephaven.qst.table.AggregateTable;
 import io.deephaven.qst.table.AsOfJoinTable;
+import io.deephaven.qst.table.DropColumnsTable;
 import io.deephaven.qst.table.EmptyTable;
 import io.deephaven.qst.table.ExactJoinTable;
 import io.deephaven.qst.table.HeadTable;
@@ -307,6 +308,12 @@ class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> impleme
     public void visit(UngroupTable ungroupTable) {
         addOp(ungroupTable, parentOps(ungroupTable)
                 .ungroup(ungroupTable.nullFill(), ungroupTable.ungroupColumns()));
+    }
+
+    @Override
+    public void visit(DropColumnsTable dropColumnsTable) {
+        addOp(dropColumnsTable,
+                parentOps(dropColumnsTable).dropColumns(dropColumnsTable.dropColumns().toArray(new ColumnName[0])));
     }
 
     private final class OutputTable implements Output<TOPS, TABLE> {

@@ -127,7 +127,7 @@ class RightIncrementalChunkedCrossJoinStateManager
     // endmixin rehash
 
     // the keys for our hash entries
-    private final ArrayBackedColumnSource<?>[] keySources;
+    private final WritableColumnSource<?>[] keySources;
     // the location of any overflow entry in this bucket
     private final IntegerArraySource overflowLocationSource = new IntegerArraySource();
 
@@ -140,7 +140,7 @@ class RightIncrementalChunkedCrossJoinStateManager
 
     // the keys for overflow
     private int nextOverflowLocation = 0;
-    private final ArrayBackedColumnSource<?> [] overflowKeySources;
+    private final WritableColumnSource<?> [] overflowKeySources;
     // the location of the next key in an overflow bucket
     private final IntegerArraySource overflowOverflowLocationSource = new IntegerArraySource();
     // the overflow buckets for the state source
@@ -212,8 +212,8 @@ class RightIncrementalChunkedCrossJoinStateManager
         this.tableHashPivot = tableSize;
         // endmixin rehash
 
-        overflowKeySources = new ArrayBackedColumnSource[keyColumnCount];
-        keySources = new ArrayBackedColumnSource[keyColumnCount];
+        overflowKeySources = new WritableColumnSource[keyColumnCount];
+        keySources = new WritableColumnSource[keyColumnCount];
 
         keyChunkTypes = new ChunkType[keyColumnCount];
         chunkHashers = new ChunkHasher[keyColumnCount];
@@ -1615,10 +1615,10 @@ class RightIncrementalChunkedCrossJoinStateManager
         return nextOverflowLocation++;
     }
 
-    private static long updateWriteThroughChunks(ResettableWritableChunk<Values>[] writeThroughChunks, long currentHashLocation, ArrayBackedColumnSource<?>[] sources) {
-        final long firstBackingChunkPosition = sources[0].resetWritableChunkToBackingStore(writeThroughChunks[0], currentHashLocation);
+    private static long updateWriteThroughChunks(ResettableWritableChunk<Values>[] writeThroughChunks, long currentHashLocation, WritableColumnSource<?>[] sources) {
+        final long firstBackingChunkPosition = ((ChunkedBackingStoreExposedWritableSource)sources[0]).resetWritableChunkToBackingStore(writeThroughChunks[0], currentHashLocation);
         for (int jj = 1; jj < sources.length; ++jj) {
-            if (sources[jj].resetWritableChunkToBackingStore(writeThroughChunks[jj], currentHashLocation) != firstBackingChunkPosition) {
+            if (((ChunkedBackingStoreExposedWritableSource)sources[jj]).resetWritableChunkToBackingStore(writeThroughChunks[jj], currentHashLocation) != firstBackingChunkPosition) {
                 throw new IllegalStateException("ArrayBackedColumnSources have different block sizes!");
             }
             if (writeThroughChunks[jj].size() != writeThroughChunks[0].size()) {
@@ -1682,9 +1682,10 @@ class RightIncrementalChunkedCrossJoinStateManager
         fillKeys(overflowKeySources, fillContexts, keyChunks, overflowLocationsChunk);
     }
 
-    private static void fillKeys(ArrayBackedColumnSource<?>[] keySources, ColumnSource.FillContext[] fillContexts, WritableChunk<Values>[] keyChunks, WritableLongChunk<RowKeys> keyIndices) {
+    private static void fillKeys(WritableColumnSource<?>[] keySources, ColumnSource.FillContext[] fillContexts, WritableChunk<Values>[] keyChunks, WritableLongChunk<RowKeys> keyIndices) {
         for (int ii = 0; ii < keySources.length; ++ii) {
-            keySources[ii].fillChunkUnordered(fillContexts[ii], keyChunks[ii], keyIndices);
+            //noinspection unchecked
+            ((FillUnordered<Values>) keySources[ii]).fillChunkUnordered(fillContexts[ii], keyChunks[ii], keyIndices);
         }
     }
 

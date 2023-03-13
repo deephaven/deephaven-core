@@ -456,7 +456,11 @@ public class WorkerConnection {
                     // token is no longer valid, signal deauth for re-login
                     // TODO deephaven-core#2564 fire an event for the UI to re-auth
                     checkStatus(status);
-                    reject.onInvoke(status.getDetails());
+                    if (status.getDetails() == null || status.getDetails().isEmpty()) {
+                        reject.onInvoke("Error occurred while authenticating, gRPC status " + status.getCode());
+                    } else {
+                        reject.onInvoke(status.getDetails());
+                    }
                 }
             });
 

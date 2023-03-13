@@ -7,9 +7,9 @@ import com.google.rpc.Code;
 import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.Table;
-import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.HeadOrTailRequest;
+import io.deephaven.proto.util.Exceptions;
 import io.deephaven.server.session.SessionState;
 import io.grpc.StatusRuntimeException;
 
@@ -38,7 +38,8 @@ public abstract class HeadOrTailGrpcImpl extends GrpcTableOperation<HeadOrTailRe
     public void validateRequest(final HeadOrTailRequest request) throws StatusRuntimeException {
         final long nRows = request.getNumRows();
         if (nRows < 0) {
-            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "numRows must be >= 0 (found: " + nRows + ")");
+            throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                    "numRows must be >= 0 (found: " + nRows + ")");
         }
     }
 

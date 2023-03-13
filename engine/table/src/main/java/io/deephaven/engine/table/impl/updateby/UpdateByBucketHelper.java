@@ -336,31 +336,6 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
     }
 
     /**
-     * Store an array of input sources for the following call to {@code processWindow()}. The function allows for the
-     * use of cached input sources instead of the original input sources.
-     *
-     * @param winIdx the index of the window to modify
-     * @param inputSources the input sources for the operators
-     */
-    public void assignInputSources(final int winIdx, final ColumnSource<?>[] inputSources) {
-        windows[winIdx].assignInputSources(windowContexts[winIdx], inputSources);
-    }
-
-    /**
-     * Perform all the operator calculations for this bucket using the input sources assigned by the
-     * {@code assignInputSources()} call.
-     *
-     * @param winIdx the index of the window to modify
-     * @param initialStep indicates whether this is part of the creation phase
-     */
-    public void processWindow(final int winIdx, final boolean initialStep) {
-        if (!windows[winIdx].isWindowBucketDirty(windowContexts[winIdx])) {
-            return; // no work to do for this bucket window
-        }
-        windows[winIdx].processRows(windowContexts[winIdx], initialStep);
-    }
-
-    /**
      * Close the window contexts and release resources for this bucket
      */
     public void finalizeUpdate() {

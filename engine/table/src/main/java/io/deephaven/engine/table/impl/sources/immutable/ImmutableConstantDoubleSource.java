@@ -32,7 +32,7 @@ import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 public class ImmutableConstantDoubleSource
         extends AbstractColumnSource<Double>
         implements ImmutableColumnSourceGetDefaults.ForDouble, ShiftData.ShiftCallback, InMemoryColumnSource,
-        RowKeyAgnosticChunkSource<Values> {
+        RowKeyAgnosticChunkSource<Values> /* MIXIN_IMPLS */ {
 
     private final double value;
 
@@ -72,9 +72,6 @@ public class ImmutableConstantDoubleSource
     @Override
     public final void shift(final long start, final long end, final long offset) {}
 
-    // region reinterpret
-    // endregion reinterpret
-
     @Override
     public void fillChunkUnordered(
             @NotNull FillContext context,
@@ -99,4 +96,7 @@ public class ImmutableConstantDoubleSource
     public boolean providesFillUnordered() {
         return true;
     }
+
+    // region reinterpretation
+    // endregion reinterpretation
 }

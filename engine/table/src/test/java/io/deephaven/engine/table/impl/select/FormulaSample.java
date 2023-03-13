@@ -217,6 +217,6 @@ public class FormulaSample extends io.deephaven.engine.table.impl.select.Formula
     }
 
     private int __intSize(final long l) {
-        return LongSizedDataStructure.intSize("FormulaColumn ii usage", l);
+        return LongSizedDataStructure.intSize("FormulaColumn i usage", l);
     }
 }

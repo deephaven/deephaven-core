@@ -94,7 +94,7 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
         final ClientCall<FlightData, BarrageMessage> call;
         final Context previous = Context.ROOT.attach();
         try {
-            call = session.channel().newCall(snapshotDescriptor, CallOptions.DEFAULT);
+            call = session.channel().channel().newCall(snapshotDescriptor, CallOptions.DEFAULT);
         } finally {
             Context.ROOT.detach(previous);
         }
@@ -197,9 +197,6 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
 
         // store this for streamreader parser
         expectedColumns = columns;
-
-        // update the viewport size for initial snapshot completion
-        resultTable.setInitialSnapshotViewportRowCount(viewport == null ? -1 : viewport.size());
 
         // Send the snapshot request:
         observer.onNext(FlightData.newBuilder()

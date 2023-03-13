@@ -14,6 +14,7 @@ import io.deephaven.engine.context.QueryCompiler;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.rowset.TrackingRowSet;
+import io.deephaven.engine.table.impl.BaseTable;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -158,12 +159,13 @@ public interface SelectColumn extends Selectable {
     boolean isRetain();
 
     /**
-     * Should we disallow use of this column for refreshing tables?
+     * Validate that this {@code SelectColumn} is safe to use in the context of the provided sourceTable.
      *
-     * Some formulas can not be reliably computed with a refreshing table, therefore we will refuse to compute those
-     * values.
+     * @param sourceTable the source table
      */
-    boolean disallowRefresh();
+    default void validateSafeForRefresh(final BaseTable<?> sourceTable) {
+        // nothing to validate by default
+    }
 
     /**
      * Returns true if this column is stateless (i.e. one row does not depend on the order of evaluation for another

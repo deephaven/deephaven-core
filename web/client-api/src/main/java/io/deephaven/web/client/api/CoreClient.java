@@ -14,7 +14,6 @@ import io.deephaven.web.client.ide.IdeConnection;
 import io.deephaven.web.shared.data.ConnectToken;
 import io.deephaven.web.shared.fu.JsBiConsumer;
 import io.deephaven.web.shared.fu.JsFunction;
-import jsinterop.annotations.JsConstructor;
 import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsType;
 

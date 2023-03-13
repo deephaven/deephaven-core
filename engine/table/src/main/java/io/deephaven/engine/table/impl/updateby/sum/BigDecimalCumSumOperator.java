@@ -21,8 +21,8 @@ public final class BigDecimalCumSumOperator extends BaseObjectUpdateByOperator<B
     protected class Context extends BaseObjectUpdateByOperator<BigDecimal>.Context {
         public ObjectChunk<BigDecimal, ? extends Values> objectValueChunk;
 
-        protected Context(final int chunkSize, final int chunkCount) {
-            super(chunkSize, chunkCount);
+        protected Context(final int chunkSize) {
+            super(chunkSize);
         }
 
         @Override
@@ -58,8 +58,8 @@ public final class BigDecimalCumSumOperator extends BaseObjectUpdateByOperator<B
 
     @NotNull
     @Override
-    public UpdateByOperator.Context makeUpdateContext(final int chunkSize, final int chunkCount) {
-        return new Context(chunkSize, chunkCount);
+    public UpdateByOperator.Context makeUpdateContext(final int chunkSize) {
+        return new Context(chunkSize);
     }
 
 }

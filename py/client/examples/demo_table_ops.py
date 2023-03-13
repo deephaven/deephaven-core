@@ -25,7 +25,7 @@ def main():
         snapshot_data = bottom_5_fares_table.snapshot()
         df = snapshot_data.to_pandas()
 
-        pd.set_option("max_columns", 20)
+        pd.set_option("display.max_columns", 20)
         print(df)
 
 

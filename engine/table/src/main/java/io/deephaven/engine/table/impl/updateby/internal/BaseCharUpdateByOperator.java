@@ -33,8 +33,7 @@ public abstract class BaseCharUpdateByOperator extends UpdateByOperator {
 
         public char curVal = NULL_CHAR;
 
-        protected Context(final int chunkSize, final int chunkCount) {
-            super(chunkCount);
+        protected Context(final int chunkSize) {
             this.outputFillContext = outputSource.makeFillFromContext(chunkSize);
             this.outputValues = WritableCharChunk.makeWritableChunk(chunkSize);
         }
@@ -116,6 +115,7 @@ public abstract class BaseCharUpdateByOperator extends UpdateByOperator {
         @Override
         public void reset() {
             curVal = NULL_CHAR;
+            nullCount = 0;
         }
 
         @Override
@@ -191,10 +191,9 @@ public abstract class BaseCharUpdateByOperator extends UpdateByOperator {
     @Override
     public void initializeCumulative(@NotNull UpdateByOperator.Context context, long firstUnmodifiedKey, long firstUnmodifiedTimestamp) {
         Context ctx = (Context) context;
+        ctx.reset();
         if (firstUnmodifiedKey != NULL_ROW_KEY) {
             ctx.curVal = outputSource.getChar(firstUnmodifiedKey);
-        } else {
-            ctx.reset();
         }
     }
 

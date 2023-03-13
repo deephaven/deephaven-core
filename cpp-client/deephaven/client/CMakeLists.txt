@@ -127,6 +127,10 @@ set(ALL_FILES
     proto/deephaven/proto/application.grpc.pb.h
     proto/deephaven/proto/application.pb.cc
     proto/deephaven/proto/application.pb.h
+    proto/deephaven/proto/config.grpc.pb.cc
+    proto/deephaven/proto/config.grpc.pb.h
+    proto/deephaven/proto/config.pb.cc
+    proto/deephaven/proto/config.pb.h
     proto/deephaven/proto/console.grpc.pb.cc
     proto/deephaven/proto/console.grpc.pb.h
     proto/deephaven/proto/console.pb.cc

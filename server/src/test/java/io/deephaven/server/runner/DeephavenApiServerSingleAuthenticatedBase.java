@@ -6,19 +6,12 @@ package io.deephaven.server.runner;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.auth.AuthenticationException;
 import io.deephaven.proto.DeephavenChannel;
-import io.deephaven.proto.DeephavenChannelMixin;
 import io.deephaven.proto.backplane.grpc.HandshakeRequest;
 import io.deephaven.proto.backplane.grpc.HandshakeResponse;
 import io.deephaven.server.session.SessionState;
-import io.grpc.CallOptions;
-import io.grpc.Channel;
-import io.grpc.ClientCall;
-import io.grpc.ClientInterceptor;
-import io.grpc.ForwardingClientCall;
 import io.grpc.Metadata;
 import io.grpc.Metadata.Key;
-import io.grpc.MethodDescriptor;
-import io.grpc.stub.AbstractStub;
+import io.grpc.stub.MetadataUtils;
 import org.junit.Before;
 
 public abstract class DeephavenApiServerSingleAuthenticatedBase extends DeephavenApiServerTestBase {
@@ -39,26 +32,10 @@ public abstract class DeephavenApiServerSingleAuthenticatedBase extends Deephave
         sessionToken = result.getSessionToken().toStringUtf8();
         final String sessionHeader = result.getMetadataHeader().toStringUtf8();
         final Key<String> sessionHeaderKey = Metadata.Key.of(sessionHeader, Metadata.ASCII_STRING_MARSHALLER);
-        this.channel = new DeephavenChannelMixin(channel) {
-            @Override
-            protected <S extends AbstractStub<S>> S mixin(S stub) {
-                return stub.withInterceptors(new ClientInterceptor() {
-                    @Override
-                    public <ReqT, RespT> ClientCall<ReqT, RespT> interceptCall(
-                            final MethodDescriptor<ReqT, RespT> methodDescriptor, final CallOptions callOptions,
-                            final Channel channel) {
-                        return new ForwardingClientCall.SimpleForwardingClientCall<>(
-                                channel.newCall(methodDescriptor, callOptions)) {
-                            @Override
-                            public void start(final Listener<RespT> responseListener, final Metadata headers) {
-                                headers.put(sessionHeaderKey, sessionToken);
-                                super.start(responseListener, headers);
-                            }
-                        };
-                    }
-                });
-            }
-        };
+        final Metadata extraHeaders = new Metadata();
+        extraHeaders.put(sessionHeaderKey, sessionToken);
+        this.channel = DeephavenChannel.withClientInterceptors(channel,
+                MetadataUtils.newAttachHeadersInterceptor(extraHeaders));
     }
 
     public SessionState authenticatedSessionState() {

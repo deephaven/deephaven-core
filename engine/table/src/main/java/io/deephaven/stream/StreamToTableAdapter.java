@@ -14,6 +14,7 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.time.DateTime;
 import io.deephaven.engine.table.ModifiedColumnSet;
@@ -32,6 +33,7 @@ import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.ref.WeakReference;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -39,6 +41,8 @@ import java.util.Map;
 
 /**
  * Adapter for converting streams of data into columnar Deephaven {@link Table tables}.
+ *
+ * @implNote The constructor publishes {@code this} to the {@link UpdateGraphProcessor} and thus cannot be subclassed.
  */
 public class StreamToTableAdapter extends ReferenceCountedLivenessNode
         implements SafeCloseable, StreamConsumer, Runnable {
@@ -80,10 +84,6 @@ public class StreamToTableAdapter extends ReferenceCountedLivenessNode
         this.streamPublisher = streamPublisher;
         this.updateSourceRegistrar = updateSourceRegistrar;
         this.name = name;
-        streamPublisher.register(this);
-        log.info().append("Registering ").append(StreamToTableAdapter.class.getSimpleName()).append('-').append(name)
-                .endl();
-        updateSourceRegistrar.addSource(this);
 
         nullColumnSources = makeNullColumnSources(tableDefinition);
 
@@ -101,6 +101,11 @@ public class StreamToTableAdapter extends ReferenceCountedLivenessNode
             }
         };
         tableRef = new WeakReference<>(table);
+
+        log.info().append("Registering ").append(StreamToTableAdapter.class.getSimpleName()).append('-').append(name)
+                .endl();
+        streamPublisher.register(this);
+        updateSourceRegistrar.addSource(this);
     }
 
     /**
@@ -206,6 +211,9 @@ public class StreamToTableAdapter extends ReferenceCountedLivenessNode
             if (columnDefinition.getDataType() == DateTime.class) {
                 // noinspection unchecked
                 visibleSource = new LongAsDateTimeColumnSource((ColumnSource<Long>) switchSource);
+            } else if (columnDefinition.getDataType() == Instant.class) {
+                // noinspection unchecked
+                visibleSource = new LongAsInstantColumnSource((ColumnSource<Long>) switchSource);
             } else if (columnDefinition.getDataType() == Boolean.class) {
                 // noinspection unchecked
                 visibleSource = new ByteAsBooleanColumnSource((ColumnSource<Byte>) switchSource);
@@ -233,7 +241,7 @@ public class StreamToTableAdapter extends ReferenceCountedLivenessNode
      * @return the type of the inner column
      */
     private static Class<?> replacementType(Class<?> columnType) {
-        if (columnType == DateTime.class) {
+        if (columnType == DateTime.class || columnType == Instant.class) {
             return long.class;
         } else if (columnType == Boolean.class) {
             return byte.class;

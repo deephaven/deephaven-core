@@ -10,8 +10,8 @@ package io.deephaven.engine.table.impl.by.ssmpercentile;
 
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.util.compare.LongComparisons;
-import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.Chunk;
@@ -26,7 +26,7 @@ public class LongPercentileTypeHelper implements SsmChunkedPercentileOperator.Pe
     private final double percentile;
     private final LongArraySource resultColumn;
 
-    LongPercentileTypeHelper(double percentile, ArrayBackedColumnSource resultColumn) {
+    LongPercentileTypeHelper(double percentile, WritableColumnSource resultColumn) {
         this.percentile = percentile;
         // region resultColumn
         this.resultColumn = (LongArraySource) resultColumn;

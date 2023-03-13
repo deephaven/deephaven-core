@@ -98,8 +98,7 @@ public class ColumnPreviewManager {
                 // Always wrap arrays
                 selectColumns.add(arrayPreviewFactory.makeColumn(name));
                 originalTypes.put(name, typeName);
-            } else if (!isColumnTypeDisplayable(type)
-                    || !io.deephaven.util.type.TypeUtils.isPrimitiveOrSerializable(type)) {
+            } else if (!isColumnTypeDisplayable(type)) {
                 // Always wrap non-displayable and non-serializable types
                 selectColumns.add(nonDisplayableFactory.makeColumn(name));
                 originalTypes.put(name, typeName);
@@ -153,9 +152,11 @@ public class ColumnPreviewManager {
         // String
         // BigInt, BigDecimal
         // DateTime
-        return type.isPrimitive() || io.deephaven.util.type.TypeUtils.isBoxedType(type)
+        return type.isPrimitive()
+                || io.deephaven.util.type.TypeUtils.isBoxedType(type)
                 || io.deephaven.util.type.TypeUtils.isString(type)
-                || io.deephaven.util.type.TypeUtils.isBigNumeric(type) || TypeUtils.isDateTime(type)
+                || io.deephaven.util.type.TypeUtils.isBigNumeric(type)
+                || TypeUtils.isDateTime(type)
                 || isOnWhiteList(type);
     }
 

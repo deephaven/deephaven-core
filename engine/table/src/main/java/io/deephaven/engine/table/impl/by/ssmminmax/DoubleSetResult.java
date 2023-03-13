@@ -8,7 +8,7 @@
  */
 package io.deephaven.engine.table.impl.by.ssmminmax;
 
-import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
+import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.sources.DoubleArraySource;
 import io.deephaven.engine.table.impl.ssms.DoubleSegmentedSortedMultiset;
 import io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet;
@@ -19,7 +19,7 @@ public class DoubleSetResult implements SsmChunkedMinMaxOperator.SetResult {
     private final boolean minimum;
     private final DoubleArraySource resultColumn;
 
-    public DoubleSetResult(boolean minimum, ArrayBackedColumnSource resultColumn) {
+    public DoubleSetResult(boolean minimum, WritableColumnSource resultColumn) {
         this.minimum = minimum;
         this.resultColumn = (DoubleArraySource) resultColumn;
     }
