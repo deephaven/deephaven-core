@@ -58,6 +58,9 @@ class BadDataBehavior(Enum):
 
 
 class OperationControl(UpdateByBase):
+    """A OperationControl represents control parameters for performing operations with the table
+        UpdateByOperation."""
+
     def __init__(self, on_null: BadDataBehavior = BadDataBehavior.SKIP,
                  on_nan: BadDataBehavior = BadDataBehavior.SKIP,
                  big_value_context: MathContext = MathContext.DECIMAL128):
