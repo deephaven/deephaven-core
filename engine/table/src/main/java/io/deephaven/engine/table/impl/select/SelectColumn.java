@@ -15,13 +15,20 @@ import io.deephaven.api.expression.UnaryExpression;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.value.Literal;
 import io.deephaven.engine.context.QueryCompiler;
-import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.rowset.TrackingRowSet;
+import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.BaseTable;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 /**
  * The interface for a query table to perform retrieve values from a column for select like operations.
@@ -184,7 +191,7 @@ public interface SelectColumn extends Selectable {
      */
     SelectColumn copy();
 
-    class ExpressionAdapter implements Expression.Visitor, Literal.Visitor, NullaryExpression.Visitor {
+    class ExpressionAdapter implements NullaryExpression.Visitor, Expression.Visitor {
         private final ColumnName lhs;
         private SelectColumn out;
 
@@ -197,33 +204,13 @@ public interface SelectColumn extends Selectable {
         }
 
         @Override
-        public void visit(Literal rhs) {
-            rhs.walk((Literal.Visitor) this);
-        }
-
-        @Override
         public void visit(ColumnName rhs) {
             out = new SourceColumn(rhs.name(), lhs.name());
         }
 
         @Override
-        public void visit(RawString rhs) {
-            out = SelectColumnFactory.getExpression(String.format("%s=%s", lhs.name(), rhs.value()));
-        }
-
-        @Override
-        public void visit(int rhs) {
-            out = SelectColumnFactory.getExpression(String.format("%s=(int)%d", lhs.name(), rhs));
-        }
-
-        @Override
-        public void visit(long rhs) {
-            out = SelectColumnFactory.getExpression(String.format("%s=%dL", lhs.name(), rhs));
-        }
-
-        @Override
-        public void visit(boolean rhs) {
-            out = SelectColumnFactory.getExpression(String.format("%s=%b", lhs.name(), rhs));
+        public void visit(Literal rhs) {
+            out = SelectColumnFactory.getExpression(String.format("%s=%s", lhs.name(), Strings.of(rhs)));
         }
 
         @Override
@@ -233,7 +220,7 @@ public interface SelectColumn extends Selectable {
 
         @Override
         public void visit(NullaryExpression rhs) {
-            rhs.walk((NullaryExpression.Visitor) this);
+            out = SelectColumnFactory.getExpression(String.format("%s=%s", lhs.name(), Strings.of(rhs)));
         }
 
         @Override
@@ -248,6 +235,11 @@ public interface SelectColumn extends Selectable {
 
         @Override
         public void visit(ExpressionFunction rhs) {
+            out = SelectColumnFactory.getExpression(String.format("%s=%s", lhs.name(), Strings.of(rhs)));
+        }
+
+        @Override
+        public void visit(RawString rhs) {
             out = SelectColumnFactory.getExpression(String.format("%s=%s", lhs.name(), Strings.of(rhs)));
         }
     }

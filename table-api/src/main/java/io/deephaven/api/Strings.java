@@ -7,6 +7,7 @@ import io.deephaven.api.agg.Pair;
 import io.deephaven.api.expression.BinaryExpression;
 import io.deephaven.api.expression.Divide;
 import io.deephaven.api.expression.Expression;
+import io.deephaven.api.expression.ExpressionBasicVisitor;
 import io.deephaven.api.expression.ExpressionFunction;
 import io.deephaven.api.expression.Minus;
 import io.deephaven.api.expression.Multiply;
@@ -125,15 +126,21 @@ public class Strings {
         return visitor.getOut();
     }
 
-    public static String of(BinaryExpression binaryExpression) {
+    public static String of(NullaryExpression nullaryExpression) {
         final UniversalAdapter visitor = new UniversalAdapter();
-        binaryExpression.walk((BinaryExpression.Visitor) visitor);
+        nullaryExpression.walk((NullaryExpression.Visitor) visitor);
         return visitor.getOut();
     }
 
     public static String of(UnaryExpression unaryExpression) {
         final UniversalAdapter visitor = new UniversalAdapter();
         unaryExpression.walk((UnaryExpression.Visitor) visitor);
+        return visitor.getOut();
+    }
+
+    public static String of(BinaryExpression binaryExpression) {
+        final UniversalAdapter visitor = new UniversalAdapter();
+        binaryExpression.walk((BinaryExpression.Visitor) visitor);
         return visitor.getOut();
     }
 
@@ -178,13 +185,7 @@ public class Strings {
     /**
      * If we ever need to provide more specificity for a type, we can create a non-universal impl.
      */
-    private static class UniversalAdapter implements
-            Filter.Visitor,
-            Expression.Visitor,
-            Literal.Visitor,
-            NullaryExpression.Visitor,
-            UnaryExpression.Visitor,
-            BinaryExpression.Visitor {
+    private static class UniversalAdapter extends ExpressionBasicVisitor {
         private String out;
 
         public String getOut() {
@@ -199,26 +200,6 @@ public class Strings {
         @Override
         public void visit(RawString rawString) {
             out = of(rawString);
-        }
-
-        @Override
-        public void visit(Filter filter) {
-            filter.walk((Filter.Visitor) this);
-        }
-
-        @Override
-        public void visit(NullaryExpression nullaryExpression) {
-            nullaryExpression.walk((NullaryExpression.Visitor) this);
-        }
-
-        @Override
-        public void visit(UnaryExpression unaryExpression) {
-            unaryExpression.walk((UnaryExpression.Visitor) this);
-        }
-
-        @Override
-        public void visit(BinaryExpression binaryExpression) {
-            binaryExpression.walk((BinaryExpression.Visitor) this);
         }
 
         @Override
@@ -279,11 +260,6 @@ public class Strings {
         @Override
         public void visit(Divide divide) {
             out = of(divide);
-        }
-
-        @Override
-        public void visit(Literal value) {
-            value.walk((Literal.Visitor) this);
         }
 
         @Override
