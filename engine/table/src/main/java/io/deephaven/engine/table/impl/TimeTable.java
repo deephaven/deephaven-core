@@ -27,6 +27,7 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
+import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -207,6 +208,9 @@ public final class TimeTable extends QueryTable implements Runnable {
         }
 
         private long computeNanos(long rowKey) {
+            if (rowKey < 0) {
+                return QueryConstants.NULL_LONG;
+            }
             return startTime.getNanos() + period * rowKey;
         }
 
