@@ -5,15 +5,15 @@ package io.deephaven.api;
 
 import io.deephaven.api.agg.Pair;
 import io.deephaven.api.expression.BinaryExpression;
-import io.deephaven.api.expression.BinaryFunction;
 import io.deephaven.api.expression.Divide;
 import io.deephaven.api.expression.Expression;
+import io.deephaven.api.expression.ExpressionFunction;
 import io.deephaven.api.expression.Minus;
 import io.deephaven.api.expression.Multiply;
+import io.deephaven.api.expression.NullaryExpression;
 import io.deephaven.api.expression.Plus;
 import io.deephaven.api.expression.UnaryExpression;
 import io.deephaven.api.expression.UnaryMinus;
-import io.deephaven.api.expression.UnaryFunction;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.filter.FilterAnd;
 import io.deephaven.api.filter.FilterComparison;
@@ -153,10 +153,6 @@ public class Strings {
         return String.format("-(%s)", of(unaryMinus.parent()));
     }
 
-    public static String of(UnaryFunction unaryFunction) {
-        return String.format("%s(%s)", unaryFunction.name(), of(unaryFunction.parent()));
-    }
-
     public static String of(Plus plus) {
         return String.format("(%s) + (%s)", of(plus.lhs()), of(plus.rhs()));
     }
@@ -173,15 +169,21 @@ public class Strings {
         return String.format("(%s) / (%s)", of(divide.lhs()), of(divide.rhs()));
     }
 
-    public static String of(BinaryFunction binaryFunction) {
-        return String.format("%s(%s, %s)", binaryFunction.name(), of(binaryFunction.lhs()), of(binaryFunction.rhs()));
+    public static String of(ExpressionFunction function) {
+        // <name>(<exp-1>, <exp-2>, ..., <exp-N>)
+        return function.name()
+                + function.arguments().stream().map(Strings::of).collect(Collectors.joining(", ", "(", ")"));
     }
 
     /**
      * If we ever need to provide more specificity for a type, we can create a non-universal impl.
      */
-    private static class UniversalAdapter
-            implements Filter.Visitor, Expression.Visitor, Literal.Visitor, UnaryExpression.Visitor,
+    private static class UniversalAdapter implements
+            Filter.Visitor,
+            Expression.Visitor,
+            Literal.Visitor,
+            NullaryExpression.Visitor,
+            UnaryExpression.Visitor,
             BinaryExpression.Visitor {
         private String out;
 
@@ -205,6 +207,11 @@ public class Strings {
         }
 
         @Override
+        public void visit(NullaryExpression nullaryExpression) {
+            nullaryExpression.walk((NullaryExpression.Visitor) this);
+        }
+
+        @Override
         public void visit(UnaryExpression unaryExpression) {
             unaryExpression.walk((UnaryExpression.Visitor) this);
         }
@@ -212,6 +219,11 @@ public class Strings {
         @Override
         public void visit(BinaryExpression binaryExpression) {
             binaryExpression.walk((BinaryExpression.Visitor) this);
+        }
+
+        @Override
+        public void visit(ExpressionFunction function) {
+            out = of(function);
         }
 
         @Override
@@ -250,11 +262,6 @@ public class Strings {
         }
 
         @Override
-        public void visit(UnaryFunction unaryFunction) {
-            out = of(unaryFunction);
-        }
-
-        @Override
         public void visit(Plus plus) {
             out = of(plus);
         }
@@ -272,11 +279,6 @@ public class Strings {
         @Override
         public void visit(Divide divide) {
             out = of(divide);
-        }
-
-        @Override
-        public void visit(BinaryFunction binaryFunction) {
-            out = of(binaryFunction);
         }
 
         @Override

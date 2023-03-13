@@ -17,6 +17,8 @@ import io.deephaven.api.Strings;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.expression.BinaryExpression;
 import io.deephaven.api.expression.Expression;
+import io.deephaven.api.expression.ExpressionFunction;
+import io.deephaven.api.expression.NullaryExpression;
 import io.deephaven.api.expression.UnaryExpression;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.filter.FilterAnd;
@@ -566,7 +568,7 @@ class BatchTableRequestBuilder {
         return io.deephaven.proto.backplane.grpc.Literal.newBuilder().setBoolValue(x).build();
     }
 
-    static class ExpressionAdapter implements Expression.Visitor, Literal.Visitor {
+    static class ExpressionAdapter implements Expression.Visitor, NullaryExpression.Visitor, Literal.Visitor {
         static io.deephaven.proto.backplane.grpc.Value adapt(Expression expression) {
             return expression.walk(new ExpressionAdapter()).out();
         }
@@ -609,6 +611,11 @@ class BatchTableRequestBuilder {
         }
 
         @Override
+        public void visit(NullaryExpression nullaryExpression) {
+            nullaryExpression.walk((NullaryExpression.Visitor) this);
+        }
+
+        @Override
         public void visit(UnaryExpression unaryExpression) {
             throw new UnsupportedOperationException(
                     "Unable to create a io.deephaven.proto.backplane.grpc.Value from an UnaryExpression");
@@ -618,6 +625,12 @@ class BatchTableRequestBuilder {
         public void visit(BinaryExpression binaryExpression) {
             throw new UnsupportedOperationException(
                     "Unable to create a io.deephaven.proto.backplane.grpc.Value from a BinaryExpression");
+        }
+
+        @Override
+        public void visit(ExpressionFunction function) {
+            throw new UnsupportedOperationException(
+                    "Unable to create a io.deephaven.proto.backplane.grpc.Value from an ExpressionFunction");
         }
 
         @Override

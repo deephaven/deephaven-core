@@ -9,6 +9,8 @@ import io.deephaven.api.Selectable;
 import io.deephaven.api.Strings;
 import io.deephaven.api.expression.BinaryExpression;
 import io.deephaven.api.expression.Expression;
+import io.deephaven.api.expression.ExpressionFunction;
+import io.deephaven.api.expression.NullaryExpression;
 import io.deephaven.api.expression.UnaryExpression;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.value.Literal;
@@ -182,7 +184,7 @@ public interface SelectColumn extends Selectable {
      */
     SelectColumn copy();
 
-    class ExpressionAdapter implements Expression.Visitor, Literal.Visitor {
+    class ExpressionAdapter implements Expression.Visitor, Literal.Visitor, NullaryExpression.Visitor {
         private final ColumnName lhs;
         private SelectColumn out;
 
@@ -230,12 +232,22 @@ public interface SelectColumn extends Selectable {
         }
 
         @Override
+        public void visit(NullaryExpression rhs) {
+            rhs.walk((NullaryExpression.Visitor) this);
+        }
+
+        @Override
         public void visit(UnaryExpression rhs) {
             out = SelectColumnFactory.getExpression(String.format("%s=%s", lhs.name(), Strings.of(rhs)));
         }
 
         @Override
         public void visit(BinaryExpression rhs) {
+            out = SelectColumnFactory.getExpression(String.format("%s=%s", lhs.name(), Strings.of(rhs)));
+        }
+
+        @Override
+        public void visit(ExpressionFunction rhs) {
             out = SelectColumnFactory.getExpression(String.format("%s=%s", lhs.name(), Strings.of(rhs)));
         }
     }

@@ -4,6 +4,12 @@ import io.deephaven.api.filter.FilterIsNotNull;
 import io.deephaven.api.filter.FilterIsNull;
 import io.deephaven.api.filter.FilterNot;
 
+/**
+ * @see UnaryMinus
+ * @see FilterNot
+ * @see FilterIsNull
+ * @see FilterIsNotNull
+ */
 public interface UnaryExpression extends Expression {
 
     Expression parent();
@@ -19,7 +25,5 @@ public interface UnaryExpression extends Expression {
         void visit(FilterIsNull filterIsNull);
 
         void visit(FilterIsNotNull filterIsNotNull);
-
-        void visit(UnaryFunction unaryFunction);
     }
 }

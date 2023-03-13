@@ -2,6 +2,13 @@ package io.deephaven.api.expression;
 
 import io.deephaven.api.filter.FilterComparison;
 
+/**
+ * @see Plus
+ * @see Minus
+ * @see Multiply
+ * @see Divide
+ * @see FilterComparison
+ */
 public interface BinaryExpression extends Expression {
 
     Expression lhs();
@@ -21,7 +28,5 @@ public interface BinaryExpression extends Expression {
         void visit(Divide divide);
 
         void visit(FilterComparison filterComparison);
-
-        void visit(BinaryFunction binaryFunction);
     }
 }
