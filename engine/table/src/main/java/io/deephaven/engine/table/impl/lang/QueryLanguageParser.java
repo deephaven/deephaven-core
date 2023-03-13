@@ -1041,17 +1041,12 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         for (int ai = 0; ai < (executable.isVarArgs() ? nArgs - 1 : nArgs); ai++) {
             if (argumentTypes[ai] != expressionTypes[ai] && argumentTypes[ai].isPrimitive()
                     && expressionTypes[ai].isPrimitive()) {
-                expressions[ai] = new CastExpr(
-                        new PrimitiveType(PrimitiveType.Primitive
-                                .valueOf(argumentTypes[ai].getSimpleName().toUpperCase())),
-                        expressions[ai]);
+                expressions[ai] = new CastExpr(new PrimitiveType(PrimitiveType.Primitive
+                        .valueOf(argumentTypes[ai].getSimpleName().toUpperCase())), expressions[ai]);
             } else if (unboxArguments && argumentTypes[ai].isPrimitive() && !expressionTypes[ai].isPrimitive()) {
                 if (expressionTypes[ai] == NULL_CLASS) {
-                    // intentionally aim for an NPE on evaluation
-                    expressions[ai] = new CastExpr(
-                            new PrimitiveType(PrimitiveType.Primitive
-                                    .valueOf(argumentTypes[ai].getSimpleName().toUpperCase())).toBoxedType(),
-                            expressions[ai]);
+                    expressions[ai] = new CastExpr(new PrimitiveType(PrimitiveType.Primitive
+                            .valueOf(argumentTypes[ai].getSimpleName().toUpperCase())), expressions[ai]);
                 } else {
                     expressions[ai] = new MethodCallExpr(expressions[ai],
                             argumentTypes[ai].getSimpleName() + "Value", new NodeList<>());
@@ -1428,21 +1423,15 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         if ((toPrimitive && !ret.equals(boolean.class) && !ret.equals(exprType)) || isPyUpgrade) {
             // Casting to a primitive, except booleans and the identity conversion
             if (!toPrimitive) {
-                if (exprType == NULL_CLASS) {
-                    printer.append("(");
-                } else {
-                    // these methods look like `doStringPyCast` and `doBooleanPyCast`
-                    printer.append("do");
-                }
+                // these methods look like `doStringPyCast` and `doBooleanPyCast`
+                printer.append("do");
             }
             printer.append(ret.getSimpleName());
 
             if (exprType != NULL_CLASS && isAssignableFrom(PyObject.class, exprType)) {
                 printer.append("PyCast(");
-            } else if (toPrimitive || exprType != NULL_CLASS) {
-                printer.append("Cast(");
             } else {
-                printer.append(")");
+                printer.append("Cast(");
             }
 
             /*
@@ -1461,9 +1450,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                 printer.append(')');
             }
 
-            if (toPrimitive || exprType != NULL_CLASS) {
-                printer.append(')');
-            }
+            printer.append(')');
         } else { // Casting to a reference type or a boolean, or a redundant primitive cast
 
             /* Print the cast normally - "(targetType) (expression)" */
