@@ -101,8 +101,15 @@ public class SliceLikeOperation implements QueryTable.Operation<QueryTable> {
             resultTable.setFlat();
         }
 
-        // if the first row is fixed (not negative), then we can propagate add-only/append-only properties
-        if (getFirstPositionInclusive() >= 0) {
+        if (operation.equals("headPct")) {
+            // headPct has a floating tail, so we can only propagate if append-only
+            if (parent.isAppendOnly()) {
+                resultTable.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, true);
+                resultTable.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, true);
+            }
+        } else if (!operation.equals("tailPct") && getFirstPositionInclusive() >= 0) {
+            // tailPct has a floating head, so we can't propagate either property
+            // otherwise, if the first row is fixed (not negative), then we can propagate add-only/append-only
             if (parent.isAddOnly()) {
                 resultTable.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, true);
             }
