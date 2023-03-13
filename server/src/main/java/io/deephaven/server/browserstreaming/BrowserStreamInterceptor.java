@@ -4,8 +4,8 @@
 package io.deephaven.server.browserstreaming;
 
 import com.google.rpc.Code;
-import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.proto.backplane.grpc.Ticket;
+import io.deephaven.proto.util.Exceptions;
 import io.deephaven.proto.util.ExportTicketHelper;
 import io.grpc.Context;
 import io.grpc.Contexts;
@@ -45,7 +45,7 @@ public class BrowserStreamInterceptor implements ServerInterceptor {
         boolean hasTicket = ticketInt != null;
         boolean hasSeqString = sequenceString != null;
         if (hasTicket != hasSeqString) {
-            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Either both " + TICKET_HEADER_NAME + " and "
+            throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "Either both " + TICKET_HEADER_NAME + " and "
                     + SEQUENCE_HEADER_NAME + " must be provided, or neither");
         }
 

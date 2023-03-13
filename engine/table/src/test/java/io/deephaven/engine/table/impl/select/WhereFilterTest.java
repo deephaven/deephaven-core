@@ -8,10 +8,6 @@ import io.deephaven.api.RawString;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.filter.FilterCondition;
 import io.deephaven.api.value.Value;
-import io.deephaven.engine.table.impl.select.ConditionFilter;
-import io.deephaven.engine.table.impl.select.LongRangeFilter;
-import io.deephaven.engine.table.impl.select.MatchFilter;
-import io.deephaven.engine.table.impl.select.WhereFilter;
 import junit.framework.TestCase;
 
 import static org.assertj.core.api.Assertions.assertThat;

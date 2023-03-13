@@ -2,12 +2,12 @@ package io.deephaven.server.console.completer;
 
 import com.google.rpc.Code;
 import io.deephaven.engine.util.ScriptSession;
-import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.lang.completion.ChunkerCompleter;
 import io.deephaven.lang.parse.CompletionParser;
 import io.deephaven.proto.backplane.script.grpc.*;
+import io.deephaven.proto.util.Exceptions;
 import io.deephaven.server.console.ConsoleServiceGrpcImpl;
 import io.deephaven.server.session.SessionCloseableObserver;
 import io.deephaven.server.session.SessionState;
@@ -91,8 +91,7 @@ public class PythonAutoCompleteObserver extends SessionCloseableObserver<AutoCom
                 break;
             }
             case REQUEST_NOT_SET: {
-                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
-                        "Autocomplete command missing request");
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "Autocomplete command missing request");
             }
         }
     }
@@ -101,8 +100,7 @@ public class PythonAutoCompleteObserver extends SessionCloseableObserver<AutoCom
             SessionState.ExportObject<ScriptSession> exportedConsole,
             StreamObserver<AutoCompleteResponse> responseObserver) {
         final ScriptSession scriptSession = exportedConsole.get();
-        try (final SafeCloseable ignored = scriptSession.getExecutionContext().open()) {
-
+        try {
             PyObject completer = (PyObject) scriptSession.getVariable("jedi_settings");
             boolean canJedi = completer.callMethod("is_enabled").getBooleanValue();
             if (!canJedi) {

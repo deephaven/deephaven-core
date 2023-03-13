@@ -83,11 +83,14 @@ import com.github.javaparser.ast.type.VoidType;
 import com.github.javaparser.ast.type.WildcardType;
 import com.github.javaparser.ast.visitor.GenericVisitorAdapter;
 import io.deephaven.DeephavenException;
+import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
+import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.impl.ShiftedColumnsFactory;
 import io.deephaven.engine.util.PyCallableWrapper.ColumnChunkArgument;
 import io.deephaven.engine.util.PyCallableWrapper.ConstantChunkArgument;
 import io.deephaven.engine.util.PyCallableWrapper;
@@ -222,6 +225,8 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         try {
             final Expression expr = JavaExpressionParser.parseExpression(expression);
             final boolean isConstantValueExpression = JavaExpressionParser.isConstantValueExpression(expr);
+            final Pair<String, Map<Long, List<MatchPair>>> formulaShiftColPair =
+                    ShiftedColumnsFactory.getShiftToColPairsMap(expr);
 
             Class<?> type = expr.accept(this, printer);
 
@@ -229,7 +234,8 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                 type = Object.class;
             }
 
-            result = new Result(type, printer.builder.toString(), variablesUsed, isConstantValueExpression);
+            result = new Result(type, printer.builder.toString(), variablesUsed, isConstantValueExpression,
+                    formulaShiftColPair);
         } catch (Throwable e) {
             // need to catch it and make a new one because it contains unserializable variables...
             final StringBuilder exceptionMessageBuilder = new StringBuilder(1024)
@@ -376,7 +382,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
 
         printer.append('(');
         for (int i = 0; i < arguments.length; i++) {
-            types.add(arguments[i].accept(this, printer));
+            types.add(arguments[i].accept(this, printer.cloneWithCastingContext(null)));
 
             if (i != arguments.length - 1) {
                 printer.append(", ");
@@ -483,7 +489,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                 }
             }
         } else {
-            if (scope == org.jpy.PyObject.class) {
+            if (scope == org.jpy.PyObject.class || scope == PyCallableWrapper.class) {
                 // This is a Python method call, assume it exists and wrap in PythonScopeJpyImpl.CallableWrapper
                 for (Method method : PyCallableWrapper.class.getDeclaredMethods()) {
                     possiblyAddExecutable(acceptableMethods, method, "call", paramTypes, parameterizedTypes);
@@ -861,7 +867,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         return cachedTypes.get(n);
     }
 
-    static String getOperatorSymbol(BinaryExpr.Operator op) {
+    public static String getOperatorSymbol(BinaryExpr.Operator op) {
         return op.asString();
     }
 
@@ -1650,7 +1656,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                 try {
                     // For Python object, the type of the field is PyObject by default, the actual data type if
                     // primitive will only be known at runtime
-                    if (scopeType == PyObject.class) {
+                    if (scopeType == PyObject.class || scopeType == PyCallableWrapper.class) {
                         ret = PyObject.class;
                     } else {
                         ret = scopeType.getField(fieldName).getType();
@@ -2400,12 +2406,15 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         private final String source;
         private final HashSet<String> variablesUsed;
         private final boolean isConstantValueExpression;
+        private final Pair<String, Map<Long, List<MatchPair>>> formulaShiftColPair;
 
-        Result(Class<?> type, String source, HashSet<String> variablesUsed, boolean isConstantValueExpression) {
+        Result(Class<?> type, String source, HashSet<String> variablesUsed, boolean isConstantValueExpression,
+                Pair<String, Map<Long, List<MatchPair>>> formulaShiftColPair) {
             this.type = type;
             this.source = source;
             this.variablesUsed = variablesUsed;
             this.isConstantValueExpression = isConstantValueExpression;
+            this.formulaShiftColPair = formulaShiftColPair;
         }
 
         public Class<?> getType() {
@@ -2422,6 +2431,10 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
 
         public HashSet<String> getVariablesUsed() {
             return variablesUsed;
+        }
+
+        public Pair<String, Map<Long, List<MatchPair>>> getFormulaShiftColPair() {
+            return formulaShiftColPair;
         }
     }
 

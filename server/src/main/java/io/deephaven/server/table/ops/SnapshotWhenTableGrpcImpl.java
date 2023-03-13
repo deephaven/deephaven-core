@@ -12,10 +12,10 @@ import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation;
 import io.deephaven.proto.backplane.grpc.SnapshotWhenTableRequest;
 import io.deephaven.proto.backplane.grpc.TableReference;
+import io.deephaven.proto.util.Exceptions;
 import io.deephaven.server.grpc.Common;
 import io.deephaven.server.grpc.GrpcErrorHelper;
 import io.deephaven.server.session.SessionState;
@@ -76,7 +76,7 @@ public final class SnapshotWhenTableGrpcImpl extends GrpcTableOperation<Snapshot
         try {
             options(request);
         } catch (UnsupportedOperationException e) {
-            throw GrpcUtil.statusRuntimeException(Code.UNIMPLEMENTED, e.getMessage());
+            throw Exceptions.statusRuntimeException(Code.UNIMPLEMENTED, e.getMessage());
         }
     }
 

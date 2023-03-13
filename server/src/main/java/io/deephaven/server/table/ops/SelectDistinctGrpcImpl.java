@@ -7,9 +7,9 @@ import com.google.rpc.Code;
 import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.Table;
-import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.SelectDistinctRequest;
+import io.deephaven.proto.util.Exceptions;
 import io.deephaven.server.session.SessionState;
 
 import javax.inject.Inject;
@@ -37,7 +37,7 @@ public class SelectDistinctGrpcImpl extends GrpcTableOperation<SelectDistinctReq
         final Set<String> requestedMissing = new HashSet<>(request.getColumnNamesList());
         requestedMissing.removeAll(parent.getDefinition().getColumnNameMap().keySet());
         if (!requestedMissing.isEmpty()) {
-            throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
+            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
                     "column(s) not found: " + String.join(", ", requestedMissing));
         }
 

@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl.util;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.WritableColumnSource;
+import io.deephaven.engine.table.Table;
 import io.deephaven.qst.column.header.ColumnHeader;
 import io.deephaven.qst.table.TableHeader;
 import io.deephaven.qst.type.Type;
@@ -386,8 +387,12 @@ public final class DynamicTableWriter implements TableWriter {
 
     private DynamicTableWriter(final Map<String, ColumnSource<?>> sources, final Map<String, Object> constantValues,
             final int allocatedSize) {
-        this.allocatedSize = 256;
-        this.table = new UpdateSourceQueryTable(RowSetFactory.fromKeys().toTracking(), sources);
+        this.allocatedSize = allocatedSize;
+        table = new UpdateSourceQueryTable(RowSetFactory.fromKeys().toTracking(), sources);
+        table.setFlat();
+        table.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, true);
+        table.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, true);
+
         final int nCols = sources.size();;
         this.columnNames = new String[nCols];
         this.arrayColumnSources = new WritableColumnSource[nCols];

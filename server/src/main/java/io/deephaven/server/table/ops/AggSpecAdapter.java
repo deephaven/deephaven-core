@@ -12,7 +12,6 @@ import io.deephaven.api.agg.spec.AggSpecSortedLast;
 import io.deephaven.api.agg.spec.AggSpecWAvg;
 import io.deephaven.api.agg.spec.AggSpecWSum;
 import io.deephaven.api.object.UnionObject;
-import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecAbsSum;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecApproximatePercentile;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecAvg;
@@ -38,6 +37,7 @@ import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecVar;
 import io.deephaven.proto.backplane.grpc.AggSpec.AggSpecWeighted;
 import io.deephaven.proto.backplane.grpc.AggSpec.TypeCase;
 import io.deephaven.proto.backplane.grpc.NullValue;
+import io.deephaven.proto.util.Exceptions;
 import io.deephaven.server.grpc.GrpcErrorHelper;
 
 import java.lang.reflect.InvocationTargetException;
@@ -98,32 +98,32 @@ class AggSpecAdapter {
                 return;
             case NULL_VALUE:
                 if (nonUniqueSentinel.getNullValue() != NullValue.NULL_VALUE) {
-                    throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                    throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
                             "AggSpecNonUniqueSentinel null_value out of range");
                 }
                 return;
             case BYTE_VALUE:
                 if (nonUniqueSentinel.getByteValue() != (byte) nonUniqueSentinel.getByteValue()) {
-                    throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                    throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
                             "AggSpecNonUniqueSentinel byte_value out of range");
                 }
                 return;
             case SHORT_VALUE:
                 if (nonUniqueSentinel.getShortValue() != (short) nonUniqueSentinel.getShortValue()) {
-                    throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                    throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
                             "AggSpecNonUniqueSentinel short_value out of range");
                 }
                 return;
             case CHAR_VALUE:
                 if (nonUniqueSentinel.getCharValue() != (char) nonUniqueSentinel.getCharValue()) {
-                    throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                    throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
                             "AggSpecNonUniqueSentinel char_value out of range");
                 }
                 return;
             case TYPE_NOT_SET:
                 // Should be caught by checkHasOneOf, fall-through to internal error if not.
             default:
-                throw GrpcUtil.statusRuntimeException(Code.INTERNAL,
+                throw Exceptions.statusRuntimeException(Code.INTERNAL,
                         String.format("Server missing AggSpecNonUniqueSentinel type %s", type));
         }
     }
@@ -211,9 +211,9 @@ class AggSpecAdapter {
             case CHAR_VALUE:
                 return UnionObject.of((char) nonUniqueSentinel.getCharValue());
             case TYPE_NOT_SET:
-                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "AggSpecNonUniqueSentinel type not set");
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "AggSpecNonUniqueSentinel type not set");
             default:
-                throw GrpcUtil.statusRuntimeException(Code.INTERNAL, String
+                throw Exceptions.statusRuntimeException(Code.INTERNAL, String
                         .format("Server is missing AggSpecNonUniqueSentinel case %s", nonUniqueSentinel.getTypeCase()));
         }
     }
@@ -244,10 +244,10 @@ class AggSpecAdapter {
                 return adapter;
             }
             if (unimplemented.contains(type)) {
-                throw GrpcUtil.statusRuntimeException(Code.UNIMPLEMENTED,
+                throw Exceptions.statusRuntimeException(Code.UNIMPLEMENTED,
                         String.format("AggSpec type %s is unimplemented", type));
             }
-            throw GrpcUtil.statusRuntimeException(Code.INTERNAL,
+            throw Exceptions.statusRuntimeException(Code.INTERNAL,
                     String.format("Server is missing AggSpec type %s", type));
         }
 

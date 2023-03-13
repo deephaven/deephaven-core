@@ -12,10 +12,10 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.ScriptSession;
-import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.flight.util.TicketRouterHelper;
 import io.deephaven.proto.util.ByteHelper;
+import io.deephaven.proto.util.Exceptions;
 import io.deephaven.proto.util.ScopeTicketHelper;
 import io.deephaven.server.auth.AuthorizationProvider;
 import io.deephaven.server.session.SessionState;
@@ -63,7 +63,7 @@ public class ScopeTicketResolver extends TicketResolverBase {
             final ScriptSession gss = scriptSessionProvider.get();
             Object scopeVar = gss.getVariable(scopeName, null);
             if (scopeVar == null) {
-                throw GrpcUtil.statusRuntimeException(Code.NOT_FOUND,
+                throw Exceptions.statusRuntimeException(Code.NOT_FOUND,
                         "Could not resolve '" + logId + ": no variable exists with name '" + scopeName + "'");
             }
             if (scopeVar instanceof Table) {
@@ -71,7 +71,7 @@ public class ScopeTicketResolver extends TicketResolverBase {
                 return TicketRouter.getFlightInfo((Table) scopeVar, descriptor, flightTicketForName(scopeName));
             }
 
-            throw GrpcUtil.statusRuntimeException(Code.NOT_FOUND,
+            throw Exceptions.statusRuntimeException(Code.NOT_FOUND,
                     "Could not resolve '" + logId + "': no variable exists with name '" + scopeName + "'");
         });
 
@@ -117,7 +117,7 @@ public class ScopeTicketResolver extends TicketResolverBase {
         export = authTransformation.transform(export);
 
         if (export == null) {
-            return SessionState.wrapAsFailedExport(GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
+            return SessionState.wrapAsFailedExport(Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
                     "Could not resolve '" + logId + "': no variable exists with name '" + scopeName + "'"));
         }
 
@@ -205,12 +205,12 @@ public class ScopeTicketResolver extends TicketResolverBase {
      */
     public static String nameForTicket(final ByteBuffer ticket, final String logId) {
         if (ticket == null || ticket.remaining() == 0) {
-            throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
+            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
                     "Could not resolve '" + logId + "': no ticket supplied");
         }
         if (ticket.remaining() < 3 || ticket.get(ticket.position()) != TICKET_PREFIX
                 || ticket.get(ticket.position() + 1) != '/') {
-            throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
+            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
                     "Could not resolve '" + logId + "': found 0x" + ByteHelper.byteBufToHex(ticket) + "' (hex)");
         }
 
@@ -221,7 +221,7 @@ public class ScopeTicketResolver extends TicketResolverBase {
             ticket.position(initialPosition + 2);
             return decoder.decode(ticket).toString();
         } catch (CharacterCodingException e) {
-            throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
+            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
                     "Could not resolve '" + logId + "': failed to decode: " + e.getMessage());
         } finally {
             ticket.position(initialPosition);
@@ -238,11 +238,11 @@ public class ScopeTicketResolver extends TicketResolverBase {
      */
     public static String nameForDescriptor(final Flight.FlightDescriptor descriptor, final String logId) {
         if (descriptor.getType() != Flight.FlightDescriptor.DescriptorType.PATH) {
-            throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
+            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
                     "Could not resolve descriptor '" + logId + "': only paths are supported");
         }
         if (descriptor.getPathCount() != 2) {
-            throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
+            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
                     "Could not resolve descriptor '" + logId + "': unexpected path length (found: "
                             + TicketRouterHelper.getLogNameFor(descriptor) + ", expected: 2)");
         }

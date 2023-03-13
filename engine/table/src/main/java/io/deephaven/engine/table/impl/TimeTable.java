@@ -119,6 +119,7 @@ public final class TimeTable extends QueryTable implements Runnable {
             setAttribute(Table.STREAM_TABLE_ATTRIBUTE, Boolean.TRUE);
         } else {
             setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
+            setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
             setFlat();
         }
         if (startTime != null) {

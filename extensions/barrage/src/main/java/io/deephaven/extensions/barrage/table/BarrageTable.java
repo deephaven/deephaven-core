@@ -98,11 +98,6 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
     protected boolean serverReverseViewport;
     protected BitSet serverColumns;
 
-    /** the size of the initial viewport requested from the server (-1 implies full subscription) */
-    private long initialSnapshotViewportRowCount;
-    /** have we completed the initial snapshot */
-    private boolean initialSnapshotReceived;
-
     /** synchronize access to pendingUpdates */
     private final Object pendingUpdatesLock = new Object();
 
@@ -154,7 +149,6 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
         } else {
             serverViewport = RowSetFactory.empty();
         }
-        this.initialSnapshotViewportRowCount = initialViewPortRows;
 
         this.destSources = new WritableColumnSource<?>[writableSources.length];
         for (int ii = 0; ii < writableSources.length; ++ii) {
@@ -213,10 +207,6 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
     @VisibleForTesting
     public BitSet getServerColumns() {
         return serverColumns;
-    }
-
-    public void setInitialSnapshotViewportRowCount(long rowCount) {
-        initialSnapshotViewportRowCount = rowCount;
     }
 
     /**
