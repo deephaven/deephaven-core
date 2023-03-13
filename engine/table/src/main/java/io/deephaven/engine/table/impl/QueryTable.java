@@ -1645,6 +1645,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                     }
                     propagateFlatness(queryTable);
 
+                    copyAttributes(queryTable, CopyAttributeOperation.RenameColumns);
                     copySortableColumns(queryTable, pairs);
                     maybeCopyColumnDescriptions(queryTable, pairs);
 
