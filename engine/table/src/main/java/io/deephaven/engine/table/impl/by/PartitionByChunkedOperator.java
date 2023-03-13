@@ -34,7 +34,6 @@ import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
-import io.deephaven.engine.table.iterators.ColumnIterator;
 import io.deephaven.engine.table.iterators.ObjectColumnIterator;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.util.SafeCloseable;
@@ -1004,7 +1003,7 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
 
     @Override
     public void propagateFailure(@NotNull final Throwable originalException, @NotNull TableListener.Entry sourceEntry) {
-        new ObjectColumnIterator<QueryTable>(tables, resultTable.getRowSet(), ColumnIterator.DEFAULT_CHUNK_SIZE)
+        new ObjectColumnIterator<QueryTable>(tables, resultTable.getRowSet())
                 .forEachRemaining(st -> st.notifyListenersOnError(originalException, sourceEntry));
     }
 

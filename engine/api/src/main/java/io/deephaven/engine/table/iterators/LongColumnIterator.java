@@ -41,17 +41,20 @@ public final class LongColumnIterator
      *        chunk type} of {@link ChunkType#Long}
      * @param rowSequence The {@link RowSequence} to iterate over
      * @param chunkSize The buffer size to use when fetching data
+     * @param firstRowKey The first row key from {@code rowSequence} to iterate
+     * @param length The total number of rows to iterate
      */
     public LongColumnIterator(
             @NotNull final ChunkSource<? extends Any> chunkSource,
             @NotNull final RowSequence rowSequence,
             // @formatter:off
             // region chunkSize
-            final int chunkSize
+            final int chunkSize,
             // endregion chunkSize
             // @formatter:on
-    ) {
-        super(validateChunkType(chunkSource, ChunkType.Long), rowSequence, chunkSize);
+            final long firstRowKey,
+            final long length) {
+        super(validateChunkType(chunkSource, ChunkType.Long), rowSequence, chunkSize, firstRowKey, length);
     }
 
     /**
@@ -64,7 +67,7 @@ public final class LongColumnIterator
     public LongColumnIterator(
             @NotNull final ChunkSource<? extends Any> chunkSource,
             @NotNull final RowSequence rowSequence) {
-        this(chunkSource, rowSequence, DEFAULT_CHUNK_SIZE);
+        this(chunkSource, rowSequence, DEFAULT_CHUNK_SIZE, rowSequence.firstRowKey(), rowSequence.size());
     }
 
     /**
@@ -75,7 +78,7 @@ public final class LongColumnIterator
      *        {@link ChunkType#Long}
      */
     public LongColumnIterator(@NotNull final Table table, @NotNull final String columnName) {
-        this(table.getColumnSource(columnName), table.getRowSet(), DEFAULT_CHUNK_SIZE);
+        this(table.getColumnSource(columnName), table.getRowSet());
     }
 
     @Override
@@ -130,7 +133,7 @@ public final class LongColumnIterator
         return StreamSupport.longStream(
                 Spliterators.spliterator(
                         this,
-                        size(),
+                        remaining(),
                         Spliterator.IMMUTABLE | Spliterator.ORDERED),
                 false)
                 .onClose(this::close);
@@ -148,7 +151,7 @@ public final class LongColumnIterator
         return StreamSupport.stream(
                 Spliterators.spliterator(
                         this,
-                        size(),
+                        remaining(),
                         Spliterator.IMMUTABLE | Spliterator.ORDERED),
                 false)
                 .onClose(this::close);

@@ -39,12 +39,16 @@ public final class CharacterColumnIterator
      *        chunk type} of {@link ChunkType#Char}
      * @param rowSequence The {@link RowSequence} to iterate over
      * @param chunkSize The buffer size to use when fetching data
+     * @param firstRowKey The first row key from {@code rowSequence} to iterate
+     * @param length The total number of rows to iterate
      */
     public CharacterColumnIterator(
             @NotNull final ChunkSource<? extends Any> chunkSource,
             @NotNull final RowSequence rowSequence,
-            final int chunkSize) {
-        super(validateChunkType(chunkSource, ChunkType.Char), rowSequence, chunkSize);
+            final int chunkSize,
+            final long firstRowKey,
+            final long length) {
+        super(validateChunkType(chunkSource, ChunkType.Char), rowSequence, chunkSize, firstRowKey, length);
     }
 
     /**
@@ -57,7 +61,7 @@ public final class CharacterColumnIterator
     public CharacterColumnIterator(
             @NotNull final ChunkSource<? extends Any> chunkSource,
             @NotNull final RowSequence rowSequence) {
-        this(chunkSource, rowSequence, DEFAULT_CHUNK_SIZE);
+        this(chunkSource, rowSequence, DEFAULT_CHUNK_SIZE, rowSequence.firstRowKey(), rowSequence.size());
     }
 
     /**
@@ -68,7 +72,7 @@ public final class CharacterColumnIterator
      *        {@link ChunkType#Char}
      */
     public CharacterColumnIterator(@NotNull final Table table, @NotNull final String columnName) {
-        this(table.getColumnSource(columnName), table.getRowSet(), DEFAULT_CHUNK_SIZE);
+        this(table.getColumnSource(columnName), table.getRowSet());
     }
 
     @Override
@@ -119,7 +123,7 @@ public final class CharacterColumnIterator
         return StreamSupport.intStream(
                 Spliterators.spliterator(
                         adapted,
-                        size(),
+                        remaining(),
                         Spliterator.IMMUTABLE | Spliterator.ORDERED),
                 false)
                 .onClose(this::close);
@@ -152,7 +156,7 @@ public final class CharacterColumnIterator
         return StreamSupport.stream(
                 Spliterators.spliterator(
                         this,
-                        size(),
+                        remaining(),
                         Spliterator.IMMUTABLE | Spliterator.ORDERED),
                 false)
                 .onClose(this::close);

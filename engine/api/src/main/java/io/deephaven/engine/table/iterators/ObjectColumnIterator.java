@@ -30,12 +30,16 @@ public final class ObjectColumnIterator<TYPE> extends ColumnIterator<TYPE, Objec
      *        chunk type} of {@link ChunkType#Object}
      * @param rowSequence The {@link RowSequence} to iterate over
      * @param chunkSize The internal buffer size to use when fetching data
+     * @param firstRowKey The first row key from {@code rowSequence} to iterate
+     * @param length The total number of rows to iterate
      */
     public ObjectColumnIterator(
             @NotNull final ChunkSource<? extends Any> chunkSource,
             @NotNull final RowSequence rowSequence,
-            final int chunkSize) {
-        super(validateChunkType(chunkSource, ChunkType.Object), rowSequence, chunkSize);
+            final int chunkSize,
+            final long firstRowKey,
+            final long length) {
+        super(validateChunkType(chunkSource, ChunkType.Object), rowSequence, chunkSize, firstRowKey, length);
     }
 
     /**
@@ -48,7 +52,8 @@ public final class ObjectColumnIterator<TYPE> extends ColumnIterator<TYPE, Objec
     public ObjectColumnIterator(
             @NotNull final ChunkSource<? extends Any> chunkSource,
             @NotNull final RowSequence rowSequence) {
-        this(validateChunkType(chunkSource, ChunkType.Object), rowSequence, DEFAULT_CHUNK_SIZE);
+        this(validateChunkType(chunkSource, ChunkType.Object), rowSequence, DEFAULT_CHUNK_SIZE,
+                rowSequence.firstRowKey(), rowSequence.size());
     }
 
     /**
@@ -59,7 +64,7 @@ public final class ObjectColumnIterator<TYPE> extends ColumnIterator<TYPE, Objec
      *        {@link ChunkType#Object}
      */
     public ObjectColumnIterator(@NotNull final Table table, @NotNull final String columnName) {
-        this(table.getColumnSource(columnName), table.getRowSet(), DEFAULT_CHUNK_SIZE);
+        this(table.getColumnSource(columnName), table.getRowSet());
     }
 
     @Override
@@ -95,7 +100,7 @@ public final class ObjectColumnIterator<TYPE> extends ColumnIterator<TYPE, Objec
         return StreamSupport.stream(
                 Spliterators.spliterator(
                         this,
-                        size(),
+                        remaining(),
                         Spliterator.IMMUTABLE | Spliterator.ORDERED),
                 false)
                 .onClose(this::close);

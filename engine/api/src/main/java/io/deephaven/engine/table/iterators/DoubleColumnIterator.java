@@ -41,17 +41,20 @@ public final class DoubleColumnIterator
      *        chunk type} of {@link ChunkType#Double}
      * @param rowSequence The {@link RowSequence} to iterate over
      * @param chunkSize The buffer size to use when fetching data
+     * @param firstRowKey The first row key from {@code rowSequence} to iterate
+     * @param length The total number of rows to iterate
      */
     public DoubleColumnIterator(
             @NotNull final ChunkSource<? extends Any> chunkSource,
             @NotNull final RowSequence rowSequence,
             // @formatter:off
             // region chunkSize
-            final int chunkSize
+            final int chunkSize,
             // endregion chunkSize
             // @formatter:on
-    ) {
-        super(validateChunkType(chunkSource, ChunkType.Double), rowSequence, chunkSize);
+            final long firstRowKey,
+            final long length) {
+        super(validateChunkType(chunkSource, ChunkType.Double), rowSequence, chunkSize, firstRowKey, length);
     }
 
     /**
@@ -64,7 +67,7 @@ public final class DoubleColumnIterator
     public DoubleColumnIterator(
             @NotNull final ChunkSource<? extends Any> chunkSource,
             @NotNull final RowSequence rowSequence) {
-        this(chunkSource, rowSequence, DEFAULT_CHUNK_SIZE);
+        this(chunkSource, rowSequence, DEFAULT_CHUNK_SIZE, rowSequence.firstRowKey(), rowSequence.size());
     }
 
     /**
@@ -75,7 +78,7 @@ public final class DoubleColumnIterator
      *        {@link ChunkType#Double}
      */
     public DoubleColumnIterator(@NotNull final Table table, @NotNull final String columnName) {
-        this(table.getColumnSource(columnName), table.getRowSet(), DEFAULT_CHUNK_SIZE);
+        this(table.getColumnSource(columnName), table.getRowSet());
     }
 
     @Override
@@ -130,7 +133,7 @@ public final class DoubleColumnIterator
         return StreamSupport.doubleStream(
                 Spliterators.spliterator(
                         this,
-                        size(),
+                        remaining(),
                         Spliterator.IMMUTABLE | Spliterator.ORDERED),
                 false)
                 .onClose(this::close);
@@ -148,7 +151,7 @@ public final class DoubleColumnIterator
         return StreamSupport.stream(
                 Spliterators.spliterator(
                         this,
-                        size(),
+                        remaining(),
                         Spliterator.IMMUTABLE | Spliterator.ORDERED),
                 false)
                 .onClose(this::close);
