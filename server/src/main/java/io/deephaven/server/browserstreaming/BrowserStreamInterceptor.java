@@ -19,8 +19,9 @@ import io.grpc.ServerInterceptor;
  * tooling so that unary and server-streaming calls can be combined into an emulated bidirectional stream.
  */
 public class BrowserStreamInterceptor implements ServerInterceptor {
-    private static final String TICKET_HEADER_NAME = "x-deephaven-stream-ticket";
-    private static final String SEQUENCE_HEADER_NAME = "x-deephaven-stream-sequence";
+    public static final String TICKET_HEADER_NAME = "x-deephaven-stream-ticket";
+    public static final String SEQUENCE_HEADER_NAME = "x-deephaven-stream-sequence";
+    public static final String HALF_CLOSE_HEADER_NAME = "x-deephaven-stream-halfclose";
 
     /** Export ticket int value. */
     private static final Metadata.Key<String> RPC_TICKET =
@@ -34,7 +35,7 @@ public class BrowserStreamInterceptor implements ServerInterceptor {
      * be ignored to enable a client to open a stream, never send a message, and then close it.
      */
     private static final Metadata.Key<String> HALF_CLOSE_HEADER =
-            Metadata.Key.of("x-deephaven-stream-halfclose", Metadata.ASCII_STRING_MARSHALLER);
+            Metadata.Key.of(HALF_CLOSE_HEADER_NAME, Metadata.ASCII_STRING_MARSHALLER);
 
     @Override
     public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(ServerCall<ReqT, RespT> call, Metadata headers,
