@@ -49,7 +49,7 @@ cd ${DHROOT}/py/client2
 Then run these commands to build the Deephaven shared library:
 
 ```
-export DEEPHAVEN_LOCAL=/usr/local/dhcpp-230313/local # Or where build of the deephaven C++ client is installed.
+export DEEPHAVEN_LOCAL=/usr/local/dhcpp-230313/local # Or where your build of the deephaven C++ client is installed.
 export LD_LIBRARY_PATH=${DEEPHAVEN_LOCAL}/arrow/lib:$PFX/cares/lib
 rm -rf build *.so && CFLAGS="-I${DEEPHAVEN_LOCAL}/deephaven/include" LDFLAGS="-L${DEEPHAVEN_LOCAL}/deephaven/lib -L${DEEPHAVEN_LOCAL}/protobuf/lib -L${DEEPHAVEN_LOCAL}/arrow/lib -L${DEEPHAVEN_LOCAL}/grpc/lib -L${DEEPHAVEN_LOCAL}/abseil/lib -L${DEEPHAVEN_LOCAL}/re2/lib -L${DEEPHAVEN_LOCAL}/cares/lib" python setup.py build_ext -i
 ```
