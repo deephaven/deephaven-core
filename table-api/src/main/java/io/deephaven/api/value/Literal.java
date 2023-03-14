@@ -3,14 +3,14 @@
  */
 package io.deephaven.api.value;
 
-import io.deephaven.api.expression.NullaryExpression;
+import io.deephaven.api.expression.Expression;
 
 /**
  * Represents a literal value.
  *
- * @see NullaryExpression
+ * @see Expression
  */
-public interface Literal extends NullaryExpression {
+public interface Literal extends Expression {
 
     static LiteralFilter of(boolean value) {
         return LiteralBool.of(value);

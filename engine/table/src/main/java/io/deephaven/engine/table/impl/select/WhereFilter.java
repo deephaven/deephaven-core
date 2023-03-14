@@ -6,11 +6,8 @@ package io.deephaven.engine.table.impl.select;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.RawString;
 import io.deephaven.api.Strings;
-import io.deephaven.api.expression.BinaryExpression;
 import io.deephaven.api.expression.Expression;
 import io.deephaven.api.expression.ExpressionFunction;
-import io.deephaven.api.expression.NullaryExpression;
-import io.deephaven.api.expression.UnaryExpression;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.filter.FilterAnd;
 import io.deephaven.api.filter.FilterComparison;
@@ -318,8 +315,7 @@ public interface WhereFilter extends Filter {
             return WhereFilterFactory.getExpression(Strings.of(Filter.isNotNull(expression)));
         }
 
-        private static class FilterComparisonAdapter
-                implements Expression.Visitor, Literal.Visitor, NullaryExpression.Visitor {
+        private static class FilterComparisonAdapter implements Expression.Visitor, Literal.Visitor {
 
             public static WhereFilter of(FilterComparison condition) {
                 FilterComparison preferred = condition.maybeTranspose();
@@ -345,8 +341,7 @@ public interface WhereFilter extends Filter {
                 preferred.rhs().walk(new PreferredLhsColumnRhsVisitor(lhs));
             }
 
-            private class PreferredLhsColumnRhsVisitor
-                    implements Expression.Visitor, Literal.Visitor, NullaryExpression.Visitor {
+            private class PreferredLhsColumnRhsVisitor implements Expression.Visitor, Literal.Visitor {
                 private final ColumnName lhs;
 
                 public PreferredLhsColumnRhsVisitor(ColumnName lhs) {
@@ -437,21 +432,6 @@ public interface WhereFilter extends Filter {
                 }
 
                 @Override
-                public void visit(NullaryExpression nullaryExpression) {
-                    nullaryExpression.walk((NullaryExpression.Visitor) this);
-                }
-
-                @Override
-                public void visit(UnaryExpression rhs) {
-                    out = WhereFilterFactory.getExpression(Strings.of(original));
-                }
-
-                @Override
-                public void visit(BinaryExpression rhs) {
-                    out = WhereFilterFactory.getExpression(Strings.of(original));
-                }
-
-                @Override
                 public void visit(ExpressionFunction function) {
                     out = WhereFilterFactory.getExpression(Strings.of(original));
                 }
@@ -493,21 +473,6 @@ public interface WhereFilter extends Filter {
 
             @Override
             public void visit(Filter lhs) {
-                out = WhereFilterFactory.getExpression(Strings.of(original));
-            }
-
-            @Override
-            public void visit(NullaryExpression lhs) {
-                lhs.walk((NullaryExpression.Visitor) this);
-            }
-
-            @Override
-            public void visit(UnaryExpression lhs) {
-                out = WhereFilterFactory.getExpression(Strings.of(original));
-            }
-
-            @Override
-            public void visit(BinaryExpression lhs) {
                 out = WhereFilterFactory.getExpression(Strings.of(original));
             }
 

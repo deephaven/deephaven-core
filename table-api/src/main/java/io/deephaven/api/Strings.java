@@ -4,17 +4,9 @@
 package io.deephaven.api;
 
 import io.deephaven.api.agg.Pair;
-import io.deephaven.api.expression.BinaryExpression;
-import io.deephaven.api.expression.Divide;
 import io.deephaven.api.expression.Expression;
 import io.deephaven.api.expression.ExpressionBasicVisitor;
 import io.deephaven.api.expression.ExpressionFunction;
-import io.deephaven.api.expression.Minus;
-import io.deephaven.api.expression.Multiply;
-import io.deephaven.api.expression.NullaryExpression;
-import io.deephaven.api.expression.Plus;
-import io.deephaven.api.expression.UnaryExpression;
-import io.deephaven.api.expression.UnaryMinus;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.filter.FilterAnd;
 import io.deephaven.api.filter.FilterComparison;
@@ -126,24 +118,6 @@ public class Strings {
         return visitor.getOut();
     }
 
-    public static String of(NullaryExpression nullaryExpression) {
-        final UniversalAdapter visitor = new UniversalAdapter();
-        nullaryExpression.walk((NullaryExpression.Visitor) visitor);
-        return visitor.getOut();
-    }
-
-    public static String of(UnaryExpression unaryExpression) {
-        final UniversalAdapter visitor = new UniversalAdapter();
-        unaryExpression.walk((UnaryExpression.Visitor) visitor);
-        return visitor.getOut();
-    }
-
-    public static String of(BinaryExpression binaryExpression) {
-        final UniversalAdapter visitor = new UniversalAdapter();
-        binaryExpression.walk((BinaryExpression.Visitor) visitor);
-        return visitor.getOut();
-    }
-
     public static String of(Filter filter) {
         final UniversalAdapter visitor = new UniversalAdapter();
         filter.walk((Filter.Visitor) visitor);
@@ -154,26 +128,6 @@ public class Strings {
         final UniversalAdapter visitor = new UniversalAdapter();
         value.walk((Literal.Visitor) visitor);
         return visitor.getOut();
-    }
-
-    public static String of(UnaryMinus unaryMinus) {
-        return String.format("-(%s)", of(unaryMinus.parent()));
-    }
-
-    public static String of(Plus plus) {
-        return String.format("(%s) + (%s)", of(plus.lhs()), of(plus.rhs()));
-    }
-
-    public static String of(Minus minus) {
-        return String.format("(%s) - (%s)", of(minus.lhs()), of(minus.rhs()));
-    }
-
-    public static String of(Multiply multiply) {
-        return String.format("(%s) * (%s)", of(multiply.lhs()), of(multiply.rhs()));
-    }
-
-    public static String of(Divide divide) {
-        return String.format("(%s) / (%s)", of(divide.lhs()), of(divide.rhs()));
     }
 
     public static String of(ExpressionFunction function) {
@@ -235,31 +189,6 @@ public class Strings {
         @Override
         public void visit(FilterAnd ands) {
             out = of(ands);
-        }
-
-        @Override
-        public void visit(UnaryMinus unaryMinus) {
-            out = of(unaryMinus);
-        }
-
-        @Override
-        public void visit(Plus plus) {
-            out = of(plus);
-        }
-
-        @Override
-        public void visit(Minus minus) {
-            out = of(minus);
-        }
-
-        @Override
-        public void visit(Multiply multiply) {
-            out = of(multiply);
-        }
-
-        @Override
-        public void visit(Divide divide) {
-            out = of(divide);
         }
 
         @Override

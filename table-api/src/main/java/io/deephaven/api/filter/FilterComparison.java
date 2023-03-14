@@ -5,7 +5,6 @@ package io.deephaven.api.filter;
 
 import io.deephaven.annotations.BuildableStyle;
 import io.deephaven.api.ColumnName;
-import io.deephaven.api.expression.BinaryExpression;
 import io.deephaven.api.expression.Expression;
 import org.immutables.value.Value.Immutable;
 
@@ -17,7 +16,7 @@ import java.io.Serializable;
  */
 @Immutable
 @BuildableStyle
-public abstract class FilterComparison extends FilterBase implements BinaryExpression, Serializable {
+public abstract class FilterComparison extends FilterBase implements Serializable {
 
     public enum Operator {
         /**
@@ -199,12 +198,6 @@ public abstract class FilterComparison extends FilterBase implements BinaryExpre
 
     @Override
     public final <V extends Filter.Visitor> V walk(V visitor) {
-        visitor.visit(this);
-        return visitor;
-    }
-
-    @Override
-    public <V extends BinaryExpression.Visitor> V walk(V visitor) {
         visitor.visit(this);
         return visitor;
     }

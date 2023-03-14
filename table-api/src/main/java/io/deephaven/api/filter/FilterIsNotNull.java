@@ -5,7 +5,6 @@ package io.deephaven.api.filter;
 
 import io.deephaven.annotations.SimpleStyle;
 import io.deephaven.api.expression.Expression;
-import io.deephaven.api.expression.UnaryExpression;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
 
@@ -14,7 +13,7 @@ import org.immutables.value.Value.Parameter;
  */
 @Immutable
 @SimpleStyle
-public abstract class FilterIsNotNull extends FilterBase implements UnaryExpression {
+public abstract class FilterIsNotNull extends FilterBase {
 
     public static FilterIsNotNull of(Expression expression) {
         return ImmutableFilterIsNotNull.of(expression);
@@ -39,18 +38,7 @@ public abstract class FilterIsNotNull extends FilterBase implements UnaryExpress
     }
 
     @Override
-    public final Expression parent() {
-        return expression();
-    }
-
-    @Override
     public final <V extends Filter.Visitor> V walk(V visitor) {
-        visitor.visit(this);
-        return visitor;
-    }
-
-    @Override
-    public final <V extends UnaryExpression.Visitor> V walk(V visitor) {
         visitor.visit(this);
         return visitor;
     }
