@@ -131,13 +131,23 @@ message AutoCompleteRequest {
         // Requests that a response be sent back with completion items
         GetCompletionItemsRequest get_completion_items = 3;
 
+        // Request for help about the method signature at the cursor
+        GetSignatureHelpRequest get_signature_help = 4;
+
+        // Request for help about what the user is hovering over
+        GetHoverRequest get_hover = 5;
+
         // Closes the document, indicating that it will not be referenced again
-        CloseDocumentRequest close_document = 4;
+        CloseDocumentRequest close_document = 6;
     }
 }
 message AutoCompleteResponse {
+    int32 request_id = 1;
+    bool success = 2;
     oneof response {
-        GetCompletionItemsResponse completion_items = 1;
+        GetCompletionItemsResponse completion_items = 3;
+        GetSignatureHelpResponse signatures = 4;
+        GetHoverResponse hover = 5;
     }
 }
 
@@ -199,9 +209,6 @@ message CompletionContext {
 }
 message GetCompletionItemsResponse {
     repeated CompletionItem items = 1;
-
-    int32 request_id = 2;
-    bool success = 3;
 }
 message CompletionItem {
     int32 start = 1;
@@ -222,6 +229,52 @@ message CompletionItem {
 message TextEdit {
     DocumentRange range = 1;
     string text = 2;
+}
+
+message GetSignatureHelpRequest {
+    io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
+
+    SignatureHelpContext context = 2;
+    VersionedTextDocumentIdentifier text_document = 3;
+    Position position = 4;
+
+    int32 request_id = 5;
+}
+message SignatureHelpContext {
+    int32 trigger_kind = 1;
+    string trigger_character = 2;
+}
+
+message GetSignatureHelpResponse {
+    repeated SignatureInformation signatures = 1;
+    int32 active_signature = 2;
+    int32 active_parameter = 3;
+}
+
+message SignatureInformation {
+    string label = 1;
+    string documentation = 2;
+    repeated ParameterInformation parameters = 3;
+    int32 active_parameter = 4;
+}
+
+message ParameterInformation {
+    string label = 1;
+    string documentation = 2;
+}
+
+message GetHoverRequest {
+    io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
+
+    VersionedTextDocumentIdentifier text_document = 2;
+    Position position = 3;
+
+    int32 request_id = 4;
+}
+
+message GetHoverResponse {
+    string contents = 1;
+    DocumentRange range = 2;
 }
 
 message FigureDescriptor {
