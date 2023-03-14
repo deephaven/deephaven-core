@@ -18,8 +18,15 @@ TableHandle makeTable(const TableHandleManager &manager);
 void dumpSymbolColumn(const TableHandle &tableHandle);
 }  // namespace
 
-int main() {
+int main(int argc, char *argv[]) {
   const char *server = "localhost:10000";
+  if (argc > 1) {
+    if (argc != 2 || std::strcmp("-h", argv[1]) == 0) {
+      std::cerr << "Usage: " << argv[0] << " [host:port]" << std::endl;
+      std::exit(1);
+    }
+    server = argv[1];
+  }
 
   try {
     auto client = Client::connect(server);
