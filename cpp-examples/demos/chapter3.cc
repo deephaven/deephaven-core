@@ -169,7 +169,7 @@ void printDiffs(const TableHandleManager &manager) {
 class CallbackSumDiffs final : public deephaven::client::TickingCallback {
 public:
   void onTick(deephaven::client::TickingUpdate update) final {
-    auto colIndex = update.current()->getColumnIndex("IntValue", true);
+    auto colIndex = update.current()->getColumnIndex("Int64Value", true);
 
     processDeltas(*update.beforeRemoves(), colIndex, update.removedRows(), -1);
     processDeltas(*update.afterAdds(), colIndex, update.addedRows(), 1);
