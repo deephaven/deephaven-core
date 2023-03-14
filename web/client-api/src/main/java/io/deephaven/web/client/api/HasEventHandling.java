@@ -122,7 +122,7 @@ public class HasEventHandling {
     }
 
     @JsMethod
-    public boolean removeEventListener(String name, EventFn<?> callback) {
+    public <T> boolean removeEventListener(String name, EventFn<T> callback) {
         final JsArray<EventFn<?>> listeners = map.get(name);
         if (listeners == null) {
             JsLog.warn(logPrefix() + "Asked to remove an event listener which wasn't present, ignoring.");
