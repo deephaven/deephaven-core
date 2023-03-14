@@ -158,7 +158,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         // legacy attributes
         Flatten, Sort, UpdateView, Join, Filter,
         // new attributes
-        DropColumns, View, Reverse,
+        DropColumns, RenameColumns, View, Reverse,
         /**
          * The result tables that go in a PartitionBy TableMap
          */
@@ -199,6 +199,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         // into constituent tables
         tempMap.put(MERGED_TABLE_ATTRIBUTE, EnumSet.of(
                 CopyAttributeOperation.DropColumns,
+                CopyAttributeOperation.RenameColumns,
                 CopyAttributeOperation.View));
 
         tempMap.put(INITIALLY_EMPTY_COALESCED_SOURCE_TABLE_ATTRIBUTE, EnumSet.complementOf(EnumSet.of(
@@ -271,12 +272,14 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
 
         tempMap.put(ADD_ONLY_TABLE_ATTRIBUTE, EnumSet.of(
                 CopyAttributeOperation.DropColumns,
+                CopyAttributeOperation.RenameColumns,
                 CopyAttributeOperation.PartitionBy,
                 CopyAttributeOperation.Coalesce));
 
 
         tempMap.put(APPEND_ONLY_TABLE_ATTRIBUTE, EnumSet.of(
                 CopyAttributeOperation.DropColumns,
+                CopyAttributeOperation.RenameColumns,
                 CopyAttributeOperation.FirstBy,
                 CopyAttributeOperation.Flatten,
                 CopyAttributeOperation.PartitionBy,
@@ -318,6 +321,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
                 CopyAttributeOperation.View, // and Select, if added
                 CopyAttributeOperation.UpdateView, // and Update, if added
                 CopyAttributeOperation.DropColumns,
+                CopyAttributeOperation.RenameColumns,
                 CopyAttributeOperation.Join,
                 CopyAttributeOperation.WouldMatch));
 
