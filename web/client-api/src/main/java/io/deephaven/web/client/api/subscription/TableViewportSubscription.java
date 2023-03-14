@@ -9,7 +9,6 @@ import elemental2.core.Uint8Array;
 import elemental2.dom.CustomEvent;
 import elemental2.dom.CustomEventInit;
 import elemental2.dom.DomGlobal;
-import elemental2.dom.Event;
 import elemental2.promise.IThenable;
 import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.message_generated.org.apache.arrow.flatbuf.Message;
@@ -171,7 +170,7 @@ public class TableViewportSubscription extends HasEventHandling {
         return originalState;
     }
 
-    private void refire(Event e) {
+    private <T> void refire(CustomEvent<T> e) {
         this.fireEvent(e.type, e);
         if (originalActive && state() == original.state()) {
             // When these fail to match, it probably means that the original's state was paused, but we're still

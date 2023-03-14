@@ -69,12 +69,6 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>> exte
         fireEvent(IdeConnection.HACK_CONNECTION_FAILURE, event);
     }
 
-    @Override
-    @JsMethod
-    public RemoverFn addEventListener(String name, EventFn callback) {
-        return super.addEventListener(name, callback);
-    }
-
     protected Promise<Void> onConnected() {
         if (connected) {
             return Promise.resolve((Void) null);
