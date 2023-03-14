@@ -3,12 +3,16 @@
  */
 package io.deephaven.vector;
 
+import io.deephaven.base.verify.Require;
+import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.qst.type.GenericVectorType;
 import io.deephaven.qst.type.GenericType;
 import io.deephaven.util.annotations.FinalDefault;
+import io.deephaven.util.datastructures.LongSizedDataStructure;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.Function;
@@ -16,30 +20,65 @@ import java.util.function.Function;
 /**
  * A {@link Vector} of {@link Object objects}.
  */
-public interface ObjectVector<COMPONENT_TYPE> extends Vector<ObjectVector<COMPONENT_TYPE>> {
+public interface ObjectVector<COMPONENT_TYPE> extends Vector<ObjectVector<COMPONENT_TYPE>>, Iterable<COMPONENT_TYPE> {
 
     static <T> GenericVectorType<ObjectVector<T>, T> type(GenericType<T> genericType) {
         // noinspection unchecked
         return GenericVectorType.of((Class<ObjectVector<T>>) (Class<?>) ObjectVector.class, genericType);
     }
 
+    /**
+     * Get the element of this ObjectVector at offset {@code index}. If {@code index} is not within range
+     * {@code [0, size())}, will return {@code null}.
+     *
+     * @param index An offset into this ObjectVector
+     * @return The element at the specified offset, or {@code null}
+     */
     COMPONENT_TYPE get(long index);
 
-    ObjectVector<COMPONENT_TYPE> subVector(long fromIndexInclusive, long toIndexExclusive);
-
-    ObjectVector<COMPONENT_TYPE> subVectorByPositions(long[] positions);
-
+    @Override
     COMPONENT_TYPE[] toArray();
 
+    @Override
     Class<COMPONENT_TYPE> getComponentType();
+
+    @Override
+    @FinalDefault
+    default CloseableIterator<COMPONENT_TYPE> iterator() {
+        return iterator(0, size());
+    }
+
+    /**
+     * Returns an iterator over a slice of this ObjectVector, with equivalent semantics to
+     * {@code subVector(fromIndexInclusive, toIndexExclusive).iterator()}.
+     *
+     * @param fromIndexInclusive The first position to include
+     * @param toIndexExclusive The first position after {@code fromIndexInclusive} to not include
+     * @return An iterator over the requested slice
+     */
+    default CloseableIterator<COMPONENT_TYPE> iterator(final long fromIndexInclusive, final long toIndexExclusive) {
+        Require.leq(fromIndexInclusive, "fromIndexInclusive", toIndexExclusive, "toIndexExclusive");
+        return new CloseableIterator<>() {
+
+            long nextIndex = fromIndexInclusive;
+
+            @Override
+            public COMPONENT_TYPE next() {
+                return get(nextIndex++);
+            }
+
+            @Override
+            public boolean hasNext() {
+                return nextIndex < toIndexExclusive;
+            }
+        };
+    }
 
     @Override
     @FinalDefault
     default String toString(final int prefixLength) {
         return toString(this, prefixLength);
     }
-
-    ObjectVector<COMPONENT_TYPE> getDirect();
 
     static String defaultValToString(final Object val) {
         return val == null ? NULL_ELEMENT_STRING : val.toString();
@@ -56,14 +95,12 @@ public interface ObjectVector<COMPONENT_TYPE> extends Vector<ObjectVector<COMPON
         if (vector.isEmpty()) {
             return "[]";
         }
-
         final Function<Object, String> valToString = Vector.classToHelper(vector.getComponentType());
-
         final StringBuilder builder = new StringBuilder("[");
         final int displaySize = (int) Math.min(vector.size(), prefixLength);
-        builder.append(valToString.apply(vector.get(0)));
-        for (int ei = 1; ei < displaySize; ++ei) {
-            builder.append(',').append(valToString.apply(vector.get(ei)));
+        try (final CloseableIterator<?> iterator = vector.iterator(0, displaySize)) {
+            builder.append(valToString.apply(iterator.next()));
+            iterator.forEachRemaining((final Object value) -> builder.append(',').append(valToString.apply(value)));
         }
         if (displaySize == vector.size()) {
             builder.append(']');
@@ -92,9 +129,17 @@ public interface ObjectVector<COMPONENT_TYPE> extends Vector<ObjectVector<COMPON
         if (size != bVector.size()) {
             return false;
         }
-        for (long ei = 0; ei < size; ++ei) {
-            if (!Objects.equals(aVector.get(ei), bVector.get(ei))) {
-                return false;
+        if (size == 0) {
+            return true;
+        }
+        // @formatter:off
+        try (final CloseableIterator<?> aIterator = aVector.iterator();
+             final CloseableIterator<?> bIterator = bVector.iterator()) {
+            // @formatter:on
+            while (aIterator.hasNext()) {
+                if (!Objects.equals(aIterator.next(), bIterator.next())) {
+                    return false;
+                }
             }
         }
         return true;
@@ -108,10 +153,14 @@ public interface ObjectVector<COMPONENT_TYPE> extends Vector<ObjectVector<COMPON
      * @return The hash code
      */
     static int hashCode(@NotNull final ObjectVector<?> vector) {
-        final long size = vector.size();
         int result = 1;
-        for (long ei = 0; ei < size; ++ei) {
-            result = 31 * result + Objects.hashCode(vector.get(ei));
+        if (vector.isEmpty()) {
+            return result;
+        }
+        try (final CloseableIterator<?> iterator = vector.iterator()) {
+            while (iterator.hasNext()) {
+                result = 31 * result + Objects.hashCode(iterator.next());
+            }
         }
         return result;
     }
@@ -122,8 +171,39 @@ public interface ObjectVector<COMPONENT_TYPE> extends Vector<ObjectVector<COMPON
     abstract class Indirect<COMPONENT_TYPE> implements ObjectVector<COMPONENT_TYPE> {
 
         @Override
+        public COMPONENT_TYPE[] toArray() {
+            final int size = intSize("ObjectVector.toArray");
+            // noinspection unchecked
+            final COMPONENT_TYPE[] result = (COMPONENT_TYPE[]) Array.newInstance(getComponentType(), size);
+            try (final CloseableIterator<COMPONENT_TYPE> iterator = iterator()) {
+                for (int ei = 0; ei < size; ++ei) {
+                    result[ei] = iterator.next();
+                }
+            }
+            return result;
+        }
+
+        @Override
         public ObjectVector<COMPONENT_TYPE> getDirect() {
-            return new ObjectVectorDirect<>(toArray());
+            if (Vector.class.isAssignableFrom(getComponentType())) {
+                final int size = LongSizedDataStructure.intSize("ObjectVector.Indirect.getDirect", size());
+                // noinspection unchecked
+                final COMPONENT_TYPE[] array = (COMPONENT_TYPE[]) Array.newInstance(getComponentType(), size);
+                try (final CloseableIterator<COMPONENT_TYPE> iterator = iterator()) {
+                    for (int ei = 0; ei < size; ++ei) {
+                        final COMPONENT_TYPE element = iterator.next();
+                        if (element == null) {
+                            array[ei] = null;
+                        } else {
+                            // noinspection unchecked
+                            array[ei] = (COMPONENT_TYPE) ((Vector<?>) element).getDirect();
+                        }
+                    }
+                }
+                return new ObjectVectorDirect<>(array);
+            } else {
+                return new ObjectVectorDirect<>(toArray());
+            }
         }
 
         @Override

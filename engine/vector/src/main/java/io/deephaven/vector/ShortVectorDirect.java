@@ -8,9 +8,11 @@
  */
 package io.deephaven.vector;
 
-import io.deephaven.util.datastructures.LongSizedDataStructure;
+import io.deephaven.base.verify.Require;
+import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfShort;
 import io.deephaven.util.annotations.ArrayType;
 import io.deephaven.util.annotations.ArrayTypeGetter;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 
@@ -20,22 +22,22 @@ import static io.deephaven.util.QueryConstants.NULL_SHORT;
  * A {@link ShortVector} backed by an array.
  */
 @ArrayType(type = short[].class)
-public class ShortVectorDirect implements ShortVector {
+public final class ShortVectorDirect implements ShortVector {
 
     public static final ShortVector ZERO_LENGTH_VECTOR = new ShortVectorDirect();
 
     private final short[] data;
 
-    public ShortVectorDirect(final short... data) {
-        this.data = data;
+    public ShortVectorDirect(@NotNull final short... data) {
+        this.data = Require.neqNull(data, "data");
     }
 
     @Override
     public short get(final long index) {
-        if (index < 0 || index > data.length - 1) {
+        if (index < 0 || index >= data.length) {
             return NULL_SHORT;
         }
-        return data[LongSizedDataStructure.intSize("ShortVectorDirect get", index)];
+        return data[(int) index];
     }
 
     @Override
@@ -54,6 +56,14 @@ public class ShortVectorDirect implements ShortVector {
     }
 
     @Override
+    public CloseablePrimitiveIteratorOfShort iterator(final long fromIndexInclusive, final long toIndexExclusive) {
+        if (fromIndexInclusive == 0 && toIndexExclusive == data.length) {
+            return CloseablePrimitiveIteratorOfShort.of(data);
+        }
+        return ShortVector.super.iterator(fromIndexInclusive, toIndexExclusive);
+    }
+
+    @Override
     public long size() {
         return data.length;
     }
@@ -64,12 +74,12 @@ public class ShortVectorDirect implements ShortVector {
     }
 
     @Override
-    public final String toString() {
+    public String toString() {
         return ShortVector.toString(this, 10);
     }
 
     @Override
-    public final boolean equals(final Object obj) {
+    public boolean equals(final Object obj) {
         if (obj instanceof ShortVectorDirect) {
             return Arrays.equals(data, ((ShortVectorDirect) obj).data);
         }
@@ -77,7 +87,7 @@ public class ShortVectorDirect implements ShortVector {
     }
 
     @Override
-    public final int hashCode() {
+    public int hashCode() {
         return ShortVector.hashCode(this);
     }
 }

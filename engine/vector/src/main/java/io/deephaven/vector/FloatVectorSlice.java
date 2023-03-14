@@ -10,12 +10,13 @@ package io.deephaven.vector;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
-import io.deephaven.util.datastructures.LongSizedDataStructure;
+import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfFloat;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 
 import static io.deephaven.base.ClampUtil.clampLong;
+import static io.deephaven.util.QueryConstants.NULL_FLOAT;
 import static io.deephaven.vector.Vector.clampIndex;
 
 /**
@@ -73,7 +74,10 @@ public class FloatVectorSlice extends FloatVector.Indirect {
     @Override
     public FloatVector subVectorByPositions(final long[] positions) {
         return innerVector.subVectorByPositions(Arrays.stream(positions)
-                .map(p -> clampIndex(innerVectorValidFromInclusive, innerVectorValidToExclusive, p + offsetIndex))
+                .map((final long position) -> clampIndex(
+                        innerVectorValidFromInclusive,
+                        innerVectorValidToExclusive,
+                        position + offsetIndex))
                 .toArray());
     }
 
@@ -82,24 +86,57 @@ public class FloatVectorSlice extends FloatVector.Indirect {
         if (innerVector instanceof FloatVectorDirect
                 && offsetIndex >= innerVectorValidFromInclusive
                 && offsetIndex + length <= innerVectorValidToExclusive) {
-            return Arrays.copyOfRange(innerVector.toArray(),
-                    LongSizedDataStructure.intSize("FloatVectorSlice.toArray", offsetIndex),
-                    LongSizedDataStructure.intSize("FloatVectorSlice.toArray", offsetIndex + length));
+            // In this case, innerVectorValidFromInclusive must be in range [0, MAX_ARRAY_SIZE) and
+            // innerVectorValidToExclusive must be in range [0, MAX_ARRAY_SIZE].
+            return Arrays.copyOfRange(innerVector.toArray(), (int) offsetIndex, (int) (offsetIndex + length));
         }
-        final float[] result = new float[LongSizedDataStructure.intSize("FloatVectorSlice.toArray", length)];
-        for (int ii = 0; ii < length; ++ii) {
-            result[ii] = get(ii);
+        return super.toArray();
+    }
+
+    @Override
+    public CloseablePrimitiveIteratorOfFloat iterator(long fromIndexInclusive, long toIndexExclusive) {
+        Require.leq(fromIndexInclusive, "fromIndexInclusive", toIndexExclusive, "toIndexExclusive");
+        fromIndexInclusive += offsetIndex;
+        toIndexExclusive += offsetIndex;
+        final long totalWanted = toIndexExclusive - fromIndexInclusive;
+        final long includedInitialNulls = fromIndexInclusive < innerVectorValidFromInclusive
+                ? Math.min(innerVectorValidFromInclusive - fromIndexInclusive, totalWanted)
+                : 0;
+        long remaining = totalWanted - includedInitialNulls;
+
+        final long innerVectorValidSize = innerVectorValidToExclusive - innerVectorValidFromInclusive;
+        final long firstIncludedInnerOffset;
+        final long includedInnerLength;
+        if (remaining > 0
+                && innerVectorValidSize > 0
+                && fromIndexInclusive < innerVectorValidFromInclusive + innerVectorValidSize) {
+            if (fromIndexInclusive <= innerVectorValidFromInclusive) {
+                firstIncludedInnerOffset = innerVectorValidFromInclusive;
+                includedInnerLength = Math.min(innerVectorValidSize, remaining);
+            } else {
+                firstIncludedInnerOffset = fromIndexInclusive - innerVectorValidFromInclusive;
+                includedInnerLength = Math.min(innerVectorValidSize - firstIncludedInnerOffset, remaining);
+            }
+            remaining -= includedInnerLength;
+        } else {
+            firstIncludedInnerOffset = -1;
+            includedInnerLength = 0;
         }
-        return result;
+
+        final CloseablePrimitiveIteratorOfFloat initialNullsIterator = includedInitialNulls > 0
+                ? CloseablePrimitiveIteratorOfFloat.repeat(NULL_FLOAT, includedInitialNulls)
+                : null;
+        final CloseablePrimitiveIteratorOfFloat innerIterator = includedInnerLength > 0
+                ? innerVector.iterator(firstIncludedInnerOffset, firstIncludedInnerOffset + includedInnerLength)
+                : null;
+        final CloseablePrimitiveIteratorOfFloat finalNullsIterator = remaining > 0
+                ? CloseablePrimitiveIteratorOfFloat.repeat(NULL_FLOAT, remaining)
+                : null;
+        return CloseablePrimitiveIteratorOfFloat.maybeConcat(initialNullsIterator, innerIterator, finalNullsIterator);
     }
 
     @Override
     public long size() {
         return length;
-    }
-
-    @Override
-    public boolean isEmpty() {
-        return length == 0;
     }
 }

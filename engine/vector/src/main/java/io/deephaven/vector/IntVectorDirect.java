@@ -8,9 +8,11 @@
  */
 package io.deephaven.vector;
 
-import io.deephaven.util.datastructures.LongSizedDataStructure;
+import io.deephaven.base.verify.Require;
+import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfInt;
 import io.deephaven.util.annotations.ArrayType;
 import io.deephaven.util.annotations.ArrayTypeGetter;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 
@@ -20,22 +22,22 @@ import static io.deephaven.util.QueryConstants.NULL_INT;
  * A {@link IntVector} backed by an array.
  */
 @ArrayType(type = int[].class)
-public class IntVectorDirect implements IntVector {
+public final class IntVectorDirect implements IntVector {
 
     public static final IntVector ZERO_LENGTH_VECTOR = new IntVectorDirect();
 
     private final int[] data;
 
-    public IntVectorDirect(final int... data) {
-        this.data = data;
+    public IntVectorDirect(@NotNull final int... data) {
+        this.data = Require.neqNull(data, "data");
     }
 
     @Override
     public int get(final long index) {
-        if (index < 0 || index > data.length - 1) {
+        if (index < 0 || index >= data.length) {
             return NULL_INT;
         }
-        return data[LongSizedDataStructure.intSize("IntVectorDirect get", index)];
+        return data[(int) index];
     }
 
     @Override
@@ -54,6 +56,14 @@ public class IntVectorDirect implements IntVector {
     }
 
     @Override
+    public CloseablePrimitiveIteratorOfInt iterator(final long fromIndexInclusive, final long toIndexExclusive) {
+        if (fromIndexInclusive == 0 && toIndexExclusive == data.length) {
+            return CloseablePrimitiveIteratorOfInt.of(data);
+        }
+        return IntVector.super.iterator(fromIndexInclusive, toIndexExclusive);
+    }
+
+    @Override
     public long size() {
         return data.length;
     }
@@ -64,12 +74,12 @@ public class IntVectorDirect implements IntVector {
     }
 
     @Override
-    public final String toString() {
+    public String toString() {
         return IntVector.toString(this, 10);
     }
 
     @Override
-    public final boolean equals(final Object obj) {
+    public boolean equals(final Object obj) {
         if (obj instanceof IntVectorDirect) {
             return Arrays.equals(data, ((IntVectorDirect) obj).data);
         }
@@ -77,7 +87,7 @@ public class IntVectorDirect implements IntVector {
     }
 
     @Override
-    public final int hashCode() {
+    public int hashCode() {
         return IntVector.hashCode(this);
     }
 }

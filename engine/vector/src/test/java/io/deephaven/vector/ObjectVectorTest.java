@@ -5,38 +5,38 @@ package io.deephaven.vector;
 
 import junit.framework.TestCase;
 
-import java.util.Arrays;
+import java.util.List;
 
 public class ObjectVectorTest extends TestCase {
 
     public void testDirect() {
-        ObjectVectorDirect vectorDirect = new ObjectVectorDirect<>("a", "b", "c");
+        ObjectVectorDirect<?> vectorDirect = new ObjectVectorDirect<>("a", "b", "c");
         assertEquals(3, vectorDirect.size());
         assertEquals("a", vectorDirect.get(0));
         assertEquals("b", vectorDirect.get(1));
         assertEquals("c", vectorDirect.get(2));
-        assertEquals(null, vectorDirect.get(3));
-        assertEquals(null, vectorDirect.get(-1));
-        assertEquals(Arrays.asList("a", "b", "c"), Arrays.asList(vectorDirect.toArray()));
+        assertNull(vectorDirect.get(3));
+        assertNull(vectorDirect.get(-1));
+        assertEquals(List.of("a", "b", "c"), List.of(vectorDirect.toArray()));
         assertEquals(0, vectorDirect.subVector(0, 0).size());
-        assertEquals(Arrays.asList(), Arrays.asList(vectorDirect.subVector(0, 0).toArray()));
-        assertEquals(null, vectorDirect.subVector(0, 0).get(0));
-        assertEquals(null, vectorDirect.subVector(0, 0).get(-1));
+        assertEquals(List.of(), List.of(vectorDirect.subVector(0, 0).toArray()));
+        assertNull(vectorDirect.subVector(0, 0).get(0));
+        assertNull(vectorDirect.subVector(0, 0).get(-1));
 
         assertEquals(1, vectorDirect.subVector(0, 1).size());
-        assertEquals(Arrays.asList("a"), Arrays.asList(vectorDirect.subVector(0, 1).toArray()));
-        assertEquals(null, vectorDirect.subVector(0, 1).get(1));
-        assertEquals(null, vectorDirect.subVector(0, 1).get(-1));
+        assertEquals(List.of("a"), List.of(vectorDirect.subVector(0, 1).toArray()));
+        assertNull(vectorDirect.subVector(0, 1).get(1));
+        assertNull(vectorDirect.subVector(0, 1).get(-1));
 
         assertEquals(1, vectorDirect.subVector(1, 2).size());
-        assertEquals(Arrays.asList("b"), Arrays.asList(vectorDirect.subVector(1, 2).toArray()));
-        assertEquals(null, vectorDirect.subVector(0, 1).get(1));
-        assertEquals(null, vectorDirect.subVector(0, 1).get(-1));
+        assertEquals(List.of("b"), List.of(vectorDirect.subVector(1, 2).toArray()));
+        assertNull(vectorDirect.subVector(0, 1).get(1));
+        assertNull(vectorDirect.subVector(0, 1).get(-1));
 
         assertEquals(2, vectorDirect.subVector(1, 3).size());
-        assertEquals(Arrays.asList("b", "c"), Arrays.asList(vectorDirect.subVector(1, 3).toArray()));
-        assertEquals(null, vectorDirect.subVector(1, 3).get(2));
-        assertEquals(null, vectorDirect.subVector(0, 1).get(-1));
+        assertEquals(List.of("b", "c"), List.of(vectorDirect.subVector(1, 3).toArray()));
+        assertNull(vectorDirect.subVector(1, 3).get(2));
+        assertNull(vectorDirect.subVector(0, 1).get(-1));
     }
 
     public void testSubArray() {
@@ -48,10 +48,10 @@ public class ObjectVectorTest extends TestCase {
                     continue;
                 }
 
-                Object result[] = new Object[end - start];
+                final Object[] result = new Object[end - start];
 
-                for (int i = start; i < end; i++) {
-                    result[i - start] = (i < 0 || i >= vector.size()) ? null : vector.get(i);
+                for (int ei = start; ei < end; ei++) {
+                    result[ei - start] = (ei < 0 || ei >= vector.size()) ? null : vector.get(ei);
                 }
 
                 checkSubArray(vector, start, end, result);
@@ -66,16 +66,16 @@ public class ObjectVectorTest extends TestCase {
                             continue;
                         }
 
-                        Object result[] = new Object[end - start];
+                        final Object[] result = new Object[end - start];
 
-                        for (int i = start; i < end; i++) {
-                            result[i - start] = (i < 0 || i >= vector.size()) ? null : vector.get(i);
+                        for (int ei = start; ei < end; ei++) {
+                            result[ei - start] = (ei < 0 || ei >= vector.size()) ? null : vector.get(ei);
                         }
 
-                        Object result2[] = new Object[end2 - start2];
+                        final Object[] result2 = new Object[end2 - start2];
 
-                        for (int i = start2; i < end2; i++) {
-                            result2[i - start2] = (i < 0 || i >= result.length) ? null : result[i];
+                        for (int ei = start2; ei < end2; ei++) {
+                            result2[ei - start2] = (ei < 0 || ei >= result.length) ? null : result[ei];
                         }
 
                         checkDoubleSubArray(vector, start, end, start2, end2, result2);
@@ -85,28 +85,38 @@ public class ObjectVectorTest extends TestCase {
         }
     }
 
-    private void checkSubArray(ObjectVector vector, int start, int end, Object result[]) {
-        ObjectVector subArray = vector.subVector(start, end);
-        Object array[] = subArray.toArray();
+    private void checkSubArray(
+            final ObjectVector<?> vector,
+            final int start,
+            final int end,
+            final Object[] result) {
+        final ObjectVector<?> subArray = vector.subVector(start, end);
+        final Object[] array = subArray.toArray();
         assertEquals(result.length, subArray.size());
         assertEquals(result.length, array.length);
 
-        for (int i = 0; i < result.length; i++) {
-            assertEquals(result[i], subArray.get(i));
-            assertEquals(result[i], array[i]);
+        for (int ei = 0; ei < result.length; ei++) {
+            assertEquals(result[ei], subArray.get(ei));
+            assertEquals(result[ei], array[ei]);
         }
     }
 
-    private void checkDoubleSubArray(ObjectVector vector, int start, int end, int start2, int end2, Object result[]) {
-        ObjectVector subArray = vector.subVector(start, end);
+    private void checkDoubleSubArray(
+            final ObjectVector<?> vector,
+            final int start,
+            final int end,
+            final int start2,
+            final int end2,
+            final Object[] result) {
+        ObjectVector<?> subArray = vector.subVector(start, end);
         subArray = subArray.subVector(start2, end2);
-        Object array[] = subArray.toArray();
+        final Object[] array = subArray.toArray();
         assertEquals(result.length, subArray.size());
         assertEquals(result.length, array.length);
 
-        for (int i = 0; i < result.length; i++) {
-            assertEquals(result[i], subArray.get(i));
-            assertEquals(result[i], array[i]);
+        for (int ei = 0; ei < result.length; ei++) {
+            assertEquals(result[ei], subArray.get(ei));
+            assertEquals(result[ei], array[ei]);
         }
     }
 }

@@ -8,9 +8,11 @@
  */
 package io.deephaven.vector;
 
-import io.deephaven.util.datastructures.LongSizedDataStructure;
+import io.deephaven.base.verify.Require;
+import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfByte;
 import io.deephaven.util.annotations.ArrayType;
 import io.deephaven.util.annotations.ArrayTypeGetter;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 
@@ -20,22 +22,22 @@ import static io.deephaven.util.QueryConstants.NULL_BYTE;
  * A {@link ByteVector} backed by an array.
  */
 @ArrayType(type = byte[].class)
-public class ByteVectorDirect implements ByteVector {
+public final class ByteVectorDirect implements ByteVector {
 
     public static final ByteVector ZERO_LENGTH_VECTOR = new ByteVectorDirect();
 
     private final byte[] data;
 
-    public ByteVectorDirect(final byte... data) {
-        this.data = data;
+    public ByteVectorDirect(@NotNull final byte... data) {
+        this.data = Require.neqNull(data, "data");
     }
 
     @Override
     public byte get(final long index) {
-        if (index < 0 || index > data.length - 1) {
+        if (index < 0 || index >= data.length) {
             return NULL_BYTE;
         }
-        return data[LongSizedDataStructure.intSize("ByteVectorDirect get", index)];
+        return data[(int) index];
     }
 
     @Override
@@ -54,6 +56,14 @@ public class ByteVectorDirect implements ByteVector {
     }
 
     @Override
+    public CloseablePrimitiveIteratorOfByte iterator(final long fromIndexInclusive, final long toIndexExclusive) {
+        if (fromIndexInclusive == 0 && toIndexExclusive == data.length) {
+            return CloseablePrimitiveIteratorOfByte.of(data);
+        }
+        return ByteVector.super.iterator(fromIndexInclusive, toIndexExclusive);
+    }
+
+    @Override
     public long size() {
         return data.length;
     }
@@ -64,12 +74,12 @@ public class ByteVectorDirect implements ByteVector {
     }
 
     @Override
-    public final String toString() {
+    public String toString() {
         return ByteVector.toString(this, 10);
     }
 
     @Override
-    public final boolean equals(final Object obj) {
+    public boolean equals(final Object obj) {
         if (obj instanceof ByteVectorDirect) {
             return Arrays.equals(data, ((ByteVectorDirect) obj).data);
         }
@@ -77,7 +87,7 @@ public class ByteVectorDirect implements ByteVector {
     }
 
     @Override
-    public final int hashCode() {
+    public int hashCode() {
         return ByteVector.hashCode(this);
     }
 }

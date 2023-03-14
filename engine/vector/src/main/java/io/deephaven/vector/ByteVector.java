@@ -8,6 +8,8 @@
  */
 package io.deephaven.vector;
 
+import io.deephaven.base.verify.Require;
+import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfByte;
 import io.deephaven.qst.type.ByteType;
 import io.deephaven.qst.type.PrimitiveVectorType;
 import io.deephaven.util.QueryConstants;
@@ -20,25 +22,55 @@ import java.util.Arrays;
 /**
  * A {@link Vector} of primitive bytes.
  */
-public interface ByteVector extends Vector<ByteVector> {
+public interface ByteVector extends Vector<ByteVector>, Iterable<Byte> {
 
     static PrimitiveVectorType<ByteVector, Byte> type() {
         return PrimitiveVectorType.of(ByteVector.class, ByteType.instance());
     }
 
+    /**
+     * Get the element of this ByteVector at offset {@code index}. If {@code index} is not within range
+     * {@code [0, size())}, will return the {@link QueryConstants#NULL_BYTE null byte}.
+     *
+     * @param index An offset into this ByteVector
+     * @return The element at the specified offset, or the {@link QueryConstants#NULL_BYTE null byte}
+     */
     byte get(long index);
-
-    @Override
-    ByteVector subVector(long fromIndexInclusive, long toIndexExclusive);
-
-    @Override
-    ByteVector subVectorByPositions(long[] positions);
 
     @Override
     byte[] toArray();
 
     @Override
-    long size();
+    @FinalDefault
+    default CloseablePrimitiveIteratorOfByte iterator() {
+        return iterator(0, size());
+    }
+
+    /**
+     * Returns an iterator over a slice of this vector, with equivalent semantics to
+     * {@code subVector(fromIndexInclusive, toIndexExclusive).iterator()}.
+     *
+     * @param fromIndexInclusive The first position to include
+     * @param toIndexExclusive The first position after {@code fromIndexInclusive} to not include
+     * @return An iterator over the requested slice
+     */
+    default CloseablePrimitiveIteratorOfByte iterator(final long fromIndexInclusive, final long toIndexExclusive) {
+        Require.leq(fromIndexInclusive, "fromIndexInclusive", toIndexExclusive, "toIndexExclusive");
+        return new CloseablePrimitiveIteratorOfByte() {
+
+            long nextIndex = fromIndexInclusive;
+
+            @Override
+            public byte nextByte() {
+                return get(nextIndex++);
+            }
+
+            @Override
+            public boolean hasNext() {
+                return nextIndex < toIndexExclusive;
+            }
+        };
+    }
 
     @Override
     @FinalDefault
@@ -51,10 +83,6 @@ public interface ByteVector extends Vector<ByteVector> {
     default String toString(final int prefixLength) {
         return toString(this, prefixLength);
     }
-
-    /** Return a version of this Vector that is flattened out to only reference memory. */
-    @Override
-    ByteVector getDirect();
 
     static String byteValToString(final Object val) {
         return val == null ? NULL_ELEMENT_STRING : primitiveByteValToString((Byte) val);
@@ -77,9 +105,10 @@ public interface ByteVector extends Vector<ByteVector> {
         }
         final StringBuilder builder = new StringBuilder("[");
         final int displaySize = (int) Math.min(vector.size(), prefixLength);
-        builder.append(primitiveByteValToString(vector.get(0)));
-        for (int ei = 1; ei < displaySize; ++ei) {
-            builder.append(',').append(primitiveByteValToString(vector.get(ei)));
+        try (final CloseablePrimitiveIteratorOfByte iterator = vector.iterator(0, displaySize)) {
+            builder.append(primitiveByteValToString(iterator.nextByte()));
+            iterator.forEachRemaining(
+                    (final byte value) -> builder.append(',').append(primitiveByteValToString(value)));
         }
         if (displaySize == vector.size()) {
             builder.append(']');
@@ -108,28 +137,37 @@ public interface ByteVector extends Vector<ByteVector> {
         if (size != bVector.size()) {
             return false;
         }
-        for (long ei = 0; ei < size; ++ei) {
-            // region elementEquals
-            if (aVector.get(ei) != bVector.get(ei)) {
-                return false;
+        if (size == 0) {
+            return true;
+        }
+        // @formatter:off
+        try (final CloseablePrimitiveIteratorOfByte aIterator = aVector.iterator();
+             final CloseablePrimitiveIteratorOfByte bIterator = bVector.iterator()) {
+            // @formatter:on
+            while (aIterator.hasNext()) {
+                if (aIterator.nextByte() != bIterator.nextByte()) {
+                    return false;
+                }
             }
-            // endregion elementEquals
         }
         return true;
     }
 
     /**
-     * Helper method for implementing {@link Object#hashCode()}. Follows the pattern
-     * in {@link Arrays#hashCode(byte[])}.
+     * Helper method for implementing {@link Object#hashCode()}. Follows the pattern in {@link Arrays#hashCode(byte[])}.
      *
      * @param vector The ByteVector to hash
      * @return The hash code
      */
     static int hashCode(@NotNull final ByteVector vector) {
-        final long size = vector.size();
         int result = 1;
-        for (long ei = 0; ei < size; ++ei) {
-            result = 31 * result + Byte.hashCode(vector.get(ei));
+        if (vector.isEmpty()) {
+            return result;
+        }
+        try (final CloseablePrimitiveIteratorOfByte iterator = vector.iterator()) {
+            while (iterator.hasNext()) {
+                result = 31 * result + Byte.hashCode(iterator.nextByte());
+            }
         }
         return result;
     }
@@ -138,6 +176,18 @@ public interface ByteVector extends Vector<ByteVector> {
      * Base class for all "indirect" ByteVector implementations.
      */
     abstract class Indirect implements ByteVector {
+
+        @Override
+        public byte[] toArray() {
+            final int size = intSize("ByteVector.toArray");
+            final byte[] result = new byte[size];
+            try (final CloseablePrimitiveIteratorOfByte iterator = iterator()) {
+                for (int ei = 0; ei < size; ++ei) {
+                    result[ei] = iterator.nextByte();
+                }
+            }
+            return result;
+        }
 
         @Override
         public ByteVector getDirect() {

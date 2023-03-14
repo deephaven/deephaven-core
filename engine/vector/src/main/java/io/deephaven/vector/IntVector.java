@@ -8,6 +8,8 @@
  */
 package io.deephaven.vector;
 
+import io.deephaven.base.verify.Require;
+import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfInt;
 import io.deephaven.qst.type.IntType;
 import io.deephaven.qst.type.PrimitiveVectorType;
 import io.deephaven.util.QueryConstants;
@@ -20,25 +22,55 @@ import java.util.Arrays;
 /**
  * A {@link Vector} of primitive ints.
  */
-public interface IntVector extends Vector<IntVector> {
+public interface IntVector extends Vector<IntVector>, Iterable<Integer> {
 
     static PrimitiveVectorType<IntVector, Integer> type() {
         return PrimitiveVectorType.of(IntVector.class, IntType.instance());
     }
 
+    /**
+     * Get the element of this IntVector at offset {@code index}. If {@code index} is not within range
+     * {@code [0, size())}, will return the {@link QueryConstants#NULL_INT null int}.
+     *
+     * @param index An offset into this IntVector
+     * @return The element at the specified offset, or the {@link QueryConstants#NULL_INT null int}
+     */
     int get(long index);
-
-    @Override
-    IntVector subVector(long fromIndexInclusive, long toIndexExclusive);
-
-    @Override
-    IntVector subVectorByPositions(long[] positions);
 
     @Override
     int[] toArray();
 
     @Override
-    long size();
+    @FinalDefault
+    default CloseablePrimitiveIteratorOfInt iterator() {
+        return iterator(0, size());
+    }
+
+    /**
+     * Returns an iterator over a slice of this vector, with equivalent semantics to
+     * {@code subVector(fromIndexInclusive, toIndexExclusive).iterator()}.
+     *
+     * @param fromIndexInclusive The first position to include
+     * @param toIndexExclusive The first position after {@code fromIndexInclusive} to not include
+     * @return An iterator over the requested slice
+     */
+    default CloseablePrimitiveIteratorOfInt iterator(final long fromIndexInclusive, final long toIndexExclusive) {
+        Require.leq(fromIndexInclusive, "fromIndexInclusive", toIndexExclusive, "toIndexExclusive");
+        return new CloseablePrimitiveIteratorOfInt() {
+
+            long nextIndex = fromIndexInclusive;
+
+            @Override
+            public int nextInt() {
+                return get(nextIndex++);
+            }
+
+            @Override
+            public boolean hasNext() {
+                return nextIndex < toIndexExclusive;
+            }
+        };
+    }
 
     @Override
     @FinalDefault
@@ -51,10 +83,6 @@ public interface IntVector extends Vector<IntVector> {
     default String toString(final int prefixLength) {
         return toString(this, prefixLength);
     }
-
-    /** Return a version of this Vector that is flattened out to only reference memory. */
-    @Override
-    IntVector getDirect();
 
     static String intValToString(final Object val) {
         return val == null ? NULL_ELEMENT_STRING : primitiveIntValToString((Integer) val);
@@ -77,9 +105,10 @@ public interface IntVector extends Vector<IntVector> {
         }
         final StringBuilder builder = new StringBuilder("[");
         final int displaySize = (int) Math.min(vector.size(), prefixLength);
-        builder.append(primitiveIntValToString(vector.get(0)));
-        for (int ei = 1; ei < displaySize; ++ei) {
-            builder.append(',').append(primitiveIntValToString(vector.get(ei)));
+        try (final CloseablePrimitiveIteratorOfInt iterator = vector.iterator(0, displaySize)) {
+            builder.append(primitiveIntValToString(iterator.nextInt()));
+            iterator.forEachRemaining(
+                    (final int value) -> builder.append(',').append(primitiveIntValToString(value)));
         }
         if (displaySize == vector.size()) {
             builder.append(']');
@@ -108,28 +137,37 @@ public interface IntVector extends Vector<IntVector> {
         if (size != bVector.size()) {
             return false;
         }
-        for (long ei = 0; ei < size; ++ei) {
-            // region elementEquals
-            if (aVector.get(ei) != bVector.get(ei)) {
-                return false;
+        if (size == 0) {
+            return true;
+        }
+        // @formatter:off
+        try (final CloseablePrimitiveIteratorOfInt aIterator = aVector.iterator();
+             final CloseablePrimitiveIteratorOfInt bIterator = bVector.iterator()) {
+            // @formatter:on
+            while (aIterator.hasNext()) {
+                if (aIterator.nextInt() != bIterator.nextInt()) {
+                    return false;
+                }
             }
-            // endregion elementEquals
         }
         return true;
     }
 
     /**
-     * Helper method for implementing {@link Object#hashCode()}. Follows the pattern
-     * in {@link Arrays#hashCode(int[])}.
+     * Helper method for implementing {@link Object#hashCode()}. Follows the pattern in {@link Arrays#hashCode(int[])}.
      *
      * @param vector The IntVector to hash
      * @return The hash code
      */
     static int hashCode(@NotNull final IntVector vector) {
-        final long size = vector.size();
         int result = 1;
-        for (long ei = 0; ei < size; ++ei) {
-            result = 31 * result + Integer.hashCode(vector.get(ei));
+        if (vector.isEmpty()) {
+            return result;
+        }
+        try (final CloseablePrimitiveIteratorOfInt iterator = vector.iterator()) {
+            while (iterator.hasNext()) {
+                result = 31 * result + Integer.hashCode(iterator.nextInt());
+            }
         }
         return result;
     }
@@ -138,6 +176,18 @@ public interface IntVector extends Vector<IntVector> {
      * Base class for all "indirect" IntVector implementations.
      */
     abstract class Indirect implements IntVector {
+
+        @Override
+        public int[] toArray() {
+            final int size = intSize("IntVector.toArray");
+            final int[] result = new int[size];
+            try (final CloseablePrimitiveIteratorOfInt iterator = iterator()) {
+                for (int ei = 0; ei < size; ++ei) {
+                    result[ei] = iterator.nextInt();
+                }
+            }
+            return result;
+        }
 
         @Override
         public IntVector getDirect() {

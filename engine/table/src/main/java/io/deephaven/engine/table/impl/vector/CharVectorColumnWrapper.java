@@ -5,14 +5,21 @@ package io.deephaven.engine.table.impl.vector;
 
 import io.deephaven.base.ClampUtil;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.util.datastructures.LongSizedDataStructure;
-import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.base.verify.Require;
+import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfChar;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.rowset.RowSetBuilderRandom;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.iterators.CharacterColumnIterator;
+import io.deephaven.vector.CharSubVector;
 import io.deephaven.vector.CharVector;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Arrays;
+
+import static io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfChar.maybeConcat;
+import static io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfChar.repeat;
+import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
+import static io.deephaven.engine.table.iterators.ColumnIterator.DEFAULT_CHUNK_SIZE;
 import static io.deephaven.util.QueryConstants.NULL_CHAR;
 
 public class CharVectorColumnWrapper extends CharVector.Indirect {
@@ -22,12 +29,17 @@ public class CharVectorColumnWrapper extends CharVector.Indirect {
     private final long startPadding;
     private final long endPadding;
 
-    public CharVectorColumnWrapper(@NotNull final ColumnSource<Character> columnSource, @NotNull final RowSet rowSet) {
+    public CharVectorColumnWrapper(
+            @NotNull final ColumnSource<Character> columnSource,
+            @NotNull final RowSet rowSet) {
         this(columnSource, rowSet, 0, 0);
     }
 
-    public CharVectorColumnWrapper(@NotNull final ColumnSource<Character> columnSource, @NotNull final RowSet rowSet,
-                                   final long startPadding, final long endPadding) {
+    public CharVectorColumnWrapper(
+            @NotNull final ColumnSource<Character> columnSource,
+            @NotNull final RowSet rowSet,
+            final long startPadding,
+            final long endPadding) {
         Assert.neqNull(rowSet, "rowSet");
         this.columnSource = columnSource;
         this.rowSet = rowSet;
@@ -39,7 +51,7 @@ public class CharVectorColumnWrapper extends CharVector.Indirect {
     public char get(long index) {
         index -= startPadding;
 
-        if (index <0 || index > rowSet.size()-1) {
+        if (index < 0 || index >= rowSet.size()) {
             return NULL_CHAR;
         }
 
@@ -48,56 +60,111 @@ public class CharVectorColumnWrapper extends CharVector.Indirect {
 
     @Override
     public CharVector subVector(long fromIndexInclusive, long toIndexExclusive) {
-        fromIndexInclusive -=startPadding;
-        toIndexExclusive -=startPadding;
+        fromIndexInclusive -= startPadding;
+        toIndexExclusive -= startPadding;
 
         final long realFrom = ClampUtil.clampLong(0, rowSet.size(), fromIndexInclusive);
         final long realTo = ClampUtil.clampLong(0, rowSet.size(), toIndexExclusive);
 
-        long newStartPadding= toIndexExclusive <0 ? toIndexExclusive - fromIndexInclusive : Math.max(0, -fromIndexInclusive);
-        long newEndPadding= fromIndexInclusive >= rowSet.size() ? toIndexExclusive - fromIndexInclusive : Math.max(0, toIndexExclusive - rowSet.size());
+        final long newStartPadding = toIndexExclusive < 0
+                ? toIndexExclusive - fromIndexInclusive
+                : Math.max(0, -fromIndexInclusive);
+        final long newEndPadding = fromIndexInclusive >= rowSet.size()
+                ? toIndexExclusive - fromIndexInclusive
+                : Math.max(0, toIndexExclusive - rowSet.size());
 
-        return new CharVectorColumnWrapper(columnSource, rowSet.subSetByPositionRange(realFrom, realTo), newStartPadding, newEndPadding);
+        return new CharVectorColumnWrapper(columnSource, rowSet.subSetByPositionRange(realFrom, realTo),
+                newStartPadding, newEndPadding);
     }
 
     @Override
-    public CharVector subVectorByPositions(long [] positions) {
-        RowSetBuilderRandom builder = RowSetFactory.builderRandom();
-
-        for (long position : positions) {
-            final long realPos = position - startPadding;
-
-            if (realPos < rowSet.size()) {
-                builder.addKey(rowSet.get(realPos));
-            }
-        }
-
-        return new CharVectorColumnWrapper(columnSource, builder.build(), 0, 0);
+    public CharVector subVectorByPositions(final long[] positions) {
+        return new CharSubVector(this, positions);
     }
 
-    @Override
-    public char[] toArray() {
-        return toArray(false,Integer.MAX_VALUE);
-    }
-
-    public char[] toArray(boolean shouldBeNullIfOutofBounds,int maxSize) {
-        if (shouldBeNullIfOutofBounds && (startPadding>0 || endPadding>0)){
+    public char[] toArray(final boolean shouldBeNullIfOutOfBounds, final int maxSize) {
+        if (shouldBeNullIfOutOfBounds && (startPadding > 0 || endPadding > 0)) {
             return null;
         }
 
-        int sz = LongSizedDataStructure.intSize("toArray", Math.min(size(),maxSize));
+        final int size = (int) Math.min(size(), maxSize);
+        final char[] result = new char[size];
+        int nextFillIndex;
 
-        char[] result = new char[sz];
-        for (int i = 0; i < sz; i++) {
-            result[i] = get(i);
+        final int startPaddingFillAmount = (int) Math.min(startPadding, size);
+        if (startPaddingFillAmount > 0) {
+            Arrays.fill(result, 0, startPaddingFillAmount, NULL_CHAR);
+            nextFillIndex = startPaddingFillAmount;
+        } else {
+            nextFillIndex = 0;
         }
-        
+
+        final int rowSetFillAmount = (int) Math.min(rowSet.size(), size - nextFillIndex);
+        if (rowSetFillAmount > 0) {
+            try (final CharacterColumnIterator iterator = new CharacterColumnIterator(columnSource, rowSet,
+                    DEFAULT_CHUNK_SIZE, rowSet.firstRowKey(), rowSetFillAmount)) {
+                for (int ri = 0; ri < rowSetFillAmount; ++ri) {
+                    result[nextFillIndex++] = iterator.nextChar();
+                }
+            }
+        }
+
+        final int endPaddingFillAmount = (int) Math.min(endPadding, size - nextFillIndex);
+        if (endPaddingFillAmount > 0) {
+            Arrays.fill(result, nextFillIndex, nextFillIndex + endPaddingFillAmount, NULL_CHAR);
+        }
+
         return result;
+    }
+
+    @Override
+    public CloseablePrimitiveIteratorOfChar iterator(final long fromIndexInclusive, final long toIndexExclusive) {
+        final long rowSetSize = rowSet.size();
+        if (startPadding == 0 && endPadding == 0 && fromIndexInclusive == 0 && toIndexExclusive == rowSetSize) {
+            return new CharacterColumnIterator(columnSource, rowSet, DEFAULT_CHUNK_SIZE,
+                    rowSet.firstRowKey(), rowSetSize);
+        }
+
+        Require.leq(fromIndexInclusive, "fromIndexInclusive", toIndexExclusive, "toIndexExclusive");
+
+        final long totalWanted = toIndexExclusive - fromIndexInclusive;
+        final long includedInitialNulls = fromIndexInclusive < startPadding
+                ? Math.min(startPadding - fromIndexInclusive, totalWanted)
+                : 0;
+        long remaining = totalWanted - includedInitialNulls;
+
+        final long firstIncludedRowKey;
+        final long includedRows;
+        if (remaining > 0 && rowSetSize > 0 && fromIndexInclusive < startPadding + rowSetSize) {
+            if (fromIndexInclusive <= startPadding) {
+                firstIncludedRowKey = rowSet.firstRowKey();
+                includedRows = Math.min(rowSetSize, remaining);
+            } else {
+                final long firstIncludedRowPosition = fromIndexInclusive - startPadding;
+                firstIncludedRowKey = rowSet.get(firstIncludedRowPosition);
+                includedRows = Math.min(rowSetSize - firstIncludedRowPosition, remaining);
+            }
+            remaining -= includedRows;
+        } else {
+            firstIncludedRowKey = NULL_ROW_KEY;
+            includedRows = 0;
+        }
+
+        final CloseablePrimitiveIteratorOfChar initialNullsIterator = includedInitialNulls > 0
+                ? repeat(NULL_CHAR, includedInitialNulls)
+                : null;
+        final CloseablePrimitiveIteratorOfChar rowsIterator = includedRows > 0
+                ? new CharacterColumnIterator(columnSource, rowSet, DEFAULT_CHUNK_SIZE, firstIncludedRowKey,
+                        includedRows)
+                : null;
+        final CloseablePrimitiveIteratorOfChar finalNullsIterator = remaining > 0
+                ? repeat(NULL_CHAR, remaining)
+                : null;
+        return maybeConcat(initialNullsIterator, rowsIterator, finalNullsIterator);
     }
 
     @Override
     public long size() {
         return startPadding + rowSet.size() + endPadding;
     }
-
 }

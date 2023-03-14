@@ -8,9 +8,11 @@
  */
 package io.deephaven.vector;
 
-import io.deephaven.util.datastructures.LongSizedDataStructure;
+import io.deephaven.base.verify.Require;
+import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfFloat;
 import io.deephaven.util.annotations.ArrayType;
 import io.deephaven.util.annotations.ArrayTypeGetter;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 
@@ -20,22 +22,22 @@ import static io.deephaven.util.QueryConstants.NULL_FLOAT;
  * A {@link FloatVector} backed by an array.
  */
 @ArrayType(type = float[].class)
-public class FloatVectorDirect implements FloatVector {
+public final class FloatVectorDirect implements FloatVector {
 
     public static final FloatVector ZERO_LENGTH_VECTOR = new FloatVectorDirect();
 
     private final float[] data;
 
-    public FloatVectorDirect(final float... data) {
-        this.data = data;
+    public FloatVectorDirect(@NotNull final float... data) {
+        this.data = Require.neqNull(data, "data");
     }
 
     @Override
     public float get(final long index) {
-        if (index < 0 || index > data.length - 1) {
+        if (index < 0 || index >= data.length) {
             return NULL_FLOAT;
         }
-        return data[LongSizedDataStructure.intSize("FloatVectorDirect get", index)];
+        return data[(int) index];
     }
 
     @Override
@@ -54,6 +56,14 @@ public class FloatVectorDirect implements FloatVector {
     }
 
     @Override
+    public CloseablePrimitiveIteratorOfFloat iterator(final long fromIndexInclusive, final long toIndexExclusive) {
+        if (fromIndexInclusive == 0 && toIndexExclusive == data.length) {
+            return CloseablePrimitiveIteratorOfFloat.of(data);
+        }
+        return FloatVector.super.iterator(fromIndexInclusive, toIndexExclusive);
+    }
+
+    @Override
     public long size() {
         return data.length;
     }
@@ -64,12 +74,12 @@ public class FloatVectorDirect implements FloatVector {
     }
 
     @Override
-    public final String toString() {
+    public String toString() {
         return FloatVector.toString(this, 10);
     }
 
     @Override
-    public final boolean equals(final Object obj) {
+    public boolean equals(final Object obj) {
         if (obj instanceof FloatVectorDirect) {
             return Arrays.equals(data, ((FloatVectorDirect) obj).data);
         }
@@ -77,7 +87,7 @@ public class FloatVectorDirect implements FloatVector {
     }
 
     @Override
-    public final int hashCode() {
+    public int hashCode() {
         return FloatVector.hashCode(this);
     }
 }

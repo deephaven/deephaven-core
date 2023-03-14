@@ -18,21 +18,54 @@ public interface Vector<VECTOR_TYPE extends Vector<VECTOR_TYPE>> extends LongSiz
 
     String NULL_ELEMENT_STRING = " ";
 
+    /**
+     * Get a Vector that represents a slice of this Vector.
+     *
+     * @param fromIndexInclusive The first offset into this Vector to include in the result; if negative, the result
+     *        will have a range of null values at offsets in {@code [0, -fromIndexInclusive)}
+     * @param toIndexExclusive The first offset into this Vector to not include in the result; if larger than
+     *        {@code size()}, the result will have a range of null values at the corresponding offsets
+     * @return The sub-Vector specified by {@code [fromIndexInclusive, toIndexExclusive)}
+     */
     VECTOR_TYPE subVector(long fromIndexInclusive, long toIndexExclusive);
 
+    /**
+     * Get a Vector that represents a set of offset positions in this Vector.
+     *
+     * @param positions The offsets to include; if not within {@code [0, size())}, the corresponding offset in the
+     *        result will contain the appropriate null value
+     * @return The sub-Vector specified by {@code positions}
+     */
     VECTOR_TYPE subVectorByPositions(long[] positions);
 
+    /**
+     * @return An array representation of the elements of this Vector
+     */
     Object toArray();
 
+    /**
+     * @return The type of elements contained by this Vector
+     */
     Class<?> getComponentType();
 
+    /**
+     * Get a String representation of a prefix of this Vector.
+     *
+     * @param prefixLength The number of elements to include
+     * @return The specified prefix String representation
+     */
     String toString(int prefixLength);
 
+    /**
+     * @return Whether this Vector is empty
+     */
     default boolean isEmpty() {
         return size() == 0;
     }
 
-    /** Return a version of this Vector that is flattened out to only reference memory. */
+    /**
+     * @return A version of this Vector that is flattened out to only reference memory
+     */
     VECTOR_TYPE getDirect();
 
     static long clampIndex(final long validFromInclusive, final long validToExclusive, final long index) {
@@ -46,17 +79,20 @@ public interface Vector<VECTOR_TYPE extends Vector<VECTOR_TYPE>> extends LongSiz
         Assert.leq(selectedRangeStartInclusive, "selectedRangeStartInclusive",
                 selectedRangeEndExclusive, "selectedRangeEndExclusive");
         return LongStream.range(selectedRangeStartInclusive, selectedRangeEndExclusive)
-                .map(s -> s < 0 || s >= currentPositions.length
+                .map((final long selected) -> selected < 0 || selected >= currentPositions.length
                         ? -1
-                        : currentPositions[LongSizedDataStructure.intSize("mapSelectedPositionRange", s)])
+                        : currentPositions[(int) selected])
                 .toArray();
     }
 
     static long[] mapSelectedPositions(
             @NotNull final long[] currentPositions,
             @NotNull final long[] selectedPositions) {
-        return Arrays.stream(selectedPositions).map(s -> s < 0 || s >= currentPositions.length ? -1
-                : currentPositions[LongSizedDataStructure.intSize("mapSelectedPositions", s)]).toArray();
+        return Arrays.stream(selectedPositions)
+                .map((final long selected) -> selected < 0 || selected >= currentPositions.length
+                        ? -1
+                        : currentPositions[(int) selected])
+                .toArray();
     }
 
     static Function<Object, String> classToHelper(final Class<?> clazz) {

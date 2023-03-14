@@ -8,6 +8,8 @@
  */
 package io.deephaven.vector;
 
+import io.deephaven.base.verify.Require;
+import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfDouble;
 import io.deephaven.qst.type.DoubleType;
 import io.deephaven.qst.type.PrimitiveVectorType;
 import io.deephaven.util.QueryConstants;
@@ -20,25 +22,55 @@ import java.util.Arrays;
 /**
  * A {@link Vector} of primitive doubles.
  */
-public interface DoubleVector extends Vector<DoubleVector> {
+public interface DoubleVector extends Vector<DoubleVector>, Iterable<Double> {
 
     static PrimitiveVectorType<DoubleVector, Double> type() {
         return PrimitiveVectorType.of(DoubleVector.class, DoubleType.instance());
     }
 
+    /**
+     * Get the element of this DoubleVector at offset {@code index}. If {@code index} is not within range
+     * {@code [0, size())}, will return the {@link QueryConstants#NULL_DOUBLE null double}.
+     *
+     * @param index An offset into this DoubleVector
+     * @return The element at the specified offset, or the {@link QueryConstants#NULL_DOUBLE null double}
+     */
     double get(long index);
-
-    @Override
-    DoubleVector subVector(long fromIndexInclusive, long toIndexExclusive);
-
-    @Override
-    DoubleVector subVectorByPositions(long[] positions);
 
     @Override
     double[] toArray();
 
     @Override
-    long size();
+    @FinalDefault
+    default CloseablePrimitiveIteratorOfDouble iterator() {
+        return iterator(0, size());
+    }
+
+    /**
+     * Returns an iterator over a slice of this vector, with equivalent semantics to
+     * {@code subVector(fromIndexInclusive, toIndexExclusive).iterator()}.
+     *
+     * @param fromIndexInclusive The first position to include
+     * @param toIndexExclusive The first position after {@code fromIndexInclusive} to not include
+     * @return An iterator over the requested slice
+     */
+    default CloseablePrimitiveIteratorOfDouble iterator(final long fromIndexInclusive, final long toIndexExclusive) {
+        Require.leq(fromIndexInclusive, "fromIndexInclusive", toIndexExclusive, "toIndexExclusive");
+        return new CloseablePrimitiveIteratorOfDouble() {
+
+            long nextIndex = fromIndexInclusive;
+
+            @Override
+            public double nextDouble() {
+                return get(nextIndex++);
+            }
+
+            @Override
+            public boolean hasNext() {
+                return nextIndex < toIndexExclusive;
+            }
+        };
+    }
 
     @Override
     @FinalDefault
@@ -51,10 +83,6 @@ public interface DoubleVector extends Vector<DoubleVector> {
     default String toString(final int prefixLength) {
         return toString(this, prefixLength);
     }
-
-    /** Return a version of this Vector that is flattened out to only reference memory. */
-    @Override
-    DoubleVector getDirect();
 
     static String doubleValToString(final Object val) {
         return val == null ? NULL_ELEMENT_STRING : primitiveDoubleValToString((Double) val);
@@ -77,9 +105,10 @@ public interface DoubleVector extends Vector<DoubleVector> {
         }
         final StringBuilder builder = new StringBuilder("[");
         final int displaySize = (int) Math.min(vector.size(), prefixLength);
-        builder.append(primitiveDoubleValToString(vector.get(0)));
-        for (int ei = 1; ei < displaySize; ++ei) {
-            builder.append(',').append(primitiveDoubleValToString(vector.get(ei)));
+        try (final CloseablePrimitiveIteratorOfDouble iterator = vector.iterator(0, displaySize)) {
+            builder.append(primitiveDoubleValToString(iterator.nextDouble()));
+            iterator.forEachRemaining(
+                    (final double value) -> builder.append(',').append(primitiveDoubleValToString(value)));
         }
         if (displaySize == vector.size()) {
             builder.append(']');
@@ -108,28 +137,37 @@ public interface DoubleVector extends Vector<DoubleVector> {
         if (size != bVector.size()) {
             return false;
         }
-        for (long ei = 0; ei < size; ++ei) {
-            // region elementEquals
-            if (aVector.get(ei) != bVector.get(ei)) {
-                return false;
+        if (size == 0) {
+            return true;
+        }
+        // @formatter:off
+        try (final CloseablePrimitiveIteratorOfDouble aIterator = aVector.iterator();
+             final CloseablePrimitiveIteratorOfDouble bIterator = bVector.iterator()) {
+            // @formatter:on
+            while (aIterator.hasNext()) {
+                if (aIterator.nextDouble() != bIterator.nextDouble()) {
+                    return false;
+                }
             }
-            // endregion elementEquals
         }
         return true;
     }
 
     /**
-     * Helper method for implementing {@link Object#hashCode()}. Follows the pattern
-     * in {@link Arrays#hashCode(double[])}.
+     * Helper method for implementing {@link Object#hashCode()}. Follows the pattern in {@link Arrays#hashCode(double[])}.
      *
      * @param vector The DoubleVector to hash
      * @return The hash code
      */
     static int hashCode(@NotNull final DoubleVector vector) {
-        final long size = vector.size();
         int result = 1;
-        for (long ei = 0; ei < size; ++ei) {
-            result = 31 * result + Double.hashCode(vector.get(ei));
+        if (vector.isEmpty()) {
+            return result;
+        }
+        try (final CloseablePrimitiveIteratorOfDouble iterator = vector.iterator()) {
+            while (iterator.hasNext()) {
+                result = 31 * result + Double.hashCode(iterator.nextDouble());
+            }
         }
         return result;
     }
@@ -138,6 +176,18 @@ public interface DoubleVector extends Vector<DoubleVector> {
      * Base class for all "indirect" DoubleVector implementations.
      */
     abstract class Indirect implements DoubleVector {
+
+        @Override
+        public double[] toArray() {
+            final int size = intSize("DoubleVector.toArray");
+            final double[] result = new double[size];
+            try (final CloseablePrimitiveIteratorOfDouble iterator = iterator()) {
+                for (int ei = 0; ei < size; ++ei) {
+                    result[ei] = iterator.nextDouble();
+                }
+            }
+            return result;
+        }
 
         @Override
         public DoubleVector getDirect() {

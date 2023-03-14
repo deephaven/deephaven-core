@@ -12,7 +12,7 @@ import io.deephaven.vector.*;
 import junit.framework.TestCase;
 
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
 
 /**
@@ -21,36 +21,35 @@ import java.util.Random;
 public class ObjectVectorColumnWrapperTest extends TestCase {
 
     public void testVectorColumnWrapper() {
-        // noinspection unchecked
-        ObjectVector vector = new ObjectVectorColumnWrapper(
+        final ObjectVector<?> vector = new ObjectVectorColumnWrapper<>(
                 ArrayBackedColumnSource.getMemoryColumnSourceUntyped(new String[] {"a", "b", "c"}),
                 RowSetFactory.fromRange(0, 2));
         assertEquals(3, vector.size());
         assertEquals("a", vector.get(0));
         assertEquals("b", vector.get(1));
         assertEquals("c", vector.get(2));
-        assertEquals(null, vector.get(3));
-        assertEquals(null, vector.get(-1));
-        assertEquals(Arrays.asList("a", "b", "c"), Arrays.asList(vector.toArray()));
+        assertNull(vector.get(3));
+        assertNull(vector.get(-1));
+        assertEquals(List.of("a", "b", "c"), List.of(vector.toArray()));
         assertEquals(0, vector.subVector(0, 0).size());
-        assertEquals(Arrays.asList(), Arrays.asList(vector.subVector(0, 0).toArray()));
-        assertEquals(null, vector.subVector(0, 0).get(0));
-        assertEquals(null, vector.subVector(0, 0).get(-1));
+        assertEquals(List.of(), List.of(vector.subVector(0, 0).toArray()));
+        assertNull(vector.subVector(0, 0).get(0));
+        assertNull(vector.subVector(0, 0).get(-1));
 
         assertEquals(1, vector.subVector(0, 1).size());
-        assertEquals(Arrays.asList("a"), Arrays.asList(vector.subVector(0, 1).toArray()));
-        assertEquals(null, vector.subVector(0, 1).get(1));
-        assertEquals(null, vector.subVector(0, 1).get(-1));
+        assertEquals(List.of("a"), List.of(vector.subVector(0, 1).toArray()));
+        assertNull(vector.subVector(0, 1).get(1));
+        assertNull(vector.subVector(0, 1).get(-1));
 
         assertEquals(1, vector.subVector(1, 2).size());
-        assertEquals(Arrays.asList("b"), Arrays.asList(vector.subVector(1, 2).toArray()));
-        assertEquals(null, vector.subVector(0, 1).get(1));
-        assertEquals(null, vector.subVector(0, 1).get(-1));
+        assertEquals(List.of("b"), List.of(vector.subVector(1, 2).toArray()));
+        assertNull(vector.subVector(0, 1).get(1));
+        assertNull(vector.subVector(0, 1).get(-1));
 
         assertEquals(2, vector.subVector(1, 3).size());
-        assertEquals(Arrays.asList("b", "c"), Arrays.asList(vector.subVector(1, 3).toArray()));
-        assertEquals(null, vector.subVector(1, 3).get(2));
-        assertEquals(null, vector.subVector(0, 1).get(-1));
+        assertEquals(List.of("b", "c"), List.of(vector.subVector(1, 3).toArray()));
+        assertNull(vector.subVector(1, 3).get(2));
+        assertNull(vector.subVector(0, 1).get(-1));
     }
 
     public void testSubVectorByPositions() {
@@ -59,11 +58,11 @@ public class ObjectVectorColumnWrapperTest extends TestCase {
         for (int ii = 0; ii < 6; ++ii) {
             integerArraySource.set(ii, (ii + 1) * 10);
         }
-        ObjectVector<Integer> columnVector =
+        final ObjectVector<Integer> columnVector =
                 new ObjectVectorColumnWrapper<>(integerArraySource, RowSetFactory.fromRange(0, 5));
-        IntVector intVectorDirect = new IntVectorDirect(10, 20, 30, 40, 50, 60);
+        final IntVector intVectorDirect = new IntVectorDirect(10, 20, 30, 40, 50, 60);
 
-        Random random = new Random(42);
+        final Random random = new Random(42);
 
         for (int step = 0; step < 50; ++step) {
             ArrayList<Integer> expected = new ArrayList<>();
@@ -75,9 +74,10 @@ public class ObjectVectorColumnWrapperTest extends TestCase {
                 }
             }
 
-            ObjectVector<Integer> columnResult =
+            final ObjectVector<Integer> columnResult =
                     columnVector.subVectorByPositions(positions.toArray(new long[positions.size()]));
-            IntVector directResult = intVectorDirect.subVectorByPositions(positions.toArray(new long[positions.size()]));
+            final IntVector directResult =
+                    intVectorDirect.subVectorByPositions(positions.toArray(new long[positions.size()]));
 
             assertEquals(expected.size(), columnResult.size());
             assertEquals(expected.size(), directResult.size());
@@ -90,18 +90,17 @@ public class ObjectVectorColumnWrapperTest extends TestCase {
     }
 
     /**
-     * Verify that a ObjectVectorColumnWrapper can correctly invoke the 'getDirect' operation even when one of the column
-     * sources is null.
+     * Verify that a ObjectVectorColumnWrapper can correctly invoke the 'getDirect' operation even when one of the
+     * column sources is null.
      */
     public void testGetDirect() {
-        ObjectVectorDirect vectorDirect = new ObjectVectorDirect<>("a", "b", "c");
-        // noinspection unchecked
-        ObjectVectorColumnWrapper vector = new ObjectVectorColumnWrapper(
+        final ObjectVectorDirect<?> vectorDirect = new ObjectVectorDirect<>("a", "b", "c");
+        final ObjectVectorColumnWrapper<?> vector = new ObjectVectorColumnWrapper<>(
                 ArrayBackedColumnSource.getMemoryColumnSourceUntyped(new Vector[] {vectorDirect, null}),
                 RowSetFactory.fromRange(0, 1));
-        Vector base = vector.getDirect();
+        final Vector<?> base = vector.getDirect();
         assertEquals(2, base.intSize());
         assertTrue(ObjectVectorDirect.class.isAssignableFrom(base.getClass()));
-        assertNull(((ObjectVectorDirect) base).get(1));
+        assertNull(((ObjectVectorDirect<?>) base).get(1));
     }
 }

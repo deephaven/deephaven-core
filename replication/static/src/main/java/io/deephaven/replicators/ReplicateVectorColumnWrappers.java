@@ -13,8 +13,6 @@ public class ReplicateVectorColumnWrappers {
         charToAllButBoolean(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/vector/CharVectorColumnWrapper.java");
         charToAllButBoolean(
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/vector/PrevCharVectorColumnWrapper.java");
-        charToAllButBoolean(
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/vector/CharVectorColumnWrapperTest.java");
     }
 }

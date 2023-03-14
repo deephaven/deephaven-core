@@ -8,6 +8,8 @@
  */
 package io.deephaven.vector;
 
+import io.deephaven.base.verify.Require;
+import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfFloat;
 import io.deephaven.qst.type.FloatType;
 import io.deephaven.qst.type.PrimitiveVectorType;
 import io.deephaven.util.QueryConstants;
@@ -20,25 +22,55 @@ import java.util.Arrays;
 /**
  * A {@link Vector} of primitive floats.
  */
-public interface FloatVector extends Vector<FloatVector> {
+public interface FloatVector extends Vector<FloatVector>, Iterable<Float> {
 
     static PrimitiveVectorType<FloatVector, Float> type() {
         return PrimitiveVectorType.of(FloatVector.class, FloatType.instance());
     }
 
+    /**
+     * Get the element of this FloatVector at offset {@code index}. If {@code index} is not within range
+     * {@code [0, size())}, will return the {@link QueryConstants#NULL_FLOAT null float}.
+     *
+     * @param index An offset into this FloatVector
+     * @return The element at the specified offset, or the {@link QueryConstants#NULL_FLOAT null float}
+     */
     float get(long index);
-
-    @Override
-    FloatVector subVector(long fromIndexInclusive, long toIndexExclusive);
-
-    @Override
-    FloatVector subVectorByPositions(long[] positions);
 
     @Override
     float[] toArray();
 
     @Override
-    long size();
+    @FinalDefault
+    default CloseablePrimitiveIteratorOfFloat iterator() {
+        return iterator(0, size());
+    }
+
+    /**
+     * Returns an iterator over a slice of this vector, with equivalent semantics to
+     * {@code subVector(fromIndexInclusive, toIndexExclusive).iterator()}.
+     *
+     * @param fromIndexInclusive The first position to include
+     * @param toIndexExclusive The first position after {@code fromIndexInclusive} to not include
+     * @return An iterator over the requested slice
+     */
+    default CloseablePrimitiveIteratorOfFloat iterator(final long fromIndexInclusive, final long toIndexExclusive) {
+        Require.leq(fromIndexInclusive, "fromIndexInclusive", toIndexExclusive, "toIndexExclusive");
+        return new CloseablePrimitiveIteratorOfFloat() {
+
+            long nextIndex = fromIndexInclusive;
+
+            @Override
+            public float nextFloat() {
+                return get(nextIndex++);
+            }
+
+            @Override
+            public boolean hasNext() {
+                return nextIndex < toIndexExclusive;
+            }
+        };
+    }
 
     @Override
     @FinalDefault
@@ -51,10 +83,6 @@ public interface FloatVector extends Vector<FloatVector> {
     default String toString(final int prefixLength) {
         return toString(this, prefixLength);
     }
-
-    /** Return a version of this Vector that is flattened out to only reference memory. */
-    @Override
-    FloatVector getDirect();
 
     static String floatValToString(final Object val) {
         return val == null ? NULL_ELEMENT_STRING : primitiveFloatValToString((Float) val);
@@ -77,9 +105,10 @@ public interface FloatVector extends Vector<FloatVector> {
         }
         final StringBuilder builder = new StringBuilder("[");
         final int displaySize = (int) Math.min(vector.size(), prefixLength);
-        builder.append(primitiveFloatValToString(vector.get(0)));
-        for (int ei = 1; ei < displaySize; ++ei) {
-            builder.append(',').append(primitiveFloatValToString(vector.get(ei)));
+        try (final CloseablePrimitiveIteratorOfFloat iterator = vector.iterator(0, displaySize)) {
+            builder.append(primitiveFloatValToString(iterator.nextFloat()));
+            iterator.forEachRemaining(
+                    (final float value) -> builder.append(',').append(primitiveFloatValToString(value)));
         }
         if (displaySize == vector.size()) {
             builder.append(']');
@@ -108,28 +137,37 @@ public interface FloatVector extends Vector<FloatVector> {
         if (size != bVector.size()) {
             return false;
         }
-        for (long ei = 0; ei < size; ++ei) {
-            // region elementEquals
-            if (aVector.get(ei) != bVector.get(ei)) {
-                return false;
+        if (size == 0) {
+            return true;
+        }
+        // @formatter:off
+        try (final CloseablePrimitiveIteratorOfFloat aIterator = aVector.iterator();
+             final CloseablePrimitiveIteratorOfFloat bIterator = bVector.iterator()) {
+            // @formatter:on
+            while (aIterator.hasNext()) {
+                if (aIterator.nextFloat() != bIterator.nextFloat()) {
+                    return false;
+                }
             }
-            // endregion elementEquals
         }
         return true;
     }
 
     /**
-     * Helper method for implementing {@link Object#hashCode()}. Follows the pattern
-     * in {@link Arrays#hashCode(float[])}.
+     * Helper method for implementing {@link Object#hashCode()}. Follows the pattern in {@link Arrays#hashCode(float[])}.
      *
      * @param vector The FloatVector to hash
      * @return The hash code
      */
     static int hashCode(@NotNull final FloatVector vector) {
-        final long size = vector.size();
         int result = 1;
-        for (long ei = 0; ei < size; ++ei) {
-            result = 31 * result + Float.hashCode(vector.get(ei));
+        if (vector.isEmpty()) {
+            return result;
+        }
+        try (final CloseablePrimitiveIteratorOfFloat iterator = vector.iterator()) {
+            while (iterator.hasNext()) {
+                result = 31 * result + Float.hashCode(iterator.nextFloat());
+            }
         }
         return result;
     }
@@ -138,6 +176,18 @@ public interface FloatVector extends Vector<FloatVector> {
      * Base class for all "indirect" FloatVector implementations.
      */
     abstract class Indirect implements FloatVector {
+
+        @Override
+        public float[] toArray() {
+            final int size = intSize("FloatVector.toArray");
+            final float[] result = new float[size];
+            try (final CloseablePrimitiveIteratorOfFloat iterator = iterator()) {
+                for (int ei = 0; ei < size; ++ei) {
+                    result[ei] = iterator.nextFloat();
+                }
+            }
+            return result;
+        }
 
         @Override
         public FloatVector getDirect() {

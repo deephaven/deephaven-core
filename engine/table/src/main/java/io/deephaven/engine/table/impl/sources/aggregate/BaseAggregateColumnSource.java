@@ -21,6 +21,7 @@ abstract class BaseAggregateColumnSource<DB_ARRAY_TYPE extends Vector, COMPONENT
         extends AbstractColumnSource<DB_ARRAY_TYPE> implements AggregateColumnSource<DB_ARRAY_TYPE, COMPONENT_TYPE> {
 
     final ColumnSource<COMPONENT_TYPE> aggregatedSource;
+    final ColumnSource<COMPONENT_TYPE> aggregatedSourcePrev;
     final ColumnSource<? extends RowSet> groupRowSetSource;
 
     BaseAggregateColumnSource(@NotNull final Class<DB_ARRAY_TYPE> vectorType,
@@ -28,6 +29,7 @@ abstract class BaseAggregateColumnSource<DB_ARRAY_TYPE extends Vector, COMPONENT
             @NotNull final ColumnSource<? extends RowSet> groupRowSetSource) {
         super(vectorType, aggregatedSource.getType());
         this.aggregatedSource = aggregatedSource;
+        aggregatedSourcePrev = aggregatedSource.isImmutable() ? aggregatedSource : aggregatedSource.getPrevSource();
         this.groupRowSetSource = groupRowSetSource;
     }
 

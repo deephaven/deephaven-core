@@ -3,14 +3,16 @@
  */
 package io.deephaven.vector;
 
-import io.deephaven.util.datastructures.LongSizedDataStructure;
+import io.deephaven.base.verify.Require;
+import io.deephaven.engine.primitive.iterator.CloseableIterator;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 
 /**
  * An {@link ObjectVector} backed by an array.
  */
-public class ObjectVectorDirect<COMPONENT_TYPE> implements ObjectVector<COMPONENT_TYPE> {
+public final class ObjectVectorDirect<COMPONENT_TYPE> implements ObjectVector<COMPONENT_TYPE> {
 
     public static final ObjectVector<?> ZERO_LENGTH_VECTOR = new ObjectVectorDirect<>();
 
@@ -18,17 +20,17 @@ public class ObjectVectorDirect<COMPONENT_TYPE> implements ObjectVector<COMPONEN
     private final Class<COMPONENT_TYPE> componentType;
 
     @SuppressWarnings("unchecked")
-    public ObjectVectorDirect(final COMPONENT_TYPE... data) {
-        this.data = data;
-        componentType = (Class<COMPONENT_TYPE>) (data == null ? Object.class : data.getClass().getComponentType());
+    public ObjectVectorDirect(@NotNull final COMPONENT_TYPE... data) {
+        this.data = Require.neqNull(data, "data");
+        componentType = (Class<COMPONENT_TYPE>) data.getClass().getComponentType();
     }
 
     @Override
     public COMPONENT_TYPE get(final long index) {
-        if (index < 0 || index > data.length - 1) {
+        if (index < 0 || index >= data.length) {
             return null;
         }
-        return data[LongSizedDataStructure.intSize("ObjectVectorDirect.get", index)];
+        return data[(int) index];
     }
 
     @Override
@@ -47,6 +49,14 @@ public class ObjectVectorDirect<COMPONENT_TYPE> implements ObjectVector<COMPONEN
     }
 
     @Override
+    public CloseableIterator<COMPONENT_TYPE> iterator(final long fromIndexInclusive, final long toIndexExclusive) {
+        if (fromIndexInclusive == 0 && toIndexExclusive == data.length) {
+            return CloseableIterator.of(data);
+        }
+        return ObjectVector.super.iterator(fromIndexInclusive, toIndexExclusive);
+    }
+
+    @Override
     public long size() {
         return data.length;
     }
@@ -62,12 +72,12 @@ public class ObjectVectorDirect<COMPONENT_TYPE> implements ObjectVector<COMPONEN
     }
 
     @Override
-    public final String toString() {
+    public String toString() {
         return ObjectVector.toString(this, 10);
     }
 
     @Override
-    public final boolean equals(final Object obj) {
+    public boolean equals(final Object obj) {
         if (obj instanceof ObjectVectorDirect) {
             return Arrays.equals(data, ((ObjectVectorDirect<?>) obj).data);
         }
@@ -75,7 +85,7 @@ public class ObjectVectorDirect<COMPONENT_TYPE> implements ObjectVector<COMPONEN
     }
 
     @Override
-    public final int hashCode() {
+    public int hashCode() {
         return ObjectVector.hashCode(this);
     }
 }
