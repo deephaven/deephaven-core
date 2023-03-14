@@ -49,8 +49,9 @@ cd ${DHROOT}/py/client2
 Then run these commands to build the Deephaven shared library:
 
 ```
-rm -rf build *.so && \
-CFLAGS="-I${DHLIB}/deephaven/include" LDFLAGS="-L${DHLIB}/deephaven/lib -L${DHLIB}/protobuf/lib -L${DHLIB}/arrow/lib -L${DHLIB}/grpc/lib -L${DHLIB}/abseil/lib -L${DHLIB}/re2/lib" python setup.py build_ext -i
+export PFX=/usr/local/dhcpp-230313/local
+export LD_LIBRARY_PATH=$PFX/arrow/lib:$PFX/cares/lib
+rm -rf build *.so && CFLAGS="-I$PFX/deephaven/include" LDFLAGS="-L$PFX/deephaven/lib -L$PFX/protobuf/lib -L$PFX/arrow/lib -L$PFX/grpc/lib -L$PFX/abseil/lib -L$PFX/re2/lib -L$PFX/cares/lib" python setup.py build_ext -i
 ```
 
 Once built, a shared object with the binary python module should show up, named like
@@ -71,7 +72,7 @@ program:
 ```
 import deephaven_client as dh
 client = dh.Client.connect("localhost:10000")
-manager = client.getManager()
-handle = manager.emptyTable(10).update(["II= ii"])
+manager = client.get_manager()
+handle = manager.empty_table(10).update(["II= ii"])
 print(handle.toString(True))
 ```
