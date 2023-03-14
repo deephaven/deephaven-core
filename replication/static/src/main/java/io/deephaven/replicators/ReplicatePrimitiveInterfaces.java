@@ -37,8 +37,10 @@ public class ReplicatePrimitiveInterfaces {
             charToShortAndByte(CHAR_TO_INT_PATH);
             final String floatToIntPath = charToFloat(CHAR_TO_INT_PATH, null);
             removeExtraCopyrightHeader(intToDouble(floatToIntPath, null,
-                    "interface", "FunctionalInterface",
-                    CHAR_TO_INT_PATH.substring(CHAR_TO_INT_PATH.lastIndexOf('/') + 1,
+                    "interface",
+                    "FunctionalInterface",
+                    CHAR_TO_INT_PATH.substring(
+                            CHAR_TO_INT_PATH.lastIndexOf('/') + 1,
                             CHAR_TO_INT_PATH.lastIndexOf(".java"))));
             if (!new File(floatToIntPath).delete()) {
                 throw new IOException("Failed to delete extraneous " + floatToIntPath);
@@ -48,14 +50,25 @@ public class ReplicatePrimitiveInterfaces {
             charToShortAndByte(CHAR_ITERATOR_PATH);
             final String floatPath = charToFloat(CHAR_ITERATOR_PATH, null);
             removeExtraCopyrightHeader(intToDouble(floatPath, null,
-                    "interface", "FunctionalInterface",
+                    "interface",
+                    "FunctionalInterface",
+                    "int valueIndex",
+                    "int subIteratorIndex",
                     CHAR_ITERATOR_PATH.substring(
                             CHAR_ITERATOR_PATH.lastIndexOf('/') + 1,
                             CHAR_ITERATOR_PATH.lastIndexOf(".java"))));
         }
         {
-            intToLong(INT_ITERATOR_PATH, null, "interface", "FunctionalInterface");
-            intToDouble(INT_ITERATOR_PATH, null, "interface", "FunctionalInterface");
+            intToLong(INT_ITERATOR_PATH, null,
+                    "interface",
+                    "FunctionalInterface",
+                    "int valueIndex",
+                    "int subIteratorIndex");
+            intToDouble(INT_ITERATOR_PATH, null,
+                    "interface",
+                    "FunctionalInterface",
+                    "int valueIndex",
+                    "int subIteratorIndex");
         }
     }
 

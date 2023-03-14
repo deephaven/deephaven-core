@@ -2,7 +2,9 @@ package io.deephaven.engine.primitive.iterator;
 
 import io.deephaven.engine.primitive.function.CharConsumer;
 import io.deephaven.engine.primitive.function.CharToIntFunction;
+import io.deephaven.util.SafeCloseableArray;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -92,5 +94,166 @@ public interface CloseablePrimitiveIteratorOfChar extends CloseablePrimitiveIter
      */
     default IntStream streamAsInt() {
         return streamAsInt(value -> (int) value);
+    }
+
+    /**
+     * A re-usable, immutable CloseablePrimitiveIteratorOfChar with no elements.
+     */
+    CloseablePrimitiveIteratorOfChar EMPTY = new CloseablePrimitiveIteratorOfChar() {
+        @Override
+        public char nextChar() {
+            throw new NoSuchElementException();
+        }
+
+        @Override
+        public boolean hasNext() {
+            return false;
+        }
+    };
+
+    /**
+     * Get a CloseablePrimitiveIteratorOfChar with no elements. The result does not need to be {@link #close() closed}.
+     *
+     * @return A CloseablePrimitiveIteratorOfChar with no elements
+     */
+    static CloseablePrimitiveIteratorOfChar empty() {
+        return EMPTY;
+    }
+
+    /**
+     * Create a CloseablePrimitiveIteratorOfChar over an array of {@code char}. The result does not need to be
+     * {@link #close() closed}.
+     *
+     * @param values The elements to iterate
+     * @return A CloseablePrimitiveIteratorOfChar of {@code values}
+     */
+    static CloseablePrimitiveIteratorOfChar of(@NotNull final char... values) {
+        Objects.requireNonNull(values);
+        return new CloseablePrimitiveIteratorOfChar() {
+
+            private int valueIndex;
+
+            @Override
+            public char nextChar() {
+                if (valueIndex < values.length) {
+                    return values[valueIndex++];
+                }
+                throw new NoSuchElementException();
+            }
+
+            @Override
+            public boolean hasNext() {
+                return valueIndex < values.length;
+            }
+        };
+    }
+
+    /**
+     * Create a CloseablePrimitiveIteratorOfChar that repeats {@code value}, {@code repeatCount} times. The result does
+     * not need to be {@link #close() closed}.
+     *
+     * @param value The value to repeat
+     * @param repeatCount The number of repetitions
+     * @return A CloseablePrimitiveIteratorOfChar that repeats {@code value}, {@code repeatCount} times
+     */
+    static CloseablePrimitiveIteratorOfChar repeat(final char value, final long repeatCount) {
+        return new CloseablePrimitiveIteratorOfChar() {
+
+            private long repeatIndex;
+
+            @Override
+            public char nextChar() {
+                if (repeatIndex++ < repeatCount) {
+                    return value;
+                }
+                throw new NoSuchElementException();
+            }
+
+            @Override
+            public boolean hasNext() {
+                return repeatIndex < repeatCount;
+            }
+        };
+    }
+
+    /**
+     * Create a CloseablePrimitiveIteratorOfChar that concatenates an array of {@code subIterators}. The result only
+     * needs to be {@link #close() closed} if any of the {@code subIterators} require it.
+     *
+     * @param subIterators The iterators to concatenate. If directly passing an array, ensure that this iterator has
+     *        full ownership.
+     * @return A CloseablePrimitiveIteratorOfChar concatenating all elements from {@code subIterators}
+     */
+    static CloseablePrimitiveIteratorOfChar concat(@NotNull final CloseablePrimitiveIteratorOfChar... subIterators) {
+        Objects.requireNonNull(subIterators);
+        return new CloseablePrimitiveIteratorOfChar() {
+
+            private boolean hasNextChecked;
+            private int subIteratorIndex;
+
+            @Override
+            public char nextChar() {
+                if (hasNext()) {
+                    hasNextChecked = false;
+                    return subIterators[subIteratorIndex].nextChar();
+                }
+                throw new NoSuchElementException();
+            }
+
+            @Override
+            public boolean hasNext() {
+                if (hasNextChecked) {
+                    return true;
+                }
+                for (; subIteratorIndex < subIterators.length; ++subIteratorIndex) {
+                    if (subIterators[subIteratorIndex].hasNext()) {
+                        return hasNextChecked = true;
+                    }
+                }
+                return false;
+            }
+
+            @Override
+            public void close() {
+                SafeCloseableArray.close(subIterators);
+            }
+        };
+    }
+
+    /**
+     * Return a CloseablePrimitiveIteratorOfChar that concatenates the contents of any non-{@code null}
+     * CloseablePrimitiveIteratorOfChar found amongst {@code first}, {@code second}, and {@code third}.
+     *
+     * @param first The first iterator to consider concatenating
+     * @param second The second iterator to consider concatenating
+     * @param third The third iterator to consider concatenating
+     * @return A CloseablePrimitiveIteratorOfChar that concatenates all elements as specified
+     */
+    static CloseablePrimitiveIteratorOfChar maybeConcat(
+            @Nullable final CloseablePrimitiveIteratorOfChar first,
+            @Nullable final CloseablePrimitiveIteratorOfChar second,
+            @Nullable final CloseablePrimitiveIteratorOfChar third) {
+        if (first != null) {
+            if (second != null) {
+                if (third != null) {
+                    return concat(first, second, third);
+                }
+                return concat(first, second);
+            }
+            if (third != null) {
+                return concat(first, third);
+            }
+            return first;
+        }
+        if (second != null) {
+            if (third != null) {
+                return concat(second, third);
+            }
+            return second;
+        }
+        if (third != null) {
+            return third;
+        }
+        return empty();
     }
 }
