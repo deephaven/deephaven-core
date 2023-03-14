@@ -47,6 +47,7 @@ C++ compiler and tool suite (cmake etc).
    mkdir -p $HOME/dhcpp
    cd $HOME/dhcpp
    wget https://github.com/deephaven/deephaven-base-images/raw/main/cpp-client/build-dependencies.sh
+   chmod +x ./build-dependencies.sh
    # Maybe edit build-dependencies.sh to reflect choices of build tools and build target
    ./build-dependencies.sh
    ```
