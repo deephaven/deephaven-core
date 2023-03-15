@@ -40,8 +40,9 @@ class WhereFilterAdapter implements Filter.Visitor {
         return literal ? WhereFilterFactory.getExpression("true") : WhereNoneFilter.INSTANCE;
     }
 
-    public static WhereFilter of(RawString rawString) {
-        return WhereFilterFactory.getExpression(rawString.value());
+    public static WhereFilter of(RawString rawString, boolean inverted) {
+        return inverted ? WhereFilterFactory.getExpression(String.format("!(%s)", rawString.value()))
+                : WhereFilterFactory.getExpression(rawString.value());
     }
 
     private final boolean inverted;
@@ -96,11 +97,7 @@ class WhereFilterAdapter implements Filter.Visitor {
 
     @Override
     public void visit(RawString rawString) {
-        if (inverted) {
-            out = WhereFilterFactory.getExpression(String.format("!(%s)", rawString.value()));
-        } else {
-            out = of(rawString);
-        }
+        out = of(rawString, inverted);
     }
 
     private static class FilterComparisonAdapter implements Expression.Visitor {
@@ -266,16 +263,42 @@ class WhereFilterAdapter implements Filter.Visitor {
 
     private static class ExpressionIsNullAdapter implements Expression.Visitor {
 
-        public static WhereFilter of(ExpressionFunction function) {
-            return WhereFilterFactory.getExpression(Strings.of(Filter.isNull(function)));
+        public static WhereFilter of(Expression expression) {
+            return expression.walk(new ExpressionIsNullAdapter(false)).out();
         }
 
-        public static WhereFilter of(RawString rawString) {
-            return WhereFilterFactory.getExpression(Strings.of(Filter.isNull(rawString)));
+        public static MatchFilter of(ColumnName columnName, boolean inverted) {
+            return new MatchFilter(inverted ? MatchType.Inverted : MatchType.Regular, columnName.name(),
+                    new Object[] {null});
+        }
+
+        public static WhereFilter of(Literal literal, boolean inverted) {
+            // Note: we _could_ try and optimize here, since a literal is never null.
+            // That said, this filter will be compiled and potentially JITted, so it might not matter.
+            // return inverted ? WhereFilterFactory.getExpression("true") : WhereNoneFilter.INSTANCE;
+            return WhereFilterFactory
+                    .getExpression(String.format(inverted ? "!isNull(%s)" : "isNull(%s)", Strings.of(literal)));
+        }
+
+        public static WhereFilter of(Filter filter, boolean inverted) {
+            // Note: we _could_ try and optimize here, since a filter never returns null (always true or false).
+            // That said, this filter will be compiled and potentially JITted, so it might not matter.
+            // return inverted ? WhereFilterFactory.getExpression("true") : WhereNoneFilter.INSTANCE;
+            return WhereFilterFactory
+                    .getExpression(String.format(inverted ? "!isNull(%s)" : "isNull(%s)", Strings.of(filter)));
+        }
+
+        public static WhereFilter of(ExpressionFunction function, boolean inverted) {
+            return WhereFilterFactory
+                    .getExpression(String.format(inverted ? "!isNull(%s)" : "isNull(%s)", Strings.of(function)));
+        }
+
+        public static WhereFilter of(RawString rawString, boolean inverted) {
+            return WhereFilterFactory
+                    .getExpression(String.format(inverted ? "!isNull(%s)" : "isNull(%s)", Strings.of(rawString)));
         }
 
         private final boolean inverted;
-
         private WhereFilter out;
 
         ExpressionIsNullAdapter(boolean inverted) {
@@ -288,33 +311,27 @@ class WhereFilterAdapter implements Filter.Visitor {
 
         @Override
         public void visit(Literal literal) {
-            // isNotNull(literal) is always true
-            // isNull(literal) is always false
-            out = inverted ? WhereFilterFactory.getExpression("true") : WhereNoneFilter.INSTANCE;
+            out = of(literal, inverted);
         }
 
         @Override
         public void visit(ColumnName columnName) {
-            out = new MatchFilter(inverted ? MatchType.Inverted : MatchType.Regular, columnName.name(),
-                    new Object[] {null});
+            out = of(columnName, inverted);
         }
 
         @Override
         public void visit(Filter filter) {
-            // A filter application will always evaluate to true or false, never null
-            // isNotNull(filter(...)) is always true
-            // isNull(filter(...)) is always false
-            out = inverted ? WhereFilterFactory.getExpression("true") : WhereNoneFilter.INSTANCE;
+            out = of(filter, inverted);
         }
 
         @Override
         public void visit(ExpressionFunction function) {
-            out = inverted ? WhereFilterFactory.getExpression(Strings.of(Filter.isNotNull(function))) : of(function);
+            out = of(function, inverted);
         }
 
         @Override
         public void visit(RawString rawString) {
-            out = inverted ? WhereFilterFactory.getExpression(Strings.of(Filter.isNotNull(rawString))) : of(rawString);
+            out = of(rawString, inverted);
         }
     }
 }
