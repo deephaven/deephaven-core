@@ -29,6 +29,8 @@ import static io.deephaven.util.QueryConstants.NULL_FLOAT;
 
 public class FloatVectorColumnWrapper extends FloatVector.Indirect {
 
+    private static final long serialVersionUID = -2715269662143763674L;
+
     private final ColumnSource<Float> columnSource;
     private final RowSet rowSet;
     private final long startPadding;

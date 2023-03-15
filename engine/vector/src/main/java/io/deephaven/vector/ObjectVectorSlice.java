@@ -18,6 +18,8 @@ import static io.deephaven.vector.Vector.clampIndex;
  */
 public class ObjectVectorSlice<COMPONENT_TYPE> extends ObjectVector.Indirect<COMPONENT_TYPE> {
 
+    private static final long serialVersionUID = 1L;
+
     private final ObjectVector<COMPONENT_TYPE> innerVector;
     private final long offsetIndex;
     private final long length;

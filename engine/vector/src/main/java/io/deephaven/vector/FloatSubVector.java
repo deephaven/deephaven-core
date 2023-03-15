@@ -16,6 +16,8 @@ import org.jetbrains.annotations.NotNull;
  */
 public final class FloatSubVector extends FloatVector.Indirect {
 
+    private static final long serialVersionUID = 1L;
+
     private final FloatVector innerVector;
     private final long[] positions;
 

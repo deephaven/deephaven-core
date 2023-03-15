@@ -29,6 +29,8 @@ import static io.deephaven.util.QueryConstants.NULL_INT;
 
 public class IntVectorColumnWrapper extends IntVector.Indirect {
 
+    private static final long serialVersionUID = -2715269662143763674L;
+
     private final ColumnSource<Integer> columnSource;
     private final RowSet rowSet;
     private final long startPadding;

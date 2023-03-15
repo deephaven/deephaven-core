@@ -19,6 +19,8 @@ import static io.deephaven.util.QueryConstants.NULL_CHAR;
 @ArrayType(type = char[].class)
 public final class CharVectorDirect implements CharVector {
 
+    private final static long serialVersionUID = 3636374971797603565L;
+
     public static final CharVector ZERO_LENGTH_VECTOR = new CharVectorDirect();
 
     private final char[] data;

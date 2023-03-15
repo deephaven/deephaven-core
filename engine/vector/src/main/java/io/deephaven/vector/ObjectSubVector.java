@@ -10,6 +10,8 @@ import org.jetbrains.annotations.NotNull;
  */
 public class ObjectSubVector<COMPONENT_TYPE> extends ObjectVector.Indirect<COMPONENT_TYPE> {
 
+    private static final long serialVersionUID = 1L;
+
     private final ObjectVector<COMPONENT_TYPE> innerVector;
     private final long[] positions;
 

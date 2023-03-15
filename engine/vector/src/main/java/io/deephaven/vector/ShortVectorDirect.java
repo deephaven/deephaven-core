@@ -24,6 +24,8 @@ import static io.deephaven.util.QueryConstants.NULL_SHORT;
 @ArrayType(type = short[].class)
 public final class ShortVectorDirect implements ShortVector {
 
+    private final static long serialVersionUID = 3636374971797603565L;
+
     public static final ShortVector ZERO_LENGTH_VECTOR = new ShortVectorDirect();
 
     private final short[] data;

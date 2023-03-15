@@ -24,6 +24,8 @@ import static io.deephaven.engine.table.iterators.ColumnIterator.DEFAULT_CHUNK_S
 
 public class ObjectVectorColumnWrapper<T> extends ObjectVector.Indirect<T> {
 
+    private static final long serialVersionUID = -5944424618636079377L;
+
     private final ColumnSource<T> columnSource;
     private final RowSet rowSet;
     private final long startPadding;

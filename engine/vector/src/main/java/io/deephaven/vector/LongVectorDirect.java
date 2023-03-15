@@ -24,6 +24,8 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
 @ArrayType(type = long[].class)
 public final class LongVectorDirect implements LongVector {
 
+    private final static long serialVersionUID = 3636374971797603565L;
+
     public static final LongVector ZERO_LENGTH_VECTOR = new LongVectorDirect();
 
     private final long[] data;

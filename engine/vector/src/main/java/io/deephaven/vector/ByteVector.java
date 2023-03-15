@@ -24,6 +24,8 @@ import java.util.Arrays;
  */
 public interface ByteVector extends Vector<ByteVector>, Iterable<Byte> {
 
+    long serialVersionUID = -1373264425081841175L;
+
     static PrimitiveVectorType<ByteVector, Byte> type() {
         return PrimitiveVectorType.of(ByteVector.class, ByteType.instance());
     }
@@ -217,6 +219,10 @@ public interface ByteVector extends Vector<ByteVector>, Iterable<Byte> {
         @Override
         public final int hashCode() {
             return ByteVector.hashCode(this);
+        }
+
+        protected final Object writeReplace() {
+            return getDirect();
         }
     }
 }

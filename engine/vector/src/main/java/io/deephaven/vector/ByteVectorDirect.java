@@ -24,6 +24,8 @@ import static io.deephaven.util.QueryConstants.NULL_BYTE;
 @ArrayType(type = byte[].class)
 public final class ByteVectorDirect implements ByteVector {
 
+    private final static long serialVersionUID = 3636374971797603565L;
+
     public static final ByteVector ZERO_LENGTH_VECTOR = new ByteVectorDirect();
 
     private final byte[] data;

@@ -22,6 +22,8 @@ import java.util.function.Function;
  */
 public interface ObjectVector<COMPONENT_TYPE> extends Vector<ObjectVector<COMPONENT_TYPE>>, Iterable<COMPONENT_TYPE> {
 
+    long serialVersionUID = 2691131699080413017L;
+
     static <T> GenericVectorType<ObjectVector<T>, T> type(GenericType<T> genericType) {
         // noinspection unchecked
         return GenericVectorType.of((Class<ObjectVector<T>>) (Class<?>) ObjectVector.class, genericType);
@@ -229,6 +231,11 @@ public interface ObjectVector<COMPONENT_TYPE> extends Vector<ObjectVector<COMPON
         @Override
         public final int hashCode() {
             return ObjectVector.hashCode(this);
+        }
+
+        protected final Object writeReplace() {
+            // Rather than call getDirect(), allow component Vectors to serialize themselves appropriately
+            return new ObjectVectorDirect<>(toArray());
         }
     }
 }

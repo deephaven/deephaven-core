@@ -24,6 +24,8 @@ import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 @ArrayType(type = double[].class)
 public final class DoubleVectorDirect implements DoubleVector {
 
+    private final static long serialVersionUID = 3636374971797603565L;
+
     public static final DoubleVector ZERO_LENGTH_VECTOR = new DoubleVectorDirect();
 
     private final double[] data;

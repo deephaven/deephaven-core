@@ -29,6 +29,8 @@ import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 
 public class DoubleVectorColumnWrapper extends DoubleVector.Indirect {
 
+    private static final long serialVersionUID = -2715269662143763674L;
+
     private final ColumnSource<Double> columnSource;
     private final RowSet rowSet;
     private final long startPadding;

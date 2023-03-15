@@ -14,6 +14,8 @@ import java.util.Arrays;
  */
 public final class ObjectVectorDirect<COMPONENT_TYPE> implements ObjectVector<COMPONENT_TYPE> {
 
+    private static final long serialVersionUID = 9111886364211462917L;
+
     public static final ObjectVector<?> ZERO_LENGTH_VECTOR = new ObjectVectorDirect<>();
 
     private final COMPONENT_TYPE[] data;

@@ -24,6 +24,8 @@ import static io.deephaven.util.QueryConstants.NULL_INT;
 @ArrayType(type = int[].class)
 public final class IntVectorDirect implements IntVector {
 
+    private final static long serialVersionUID = 3636374971797603565L;
+
     public static final IntVector ZERO_LENGTH_VECTOR = new IntVectorDirect();
 
     private final int[] data;

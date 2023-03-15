@@ -19,6 +19,8 @@ import static io.deephaven.vector.Vector.clampIndex;
  */
 public class CharVectorSlice extends CharVector.Indirect {
 
+    private static final long serialVersionUID = 1L;
+
     private final CharVector innerVector;
     private final long offsetIndex;
     private final long length;

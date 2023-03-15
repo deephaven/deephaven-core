@@ -24,6 +24,8 @@ import static io.deephaven.util.QueryConstants.NULL_FLOAT;
 @ArrayType(type = float[].class)
 public final class FloatVectorDirect implements FloatVector {
 
+    private final static long serialVersionUID = 3636374971797603565L;
+
     public static final FloatVector ZERO_LENGTH_VECTOR = new FloatVectorDirect();
 
     private final float[] data;

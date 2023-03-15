@@ -24,6 +24,8 @@ import static io.deephaven.vector.Vector.clampIndex;
  */
 public class ByteVectorSlice extends ByteVector.Indirect {
 
+    private static final long serialVersionUID = 1L;
+
     private final ByteVector innerVector;
     private final long offsetIndex;
     private final long length;

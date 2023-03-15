@@ -24,6 +24,8 @@ import java.util.Arrays;
  */
 public interface IntVector extends Vector<IntVector>, Iterable<Integer> {
 
+    long serialVersionUID = -1373264425081841175L;
+
     static PrimitiveVectorType<IntVector, Integer> type() {
         return PrimitiveVectorType.of(IntVector.class, IntType.instance());
     }
@@ -217,6 +219,10 @@ public interface IntVector extends Vector<IntVector>, Iterable<Integer> {
         @Override
         public final int hashCode() {
             return IntVector.hashCode(this);
+        }
+
+        protected final Object writeReplace() {
+            return getDirect();
         }
     }
 }

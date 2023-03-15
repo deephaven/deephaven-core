@@ -24,6 +24,8 @@ import java.util.Arrays;
  */
 public interface ShortVector extends Vector<ShortVector>, Iterable<Short> {
 
+    long serialVersionUID = -1373264425081841175L;
+
     static PrimitiveVectorType<ShortVector, Short> type() {
         return PrimitiveVectorType.of(ShortVector.class, ShortType.instance());
     }
@@ -217,6 +219,10 @@ public interface ShortVector extends Vector<ShortVector>, Iterable<Short> {
         @Override
         public final int hashCode() {
             return ShortVector.hashCode(this);
+        }
+
+        protected final Object writeReplace() {
+            return getDirect();
         }
     }
 }
