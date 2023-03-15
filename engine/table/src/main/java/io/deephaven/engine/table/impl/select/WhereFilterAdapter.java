@@ -41,20 +41,12 @@ class WhereFilterAdapter implements Filter.Visitor {
 
     @Override
     public void visit(FilterIsNull isNull) {
-        if (inverted) {
-            out = isNotNull(isNull.expression());
-        } else {
-            out = isNull(isNull.expression());
-        }
+        out = isNull.expression().walk(new ExpressionIsNullAdapter(inverted)).out();
     }
 
     @Override
     public void visit(FilterIsNotNull isNotNull) {
-        if (inverted) {
-            out = isNull(isNotNull.expression());
-        } else {
-            out = isNotNull(isNotNull.expression());
-        }
+        out = isNotNull.expression().walk(new ExpressionIsNullAdapter(!inverted)).out();
     }
 
     @Override
@@ -97,21 +89,7 @@ class WhereFilterAdapter implements Filter.Visitor {
         }
     }
 
-    private static WhereFilter isNull(Expression expression) {
-        if (expression instanceof ColumnName) {
-            return new MatchFilter(((ColumnName) expression).name(), new Object[]{null});
-        }
-        return WhereFilterFactory.getExpression(Strings.of(Filter.isNull(expression)));
-    }
-
-    private static WhereFilter isNotNull(Expression expression) {
-        if (expression instanceof ColumnName) {
-            return new MatchFilter(MatchType.Inverted, ((ColumnName) expression).name(), new Object[]{null});
-        }
-        return WhereFilterFactory.getExpression(Strings.of(Filter.isNotNull(expression)));
-    }
-
-    private static class FilterComparisonAdapter implements Expression.Visitor, Literal.Visitor {
+    private static class FilterComparisonAdapter implements Expression.Visitor {
 
         public static WhereFilter of(FilterComparison condition) {
             FilterComparison preferred = condition.maybeTranspose();
@@ -246,25 +224,9 @@ class WhereFilterAdapter implements Filter.Visitor {
         // Note for all remaining cases: since we are walking the preferred object, we know we don't have to handle
         // the case where rhs is column name.
 
-
-        @Override
-        public void visit(int literal) {
-            out = WhereFilterFactory.getExpression(Strings.of(original));
-        }
-
-        @Override
-        public void visit(long lhs) {
-            out = WhereFilterFactory.getExpression(Strings.of(original));
-        }
-
-        @Override
-        public void visit(boolean literal) {
-            out = WhereFilterFactory.getExpression(Strings.of(original));
-        }
-
         @Override
         public void visit(Literal lhs) {
-            lhs.walk((Literal.Visitor) this);
+            out = WhereFilterFactory.getExpression(Strings.of(original));
         }
 
         @Override
@@ -283,35 +245,51 @@ class WhereFilterAdapter implements Filter.Visitor {
         }
     }
 
-    private static class FilterIsNullAdapter implements Expression.Visitor {
+    private static class ExpressionIsNullAdapter implements Expression.Visitor {
 
-        private boolean inverted;
+        private final boolean inverted;
+
+        private WhereFilter out;
+
+        ExpressionIsNullAdapter(boolean inverted) {
+            this.inverted = inverted;
+        }
+
+        public WhereFilter out() {
+            return Objects.requireNonNull(out);
+        }
 
         @Override
         public void visit(Literal literal) {
-            // false, literal never null
+            // isNotNull(literal) is always true
+            // isNull(literal) is always false
+            out = inverted ? WhereFilterFactory.getExpression("true") : WhereFilterFactory.getExpression("false");
         }
 
         @Override
         public void visit(ColumnName columnName) {
-            if (inverted) {
-
-            }
+            out = new MatchFilter(inverted ? MatchType.Inverted : MatchType.Regular, columnName.name(),
+                    new Object[] {null});
         }
 
         @Override
         public void visit(Filter filter) {
-
+            // A filter application will always evaluate to true or false, never null
+            // isNotNull(filter(...)) is always true
+            // isNull(filter(...)) is always false
+            out = inverted ? WhereFilterFactory.getExpression("true") : WhereFilterFactory.getExpression("false");
         }
 
         @Override
         public void visit(ExpressionFunction function) {
-
+            out = inverted ? WhereFilterFactory.getExpression(Strings.of(Filter.isNotNull(function)))
+                    : WhereFilterFactory.getExpression(Strings.of(Filter.isNull(function)));
         }
 
         @Override
         public void visit(RawString rawString) {
-
+            out = inverted ? WhereFilterFactory.getExpression(Strings.of(Filter.isNotNull(rawString)))
+                    : WhereFilterFactory.getExpression(Strings.of(Filter.isNull(rawString)));
         }
     }
 }
