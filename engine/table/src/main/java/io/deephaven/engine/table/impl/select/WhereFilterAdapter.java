@@ -19,6 +19,31 @@ import io.deephaven.gui.table.filters.Condition;
 import java.util.Objects;
 
 class WhereFilterAdapter implements Filter.Visitor {
+
+    public static WhereFilter of(Filter filter) {
+        return filter.walk(new WhereFilterAdapter(false)).out();
+    }
+
+    public static WhereFilter of(FilterNot not) {
+        return not.filter().walk(new WhereFilterAdapter(true)).out();
+    }
+
+    public static WhereFilter of(FilterOr ors) {
+        return DisjunctiveFilter.makeDisjunctiveFilter(WhereFilter.from(ors.filters()));
+    }
+
+    public static WhereFilter of(FilterAnd ands) {
+        return ConjunctiveFilter.makeConjunctiveFilter(WhereFilter.from(ands.filters()));
+    }
+
+    public static WhereFilter of(boolean literal) {
+        return literal ? WhereFilterFactory.getExpression("true") : WhereNoneFilter.INSTANCE;
+    }
+
+    public static WhereFilter of(RawString rawString) {
+        return WhereFilterFactory.getExpression(rawString.value());
+    }
+
     private final boolean inverted;
     private WhereFilter out;
 
@@ -37,7 +62,7 @@ class WhereFilterAdapter implements Filter.Visitor {
 
     @Override
     public void visit(FilterNot not) {
-        out = not.filter().walk(new WhereFilterAdapter(!inverted)).out();
+        out = inverted ? of(not.filter()) : of(not);
     }
 
     @Override
@@ -52,33 +77,21 @@ class WhereFilterAdapter implements Filter.Visitor {
 
     @Override
     public void visit(FilterOr ors) {
-        if (inverted) {
-            // !A && !B && ... && !Z
-            out = ConjunctiveFilter.makeConjunctiveFilter(WhereFilter.fromInverted(ors.filters()));
-        } else {
-            // A || B || ... || Z
-            out = DisjunctiveFilter.makeDisjunctiveFilter(WhereFilter.from(ors.filters()));
-        }
+        // !A && !B && ... && !Z
+        // A || B || ... || Z
+        out = inverted ? of(ors.inverse()) : of(ors);
     }
 
     @Override
     public void visit(FilterAnd ands) {
-        if (inverted) {
-            // !A || !B || ... || !Z
-            out = DisjunctiveFilter.makeDisjunctiveFilter(WhereFilter.fromInverted(ands.filters()));
-        } else {
-            // A && B && ... && Z
-            out = ConjunctiveFilter.makeConjunctiveFilter(WhereFilter.from(ands.filters()));
-        }
+        // !A || !B || ... || !Z
+        // A && B && ... && Z
+        out = inverted ? of(ands.inverse()) : of(ands);
     }
 
     @Override
     public void visit(boolean literal) {
-        if (inverted ^ literal) {
-            out = WhereFilterFactory.getExpression("true");
-        } else {
-            out = WhereNoneFilter.INSTANCE;
-        }
+        out = of(inverted ^ literal);
     }
 
     @Override
@@ -86,7 +99,7 @@ class WhereFilterAdapter implements Filter.Visitor {
         if (inverted) {
             out = WhereFilterFactory.getExpression(String.format("!(%s)", rawString.value()));
         } else {
-            out = WhereFilterFactory.getExpression(rawString.value());
+            out = of(rawString);
         }
     }
 
@@ -253,6 +266,14 @@ class WhereFilterAdapter implements Filter.Visitor {
 
     private static class ExpressionIsNullAdapter implements Expression.Visitor {
 
+        public static WhereFilter of(ExpressionFunction function) {
+            return WhereFilterFactory.getExpression(Strings.of(Filter.isNull(function)));
+        }
+
+        public static WhereFilter of(RawString rawString) {
+            return WhereFilterFactory.getExpression(Strings.of(Filter.isNull(rawString)));
+        }
+
         private final boolean inverted;
 
         private WhereFilter out;
@@ -288,14 +309,12 @@ class WhereFilterAdapter implements Filter.Visitor {
 
         @Override
         public void visit(ExpressionFunction function) {
-            out = inverted ? WhereFilterFactory.getExpression(Strings.of(Filter.isNotNull(function)))
-                    : WhereFilterFactory.getExpression(Strings.of(Filter.isNull(function)));
+            out = inverted ? WhereFilterFactory.getExpression(Strings.of(Filter.isNotNull(function))) : of(function);
         }
 
         @Override
         public void visit(RawString rawString) {
-            out = inverted ? WhereFilterFactory.getExpression(Strings.of(Filter.isNotNull(rawString)))
-                    : WhereFilterFactory.getExpression(Strings.of(Filter.isNull(rawString)));
+            out = inverted ? WhereFilterFactory.getExpression(Strings.of(Filter.isNotNull(rawString))) : of(rawString);
         }
     }
 }

@@ -25,21 +25,11 @@ import java.util.List;
 public interface WhereFilter extends Filter {
 
     static WhereFilter of(Filter filter) {
-        return (filter instanceof WhereFilter)
-                ? (WhereFilter) filter
-                : filter.walk(new WhereFilterAdapter(false)).out();
-    }
-
-    static WhereFilter ofInverted(Filter filter) {
-        return filter.walk(new WhereFilterAdapter(true)).out();
+        return (filter instanceof WhereFilter) ? (WhereFilter) filter : WhereFilterAdapter.of(filter);
     }
 
     static WhereFilter[] from(Collection<? extends Filter> filters) {
         return filters.stream().map(WhereFilter::of).toArray(WhereFilter[]::new);
-    }
-
-    static WhereFilter[] fromInverted(Collection<? extends Filter> filters) {
-        return filters.stream().map(WhereFilter::ofInverted).toArray(WhereFilter[]::new);
     }
 
     static WhereFilter[] copyFrom(WhereFilter[] filters) {
