@@ -14,6 +14,7 @@ import io.deephaven.api.filter.FilterNot;
 import io.deephaven.api.filter.FilterOr;
 import io.deephaven.api.value.Literal;
 import io.deephaven.engine.table.impl.select.MatchFilter.MatchType;
+import io.deephaven.gui.table.filters.Condition;
 
 import java.util.Objects;
 
@@ -25,7 +26,7 @@ class WhereFilterAdapter implements Filter.Visitor {
         this.inverted = inverted;
     }
 
-    public WhereFilter getOut() {
+    public WhereFilter out() {
         return Objects.requireNonNull(out);
     }
 
@@ -36,7 +37,7 @@ class WhereFilterAdapter implements Filter.Visitor {
 
     @Override
     public void visit(FilterNot not) {
-        out = not.filter().walk(new WhereFilterAdapter(!inverted)).getOut();
+        out = not.filter().walk(new WhereFilterAdapter(!inverted)).out();
     }
 
     @Override
@@ -131,23 +132,26 @@ class WhereFilterAdapter implements Filter.Visitor {
             @Override
             public void visit(int rhs) {
                 switch (preferred.operator()) {
-                    case LESS_THAN:
-                        out = IntRangeFilter.lt(lhs.name(), rhs);
-                        break;
-                    case LESS_THAN_OR_EQUAL:
-                        out = IntRangeFilter.lte(lhs.name(), rhs);
-                        break;
-                    case GREATER_THAN:
-                        out = IntRangeFilter.gt(lhs.name(), rhs);
-                        break;
-                    case GREATER_THAN_OR_EQUAL:
-                        out = IntRangeFilter.gte(lhs.name(), rhs);
-                        break;
                     case EQUALS:
                         out = new MatchFilter(lhs.name(), rhs);
                         break;
                     case NOT_EQUALS:
                         out = new MatchFilter(MatchType.Inverted, lhs.name(), rhs);
+                        break;
+                    // Note: we can't assume IntRangeFilter - even though the rhs literal is an int, it might be against
+                    // a different column type; we won't have the proper typing info until execution time.
+                    case LESS_THAN:
+                        out = new RangeConditionFilter(lhs.name(), Condition.LESS_THAN, Integer.toString(rhs));
+                        break;
+                    case LESS_THAN_OR_EQUAL:
+                        out = new RangeConditionFilter(lhs.name(), Condition.LESS_THAN_OR_EQUAL, Integer.toString(rhs));
+                        break;
+                    case GREATER_THAN:
+                        out = new RangeConditionFilter(lhs.name(), Condition.GREATER_THAN, Integer.toString(rhs));
+                        break;
+                    case GREATER_THAN_OR_EQUAL:
+                        out = new RangeConditionFilter(lhs.name(), Condition.GREATER_THAN_OR_EQUAL,
+                                Integer.toString(rhs));
                         break;
                     default:
                         throw new IllegalStateException("Unexpected operator " + original.operator());
@@ -157,23 +161,25 @@ class WhereFilterAdapter implements Filter.Visitor {
             @Override
             public void visit(long rhs) {
                 switch (preferred.operator()) {
-                    case LESS_THAN:
-                        out = LongRangeFilter.lt(lhs.name(), rhs);
-                        break;
-                    case LESS_THAN_OR_EQUAL:
-                        out = LongRangeFilter.lte(lhs.name(), rhs);
-                        break;
-                    case GREATER_THAN:
-                        out = LongRangeFilter.gt(lhs.name(), rhs);
-                        break;
-                    case GREATER_THAN_OR_EQUAL:
-                        out = LongRangeFilter.gte(lhs.name(), rhs);
-                        break;
                     case EQUALS:
                         out = new MatchFilter(lhs.name(), rhs);
                         break;
                     case NOT_EQUALS:
                         out = new MatchFilter(MatchType.Inverted, lhs.name(), rhs);
+                        break;
+                    // Note: we can't assume LongRangeFilter - even though the rhs literal is an int, it might be
+                    // against a different column type; we won't have the proper typing info until execution time.
+                    case LESS_THAN:
+                        out = new RangeConditionFilter(lhs.name(), Condition.LESS_THAN, Long.toString(rhs));
+                        break;
+                    case LESS_THAN_OR_EQUAL:
+                        out = new RangeConditionFilter(lhs.name(), Condition.LESS_THAN_OR_EQUAL, Long.toString(rhs));
+                        break;
+                    case GREATER_THAN:
+                        out = new RangeConditionFilter(lhs.name(), Condition.GREATER_THAN, Long.toString(rhs));
+                        break;
+                    case GREATER_THAN_OR_EQUAL:
+                        out = new RangeConditionFilter(lhs.name(), Condition.GREATER_THAN_OR_EQUAL, Long.toString(rhs));
                         break;
                     default:
                         throw new IllegalStateException("Unexpected operator " + original.operator());

@@ -27,11 +27,11 @@ public interface WhereFilter extends Filter {
     static WhereFilter of(Filter filter) {
         return (filter instanceof WhereFilter)
                 ? (WhereFilter) filter
-                : filter.walk(new WhereFilterAdapter(false)).getOut();
+                : filter.walk(new WhereFilterAdapter(false)).out();
     }
 
     static WhereFilter ofInverted(Filter filter) {
-        return filter.walk(new WhereFilterAdapter(true)).getOut();
+        return filter.walk(new WhereFilterAdapter(true)).out();
     }
 
     static WhereFilter[] from(Collection<? extends Filter> filters) {
