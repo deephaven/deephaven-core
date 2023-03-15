@@ -114,10 +114,9 @@ public class JsTreeTable extends HasEventHandling {
         }
     }
 
-    //TODO extend TableData?
     @TsInterface
     @TsName(namespace = "dh")
-    public class TreeViewportData {
+    public class TreeViewportData implements TableData {
         private final Boolean[] expandedColumn;
         private final int[] depthColumn;
         private final double offset;
@@ -213,6 +212,36 @@ public class JsTreeTable extends HasEventHandling {
             for (int i = 0; i < viewportSize; i++) {
                 rows.push(new TreeRow(i, data, data[rowFormatColumn]));
             }
+        }
+
+        @Override
+        public Row get(long index) {
+            return getRows().getAt((int) index);
+        }
+
+        @Override
+        public Row get(int index) {
+            return getRows().getAt((int) index);
+        }
+
+        @Override
+        public Any getData(int index, Column column) {
+            return getRows().getAt(index).get(column);
+        }
+
+        @Override
+        public Any getData(long index, Column column) {
+            return getRows().getAt((int) index).get(column);
+        }
+
+        @Override
+        public Format getFormat(int index, Column column) {
+            return getRows().getAt(index).getFormat(column);
+        }
+
+        @Override
+        public Format getFormat(long index, Column column) {
+            return getRows().getAt((int) index).getFormat(column);
         }
 
         @JsProperty

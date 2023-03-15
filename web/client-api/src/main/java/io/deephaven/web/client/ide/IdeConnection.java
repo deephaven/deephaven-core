@@ -9,7 +9,7 @@ import io.deephaven.web.client.api.ConnectOptions;
 import io.deephaven.web.client.api.QueryConnectable;
 import io.deephaven.web.client.api.WorkerConnection;
 import io.deephaven.web.client.api.console.JsVariableChanges;
-import io.deephaven.web.client.api.console.JsVariableDefinition;
+import io.deephaven.web.client.api.console.JsVariableDescriptor;
 import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.shared.data.ConnectToken;
 import io.deephaven.web.shared.fu.JsConsumer;
@@ -17,7 +17,6 @@ import io.deephaven.web.shared.fu.JsRunnable;
 import jsinterop.annotations.JsConstructor;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsOptional;
-import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
 import jsinterop.base.JsPropertyMap;
 
@@ -101,8 +100,7 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
         }
     }
 
-    //TODO this typeref is wrong
-    public Promise<?> getObject(@TsTypeRef(JsVariableDefinition.class) JsPropertyMap<Object> definitionObject) {
+    public Promise<?> getObject(@TsTypeRef(JsVariableDescriptor.class) JsPropertyMap<Object> definitionObject) {
         WorkerConnection conn = connection.get();
         return onConnected().then(e -> conn.getJsObject(definitionObject));
     }

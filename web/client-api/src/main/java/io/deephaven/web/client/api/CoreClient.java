@@ -17,6 +17,8 @@ import io.deephaven.web.shared.fu.JsBiConsumer;
 import io.deephaven.web.shared.fu.JsFunction;
 import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsType;
+import jsinterop.base.Js;
+import jsinterop.base.JsPropertyMap;
 
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -82,22 +84,28 @@ public class CoreClient extends HasEventHandling {
                 AuthenticationConstantsResponse::getConfigValuesMap);
     }
 
-    public Promise<Void> login(LoginCredentials credentials) {
-        Objects.requireNonNull(credentials.getType(), "type must be specified");
+    public Promise<Void> login(@TsTypeRef(LoginCredentials.class) JsPropertyMap<Object> credentials) {
+        final LoginCredentials creds;
+        if (credentials instanceof LoginCredentials) {
+            creds = (LoginCredentials) credentials;
+        } else {
+            creds = new LoginCredentials(credentials);
+        }
+        Objects.requireNonNull(creds.getType(), "type must be specified");
         ConnectToken token = ideConnection.getToken();
-        if (LOGIN_TYPE_PASSWORD.equals(credentials.getType())) {
-            Objects.requireNonNull(credentials.getUsername(), "username must be specified for password login");
-            Objects.requireNonNull(credentials.getToken(), "token must be specified for password login");
+        if (LOGIN_TYPE_PASSWORD.equals(creds.getType())) {
+            Objects.requireNonNull(creds.getUsername(), "username must be specified for password login");
+            Objects.requireNonNull(creds.getToken(), "token must be specified for password login");
             token.setType("Basic");
-            token.setValue(ConnectToken.bytesToBase64(credentials.getUsername() + ":" + credentials.getToken()));
-        } else if (LOGIN_TYPE_ANONYMOUS.equals(credentials.getType())) {
+            token.setValue(ConnectToken.bytesToBase64(creds.getUsername() + ":" + creds.getToken()));
+        } else if (LOGIN_TYPE_ANONYMOUS.equals(creds.getType())) {
             token.setType("Anonymous");
             token.setValue("");
         } else {
-            token.setType(credentials.getType());
-            token.setValue(credentials.getToken());
-            if (credentials.getUsername() != null) {
-                JsLog.warn("username ignored for login type " + credentials.getType());
+            token.setType(creds.getType());
+            token.setValue(creds.getToken());
+            if (creds.getUsername() != null) {
+                JsLog.warn("username ignored for login type " + creds.getType());
             }
         }
         Promise<Void> login =
@@ -119,7 +127,7 @@ public class CoreClient extends HasEventHandling {
     }
 
     public Promise<Void> relogin(@TsTypeRef(JsRefreshToken.class) Object token) {
-        return login(LoginCredentials.reconnect(JsRefreshToken.fromObject(token).getBytes()));
+        return login(Js.cast(LoginCredentials.reconnect(JsRefreshToken.fromObject(token).getBytes())));
     }
 
     public Promise<Void> onConnected(@JsOptional Double timeoutInMillis) {

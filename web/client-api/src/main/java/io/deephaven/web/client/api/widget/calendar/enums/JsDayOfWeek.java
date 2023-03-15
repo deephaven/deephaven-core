@@ -30,7 +30,6 @@ public class JsDayOfWeek {
             SATURDAY
     });
 
-    // TODO missing?
     @JsMethod
     public static String[] values() {
         return VALUES;

@@ -56,7 +56,6 @@ public class JsTotalsTableConfig {
 
     public JsArray<String> groupBy = new JsArray<>();
 
-    @JsConstructor
     public JsTotalsTableConfig() {}
 
     @JsIgnore

@@ -170,8 +170,6 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
         return Sort.reverse();
     }
 
-//    @TsIgnore
-    @JsMethod
     public Promise<JsTable> batch(JsConsumer<RequestBatcher> userCode) {
         boolean rootBatch = batchDepth++ == 0;
         RequestBatcher batcher = workerConnection.getBatcher(this);
@@ -530,7 +528,7 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
     public Promise<TableData> getViewportData() {
         TableViewportSubscription subscription = subscriptions.get(getHandle());
         if (subscription == null) {
-            return (Promise) Promise.reject("No viewport currently set");
+            return Promise.reject("No viewport currently set");
         }
         return subscription.getViewportData();
     }
@@ -605,7 +603,7 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
 
     // TODO: #37: Need SmartKey support for this functionality
     // @JsMethod
-    public Promise<JsTotalsTable> getTotalsTable(/* @JsOptional */@TsTypeRef(JsTotalsTableConfig.class) Object config) {
+    public Promise<JsTotalsTable> getTotalsTable(/*@JsOptional @JsNullable*/ @TsTypeRef(JsTotalsTableConfig.class) Object config) {
         // fetch the handle and wrap it in a new jstable. listen for changes
         // on the parent table, and re-fetch each time.
 
@@ -741,7 +739,7 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
     // TODO: #37: Need SmartKey support for this functionality
     // @JsMethod
     public Promise<JsTotalsTable> getGrandTotalsTable(
-            /* @JsOptional */@TsTypeRef(JsTotalsTableConfig.class) Object config) {
+            /*@JsNullable @JsOptional*/ @TsTypeRef(JsTotalsTableConfig.class) Object config) {
         // As in getTotalsTable, but this time we want to skip any filters - this could mean use the
         // most-derived table which has no filter, or the least-derived table which has all custom columns.
         // Currently, these two mean the same thing.

@@ -4,6 +4,7 @@
 package io.deephaven.web.client.api;
 
 import jsinterop.annotations.JsIgnore;
+import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsType;
 
 import javax.annotation.Nonnull;
@@ -14,6 +15,9 @@ import java.math.BigDecimal;
  */
 @JsType(namespace = "dh")
 public class BigDecimalWrapper {
+    public static BigDecimalWrapper ofString(String value) {
+        return new BigDecimalWrapper(new BigDecimal(value));
+    }
     private final BigDecimal value;
 
     @JsIgnore
@@ -26,7 +30,6 @@ public class BigDecimalWrapper {
         return value;
     }
 
-    @JsIgnore
     public double asNumber() {
         return getWrapped().doubleValue();
     }

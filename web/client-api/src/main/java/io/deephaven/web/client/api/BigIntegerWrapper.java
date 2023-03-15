@@ -14,11 +14,11 @@ import java.math.BigInteger;
  */
 @JsType(namespace = "dh")
 public class BigIntegerWrapper {
-    private final BigInteger value;
-
     public static BigIntegerWrapper ofString(String str) {
         return new BigIntegerWrapper(new BigInteger(str));
     }
+
+    private final BigInteger value;
 
     @JsIgnore
     public BigIntegerWrapper(@Nonnull BigInteger value) {

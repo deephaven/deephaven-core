@@ -16,7 +16,7 @@ import io.deephaven.web.client.api.*;
 import io.deephaven.web.client.api.barrage.stream.BiDiStream;
 import io.deephaven.web.client.api.console.JsCommandResult;
 import io.deephaven.web.client.api.console.JsVariableChanges;
-import io.deephaven.web.client.api.console.JsVariableDefinition;
+import io.deephaven.web.client.api.console.JsVariableDescriptor;
 import io.deephaven.web.client.api.console.JsVariableType;
 import io.deephaven.web.client.api.tree.JsTreeTable;
 import io.deephaven.web.client.api.widget.plot.JsFigure;
@@ -118,8 +118,7 @@ public class IdeSession extends HasEventHandling {
                 .then(connection::getTreeTable);
     }
 
-    //TODO this typeref is wrong
-    public Promise<?> getObject(@TsTypeRef(JsVariableDefinition.class) JsPropertyMap<Object> definitionObject) {
+    public Promise<?> getObject(@TsTypeRef(JsVariableDescriptor.class) JsPropertyMap<Object> definitionObject) {
         return connection.getJsObject(definitionObject);
     }
 
