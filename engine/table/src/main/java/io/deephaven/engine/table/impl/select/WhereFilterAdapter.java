@@ -77,7 +77,7 @@ class WhereFilterAdapter implements Filter.Visitor {
         if (inverted ^ literal) {
             out = WhereFilterFactory.getExpression("true");
         } else {
-            out = WhereFilterFactory.getExpression("false");
+            out = WhereNoneFilter.INSTANCE;
         }
     }
 
@@ -269,7 +269,7 @@ class WhereFilterAdapter implements Filter.Visitor {
         public void visit(Literal literal) {
             // isNotNull(literal) is always true
             // isNull(literal) is always false
-            out = inverted ? WhereFilterFactory.getExpression("true") : WhereFilterFactory.getExpression("false");
+            out = inverted ? WhereFilterFactory.getExpression("true") : WhereNoneFilter.INSTANCE;
         }
 
         @Override
@@ -283,7 +283,7 @@ class WhereFilterAdapter implements Filter.Visitor {
             // A filter application will always evaluate to true or false, never null
             // isNotNull(filter(...)) is always true
             // isNull(filter(...)) is always false
-            out = inverted ? WhereFilterFactory.getExpression("true") : WhereFilterFactory.getExpression("false");
+            out = inverted ? WhereFilterFactory.getExpression("true") : WhereNoneFilter.INSTANCE;
         }
 
         @Override
