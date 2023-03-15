@@ -19,8 +19,10 @@ class LivenessScope(JObjectWrapper):
     """
     j_object_type = _JLivenessScope
 
-    def __init__(self, j_scope: jpy.JType):
-        self.j_scope = j_scope
+    def __init__(self):
+        self.j_scope = _JLivenessScope()
+        _JLivenessScopeStack.push(j_scope)
+        
 
     @property
     def j_object(self) -> jpy.JType:
@@ -32,6 +34,12 @@ class LivenessScope(JObjectWrapper):
         _JLivenessScopeStack.peek().manage(wrapper.j_object)
         _JLivenessScopeStack.push(self.j_scope)
 
+    def release(self) -> None:
+        if self.j_scope is None:
+            return
+        _JLivenessScopeStack.pop(self.j_scope)
+        self.j_scope.release()
+        self.j_scope = None
 
 @contextlib.contextmanager
 def liveness_scope() -> LivenessScope:
@@ -41,10 +49,8 @@ def liveness_scope() -> LivenessScope:
     Returns:
         a LivenessScope
     """
-    j_scope = _JLivenessScope()
-    _JLivenessScopeStack.push(j_scope)
+    scope = LivenessScope()
     try:
-        yield LivenessScope(j_scope=j_scope)
+        yield scope
     finally:
-        _JLivenessScopeStack.pop(j_scope)
-        j_scope.release()
+        scope.release()
