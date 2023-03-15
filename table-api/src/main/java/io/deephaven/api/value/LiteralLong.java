@@ -27,7 +27,6 @@ abstract class LiteralLong extends LiteralBase {
 
     @Check
     final void checkNotDeephavenNull() {
-        // todo: should we allow this value?
         if (value() == Long.MIN_VALUE) {
             throw new IllegalArgumentException(
                     "Can't represent Long.MIN_VALUE, is Deephaven null representation");

@@ -27,7 +27,6 @@ abstract class LiteralInt extends LiteralBase {
 
     @Check
     final void checkNotDeephavenNull() {
-        // todo: should we allow this value?
         if (value() == Integer.MIN_VALUE) {
             throw new IllegalArgumentException(
                     "Can't represent Integer.MIN_VALUE, is Deephaven null representation");
