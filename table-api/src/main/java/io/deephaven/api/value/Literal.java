@@ -27,7 +27,6 @@ public interface Literal extends Expression {
     <V extends Visitor> V walk(V visitor);
 
     interface Visitor {
-        // TODO (deephaven-core#831): Add more table api Value structuring
 
         void visit(boolean literal);
 

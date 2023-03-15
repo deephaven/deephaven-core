@@ -9,6 +9,7 @@ import io.deephaven.api.expression.Expression;
 import org.immutables.value.Value.Immutable;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 /**
  * Evaluates to true based on the specific {@link #operator() operator} applied to the {@link #lhs() left-hand side} and
@@ -22,34 +23,44 @@ public abstract class FilterComparison extends FilterBase implements Serializabl
         /**
          * {@code lhs < rhs}
          */
-        LESS_THAN,
+        LESS_THAN("<"),
 
         /**
          * {@code lhs <= rhs}
          */
-        LESS_THAN_OR_EQUAL,
+        LESS_THAN_OR_EQUAL("<="),
 
         /**
          * {@code lhs > rhs}
          */
-        GREATER_THAN,
+        GREATER_THAN(">"),
 
         /**
          * {@code lhs >= rhs}
          */
-        GREATER_THAN_OR_EQUAL,
+        GREATER_THAN_OR_EQUAL(">="),
 
         /**
          * {@code lhs == rhs}
          */
-        EQUALS,
+        EQUALS("=="),
 
         /**
          * {@code lhs != rhs}
          */
-        NOT_EQUALS;
+        NOT_EQUALS("!=");
 
-        public final FilterComparison of(Expression lhs, Expression rhs) {
+        private final String javaOperator;
+
+        Operator(String javaOperator) {
+            this.javaOperator = Objects.requireNonNull(javaOperator);
+        }
+
+        public String javaOperator() {
+            return javaOperator;
+        }
+
+        public FilterComparison of(Expression lhs, Expression rhs) {
             return FilterComparison.builder().operator(this).lhs(lhs).rhs(rhs).build();
         }
 
@@ -58,7 +69,7 @@ public abstract class FilterComparison extends FilterBase implements Serializabl
          *
          * @return the inverted operator
          */
-        public final Operator inverse() {
+        public Operator inverse() {
             switch (this) {
                 case LESS_THAN:
                     return GREATER_THAN_OR_EQUAL;
@@ -82,7 +93,7 @@ public abstract class FilterComparison extends FilterBase implements Serializabl
          *
          * @return the transposed operator
          */
-        public final Operator transpose() {
+        public Operator transpose() {
             switch (this) {
                 case LESS_THAN:
                     return GREATER_THAN;

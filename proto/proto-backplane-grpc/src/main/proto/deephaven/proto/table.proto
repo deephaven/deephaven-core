@@ -925,8 +925,6 @@ message NotCondition {
   Condition filter = 1;
 }
 
-// Todo: gRPC expression support on condition
-
 message CompareCondition {
   enum CompareOperation {
     LESS_THAN = 0;

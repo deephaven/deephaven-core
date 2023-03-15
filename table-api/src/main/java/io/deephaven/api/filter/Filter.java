@@ -139,14 +139,6 @@ public interface Filter extends Expression, Serializable {
     <V extends Visitor> V walk(V visitor);
 
     interface Visitor {
-        // TODO (deephaven-core#829): Add more table api Filter structuring
-
-        // note: isNull is a "special" case, as the caller doesn't technically need to know the return type of the
-        // expression (even though they should technically know, and the engine will implicitly choose the appropriate
-        // call).
-        //
-        // The same can't be said about boolean; if you want to check whether an expression is true, that will be
-        // represented with a filter comparison against a literal boolean
 
         void visit(FilterIsNull isNull);
 

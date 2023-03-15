@@ -5,7 +5,6 @@ package io.deephaven.api;
 
 import io.deephaven.api.agg.Pair;
 import io.deephaven.api.expression.Expression;
-import io.deephaven.api.expression.ExpressionBasicVisitor;
 import io.deephaven.api.expression.ExpressionFunction;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.filter.FilterAnd;
@@ -34,26 +33,9 @@ public class Strings {
     }
 
     public static String of(FilterComparison comparison) {
-        // todo: consider lhs / rhs as null? translate to isNull / !isNull?
-        String lhs = of(comparison.lhs());
-        String rhs = of(comparison.rhs());
-        switch (comparison.operator()) {
-            case LESS_THAN:
-                return String.format("(%s) < (%s)", lhs, rhs);
-            case LESS_THAN_OR_EQUAL:
-                return String.format("(%s) <= (%s)", lhs, rhs);
-            case GREATER_THAN:
-                return String.format("(%s) > (%s)", lhs, rhs);
-            case GREATER_THAN_OR_EQUAL:
-                return String.format("(%s) >= (%s)", lhs, rhs);
-            case EQUALS:
-                return String.format("(%s) == (%s)", lhs, rhs);
-            case NOT_EQUALS:
-                return String.format("(%s) != (%s)", lhs, rhs);
-            default:
-                throw new IllegalStateException(
-                        "Unexpected comparison operator: " + comparison.operator());
-        }
+        final String lhs = of(comparison.lhs());
+        final String rhs = of(comparison.rhs());
+        return String.format("(%s) %s (%s)", lhs, comparison.operator().javaOperator(), rhs);
     }
 
     public static String of(FilterNot not) {
@@ -139,11 +121,21 @@ public class Strings {
     /**
      * If we ever need to provide more specificity for a type, we can create a non-universal impl.
      */
-    private static class UniversalAdapter extends ExpressionBasicVisitor {
+    private static class UniversalAdapter implements Expression.Visitor, Filter.Visitor, Literal.Visitor {
         private String out;
 
         public String getOut() {
             return Objects.requireNonNull(out);
+        }
+
+        @Override
+        public void visit(Filter filter) {
+            filter.walk((Filter.Visitor) this);
+        }
+
+        @Override
+        public void visit(Literal literal) {
+            literal.walk((Literal.Visitor) this);
         }
 
         @Override

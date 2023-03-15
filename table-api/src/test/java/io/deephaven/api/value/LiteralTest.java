@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class ValueTest {
+public class LiteralTest {
 
     @Test
     void boolValue() {
@@ -17,7 +17,7 @@ public class ValueTest {
 
     @Test
     void intValue() {
-        toString(Literal.of(42), "42");
+        toString(Literal.of(42), "(int)42");
     }
 
     @Test
