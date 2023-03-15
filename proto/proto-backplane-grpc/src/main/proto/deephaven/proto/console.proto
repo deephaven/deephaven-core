@@ -121,6 +121,9 @@ message CancelCommandResponse {
 }
 
 message AutoCompleteRequest {
+    io.deephaven.proto.backplane.grpc.Ticket console_id = 5;
+    VersionedTextDocumentIdentifier text_document = 6;//TODO actually just uri?
+    optional int32 request_id = 7;
     oneof request {
         // Starts a document in a given console - to end, just close the stream, the server will hang up right away
         OpenDocumentRequest open_document = 1;
@@ -132,10 +135,10 @@ message AutoCompleteRequest {
         GetCompletionItemsRequest get_completion_items = 3;
 
         // Request for help about the method signature at the cursor
-        GetSignatureHelpRequest get_signature_help = 5;
+        GetSignatureHelpRequest get_signature_help = 8;
 
         // Request for help about what the user is hovering over
-        GetHoverRequest get_hover = 6;
+        GetHoverRequest get_hover = 9;
 
         // Closes the document, indicating that it will not be referenced again
         CloseDocumentRequest close_document = 4;
@@ -155,8 +158,8 @@ message BrowserNextResponse {
 }
 
 message OpenDocumentRequest {
-    io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
-    TextDocumentItem text_document = 2;
+    io.deephaven.proto.backplane.grpc.Ticket console_id = 1 [deprecated=true];
+    TextDocumentItem text_document = 2 [deprecated=true];
 }
 message TextDocumentItem {
     string uri = 1;
@@ -166,13 +169,13 @@ message TextDocumentItem {
 }
 
 message CloseDocumentRequest {
-    io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
-    VersionedTextDocumentIdentifier text_document = 2;//TODO actually just uri?
+    io.deephaven.proto.backplane.grpc.Ticket console_id = 1 [deprecated=true];
+    VersionedTextDocumentIdentifier text_document = 2 [deprecated=true];
 }
 
 message ChangeDocumentRequest {
-    io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
-    VersionedTextDocumentIdentifier text_document = 2;//TODO actually just uri?
+    io.deephaven.proto.backplane.grpc.Ticket console_id = 1 [deprecated=true];
+    VersionedTextDocumentIdentifier text_document = 2 [deprecated=true];
     repeated TextDocumentContentChangeEvent content_changes = 3;
 
     message TextDocumentContentChangeEvent {
@@ -195,13 +198,13 @@ message Position {
 }
 
 message GetCompletionItemsRequest {
-    io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
+    io.deephaven.proto.backplane.grpc.Ticket console_id = 1 [deprecated=true];
 
     CompletionContext context = 2;
-    VersionedTextDocumentIdentifier text_document = 3;
+    VersionedTextDocumentIdentifier text_document = 3 [deprecated=true];
     Position position = 4;
 
-    int32 request_id = 5;
+    int32 request_id = 5 [deprecated=true];
 }
 message CompletionContext {
     int32 trigger_kind = 1;
@@ -237,19 +240,14 @@ message TextEdit {
 }
 
 message GetSignatureHelpRequest {
-    io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
-
-    optional SignatureHelpContext context = 2;
-    VersionedTextDocumentIdentifier text_document = 3;
-    Position position = 4;
-
-    int32 request_id = 5;
+    SignatureHelpContext context = 1;
+    Position position = 2;
 }
 message SignatureHelpContext {
     int32 trigger_kind = 1;
     optional string trigger_character = 2;
     bool is_retrigger = 3;
-    optional SignatureHelp active_signature_help = 4;
+    SignatureHelp active_signature_help = 4;
 }
 
 message SignatureHelp {
@@ -271,12 +269,7 @@ message ParameterInformation {
 }
 
 message GetHoverRequest {
-    io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
-
-    VersionedTextDocumentIdentifier text_document = 2;
-    Position position = 3;
-
-    int32 request_id = 4;
+    Position position = 1;
 }
 
 message Hover {
