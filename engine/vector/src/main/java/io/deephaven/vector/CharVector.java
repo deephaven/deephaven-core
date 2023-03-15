@@ -33,7 +33,16 @@ public interface CharVector extends Vector<CharVector>, Iterable<Character> {
     char get(long index);
 
     @Override
+    CharVector subVector(long fromIndexInclusive, long toIndexExclusive);
+
+    @Override
+    CharVector subVectorByPositions(long[] positions);
+
+    @Override
     char[] toArray();
+
+    @Override
+    CharVector getDirect();
 
     @Override
     @FinalDefault

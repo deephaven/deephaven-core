@@ -38,7 +38,16 @@ public interface FloatVector extends Vector<FloatVector>, Iterable<Float> {
     float get(long index);
 
     @Override
+    FloatVector subVector(long fromIndexInclusive, long toIndexExclusive);
+
+    @Override
+    FloatVector subVectorByPositions(long[] positions);
+
+    @Override
     float[] toArray();
+
+    @Override
+    FloatVector getDirect();
 
     @Override
     @FinalDefault

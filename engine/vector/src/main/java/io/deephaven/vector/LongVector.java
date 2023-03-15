@@ -38,7 +38,16 @@ public interface LongVector extends Vector<LongVector>, Iterable<Long> {
     long get(long index);
 
     @Override
+    LongVector subVector(long fromIndexInclusive, long toIndexExclusive);
+
+    @Override
+    LongVector subVectorByPositions(long[] positions);
+
+    @Override
     long[] toArray();
+
+    @Override
+    LongVector getDirect();
 
     @Override
     @FinalDefault

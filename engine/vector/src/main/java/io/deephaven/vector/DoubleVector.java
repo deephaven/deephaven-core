@@ -38,7 +38,16 @@ public interface DoubleVector extends Vector<DoubleVector>, Iterable<Double> {
     double get(long index);
 
     @Override
+    DoubleVector subVector(long fromIndexInclusive, long toIndexExclusive);
+
+    @Override
+    DoubleVector subVectorByPositions(long[] positions);
+
+    @Override
     double[] toArray();
+
+    @Override
+    DoubleVector getDirect();
 
     @Override
     @FinalDefault

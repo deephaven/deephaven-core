@@ -38,7 +38,16 @@ public interface ByteVector extends Vector<ByteVector>, Iterable<Byte> {
     byte get(long index);
 
     @Override
+    ByteVector subVector(long fromIndexInclusive, long toIndexExclusive);
+
+    @Override
+    ByteVector subVectorByPositions(long[] positions);
+
+    @Override
     byte[] toArray();
+
+    @Override
+    ByteVector getDirect();
 
     @Override
     @FinalDefault

@@ -44,6 +44,11 @@ public interface Vector<VECTOR_TYPE extends Vector<VECTOR_TYPE>> extends LongSiz
     Object toArray();
 
     /**
+     * @return A version of this Vector that is flattened out to only reference memory
+     */
+    VECTOR_TYPE getDirect();
+
+    /**
      * @return The type of elements contained by this Vector
      */
     Class<?> getComponentType();
@@ -62,11 +67,6 @@ public interface Vector<VECTOR_TYPE extends Vector<VECTOR_TYPE>> extends LongSiz
     default boolean isEmpty() {
         return size() == 0;
     }
-
-    /**
-     * @return A version of this Vector that is flattened out to only reference memory
-     */
-    VECTOR_TYPE getDirect();
 
     static long clampIndex(final long validFromInclusive, final long validToExclusive, final long index) {
         return index < validFromInclusive || index >= validToExclusive ? -1 : index;

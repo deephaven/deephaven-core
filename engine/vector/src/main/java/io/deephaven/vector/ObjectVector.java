@@ -37,7 +37,16 @@ public interface ObjectVector<COMPONENT_TYPE> extends Vector<ObjectVector<COMPON
     COMPONENT_TYPE get(long index);
 
     @Override
+    ObjectVector<COMPONENT_TYPE> subVector(long fromIndexInclusive, long toIndexExclusive);
+
+    @Override
+    ObjectVector<COMPONENT_TYPE> subVectorByPositions(long[] positions);
+
+    @Override
     COMPONENT_TYPE[] toArray();
+
+    @Override
+    ObjectVector<COMPONENT_TYPE> getDirect();
 
     @Override
     Class<COMPONENT_TYPE> getComponentType();

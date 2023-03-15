@@ -38,7 +38,16 @@ public interface ShortVector extends Vector<ShortVector>, Iterable<Short> {
     short get(long index);
 
     @Override
+    ShortVector subVector(long fromIndexInclusive, long toIndexExclusive);
+
+    @Override
+    ShortVector subVectorByPositions(long[] positions);
+
+    @Override
     short[] toArray();
+
+    @Override
+    ShortVector getDirect();
 
     @Override
     @FinalDefault

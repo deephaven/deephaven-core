@@ -38,7 +38,16 @@ public interface IntVector extends Vector<IntVector>, Iterable<Integer> {
     int get(long index);
 
     @Override
+    IntVector subVector(long fromIndexInclusive, long toIndexExclusive);
+
+    @Override
+    IntVector subVectorByPositions(long[] positions);
+
+    @Override
     int[] toArray();
+
+    @Override
+    IntVector getDirect();
 
     @Override
     @FinalDefault
