@@ -6,9 +6,9 @@ plugins {
 description = 'An extension integrating Arrow sources with Deephaven\'s Table Model'
 
 dependencies {
-    api project(':Configuration')
     api project(':engine-table')
 
+    implementation project(':Configuration')
     implementation depCommonsLang3
 
     Classpaths.inheritArrow(project, 'arrow-format', 'implementation')

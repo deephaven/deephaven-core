@@ -46,6 +46,11 @@ public abstract class AbstractArrowColumnSource<T> extends AbstractColumnSource<
             @NotNull final ArrowWrapperTools.FillContext context,
             @NotNull final RowSequence rowSequence,
             @NotNull final LongConsumer rowKeyConsumer) {
+        if (getBlockNo(rowSequence.firstRowKey()) == getBlockNo(rowSequence.lastRowKey())) {
+            context.ensureLoadingBlock(getBlockNo(rowSequence.firstRowKey()));
+            rowSequence.forAllRowKeys(rowKeyConsumer);
+            return;
+        }
         try (RowSequence.Iterator okIt = rowSequence.getRowSequenceIterator()) {
             while (okIt.hasMore()) {
                 long nextKey = okIt.peekNextKey();

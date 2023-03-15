@@ -97,15 +97,21 @@ import static org.apache.arrow.vector.ipc.message.MessageSerializer.IPC_CONTINUA
  * <li>{@link ArrowLongColumnSource} - uses {@link BigIntVector} under the hood, returns long</li>
  * <li>{@link ArrowUInt1ColumnSource} - uses {@link UInt1Vector} under the hood, returns short</li>
  * <li>{@link ArrowUInt4ColumnSource} - uses {@link UInt4Vector} under the hood, returns long</li>
- * <li>{@link ArrowObjectColumnSource ArrowObjectColumnSource&lt;BigInteger&gt;} - uses {@link UInt8Vector} under the hood, returns BigInteger</li>
+ * <li>{@link ArrowObjectColumnSource ArrowObjectColumnSource&lt;BigInteger&gt;} - uses {@link UInt8Vector} under the
+ * hood, returns BigInteger</li>
  * <li>{@link ArrowLocalTimeColumnSource} - uses {@link TimeMilliVector} under the hood, returns LocalTime</li>
  * <li>{@link ArrowDateTimeColumnSource} - uses {@link TimeStampVector} under the hood, returns DateTime</li>
  * <li>{@link ArrowStringColumnSource} - uses {@link VarCharVector} under the hood, returns String</li>
- * <li>{@link ArrowObjectColumnSource ArrowObjectColumnSource&lt;byte[]&gt;} - uses {@link FixedSizeBinaryVector} under the hood, returns byte[]</li>
- * <li>{@link ArrowObjectColumnSource ArrowObjectColumnSource&lt;byte[]&gt;} - uses {@link VarBinaryVector} under the hood, returns byte[]</li>
- * <li>{@link ArrowObjectColumnSource ArrowObjectColumnSource&lt;BigDecimal&gt;} - uses {@link DecimalVector} under the hood, returns BigDecimal</li>
- * <li>{@link ArrowObjectColumnSource ArrowObjectColumnSource&lt;BigDecimal&gt;} - uses {@link Decimal256Vector} under the hood, returns BigDecimal</li>
- * <li>{@link ArrowObjectColumnSource ArrowObjectColumnSource&lt;LocalDateTime&gt;} - uses {@link DateMilliVector} under the hood, returns LocalDateTime</li>
+ * <li>{@link ArrowObjectColumnSource ArrowObjectColumnSource&lt;byte[]&gt;} - uses {@link FixedSizeBinaryVector} under
+ * the hood, returns byte[]</li>
+ * <li>{@link ArrowObjectColumnSource ArrowObjectColumnSource&lt;byte[]&gt;} - uses {@link VarBinaryVector} under the
+ * hood, returns byte[]</li>
+ * <li>{@link ArrowObjectColumnSource ArrowObjectColumnSource&lt;BigDecimal&gt;} - uses {@link DecimalVector} under the
+ * hood, returns BigDecimal</li>
+ * <li>{@link ArrowObjectColumnSource ArrowObjectColumnSource&lt;BigDecimal&gt;} - uses {@link Decimal256Vector} under
+ * the hood, returns BigDecimal</li>
+ * <li>{@link ArrowObjectColumnSource ArrowObjectColumnSource&lt;LocalDateTime&gt;} - uses {@link DateMilliVector} under
+ * the hood, returns LocalDateTime</li>
  * </ul>
  */
 public class ArrowWrapperTools {
@@ -128,6 +134,7 @@ public class ArrowWrapperTools {
 
             int metadataBufLen = 1024;
             byte[] rawMetadataBuf = new byte[metadataBufLen];
+            final Message message = new Message();
             final RecordBatch recordBatch = new RecordBatch();
             for (int ii = 0; ii < blocks.length; ++ii) {
                 final ArrowBlock block = recordBlocks.get(ii);
@@ -153,10 +160,11 @@ public class ArrowWrapperTools {
                     // if the continuation token is present, skip the length
                     metadataBuf.position(metadataBuf.position() + Integer.BYTES);
                 }
-                final Message message = Message.getRootAsMessage(metadataBuf.asReadOnlyBuffer());
-                final RecordBatch batch = (RecordBatch) message.header(recordBatch);
+                Message.getRootAsMessage(metadataBuf.asReadOnlyBuffer(), message);
+                message.header(recordBatch);
 
-                final int rowCount = LongSizedDataStructure.intSize("ArrowWrapperTools#readFeather", batch.length());
+                final int rowCount = LongSizedDataStructure.intSize("ArrowWrapperTools#readFeather",
+                        recordBatch.length());
                 blocks[ii] = rowCount;
                 biggestBlock = Math.max(biggestBlock, rowCount);
             }
@@ -192,7 +200,7 @@ public class ArrowWrapperTools {
 
     private static AbstractColumnSource<?> generateColumnSource(
             final FieldVector vector, final Field field, final int highBit, final ArrowTableContext arrowHelper) {
-        switch(vector.getMinorType()) {
+        switch (vector.getMinorType()) {
             case TINYINT:
                 return new ArrowByteColumnSource(highBit, field, arrowHelper);
             case SMALLINT:
