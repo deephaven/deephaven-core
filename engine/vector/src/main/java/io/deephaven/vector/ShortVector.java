@@ -156,9 +156,11 @@ public interface ShortVector extends Vector<ShortVector>, Iterable<Short> {
              final CloseablePrimitiveIteratorOfShort bIterator = bVector.iterator()) {
             // @formatter:on
             while (aIterator.hasNext()) {
+                // region ElementEquals
                 if (aIterator.nextShort() != bIterator.nextShort()) {
                     return false;
                 }
+                // endregion ElementEquals
             }
         }
         return true;

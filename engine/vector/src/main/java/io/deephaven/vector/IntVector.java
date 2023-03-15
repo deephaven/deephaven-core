@@ -156,9 +156,11 @@ public interface IntVector extends Vector<IntVector>, Iterable<Integer> {
              final CloseablePrimitiveIteratorOfInt bIterator = bVector.iterator()) {
             // @formatter:on
             while (aIterator.hasNext()) {
+                // region ElementEquals
                 if (aIterator.nextInt() != bIterator.nextInt()) {
                     return false;
                 }
+                // endregion ElementEquals
             }
         }
         return true;

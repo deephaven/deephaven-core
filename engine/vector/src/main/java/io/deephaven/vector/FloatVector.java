@@ -156,9 +156,11 @@ public interface FloatVector extends Vector<FloatVector>, Iterable<Float> {
              final CloseablePrimitiveIteratorOfFloat bIterator = bVector.iterator()) {
             // @formatter:on
             while (aIterator.hasNext()) {
-                if (aIterator.nextFloat() != bIterator.nextFloat()) {
+                // region ElementEquals
+                if (Float.floatToIntBits(aIterator.nextFloat()) != Float.floatToIntBits(bIterator.nextFloat())) {
                     return false;
                 }
+                // endregion ElementEquals
             }
         }
         return true;

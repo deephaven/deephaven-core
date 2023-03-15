@@ -151,9 +151,11 @@ public interface CharVector extends Vector<CharVector>, Iterable<Character> {
              final CloseablePrimitiveIteratorOfChar bIterator = bVector.iterator()) {
             // @formatter:on
             while (aIterator.hasNext()) {
+                // region ElementEquals
                 if (aIterator.nextChar() != bIterator.nextChar()) {
                     return false;
                 }
+                // endregion ElementEquals
             }
         }
         return true;

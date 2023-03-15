@@ -156,9 +156,11 @@ public interface LongVector extends Vector<LongVector>, Iterable<Long> {
              final CloseablePrimitiveIteratorOfLong bIterator = bVector.iterator()) {
             // @formatter:on
             while (aIterator.hasNext()) {
+                // region ElementEquals
                 if (aIterator.nextLong() != bIterator.nextLong()) {
                     return false;
                 }
+                // endregion ElementEquals
             }
         }
         return true;

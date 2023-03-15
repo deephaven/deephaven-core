@@ -156,9 +156,11 @@ public interface ByteVector extends Vector<ByteVector>, Iterable<Byte> {
              final CloseablePrimitiveIteratorOfByte bIterator = bVector.iterator()) {
             // @formatter:on
             while (aIterator.hasNext()) {
+                // region ElementEquals
                 if (aIterator.nextByte() != bIterator.nextByte()) {
                     return false;
                 }
+                // endregion ElementEquals
             }
         }
         return true;

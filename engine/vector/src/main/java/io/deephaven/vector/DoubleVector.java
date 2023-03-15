@@ -156,9 +156,11 @@ public interface DoubleVector extends Vector<DoubleVector>, Iterable<Double> {
              final CloseablePrimitiveIteratorOfDouble bIterator = bVector.iterator()) {
             // @formatter:on
             while (aIterator.hasNext()) {
-                if (aIterator.nextDouble() != bIterator.nextDouble()) {
+                // region ElementEquals
+                if (Double.doubleToLongBits(aIterator.nextDouble()) != Double.doubleToLongBits(bIterator.nextDouble())) {
                     return false;
                 }
+                // endregion ElementEquals
             }
         }
         return true;
