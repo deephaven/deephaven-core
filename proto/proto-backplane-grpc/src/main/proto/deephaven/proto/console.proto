@@ -132,22 +132,22 @@ message AutoCompleteRequest {
         GetCompletionItemsRequest get_completion_items = 3;
 
         // Request for help about the method signature at the cursor
-        GetSignatureHelpRequest get_signature_help = 4;
+        GetSignatureHelpRequest get_signature_help = 5;
 
         // Request for help about what the user is hovering over
-        GetHoverRequest get_hover = 5;
+        GetHoverRequest get_hover = 6;
 
         // Closes the document, indicating that it will not be referenced again
-        CloseDocumentRequest close_document = 6;
+        CloseDocumentRequest close_document = 4;
     }
 }
 message AutoCompleteResponse {
-    int32 request_id = 1;
-    bool success = 2;
+    int32 request_id = 2;
+    bool success = 3;
     oneof response {
-        GetCompletionItemsResponse completion_items = 3;
-        GetSignatureHelpResponse signatures = 4;
-        GetHoverResponse hover = 5;
+        GetCompletionItemsResponse completion_items = 1;
+        SignatureHelp signatures = 4;
+        Hover hover = 5;
     }
 }
 
@@ -209,6 +209,11 @@ message CompletionContext {
 }
 message GetCompletionItemsResponse {
     repeated CompletionItem items = 1;
+
+    // These fields are maintained for backwards compatibility
+    // Use the same fields on AutoCompleteResponse instead
+    int32 request_id = 2 [deprecated=true];
+    bool success = 3 [deprecated=true];
 }
 message CompletionItem {
     int32 start = 1;
@@ -234,7 +239,7 @@ message TextEdit {
 message GetSignatureHelpRequest {
     io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
 
-    SignatureHelpContext context = 2;
+    optional SignatureHelpContext context = 2;
     VersionedTextDocumentIdentifier text_document = 3;
     Position position = 4;
 
@@ -242,25 +247,27 @@ message GetSignatureHelpRequest {
 }
 message SignatureHelpContext {
     int32 trigger_kind = 1;
-    string trigger_character = 2;
+    optional string trigger_character = 2;
+    bool is_retrigger = 3;
+    optional SignatureHelp active_signature_help = 4;
 }
 
-message GetSignatureHelpResponse {
+message SignatureHelp {
     repeated SignatureInformation signatures = 1;
-    int32 active_signature = 2;
-    int32 active_parameter = 3;
+    optional int32 active_signature = 2;
+    optional int32 active_parameter = 3;
 }
 
 message SignatureInformation {
     string label = 1;
-    string documentation = 2;
+    optional string documentation = 2;
     repeated ParameterInformation parameters = 3;
-    int32 active_parameter = 4;
+    optional int32 active_parameter = 4;
 }
 
 message ParameterInformation {
     string label = 1;
-    string documentation = 2;
+    optional string documentation = 2;
 }
 
 message GetHoverRequest {
@@ -272,9 +279,9 @@ message GetHoverRequest {
     int32 request_id = 4;
 }
 
-message GetHoverResponse {
+message Hover {
     string contents = 1;
-    DocumentRange range = 2;
+    optional DocumentRange range = 2;
 }
 
 message FigureDescriptor {
