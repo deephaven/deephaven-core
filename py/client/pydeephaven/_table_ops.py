@@ -1,25 +1,43 @@
 #
-# Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
 #
 
-from abc import ABC
+from abc import ABC, abstractmethod
 from typing import List, Any
 
+from pydeephaven._constants import AggType
 from pydeephaven.combo_agg import ComboAggregation
 from pydeephaven.constants import SortDirection, MatchRule
-from pydeephaven._constants import AggType
 from pydeephaven.proto import table_pb2, table_pb2_grpc
+from pydeephaven.updateby import UpdateByOperation
 
 
 class TableOp(ABC):
+    @classmethod
+    @abstractmethod
+    def get_stub_func(cls, table_service_stub: table_pb2_grpc.TableServiceStub):
+        ...
+
+    @abstractmethod
     def make_grpc_request(self, result_id, source_id=None):
         ...
 
+    @abstractmethod
     def make_grpc_request_for_batch(self, result_id, source_id):
         ...
 
 
 class NoneOp(TableOp):
+    @classmethod
+    def get_stub_func(cls, table_service_stub: table_pb2_grpc.TableServiceStub):
+        raise AssertionError("should never be called.")
+
+    def make_grpc_request(self, result_id, source_id=None):
+        raise AssertionError("should never be called.")
+
+    def make_grpc_request_for_batch(self, result_id, source_id):
+        raise AssertionError("should never be called.")
+
     def __init__(self, table):
         self.table = table
 
@@ -493,4 +511,23 @@ class FetchTableOp(TableOp):
 
     def make_grpc_request_for_batch(self, result_id, source_id):
         return table_pb2.BatchTableRequest.Operation(
-            empty_table=self.make_grpc_request(result_id=result_id, source_id=source_id))
+            fetch_table=self.make_grpc_request(result_id=result_id, source_id=source_id))
+
+
+class UpdateByOp(TableOp):
+    def __init__(self, operations: List[UpdateByOperation], by: List[str]):
+        self.operations = operations
+        self.by = by
+
+    @classmethod
+    def get_stub_func(cls, table_service_stub: table_pb2_grpc.TableServiceStub):
+        return table_service_stub.UpdateBy
+
+    def make_grpc_request(self, result_id, source_id=None):
+        operations = [op.make_grpc_request() for op in self.operations]
+        return table_pb2.UpdateByRequest(result_id=result_id, source_id=source_id, operations=operations,
+                                         group_by_columns=self.by)
+
+    def make_grpc_request_for_batch(self, result_id, source_id):
+        return table_pb2.BatchTableRequest.Operation(
+            update_by=self.make_grpc_request(result_id=result_id, source_id=source_id))
