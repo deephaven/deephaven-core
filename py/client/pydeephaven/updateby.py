@@ -8,25 +8,25 @@ from .dherror import DHError
 from pydeephaven.proto import table_pb2
 
 
-GrpcUpdateByOperation = table_pb2.UpdateByRequest.UpdateByOperation
-GrpcUpdateByColumn = GrpcUpdateByOperation.UpdateByColumn
-GrpcUpdateBySpec = GrpcUpdateByColumn.UpdateBySpec
-GrpcUpdateByEma = GrpcUpdateBySpec.UpdateByEma
-GrpcUpdateByEmaOptions = GrpcUpdateByEma.UpdateByEmaOptions
-GrpcUpdateByEmaTimescale = GrpcUpdateByEma.UpdateByEmaTimescale
-GrpcUpdateByEmaTicks = GrpcUpdateByEmaTimescale.UpdateByEmaTicks
-GrpcUpdateByEmaTime = GrpcUpdateByEmaTimescale.UpdateByEmaTime
-GrpcMathContext = table_pb2.MathContext
+_GrpcUpdateByOperation = table_pb2.UpdateByRequest.UpdateByOperation
+_GrpcUpdateByColumn = _GrpcUpdateByOperation.UpdateByColumn
+_GrpcUpdateBySpec = _GrpcUpdateByColumn.UpdateBySpec
+_GrpcUpdateByEma = _GrpcUpdateBySpec.UpdateByEma
+_GrpcUpdateByEmaOptions = _GrpcUpdateByEma.UpdateByEmaOptions
+_GrpcUpdateByEmaTimescale = _GrpcUpdateByEma.UpdateByEmaTimescale
+_GrpcUpdateByEmaTicks = _GrpcUpdateByEmaTimescale.UpdateByEmaTicks
+_GrpcUpdateByEmaTime = _GrpcUpdateByEmaTimescale.UpdateByEmaTime
+_GrpcMathContext = table_pb2.MathContext
 
 
-class UpdateByBase(ABC):
+class _UpdateByBase(ABC):
     @abstractmethod
     def make_grpc_request(self):
         ...
 
 
 class MathContext(Enum):
-    """An Enum for predefined precision and rounding settings in numeric calculation."""
+    """An Enum for predefined precision and rounding settings in numeric calculations."""
 
     UNLIMITED = 0, table_pb2.MathContext.RoundingMode.HALF_UP
     """unlimited precision arithmetic, rounding is half-up"""
@@ -57,7 +57,7 @@ class BadDataBehavior(Enum):
     """Allow the bad data to poison the result. This is only valid for use with NaN"""
 
 
-class OperationControl(UpdateByBase):
+class OperationControl(_UpdateByBase):
     """A OperationControl represents control parameters for performing operations with the table
         UpdateByOperation."""
 
@@ -77,23 +77,23 @@ class OperationControl(UpdateByBase):
         self.big_value_context = big_value_context
 
     def make_grpc_request(self):
-        return GrpcUpdateByEmaOptions(on_null_value=self.on_null.value, on_nan_value=self.on_nan.value,
-                                      big_value_context=GrpcMathContext(precision=self.big_value_context.value[0],
-                                                                        rounding_mode=self.big_value_context.value[1]))
+        return _GrpcUpdateByEmaOptions(on_null_value=self.on_null.value, on_nan_value=self.on_nan.value,
+                                      big_value_context=_GrpcMathContext(precision=self.big_value_context.value[0],
+                                                                         rounding_mode=self.big_value_context.value[1]))
 
 
-class UpdateByOperation(UpdateByBase):
+class UpdateByOperation(_UpdateByBase):
     """A UpdateByOperation represents an operator for the Table update-by operation."""
 
     def __init__(self, ub_column):
         self.ub_column = ub_column
 
     def make_grpc_request(self):
-        return GrpcUpdateByOperation(column=self.ub_column)
+        return _GrpcUpdateByOperation(column=self.ub_column)
 
 
 def cum_sum(cols: List[str]) -> UpdateByOperation:
-    """ Create a cumulative sum update-by operation.
+    """Creates a cumulative sum UpdateByOperation for the supplied column names.
 
     Args:
         cols (List[str]): the columns to be operated on, can be a common name or an equal expression,
@@ -103,13 +103,13 @@ def cum_sum(cols: List[str]) -> UpdateByOperation:
     Returns:
         UpdateByOperation
     """
-    ub_spec = GrpcUpdateBySpec(sum=GrpcUpdateBySpec.UpdateByCumulativeSum())
-    ub_column = GrpcUpdateByColumn(spec=ub_spec, match_pairs=cols)
+    ub_spec = _GrpcUpdateBySpec(sum=_GrpcUpdateBySpec.UpdateByCumulativeSum())
+    ub_column = _GrpcUpdateByColumn(spec=ub_spec, match_pairs=cols)
     return UpdateByOperation(ub_column=ub_column)
 
 
 def cum_prod(cols: List[str]) -> UpdateByOperation:
-    """ Create a cumulative product update-by operation.
+    """Creates a cumulative product UpdateByOperation for the supplied column names.
 
     Args:
         cols (List[str]): the columns to be operated on, can be a common name or an equal expression,
@@ -119,13 +119,13 @@ def cum_prod(cols: List[str]) -> UpdateByOperation:
     Returns:
         UpdateByOperation
     """
-    ub_spec = GrpcUpdateBySpec(product=GrpcUpdateBySpec.UpdateByCumulativeProduct())
-    ub_column = GrpcUpdateByColumn(spec=ub_spec, match_pairs=cols)
+    ub_spec = _GrpcUpdateBySpec(product=_GrpcUpdateBySpec.UpdateByCumulativeProduct())
+    ub_column = _GrpcUpdateByColumn(spec=ub_spec, match_pairs=cols)
     return UpdateByOperation(ub_column=ub_column)
 
 
 def cum_min(cols: List[str]) -> UpdateByOperation:
-    """ Create a cumulative minimum update-by operation.
+    """Creates a cumulative minimum UpdateByOperation for the supplied column names.
 
     Args:
         cols (List[str]): the columns to be operated on, can be a common name or an equal expression,
@@ -135,13 +135,13 @@ def cum_min(cols: List[str]) -> UpdateByOperation:
     Returns:
         UpdateByOperation
     """
-    ub_spec = GrpcUpdateBySpec(min=GrpcUpdateBySpec.UpdateByCumulativeMin())
-    ub_column = GrpcUpdateByColumn(spec=ub_spec, match_pairs=cols)
+    ub_spec = _GrpcUpdateBySpec(min=_GrpcUpdateBySpec.UpdateByCumulativeMin())
+    ub_column = _GrpcUpdateByColumn(spec=ub_spec, match_pairs=cols)
     return UpdateByOperation(ub_column=ub_column)
 
 
 def cum_max(cols: List[str]) -> UpdateByOperation:
-    """ Create a cumulative maximum update-by operation.
+    """Creates a cumulative maximum UpdateByOperation for the supplied column names.
 
     Args:
         cols (List[str]): the columns to be operated on, can be a common name or an equal expression,
@@ -151,13 +151,14 @@ def cum_max(cols: List[str]) -> UpdateByOperation:
     Returns:
         UpdateByOperation
     """
-    ub_spec = GrpcUpdateBySpec(max=GrpcUpdateBySpec.UpdateByCumulativeMax())
-    ub_column = GrpcUpdateByColumn(spec=ub_spec, match_pairs=cols)
+    ub_spec = _GrpcUpdateBySpec(max=_GrpcUpdateBySpec.UpdateByCumulativeMax())
+    ub_column = _GrpcUpdateByColumn(spec=ub_spec, match_pairs=cols)
     return UpdateByOperation(ub_column=ub_column)
 
 
 def forward_fill(cols: List[str]) -> UpdateByOperation:
-    """ Create a forward fill update-by operation.
+    """Creates a forward fill UpdateByOperation for the supplied column names. Null values in the columns are
+    replaced by the last known non-null values. This operation is forward only.
 
     Args:
         cols (List[str]): the columns to be operated on, can be a common name or an equal expression,
@@ -167,8 +168,8 @@ def forward_fill(cols: List[str]) -> UpdateByOperation:
     Returns:
         UpdateByOperation
     """
-    ub_spec = GrpcUpdateBySpec(fill=GrpcUpdateBySpec.UpdateByFill())
-    ub_column = GrpcUpdateByColumn(spec=ub_spec, match_pairs=cols)
+    ub_spec = _GrpcUpdateBySpec(fill=_GrpcUpdateBySpec.UpdateByFill())
+    ub_column = _GrpcUpdateByColumn(spec=ub_spec, match_pairs=cols)
     return UpdateByOperation(ub_column=ub_column)
 
 
@@ -195,10 +196,10 @@ def ema_tick_decay(time_scale_ticks: int, cols: List[str],
         DHError
     """
     try:
-        timescale = GrpcUpdateByEmaTimescale(ticks=GrpcUpdateByEmaTicks(ticks=time_scale_ticks))
-        ub_ema = GrpcUpdateByEma(options=op_control.make_grpc_request() if op_control else None, timescale=timescale)
-        ub_spec = GrpcUpdateBySpec(ema=ub_ema)
-        ub_column = GrpcUpdateByColumn(spec=ub_spec, match_pairs=cols)
+        timescale = _GrpcUpdateByEmaTimescale(ticks=_GrpcUpdateByEmaTicks(ticks=time_scale_ticks))
+        ub_ema = _GrpcUpdateByEma(options=op_control.make_grpc_request() if op_control else None, timescale=timescale)
+        ub_spec = _GrpcUpdateBySpec(ema=ub_ema)
+        ub_column = _GrpcUpdateByColumn(spec=ub_spec, match_pairs=cols)
         return UpdateByOperation(ub_column=ub_column)
     except Exception as e:
         raise DHError("failed to create a tick-decay EMA UpdateByOperation.") from e
@@ -229,11 +230,11 @@ def ema_time_decay(ts_col: str, time_scale: int, cols: List[str],
         DHError
     """
     try:
-        timescale = GrpcUpdateByEmaTimescale(time=GrpcUpdateByEmaTime(column=ts_col, period_nanos=time_scale))
-        ub_ema = GrpcUpdateByEma(options=op_control.make_grpc_request() if op_control else None, timescale=timescale)
+        timescale = _GrpcUpdateByEmaTimescale(time=_GrpcUpdateByEmaTime(column=ts_col, period_nanos=time_scale))
+        ub_ema = _GrpcUpdateByEma(options=op_control.make_grpc_request() if op_control else None, timescale=timescale)
 
-        ub_spec = GrpcUpdateBySpec(ema=ub_ema)
-        ub_column = GrpcUpdateByColumn(spec=ub_spec, match_pairs=cols)
+        ub_spec = _GrpcUpdateBySpec(ema=ub_ema)
+        ub_column = _GrpcUpdateByColumn(spec=ub_spec, match_pairs=cols)
         return UpdateByOperation(ub_column=ub_column)
     except Exception as e:
         raise DHError("failed to create a time-decay EMA UpdateByOperation.") from e
