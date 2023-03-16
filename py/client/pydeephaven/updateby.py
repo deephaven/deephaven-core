@@ -96,9 +96,9 @@ def cum_sum(cols: List[str]) -> UpdateByOperation:
     """Creates a cumulative sum UpdateByOperation for the supplied column names.
 
     Args:
-        cols (List[str]): the columns to be operated on, can be a common name or an equal expression,
-                i.e. "col_a = col_b" for different column names; when empty, update_by performs the cumulative sum
-                operation on all the applicable columns.
+        cols (List[str]): the columns to be operated on, can include expressions to rename the output,
+            i.e. "new_col = col"; when empty, update_by performs the cumulative sum operation on all the
+            applicable columns.
 
     Returns:
         UpdateByOperation
@@ -112,9 +112,9 @@ def cum_prod(cols: List[str]) -> UpdateByOperation:
     """Creates a cumulative product UpdateByOperation for the supplied column names.
 
     Args:
-        cols (List[str]): the columns to be operated on, can be a common name or an equal expression,
-                i.e. "col_a = col_b" for different column names; when empty, update_by performs the cumulative product
-                operation on all the applicable columns.
+        cols (List[str]): the columns to be operated on, can include expressions to rename the output,
+            i.e. "new_col = col"; when empty, update_by performs the cumulative product operation on all the
+            applicable columns.
 
     Returns:
         UpdateByOperation
@@ -128,9 +128,9 @@ def cum_min(cols: List[str]) -> UpdateByOperation:
     """Creates a cumulative minimum UpdateByOperation for the supplied column names.
 
     Args:
-        cols (List[str]): the columns to be operated on, can be a common name or an equal expression,
-                i.e. "col_a = col_b" for different column names; when empty, update_by performs the cumulative minimum
-                operation on all the applicable columns.
+        cols (List[str]): the columns to be operated on, can include expressions to rename the output,
+            i.e. "new_col = col"; when empty, update_by performs the cumulative minimum operation on all the
+            applicable columns.
 
     Returns:
         UpdateByOperation
@@ -144,9 +144,9 @@ def cum_max(cols: List[str]) -> UpdateByOperation:
     """Creates a cumulative maximum UpdateByOperation for the supplied column names.
 
     Args:
-        cols (List[str]): the columns to be operated on, can be a common name or an equal expression,
-                i.e. "col_a = col_b" for different column names; when empty, update_by performs the cumulative maximum
-                operation on all the applicable columns.
+        cols (List[str]): the columns to be operated on, can include expressions to rename the output,
+            i.e. "new_col = col"; when empty, update_by performing the cumulative maximum operation on all the
+            applicable columns.
 
     Returns:
         UpdateByOperation
@@ -161,9 +161,9 @@ def forward_fill(cols: List[str]) -> UpdateByOperation:
     replaced by the last known non-null values. This operation is forward only.
 
     Args:
-        cols (List[str]): the columns to be operated on, can be a common name or an equal expression,
-                i.e. "col_a = col_b" for different column names; when empty, update_by performs the forward fill
-                operation on all the applicable columns.
+        cols (List[str]): the columns to be operated on, can include expressions to rename the output,
+            i.e. "new_col = col"; when empty, update_by performs the forward fill operation on all the
+            applicable columns.
 
     Returns:
         UpdateByOperation
