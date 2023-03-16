@@ -933,6 +933,31 @@ public abstract class TableBase implements TableSpec {
     }
 
     @Override
+    public final DropColumnsTable dropColumns(String... columnNames) {
+        final DropColumnsTable.Builder builder = DropColumnsTable.builder()
+                .parent(this);
+        for (String columnName : columnNames) {
+            builder.addDropColumns(ColumnName.of(columnName));
+        }
+        return builder.build();
+    }
+
+    @Override
+    public final DropColumnsTable dropColumns(Collection<String> columnNames) {
+        final DropColumnsTable.Builder builder = DropColumnsTable.builder()
+                .parent(this);
+        for (String columnName : columnNames) {
+            builder.addDropColumns(ColumnName.of(columnName));
+        }
+        return builder.build();
+    }
+
+    @Override
+    public final DropColumnsTable dropColumns(ColumnName... columnNames) {
+        return DropColumnsTable.builder().parent(this).addDropColumns(columnNames).build();
+    }
+
+    @Override
     public final <V extends TableSchema.Visitor> V walk(V visitor) {
         visitor.visit(this);
         return visitor;

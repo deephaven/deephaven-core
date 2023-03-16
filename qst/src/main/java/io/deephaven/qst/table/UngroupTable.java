@@ -33,7 +33,7 @@ public abstract class UngroupTable extends TableBase implements SingleParentTabl
         return visitor;
     }
 
-    interface Builder {
+    public interface Builder {
         Builder parent(TableSpec parent);
 
         Builder addUngroupColumns(ColumnName element);

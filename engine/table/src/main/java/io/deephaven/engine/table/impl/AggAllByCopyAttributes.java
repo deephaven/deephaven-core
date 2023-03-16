@@ -4,7 +4,6 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.agg.spec.*;
-import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.BaseTable.CopyAttributeOperation;
 
 import java.util.Objects;

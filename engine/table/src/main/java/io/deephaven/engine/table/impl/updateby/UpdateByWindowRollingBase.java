@@ -12,12 +12,12 @@ import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.ssa.LongSegmentedSortedArray;
-import io.deephaven.engine.table.impl.updateby.rollinggroup.RollingGroupOperator;
 import io.deephaven.util.SafeCloseableArray;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.OverridingMethodsMustInvokeSuper;
+import java.util.Arrays;
 
 /**
  * This is the base class of {@link UpdateByWindowRollingTicks} and {@link UpdateByWindowRollingTime}.
@@ -123,6 +123,9 @@ abstract class UpdateByWindowRollingBase extends UpdateByWindow {
         final TrackingRowSet bucketRowSet =
                 ctx.timestampValidRowSet != null ? ctx.timestampValidRowSet : ctx.sourceRowSet;
 
+        final boolean operatorsRequirePositions = Arrays.stream(opIndices)
+                .anyMatch(opIdx -> operators[opIdx].requiresRowPositions());
+
         try (final RowSequence.Iterator affectedRowsIt = ctx.affectedRows.getRowSequenceIterator();
                 final RowSequence.Iterator influencerRowsIt = ctx.influencerRows.getRowSequenceIterator();
                 final RowSet affectedPosRs = operatorsRequirePositions
@@ -146,7 +149,7 @@ abstract class UpdateByWindowRollingBase extends UpdateByWindow {
                     continue;
                 }
                 UpdateByOperator rollingOp = operators[opIdx];
-                rollingOp.initializeRolling(winOpContexts[ii]);
+                rollingOp.initializeRolling(winOpContexts[ii], bucketRowSet);
             }
 
             int affectedChunkOffset = 0;
@@ -187,12 +190,6 @@ abstract class UpdateByWindowRollingBase extends UpdateByWindow {
                     if (!context.dirtyOperators.get(opIdx)) {
                         // Skip if not dirty.
                         continue;
-                    }
-
-                    // assign the bucket rowsets before we accumulate
-                    if (winOpContexts[ii] instanceof RollingGroupOperator.Context) {
-                        ((RollingGroupOperator.Context) winOpContexts[ii])
-                                .assignBucketRowSource(bucketRowSet, affectedRs);
                     }
 
                     winOpContexts[ii].accumulateRolling(

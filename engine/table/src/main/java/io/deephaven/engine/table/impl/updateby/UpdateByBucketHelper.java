@@ -50,7 +50,7 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
     /** Indicates this bucket needs to be processed (at least one window and operator are dirty) */
     private boolean isDirty;
     /** This rowset will store row keys where the timestamp is not null (will mirror the SSA contents) */
-    private TrackingRowSet timestampValidRowSet;
+    private final TrackingWritableRowSet timestampValidRowSet;
     /** Track how many rows in this bucket have NULL timestamps */
     private long nullTimestampCount;
 
@@ -153,24 +153,35 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
                         LongChunk<OrderedRowKeys> keysChunk = chunkRs.asRowKeyChunk();
 
                         // Push only non-null values/keys into the Ssa.
-                        nullTimestampCount -= fillChunkWithNonNull(keysChunk, valuesChunk, ssaKeys, ssaValues,
+                        final int chunkNullCount = fillChunkWithNonNull(keysChunk, valuesChunk, ssaKeys, ssaValues,
                                 nullTsKeys, lastTimestamp);
-                        timestampSsa.remove(ssaValues, ssaKeys);
+                        nullTimestampCount -= chunkNullCount;
 
-                        // If we have removed all the nulls, we can reset to mirror the source. Otherwise, need to
-                        // remove these rows from the non-null set.
-                        if (nullTimestampCount > 0) {
-                            // Update the non-null set with these removes.
-                            timestampValidRowSet.writableCast().remove(ssaKeys, 0, ssaKeys.size());
+                        // Only process if there are non-nulls in this chunk.
+                        if (chunkNullCount != keysChunk.size()) {
+                            timestampSsa.remove(ssaValues, ssaKeys);
+
+                            // If we have removed all the nulls, we will reset to mirror the source. Otherwise, need to
+                            // remove these rows from the non-null set. This test skips the transition chunk's removals.
+                            if (nullTimestampCount > 0) {
+                                // Update the non-null set with these removes.
+                                timestampValidRowSet.remove(ssaKeys, 0, ssaKeys.size());
+                            }
                         }
                     }
                 }
             }
 
+            // If we have no nulls, we can safely and efficiently mirror the source.
+            final boolean resetToSource = nullTimestampCount == 0;
+            if (resetToSource) {
+                timestampValidRowSet.resetTo(source.getRowSet());
+            }
+
             // shifts
             if (upstream.shifted().nonempty()) {
-                if (nullTimestampCount > 0) {
-                    upstream.shifted().apply(timestampValidRowSet.writableCast());
+                if (!resetToSource) {
+                    upstream.shifted().apply(timestampValidRowSet);
                 }
 
                 final int size = Math.max(
@@ -204,10 +215,12 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
                 }
             }
 
+
             // adds
             if (restampAdditions.isNonempty()) {
                 try (final RowSequence.Iterator it = restampAdditions.getRowSequenceIterator()) {
                     MutableLong lastTimestamp = new MutableLong(NULL_LONG);
+
                     while (it.hasMore()) {
                         RowSequence chunkRs = it.getNextRowSequenceWithLength(chunkSize);
 
@@ -217,29 +230,27 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
                         LongChunk<OrderedRowKeys> keysChunk = chunkRs.asRowKeyChunk();
 
                         // Push only non-null values/keys into the Ssa.
-                        final long prevCount = nullTimestampCount;
-                        nullTimestampCount += fillChunkWithNonNull(keysChunk, valuesChunk, ssaKeys, ssaValues,
+                        final int chunkNullCount = fillChunkWithNonNull(keysChunk, valuesChunk, ssaKeys, ssaValues,
                                 nullTsKeys, lastTimestamp);
-                        timestampSsa.insert(ssaValues, ssaKeys);
+                        nullTimestampCount += chunkNullCount;
 
-                        if (nullTimestampCount > 0) {
-                            if (prevCount == 0) {
-                                // Transition from a clone of source by removing the nulls.
-                                timestampValidRowSet.writableCast().resetTo(source.getRowSet());
-                                timestampValidRowSet.writableCast().remove(nullTsKeys, 0, nullTsKeys.size());
-                            } else {
-                                // Maintain this set by adding the new non-null values.
-                                timestampValidRowSet.writableCast().insert(ssaKeys, 0, ssaKeys.size());
+                        // Only add to the SSA if there are non-nulls in this chunk.
+                        if (chunkNullCount != keysChunk.size()) {
+                            timestampSsa.insert(ssaValues, ssaKeys);
+                        }
+
+                        if (resetToSource) {
+                            // The original source rowset might contain null-ts rows. Remove them now.
+                            if (chunkNullCount > 0) {
+                                timestampValidRowSet.remove(nullTsKeys, 0, nullTsKeys.size());
                             }
+                        } else {
+                            // Maintain the parallel non-null set by adding the new non-null values.
+                            timestampValidRowSet.insert(ssaKeys, 0, ssaKeys.size());
                         }
                     }
                 }
             }
-        }
-
-        if (nullTimestampCount == 0) {
-            // Reset this to match the source row set.
-            timestampValidRowSet.writableCast().resetTo(source.getRowSet());
         }
 
         Assert.eq(nullTimestampCount, "nullTimestampCount", source.size() - timestampValidRowSet.size());

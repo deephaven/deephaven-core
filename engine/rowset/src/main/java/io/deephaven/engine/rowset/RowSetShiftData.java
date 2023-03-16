@@ -305,10 +305,12 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
                     break;
                 }
 
-                // TODO: This loop is unfortunate, we will iterate the entire Index shift data; even if we have an input
-                // index that is only a small subset. For the ending condition we solve that with the advance breaking
-                // out of the loop, but for the starting condition, we can do better by binary searching the shift data
-                // for the beginning of the index if the end of that range is less than the data.
+                // TODO #3341: This loop is unfortunate, we will iterate the entire RowSetShiftData; even if we have an
+                // input rowSet that is only a small subset. For the ending condition we solve that with the advance
+                // breaking out of the loop, but for the starting condition, we can do better by binary searching the
+                // shift data for the beginning of the index if the end of that range is less than the data. We can
+                // binary search for the next relevant shifted range anytime we attempt a shift that does not effect the
+                // rowSet.
                 if (endRange < rsIt.peekNextKey()) {
                     continue;
                 }

@@ -3,6 +3,7 @@ package io.deephaven.engine.table.impl.updateby;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.api.updateby.UpdateByOperation;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
@@ -23,9 +24,8 @@ import org.junit.experimental.categories.Category;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Duration;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static io.deephaven.engine.testutil.GenerateTableUpdates.generateAppends;
 import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.simulateShiftAwareStep;
@@ -757,6 +757,253 @@ public class TestRollingGroup extends BaseUpdateByTest {
 
     // endregion
 
+    // region Ungroup test
+
+    @Test
+    public void testUngroupOneRow() {
+        final int prevTicks = 1; // one row
+        final int postTicks = 0;
+
+        final CreateResult result = createTestTable(STATIC_TABLE_SIZE, false, false, false, 0x31313131);
+        final QueryTable t = result.t;
+
+        final Table grouped = t.updateBy(
+                List.of(UpdateByOperation.RollingGroup(prevTicks, postTicks, columns)));
+
+        final Table ungrouped = grouped.ungroup(columns);
+
+        TstUtils.assertTableEquals(t, ungrouped);
+    }
+
+    @Test
+    public void testUngroupOneRowBucketed() {
+        final int prevTicks = 1; // one row
+        final int postTicks = 0;
+
+        final CreateResult result = createTestTable(STATIC_TABLE_SIZE, true, false, false, 0x31313131);
+        final QueryTable t = result.t;
+
+        final Table grouped = t.updateBy(
+                List.of(UpdateByOperation.RollingGroup(prevTicks, postTicks, columns)),
+                ColumnName.from("Sym"));
+
+        final Table ungrouped = grouped.ungroup(columns);
+
+        TstUtils.assertTableEquals(t, ungrouped);
+    }
+
+    @Test
+    public void testUngroupOneRowTimed() {
+        // This selects only one row in this case where no timestamps are identical. Otherwise the groups include all
+        // rows with identical timestamps.
+        final Duration prevTime = Duration.ofMinutes(0);
+        final Duration postTime = Duration.ofMinutes(0);
+
+        final CreateResult result = createTestTable(STATIC_TABLE_SIZE, false, false, true, 0x31313131,
+                new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
+                        convertDateTime("2022-03-09T09:00:00.000 NY"),
+                        convertDateTime("2022-03-09T16:30:00.000 NY"))});
+
+        final QueryTable t = result.t;
+
+        final Table grouped = t.updateBy(
+                List.of(UpdateByOperation.RollingGroup("ts", prevTime, postTime, columns)));
+
+        final Table ungrouped = grouped.ungroup(columns);
+
+        TstUtils.assertTableEquals(t, ungrouped);
+    }
+
+    @Test
+    public void testUngroupOneRowBucketedTimed() {
+        // This selects only one row in this case where no timestamps are identical. Otherwise the groups include all
+        // rows with identical timestamps.
+        final Duration prevTime = Duration.ofMinutes(0);
+        final Duration postTime = Duration.ofMinutes(0);
+
+        final CreateResult result = createTestTable(STATIC_TABLE_SIZE, true, false, true, 0x31313131,
+                new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
+                        convertDateTime("2022-03-09T09:00:00.000 NY"),
+                        convertDateTime("2022-03-09T16:30:00.000 NY"))});
+
+        final QueryTable t = result.t;
+
+        final Table grouped = t.updateBy(
+                List.of(UpdateByOperation.RollingGroup("ts", prevTime, postTime, columns)),
+                ColumnName.from("Sym"));
+
+        final Table ungrouped = grouped.ungroup(columns);
+
+        TstUtils.assertTableEquals(t, ungrouped);
+    }
+
+    @Test
+    public void testUngroupFiveRowsRev() {
+        final int prevTicks = 5;
+        final int postTicks = 0;
+
+        final CreateResult result = createTestTable(DYNAMIC_TABLE_SIZE, false, false, false, 0x31313131);
+        final QueryTable t = result.t;
+
+        final Table grouped = t.updateBy(
+                List.of(UpdateByOperation.RollingGroup(prevTicks, postTicks, columns)));
+
+        final Table ungrouped = grouped.ungroup(columns);
+
+        // Hacky way to test that the final value in each grouped/ungrouped matches the original value. This works
+        // because we are stopping at the current row in our selection.
+
+        try (final RowSet.RangeIterator rangeIt = ungrouped.getRowSet().rangeIterator();
+                final RowSet.Iterator rowIt = t.getRowSet().iterator()) {
+            while (rowIt.hasNext() && rangeIt.hasNext()) {
+
+                final long rowKeyA = rowIt.nextLong();
+                rangeIt.next();
+                final long rowKeyB = rangeIt.currentRangeEnd();
+
+                for (String col : columns) {
+                    Object a = t.getColumnSource(col).get(rowKeyA);
+                    Object b = ungrouped.getColumnSource(col).get(rowKeyB);
+                    assert Objects.equals(a, b);
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testUngroupFiveRowsRevTimed() {
+        final Duration prevTime = Duration.ofMinutes(5);
+        final Duration postTime = Duration.ofMinutes(0);
+
+        final CreateResult result = createTestTable(STATIC_TABLE_SIZE, false, false, true, 0x31313131,
+                new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
+                        convertDateTime("2022-03-09T09:00:00.000 NY"),
+                        convertDateTime("2022-03-09T16:30:00.000 NY"))});
+
+        final QueryTable t = result.t;
+
+        final Table grouped = t.updateBy(
+                List.of(UpdateByOperation.RollingGroup("ts", prevTime, postTime, columns)));
+
+        final Table ungrouped = grouped.ungroup(columns);
+
+        // Hacky way to test that the final value in each grouped/ungrouped matches the original value. This works
+        // because we are stopping at the current row in our selection.
+
+        try (final RowSet.RangeIterator rangeIt = ungrouped.getRowSet().rangeIterator();
+                final RowSet.Iterator rowIt = t.getRowSet().iterator()) {
+            while (rowIt.hasNext() && rangeIt.hasNext()) {
+
+                final long rowKeyA = rowIt.nextLong();
+                rangeIt.next();
+                final long rowKeyB = rangeIt.currentRangeEnd();
+
+                for (String col : columns) {
+                    Object a = t.getColumnSource(col).get(rowKeyA);
+                    Object b = ungrouped.getColumnSource(col).get(rowKeyB);
+                    assert Objects.equals(a, b);
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testUngroupFiveRowsFwd() {
+        final int prevTicks = 1;
+        final int postTicks = 4;
+
+        final CreateResult result = createTestTable(DYNAMIC_TABLE_SIZE, false, false, false, 0x31313131);
+        final QueryTable t = result.t;
+
+        final Table grouped = t.updateBy(
+                List.of(UpdateByOperation.RollingGroup(prevTicks, postTicks, columns)));
+
+        final Table ungrouped = grouped.ungroup(columns);
+
+        // Hacky way to test that the first value in each grouped/ungrouped matches the original value. This works
+        // because we are starting at the current row in our selection.
+
+        try (final RowSet.RangeIterator rangeIt = ungrouped.getRowSet().rangeIterator();
+                final RowSet.Iterator rowIt = t.getRowSet().iterator()) {
+            while (rowIt.hasNext() && rangeIt.hasNext()) {
+
+                final long rowKeyA = rowIt.nextLong();
+                rangeIt.next();
+                final long rowKeyB = rangeIt.currentRangeStart();
+
+                for (String col : columns) {
+                    Object a = t.getColumnSource(col).get(rowKeyA);
+                    Object b = ungrouped.getColumnSource(col).get(rowKeyB);
+                    assert Objects.equals(a, b);
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testUngroupFiveRowsFwdTimed() {
+        final Duration prevTime = Duration.ofMinutes(0);
+        final Duration postTime = Duration.ofMinutes(5);
+
+        final CreateResult result = createTestTable(STATIC_TABLE_SIZE, false, false, true, 0x31313131,
+                new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
+                        convertDateTime("2022-03-09T09:00:00.000 NY"),
+                        convertDateTime("2022-03-09T16:30:00.000 NY"))});
+
+        final QueryTable t = result.t;
+
+        final Table grouped = t.updateBy(
+                List.of(UpdateByOperation.RollingGroup("ts", prevTime, postTime, columns)));
+
+        final Table ungrouped = grouped.ungroup(columns).select();
+
+        // Hacky way to test that the first value in each grouped/ungrouped matches the original value. This works
+        // because we are starting at the current row in our selection.
+
+        try (final RowSet.RangeIterator rangeIt = ungrouped.getRowSet().rangeIterator();
+                final RowSet.Iterator rowIt = t.getRowSet().iterator()) {
+            while (rowIt.hasNext() && rangeIt.hasNext()) {
+
+                final long rowKeyA = rowIt.nextLong();
+                rangeIt.next();
+                final long rowKeyB = rangeIt.currentRangeStart();
+
+                for (String col : columns) {
+                    Object a = t.getColumnSource(col).get(rowKeyA);
+                    Object b = ungrouped.getColumnSource(col).get(rowKeyB);
+                    assert Objects.equals(a, b);
+                }
+            }
+        }
+    }
+
+    // endregion
+
+    // region Edge cases
+
+    @Test
+    public void testCombinedGroupStatic() {
+        final int prevTicks = 10;
+        final int postTicks = 0;
+
+        final QueryTable t = createTestTable(STATIC_TABLE_SIZE, false, false, false, 0x31313131).t;
+        t.setRefreshing(false);
+
+        // Make a unique RollingGroup operator for each column.
+        List<UpdateByOperation> ops = Arrays.stream(columns)
+                .map(col -> UpdateByOperation.RollingGroup(prevTicks, postTicks, col))
+                .collect(Collectors.toList());
+
+        final Table summed = t.updateBy(ops);
+
+        for (String col : t.getDefinition().getColumnNamesArray()) {
+            assertWithRollingGroupTicks(t.getColumn(col).getDirect(), summed.getColumn(col).getDirect(),
+                    summed.getColumn(col).getType(), prevTicks, postTicks);
+        }
+    }
+
+    // endregion
+
     // region Rolling Group static verification
 
     private byte[][] rollingGroup(byte[] values, int prevTicks, int postTicks) {
@@ -768,7 +1015,7 @@ public class TestRollingGroup extends BaseUpdateByTest {
             return new byte[0][0];
         }
 
-        byte[][] result = new byte[values.length][];
+        byte[][] result = new byte[values.length][0];
 
 
         for (int ii = 0; ii < values.length; ii++) {
@@ -795,7 +1042,7 @@ public class TestRollingGroup extends BaseUpdateByTest {
             return new short[0][0];
         }
 
-        short[][] result = new short[values.length][];
+        short[][] result = new short[values.length][0];
 
 
         for (int ii = 0; ii < values.length; ii++) {
@@ -823,7 +1070,7 @@ public class TestRollingGroup extends BaseUpdateByTest {
             return new int[0][0];
         }
 
-        int[][] result = new int[values.length][];
+        int[][] result = new int[values.length][0];
 
 
         for (int ii = 0; ii < values.length; ii++) {
@@ -851,7 +1098,7 @@ public class TestRollingGroup extends BaseUpdateByTest {
             return new long[0][0];
         }
 
-        long[][] result = new long[values.length][];
+        long[][] result = new long[values.length][0];
 
 
         for (int ii = 0; ii < values.length; ii++) {
@@ -879,7 +1126,7 @@ public class TestRollingGroup extends BaseUpdateByTest {
             return new float[0][0];
         }
 
-        float[][] result = new float[values.length][];
+        float[][] result = new float[values.length][0];
 
 
         for (int ii = 0; ii < values.length; ii++) {
@@ -907,7 +1154,7 @@ public class TestRollingGroup extends BaseUpdateByTest {
             return new double[0][0];
         }
 
-        double[][] result = new double[values.length][];
+        double[][] result = new double[values.length][0];
 
 
         for (int ii = 0; ii < values.length; ii++) {
@@ -935,7 +1182,7 @@ public class TestRollingGroup extends BaseUpdateByTest {
             return new Object[0][0];
         }
 
-        Object[][] result = new Object[values.length][];
+        Object[][] result = new Object[values.length][0];
 
 
         for (int ii = 0; ii < values.length; ii++) {
@@ -963,7 +1210,7 @@ public class TestRollingGroup extends BaseUpdateByTest {
             return new byte[0][0];
         }
 
-        byte[][] result = new byte[values.length][];
+        byte[][] result = new byte[values.length][0];
 
         // track how many nulls are in the window
         int nullCount = 0;
@@ -1022,7 +1269,7 @@ public class TestRollingGroup extends BaseUpdateByTest {
             return new short[0][0];
         }
 
-        short[][] result = new short[values.length][];
+        short[][] result = new short[values.length][0];
 
         // track how many nulls are in the window
         int nullCount = 0;
@@ -1081,7 +1328,7 @@ public class TestRollingGroup extends BaseUpdateByTest {
             return new int[0][0];
         }
 
-        int[][] result = new int[values.length][];
+        int[][] result = new int[values.length][0];
 
         // track how many nulls are in the window
         int nullCount = 0;
@@ -1140,7 +1387,7 @@ public class TestRollingGroup extends BaseUpdateByTest {
             return new long[0][0];
         }
 
-        long[][] result = new long[values.length][];
+        long[][] result = new long[values.length][0];
 
         // track how many nulls are in the window
         int nullCount = 0;
@@ -1199,7 +1446,7 @@ public class TestRollingGroup extends BaseUpdateByTest {
             return new float[0][0];
         }
 
-        float[][] result = new float[values.length][];
+        float[][] result = new float[values.length][0];
 
         // track how many nulls are in the window
         int nullCount = 0;
@@ -1258,7 +1505,7 @@ public class TestRollingGroup extends BaseUpdateByTest {
             return new double[0][0];
         }
 
-        double[][] result = new double[values.length][];
+        double[][] result = new double[values.length][0];
 
         // track how many nulls are in the window
         int nullCount = 0;
@@ -1317,7 +1564,7 @@ public class TestRollingGroup extends BaseUpdateByTest {
             return new Object[0][0];
         }
 
-        Object[][] result = new Object[values.length][];
+        Object[][] result = new Object[values.length][0];
 
         // track how many nulls are in the window
         int nullCount = 0;

@@ -71,31 +71,31 @@ func Example_importTable() {
 	fmt.Println(filteredRecord)
 
 	// Output:
-	// Data Before:
-	// record:
-	//   schema:
-	//   fields: 3
-	//     - Ticker: type=utf8
-	//     - Close: type=float32
-	//     - Volume: type=int32
-	//   rows: 7
-	//   col[0][Ticker]: ["XRX" "XYZZY" "IBM" "GME" "AAPL" "ZNGA" "T"]
-	//   col[1][Close]: [53.8 88.5 38.7 453 26.7 544.9 13.4]
-	//   col[2][Volume]: [87000 6060842 138000 138000000 19000 48300 1500]
-	//
-	// Data After:
-	// record:
-	//   schema:
-	//   fields: 3
-	//     - Ticker: type=utf8, nullable
-	//         metadata: ["deephaven:isRowStyle": "false", "deephaven:isNumberFormat": "false", "deephaven:isStyle": "false", "deephaven:type": "java.lang.String", "deephaven:isDateFormat": "false"]
-	//     - Close: type=float32, nullable
-	//        metadata: ["deephaven:isRowStyle": "false", "deephaven:isNumberFormat": "false", "deephaven:isStyle": "false", "deephaven:type": "float", "deephaven:isDateFormat": "false"]
-	//     - Volume: type=int32, nullable
-	//         metadata: ["deephaven:isRowStyle": "false", "deephaven:isNumberFormat": "false", "deephaven:isStyle": "false", "deephaven:type": "int", "deephaven:isDateFormat": "false"]
-	//   metadata: ["deephaven:attribute.SortedColumns": "Close=Ascending", "deephaven:attribute_type.SortedColumns": "java.lang.String", "deephaven:attribute_type.AddOnly": "java.lang.Boolean", "deephaven:attribute.AddOnly": "true"]
-	//   rows: 5
-	//   col[0][Ticker]: ["IBM" "XRX" "XYZZY" "GME" "ZNGA"]
-	//   col[1][Close]: [38.7 53.8 88.5 453 544.9]
-	//   col[2][Volume]: [138000 87000 6060842 138000000 48300]
+    // Data Before:
+    // record:
+    //   schema:
+    //   fields: 3
+    //     - Ticker: type=utf8
+    //     - Close: type=float32
+    //     - Volume: type=int32
+    //   rows: 7
+    //   col[0][Ticker]: ["XRX" "XYZZY" "IBM" "GME" "AAPL" "ZNGA" "T"]
+    //   col[1][Close]: [53.8 88.5 38.7 453 26.7 544.9 13.4]
+    //   col[2][Volume]: [87000 6060842 138000 138000000 19000 48300 1500]
+    //
+    // Data After:
+    // record:
+    //   schema:
+    //   fields: 3
+    //     - Ticker: type=utf8, nullable
+    //         metadata: ["deephaven:isRowStyle": "false", "deephaven:isNumberFormat": "false", "deephaven:isStyle": "false", "deephaven:type": "java.lang.String", "deephaven:isDateFormat": "false"]
+    //     - Close: type=float32, nullable
+    //        metadata: ["deephaven:isRowStyle": "false", "deephaven:isNumberFormat": "false", "deephaven:isStyle": "false", "deephaven:type": "float", "deephaven:isDateFormat": "false"]
+    //     - Volume: type=int32, nullable
+    //         metadata: ["deephaven:isRowStyle": "false", "deephaven:isNumberFormat": "false", "deephaven:isStyle": "false", "deephaven:type": "int", "deephaven:isDateFormat": "false"]
+    //   metadata: ["deephaven:attribute.SortedColumns": "Close=Ascending", "deephaven:attribute_type.SortedColumns": "java.lang.String", "deephaven:attribute_type.AddOnly": "java.lang.Boolean", "deephaven:attribute.AddOnly": "true", "deephaven:attribute_type.AppendOnly": "java.lang.Boolean", "deephaven:attribute.AppendOnly": "true"]
+    //   rows: 5
+    //   col[0][Ticker]: ["IBM" "XRX" "XYZZY" "GME" "ZNGA"]
+    //   col[1][Close]: [38.7 53.8 88.5 453 544.9]
+    //   col[2][Volume]: [138000 87000 6060842 138000000 48300]
 }

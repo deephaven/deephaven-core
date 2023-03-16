@@ -5,9 +5,10 @@ import unittest
 from types import SimpleNamespace
 from typing import List, Any
 
-from deephaven import DHError, read_csv, empty_table, SortDirection, AsOfMatchRule, time_table, ugp
+from deephaven import DHError, read_csv, empty_table, SortDirection, AsOfMatchRule, time_table, ugp, new_table, dtypes
 from deephaven.agg import sum_, weighted_avg, avg, pct, group, count_, first, last, max_, median, min_, std, abs_sum, \
     var, formula, partition
+from deephaven.column import datetime_col
 from deephaven.execution_context import make_user_exec_ctx
 from deephaven.html import to_html
 from deephaven.jcompat import j_hashmap
@@ -901,6 +902,56 @@ class TableTestCase(BaseTestCase):
             self.assertEqual(x1.size, 10)
             self.assertEqual(x2.size, 10)
             self.assertEqual(x3.size, 10)
+
+    def test_callable_attrs_in_query(self):
+        input_cols = [
+            datetime_col(name="DTCol", data=[dtypes.DateTime(1), dtypes.DateTime(10000000)]),
+        ]
+        test_table = new_table(cols=input_cols)
+        from deephaven.time import year, TimeZone
+        rt = test_table.update("Year = (int)year(DTCol, TimeZone.NY)")
+        self.assertEqual(rt.size, test_table.size)
+
+        class Foo:
+            ATTR = 256
+
+            def __call__(self):
+                ...
+
+            def do_something_instance(self, p=None):
+                return p if p else 1
+
+            @classmethod
+            def do_something_cls(cls, p=None):
+                return p if p else 1
+
+            @staticmethod
+            def do_something_static(p=None):
+                return p if p else 1
+
+        def do_something(p=None):
+            return p if p else 1
+
+        rt = empty_table(1).update("Col = Foo.ATTR")
+        self.assertTrue(rt.columns[0].data_type == dtypes.PyObject)
+
+        rt = empty_table(1).update("Col = (int)Foo.ATTR")
+        self.assertTrue(rt.columns[0].data_type == dtypes.int32)
+
+        foo = Foo()
+        rt = empty_table(1).update("Col = (int)foo.do_something_instance()")
+        self.assertTrue(rt.columns[0].data_type == dtypes.int32)
+
+        rt = empty_table(1).update("Col = (int)Foo.do_something_cls()")
+        self.assertTrue(rt.columns[0].data_type == dtypes.int32)
+
+        rt = empty_table(1).update("Col = (int)foo.do_something_static()")
+        self.assertTrue(rt.columns[0].data_type == dtypes.int32)
+
+        rt = empty_table(1).update("Col = (int)do_something((byte)Foo.ATTR)")
+        df = to_pandas(rt)
+        self.assertEqual(df.loc[0]['Col'], 1)
+        self.assertTrue(rt.columns[0].data_type == dtypes.int32)
 
 
 if __name__ == "__main__":

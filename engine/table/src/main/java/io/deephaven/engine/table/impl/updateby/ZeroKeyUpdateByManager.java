@@ -62,12 +62,10 @@ public class ZeroKeyUpdateByManager extends UpdateBy {
             result.addParentReference(sourceListener);
 
             // create input and output modified column sets
-            for (UpdateByWindow win : windows) {
-                for (UpdateByOperator op : win.operators) {
-                    op.createInputModifiedColumnSet(source);
-                    op.createOutputModifiedColumnSet(result);
-                }
-            }
+            forAllOperators(op -> {
+                op.createInputModifiedColumnSet(source);
+                op.createOutputModifiedColumnSet(result);
+            });
 
             // create an updateby bucket instance directly from the source table
             zeroKeyUpdateBy = new UpdateByBucketHelper(bucketDescription, source, windows, resultSources,

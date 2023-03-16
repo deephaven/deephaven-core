@@ -4,11 +4,13 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.clock.Clock;
+import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -27,6 +29,7 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
+import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -41,8 +44,10 @@ import static io.deephaven.util.type.TypeUtils.box;
  * A TimeTable adds rows at a fixed interval with a single column named "Timestamp".
  *
  * To create a TimeTable, you should use the {@link TableTools#timeTable} family of methods.
+ *
+ * @implNote The constructor publishes {@code this} to the {@link UpdateGraphProcessor} and thus cannot be subclassed.
  */
-public class TimeTable extends QueryTable implements Runnable {
+public final class TimeTable extends QueryTable implements Runnable {
     private static final Logger log = LoggerFactory.getLogger(TimeTable.class);
 
     public static class Builder {
@@ -117,6 +122,7 @@ public class TimeTable extends QueryTable implements Runnable {
             setAttribute(Table.STREAM_TABLE_ATTRIBUTE, Boolean.TRUE);
         } else {
             setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
+            setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
             setFlat();
         }
         if (startTime != null) {
@@ -200,6 +206,9 @@ public class TimeTable extends QueryTable implements Runnable {
 
         @Override
         public DateTime get(long rowKey) {
+            if (rowKey < 0) {
+                return null;
+            }
             return computeDateTime(rowKey);
         }
 
@@ -209,6 +218,9 @@ public class TimeTable extends QueryTable implements Runnable {
 
         @Override
         public long getLong(long rowKey) {
+            if (rowKey < 0) {
+                return QueryConstants.NULL_LONG;
+            }
             return computeNanos(rowKey);
         }
 
@@ -269,19 +281,46 @@ public class TimeTable extends QueryTable implements Runnable {
         }
 
         @Override
-        public void fillChunkUnordered(@NotNull FillContext context, @NotNull WritableChunk<? super Values> dest,
-                @NotNull LongChunk<? extends RowKeys> keys) {
+        public void fillChunk(
+                @NotNull final FillContext context,
+                @NotNull final WritableChunk<? super Values> dest,
+                @NotNull final RowSequence rowSequence) {
+            final WritableObjectChunk<DateTime, ? super Values> objectDest = dest.asWritableObjectChunk();
+            dest.setSize(0);
+            rowSequence.forAllRowKeys(rowKey -> objectDest.add(computeDateTime(rowKey)));
+        }
+
+        @Override
+        public void fillPrevChunk(
+                @NotNull final FillContext context,
+                @NotNull final WritableChunk<? super Values> dest,
+                @NotNull final RowSequence rowSequence) {
+            fillChunk(context, dest, rowSequence);
+        }
+
+        @Override
+        public void fillChunkUnordered(
+                @NotNull final FillContext context,
+                @NotNull final WritableChunk<? super Values> dest,
+                @NotNull final LongChunk<? extends RowKeys> keys) {
             final WritableObjectChunk<DateTime, ? super Values> objectDest = dest.asWritableObjectChunk();
             objectDest.setSize(keys.size());
 
             for (int ii = 0; ii < keys.size(); ++ii) {
-                objectDest.set(ii, computeDateTime(keys.get(ii)));
+                long rowKey = keys.get(ii);
+                if (rowKey < 0) {
+                    objectDest.set(ii, null);
+                } else {
+                    objectDest.set(ii, computeDateTime(rowKey));
+                }
             }
         }
 
         @Override
-        public void fillPrevChunkUnordered(@NotNull FillContext context, @NotNull WritableChunk<? super Values> dest,
-                @NotNull LongChunk<? extends RowKeys> keys) {
+        public void fillPrevChunkUnordered(
+                @NotNull final FillContext context,
+                @NotNull final WritableChunk<? super Values> dest,
+                @NotNull final LongChunk<? extends RowKeys> keys) {
             fillChunkUnordered(context, dest, keys);
         }
 
@@ -300,12 +339,36 @@ public class TimeTable extends QueryTable implements Runnable {
 
             @Override
             public Long get(long rowKey) {
+                if (rowKey < 0) {
+                    return null;
+                }
                 return box(computeNanos(rowKey));
             }
 
             @Override
             public long getLong(long rowKey) {
+                if (rowKey < 0) {
+                    return QueryConstants.NULL_LONG;
+                }
                 return computeNanos(rowKey);
+            }
+
+            @Override
+            public void fillChunk(
+                    @NotNull final FillContext context,
+                    @NotNull final WritableChunk<? super Values> dest,
+                    @NotNull final RowSequence rowSequence) {
+                WritableLongChunk<? super Values> longDest = dest.asWritableLongChunk();
+                dest.setSize(0);
+                rowSequence.forAllRowKeys(rowKey -> longDest.add(computeNanos(rowKey)));
+            }
+
+            @Override
+            public void fillPrevChunk(
+                    @NotNull final FillContext context,
+                    @NotNull final WritableChunk<? super Values> dest,
+                    @NotNull final RowSequence rowSequence) {
+                fillChunk(context, dest, rowSequence);
             }
 
             @Override
@@ -370,7 +433,12 @@ public class TimeTable extends QueryTable implements Runnable {
                 longDest.setSize(keys.size());
 
                 for (int ii = 0; ii < keys.size(); ++ii) {
-                    longDest.set(ii, computeNanos(keys.get(ii)));
+                    long rowKey = keys.get(ii);
+                    if (rowKey < 0) {
+                        longDest.set(ii, QueryConstants.NULL_LONG);
+                    } else {
+                        longDest.set(ii, computeNanos(rowKey));
+                    }
                 }
             }
 

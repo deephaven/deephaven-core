@@ -6,7 +6,7 @@ import unittest
 
 from deephaven.pandas import to_pandas
 
-from deephaven import time_table
+from deephaven import time_table, DHError
 
 from deephaven.ugp import exclusive_lock
 from deephaven.liveness_scope import liveness_scope
@@ -31,6 +31,23 @@ class LivenessTestCase(BaseTestCase):
         self.assertTrue(not_managed.j_table.tryRetainReference())
         self.assertTrue(must_keep.j_table.tryRetainReference())
         self.assertFalse(to_discard.j_table.tryRetainReference())
+
+        with liveness_scope():
+            to_discard = create_table()
+            df = to_pandas(to_discard)
+            must_keep = create_table()
+            df = to_pandas(must_keep)
+
+        with self.assertRaises(DHError):
+            l_scope = liveness_scope()
+            to_discard = create_table()
+            df = to_pandas(to_discard)
+            l_scope_2 = liveness_scope()
+            must_keep = create_table()
+            df = to_pandas(must_keep)
+            l_scope.preserve(must_keep)
+            l_scope.close()
+            l_scope_2.close()
 
     def test_liveness_nested(self):
         with liveness_scope() as l_scope:

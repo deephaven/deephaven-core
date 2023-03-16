@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl.sources.aggregate;
 
+import io.deephaven.base.ClampUtil;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnSource;
@@ -19,8 +20,8 @@ import static io.deephaven.util.QueryConstants.*;
 /**
  * Base {@link ColumnSource} implementation for sliced rowset aggregation result columns.
  */
-public abstract class BaseAggregateSlicedColumnSource<DB_ARRAY_TYPE extends Vector, COMPONENT_TYPE>
-        extends AbstractColumnSource<DB_ARRAY_TYPE> implements AggregateColumnSource<DB_ARRAY_TYPE, COMPONENT_TYPE> {
+public abstract class BaseAggregateSlicedColumnSource<VECTOR_TYPE extends Vector, COMPONENT_TYPE>
+        extends AbstractColumnSource<VECTOR_TYPE> implements AggregateColumnSource<VECTOR_TYPE, COMPONENT_TYPE> {
 
     protected final ColumnSource<COMPONENT_TYPE> aggregatedSource;
     protected final ColumnSource<? extends RowSet> groupRowSetSource;
@@ -33,7 +34,7 @@ public abstract class BaseAggregateSlicedColumnSource<DB_ARRAY_TYPE extends Vect
     protected final long endOffset;
 
     protected BaseAggregateSlicedColumnSource(
-            @NotNull final Class<DB_ARRAY_TYPE> vectorType,
+            @NotNull final Class<VECTOR_TYPE> vectorType,
             @NotNull final ColumnSource<COMPONENT_TYPE> aggregatedSource,
             @NotNull final ColumnSource<? extends RowSet> groupRowSetSource,
             @NotNull final ColumnSource<Long> startSource,
@@ -49,16 +50,16 @@ public abstract class BaseAggregateSlicedColumnSource<DB_ARRAY_TYPE extends Vect
     }
 
     protected BaseAggregateSlicedColumnSource(
-            @NotNull final Class<DB_ARRAY_TYPE> vectorType,
+            @NotNull final Class<VECTOR_TYPE> vectorType,
             @NotNull final ColumnSource<COMPONENT_TYPE> aggregatedSource,
             @NotNull final ColumnSource<? extends RowSet> groupRowSetSource,
-            final long revTicks,
-            final long fwdTicks) {
+            final long startOffset,
+            final long endOffset) {
         super(vectorType, aggregatedSource.getType());
         this.aggregatedSource = aggregatedSource;
         this.groupRowSetSource = groupRowSetSource;
-        this.startOffset = revTicks;
-        this.endOffset = fwdTicks;
+        this.startOffset = startOffset;
+        this.endOffset = endOffset;
 
         startSource = null;
         endSource = null;
@@ -66,8 +67,7 @@ public abstract class BaseAggregateSlicedColumnSource<DB_ARRAY_TYPE extends Vect
 
     @Override
     public final UngroupedColumnSource<COMPONENT_TYPE> ungrouped() {
-        return null;
-        // return new UngroupedAggregateColumnSource<>(this);
+        return new UngroupedAggregateSlicedColumnSource<>(this);
     }
 
     @Override
@@ -82,9 +82,6 @@ public abstract class BaseAggregateSlicedColumnSource<DB_ARRAY_TYPE extends Vect
         private AggregateSlicedFillContext(@NotNull final ColumnSource<? extends RowSet> groupRowSetSource,
                 @Nullable ColumnSource<Long> startSource, @Nullable ColumnSource<Long> endSource,
                 final int chunkCapacity, final SharedContext sharedContext) {
-            // TODO: Implement a proper shareable context to use with other instances that share a RowSet source.
-            // Current usage is "safe" because RowSet sources are only exposed through this wrapper, and all
-            // sources at a given level will pass through their ordered keys to the RowSet source unchanged.
             groupRowSetGetContext = groupRowSetSource.makeGetContext(chunkCapacity, sharedContext);
             startGetContext = startSource != null ? startSource.makeGetContext(chunkCapacity, sharedContext) : null;
             endGetContext = endSource != null ? endSource.makeGetContext(chunkCapacity, sharedContext) : null;
@@ -106,12 +103,44 @@ public abstract class BaseAggregateSlicedColumnSource<DB_ARRAY_TYPE extends Vect
         return true;
     }
 
+    private long getStartOffset(final long groupIndexKey) {
+        return startSource != null ? startSource.getLong(groupIndexKey) : startOffset;
+    }
+
+    private long getEndOffset(final long groupIndexKey) {
+        return endSource != null ? endSource.getLong(groupIndexKey) : endOffset;
+    }
+
+    private long getPrevStartOffset(final long groupIndexKey) {
+        return startSource != null ? startSource.getPrevLong(groupIndexKey) : startOffset;
+    }
+
+    private long getPrevEndOffset(final long groupIndexKey) {
+        return endSource != null ? endSource.getPrevLong(groupIndexKey) : endOffset;
+    }
+
     @Override
     public long getUngroupedSize(final long groupIndexKey) {
         if (groupIndexKey == RowSequence.NULL_ROW_KEY) {
             return 0;
         }
-        return groupRowSetSource.get(groupIndexKey).size();
+
+        final long startPos = getStartOffset(groupIndexKey);
+        final long endPos = getEndOffset(groupIndexKey);
+
+        if (startPos == NULL_LONG || endPos == NULL_LONG) {
+            return 0;
+        }
+
+        final RowSet bucketRowSet = groupRowSetSource.get(groupIndexKey);
+        final long rowPos = bucketRowSet.find(groupIndexKey);
+
+        final long size = bucketRowSet.size();
+
+        final long start = ClampUtil.clampLong(0, size, rowPos + startPos);
+        final long end = ClampUtil.clampLong(0, size, rowPos + endPos);
+
+        return end - start;
     }
 
     @Override
@@ -119,24 +148,67 @@ public abstract class BaseAggregateSlicedColumnSource<DB_ARRAY_TYPE extends Vect
         if (groupIndexKey == RowSequence.NULL_ROW_KEY) {
             return 0;
         }
-        final RowSet groupRowSetPrev = groupRowSetSource.getPrev(groupIndexKey);
-        return groupRowSetPrev.isTracking()
-                ? groupRowSetPrev.trackingCast().sizePrev()
-                : groupRowSetPrev.size();
+
+        final long startPos = getPrevStartOffset(groupIndexKey);
+        final long endPos = getPrevEndOffset(groupIndexKey);
+
+        if (startPos == NULL_LONG || endPos == NULL_LONG) {
+            return 0;
+        }
+
+        try (final RowSet bucketRowSet = getPrevGroupRowSet(groupIndexKey)) {
+            final long rowPos = bucketRowSet.find(groupIndexKey);
+
+            final long size = bucketRowSet.isTracking()
+                    ? bucketRowSet.trackingCast().sizePrev()
+                    : bucketRowSet.size();
+
+            final long start = ClampUtil.clampLong(0, size, rowPos + startPos);
+            final long end = ClampUtil.clampLong(0, size, rowPos + endPos);
+
+            return end - start;
+        }
     }
 
     private long getPrevRowKey(final long groupIndexKey, final int offsetInGroup) {
-        final RowSet groupRowSetPrev = groupRowSetSource.getPrev(groupIndexKey);
-        return groupRowSetPrev.isTracking()
-                ? groupRowSetPrev.trackingCast().getPrev(offsetInGroup)
-                : groupRowSetPrev.get(offsetInGroup);
+        final long startPos = getPrevStartOffset(groupIndexKey);
+
+        try (final RowSet bucketRowSet = getPrevGroupRowSet(groupIndexKey)) {
+            final long firstPos = bucketRowSet.find(groupIndexKey) + startPos;
+            return bucketRowSet.get(firstPos + offsetInGroup);
+        }
     }
 
     protected RowSet getPrevGroupRowSet(final long groupIndexKey) {
         final RowSet groupRowSetPrev = groupRowSetSource.getPrev(groupIndexKey);
+        // This will always return a SafeCloseable so at least some invocations can be disposed.
         return groupRowSetPrev.isTracking()
                 ? groupRowSetPrev.trackingCast().copyPrev()
-                : groupRowSetPrev;
+                : groupRowSetPrev.copy();
+    }
+
+    private long getGroupOffsetKey(final long groupIndexKey, final int offsetInGroup) {
+        final long startPos = getStartOffset(groupIndexKey);
+        final RowSet bucketRowSet = groupRowSetSource.get(groupIndexKey);
+
+        final long rowPos = bucketRowSet.find(groupIndexKey);
+        final long size = bucketRowSet.size();
+        final long start = ClampUtil.clampLong(0, size, rowPos + startPos);
+
+        final long finalPos = start + offsetInGroup;
+        return bucketRowSet.get(finalPos);
+    }
+
+    private long getPrevGroupOffsetKey(final long groupIndexKey, final int offsetInGroup) {
+        final long startPos = getPrevStartOffset(groupIndexKey);
+        try (final RowSet bucketRowSet = getPrevGroupRowSet(groupIndexKey)) {
+            final long rowPos = bucketRowSet.find(groupIndexKey);
+            final long size = bucketRowSet.size();
+            final long start = ClampUtil.clampLong(0, size, rowPos + startPos);
+
+            final long finalPos = start + offsetInGroup;
+            return bucketRowSet.get(finalPos);
+        }
     }
 
     @Override
@@ -144,7 +216,8 @@ public abstract class BaseAggregateSlicedColumnSource<DB_ARRAY_TYPE extends Vect
         if (groupIndexKey == RowSequence.NULL_ROW_KEY) {
             return null;
         }
-        return aggregatedSource.get(groupRowSetSource.get(groupIndexKey).get(offsetInGroup));
+        final long finalKey = getGroupOffsetKey(groupIndexKey, offsetInGroup);
+        return aggregatedSource.get(finalKey);
     }
 
     @Override
@@ -152,15 +225,17 @@ public abstract class BaseAggregateSlicedColumnSource<DB_ARRAY_TYPE extends Vect
         if (groupIndexKey == RowSequence.NULL_ROW_KEY) {
             return null;
         }
-        return aggregatedSource.getPrev(getPrevRowKey(groupIndexKey, offsetInGroup));
+        final long finalKey = getPrevGroupOffsetKey(groupIndexKey, offsetInGroup);
+        return aggregatedSource.getPrev(finalKey);
     }
 
     @Override
     public final Boolean getUngroupedBoolean(final long groupIndexKey, final int offsetInGroup) {
         if (groupIndexKey == RowSequence.NULL_ROW_KEY) {
-            return NULL_BOOLEAN;
+            return null;
         }
-        return aggregatedSource.getBoolean(groupRowSetSource.get(groupIndexKey).get(offsetInGroup));
+        final long finalKey = getGroupOffsetKey(groupIndexKey, offsetInGroup);
+        return aggregatedSource.getBoolean(finalKey);
     }
 
     @Override
@@ -168,7 +243,8 @@ public abstract class BaseAggregateSlicedColumnSource<DB_ARRAY_TYPE extends Vect
         if (groupIndexKey == RowSequence.NULL_ROW_KEY) {
             return NULL_BOOLEAN;
         }
-        return aggregatedSource.getPrevBoolean(getPrevRowKey(groupIndexKey, offsetInGroup));
+        final long finalKey = getPrevGroupOffsetKey(groupIndexKey, offsetInGroup);
+        return aggregatedSource.getPrevBoolean(finalKey);
     }
 
     @Override
@@ -176,7 +252,8 @@ public abstract class BaseAggregateSlicedColumnSource<DB_ARRAY_TYPE extends Vect
         if (groupIndexKey == RowSequence.NULL_ROW_KEY) {
             return NULL_DOUBLE;
         }
-        return aggregatedSource.getDouble(groupRowSetSource.get(groupIndexKey).get(offsetInGroup));
+        final long finalKey = getGroupOffsetKey(groupIndexKey, offsetInGroup);
+        return aggregatedSource.getDouble(finalKey);
     }
 
     @Override
@@ -184,7 +261,8 @@ public abstract class BaseAggregateSlicedColumnSource<DB_ARRAY_TYPE extends Vect
         if (groupIndexKey == RowSequence.NULL_ROW_KEY) {
             return NULL_DOUBLE;
         }
-        return aggregatedSource.getPrevDouble(getPrevRowKey(groupIndexKey, offsetInGroup));
+        final long finalKey = getPrevGroupOffsetKey(groupIndexKey, offsetInGroup);
+        return aggregatedSource.getPrevDouble(finalKey);
     }
 
     @Override
@@ -192,7 +270,8 @@ public abstract class BaseAggregateSlicedColumnSource<DB_ARRAY_TYPE extends Vect
         if (groupIndexKey == RowSequence.NULL_ROW_KEY) {
             return NULL_FLOAT;
         }
-        return aggregatedSource.getFloat(groupRowSetSource.get(groupIndexKey).get(offsetInGroup));
+        final long finalKey = getGroupOffsetKey(groupIndexKey, offsetInGroup);
+        return aggregatedSource.getFloat(finalKey);
     }
 
     @Override
@@ -200,7 +279,8 @@ public abstract class BaseAggregateSlicedColumnSource<DB_ARRAY_TYPE extends Vect
         if (groupIndexKey == RowSequence.NULL_ROW_KEY) {
             return NULL_FLOAT;
         }
-        return aggregatedSource.getPrevFloat(getPrevRowKey(groupIndexKey, offsetInGroup));
+        final long finalKey = getPrevGroupOffsetKey(groupIndexKey, offsetInGroup);
+        return aggregatedSource.getPrevFloat(finalKey);
     }
 
     @Override
@@ -208,7 +288,8 @@ public abstract class BaseAggregateSlicedColumnSource<DB_ARRAY_TYPE extends Vect
         if (groupIndexKey == RowSequence.NULL_ROW_KEY) {
             return NULL_BYTE;
         }
-        return aggregatedSource.getByte(groupRowSetSource.get(groupIndexKey).get(offsetInGroup));
+        final long finalKey = getGroupOffsetKey(groupIndexKey, offsetInGroup);
+        return aggregatedSource.getByte(finalKey);
     }
 
     @Override
@@ -216,7 +297,8 @@ public abstract class BaseAggregateSlicedColumnSource<DB_ARRAY_TYPE extends Vect
         if (groupIndexKey == RowSequence.NULL_ROW_KEY) {
             return NULL_BYTE;
         }
-        return aggregatedSource.getPrevByte(getPrevRowKey(groupIndexKey, offsetInGroup));
+        final long finalKey = getPrevGroupOffsetKey(groupIndexKey, offsetInGroup);
+        return aggregatedSource.getPrevByte(finalKey);
     }
 
     @Override
@@ -224,7 +306,8 @@ public abstract class BaseAggregateSlicedColumnSource<DB_ARRAY_TYPE extends Vect
         if (groupIndexKey == RowSequence.NULL_ROW_KEY) {
             return NULL_CHAR;
         }
-        return aggregatedSource.getChar(groupRowSetSource.get(groupIndexKey).get(offsetInGroup));
+        final long finalKey = getGroupOffsetKey(groupIndexKey, offsetInGroup);
+        return aggregatedSource.getChar(finalKey);
     }
 
     @Override
@@ -232,7 +315,8 @@ public abstract class BaseAggregateSlicedColumnSource<DB_ARRAY_TYPE extends Vect
         if (groupIndexKey == RowSequence.NULL_ROW_KEY) {
             return NULL_CHAR;
         }
-        return aggregatedSource.getPrevChar(getPrevRowKey(groupIndexKey, offsetInGroup));
+        final long finalKey = getPrevGroupOffsetKey(groupIndexKey, offsetInGroup);
+        return aggregatedSource.getPrevChar(finalKey);
     }
 
     @Override
@@ -240,7 +324,8 @@ public abstract class BaseAggregateSlicedColumnSource<DB_ARRAY_TYPE extends Vect
         if (groupIndexKey == RowSequence.NULL_ROW_KEY) {
             return NULL_SHORT;
         }
-        return aggregatedSource.getShort(groupRowSetSource.get(groupIndexKey).get(offsetInGroup));
+        final long finalKey = getGroupOffsetKey(groupIndexKey, offsetInGroup);
+        return aggregatedSource.getShort(finalKey);
     }
 
     @Override
@@ -248,7 +333,8 @@ public abstract class BaseAggregateSlicedColumnSource<DB_ARRAY_TYPE extends Vect
         if (groupIndexKey == RowSequence.NULL_ROW_KEY) {
             return NULL_SHORT;
         }
-        return aggregatedSource.getPrevShort(getPrevRowKey(groupIndexKey, offsetInGroup));
+        final long finalKey = getPrevGroupOffsetKey(groupIndexKey, offsetInGroup);
+        return aggregatedSource.getPrevShort(finalKey);
     }
 
     @Override
@@ -256,7 +342,8 @@ public abstract class BaseAggregateSlicedColumnSource<DB_ARRAY_TYPE extends Vect
         if (groupIndexKey == RowSequence.NULL_ROW_KEY) {
             return NULL_INT;
         }
-        return aggregatedSource.getInt(groupRowSetSource.get(groupIndexKey).get(offsetInGroup));
+        final long finalKey = getGroupOffsetKey(groupIndexKey, offsetInGroup);
+        return aggregatedSource.getInt(finalKey);
     }
 
     @Override
@@ -264,7 +351,8 @@ public abstract class BaseAggregateSlicedColumnSource<DB_ARRAY_TYPE extends Vect
         if (groupIndexKey == RowSequence.NULL_ROW_KEY) {
             return NULL_INT;
         }
-        return aggregatedSource.getPrevInt(getPrevRowKey(groupIndexKey, offsetInGroup));
+        final long finalKey = getPrevGroupOffsetKey(groupIndexKey, offsetInGroup);
+        return aggregatedSource.getPrevInt(finalKey);
     }
 
     @Override
@@ -272,7 +360,8 @@ public abstract class BaseAggregateSlicedColumnSource<DB_ARRAY_TYPE extends Vect
         if (groupIndexKey == RowSequence.NULL_ROW_KEY) {
             return NULL_LONG;
         }
-        return aggregatedSource.getLong(groupRowSetSource.get(groupIndexKey).get(offsetInGroup));
+        final long finalKey = getGroupOffsetKey(groupIndexKey, offsetInGroup);
+        return aggregatedSource.getLong(finalKey);
     }
 
     @Override
@@ -280,11 +369,15 @@ public abstract class BaseAggregateSlicedColumnSource<DB_ARRAY_TYPE extends Vect
         if (groupIndexKey == RowSequence.NULL_ROW_KEY) {
             return NULL_LONG;
         }
-        return aggregatedSource.getPrevLong(getPrevRowKey(groupIndexKey, offsetInGroup));
+        final long finalKey = getPrevGroupOffsetKey(groupIndexKey, offsetInGroup);
+        return aggregatedSource.getPrevLong(finalKey);
     }
 
     @Override
     public boolean isStateless() {
-        return aggregatedSource.isStateless() && groupRowSetSource.isStateless();
+        return aggregatedSource.isStateless()
+                && groupRowSetSource.isStateless()
+                && (startSource == null || startSource.isStateless())
+                && (endSource == null || endSource.isStateless());
     }
 }

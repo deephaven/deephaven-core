@@ -5,8 +5,8 @@ package io.deephaven.server.session;
 
 import com.google.rpc.Code;
 import io.deephaven.engine.table.Table;
-import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.proto.flight.util.FlightExportTicketHelper;
+import io.deephaven.proto.util.Exceptions;
 import io.deephaven.proto.util.ExportTicketHelper;
 import io.deephaven.server.auth.AuthorizationProvider;
 import org.apache.arrow.flight.impl.Flight;
@@ -41,7 +41,7 @@ public class ExportTicketResolver extends TicketResolverBase {
     public SessionState.ExportObject<Flight.FlightInfo> flightInfoFor(
             @Nullable final SessionState session, final Flight.FlightDescriptor descriptor, final String logId) {
         if (session == null) {
-            throw GrpcUtil.statusRuntimeException(Code.UNAUTHENTICATED,
+            throw Exceptions.statusRuntimeException(Code.UNAUTHENTICATED,
                     "Could not resolve '" + logId + "': no exports can exist without a session to search");
         }
 
@@ -54,7 +54,7 @@ public class ExportTicketResolver extends TicketResolverBase {
                                 FlightExportTicketHelper.descriptorToFlightTicket(descriptor, logId));
                     }
 
-                    throw GrpcUtil.statusRuntimeException(Code.NOT_FOUND,
+                    throw Exceptions.statusRuntimeException(Code.NOT_FOUND,
                             "Could not resolve '" + logId + "': flight '" + descriptor.toString() + " does not exist");
                 });
     }
@@ -68,7 +68,7 @@ public class ExportTicketResolver extends TicketResolverBase {
     public <T> SessionState.ExportObject<T> resolve(
             @Nullable final SessionState session, final ByteBuffer ticket, final String logId) {
         if (session == null) {
-            throw GrpcUtil.statusRuntimeException(Code.UNAUTHENTICATED,
+            throw Exceptions.statusRuntimeException(Code.UNAUTHENTICATED,
                     "Could not resolve '" + logId + "': no exports can exist without an active session");
         }
 
@@ -79,7 +79,7 @@ public class ExportTicketResolver extends TicketResolverBase {
     public <T> SessionState.ExportObject<T> resolve(
             @Nullable final SessionState session, final Flight.FlightDescriptor descriptor, final String logId) {
         if (session == null) {
-            throw GrpcUtil.statusRuntimeException(Code.UNAUTHENTICATED,
+            throw Exceptions.statusRuntimeException(Code.UNAUTHENTICATED,
                     "Could not resolve '" + logId + "': no exports can exist without a session to search");
         }
 

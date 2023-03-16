@@ -690,6 +690,20 @@ public interface TableOperationsDefaults<TOPS extends TableOperations<TOPS, TABL
 
     // -------------------------------------------------------------------------------------------
 
+    @Override
+    @ConcurrentMethod
+    default TOPS dropColumns(Collection<String> columnNames) {
+        return dropColumns(columnNames.toArray(new String[0]));
+    }
+
+    @Override
+    @ConcurrentMethod
+    default TOPS dropColumns(ColumnName... columnNames) {
+        return dropColumns(Arrays.stream(columnNames).map(ColumnName::name).toArray(String[]::new));
+    }
+
+    // -------------------------------------------------------------------------------------------
+
     static Collection<String> splitToCollection(String string) {
         return string.trim().isEmpty() ? Collections.emptyList()
                 : Arrays.stream(string.split(",")).map(String::trim).filter(s -> !s.isEmpty())

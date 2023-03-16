@@ -77,9 +77,9 @@ public class BaseLayer extends SelectAndViewAnalyzer {
     }
 
     @Override
-    final Map<String, Set<String>> calcDependsOnRecurse() {
+    final Map<String, Set<String>> calcDependsOnRecurse(boolean forcePublishAllSources) {
         final Map<String, Set<String>> result = new HashMap<>();
-        if (publishTheseSources) {
+        if (publishTheseSources || forcePublishAllSources) {
             for (final String col : sources.keySet()) {
                 result.computeIfAbsent(col, dummy -> new HashSet<>()).add(col);
             }

@@ -9,6 +9,7 @@ import com.bmuschko.gradle.docker.tasks.network.DockerRemoveNetwork
 import groovy.transform.CompileStatic
 import org.gradle.api.Project
 import org.gradle.api.Task
+import org.gradle.api.provider.MapProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.TaskProvider
 
@@ -37,6 +38,8 @@ public abstract class DeephavenInDockerExtension {
     abstract Property<Integer> getAwaitStatusTimeout()
     abstract Property<Integer> getCheckInterval()
 
+    abstract MapProperty<String, String> getEnvVars();
+
     @Inject
     DeephavenInDockerExtension(Project project) {
         awaitStatusTimeout.set 20
@@ -62,6 +65,7 @@ public abstract class DeephavenInDockerExtension {
             task.targetImageId grpcApiImage.getImageId()
             task.containerName.set containerName.get()
             task.hostConfig.network.set networkName.get()
+            task.envVars.set(this.getEnvVars())
         }
 
         startTask = project.tasks.register('startDeephaven', DockerStartContainer) { task ->
