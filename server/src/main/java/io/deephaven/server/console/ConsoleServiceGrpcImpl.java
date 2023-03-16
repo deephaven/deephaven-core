@@ -24,6 +24,7 @@ import io.deephaven.proto.backplane.grpc.FieldsChangeUpdate;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.backplane.grpc.TypedTicket;
 import io.deephaven.proto.backplane.script.grpc.*;
+import io.deephaven.proto.util.Exceptions;
 import io.deephaven.server.console.completer.JavaAutoCompleteObserver;
 import io.deephaven.server.console.completer.PythonAutoCompleteObserver;
 import io.deephaven.server.session.SessionCloseableObserver;
@@ -34,6 +35,7 @@ import io.deephaven.server.session.TicketRouter;
 import io.deephaven.server.util.Scheduler;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
+import org.jetbrains.annotations.NotNull;
 import org.jpy.PyObject;
 
 import javax.inject.Inject;
@@ -87,113 +89,112 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
     }
 
     @Override
-    public void getConsoleTypes(final GetConsoleTypesRequest request,
-            final StreamObserver<GetConsoleTypesResponse> responseObserver) {
-        GrpcUtil.rpcWrapper(log, responseObserver, () -> {
-            // TODO (deephaven-core#3147): for legacy reasons, this method is used prior to authentication
-            if (!REMOTE_CONSOLE_DISABLED) {
-                responseObserver.onNext(GetConsoleTypesResponse.newBuilder()
-                        .addConsoleTypes(scriptSessionProvider.get().scriptType().toLowerCase())
-                        .build());
-            } else {
-                responseObserver.onNext(GetConsoleTypesResponse.getDefaultInstance());
-            }
-            responseObserver.onCompleted();
-        });
+    public void getConsoleTypes(
+            @NotNull final GetConsoleTypesRequest request,
+            @NotNull final StreamObserver<GetConsoleTypesResponse> responseObserver) {
+        // TODO (deephaven-core#3147): for legacy reasons, this method is used prior to authentication
+        if (!REMOTE_CONSOLE_DISABLED) {
+            responseObserver.onNext(GetConsoleTypesResponse.newBuilder()
+                    .addConsoleTypes(scriptSessionProvider.get().scriptType().toLowerCase())
+                    .build());
+        } else {
+            responseObserver.onNext(GetConsoleTypesResponse.getDefaultInstance());
+        }
+        responseObserver.onCompleted();
     }
 
     @Override
-    public void startConsole(StartConsoleRequest request, StreamObserver<StartConsoleResponse> responseObserver) {
-        GrpcUtil.rpcWrapper(log, responseObserver, () -> {
-            SessionState session = sessionService.getCurrentSession();
-            if (REMOTE_CONSOLE_DISABLED) {
-                responseObserver
-                        .onError(GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "Remote console disabled"));
-                return;
-            }
+    public void startConsole(
+            @NotNull final StartConsoleRequest request,
+            @NotNull final StreamObserver<StartConsoleResponse> responseObserver) {
+        SessionState session = sessionService.getCurrentSession();
+        if (REMOTE_CONSOLE_DISABLED) {
+            responseObserver
+                    .onError(Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, "Remote console disabled"));
+            return;
+        }
 
-            // TODO (#702): initially global session will be null; set it here if applicable
+        // TODO (#702): initially global session will be null; set it here if applicable
 
-            final String sessionType = request.getSessionType();
-            if (!scriptSessionProvider.get().scriptType().equalsIgnoreCase(sessionType)) {
-                throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
-                        "session type '" + sessionType + "' is not supported");
-            }
+        final String sessionType = request.getSessionType();
+        if (!scriptSessionProvider.get().scriptType().equalsIgnoreCase(sessionType)) {
+            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
+                    "session type '" + sessionType + "' is not supported");
+        }
 
-            session.newExport(request.getResultId(), "resultId")
-                    .onError(responseObserver)
-                    .submit(() -> {
-                        final ScriptSession scriptSession = new DelegatingScriptSession(scriptSessionProvider.get());
+        session.newExport(request.getResultId(), "resultId")
+                .onError(responseObserver)
+                .submit(() -> {
+                    final ScriptSession scriptSession = new DelegatingScriptSession(scriptSessionProvider.get());
 
-                        safelyComplete(responseObserver, StartConsoleResponse.newBuilder()
-                                .setResultId(request.getResultId())
-                                .build());
+                    safelyComplete(responseObserver, StartConsoleResponse.newBuilder()
+                            .setResultId(request.getResultId())
+                            .build());
 
-                        return scriptSession;
-                    });
-        });
+                    return scriptSession;
+                });
     }
 
     @Override
-    public void subscribeToLogs(LogSubscriptionRequest request, StreamObserver<LogSubscriptionData> responseObserver) {
-        GrpcUtil.rpcWrapper(log, responseObserver, () -> {
-            sessionService.getCurrentSession();
-            if (REMOTE_CONSOLE_DISABLED) {
-                GrpcUtil.safelyError(responseObserver, Code.FAILED_PRECONDITION, "Remote console disabled");
-                return;
-            }
-            final LogsClient client =
-                    new LogsClient(request, (ServerCallStreamObserver<LogSubscriptionData>) responseObserver);
-            client.start();
-        });
+    public void subscribeToLogs(
+            @NotNull final LogSubscriptionRequest request,
+            @NotNull final StreamObserver<LogSubscriptionData> responseObserver) {
+        sessionService.getCurrentSession();
+        if (REMOTE_CONSOLE_DISABLED) {
+            GrpcUtil.safelyError(responseObserver, Code.FAILED_PRECONDITION, "Remote console disabled");
+            return;
+        }
+        final LogsClient client =
+                new LogsClient(request, (ServerCallStreamObserver<LogSubscriptionData>) responseObserver);
+        client.start();
     }
 
     @Override
-    public void executeCommand(ExecuteCommandRequest request, StreamObserver<ExecuteCommandResponse> responseObserver) {
-        GrpcUtil.rpcWrapper(log, responseObserver, () -> {
-            final SessionState session = sessionService.getCurrentSession();
-            final Ticket consoleId = request.getConsoleId();
-            if (consoleId.getTicket().isEmpty()) {
-                throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "No consoleId supplied");
-            }
+    public void executeCommand(
+            @NotNull final ExecuteCommandRequest request,
+            @NotNull final StreamObserver<ExecuteCommandResponse> responseObserver) {
+        final SessionState session = sessionService.getCurrentSession();
+        final Ticket consoleId = request.getConsoleId();
+        if (consoleId.getTicket().isEmpty()) {
+            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, "No consoleId supplied");
+        }
 
-            SessionState.ExportObject<ScriptSession> exportedConsole =
-                    ticketRouter.resolve(session, consoleId, "consoleId");
-            session.nonExport()
-                    .requiresSerialQueue()
-                    .require(exportedConsole)
-                    .onError(responseObserver)
-                    .submit(() -> {
-                        ScriptSession scriptSession = exportedConsole.get();
-                        ScriptSession.Changes changes = scriptSession.evaluateScript(request.getCode());
-                        ExecuteCommandResponse.Builder diff = ExecuteCommandResponse.newBuilder();
-                        FieldsChangeUpdate.Builder fieldChanges = FieldsChangeUpdate.newBuilder();
-                        changes.created.entrySet()
-                                .forEach(entry -> fieldChanges.addCreated(makeVariableDefinition(entry)));
-                        changes.updated.entrySet()
-                                .forEach(entry -> fieldChanges.addUpdated(makeVariableDefinition(entry)));
-                        changes.removed.entrySet()
-                                .forEach(entry -> fieldChanges.addRemoved(makeVariableDefinition(entry)));
-                        responseObserver.onNext(diff.setChanges(fieldChanges).build());
-                        responseObserver.onCompleted();
-                    });
-        });
+        SessionState.ExportObject<ScriptSession> exportedConsole =
+                ticketRouter.resolve(session, consoleId, "consoleId");
+        session.nonExport()
+                .requiresSerialQueue()
+                .require(exportedConsole)
+                .onError(responseObserver)
+                .submit(() -> {
+                    ScriptSession scriptSession = exportedConsole.get();
+                    ScriptSession.Changes changes = scriptSession.evaluateScript(request.getCode());
+                    ExecuteCommandResponse.Builder diff = ExecuteCommandResponse.newBuilder();
+                    FieldsChangeUpdate.Builder fieldChanges = FieldsChangeUpdate.newBuilder();
+                    changes.created.entrySet()
+                            .forEach(entry -> fieldChanges.addCreated(makeVariableDefinition(entry)));
+                    changes.updated.entrySet()
+                            .forEach(entry -> fieldChanges.addUpdated(makeVariableDefinition(entry)));
+                    changes.removed.entrySet()
+                            .forEach(entry -> fieldChanges.addRemoved(makeVariableDefinition(entry)));
+                    responseObserver.onNext(diff.setChanges(fieldChanges).build());
+                    responseObserver.onCompleted();
+                });
     }
 
     @Override
-    public void getHeapInfo(GetHeapInfoRequest request, StreamObserver<GetHeapInfoResponse> responseObserver) {
-        GrpcUtil.rpcWrapper(log, responseObserver, () -> {
-            final RuntimeMemory runtimeMemory = RuntimeMemory.getInstance();
-            final Sample sample = new Sample();
-            runtimeMemory.read(sample);
-            final GetHeapInfoResponse infoResponse = GetHeapInfoResponse.newBuilder()
-                    .setTotalMemory(sample.totalMemory)
-                    .setFreeMemory(sample.freeMemory)
-                    .setMaxMemory(runtimeMemory.maxMemory())
-                    .build();
-            responseObserver.onNext(infoResponse);
-            responseObserver.onCompleted();
-        });
+    public void getHeapInfo(
+            @NotNull final GetHeapInfoRequest request,
+            @NotNull final StreamObserver<GetHeapInfoResponse> responseObserver) {
+        final RuntimeMemory runtimeMemory = RuntimeMemory.getInstance();
+        final Sample sample = new Sample();
+        runtimeMemory.read(sample);
+        final GetHeapInfoResponse infoResponse = GetHeapInfoResponse.newBuilder()
+                .setTotalMemory(sample.totalMemory)
+                .setFreeMemory(sample.freeMemory)
+                .setMaxMemory(runtimeMemory.maxMemory())
+                .build();
+        responseObserver.onNext(infoResponse);
+        responseObserver.onCompleted();
     }
 
     private static FieldInfo makeVariableDefinition(Map.Entry<String, String> entry) {
@@ -214,79 +215,76 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
     }
 
     @Override
-    public void cancelCommand(CancelCommandRequest request, StreamObserver<CancelCommandResponse> responseObserver) {
-        GrpcUtil.rpcWrapper(log, responseObserver, () -> {
-            // TODO (#53): consider task cancellation
-            super.cancelCommand(request, responseObserver);
-        });
+    public void cancelCommand(
+            @NotNull final CancelCommandRequest request,
+            @NotNull final StreamObserver<CancelCommandResponse> responseObserver) {
+        // TODO (#53): consider task cancellation
+        super.cancelCommand(request, responseObserver);
     }
 
     @Override
-    public void bindTableToVariable(BindTableToVariableRequest request,
-            StreamObserver<BindTableToVariableResponse> responseObserver) {
-        GrpcUtil.rpcWrapper(log, responseObserver, () -> {
-            final SessionState session = sessionService.getCurrentSession();
+    public void bindTableToVariable(
+            @NotNull final BindTableToVariableRequest request,
+            @NotNull final StreamObserver<BindTableToVariableResponse> responseObserver) {
+        final SessionState session = sessionService.getCurrentSession();
 
-            Ticket tableId = request.getTableId();
-            if (tableId.getTicket().isEmpty()) {
-                throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "No source tableId supplied");
+        Ticket tableId = request.getTableId();
+        if (tableId.getTicket().isEmpty()) {
+            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, "No source tableId supplied");
+        }
+        final SessionState.ExportObject<Table> exportedTable = ticketRouter.resolve(session, tableId, "tableId");
+        final SessionState.ExportObject<ScriptSession> exportedConsole;
+
+        ExportBuilder<?> exportBuilder = session.nonExport()
+                .requiresSerialQueue()
+                .onError(responseObserver);
+
+        if (request.hasConsoleId()) {
+            exportedConsole = ticketRouter.resolve(session, request.getConsoleId(), "consoleId");
+            exportBuilder.require(exportedTable, exportedConsole);
+        } else {
+            exportedConsole = null;
+            exportBuilder.require(exportedTable);
+        }
+
+        exportBuilder.submit(() -> {
+            ScriptSession scriptSession =
+                    exportedConsole != null ? exportedConsole.get() : scriptSessionProvider.get();
+            Table table = exportedTable.get();
+            scriptSession.setVariable(request.getVariableName(), table);
+            if (DynamicNode.notDynamicOrIsRefreshing(table)) {
+                scriptSession.manage(table);
             }
-            final SessionState.ExportObject<Table> exportedTable = ticketRouter.resolve(session, tableId, "tableId");
-            final SessionState.ExportObject<ScriptSession> exportedConsole;
-
-            ExportBuilder<?> exportBuilder = session.nonExport()
-                    .requiresSerialQueue()
-                    .onError(responseObserver);
-
-            if (request.hasConsoleId()) {
-                exportedConsole = ticketRouter.resolve(session, request.getConsoleId(), "consoleId");
-                exportBuilder.require(exportedTable, exportedConsole);
-            } else {
-                exportedConsole = null;
-                exportBuilder.require(exportedTable);
-            }
-
-            exportBuilder.submit(() -> {
-                ScriptSession scriptSession =
-                        exportedConsole != null ? exportedConsole.get() : scriptSessionProvider.get();
-                Table table = exportedTable.get();
-                scriptSession.setVariable(request.getVariableName(), table);
-                if (DynamicNode.notDynamicOrIsRefreshing(table)) {
-                    scriptSession.manage(table);
-                }
-                responseObserver.onNext(BindTableToVariableResponse.getDefaultInstance());
-                responseObserver.onCompleted();
-            });
+            responseObserver.onNext(BindTableToVariableResponse.getDefaultInstance());
+            responseObserver.onCompleted();
         });
     }
 
     @Override
     public StreamObserver<AutoCompleteRequest> autoCompleteStream(
-            StreamObserver<AutoCompleteResponse> responseObserver) {
-        return GrpcUtil.rpcWrapper(log, responseObserver, () -> {
-            final SessionState session = sessionService.getCurrentSession();
-            if (AUTOCOMPLETE_DISABLED) {
-                return new NoopAutoCompleteObserver(session, responseObserver);
+            @NotNull final StreamObserver<AutoCompleteResponse> responseObserver) {
+        final SessionState session = sessionService.getCurrentSession();
+        if (AUTOCOMPLETE_DISABLED) {
+            return new NoopAutoCompleteObserver(session, responseObserver);
+        }
+        if (PythonDeephavenSession.SCRIPT_TYPE.equals(scriptSessionProvider.get().scriptType())) {
+            PyObject[] settings = new PyObject[1];
+            try {
+                final ScriptSession scriptSession = scriptSessionProvider.get();
+                scriptSession.evaluateScript(
+                        "from deephaven_internal.auto_completer import jedi_settings ; jedi_settings.set_scope(globals())");
+                settings[0] = (PyObject) scriptSession.getVariable("jedi_settings");
+            } catch (Exception err) {
+                log.error().append("Error trying to enable jedi autocomplete").append(err).endl();
             }
-            if (PythonDeephavenSession.SCRIPT_TYPE.equals(scriptSessionProvider.get().scriptType())) {
-                PyObject[] settings = new PyObject[1];
-                try {
-                    final ScriptSession scriptSession = scriptSessionProvider.get();
-                    scriptSession.evaluateScript(
-                            "from deephaven_internal.auto_completer import jedi_settings ; jedi_settings.set_scope(globals())");
-                    settings[0] = (PyObject) scriptSession.getVariable("jedi_settings");
-                } catch (Exception err) {
-                    log.error().append("Error trying to enable jedi autocomplete").append(err).endl();
-                }
-                boolean canJedi = settings[0] != null && settings[0].call("can_jedi").getBooleanValue();
-                log.info().append(canJedi ? "Using jedi for python autocomplete"
-                        : "No jedi dependency available in python environment; disabling autocomplete.").endl();
-                return canJedi ? new PythonAutoCompleteObserver(responseObserver, scriptSessionProvider, session)
-                        : new NoopAutoCompleteObserver(session, responseObserver);
-            }
+            boolean canJedi = settings[0] != null && settings[0].call("can_jedi").getBooleanValue();
+            log.info().append(canJedi ? "Using jedi for python autocomplete"
+                    : "No jedi dependency available in python environment; disabling autocomplete.").endl();
+            return canJedi ? new PythonAutoCompleteObserver(responseObserver, scriptSessionProvider, session)
+                    : new NoopAutoCompleteObserver(session, responseObserver);
+        }
 
-            return new JavaAutoCompleteObserver(session, responseObserver);
-        });
+        return new JavaAutoCompleteObserver(session, responseObserver);
     }
 
     private static class NoopAutoCompleteObserver extends SessionCloseableObserver<AutoCompleteResponse>

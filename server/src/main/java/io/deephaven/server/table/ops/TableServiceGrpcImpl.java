@@ -7,7 +7,6 @@ import com.google.rpc.Code;
 import io.deephaven.clientsupport.gotorow.SeekRow;
 import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.engine.table.Table;
-import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.extensions.barrage.util.ExportUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
@@ -52,6 +51,7 @@ import io.deephaven.proto.backplane.grpc.UngroupRequest;
 import io.deephaven.proto.backplane.grpc.UnstructuredFilterTableRequest;
 import io.deephaven.proto.backplane.grpc.UpdateByRequest;
 import io.deephaven.proto.backplane.grpc.WhereInRequest;
+import io.deephaven.proto.util.Exceptions;
 import io.deephaven.proto.util.ExportTicketHelper;
 import io.deephaven.server.grpc.GrpcErrorHelper;
 import io.deephaven.server.session.SessionService;
@@ -63,6 +63,7 @@ import io.deephaven.server.table.ExportedTableUpdateListener;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
+import org.jetbrains.annotations.NotNull;
 
 import javax.inject.Inject;
 import java.math.BigDecimal;
@@ -103,7 +104,7 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
         // noinspection unchecked
         final GrpcTableOperation<T> operation = (GrpcTableOperation<T>) operationMap.get(op);
         if (operation == null) {
-            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+            throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
                     "BatchTableRequest.Operation.OpCode is unset, incompatible, or not yet supported. (found: " + op
                             + ")");
         }
@@ -111,163 +112,191 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
     }
 
     @Override
-    public void emptyTable(final EmptyTableRequest request,
-            final StreamObserver<ExportedTableCreationResponse> responseObserver) {
+    public void emptyTable(
+            @NotNull final EmptyTableRequest request,
+            @NotNull final StreamObserver<ExportedTableCreationResponse> responseObserver) {
         oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.EMPTY_TABLE, request, responseObserver);
     }
 
     @Override
-    public void timeTable(final TimeTableRequest request,
-            final StreamObserver<ExportedTableCreationResponse> responseObserver) {
+    public void timeTable(
+            @NotNull final TimeTableRequest request,
+            @NotNull final StreamObserver<ExportedTableCreationResponse> responseObserver) {
         oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.TIME_TABLE, request, responseObserver);
     }
 
     @Override
-    public void mergeTables(final MergeTablesRequest request,
-            final StreamObserver<ExportedTableCreationResponse> responseObserver) {
+    public void mergeTables(
+            @NotNull final MergeTablesRequest request,
+            @NotNull final StreamObserver<ExportedTableCreationResponse> responseObserver) {
         oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.MERGE, request, responseObserver);
     }
 
     @Override
-    public void selectDistinct(final SelectDistinctRequest request,
-            final StreamObserver<ExportedTableCreationResponse> responseObserver) {
+    public void selectDistinct(
+            @NotNull final SelectDistinctRequest request,
+            @NotNull final StreamObserver<ExportedTableCreationResponse> responseObserver) {
         oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.SELECT_DISTINCT, request, responseObserver);
     }
 
     @Override
-    public void update(final SelectOrUpdateRequest request,
-            final StreamObserver<ExportedTableCreationResponse> responseObserver) {
+    public void update(
+            @NotNull final SelectOrUpdateRequest request,
+            @NotNull final StreamObserver<ExportedTableCreationResponse> responseObserver) {
         oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.UPDATE, request, responseObserver);
     }
 
     @Override
-    public void lazyUpdate(final SelectOrUpdateRequest request,
-            final StreamObserver<ExportedTableCreationResponse> responseObserver) {
+    public void lazyUpdate(
+            @NotNull final SelectOrUpdateRequest request,
+            @NotNull final StreamObserver<ExportedTableCreationResponse> responseObserver) {
         oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.LAZY_UPDATE, request, responseObserver);
     }
 
     @Override
-    public void view(final SelectOrUpdateRequest request,
-            final StreamObserver<ExportedTableCreationResponse> responseObserver) {
+    public void view(
+            @NotNull final SelectOrUpdateRequest request,
+            @NotNull final StreamObserver<ExportedTableCreationResponse> responseObserver) {
         oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.VIEW, request, responseObserver);
     }
 
     @Override
-    public void updateView(final SelectOrUpdateRequest request,
-            final StreamObserver<ExportedTableCreationResponse> responseObserver) {
+    public void updateView(
+            @NotNull final SelectOrUpdateRequest request,
+            @NotNull final StreamObserver<ExportedTableCreationResponse> responseObserver) {
         oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.UPDATE_VIEW, request, responseObserver);
     }
 
     @Override
-    public void select(final SelectOrUpdateRequest request,
-            final StreamObserver<ExportedTableCreationResponse> responseObserver) {
+    public void select(
+            @NotNull final SelectOrUpdateRequest request,
+            @NotNull final StreamObserver<ExportedTableCreationResponse> responseObserver) {
         oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.SELECT, request, responseObserver);
     }
 
     @Override
-    public void headBy(final HeadOrTailByRequest request,
-            final StreamObserver<ExportedTableCreationResponse> responseObserver) {
+    public void headBy(
+            @NotNull final HeadOrTailByRequest request,
+            @NotNull final StreamObserver<ExportedTableCreationResponse> responseObserver) {
         oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.HEAD_BY, request, responseObserver);
     }
 
     @Override
-    public void tailBy(final HeadOrTailByRequest request,
-            final StreamObserver<ExportedTableCreationResponse> responseObserver) {
+    public void tailBy(
+            @NotNull final HeadOrTailByRequest request,
+            @NotNull final StreamObserver<ExportedTableCreationResponse> responseObserver) {
         oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.TAIL_BY, request, responseObserver);
     }
 
     @Override
-    public void head(final HeadOrTailRequest request,
-            final StreamObserver<ExportedTableCreationResponse> responseObserver) {
+    public void head(
+            @NotNull final HeadOrTailRequest request,
+            @NotNull final StreamObserver<ExportedTableCreationResponse> responseObserver) {
         oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.HEAD, request, responseObserver);
     }
 
     @Override
-    public void tail(final HeadOrTailRequest request,
-            final StreamObserver<ExportedTableCreationResponse> responseObserver) {
+    public void tail(
+            @NotNull final HeadOrTailRequest request,
+            @NotNull final StreamObserver<ExportedTableCreationResponse> responseObserver) {
         oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.TAIL, request, responseObserver);
     }
 
     @Override
-    public void ungroup(final UngroupRequest request,
-            final StreamObserver<ExportedTableCreationResponse> responseObserver) {
+    public void ungroup(
+            @NotNull final UngroupRequest request,
+            @NotNull final StreamObserver<ExportedTableCreationResponse> responseObserver) {
         oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.UNGROUP, request, responseObserver);
     }
 
     @Override
-    public void comboAggregate(final ComboAggregateRequest request,
-            final StreamObserver<ExportedTableCreationResponse> responseObserver) {
+    public void comboAggregate(
+            @NotNull final ComboAggregateRequest request,
+            @NotNull final StreamObserver<ExportedTableCreationResponse> responseObserver) {
         oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.COMBO_AGGREGATE, request, responseObserver);
     }
 
     @Override
-    public void aggregateAll(AggregateAllRequest request,
-            StreamObserver<ExportedTableCreationResponse> responseObserver) {
+    public void aggregateAll(
+            @NotNull final AggregateAllRequest request,
+            @NotNull final StreamObserver<ExportedTableCreationResponse> responseObserver) {
         oneShotOperationWrapper(OpCase.AGGREGATE_ALL, request, responseObserver);
     }
 
     @Override
-    public void aggregate(AggregateRequest request, StreamObserver<ExportedTableCreationResponse> responseObserver) {
+    public void aggregate(
+            @NotNull final AggregateRequest request,
+            @NotNull final StreamObserver<ExportedTableCreationResponse> responseObserver) {
         oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.AGGREGATE, request, responseObserver);
     }
 
     @Override
-    public void snapshot(final SnapshotTableRequest request,
-            final StreamObserver<ExportedTableCreationResponse> responseObserver) {
+    public void snapshot(
+            @NotNull final SnapshotTableRequest request,
+            @NotNull final StreamObserver<ExportedTableCreationResponse> responseObserver) {
         oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.SNAPSHOT, request, responseObserver);
     }
 
     @Override
-    public void snapshotWhen(final SnapshotWhenTableRequest request,
-            final StreamObserver<ExportedTableCreationResponse> responseObserver) {
+    public void snapshotWhen(
+            @NotNull final SnapshotWhenTableRequest request,
+            @NotNull final StreamObserver<ExportedTableCreationResponse> responseObserver) {
         oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.SNAPSHOT_WHEN, request, responseObserver);
     }
 
     @Override
-    public void dropColumns(final DropColumnsRequest request,
-            final StreamObserver<ExportedTableCreationResponse> responseObserver) {
+    public void dropColumns(
+            @NotNull final DropColumnsRequest request,
+            @NotNull final StreamObserver<ExportedTableCreationResponse> responseObserver) {
         oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.DROP_COLUMNS, request, responseObserver);
     }
 
     @Override
-    public void filter(final FilterTableRequest request,
-            final StreamObserver<ExportedTableCreationResponse> responseObserver) {
+    public void filter(
+            @NotNull final FilterTableRequest request,
+            @NotNull final StreamObserver<ExportedTableCreationResponse> responseObserver) {
         oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.FILTER, request, responseObserver);
     }
 
     @Override
-    public void unstructuredFilter(final UnstructuredFilterTableRequest request,
-            final StreamObserver<ExportedTableCreationResponse> responseObserver) {
+    public void unstructuredFilter(
+            @NotNull final UnstructuredFilterTableRequest request,
+            @NotNull final StreamObserver<ExportedTableCreationResponse> responseObserver) {
         oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.UNSTRUCTURED_FILTER, request, responseObserver);
     }
 
     @Override
-    public void sort(final SortTableRequest request,
-            final StreamObserver<ExportedTableCreationResponse> responseObserver) {
+    public void sort(
+            @NotNull final SortTableRequest request,
+            @NotNull final StreamObserver<ExportedTableCreationResponse> responseObserver) {
         oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.SORT, request, responseObserver);
     }
 
     @Override
-    public void flatten(final FlattenRequest request,
-            final StreamObserver<ExportedTableCreationResponse> responseObserver) {
+    public void flatten(
+            @NotNull final FlattenRequest request,
+            @NotNull final StreamObserver<ExportedTableCreationResponse> responseObserver) {
         oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.FLATTEN, request, responseObserver);
     }
 
     @Override
-    public void crossJoinTables(final CrossJoinTablesRequest request,
-            final StreamObserver<ExportedTableCreationResponse> responseObserver) {
+    public void crossJoinTables(
+            @NotNull final CrossJoinTablesRequest request,
+            @NotNull final StreamObserver<ExportedTableCreationResponse> responseObserver) {
         oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.CROSS_JOIN, request, responseObserver);
     }
 
     @Override
-    public void naturalJoinTables(final NaturalJoinTablesRequest request,
-            final StreamObserver<ExportedTableCreationResponse> responseObserver) {
+    public void naturalJoinTables(
+            @NotNull final NaturalJoinTablesRequest request,
+            @NotNull final StreamObserver<ExportedTableCreationResponse> responseObserver) {
         oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.NATURAL_JOIN, request, responseObserver);
     }
 
     @Override
-    public void exactJoinTables(final ExactJoinTablesRequest request,
-            final StreamObserver<ExportedTableCreationResponse> responseObserver) {
+    public void exactJoinTables(
+            @NotNull final ExactJoinTablesRequest request,
+            @NotNull final StreamObserver<ExportedTableCreationResponse> responseObserver) {
         oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.EXACT_JOIN, request, responseObserver);
     }
 
@@ -320,13 +349,14 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
                 return new BigInteger(literal.getStringValue());
             }
             if (!String.class.isAssignableFrom(dataType) && dataType != char.class) {
-                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
                         "Invalid String type for seek: " + dataType);
             }
             return literal.getStringValue();
         } else if (literal.hasNanoTimeValue()) {
             if (!DateTime.class.isAssignableFrom(dataType)) {
-                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Invalid Date type for seek: " + dataType);
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                        "Invalid Date type for seek: " + dataType);
             }
             return new DateTime(literal.getNanoTimeValue());
         } else if (literal.hasLongValue()) {
@@ -372,166 +402,166 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
         } else if (literal.hasBoolValue()) {
             return literal.getBoolValue();
         }
-        throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Invalid column type for seek: " + dataType);
+        throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "Invalid column type for seek: " + dataType);
     }
 
     @Override
-    public void whereIn(WhereInRequest request, StreamObserver<ExportedTableCreationResponse> responseObserver) {
+    public void whereIn(
+            @NotNull final WhereInRequest request,
+            @NotNull final StreamObserver<ExportedTableCreationResponse> responseObserver) {
         oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.WHERE_IN, request, responseObserver);
     }
 
     @Override
-    public void seekRow(SeekRowRequest request, StreamObserver<SeekRowResponse> responseObserver) {
-        GrpcUtil.rpcWrapper(log, responseObserver, () -> {
-            final SessionState session = sessionService.getCurrentSession();
-            final Ticket sourceId = request.getSourceId();
-            if (sourceId.getTicket().isEmpty()) {
-                throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "No consoleId supplied");
-            }
-            SessionState.ExportObject<Table> exportedTable =
-                    ticketRouter.resolve(session, sourceId, "sourceId");
-            session.nonExport()
-                    .require(exportedTable)
-                    .onError(responseObserver)
-                    .submit(() -> {
-                        final Table table = exportedTable.get();
-                        authWiring.checkPermissionSeekRow(session.getAuthContext(), request,
-                                Collections.singletonList(table));
-                        final String columnName = request.getColumnName();
-                        final Class<?> dataType = table.getDefinition().getColumn(columnName).getDataType();
-                        final Object seekValue = getSeekValue(request.getSeekValue(), dataType);
-                        final Long result = table.apply(new SeekRow(
-                                request.getStartingRow(),
-                                columnName,
-                                seekValue,
-                                request.getInsensitive(),
-                                request.getContains(),
-                                request.getIsBackward()));
-                        SeekRowResponse.Builder rowResponse = SeekRowResponse.newBuilder();
-                        safelyComplete(responseObserver, rowResponse.setResultRow(result).build());
-                    });
-        });
-    }
-
-    @Override
-    public void batch(final BatchTableRequest request,
-            final StreamObserver<ExportedTableCreationResponse> responseObserver) {
-        GrpcUtil.rpcWrapper(log, responseObserver, () -> {
-            GrpcErrorHelper.checkRepeatedFieldNonEmpty(request, BatchTableRequest.OPS_FIELD_NUMBER);
-            GrpcErrorHelper.checkHasNoUnknownFields(request);
-            for (Operation operation : request.getOpsList()) {
-                GrpcErrorHelper.checkHasOneOf(operation, "op");
-                GrpcErrorHelper.checkHasNoUnknownFields(operation);
-            }
-            final SessionState session = sessionService.getCurrentSession();
-
-            // step 1: initialize exports
-            final List<BatchExportBuilder<?>> exportBuilders = request.getOpsList().stream()
-                    .map(op -> createBatchExportBuilder(session, op))
-                    .collect(Collectors.toList());
-
-            // step 2: resolve dependencies
-            exportBuilders.forEach(export -> export.resolveDependencies(session, exportBuilders));
-
-            // step 3: check for cyclical dependencies; this is our only opportunity to check non-export cycles
-            // TODO: check for cycles
-
-            // step 4: submit the batched operations
-            final AtomicInteger remaining = new AtomicInteger(exportBuilders.size());
-            final AtomicReference<StatusRuntimeException> firstFailure = new AtomicReference<>();
-
-            final Runnable onOneResolved = () -> {
-                if (remaining.decrementAndGet() == 0) {
-                    final StatusRuntimeException failure = firstFailure.get();
-                    if (failure != null) {
-                        safelyError(responseObserver, failure);
-                    } else {
-                        safelyComplete(responseObserver);
-                    }
-                }
-            };
-
-            for (int i = 0; i < exportBuilders.size(); ++i) {
-                final BatchExportBuilder<?> exportBuilder = exportBuilders.get(i);
-                final int exportId = exportBuilder.exportBuilder.getExportId();
-
-                final TableReference resultId;
-                if (exportId == SessionState.NON_EXPORT_ID) {
-                    resultId = TableReference.newBuilder().setBatchOffset(i).build();
-                } else {
-                    resultId = ExportTicketHelper.tableReference(exportId);
-                }
-
-                exportBuilder.exportBuilder.onError((result, errorContext, cause, dependentId) -> {
-                    String errorInfo = errorContext;
-                    if (dependentId != null) {
-                        errorInfo += " dependency: " + dependentId;
-                    }
-                    if (cause instanceof StatusRuntimeException) {
-                        errorInfo += " cause: " + cause.getMessage();
-                        firstFailure.compareAndSet(null, (StatusRuntimeException) cause);
-                    }
-                    final ExportedTableCreationResponse response = ExportedTableCreationResponse.newBuilder()
-                            .setResultId(resultId)
-                            .setSuccess(false)
-                            .setErrorInfo(errorInfo)
-                            .build();
-                    safelyOnNext(responseObserver, response);
-                    onOneResolved.run();
-                }).submit(() -> {
-                    final Table table = exportBuilder.doExport();
-                    final ExportedTableCreationResponse response =
-                            ExportUtil.buildTableCreationResponse(resultId, table);
-                    safelyOnNext(responseObserver, response);
-                    onOneResolved.run();
-                    return table;
+    public void seekRow(
+            @NotNull final SeekRowRequest request,
+            @NotNull final StreamObserver<SeekRowResponse> responseObserver) {
+        final SessionState session = sessionService.getCurrentSession();
+        final Ticket sourceId = request.getSourceId();
+        if (sourceId.getTicket().isEmpty()) {
+            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, "No consoleId supplied");
+        }
+        SessionState.ExportObject<Table> exportedTable =
+                ticketRouter.resolve(session, sourceId, "sourceId");
+        session.nonExport()
+                .require(exportedTable)
+                .onError(responseObserver)
+                .submit(() -> {
+                    final Table table = exportedTable.get();
+                    authWiring.checkPermissionSeekRow(session.getAuthContext(), request,
+                            Collections.singletonList(table));
+                    final String columnName = request.getColumnName();
+                    final Class<?> dataType = table.getDefinition().getColumn(columnName).getDataType();
+                    final Object seekValue = getSeekValue(request.getSeekValue(), dataType);
+                    final Long result = table.apply(new SeekRow(
+                            request.getStartingRow(),
+                            columnName,
+                            seekValue,
+                            request.getInsensitive(),
+                            request.getContains(),
+                            request.getIsBackward()));
+                    SeekRowResponse.Builder rowResponse = SeekRowResponse.newBuilder();
+                    safelyComplete(responseObserver, rowResponse.setResultRow(result).build());
                 });
-            }
-        });
     }
 
     @Override
-    public void exportedTableUpdates(final ExportedTableUpdatesRequest request,
-            final StreamObserver<ExportedTableUpdateMessage> responseObserver) {
-        GrpcUtil.rpcWrapper(log, responseObserver, () -> {
-            final SessionState session = sessionService.getCurrentSession();
-            authWiring.checkPermissionExportedTableUpdates(session.getAuthContext(), request, Collections.emptyList());
-            final ExportedTableUpdateListener listener = new ExportedTableUpdateListener(session, responseObserver);
-            session.addExportListener(listener);
-            ((ServerCallStreamObserver<ExportedTableUpdateMessage>) responseObserver).setOnCancelHandler(
-                    () -> session.removeExportListener(listener));
-        });
+    public void batch(
+            @NotNull final BatchTableRequest request,
+            @NotNull final StreamObserver<ExportedTableCreationResponse> responseObserver) {
+        GrpcErrorHelper.checkRepeatedFieldNonEmpty(request, BatchTableRequest.OPS_FIELD_NUMBER);
+        GrpcErrorHelper.checkHasNoUnknownFields(request);
+        for (Operation operation : request.getOpsList()) {
+            GrpcErrorHelper.checkHasOneOf(operation, "op");
+            GrpcErrorHelper.checkHasNoUnknownFields(operation);
+        }
+        final SessionState session = sessionService.getCurrentSession();
+
+        // step 1: initialize exports
+        final List<BatchExportBuilder<?>> exportBuilders = request.getOpsList().stream()
+                .map(op -> createBatchExportBuilder(session, op))
+                .collect(Collectors.toList());
+
+        // step 2: resolve dependencies
+        exportBuilders.forEach(export -> export.resolveDependencies(session, exportBuilders));
+
+        // step 3: check for cyclical dependencies; this is our only opportunity to check non-export cycles
+        // TODO: check for cycles
+
+        // step 4: submit the batched operations
+        final AtomicInteger remaining = new AtomicInteger(exportBuilders.size());
+        final AtomicReference<StatusRuntimeException> firstFailure = new AtomicReference<>();
+
+        final Runnable onOneResolved = () -> {
+            if (remaining.decrementAndGet() == 0) {
+                final StatusRuntimeException failure = firstFailure.get();
+                if (failure != null) {
+                    safelyError(responseObserver, failure);
+                } else {
+                    safelyComplete(responseObserver);
+                }
+            }
+        };
+
+        for (int i = 0; i < exportBuilders.size(); ++i) {
+            final BatchExportBuilder<?> exportBuilder = exportBuilders.get(i);
+            final int exportId = exportBuilder.exportBuilder.getExportId();
+
+            final TableReference resultId;
+            if (exportId == SessionState.NON_EXPORT_ID) {
+                resultId = TableReference.newBuilder().setBatchOffset(i).build();
+            } else {
+                resultId = ExportTicketHelper.tableReference(exportId);
+            }
+
+            exportBuilder.exportBuilder.onError((result, errorContext, cause, dependentId) -> {
+                String errorInfo = errorContext;
+                if (dependentId != null) {
+                    errorInfo += " dependency: " + dependentId;
+                }
+                if (cause instanceof StatusRuntimeException) {
+                    errorInfo += " cause: " + cause.getMessage();
+                    firstFailure.compareAndSet(null, (StatusRuntimeException) cause);
+                }
+                final ExportedTableCreationResponse response = ExportedTableCreationResponse.newBuilder()
+                        .setResultId(resultId)
+                        .setSuccess(false)
+                        .setErrorInfo(errorInfo)
+                        .build();
+                safelyOnNext(responseObserver, response);
+                onOneResolved.run();
+            }).submit(() -> {
+                final Table table = exportBuilder.doExport();
+                final ExportedTableCreationResponse response =
+                        ExportUtil.buildTableCreationResponse(resultId, table);
+                safelyOnNext(responseObserver, response);
+                onOneResolved.run();
+                return table;
+            });
+        }
     }
 
     @Override
-    public void getExportedTableCreationResponse(final Ticket request,
-            final StreamObserver<ExportedTableCreationResponse> responseObserver) {
-        GrpcUtil.rpcWrapper(log, responseObserver, () -> {
-            final SessionState session = sessionService.getCurrentSession();
+    public void exportedTableUpdates(
+            @NotNull final ExportedTableUpdatesRequest request,
+            @NotNull final StreamObserver<ExportedTableUpdateMessage> responseObserver) {
+        final SessionState session = sessionService.getCurrentSession();
+        authWiring.checkPermissionExportedTableUpdates(session.getAuthContext(), request, Collections.emptyList());
+        final ExportedTableUpdateListener listener = new ExportedTableUpdateListener(session, responseObserver);
+        session.addExportListener(listener);
+        ((ServerCallStreamObserver<ExportedTableUpdateMessage>) responseObserver).setOnCancelHandler(
+                () -> session.removeExportListener(listener));
+    }
 
-            if (request.getTicket().isEmpty()) {
-                throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "No request ticket supplied");
-            }
+    @Override
+    public void getExportedTableCreationResponse(
+            @NotNull final Ticket request,
+            @NotNull final StreamObserver<ExportedTableCreationResponse> responseObserver) {
+        final SessionState session = sessionService.getCurrentSession();
 
-            final SessionState.ExportObject<Object> export = ticketRouter.resolve(session, request, "request");
+        if (request.getTicket().isEmpty()) {
+            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, "No request ticket supplied");
+        }
 
-            session.nonExport()
-                    .require(export)
-                    .onError(responseObserver)
-                    .submit(() -> {
-                        final Object obj = export.get();
-                        if (!(obj instanceof Table)) {
-                            responseObserver.onError(
-                                    GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "Ticket is not a table"));
-                            return;
-                        }
-                        authWiring.checkPermissionGetExportedTableCreationResponse(
-                                session.getAuthContext(), request, Collections.singletonList((Table) obj));
-                        final ExportedTableCreationResponse response =
-                                ExportUtil.buildTableCreationResponse(request, (Table) obj);
-                        safelyComplete(responseObserver, response);
-                    });
-        });
+        final SessionState.ExportObject<Object> export = ticketRouter.resolve(session, request, "request");
+
+        session.nonExport()
+                .require(export)
+                .onError(responseObserver)
+                .submit(() -> {
+                    final Object obj = export.get();
+                    if (!(obj instanceof Table)) {
+                        responseObserver.onError(
+                                Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
+                                        "Ticket is not a table"));
+                        return;
+                    }
+                    authWiring.checkPermissionGetExportedTableCreationResponse(
+                            session.getAuthContext(), request, Collections.singletonList((Table) obj));
+                    final ExportedTableCreationResponse response =
+                            ExportUtil.buildTableCreationResponse(request, (Table) obj);
+                    safelyComplete(responseObserver, response);
+                });
     }
 
     /**
@@ -546,37 +576,35 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
             final BatchTableRequest.Operation.OpCase op,
             final T request,
             final StreamObserver<ExportedTableCreationResponse> responseObserver) {
-        GrpcUtil.rpcWrapper(log, responseObserver, () -> {
-            final SessionState session = sessionService.getCurrentSession();
-            final GrpcTableOperation<T> operation = getOp(op);
-            operation.validateRequest(request);
+        final SessionState session = sessionService.getCurrentSession();
+        final GrpcTableOperation<T> operation = getOp(op);
+        operation.validateRequest(request);
 
-            final Ticket resultId = operation.getResultTicket(request);
-            if (resultId.getTicket().isEmpty()) {
-                throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "No result ticket supplied");
-            }
+        final Ticket resultId = operation.getResultTicket(request);
+        if (resultId.getTicket().isEmpty()) {
+            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, "No result ticket supplied");
+        }
 
-            final List<SessionState.ExportObject<Table>> dependencies = operation.getTableReferences(request).stream()
-                    .map(ref -> resolveOneShotReference(session, ref))
-                    .collect(Collectors.toList());
+        final List<SessionState.ExportObject<Table>> dependencies = operation.getTableReferences(request).stream()
+                .map(ref -> resolveOneShotReference(session, ref))
+                .collect(Collectors.toList());
 
-            session.newExport(resultId, "resultId")
-                    .require(dependencies)
-                    .onError(responseObserver)
-                    .submit(() -> {
-                        operation.checkPermission(request, dependencies);
-                        final Table result = operation.create(request, dependencies);
-                        final ExportedTableCreationResponse response =
-                                ExportUtil.buildTableCreationResponse(resultId, result);
-                        safelyComplete(responseObserver, response);
-                        return result;
-                    });
-        });
+        session.newExport(resultId, "resultId")
+                .require(dependencies)
+                .onError(responseObserver)
+                .submit(() -> {
+                    operation.checkPermission(request, dependencies);
+                    final Table result = operation.create(request, dependencies);
+                    final ExportedTableCreationResponse response =
+                            ExportUtil.buildTableCreationResponse(resultId, result);
+                    safelyComplete(responseObserver, response);
+                    return result;
+                });
     }
 
     private SessionState.ExportObject<Table> resolveOneShotReference(SessionState session, TableReference ref) {
         if (!ref.hasTicket()) {
-            throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
+            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
                     "One-shot operations must use ticket references");
         }
         return ticketRouter.resolve(session, ref.getTicket(), "sourceId");
@@ -590,11 +618,11 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
             case BATCH_OFFSET:
                 final int offset = ref.getBatchOffset();
                 if (offset < 0 || offset >= exportBuilders.size()) {
-                    throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "invalid table reference: " + ref);
+                    throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "invalid table reference: " + ref);
                 }
                 return exportBuilders.get(offset).exportBuilder.getExport();
             default:
-                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "invalid table reference: " + ref);
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "invalid table reference: " + ref);
         }
     }
 

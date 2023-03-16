@@ -111,11 +111,6 @@ class LongConstantColumn implements SelectColumn {
     }
 
     @Override
-    public final boolean disallowRefresh() {
-        return false;
-    }
-
-    @Override
     public final boolean isStateless() {
         return true;
     }

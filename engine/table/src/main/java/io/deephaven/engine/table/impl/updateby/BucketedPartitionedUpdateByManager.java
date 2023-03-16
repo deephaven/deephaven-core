@@ -106,12 +106,10 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
             result.addParentReference(sourceListener);
 
             // create input and output modified column sets
-            for (UpdateByWindow win : windows) {
-                for (UpdateByOperator op : win.operators) {
-                    op.createInputModifiedColumnSet(source);
-                    op.createOutputModifiedColumnSet(result);
-                }
-            }
+            forAllOperators(op -> {
+                op.createInputModifiedColumnSet(source);
+                op.createOutputModifiedColumnSet(result);
+            });
 
             // make the source->result transformer from only the columns in the source that are present in result
             mcsTransformer = source.newModifiedColumnSetTransformer(result, preservedColumns);

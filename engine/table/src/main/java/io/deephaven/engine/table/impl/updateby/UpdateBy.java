@@ -38,7 +38,7 @@ import io.deephaven.util.SafeCloseableArray;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedNode;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedQueue;
 import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.lang3.mutable.MutableBoolean;
+import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -48,7 +48,6 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicIntegerArray;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
@@ -357,11 +356,9 @@ public abstract class UpdateBy {
 
                 // clear them now and let them set their own prev states
                 if (!initialStep && !toClear.isEmpty()) {
-                    for (UpdateByWindow win : windows) {
-                        for (UpdateByOperator op : win.operators) {
-                            op.clearOutputRows(toClear);
-                        }
-                    }
+                    forAllOperators(op -> {
+                        op.clearOutputRows(toClear);
+                    });
                 }
             } else {
                 // identify which rows we need to clear in our Object columns (actual clearing will be performed later)
@@ -899,11 +896,9 @@ public abstract class UpdateBy {
 
             // clear the sparse output columns for rows that no longer exist
             if (!initialStep && !redirHelper.isRedirected() && !toClear.isEmpty()) {
-                for (UpdateByWindow win : windows) {
-                    for (UpdateByOperator op : win.operators) {
-                        op.clearOutputRows(toClear);
-                    }
-                }
+                forAllOperators(op -> {
+                    op.clearOutputRows(toClear);
+                });
             }
 
             // release remaining resources
@@ -970,7 +965,7 @@ public abstract class UpdateBy {
                         final UpdateByOperator[] winOps = win.getOperators();
                         for (int winOpIdx : win.getDirtyOperators(winCtx)) {
                             // these were created directly from the result output columns so no transformer needed
-                            downstream.modifiedColumnSet.setAll(winOps[winOpIdx].getOutputModifiedColumnSet());
+                            win.operators[winOpIdx].extractDownstreamModifiedColumnSet(upstream, downstream);
                         }
                     }
                 }
@@ -1049,6 +1044,14 @@ public abstract class UpdateBy {
         } catch (IOException e) {
             throw new UncheckedTableException(
                     "Exception while delivering async client error notification for " + sourceEntry, error);
+        }
+    }
+
+    void forAllOperators(Consumer<UpdateByOperator> consumer) {
+        for (UpdateByWindow win : windows) {
+            for (UpdateByOperator op : win.operators) {
+                consumer.accept(op);
+            }
         }
     }
 
@@ -1167,7 +1170,7 @@ public abstract class UpdateBy {
                 .append(updateByOperatorFactory.describe(clauses))
                 .append("}");
 
-        final AtomicReference<String> timestampColumnName = new AtomicReference<>(null);
+        final MutableObject<String> timestampColumnName = new MutableObject<>(null);
         // create an initial set of all source columns
         final Set<String> preservedColumnSet = new LinkedHashSet<>(source.getColumnSourceMap().keySet());
 
@@ -1194,10 +1197,10 @@ public abstract class UpdateBy {
                 });
                 // verify zero or one timestamp column names
                 if (op.getTimestampColumnName() != null) {
-                    if (timestampColumnName.get() == null) {
-                        timestampColumnName.set(op.getTimestampColumnName());
+                    if (timestampColumnName.getValue() == null) {
+                        timestampColumnName.setValue(op.getTimestampColumnName());
                     } else {
-                        if (!timestampColumnName.get().equals(op.getTimestampColumnName())) {
+                        if (!timestampColumnName.getValue().equals(op.getTimestampColumnName())) {
                             throw new UncheckedTableException(
                                     "Cannot reference more than one timestamp source on a single UpdateBy call {"
                                             + timestampColumnName + ", " + op.getTimestampColumnName() + "}");
@@ -1240,8 +1243,13 @@ public abstract class UpdateBy {
         final ColumnSource<?>[] inputSourceArr = inputSourceList.toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY);
 
         final Map<String, ColumnSource<?>> resultSources = new LinkedHashMap<>(source.getColumnSourceMap());
-        resultSources.putAll(opResultSources);
-        final String fTimestampColumnName = timestampColumnName.get();
+        // Add the output columns in the user-supplied order
+        final Collection<String> userOutputColumns = updateByOperatorFactory.getOutputColumns(clauses);
+        for (String colName : userOutputColumns) {
+            final ColumnSource<?> matchedColumn = opResultSources.get(colName);
+            Assert.neqNull(matchedColumn, "matchedColumn");
+            resultSources.put(colName, matchedColumn);
+        }
         if (pairs.length == 0) {
             descriptionBuilder.append(")");
             return LivenessScopeStack.computeEnclosed(() -> {
@@ -1251,7 +1259,7 @@ public abstract class UpdateBy {
                         source,
                         preservedColumns,
                         resultSources,
-                        fTimestampColumnName,
+                        timestampColumnName.getValue(),
                         rowRedirection,
                         control);
 
@@ -1294,7 +1302,7 @@ public abstract class UpdateBy {
                     preservedColumns,
                     resultSources,
                     byColumns,
-                    fTimestampColumnName,
+                    timestampColumnName.getValue(),
                     rowRedirection,
                     control);
 

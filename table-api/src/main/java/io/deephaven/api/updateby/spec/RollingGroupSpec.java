@@ -6,7 +6,7 @@ import org.immutables.value.Value.Immutable;
 import java.time.Duration;
 
 /**
- * A {@link UpdateBySpec} for performing a windowed rolling sum across the specified columns
+ * An {@link UpdateBySpec} for performing a windowed rolling group operation
  */
 @Immutable
 @BuildableStyle

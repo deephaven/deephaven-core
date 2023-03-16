@@ -3,7 +3,7 @@ package io.deephaven.api.updateby.spec;
 import org.immutables.value.Value;
 
 /**
- * A {@link UpdateBySpec} for performing a windowed rolling sum across the specified columns
+ * An {@link UpdateBySpec} base class for performing a windowed rolling operation
  */
 
 public abstract class RollingOpSpec extends UpdateBySpecBase {

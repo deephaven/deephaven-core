@@ -21,12 +21,13 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.vector.ByteVectorColumnWrapper;
 import io.deephaven.engine.table.impl.vector.PrevByteVectorColumnWrapper;
 import io.deephaven.vector.ByteVector;
+import io.deephaven.vector.ByteVectorDirect;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 /**
- * {@link ColumnSource} implementation for aggregation result short columns.
+ * {@link ColumnSource} implementation for aggregation result byte columns.
  */
 public final class SlicedByteAggregateColumnSource extends BaseAggregateSlicedColumnSource<ByteVector, Byte> {
     public SlicedByteAggregateColumnSource(
@@ -45,6 +46,18 @@ public final class SlicedByteAggregateColumnSource extends BaseAggregateSlicedCo
         super(ByteVector.class, aggregatedSource, groupRowSetSource, revTicks, fwdTicks);
     }
 
+    private ByteVector makeVector(final RowSet rowSetSlice) {
+        return rowSetSlice.isEmpty()
+                ? ByteVectorDirect.ZERO_LEN_VECTOR
+                : new ByteVectorColumnWrapper(aggregatedSource, rowSetSlice);
+    }
+
+    private ByteVector makePrevVector(final RowSet rowSetSlice) {
+        return rowSetSlice.isEmpty()
+                ? ByteVectorDirect.ZERO_LEN_VECTOR
+                : new PrevByteVectorColumnWrapper(aggregatedSource, rowSetSlice);
+    }
+
     @Override
     public ByteVector get(final long rowKey) {
         if (rowKey == RowSequence.NULL_ROW_KEY) {
@@ -54,8 +67,12 @@ public final class SlicedByteAggregateColumnSource extends BaseAggregateSlicedCo
         final long startPos = startSource != null ? startSource.getLong(rowKey) : startOffset;
         final long endPos = endSource != null ? endSource.getLong(rowKey) : endOffset;
 
-        if (startPos == NULL_LONG || endPos == NULL_LONG) {
+        if (startPos == NULL_LONG && endPos == NULL_LONG) {
+            // null when both start/end are null.
             return null;
+        } else if (startPos == NULL_LONG) {
+            // empty vector when only start is null
+            return ByteVectorDirect.ZERO_LEN_VECTOR;
         }
 
         final RowSet bucketRowSet = groupRowSetSource.get(rowKey);
@@ -63,11 +80,11 @@ public final class SlicedByteAggregateColumnSource extends BaseAggregateSlicedCo
 
         final long size = bucketRowSet.size();
         final long start = ClampUtil.clampLong(0, size, rowPos + startPos);
-        final long end = ClampUtil.clampLong(0, size , rowPos + endPos + 1);
+        final long end = ClampUtil.clampLong(0, size , rowPos + endPos);
 
         // Determine the slice of the groupRowSetSource from start to end.
         final RowSet rowSetSlice = bucketRowSet.subSetByPositionRange(start, end);
-        return rowSetSlice.isEmpty() ? null : new ByteVectorColumnWrapper(aggregatedSource, rowSetSlice);
+        return makeVector(rowSetSlice);
     }
 
     @Override
@@ -79,8 +96,12 @@ public final class SlicedByteAggregateColumnSource extends BaseAggregateSlicedCo
         final long startPos = startSource != null ? startSource.getPrevLong(rowKey) : startOffset;
         final long endPos = endSource != null ? endSource.getPrevLong(rowKey) : endOffset;
 
-        if (startPos == NULL_LONG || endPos == NULL_LONG) {
+        if (startPos == NULL_LONG && endPos == NULL_LONG) {
+            // null when both start/end are null.
             return null;
+        } else if (startPos == NULL_LONG) {
+            // empty vector when only start is null
+            return ByteVectorDirect.ZERO_LEN_VECTOR;
         }
 
         final RowSet bucketRowSet = getPrevGroupRowSet(rowKey);
@@ -88,11 +109,11 @@ public final class SlicedByteAggregateColumnSource extends BaseAggregateSlicedCo
 
         final long size = bucketRowSet.size();
         final long start = ClampUtil.clampLong(0, size, rowPos + startPos);
-        final long end = ClampUtil.clampLong(0, size , rowPos + endPos + 1);
+        final long end = ClampUtil.clampLong(0, size , rowPos + endPos);
 
         // Determine the slice of the groupRowSetSource from start to end.
         final RowSet rowSetSlice = bucketRowSet.subSetByPositionRange(start, end);
-        return rowSetSlice.isEmpty() ? null : new PrevByteVectorColumnWrapper(aggregatedSource, rowSetSlice);
+        return makePrevVector(rowSetSlice);
     }
 
     @Override
@@ -117,8 +138,12 @@ public final class SlicedByteAggregateColumnSource extends BaseAggregateSlicedCo
             final long startPos = startChunk != null ? startChunk.get(di) : startOffset;
             final long endPos = endChunk != null ? endChunk.get(di) : endOffset;
 
-            if (startPos == NULL_LONG || endPos == NULL_LONG) {
+            if (startPos == NULL_LONG && endPos == NULL_LONG) {
+                // null when both start/end are null.
                 typedDestination.set(di, null);
+            } else if (startPos == NULL_LONG) {
+                // empty vector when only start is null
+                typedDestination.set(di, ByteVectorDirect.ZERO_LEN_VECTOR);
             } else {
                 final long rowKey = keyChunk.get(di);
                 final RowSet bucketRowSet = groupRowSetChunk.get(di);
@@ -126,11 +151,11 @@ public final class SlicedByteAggregateColumnSource extends BaseAggregateSlicedCo
 
                 final long rowSetSize = bucketRowSet.size();
                 final long start = ClampUtil.clampLong(0, rowSetSize, rowPos + startPos);
-                final long end = ClampUtil.clampLong(0, rowSetSize , rowPos + endPos + 1);
+                final long end = ClampUtil.clampLong(0, rowSetSize , rowPos + endPos);
 
                 // Determine the slice of the groupRowSetSource from start to end.
                 final RowSet rowSetSlice = bucketRowSet.subSetByPositionRange(start, end);
-                typedDestination.set(di, rowSetSlice.isEmpty() ? null : new ByteVectorColumnWrapper(aggregatedSource, rowSetSlice));
+                typedDestination.set(di, makeVector(rowSetSlice));
             }
         }
         typedDestination.setSize(size);
@@ -157,8 +182,12 @@ public final class SlicedByteAggregateColumnSource extends BaseAggregateSlicedCo
             final long startPos = startPrevChunk != null ? startPrevChunk.get(di) : startOffset;
             final long endPos = endPrevChunk != null ? endPrevChunk.get(di) : endOffset;
 
-            if (startPos == NULL_LONG || endPos == NULL_LONG) {
+            if (startPos == NULL_LONG && endPos == NULL_LONG) {
+                // null when both start/end are null.
                 typedDestination.set(di, null);
+            } else if (startPos == NULL_LONG) {
+                // empty vector when only start is null
+                typedDestination.set(di, ByteVectorDirect.ZERO_LEN_VECTOR);
             } else {
                 final long rowKey = keyChunk.get(di);
                 final RowSet groupRowSetPrev = groupRowSetPrevChunk.get(di);
@@ -169,11 +198,11 @@ public final class SlicedByteAggregateColumnSource extends BaseAggregateSlicedCo
 
                 final long rowSetSize = groupRowSetToUse.size();
                 final long start = ClampUtil.clampLong(0, rowSetSize, rowPos + startPos);
-                final long end = ClampUtil.clampLong(0, rowSetSize , rowPos + endPos + 1);
+                final long end = ClampUtil.clampLong(0, rowSetSize , rowPos + endPos);
 
                 // Determine the slice of the groupRowSetSource from start to end.
                 final RowSet rowSetSlice = groupRowSetToUse.subSetByPositionRange(start, end);
-                typedDestination.set(di, rowSetSlice.isEmpty() ? null : new PrevByteVectorColumnWrapper(aggregatedSource, rowSetSlice));
+                typedDestination.set(di, makePrevVector(rowSetSlice));
             }
         }
         typedDestination.setSize(size);

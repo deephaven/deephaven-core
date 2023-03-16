@@ -1,18 +1,17 @@
 package io.deephaven.server.grpc;
 
 import com.google.rpc.Code;
-import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.proto.backplane.grpc.TableReference;
 import io.deephaven.proto.backplane.grpc.TableReference.RefCase;
 import io.deephaven.proto.backplane.grpc.Ticket;
-import io.deephaven.server.grpc.GrpcErrorHelper;
+import io.deephaven.proto.util.Exceptions;
 
 public class Common {
 
     public static void validate(Ticket ticket) {
         GrpcErrorHelper.checkHasNoUnknownFields(ticket);
         if (ticket.getTicket().isEmpty()) {
-            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Ticket is empty");
+            throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "Ticket is empty");
         }
     }
 
@@ -32,7 +31,7 @@ public class Common {
                 break;
             case REF_NOT_SET:
             default:
-                throw GrpcUtil.statusRuntimeException(Code.INTERNAL,
+                throw Exceptions.statusRuntimeException(Code.INTERNAL,
                         String.format("Server missing TableReference type %s", ref));
         }
     }

@@ -28,9 +28,6 @@ abstract class UpdateByWindow {
     /** The indices in the UpdateBy input source collection for each operator input slots */
     protected final int[][] operatorInputSourceSlots;
 
-    /** Whether the operators for this window require row positions during accumulation */
-    protected final boolean operatorsRequirePositions;
-
     /** This context will store the necessary info to process a single window for a single bucket */
     static class UpdateByWindowBucketContext implements SafeCloseable {
         /** A reference to the source rowset */
@@ -105,8 +102,6 @@ abstract class UpdateByWindow {
         this.operators = operators;
         this.operatorInputSourceSlots = operatorInputSourceSlots;
         this.timestampColumnName = timestampColumnName;
-
-        operatorsRequirePositions = Arrays.stream(operators).anyMatch(UpdateByOperator::requiresRowPositions);
     }
 
     /**

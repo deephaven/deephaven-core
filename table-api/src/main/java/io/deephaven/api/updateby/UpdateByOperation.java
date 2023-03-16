@@ -345,7 +345,7 @@ public interface UpdateByOperation {
     }
 
     /**
-     * Create an {@link RollingGroupSpec rolling sum} for the supplied column name pairs, using ticks as the windowing
+     * Create {@link RollingGroupSpec rolling groups} for the supplied column name pairs, using ticks as the windowing
      * unit. Uses the default OperationControl settings.
      *
      * @param prevTimeTicks the look-behind window size (in rows/ticks)
@@ -357,7 +357,7 @@ public interface UpdateByOperation {
     }
 
     /**
-     * Create an {@link RollingGroupSpec rolling sum} for the supplied column name pairs, using ticks as the windowing
+     * Create {@link RollingGroupSpec rolling groups} for the supplied column name pairs, using ticks as the windowing
      * unit. Uses the default OperationControl settings.
      *
      * @param prevTimeTicks the look-behind window size (in rows/ticks)
@@ -370,7 +370,7 @@ public interface UpdateByOperation {
     }
 
     /**
-     * Create an {@link RollingGroupSpec rolling sum} for the supplied column name pairs, using time as the windowing
+     * Create {@link RollingGroupSpec rolling groups} for the supplied column name pairs, using time as the windowing
      * unit. Uses the default OperationControl settings.
      *
      * @param prevWindowDuration the look-behind window size (in Duration)
@@ -382,7 +382,7 @@ public interface UpdateByOperation {
     }
 
     /**
-     * Create an {@link RollingGroupSpec rolling sum} for the supplied column name pairs, using time as the windowing
+     * Create {@link RollingGroupSpec rolling groups} for the supplied column name pairs, using time as the windowing
      * unit. Uses the default OperationControl settings.
      *
      * @param prevWindowDuration the look-behind window size (in Duration)
@@ -397,7 +397,7 @@ public interface UpdateByOperation {
 
 
     /**
-     * Create an {@link RollingGroupSpec rolling sum} for the supplied column name pairs, using time as the windowing
+     * Create {@link RollingGroupSpec rolling groups} for the supplied column name pairs, using time as the windowing
      * unit. Uses the default OperationControl settings.
      *
      * @param prevWindowNanos the look-behind window size (in nanoseconds)
@@ -409,7 +409,7 @@ public interface UpdateByOperation {
     }
 
     /**
-     * Create an {@link RollingGroupSpec rolling sum} for the supplied column name pairs, using time as the windowing
+     * Create {@link RollingGroupSpec rolling groups} for the supplied column name pairs, using time as the windowing
      * unit. Uses the default OperationControl settings.
      *
      * @param prevWindowNanos the look-behind window size (in nanoseconds)

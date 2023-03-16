@@ -198,9 +198,6 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
         // store this for streamreader parser
         expectedColumns = columns;
 
-        // update the viewport size for initial snapshot completion
-        resultTable.setInitialSnapshotViewportRowCount(viewport == null ? -1 : viewport.size());
-
         // Send the snapshot request:
         observer.onNext(FlightData.newBuilder()
                 .setAppMetadata(ByteStringAccess.wrap(makeRequestInternal(viewport, columns, reverseViewport, options)))

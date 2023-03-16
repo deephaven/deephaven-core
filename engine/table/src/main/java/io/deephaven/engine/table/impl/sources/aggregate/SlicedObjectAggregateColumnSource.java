@@ -16,6 +16,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.vector.ObjectVectorColumnWrapper;
 import io.deephaven.engine.table.impl.vector.PrevObjectVectorColumnWrapper;
 import io.deephaven.vector.ObjectVector;
+import io.deephaven.vector.ObjectVectorDirect;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;
@@ -40,6 +41,18 @@ public final class SlicedObjectAggregateColumnSource<COMPONENT_TYPE> extends Bas
         super(ObjectVector.class, aggregatedSource, groupRowSetSource, startOffset, endOffset);
     }
 
+    private ObjectVector<COMPONENT_TYPE> makeVector(final RowSet rowSetSlice) {
+        return rowSetSlice.isEmpty()
+                ? (ObjectVector<COMPONENT_TYPE>) ObjectVectorDirect.ZERO_LEN_VECTOR
+                : new ObjectVectorColumnWrapper<>(aggregatedSource, rowSetSlice);
+    }
+
+    private ObjectVector<COMPONENT_TYPE> makePrevVector(final RowSet rowSetSlice) {
+        return rowSetSlice.isEmpty()
+                ? (ObjectVector<COMPONENT_TYPE>) ObjectVectorDirect.ZERO_LEN_VECTOR
+                : new PrevObjectVectorColumnWrapper<>(aggregatedSource, rowSetSlice);
+    }
+
     @Override
     public ObjectVector<COMPONENT_TYPE> get(final long rowKey) {
         if (rowKey == RowSequence.NULL_ROW_KEY) {
@@ -58,11 +71,11 @@ public final class SlicedObjectAggregateColumnSource<COMPONENT_TYPE> extends Bas
 
         final long size = bucketRowSet.size();
         final long start = ClampUtil.clampLong(0, size, rowPos + startPos);
-        final long end = ClampUtil.clampLong(0, size , rowPos + endPos + 1);
+        final long end = ClampUtil.clampLong(0, size , rowPos + endPos);
 
         // Determine the slice of the groupRowSetSource from start to end.
         final RowSet rowSetSlice = bucketRowSet.subSetByPositionRange(start, end);
-        return rowSetSlice.isEmpty() ? null : new ObjectVectorColumnWrapper<>(aggregatedSource, rowSetSlice);
+        return makeVector(rowSetSlice);
     }
 
     @Override
@@ -83,11 +96,11 @@ public final class SlicedObjectAggregateColumnSource<COMPONENT_TYPE> extends Bas
 
         final long size = bucketRowSet.size();
         final long start = ClampUtil.clampLong(0, size, rowPos + startPos);
-        final long end = ClampUtil.clampLong(0, size , rowPos + endPos + 1);
+        final long end = ClampUtil.clampLong(0, size , rowPos + endPos);
 
         // Determine the slice of the groupRowSetSource from start to end.
         final RowSet rowSetSlice = bucketRowSet.subSetByPositionRange(start, end);
-        return rowSetSlice.isEmpty() ? null : new PrevObjectVectorColumnWrapper<>(aggregatedSource, rowSetSlice);
+        return makePrevVector(rowSetSlice);
     }
 
     @Override
@@ -111,8 +124,12 @@ public final class SlicedObjectAggregateColumnSource<COMPONENT_TYPE> extends Bas
             final long startPos = startChunk != null ? startChunk.get(di) : startOffset;
             final long endPos = endChunk != null ? endChunk.get(di) : endOffset;
 
-            if (startPos == NULL_LONG || endPos == NULL_LONG) {
+            if (startPos == NULL_LONG && endPos == NULL_LONG) {
+                // null when both start/end are null.
                 typedDestination.set(di, null);
+            } else if (startPos == NULL_LONG) {
+                // empty vector when only start is null
+                typedDestination.set(di, (ObjectVector<COMPONENT_TYPE>) ObjectVectorDirect.ZERO_LEN_VECTOR);
             } else {
                 final long rowKey = keyChunk.get(di);
                 final RowSet bucketRowSet = groupRowSetChunk.get(di);
@@ -120,7 +137,7 @@ public final class SlicedObjectAggregateColumnSource<COMPONENT_TYPE> extends Bas
 
                 final long rowSetSize = bucketRowSet.size();
                 final long start = ClampUtil.clampLong(0, rowSetSize, rowPos + startPos);
-                final long end = ClampUtil.clampLong(0, rowSetSize , rowPos + endPos + 1);
+                final long end = ClampUtil.clampLong(0, rowSetSize , rowPos + endPos);
 
                 // Determine the slice of the groupRowSetSource from start to end.
                 final RowSet rowSetSlice = bucketRowSet.subSetByPositionRange(start, end);
@@ -151,8 +168,12 @@ public final class SlicedObjectAggregateColumnSource<COMPONENT_TYPE> extends Bas
             final long startPos = startPrevChunk != null ? startPrevChunk.get(di) : startOffset;
             final long endPos = endPrevChunk != null ? endPrevChunk.get(di) : endOffset;
 
-            if (startPos == NULL_LONG || endPos == NULL_LONG) {
+            if (startPos == NULL_LONG && endPos == NULL_LONG) {
+                // null when both start/end are null.
                 typedDestination.set(di, null);
+            } else if (startPos == NULL_LONG) {
+                // empty vector when only start is null
+                typedDestination.set(di, (ObjectVector<COMPONENT_TYPE>) ObjectVectorDirect.ZERO_LEN_VECTOR);
             } else {
                 final long rowKey = keyChunk.get(di);
                 final RowSet groupRowSetPrev = groupRowSetPrevChunk.get(di);
@@ -163,7 +184,7 @@ public final class SlicedObjectAggregateColumnSource<COMPONENT_TYPE> extends Bas
 
                 final long rowSetSize = groupRowSetToUse.size();
                 final long start = ClampUtil.clampLong(0, rowSetSize, rowPos + startPos);
-                final long end = ClampUtil.clampLong(0, rowSetSize , rowPos + endPos + 1);
+                final long end = ClampUtil.clampLong(0, rowSetSize , rowPos + endPos);
 
                 // Determine the slice of the groupRowSetSource from start to end.
                 final RowSet rowSetSlice = groupRowSetToUse.subSetByPositionRange(start, end);

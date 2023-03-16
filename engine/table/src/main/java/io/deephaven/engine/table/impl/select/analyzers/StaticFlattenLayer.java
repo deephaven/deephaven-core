@@ -100,8 +100,8 @@ final public class StaticFlattenLayer extends SelectAndViewAnalyzer {
     }
 
     @Override
-    Map<String, Set<String>> calcDependsOnRecurse() {
-        return inner.calcDependsOnRecurse();
+    Map<String, Set<String>> calcDependsOnRecurse(boolean forcePublishAllResources) {
+        return inner.calcDependsOnRecurse(forcePublishAllResources);
     }
 
     @Override

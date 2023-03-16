@@ -7,10 +7,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.MatchPair;
-import io.deephaven.engine.table.ModifiedColumnSet;
-import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.util.SafeCloseable;
@@ -25,8 +22,8 @@ import java.util.Map;
  * interface, the pattern of calls will be as follows.
  *
  * <ol>
- * <li>{@link UpdateByOperator#initializeCumulative(Context, long, long)} for cumulative operators or
- * {@link UpdateByOperator#initializeRolling(Context)} (Context)} for windowed operators</li>
+ * <li>{@link UpdateByOperator#initializeCumulative(Context, long, long, RowSet)} for cumulative operators or
+ * {@link UpdateByOperator#initializeRolling(Context, RowSet)} (Context)} for windowed operators</li>
  * <li>{@link UpdateByOperator.Context#accumulateCumulative(RowSequence, Chunk[], LongChunk, int)} for cumulative
  * operators or
  * {@link UpdateByOperator.Context#accumulateRolling(RowSequence, Chunk[], LongChunk, LongChunk, IntChunk, IntChunk, int)}
@@ -48,11 +45,11 @@ public abstract class UpdateByOperator {
     /**
      * The input modifiedColumnSet for this operator
      */
-    ModifiedColumnSet inputModifiedColumnSet;
+    protected ModifiedColumnSet inputModifiedColumnSet;
     /**
      * The output modifiedColumnSet for this operator
      */
-    ModifiedColumnSet outputModifiedColumnSet;
+    protected ModifiedColumnSet outputModifiedColumnSet;
 
     /**
      * A context item for use with updateBy operators
@@ -113,7 +110,6 @@ public abstract class UpdateByOperator {
          */
         protected abstract void writeToOutputChunk(int outIdx);
 
-
         /**
          * Write the output chunk to the output column
          */
@@ -126,7 +122,6 @@ public abstract class UpdateByOperator {
         @OverridingMethodsMustInvokeSuper
         protected abstract void reset();
     }
-
 
     protected UpdateByOperator(@NotNull final MatchPair pair,
             @NotNull final String[] affectingColumns,
@@ -148,14 +143,16 @@ public abstract class UpdateByOperator {
      * Initialize the bucket context for a cumulative operator
      */
     public void initializeCumulative(@NotNull final Context context, final long firstUnmodifiedKey,
-            long firstUnmodifiedTimestamp) {
+            final long firstUnmodifiedTimestamp,
+            @NotNull final RowSet bucketRowSet) {
         context.reset();
     }
 
     /**
      * Initialize the bucket context for a windowed operator
      */
-    public void initializeRolling(@NotNull final Context context) {
+    public void initializeRolling(@NotNull final Context context,
+            @NotNull final RowSet bucketRowSet) {
         context.reset();
     }
 
@@ -279,6 +276,15 @@ public abstract class UpdateByOperator {
      */
     protected ModifiedColumnSet getOutputModifiedColumnSet() {
         return outputModifiedColumnSet;
+    }
+
+    /**
+     * Set the downstream modified column set appropriately for this operator.
+     */
+    protected void extractDownstreamModifiedColumnSet(@NotNull final TableUpdate upstream,
+            @NotNull final TableUpdate downstream) {
+        // for nearly all operators, all output columns will be modified.
+        downstream.modifiedColumnSet().setAll(getOutputModifiedColumnSet());
     }
 
     /**
