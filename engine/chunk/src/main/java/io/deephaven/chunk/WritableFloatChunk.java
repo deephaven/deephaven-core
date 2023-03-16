@@ -26,6 +26,8 @@ import java.nio.Buffer;
 import java.nio.FloatBuffer;
 // endregion BufferImports
 
+import static io.deephaven.chunk.util.pools.ChunkPoolConstants.POOL_WRITABLE_CHUNKS;
+
 // @formatter:on
 
 /**
@@ -42,7 +44,10 @@ public class WritableFloatChunk<ATTR extends Any> extends FloatChunk<ATTR> imple
     }
 
     public static <ATTR extends Any> WritableFloatChunk<ATTR> makeWritableChunk(int size) {
-        return MultiChunkPool.forThisThread().getFloatChunkPool().takeWritableFloatChunk(size);
+        if (POOL_WRITABLE_CHUNKS) {
+            return MultiChunkPool.forThisThread().getFloatChunkPool().takeWritableFloatChunk(size);
+        }
+        return new WritableFloatChunk<>(makeArray(size), 0, size);
     }
 
     @SuppressWarnings("rawtypes")

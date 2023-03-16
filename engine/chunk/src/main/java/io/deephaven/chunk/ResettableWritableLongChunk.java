@@ -12,6 +12,8 @@ import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.util.pools.MultiChunkPool;
 import io.deephaven.util.type.ArrayTypeUtils;
 
+import static io.deephaven.chunk.util.pools.ChunkPoolConstants.POOL_RESETTABLE_CHUNKS;
+
 /**
  * {@link ResettableWritableChunk} implementation for long data.
  */
@@ -19,7 +21,10 @@ import io.deephaven.util.type.ArrayTypeUtils;
 public final class ResettableWritableLongChunk<ATTR_BASE extends Any> extends WritableLongChunk implements ResettableWritableChunk<ATTR_BASE> {
 
     public static <ATTR_BASE extends Any> ResettableWritableLongChunk<ATTR_BASE> makeResettableChunk() {
-        return MultiChunkPool.forThisThread().getLongChunkPool().takeResettableWritableLongChunk();
+        if (POOL_RESETTABLE_CHUNKS) {
+            return MultiChunkPool.forThisThread().getLongChunkPool().takeResettableWritableLongChunk();
+        }
+        return new ResettableWritableLongChunk<>();
     }
 
     public static <ATTR_BASE extends Any> ResettableWritableLongChunk<ATTR_BASE> makeResettableChunkForPool() {
@@ -78,6 +83,8 @@ public final class ResettableWritableLongChunk<ATTR_BASE extends Any> extends Wr
 
     @Override
     public void close() {
-        MultiChunkPool.forThisThread().getLongChunkPool().giveResettableWritableLongChunk(this);
+        if (POOL_RESETTABLE_CHUNKS) {
+            MultiChunkPool.forThisThread().getLongChunkPool().giveResettableWritableLongChunk(this);
+        }
     }
 }

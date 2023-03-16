@@ -23,6 +23,8 @@ import java.util.Arrays;
 // region BufferImports
 // endregion BufferImports
 
+import static io.deephaven.chunk.util.pools.ChunkPoolConstants.POOL_WRITABLE_CHUNKS;
+
 // @formatter:on
 
 /**
@@ -39,7 +41,10 @@ public class WritableBooleanChunk<ATTR extends Any> extends BooleanChunk<ATTR> i
     }
 
     public static <ATTR extends Any> WritableBooleanChunk<ATTR> makeWritableChunk(int size) {
-        return MultiChunkPool.forThisThread().getBooleanChunkPool().takeWritableBooleanChunk(size);
+        if (POOL_WRITABLE_CHUNKS) {
+            return MultiChunkPool.forThisThread().getBooleanChunkPool().takeWritableBooleanChunk(size);
+        }
+        return new WritableBooleanChunk<>(makeArray(size), 0, size);
     }
 
     @SuppressWarnings("rawtypes")

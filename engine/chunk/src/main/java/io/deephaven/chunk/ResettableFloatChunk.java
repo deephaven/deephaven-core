@@ -12,6 +12,8 @@ import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.util.pools.MultiChunkPool;
 import io.deephaven.util.type.ArrayTypeUtils;
 
+import static io.deephaven.chunk.util.pools.ChunkPoolConstants.POOL_RESETTABLE_CHUNKS;
+
 /**
  * {@link ResettableReadOnlyChunk} implementation for float data.
  */
@@ -19,7 +21,10 @@ import io.deephaven.util.type.ArrayTypeUtils;
 public final class ResettableFloatChunk<ATTR_UPPER extends Any> extends FloatChunk implements ResettableReadOnlyChunk<ATTR_UPPER> {
 
     public static <ATTR_BASE extends Any> ResettableFloatChunk<ATTR_BASE> makeResettableChunk() {
-        return MultiChunkPool.forThisThread().getFloatChunkPool().takeResettableFloatChunk();
+        if (POOL_RESETTABLE_CHUNKS) {
+            return MultiChunkPool.forThisThread().getFloatChunkPool().takeResettableFloatChunk();
+        }
+        return new ResettableFloatChunk<>();
     }
 
     public static <ATTR_BASE extends Any> ResettableFloatChunk<ATTR_BASE> makeResettableChunkForPool() {
@@ -79,6 +84,8 @@ public final class ResettableFloatChunk<ATTR_UPPER extends Any> extends FloatChu
 
     @Override
     public void close() {
-        MultiChunkPool.forThisThread().getFloatChunkPool().giveResettableFloatChunk(this);
+        if (POOL_RESETTABLE_CHUNKS) {
+            MultiChunkPool.forThisThread().getFloatChunkPool().giveResettableFloatChunk(this);
+        }
     }
 }

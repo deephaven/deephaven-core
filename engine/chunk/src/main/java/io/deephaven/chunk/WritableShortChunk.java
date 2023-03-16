@@ -26,6 +26,8 @@ import java.nio.Buffer;
 import java.nio.ShortBuffer;
 // endregion BufferImports
 
+import static io.deephaven.chunk.util.pools.ChunkPoolConstants.POOL_WRITABLE_CHUNKS;
+
 // @formatter:on
 
 /**
@@ -42,7 +44,10 @@ public class WritableShortChunk<ATTR extends Any> extends ShortChunk<ATTR> imple
     }
 
     public static <ATTR extends Any> WritableShortChunk<ATTR> makeWritableChunk(int size) {
-        return MultiChunkPool.forThisThread().getShortChunkPool().takeWritableShortChunk(size);
+        if (POOL_WRITABLE_CHUNKS) {
+            return MultiChunkPool.forThisThread().getShortChunkPool().takeWritableShortChunk(size);
+        }
+        return new WritableShortChunk<>(makeArray(size), 0, size);
     }
 
     @SuppressWarnings("rawtypes")

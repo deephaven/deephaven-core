@@ -12,6 +12,8 @@ import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.util.pools.MultiChunkPool;
 import io.deephaven.util.type.ArrayTypeUtils;
 
+import static io.deephaven.chunk.util.pools.ChunkPoolConstants.POOL_RESETTABLE_CHUNKS;
+
 /**
  * {@link ResettableWritableChunk} implementation for float data.
  */
@@ -19,7 +21,10 @@ import io.deephaven.util.type.ArrayTypeUtils;
 public final class ResettableWritableFloatChunk<ATTR_BASE extends Any> extends WritableFloatChunk implements ResettableWritableChunk<ATTR_BASE> {
 
     public static <ATTR_BASE extends Any> ResettableWritableFloatChunk<ATTR_BASE> makeResettableChunk() {
-        return MultiChunkPool.forThisThread().getFloatChunkPool().takeResettableWritableFloatChunk();
+        if (POOL_RESETTABLE_CHUNKS) {
+            return MultiChunkPool.forThisThread().getFloatChunkPool().takeResettableWritableFloatChunk();
+        }
+        return new ResettableWritableFloatChunk<>();
     }
 
     public static <ATTR_BASE extends Any> ResettableWritableFloatChunk<ATTR_BASE> makeResettableChunkForPool() {
@@ -78,6 +83,8 @@ public final class ResettableWritableFloatChunk<ATTR_BASE extends Any> extends W
 
     @Override
     public void close() {
-        MultiChunkPool.forThisThread().getFloatChunkPool().giveResettableWritableFloatChunk(this);
+        if (POOL_RESETTABLE_CHUNKS) {
+            MultiChunkPool.forThisThread().getFloatChunkPool().giveResettableWritableFloatChunk(this);
+        }
     }
 }

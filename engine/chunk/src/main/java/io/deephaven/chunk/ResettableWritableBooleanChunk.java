@@ -12,6 +12,8 @@ import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.util.pools.MultiChunkPool;
 import io.deephaven.util.type.ArrayTypeUtils;
 
+import static io.deephaven.chunk.util.pools.ChunkPoolConstants.POOL_RESETTABLE_CHUNKS;
+
 /**
  * {@link ResettableWritableChunk} implementation for boolean data.
  */
@@ -19,7 +21,10 @@ import io.deephaven.util.type.ArrayTypeUtils;
 public final class ResettableWritableBooleanChunk<ATTR_BASE extends Any> extends WritableBooleanChunk implements ResettableWritableChunk<ATTR_BASE> {
 
     public static <ATTR_BASE extends Any> ResettableWritableBooleanChunk<ATTR_BASE> makeResettableChunk() {
-        return MultiChunkPool.forThisThread().getBooleanChunkPool().takeResettableWritableBooleanChunk();
+        if (POOL_RESETTABLE_CHUNKS) {
+            return MultiChunkPool.forThisThread().getBooleanChunkPool().takeResettableWritableBooleanChunk();
+        }
+        return new ResettableWritableBooleanChunk<>();
     }
 
     public static <ATTR_BASE extends Any> ResettableWritableBooleanChunk<ATTR_BASE> makeResettableChunkForPool() {
@@ -78,6 +83,8 @@ public final class ResettableWritableBooleanChunk<ATTR_BASE extends Any> extends
 
     @Override
     public void close() {
-        MultiChunkPool.forThisThread().getBooleanChunkPool().giveResettableWritableBooleanChunk(this);
+        if (POOL_RESETTABLE_CHUNKS) {
+            MultiChunkPool.forThisThread().getBooleanChunkPool().giveResettableWritableBooleanChunk(this);
+        }
     }
 }

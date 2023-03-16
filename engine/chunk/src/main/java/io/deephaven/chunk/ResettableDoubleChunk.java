@@ -12,6 +12,8 @@ import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.util.pools.MultiChunkPool;
 import io.deephaven.util.type.ArrayTypeUtils;
 
+import static io.deephaven.chunk.util.pools.ChunkPoolConstants.POOL_RESETTABLE_CHUNKS;
+
 /**
  * {@link ResettableReadOnlyChunk} implementation for double data.
  */
@@ -19,7 +21,10 @@ import io.deephaven.util.type.ArrayTypeUtils;
 public final class ResettableDoubleChunk<ATTR_UPPER extends Any> extends DoubleChunk implements ResettableReadOnlyChunk<ATTR_UPPER> {
 
     public static <ATTR_BASE extends Any> ResettableDoubleChunk<ATTR_BASE> makeResettableChunk() {
-        return MultiChunkPool.forThisThread().getDoubleChunkPool().takeResettableDoubleChunk();
+        if (POOL_RESETTABLE_CHUNKS) {
+            return MultiChunkPool.forThisThread().getDoubleChunkPool().takeResettableDoubleChunk();
+        }
+        return new ResettableDoubleChunk<>();
     }
 
     public static <ATTR_BASE extends Any> ResettableDoubleChunk<ATTR_BASE> makeResettableChunkForPool() {
@@ -79,6 +84,8 @@ public final class ResettableDoubleChunk<ATTR_UPPER extends Any> extends DoubleC
 
     @Override
     public void close() {
-        MultiChunkPool.forThisThread().getDoubleChunkPool().giveResettableDoubleChunk(this);
+        if (POOL_RESETTABLE_CHUNKS) {
+            MultiChunkPool.forThisThread().getDoubleChunkPool().giveResettableDoubleChunk(this);
+        }
     }
 }

@@ -7,6 +7,8 @@ import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.util.pools.MultiChunkPool;
 import io.deephaven.util.type.ArrayTypeUtils;
 
+import static io.deephaven.chunk.util.pools.ChunkPoolConstants.POOL_RESETTABLE_CHUNKS;
+
 /**
  * {@link ResettableReadOnlyChunk} implementation for char data.
  */
@@ -14,7 +16,10 @@ import io.deephaven.util.type.ArrayTypeUtils;
 public final class ResettableCharChunk<ATTR_UPPER extends Any> extends CharChunk implements ResettableReadOnlyChunk<ATTR_UPPER> {
 
     public static <ATTR_BASE extends Any> ResettableCharChunk<ATTR_BASE> makeResettableChunk() {
-        return MultiChunkPool.forThisThread().getCharChunkPool().takeResettableCharChunk();
+        if (POOL_RESETTABLE_CHUNKS) {
+            return MultiChunkPool.forThisThread().getCharChunkPool().takeResettableCharChunk();
+        }
+        return new ResettableCharChunk<>();
     }
 
     public static <ATTR_BASE extends Any> ResettableCharChunk<ATTR_BASE> makeResettableChunkForPool() {
@@ -74,6 +79,8 @@ public final class ResettableCharChunk<ATTR_UPPER extends Any> extends CharChunk
 
     @Override
     public void close() {
-        MultiChunkPool.forThisThread().getCharChunkPool().giveResettableCharChunk(this);
+        if (POOL_RESETTABLE_CHUNKS) {
+            MultiChunkPool.forThisThread().getCharChunkPool().giveResettableCharChunk(this);
+        }
     }
 }
