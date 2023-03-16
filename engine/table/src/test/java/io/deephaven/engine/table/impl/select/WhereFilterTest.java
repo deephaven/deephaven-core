@@ -192,6 +192,13 @@ public class WhereFilterTest extends TestCase {
         expect(Filter.not(Filter.isNotNull(Literal.of(42))), ConditionFilter.class, "isNull((int)42)");
     }
 
+    public void testFilterTrue() {
+        assertThat(WhereFilter.of(Filter.ofTrue())).isEqualTo(WhereAllFilter.INSTANCE);
+    }
+
+    public void testFilterFalse() {
+        assertThat(WhereFilter.of(Filter.ofFalse())).isEqualTo(WhereNoneFilter.INSTANCE);
+    }
 
     private static void expect(Filter filter, Class<? extends WhereFilter> clazz, String expected) {
         WhereFilter impl = WhereFilter.of(filter);

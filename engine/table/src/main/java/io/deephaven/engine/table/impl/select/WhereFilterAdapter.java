@@ -36,8 +36,20 @@ class WhereFilterAdapter implements Filter.Visitor {
         return ConjunctiveFilter.makeConjunctiveFilter(WhereFilter.from(ands.filters()));
     }
 
+    public static WhereFilter of(FilterComparison comparison) {
+        return FilterComparisonAdapter.of(comparison);
+    }
+
+    public static WhereFilter of(FilterIsNull isNull) {
+        return isNull.expression().walk(new ExpressionIsNullAdapter(false)).out();
+    }
+
+    public static WhereFilter of(FilterIsNotNull isNotNull) {
+        return isNotNull.expression().walk(new ExpressionIsNullAdapter(true)).out();
+    }
+
     public static WhereFilter of(boolean literal) {
-        return literal ? WhereFilterFactory.getExpression("true") : WhereNoneFilter.INSTANCE;
+        return literal ? WhereAllFilter.INSTANCE : WhereNoneFilter.INSTANCE;
     }
 
     public static WhereFilter of(RawString rawString, boolean inverted) {
@@ -58,22 +70,22 @@ class WhereFilterAdapter implements Filter.Visitor {
 
     @Override
     public void visit(FilterComparison comparison) {
-        out = FilterComparisonAdapter.of(inverted ? comparison.inverse() : comparison);
+        out = of(inverted ? comparison.inverse() : comparison);
     }
 
     @Override
     public void visit(FilterNot not) {
-        out = inverted ? of(not.filter()) : of(not);
+        out = inverted ? of(not.inverse()) : of(not);
     }
 
     @Override
     public void visit(FilterIsNull isNull) {
-        out = isNull.expression().walk(new ExpressionIsNullAdapter(inverted)).out();
+        out = inverted ? of(isNull.inverse()) : of(isNull);
     }
 
     @Override
     public void visit(FilterIsNotNull isNotNull) {
-        out = isNotNull.expression().walk(new ExpressionIsNullAdapter(!inverted)).out();
+        out = inverted ? of(isNotNull.inverse()) : of(isNotNull);
     }
 
     @Override
@@ -275,7 +287,7 @@ class WhereFilterAdapter implements Filter.Visitor {
         public static WhereFilter of(Literal literal, boolean inverted) {
             // Note: we _could_ try and optimize here, since a literal is never null.
             // That said, this filter will be compiled and potentially JITted, so it might not matter.
-            // return inverted ? WhereFilterFactory.getExpression("true") : WhereNoneFilter.INSTANCE;
+            // return inverted ? WhereAllFilter.INSTANCE : WhereNoneFilter.INSTANCE;
             return WhereFilterFactory
                     .getExpression(String.format(inverted ? "!isNull(%s)" : "isNull(%s)", Strings.of(literal)));
         }
@@ -283,7 +295,7 @@ class WhereFilterAdapter implements Filter.Visitor {
         public static WhereFilter of(Filter filter, boolean inverted) {
             // Note: we _could_ try and optimize here, since a filter never returns null (always true or false).
             // That said, this filter will be compiled and potentially JITted, so it might not matter.
-            // return inverted ? WhereFilterFactory.getExpression("true") : WhereNoneFilter.INSTANCE;
+            // return inverted ? WhereAllFilter.INSTANCE : WhereNoneFilter.INSTANCE;
             return WhereFilterFactory
                     .getExpression(String.format(inverted ? "!isNull(%s)" : "isNull(%s)", Strings.of(filter)));
         }

@@ -6,6 +6,7 @@ package io.deephaven.api.filter;
 import io.deephaven.api.RawString;
 import io.deephaven.api.expression.Expression;
 import io.deephaven.api.value.Literal;
+import io.deephaven.api.value.LiteralFilter;
 
 import java.io.Serializable;
 import java.util.Arrays;
@@ -30,6 +31,14 @@ public interface Filter extends Expression, Serializable {
     static Collection<? extends Filter> from_(String... expressions) {
         // This is for Python to invoke "from" without syntax errors.
         return from(expressions);
+    }
+
+    static LiteralFilter ofTrue() {
+        return Literal.of(true);
+    }
+
+    static LiteralFilter ofFalse() {
+        return Literal.of(false);
     }
 
     /**

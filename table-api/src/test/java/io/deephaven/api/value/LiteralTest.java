@@ -13,6 +13,7 @@ public class LiteralTest {
     @Test
     void boolValue() {
         toString(Literal.of(true), "true");
+        toString(Literal.of(false), "false");
     }
 
     @Test
