@@ -28,6 +28,7 @@ import java.nio.CharBuffer;
  */
 public class WritableCharChunk<ATTR extends Any> extends CharChunk<ATTR> implements WritableChunk<ATTR> {
 
+    @SuppressWarnings("rawtypes")
     private static final WritableCharChunk[] EMPTY_WRITABLE_CHAR_CHUNK_ARRAY = new WritableCharChunk[0];
 
     static <ATTR extends Any> WritableCharChunk<ATTR>[] getEmptyChunkArray() {
@@ -39,6 +40,7 @@ public class WritableCharChunk<ATTR extends Any> extends CharChunk<ATTR> impleme
         return MultiChunkPool.forThisThread().getCharChunkPool().takeWritableCharChunk(size);
     }
 
+    @SuppressWarnings("rawtypes")
     public static WritableCharChunk makeWritableChunkForPool(int size) {
         return new WritableCharChunk(makeArray(size), 0, size) {
             @Override

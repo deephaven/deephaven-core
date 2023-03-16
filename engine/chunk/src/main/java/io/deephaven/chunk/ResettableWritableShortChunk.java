@@ -15,6 +15,7 @@ import io.deephaven.util.type.ArrayTypeUtils;
 /**
  * {@link ResettableWritableChunk} implementation for short data.
  */
+@SuppressWarnings("rawtypes")
 public final class ResettableWritableShortChunk<ATTR_BASE extends Any> extends WritableShortChunk implements ResettableWritableChunk<ATTR_BASE> {
 
     public static <ATTR_BASE extends Any> ResettableWritableShortChunk<ATTR_BASE> makeResettableChunk() {
@@ -34,49 +35,49 @@ public final class ResettableWritableShortChunk<ATTR_BASE extends Any> extends W
     }
 
     @Override
-    public final ResettableWritableShortChunk slice(int offset, int capacity) {
+    public ResettableWritableShortChunk slice(int offset, int capacity) {
         ChunkHelpers.checkSliceArgs(size, offset, capacity);
         return new ResettableWritableShortChunk<>(data, this.offset + offset, capacity);
     }
 
     @Override
-    public final <ATTR extends ATTR_BASE> WritableShortChunk<ATTR> resetFromChunk(WritableChunk<ATTR> other, int offset, int capacity) {
+    public <ATTR extends ATTR_BASE> WritableShortChunk<ATTR> resetFromChunk(WritableChunk<ATTR> other, int offset, int capacity) {
         return resetFromTypedChunk(other.asWritableShortChunk(), offset, capacity);
     }
 
     @Override
-    public final <ATTR extends ATTR_BASE> WritableShortChunk<ATTR> resetFromArray(Object array, int offset, int capacity) {
+    public <ATTR extends ATTR_BASE> WritableShortChunk<ATTR> resetFromArray(Object array, int offset, int capacity) {
         final short[] typedArray = (short[])array;
         return resetFromTypedArray(typedArray, offset, capacity);
     }
 
-    public final <ATTR extends ATTR_BASE> WritableShortChunk<ATTR> resetFromArray(Object array) {
+    public <ATTR extends ATTR_BASE> WritableShortChunk<ATTR> resetFromArray(Object array) {
         final short[] typedArray = (short[])array;
         return resetFromTypedArray(typedArray, 0, typedArray.length);
     }
 
     @Override
-    public final <ATTR extends ATTR_BASE> WritableShortChunk<ATTR> clear() {
+    public <ATTR extends ATTR_BASE> WritableShortChunk<ATTR> clear() {
         return resetFromArray(ArrayTypeUtils.EMPTY_SHORT_ARRAY, 0, 0);
     }
 
-    public final <ATTR extends ATTR_BASE> WritableShortChunk<ATTR> resetFromTypedChunk(WritableShortChunk<ATTR> other, int offset, int capacity) {
+    public <ATTR extends ATTR_BASE> WritableShortChunk<ATTR> resetFromTypedChunk(WritableShortChunk<ATTR> other, int offset, int capacity) {
         ChunkHelpers.checkSliceArgs(other.size, offset, capacity);
         return resetFromTypedArray(other.data, other.offset + offset, capacity);
     }
 
-    public final <ATTR extends ATTR_BASE> WritableShortChunk<ATTR> resetFromTypedArray(short[] data, int offset, int capacity) {
+    public <ATTR extends ATTR_BASE> WritableShortChunk<ATTR> resetFromTypedArray(short[] data, int offset, int capacity) {
         ChunkHelpers.checkArrayArgs(data.length, offset, capacity);
         this.data = data;
         this.offset = offset;
         this.capacity = capacity;
         this.size = capacity;
-        //noinspection unchecked
+        // noinspection unchecked
         return this;
     }
 
     @Override
-    public final void close() {
+    public void close() {
         MultiChunkPool.forThisThread().getShortChunkPool().giveResettableWritableShortChunk(this);
     }
 }

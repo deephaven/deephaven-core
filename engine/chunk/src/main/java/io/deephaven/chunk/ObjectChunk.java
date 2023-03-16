@@ -24,6 +24,7 @@ import org.jetbrains.annotations.NotNull;
  */
 public class ObjectChunk<T, ATTR extends Any> extends ChunkBase<ATTR> {
 
+    @SuppressWarnings("rawtypes")
     private static final ObjectChunk EMPTY = new ObjectChunk<>(ArrayTypeUtils.EMPTY_OBJECT_ARRAY, 0, 0);
 
     public static <T, ATTR extends Any> ObjectChunk<T, ATTR> getEmptyChunk() {
@@ -31,6 +32,7 @@ public class ObjectChunk<T, ATTR extends Any> extends ChunkBase<ATTR> {
         return EMPTY;
     }
 
+    @SuppressWarnings("rawtypes")
     private static final ObjectChunk[] EMPTY_OBJECT_CHUNK_ARRAY = new ObjectChunk[0];
 
     static <T, ATTR extends Any> ObjectChunk<T, ATTR>[] getEmptyChunkArray() {
@@ -115,7 +117,7 @@ public class ObjectChunk<T, ATTR extends Any> extends ChunkBase<ATTR> {
     }
 
     @Override
-    public final boolean isAlias(Chunk chunk) {
+    public final boolean isAlias(Chunk<?> chunk) {
         return chunk.isAlias(data);
     }
 
@@ -137,9 +139,9 @@ public class ObjectChunk<T, ATTR extends Any> extends ChunkBase<ATTR> {
         return (ObjectChunk<T_DERIV, ATTR>) this;
     }
 
-    public static <T, ATTR extends Any, ATTR_DERIV extends ATTR> WritableObjectChunk<T, ATTR_DERIV> downcast(WritableObjectChunk<T, ATTR> self) {
+    public static <T, ATTR extends Any, ATTR_DERIV extends ATTR> ObjectChunk<T, ATTR_DERIV> downcast(ObjectChunk<T, ATTR> self) {
         //noinspection unchecked
-        return (WritableObjectChunk<T, ATTR_DERIV>) self;
+        return (ObjectChunk<T, ATTR_DERIV>) self;
     }
     // endregion downcast
 }

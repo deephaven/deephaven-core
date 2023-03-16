@@ -33,6 +33,7 @@ import java.nio.LongBuffer;
  */
 public class WritableLongChunk<ATTR extends Any> extends LongChunk<ATTR> implements WritableChunk<ATTR> {
 
+    @SuppressWarnings("rawtypes")
     private static final WritableLongChunk[] EMPTY_WRITABLE_LONG_CHUNK_ARRAY = new WritableLongChunk[0];
 
     static <ATTR extends Any> WritableLongChunk<ATTR>[] getEmptyChunkArray() {
@@ -44,6 +45,7 @@ public class WritableLongChunk<ATTR extends Any> extends LongChunk<ATTR> impleme
         return MultiChunkPool.forThisThread().getLongChunkPool().takeWritableLongChunk(size);
     }
 
+    @SuppressWarnings("rawtypes")
     public static WritableLongChunk makeWritableChunkForPool(int size) {
         return new WritableLongChunk(makeArray(size), 0, size) {
             @Override

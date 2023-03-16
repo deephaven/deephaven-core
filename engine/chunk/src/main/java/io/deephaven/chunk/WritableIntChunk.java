@@ -33,6 +33,7 @@ import java.nio.IntBuffer;
  */
 public class WritableIntChunk<ATTR extends Any> extends IntChunk<ATTR> implements WritableChunk<ATTR> {
 
+    @SuppressWarnings("rawtypes")
     private static final WritableIntChunk[] EMPTY_WRITABLE_INT_CHUNK_ARRAY = new WritableIntChunk[0];
 
     static <ATTR extends Any> WritableIntChunk<ATTR>[] getEmptyChunkArray() {
@@ -44,6 +45,7 @@ public class WritableIntChunk<ATTR extends Any> extends IntChunk<ATTR> implement
         return MultiChunkPool.forThisThread().getIntChunkPool().takeWritableIntChunk(size);
     }
 
+    @SuppressWarnings("rawtypes")
     public static WritableIntChunk makeWritableChunkForPool(int size) {
         return new WritableIntChunk(makeArray(size), 0, size) {
             @Override

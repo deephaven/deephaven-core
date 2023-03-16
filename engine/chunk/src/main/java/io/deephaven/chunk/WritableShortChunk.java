@@ -33,6 +33,7 @@ import java.nio.ShortBuffer;
  */
 public class WritableShortChunk<ATTR extends Any> extends ShortChunk<ATTR> implements WritableChunk<ATTR> {
 
+    @SuppressWarnings("rawtypes")
     private static final WritableShortChunk[] EMPTY_WRITABLE_SHORT_CHUNK_ARRAY = new WritableShortChunk[0];
 
     static <ATTR extends Any> WritableShortChunk<ATTR>[] getEmptyChunkArray() {
@@ -44,6 +45,7 @@ public class WritableShortChunk<ATTR extends Any> extends ShortChunk<ATTR> imple
         return MultiChunkPool.forThisThread().getShortChunkPool().takeWritableShortChunk(size);
     }
 
+    @SuppressWarnings("rawtypes")
     public static WritableShortChunk makeWritableChunkForPool(int size) {
         return new WritableShortChunk(makeArray(size), 0, size) {
             @Override

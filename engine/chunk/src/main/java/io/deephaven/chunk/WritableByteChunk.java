@@ -33,6 +33,7 @@ import java.nio.ByteBuffer;
  */
 public class WritableByteChunk<ATTR extends Any> extends ByteChunk<ATTR> implements WritableChunk<ATTR> {
 
+    @SuppressWarnings("rawtypes")
     private static final WritableByteChunk[] EMPTY_WRITABLE_BYTE_CHUNK_ARRAY = new WritableByteChunk[0];
 
     static <ATTR extends Any> WritableByteChunk<ATTR>[] getEmptyChunkArray() {
@@ -44,6 +45,7 @@ public class WritableByteChunk<ATTR extends Any> extends ByteChunk<ATTR> impleme
         return MultiChunkPool.forThisThread().getByteChunkPool().takeWritableByteChunk(size);
     }
 
+    @SuppressWarnings("rawtypes")
     public static WritableByteChunk makeWritableChunkForPool(int size) {
         return new WritableByteChunk(makeArray(size), 0, size) {
             @Override

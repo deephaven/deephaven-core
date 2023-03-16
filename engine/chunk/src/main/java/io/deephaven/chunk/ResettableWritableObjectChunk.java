@@ -15,6 +15,7 @@ import io.deephaven.util.type.ArrayTypeUtils;
 /**
  * {@link ResettableWritableChunk} implementation for Object data.
  */
+@SuppressWarnings("rawtypes")
 public final class ResettableWritableObjectChunk<T, ATTR_BASE extends Any> extends WritableObjectChunk implements ResettableWritableChunk<ATTR_BASE> {
 
     public static <T, ATTR_BASE extends Any> ResettableWritableObjectChunk<T, ATTR_BASE> makeResettableChunk() {
@@ -35,51 +36,51 @@ public final class ResettableWritableObjectChunk<T, ATTR_BASE extends Any> exten
     }
 
     @Override
-    public final ResettableWritableObjectChunk slice(int offset, int capacity) {
+    public ResettableWritableObjectChunk slice(int offset, int capacity) {
         ChunkHelpers.checkSliceArgs(size, offset, capacity);
         return new ResettableWritableObjectChunk<>(data, this.offset + offset, capacity);
     }
 
     @Override
-    public final <ATTR extends ATTR_BASE> WritableObjectChunk<T, ATTR> resetFromChunk(WritableChunk<ATTR> other, int offset, int capacity) {
+    public <ATTR extends ATTR_BASE> WritableObjectChunk<T, ATTR> resetFromChunk(WritableChunk<ATTR> other, int offset, int capacity) {
         return resetFromTypedChunk(other.asWritableObjectChunk(), offset, capacity);
     }
 
     @Override
-    public final <ATTR extends ATTR_BASE> WritableObjectChunk<T, ATTR> resetFromArray(Object array, int offset, int capacity) {
+    public <ATTR extends ATTR_BASE> WritableObjectChunk<T, ATTR> resetFromArray(Object array, int offset, int capacity) {
         //noinspection unchecked
         final T[] typedArray = (T[])array;
         return resetFromTypedArray(typedArray, offset, capacity);
     }
 
-    public final <ATTR extends ATTR_BASE> WritableObjectChunk<T, ATTR> resetFromArray(Object array) {
+    public <ATTR extends ATTR_BASE> WritableObjectChunk<T, ATTR> resetFromArray(Object array) {
         //noinspection unchecked
         final T[] typedArray = (T[])array;
         return resetFromTypedArray(typedArray, 0, typedArray.length);
     }
 
     @Override
-    public final <ATTR extends ATTR_BASE> WritableObjectChunk<T, ATTR> clear() {
+    public <ATTR extends ATTR_BASE> WritableObjectChunk<T, ATTR> clear() {
         return resetFromArray(ArrayTypeUtils.EMPTY_OBJECT_ARRAY, 0, 0);
     }
 
-    public final <ATTR extends ATTR_BASE> WritableObjectChunk<T, ATTR> resetFromTypedChunk(WritableObjectChunk<T, ATTR> other, int offset, int capacity) {
+    public <ATTR extends ATTR_BASE> WritableObjectChunk<T, ATTR> resetFromTypedChunk(WritableObjectChunk<T, ATTR> other, int offset, int capacity) {
         ChunkHelpers.checkSliceArgs(other.size, offset, capacity);
         return resetFromTypedArray(other.data, other.offset + offset, capacity);
     }
 
-    public final <ATTR extends ATTR_BASE> WritableObjectChunk<T, ATTR> resetFromTypedArray(T[] data, int offset, int capacity) {
+    public <ATTR extends ATTR_BASE> WritableObjectChunk<T, ATTR> resetFromTypedArray(T[] data, int offset, int capacity) {
         ChunkHelpers.checkArrayArgs(data.length, offset, capacity);
         this.data = data;
         this.offset = offset;
         this.capacity = capacity;
         this.size = capacity;
-        //noinspection unchecked
+        // noinspection unchecked
         return this;
     }
 
     @Override
-    public final void close() {
+    public void close() {
         MultiChunkPool.forThisThread().getObjectChunkPool().giveResettableWritableObjectChunk(this);
     }
 }

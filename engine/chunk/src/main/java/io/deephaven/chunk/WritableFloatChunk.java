@@ -33,6 +33,7 @@ import java.nio.FloatBuffer;
  */
 public class WritableFloatChunk<ATTR extends Any> extends FloatChunk<ATTR> implements WritableChunk<ATTR> {
 
+    @SuppressWarnings("rawtypes")
     private static final WritableFloatChunk[] EMPTY_WRITABLE_FLOAT_CHUNK_ARRAY = new WritableFloatChunk[0];
 
     static <ATTR extends Any> WritableFloatChunk<ATTR>[] getEmptyChunkArray() {
@@ -44,6 +45,7 @@ public class WritableFloatChunk<ATTR extends Any> extends FloatChunk<ATTR> imple
         return MultiChunkPool.forThisThread().getFloatChunkPool().takeWritableFloatChunk(size);
     }
 
+    @SuppressWarnings("rawtypes")
     public static WritableFloatChunk makeWritableChunkForPool(int size) {
         return new WritableFloatChunk(makeArray(size), 0, size) {
             @Override

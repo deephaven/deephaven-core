@@ -33,6 +33,7 @@ import java.nio.DoubleBuffer;
  */
 public class WritableDoubleChunk<ATTR extends Any> extends DoubleChunk<ATTR> implements WritableChunk<ATTR> {
 
+    @SuppressWarnings("rawtypes")
     private static final WritableDoubleChunk[] EMPTY_WRITABLE_DOUBLE_CHUNK_ARRAY = new WritableDoubleChunk[0];
 
     static <ATTR extends Any> WritableDoubleChunk<ATTR>[] getEmptyChunkArray() {
@@ -44,6 +45,7 @@ public class WritableDoubleChunk<ATTR extends Any> extends DoubleChunk<ATTR> imp
         return MultiChunkPool.forThisThread().getDoubleChunkPool().takeWritableDoubleChunk(size);
     }
 
+    @SuppressWarnings("rawtypes")
     public static WritableDoubleChunk makeWritableChunkForPool(int size) {
         return new WritableDoubleChunk(makeArray(size), 0, size) {
             @Override

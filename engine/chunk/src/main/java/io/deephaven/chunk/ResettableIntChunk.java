@@ -15,6 +15,7 @@ import io.deephaven.util.type.ArrayTypeUtils;
 /**
  * {@link ResettableReadOnlyChunk} implementation for int data.
  */
+@SuppressWarnings("rawtypes")
 public final class ResettableIntChunk<ATTR_UPPER extends Any> extends IntChunk implements ResettableReadOnlyChunk<ATTR_UPPER> {
 
     public static <ATTR_BASE extends Any> ResettableIntChunk<ATTR_BASE> makeResettableChunk() {
@@ -34,50 +35,50 @@ public final class ResettableIntChunk<ATTR_UPPER extends Any> extends IntChunk i
     }
 
     @Override
-    public final ResettableIntChunk slice(int offset, int capacity) {
+    public ResettableIntChunk slice(int offset, int capacity) {
         ChunkHelpers.checkSliceArgs(size, offset, capacity);
-        return new ResettableIntChunk(data, this.offset + offset, capacity);
+        return new ResettableIntChunk<>(data, this.offset + offset, capacity);
     }
 
     @Override
-    public final <ATTR extends ATTR_UPPER> IntChunk<ATTR> resetFromChunk(Chunk<? extends ATTR> other, int offset, int capacity) {
+    public <ATTR extends ATTR_UPPER> IntChunk<ATTR> resetFromChunk(Chunk<? extends ATTR> other, int offset, int capacity) {
         return resetFromTypedChunk(other.asIntChunk(), offset, capacity);
     }
 
     @Override
-    public final <ATTR extends ATTR_UPPER> IntChunk<ATTR> resetFromArray(Object array, int offset, int capacity) {
-        final int[] typedArray = (int[])array;
+    public <ATTR extends ATTR_UPPER> IntChunk<ATTR> resetFromArray(Object array, int offset, int capacity) {
+        final int[] typedArray = (int[]) array;
         return resetFromTypedArray(typedArray, offset, capacity);
     }
 
     @Override
-    public final <ATTR extends ATTR_UPPER> IntChunk<ATTR> resetFromArray(Object array) {
-        final int[] typedArray = (int[])array;
+    public <ATTR extends ATTR_UPPER> IntChunk<ATTR> resetFromArray(Object array) {
+        final int[] typedArray = (int[]) array;
         return resetFromTypedArray(typedArray, 0, typedArray.length);
     }
 
     @Override
-    public final <ATTR extends ATTR_UPPER> IntChunk<ATTR> clear() {
+    public <ATTR extends ATTR_UPPER> IntChunk<ATTR> clear() {
         return resetFromArray(ArrayTypeUtils.EMPTY_INT_ARRAY, 0, 0);
     }
 
-    public final <ATTR extends ATTR_UPPER> IntChunk<ATTR> resetFromTypedChunk(IntChunk<? extends ATTR> other, int offset, int capacity) {
+    public <ATTR extends ATTR_UPPER> IntChunk<ATTR> resetFromTypedChunk(IntChunk<? extends ATTR> other, int offset, int capacity) {
         ChunkHelpers.checkSliceArgs(other.size, offset, capacity);
         return resetFromTypedArray(other.data, other.offset + offset, capacity);
     }
 
-    public final <ATTR extends ATTR_UPPER> IntChunk<ATTR> resetFromTypedArray(int[] data, int offset, int capacity) {
+    public <ATTR extends ATTR_UPPER> IntChunk<ATTR> resetFromTypedArray(int[] data, int offset, int capacity) {
         ChunkHelpers.checkArrayArgs(data.length, offset, capacity);
         this.data = data;
         this.offset = offset;
         this.capacity = capacity;
         this.size = capacity;
-        //noinspection unchecked
+        // noinspection unchecked
         return this;
     }
 
     @Override
-    public final void close() {
+    public void close() {
         MultiChunkPool.forThisThread().getIntChunkPool().giveResettableIntChunk(this);
     }
 }
