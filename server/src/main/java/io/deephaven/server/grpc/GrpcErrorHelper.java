@@ -4,14 +4,12 @@ import com.google.protobuf.Descriptors.Descriptor;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Descriptors.OneofDescriptor;
 import com.google.protobuf.Message;
-import com.google.protobuf.MessageOrBuilder;
 import com.google.rpc.Code;
-import io.deephaven.extensions.barrage.util.GrpcUtil;
+import io.deephaven.proto.util.Exceptions;
 import io.grpc.StatusRuntimeException;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.List;
 import java.util.Map.Entry;
 import java.util.Objects;
 
@@ -20,7 +18,7 @@ public class GrpcErrorHelper {
         final Descriptor descriptor = message.getDescriptorForType();
         final FieldDescriptor fieldDescriptor = descriptor.findFieldByNumber(fieldNumber);
         if (!message.hasField(fieldDescriptor)) {
-            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, String.format("%s must have field %s (%d)",
+            throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, String.format("%s must have field %s (%d)",
                     descriptor.getFullName(), fieldDescriptor.getName(), fieldNumber));
         }
     }
@@ -34,7 +32,7 @@ public class GrpcErrorHelper {
                     descriptor.getFullName(), fieldDescriptor.getName(), fieldNumber));
         }
         if (message.getRepeatedFieldCount(fieldDescriptor) <= 0) {
-            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+            throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
                     String.format("%s must have at least one %s (%d)", descriptor.getFullName(),
                             fieldDescriptor.getName(), fieldNumber));
         }
@@ -45,7 +43,7 @@ public class GrpcErrorHelper {
         final OneofDescriptor oneofDescriptor =
                 descriptor.getOneofs().stream().filter(o -> oneOfName.equals(o.getName())).findFirst().orElseThrow();
         if (!message.hasOneof(oneofDescriptor)) {
-            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, String.format(
+            throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, String.format(
                     "%s must have oneof %s. Note: this may also indicate that the server is older than the client and doesn't know about this new oneof option.",
                     descriptor.getFullName(), oneOfName));
         }
@@ -53,7 +51,7 @@ public class GrpcErrorHelper {
 
     public static void checkHasNoUnknownFields(Message message) {
         if (!message.getUnknownFields().asMap().isEmpty()) {
-            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+            throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
                     String.format("%s has unknown field(s)", message.getDescriptorForType().getFullName()));
         }
     }

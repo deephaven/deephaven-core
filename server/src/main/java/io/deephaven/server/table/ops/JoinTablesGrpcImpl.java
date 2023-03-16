@@ -11,7 +11,6 @@ import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.CrossJoinTablesRequest;
@@ -19,6 +18,7 @@ import io.deephaven.proto.backplane.grpc.ExactJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.NaturalJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.Ticket;
+import io.deephaven.proto.util.Exceptions;
 import io.deephaven.server.session.SessionState;
 import io.grpc.StatusRuntimeException;
 
@@ -59,7 +59,7 @@ public abstract class JoinTablesGrpcImpl<T> extends GrpcTableOperation<T> {
             MatchPairFactory.getExpressions(getColMatchList.apply(request));
             MatchPairFactory.getExpressions(getColAddList.apply(request));
         } catch (final ExpressionException err) {
-            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+            throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
                     err.getMessage() + ": " + err.getProblemExpression());
         }
     }
@@ -75,7 +75,7 @@ public abstract class JoinTablesGrpcImpl<T> extends GrpcTableOperation<T> {
             columnsToMatch = MatchPairFactory.getExpressions(getColMatchList.apply(request));
             columnsToAdd = MatchPairFactory.getExpressions(getColAddList.apply(request));
         } catch (final ExpressionException err) {
-            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+            throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
                     err.getMessage() + ": " + err.getProblemExpression());
         }
 
@@ -114,7 +114,7 @@ public abstract class JoinTablesGrpcImpl<T> extends GrpcTableOperation<T> {
             super.validateRequest(request);
 
             if (request.getAsOfMatchRule() == AsOfJoinTablesRequest.MatchRule.UNRECOGNIZED) {
-                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Unrecognized as-of match rule");
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "Unrecognized as-of match rule");
             }
         }
 
@@ -208,8 +208,7 @@ public abstract class JoinTablesGrpcImpl<T> extends GrpcTableOperation<T> {
         public static Table doJoin(final Table lhs, final Table rhs,
                 final MatchPair[] columnsToMatch, final MatchPair[] columnsToAdd,
                 final LeftJoinTablesRequest request) {
-            throw GrpcUtil.statusRuntimeException(Code.UNIMPLEMENTED,
-                    "LeftJoinTables is currently unimplemented");
+            throw Exceptions.statusRuntimeException(Code.UNIMPLEMENTED, "LeftJoinTables is currently unimplemented");
         }
     }
 

@@ -22,6 +22,7 @@ import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.extensions.barrage.util.HierarchicalTableSchemaUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.proto.util.Exceptions;
 import io.deephaven.server.util.Scheduler;
 import io.deephaven.time.DateTime;
 import io.deephaven.util.SafeCloseable;
@@ -371,7 +372,7 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
 
         if (viewportColumns != null) {
             if (viewportColumns.length() > view.getHierarchicalTable().getAvailableColumnDefinitions().size()) {
-                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, String.format(
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, String.format(
                         "Requested columns out of range: length=%d, available length=%d",
                         viewportColumns.length(),
                         view.getHierarchicalTable().getAvailableColumnDefinitions().size()));
@@ -379,17 +380,17 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
         }
         if (viewportRows != null) {
             if (!viewportRows.isContiguous()) {
-                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
                         "HierarchicalTableView subscriptions only support contiguous viewports");
             }
             if (viewportRows.size() > LARGEST_POOLED_CHUNK_CAPACITY) {
-                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, String.format(
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, String.format(
                         "HierarchicalTableView subscriptions only support viewport size up to %d rows, requested %d rows",
                         LARGEST_POOLED_CHUNK_CAPACITY, viewportRows.size()));
             }
         }
         if (reverseViewport) {
-            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+            throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
                     "HierarchicalTableView subscriptions do not support reverse viewports");
         }
 

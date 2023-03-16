@@ -8,11 +8,11 @@ Deephaven Python Client is a Python package created by Deephaven Data Labs. It i
 ### From the deephaven-core repository root 
 (clone from https://github.com/deephaven/deephaven-core)
 ``` shell
-$ cd pyclient
+$ cd py/client
 ```
 ## Dev environment setup
 ``` shell
-$ pip3 install -r requirements.txt
+$ pip3 install -r requirements-dev.txt
 ```
 
 ## Build

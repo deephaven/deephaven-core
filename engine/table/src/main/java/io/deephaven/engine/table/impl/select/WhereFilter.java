@@ -12,6 +12,7 @@ import io.deephaven.engine.context.QueryCompiler;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.select.MatchFilter.MatchType;
@@ -111,6 +112,15 @@ public interface WhereFilter extends Filter {
      *          {@link QueryCompiler} usage needs to be resolved within init. Implementations must be idempotent.
      */
     void init(TableDefinition tableDefinition);
+
+    /**
+     * Validate that this {@code WhereFilter} is safe to use in the context of the provided sourceTable.
+     *
+     * @param sourceTable the source table
+     */
+    default void validateSafeForRefresh(final BaseTable<?> sourceTable) {
+        // nothing to validate by default
+    }
 
     /**
      * Filter selection to only matching rows.

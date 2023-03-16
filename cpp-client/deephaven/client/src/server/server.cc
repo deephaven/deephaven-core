@@ -6,6 +6,7 @@
 #include <charconv>
 #include <exception>
 #include <grpcpp/grpcpp.h>
+#include <optional>
 #include <regex>
 #include <arrow/flight/client_auth.h>
 #include <arrow/flight/client.h>

@@ -158,7 +158,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         // legacy attributes
         Flatten, Sort, UpdateView, Join, Filter,
         // new attributes
-        DropColumns, View, Reverse,
+        DropColumns, RenameColumns, View, Reverse,
         /**
          * The result tables that go in a PartitionBy TableMap
          */
@@ -199,6 +199,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         // into constituent tables
         tempMap.put(MERGED_TABLE_ATTRIBUTE, EnumSet.of(
                 CopyAttributeOperation.DropColumns,
+                CopyAttributeOperation.RenameColumns,
                 CopyAttributeOperation.View));
 
         tempMap.put(INITIALLY_EMPTY_COALESCED_SOURCE_TABLE_ATTRIBUTE, EnumSet.complementOf(EnumSet.of(
@@ -271,8 +272,16 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
 
         tempMap.put(ADD_ONLY_TABLE_ATTRIBUTE, EnumSet.of(
                 CopyAttributeOperation.DropColumns,
-                CopyAttributeOperation.UpdateView,
-                CopyAttributeOperation.View,
+                CopyAttributeOperation.RenameColumns,
+                CopyAttributeOperation.PartitionBy,
+                CopyAttributeOperation.Coalesce));
+
+
+        tempMap.put(APPEND_ONLY_TABLE_ATTRIBUTE, EnumSet.of(
+                CopyAttributeOperation.DropColumns,
+                CopyAttributeOperation.RenameColumns,
+                CopyAttributeOperation.FirstBy,
+                CopyAttributeOperation.Flatten,
                 CopyAttributeOperation.PartitionBy,
                 CopyAttributeOperation.Coalesce));
 
@@ -312,6 +321,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
                 CopyAttributeOperation.View, // and Select, if added
                 CopyAttributeOperation.UpdateView, // and Update, if added
                 CopyAttributeOperation.DropColumns,
+                CopyAttributeOperation.RenameColumns,
                 CopyAttributeOperation.Join,
                 CopyAttributeOperation.WouldMatch));
 
@@ -367,7 +377,24 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         if (!isRefreshing()) {
             return true;
         }
-        return Boolean.TRUE.equals(getAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE));
+        boolean addOnly = Boolean.TRUE.equals(getAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE));
+        boolean appendOnly = Boolean.TRUE.equals(getAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE));
+        return addOnly || appendOnly;
+    }
+
+    /**
+     * Returns true if this table is append-only, or has an attribute asserting that no modifies, shifts, or removals
+     * are generated and that all new rows are added to the end of the table.
+     *
+     * @return true if this table may only append rows at the end of the table
+     */
+    public boolean isAppendOnly() {
+        if (!isRefreshing()) {
+            return true;
+        }
+        boolean addOnly = Boolean.TRUE.equals(getAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE));
+        boolean appendOnly = Boolean.TRUE.equals(getAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE));
+        return appendOnly || (addOnly && isFlat());
     }
 
     /**
@@ -594,10 +621,14 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         if (isFlat()) {
             Assert.assertion(getRowSet().isFlat(), "build().isFlat()", getRowSet(), "build()");
         }
-        if (isAddOnly()) {
+        if (isAppendOnly() || isAddOnly()) {
             Assert.assertion(update.removed().isEmpty(), "update.removed.empty()");
             Assert.assertion(update.modified().isEmpty(), "update.modified.empty()");
             Assert.assertion(update.shifted().empty(), "update.shifted.empty()");
+        }
+        if (isAppendOnly()) {
+            Assert.assertion(getRowSet().sizePrev() == 0 || getRowSet().lastRowKeyPrev() < update.added().firstRowKey(),
+                    "getRowSet().lastRowKeyPrev() < update.added().firstRowKey()");
         }
 
         // First validate that each rowSet is in a sane state.

@@ -12,12 +12,14 @@ import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.chunk.ChunkInputStreamGenerator;
 import io.deephaven.extensions.barrage.table.BarrageTable;
 import io.deephaven.io.streams.ByteBufferInputStream;
+import io.deephaven.proto.util.Exceptions;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import org.apache.arrow.flatbuf.Message;
 import org.apache.arrow.flatbuf.MessageHeader;
@@ -156,11 +158,15 @@ public class ArrowToTableConverter {
 
     protected void parseSchema(final Schema header) {
         if (resultTable != null) {
-            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Schema evolution not supported");
+            throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "Schema evolution not supported");
         }
 
         final BarrageUtil.ConvertedArrowSchema result = BarrageUtil.convertArrowSchema(header);
+        result.attributes.put(Table.ADD_ONLY_TABLE_ATTRIBUTE, true);
+        result.attributes.put(Table.APPEND_ONLY_TABLE_ATTRIBUTE, true);
         resultTable = BarrageTable.make(null, result.tableDef, result.attributes, -1);
+        resultTable.setFlat();
+
         columnConversionFactors = result.conversionFactors;
         columnChunkTypes = resultTable.getWireChunkTypes();
         columnTypes = resultTable.getWireTypes();
@@ -213,7 +219,7 @@ public class ArrowToTableConverter {
             }
 
             if (acd.data.get(0).size() != numRowsAdded) {
-                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
                         "Inconsistent num records per column: " + numRowsAdded + " != " + acd.data.get(0).size());
             }
             acd.type = columnTypes[ci];

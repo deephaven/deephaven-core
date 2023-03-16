@@ -176,9 +176,17 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
         if (!constituents.hasNext()) {
             return Collections.emptyMap();
         }
-        final Map<String, Object> candidates = new HashMap<>(constituents.next().getAttributes());
+
+        boolean anyPreviousTableIsRefreshing = false;
+
+        Table constituent = constituents.next();
+        boolean currentTableIsRefreshing = constituent.isRefreshing();
+        final Map<String, Object> candidates = new HashMap<>(constituent.getAttributes());
+
         while (constituents.hasNext()) {
-            final Table constituent = constituents.next();
+            anyPreviousTableIsRefreshing |= currentTableIsRefreshing;
+            constituent = constituents.next();
+            currentTableIsRefreshing = constituent.isRefreshing();
             final Iterator<Map.Entry<String, Object>> candidatesIter = candidates.entrySet().iterator();
             while (candidatesIter.hasNext()) {
                 final Map.Entry<String, Object> candidate = candidatesIter.next();
@@ -194,6 +202,22 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
                 return Collections.emptyMap();
             }
         }
+
+        if (anyPreviousTableIsRefreshing) {
+            // if a previous table may grow and cause shifts, then the merged table cannot be add-only
+            candidates.remove(BaseTable.ADD_ONLY_TABLE_ATTRIBUTE);
+            // if a previous table may change then this cannot be append-only
+            candidates.remove(BaseTable.APPEND_ONLY_TABLE_ATTRIBUTE);
+        } else {
+            // otherwise, last constituent influences whether the merged result is add-only and/or append-only
+            if (constituent.hasAttribute(BaseTable.ADD_ONLY_TABLE_ATTRIBUTE)) {
+                candidates.put(BaseTable.ADD_ONLY_TABLE_ATTRIBUTE, true);
+            }
+            if (constituent.hasAttribute(BaseTable.APPEND_ONLY_TABLE_ATTRIBUTE)) {
+                candidates.put(BaseTable.APPEND_ONLY_TABLE_ATTRIBUTE, true);
+            }
+        }
+
         return candidates;
     }
 
