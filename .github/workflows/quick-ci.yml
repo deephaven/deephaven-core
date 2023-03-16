@@ -55,5 +55,6 @@ jobs:
           gradle-version: wrapper
       - name: suggester / shellcheck
         uses: reviewdog/action-suggester@v1
+        if: failure()
         with:
           tool_name: spotless
