@@ -373,42 +373,42 @@ public class QueryTable extends BaseTable<QueryTable> {
 
     @Override
     public CloseablePrimitiveIteratorOfChar characterColumnIterator(@NotNull final String columnName) {
-        return new CharacterColumnIterator(this, columnName);
+        return new CharacterColumnIterator(getColumnSource(columnName, char.class), getRowSet());
     }
 
     @Override
     public CloseablePrimitiveIteratorOfByte byteColumnIterator(@NotNull final String columnName) {
-        return new ByteColumnIterator(this, columnName);
+        return new ByteColumnIterator(getColumnSource(columnName, byte.class), getRowSet());
     }
 
     @Override
     public CloseablePrimitiveIteratorOfShort shortColumnIterator(@NotNull final String columnName) {
-        return new ShortColumnIterator(this, columnName);
+        return new ShortColumnIterator(getColumnSource(columnName, short.class), getRowSet());
     }
 
     @Override
     public CloseablePrimitiveIteratorOfInt integerColumnIterator(@NotNull final String columnName) {
-        return new IntegerColumnIterator(this, columnName);
+        return new IntegerColumnIterator(getColumnSource(columnName, int.class), getRowSet());
     }
 
     @Override
     public CloseablePrimitiveIteratorOfLong longColumnIterator(@NotNull final String columnName) {
-        return new LongColumnIterator(this, columnName);
+        return new LongColumnIterator(getColumnSource(columnName, long.class), getRowSet());
     }
 
     @Override
     public CloseablePrimitiveIteratorOfFloat floatColumnIterator(@NotNull final String columnName) {
-        return new FloatColumnIterator(this, columnName);
+        return new FloatColumnIterator(getColumnSource(columnName, float.class), getRowSet());
     }
 
     @Override
     public CloseablePrimitiveIteratorOfDouble doubleColumnIterator(@NotNull final String columnName) {
-        return new DoubleColumnIterator(this, columnName);
+        return new DoubleColumnIterator(getColumnSource(columnName, double.class), getRowSet());
     }
 
     @Override
     public <DATA_TYPE> CloseableIterator<DATA_TYPE> objectColumnIterator(@NotNull final String columnName) {
-        return new ObjectColumnIterator<>(this, columnName);
+        return new ObjectColumnIterator<>(getColumnSource(columnName, Object.class), getRowSet());
     }
 
     // endregion Column Iterators
@@ -3389,7 +3389,7 @@ public class QueryTable extends BaseTable<QueryTable> {
         }
     }
 
-    private  <R> R applyInternal(@NotNull final Function<Table, R> function) {
+    private <R> R applyInternal(@NotNull final Function<Table, R> function) {
         final QueryPerformanceNugget nugget =
                 QueryPerformanceRecorder.getInstance().getNugget("apply(" + function + ")");
         try {
@@ -3402,7 +3402,8 @@ public class QueryTable extends BaseTable<QueryTable> {
     @Override
     public <R> R apply(@NotNull final Function<Table, R> function) {
         if (function instanceof MemoizedOperationKey.Provider) {
-            return memoizeResult(((MemoizedOperationKey.Provider) function).getMemoKey(), () -> applyInternal(function));
+            return memoizeResult(((MemoizedOperationKey.Provider) function).getMemoKey(),
+                    () -> applyInternal(function));
         }
 
         return applyInternal(function);

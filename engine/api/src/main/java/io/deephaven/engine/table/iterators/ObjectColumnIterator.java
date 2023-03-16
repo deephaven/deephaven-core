@@ -9,7 +9,6 @@ import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ChunkSource;
-import io.deephaven.engine.table.Table;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Spliterator;
@@ -54,17 +53,6 @@ public final class ObjectColumnIterator<TYPE> extends ColumnIterator<TYPE, Objec
             @NotNull final RowSequence rowSequence) {
         this(validateChunkType(chunkSource, ChunkType.Object), rowSequence, DEFAULT_CHUNK_SIZE,
                 rowSequence.firstRowKey(), rowSequence.size());
-    }
-
-    /**
-     * Create a new ObjectColumnIterator.
-     *
-     * @param table {@link Table} to create the iterator from
-     * @param columnName Column name for iteration; must have {@link ChunkSource#getChunkType() chunk type} of
-     *        {@link ChunkType#Object}
-     */
-    public ObjectColumnIterator(@NotNull final Table table, @NotNull final String columnName) {
-        this(table.getColumnSource(columnName), table.getRowSet());
     }
 
     @Override

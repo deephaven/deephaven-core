@@ -12,7 +12,6 @@ import io.deephaven.engine.primitive.function.CharToIntFunction;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfChar;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ChunkSource;
-import io.deephaven.engine.table.Table;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
@@ -62,17 +61,6 @@ public final class CharacterColumnIterator
             @NotNull final ChunkSource<? extends Any> chunkSource,
             @NotNull final RowSequence rowSequence) {
         this(chunkSource, rowSequence, DEFAULT_CHUNK_SIZE, rowSequence.firstRowKey(), rowSequence.size());
-    }
-
-    /**
-     * Create a new CharacterColumnIterator.
-     *
-     * @param table {@link Table} to create the iterator from
-     * @param columnName Column name for iteration; must have {@link ChunkSource#getChunkType() chunk type} of
-     *        {@link ChunkType#Char}
-     */
-    public CharacterColumnIterator(@NotNull final Table table, @NotNull final String columnName) {
-        this(table.getColumnSource(columnName), table.getRowSet());
     }
 
     @Override

@@ -14,6 +14,7 @@ import io.deephaven.engine.liveness.Liveness;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessManager;
 import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -160,7 +161,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
             merged.setAttribute(Table.MERGED_TABLE_ATTRIBUTE, Boolean.TRUE);
             if (!constituentChangesPermitted) {
                 final Map<String, Object> sharedAttributes;
-                try (final ObjectColumnIterator<Table> constituents =
+                try (final CloseableIterator<Table> constituents =
                         table().objectColumnIterator(constituentColumnName)) {
                     sharedAttributes = computeSharedAttributes(constituents);
                 }
