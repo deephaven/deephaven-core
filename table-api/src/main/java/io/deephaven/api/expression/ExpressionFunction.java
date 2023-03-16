@@ -5,6 +5,9 @@ import org.immutables.value.Value.Immutable;
 
 import java.util.List;
 
+/**
+ * Represents a function call.
+ */
 @Immutable
 @BuildableStyle
 public abstract class ExpressionFunction implements Expression {
@@ -13,8 +16,18 @@ public abstract class ExpressionFunction implements Expression {
         return ImmutableExpressionFunction.builder();
     }
 
+    /**
+     * The name.
+     *
+     * @return the name
+     */
     public abstract String name();
 
+    /**
+     * The arguments.
+     *
+     * @return the arguments
+     */
     public abstract List<Expression> arguments();
 
     @Override

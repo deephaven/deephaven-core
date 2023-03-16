@@ -17,6 +17,14 @@ import java.util.stream.Collectors;
  * Represents an evaluate-able filter.
  *
  * @see io.deephaven.api.TableOperations#where(Collection)
+ * @see FilterIsNull
+ * @see FilterIsNotNull
+ * @see FilterComparison
+ * @see FilterNot
+ * @see FilterOr
+ * @see FilterAnd
+ * @see LiteralFilter
+ * @see RawString
  */
 public interface Filter extends Expression, Serializable {
 
@@ -33,10 +41,24 @@ public interface Filter extends Expression, Serializable {
         return from(expressions);
     }
 
+    /**
+     * Creates an always-true-filter.
+     *
+     * <p>
+     * Equivalent to {@code Literal.of(true)}.
+     * @return the always-true-filter
+     */
     static LiteralFilter ofTrue() {
         return Literal.of(true);
     }
 
+    /**
+     * Creates an always-false-filter.
+     *
+     * <p>
+     * Equivalent to {@code Literal.of(false)}.
+     * @return the always-false-filter
+     */
     static LiteralFilter ofFalse() {
         return Literal.of(false);
     }
@@ -65,26 +87,26 @@ public interface Filter extends Expression, Serializable {
      * Creates an is-true-filter.
      *
      * <p>
-     * Equivalent to {@code FilterComparison.eq(expression, Literal.of(true))}.
+     * Equivalent to {@code FilterComparison.eq(expression, ofTrue())}.
      *
      * @param expression the expression
      * @return the equals-true-filter
      */
     static FilterComparison isTrue(Expression expression) {
-        return FilterComparison.eq(expression, Literal.of(true));
+        return FilterComparison.eq(expression, ofTrue());
     }
 
     /**
      * Creates an is-false-filter.
      *
      * <p>
-     * Equivalent to {@code FilterComparison.eq(expression, Literal.of(false))}.
+     * Equivalent to {@code FilterComparison.eq(expression, ofFalse())}.
      *
      * @param expression the expression
      * @return @return the equals-false-filter
      */
     static FilterComparison isFalse(Expression expression) {
-        return FilterComparison.eq(expression, Literal.of(false));
+        return FilterComparison.eq(expression, ofFalse());
     }
 
     /**

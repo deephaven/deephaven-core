@@ -10,11 +10,16 @@ import io.deephaven.api.filter.Filter;
 import io.deephaven.api.value.Literal;
 
 import java.io.Serializable;
+import java.util.Collection;
 
 /**
  * Represents an evaluate-able expression structure.
  *
- * @see Selectable
+ * @see Literal
+ * @see ColumnName
+ * @see Filter
+ * @see ExpressionFunction
+ * @see RawString
  */
 public interface Expression extends Serializable {
 
