@@ -130,7 +130,9 @@ public class RollingGroupOperator extends UpdateByOperator {
                 final int popCount = popChunk.get(ii);
 
                 if (pushCount == NULL_INT) {
-                    // Skip this row and do not include it in any windows.
+                    // Setting NULL_LONG, NULL_LONG marks this as an invalid row.
+                    startSourceOutputValues.set(ii, NULL_LONG);
+                    endSourceOutputValues.set(ii, NULL_LONG);
                     continue;
                 }
 
@@ -188,10 +190,16 @@ public class RollingGroupOperator extends UpdateByOperator {
 
         @Override
         public void writeToOutputChunk(int outIdx) {
-            final long affectedPos = affectedPosChunk.get(outIdx);
-            startSourceOutputValues.set(outIdx, startPos == NULL_LONG ? NULL_LONG : startPos - affectedPos);
-            // Store endPos as an exclusive value by incrementing by one
-            endSourceOutputValues.set(outIdx, endPos == NULL_LONG ? NULL_LONG : endPos - affectedPos + 1);
+            if (startPos == NULL_LONG) {
+                // Setting NULL_LONG, 0 signifies empty window
+                startSourceOutputValues.set(outIdx, NULL_LONG);
+                endSourceOutputValues.set(outIdx, 0);
+            } else {
+                final long affectedPos = affectedPosChunk.get(outIdx);
+                startSourceOutputValues.set(outIdx, startPos - affectedPos);
+                // Store endPos as an exclusive value by incrementing by one
+                endSourceOutputValues.set(outIdx, endPos - affectedPos + 1);
+            }
         }
 
         @Override

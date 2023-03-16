@@ -1015,7 +1015,7 @@ public class TestRollingGroup extends BaseUpdateByTest {
             return new byte[0][0];
         }
 
-        byte[][] result = new byte[values.length][];
+        byte[][] result = new byte[values.length][0];
 
 
         for (int ii = 0; ii < values.length; ii++) {
@@ -1042,7 +1042,7 @@ public class TestRollingGroup extends BaseUpdateByTest {
             return new short[0][0];
         }
 
-        short[][] result = new short[values.length][];
+        short[][] result = new short[values.length][0];
 
 
         for (int ii = 0; ii < values.length; ii++) {
@@ -1070,7 +1070,7 @@ public class TestRollingGroup extends BaseUpdateByTest {
             return new int[0][0];
         }
 
-        int[][] result = new int[values.length][];
+        int[][] result = new int[values.length][0];
 
 
         for (int ii = 0; ii < values.length; ii++) {
@@ -1098,7 +1098,7 @@ public class TestRollingGroup extends BaseUpdateByTest {
             return new long[0][0];
         }
 
-        long[][] result = new long[values.length][];
+        long[][] result = new long[values.length][0];
 
 
         for (int ii = 0; ii < values.length; ii++) {
@@ -1126,7 +1126,7 @@ public class TestRollingGroup extends BaseUpdateByTest {
             return new float[0][0];
         }
 
-        float[][] result = new float[values.length][];
+        float[][] result = new float[values.length][0];
 
 
         for (int ii = 0; ii < values.length; ii++) {
@@ -1154,7 +1154,7 @@ public class TestRollingGroup extends BaseUpdateByTest {
             return new double[0][0];
         }
 
-        double[][] result = new double[values.length][];
+        double[][] result = new double[values.length][0];
 
 
         for (int ii = 0; ii < values.length; ii++) {
@@ -1182,7 +1182,7 @@ public class TestRollingGroup extends BaseUpdateByTest {
             return new Object[0][0];
         }
 
-        Object[][] result = new Object[values.length][];
+        Object[][] result = new Object[values.length][0];
 
 
         for (int ii = 0; ii < values.length; ii++) {
@@ -1210,7 +1210,7 @@ public class TestRollingGroup extends BaseUpdateByTest {
             return new byte[0][0];
         }
 
-        byte[][] result = new byte[values.length][];
+        byte[][] result = new byte[values.length][0];
 
         // track how many nulls are in the window
         int nullCount = 0;
@@ -1269,7 +1269,7 @@ public class TestRollingGroup extends BaseUpdateByTest {
             return new short[0][0];
         }
 
-        short[][] result = new short[values.length][];
+        short[][] result = new short[values.length][0];
 
         // track how many nulls are in the window
         int nullCount = 0;
@@ -1328,7 +1328,7 @@ public class TestRollingGroup extends BaseUpdateByTest {
             return new int[0][0];
         }
 
-        int[][] result = new int[values.length][];
+        int[][] result = new int[values.length][0];
 
         // track how many nulls are in the window
         int nullCount = 0;
@@ -1387,7 +1387,7 @@ public class TestRollingGroup extends BaseUpdateByTest {
             return new long[0][0];
         }
 
-        long[][] result = new long[values.length][];
+        long[][] result = new long[values.length][0];
 
         // track how many nulls are in the window
         int nullCount = 0;
@@ -1446,7 +1446,7 @@ public class TestRollingGroup extends BaseUpdateByTest {
             return new float[0][0];
         }
 
-        float[][] result = new float[values.length][];
+        float[][] result = new float[values.length][0];
 
         // track how many nulls are in the window
         int nullCount = 0;
@@ -1505,7 +1505,7 @@ public class TestRollingGroup extends BaseUpdateByTest {
             return new double[0][0];
         }
 
-        double[][] result = new double[values.length][];
+        double[][] result = new double[values.length][0];
 
         // track how many nulls are in the window
         int nullCount = 0;
@@ -1564,7 +1564,7 @@ public class TestRollingGroup extends BaseUpdateByTest {
             return new Object[0][0];
         }
 
-        Object[][] result = new Object[values.length][];
+        Object[][] result = new Object[values.length][0];
 
         // track how many nulls are in the window
         int nullCount = 0;

@@ -21,6 +21,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.vector.LongVectorColumnWrapper;
 import io.deephaven.engine.table.impl.vector.PrevLongVectorColumnWrapper;
 import io.deephaven.vector.LongVector;
+import io.deephaven.vector.LongVectorDirect;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;
@@ -45,6 +46,18 @@ public final class SlicedLongAggregateColumnSource extends BaseAggregateSlicedCo
         super(LongVector.class, aggregatedSource, groupRowSetSource, revTicks, fwdTicks);
     }
 
+    private LongVector makeVector(final RowSet rowSetSlice) {
+        return rowSetSlice.isEmpty()
+                ? LongVectorDirect.ZERO_LEN_VECTOR
+                : new LongVectorColumnWrapper(aggregatedSource, rowSetSlice);
+    }
+
+    private LongVector makePrevVector(final RowSet rowSetSlice) {
+        return rowSetSlice.isEmpty()
+                ? LongVectorDirect.ZERO_LEN_VECTOR
+                : new PrevLongVectorColumnWrapper(aggregatedSource, rowSetSlice);
+    }
+
     @Override
     public LongVector get(final long rowKey) {
         if (rowKey == RowSequence.NULL_ROW_KEY) {
@@ -54,8 +67,12 @@ public final class SlicedLongAggregateColumnSource extends BaseAggregateSlicedCo
         final long startPos = startSource != null ? startSource.getLong(rowKey) : startOffset;
         final long endPos = endSource != null ? endSource.getLong(rowKey) : endOffset;
 
-        if (startPos == NULL_LONG || endPos == NULL_LONG) {
+        if (startPos == NULL_LONG && endPos == NULL_LONG) {
+            // null when both start/end are null.
             return null;
+        } else if (startPos == NULL_LONG) {
+            // empty vector when only start is null
+            return LongVectorDirect.ZERO_LEN_VECTOR;
         }
 
         final RowSet bucketRowSet = groupRowSetSource.get(rowKey);
@@ -67,7 +84,7 @@ public final class SlicedLongAggregateColumnSource extends BaseAggregateSlicedCo
 
         // Determine the slice of the groupRowSetSource from start to end.
         final RowSet rowSetSlice = bucketRowSet.subSetByPositionRange(start, end);
-        return rowSetSlice.isEmpty() ? null : new LongVectorColumnWrapper(aggregatedSource, rowSetSlice);
+        return makeVector(rowSetSlice);
     }
 
     @Override
@@ -79,8 +96,12 @@ public final class SlicedLongAggregateColumnSource extends BaseAggregateSlicedCo
         final long startPos = startSource != null ? startSource.getPrevLong(rowKey) : startOffset;
         final long endPos = endSource != null ? endSource.getPrevLong(rowKey) : endOffset;
 
-        if (startPos == NULL_LONG || endPos == NULL_LONG) {
+        if (startPos == NULL_LONG && endPos == NULL_LONG) {
+            // null when both start/end are null.
             return null;
+        } else if (startPos == NULL_LONG) {
+            // empty vector when only start is null
+            return LongVectorDirect.ZERO_LEN_VECTOR;
         }
 
         final RowSet bucketRowSet = getPrevGroupRowSet(rowKey);
@@ -92,7 +113,7 @@ public final class SlicedLongAggregateColumnSource extends BaseAggregateSlicedCo
 
         // Determine the slice of the groupRowSetSource from start to end.
         final RowSet rowSetSlice = bucketRowSet.subSetByPositionRange(start, end);
-        return rowSetSlice.isEmpty() ? null : new PrevLongVectorColumnWrapper(aggregatedSource, rowSetSlice);
+        return makePrevVector(rowSetSlice);
     }
 
     @Override
@@ -117,8 +138,12 @@ public final class SlicedLongAggregateColumnSource extends BaseAggregateSlicedCo
             final long startPos = startChunk != null ? startChunk.get(di) : startOffset;
             final long endPos = endChunk != null ? endChunk.get(di) : endOffset;
 
-            if (startPos == NULL_LONG || endPos == NULL_LONG) {
+            if (startPos == NULL_LONG && endPos == NULL_LONG) {
+                // null when both start/end are null.
                 typedDestination.set(di, null);
+            } else if (startPos == NULL_LONG) {
+                // empty vector when only start is null
+                typedDestination.set(di, LongVectorDirect.ZERO_LEN_VECTOR);
             } else {
                 final long rowKey = keyChunk.get(di);
                 final RowSet bucketRowSet = groupRowSetChunk.get(di);
@@ -130,7 +155,7 @@ public final class SlicedLongAggregateColumnSource extends BaseAggregateSlicedCo
 
                 // Determine the slice of the groupRowSetSource from start to end.
                 final RowSet rowSetSlice = bucketRowSet.subSetByPositionRange(start, end);
-                typedDestination.set(di, rowSetSlice.isEmpty() ? null : new LongVectorColumnWrapper(aggregatedSource, rowSetSlice));
+                typedDestination.set(di, makeVector(rowSetSlice));
             }
         }
         typedDestination.setSize(size);
@@ -157,8 +182,12 @@ public final class SlicedLongAggregateColumnSource extends BaseAggregateSlicedCo
             final long startPos = startPrevChunk != null ? startPrevChunk.get(di) : startOffset;
             final long endPos = endPrevChunk != null ? endPrevChunk.get(di) : endOffset;
 
-            if (startPos == NULL_LONG || endPos == NULL_LONG) {
+            if (startPos == NULL_LONG && endPos == NULL_LONG) {
+                // null when both start/end are null.
                 typedDestination.set(di, null);
+            } else if (startPos == NULL_LONG) {
+                // empty vector when only start is null
+                typedDestination.set(di, LongVectorDirect.ZERO_LEN_VECTOR);
             } else {
                 final long rowKey = keyChunk.get(di);
                 final RowSet groupRowSetPrev = groupRowSetPrevChunk.get(di);
@@ -173,7 +202,7 @@ public final class SlicedLongAggregateColumnSource extends BaseAggregateSlicedCo
 
                 // Determine the slice of the groupRowSetSource from start to end.
                 final RowSet rowSetSlice = groupRowSetToUse.subSetByPositionRange(start, end);
-                typedDestination.set(di, rowSetSlice.isEmpty() ? null : new PrevLongVectorColumnWrapper(aggregatedSource, rowSetSlice));
+                typedDestination.set(di, makePrevVector(rowSetSlice));
             }
         }
         typedDestination.setSize(size);
