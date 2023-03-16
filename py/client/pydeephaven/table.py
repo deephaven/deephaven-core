@@ -70,7 +70,7 @@ class Table(TableInterface):
         reader = pyarrow.ipc.open_stream(schema_header)
         self.schema = reader.schema
 
-    def snapshot(self) -> pyarrow.Table:
+    def to_arrow(self) -> pyarrow.Table:
         """ Take a snapshot of the table and return a pyarrow Table.
 
         Returns:
@@ -79,4 +79,4 @@ class Table(TableInterface):
         Raises:
             DHError
         """
-        return self.session.flight_service.snapshot_table(self)
+        return self.session.flight_service.do_get_table(self)

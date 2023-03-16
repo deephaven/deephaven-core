@@ -32,15 +32,15 @@ class TableTestCase(BaseTestCase):
         # time table has a default timestamp column
         self.assertEqual(len(column_specs) + 1, len(t2.schema))
 
-    def test_snapshot_timetable(self):
+    def test_to_arrow_timetable(self):
         t = self.session.time_table(period=1000000000)
-        pa_table = t.snapshot()
+        pa_table = t.to_arrow()
         self.assertIsNotNone(pa_table)
 
     def test_create_data_table_then_update(self):
         pa_table = csv.read_csv(self.csv_file)
         new_table = self.session.import_table(pa_table).update(formulas=['Sum = a + b + c + d'])
-        pa_table2 = new_table.snapshot()
+        pa_table2 = new_table.to_arrow()
         df = pa_table2.to_pandas()
         self.assertEquals(df.shape[1], 6)
         self.assertEquals(1000, len(df.index))
@@ -88,7 +88,7 @@ class TableTestCase(BaseTestCase):
         pa_table = csv.read_csv(self.csv_file)
         test_table = self.session.import_table(pa_table)
         sorted_table = test_table.sort(order_by=["a", "b"], order=[SortDirection.DESCENDING])
-        df = sorted_table.snapshot().to_pandas()
+        df = sorted_table.to_arrow().to_pandas()
 
         self.assertTrue(df.iloc[:, 0].is_monotonic_decreasing)
 
@@ -133,8 +133,8 @@ class TableTestCase(BaseTestCase):
         tt_left = self.session.time_table(period=100000).update(formulas=["Col1=i"])
         tt_right = self.session.time_table(period=200000).update(formulas=["Col1=i"])
         time.sleep(2)
-        left_table = self.session.import_table(tt_left.snapshot())
-        right_table = self.session.import_table(tt_right.snapshot())
+        left_table = self.session.import_table(tt_left.to_arrow())
+        right_table = self.session.import_table(tt_right.to_arrow())
         result_table = left_table.aj(right_table, on=["Col1", "Timestamp"])
         self.assertGreater(result_table.size, 0)
         self.assertLessEqual(result_table.size, left_table.size)
@@ -191,7 +191,7 @@ class TableTestCase(BaseTestCase):
     def test_count(self):
         pa_table = csv.read_csv(self.csv_file)
         test_table = self.session.import_table(pa_table)
-        df = test_table.count(col="a").snapshot().to_pandas()
+        df = test_table.count(col="a").to_arrow().to_pandas()
         self.assertEqual(df.iloc[0]["a"], test_table.size)
 
     def test_combo_agg(self):
@@ -207,6 +207,34 @@ class TableTestCase(BaseTestCase):
 
         result_table = test_table.agg_by(agg=combo_agg, by=["a"])
         self.assertEqual(result_table.size, num_distinct_a)
+
+    def test_snapshot(self):
+        pa_table = csv.read_csv(self.csv_file)
+        test_table = self.session.import_table(pa_table)
+        result_table = test_table.snapshot()
+        self.assertEqual(test_table.schema, result_table.schema)
+        self.assertEqual(test_table.size, result_table.size)
+
+        test_table = self.session.time_table(period=10000000).update(formulas=["Col1 = i", "Col2 = i * 2"])
+        result_table = test_table.snapshot()
+        self.assertEqual(test_table.schema, result_table.schema)
+        self.assertGreaterEqual(test_table.size, result_table.size)
+
+    def test_snapshot_when(self):
+        source_table = (self.session.time_table(period=10_000_000)
+                        .update(formulas=["Col1= i", "Col2 = i * 2"]).drop_columns(["Timestamp"]))
+        trigger_table = self.session.time_table(period=1_000_000_000)
+        result_table = source_table.snapshot_when(trigger_table=trigger_table, stamp_cols=["Timestamp"],
+                                                  initial=True, incremental=True, history=False)
+        self.assertEqual(len(source_table.schema) + 1, len(result_table.schema))
+
+        result_table = source_table.snapshot_when(trigger_table=trigger_table, stamp_cols=["Timestamp"],
+                                                  initial=False, incremental=False, history=True)
+        self.assertEqual(len(source_table.schema) + 1, len(result_table.schema))
+
+        with self.assertRaises(DHError):
+            result_table = source_table.snapshot_when(trigger_table=trigger_table, stamp_cols=["Timestamp"],
+                                                      initial=True, incremental=False, history=True)
 
 
 if __name__ == '__main__':
