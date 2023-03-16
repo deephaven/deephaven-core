@@ -44,8 +44,7 @@ public final class ObjectChunkPool implements ChunkPool {
                     SUB_POOL_SEGMENT_CAPACITY,
                     () -> ChunkPoolInstrumentation.getAndRecord(() -> WritableObjectChunk.makeWritableChunkForPool(chunkCapacity)),
                     (final WritableObjectChunk chunk) -> {
-                        chunk.fillWithNullValue(0, chunkCapacity);
-                        chunk.setSize(chunkCapacity);
+                         chunk.fillWithNullValue(0, chunkCapacity);
                     }
             );
         }
@@ -108,7 +107,7 @@ public final class ObjectChunkPool implements ChunkPool {
         return ChunkPoolReleaseTracking.onTake(WritableObjectChunk.makeWritableChunkForPool(capacity));
     }
 
-    public void giveWritableObjectChunk(@NotNull final WritableObjectChunk writableObjectChunk) {
+    public void giveWritableObjectChunk(@NotNull final WritableObjectChunk<?, ?> writableObjectChunk) {
         if (writableObjectChunk == EMPTY || writableObjectChunk.isAlias(EMPTY)) {
             return;
         }
