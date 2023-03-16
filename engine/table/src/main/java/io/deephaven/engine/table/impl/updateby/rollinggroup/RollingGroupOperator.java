@@ -6,7 +6,6 @@ import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.QueryTable;
@@ -217,10 +216,6 @@ public class RollingGroupOperator extends UpdateByOperator {
             endSource.fillFromChunk(endSourceFillFromContext, endSourceOutputValues, inputKeys);
             groupRowSetSource.fillFromChunk(groupRowSetSourceFillFromContext, groupRowSetSourceOutputValues, inputKeys);
         }
-
-        public void assignBucketRowSource(final TrackingRowSet bucketRowSet, final RowSequence chunkRs) {
-            groupRowSetSourceOutputValues.fillWithValue(0, chunkRs.intSize(), bucketRowSet);
-        }
     }
 
     public RollingGroupOperator(@NotNull final MatchPair[] pairs,
@@ -229,7 +224,7 @@ public class RollingGroupOperator extends UpdateByOperator {
             @Nullable final String timestampColumnName,
             final long reverseWindowScaleUnits,
             final long forwardWindowScaleUnits,
-            final ColumnSource<?>[] valueSources
+            @NotNull final ColumnSource<?>[] valueSources
     // region extra-constructor-args
     // endregion extra-constructor-args
     ) {
@@ -329,6 +324,14 @@ public class RollingGroupOperator extends UpdateByOperator {
                 ((WritableSourceWithPrepareForParallelPopulation) endSource).prepareForParallelPopulation(changedRows);
             }
         }
+    }
+
+    @Override
+    public void initializeRolling(@NotNull final UpdateByOperator.Context context, @NotNull final RowSet bucketRowSet) {
+        super.initializeRolling(context, bucketRowSet);
+
+        Context ctx = (Context) context;
+        ctx.groupRowSetSourceOutputValues.fillWithValue(0, ctx.groupRowSetSourceOutputValues.size(), bucketRowSet);
     }
 
     // region Shifts

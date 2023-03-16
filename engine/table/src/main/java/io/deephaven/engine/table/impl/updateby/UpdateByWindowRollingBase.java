@@ -12,7 +12,6 @@ import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.ssa.LongSegmentedSortedArray;
-import io.deephaven.engine.table.impl.updateby.rollinggroup.RollingGroupOperator;
 import io.deephaven.util.SafeCloseableArray;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -150,7 +149,7 @@ abstract class UpdateByWindowRollingBase extends UpdateByWindow {
                     continue;
                 }
                 UpdateByOperator rollingOp = operators[opIdx];
-                rollingOp.initializeRolling(winOpContexts[ii]);
+                rollingOp.initializeRolling(winOpContexts[ii], bucketRowSet);
             }
 
             int affectedChunkOffset = 0;
@@ -191,12 +190,6 @@ abstract class UpdateByWindowRollingBase extends UpdateByWindow {
                     if (!context.dirtyOperators.get(opIdx)) {
                         // Skip if not dirty.
                         continue;
-                    }
-
-                    // assign the bucket rowsets before we accumulate
-                    if (winOpContexts[ii] instanceof RollingGroupOperator.Context) {
-                        ((RollingGroupOperator.Context) winOpContexts[ii])
-                                .assignBucketRowSource(bucketRowSet, affectedRs);
                     }
 
                     winOpContexts[ii].accumulateRolling(

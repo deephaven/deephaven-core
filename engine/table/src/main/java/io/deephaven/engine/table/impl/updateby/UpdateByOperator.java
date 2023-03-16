@@ -22,8 +22,8 @@ import java.util.Map;
  * interface, the pattern of calls will be as follows.
  *
  * <ol>
- * <li>{@link UpdateByOperator#initializeCumulative(Context, long, long)} for cumulative operators or
- * {@link UpdateByOperator#initializeRolling(Context)} (Context)} for windowed operators</li>
+ * <li>{@link UpdateByOperator#initializeCumulative(Context, long, long, RowSet)} for cumulative operators or
+ * {@link UpdateByOperator#initializeRolling(Context, RowSet)} (Context)} for windowed operators</li>
  * <li>{@link UpdateByOperator.Context#accumulateCumulative(RowSequence, Chunk[], LongChunk, int)} for cumulative
  * operators or
  * {@link UpdateByOperator.Context#accumulateRolling(RowSequence, Chunk[], LongChunk, LongChunk, IntChunk, IntChunk, int)}
@@ -110,7 +110,6 @@ public abstract class UpdateByOperator {
          */
         protected abstract void writeToOutputChunk(int outIdx);
 
-
         /**
          * Write the output chunk to the output column
          */
@@ -123,7 +122,6 @@ public abstract class UpdateByOperator {
         @OverridingMethodsMustInvokeSuper
         protected abstract void reset();
     }
-
 
     protected UpdateByOperator(@NotNull final MatchPair pair,
             @NotNull final String[] affectingColumns,
@@ -145,14 +143,16 @@ public abstract class UpdateByOperator {
      * Initialize the bucket context for a cumulative operator
      */
     public void initializeCumulative(@NotNull final Context context, final long firstUnmodifiedKey,
-            long firstUnmodifiedTimestamp) {
+            final long firstUnmodifiedTimestamp,
+            @NotNull final RowSet bucketRowSet) {
         context.reset();
     }
 
     /**
      * Initialize the bucket context for a windowed operator
      */
-    public void initializeRolling(@NotNull final Context context) {
+    public void initializeRolling(@NotNull final Context context,
+            @NotNull final RowSet bucketRowSet) {
         context.reset();
     }
 
@@ -283,7 +283,7 @@ public abstract class UpdateByOperator {
      */
     protected void extractDownstreamModifiedColumnSet(@NotNull final TableUpdate upstream,
             @NotNull final TableUpdate downstream) {
-        // for nearly all operators, all output columns will be modified on a recompute.
+        // for nearly all operators, all output columns will be modified.
         downstream.modifiedColumnSet().setAll(getOutputModifiedColumnSet());
     }
 

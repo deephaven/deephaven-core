@@ -184,7 +184,7 @@ class UpdateByWindowCumulative extends UpdateByWindow {
                     continue;
                 }
                 UpdateByOperator cumOp = operators[opIdx];
-                cumOp.initializeCumulative(winOpContexts[ii], rowKey, timestamp);
+                cumOp.initializeCumulative(winOpContexts[ii], rowKey, timestamp, context.sourceRowSet);
             }
 
             while (affectedIt.hasMore()) {
