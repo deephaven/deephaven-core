@@ -12,10 +12,10 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.AbsoluteSortColumnConventions;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.SortDescriptor;
 import io.deephaven.proto.backplane.grpc.SortTableRequest;
+import io.deephaven.proto.util.Exceptions;
 import io.deephaven.server.session.SessionState;
 
 import javax.inject.Inject;
@@ -79,7 +79,7 @@ public class SortTableGrpcImpl extends GrpcTableOperation<SortTableRequest> {
                     direction = 1;
                     break;
                 default:
-                    throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                    throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
                             "Unexpected sort direction: " + direction);
             }
 
