@@ -9,6 +9,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.table.impl.sources.aggregate.*;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
@@ -53,6 +54,9 @@ public class RollingGroupOperator extends UpdateByOperator {
     protected final LongArraySource innerStartSource;
     protected final WritableColumnSource<Long> endSource;
     protected final LongArraySource innerEndSource;
+
+    private ModifiedColumnSet.Transformer inputOutputTransformer;
+    private ModifiedColumnSet[] outputModifiedColumnSets;
 
     public class Context extends UpdateByOperator.Context {
         private static final int BUFFER_INITIAL_CAPACITY = 512;
@@ -406,5 +410,57 @@ public class RollingGroupOperator extends UpdateByOperator {
     @Override
     protected boolean requiresRowPositions() {
         return true;
+    }
+
+    /**
+     * Create the modified column set for the input columns of this operator.
+     */
+    @Override
+    protected void createInputModifiedColumnSet(@NotNull final QueryTable source) {
+        inputModifiedColumnSet = source.newModifiedColumnSet(getAffectingColumnNames());
+        // inputModifiedColumnSet needs to be set before we can create the transformer.
+        createInputOutputTransformer();
+    }
+
+    /**
+     * Create the modified column set for the output columns from this operator.
+     */
+    @Override
+    protected void createOutputModifiedColumnSet(@NotNull final QueryTable result) {
+        final String[] colNames = getOutputColumnNames();
+        outputModifiedColumnSet = result.newModifiedColumnSet(colNames);
+
+        // Create an individual MCS for each output column.
+        outputModifiedColumnSets = new ModifiedColumnSet[colNames.length];
+        for (int ii = 0; ii < colNames.length; ii++) {
+            outputModifiedColumnSets[ii] = result.newModifiedColumnSet(colNames[ii]);
+        }
+        // outputModifiedColumnSets need to be set before we can create the transformer.
+        createInputOutputTransformer();
+    }
+
+    private void createInputOutputTransformer() {
+        if (inputOutputTransformer != null || inputModifiedColumnSet == null || outputModifiedColumnSet == null) {
+            return;
+        }
+        // Create the transformer to map from the input columns to the individual output column MCS.
+        inputOutputTransformer =
+                inputModifiedColumnSet.newTransformer(getOutputColumnNames(), outputModifiedColumnSets);
+    }
+
+    /**
+     * Set the downstream modified column set appropriately for this operator.
+     */
+    @Override
+    protected void extractDownstreamModifiedColumnSet(@NotNull final TableUpdate upstream,
+            @NotNull final TableUpdate downstream) {
+        if (upstream.added().isNonempty() || upstream.removed().isNonempty()) {
+            downstream.modifiedColumnSet().setAll(getOutputModifiedColumnSet());
+            return;
+        }
+
+        if (upstream.modified().isNonempty()) {
+            inputOutputTransformer.transform(upstream.modifiedColumnSet(), downstream.modifiedColumnSet());
+        }
     }
 }

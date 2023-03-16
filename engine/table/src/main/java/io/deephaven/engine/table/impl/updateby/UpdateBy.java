@@ -965,7 +965,7 @@ public abstract class UpdateBy {
                         final UpdateByOperator[] winOps = win.getOperators();
                         for (int winOpIdx : win.getDirtyOperators(winCtx)) {
                             // these were created directly from the result output columns so no transformer needed
-                            downstream.modifiedColumnSet.setAll(winOps[winOpIdx].getOutputModifiedColumnSet());
+                            win.operators[winOpIdx].extractDownstreamModifiedColumnSet(upstream, downstream);
                         }
                     }
                 }

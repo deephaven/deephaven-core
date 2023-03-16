@@ -77,6 +77,11 @@ public class UpdateByOperatorFactory {
     final Collection<UpdateByOperator> getOperators(@NotNull final Collection<? extends UpdateByOperation> specs) {
         final OperationVisitor v = new OperationVisitor();
         specs.forEach(s -> s.walk(v));
+
+        // Do we have a combined rolling group operator to create?
+        if (v.rollingGroupSpec != null) {
+            v.ops.add(v.makeRollingGroupOperator(v.rollingGroupPairs, source, v.rollingGroupSpec));
+        }
         return v.ops;
     }
 
@@ -167,7 +172,6 @@ public class UpdateByOperatorFactory {
 
     private class OutputColumnVisitor implements UpdateByOperation.Visitor<Void> {
         final List<String> outputColumns = new ArrayList<>();
-
 
         @Override
         public Void visit(@NotNull final ColumnUpdateOperation clause) {
@@ -266,6 +270,10 @@ public class UpdateByOperatorFactory {
         private final List<UpdateByOperator> ops = new ArrayList<>();
         private MatchPair[] pairs;
 
+        // Storage for delayed RollingGroup creation.
+        RollingGroupSpec rollingGroupSpec;
+        MatchPair[] rollingGroupPairs;
+
         /**
          * Check if the supplied type is one of the supported time types.
          *
@@ -348,8 +356,18 @@ public class UpdateByOperatorFactory {
 
         @Override
         public Void visit(@NotNull final RollingGroupSpec rg) {
-            // Only one group operator needed for any number of RollingGroup that share a window
-            ops.add(makeRollingGroupOperator(pairs, source, rg));
+            // Delay the creation of the operator until we combine all the pairs together.
+            if (rollingGroupSpec == null) {
+                rollingGroupSpec = rg;
+                rollingGroupPairs = pairs;
+                return null;
+            }
+
+            // The specs are identical and we can accumulate the pairs. We are not testing for uniqueness because
+            // subsequent checks will catch collisions.
+            final MatchPair[] newPairs = Arrays.copyOf(rollingGroupPairs, rollingGroupPairs.length + pairs.length);
+            System.arraycopy(pairs, 0, newPairs, rollingGroupPairs.length, pairs.length);
+            rollingGroupPairs = newPairs;
             return null;
         }
 

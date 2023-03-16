@@ -375,6 +375,9 @@ public abstract class BaseAggregateSlicedColumnSource<VECTOR_TYPE extends Vector
 
     @Override
     public boolean isStateless() {
-        return aggregatedSource.isStateless() && groupRowSetSource.isStateless();
+        return aggregatedSource.isStateless()
+                && groupRowSetSource.isStateless()
+                && (startSource == null || startSource.isStateless())
+                && (endSource == null || endSource.isStateless());
     }
 }

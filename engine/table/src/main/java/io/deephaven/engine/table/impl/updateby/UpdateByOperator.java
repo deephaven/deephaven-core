@@ -7,10 +7,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.MatchPair;
-import io.deephaven.engine.table.ModifiedColumnSet;
-import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.util.SafeCloseable;
@@ -48,11 +45,11 @@ public abstract class UpdateByOperator {
     /**
      * The input modifiedColumnSet for this operator
      */
-    ModifiedColumnSet inputModifiedColumnSet;
+    protected ModifiedColumnSet inputModifiedColumnSet;
     /**
      * The output modifiedColumnSet for this operator
      */
-    ModifiedColumnSet outputModifiedColumnSet;
+    protected ModifiedColumnSet outputModifiedColumnSet;
 
     /**
      * A context item for use with updateBy operators
@@ -279,6 +276,15 @@ public abstract class UpdateByOperator {
      */
     protected ModifiedColumnSet getOutputModifiedColumnSet() {
         return outputModifiedColumnSet;
+    }
+
+    /**
+     * Set the downstream modified column set appropriately for this operator.
+     */
+    protected void extractDownstreamModifiedColumnSet(@NotNull final TableUpdate upstream,
+            @NotNull final TableUpdate downstream) {
+        // for nearly all operators, all output columns will be modified on a recompute.
+        downstream.modifiedColumnSet().setAll(getOutputModifiedColumnSet());
     }
 
     /**

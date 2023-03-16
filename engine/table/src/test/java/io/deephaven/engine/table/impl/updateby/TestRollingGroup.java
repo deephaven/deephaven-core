@@ -24,10 +24,8 @@ import org.junit.experimental.categories.Category;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Duration;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
-import java.util.Random;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static io.deephaven.engine.testutil.GenerateTableUpdates.generateAppends;
 import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.simulateShiftAwareStep;
@@ -976,6 +974,31 @@ public class TestRollingGroup extends BaseUpdateByTest {
                     assert Objects.equals(a, b);
                 }
             }
+        }
+    }
+
+    // endregion
+
+    // region Edge cases
+
+    @Test
+    public void testCombinedGroupStatic() {
+        final int prevTicks = 10;
+        final int postTicks = 0;
+
+        final QueryTable t = createTestTable(STATIC_TABLE_SIZE, false, false, false, 0x31313131).t;
+        t.setRefreshing(false);
+
+        // Make a unique RollingGroup operator for each column.
+        List<UpdateByOperation> ops = Arrays.stream(columns)
+                .map(col -> UpdateByOperation.RollingGroup(prevTicks, postTicks, col))
+                .collect(Collectors.toList());
+
+        final Table summed = t.updateBy(ops);
+
+        for (String col : t.getDefinition().getColumnNamesArray()) {
+            assertWithRollingGroupTicks(t.getColumn(col).getDirect(), summed.getColumn(col).getDirect(),
+                    summed.getColumn(col).getType(), prevTicks, postTicks);
         }
     }
 
