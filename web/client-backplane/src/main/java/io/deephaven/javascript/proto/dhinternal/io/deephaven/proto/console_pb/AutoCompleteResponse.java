@@ -219,6 +219,122 @@ public class AutoCompleteResponse {
             void setSuccess(boolean success);
         }
 
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface HoverFieldType {
+            @JsOverlay
+            static AutoCompleteResponse.ToObjectReturnType.HoverFieldType create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            String getContents();
+
+            @JsProperty
+            Object getRange();
+
+            @JsProperty
+            void setContents(String contents);
+
+            @JsProperty
+            void setRange(Object range);
+        }
+
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface SignaturesFieldType {
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface SignaturesListFieldType {
+                @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                public interface ParametersListFieldType {
+                    @JsOverlay
+                    static AutoCompleteResponse.ToObjectReturnType.SignaturesFieldType.SignaturesListFieldType.ParametersListFieldType create() {
+                        return Js.uncheckedCast(JsPropertyMap.of());
+                    }
+
+                    @JsProperty
+                    String getDocumentation();
+
+                    @JsProperty
+                    String getLabel();
+
+                    @JsProperty
+                    void setDocumentation(String documentation);
+
+                    @JsProperty
+                    void setLabel(String label);
+                }
+
+                @JsOverlay
+                static AutoCompleteResponse.ToObjectReturnType.SignaturesFieldType.SignaturesListFieldType create() {
+                    return Js.uncheckedCast(JsPropertyMap.of());
+                }
+
+                @JsProperty
+                double getActiveParameter();
+
+                @JsProperty
+                String getDocumentation();
+
+                @JsProperty
+                String getLabel();
+
+                @JsProperty
+                JsArray<AutoCompleteResponse.ToObjectReturnType.SignaturesFieldType.SignaturesListFieldType.ParametersListFieldType> getParametersList();
+
+                @JsProperty
+                void setActiveParameter(double activeParameter);
+
+                @JsProperty
+                void setDocumentation(String documentation);
+
+                @JsProperty
+                void setLabel(String label);
+
+                @JsProperty
+                void setParametersList(
+                        JsArray<AutoCompleteResponse.ToObjectReturnType.SignaturesFieldType.SignaturesListFieldType.ParametersListFieldType> parametersList);
+
+                @JsOverlay
+                default void setParametersList(
+                        AutoCompleteResponse.ToObjectReturnType.SignaturesFieldType.SignaturesListFieldType.ParametersListFieldType[] parametersList) {
+                    setParametersList(
+                            Js.<JsArray<AutoCompleteResponse.ToObjectReturnType.SignaturesFieldType.SignaturesListFieldType.ParametersListFieldType>>uncheckedCast(
+                                    parametersList));
+                }
+            }
+
+            @JsOverlay
+            static AutoCompleteResponse.ToObjectReturnType.SignaturesFieldType create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            double getActiveParameter();
+
+            @JsProperty
+            double getActiveSignature();
+
+            @JsProperty
+            JsArray<AutoCompleteResponse.ToObjectReturnType.SignaturesFieldType.SignaturesListFieldType> getSignaturesList();
+
+            @JsProperty
+            void setActiveParameter(double activeParameter);
+
+            @JsProperty
+            void setActiveSignature(double activeSignature);
+
+            @JsProperty
+            void setSignaturesList(
+                    JsArray<AutoCompleteResponse.ToObjectReturnType.SignaturesFieldType.SignaturesListFieldType> signaturesList);
+
+            @JsOverlay
+            default void setSignaturesList(
+                    AutoCompleteResponse.ToObjectReturnType.SignaturesFieldType.SignaturesListFieldType[] signaturesList) {
+                setSignaturesList(
+                        Js.<JsArray<AutoCompleteResponse.ToObjectReturnType.SignaturesFieldType.SignaturesListFieldType>>uncheckedCast(
+                                signaturesList));
+            }
+        }
+
         @JsOverlay
         static AutoCompleteResponse.ToObjectReturnType create() {
             return Js.uncheckedCast(JsPropertyMap.of());
@@ -228,8 +344,32 @@ public class AutoCompleteResponse {
         AutoCompleteResponse.ToObjectReturnType.CompletionItemsFieldType getCompletionItems();
 
         @JsProperty
+        AutoCompleteResponse.ToObjectReturnType.HoverFieldType getHover();
+
+        @JsProperty
+        double getRequestId();
+
+        @JsProperty
+        AutoCompleteResponse.ToObjectReturnType.SignaturesFieldType getSignatures();
+
+        @JsProperty
+        boolean isSuccess();
+
+        @JsProperty
         void setCompletionItems(
                 AutoCompleteResponse.ToObjectReturnType.CompletionItemsFieldType completionItems);
+
+        @JsProperty
+        void setHover(AutoCompleteResponse.ToObjectReturnType.HoverFieldType hover);
+
+        @JsProperty
+        void setRequestId(double requestId);
+
+        @JsProperty
+        void setSignatures(AutoCompleteResponse.ToObjectReturnType.SignaturesFieldType signatures);
+
+        @JsProperty
+        void setSuccess(boolean success);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -434,6 +574,122 @@ public class AutoCompleteResponse {
             void setSuccess(boolean success);
         }
 
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface HoverFieldType {
+            @JsOverlay
+            static AutoCompleteResponse.ToObjectReturnType0.HoverFieldType create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            String getContents();
+
+            @JsProperty
+            Object getRange();
+
+            @JsProperty
+            void setContents(String contents);
+
+            @JsProperty
+            void setRange(Object range);
+        }
+
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface SignaturesFieldType {
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface SignaturesListFieldType {
+                @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                public interface ParametersListFieldType {
+                    @JsOverlay
+                    static AutoCompleteResponse.ToObjectReturnType0.SignaturesFieldType.SignaturesListFieldType.ParametersListFieldType create() {
+                        return Js.uncheckedCast(JsPropertyMap.of());
+                    }
+
+                    @JsProperty
+                    String getDocumentation();
+
+                    @JsProperty
+                    String getLabel();
+
+                    @JsProperty
+                    void setDocumentation(String documentation);
+
+                    @JsProperty
+                    void setLabel(String label);
+                }
+
+                @JsOverlay
+                static AutoCompleteResponse.ToObjectReturnType0.SignaturesFieldType.SignaturesListFieldType create() {
+                    return Js.uncheckedCast(JsPropertyMap.of());
+                }
+
+                @JsProperty
+                double getActiveParameter();
+
+                @JsProperty
+                String getDocumentation();
+
+                @JsProperty
+                String getLabel();
+
+                @JsProperty
+                JsArray<AutoCompleteResponse.ToObjectReturnType0.SignaturesFieldType.SignaturesListFieldType.ParametersListFieldType> getParametersList();
+
+                @JsProperty
+                void setActiveParameter(double activeParameter);
+
+                @JsProperty
+                void setDocumentation(String documentation);
+
+                @JsProperty
+                void setLabel(String label);
+
+                @JsProperty
+                void setParametersList(
+                        JsArray<AutoCompleteResponse.ToObjectReturnType0.SignaturesFieldType.SignaturesListFieldType.ParametersListFieldType> parametersList);
+
+                @JsOverlay
+                default void setParametersList(
+                        AutoCompleteResponse.ToObjectReturnType0.SignaturesFieldType.SignaturesListFieldType.ParametersListFieldType[] parametersList) {
+                    setParametersList(
+                            Js.<JsArray<AutoCompleteResponse.ToObjectReturnType0.SignaturesFieldType.SignaturesListFieldType.ParametersListFieldType>>uncheckedCast(
+                                    parametersList));
+                }
+            }
+
+            @JsOverlay
+            static AutoCompleteResponse.ToObjectReturnType0.SignaturesFieldType create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            double getActiveParameter();
+
+            @JsProperty
+            double getActiveSignature();
+
+            @JsProperty
+            JsArray<AutoCompleteResponse.ToObjectReturnType0.SignaturesFieldType.SignaturesListFieldType> getSignaturesList();
+
+            @JsProperty
+            void setActiveParameter(double activeParameter);
+
+            @JsProperty
+            void setActiveSignature(double activeSignature);
+
+            @JsProperty
+            void setSignaturesList(
+                    JsArray<AutoCompleteResponse.ToObjectReturnType0.SignaturesFieldType.SignaturesListFieldType> signaturesList);
+
+            @JsOverlay
+            default void setSignaturesList(
+                    AutoCompleteResponse.ToObjectReturnType0.SignaturesFieldType.SignaturesListFieldType[] signaturesList) {
+                setSignaturesList(
+                        Js.<JsArray<AutoCompleteResponse.ToObjectReturnType0.SignaturesFieldType.SignaturesListFieldType>>uncheckedCast(
+                                signaturesList));
+            }
+        }
+
         @JsOverlay
         static AutoCompleteResponse.ToObjectReturnType0 create() {
             return Js.uncheckedCast(JsPropertyMap.of());
@@ -443,8 +699,32 @@ public class AutoCompleteResponse {
         AutoCompleteResponse.ToObjectReturnType0.CompletionItemsFieldType getCompletionItems();
 
         @JsProperty
+        AutoCompleteResponse.ToObjectReturnType0.HoverFieldType getHover();
+
+        @JsProperty
+        double getRequestId();
+
+        @JsProperty
+        AutoCompleteResponse.ToObjectReturnType0.SignaturesFieldType getSignatures();
+
+        @JsProperty
+        boolean isSuccess();
+
+        @JsProperty
         void setCompletionItems(
                 AutoCompleteResponse.ToObjectReturnType0.CompletionItemsFieldType completionItems);
+
+        @JsProperty
+        void setHover(AutoCompleteResponse.ToObjectReturnType0.HoverFieldType hover);
+
+        @JsProperty
+        void setRequestId(double requestId);
+
+        @JsProperty
+        void setSignatures(AutoCompleteResponse.ToObjectReturnType0.SignaturesFieldType signatures);
+
+        @JsProperty
+        void setSuccess(boolean success);
     }
 
     public static native AutoCompleteResponse deserializeBinary(Uint8Array bytes);
@@ -459,17 +739,45 @@ public class AutoCompleteResponse {
 
     public native void clearCompletionItems();
 
+    public native void clearHover();
+
+    public native void clearSignatures();
+
     public native GetCompletionItemsResponse getCompletionItems();
+
+    public native Hover getHover();
+
+    public native int getRequestId();
 
     public native int getResponseCase();
 
+    public native SignatureHelp getSignatures();
+
+    public native boolean getSuccess();
+
     public native boolean hasCompletionItems();
+
+    public native boolean hasHover();
+
+    public native boolean hasSignatures();
 
     public native Uint8Array serializeBinary();
 
     public native void setCompletionItems();
 
     public native void setCompletionItems(GetCompletionItemsResponse value);
+
+    public native void setHover();
+
+    public native void setHover(Hover value);
+
+    public native void setRequestId(int value);
+
+    public native void setSignatures();
+
+    public native void setSignatures(SignatureHelp value);
+
+    public native void setSuccess(boolean value);
 
     public native AutoCompleteResponse.ToObjectReturnType0 toObject();
 
