@@ -10,8 +10,6 @@
 #include <set>
 #include <arrow/flight/client.h>
 #include <arrow/flight/types.h>
-#include <arrow/array.h>
-#include <arrow/array/array_primitive.h>
 #include <arrow/scalar.h>
 #include <arrow/type.h>
 #include <arrow/table.h>
@@ -547,7 +545,7 @@ public:
 
   void invokeHelper() {
     arrow::flight::FlightCallOptions options;
-    options.headers.push_back(server_->makeBlessing());
+    options.headers.push_back(server_->getAuthHeader());
 
     arrow::flight::FlightDescriptor fd;
     if (!ArrowUtil::tryConvertTicketToFlightDescriptor(ticket_.ticket(), &fd)) {

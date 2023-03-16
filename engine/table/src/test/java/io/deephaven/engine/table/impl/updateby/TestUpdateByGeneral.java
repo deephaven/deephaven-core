@@ -149,15 +149,17 @@ public class TestUpdateByGeneral extends BaseUpdateByTest implements UpdateError
                 },
         };
 
+        final int stepSize = Math.max(5, size / 10);
+
         for (int step = 0; step < steps; step++) {
             try {
                 if (appendOnly) {
                     UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-                        generateAppends(100, result.random, result.t, result.infos);
+                        generateAppends(stepSize, result.random, result.t, result.infos);
                     });
                     validate("Table", nuggets);
                 } else {
-                    simulateShiftAwareStep(size, result.random, result.t, result.infos, nuggets);
+                    simulateShiftAwareStep(stepSize, result.random, result.t, result.infos, nuggets);
                 }
             } catch (Throwable t) {
                 System.out

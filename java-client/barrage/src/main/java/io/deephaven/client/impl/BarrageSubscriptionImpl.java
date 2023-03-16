@@ -203,9 +203,6 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
                 completedCondition = UpdateGraphProcessor.DEFAULT.exclusiveLock().newCondition();
             }
 
-            // update the viewport size for initial snapshot completion
-            resultTable.setInitialSnapshotViewportRowCount(viewport == null ? -1 : viewport.size());
-
             // Send the initial subscription:
             observer.onNext(FlightData.newBuilder()
                     .setAppMetadata(

@@ -68,7 +68,10 @@ public class TestRollingAvg extends BaseUpdateByTest {
     final int DYNAMIC_UPDATE_STEPS = 20;
 
     private String[] getFormulas(String[] columns) {
-        return Arrays.stream(columns).map(c -> c + "=avg(" + c + ")").toArray(String[]::new);
+        return Arrays.stream(columns)
+                // Force null instead of NaN when vector size == 0
+                .map(c -> String.format("%s=%s.size() == 0 ? null : avg(%s)", c, c, c))
+                .toArray(String[]::new);
     }
 
     // region Object Helper functions
@@ -76,7 +79,7 @@ public class TestRollingAvg extends BaseUpdateByTest {
     final Function<ObjectVector<BigInteger>, BigDecimal> avgBigInt = bigIntegerObjectVector -> {
         MathContext mathContextDefault = UpdateByControl.mathContextDefault();
 
-        if (bigIntegerObjectVector == null) {
+        if (bigIntegerObjectVector == null || bigIntegerObjectVector.size() == 0) {
             return null;
         }
 
@@ -102,7 +105,7 @@ public class TestRollingAvg extends BaseUpdateByTest {
     final Function<ObjectVector<BigDecimal>, BigDecimal> avgBigDec = bigDecimalObjectVector -> {
         MathContext mathContextDefault = UpdateByControl.mathContextDefault();
 
-        if (bigDecimalObjectVector == null) {
+        if (bigDecimalObjectVector == null || bigDecimalObjectVector.size() == 0) {
             return null;
         }
 

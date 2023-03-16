@@ -10,7 +10,6 @@ import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.InstrumentedTableUpdateListener;
 import io.deephaven.engine.table.impl.NotificationStepReceiver;
 import io.deephaven.engine.table.impl.SwapListener;
-import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.hash.KeyedLongObjectHashMap;
 import io.deephaven.hash.KeyedLongObjectKey;
 import io.deephaven.internal.log.LoggerFactory;
@@ -18,6 +17,7 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.backplane.grpc.ExportNotification;
 import io.deephaven.proto.backplane.grpc.ExportedTableUpdateMessage;
 import io.deephaven.proto.backplane.grpc.Ticket;
+import io.deephaven.proto.util.Exceptions;
 import io.deephaven.proto.util.ExportTicketHelper;
 import io.deephaven.server.session.SessionState;
 import io.grpc.StatusRuntimeException;
@@ -61,7 +61,7 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
      */
     public void onNext(final ExportNotification notification) {
         if (isDestroyed) {
-            throw GrpcUtil.statusRuntimeException(Code.CANCELLED, "client cancelled the stream");
+            throw Exceptions.statusRuntimeException(Code.CANCELLED, "client cancelled the stream");
         }
 
         final Ticket ticket = notification.getTicket();

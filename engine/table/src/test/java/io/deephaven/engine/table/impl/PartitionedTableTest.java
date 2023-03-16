@@ -473,8 +473,10 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
                 .captureQueryCompiler()
                 .build();
         final PartitionedTable result2 =
-                sourceTable2.update("SlowItDown=pauseHelper.pauseValue(k)").partitionBy("USym2")
-                        .transform(executionContext, t -> t.update("SlowItDown2=pauseHelper2.pauseValue(2 * k)"), true);
+                sourceTable2.update("SlowItDown=pauseHelper.pauseValue(k)").partitionBy("USym2").transform(
+                        executionContext, t -> t.withAttributes(Map.of(BaseTable.TEST_SOURCE_TABLE_ATTRIBUTE, "true"))
+                                .update("SlowItDown2=pauseHelper2.pauseValue(2 * k)"),
+                        true);
 
         // pauseHelper.pause();
         pauseHelper2.pause();
@@ -559,8 +561,10 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
                 .captureQueryLibrary()
                 .captureQueryCompiler()
                 .build();
-        final PartitionedTable result2 = sourceTable2.partitionBy("USym2")
-                .transform(executionContext, t -> t.update("SlowItDown2=pauseHelper.pauseValue(2 * k)"), true);
+        final PartitionedTable result2 = sourceTable2.partitionBy("USym2").transform(executionContext,
+                t -> t.withAttributes(Map.of(BaseTable.TEST_SOURCE_TABLE_ATTRIBUTE, "true"))
+                        .update("SlowItDown2=pauseHelper.pauseValue(2 * k)"),
+                true);
 
         final PartitionedTable joined = result.partitionedTransform(result2, (l, r) -> {
             System.out.println("Doing naturalJoin");

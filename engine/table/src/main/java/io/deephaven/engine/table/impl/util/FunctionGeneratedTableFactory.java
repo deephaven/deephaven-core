@@ -129,7 +129,10 @@ public class FunctionGeneratedTableFactory {
                 false);
     }
 
-    private class FunctionBackedTable extends QueryTable implements Runnable {
+    /**
+     * @implNote The constructor publishes {@code this} to the {@link UpdateGraphProcessor} and cannot be subclassed.
+     */
+    private final class FunctionBackedTable extends QueryTable implements Runnable {
         FunctionBackedTable(TrackingRowSet rowSet, Map<String, ColumnSource<?>> columns) {
             super(rowSet, columns);
             if (refreshIntervalMs >= 0) {

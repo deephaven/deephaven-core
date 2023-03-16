@@ -16,7 +16,7 @@ using deephaven::client::TableHandleManager;
 using deephaven::client::utility::okOrThrow;
 
 namespace {
-void mainMenu();
+void mainMenu(const TableHandleManager &manager);
 
 // demo options
 void printStaticTable(const TableHandleManager &manager);
@@ -52,10 +52,22 @@ inline OptionalAdaptor<ARROW_OPTIONAL> adaptOptional(const ARROW_OPTIONAL &optio
 }
 }  // namespace
 
-int main() {
+int main(int argc, char *argv[]) {
+  const char *server = "localhost:10000";
+  if (argc > 1) {
+    if (argc != 2 || std::strcmp("-h", argv[1]) == 0) {
+      std::cerr << "Usage: " << argv[0] << " [host:port]" << std::endl;
+      std::exit(1);
+    }
+    server = argv[1];
+  }
+
+  auto client = Client::connect(server);
+  auto manager = client.getManager();
+
   try {
     while (true) {
-      mainMenu();
+      mainMenu(manager);
     }
   } catch (const std::exception &e) {
     std::cerr << "Caught exception: " << e.what() << '\n';
@@ -63,7 +75,7 @@ int main() {
 }
 
 namespace {
-void mainMenu() {
+void mainMenu(const TableHandleManager &manager) {
   std::cout << "*** CHAPTER 1: MAIN MENU ***\n"
                "1 - printStaticTable\n"
                "2 - withArrow\n"
@@ -73,10 +85,6 @@ void mainMenu() {
                "Please select 1-4: ";
 
   auto selection = readNumber(std::cin);
-
-  const char *server = "localhost:10000";
-  auto client = Client::connect(server);
-  auto manager = client.getManager();
 
   switch (selection) {
     case 1:

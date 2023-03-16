@@ -90,6 +90,12 @@ public final class BigIntegerRollingAvgOperator extends BaseObjectUpdateByOperat
                 outputValues.set(outIdx, curVal.divide(count, mathContext));
             }
         }
+
+        @Override
+        public void reset() {
+            super.reset();
+            objectWindowValues.clear();
+        }
     }
 
     @NotNull

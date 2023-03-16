@@ -52,6 +52,14 @@ public class PyCallableWrapper {
         this.pyCallable = pyCallable;
     }
 
+    public PyObject getAttribute(String name) {
+        return this.pyCallable.getAttribute(name);
+    }
+
+    public <T> T getAttribute(String name, Class<? extends T> valueType) {
+        return this.pyCallable.getAttribute(name, valueType);
+    }
+
     public ArgumentsChunked buildArgumentsChunked(List<String> columnNames) {
         for (ChunkArgument arg : chunkArguments) {
             if (arg instanceof ColumnChunkArgument) {

@@ -21,7 +21,6 @@ import io.deephaven.engine.table.impl.util.MemoryTableLoggers;
 import io.deephaven.engine.tablelogger.QueryOperationPerformanceLogLogger;
 import io.deephaven.engine.tablelogger.QueryPerformanceLogLogger;
 import io.deephaven.engine.updategraph.DynamicNode;
-import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.hash.KeyedIntObjectHash;
 import io.deephaven.hash.KeyedIntObjectHashMap;
 import io.deephaven.hash.KeyedIntObjectKey;
@@ -31,6 +30,7 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.backplane.grpc.ExportNotification;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.flight.util.FlightExportTicketHelper;
+import io.deephaven.proto.util.Exceptions;
 import io.deephaven.proto.util.ExportTicketHelper;
 import io.deephaven.server.util.Scheduler;
 import io.deephaven.engine.context.ExecutionContext;
@@ -201,7 +201,7 @@ public class SessionState {
         }
 
         if (prevToken == null) {
-            throw GrpcUtil.statusRuntimeException(Code.UNAUTHENTICATED, "session has expired");
+            throw Exceptions.statusRuntimeException(Code.UNAUTHENTICATED, "session has expired");
         }
 
         log.debug().append(logPrefix).append("token, expires at ")
@@ -231,6 +231,13 @@ public class SessionState {
      */
     public AuthContext getAuthContext() {
         return authContext;
+    }
+
+    /**
+     * @return the execution context for this session
+     */
+    public ExecutionContext getExecutionContext() {
+        return executionContext;
     }
 
     /**
@@ -264,7 +271,7 @@ public class SessionState {
     @SuppressWarnings("unchecked")
     public <T> ExportObject<T> getExport(final int exportId) {
         if (isExpired()) {
-            throw GrpcUtil.statusRuntimeException(Code.UNAUTHENTICATED, "session has expired");
+            throw Exceptions.statusRuntimeException(Code.UNAUTHENTICATED, "session has expired");
         }
 
         final ExportObject<T> result;
@@ -274,7 +281,7 @@ public class SessionState {
             result = (ExportObject<T>) exportMap.get(exportId);
 
             if (result == null) {
-                throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
+                throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
                         "Export id " + exportId + " does not exist and cannot be used out-of-order!");
             }
         } else {
@@ -293,7 +300,7 @@ public class SessionState {
     @SuppressWarnings("unchecked")
     public <T> ExportObject<T> getExportIfExists(final int exportId) {
         if (isExpired()) {
-            throw GrpcUtil.statusRuntimeException(Code.UNAUTHENTICATED, "session has expired");
+            throw Exceptions.statusRuntimeException(Code.UNAUTHENTICATED, "session has expired");
         }
 
         return (ExportObject<T>) exportMap.get(exportId);
@@ -320,7 +327,7 @@ public class SessionState {
      */
     public <T> ExportObject<T> newServerSideExport(final T export) {
         if (isExpired()) {
-            throw GrpcUtil.statusRuntimeException(Code.UNAUTHENTICATED, "session has expired");
+            throw Exceptions.statusRuntimeException(Code.UNAUTHENTICATED, "session has expired");
         }
 
         final int exportId = SERVER_EXPORT_UPDATER.getAndDecrement(this);
@@ -365,7 +372,7 @@ public class SessionState {
     @VisibleForTesting
     public <T> ExportBuilder<T> newExport(final int exportId) {
         if (isExpired()) {
-            throw GrpcUtil.statusRuntimeException(Code.UNAUTHENTICATED, "session has expired");
+            throw Exceptions.statusRuntimeException(Code.UNAUTHENTICATED, "session has expired");
         }
         if (exportId <= 0) {
             throw new IllegalArgumentException("exportId's <= 0 are reserved for server allocation only");
@@ -380,7 +387,7 @@ public class SessionState {
      */
     public <T> ExportBuilder<T> nonExport() {
         if (isExpired()) {
-            throw GrpcUtil.statusRuntimeException(Code.UNAUTHENTICATED, "session has expired");
+            throw Exceptions.statusRuntimeException(Code.UNAUTHENTICATED, "session has expired");
         }
         return new ExportBuilder<>(NON_EXPORT_ID);
     }
@@ -401,7 +408,7 @@ public class SessionState {
             if (isExpired()) {
                 // After the session has expired, nothing new can be added to the collection, so throw an exception (and
                 // release the lock, allowing each item already in the collection to be released)
-                throw GrpcUtil.statusRuntimeException(Code.UNAUTHENTICATED, "session has expired");
+                throw Exceptions.statusRuntimeException(Code.UNAUTHENTICATED, "session has expired");
             }
             onCloseCallbacks.add(onClose);
         }
@@ -682,7 +689,7 @@ public class SessionState {
          */
         public T get() {
             if (session != null && session.isExpired()) {
-                throw GrpcUtil.statusRuntimeException(Code.UNAUTHENTICATED, "session has expired");
+                throw Exceptions.statusRuntimeException(Code.UNAUTHENTICATED, "session has expired");
             }
 
             // Note: an export may be released while still being a dependency of queued work; so let's make sure we're
@@ -1040,7 +1047,7 @@ public class SessionState {
         final ExportListener listener;
         synchronized (exportListeners) {
             if (isExpired()) {
-                throw GrpcUtil.statusRuntimeException(Code.UNAUTHENTICATED, "session has expired");
+                throw Exceptions.statusRuntimeException(Code.UNAUTHENTICATED, "session has expired");
             }
 
             listener = new ExportListener(observer);
@@ -1287,11 +1294,10 @@ public class SessionState {
                 final String dependentStr = dependentExportId == null ? ""
                         : (" (related parent export id: " + dependentExportId + ")");
                 if (cause == null) {
-                    errorHandler.onError(GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
+                    errorHandler.onError(Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
                             "Export in state " + resultState + dependentStr));
                 } else {
-                    errorHandler.onError(GrpcUtil.statusRuntimeException(
-                            Code.FAILED_PRECONDITION,
+                    errorHandler.onError(Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
                             "Details Logged w/ID '" + errorContext + "'" + dependentStr));
                 }
             }));
@@ -1376,7 +1382,7 @@ public class SessionState {
                 @Override
                 public ExportObject<?> newValue(final int key) {
                     if (isExpired()) {
-                        throw GrpcUtil.statusRuntimeException(Code.UNAUTHENTICATED, "session has expired");
+                        throw Exceptions.statusRuntimeException(Code.UNAUTHENTICATED, "session has expired");
                     }
 
                     return new ExportObject<>(SessionState.this, key);

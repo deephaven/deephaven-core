@@ -107,7 +107,7 @@ struct CancelWrapper final : SubscriptionHandle {
 
 std::shared_ptr<SubscriptionHandle> SubscribeState::invokeHelper() {
   arrow::flight::FlightCallOptions fco;
-  fco.headers.push_back(server_->makeBlessing());
+  fco.headers.push_back(server_->getAuthHeader());
   auto *client = server_->flightClient();
 
   arrow::flight::FlightDescriptor dummy;

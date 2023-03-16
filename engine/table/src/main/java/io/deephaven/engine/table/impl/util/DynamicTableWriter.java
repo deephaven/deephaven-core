@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl.util;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.WritableColumnSource;
+import io.deephaven.engine.table.Table;
 import io.deephaven.qst.column.header.ColumnHeader;
 import io.deephaven.qst.table.TableHeader;
 import io.deephaven.qst.type.Type;
@@ -34,8 +35,10 @@ import java.util.stream.Collectors;
  * <p>
  * This class is not thread safe, you must synchronize externally. However, multiple setters may safely log
  * concurrently.
+ *
+ * @implNote The constructor publishes {@code this} to the {@link UpdateGraphProcessor} and thus cannot be subclassed.
  */
-public class DynamicTableWriter implements TableWriter {
+public final class DynamicTableWriter implements TableWriter {
     private final UpdateSourceQueryTable table;
     private final WritableColumnSource[] arrayColumnSources;
 
@@ -384,8 +387,12 @@ public class DynamicTableWriter implements TableWriter {
 
     private DynamicTableWriter(final Map<String, ColumnSource<?>> sources, final Map<String, Object> constantValues,
             final int allocatedSize) {
-        this.allocatedSize = 256;
-        this.table = new UpdateSourceQueryTable(RowSetFactory.fromKeys().toTracking(), sources);
+        this.allocatedSize = allocatedSize;
+        table = new UpdateSourceQueryTable(RowSetFactory.fromKeys().toTracking(), sources);
+        table.setFlat();
+        table.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, true);
+        table.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, true);
+
         final int nCols = sources.size();;
         this.columnNames = new String[nCols];
         this.arrayColumnSources = new WritableColumnSource[nCols];

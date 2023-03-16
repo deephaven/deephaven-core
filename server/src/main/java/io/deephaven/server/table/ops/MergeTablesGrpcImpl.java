@@ -9,9 +9,9 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
-import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.MergeTablesRequest;
+import io.deephaven.proto.util.Exceptions;
 import io.deephaven.server.session.SessionState;
 import io.grpc.StatusRuntimeException;
 
@@ -37,7 +37,7 @@ public class MergeTablesGrpcImpl extends GrpcTableOperation<MergeTablesRequest> 
     @Override
     public void validateRequest(final MergeTablesRequest request) throws StatusRuntimeException {
         if (request.getSourceIdsList().isEmpty()) {
-            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Cannot merge zero source tables.");
+            throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "Cannot merge zero source tables.");
         }
     }
 

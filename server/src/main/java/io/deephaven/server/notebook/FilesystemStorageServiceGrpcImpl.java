@@ -1,3 +1,6 @@
+/**
+ * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
+ */
 package io.deephaven.server.notebook;
 
 import com.google.common.hash.HashFunction;
@@ -25,8 +28,10 @@ import io.deephaven.proto.backplane.grpc.MoveItemResponse;
 import io.deephaven.proto.backplane.grpc.SaveFileRequest;
 import io.deephaven.proto.backplane.grpc.SaveFileResponse;
 import io.deephaven.proto.backplane.grpc.StorageServiceGrpc;
+import io.deephaven.proto.util.Exceptions;
 import io.deephaven.server.session.SessionService;
 import io.grpc.stub.StreamObserver;
+import org.jetbrains.annotations.NotNull;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -104,62 +109,64 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
                 return resolved;
             }
         }
-        throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Invalid path: " + incomingPath);
+        throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "Invalid path: " + incomingPath);
     }
 
     private void requireNotRoot(Path path, String message) {
         if (path.equals(root)) {
-            throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, message);
+            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, message);
         }
     }
 
     @Override
-    public void listItems(ListItemsRequest request, StreamObserver<ListItemsResponse> responseObserver) {
-        GrpcUtil.rpcWrapper(log, responseObserver, () -> {
-            sessionService.getCurrentSession();
+    public void listItems(
+            @NotNull final ListItemsRequest request,
+            @NotNull final StreamObserver<ListItemsResponse> responseObserver) {
+        sessionService.getCurrentSession();
 
-            ListItemsResponse.Builder builder = ListItemsResponse.newBuilder();
-            PathMatcher matcher =
-                    request.hasFilterGlob() ? createPathFilter(request.getFilterGlob()) : ignore -> true;
-            Path dir = resolveOrThrow(request.getPath());
-            try (Stream<Path> list = Files.list(dir)) {
-                for (Path p : (Iterable<Path>) list::iterator) {
-                    if (!matcher.matches(dir.relativize(p))) {
-                        continue;
-                    }
-                    BasicFileAttributes attrs = Files.readAttributes(p, BasicFileAttributes.class);
-                    boolean isDirectory = attrs.isDirectory();
-                    ItemInfo.Builder info = ItemInfo.newBuilder()
-                            .setPath("/" + root.relativize(p));
-                    if (isDirectory) {
-                        info.setType(ItemType.DIRECTORY);
-                    } else {
-                        info.setSize(attrs.size())
-                                .setEtag(hash(p))// Note, there is a potential race here between the size and the hash
-                                .setType(ItemType.FILE);
-                    }
-                    builder.addItems(info.build());
+        ListItemsResponse.Builder builder = ListItemsResponse.newBuilder();
+        PathMatcher matcher =
+                request.hasFilterGlob() ? createPathFilter(request.getFilterGlob()) : ignore -> true;
+        Path dir = resolveOrThrow(request.getPath());
+        try (Stream<Path> list = Files.list(dir)) {
+            for (Path p : (Iterable<Path>) list::iterator) {
+                if (!matcher.matches(dir.relativize(p))) {
+                    continue;
                 }
-            } catch (NoSuchFileException noSuchFileException) {
-                throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "Directory does not exist");
+                BasicFileAttributes attrs = Files.readAttributes(p, BasicFileAttributes.class);
+                boolean isDirectory = attrs.isDirectory();
+                ItemInfo.Builder info = ItemInfo.newBuilder()
+                        .setPath("/" + root.relativize(p));
+                if (isDirectory) {
+                    info.setType(ItemType.DIRECTORY);
+                } else {
+                    info.setSize(attrs.size())
+                            .setEtag(hash(p))// Note, there is a potential race here between the size and the hash
+                            .setType(ItemType.FILE);
+                }
+                builder.addItems(info.build());
             }
-            responseObserver.onNext(builder.build());
-            responseObserver.onCompleted();
-        });
+        } catch (NoSuchFileException noSuchFileException) {
+            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, "Directory does not exist");
+        } catch (IOException ioe) {
+            throw GrpcUtil.securelyWrapError(log, ioe);
+        }
+        responseObserver.onNext(builder.build());
+        responseObserver.onCompleted();
     }
 
     private static PathMatcher createPathFilter(String filterGlob) {
         if (filterGlob.contains("**")) {
-            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "Bad glob, only single `*`s are supported");
+            throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "Bad glob, only single `*`s are supported");
         }
         if (filterGlob.contains("/")) {
-            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+            throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
                     "Bad glob, only the same directory can be checked");
         }
         try {
             return FileSystems.getDefault().getPathMatcher("glob:" + filterGlob);
         } catch (PatternSyntaxException e) {
-            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+            throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
                     "Bad glob, can't parse expression: " + e.getMessage());
         }
     }
@@ -173,123 +180,135 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
     }
 
     @Override
-    public void fetchFile(FetchFileRequest request, StreamObserver<FetchFileResponse> responseObserver) {
-        GrpcUtil.rpcWrapper(log, responseObserver, () -> {
-            sessionService.getCurrentSession();
+    public void fetchFile(
+            @NotNull final FetchFileRequest request,
+            @NotNull final StreamObserver<FetchFileResponse> responseObserver) {
+        sessionService.getCurrentSession();
 
-            final byte[] bytes;
-            final String etag;
-            try {
-                bytes = Files.readAllBytes(resolveOrThrow(request.getPath()));
-                // Hash those bytes, as long as we are reading them to send, since we want the hash to be consistent
-                // with the contents we send. This avoids a race condition, at the cost of requiring that the server
-                // always read the full bytes
-                etag = ByteSource.wrap(bytes).hash(HASH_FUNCTION).toString();
-            } catch (NoSuchFileException noSuchFileException) {
-                throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "File does not exist");
-            }
-            final FetchFileResponse.Builder response = FetchFileResponse.newBuilder();
-            response.setEtag(etag);
-            if (!request.hasEtag() || !etag.equals(request.getEtag())) {
-                response.setContents(ByteString.copyFrom(bytes));
-            }
-            responseObserver.onNext(response.build());
-            responseObserver.onCompleted();
-        });
+        final byte[] bytes;
+        final String etag;
+        try {
+            bytes = Files.readAllBytes(resolveOrThrow(request.getPath()));
+            // Hash those bytes, as long as we are reading them to send, since we want the hash to be consistent
+            // with the contents we send. This avoids a race condition, at the cost of requiring that the server
+            // always read the full bytes
+            etag = ByteSource.wrap(bytes).hash(HASH_FUNCTION).toString();
+        } catch (NoSuchFileException noSuchFileException) {
+            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, "File does not exist");
+        } catch (IOException ioe) {
+            throw GrpcUtil.securelyWrapError(log, ioe);
+        }
+
+        final FetchFileResponse.Builder response = FetchFileResponse.newBuilder();
+        response.setEtag(etag);
+        if (!request.hasEtag() || !etag.equals(request.getEtag())) {
+            response.setContents(ByteString.copyFrom(bytes));
+        }
+        responseObserver.onNext(response.build());
+        responseObserver.onCompleted();
     }
 
     @Override
-    public void saveFile(SaveFileRequest request, StreamObserver<SaveFileResponse> responseObserver) {
-        GrpcUtil.rpcWrapper(log, responseObserver, () -> {
-            sessionService.getCurrentSession();
+    public void saveFile(
+            @NotNull final SaveFileRequest request,
+            @NotNull final StreamObserver<SaveFileResponse> responseObserver) {
+        sessionService.getCurrentSession();
 
-            Path path = resolveOrThrow(request.getPath());
-            requireNotRoot(path, "Can't overwrite the root directory");
-            StandardOpenOption option =
-                    request.getAllowOverwrite() ? StandardOpenOption.TRUNCATE_EXISTING : StandardOpenOption.CREATE_NEW;
+        Path path = resolveOrThrow(request.getPath());
+        requireNotRoot(path, "Can't overwrite the root directory");
+        StandardOpenOption option =
+                request.getAllowOverwrite() ? StandardOpenOption.TRUNCATE_EXISTING : StandardOpenOption.CREATE_NEW;
 
-            byte[] bytes = request.getContents().toByteArray();
-            String etag = ByteSource.wrap(bytes).hash(HASH_FUNCTION).toString();
-            try {
-                Files.write(path, bytes, StandardOpenOption.CREATE, option);
-            } catch (FileAlreadyExistsException alreadyExistsException) {
-                throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "File already exists");
-            } catch (NoSuchFileException noSuchFileException) {
-                throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "Directory does not exist");
-            }
-            responseObserver.onNext(SaveFileResponse.newBuilder().setEtag(etag).build());
-            responseObserver.onCompleted();
-        });
+        String etag;
+        byte[] bytes = request.getContents().toByteArray();
+        try {
+            etag = ByteSource.wrap(bytes).hash(HASH_FUNCTION).toString();
+            Files.write(path, bytes, StandardOpenOption.CREATE, option);
+        } catch (FileAlreadyExistsException alreadyExistsException) {
+            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, "File already exists");
+        } catch (NoSuchFileException noSuchFileException) {
+            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, "Directory does not exist");
+        } catch (IOException ioe) {
+            throw GrpcUtil.securelyWrapError(log, ioe);
+        }
+
+        responseObserver.onNext(SaveFileResponse.newBuilder().setEtag(etag).build());
+        responseObserver.onCompleted();
     }
 
     @Override
-    public void moveItem(MoveItemRequest request, StreamObserver<MoveItemResponse> responseObserver) {
-        GrpcUtil.rpcWrapper(log, responseObserver, () -> {
-            sessionService.getCurrentSession();
+    public void moveItem(
+            @NotNull final MoveItemRequest request,
+            @NotNull final StreamObserver<MoveItemResponse> responseObserver) {
+        sessionService.getCurrentSession();
 
-            Path source = resolveOrThrow(request.getOldPath());
-            Path target = resolveOrThrow(request.getNewPath());
-            requireNotRoot(target, "Can't overwrite the root directory");
+        Path source = resolveOrThrow(request.getOldPath());
+        Path target = resolveOrThrow(request.getNewPath());
+        requireNotRoot(target, "Can't overwrite the root directory");
 
-            StandardCopyOption[] options =
-                    request.getAllowOverwrite() ? new StandardCopyOption[] {StandardCopyOption.REPLACE_EXISTING}
-                            : new StandardCopyOption[0];
+        StandardCopyOption[] options =
+                request.getAllowOverwrite() ? new StandardCopyOption[] {StandardCopyOption.REPLACE_EXISTING}
+                        : new StandardCopyOption[0];
 
-            try {
-                Files.move(source, target, options);
-            } catch (NoSuchFileException noSuchFileException) {
-                throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "File does not exist, cannot rename");
-            } catch (FileAlreadyExistsException alreadyExistsException) {
-                throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
-                        "File already exists, cannot rename to replace");
-            } catch (DirectoryNotEmptyException directoryNotEmptyException) {
-                throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "Cannot replace non-empty directory");
-            }
-            responseObserver.onNext(MoveItemResponse.getDefaultInstance());
-            responseObserver.onCompleted();
-        });
+        try {
+            Files.move(source, target, options);
+        } catch (NoSuchFileException noSuchFileException) {
+            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, "File does not exist, cannot rename");
+        } catch (FileAlreadyExistsException alreadyExistsException) {
+            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
+                    "File already exists, cannot rename to replace");
+        } catch (DirectoryNotEmptyException directoryNotEmptyException) {
+            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, "Cannot replace non-empty directory");
+        } catch (IOException ioe) {
+            throw GrpcUtil.securelyWrapError(log, ioe);
+        }
+        responseObserver.onNext(MoveItemResponse.getDefaultInstance());
+        responseObserver.onCompleted();
     }
 
     @Override
-    public void createDirectory(CreateDirectoryRequest request,
-            StreamObserver<CreateDirectoryResponse> responseObserver) {
-        GrpcUtil.rpcWrapper(log, responseObserver, () -> {
-            sessionService.getCurrentSession();
+    public void createDirectory(
+            @NotNull final CreateDirectoryRequest request,
+            @NotNull final StreamObserver<CreateDirectoryResponse> responseObserver) {
+        sessionService.getCurrentSession();
 
-            Path dir = resolveOrThrow(request.getPath());
-            requireNotRoot(dir, "Can't overwrite the root directory");
+        Path dir = resolveOrThrow(request.getPath());
+        requireNotRoot(dir, "Can't overwrite the root directory");
 
-            try {
-                Files.createDirectory(dir);
-            } catch (FileAlreadyExistsException fileAlreadyExistsException) {
-                throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
-                        "Something already exists with that name");
-            } catch (NoSuchFileException noSuchFileException) {
-                throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
-                        "Can't create directory, parent directory doesn't exist");
-            }
-            responseObserver.onNext(CreateDirectoryResponse.getDefaultInstance());
-            responseObserver.onCompleted();
-        });
+        try {
+            Files.createDirectory(dir);
+        } catch (FileAlreadyExistsException fileAlreadyExistsException) {
+            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
+                    "Something already exists with that name");
+        } catch (NoSuchFileException noSuchFileException) {
+            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
+                    "Can't create directory, parent directory doesn't exist");
+        } catch (IOException ioe) {
+            throw GrpcUtil.securelyWrapError(log, ioe);
+        }
+        responseObserver.onNext(CreateDirectoryResponse.getDefaultInstance());
+        responseObserver.onCompleted();
     }
 
     @Override
-    public void deleteItem(DeleteItemRequest request, StreamObserver<DeleteItemResponse> responseObserver) {
-        GrpcUtil.rpcWrapper(log, responseObserver, () -> {
-            sessionService.getCurrentSession();
+    public void deleteItem(
+            @NotNull final DeleteItemRequest request,
+            @NotNull final StreamObserver<DeleteItemResponse> responseObserver) {
+        sessionService.getCurrentSession();
 
-            Path path = resolveOrThrow(request.getPath());
-            requireNotRoot(path, "Can't delete the root directory");
+        Path path = resolveOrThrow(request.getPath());
+        requireNotRoot(path, "Can't delete the root directory");
 
-            try {
-                Files.delete(path);
-            } catch (NoSuchFileException noSuchFileException) {
-                throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "Cannot delete, file does not exists");
-            } catch (DirectoryNotEmptyException directoryNotEmptyException) {
-                throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "Cannot delete non-empty directory");
-            }
-            responseObserver.onNext(DeleteItemResponse.getDefaultInstance());
-            responseObserver.onCompleted();
-        });
+        try {
+            Files.delete(path);
+        } catch (NoSuchFileException noSuchFileException) {
+            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, "Cannot delete, file does not exists");
+        } catch (DirectoryNotEmptyException directoryNotEmptyException) {
+            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, "Cannot delete non-empty directory");
+        } catch (IOException ioe) {
+            throw GrpcUtil.securelyWrapError(log, ioe);
+        }
+        responseObserver.onNext(DeleteItemResponse.getDefaultInstance());
+        responseObserver.onCompleted();
     }
 }

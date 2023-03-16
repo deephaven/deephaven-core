@@ -123,6 +123,8 @@ public interface Table extends
     String FILTERABLE_COLUMNS_ATTRIBUTE = "FilterableColumns";
     String TOTALS_TABLE_ATTRIBUTE = "TotalsTable";
     String ADD_ONLY_TABLE_ATTRIBUTE = "AddOnly";
+    String APPEND_ONLY_TABLE_ATTRIBUTE = "AppendOnly";
+    String TEST_SOURCE_TABLE_ATTRIBUTE = "TestSource";
     /**
      * <p>
      * If this attribute is present with value {@code true}, this Table is a "stream table".
@@ -302,12 +304,6 @@ public interface Table extends
 
     @ConcurrentMethod
     Table updateView(Selectable... newColumns);
-
-    @ConcurrentMethod
-    Table dropColumns(Collection<String> columnNames);
-
-    @ConcurrentMethod
-    Table dropColumns(String... columnNames);
 
     @ConcurrentMethod
     Table dropColumnFormats();

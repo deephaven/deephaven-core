@@ -9,7 +9,6 @@ import io.deephaven.api.updateby.spec.*;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.TableDefaults;
 import io.deephaven.engine.table.impl.updateby.ema.*;
 import io.deephaven.engine.table.impl.updateby.fill.*;
 import io.deephaven.engine.table.impl.updateby.minmax.*;
@@ -22,7 +21,6 @@ import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.time.DateTime;
-import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -39,14 +37,14 @@ import static io.deephaven.util.QueryConstants.NULL_BYTE;
  * {@link UpdateBy} can use to produce a result.
  */
 public class UpdateByOperatorFactory {
-    private final TableDefaults source;
+    private final Table source;
     private final MatchPair[] groupByColumns;
     @Nullable
     private final WritableRowRedirection rowRedirection;
     @NotNull
     private final UpdateByControl control;
 
-    public UpdateByOperatorFactory(@NotNull final TableDefaults source,
+    public UpdateByOperatorFactory(@NotNull final Table source,
             @NotNull final MatchPair[] groupByColumns,
             @Nullable final WritableRowRedirection rowRedirection,
             @NotNull final UpdateByControl control) {
@@ -57,17 +55,34 @@ public class UpdateByOperatorFactory {
     }
 
     /**
+     * Create a collection of operator output column names from a list of {@link UpdateByOperation operator specs}.
+     *
+     * @param specs the collection of {@link UpdateByOperation specs} to create
+     * @return a collection of {@link String column names}
+     */
+    final Collection<String> getOutputColumns(@NotNull final Collection<? extends UpdateByOperation> specs) {
+        final OutputColumnVisitor v = new OutputColumnVisitor();
+        specs.forEach(s -> s.walk(v));
+        return v.outputColumns;
+    }
+
+    /**
      * Create a collection of operators from a list of {@link UpdateByOperation operator specs}. This operation assumes
      * that the {@link UpdateByOperation specs} are window-compatible, i.e. will share cumulative vs. rolling properties
      * and window parameters.
      *
      * @param specs the collection of {@link UpdateByOperation specs} to create
-     * @return a organized collection of {@link List<ColumnUpdateOperation> operation lists} where the operator specs
-     *         can share resources within the collection
+     * @return a organized collection of {@link UpdateByOperator operations} where each operator can share resources
+     *         within the collection
      */
     final Collection<UpdateByOperator> getOperators(@NotNull final Collection<? extends UpdateByOperation> specs) {
         final OperationVisitor v = new OperationVisitor();
         specs.forEach(s -> s.walk(v));
+
+        // Do we have a combined rolling group operator to create?
+        if (v.rollingGroupSpec != null) {
+            v.ops.add(v.makeRollingGroupOperator(v.rollingGroupPairs, source, v.rollingGroupSpec));
+        }
         return v.ops;
     }
 
@@ -156,7 +171,24 @@ public class UpdateByOperatorFactory {
         }
     }
 
+    private class OutputColumnVisitor implements UpdateByOperation.Visitor<Void> {
+        final List<String> outputColumns = new ArrayList<>();
+
+        @Override
+        public Void visit(@NotNull final ColumnUpdateOperation clause) {
+            final UpdateBySpec spec = clause.spec();
+            final MatchPair[] pairs =
+                    createColumnsToAddIfMissing(source, parseMatchPairs(clause.columns()), spec, groupByColumns);
+            for (MatchPair pair : pairs) {
+                outputColumns.add(pair.leftColumn);
+            }
+            return null;
+        }
+    }
+
     private static class WindowVisitor implements UpdateByOperation.Visitor<Void> {
+        boolean created = false;
+
         // We will divide the operators into similar windows for efficient processing.
         final KeyedObjectHashMap<ColumnUpdateOperation, List<ColumnUpdateOperation>> windowMap =
                 new KeyedObjectHashMap<>(new KeyedObjectKey<>() {
@@ -220,16 +252,15 @@ public class UpdateByOperatorFactory {
 
         @Override
         public Void visit(@NotNull final ColumnUpdateOperation clause) {
-
-            final MutableBoolean created = new MutableBoolean(false);
+            created = false;
             final List<ColumnUpdateOperation> opList = windowMap.putIfAbsent(clause,
                     (newOpListOp) -> {
                         final List<ColumnUpdateOperation> newOpList = new ArrayList<>();
                         newOpList.add(clause);
-                        created.setTrue();
+                        created = true;
                         return newOpList;
                     });
-            if (!created.booleanValue()) {
+            if (!created) {
                 opList.add(clause);
             }
             return null;
@@ -239,6 +270,10 @@ public class UpdateByOperatorFactory {
     private class OperationVisitor implements UpdateBySpec.Visitor<Void>, UpdateByOperation.Visitor<Void> {
         private final List<UpdateByOperator> ops = new ArrayList<>();
         private MatchPair[] pairs;
+
+        // Storage for delayed RollingGroup creation.
+        RollingGroupSpec rollingGroupSpec;
+        MatchPair[] rollingGroupPairs;
 
         /**
          * Check if the supplied type is one of the supported time types.
@@ -322,8 +357,18 @@ public class UpdateByOperatorFactory {
 
         @Override
         public Void visit(@NotNull final RollingGroupSpec rg) {
-            // Only one group operator needed for any number of RollingGroup that share a window
-            ops.add(makeRollingGroupOperator(pairs, source, rg));
+            // Delay the creation of the operator until we combine all the pairs together.
+            if (rollingGroupSpec == null) {
+                rollingGroupSpec = rg;
+                rollingGroupPairs = pairs;
+                return null;
+            }
+
+            // The specs are identical and we can accumulate the pairs. We are not testing for uniqueness because
+            // subsequent checks will catch collisions.
+            final MatchPair[] newPairs = Arrays.copyOf(rollingGroupPairs, rollingGroupPairs.length + pairs.length);
+            System.arraycopy(pairs, 0, newPairs, rollingGroupPairs.length, pairs.length);
+            rollingGroupPairs = newPairs;
             return null;
         }
 
@@ -342,7 +387,7 @@ public class UpdateByOperatorFactory {
         }
 
         private UpdateByOperator makeEmaOperator(@NotNull final MatchPair pair,
-                @NotNull final TableDefaults source,
+                @NotNull final Table source,
                 @NotNull final EmaSpec ema) {
             // noinspection rawtypes
             final ColumnSource columnSource = source.getColumnSource(pair.rightColumn);
@@ -388,7 +433,7 @@ public class UpdateByOperatorFactory {
             throw new IllegalArgumentException("Can not perform EMA on type " + csType);
         }
 
-        private UpdateByOperator makeCumProdOperator(MatchPair fc, TableDefaults source) {
+        private UpdateByOperator makeCumProdOperator(MatchPair fc, Table source) {
             final Class<?> csType = source.getColumnSource(fc.rightColumn).getType();
             if (csType == byte.class || csType == Byte.class) {
                 return new ByteCumProdOperator(fc, rowRedirection, NULL_BYTE);
@@ -411,7 +456,7 @@ public class UpdateByOperatorFactory {
             throw new IllegalArgumentException("Can not perform Cumulative Min/Max on type " + csType);
         }
 
-        private UpdateByOperator makeCumMinMaxOperator(MatchPair fc, TableDefaults source, boolean isMax) {
+        private UpdateByOperator makeCumMinMaxOperator(MatchPair fc, Table source, boolean isMax) {
             final ColumnSource<?> columnSource = source.getColumnSource(fc.rightColumn);
             final Class<?> csType = columnSource.getType();
             if (csType == byte.class || csType == Byte.class) {
@@ -434,7 +479,7 @@ public class UpdateByOperatorFactory {
             throw new IllegalArgumentException("Can not perform Cumulative Min/Max on type " + csType);
         }
 
-        private UpdateByOperator makeCumSumOperator(MatchPair fc, TableDefaults source) {
+        private UpdateByOperator makeCumSumOperator(MatchPair fc, Table source) {
             final Class<?> csType = source.getColumnSource(fc.rightColumn).getType();
             if (csType == Boolean.class || csType == boolean.class) {
                 return new ByteCumSumOperator(fc, rowRedirection, NULL_BOOLEAN_AS_BYTE);
@@ -459,7 +504,7 @@ public class UpdateByOperatorFactory {
             throw new IllegalArgumentException("Can not perform Cumulative Sum on type " + csType);
         }
 
-        private UpdateByOperator makeForwardFillOperator(MatchPair fc, TableDefaults source) {
+        private UpdateByOperator makeForwardFillOperator(MatchPair fc, Table source) {
             final ColumnSource<?> columnSource = source.getColumnSource(fc.rightColumn);
             final Class<?> csType = columnSource.getType();
             if (csType == char.class || csType == Character.class) {
@@ -484,7 +529,7 @@ public class UpdateByOperatorFactory {
         }
 
         private UpdateByOperator makeRollingSumOperator(@NotNull final MatchPair pair,
-                @NotNull final TableDefaults source,
+                @NotNull final Table source,
                 @NotNull final RollingSumSpec rs) {
             // noinspection rawtypes
             final ColumnSource columnSource = source.getColumnSource(pair.rightColumn);
@@ -542,7 +587,7 @@ public class UpdateByOperatorFactory {
         }
 
         private UpdateByOperator makeRollingGroupOperator(@NotNull final MatchPair[] pairs,
-                @NotNull final TableDefaults source,
+                @NotNull final Table source,
                 @NotNull final RollingGroupSpec rg) {
 
             // noinspection rawtypes
@@ -573,7 +618,7 @@ public class UpdateByOperatorFactory {
         }
 
         private UpdateByOperator makeRollingAvgOperator(@NotNull final MatchPair pair,
-                @NotNull final TableDefaults source,
+                @NotNull final Table source,
                 @NotNull final RollingAvgSpec rs) {
             // noinspection rawtypes
             final ColumnSource columnSource = source.getColumnSource(pair.rightColumn);
