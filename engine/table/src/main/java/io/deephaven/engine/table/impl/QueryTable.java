@@ -27,6 +27,7 @@ import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.liveness.LivenessScope;
+import io.deephaven.engine.primitive.iterator.*;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
@@ -47,6 +48,7 @@ import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.table.impl.util.OperationInitializationPoolJobScheduler;
 import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzerWrapper;
 import io.deephaven.engine.table.impl.util.FieldUtils;
+import io.deephaven.engine.table.iterators.*;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.util.*;
 import io.deephaven.engine.util.systemicmarking.SystemicObject;
@@ -361,6 +363,55 @@ public class QueryTable extends BaseTable<QueryTable> {
         return FieldUtils.ensureField(this, INDEXED_DATA_COLUMNS_UPDATER, EMPTY_INDEXED_DATA_COLUMNS,
                 ConcurrentHashMap::new);
     }
+
+    // region Column Iterators
+
+    @Override
+    public <TYPE> CloseableIterator<TYPE> columnIterator(@NotNull final String columnName) {
+        return ColumnIterator.make(getColumnSource(columnName), getRowSet());
+    }
+
+    @Override
+    public CloseablePrimitiveIteratorOfChar characterColumnIterator(@NotNull final String columnName) {
+        return new CharacterColumnIterator(this, columnName);
+    }
+
+    @Override
+    public CloseablePrimitiveIteratorOfByte byteColumnIterator(@NotNull final String columnName) {
+        return new ByteColumnIterator(this, columnName);
+    }
+
+    @Override
+    public CloseablePrimitiveIteratorOfShort shortColumnIterator(@NotNull final String columnName) {
+        return new ShortColumnIterator(this, columnName);
+    }
+
+    @Override
+    public CloseablePrimitiveIteratorOfInt integerColumnIterator(@NotNull final String columnName) {
+        return new IntegerColumnIterator(this, columnName);
+    }
+
+    @Override
+    public CloseablePrimitiveIteratorOfLong longColumnIterator(@NotNull final String columnName) {
+        return new LongColumnIterator(this, columnName);
+    }
+
+    @Override
+    public CloseablePrimitiveIteratorOfFloat floatColumnIterator(@NotNull final String columnName) {
+        return new FloatColumnIterator(this, columnName);
+    }
+
+    @Override
+    public CloseablePrimitiveIteratorOfDouble doubleColumnIterator(@NotNull final String columnName) {
+        return new DoubleColumnIterator(this, columnName);
+    }
+
+    @Override
+    public <DATA_TYPE> CloseableIterator<DATA_TYPE> objectColumnIterator(@NotNull final String columnName) {
+        return new ObjectColumnIterator<>(this, columnName);
+    }
+
+    // endregion Column Iterators
 
     /**
      * Producers of tables should use the modified column set embedded within the table for their result.
@@ -3338,13 +3389,23 @@ public class QueryTable extends BaseTable<QueryTable> {
         }
     }
 
+    private  <R> R applyInternal(@NotNull final Function<Table, R> function) {
+        final QueryPerformanceNugget nugget =
+                QueryPerformanceRecorder.getInstance().getNugget("apply(" + function + ")");
+        try {
+            return function.apply(this);
+        } finally {
+            nugget.done();
+        }
+    }
+
     @Override
-    public <R> R apply(Function<Table, R> function) {
+    public <R> R apply(@NotNull final Function<Table, R> function) {
         if (function instanceof MemoizedOperationKey.Provider) {
-            return memoizeResult(((MemoizedOperationKey.Provider) function).getMemoKey(), () -> super.apply(function));
+            return memoizeResult(((MemoizedOperationKey.Provider) function).getMemoKey(), () -> applyInternal(function));
         }
 
-        return super.apply(function);
+        return applyInternal(function);
     }
 
     public Table wouldMatch(WouldMatchPair... matchers) {
