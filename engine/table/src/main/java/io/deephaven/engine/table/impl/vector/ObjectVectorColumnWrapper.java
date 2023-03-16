@@ -6,7 +6,12 @@ package io.deephaven.engine.table.impl.vector;
 import io.deephaven.base.ClampUtil;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
+import io.deephaven.chunk.ResettableWritableObjectChunk;
+import io.deephaven.chunk.WritableObjectChunk;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.iterators.ObjectColumnIterator;
 import io.deephaven.vector.ObjectSubVector;
 import io.deephaven.vector.ObjectVector;
@@ -83,6 +88,11 @@ public class ObjectVectorColumnWrapper<T> extends ObjectVector.Indirect<T> {
         return new ObjectSubVector<>(this, positions);
     }
 
+    @Override
+    public T[] toArray() {
+        return toArray(false, Long.MAX_VALUE);
+    }
+
     public T[] toArray(final boolean shouldBeNullIfOutOfBounds, final long maxSize) {
         if (shouldBeNullIfOutOfBounds && (startPadding > 0 || endPadding > 0)) {
             return null;
@@ -103,10 +113,27 @@ public class ObjectVectorColumnWrapper<T> extends ObjectVector.Indirect<T> {
 
         final int rowSetFillAmount = (int) Math.min(rowSet.size(), size - nextFillIndex);
         if (rowSetFillAmount > 0) {
-            try (final ObjectColumnIterator<T> iterator = new ObjectColumnIterator<>(columnSource, rowSet,
-                    DEFAULT_CHUNK_SIZE, rowSet.firstRowKey(), rowSetFillAmount)) {
-                for (int ri = 0; ri < rowSetFillAmount; ++ri) {
-                    result[nextFillIndex++] = iterator.next();
+            final int contextSize = Math.min(DEFAULT_CHUNK_SIZE, rowSetFillAmount);
+            if (contextSize == rowSetFillAmount) {
+                try (final ChunkSource.FillContext fillContext = columnSource.makeFillContext(contextSize)) {
+                    columnSource.fillChunk(fillContext,
+                            WritableObjectChunk.writableChunkWrap(result, nextFillIndex, rowSetFillAmount), rowSet);
+                    nextFillIndex += rowSetFillAmount;
+                }
+            } else {
+                // @formatter:off
+                try (final ChunkSource.FillContext fillContext = columnSource.makeFillContext(contextSize);
+                     final RowSequence.Iterator rowsIterator = rowSet.getRowSequenceIterator();
+                     final ResettableWritableObjectChunk<T, Values> chunk =
+                             ResettableWritableObjectChunk.makeResettableChunk()) {
+                    // @formatter:on
+                    while (rowsIterator.hasMore()) {
+                        final int maxFillSize = Math.min(contextSize, size - nextFillIndex);
+                        final RowSequence chunkRows = rowsIterator.getNextRowSequenceWithLength(maxFillSize);
+                        columnSource.fillChunk(fillContext,
+                                chunk.resetFromTypedArray(result, nextFillIndex, chunkRows.intSize()), chunkRows);
+                        nextFillIndex += chunkRows.intSize();
+                    }
                 }
             }
         }

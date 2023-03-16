@@ -11,8 +11,13 @@ package io.deephaven.engine.table.impl.vector;
 import io.deephaven.base.ClampUtil;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
+import io.deephaven.chunk.ResettableWritableDoubleChunk;
+import io.deephaven.chunk.WritableDoubleChunk;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfDouble;
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.iterators.DoubleColumnIterator;
 import io.deephaven.vector.DoubleSubVector;
@@ -89,6 +94,11 @@ public class DoubleVectorColumnWrapper extends DoubleVector.Indirect {
         return new DoubleSubVector(this, positions);
     }
 
+    @Override
+    public double[] toArray() {
+        return toArray(false, Integer.MAX_VALUE);
+    }
+
     public double[] toArray(final boolean shouldBeNullIfOutOfBounds, final int maxSize) {
         if (shouldBeNullIfOutOfBounds && (startPadding > 0 || endPadding > 0)) {
             return null;
@@ -108,10 +118,27 @@ public class DoubleVectorColumnWrapper extends DoubleVector.Indirect {
 
         final int rowSetFillAmount = (int) Math.min(rowSet.size(), size - nextFillIndex);
         if (rowSetFillAmount > 0) {
-            try (final DoubleColumnIterator iterator = new DoubleColumnIterator(columnSource, rowSet,
-                    DEFAULT_CHUNK_SIZE, rowSet.firstRowKey(), rowSetFillAmount)) {
-                for (int ri = 0; ri < rowSetFillAmount; ++ri) {
-                    result[nextFillIndex++] = iterator.nextDouble();
+            final int contextSize = Math.min(DEFAULT_CHUNK_SIZE, rowSetFillAmount);
+            if (contextSize == rowSetFillAmount) {
+                try (final ChunkSource.FillContext fillContext = columnSource.makeFillContext(contextSize)) {
+                    columnSource.fillChunk(fillContext,
+                            WritableDoubleChunk.writableChunkWrap(result, nextFillIndex, rowSetFillAmount), rowSet);
+                    nextFillIndex += rowSetFillAmount;
+                }
+            } else {
+                // @formatter:off
+                try (final ChunkSource.FillContext fillContext = columnSource.makeFillContext(contextSize);
+                     final RowSequence.Iterator rowsIterator = rowSet.getRowSequenceIterator();
+                     final ResettableWritableDoubleChunk<Values> chunk =
+                             ResettableWritableDoubleChunk.makeResettableChunk()) {
+                    // @formatter:on
+                    while (rowsIterator.hasMore()) {
+                        final int maxFillSize = Math.min(contextSize, size - nextFillIndex);
+                        final RowSequence chunkRows = rowsIterator.getNextRowSequenceWithLength(maxFillSize);
+                        columnSource.fillChunk(fillContext,
+                                chunk.resetFromTypedArray(result, nextFillIndex, chunkRows.intSize()), chunkRows);
+                        nextFillIndex += chunkRows.intSize();
+                    }
                 }
             }
         }
