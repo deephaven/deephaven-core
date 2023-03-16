@@ -55,7 +55,7 @@ jobs:
           job-id: spotless-formatting
           arguments: spotlessJavaApply
           gradle-version: wrapper
-      - name: suggester / shellcheck
+      - name: suggester / spotless
         uses: reviewdog/action-suggester@v1
         if: failure()
         with:
