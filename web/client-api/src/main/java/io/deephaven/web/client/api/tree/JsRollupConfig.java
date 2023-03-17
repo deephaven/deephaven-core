@@ -29,6 +29,7 @@ import io.deephaven.web.client.api.tree.enums.JsAggregationOperation;
 import io.deephaven.web.client.fu.JsLog;
 import jsinterop.annotations.JsConstructor;
 import jsinterop.annotations.JsIgnore;
+import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsType;
 import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
@@ -50,6 +51,7 @@ public class JsRollupConfig {
             Js.cast(JsObject.create(null));
     public boolean includeConstituents = false;
     // TODO optional
+    @JsNullable
     public boolean includeOriginalColumns = false;
     public boolean includeDescriptions = true;
 

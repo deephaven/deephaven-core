@@ -18,6 +18,10 @@ public class LoginCredentials {
         return loginCredentials;
     }
 
+    private String username;
+    private String token;
+    private String type;
+
     @JsConstructor
     public LoginCredentials() {}
 
@@ -34,8 +38,6 @@ public class LoginCredentials {
             type = source.getAsAny("type").asString();
         }
     }
-
-    private String username, token, type;
 
     @JsProperty
     @JsNullable

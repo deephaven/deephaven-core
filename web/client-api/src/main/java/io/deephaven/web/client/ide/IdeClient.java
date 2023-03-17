@@ -19,7 +19,6 @@ public class IdeClient {
         return IdeClient.getExistingSession(websocketUrl, authToken, serviceId, language);
     }
 
-    // TODO missing?
     @Deprecated
     public static CancellablePromise<IdeSession> getExistingSession(String websocketUrl, String authToken,
             String serviceId, String language) {
