@@ -34,24 +34,24 @@ public class TestRollingWAvg extends BaseUpdateByTest {
      * are performed on BigInteger/BigDecimal columns as well.
      */
     final String[] primitiveColumns = new String[] {
-            // "byteCol",
+            "byteCol",
             "shortCol",
-            // "intCol",
-            // "longCol",
-            // "floatCol",
-            // "doubleCol",
+            "intCol",
+            "longCol",
+            "floatCol",
+            "doubleCol",
     };
 
     /**
      * These are used in the ticking table evaluations where we verify dynamic vs static tables.
      */
     final String[] columns = new String[] {
-            // "byteCol",
+            "byteCol",
             "shortCol",
-            // "intCol",
-            // "longCol",
-            // "floatCol",
-            // "doubleCol",
+            "intCol",
+            "longCol",
+            "floatCol",
+            "doubleCol",
             // "bigIntCol",
             // "bigDecimalCol",
     };
