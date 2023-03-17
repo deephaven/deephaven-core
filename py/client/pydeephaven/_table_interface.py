@@ -578,10 +578,10 @@ class TableInterface(ABC):
         return self.table_op_handler(table_op)
 
     def snapshot(self):
-        """ Take a snapshot of the table and return it as a static table.
+        """Returns a static snapshot table.
 
         Returns:
-            a Table object
+            a new Table
 
         Raises:
             DHError
@@ -591,7 +591,7 @@ class TableInterface(ABC):
 
     def snapshot_when(self, trigger_table: Any, stamp_cols: List[str] = None, initial: bool = False,
                       incremental: bool = False, history: bool = False):
-        """ Returns a table that captures a snapshot of this table whenever trigger_table updates.
+        """Returns a table that captures a snapshot of this table whenever trigger_table updates.
 
         When trigger_table updates, a snapshot of this table and the "stamp key" from trigger_table form the resulting
         table. The "stamp key" is the last row of the trigger_table, limited by the stamp_cols. If trigger_table is
@@ -612,7 +612,7 @@ class TableInterface(ABC):
                 must be False.
 
         Returns:
-            a Table object
+            a new Table
 
         Raises:
             DHError
