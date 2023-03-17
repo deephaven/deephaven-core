@@ -8,6 +8,7 @@ import elemental2.core.JsSet;
 import elemental2.dom.CustomEventInit;
 import elemental2.dom.DomGlobal;
 import elemental2.promise.Promise;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.TerminationNotificationResponse;
 import io.deephaven.web.client.ide.IdeSession;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.*;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
@@ -225,6 +226,7 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>> exte
         JsLog.debug(getClass(), " connected");
 
         connected = true;
+        notifiedConnectionError = false;
 
         fireEvent(EVENT_CONNECT);
 
@@ -265,4 +267,6 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>> exte
                     + "Query disconnected (to prevent this log message, handle the EVENT_DISCONNECT event)");
         }
     }
+
+    public abstract void notifyServerShutdown(TerminationNotificationResponse success);
 }

@@ -519,6 +519,7 @@ public class WorkerConnection {
         sessionServiceClient.terminationNotification(new TerminationNotificationRequest(), metadata(),
                 (fail, success) -> {
                     if (fail != null) {
+                        // Errors are treated like connection issues, won't signal any shutdown
                         if (checkStatus((ResponseStreamWrapper.ServiceError) fail)) {
                             // restart the termination notification
                             subscribeToTerminationNotification();
@@ -533,50 +534,7 @@ public class WorkerConnection {
                     // welp; the server is gone -- let everyone know
                     connectionLost();
 
-                    info.notifyConnectionError(new ResponseStreamWrapper.Status() {
-                        @Override
-                        public int getCode() {
-                            return Code.Unavailable;
-                        }
-
-                        @SuppressWarnings("StringConcatenationInLoop")
-                        @Override
-                        public String getDetails() {
-                            if (!success.getAbnormalTermination()) {
-                                return "Server exited normally.";
-                            }
-
-                            String retval;
-                            if (!success.getReason().isEmpty()) {
-                                retval = success.getReason();
-                            } else {
-                                retval = "Server exited abnormally.";
-                            }
-
-                            final JsArray<StackTrace> traces = success.getStackTracesList();
-                            for (int ii = 0; ii < traces.length; ++ii) {
-                                final StackTrace trace = traces.getAt(ii);
-                                retval += "\n\n";
-                                if (ii != 0) {
-                                    retval += "Caused By: " + trace.getType() + ": " + trace.getMessage();
-                                } else {
-                                    retval += trace.getType() + ": " + trace.getMessage();
-                                }
-
-                                final JsArray<String> elements = trace.getElementsList();
-                                for (int jj = 0; jj < elements.length; ++jj) {
-                                    retval += "\n" + elements.getAt(jj);
-                                }
-                            }
-
-                            return retval;
-                        }
-
-                        @Override
-                        public BrowserHeaders getMetadata() {
-                            return new BrowserHeaders(); // nothing to offer
-                        }
-                    });
+                    info.notifyServerShutdown(success);
                 });
     }
 
@@ -664,44 +622,10 @@ public class WorkerConnection {
         onOpen.clear();
     }
 
-    // TODO #730 fold this into the auth reconnect and "my stream puked" check"
-    // @Override
-    // public void ping(final String lastKnownSessionToken) {
-    // // note that lastKnownSessionToken may be null when client manually tries to ping
-    //
-    // if (state == State.Disconnected) {
-    // // deliberately closed, stop the ping/pong
-    // JsLog.debug("WorkerConnection.ping Disconnected, ignoring");
-    // return;
-    // }
-    //
-    // // cancel the last timeout check, and schedule a new one
-    // DomGlobal.clearTimeout(killTimerCancelation);
-    // final double now = Duration.currentTimeMillis();
-    // killTimerCancelation = DomGlobal.setTimeout(ignore -> {
-    // boolean keepWaiting = isDevMode() && (Duration.currentTimeMillis() - now > 45_000);
-    // if (keepWaiting) {
-    // // it took quite a bit more than 30s, user was probably stuck in debugger,
-    // // or laptop was shut down in some way. Ping again.
-    // ping(null);
-    // } else {
-    // JsLog.debug("Haven't heard from the server in 30s, reconnecting...");
-    // forceReconnect();
-    // }
-    // }, 30_000);
-    //
-    // // wait 5s, and tell the server that we're here to continue the cycle
-    // DomGlobal.setTimeout(ignore -> server.pong(), 5000);
-    // }
-
     @JsMethod
     public void forceReconnect() {
         JsLog.debug("pending: ", definitionCallbacks, handleCallbacks);
 
-        // stop the current connection
-        // if (server != null) {
-        // server.close();
-        // }
         // just in case it wasn't already running, mark us as reconnecting
         state = State.Reconnecting;
         newSessionReconnect.failed();
@@ -711,9 +635,8 @@ public class WorkerConnection {
     public void forceClose() {
         // explicitly mark as disconnected so reconnect isn't attempted
         state = State.Disconnected;
-        // if (server != null) {
-        // server.close();
-        // }
+
+
         newSessionReconnect.disconnected();
         DomGlobal.clearTimeout(killTimerCancelation);
     }
