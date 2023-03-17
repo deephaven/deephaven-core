@@ -46,6 +46,7 @@ public interface Filter extends Expression, Serializable {
      *
      * <p>
      * Equivalent to {@code Literal.of(true)}.
+     * 
      * @return the always-true-filter
      */
     static LiteralFilter ofTrue() {
@@ -57,6 +58,7 @@ public interface Filter extends Expression, Serializable {
      *
      * <p>
      * Equivalent to {@code Literal.of(false)}.
+     * 
      * @return the always-false-filter
      */
     static LiteralFilter ofFalse() {
