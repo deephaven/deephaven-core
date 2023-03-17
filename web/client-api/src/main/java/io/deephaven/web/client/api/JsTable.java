@@ -432,7 +432,7 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
 
     @JsMethod
     @SuppressWarnings("unusable-by-js")
-    //TODO union this
+    // TODO union this
     public JsArray<CustomColumn> applyCustomColumns(Object[] customColumns) {
         String[] customColumnStrings = Arrays.stream(customColumns).map(obj -> {
             if (obj instanceof String || obj instanceof CustomColumn) {
@@ -486,7 +486,8 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
     }
 
     @JsMethod
-    public TableViewportSubscription setViewport(double firstRow, double lastRow, @JsOptional @JsNullable JsArray<Column> columns,
+    public TableViewportSubscription setViewport(double firstRow, double lastRow,
+            @JsOptional @JsNullable JsArray<Column> columns,
             @JsOptional @JsNullable Double updateIntervalMs) {
         Column[] columnsCopy = columns != null ? Js.uncheckedCast(columns.slice()) : null;
         ClientTableState currentState = state();
@@ -603,7 +604,8 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
 
     // TODO: #37: Need SmartKey support for this functionality
     // @JsMethod
-    public Promise<JsTotalsTable> getTotalsTable(/*@JsOptional @JsNullable*/ @TsTypeRef(JsTotalsTableConfig.class) Object config) {
+    public Promise<JsTotalsTable> getTotalsTable(
+            /* @JsOptional @JsNullable */ @TsTypeRef(JsTotalsTableConfig.class) Object config) {
         // fetch the handle and wrap it in a new jstable. listen for changes
         // on the parent table, and re-fetch each time.
 
@@ -739,7 +741,7 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
     // TODO: #37: Need SmartKey support for this functionality
     // @JsMethod
     public Promise<JsTotalsTable> getGrandTotalsTable(
-            /*@JsNullable @JsOptional*/ @TsTypeRef(JsTotalsTableConfig.class) Object config) {
+            /* @JsNullable @JsOptional */ @TsTypeRef(JsTotalsTableConfig.class) Object config) {
         // As in getTotalsTable, but this time we want to skip any filters - this could mean use the
         // most-derived table which has no filter, or the least-derived table which has all custom columns.
         // Currently, these two mean the same thing.

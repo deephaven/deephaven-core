@@ -3,6 +3,7 @@
  */
 package io.deephaven.web.client.api.filter;
 
+import com.vertispan.tsdefs.annotations.TsTypeRef;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.Table_pb;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.CompareCondition;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.Condition;
@@ -31,11 +32,11 @@ public class FilterValue {
     protected final Value descriptor;
 
     @JsMethod(namespace = "dh.FilterValue")
-    public static FilterValue ofString(Any input) {
+    public static FilterValue ofString(@TsTypeRef(Any.class) Object input) {
         Objects.requireNonNull(input);
         final String string;
         if (Js.typeof(input).equals("string")) {
-            string = input.asString();
+            string = (String) input;
         } else {
             string = input.toString();
         }
@@ -45,7 +46,7 @@ public class FilterValue {
     }
 
     @JsMethod(namespace = "dh.FilterValue")
-    public static FilterValue ofNumber(Any input) {
+    public static FilterValue ofNumber(@TsTypeRef(Any.class) Object input) {
         Objects.requireNonNull(input);
         if (input instanceof DateWrapper) {
             Literal lit = new Literal();

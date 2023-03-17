@@ -94,7 +94,7 @@ public class HasEventHandling {
                     return;
                 }
                 seen[0] = true;
-                pair.callback.onEvent((CustomEvent)e);
+                pair.callback.onEvent((CustomEvent) e);
             });
         }
     }

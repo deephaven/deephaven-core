@@ -114,7 +114,7 @@ public class JsDateTimeFormat {
     // synthesize a gwt TimeZone with the correct offset data to get nice output in some tz
     // other than the browser's current or UTC+/-OFFSET
     public String format(Any date, @JsOptional JsTimeZone timeZone) {
-        return format((Object)date, timeZone);
+        return format((Object) date, timeZone);
     }
 
     @JsIgnore

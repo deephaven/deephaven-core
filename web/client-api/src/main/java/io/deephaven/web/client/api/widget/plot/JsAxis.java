@@ -169,7 +169,8 @@ public class JsAxis {
     }
 
     @JsMethod
-    public void range(@JsOptional @JsNullable Double pixelCount, @JsOptional @JsNullable Object min, @JsOptional @JsNullable Object max) {
+    public void range(@JsOptional @JsNullable Double pixelCount, @JsOptional @JsNullable Object min,
+            @JsOptional @JsNullable Object max) {
         if (pixelCount == null || !Js.typeof(Js.asAny(pixelCount)).equals("number")) {
             if (this.pixels != null) {
                 JsLog.warn("Turning off downsampling on a chart where it is running is not currently supported");

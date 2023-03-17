@@ -4,6 +4,7 @@
 package io.deephaven.web.client.api.i18n;
 
 import com.google.gwt.i18n.client.NumberFormat;
+import com.vertispan.tsdefs.annotations.TsTypeRef;
 import io.deephaven.web.client.api.BigDecimalWrapper;
 import io.deephaven.web.client.api.BigIntegerWrapper;
 import io.deephaven.web.client.api.LongWrapper;
@@ -50,19 +51,18 @@ public class JsNumberFormat {
         return wrapped.parse(text);
     }
 
-    public String format(Any number) {
-        Object value = number;
+    public String format(@TsTypeRef(Any.class) Object number) {
         Objects.requireNonNull(number);
-        if (value instanceof Double) {// aka typeof number, and non-null
-            return wrapped.format((double) (Double) value);
+        if (number instanceof Double) {// aka typeof number, and non-null
+            return wrapped.format((double) (Double) number);
         } else if (number instanceof BigDecimalWrapper) {
-            return wrapped.format(((BigDecimalWrapper) value).getWrapped());
+            return wrapped.format(((BigDecimalWrapper) number).getWrapped());
         } else if (number instanceof BigIntegerWrapper) {
-            return wrapped.format(((BigIntegerWrapper) value).getWrapped());
+            return wrapped.format(((BigIntegerWrapper) number).getWrapped());
         } else if (number instanceof LongWrapper) {
-            return wrapped.format((Long) ((LongWrapper) value).getWrapped());
+            return wrapped.format((Long) ((LongWrapper) number).getWrapped());
         }
-        throw new IllegalStateException("Can't format non-number object of type " + Js.typeof(value));
+        throw new IllegalStateException("Can't format non-number object of type " + Js.typeof(number));
     }
 
     @Override

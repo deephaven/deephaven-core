@@ -18,6 +18,7 @@ public class BigDecimalWrapper {
     public static BigDecimalWrapper ofString(String value) {
         return new BigDecimalWrapper(new BigDecimal(value));
     }
+
     private final BigDecimal value;
 
     @JsIgnore
