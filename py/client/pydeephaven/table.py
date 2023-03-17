@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
 #
 
 from __future__ import annotations
@@ -45,6 +45,10 @@ class Table(TableInterface):
         except Exception as e:
             # TODO(deephaven-core#1858): Better error handling for pyclient around release #1858
             pass
+
+    @property
+    def is_refreshing(self):
+        return not self.is_static
 
     @property
     def is_closed(self):

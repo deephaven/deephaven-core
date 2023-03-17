@@ -3,10 +3,12 @@
 #
 
 import time
+import unittest
 
 from pyarrow import csv
 
 from pydeephaven import DHError
+from pydeephaven.updateby import ema_tick_decay, cum_prod
 from tests.testbase import BaseTestCase
 
 
@@ -45,3 +47,23 @@ class QueryTestCase(BaseTestCase):
 
         result_table = query.exec()
         self.assertTrue(result_table.size > 0)
+
+    def test_update_by(self):
+        pa_table = csv.read_csv(self.csv_file)
+        test_table = self.session.import_table(pa_table)
+        ub_ops = [ema_tick_decay(time_scale_ticks=100, cols=["ema_a = a"]),
+                  cum_prod(cols=["cc = c", "cb = b"]),
+                  ]
+
+        query = self.session.query(test_table)
+        (query.drop_columns(cols=['e'])
+         .where(["a > 10"])
+         .update_by(ops=ub_ops, by=["b"])
+         .tail(10))
+
+        result_table = query.exec()
+        self.assertTrue(result_table.size == 10)
+
+
+if __name__ == '__main__':
+    unittest.main()

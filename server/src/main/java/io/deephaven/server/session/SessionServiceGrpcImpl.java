@@ -50,10 +50,15 @@ import java.util.Map;
 import java.util.UUID;
 
 public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImplBase {
+    /**
+     * Deprecated, use {@link Auth2Constants#AUTHORIZATION_HEADER} instead.
+     */
+    @Deprecated
     public static final String DEEPHAVEN_SESSION_ID = Auth2Constants.AUTHORIZATION_HEADER;
     public static final Metadata.Key<String> SESSION_HEADER_KEY =
-            Metadata.Key.of(DEEPHAVEN_SESSION_ID, Metadata.ASCII_STRING_MARSHALLER);
-    public static final Context.Key<SessionState> SESSION_CONTEXT_KEY = Context.key(DEEPHAVEN_SESSION_ID);
+            Metadata.Key.of(Auth2Constants.AUTHORIZATION_HEADER, Metadata.ASCII_STRING_MARSHALLER);
+    public static final Context.Key<SessionState> SESSION_CONTEXT_KEY =
+            Context.key(Auth2Constants.AUTHORIZATION_HEADER);
 
     private static final String SERVER_CALL_ID = "SessionServiceGrpcImpl.ServerCall";
     private static final Context.Key<InterceptedCall<?, ?>> SESSION_CALL_KEY = Context.key(SERVER_CALL_ID);
@@ -80,7 +85,7 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
 
         final SessionState session = service.newSession(authContext);
         responseObserver.onNext(HandshakeResponse.newBuilder()
-                .setMetadataHeader(ByteString.copyFromUtf8(DEEPHAVEN_SESSION_ID))
+                .setMetadataHeader(ByteString.copyFromUtf8(Auth2Constants.AUTHORIZATION_HEADER))
                 .setSessionToken(session.getExpiration().getBearerTokenAsByteString())
                 .setTokenDeadlineTimeMillis(session.getExpiration().deadlineMillis)
                 .setTokenExpirationDelayMillis(service.getExpirationDelayMs())
@@ -104,7 +109,7 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
         final SessionService.TokenExpiration expiration = service.refreshToken(session);
 
         responseObserver.onNext(HandshakeResponse.newBuilder()
-                .setMetadataHeader(ByteString.copyFromUtf8(DEEPHAVEN_SESSION_ID))
+                .setMetadataHeader(ByteString.copyFromUtf8(Auth2Constants.AUTHORIZATION_HEADER))
                 .setSessionToken(expiration.getBearerTokenAsByteString())
                 .setTokenDeadlineTimeMillis(expiration.deadlineMillis)
                 .setTokenExpirationDelayMillis(service.getExpirationDelayMs())

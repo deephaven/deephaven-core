@@ -179,7 +179,7 @@ class Query(TableInterface):
         return super().natural_join(table, on, joins)
 
     def exact_join(self, table: Any, on: List[str], joins: List[str] = []):
-        """ Add a exact-join operation to the query.
+        """ Add an exact-join operation to the query.
 
         Args:
             table (Table): the right-table of the join
@@ -423,3 +423,15 @@ class Query(TableInterface):
             self
         """
         return super().agg_by(agg, by)
+
+    def update_by(self, ops: List[UpdateByOperation], by: List[str]):
+        """ Add an update-by operation to the query.
+
+        Args:
+            ops (List[UpdateByOperation]): the UpdateByOperations to be applied
+            by (List[str]): the group-by column names
+
+        Returns:
+            self
+        """
+        return super().update_by(ops=ops, by=by)

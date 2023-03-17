@@ -185,3 +185,7 @@ class SessionTestCase(BaseTestCase):
                 exception_list.append(e)
 
         self.assertEqual(0, len(exception_list))
+
+
+if __name__ == '__main__':
+    unittest.main()
