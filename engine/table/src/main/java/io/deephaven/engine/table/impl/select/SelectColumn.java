@@ -10,7 +10,7 @@ import io.deephaven.api.Strings;
 import io.deephaven.api.expression.Expression;
 import io.deephaven.api.expression.ExpressionFunction;
 import io.deephaven.api.filter.Filter;
-import io.deephaven.api.value.Literal;
+import io.deephaven.api.literal.Literal;
 import io.deephaven.engine.context.QueryCompiler;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.ColumnDefinition;

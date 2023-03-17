@@ -1,4 +1,4 @@
-package io.deephaven.api.value;
+package io.deephaven.api.literal;
 
 import io.deephaven.api.filter.Filter;
 

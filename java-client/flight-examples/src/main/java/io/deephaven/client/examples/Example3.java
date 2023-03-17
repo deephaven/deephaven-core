@@ -8,7 +8,7 @@ import io.deephaven.api.RawString;
 import io.deephaven.api.TableOperations;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.filter.FilterComparison;
-import io.deephaven.api.value.Literal;
+import io.deephaven.api.literal.Literal;
 import io.deephaven.qst.TableCreationLogic;
 import io.deephaven.qst.TableCreator;
 import io.deephaven.qst.table.TableSpec;

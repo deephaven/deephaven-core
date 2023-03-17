@@ -1,7 +1,7 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.api.value;
+package io.deephaven.api.literal;
 
 import io.deephaven.annotations.SimpleStyle;
 import org.immutables.value.Value.Check;
@@ -10,14 +10,14 @@ import org.immutables.value.Value.Parameter;
 
 @Immutable
 @SimpleStyle
-abstract class LiteralLong extends LiteralBase {
+abstract class LiteralInt extends LiteralBase {
 
-    public static LiteralLong of(long value) {
-        return ImmutableLiteralLong.of(value);
+    public static LiteralInt of(int value) {
+        return ImmutableLiteralInt.of(value);
     }
 
     @Parameter
-    public abstract long value();
+    public abstract int value();
 
     @Override
     public final <V extends Visitor> V walk(V visitor) {
@@ -27,9 +27,9 @@ abstract class LiteralLong extends LiteralBase {
 
     @Check
     final void checkNotDeephavenNull() {
-        if (value() == Long.MIN_VALUE) {
+        if (value() == Integer.MIN_VALUE) {
             throw new IllegalArgumentException(
-                    "Can't represent Long.MIN_VALUE, is Deephaven null representation");
+                    "Can't represent Integer.MIN_VALUE, is Deephaven null representation");
         }
     }
 }

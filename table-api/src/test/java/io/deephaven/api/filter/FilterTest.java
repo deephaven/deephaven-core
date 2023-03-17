@@ -5,7 +5,7 @@ package io.deephaven.api.filter;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.Strings;
-import io.deephaven.api.value.Literal;
+import io.deephaven.api.literal.Literal;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;

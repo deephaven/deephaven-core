@@ -1,11 +1,10 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.api.value;
+package io.deephaven.api.literal;
 
 import io.deephaven.annotations.SimpleStyle;
 import io.deephaven.api.filter.Filter;
-import io.deephaven.api.filter.Filter.Visitor;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
 

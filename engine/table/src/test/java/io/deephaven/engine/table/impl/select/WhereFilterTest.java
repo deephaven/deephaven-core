@@ -8,7 +8,7 @@ import io.deephaven.api.RawString;
 import io.deephaven.api.expression.ExpressionFunction;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.filter.FilterComparison;
-import io.deephaven.api.value.Literal;
+import io.deephaven.api.literal.Literal;
 import junit.framework.TestCase;
 
 import static org.assertj.core.api.Assertions.assertThat;

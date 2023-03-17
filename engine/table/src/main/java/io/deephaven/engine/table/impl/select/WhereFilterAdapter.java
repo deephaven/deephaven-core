@@ -12,7 +12,7 @@ import io.deephaven.api.filter.FilterIsNotNull;
 import io.deephaven.api.filter.FilterIsNull;
 import io.deephaven.api.filter.FilterNot;
 import io.deephaven.api.filter.FilterOr;
-import io.deephaven.api.value.Literal;
+import io.deephaven.api.literal.Literal;
 import io.deephaven.engine.table.impl.select.MatchFilter.MatchType;
 import io.deephaven.gui.table.filters.Condition;
 

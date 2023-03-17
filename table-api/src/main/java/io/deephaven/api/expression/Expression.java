@@ -5,12 +5,10 @@ package io.deephaven.api.expression;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.RawString;
-import io.deephaven.api.Selectable;
 import io.deephaven.api.filter.Filter;
-import io.deephaven.api.value.Literal;
+import io.deephaven.api.literal.Literal;
 
 import java.io.Serializable;
-import java.util.Collection;
 
 /**
  * Represents an evaluate-able expression structure.

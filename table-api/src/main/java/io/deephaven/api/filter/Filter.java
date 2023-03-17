@@ -5,8 +5,8 @@ package io.deephaven.api.filter;
 
 import io.deephaven.api.RawString;
 import io.deephaven.api.expression.Expression;
-import io.deephaven.api.value.Literal;
-import io.deephaven.api.value.LiteralFilter;
+import io.deephaven.api.literal.Literal;
+import io.deephaven.api.literal.LiteralFilter;
 
 import java.io.Serializable;
 import java.util.Arrays;
