@@ -187,6 +187,9 @@ public class MultiplexedWebsocketTransport implements Transport {
             activeCount++;
         }
 
+        /**
+         * May be called once per transport
+         */
         private void release() {
             activeCount--;
             if (activeCount == 0 && closing) {
@@ -195,7 +198,7 @@ public class MultiplexedWebsocketTransport implements Transport {
         }
     }
 
-    private final ActiveTransport transport;
+    private ActiveTransport transport;
     private final int streamId = nextStreamId++;
     private final List<QueuedEntry> sendQueue = new ArrayList<>();
     private final TransportOptions options;
@@ -310,8 +313,8 @@ public class MultiplexedWebsocketTransport implements Transport {
         cleanup = JsRunnable.doNothing();
 
         // release our reference to the transport, last one out will close the socket (if needed)
-        // TODO ensure this is called once per instance
         transport.release();
+        transport = null;
     }
 
     private void onClose(Event event) {
