@@ -424,7 +424,6 @@ public interface UpdateByOperation {
 
 
 
-
     /**
      * Create a {@link RollingWAvgSpec rolling sum} for the supplied column name pairs, using ticks as the windowing
      * unit. Ticks are row counts and you may specify the previous window in number of rows to include. The current row
@@ -470,10 +469,10 @@ public interface UpdateByOperation {
     }
 
     /**
-     * Create a {@link RollingWAvgSpec rolling sum} for the supplied column name pairs, using time as the windowing unit.
-     * This function accepts {@link Duration duration} as the reverse window parameter. A row containing a {@code null}
-     * in the timestamp column belongs to no window and will not have a value computed or be considered in the windows
-     * of other rows.
+     * Create a {@link RollingWAvgSpec rolling sum} for the supplied column name pairs, using time as the windowing
+     * unit. This function accepts {@link Duration duration} as the reverse window parameter. A row containing a
+     * {@code null} in the timestamp column belongs to no window and will not have a value computed or be considered in
+     * the windows of other rows.
      *
      * Here are some examples of window values:
      * <ul>
@@ -491,11 +490,11 @@ public interface UpdateByOperation {
     }
 
     /**
-     * Create a {@link RollingWAvgSpec rolling sum} for the supplied column name pairs, using time as the windowing unit.
-     * This function accepts {@link Duration durations} as the reverse and forward window parameters. Negative values
-     * are allowed and can be used to generate completely forward or completely reverse windows. A row containing a
-     * {@code null} in the timestamp column belongs to no window and will not have a value computed or be considered in
-     * the windows of other rows.
+     * Create a {@link RollingWAvgSpec rolling sum} for the supplied column name pairs, using time as the windowing
+     * unit. This function accepts {@link Duration durations} as the reverse and forward window parameters. Negative
+     * values are allowed and can be used to generate completely forward or completely reverse windows. A row containing
+     * a {@code null} in the timestamp column belongs to no window and will not have a value computed or be considered
+     * in the windows of other rows.
      *
      * Here are some examples of window values:
      * <ul>
@@ -519,15 +518,15 @@ public interface UpdateByOperation {
      * @return The aggregation
      */
     static UpdateByOperation RollingWAvg(String timestampCol, Duration revDuration, Duration fwdDuration,
-                                         String weightCol, String... pairs) {
+            String weightCol, String... pairs) {
         return RollingWAvgSpec.ofTime(timestampCol, revDuration, fwdDuration, weightCol).clause(pairs);
     }
 
     /**
-     * Create a {@link RollingWAvgSpec rolling sum} for the supplied column name pairs, using time as the windowing unit.
-     * This function accepts {@code nanoseconds} as the reverse window parameters. A row containing a {@code null} in
-     * the timestamp column belongs to no window and will not have a value computed or be considered in the windows of
-     * other rows.
+     * Create a {@link RollingWAvgSpec rolling sum} for the supplied column name pairs, using time as the windowing
+     * unit. This function accepts {@code nanoseconds} as the reverse window parameters. A row containing a {@code null}
+     * in the timestamp column belongs to no window and will not have a value computed or be considered in the windows
+     * of other rows.
      *
      * @param timestampCol the name of the timestamp column
      * @param revTime the look-behind window size (in nanoseconds)
@@ -539,8 +538,8 @@ public interface UpdateByOperation {
     }
 
     /**
-     * Create a {@link RollingWAvgSpec rolling sum} for the supplied column name pairs, using time as the windowing unit.
-     * This function accepts {@code nanoseconds} as the reverse and forward window parameters. Negative values are
+     * Create a {@link RollingWAvgSpec rolling sum} for the supplied column name pairs, using time as the windowing
+     * unit. This function accepts {@code nanoseconds} as the reverse and forward window parameters. Negative values are
      * allowed and can be used to generate completely forward or completely reverse windows. A row containing a
      * {@code null} in the timestamp column belongs to no window and will not have a value computed or be considered in
      * the windows of other rows.
@@ -551,15 +550,12 @@ public interface UpdateByOperation {
      * @param pairs The input/output column name pairs
      * @return The aggregation
      */
-    static UpdateByOperation RollingWAvg(String timestampCol, long revTime, long fwdTime, String weightCol, String... pairs) {
+    static UpdateByOperation RollingWAvg(String timestampCol, long revTime, long fwdTime, String weightCol,
+            String... pairs) {
         return RollingWAvgSpec.ofTime(timestampCol, revTime, fwdTime, weightCol).clause(pairs);
     }
-    
-    
-    
-    
-    
-    
+
+
 
     <T> T walk(Visitor<T> visitor);
 

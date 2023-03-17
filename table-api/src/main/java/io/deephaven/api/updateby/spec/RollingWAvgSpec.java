@@ -29,7 +29,8 @@ public abstract class RollingWAvgSpec extends RollingOpSpec {
         return of(WindowScale.ofTime(timestampCol, revDuration), weightCol);
     }
 
-    public static RollingWAvgSpec ofTime(final String timestampCol, Duration revDuration, Duration fwdDuration, final String weightCol) {
+    public static RollingWAvgSpec ofTime(final String timestampCol, Duration revDuration, Duration fwdDuration,
+            final String weightCol) {
         return of(WindowScale.ofTime(timestampCol, revDuration),
                 WindowScale.ofTime(timestampCol, fwdDuration),
                 weightCol);
@@ -39,7 +40,8 @@ public abstract class RollingWAvgSpec extends RollingOpSpec {
         return of(WindowScale.ofTime(timestampCol, revDuration), weightCol);
     }
 
-    public static RollingWAvgSpec ofTime(final String timestampCol, long revDuration, long fwdDuration, final String weightCol) {
+    public static RollingWAvgSpec ofTime(final String timestampCol, long revDuration, long fwdDuration,
+            final String weightCol) {
         return of(WindowScale.ofTime(timestampCol, revDuration),
                 WindowScale.ofTime(timestampCol, fwdDuration),
                 weightCol);
