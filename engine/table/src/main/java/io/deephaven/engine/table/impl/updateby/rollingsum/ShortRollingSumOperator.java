@@ -36,8 +36,8 @@ public class ShortRollingSumOperator extends BaseLongUpdateByOperator {
 
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            shortInfluencerValuesChunk = valuesChunk.asShortChunk();
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
+            shortInfluencerValuesChunk = valueChunks[0].asShortChunk();
         }
 
         @Override

@@ -36,8 +36,8 @@ public final class BigDecimalRollingSumOperator extends BaseObjectUpdateByOperat
 
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            objectInfluencerValuesChunk = valuesChunk.asObjectChunk();
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
+            objectInfluencerValuesChunk = valueChunks[0].asObjectChunk();
         }
 
         @Override

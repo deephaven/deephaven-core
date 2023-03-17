@@ -155,7 +155,7 @@ public class RollingGroupOperator extends UpdateByOperator {
         }
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
             // NOP
         }
 

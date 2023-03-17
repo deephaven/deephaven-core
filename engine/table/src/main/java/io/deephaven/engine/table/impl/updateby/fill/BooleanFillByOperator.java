@@ -37,8 +37,8 @@ public class BooleanFillByOperator extends BaseByteUpdateByOperator {
         }
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            booleanValueChunk = valuesChunk.asByteChunk();
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
+            booleanValueChunk = valueChunks[0].asByteChunk();
         }
 
         @Override

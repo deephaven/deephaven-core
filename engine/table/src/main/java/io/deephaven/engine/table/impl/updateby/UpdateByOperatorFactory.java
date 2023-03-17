@@ -6,6 +6,7 @@ import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.api.updateby.spec.*;
+import io.deephaven.chunk.ChunkType;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.Table;
@@ -15,8 +16,6 @@ import io.deephaven.engine.table.impl.updateby.minmax.*;
 import io.deephaven.engine.table.impl.updateby.prod.*;
 import io.deephaven.engine.table.impl.updateby.rollinggroup.RollingGroupOperator;
 import io.deephaven.engine.table.impl.updateby.rollingsum.*;
-import io.deephaven.engine.table.impl.updateby.rollingwavg.DoubleRollingWAvgRecorder;
-import io.deephaven.engine.table.impl.updateby.rollingwavg.RollingWAvgRecorder;
 import io.deephaven.engine.table.impl.updateby.rollingwavg.ShortRollingWAvgOperator;
 import io.deephaven.engine.table.impl.updateby.sum.*;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
@@ -272,8 +271,6 @@ public class UpdateByOperatorFactory {
     private class OperationVisitor implements UpdateBySpec.Visitor<Void>, UpdateByOperation.Visitor<Void> {
         private final List<UpdateByOperator> ops = new ArrayList<>();
         private MatchPair[] pairs;
-
-        private Map<String, DoubleRollingWAvgRecorder> doubleRollingWAvgRecorderMap;
 
         // Storage for delayed RollingGroup creation.
         RollingGroupSpec rollingGroupSpec;
@@ -622,77 +619,68 @@ public class UpdateByOperatorFactory {
         }
 
         private UpdateByOperator makeRollingWAvgOperator(@NotNull final MatchPair pair,
-                                                         @NotNull final Table source,
-                                                         @NotNull final RollingWAvgSpec rs) {
+                @NotNull final Table source,
+                @NotNull final RollingWAvgSpec rs) {
             // noinspection rawtypes
             final ColumnSource columnSource = source.getColumnSource(pair.rightColumn);
             final Class<?> csType = columnSource.getType();
 
+            final ColumnSource weightColumnSource = source.getColumnSource(rs.weightCol());
+            final ChunkType weightChunkType = weightColumnSource.getChunkType();
+
             final String[] affectingColumns;
             if (rs.revWindowScale().timestampCol() == null) {
-                affectingColumns = new String[] {pair.rightColumn};
+                affectingColumns = new String[] {pair.rightColumn, rs.weightCol()};
             } else {
-                affectingColumns = new String[] {rs.revWindowScale().timestampCol(), pair.rightColumn};
+                affectingColumns = new String[] {rs.revWindowScale().timestampCol(), pair.rightColumn, rs.weightCol()};
             }
 
             final long prevWindowScaleUnits = rs.revWindowScale().timescaleUnits();
             final long fwdWindowScaleUnits = rs.fwdWindowScale().timescaleUnits();
 
-            // We need a recorder for this operator.
-            if (doubleRollingWAvgRecorderMap == null) {
-                doubleRollingWAvgRecorderMap = new HashMap<>();
-            }
-            // Retrieve or create the recorder.
-            final DoubleRollingWAvgRecorder recorder = doubleRollingWAvgRecorderMap.computeIfAbsent(rs.weightCol(),
-                    key -> {
-                        final DoubleRollingWAvgRecorder newRecorder = new DoubleRollingWAvgRecorder(key, source.getColumnSource(key));
-                        ops.add(newRecorder);
-                        return newRecorder;
-                    });
-
             if (csType == short.class || csType == Short.class) {
                 return new ShortRollingWAvgOperator(pair, affectingColumns, rowRedirection,
                         rs.revWindowScale().timestampCol(),
-                        prevWindowScaleUnits, fwdWindowScaleUnits, recorder);
+                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.weightCol(), weightChunkType);
             }
 
-//            if (csType == Boolean.class || csType == boolean.class) {
-//                return new ByteRollingSumOperator(pair, affectingColumns, rowRedirection,
-//                        rs.revWindowScale().timestampCol(),
-//                        prevWindowScaleUnits, fwdWindowScaleUnits, NULL_BOOLEAN_AS_BYTE);
-//            } else if (csType == byte.class || csType == Byte.class) {
-//                return new ByteRollingSumOperator(pair, affectingColumns, rowRedirection,
-//                        rs.revWindowScale().timestampCol(),
-//                        prevWindowScaleUnits, fwdWindowScaleUnits, NULL_BYTE);
-//            } else if (csType == short.class || csType == Short.class) {
-//                return new ShortRollingSumOperator(pair, affectingColumns, rowRedirection,
-//                        rs.revWindowScale().timestampCol(),
-//                        prevWindowScaleUnits, fwdWindowScaleUnits);
-//            } else if (csType == int.class || csType == Integer.class) {
-//                return new IntRollingSumOperator(pair, affectingColumns, rowRedirection,
-//                        rs.revWindowScale().timestampCol(),
-//                        prevWindowScaleUnits, fwdWindowScaleUnits);
-//            } else if (csType == long.class || csType == Long.class) {
-//                return new LongRollingSumOperator(pair, affectingColumns, rowRedirection,
-//                        rs.revWindowScale().timestampCol(),
-//                        prevWindowScaleUnits, fwdWindowScaleUnits);
-//            } else if (csType == float.class || csType == Float.class) {
-//                return new FloatRollingSumOperator(pair, affectingColumns, rowRedirection,
-//                        rs.revWindowScale().timestampCol(),
-//                        prevWindowScaleUnits, fwdWindowScaleUnits);
-//            } else if (csType == double.class || csType == Double.class) {
-//                return new DoubleRollingSumOperator(pair, affectingColumns, rowRedirection,
-//                        rs.revWindowScale().timestampCol(),
-//                        prevWindowScaleUnits, fwdWindowScaleUnits);
-//            } else if (csType == BigDecimal.class) {
-//                return new BigDecimalRollingSumOperator(pair, affectingColumns, rowRedirection,
-//                        rs.revWindowScale().timestampCol(),
-//                        prevWindowScaleUnits, fwdWindowScaleUnits, control.mathContextOrDefault());
-//            } else if (csType == BigInteger.class) {
-//                return new BigIntegerRollingSumOperator(pair, affectingColumns, rowRedirection,
-//                        rs.revWindowScale().timestampCol(),
-//                        prevWindowScaleUnits, fwdWindowScaleUnits);
-//            }
+            // if (csType == Boolean.class || csType == boolean.class) {
+            // return new ByteRollingSumOperator(pair, affectingColumns, rowRedirection,
+            // rs.revWindowScale().timestampCol(),
+            // prevWindowScaleUnits, fwdWindowScaleUnits, NULL_BOOLEAN_AS_BYTE);
+            // } else if (csType == byte.class || csType == Byte.class) {
+            // return new ByteRollingSumOperator(pair, affectingColumns, rowRedirection,
+            // rs.revWindowScale().timestampCol(),
+            // prevWindowScaleUnits, fwdWindowScaleUnits, NULL_BYTE);
+            // } else if (csType == short.class || csType == Short.class) {
+            // return new ShortRollingSumOperator(pair, affectingColumns, rowRedirection,
+            // rs.revWindowScale().timestampCol(),
+            // prevWindowScaleUnits, fwdWindowScaleUnits);
+            // } else if (csType == int.class || csType == Integer.class) {
+            // return new IntRollingSumOperator(pair, affectingColumns, rowRedirection,
+            // rs.revWindowScale().timestampCol(),
+            // prevWindowScaleUnits, fwdWindowScaleUnits);
+            // } else if (csType == long.class || csType == Long.class) {
+            // return new LongRollingSumOperator(pair, affectingColumns, rowRedirection,
+            // rs.revWindowScale().timestampCol(),
+            // prevWindowScaleUnits, fwdWindowScaleUnits);
+            // } else if (csType == float.class || csType == Float.class) {
+            // return new FloatRollingSumOperator(pair, affectingColumns, rowRedirection,
+            // rs.revWindowScale().timestampCol(),
+            // prevWindowScaleUnits, fwdWindowScaleUnits);
+            // } else if (csType == double.class || csType == Double.class) {
+            // return new DoubleRollingSumOperator(pair, affectingColumns, rowRedirection,
+            // rs.revWindowScale().timestampCol(),
+            // prevWindowScaleUnits, fwdWindowScaleUnits);
+            // } else if (csType == BigDecimal.class) {
+            // return new BigDecimalRollingSumOperator(pair, affectingColumns, rowRedirection,
+            // rs.revWindowScale().timestampCol(),
+            // prevWindowScaleUnits, fwdWindowScaleUnits, control.mathContextOrDefault());
+            // } else if (csType == BigInteger.class) {
+            // return new BigIntegerRollingSumOperator(pair, affectingColumns, rowRedirection,
+            // rs.revWindowScale().timestampCol(),
+            // prevWindowScaleUnits, fwdWindowScaleUnits);
+            // }
 
             throw new IllegalArgumentException("Can not perform RollingWAvg on type " + csType);
         }

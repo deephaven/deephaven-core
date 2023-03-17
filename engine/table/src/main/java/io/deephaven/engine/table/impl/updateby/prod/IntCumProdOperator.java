@@ -31,8 +31,8 @@ public class IntCumProdOperator extends BaseLongUpdateByOperator {
         }
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            intValueChunk = valuesChunk.asIntChunk();
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
+            intValueChunk = valueChunks[0].asIntChunk();
         }
 
         @Override

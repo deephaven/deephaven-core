@@ -36,7 +36,7 @@ public class LongEMAOperator extends BasePrimitiveEMAOperator {
                                          Chunk<? extends Values>[] valueChunkArr,
                                          LongChunk<? extends Values> tsChunk,
                                          int len) {
-            setValuesChunk(valueChunkArr[0]);
+            setValueChunks(valueChunkArr);
 
             // chunk processing
             if (timestampColumnName == null) {
@@ -90,8 +90,8 @@ public class LongEMAOperator extends BasePrimitiveEMAOperator {
         }
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            longValueChunk = valuesChunk.asLongChunk();
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
+            longValueChunk = valueChunks[0].asLongChunk();
         }
 
         @Override

@@ -31,8 +31,8 @@ public class ByteCumProdOperator extends BaseLongUpdateByOperator {
         }
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            byteValueChunk = valuesChunk.asByteChunk();
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
+            byteValueChunk = valueChunks[0].asByteChunk();
         }
 
         @Override

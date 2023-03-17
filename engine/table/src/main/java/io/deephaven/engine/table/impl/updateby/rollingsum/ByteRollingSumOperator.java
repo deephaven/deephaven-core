@@ -42,8 +42,8 @@ public class ByteRollingSumOperator extends BaseLongUpdateByOperator {
 
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            byteInfluencerValuesChunk = valuesChunk.asByteChunk();
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
+            byteInfluencerValuesChunk = valueChunks[0].asByteChunk();
         }
 
         @Override

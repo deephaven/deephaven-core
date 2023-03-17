@@ -41,8 +41,8 @@ public class IntRollingSumOperator extends BaseLongUpdateByOperator {
 
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            intInfluencerValuesChunk = valuesChunk.asIntChunk();
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
+            intInfluencerValuesChunk = valueChunks[0].asIntChunk();
         }
 
         @Override

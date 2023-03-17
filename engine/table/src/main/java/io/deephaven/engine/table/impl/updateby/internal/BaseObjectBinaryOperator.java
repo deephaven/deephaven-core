@@ -18,8 +18,8 @@ public abstract class BaseObjectBinaryOperator<T> extends BaseObjectUpdateByOper
         }
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            objectValueChunk = valuesChunk.asObjectChunk();
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
+            objectValueChunk = valueChunks[0].asObjectChunk();
         }
 
         @Override

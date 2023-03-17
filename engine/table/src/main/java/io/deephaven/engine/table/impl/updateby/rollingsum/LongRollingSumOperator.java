@@ -41,8 +41,8 @@ public class LongRollingSumOperator extends BaseLongUpdateByOperator {
 
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            longInfluencerValuesChunk = valuesChunk.asLongChunk();
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
+            longInfluencerValuesChunk = valueChunks[0].asLongChunk();
         }
 
         @Override

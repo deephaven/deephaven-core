@@ -32,8 +32,8 @@ public class DoubleCumMinMaxOperator extends BaseDoubleUpdateByOperator {
         }
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            doubleValueChunk = valuesChunk.asDoubleChunk();
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
+            doubleValueChunk = valueChunks[0].asDoubleChunk();
         }
 
         @Override

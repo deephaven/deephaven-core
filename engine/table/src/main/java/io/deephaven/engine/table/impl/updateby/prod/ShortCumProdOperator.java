@@ -26,8 +26,8 @@ public class ShortCumProdOperator extends BaseLongUpdateByOperator {
         }
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            shortValueChunk = valuesChunk.asShortChunk();
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
+            shortValueChunk = valueChunks[0].asShortChunk();
         }
 
         @Override

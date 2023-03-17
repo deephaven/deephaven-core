@@ -31,8 +31,8 @@ public class ObjectFillByOperator<T> extends BaseObjectUpdateByOperator<T> {
         }
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            ObjectValueChunk = valuesChunk.asObjectChunk();
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
+            ObjectValueChunk = valueChunks[0].asObjectChunk();
         }
 
         @Override

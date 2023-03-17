@@ -28,7 +28,7 @@ public class BigIntegerEMAOperator extends BigNumberEMAOperator<BigInteger> {
                                          Chunk<? extends Values>[] valueChunkArr,
                                          LongChunk<? extends Values> tsChunk,
                                          int len) {
-            setValuesChunk(valueChunkArr[0]);
+            setValueChunks(valueChunkArr);
 
             // chunk processing
             if (timestampColumnName == null) {

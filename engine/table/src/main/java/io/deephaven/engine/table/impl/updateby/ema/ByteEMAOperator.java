@@ -36,7 +36,7 @@ public class ByteEMAOperator extends BasePrimitiveEMAOperator {
                                          Chunk<? extends Values>[] valueChunkArr,
                                          LongChunk<? extends Values> tsChunk,
                                          int len) {
-            setValuesChunk(valueChunkArr[0]);
+            setValueChunks(valueChunkArr);
 
             // chunk processing
             if (timestampColumnName == null) {
@@ -90,8 +90,8 @@ public class ByteEMAOperator extends BasePrimitiveEMAOperator {
         }
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            byteValueChunk = valuesChunk.asByteChunk();
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
+            byteValueChunk = valueChunks[0].asByteChunk();
         }
 
         @Override

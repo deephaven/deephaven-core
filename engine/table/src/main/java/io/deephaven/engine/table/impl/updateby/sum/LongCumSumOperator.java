@@ -31,8 +31,8 @@ public class LongCumSumOperator extends BaseLongUpdateByOperator {
         }
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            longValueChunk = valuesChunk.asLongChunk();
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
+            longValueChunk = valueChunks[0].asLongChunk();
         }
 
         @Override

@@ -46,8 +46,8 @@ public class DoubleRollingSumOperator extends BaseDoubleUpdateByOperator {
         }
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            doubleInfluencerValuesChunk = valuesChunk.asDoubleChunk();
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
+            doubleInfluencerValuesChunk = valueChunks[0].asDoubleChunk();
         }
 
         @Override

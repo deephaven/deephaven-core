@@ -41,8 +41,8 @@ public class FloatRollingSumOperator extends BaseFloatUpdateByOperator {
         }
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            floatInfluencerValuesChunk = valuesChunk.asFloatChunk();
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
+            floatInfluencerValuesChunk = valueChunks[0].asFloatChunk();
         }
 
         @Override

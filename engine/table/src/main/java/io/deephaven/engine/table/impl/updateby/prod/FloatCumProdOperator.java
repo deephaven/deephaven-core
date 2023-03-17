@@ -25,8 +25,8 @@ public class FloatCumProdOperator extends BaseFloatUpdateByOperator {
         }
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            floatValueChunk = valuesChunk.asFloatChunk();
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
+            floatValueChunk = valueChunks[0].asFloatChunk();
         }
 
         @Override
