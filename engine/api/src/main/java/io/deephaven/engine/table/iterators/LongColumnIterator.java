@@ -1,6 +1,3 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
 /*
  * ---------------------------------------------------------------------------------------------------------------------
  * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit IntegerColumnIterator and regenerate
@@ -8,116 +5,46 @@
  */
 package io.deephaven.engine.table.iterators;
 
-import io.deephaven.chunk.Chunk;
-import io.deephaven.chunk.ChunkType;
-import io.deephaven.chunk.LongChunk;
-import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfLong;
-import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.table.ChunkSource;
+import io.deephaven.util.annotations.FinalDefault;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.function.Consumer;
-import java.util.function.LongConsumer;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 /**
- * {@link ColumnIterator} implementation for {@link ChunkSource chunk sources} of primitive longs.
+ * {@link ColumnIterator} implementation for columns of primitive longs.
  */
-public final class LongColumnIterator
-        extends ColumnIterator<Long, LongChunk<? extends Any>>
-        implements CloseablePrimitiveIteratorOfLong {
-
-    /**
-     * Create a new LongColumnIterator.
-     *
-     * @param chunkSource The {@link ChunkSource} to fetch values from; must have {@link ChunkSource#getChunkType()
-     *        chunk type} of {@link ChunkType#Long}
-     * @param rowSequence The {@link RowSequence} to iterate over
-     * @param chunkSize The buffer size to use when fetching data
-     * @param firstRowKey The first row key from {@code rowSequence} to iterate
-     * @param length The total number of rows to iterate
-     */
-    public LongColumnIterator(
-            @NotNull final ChunkSource<? extends Any> chunkSource,
-            @NotNull final RowSequence rowSequence,
-            // @formatter:off
-            // region chunkSize
-            final int chunkSize,
-            // endregion chunkSize
-            // @formatter:on
-            final long firstRowKey,
-            final long length) {
-        super(validateChunkType(chunkSource, ChunkType.Long), rowSequence, chunkSize, firstRowKey, length);
-    }
-
-    /**
-     * Create a new LongColumnIterator.
-     *
-     * @param chunkSource The {@link ChunkSource} to fetch values from; must have {@link ChunkSource#getChunkType()
-     *        chunk type} of {@link ChunkType#Long}
-     * @param rowSequence The {@link RowSequence} to iterate over
-     */
-    public LongColumnIterator(
-            @NotNull final ChunkSource<? extends Any> chunkSource,
-            @NotNull final RowSequence rowSequence) {
-        this(chunkSource, rowSequence, DEFAULT_CHUNK_SIZE, rowSequence.firstRowKey(), rowSequence.size());
-    }
+public interface LongColumnIterator extends ColumnIterator<Long>, CloseablePrimitiveIteratorOfLong {
 
     @Override
-    LongChunk<? extends Any> castChunk(@NotNull final Chunk<? extends Any> chunk) {
-        return chunk.asLongChunk();
-    }
-
-    @Override
-    public long nextLong() {
-        maybeAdvance();
-        return currentData.get(currentOffset++);
-    }
-
-    @Override
-    public Long next() {
+    @FinalDefault
+    default Long next() {
         return TypeUtils.box(nextLong());
     }
 
     @Override
-    public void forEachRemaining(@NotNull final LongConsumer action) {
-        consumeRemainingByChunks(() -> {
-            // region currentSize
-            final int currentSize = currentData.size();
-            // endregion currentSize
-            while (currentOffset < currentSize) {
-                action.accept(currentData.get(currentOffset++));
-            }
-        });
-    }
-
-    @Override
-    public void forEachRemaining(@NotNull final Consumer<? super Long> action) {
-        consumeRemainingByChunks(() -> {
-            // region currentSize
-            final int currentSize = currentData.size();
-            // endregion currentSize
-            while (currentOffset < currentSize) {
-                action.accept(TypeUtils.box(currentData.get(currentOffset++)));
-            }
-        });
+    @FinalDefault
+    default void forEachRemaining(@NotNull final Consumer<? super Long> action) {
+        forEachRemaining((final long element) -> action.accept(TypeUtils.box(element)));
     }
 
     /**
-     * Create a {@link LongStream} over the remaining elements of this LongColumnIterator. The result <em>must</em> be
-     * {@link java.util.stream.BaseStream#close() closed} in order to ensure resources are released. A
+     * Create an unboxed {@link LongStream} over the remaining elements of this LongColumnIterator. The result
+     * <em>must</em> be {@link java.util.stream.BaseStream#close() closed} in order to ensure resources are released. A
      * try-with-resources block is strongly encouraged.
      *
-     * @return A {@link LongStream} over the remaining contents of this iterator. Must be {@link Stream#close() closed}.
+     * @return An unboxed {@link LongStream} over the remaining contents of this iterator. Must be {@link Stream#close()
+     *         closed}.
      */
     @Override
-    public LongStream longStream() {
+    @FinalDefault
+    default LongStream longStream() {
         return StreamSupport.longStream(
                 Spliterators.spliterator(
                         this,
@@ -128,20 +55,16 @@ public final class LongColumnIterator
     }
 
     /**
-     * Create a {@link Stream} over the remaining elements of this LongColumnIterator. The result <em>must</em> be
-     * {@link java.util.stream.BaseStream#close() closed} in order to ensure resources are released. A
+     * Create a boxed {@link Stream} over the remaining elements of this LongColumnIterator. The result <em>must</em>
+     * be {@link java.util.stream.BaseStream#close() closed} in order to ensure resources are released. A
      * try-with-resources block is strongly encouraged.
      *
-     * @return A {@link LongStream} over the remaining contents of this iterator. Must be {@link Stream#close() closed}.
+     * @return A boxed {@link Stream} over the remaining contents of this iterator. Must be {@link Stream#close()
+     *         closed}.
      */
     @Override
-    public Stream<Long> stream() {
-        return StreamSupport.stream(
-                Spliterators.spliterator(
-                        this,
-                        remaining(),
-                        Spliterator.IMMUTABLE | Spliterator.ORDERED),
-                false)
-                .onClose(this::close);
+    @FinalDefault
+    default Stream<Long> stream() {
+        return longStream().mapToObj(TypeUtils::box);
     }
 }

@@ -12,7 +12,8 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ChunkSource;
-import io.deephaven.engine.table.iterators.ObjectColumnIterator;
+import io.deephaven.engine.table.iterators.ChunkedObjectColumnIterator;
+import io.deephaven.engine.table.iterators.SerialObjectColumnIterator;
 import io.deephaven.vector.ObjectSubVector;
 import io.deephaven.vector.ObjectVector;
 import io.deephaven.engine.table.ColumnSource;
@@ -25,7 +26,8 @@ import java.util.Arrays;
 import static io.deephaven.engine.primitive.iterator.CloseableIterator.maybeConcat;
 import static io.deephaven.engine.primitive.iterator.CloseableIterator.repeat;
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
-import static io.deephaven.engine.table.iterators.ColumnIterator.DEFAULT_CHUNK_SIZE;
+import static io.deephaven.engine.table.impl.vector.VectorColumnWrapperConstants.CHUNKED_COLUMN_ITERATOR_SIZE_THRESHOLD;
+import static io.deephaven.engine.table.iterators.ChunkedColumnIterator.DEFAULT_CHUNK_SIZE;
 
 public class ObjectVectorColumnWrapper<T> extends ObjectVector.Indirect<T> {
 
@@ -150,8 +152,11 @@ public class ObjectVectorColumnWrapper<T> extends ObjectVector.Indirect<T> {
     public CloseableIterator<T> iterator(final long fromIndexInclusive, final long toIndexExclusive) {
         final long rowSetSize = rowSet.size();
         if (startPadding == 0 && endPadding == 0 && fromIndexInclusive == 0 && toIndexExclusive == rowSetSize) {
-            return new ObjectColumnIterator<>(columnSource, rowSet, DEFAULT_CHUNK_SIZE, rowSet.firstRowKey(),
-                    rowSetSize);
+            if (rowSetSize >= CHUNKED_COLUMN_ITERATOR_SIZE_THRESHOLD) {
+                return new ChunkedObjectColumnIterator<>(columnSource, rowSet, DEFAULT_CHUNK_SIZE, rowSet.firstRowKey(), rowSetSize);
+            } else {
+                return new SerialObjectColumnIterator<>(columnSource, rowSet, rowSet.firstRowKey(), rowSetSize);
+            }
         }
 
         Require.leq(fromIndexInclusive, "fromIndexInclusive", toIndexExclusive, "toIndexExclusive");
@@ -182,9 +187,10 @@ public class ObjectVectorColumnWrapper<T> extends ObjectVector.Indirect<T> {
         final CloseableIterator<T> initialNullsIterator = includedInitialNulls > 0
                 ? repeat(null, includedInitialNulls)
                 : null;
-        final CloseableIterator<T> rowsIterator = includedRows > 0
-                ? new ObjectColumnIterator<>(columnSource, rowSet, DEFAULT_CHUNK_SIZE, firstIncludedRowKey,
-                        includedRows)
+        final CloseableIterator<T> rowsIterator = includedRows > CHUNKED_COLUMN_ITERATOR_SIZE_THRESHOLD
+                ? new ChunkedObjectColumnIterator<>(columnSource, rowSet, DEFAULT_CHUNK_SIZE, firstIncludedRowKey, includedRows)
+                : includedRows > 0
+                ? new SerialObjectColumnIterator<>(columnSource, rowSet, firstIncludedRowKey, includedRows)
                 : null;
         final CloseableIterator<T> finalNullsIterator = remaining > 0
                 ? repeat(null, remaining)

@@ -27,7 +27,7 @@ import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
 import io.deephaven.engine.table.impl.sources.UnionSourceManager;
-import io.deephaven.engine.table.iterators.ObjectColumnIterator;
+import io.deephaven.engine.table.iterators.ChunkedObjectColumnIterator;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -44,7 +44,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static io.deephaven.engine.table.impl.select.MatchFilter.MatchType.Inverted;
-import static io.deephaven.engine.table.iterators.ColumnIterator.*;
+import static io.deephaven.engine.table.iterators.ChunkedColumnIterator.DEFAULT_CHUNK_SIZE;
 
 /**
  * {@link PartitionedTable} implementation.
@@ -449,7 +449,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
                     ? constituentColumnSource.getPrevSource()
                     : constituentColumnSource;
             try (final Stream<Table> constituentStream =
-                    new ObjectColumnIterator<Table>(chunkSourceToFetch, rowsToFetch).stream()) {
+                    new ChunkedObjectColumnIterator<Table>(chunkSourceToFetch, rowsToFetch).stream()) {
                 return constituentStream.toArray(Table[]::new);
             }
         }

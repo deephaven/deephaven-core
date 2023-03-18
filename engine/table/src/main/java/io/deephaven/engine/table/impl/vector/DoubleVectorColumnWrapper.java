@@ -19,7 +19,7 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.iterators.DoubleColumnIterator;
+import io.deephaven.engine.table.iterators.*;
 import io.deephaven.vector.DoubleSubVector;
 import io.deephaven.vector.DoubleVector;
 import org.jetbrains.annotations.NotNull;
@@ -29,7 +29,8 @@ import java.util.Arrays;
 import static io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfDouble.maybeConcat;
 import static io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfDouble.repeat;
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
-import static io.deephaven.engine.table.iterators.ColumnIterator.DEFAULT_CHUNK_SIZE;
+import static io.deephaven.engine.table.impl.vector.VectorColumnWrapperConstants.CHUNKED_COLUMN_ITERATOR_SIZE_THRESHOLD;
+import static io.deephaven.engine.table.iterators.ChunkedColumnIterator.DEFAULT_CHUNK_SIZE;
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 
 public class DoubleVectorColumnWrapper extends DoubleVector.Indirect {
@@ -155,8 +156,11 @@ public class DoubleVectorColumnWrapper extends DoubleVector.Indirect {
     public CloseablePrimitiveIteratorOfDouble iterator(final long fromIndexInclusive, final long toIndexExclusive) {
         final long rowSetSize = rowSet.size();
         if (startPadding == 0 && endPadding == 0 && fromIndexInclusive == 0 && toIndexExclusive == rowSetSize) {
-            return new DoubleColumnIterator(columnSource, rowSet, DEFAULT_CHUNK_SIZE,
-                    rowSet.firstRowKey(), rowSetSize);
+            if (rowSetSize >= CHUNKED_COLUMN_ITERATOR_SIZE_THRESHOLD) {
+                return new ChunkedDoubleColumnIterator(columnSource, rowSet, DEFAULT_CHUNK_SIZE, rowSet.firstRowKey(), rowSetSize);
+            } else {
+                return new SerialDoubleColumnIterator(columnSource, rowSet, rowSet.firstRowKey(), rowSetSize);
+            }
         }
 
         Require.leq(fromIndexInclusive, "fromIndexInclusive", toIndexExclusive, "toIndexExclusive");
@@ -187,9 +191,10 @@ public class DoubleVectorColumnWrapper extends DoubleVector.Indirect {
         final CloseablePrimitiveIteratorOfDouble initialNullsIterator = includedInitialNulls > 0
                 ? repeat(NULL_DOUBLE, includedInitialNulls)
                 : null;
-        final CloseablePrimitiveIteratorOfDouble rowsIterator = includedRows > 0
-                ? new DoubleColumnIterator(columnSource, rowSet, DEFAULT_CHUNK_SIZE, firstIncludedRowKey,
-                        includedRows)
+        final CloseablePrimitiveIteratorOfDouble rowsIterator = includedRows > CHUNKED_COLUMN_ITERATOR_SIZE_THRESHOLD
+                ? new ChunkedDoubleColumnIterator(columnSource, rowSet, DEFAULT_CHUNK_SIZE, firstIncludedRowKey, includedRows)
+                : includedRows > 0
+                ? new SerialDoubleColumnIterator(columnSource, rowSet, firstIncludedRowKey, includedRows)
                 : null;
         final CloseablePrimitiveIteratorOfDouble finalNullsIterator = remaining > 0
                 ? repeat(NULL_DOUBLE, remaining)

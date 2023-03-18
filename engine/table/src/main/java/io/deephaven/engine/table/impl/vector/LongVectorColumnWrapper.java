@@ -19,7 +19,7 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.iterators.LongColumnIterator;
+import io.deephaven.engine.table.iterators.*;
 import io.deephaven.vector.LongSubVector;
 import io.deephaven.vector.LongVector;
 import org.jetbrains.annotations.NotNull;
@@ -29,7 +29,8 @@ import java.util.Arrays;
 import static io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfLong.maybeConcat;
 import static io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfLong.repeat;
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
-import static io.deephaven.engine.table.iterators.ColumnIterator.DEFAULT_CHUNK_SIZE;
+import static io.deephaven.engine.table.impl.vector.VectorColumnWrapperConstants.CHUNKED_COLUMN_ITERATOR_SIZE_THRESHOLD;
+import static io.deephaven.engine.table.iterators.ChunkedColumnIterator.DEFAULT_CHUNK_SIZE;
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 public class LongVectorColumnWrapper extends LongVector.Indirect {
@@ -155,8 +156,11 @@ public class LongVectorColumnWrapper extends LongVector.Indirect {
     public CloseablePrimitiveIteratorOfLong iterator(final long fromIndexInclusive, final long toIndexExclusive) {
         final long rowSetSize = rowSet.size();
         if (startPadding == 0 && endPadding == 0 && fromIndexInclusive == 0 && toIndexExclusive == rowSetSize) {
-            return new LongColumnIterator(columnSource, rowSet, DEFAULT_CHUNK_SIZE,
-                    rowSet.firstRowKey(), rowSetSize);
+            if (rowSetSize >= CHUNKED_COLUMN_ITERATOR_SIZE_THRESHOLD) {
+                return new ChunkedLongColumnIterator(columnSource, rowSet, DEFAULT_CHUNK_SIZE, rowSet.firstRowKey(), rowSetSize);
+            } else {
+                return new SerialLongColumnIterator(columnSource, rowSet, rowSet.firstRowKey(), rowSetSize);
+            }
         }
 
         Require.leq(fromIndexInclusive, "fromIndexInclusive", toIndexExclusive, "toIndexExclusive");
@@ -187,9 +191,10 @@ public class LongVectorColumnWrapper extends LongVector.Indirect {
         final CloseablePrimitiveIteratorOfLong initialNullsIterator = includedInitialNulls > 0
                 ? repeat(NULL_LONG, includedInitialNulls)
                 : null;
-        final CloseablePrimitiveIteratorOfLong rowsIterator = includedRows > 0
-                ? new LongColumnIterator(columnSource, rowSet, DEFAULT_CHUNK_SIZE, firstIncludedRowKey,
-                        includedRows)
+        final CloseablePrimitiveIteratorOfLong rowsIterator = includedRows > CHUNKED_COLUMN_ITERATOR_SIZE_THRESHOLD
+                ? new ChunkedLongColumnIterator(columnSource, rowSet, DEFAULT_CHUNK_SIZE, firstIncludedRowKey, includedRows)
+                : includedRows > 0
+                ? new SerialLongColumnIterator(columnSource, rowSet, firstIncludedRowKey, includedRows)
                 : null;
         final CloseablePrimitiveIteratorOfLong finalNullsIterator = remaining > 0
                 ? repeat(NULL_LONG, remaining)

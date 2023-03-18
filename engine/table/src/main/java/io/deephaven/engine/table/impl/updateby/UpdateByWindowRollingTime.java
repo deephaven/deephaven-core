@@ -10,6 +10,7 @@ import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.ssa.LongSegmentedSortedArray;
+import io.deephaven.engine.table.iterators.ChunkedLongColumnIterator;
 import io.deephaven.engine.table.iterators.LongColumnIterator;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -252,7 +253,7 @@ class UpdateByWindowRollingTime extends UpdateByWindowRollingBase {
                 final ChunkSource.GetContext affectedTsGetContext =
                         ctx.timestampColumnSource.makeGetContext(ctx.workingChunkSize);
                 final LongColumnIterator influencerTsTailIt =
-                        new LongColumnIterator(ctx.timestampColumnSource, ctx.influencerRows)) {
+                        new ChunkedLongColumnIterator(ctx.timestampColumnSource, ctx.influencerRows)) {
 
             final LongRingBuffer timestampWindowBuffer = new LongRingBuffer(RING_BUFFER_INITIAL_SIZE);
 

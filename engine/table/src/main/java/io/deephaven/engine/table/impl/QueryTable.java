@@ -368,47 +368,47 @@ public class QueryTable extends BaseTable<QueryTable> {
 
     @Override
     public <TYPE> CloseableIterator<TYPE> columnIterator(@NotNull final String columnName) {
-        return ColumnIterator.make(getColumnSource(columnName), getRowSet());
+        return ChunkedColumnIterator.make(getColumnSource(columnName), getRowSet());
     }
 
     @Override
     public CloseablePrimitiveIteratorOfChar characterColumnIterator(@NotNull final String columnName) {
-        return new CharacterColumnIterator(getColumnSource(columnName, char.class), getRowSet());
+        return new ChunkedCharacterColumnIterator(getColumnSource(columnName, char.class), getRowSet());
     }
 
     @Override
     public CloseablePrimitiveIteratorOfByte byteColumnIterator(@NotNull final String columnName) {
-        return new ByteColumnIterator(getColumnSource(columnName, byte.class), getRowSet());
+        return new ChunkedByteColumnIterator(getColumnSource(columnName, byte.class), getRowSet());
     }
 
     @Override
     public CloseablePrimitiveIteratorOfShort shortColumnIterator(@NotNull final String columnName) {
-        return new ShortColumnIterator(getColumnSource(columnName, short.class), getRowSet());
+        return new ChunkedShortColumnIterator(getColumnSource(columnName, short.class), getRowSet());
     }
 
     @Override
     public CloseablePrimitiveIteratorOfInt integerColumnIterator(@NotNull final String columnName) {
-        return new IntegerColumnIterator(getColumnSource(columnName, int.class), getRowSet());
+        return new ChunkedIntegerColumnIterator(getColumnSource(columnName, int.class), getRowSet());
     }
 
     @Override
     public CloseablePrimitiveIteratorOfLong longColumnIterator(@NotNull final String columnName) {
-        return new LongColumnIterator(getColumnSource(columnName, long.class), getRowSet());
+        return new ChunkedLongColumnIterator(getColumnSource(columnName, long.class), getRowSet());
     }
 
     @Override
     public CloseablePrimitiveIteratorOfFloat floatColumnIterator(@NotNull final String columnName) {
-        return new FloatColumnIterator(getColumnSource(columnName, float.class), getRowSet());
+        return new ChunkedFloatColumnIterator(getColumnSource(columnName, float.class), getRowSet());
     }
 
     @Override
     public CloseablePrimitiveIteratorOfDouble doubleColumnIterator(@NotNull final String columnName) {
-        return new DoubleColumnIterator(getColumnSource(columnName, double.class), getRowSet());
+        return new ChunkedDoubleColumnIterator(getColumnSource(columnName, double.class), getRowSet());
     }
 
     @Override
     public <DATA_TYPE> CloseableIterator<DATA_TYPE> objectColumnIterator(@NotNull final String columnName) {
-        return new ObjectColumnIterator<>(getColumnSource(columnName, Object.class), getRowSet());
+        return new ChunkedObjectColumnIterator<>(getColumnSource(columnName, Object.class), getRowSet());
     }
 
     // endregion Column Iterators

@@ -34,7 +34,7 @@ import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
-import io.deephaven.engine.table.iterators.ObjectColumnIterator;
+import io.deephaven.engine.table.iterators.ChunkedObjectColumnIterator;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
@@ -600,7 +600,7 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
         ConstituentDependency.install(resultTable, (NotificationQueue.Dependency) aggregationUpdateListener);
 
         // Link constituents
-        new ObjectColumnIterator<Table>(tables, resultTable.getRowSet()).forEachRemaining(this::linkTableReferences);
+        new ChunkedObjectColumnIterator<Table>(tables, resultTable.getRowSet()).forEachRemaining(this::linkTableReferences);
 
         // This operator never reports modifications
         return ignored -> ModifiedColumnSet.EMPTY;
@@ -1003,7 +1003,7 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
 
     @Override
     public void propagateFailure(@NotNull final Throwable originalException, @NotNull TableListener.Entry sourceEntry) {
-        new ObjectColumnIterator<QueryTable>(tables, resultTable.getRowSet())
+        new ChunkedObjectColumnIterator<QueryTable>(tables, resultTable.getRowSet())
                 .forEachRemaining(st -> st.notifyListenersOnError(originalException, sourceEntry));
     }
 

@@ -14,7 +14,7 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.iterators.CharacterColumnIterator;
+import io.deephaven.engine.table.iterators.*;
 import io.deephaven.vector.CharSubVector;
 import io.deephaven.vector.CharVector;
 import org.jetbrains.annotations.NotNull;
@@ -24,7 +24,8 @@ import java.util.Arrays;
 import static io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfChar.maybeConcat;
 import static io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfChar.repeat;
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
-import static io.deephaven.engine.table.iterators.ColumnIterator.DEFAULT_CHUNK_SIZE;
+import static io.deephaven.engine.table.impl.vector.VectorColumnWrapperConstants.CHUNKED_COLUMN_ITERATOR_SIZE_THRESHOLD;
+import static io.deephaven.engine.table.iterators.ChunkedColumnIterator.DEFAULT_CHUNK_SIZE;
 import static io.deephaven.util.QueryConstants.NULL_CHAR;
 
 public class CharVectorColumnWrapper extends CharVector.Indirect {
@@ -150,8 +151,11 @@ public class CharVectorColumnWrapper extends CharVector.Indirect {
     public CloseablePrimitiveIteratorOfChar iterator(final long fromIndexInclusive, final long toIndexExclusive) {
         final long rowSetSize = rowSet.size();
         if (startPadding == 0 && endPadding == 0 && fromIndexInclusive == 0 && toIndexExclusive == rowSetSize) {
-            return new CharacterColumnIterator(columnSource, rowSet, DEFAULT_CHUNK_SIZE,
-                    rowSet.firstRowKey(), rowSetSize);
+            if (rowSetSize >= CHUNKED_COLUMN_ITERATOR_SIZE_THRESHOLD) {
+                return new ChunkedCharacterColumnIterator(columnSource, rowSet, DEFAULT_CHUNK_SIZE, rowSet.firstRowKey(), rowSetSize);
+            } else {
+                return new SerialCharacterColumnIterator(columnSource, rowSet, rowSet.firstRowKey(), rowSetSize);
+            }
         }
 
         Require.leq(fromIndexInclusive, "fromIndexInclusive", toIndexExclusive, "toIndexExclusive");
@@ -182,9 +186,10 @@ public class CharVectorColumnWrapper extends CharVector.Indirect {
         final CloseablePrimitiveIteratorOfChar initialNullsIterator = includedInitialNulls > 0
                 ? repeat(NULL_CHAR, includedInitialNulls)
                 : null;
-        final CloseablePrimitiveIteratorOfChar rowsIterator = includedRows > 0
-                ? new CharacterColumnIterator(columnSource, rowSet, DEFAULT_CHUNK_SIZE, firstIncludedRowKey,
-                        includedRows)
+        final CloseablePrimitiveIteratorOfChar rowsIterator = includedRows > CHUNKED_COLUMN_ITERATOR_SIZE_THRESHOLD
+                ? new ChunkedCharacterColumnIterator(columnSource, rowSet, DEFAULT_CHUNK_SIZE, firstIncludedRowKey, includedRows)
+                : includedRows > 0
+                ? new SerialCharacterColumnIterator(columnSource, rowSet, firstIncludedRowKey, includedRows)
                 : null;
         final CloseablePrimitiveIteratorOfChar finalNullsIterator = remaining > 0
                 ? repeat(NULL_CHAR, remaining)
