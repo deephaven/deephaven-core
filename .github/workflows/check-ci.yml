@@ -43,7 +43,15 @@ jobs:
           job-id: checks
           arguments: --scan --continue check
           gradle-version: wrapper
-
+      - name: Publish Test Results
+        uses: mikepenz/action-junit-report@v3
+        if: ${{ github.repository_owner == 'deephaven' }}
+        with:
+          # We have to make a unique report per run https://github.com/ScaCap/action-surefire-report/issues/70
+          check_name: check report ${{ matrix.gradle-task }} java${{ matrix.test-jvm-version }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          report_paths: '**/build/test-results/*/TEST-*.xml'
+          include_passed: true
       - name: Upload Test Results
         uses: actions/upload-artifact@v3
         if: always()
@@ -51,19 +59,15 @@ jobs:
           name: check-ci-results
           path: |
             **/build/test-results/**
+            **/build/reports/tests/**
             !**/build/test-results/**/binary/**
-
-      - name: Upload Test Reports
-        uses: actions/upload-artifact@v3
-        if: always()
-        with:
-          name: check-ci-reports
-          path: '**/build/reports/tests/**'
 
       - name: Upload JVM Error Logs
         uses: actions/upload-artifact@v3
         if: failure()
         with:
           name: check-ci-jvm-err
-          path: '**/*_pid*.log'
+          path: |
+            **/*_pid*.log
+            **/core.*
           if-no-files-found: ignore
