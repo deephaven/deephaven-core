@@ -48,10 +48,8 @@ class UpdateByTestCase(BaseTestCase):
                     rt = t.update_by(ops=[op], by=["b"])
                     self.assertTrue(rt.is_refreshing is t.is_refreshing)
                     self.assertEqual(len(rt.schema), 1 + len(t.schema))
-                    if rt.is_refreshing:
+                    if not rt.is_refreshing:
                         self.assertEqual(rt.size, t.size)
-                    else:
-                        self.assertGreaterEqual(rt.size, t.size)
 
 
 if __name__ == '__main__':
