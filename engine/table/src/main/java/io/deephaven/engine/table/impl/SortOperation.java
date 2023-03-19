@@ -341,8 +341,8 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
         }
         final HashMapK4V4 reverseLookup = new HashMapLockFreeK4V4(sortResult.intSize(), .75f, RowSequence.NULL_ROW_KEY);
         try (final LongColumnIterator innerRowKeys =
-                     new ChunkedLongColumnIterator(sortRedirection, sortResult.getRowSet());
-             final RowSet.Iterator outerRowKeys = sortResult.getRowSet().iterator()) {
+                new ChunkedLongColumnIterator(sortRedirection, sortResult.getRowSet());
+                final RowSet.Iterator outerRowKeys = sortResult.getRowSet().iterator()) {
             while (outerRowKeys.hasNext()) {
                 reverseLookup.put(innerRowKeys.nextLong(), outerRowKeys.nextLong());
             }

@@ -600,7 +600,8 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
         ConstituentDependency.install(resultTable, (NotificationQueue.Dependency) aggregationUpdateListener);
 
         // Link constituents
-        new ChunkedObjectColumnIterator<Table>(tables, resultTable.getRowSet()).forEachRemaining(this::linkTableReferences);
+        new ChunkedObjectColumnIterator<Table>(tables, resultTable.getRowSet())
+                .forEachRemaining(this::linkTableReferences);
 
         // This operator never reports modifications
         return ignored -> ModifiedColumnSet.EMPTY;
