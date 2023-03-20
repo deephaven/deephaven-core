@@ -1,4 +1,0 @@
-# Provides codec support that Deephaven will use out of the box, but isn't specified upstream
-io.airlift.compress.lzo.LzoCodec
-io.airlift.compress.lzo.LzopCodec
-io.airlift.compress.zstd.ZstdCodec
