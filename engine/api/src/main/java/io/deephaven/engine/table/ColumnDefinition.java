@@ -116,17 +116,21 @@ public class ColumnDefinition<TYPE> implements LogOutputAppendable {
     }
 
     public static <T extends Vector<?>> ColumnDefinition<T> ofVector(
-            @NotNull final String name, @NotNull final Class<T> vectorType) {
+            @NotNull final String name,
+            @NotNull final Class<T> vectorType) {
         return new ColumnDefinition<>(name, vectorType, baseComponentTypeForVector(vectorType), ColumnType.Normal);
     }
 
-    public static <T> ColumnDefinition<T> fromGenericType(@NotNull final String name,
+    public static <T> ColumnDefinition<T> fromGenericType(
+            @NotNull final String name,
             @NotNull final Class<T> dataType) {
         return fromGenericType(name, dataType, null);
     }
 
     public static <T> ColumnDefinition<T> fromGenericType(
-            @NotNull final String name, @NotNull final Class<T> dataType, @Nullable final Class<?> componentType) {
+            @NotNull final String name,
+            @NotNull final Class<T> dataType,
+            @Nullable final Class<?> componentType) {
         return fromGenericType(name, dataType, componentType, ColumnType.Normal);
     }
 
@@ -317,7 +321,7 @@ public class ColumnDefinition<TYPE> implements LogOutputAppendable {
                 @Override
                 public void visit(PrimitiveVectorType<?, ?> vectorPrimitiveType) {
                     // noinspection unchecked
-                    out = ofVector(name, (Class<? extends Vector>) vectorPrimitiveType.clazz());
+                    out = ofVector(name, (Class<? extends Vector<?>>) vectorPrimitiveType.clazz());
                 }
 
                 @Override
