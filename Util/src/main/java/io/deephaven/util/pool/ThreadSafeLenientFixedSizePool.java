@@ -38,7 +38,7 @@ public class ThreadSafeLenientFixedSizePool<T> implements Pool.MultiPool<T>, Poo
      * @param <T> the type to be returned
      * @return a Function taking a ThreadSafeLenientFixedSizePool(ignored) and returning T
      */
-    private static <T> Function<io.deephaven.util.pool.ThreadSafeLenientFixedSizePool<T>, T> makeFactoryAdapter(
+    private static <T> Function<ThreadSafeLenientFixedSizePool<T>, T> makeFactoryAdapter(
             final Supplier<T> supplier) {
         return arg -> supplier.get();
     }
@@ -46,7 +46,7 @@ public class ThreadSafeLenientFixedSizePool<T> implements Pool.MultiPool<T>, Poo
     public static final int MIN_SIZE = 7;
 
     private final LockFreeArrayQueue<T> pool; // TODO: should be a stack
-    private final Function<io.deephaven.util.pool.ThreadSafeLenientFixedSizePool<T>, T> factory;
+    private final Function<ThreadSafeLenientFixedSizePool<T>, T> factory;
     private final Consumer<? super T> clearingProcedure;
     private final Counter extraFactoryCalls;
 

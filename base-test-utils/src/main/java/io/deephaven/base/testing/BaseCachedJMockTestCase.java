@@ -95,11 +95,11 @@ abstract public class BaseCachedJMockTestCase extends TestCase {
             };
         }
 
-        public void willDo(final java.util.function.Function<org.jmock.api.Invocation, Object> proc) {
+        public void willDo(final Function<org.jmock.api.Invocation, Object> proc) {
             this.currentBuilder().setAction(run(proc));
         }
 
-        public static CustomAction run(final java.util.function.Function<org.jmock.api.Invocation, Object> proc) {
+        public static CustomAction run(final Function<org.jmock.api.Invocation, Object> proc) {
             return new CustomAction("willDo_" + willDoCounter.incrementAndGet()) {
                 @Override
                 public Object invoke(Invocation invocation) throws Throwable {

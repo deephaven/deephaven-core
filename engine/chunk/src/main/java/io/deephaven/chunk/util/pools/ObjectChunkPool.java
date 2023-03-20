@@ -44,7 +44,8 @@ public final class ObjectChunkPool implements ChunkPool {
                     SUB_POOL_SEGMENT_CAPACITY,
                     () -> ChunkPoolInstrumentation.getAndRecord(() -> WritableObjectChunk.makeWritableChunkForPool(chunkCapacity)),
                     (final WritableObjectChunk chunk) -> {
-                         chunk.fillWithNullValue(0, chunkCapacity);
+                        chunk.fillWithNullValue(0, chunkCapacity);
+                        chunk.setSize(chunkCapacity);
                     }
             );
         }

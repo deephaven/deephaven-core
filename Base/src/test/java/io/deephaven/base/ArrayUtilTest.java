@@ -5,6 +5,7 @@ package io.deephaven.base;
 
 import junit.framework.TestCase;
 
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class ArrayUtilTest extends TestCase {
@@ -304,7 +305,7 @@ public class ArrayUtilTest extends TestCase {
             }
         }
 
-        public static class UnaryFactory implements java.util.function.Function<String, StringWrapper> {
+        public static class UnaryFactory implements Function<String, StringWrapper> {
             public StringWrapper apply(String s) {
                 return new StringWrapper(s);
             }

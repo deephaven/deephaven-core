@@ -15,7 +15,7 @@ public final class SerialCharacterColumnIterator
         implements CharacterColumnIterator {
 
     /**
-     * Create a new ChunkedCharacterColumnIterator.
+     * Create a new SerialCharacterColumnIterator.
      *
      * @param columnSource The {@link ColumnSource} to fetch values from
      * @param rowSet The {@link RowSet} to iterate over
@@ -31,7 +31,7 @@ public final class SerialCharacterColumnIterator
     }
 
     /**
-     * Create a new ChunkedCharacterColumnIterator.
+     * Create a new SerialCharacterColumnIterator.
      *
      * @param columnSource The {@link ColumnSource} to fetch values from
      * @param rowSet The {@link RowSet} to iterate over

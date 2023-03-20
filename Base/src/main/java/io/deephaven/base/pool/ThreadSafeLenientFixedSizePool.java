@@ -10,6 +10,7 @@ import io.deephaven.base.stats.Stats;
 import io.deephaven.base.verify.Require;
 
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
@@ -33,7 +34,7 @@ public class ThreadSafeLenientFixedSizePool<T> implements Pool.MultiPool<T> {
         }
     };
 
-    private static <T> java.util.function.Function<ThreadSafeLenientFixedSizePool<T>, T> makeNullaryFactoryAdapter(
+    private static <T> Function<ThreadSafeLenientFixedSizePool<T>, T> makeNullaryFactoryAdapter(
             final Supplier<T> factory) {
         return arg -> factory.get();
     }
@@ -41,7 +42,7 @@ public class ThreadSafeLenientFixedSizePool<T> implements Pool.MultiPool<T> {
     public static final int MIN_SIZE = 7;
 
     private final LockFreeArrayQueue<T> pool; // TODO: should be a stack
-    private final java.util.function.Function<ThreadSafeLenientFixedSizePool<T>, T> factory;
+    private final Function<ThreadSafeLenientFixedSizePool<T>, T> factory;
     private final Consumer<? super T> clearingProcedure;
     private final Counter extraFactoryCalls;
 
@@ -62,14 +63,17 @@ public class ThreadSafeLenientFixedSizePool<T> implements Pool.MultiPool<T> {
                 clearingProcedure);
     }
 
-    public ThreadSafeLenientFixedSizePool(int size,
-            java.util.function.Function<ThreadSafeLenientFixedSizePool<T>, T> factory,
+    public ThreadSafeLenientFixedSizePool(
+            int size,
+            Function<ThreadSafeLenientFixedSizePool<T>, T> factory,
             Consumer<? super T> clearingProcedure) {
         this(null, size, factory, clearingProcedure);
     }
 
-    public ThreadSafeLenientFixedSizePool(String name, int size,
-            java.util.function.Function<ThreadSafeLenientFixedSizePool<T>, T> factory,
+    public ThreadSafeLenientFixedSizePool(
+            String name,
+            int size,
+            Function<ThreadSafeLenientFixedSizePool<T>, T> factory,
             Consumer<? super T> clearingProcedure) {
         Require.geq(size, "size", MIN_SIZE, "MIN_SIZE");
         Require.neqNull(factory, "factory");

@@ -20,7 +20,7 @@ public final class SerialFloatColumnIterator
         implements FloatColumnIterator {
 
     /**
-     * Create a new ChunkedFloatColumnIterator.
+     * Create a new SerialFloatColumnIterator.
      *
      * @param columnSource The {@link ColumnSource} to fetch values from
      * @param rowSet The {@link RowSet} to iterate over
@@ -36,7 +36,7 @@ public final class SerialFloatColumnIterator
     }
 
     /**
-     * Create a new ChunkedFloatColumnIterator.
+     * Create a new SerialFloatColumnIterator.
      *
      * @param columnSource The {@link ColumnSource} to fetch values from
      * @param rowSet The {@link RowSet} to iterate over

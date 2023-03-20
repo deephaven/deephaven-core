@@ -20,7 +20,7 @@ public final class SerialLongColumnIterator
         implements LongColumnIterator {
 
     /**
-     * Create a new ChunkedLongColumnIterator.
+     * Create a new SerialLongColumnIterator.
      *
      * @param columnSource The {@link ColumnSource} to fetch values from
      * @param rowSet The {@link RowSet} to iterate over
@@ -36,7 +36,7 @@ public final class SerialLongColumnIterator
     }
 
     /**
-     * Create a new ChunkedLongColumnIterator.
+     * Create a new SerialLongColumnIterator.
      *
      * @param columnSource The {@link ColumnSource} to fetch values from
      * @param rowSet The {@link RowSet} to iterate over

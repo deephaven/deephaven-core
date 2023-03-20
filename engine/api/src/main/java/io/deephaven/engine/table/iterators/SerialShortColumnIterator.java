@@ -20,7 +20,7 @@ public final class SerialShortColumnIterator
         implements ShortColumnIterator {
 
     /**
-     * Create a new ChunkedShortColumnIterator.
+     * Create a new SerialShortColumnIterator.
      *
      * @param columnSource The {@link ColumnSource} to fetch values from
      * @param rowSet The {@link RowSet} to iterate over
@@ -36,7 +36,7 @@ public final class SerialShortColumnIterator
     }
 
     /**
-     * Create a new ChunkedShortColumnIterator.
+     * Create a new SerialShortColumnIterator.
      *
      * @param columnSource The {@link ColumnSource} to fetch values from
      * @param rowSet The {@link RowSet} to iterate over

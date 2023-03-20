@@ -84,8 +84,9 @@ public abstract class ChunkedColumnIterator<DATA_TYPE, CHUNK_TYPE extends Chunk<
         return chunkSource;
     }
 
+    @Override
     public final long remaining() {
-        return remainingRowKeys + (currentData == null ? 0 : currentData.size() - currentData.size());
+        return remainingRowKeys + (currentData == null ? 0 : currentData.size() - currentOffset);
     }
 
     @Override
@@ -98,6 +99,13 @@ public abstract class ChunkedColumnIterator<DATA_TYPE, CHUNK_TYPE extends Chunk<
         return true;
     }
 
+    /**
+     * Maybe advance this ChunkedColumnIterator if necessary (that is, if there is no current chunk or no remaining
+     * elements in the current chunk), by reading the next chunk and setting {@link #currentData} and
+     * {@link #currentOffset} accordingly.
+     * 
+     * @throws NoSuchElementException If this ChunkedColumnIterator is exhausted
+     */
     final void maybeAdvance() {
         if (currentData == null || currentOffset >= currentData.size()) {
             if (remainingRowKeys <= 0) {
@@ -112,8 +120,22 @@ public abstract class ChunkedColumnIterator<DATA_TYPE, CHUNK_TYPE extends Chunk<
         }
     }
 
+    /**
+     * Cast {@code chunk} to the appropriate class for this implementation.
+     *
+     * @param chunk The {@link Chunk} to cast
+     * @return {@code chunk} with the appropriate cast applied
+     */
     abstract CHUNK_TYPE castChunk(@NotNull final Chunk<? extends Any> chunk);
 
+    /**
+     * Invoke {@code consumeCurrentChunk} to consume all data in each remaining chunk of data in this
+     * ChunkedColumnIterator.
+     *
+     * @param consumeCurrentChunk The procedure to invoke. Must result in {@code currentOffset == currentData.size()}.
+     *        Takes no arguments, because this method is only called by tightly-coupled classes with access to
+     *        {@link #currentData} and {@link #currentOffset}.
+     */
     final void consumeRemainingByChunks(@NotNull final Runnable consumeCurrentChunk) {
         while (hasNext()) {
             maybeAdvance();

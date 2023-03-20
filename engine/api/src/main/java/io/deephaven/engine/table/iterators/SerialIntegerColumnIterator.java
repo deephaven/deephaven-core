@@ -20,7 +20,7 @@ public final class SerialIntegerColumnIterator
         implements IntegerColumnIterator {
 
     /**
-     * Create a new ChunkedIntegerColumnIterator.
+     * Create a new SerialIntegerColumnIterator.
      *
      * @param columnSource The {@link ColumnSource} to fetch values from
      * @param rowSet The {@link RowSet} to iterate over
@@ -36,7 +36,7 @@ public final class SerialIntegerColumnIterator
     }
 
     /**
-     * Create a new ChunkedIntegerColumnIterator.
+     * Create a new SerialIntegerColumnIterator.
      *
      * @param columnSource The {@link ColumnSource} to fetch values from
      * @param rowSet The {@link RowSet} to iterate over

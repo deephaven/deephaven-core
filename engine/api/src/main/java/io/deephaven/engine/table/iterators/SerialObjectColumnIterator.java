@@ -15,7 +15,7 @@ public final class SerialObjectColumnIterator<DATA_TYPE>
         implements ObjectColumnIterator<DATA_TYPE> {
 
     /**
-     * Create a new ChunkedCharacterColumnIterator.
+     * Create a new SerialObjectColumnIterator.
      *
      * @param columnSource The {@link ColumnSource} to fetch values from
      * @param rowSet The {@link RowSet} to iterate over
@@ -31,7 +31,7 @@ public final class SerialObjectColumnIterator<DATA_TYPE>
     }
 
     /**
-     * Create a new ChunkedCharacterColumnIterator.
+     * Create a new SerialObjectColumnIterator.
      *
      * @param columnSource The {@link ColumnSource} to fetch values from
      * @param rowSet The {@link RowSet} to iterate over

@@ -200,9 +200,7 @@ public class ArrayUtil {
         return pushArray(factory.get(), a, c);
     }
 
-    public static <T, A> T[] addUnless(T[] a, Class<T> c, Predicate.Binary<T, A> pred,
-            java.util.function.Function<A, T> factory,
-            A arg) {
+    public static <T, A> T[] addUnless(T[] a, Class<T> c, Predicate.Binary<T, A> pred, Function<A, T> factory, A arg) {
         if (a != null) {
             for (int i = 0; i < a.length; ++i) {
                 if (pred.call(a[i], arg)) {

@@ -43,11 +43,9 @@ public abstract class SerialColumnIterator<DATA_TYPE> implements ColumnIterator<
         this.rowSet = rowSet;
         if (firstRowKey == rowSet.firstRowKey()) {
             nextRowPosition = 0;
-        } else {
-            if ((nextRowPosition = rowSet.find(firstRowKey)) < 0) {
-                throw new IllegalArgumentException(String.format(
-                        "Invalid first row key %d, not present in iteration row set", firstRowKey));
-            }
+        } else if ((nextRowPosition = rowSet.find(firstRowKey)) < 0) {
+            throw new IllegalArgumentException(String.format(
+                    "Invalid first row key %d, not present in iteration row set", firstRowKey));
         }
         if (rowSet.size() - nextRowPosition < length) {
             throw new IllegalArgumentException(String.format(
@@ -57,6 +55,7 @@ public abstract class SerialColumnIterator<DATA_TYPE> implements ColumnIterator<
         lastRowPositionExclusive = nextRowPosition + length;
     }
 
+    @Override
     public final long remaining() {
         return lastRowPositionExclusive - nextRowPosition;
     }
@@ -66,6 +65,11 @@ public abstract class SerialColumnIterator<DATA_TYPE> implements ColumnIterator<
         return nextRowPosition != lastRowPositionExclusive;
     }
 
+    /**
+     * Get the row key for the next element of this iterator.
+     *
+     * @throws NoSuchElementException If this ChunkedColumnIterator is exhausted
+     */
     final long advanceAndGetNextRowKey() {
         if (nextRowPosition == lastRowPositionExclusive) {
             throw new NoSuchElementException();
