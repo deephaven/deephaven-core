@@ -125,10 +125,10 @@ public abstract class BaseAggregateSlicedColumnSource<VECTOR_TYPE extends Vector
             return 0;
         }
 
-        final long startPos = getStartOffset(groupIndexKey);
-        final long endPos = getEndOffset(groupIndexKey);
+        final long startOffset = getStartOffset(groupIndexKey);
+        final long endOffset = getEndOffset(groupIndexKey);
 
-        if (startPos == NULL_LONG || endPos == NULL_LONG) {
+        if (startOffset == NULL_LONG || endOffset == NULL_LONG) {
             return 0;
         }
 
@@ -137,10 +137,10 @@ public abstract class BaseAggregateSlicedColumnSource<VECTOR_TYPE extends Vector
 
         final long size = bucketRowSet.size();
 
-        final long start = ClampUtil.clampLong(0, size, rowPos + startPos);
-        final long end = ClampUtil.clampLong(0, size, rowPos + endPos);
+        final long startPos = ClampUtil.clampLong(0, size, rowPos + startOffset);
+        final long endPos = ClampUtil.clampLong(0, size, rowPos + endOffset);
 
-        return end - start;
+        return endPos - startPos;
     }
 
     @Override
@@ -149,66 +149,55 @@ public abstract class BaseAggregateSlicedColumnSource<VECTOR_TYPE extends Vector
             return 0;
         }
 
-        final long startPos = getPrevStartOffset(groupIndexKey);
-        final long endPos = getPrevEndOffset(groupIndexKey);
+        final long startOffset = getPrevStartOffset(groupIndexKey);
+        final long endOffset = getPrevEndOffset(groupIndexKey);
 
-        if (startPos == NULL_LONG || endPos == NULL_LONG) {
+        if (startOffset == NULL_LONG || endOffset == NULL_LONG) {
             return 0;
         }
 
-        try (final RowSet bucketRowSet = getPrevGroupRowSet(groupIndexKey)) {
-            final long rowPos = bucketRowSet.find(groupIndexKey);
+        final RowSet bucketRowSet = getPrevGroupRowSet(groupIndexKey);
+        final long rowPos = bucketRowSet.find(groupIndexKey);
 
-            final long size = bucketRowSet.isTracking()
-                    ? bucketRowSet.trackingCast().sizePrev()
-                    : bucketRowSet.size();
+        final long size = bucketRowSet.isTracking()
+                ? bucketRowSet.trackingCast().sizePrev()
+                : bucketRowSet.size();
 
-            final long start = ClampUtil.clampLong(0, size, rowPos + startPos);
-            final long end = ClampUtil.clampLong(0, size, rowPos + endPos);
+        final long startPos = ClampUtil.clampLong(0, size, rowPos + startOffset);
+        final long endPos = ClampUtil.clampLong(0, size, rowPos + endOffset);
 
-            return end - start;
-        }
-    }
-
-    private long getPrevRowKey(final long groupIndexKey, final int offsetInGroup) {
-        final long startPos = getPrevStartOffset(groupIndexKey);
-
-        try (final RowSet bucketRowSet = getPrevGroupRowSet(groupIndexKey)) {
-            final long firstPos = bucketRowSet.find(groupIndexKey) + startPos;
-            return bucketRowSet.get(firstPos + offsetInGroup);
-        }
+        return endPos - startPos;
     }
 
     protected RowSet getPrevGroupRowSet(final long groupIndexKey) {
         final RowSet groupRowSetPrev = groupRowSetSource.getPrev(groupIndexKey);
-        // This will always return a SafeCloseable so at least some invocations can be disposed.
         return groupRowSetPrev.isTracking()
-                ? groupRowSetPrev.trackingCast().copyPrev()
-                : groupRowSetPrev.copy();
+                ? groupRowSetPrev.trackingCast().getPrev()
+                : groupRowSetPrev;
     }
 
     private long getGroupOffsetKey(final long groupIndexKey, final int offsetInGroup) {
-        final long startPos = getStartOffset(groupIndexKey);
+        final long startOffset = getStartOffset(groupIndexKey);
         final RowSet bucketRowSet = groupRowSetSource.get(groupIndexKey);
 
         final long rowPos = bucketRowSet.find(groupIndexKey);
         final long size = bucketRowSet.size();
-        final long start = ClampUtil.clampLong(0, size, rowPos + startPos);
+        final long startPos = ClampUtil.clampLong(0, size, rowPos + startOffset);
 
-        final long finalPos = start + offsetInGroup;
+        final long finalPos = startPos + offsetInGroup;
         return bucketRowSet.get(finalPos);
     }
 
     private long getPrevGroupOffsetKey(final long groupIndexKey, final int offsetInGroup) {
-        final long startPos = getPrevStartOffset(groupIndexKey);
-        try (final RowSet bucketRowSet = getPrevGroupRowSet(groupIndexKey)) {
-            final long rowPos = bucketRowSet.find(groupIndexKey);
-            final long size = bucketRowSet.size();
-            final long start = ClampUtil.clampLong(0, size, rowPos + startPos);
+        final long startOffset = getPrevStartOffset(groupIndexKey);
+        final RowSet bucketRowSet = getPrevGroupRowSet(groupIndexKey);
 
-            final long finalPos = start + offsetInGroup;
-            return bucketRowSet.get(finalPos);
-        }
+        final long rowPos = bucketRowSet.find(groupIndexKey);
+        final long size = bucketRowSet.size();
+        final long startPos = ClampUtil.clampLong(0, size, rowPos + startOffset);
+
+        final long finalPos = startPos + offsetInGroup;
+        return bucketRowSet.get(finalPos);
     }
 
     @Override
@@ -216,8 +205,8 @@ public abstract class BaseAggregateSlicedColumnSource<VECTOR_TYPE extends Vector
         if (groupIndexKey == RowSequence.NULL_ROW_KEY) {
             return null;
         }
-        final long finalKey = getGroupOffsetKey(groupIndexKey, offsetInGroup);
-        return aggregatedSource.get(finalKey);
+        final long key = getGroupOffsetKey(groupIndexKey, offsetInGroup);
+        return aggregatedSource.get(key);
     }
 
     @Override
@@ -225,8 +214,8 @@ public abstract class BaseAggregateSlicedColumnSource<VECTOR_TYPE extends Vector
         if (groupIndexKey == RowSequence.NULL_ROW_KEY) {
             return null;
         }
-        final long finalKey = getPrevGroupOffsetKey(groupIndexKey, offsetInGroup);
-        return aggregatedSource.getPrev(finalKey);
+        final long key = getPrevGroupOffsetKey(groupIndexKey, offsetInGroup);
+        return aggregatedSource.getPrev(key);
     }
 
     @Override
@@ -234,8 +223,8 @@ public abstract class BaseAggregateSlicedColumnSource<VECTOR_TYPE extends Vector
         if (groupIndexKey == RowSequence.NULL_ROW_KEY) {
             return null;
         }
-        final long finalKey = getGroupOffsetKey(groupIndexKey, offsetInGroup);
-        return aggregatedSource.getBoolean(finalKey);
+        final long key = getGroupOffsetKey(groupIndexKey, offsetInGroup);
+        return aggregatedSource.getBoolean(key);
     }
 
     @Override
@@ -243,8 +232,8 @@ public abstract class BaseAggregateSlicedColumnSource<VECTOR_TYPE extends Vector
         if (groupIndexKey == RowSequence.NULL_ROW_KEY) {
             return NULL_BOOLEAN;
         }
-        final long finalKey = getPrevGroupOffsetKey(groupIndexKey, offsetInGroup);
-        return aggregatedSource.getPrevBoolean(finalKey);
+        final long key = getPrevGroupOffsetKey(groupIndexKey, offsetInGroup);
+        return aggregatedSource.getPrevBoolean(key);
     }
 
     @Override
@@ -252,8 +241,8 @@ public abstract class BaseAggregateSlicedColumnSource<VECTOR_TYPE extends Vector
         if (groupIndexKey == RowSequence.NULL_ROW_KEY) {
             return NULL_DOUBLE;
         }
-        final long finalKey = getGroupOffsetKey(groupIndexKey, offsetInGroup);
-        return aggregatedSource.getDouble(finalKey);
+        final long key = getGroupOffsetKey(groupIndexKey, offsetInGroup);
+        return aggregatedSource.getDouble(key);
     }
 
     @Override
@@ -261,8 +250,8 @@ public abstract class BaseAggregateSlicedColumnSource<VECTOR_TYPE extends Vector
         if (groupIndexKey == RowSequence.NULL_ROW_KEY) {
             return NULL_DOUBLE;
         }
-        final long finalKey = getPrevGroupOffsetKey(groupIndexKey, offsetInGroup);
-        return aggregatedSource.getPrevDouble(finalKey);
+        final long key = getPrevGroupOffsetKey(groupIndexKey, offsetInGroup);
+        return aggregatedSource.getPrevDouble(key);
     }
 
     @Override
@@ -270,8 +259,8 @@ public abstract class BaseAggregateSlicedColumnSource<VECTOR_TYPE extends Vector
         if (groupIndexKey == RowSequence.NULL_ROW_KEY) {
             return NULL_FLOAT;
         }
-        final long finalKey = getGroupOffsetKey(groupIndexKey, offsetInGroup);
-        return aggregatedSource.getFloat(finalKey);
+        final long key = getGroupOffsetKey(groupIndexKey, offsetInGroup);
+        return aggregatedSource.getFloat(key);
     }
 
     @Override
@@ -279,8 +268,8 @@ public abstract class BaseAggregateSlicedColumnSource<VECTOR_TYPE extends Vector
         if (groupIndexKey == RowSequence.NULL_ROW_KEY) {
             return NULL_FLOAT;
         }
-        final long finalKey = getPrevGroupOffsetKey(groupIndexKey, offsetInGroup);
-        return aggregatedSource.getPrevFloat(finalKey);
+        final long key = getPrevGroupOffsetKey(groupIndexKey, offsetInGroup);
+        return aggregatedSource.getPrevFloat(key);
     }
 
     @Override
@@ -288,8 +277,8 @@ public abstract class BaseAggregateSlicedColumnSource<VECTOR_TYPE extends Vector
         if (groupIndexKey == RowSequence.NULL_ROW_KEY) {
             return NULL_BYTE;
         }
-        final long finalKey = getGroupOffsetKey(groupIndexKey, offsetInGroup);
-        return aggregatedSource.getByte(finalKey);
+        final long key = getGroupOffsetKey(groupIndexKey, offsetInGroup);
+        return aggregatedSource.getByte(key);
     }
 
     @Override
@@ -297,8 +286,8 @@ public abstract class BaseAggregateSlicedColumnSource<VECTOR_TYPE extends Vector
         if (groupIndexKey == RowSequence.NULL_ROW_KEY) {
             return NULL_BYTE;
         }
-        final long finalKey = getPrevGroupOffsetKey(groupIndexKey, offsetInGroup);
-        return aggregatedSource.getPrevByte(finalKey);
+        final long key = getPrevGroupOffsetKey(groupIndexKey, offsetInGroup);
+        return aggregatedSource.getPrevByte(key);
     }
 
     @Override
@@ -306,8 +295,8 @@ public abstract class BaseAggregateSlicedColumnSource<VECTOR_TYPE extends Vector
         if (groupIndexKey == RowSequence.NULL_ROW_KEY) {
             return NULL_CHAR;
         }
-        final long finalKey = getGroupOffsetKey(groupIndexKey, offsetInGroup);
-        return aggregatedSource.getChar(finalKey);
+        final long key = getGroupOffsetKey(groupIndexKey, offsetInGroup);
+        return aggregatedSource.getChar(key);
     }
 
     @Override
@@ -315,8 +304,8 @@ public abstract class BaseAggregateSlicedColumnSource<VECTOR_TYPE extends Vector
         if (groupIndexKey == RowSequence.NULL_ROW_KEY) {
             return NULL_CHAR;
         }
-        final long finalKey = getPrevGroupOffsetKey(groupIndexKey, offsetInGroup);
-        return aggregatedSource.getPrevChar(finalKey);
+        final long key = getPrevGroupOffsetKey(groupIndexKey, offsetInGroup);
+        return aggregatedSource.getPrevChar(key);
     }
 
     @Override
@@ -324,8 +313,8 @@ public abstract class BaseAggregateSlicedColumnSource<VECTOR_TYPE extends Vector
         if (groupIndexKey == RowSequence.NULL_ROW_KEY) {
             return NULL_SHORT;
         }
-        final long finalKey = getGroupOffsetKey(groupIndexKey, offsetInGroup);
-        return aggregatedSource.getShort(finalKey);
+        final long key = getGroupOffsetKey(groupIndexKey, offsetInGroup);
+        return aggregatedSource.getShort(key);
     }
 
     @Override
@@ -333,8 +322,8 @@ public abstract class BaseAggregateSlicedColumnSource<VECTOR_TYPE extends Vector
         if (groupIndexKey == RowSequence.NULL_ROW_KEY) {
             return NULL_SHORT;
         }
-        final long finalKey = getPrevGroupOffsetKey(groupIndexKey, offsetInGroup);
-        return aggregatedSource.getPrevShort(finalKey);
+        final long key = getPrevGroupOffsetKey(groupIndexKey, offsetInGroup);
+        return aggregatedSource.getPrevShort(key);
     }
 
     @Override
@@ -342,8 +331,8 @@ public abstract class BaseAggregateSlicedColumnSource<VECTOR_TYPE extends Vector
         if (groupIndexKey == RowSequence.NULL_ROW_KEY) {
             return NULL_INT;
         }
-        final long finalKey = getGroupOffsetKey(groupIndexKey, offsetInGroup);
-        return aggregatedSource.getInt(finalKey);
+        final long key = getGroupOffsetKey(groupIndexKey, offsetInGroup);
+        return aggregatedSource.getInt(key);
     }
 
     @Override
@@ -351,8 +340,8 @@ public abstract class BaseAggregateSlicedColumnSource<VECTOR_TYPE extends Vector
         if (groupIndexKey == RowSequence.NULL_ROW_KEY) {
             return NULL_INT;
         }
-        final long finalKey = getPrevGroupOffsetKey(groupIndexKey, offsetInGroup);
-        return aggregatedSource.getPrevInt(finalKey);
+        final long key = getPrevGroupOffsetKey(groupIndexKey, offsetInGroup);
+        return aggregatedSource.getPrevInt(key);
     }
 
     @Override
@@ -360,8 +349,8 @@ public abstract class BaseAggregateSlicedColumnSource<VECTOR_TYPE extends Vector
         if (groupIndexKey == RowSequence.NULL_ROW_KEY) {
             return NULL_LONG;
         }
-        final long finalKey = getGroupOffsetKey(groupIndexKey, offsetInGroup);
-        return aggregatedSource.getLong(finalKey);
+        final long key = getGroupOffsetKey(groupIndexKey, offsetInGroup);
+        return aggregatedSource.getLong(key);
     }
 
     @Override
@@ -369,8 +358,8 @@ public abstract class BaseAggregateSlicedColumnSource<VECTOR_TYPE extends Vector
         if (groupIndexKey == RowSequence.NULL_ROW_KEY) {
             return NULL_LONG;
         }
-        final long finalKey = getPrevGroupOffsetKey(groupIndexKey, offsetInGroup);
-        return aggregatedSource.getPrevLong(finalKey);
+        final long key = getPrevGroupOffsetKey(groupIndexKey, offsetInGroup);
+        return aggregatedSource.getPrevLong(key);
     }
 
     @Override

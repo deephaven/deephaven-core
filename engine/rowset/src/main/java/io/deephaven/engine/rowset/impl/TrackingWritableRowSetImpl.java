@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.rowset.impl;
 
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
@@ -109,6 +110,11 @@ public class TrackingWritableRowSetImpl extends WritableRowSetImpl implements Tr
     @Override
     public WritableRowSet copyPrev() {
         return new WritableRowSetImpl(checkAndGetPrev().ixCowRef());
+    }
+
+    @Override
+    public RowSet getPrev() {
+        return new WritableRowSetImpl(checkAndGetPrev());
     }
 
     @Override

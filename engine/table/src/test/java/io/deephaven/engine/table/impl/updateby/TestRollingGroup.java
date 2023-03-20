@@ -3,6 +3,7 @@ package io.deephaven.engine.table.impl.updateby;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.api.updateby.UpdateByOperation;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.PartitionedTable;
@@ -975,6 +976,26 @@ public class TestRollingGroup extends BaseUpdateByTest {
                 }
             }
         }
+    }
+
+    @Test
+    public void testEmptyUngroupTimed() {
+        final Duration prevTime = Duration.ofMinutes(-4_999_999);
+        final Duration postTime = Duration.ofMinutes(5_000_000);
+
+        final CreateResult result = createTestTable(STATIC_TABLE_SIZE, false, false, true, 0x31313131,
+                new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
+                        convertDateTime("2022-03-09T09:00:00.000 NY"),
+                        convertDateTime("2022-03-09T16:30:00.000 NY"))});
+
+        final QueryTable t = result.t;
+
+        final Table grouped = t.updateBy(
+                List.of(UpdateByOperation.RollingGroup("ts", prevTime, postTime, columns)));
+
+        final Table ungrouped = grouped.ungroup(columns).select();
+
+        Assert.eqZero(ungrouped.getRowSet().size(), "ungrouped.getRowSet().size()");
     }
 
     // endregion
