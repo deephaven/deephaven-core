@@ -25,8 +25,8 @@ def main():
         top_5_fares_table = demo_query(dh_session=dh_session, taxi_data_table=taxi_data_table)
 
         # download the table to the client in the form of pyarrow table and convert it into a Pandas DataFrame
-        snapshot_data = top_5_fares_table.snapshot()
-        df = snapshot_data.to_pandas()
+        arrow_table = top_5_fares_table.to_arrow()
+        df = arrow_table.to_pandas()
 
         pd.set_option("display.max_columns", 20)
         print(df)
