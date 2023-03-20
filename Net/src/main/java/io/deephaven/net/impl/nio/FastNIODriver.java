@@ -149,7 +149,7 @@ public final class FastNIODriver implements Runnable {
         mutexUnlockHandoff = () -> {
             if (!alreadyHandedOff) {
                 if (shouldCreate()) {
-                    // nobody to handoff too! let's create a new driver
+                    // nobody to handoff to! let's create a new driver
                     createNewThread(name, scheduler, mutex, shutdown, workTimeout, created, destroyed, available,
                             maxThreads, crashOnMax).start();
                 }

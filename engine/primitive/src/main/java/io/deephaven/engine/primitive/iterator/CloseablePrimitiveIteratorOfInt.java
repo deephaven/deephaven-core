@@ -98,7 +98,8 @@ public interface CloseablePrimitiveIteratorOfInt
 
             @Override
             public int nextInt() {
-                if (repeatIndex++ < repeatCount) {
+                if (repeatIndex < repeatCount) {
+                    ++repeatIndex;
                     return value;
                 }
                 throw new NoSuchElementException();
@@ -112,15 +113,21 @@ public interface CloseablePrimitiveIteratorOfInt
     }
 
     /**
-     * Create a CloseablePrimitiveIteratorOfInt that concatenates an array of {@code subIterators}. The result only
-     * needs to be {@link #close() closed} if any of the {@code subIterators} require it.
+     * Create a CloseablePrimitiveIteratorOfInt that concatenates an array of non-{@code null} {@code subIterators}. The
+     * result only needs to be {@link #close() closed} if any of the {@code subIterators} require it.
      *
-     * @param subIterators The iterators to concatenate. If directly passing an array, ensure that this iterator has
-     *        full ownership.
+     * @param subIterators The iterators to concatenate, none of which should be {@code null}. If directly passing an
+     *        array, ensure that this iterator has full ownership.
      * @return A CloseablePrimitiveIteratorOfInt concatenating all elements from {@code subIterators}
      */
     static CloseablePrimitiveIteratorOfInt concat(@NotNull final CloseablePrimitiveIteratorOfInt... subIterators) {
         Objects.requireNonNull(subIterators);
+        if (subIterators.length == 0) {
+            return empty();
+        }
+        if (subIterators.length == 1) {
+            return subIterators[0];
+        }
         return new CloseablePrimitiveIteratorOfInt() {
 
             private boolean hasNextChecked;
@@ -131,9 +138,8 @@ public interface CloseablePrimitiveIteratorOfInt
                 if (hasNext()) {
                     hasNextChecked = false;
                     return subIterators[subIteratorIndex].nextInt();
-                } else {
-                    throw new NoSuchElementException();
                 }
+                throw new NoSuchElementException();
             }
 
             @Override

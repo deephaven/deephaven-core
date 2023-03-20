@@ -37,8 +37,8 @@ public class ShortIntTimsortDescendingKernel {
 
         int minGallop;
         int runCount = 0;
-        private final int [] runStarts;
-        private final int [] runLengths;
+        private final int[] runStarts;
+        private final int[] runLengths;
         private final WritableIntChunk<PERMUTE_VALUES_ATTR> temporaryKeys;
         private final WritableShortChunk<SORT_VALUES_ATTR> temporaryValues;
 
@@ -234,43 +234,25 @@ public class ShortIntTimsortDescendingKernel {
     /**
      * <p>
      * There are two merge invariants that we must preserve, quoting from Wikipedia:
-     * </p>
-     *
      * <p>
-     * Concurrently with the search for runs, the runs are merged with mergesort. Except where Timsort tries to optimise
-     * for merging disjoint runs in galloping mode, runs are repeatedly merged two at a time, with the only concerns
-     * being to maintain stability and merge balance.
-     * </p>
-     *
+     * Timsort is a stable sorting algorithm (order of elements with same key is kept) and strives to perform balanced
+     * merges (a merge thus merges runs of similar sizes).
      * <p>
-     * Stability requires non-consecutive runs are not merged, as elements could be transferred across equal elements in
-     * the intervening run, violating stability. Further, it would be impossible to recover the order of the equal
-     * elements at a later point.
-     * </p>
-     *
+     * In order to achieve sorting stability, only consecutive runs are merged. Between two non-consecutive runs, there
+     * can be an element with the same key inside the runs. Merging those two runs would change the order of equal keys.
+     * Example of this situation ([] are ordered runs): [1 2 2] 1 4 2 [0 1 2]
      * <p>
      * In pursuit of balanced merges, Timsort considers three runs on the top of the stack, X, Y, Z, and maintains the
      * invariants:
-     *
      * <ul>
      * <li>|Z| > |Y| + |X|</li>
      * <li>|Y| > |X|</li>
      * </ul>
-     *
-     * If the invariants are violated, Y is merged with the smaller of X or Z and the invariants are checked again. Once
-     * the invariants hold, the next run is formed.
-     * </p>
-     *
      * <p>
-     * Somewhat inappreciably, the invariants maintain merges as being approximately balanced while maintaining a
-     * compromise between delaying merging for balance, and exploiting fresh occurrence of runs in cache memory, and
-     * also making merge decisions relatively simple.
-     * </p>
-     *
-     * <p>
-     * On reaching the end of the data, Timsort repeatedly merges the two runs on the top of the stack, until only one
-     * run of the entire data remains.
-     * </p>
+     * If any of these invariants is violated, Y is merged with the smaller of X or Z and the invariants are checked
+     * again. Once the invariants hold, the search for a new run in the data can start. These invariants maintain merges
+     * as being approximately balanced while maintaining a compromise between delaying merging for balance, exploiting
+     * fresh occurrence of runs in cache memory and making merge decisions relatively simple.
      */
     private static <SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR extends Any> void ensureMergeInvariants(
             ShortIntSortKernelContext<SORT_VALUES_ATTR, PERMUTE_VALUES_ATTR> context,
@@ -328,8 +310,8 @@ public class ShortIntTimsortDescendingKernel {
             int length1,
             int length2) {
         // we know that we can never have zero length runs, because there is a minimum run size enforced; and at the
-        // end of an input, we won't create a zero-length run.  When we merge runs, they only become bigger, thus
-        // they'll never be empty.  I'm being cheap about function calls and control flow here.
+        // end of an input, we won't create a zero-length run. When we merge runs, they only become bigger, thus
+        // they'll never be empty. I'm being cheap about function calls and control flow here.
         // Assert.gtZero(length1, "length1");
         // Assert.gtZero(length2, "length2");
 
@@ -632,7 +614,7 @@ public class ShortIntTimsortDescendingKernel {
     }
 
     private static int bound(ShortChunk<?> valuesToSort, int lo, int hi, short searchValue, final boolean lower) {
-        final int compareLimit = lower ? -1 : 0;  // lt or leq
+        final int compareLimit = lower ? -1 : 0; // lt or leq
 
         while (lo < hi) {
             final int mid = (lo + hi) >>> 1;
@@ -657,7 +639,7 @@ public class ShortIntTimsortDescendingKernel {
         // this could eventually be done with intrinsics (AVX 512/64 bits for int keys == 16 elements, and can be
         // combined up to 256)
         for (int ii = offset + 1; ii < offset + length; ++ii) {
-            for (int jj = ii; jj > offset && gt(valuesToSort.get(jj - 1), valuesToSort.get(jj));  jj--) {
+            for (int jj = ii; jj > offset && gt(valuesToSort.get(jj - 1), valuesToSort.get(jj)); jj--) {
                 swap(valuesToPermute, valuesToSort, jj, jj - 1);
             }
         }

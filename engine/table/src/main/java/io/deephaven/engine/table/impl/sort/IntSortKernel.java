@@ -99,8 +99,8 @@ public interface IntSortKernel<SORT_VALUES_ATTR extends Any, PERMUTE_VALUES_ATTR
     /**
      * Sort the values in valuesToSort permuting the valuesToPermute chunk in the same way.
      * <p>
-     * The offsetsIn chunk is contains the offset of runs to sort in valuesToPermute; and the lengthsIn contains the
-     * length of the runs. This allows the kernel to be used for a secondary column sort, chaining it together with
+     * The offsetsIn chunk is contains the offsets of runs to sort in valuesToPermute; and the lengthsIn contains the
+     * lengths of the runs. This allows the kernel to be used for a secondary column sort, chaining it together with
      * smaller runs sorted on each pass.
      */
     void sort(WritableIntChunk<PERMUTE_VALUES_ATTR> valuesToPermute, WritableChunk<SORT_VALUES_ATTR> valuesToSort,

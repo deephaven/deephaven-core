@@ -168,7 +168,8 @@ public interface CloseablePrimitiveIteratorOfByte extends CloseablePrimitiveIter
 
             @Override
             public byte nextByte() {
-                if (repeatIndex++ < repeatCount) {
+                if (repeatIndex < repeatCount) {
+                    ++repeatIndex;
                     return value;
                 }
                 throw new NoSuchElementException();
@@ -182,15 +183,21 @@ public interface CloseablePrimitiveIteratorOfByte extends CloseablePrimitiveIter
     }
 
     /**
-     * Create a CloseablePrimitiveIteratorOfByte that concatenates an array of {@code subIterators}. The result only
-     * needs to be {@link #close() closed} if any of the {@code subIterators} require it.
+     * Create a CloseablePrimitiveIteratorOfByte that concatenates an array of non-{@code null} {@code subIterators}.
+     * The result only needs to be {@link #close() closed} if any of the {@code subIterators} require it.
      *
-     * @param subIterators The iterators to concatenate. If directly passing an array, ensure that this iterator has
-     *        full ownership.
+     * @param subIterators The iterators to concatenate, none of which should be {@code null}. If directly passing an
+     *        array, ensure that this iterator has full ownership.
      * @return A CloseablePrimitiveIteratorOfByte concatenating all elements from {@code subIterators}
      */
     static CloseablePrimitiveIteratorOfByte concat(@NotNull final CloseablePrimitiveIteratorOfByte... subIterators) {
         Objects.requireNonNull(subIterators);
+        if (subIterators.length == 0) {
+            return empty();
+        }
+        if (subIterators.length == 1) {
+            return subIterators[0];
+        }
         return new CloseablePrimitiveIteratorOfByte() {
 
             private boolean hasNextChecked;

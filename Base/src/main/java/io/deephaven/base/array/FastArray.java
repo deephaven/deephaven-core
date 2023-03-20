@@ -25,9 +25,7 @@ public class FastArray<T> {
         this(clazz, () -> {
             try {
                 return clazz.newInstance();
-            } catch (InstantiationException e) {
-                throw new RuntimeException(e);
-            } catch (IllegalAccessException e) {
+            } catch (InstantiationException | IllegalAccessException e) {
                 throw new RuntimeException(e);
             }
         });
@@ -37,9 +35,7 @@ public class FastArray<T> {
         this(clazz, () -> {
             try {
                 return clazz.newInstance();
-            } catch (InstantiationException e) {
-                throw new RuntimeException(e);
-            } catch (IllegalAccessException e) {
+            } catch (InstantiationException | IllegalAccessException e) {
                 throw new RuntimeException(e);
             }
         }, initialSize, true);

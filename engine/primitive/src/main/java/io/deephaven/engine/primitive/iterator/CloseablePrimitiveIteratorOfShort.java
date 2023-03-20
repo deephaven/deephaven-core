@@ -168,7 +168,8 @@ public interface CloseablePrimitiveIteratorOfShort extends CloseablePrimitiveIte
 
             @Override
             public short nextShort() {
-                if (repeatIndex++ < repeatCount) {
+                if (repeatIndex < repeatCount) {
+                    ++repeatIndex;
                     return value;
                 }
                 throw new NoSuchElementException();
@@ -182,15 +183,21 @@ public interface CloseablePrimitiveIteratorOfShort extends CloseablePrimitiveIte
     }
 
     /**
-     * Create a CloseablePrimitiveIteratorOfShort that concatenates an array of {@code subIterators}. The result only
-     * needs to be {@link #close() closed} if any of the {@code subIterators} require it.
+     * Create a CloseablePrimitiveIteratorOfShort that concatenates an array of non-{@code null} {@code subIterators}.
+     * The result only needs to be {@link #close() closed} if any of the {@code subIterators} require it.
      *
-     * @param subIterators The iterators to concatenate. If directly passing an array, ensure that this iterator has
-     *        full ownership.
+     * @param subIterators The iterators to concatenate, none of which should be {@code null}. If directly passing an
+     *        array, ensure that this iterator has full ownership.
      * @return A CloseablePrimitiveIteratorOfShort concatenating all elements from {@code subIterators}
      */
     static CloseablePrimitiveIteratorOfShort concat(@NotNull final CloseablePrimitiveIteratorOfShort... subIterators) {
         Objects.requireNonNull(subIterators);
+        if (subIterators.length == 0) {
+            return empty();
+        }
+        if (subIterators.length == 1) {
+            return subIterators[0];
+        }
         return new CloseablePrimitiveIteratorOfShort() {
 
             private boolean hasNextChecked;
