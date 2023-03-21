@@ -8,56 +8,143 @@
  */
 package io.deephaven.vector;
 
-import junit.framework.TestCase;
+// region IteratorTypeImport
+import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfLong;
+// endregion IteratorTypeImport
+import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
+
+// region NullConstantImport
+import java.util.stream.IntStream;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;
+// endregion NullConstantImport
+import static junit.framework.TestCase.*;
 
-public class LongVectorTest extends TestCase {
+/**
+ * Unit tests for various permutations of {@link LongVector}.
+ */
+public abstract class LongVectorTest {
 
-    public void testVectorDirect() {
-        final LongVector vector = new LongVectorDirect((long) 10, (long) 20, (long) 30);
+    protected abstract LongVector makeTestVector(@NotNull final long... data);
+
+    @Test
+    public void testVector() {
+        final LongVector vector = makeTestVector((long) 10, (long) 20, (long) 30);
+        validateIterator(vector);
         assertEquals(3, vector.size());
         assertEquals((long) 10, vector.get(0));
         assertEquals((long) 20, vector.get(1));
         assertEquals((long) 30, vector.get(2));
         assertEquals(NULL_LONG, vector.get(3));
         assertEquals(NULL_LONG, vector.get(-1));
-        final long[] longs = vector.toArray();
+
+        long[] longs = vector.toArray();
+        assertEquals(vector, new LongVectorDirect(longs));
+        assertEquals(vector.hashCode(), new LongVectorDirect(longs).hashCode());
         assertEquals((long) 10, longs[0]);
         assertEquals((long) 20, longs[1]);
         assertEquals((long) 30, longs[2]);
         assertEquals(3, longs.length);
-        assertEquals(0, vector.subVector(0, 0).size());
-        assertEquals(0, vector.subVector(0, 0).toArray().length);
-        assertEquals(NULL_LONG, vector.subVector(0, 0).get(0));
-        assertEquals(NULL_LONG, vector.subVector(0, 0).get(-1));
 
-        assertEquals(1, vector.subVector(0, 1).size());
-        final long[] longs3 = vector.subVector(0, 1).toArray();
-        assertEquals(1, longs3.length);
-        assertEquals((long) 10, longs3[0]);
+        LongVector subVector = vector.subVector(0, 0);
+        validateIterator(subVector);
+        assertEquals(0, subVector.size());
+        longs = subVector.toArray();
+        assertEquals(subVector, new LongVectorDirect(longs));
+        assertEquals(subVector.hashCode(), new LongVectorDirect(longs).hashCode());
+        assertEquals(NULL_LONG, subVector.get(0));
+        assertEquals(NULL_LONG, subVector.get(-1));
 
-        assertEquals(NULL_LONG, vector.subVector(0, 1).get(1));
-        assertEquals(NULL_LONG, vector.subVector(0, 1).get(-1));
+        subVector = vector.subVector(0, 1);
+        validateIterator(subVector);
+        assertEquals(1, subVector.size());
+        longs = subVector.toArray();
+        assertEquals(subVector, new LongVectorDirect(longs));
+        assertEquals(subVector.hashCode(), new LongVectorDirect(longs).hashCode());
+        assertEquals(1, longs.length);
+        assertEquals((long) 10, longs[0]);
+        assertEquals(NULL_LONG, subVector.get(1));
+        assertEquals(NULL_LONG, subVector.get(-1));
 
-        assertEquals(1, vector.subVector(1, 2).size());
-        final long[] longs1 = vector.subVector(1, 2).toArray();
-        assertEquals(1, longs1.length);
-        assertEquals((long) 20, longs1[0]);
-        assertEquals(NULL_LONG, vector.subVector(0, 1).get(1));
-        assertEquals(NULL_LONG, vector.subVector(0, 1).get(-1));
+        subVector = vector.subVector(2, 3);
+        validateIterator(subVector);
+        assertEquals(1, subVector.size());
+        longs = subVector.toArray();
+        assertEquals(subVector, new LongVectorDirect(longs));
+        assertEquals(subVector.hashCode(), new LongVectorDirect(longs).hashCode());
+        assertEquals(1, longs.length);
+        assertEquals((long) 30, longs[0]);
+        assertEquals(NULL_LONG, subVector.get(1));
+        assertEquals(NULL_LONG, subVector.get(-1));
 
-        assertEquals(2, vector.subVector(1, 3).size());
-        final long[] longs2 = vector.subVector(1, 3).toArray();
-        assertEquals(2, longs2.length);
-        assertEquals((long) 20, longs2[0]);
-        assertEquals((long) 30, longs2[1]);
-        assertEquals(NULL_LONG, vector.subVector(1, 3).get(2));
-        assertEquals(NULL_LONG, vector.subVector(0, 1).get(-1));
+        subVector = vector.subVector(1, 3);
+        validateIterator(subVector);
+        assertEquals(2, subVector.size());
+        longs = subVector.toArray();
+        assertEquals(subVector, new LongVectorDirect(longs));
+        assertEquals(subVector.hashCode(), new LongVectorDirect(longs).hashCode());
+        assertEquals(2, longs.length);
+        assertEquals((long) 20, longs[0]);
+        assertEquals((long) 30, longs[1]);
+        assertEquals(NULL_LONG, subVector.get(2));
+        assertEquals(NULL_LONG, subVector.get(-1));
+
+        subVector = vector.subVectorByPositions(new long[] {-1, 1, 2, 4});
+        validateIterator(subVector);
+        assertEquals(4, subVector.size());
+        longs = subVector.toArray();
+        assertEquals(subVector, new LongVectorDirect(longs));
+        assertEquals(subVector.hashCode(), new LongVectorDirect(longs).hashCode());
+        assertEquals(4, longs.length);
+        assertEquals(NULL_LONG, longs[0]);
+        assertEquals((long) 20, longs[1]);
+        assertEquals((long) 30, longs[2]);
+        assertEquals(NULL_LONG, longs[3]);
+        assertEquals(NULL_LONG, subVector.get(-1));
+        assertEquals(NULL_LONG, subVector.get(4));
+
+        subVector = subVector.subVectorByPositions(new long[] {-1, 0, 1, 4});
+        validateIterator(subVector);
+        assertEquals(4, subVector.size());
+        longs = subVector.toArray();
+        assertEquals(subVector, new LongVectorDirect(longs));
+        assertEquals(subVector.hashCode(), new LongVectorDirect(longs).hashCode());
+        assertEquals(4, longs.length);
+        assertEquals(NULL_LONG, longs[0]);
+        assertEquals(NULL_LONG, longs[1]);
+        assertEquals((long) 20, longs[2]);
+        assertEquals(NULL_LONG, longs[3]);
+        assertEquals(NULL_LONG, subVector.get(-1));
+        assertEquals(NULL_LONG, subVector.get(4));
+
+        subVector = subVector.subVector(0, 2);
+        validateIterator(subVector);
+
+        subVector = subVector.subVectorByPositions(new long[] {0, 1, 2});
+        validateIterator(subVector);
     }
 
-    public void testSubArray() {
-        LongVector vector = new LongVectorDirect((long) 10, (long) 20, (long) 30);
+    @Test
+    public void testLarge() {
+        final long[] data = new long[10_000];
+        for (int ei = 0; ei < data.length; ++ei) {
+            data[ei] = (long) ei;
+        }
+        final LongVector vector = makeTestVector(data);
+        assertEquals(vector, new LongVectorDirect(vector.toArray()));
+        validateIterator(vector, -data.length, data.length * 2);
+        validateIterator(vector, -5, data.length / 2);
+        validateIterator(vector, -5, data.length);
+        validateIterator(vector, data.length / 2, data.length);
+        validateIterator(vector, data.length / 2, data.length + 5);
+        validateIterator(vector, data.length, data.length + 5);
+    }
+
+    @Test
+    public void testSubVector() {
+        LongVector vector = makeTestVector((long) 10, (long) 20, (long) 30);
+        validateIterator(vector);
 
         for (int start = -4; start <= 4; start++) {
             for (int end = -1; end <= 7; end++) {
@@ -71,7 +158,7 @@ public class LongVectorTest extends TestCase {
                     result[ei - start] = (ei < 0 || ei >= vector.size()) ? NULL_LONG : vector.get(ei);
                 }
 
-                checkSubArray(vector, start, end, result);
+                checkSubVector(vector, start, end, result);
             }
         }
 
@@ -95,49 +182,79 @@ public class LongVectorTest extends TestCase {
                             result2[ei - start2] = (ei < 0 || ei >= result.length) ? NULL_LONG : result[ei];
                         }
 
-                        checkDoubleSubArray(vector, start, end, start2, end2, result2);
+                        checkDoubleSubVector(vector, start, end, start2, end2, result2);
                     }
                 }
             }
         }
     }
 
+    @Test
     public void testType() {
+        // region TestType
         assertEquals(LongVector.type().clazz(), LongVector.class);
+        // endregion TestType
     }
 
-    private void checkSubArray(
+    private static void checkSubVector(
             final LongVector vector,
             final int start,
             final int end,
             final long[] result) {
-        final LongVector subArray = vector.subVector(start, end);
-        final long[] array = subArray.toArray();
-        assertEquals(result.length, subArray.size());
+        final LongVector subVector = vector.subVector(start, end);
+        validateIterator(subVector);
+        final long[] array = subVector.toArray();
+        assertEquals(subVector, new LongVectorDirect(array));
+        assertEquals(subVector.hashCode(), new LongVectorDirect(array).hashCode());
+        assertEquals(result.length, subVector.size());
         assertEquals(result.length, array.length);
 
         for (int ei = 0; ei < result.length; ei++) {
-            assertEquals(result[ei], subArray.get(ei));
+            assertEquals(result[ei], subVector.get(ei));
             assertEquals(result[ei], array[ei]);
         }
     }
 
-    private void checkDoubleSubArray(
+    private static void checkDoubleSubVector(
             final LongVector vector,
             final int start,
             final int end,
             final int start2,
             final int end2,
             final long[] result) {
-        LongVector subArray = vector.subVector(start, end);
-        subArray = subArray.subVector(start2, end2);
-        final long[] array = subArray.toArray();
-        assertEquals(result.length, subArray.size());
+        LongVector subVector = vector.subVector(start, end);
+        subVector = subVector.subVector(start2, end2);
+        validateIterator(subVector);
+        final long[] array = subVector.toArray();
+        assertEquals(subVector, new LongVectorDirect(array));
+        assertEquals(subVector.hashCode(), new LongVectorDirect(array).hashCode());
+        assertEquals(result.length, subVector.size());
         assertEquals(result.length, array.length);
 
         for (int ei = 0; ei < result.length; ei++) {
-            assertEquals(result[ei], subArray.get(ei));
+            assertEquals(result[ei], subVector.get(ei));
             assertEquals(result[ei], array[ei]);
+        }
+    }
+
+    private static void validateIterator(@NotNull final LongVector vector) {
+        for (long si = -2; si < vector.size() + 2; ++si) {
+            for (long ei = si; ei < vector.size() + 2; ++ei) {
+                validateIterator(vector, si, ei);
+            }
+        }
+    }
+
+    private static void validateIterator(
+            @NotNull final LongVector vector,
+            final long startIndexInclusive,
+            final long endIndexExclusive) {
+        try (final CloseablePrimitiveIteratorOfLong iterator =
+                vector.iterator(startIndexInclusive, endIndexExclusive)) {
+            for (long vi = startIndexInclusive; vi < endIndexExclusive; ++vi) {
+                assertEquals(vector.get(vi), iterator.nextLong());
+            }
+            assertFalse(iterator.hasNext());
         }
     }
 }

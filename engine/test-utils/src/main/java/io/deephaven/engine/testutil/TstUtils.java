@@ -441,7 +441,7 @@ public class TstUtils {
         final RowSetBuilderRandom builder = RowSetFactory.builderRandom();
         long firstKey = 10;
         for (int i = 0; i < size; i++) {
-            builder.addKey(firstKey = firstKey + random.nextInt(3));
+            builder.addKey(firstKey = firstKey + 1 + random.nextInt(3));
         }
         return builder.build();
     }

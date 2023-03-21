@@ -32,7 +32,7 @@ public class FloatVectorSlice extends FloatVector.Indirect {
     private final long innerVectorValidFromInclusive;
     private final long innerVectorValidToExclusive;
 
-    public FloatVectorSlice(
+    private FloatVectorSlice(
             @NotNull final FloatVector innerVector,
             final long offsetIndex,
             final long length,
@@ -96,30 +96,25 @@ public class FloatVectorSlice extends FloatVector.Indirect {
     }
 
     @Override
-    public CloseablePrimitiveIteratorOfFloat iterator(long fromIndexInclusive, long toIndexExclusive) {
+    public CloseablePrimitiveIteratorOfFloat iterator(final long fromIndexInclusive, final long toIndexExclusive) {
         Require.leq(fromIndexInclusive, "fromIndexInclusive", toIndexExclusive, "toIndexExclusive");
-        fromIndexInclusive += offsetIndex;
-        toIndexExclusive += offsetIndex;
         final long totalWanted = toIndexExclusive - fromIndexInclusive;
-        final long includedInitialNulls = fromIndexInclusive < innerVectorValidFromInclusive
-                ? Math.min(innerVectorValidFromInclusive - fromIndexInclusive, totalWanted)
+        long nextIndexWanted = fromIndexInclusive + offsetIndex;
+
+        final long includedInitialNulls = nextIndexWanted < innerVectorValidFromInclusive
+                ? Math.min(innerVectorValidFromInclusive - nextIndexWanted, totalWanted)
                 : 0;
         long remaining = totalWanted - includedInitialNulls;
+        nextIndexWanted += includedInitialNulls;
 
-        final long innerVectorValidSize = innerVectorValidToExclusive - innerVectorValidFromInclusive;
         final long firstIncludedInnerOffset;
         final long includedInnerLength;
-        if (remaining > 0
-                && innerVectorValidSize > 0
-                && fromIndexInclusive < innerVectorValidFromInclusive + innerVectorValidSize) {
-            if (fromIndexInclusive <= innerVectorValidFromInclusive) {
-                firstIncludedInnerOffset = innerVectorValidFromInclusive;
-                includedInnerLength = Math.min(innerVectorValidSize, remaining);
-            } else {
-                firstIncludedInnerOffset = fromIndexInclusive - innerVectorValidFromInclusive;
-                includedInnerLength = Math.min(innerVectorValidSize - firstIncludedInnerOffset, remaining);
-            }
+        if (nextIndexWanted < innerVectorValidToExclusive) {
+            firstIncludedInnerOffset = nextIndexWanted;
+            includedInnerLength = Math.min(innerVectorValidToExclusive - nextIndexWanted, remaining);
             remaining -= includedInnerLength;
+            // Unused, but note for posterity:
+            // nextIndexWanted += includedInnerLength;
         } else {
             firstIncludedInnerOffset = -1;
             includedInnerLength = 0;

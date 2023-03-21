@@ -68,7 +68,7 @@ public abstract class SerialColumnIterator<DATA_TYPE> implements ColumnIterator<
     /**
      * Get the row key for the next element of this iterator.
      *
-     * @throws NoSuchElementException If this ChunkedColumnIterator is exhausted
+     * @throws NoSuchElementException If this SerialColumnIterator is exhausted
      */
     final long advanceAndGetNextRowKey() {
         if (nextRowPosition == lastRowPositionExclusive) {
