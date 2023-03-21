@@ -19,7 +19,6 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.vector.LongVectorColumnWrapper;
-import io.deephaven.engine.table.impl.vector.PrevLongVectorColumnWrapper;
 import io.deephaven.vector.LongVector;
 import io.deephaven.vector.LongVectorDirect;
 import org.jetbrains.annotations.NotNull;
@@ -48,14 +47,14 @@ public final class SlicedLongAggregateColumnSource extends BaseAggregateSlicedCo
 
     private LongVector makeVector(final RowSet rowSetSlice) {
         return rowSetSlice.isEmpty()
-                ? LongVectorDirect.ZERO_LEN_VECTOR
+                ? LongVectorDirect.ZERO_LENGTH_VECTOR
                 : new LongVectorColumnWrapper(aggregatedSource, rowSetSlice);
     }
 
     private LongVector makePrevVector(final RowSet rowSetSlice) {
         return rowSetSlice.isEmpty()
-                ? LongVectorDirect.ZERO_LEN_VECTOR
-                : new PrevLongVectorColumnWrapper(aggregatedSource, rowSetSlice);
+                ? LongVectorDirect.ZERO_LENGTH_VECTOR
+                : new LongVectorColumnWrapper(aggregatedSourcePrev, rowSetSlice);
     }
 
     @Override
@@ -72,7 +71,7 @@ public final class SlicedLongAggregateColumnSource extends BaseAggregateSlicedCo
             return null;
         } else if (startPos == NULL_LONG) {
             // empty vector when only start is null
-            return LongVectorDirect.ZERO_LEN_VECTOR;
+            return LongVectorDirect.ZERO_LENGTH_VECTOR;
         }
 
         final RowSet bucketRowSet = groupRowSetSource.get(rowKey);
@@ -101,7 +100,7 @@ public final class SlicedLongAggregateColumnSource extends BaseAggregateSlicedCo
             return null;
         } else if (startPos == NULL_LONG) {
             // empty vector when only start is null
-            return LongVectorDirect.ZERO_LEN_VECTOR;
+            return LongVectorDirect.ZERO_LENGTH_VECTOR;
         }
 
         final RowSet bucketRowSet = getPrevGroupRowSet(rowKey);
@@ -134,16 +133,15 @@ public final class SlicedLongAggregateColumnSource extends BaseAggregateSlicedCo
         final WritableObjectChunk<LongVector, ? super Values> typedDestination = destination.asWritableObjectChunk();
         final int size = rowSequence.intSize();
         for (int di = 0; di < size; ++di) {
-            // Transition from revTicks that include the current row to strict position offsets.
             final long startPos = startChunk != null ? startChunk.get(di) : startOffset;
             final long endPos = endChunk != null ? endChunk.get(di) : endOffset;
 
             if (startPos == NULL_LONG && endPos == NULL_LONG) {
-                // null when both start/end are null.
+                // Null when both start/end are null.
                 typedDestination.set(di, null);
             } else if (startPos == NULL_LONG) {
-                // empty vector when only start is null
-                typedDestination.set(di, LongVectorDirect.ZERO_LEN_VECTOR);
+                // Empty vector when only start is null
+                typedDestination.set(di, LongVectorDirect.ZERO_LENGTH_VECTOR);
             } else {
                 final long rowKey = keyChunk.get(di);
                 final RowSet bucketRowSet = groupRowSetChunk.get(di);
@@ -187,7 +185,7 @@ public final class SlicedLongAggregateColumnSource extends BaseAggregateSlicedCo
                 typedDestination.set(di, null);
             } else if (startPos == NULL_LONG) {
                 // empty vector when only start is null
-                typedDestination.set(di, LongVectorDirect.ZERO_LEN_VECTOR);
+                typedDestination.set(di, LongVectorDirect.ZERO_LENGTH_VECTOR);
             } else {
                 final long rowKey = keyChunk.get(di);
                 final RowSet groupRowSetPrev = groupRowSetPrevChunk.get(di);

@@ -14,7 +14,6 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.vector.ObjectVectorColumnWrapper;
-import io.deephaven.engine.table.impl.vector.PrevObjectVectorColumnWrapper;
 import io.deephaven.vector.ObjectVector;
 import io.deephaven.vector.ObjectVectorDirect;
 import org.jetbrains.annotations.NotNull;
@@ -43,14 +42,14 @@ public final class SlicedObjectAggregateColumnSource<COMPONENT_TYPE> extends Bas
 
     private ObjectVector<COMPONENT_TYPE> makeVector(final RowSet rowSetSlice) {
         return rowSetSlice.isEmpty()
-                ? (ObjectVector<COMPONENT_TYPE>) ObjectVectorDirect.ZERO_LEN_VECTOR
+                ? (ObjectVector<COMPONENT_TYPE>) ObjectVectorDirect.ZERO_LENGTH_VECTOR
                 : new ObjectVectorColumnWrapper<>(aggregatedSource, rowSetSlice);
     }
 
     private ObjectVector<COMPONENT_TYPE> makePrevVector(final RowSet rowSetSlice) {
         return rowSetSlice.isEmpty()
-                ? (ObjectVector<COMPONENT_TYPE>) ObjectVectorDirect.ZERO_LEN_VECTOR
-                : new PrevObjectVectorColumnWrapper<>(aggregatedSource, rowSetSlice);
+                ? (ObjectVector<COMPONENT_TYPE>) ObjectVectorDirect.ZERO_LENGTH_VECTOR
+                : new ObjectVectorColumnWrapper<>(aggregatedSourcePrev, rowSetSlice);
     }
 
     @Override
@@ -129,7 +128,7 @@ public final class SlicedObjectAggregateColumnSource<COMPONENT_TYPE> extends Bas
                 typedDestination.set(di, null);
             } else if (startPos == NULL_LONG) {
                 // empty vector when only start is null
-                typedDestination.set(di, (ObjectVector<COMPONENT_TYPE>) ObjectVectorDirect.ZERO_LEN_VECTOR);
+                typedDestination.set(di, (ObjectVector<COMPONENT_TYPE>) ObjectVectorDirect.ZERO_LENGTH_VECTOR);
             } else {
                 final long rowKey = keyChunk.get(di);
                 final RowSet bucketRowSet = groupRowSetChunk.get(di);
@@ -141,7 +140,7 @@ public final class SlicedObjectAggregateColumnSource<COMPONENT_TYPE> extends Bas
 
                 // Determine the slice of the groupRowSetSource from start to end.
                 final RowSet rowSetSlice = bucketRowSet.subSetByPositionRange(start, end);
-                typedDestination.set(di, rowSetSlice.isEmpty() ? null : new ObjectVectorColumnWrapper<>(aggregatedSource, rowSetSlice));
+                typedDestination.set(di, makeVector(rowSetSlice));
             }
         }
         typedDestination.setSize(size);
@@ -173,7 +172,7 @@ public final class SlicedObjectAggregateColumnSource<COMPONENT_TYPE> extends Bas
                 typedDestination.set(di, null);
             } else if (startPos == NULL_LONG) {
                 // empty vector when only start is null
-                typedDestination.set(di, (ObjectVector<COMPONENT_TYPE>) ObjectVectorDirect.ZERO_LEN_VECTOR);
+                typedDestination.set(di, (ObjectVector<COMPONENT_TYPE>) ObjectVectorDirect.ZERO_LENGTH_VECTOR);
             } else {
                 final long rowKey = keyChunk.get(di);
                 final RowSet groupRowSetPrev = groupRowSetPrevChunk.get(di);
@@ -188,8 +187,7 @@ public final class SlicedObjectAggregateColumnSource<COMPONENT_TYPE> extends Bas
 
                 // Determine the slice of the groupRowSetSource from start to end.
                 final RowSet rowSetSlice = groupRowSetToUse.subSetByPositionRange(start, end);
-                typedDestination.set(di, rowSetSlice.isEmpty() ? null : new PrevObjectVectorColumnWrapper<>(aggregatedSource, rowSetSlice));
-            }
+                typedDestination.set(di, makePrevVector(rowSetSlice));            }
         }
         typedDestination.setSize(size);
     }

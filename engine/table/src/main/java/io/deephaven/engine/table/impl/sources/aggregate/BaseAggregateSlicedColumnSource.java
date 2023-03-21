@@ -24,6 +24,7 @@ public abstract class BaseAggregateSlicedColumnSource<VECTOR_TYPE extends Vector
         extends AbstractColumnSource<VECTOR_TYPE> implements AggregateColumnSource<VECTOR_TYPE, COMPONENT_TYPE> {
 
     protected final ColumnSource<COMPONENT_TYPE> aggregatedSource;
+    protected final ColumnSource<COMPONENT_TYPE> aggregatedSourcePrev;
     protected final ColumnSource<? extends RowSet> groupRowSetSource;
     @Nullable
     protected final ColumnSource<Long> startSource;
@@ -41,6 +42,7 @@ public abstract class BaseAggregateSlicedColumnSource<VECTOR_TYPE extends Vector
             @NotNull final ColumnSource<Long> endSource) {
         super(vectorType, aggregatedSource.getType());
         this.aggregatedSource = aggregatedSource;
+        aggregatedSourcePrev = aggregatedSource.isImmutable() ? aggregatedSource : aggregatedSource.getPrevSource();
         this.groupRowSetSource = groupRowSetSource;
         this.startSource = startSource;
         this.endSource = endSource;
@@ -57,6 +59,7 @@ public abstract class BaseAggregateSlicedColumnSource<VECTOR_TYPE extends Vector
             final long endOffset) {
         super(vectorType, aggregatedSource.getType());
         this.aggregatedSource = aggregatedSource;
+        aggregatedSourcePrev = aggregatedSource.isImmutable() ? aggregatedSource : aggregatedSource.getPrevSource();
         this.groupRowSetSource = groupRowSetSource;
         this.startOffset = startOffset;
         this.endOffset = endOffset;
