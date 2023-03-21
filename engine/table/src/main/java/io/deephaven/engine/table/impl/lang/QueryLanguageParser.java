@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl.lang;
 
+import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.ArrayCreationLevel;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.ImportDeclaration;
@@ -1102,8 +1103,8 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                 }
             }
 
-            if (varArgType.isPrimitive() && allExpressionTypesArePrimitive) {
-                // there are ambiguous oddities with primitive varargs, so if its primitive lets just box it ourselves
+            if ((TypeUtils.isBoxedType(varArgType) || varArgType.isPrimitive()) && allExpressionTypesArePrimitive) {
+                // method invocation is ambiguous when both boxed and primitive versions of the method exist
                 Expression[] temp = new Expression[nArgs];
                 Expression[] varArgExpressions = new Expression[nArgExpressions - nArgs + 1];
                 System.arraycopy(expressions, 0, temp, 0, temp.length - 1);
@@ -1111,10 +1112,15 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                         varArgExpressions.length);
 
                 NodeList<ArrayCreationLevel> levels = new NodeList<>(new ArrayCreationLevel());
+                com.github.javaparser.ast.type.Type elementType;
+                if (varArgType.isPrimitive()) {
+                    elementType = new PrimitiveType(PrimitiveType.Primitive.valueOf(
+                            varArgType.getSimpleName().toUpperCase()));
+                } else {
+                    elementType = StaticJavaParser.parseClassOrInterfaceType(varArgType.getSimpleName());
+                }
                 temp[temp.length - 1] = new ArrayCreationExpr(
-                        new PrimitiveType(
-                                PrimitiveType.Primitive.valueOf(varArgType.getSimpleName().toUpperCase())),
-                        levels, new ArrayInitializerExpr(new NodeList<>(varArgExpressions)));
+                        elementType, levels, new ArrayInitializerExpr(new NodeList<>(varArgExpressions)));
 
                 expressions = temp;
             }
