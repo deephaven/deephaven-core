@@ -438,10 +438,10 @@ public class TstUtils {
     }
 
     static WritableRowSet getInitialIndex(int size, Random random) {
-        final RowSetBuilderRandom builder = RowSetFactory.builderRandom();
+        final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
         long firstKey = 10;
         for (int i = 0; i < size; i++) {
-            builder.addKey(firstKey = firstKey + 1 + random.nextInt(3));
+            builder.appendKey(firstKey = firstKey + 1 + random.nextInt(3));
         }
         return builder.build();
     }
