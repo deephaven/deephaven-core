@@ -61,9 +61,9 @@ public class TestSort extends BaseArrayTestCase {
 
     public void testObjSortExceptions() {
         //sort
-        ObjectVector dbArrayToSort = null;
+        ObjectVector vectorToSort = null;
 
-        Object[] sort = sortObj(dbArrayToSort);
+        Object[] sort = sortObj(vectorToSort);
         assertNull(sort);
 
         BigDecimal[] bd = null;
@@ -79,7 +79,7 @@ public class TestSort extends BaseArrayTestCase {
 
         //sortDescending
 
-        sort = sortDescendingObj(dbArrayToSort);
+        sort = sortDescendingObj(vectorToSort);
         assertNull(sort);
 
         bd = null;
@@ -102,17 +102,17 @@ public class TestSort extends BaseArrayTestCase {
         final ${pt.primitive}[] ${pt.primitive}s = new ${pt.primitive}[]{1, -5, -2, -2, 96, 0, 12, ${pt.null}, ${pt.null}};
         final ${pt.boxed}[] ${pt.boxed}s = new ${pt.boxed}[]{(${pt.primitive})1, (${pt.primitive})-5, (${pt.primitive})-2, (${pt.primitive})-2, (${pt.primitive})96, (${pt.primitive})0, (${pt.primitive})12, (${pt.primitive})${pt.null}, (${pt.primitive})${pt.null}};
 
-        final ${pt.primitive}[] sort = sort(new ${pt.dbArrayDirect}(${pt.primitive}s));
+        final ${pt.primitive}[] sort = sort(new ${pt.vectorDirect}(${pt.primitive}s));
         final ${pt.primitive}[] expected = new ${pt.primitive}[]{${pt.null}, ${pt.null}, -5, -2, -2, 0, 1, 12, 96};
         assertEquals(expected, sort);
 
         assertEquals(new ${pt.primitive}[]{${pt.null}, ${pt.null}, -5, -2, -2, 0, 1, 12, 96}, sort(${pt.primitive}s));
         assertEquals(new ${pt.primitive}[]{${pt.null}, ${pt.null}, -5, -2, -2, 0, 1, 12, 96}, sort(${pt.boxed}s));
 
-        assertNull(sort((${pt.dbArray})null));
+        assertNull(sort((${pt.vector})null));
         assertNull(sort((${pt.primitive}[])null));
         assertNull(sort((${pt.boxed}[])null));
-        assertEquals(new ${pt.primitive}[]{}, sort(new ${pt.dbArrayDirect}()));
+        assertEquals(new ${pt.primitive}[]{}, sort(new ${pt.vectorDirect}()));
         assertEquals(new ${pt.primitive}[]{}, sort(new ${pt.primitive}[]{}));
         assertEquals(new ${pt.primitive}[]{}, sort(new ${pt.boxed}[]{}));
     }
@@ -121,23 +121,23 @@ public class TestSort extends BaseArrayTestCase {
         final ${pt.primitive}[] ${pt.primitive}s = new ${pt.primitive}[]{1, -5, -2, -2, 96, 0, 12, ${pt.null}, ${pt.null}};
         final ${pt.boxed}[] ${pt.boxed}s = new ${pt.boxed}[]{(${pt.primitive})1, (${pt.primitive})-5, (${pt.primitive})-2, (${pt.primitive})-2, (${pt.primitive})96, (${pt.primitive})0, (${pt.primitive})12, (${pt.primitive})${pt.null}, (${pt.primitive})${pt.null}};
 
-        final ${pt.primitive}[] sort = sortDescending(new ${pt.dbArrayDirect}(${pt.primitive}s));
+        final ${pt.primitive}[] sort = sortDescending(new ${pt.vectorDirect}(${pt.primitive}s));
         final ${pt.primitive}[] expected = new ${pt.primitive}[]{96, 12, 1, 0, -2, -2, -5, ${pt.null}, ${pt.null}};
         assertEquals(expected, sort);
 
         assertEquals(new ${pt.primitive}[]{96, 12, 1, 0, -2, -2, -5, ${pt.null}, ${pt.null}}, sortDescending(${pt.primitive}s));
         assertEquals(new ${pt.primitive}[]{96, 12, 1, 0, -2, -2, -5, ${pt.null}, ${pt.null}}, sortDescending(${pt.boxed}s));
 
-        assertNull(sortDescending((${pt.dbArray})null));
+        assertNull(sortDescending((${pt.vector})null));
         assertNull(sortDescending((${pt.primitive}[])null));
         assertNull(sortDescending((${pt.boxed}[])null));
-        assertEquals(new ${pt.primitive}[]{}, sortDescending(new ${pt.dbArrayDirect}()));
+        assertEquals(new ${pt.primitive}[]{}, sortDescending(new ${pt.vectorDirect}()));
         assertEquals(new ${pt.primitive}[]{}, sortDescending(new ${pt.primitive}[]{}));
         assertEquals(new ${pt.primitive}[]{}, sortDescending(new ${pt.boxed}[]{}));
     }
 
     public void test${pt.boxed}SortsExceptions() {
-        ${pt.dbArray} db${pt.boxed}Array = null;
+        ${pt.vector} db${pt.boxed}Array = null;
         ${pt.primitive}[] sort = sort(db${pt.boxed}Array);
         assertNull(sort);
 
@@ -146,7 +146,7 @@ public class TestSort extends BaseArrayTestCase {
         assertNull(sortArray);
 
         ${pt.primitive}s = new ${pt.primitive}[]{};
-        sort = sort(new ${pt.dbArrayDirect}(${pt.primitive}s));
+        sort = sort(new ${pt.vectorDirect}(${pt.primitive}s));
         assertEquals(new ${pt.primitive}[0], sort);
 
         sortArray = sort(${pt.primitive}s);
@@ -154,7 +154,7 @@ public class TestSort extends BaseArrayTestCase {
     }
 
     public void test${pt.boxed}SortDescendingExceptions() {
-        ${pt.dbArray} db${pt.boxed}Array = null;
+        ${pt.vector} db${pt.boxed}Array = null;
         ${pt.primitive}[] sort = sortDescending(db${pt.boxed}Array);
         assertNull(sort);
 
@@ -163,7 +163,7 @@ public class TestSort extends BaseArrayTestCase {
         assertNull(sortArray);
 
         ${pt.primitive}s = new ${pt.primitive}[]{};
-        sort = sortDescending(new ${pt.dbArrayDirect}(${pt.primitive}s));
+        sort = sortDescending(new ${pt.vectorDirect}(${pt.primitive}s));
         assertEquals(new ${pt.primitive}[0], sort);
 
         sortArray = sortDescending(${pt.primitive}s);

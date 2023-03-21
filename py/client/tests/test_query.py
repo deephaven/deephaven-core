@@ -3,10 +3,12 @@
 #
 
 import time
+import unittest
 
 from pyarrow import csv
 
 from pydeephaven import DHError
+from pydeephaven.updateby import ema_tick_decay, cum_prod
 from tests.testbase import BaseTestCase
 
 
@@ -45,3 +47,45 @@ class QueryTestCase(BaseTestCase):
 
         result_table = query.exec()
         self.assertTrue(result_table.size > 0)
+
+    def test_update_by(self):
+        pa_table = csv.read_csv(self.csv_file)
+        test_table = self.session.import_table(pa_table)
+        ub_ops = [ema_tick_decay(time_scale_ticks=100, cols=["ema_a = a"]),
+                  cum_prod(cols=["cc = c", "cb = b"]),
+                  ]
+
+        query = self.session.query(test_table)
+        (query.drop_columns(cols=['e'])
+         .where(["a > 10"])
+         .update_by(ops=ub_ops, by=["b"])
+         .tail(10))
+
+        result_table = query.exec()
+        self.assertTrue(result_table.size == 10)
+
+    def test_snapshot(self):
+        test_table = self.session.time_table(period=1000000)
+        while test_table.snapshot().size < 100:
+            time.sleep(0.001)
+        query = self.session.query(test_table)
+        (query.update(formulas=["Col1 = i", "Col2 = i * 2"])
+         .where(["Col1 > 10"])
+         .snapshot()
+         .head(10))
+        result_table = query.exec()
+
+        self.assertEqual(result_table.to_arrow().num_rows, 10)
+
+    def test_snapshot_when(self):
+        source_table = (self.session.time_table(period=10_000_000)
+                        .update(formulas=["Col1= i", "Col2 = i * 2"]).drop_columns(["Timestamp"]))
+        trigger_table = self.session.time_table(period=1_000_000_000)
+        query = self.session.query(source_table).snapshot_when(trigger_table=trigger_table, stamp_cols=["Timestamp"],
+                                                               initial=True, incremental=True, history=False)
+        result_table = query.exec()
+        self.assertEqual(len(result_table.schema), len(source_table.schema) + 1)
+
+
+if __name__ == '__main__':
+    unittest.main()

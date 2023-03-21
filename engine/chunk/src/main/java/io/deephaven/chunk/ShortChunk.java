@@ -26,6 +26,7 @@ import java.nio.ShortBuffer;
  */
 public class ShortChunk<ATTR extends Any> extends ChunkBase<ATTR> {
 
+    @SuppressWarnings("rawtypes")
     private static final ShortChunk EMPTY = new ShortChunk<>(ArrayTypeUtils.EMPTY_SHORT_ARRAY, 0, 0);
 
     public static <ATTR extends Any> ShortChunk<ATTR> getEmptyChunk() {
@@ -33,6 +34,7 @@ public class ShortChunk<ATTR extends Any> extends ChunkBase<ATTR> {
         return EMPTY;
     }
 
+    @SuppressWarnings("rawtypes")
     private static final ShortChunk[] EMPTY_SHORT_CHUNK_ARRAY = new ShortChunk[0];
 
     static <ATTR extends Any> ShortChunk<ATTR>[] getEmptyChunkArray() {
@@ -115,7 +117,7 @@ public class ShortChunk<ATTR extends Any> extends ChunkBase<ATTR> {
     }
 
     @Override
-    public final boolean isAlias(Chunk chunk) {
+    public final boolean isAlias(Chunk<?> chunk) {
         return chunk.isAlias(data);
     }
 
@@ -158,9 +160,9 @@ public class ShortChunk<ATTR extends Any> extends ChunkBase<ATTR> {
     // endregion CopyToBuffer
 
     // region downcast
-    public static <ATTR extends Any, ATTR_DERIV extends ATTR> WritableShortChunk<ATTR_DERIV> downcast(WritableShortChunk<ATTR> self) {
+    public static <ATTR extends Any, ATTR_DERIV extends ATTR> ShortChunk<ATTR_DERIV> downcast(ShortChunk<ATTR> self) {
         //noinspection unchecked
-        return (WritableShortChunk<ATTR_DERIV>) self;
+        return (ShortChunk<ATTR_DERIV>) self;
     }
     // endregion downcast
 }

@@ -1109,8 +1109,7 @@ public class ChunkedOperatorAggregationHelper {
 
                 // Hijacking postPermutedKeyIndices because it's not used in this loop; the rename hopefully makes the
                 // code much clearer!
-                final WritableLongChunk<OrderedRowKeys> removedKeyIndices =
-                        WritableLongChunk.downcast(postPermutedKeyIndices);
+                final WritableLongChunk<RowKeys> removedKeyIndices = postPermutedKeyIndices;
 
                 while (modifiedPreShiftIterator.hasMore()) {
                     final RowSequence modifiedPreShiftChunk =
@@ -1154,8 +1153,8 @@ public class ChunkedOperatorAggregationHelper {
                     if (numKeyChanges > 0) {
                         slots.setSize(numKeyChanges);
                         removedKeyIndices.setSize(numKeyChanges);
-                        try (final RowSequence keyIndicesToRemoveChunk =
-                                RowSequenceFactory.wrapRowKeysChunkAsRowSequence(removedKeyIndices)) {
+                        try (final RowSequence keyIndicesToRemoveChunk = RowSequenceFactory
+                                .wrapRowKeysChunkAsRowSequence(LongChunk.downcast(removedKeyIndices))) {
                             propagateRemovesToOperators(keyIndicesToRemoveChunk, slots);
                         }
                     }

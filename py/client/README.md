@@ -43,7 +43,7 @@ $ pip3 install dist/pydeephaven-0.23.0-py3-none-any.whl
     >>> from pydeephaven import Session
     >>> session = Session() # assuming Deephaven Community Edition is running locally with the default configuration
     >>> table1 = session.time_table(period=1000000000).update(formulas=["Col1 = i % 2"])
-    >>> df = table1.snapshot().to_pandas()
+    >>> df = table1.to_arrow().to_pandas()
     >>> print(df)
                         Timestamp  Col1
     0     1629681525690000000     0
@@ -217,7 +217,7 @@ table = session.import_table(pyarrow_table)
 session.bind_table(name="my_table", table=table)
 
 #Convert the Deephaven table back to a pyarrow table
-pyarrow_table = table.snapshot()
+pyarrow_table = table.to_arrow()
 ```
 
 ## Execute a script server side
@@ -238,7 +238,7 @@ table = empty_table(8).update(["Index = i"])
 session.run_script(script)
 
 table = session.open_table("table")
-print(table.snapshot())
+print(table.to_arrow())
 ```
 
 ## Error handling

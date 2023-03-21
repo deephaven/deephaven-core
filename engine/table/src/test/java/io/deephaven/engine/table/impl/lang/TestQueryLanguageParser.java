@@ -103,8 +103,6 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         variables.put("myIntVector", IntVector.class);
         variables.put("myByteVector", ByteVector.class);
         variables.put("myDoubleVector", DoubleVector.class);
-        // noinspection deprecation
-        variables.put("myBooleanVector", BooleanVector.class);
         variables.put("myDummyClass", LanguageParserDummyClass.class);
         variables.put("myDummyInnerClass", LanguageParserDummyClass.InnerClass.class);
         variables.put("myClosure", Closure.class);
@@ -1846,10 +1844,6 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         resultExpression =
                 "eqArray(VectorConversions.nullSafeVectorToArray(myIntVector), VectorConversions.nullSafeVectorToArray(myIntVector))";
         check(expression, resultExpression, boolean[].class, new String[] {"myIntVector"});
-
-        expression = "booleanArrayToBoolean(myBooleanVector)";
-        resultExpression = "booleanArrayToBoolean(VectorConversions.nullSafeVectorToArray(myBooleanVector))";
-        check(expression, resultExpression, Boolean.class, new String[] {"myBooleanVector"});
 
         expression = "new String(myByteArray)";
         resultExpression = "new String(myByteArray)";

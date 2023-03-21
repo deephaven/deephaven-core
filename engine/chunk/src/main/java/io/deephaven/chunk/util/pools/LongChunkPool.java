@@ -110,7 +110,7 @@ public final class LongChunkPool implements ChunkPool {
         return ChunkPoolReleaseTracking.onTake(WritableLongChunk.makeWritableChunkForPool(capacity));
     }
 
-    public void giveWritableLongChunk(@NotNull final WritableLongChunk writableLongChunk) {
+    public void giveWritableLongChunk(@NotNull final WritableLongChunk<?> writableLongChunk) {
         if (writableLongChunk == EMPTY || writableLongChunk.isAlias(EMPTY)) {
             return;
         }

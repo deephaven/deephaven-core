@@ -26,6 +26,8 @@ import java.nio.Buffer;
 import java.nio.DoubleBuffer;
 // endregion BufferImports
 
+import static io.deephaven.chunk.util.pools.ChunkPoolConstants.POOL_WRITABLE_CHUNKS;
+
 // @formatter:on
 
 /**
@@ -33,6 +35,7 @@ import java.nio.DoubleBuffer;
  */
 public class WritableDoubleChunk<ATTR extends Any> extends DoubleChunk<ATTR> implements WritableChunk<ATTR> {
 
+    @SuppressWarnings("rawtypes")
     private static final WritableDoubleChunk[] EMPTY_WRITABLE_DOUBLE_CHUNK_ARRAY = new WritableDoubleChunk[0];
 
     static <ATTR extends Any> WritableDoubleChunk<ATTR>[] getEmptyChunkArray() {
@@ -41,9 +44,13 @@ public class WritableDoubleChunk<ATTR extends Any> extends DoubleChunk<ATTR> imp
     }
 
     public static <ATTR extends Any> WritableDoubleChunk<ATTR> makeWritableChunk(int size) {
-        return MultiChunkPool.forThisThread().getDoubleChunkPool().takeWritableDoubleChunk(size);
+        if (POOL_WRITABLE_CHUNKS) {
+            return MultiChunkPool.forThisThread().getDoubleChunkPool().takeWritableDoubleChunk(size);
+        }
+        return new WritableDoubleChunk<>(makeArray(size), 0, size);
     }
 
+    @SuppressWarnings("rawtypes")
     public static WritableDoubleChunk makeWritableChunkForPool(int size) {
         return new WritableDoubleChunk(makeArray(size), 0, size) {
             @Override
