@@ -192,7 +192,7 @@ public final class SlicedDoubleAggregateColumnSource extends BaseAggregateSliced
                 final long rowKey = keyChunk.get(di);
                 final RowSet groupRowSetPrev = groupRowSetPrevChunk.get(di);
                 final RowSet groupRowSetToUse = groupRowSetPrev.isTracking()
-                        ? groupRowSetPrev.trackingCast().copyPrev()
+                        ? groupRowSetPrev.trackingCast().prev()
                         : groupRowSetPrev;
                 final long rowPos = groupRowSetToUse.find(rowKey);
 

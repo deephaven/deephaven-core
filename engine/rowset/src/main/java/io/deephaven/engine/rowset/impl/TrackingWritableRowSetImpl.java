@@ -113,7 +113,7 @@ public class TrackingWritableRowSetImpl extends WritableRowSetImpl implements Tr
     }
 
     @Override
-    public RowSet getPrev() {
+    public RowSet prev() {
         return new WritableRowSetImpl(checkAndGetPrev());
     }
 

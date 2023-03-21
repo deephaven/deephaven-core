@@ -52,7 +52,7 @@ public interface TrackingRowSet extends RowSet {
      *
      * @return The read-only version of the previous row set
      */
-    RowSet getPrev();
+    RowSet prev();
 
     /**
      * Same as {@code get(rowPosition)}, as of the end of the previous update graph cycle.

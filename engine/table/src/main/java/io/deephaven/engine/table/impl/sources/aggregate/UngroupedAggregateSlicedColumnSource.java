@@ -221,33 +221,31 @@ final class UngroupedAggregateSlicedColumnSource<DATA_TYPE> extends BaseUngroupe
 
                     // Get the previous rowset for the current group if needed.
                     final boolean usePrevIndex = usePrev && currRowSet.isTracking();
-                    final RowSet bucketRowSet = usePrevIndex ? currRowSet.trackingCast().copyPrev() : currRowSet;
+                    final RowSet bucketRowSet = usePrevIndex ? currRowSet.trackingCast().prev() : currRowSet;
                     final long bucketSize = bucketRowSet.size();
 
-                    try (final RowSet ignored = usePrevIndex ? bucketRowSet : null) {
-                        // Read the total length of items in this group.
-                        final int lengthFromThisGroup = sameIndexRunLengths.get(ii);
-                        // Determine when to stop iterating for the items in this group.
-                        final long endPosition = componentKeyIndicesPosition + lengthFromThisGroup;
+                    // Read the total length of items in this group.
+                    final int lengthFromThisGroup = sameIndexRunLengths.get(ii);
+                    // Determine when to stop iterating for the items in this group.
+                    final long endPosition = componentKeyIndicesPosition + lengthFromThisGroup;
 
-                        // Get the row key and determine the starting position for the first entry of this group.
-                        final long rowKey = rowsetKeyIndices.get(ii);
-                        final int rowPos = Math.toIntExact(bucketRowSet.find(rowKey));
-                        final int localStartOffset =
-                                Math.toIntExact(startOffsets != null ? startOffsets.get(ii) : startOffset);
-                        final long startPos = ClampUtil.clampLong(0, bucketSize, rowPos + localStartOffset);
+                    // Get the row key and determine the starting position for the first entry of this group.
+                    final long rowKey = rowsetKeyIndices.get(ii);
+                    final int rowPos = Math.toIntExact(bucketRowSet.find(rowKey));
+                    final int localStartOffset =
+                            Math.toIntExact(startOffsets != null ? startOffsets.get(ii) : startOffset);
+                    final long startPos = ClampUtil.clampLong(0, bucketSize, rowPos + localStartOffset);
 
-                        while (componentKeyIndicesPosition < endPosition) {
-                            // Read the offset for this output row and determine the key in the underlying source.
-                            final long offsetInGroup = componentKeyIndices.get(componentKeyIndicesPosition);
-                            final long pos = startPos + offsetInGroup;
-                            final long key = bucketRowSet.get(pos);
+                    while (componentKeyIndicesPosition < endPosition) {
+                        // Read the offset for this output row and determine the key in the underlying source.
+                        final long offsetInGroup = componentKeyIndices.get(componentKeyIndicesPosition);
+                        final long pos = startPos + offsetInGroup;
+                        final long key = bucketRowSet.get(pos);
 
-                            // Re-use 'componentKeyIndices' as the destination for the keys.
-                            componentKeyIndices.set(componentKeyIndicesPosition, key);
+                        // Re-use 'componentKeyIndices' as the destination for the keys.
+                        componentKeyIndices.set(componentKeyIndicesPosition, key);
 
-                            componentKeyIndicesPosition++;
-                        }
+                        componentKeyIndicesPosition++;
                     }
                 }
 

@@ -106,22 +106,16 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends BaseUngroupedAggre
                     final RowSet currRowSet = indexes.get(ii);
                     Assert.neqNull(currRowSet, "currRowSet");
                     final boolean usePrevIndex = usePrev && currRowSet.isTracking();
-                    final RowSet rowSet = usePrevIndex ? currRowSet.trackingCast().copyPrev() : currRowSet;
-                    try {
-                        final int lengthFromThisIndex = sameIndexRunLengths.get(ii);
+                    final RowSet rowSet = usePrevIndex ? currRowSet.trackingCast().prev() : currRowSet;
+                    final int lengthFromThisIndex = sameIndexRunLengths.get(ii);
 
-                        final WritableLongChunk<OrderedRowKeys> remappedComponentKeys =
-                                componentKeyIndicesSlice.resetFromTypedChunk(componentKeyIndices,
-                                        componentKeyIndicesPosition, lengthFromThisIndex);
-                        rowSet.getKeysForPositions(new LongChunkIterator(componentKeyIndicesSlice),
-                                new LongChunkAppender(remappedComponentKeys));
+                    final WritableLongChunk<OrderedRowKeys> remappedComponentKeys =
+                            componentKeyIndicesSlice.resetFromTypedChunk(componentKeyIndices,
+                                    componentKeyIndicesPosition, lengthFromThisIndex);
+                    rowSet.getKeysForPositions(new LongChunkIterator(componentKeyIndicesSlice),
+                            new LongChunkAppender(remappedComponentKeys));
 
-                        componentKeyIndicesPosition += lengthFromThisIndex;
-                    } finally {
-                        if (usePrevIndex) {
-                            rowSet.close();
-                        }
-                    }
+                    componentKeyIndicesPosition += lengthFromThisIndex;
                 }
 
                 stateReusable = shared;

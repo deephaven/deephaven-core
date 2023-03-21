@@ -172,7 +172,7 @@ public abstract class BaseAggregateSlicedColumnSource<VECTOR_TYPE extends Vector
     protected RowSet getPrevGroupRowSet(final long groupIndexKey) {
         final RowSet groupRowSetPrev = groupRowSetSource.getPrev(groupIndexKey);
         return groupRowSetPrev.isTracking()
-                ? groupRowSetPrev.trackingCast().getPrev()
+                ? groupRowSetPrev.trackingCast().prev()
                 : groupRowSetPrev;
     }
 
