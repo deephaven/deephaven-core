@@ -3,12 +3,13 @@
  */
 package io.deephaven.base.pool;
 
-import io.deephaven.base.Function;
 import io.deephaven.base.LockFreeArrayQueue;
 import io.deephaven.base.MathUtil;
-import io.deephaven.base.Procedure;
 import io.deephaven.base.verify.Require;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 /**
  * A pool that
@@ -24,7 +25,7 @@ public class ThreadSafeFixedSizePool<T> implements Pool<T> {
 
     public static Factory FACTORY = new Factory() {
         @Override
-        public <T> Pool<T> create(int nSize, Function.Nullary<T> itemFactory, Procedure.Unary<T> clearingProcedure) {
+        public <T> Pool<T> create(int nSize, Supplier<T> itemFactory, Consumer<T> clearingProcedure) {
             return new ThreadSafeFixedSizePool<T>(Require.geq(nSize, "nSize", MIN_SIZE, "MIN_SIZE"),
                     Require.neqNull(itemFactory, "itemFactory"), clearingProcedure);
         }
@@ -35,19 +36,19 @@ public class ThreadSafeFixedSizePool<T> implements Pool<T> {
     private final static int SPIN_COUNT = 10000;
 
     protected final LockFreeArrayQueue<T> pool; // TODO: a stack would be nice here
-    private final Procedure.Unary<T> clearingProcedure;
+    private final Consumer<T> clearingProcedure;
 
-    public ThreadSafeFixedSizePool(int size, Function.Nullary<T> factory,
-            Procedure.Unary<T> clearingProcedure) {
+    public ThreadSafeFixedSizePool(int size, Supplier<T> factory,
+            Consumer<T> clearingProcedure) {
         this(size, Require.neqNull(factory, "factory"), clearingProcedure, false);
     }
 
-    protected ThreadSafeFixedSizePool(int size, Procedure.Unary<T> clearingProcedure) {
+    protected ThreadSafeFixedSizePool(int size, Consumer<T> clearingProcedure) {
         this(size, null, clearingProcedure, false);
     }
 
-    private ThreadSafeFixedSizePool(int size, @Nullable Function.Nullary<T> factory,
-            Procedure.Unary<T> clearingProcedure, boolean dummy) {
+    private ThreadSafeFixedSizePool(int size, @Nullable Supplier<T> factory,
+            Consumer<T> clearingProcedure, boolean dummy) {
         Require.geq(size, "size", MIN_SIZE, "MIN_SIZE");
         this.clearingProcedure = clearingProcedure;
         this.pool = new LockFreeArrayQueue<T>(MathUtil.ceilLog2(size + 2));
@@ -56,7 +57,7 @@ public class ThreadSafeFixedSizePool<T> implements Pool<T> {
             return;
         }
         for (int i = 0; i < size; ++i) {
-            T element = factory.call();
+            T element = factory.get();
             while (!pool.enqueue(element)) {
                 // spin
             }
@@ -68,7 +69,7 @@ public class ThreadSafeFixedSizePool<T> implements Pool<T> {
             return;
         }
         if (null != clearingProcedure) {
-            clearingProcedure.call(item);
+            clearingProcedure.accept(item);
         }
         if (pool.enqueue(item)) {
             // happy path

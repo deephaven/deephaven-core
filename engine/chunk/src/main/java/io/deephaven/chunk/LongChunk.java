@@ -26,6 +26,7 @@ import java.nio.LongBuffer;
  */
 public class LongChunk<ATTR extends Any> extends ChunkBase<ATTR> {
 
+    @SuppressWarnings("rawtypes")
     private static final LongChunk EMPTY = new LongChunk<>(ArrayTypeUtils.EMPTY_LONG_ARRAY, 0, 0);
 
     public static <ATTR extends Any> LongChunk<ATTR> getEmptyChunk() {
@@ -33,6 +34,7 @@ public class LongChunk<ATTR extends Any> extends ChunkBase<ATTR> {
         return EMPTY;
     }
 
+    @SuppressWarnings("rawtypes")
     private static final LongChunk[] EMPTY_LONG_CHUNK_ARRAY = new LongChunk[0];
 
     static <ATTR extends Any> LongChunk<ATTR>[] getEmptyChunkArray() {
@@ -115,7 +117,7 @@ public class LongChunk<ATTR extends Any> extends ChunkBase<ATTR> {
     }
 
     @Override
-    public final boolean isAlias(Chunk chunk) {
+    public final boolean isAlias(Chunk<?> chunk) {
         return chunk.isAlias(data);
     }
 
@@ -158,9 +160,9 @@ public class LongChunk<ATTR extends Any> extends ChunkBase<ATTR> {
     // endregion CopyToBuffer
 
     // region downcast
-    public static <ATTR extends Any, ATTR_DERIV extends ATTR> WritableLongChunk<ATTR_DERIV> downcast(WritableLongChunk<ATTR> self) {
+    public static <ATTR extends Any, ATTR_DERIV extends ATTR> LongChunk<ATTR_DERIV> downcast(LongChunk<ATTR> self) {
         //noinspection unchecked
-        return (WritableLongChunk<ATTR_DERIV>) self;
+        return (LongChunk<ATTR_DERIV>) self;
     }
     // endregion downcast
 }

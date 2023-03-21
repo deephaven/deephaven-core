@@ -48,27 +48,27 @@ class ByteRadixSortKernel {
 
 
         @Override
-        public void sort(WritableLongChunk<KEY_INDICES> indexKeys, WritableChunk<ATTR> valuesToSort) {
+        public void sort(WritableLongChunk<KEY_INDICES> valuesToPermute, WritableChunk<ATTR> valuesToSort) {
             zeroSize();
-            doBucket(indexKeys, valuesToSort.asByteChunk(), 0, valuesToSort.size());
+            doBucket(valuesToPermute, valuesToSort.asByteChunk(), 0, valuesToSort.size());
             if (order == SortingOrder.Ascending) {
-                ascendingBuckets(indexKeys, valuesToSort.asWritableByteChunk(), 0, valuesToSort.size());
+                ascendingBuckets(valuesToPermute, valuesToSort.asWritableByteChunk(), 0, valuesToSort.size());
             } else {
-                descendingBuckets(indexKeys, valuesToSort.asWritableByteChunk(), 0, valuesToSort.size());
+                descendingBuckets(valuesToPermute, valuesToSort.asWritableByteChunk(), 0, valuesToSort.size());
             }
         }
 
         @Override
-        public void sort(WritableLongChunk<KEY_INDICES> indexKeys, WritableChunk<ATTR> valuesToSort, IntChunk<? extends ChunkPositions> offsetsIn, IntChunk<? extends ChunkLengths> lengthsIn) {
+        public void sort(WritableLongChunk<KEY_INDICES> valuesToPermute, WritableChunk<ATTR> valuesToSort, IntChunk<? extends ChunkPositions> offsetsIn, IntChunk<? extends ChunkLengths> lengthsIn) {
             for (int ii = 0; ii < offsetsIn.size(); ++ii) {
                 zeroSize();
                 final int start = offsetsIn.get(ii);
                 final int length = lengthsIn.get(ii);
-                doBucket(indexKeys, valuesToSort.asByteChunk(), start, length);
+                doBucket(valuesToPermute, valuesToSort.asByteChunk(), start, length);
                 if (order == SortingOrder.Ascending) {
-                    ascendingBuckets(indexKeys, valuesToSort.asWritableByteChunk(), start, length);
+                    ascendingBuckets(valuesToPermute, valuesToSort.asWritableByteChunk(), start, length);
                 } else {
-                    descendingBuckets(indexKeys, valuesToSort.asWritableByteChunk(), start, length);
+                    descendingBuckets(valuesToPermute, valuesToSort.asWritableByteChunk(), start, length);
                 }
             }
         }

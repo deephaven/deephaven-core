@@ -3,7 +3,6 @@
  */
 package io.deephaven.util.datastructures;
 
-import io.deephaven.base.Procedure;
 import io.deephaven.base.reference.SimpleReference;
 import io.deephaven.base.reference.WeakReferenceWrapper;
 import io.deephaven.base.verify.Assert;
@@ -13,6 +12,8 @@ import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Array;
 import java.util.Arrays;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 /**
  * <p>
@@ -58,7 +59,7 @@ public class SubscriptionSet<LISTENER_TYPE> {
         }
     }
 
-    private Entry subscriptions[];
+    private Entry[] subscriptions;
     private int size;
 
     public SubscriptionSet() {
@@ -172,7 +173,7 @@ public class SubscriptionSet<LISTENER_TYPE> {
      * @param activeOnly Whether to restrict this notification to active subscriptions only
      * @return Whether this operation caused the set to become <b>empty</b>
      */
-    public final boolean deliverNotification(@NotNull final Procedure.Unary<LISTENER_TYPE> procedure,
+    public final boolean deliverNotification(@NotNull final Consumer<LISTENER_TYPE> procedure,
             final boolean activeOnly) {
         final int initialSize = size;
         for (int si = 0; si < size;) {
@@ -183,7 +184,7 @@ public class SubscriptionSet<LISTENER_TYPE> {
                 continue; // si is not incremented in this case - we'll reconsider the same slot if necessary.
             }
             if (!activeOnly || currentEntry.isActive()) {
-                procedure.call(currentListener);
+                procedure.accept(currentListener);
             }
             ++si;
         }
@@ -199,7 +200,7 @@ public class SubscriptionSet<LISTENER_TYPE> {
      * @return Whether this operation caused the set to become <b>empty</b>
      */
     public final <NOTIFICATION_TYPE> boolean deliverNotification(
-            @NotNull final Procedure.Binary<LISTENER_TYPE, NOTIFICATION_TYPE> procedure,
+            @NotNull final BiConsumer<LISTENER_TYPE, NOTIFICATION_TYPE> procedure,
             @Nullable final NOTIFICATION_TYPE notification,
             final boolean activeOnly) {
         final int initialSize = size;
@@ -211,7 +212,7 @@ public class SubscriptionSet<LISTENER_TYPE> {
                 continue; // si is not incremented in this case - we'll reconsider the same slot if necessary.
             }
             if (!activeOnly || currentEntry.isActive()) {
-                procedure.call(currentListener, notification);
+                procedure.accept(currentListener, notification);
             }
             ++si;
         }

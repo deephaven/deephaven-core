@@ -165,6 +165,9 @@ project(':engine-chunk').projectDir = file('engine/chunk')
 include(':engine-context')
 project(':engine-context').projectDir = file('engine/context')
 
+include(':engine-primitive')
+project(':engine-primitive').projectDir = file('engine/primitive')
+
 include(':engine-vector')
 project(':engine-vector').projectDir = file('engine/vector')
 

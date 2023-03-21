@@ -261,6 +261,13 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
         return result;
     }
 
+    private boolean shouldTrackPrevious() {
+        // prevFlusher == null means we are not tracking previous values yet (or maybe ever).
+        // If prepareForParallelPopulation was called on this cycle, it's assumed that all previous values have already
+        // been recorded.
+        return prevFlusher != null && prepareForParallelPopulationClockCycle != LogicalClock.DEFAULT.currentStep();
+    }
+
     @Override
     public void startTrackingPrevValues() {
         if (prevFlusher != null) {
@@ -712,13 +719,6 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
                 offset += length;
             }
         }
-    }
-
-    private boolean shouldTrackPrevious() {
-        // prevFlusher == null means we are not tracking previous values yet (or maybe ever).
-        // If prepareForParallelPopulation was called on this cycle, it's assumed that all previous values have already
-        // been recorded.
-        return prevFlusher != null && prepareForParallelPopulationClockCycle != LogicalClock.DEFAULT.currentStep();
     }
     // endregion fillFromChunkByRanges
 

@@ -12,8 +12,8 @@ public class PrimitiveType {
 
     private final String primitive;
     private final String boxed;
-    private final String dbArray;
-    private final String dbArrayDirect;
+    private final String vector;
+    private final String vectorDirect;
     private final String nullValue;
     private final String maxValue;
     private final String minValue;
@@ -24,19 +24,19 @@ public class PrimitiveType {
      *
      * @param primitive name of the primitive
      * @param boxed name of the boxed primitive
-     * @param dbArray name of the DbArray interface
-     * @param dbArrayDirect name of the concrete DbArray wrapper
+     * @param vector name of the Vector interface
+     * @param vectorDirect name of the concrete Vector wrapper
      * @param nullValue null value
      * @param maxValue maximum value
      * @param minValue minimum value
      * @param valueType type of value
      */
-    public PrimitiveType(final String primitive, final String boxed, final String dbArray, final String dbArrayDirect,
+    public PrimitiveType(final String primitive, final String boxed, final String vector, final String vectorDirect,
             final String nullValue, final String maxValue, final String minValue, final ValueType valueType) {
         this.primitive = primitive;
         this.boxed = boxed;
-        this.dbArray = dbArray;
-        this.dbArrayDirect = dbArrayDirect;
+        this.vector = vector;
+        this.vectorDirect = vectorDirect;
         this.nullValue = nullValue;
         this.maxValue = maxValue;
         this.minValue = minValue;
@@ -62,21 +62,21 @@ public class PrimitiveType {
     }
 
     /**
-     * Gets the DbArray interface of the primitive.
+     * Gets the Vector interface of the primitive.
      *
-     * @return DbArray interface of the primitive.
+     * @return Vector interface of the primitive.
      */
-    public String getDbArray() {
-        return dbArray;
+    public String getVector() {
+        return vector;
     }
 
     /**
-     * Gets the direct DbArray wrapper of the primitive.
+     * Gets the direct Vector wrapper of the primitive.
      *
-     * @return direct DbArray wrapper of the primitive.
+     * @return direct Vector wrapper of the primitive.
      */
-    public String getDbArrayDirect() {
-        return dbArrayDirect;
+    public String getVectorDirect() {
+        return vectorDirect;
     }
 
     /**
@@ -133,7 +133,7 @@ public class PrimitiveType {
     public static PrimitiveType[] primitiveTypes() {
         return new PrimitiveType[] {
                 new PrimitiveType("Boolean", "Boolean",
-                        "BooleanVector", "BooleanVectorDirect",
+                        "ObjectVector", "ObjectVectorDirect",
                         "NULL_BOOLEAN", null, null,
                         ValueType.BOOLEAN),
                 new PrimitiveType("char", "Character",

@@ -35,11 +35,12 @@ class TypeHelper {
     }
 
     static Stream<GenericType<?>> genericTypes() {
-        return Stream.concat(Stream.of(StringType.instance(), InstantType.instance()),
-                dbPrimitiveArrayTypes());
+        return Stream.concat(
+                Stream.of(StringType.instance(), InstantType.instance()),
+                primitiveVectorTypes());
     }
 
-    static Stream<PrimitiveVectorType<?, ?>> dbPrimitiveArrayTypes() {
+    static Stream<PrimitiveVectorType<?, ?>> primitiveVectorTypes() {
         try {
             return PrimitiveVectorType.types().stream();
         } catch (ClassNotFoundException | InvocationTargetException | NoSuchMethodException
