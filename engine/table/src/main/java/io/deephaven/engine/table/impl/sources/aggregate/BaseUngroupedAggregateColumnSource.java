@@ -22,12 +22,12 @@ import static io.deephaven.util.QueryConstants.*;
 /**
  * A base {@link UngroupedColumnSource} implementation for {@link AggregateColumnSource}s.
  */
-abstract class BaseUngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedColumnSource<DATA_TYPE> {
+abstract class BaseUngroupedAggregateColumnSource<DATA_TYPE, SOURCE_TYPE extends AggregateColumnSource<?, DATA_TYPE>>
+        extends UngroupedColumnSource<DATA_TYPE> {
+    final SOURCE_TYPE aggregateColumnSource;
 
-    final AggregateColumnSource<?, DATA_TYPE> aggregateColumnSource;
-
-    BaseUngroupedAggregateColumnSource(@NotNull final AggregateColumnSource<?, DATA_TYPE> aggregateColumnSource,
-            Class<DATA_TYPE> colType) {
+    BaseUngroupedAggregateColumnSource(@NotNull final SOURCE_TYPE aggregateColumnSource,
+            final Class<DATA_TYPE> colType) {
         super(colType);
         this.aggregateColumnSource = aggregateColumnSource;
     }
@@ -230,8 +230,7 @@ abstract class BaseUngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedCo
         final FillContext aggregatedFillContext;
         final ResettableWritableChunk<Any> destinationSlice;
 
-        UngroupedFillContext(@NotNull final AggregateColumnSource<?, ?> aggregateColumnSource,
-                final ColumnSource<?> aggregatedSource,
+        UngroupedFillContext(final ColumnSource<?> aggregatedSource,
                 final int chunkCapacity) {
 
             // NB: There's no reason to use a shared context for the values source. We'd have to reset it between each
@@ -245,13 +244,13 @@ abstract class BaseUngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedCo
         static abstract class Shareable extends SharedContext {
             final boolean shared;
             final GetContext rowsetGetContext;
-            final WritableLongChunk<OrderedRowKeys> rowsetKeyIndices;
+            final WritableLongChunk<OrderedRowKeys> rowKeys;
             final WritableIntChunk<ChunkLengths> sameIndexRunLengths;
-            final WritableLongChunk<OrderedRowKeys> componentKeyIndices;
-            final ResettableWritableLongChunk<OrderedRowKeys> componentKeyIndicesSlice;
+            final WritableLongChunk<OrderedRowKeys> componentKeys;
+            final ResettableWritableLongChunk<OrderedRowKeys> componentKeySlice;
 
             boolean stateReusable;
-            int currentIndexPosition;
+            int currentIndex;
 
             Shareable(final boolean shared,
                     @NotNull final ColumnSource<? extends RowSet> groupRowSetSource,
@@ -259,10 +258,10 @@ abstract class BaseUngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedCo
                 this.shared = shared;
 
                 rowsetGetContext = groupRowSetSource.makeGetContext(chunkCapacity, this);
-                rowsetKeyIndices = WritableLongChunk.makeWritableChunk(chunkCapacity);
+                rowKeys = WritableLongChunk.makeWritableChunk(chunkCapacity);
                 sameIndexRunLengths = WritableIntChunk.makeWritableChunk(chunkCapacity);
-                componentKeyIndices = WritableLongChunk.makeWritableChunk(chunkCapacity);
-                componentKeyIndicesSlice = ResettableWritableLongChunk.makeResettableChunk();
+                componentKeys = WritableLongChunk.makeWritableChunk(chunkCapacity);
+                componentKeySlice = ResettableWritableLongChunk.makeResettableChunk();
             }
 
             @Override
@@ -275,10 +274,10 @@ abstract class BaseUngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedCo
             public void close() {
                 SafeCloseable.closeArray(
                         rowsetGetContext,
-                        rowsetKeyIndices,
+                        rowKeys,
                         sameIndexRunLengths,
-                        componentKeyIndices,
-                        componentKeyIndicesSlice);
+                        componentKeys,
+                        componentKeySlice);
                 super.close();
             }
         }
@@ -292,7 +291,7 @@ abstract class BaseUngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedCo
                 final int lengthFromThisIndex = shareable.sameIndexRunLengths.get(ii);
 
                 final WritableLongChunk<OrderedRowKeys> remappedComponentKeys =
-                        shareable.componentKeyIndicesSlice.resetFromTypedChunk(shareable.componentKeyIndices,
+                        shareable.componentKeySlice.resetFromTypedChunk(shareable.componentKeys,
                                 componentKeyIndicesPosition, lengthFromThisIndex);
 
                 try (final RowSequence componentRowSequence =

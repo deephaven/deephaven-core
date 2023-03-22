@@ -25,11 +25,15 @@ import org.junit.experimental.categories.Category;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Duration;
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
+import java.util.Random;
 import java.util.stream.Collectors;
 
 import static io.deephaven.engine.testutil.GenerateTableUpdates.generateAppends;
 import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.simulateShiftAwareStep;
+import static io.deephaven.engine.util.TableTools.intCol;
 import static io.deephaven.time.DateTimeUtils.convertDateTime;
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 import static org.junit.Assert.assertArrayEquals;
@@ -648,7 +652,7 @@ public class TestRollingGroup extends BaseUpdateByTest {
                 new EvalNugget() {
                     @Override
                     protected Table e() {
-                        return t.updateBy(UpdateByOperation.RollingGroup(100, columns));
+                        return t.updateBy(UpdateByOperation.RollingGroup(prevTicks, fwdTicks, columns));
                     }
                 }
         };
@@ -996,6 +1000,74 @@ public class TestRollingGroup extends BaseUpdateByTest {
         final Table ungrouped = grouped.ungroup(columns).select();
 
         Assert.eqZero(ungrouped.getRowSet().size(), "ungrouped.getRowSet().size()");
+    }
+
+    @Test
+    public void testFilteredUngroup() {
+        final int prevTicks = 10;
+        final int postTicks = 0;
+
+        final int TABLE_SIZE = 1000;
+
+        // Create very specific values.
+        final int[] values = new int[TABLE_SIZE];
+        final int[] mod2 = new int[TABLE_SIZE];
+        final int[] mod5 = new int[TABLE_SIZE];
+
+        for (int ii = 0; ii < TABLE_SIZE; ii++) {
+            values[ii] = ii;
+            mod2[ii] = ii % 2;
+            mod5[ii] = ii % 5;
+        }
+
+        final QueryTable t = TstUtils.testTable(
+                intCol("idx", values),
+                intCol("mod2", mod2),
+                intCol("mod5", mod5));
+
+        final Table grouped = t.updateBy(
+                List.of(UpdateByOperation.RollingGroup(prevTicks, postTicks, "idx", "mod2", "mod5")));
+
+        final Table ungrouped = grouped.ungroup("idx", "mod2", "mod5");
+
+        // Test mod 2.
+        Table filteredTable = ungrouped.where("mod2==0");
+        int[] filteredArray = (int[]) filteredTable.getColumn("idx").getDirect();
+        for (int ii = 0; ii < filteredArray.length; ii++) {
+            Assert.eq(0, "filteredArray[ii] % 2", filteredArray[ii] % 2);
+        }
+        filteredTable = ungrouped.where("mod2==1");
+        filteredArray = (int[]) filteredTable.getColumn("idx").getDirect();
+        for (int ii = 0; ii < filteredArray.length; ii++) {
+            Assert.eq(1, "filteredArray[ii] % 2", filteredArray[ii] % 2);
+        }
+
+        // Test mod 5
+        filteredTable = ungrouped.where("mod5==0");
+        filteredArray = (int[]) filteredTable.getColumn("idx").getDirect();
+        for (int ii = 0; ii < filteredArray.length; ii++) {
+            Assert.eq(0, "filteredArray[ii] % 5", filteredArray[ii] % 5);
+        }
+        filteredTable = ungrouped.where("mod5==1");
+        filteredArray = (int[]) filteredTable.getColumn("idx").getDirect();
+        for (int ii = 0; ii < filteredArray.length; ii++) {
+            Assert.eq(1, "filteredArray[ii] % 5", filteredArray[ii] % 5);
+        }
+        filteredTable = ungrouped.where("mod5==2");
+        filteredArray = (int[]) filteredTable.getColumn("idx").getDirect();
+        for (int ii = 0; ii < filteredArray.length; ii++) {
+            Assert.eq(2, "filteredArray[ii] % 5", filteredArray[ii] % 5);
+        }
+        filteredTable = ungrouped.where("mod5==3");
+        filteredArray = (int[]) filteredTable.getColumn("idx").getDirect();
+        for (int ii = 0; ii < filteredArray.length; ii++) {
+            Assert.eq(3, "filteredArray[ii] % 5", filteredArray[ii] % 5);
+        }
+        filteredTable = ungrouped.where("mod5==4");
+        filteredArray = (int[]) filteredTable.getColumn("idx").getDirect();
+        for (int ii = 0; ii < filteredArray.length; ii++) {
+            Assert.eq(4, "filteredArray[ii] % 5", filteredArray[ii] % 5);
+        }
     }
 
     // endregion
