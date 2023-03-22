@@ -7,13 +7,13 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import List, Any
 
-from pydeephaven.dherror import DHError
-from pydeephaven.combo_agg import ComboAggregation
+from pydeephaven._constants import AggType
 from pydeephaven._table_ops import UpdateOp, LazyUpdateOp, ViewOp, UpdateViewOp, SelectOp, DropColumnsOp, \
     SelectDistinctOp, SortOp, UnstructuredFilterOp, HeadOp, TailOp, HeadByOp, TailByOp, UngroupOp, NaturalJoinOp, \
-    ExactJoinOp, CrossJoinOp, AsOfJoinOp, DedicatedAggOp, ComboAggOp
+    ExactJoinOp, CrossJoinOp, AsOfJoinOp, DedicatedAggOp, ComboAggOp, UpdateByOp, SnapshotTableOp, SnapshotWhenTableOp
+from pydeephaven.combo_agg import ComboAggregation
 from pydeephaven.constants import MatchRule, SortDirection
-from pydeephaven._constants import AggType
+from pydeephaven.updateby import UpdateByOperation
 
 
 class TableInterface(ABC):
@@ -276,7 +276,8 @@ class TableInterface(ABC):
         table_op = AsOfJoinOp(table=table, keys=on, columns_to_add=joins, match_rule=match_rule)
         return self.table_op_handler(table_op)
 
-    def raj(self, table: Any, on: List[str], joins: List[str] = [], match_rule: MatchRule = MatchRule.GREATER_THAN_EQUAL):
+    def raj(self, table: Any, on: List[str], joins: List[str] = [],
+            match_rule: MatchRule = MatchRule.GREATER_THAN_EQUAL):
         """ Perform a reverse as-of join between this table as the left table and another table as the right table) and
         returns the result table.
 
@@ -558,4 +559,64 @@ class TableInterface(ABC):
             DHError
         """
         table_op = ComboAggOp(column_names=by, combo_aggregation=agg)
+        return self.table_op_handler(table_op)
+
+    def update_by(self, ops: List[UpdateByOperation], by: List[str]):
+        """ Perform an update-by operation on the table and return the result table.
+
+        Args:
+            ops (List[UpdateByOperation]): the UpdateByOperations to be applied
+            by (List[str]): the group-by column names
+
+        Returns:
+            a Table object
+
+        Raises:
+            DHError
+        """
+        table_op = UpdateByOp(operations=ops, by=by)
+        return self.table_op_handler(table_op)
+
+    def snapshot(self):
+        """Returns a static snapshot table.
+
+        Returns:
+            a new Table
+
+        Raises:
+            DHError
+        """
+        table_op = SnapshotTableOp()
+        return self.table_op_handler(table_op)
+
+    def snapshot_when(self, trigger_table: Any, stamp_cols: List[str] = None, initial: bool = False,
+                      incremental: bool = False, history: bool = False):
+        """Returns a table that captures a snapshot of this table whenever trigger_table updates.
+
+        When trigger_table updates, a snapshot of this table and the "stamp key" from trigger_table form the resulting
+        table. The "stamp key" is the last row of the trigger_table, limited by the stamp_cols. If trigger_table is
+        empty, the "stamp key" will be represented by NULL values.
+
+        Args:
+            trigger_table (Table): the trigger table
+            stamp_cols (List[str]): The columns from trigger_table that form the "stamp key", may be
+                renames. None, or empty, means that all columns from trigger_table form the "stamp key".
+            initial (bool): Whether to take an initial snapshot upon construction, default is False. When False, the
+                resulting table will remain empty until trigger_table first updates.
+            incremental (bool): Whether the resulting table should be incremental, default is False. When False, all
+                rows of this table will have the latest "stamp key". When True, only the rows of this table that have
+                been added or updated will have the latest "stamp key".
+            history (bool): Whether the resulting table should keep history, default is False. A history table appends a
+                full snapshot of this table and the "stamp key" as opposed to updating existing rows. The history flag
+                is currently incompatible with initial and incremental: when history is True, incremental and initial
+                must be False.
+
+        Returns:
+            a new Table
+
+        Raises:
+            DHError
+        """
+        table_op = SnapshotWhenTableOp(trigger_table=trigger_table, stamp_cols=stamp_cols, initial=initial,
+                                       incremental=incremental, history=history)
         return self.table_op_handler(table_op)

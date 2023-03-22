@@ -150,7 +150,7 @@ public class Sort {
      * @param values values.
      * @return sorted values.
      */
-    public static ${pt.primitive}[] sort(final ${pt.dbArray} values) {
+    public static ${pt.primitive}[] sort(final ${pt.vector} values) {
         if (values == null) {
             return null;
         }
@@ -175,7 +175,7 @@ public class Sort {
             return null;
         }
 
-        return sort(new ${pt.dbArrayDirect}(values));
+        return sort(new ${pt.vectorDirect}(values));
     }
 
     /**
@@ -208,7 +208,7 @@ public class Sort {
      * @param values values.
      * @return sorted values.
      */
-    public static ${pt.primitive}[] sortDescending(final ${pt.dbArray} values) {
+    public static ${pt.primitive}[] sortDescending(final ${pt.vector} values) {
         if (values == null) {
             return null;
         }
@@ -235,7 +235,7 @@ public class Sort {
             return null;
         }
 
-        return sortDescending(new ${pt.dbArrayDirect}(values));
+        return sortDescending(new ${pt.vectorDirect}(values));
     }
 
     /**

@@ -15,19 +15,18 @@ import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.liveness.Liveness;
+import io.deephaven.engine.primitive.iterator.*;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.hierarchical.RollupTable;
 import io.deephaven.engine.table.hierarchical.TreeTable;
 import io.deephaven.engine.table.impl.updateby.UpdateBy;
-import io.deephaven.engine.table.iterators.*;
 import io.deephaven.api.util.ConcurrentMethod;
 import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -156,47 +155,47 @@ public abstract class UncoalescedTable<IMPL_TYPE extends UncoalescedTable<IMPL_T
     }
 
     @Override
-    public <TYPE> Iterator<TYPE> columnIterator(@NotNull String columnName) {
+    public <TYPE> CloseableIterator<TYPE> columnIterator(@NotNull String columnName) {
         return coalesce().columnIterator(columnName);
     }
 
     @Override
-    public CharacterColumnIterator characterColumnIterator(@NotNull String columnName) {
+    public CloseablePrimitiveIteratorOfChar characterColumnIterator(@NotNull String columnName) {
         return coalesce().characterColumnIterator(columnName);
     }
 
     @Override
-    public ByteColumnIterator byteColumnIterator(@NotNull String columnName) {
+    public CloseablePrimitiveIteratorOfByte byteColumnIterator(@NotNull String columnName) {
         return coalesce().byteColumnIterator(columnName);
     }
 
     @Override
-    public ShortColumnIterator shortColumnIterator(@NotNull String columnName) {
+    public CloseablePrimitiveIteratorOfShort shortColumnIterator(@NotNull String columnName) {
         return coalesce().shortColumnIterator(columnName);
     }
 
     @Override
-    public IntegerColumnIterator integerColumnIterator(@NotNull String columnName) {
+    public CloseablePrimitiveIteratorOfInt integerColumnIterator(@NotNull String columnName) {
         return coalesce().integerColumnIterator(columnName);
     }
 
     @Override
-    public LongColumnIterator longColumnIterator(@NotNull String columnName) {
+    public CloseablePrimitiveIteratorOfLong longColumnIterator(@NotNull String columnName) {
         return coalesce().longColumnIterator(columnName);
     }
 
     @Override
-    public FloatColumnIterator floatColumnIterator(@NotNull String columnName) {
+    public CloseablePrimitiveIteratorOfFloat floatColumnIterator(@NotNull String columnName) {
         return coalesce().floatColumnIterator(columnName);
     }
 
     @Override
-    public DoubleColumnIterator doubleColumnIterator(@NotNull String columnName) {
+    public CloseablePrimitiveIteratorOfDouble doubleColumnIterator(@NotNull String columnName) {
         return coalesce().doubleColumnIterator(columnName);
     }
 
     @Override
-    public <DATA_TYPE> ObjectColumnIterator<DATA_TYPE> objectColumnIterator(@NotNull String columnName) {
+    public <DATA_TYPE> CloseableIterator<DATA_TYPE> objectColumnIterator(@NotNull String columnName) {
         return coalesce().objectColumnIterator(columnName);
     }
 

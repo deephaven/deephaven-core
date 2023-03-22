@@ -3,18 +3,18 @@
  */
 package io.deephaven.base.map;
 
-import io.deephaven.base.Function;
 import io.deephaven.base.array.FastArrayTest;
 import io.deephaven.base.array.TrialClassA;
 import junit.framework.TestCase;
 
 import java.io.*;
 import java.util.Random;
+import java.util.function.Supplier;
 
 public class FastArrayMapTest extends TestCase {
 
     private FastArrayMap<LongWrapper, TrialClassA> constructTestMap() {
-        Function.Nullary<KeyValuePair<LongWrapper, TrialClassA>> factoryObjectToObject = new FactoryObjectToObject();
+        Supplier<KeyValuePair<LongWrapper, TrialClassA>> factoryObjectToObject = new FactoryObjectToObject();
         FastArrayMap<LongWrapper, TrialClassA> map = new FastArrayMap<LongWrapper, TrialClassA>(factoryObjectToObject);
         return map;
     }
@@ -614,10 +614,10 @@ public class FastArrayMapTest extends TestCase {
 }
 
 
-class FactoryObjectToObject implements Function.Nullary<KeyValuePair<LongWrapper, TrialClassA>> {
+class FactoryObjectToObject implements Supplier<KeyValuePair<LongWrapper, TrialClassA>> {
 
     @Override
-    public KeyValuePair<LongWrapper, TrialClassA> call() {
+    public KeyValuePair<LongWrapper, TrialClassA> get() {
         LongWrapper key = new LongWrapper(Long.MIN_VALUE);
         TrialClassA value = TrialClassA.makeNull();
         KeyValuePair<LongWrapper, TrialClassA> result = new KeyValuePair<LongWrapper, TrialClassA>(key, value);

@@ -15,7 +15,7 @@ import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.function.Basic;
 import io.deephaven.test.types.OutOfBandTest;
-import io.deephaven.util.FunctionalInterfaces;
+import io.deephaven.util.function.ThrowingRunnable;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -288,7 +288,7 @@ public class TestForwardFill extends BaseUpdateByTest {
         }
     }
 
-    void updateAndValidate(QueryTable src, Table result, FunctionalInterfaces.ThrowingRunnable<?> updateFunc)
+    void updateAndValidate(QueryTable src, Table result, ThrowingRunnable<?> updateFunc)
             throws Exception {
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(updateFunc);
 

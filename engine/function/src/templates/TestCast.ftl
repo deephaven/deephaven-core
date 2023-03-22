@@ -87,9 +87,9 @@ public class TestCast extends BaseArrayTestCase {
         assertEquals(new int[]{1,2,3,NULL_INT}, castInt(new ${pt.primitive}[]{(${pt.primitive})1,(${pt.primitive})2,(${pt.primitive})3,${pt.null}}));
         assertEquals(new int[]{1,2,3,NULL_INT}, castInt(new ${pt.primitive}[]{(${pt.primitive})1,(${pt.primitive})2,(${pt.primitive})3,${pt.null}}, true));
 
-        assertNull(castInt((${pt.dbArray}) null));
-        assertEquals(new int[]{1,2,3,NULL_INT}, castInt(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{(${pt.primitive})1,(${pt.primitive})2,(${pt.primitive})3,${pt.null}})));
-        assertEquals(new int[]{1,2,3,NULL_INT}, castInt(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{(${pt.primitive})1,(${pt.primitive})2,(${pt.primitive})3,${pt.null}}), true));
+        assertNull(castInt((${pt.vector}) null));
+        assertEquals(new int[]{1,2,3,NULL_INT}, castInt(new ${pt.vectorDirect}(new ${pt.primitive}[]{(${pt.primitive})1,(${pt.primitive})2,(${pt.primitive})3,${pt.null}})));
+        assertEquals(new int[]{1,2,3,NULL_INT}, castInt(new ${pt.vectorDirect}(new ${pt.primitive}[]{(${pt.primitive})1,(${pt.primitive})2,(${pt.primitive})3,${pt.null}}), true));
     }
 
     public void testCastLong${pt.boxed}() {
@@ -99,9 +99,9 @@ public class TestCast extends BaseArrayTestCase {
         assertEquals(new long[]{1,2,3,NULL_LONG}, castLong(new ${pt.primitive}[]{(${pt.primitive})1,(${pt.primitive})2,(${pt.primitive})3,${pt.null}}));
         assertEquals(new long[]{1,2,3,NULL_LONG}, castLong(new ${pt.primitive}[]{(${pt.primitive})1,(${pt.primitive})2,(${pt.primitive})3,${pt.null}}, true));
 
-        assertNull(castLong((${pt.dbArray}) null));
-        assertEquals(new long[]{1,2,3,NULL_LONG}, castLong(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{(${pt.primitive})1,(${pt.primitive})2,(${pt.primitive})3,${pt.null}})));
-        assertEquals(new long[]{1,2,3,NULL_LONG}, castLong(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{(${pt.primitive})1,(${pt.primitive})2,(${pt.primitive})3,${pt.null}}), true));
+        assertNull(castLong((${pt.vector}) null));
+        assertEquals(new long[]{1,2,3,NULL_LONG}, castLong(new ${pt.vectorDirect}(new ${pt.primitive}[]{(${pt.primitive})1,(${pt.primitive})2,(${pt.primitive})3,${pt.null}})));
+        assertEquals(new long[]{1,2,3,NULL_LONG}, castLong(new ${pt.vectorDirect}(new ${pt.primitive}[]{(${pt.primitive})1,(${pt.primitive})2,(${pt.primitive})3,${pt.null}}), true));
     }
 
     </#if>
@@ -115,9 +115,9 @@ public class TestCast extends BaseArrayTestCase {
         assertEquals(new double[]{1,2,3,NULL_DOUBLE}, castDouble(new ${pt.primitive}[]{(${pt.primitive})1,(${pt.primitive})2,(${pt.primitive})3,${pt.null}}));
         assertEquals(new double[]{1,2,3,NULL_DOUBLE}, castDouble(new ${pt.primitive}[]{(${pt.primitive})1,(${pt.primitive})2,(${pt.primitive})3,${pt.null}}, true));
 
-        assertNull(castDouble((${pt.dbArray}) null));
-        assertEquals(new double[]{1,2,3,NULL_DOUBLE}, castDouble(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{(${pt.primitive})1,(${pt.primitive})2,(${pt.primitive})3,${pt.null}})));
-        assertEquals(new double[]{1,2,3,NULL_DOUBLE}, castDouble(new ${pt.dbArrayDirect}(new ${pt.primitive}[]{(${pt.primitive})1,(${pt.primitive})2,(${pt.primitive})3,${pt.null}}), true));
+        assertNull(castDouble((${pt.vector}) null));
+        assertEquals(new double[]{1,2,3,NULL_DOUBLE}, castDouble(new ${pt.vectorDirect}(new ${pt.primitive}[]{(${pt.primitive})1,(${pt.primitive})2,(${pt.primitive})3,${pt.null}})));
+        assertEquals(new double[]{1,2,3,NULL_DOUBLE}, castDouble(new ${pt.vectorDirect}(new ${pt.primitive}[]{(${pt.primitive})1,(${pt.primitive})2,(${pt.primitive})3,${pt.null}}), true));
     }
 
 

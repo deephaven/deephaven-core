@@ -11,9 +11,10 @@ import org.immutables.value.Value.Parameter;
 @SimpleStyle
 public abstract class GenericVectorType<T, ComponentType> extends ArrayTypeBase<T, ComponentType> {
 
-    public static <T, ComponentType> GenericVectorType<T, ComponentType> of(Class<T> clazz,
-            GenericType<ComponentType> genericType) {
-        return ImmutableGenericVectorType.of(clazz, genericType);
+    public static <T, ComponentType> GenericVectorType<T, ComponentType> of(
+            Class<T> clazz,
+            GenericType<ComponentType> componentType) {
+        return ImmutableGenericVectorType.of(clazz, componentType);
     }
 
     @Parameter

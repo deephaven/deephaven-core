@@ -3,12 +3,13 @@
  */
 package io.deephaven.io.log.impl;
 
-import io.deephaven.base.Function;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.io.log.LogEntry;
 import io.deephaven.io.log.LogLevel;
 import io.deephaven.io.logger.StringsLoggerImpl;
 import junit.framework.TestCase;
+
+import java.util.function.Supplier;
 
 
 /**
@@ -28,8 +29,7 @@ public class TestLogOutput extends TestCase {
         this.buffers = new LogBufferPoolImpl(16, 256);
         this.outputBuffer = new LogOutputCsvImpl(buffers);
 
-        // Function.Nullary<LogEntry> entryFactory = DelayedLogEntryUnsafeImpl::new;
-        Function.Nullary<LogEntry> entryFactory = () -> new LogEntryImpl(buffers);
+        Supplier<LogEntry> entryFactory = () -> new LogEntryImpl(buffers);
 
         this.logger = new StringsLoggerImpl<>(entryFactory, 16, outputBuffer, LogLevel.INFO);
     }

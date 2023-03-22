@@ -228,7 +228,7 @@ public class RollingGroupOperator extends UpdateByOperator {
     // region extra-constructor-args
     // endregion extra-constructor-args
     ) {
-        super(null, affectingColumns, rowRedirection, timestampColumnName, reverseWindowScaleUnits,
+        super(pairs[0], affectingColumns, rowRedirection, timestampColumnName, reverseWindowScaleUnits,
                 forwardWindowScaleUnits, true);
 
         inputColumnNames = new String[pairs.length];
@@ -297,8 +297,8 @@ public class RollingGroupOperator extends UpdateByOperator {
 
     @NotNull
     @Override
-    public UpdateByOperator.Context makeUpdateContext(final int affectedChunkSize, final int influencerChunkSize) {
-        return new Context(affectedChunkSize);
+    public UpdateByOperator.Context makeUpdateContext(final int chunkSize, final int influencerChunkSize) {
+        return new Context(chunkSize);
     }
 
     @Override
@@ -456,7 +456,7 @@ public class RollingGroupOperator extends UpdateByOperator {
         }
         // Create the transformer to map from the input columns to the individual output column MCS.
         inputOutputTransformer =
-                inputModifiedColumnSet.newTransformer(getOutputColumnNames(), outputModifiedColumnSets);
+                inputModifiedColumnSet.newTransformer(getInputColumnNames(), outputModifiedColumnSets);
     }
 
     /**

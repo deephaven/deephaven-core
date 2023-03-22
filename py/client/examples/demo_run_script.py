@@ -26,8 +26,8 @@ def main():
         dh_session.bind_table(variable_name, taxi_data_table)
 
         bottom_5_fares_table = run_script(dh_session=dh_session)
-        snapshot_data = bottom_5_fares_table.snapshot()
-        df = snapshot_data.to_pandas()
+        arrow_table = bottom_5_fares_table.to_arrow()
+        df = arrow_table.to_pandas()
 
         pd.set_option("display.max_columns", 20)
         print(df)

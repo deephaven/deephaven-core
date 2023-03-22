@@ -94,7 +94,7 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
         postMutationHook();
     }
 
-    private void assign(final OrderedLongSet maybeNewImpl) {
+    void assign(final OrderedLongSet maybeNewImpl) {
         invalidateRowSequenceAsChunkImpl();
         if (maybeNewImpl == innerSet) {
             return;
@@ -311,22 +311,24 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
     public final void validate(final String failMsg) {
         innerSet.ixValidate(failMsg);
         long totalSize = 0;
-        final RangeIterator it = rangeIterator();
-        long lastEnd = Long.MIN_VALUE;
         final String m = failMsg == null ? "" : failMsg + " ";
-        while (it.hasNext()) {
-            it.next();
-            final long start = it.currentRangeStart();
-            final long end = it.currentRangeEnd();
-            Assert.assertion(start >= 0, m + "start >= 0", start, "start", this, "rowSet");
-            Assert.assertion(end >= start, m + "end >= start", start, "start", end, "end", this, "rowSet");
-            Assert.assertion(start > lastEnd, m + "start > lastEnd", start, "start", lastEnd, "lastEnd", this,
-                    "rowSet");
-            Assert.assertion(start > lastEnd + 1, m + "start > lastEnd + 1", start, "start", lastEnd, "lastEnd", this,
-                    "rowSet");
-            lastEnd = end;
+        try (final RangeIterator it = rangeIterator()) {
+            long lastEnd = Long.MIN_VALUE;
+            while (it.hasNext()) {
+                it.next();
+                final long start = it.currentRangeStart();
+                final long end = it.currentRangeEnd();
+                Assert.assertion(start >= 0, m + "start >= 0", start, "start", this, "rowSet");
+                Assert.assertion(end >= start, m + "end >= start", start, "start", end, "end", this, "rowSet");
+                Assert.assertion(start > lastEnd, m + "start > lastEnd", start, "start", lastEnd, "lastEnd", this,
+                        "rowSet");
+                Assert.assertion(start > lastEnd + 1, m + "start > lastEnd + 1", start, "start", lastEnd, "lastEnd",
+                        this,
+                        "rowSet");
+                lastEnd = end;
 
-            totalSize += ((end - start) + 1);
+                totalSize += ((end - start) + 1);
+            }
         }
 
         Assert.eq(totalSize, m + "totalSize", size(), "size()");

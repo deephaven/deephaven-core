@@ -10,9 +10,9 @@ import io.deephaven.engine.table.impl.ShiftObliviousInstrumentedListenerAdapter;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.util.FunctionalInterfaces;
 import gnu.trove.map.TObjectLongMap;
 import gnu.trove.map.hash.TObjectLongHashMap;
+import io.deephaven.util.function.ThrowingBiConsumer;
 
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -177,7 +177,7 @@ public abstract class RDMModelFarm<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends
             final ModelFarmBase.GetDataLockType lockType) {
         // Get the "doLockedConsumer", which will call the FitDataPopulator (i.e. the lambda below) using the configured
         // lock type and the appropriate value for 'usePrev'.
-        final FunctionalInterfaces.ThrowingBiConsumer<ModelFarmBase.QueryDataRetrievalOperation, Table, RuntimeException> doLockedConsumer =
+        final ThrowingBiConsumer<QueryDataRetrievalOperation, Table, RuntimeException> doLockedConsumer =
                 getDoLockedConsumer(lockType);
         return (key) -> {
             final DATATYPE data = dataManager.newData();
