@@ -229,7 +229,7 @@ final class UngroupedAggregateSlicedColumnSource<DATA_TYPE>
 
                     // Get the row key and determine the starting position for the first entry of this group.
                     final long rowKey = rowKeys.get(ii);
-                    final long rowPos = Math.toIntExact(bucketRowSet.find(rowKey));
+                    final long rowPos = bucketRowSet.find(rowKey);
                     final long localStartOffset = startOffsets != null ? startOffsets.get(ii) : startOffset;
                     final long startPos = ClampUtil.clampLong(0, bucketSize, rowPos + localStartOffset);
 
