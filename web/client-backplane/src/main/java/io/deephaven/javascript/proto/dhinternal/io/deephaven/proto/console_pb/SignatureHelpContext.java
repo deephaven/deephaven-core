@@ -24,6 +24,26 @@ public class SignatureHelpContext {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface SignaturesListFieldType {
                 @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                public interface DocumentationFieldType {
+                    @JsOverlay
+                    static SignatureHelpContext.ToObjectReturnType.ActiveSignatureHelpFieldType.SignaturesListFieldType.DocumentationFieldType create() {
+                        return Js.uncheckedCast(JsPropertyMap.of());
+                    }
+
+                    @JsProperty
+                    String getKind();
+
+                    @JsProperty
+                    String getValue();
+
+                    @JsProperty
+                    void setKind(String kind);
+
+                    @JsProperty
+                    void setValue(String value);
+                }
+
+                @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                 public interface ParametersListFieldType {
                     @JsOverlay
                     static SignatureHelpContext.ToObjectReturnType.ActiveSignatureHelpFieldType.SignaturesListFieldType.ParametersListFieldType create() {
@@ -31,13 +51,13 @@ public class SignatureHelpContext {
                     }
 
                     @JsProperty
-                    String getDocumentation();
+                    Object getDocumentation();
 
                     @JsProperty
                     String getLabel();
 
                     @JsProperty
-                    void setDocumentation(String documentation);
+                    void setDocumentation(Object documentation);
 
                     @JsProperty
                     void setLabel(String label);
@@ -52,7 +72,7 @@ public class SignatureHelpContext {
                 double getActiveParameter();
 
                 @JsProperty
-                String getDocumentation();
+                SignatureHelpContext.ToObjectReturnType.ActiveSignatureHelpFieldType.SignaturesListFieldType.DocumentationFieldType getDocumentation();
 
                 @JsProperty
                 String getLabel();
@@ -64,7 +84,8 @@ public class SignatureHelpContext {
                 void setActiveParameter(double activeParameter);
 
                 @JsProperty
-                void setDocumentation(String documentation);
+                void setDocumentation(
+                        SignatureHelpContext.ToObjectReturnType.ActiveSignatureHelpFieldType.SignaturesListFieldType.DocumentationFieldType documentation);
 
                 @JsProperty
                 void setLabel(String label);
@@ -153,6 +174,26 @@ public class SignatureHelpContext {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface SignaturesListFieldType {
                 @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                public interface DocumentationFieldType {
+                    @JsOverlay
+                    static SignatureHelpContext.ToObjectReturnType0.ActiveSignatureHelpFieldType.SignaturesListFieldType.DocumentationFieldType create() {
+                        return Js.uncheckedCast(JsPropertyMap.of());
+                    }
+
+                    @JsProperty
+                    String getKind();
+
+                    @JsProperty
+                    String getValue();
+
+                    @JsProperty
+                    void setKind(String kind);
+
+                    @JsProperty
+                    void setValue(String value);
+                }
+
+                @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                 public interface ParametersListFieldType {
                     @JsOverlay
                     static SignatureHelpContext.ToObjectReturnType0.ActiveSignatureHelpFieldType.SignaturesListFieldType.ParametersListFieldType create() {
@@ -160,13 +201,13 @@ public class SignatureHelpContext {
                     }
 
                     @JsProperty
-                    String getDocumentation();
+                    Object getDocumentation();
 
                     @JsProperty
                     String getLabel();
 
                     @JsProperty
-                    void setDocumentation(String documentation);
+                    void setDocumentation(Object documentation);
 
                     @JsProperty
                     void setLabel(String label);
@@ -181,7 +222,7 @@ public class SignatureHelpContext {
                 double getActiveParameter();
 
                 @JsProperty
-                String getDocumentation();
+                SignatureHelpContext.ToObjectReturnType0.ActiveSignatureHelpFieldType.SignaturesListFieldType.DocumentationFieldType getDocumentation();
 
                 @JsProperty
                 String getLabel();
@@ -193,7 +234,8 @@ public class SignatureHelpContext {
                 void setActiveParameter(double activeParameter);
 
                 @JsProperty
-                void setDocumentation(String documentation);
+                void setDocumentation(
+                        SignatureHelpContext.ToObjectReturnType0.ActiveSignatureHelpFieldType.SignaturesListFieldType.DocumentationFieldType documentation);
 
                 @JsProperty
                 void setLabel(String label);
@@ -289,7 +331,7 @@ public class SignatureHelpContext {
 
     public native void clearTriggerCharacter();
 
-    public native SignatureHelp getActiveSignatureHelp();
+    public native GetSignatureHelpResponse getActiveSignatureHelp();
 
     public native boolean getIsRetrigger();
 
@@ -305,7 +347,7 @@ public class SignatureHelpContext {
 
     public native void setActiveSignatureHelp();
 
-    public native void setActiveSignatureHelp(SignatureHelp value);
+    public native void setActiveSignatureHelp(GetSignatureHelpResponse value);
 
     public native void setIsRetrigger(boolean value);
 

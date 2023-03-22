@@ -20,6 +20,26 @@ public class SignatureInformation {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface DocumentationFieldType {
+            @JsOverlay
+            static SignatureInformation.ToObjectReturnType.DocumentationFieldType create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            String getKind();
+
+            @JsProperty
+            String getValue();
+
+            @JsProperty
+            void setKind(String kind);
+
+            @JsProperty
+            void setValue(String value);
+        }
+
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface ParametersListFieldType {
             @JsOverlay
             static SignatureInformation.ToObjectReturnType.ParametersListFieldType create() {
@@ -27,13 +47,13 @@ public class SignatureInformation {
             }
 
             @JsProperty
-            String getDocumentation();
+            Object getDocumentation();
 
             @JsProperty
             String getLabel();
 
             @JsProperty
-            void setDocumentation(String documentation);
+            void setDocumentation(Object documentation);
 
             @JsProperty
             void setLabel(String label);
@@ -48,7 +68,7 @@ public class SignatureInformation {
         double getActiveParameter();
 
         @JsProperty
-        String getDocumentation();
+        SignatureInformation.ToObjectReturnType.DocumentationFieldType getDocumentation();
 
         @JsProperty
         String getLabel();
@@ -60,7 +80,8 @@ public class SignatureInformation {
         void setActiveParameter(double activeParameter);
 
         @JsProperty
-        void setDocumentation(String documentation);
+        void setDocumentation(
+                SignatureInformation.ToObjectReturnType.DocumentationFieldType documentation);
 
         @JsProperty
         void setLabel(String label);
@@ -81,6 +102,26 @@ public class SignatureInformation {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType0 {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface DocumentationFieldType {
+            @JsOverlay
+            static SignatureInformation.ToObjectReturnType0.DocumentationFieldType create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            String getKind();
+
+            @JsProperty
+            String getValue();
+
+            @JsProperty
+            void setKind(String kind);
+
+            @JsProperty
+            void setValue(String value);
+        }
+
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface ParametersListFieldType {
             @JsOverlay
             static SignatureInformation.ToObjectReturnType0.ParametersListFieldType create() {
@@ -88,13 +129,13 @@ public class SignatureInformation {
             }
 
             @JsProperty
-            String getDocumentation();
+            Object getDocumentation();
 
             @JsProperty
             String getLabel();
 
             @JsProperty
-            void setDocumentation(String documentation);
+            void setDocumentation(Object documentation);
 
             @JsProperty
             void setLabel(String label);
@@ -109,7 +150,7 @@ public class SignatureInformation {
         double getActiveParameter();
 
         @JsProperty
-        String getDocumentation();
+        SignatureInformation.ToObjectReturnType0.DocumentationFieldType getDocumentation();
 
         @JsProperty
         String getLabel();
@@ -121,7 +162,8 @@ public class SignatureInformation {
         void setActiveParameter(double activeParameter);
 
         @JsProperty
-        void setDocumentation(String documentation);
+        void setDocumentation(
+                SignatureInformation.ToObjectReturnType0.DocumentationFieldType documentation);
 
         @JsProperty
         void setLabel(String label);
@@ -163,7 +205,7 @@ public class SignatureInformation {
 
     public native int getActiveParameter();
 
-    public native String getDocumentation();
+    public native MarkupContent getDocumentation();
 
     public native String getLabel();
 
@@ -177,7 +219,9 @@ public class SignatureInformation {
 
     public native void setActiveParameter(int value);
 
-    public native void setDocumentation(String value);
+    public native void setDocumentation();
+
+    public native void setDocumentation(MarkupContent value);
 
     public native void setLabel(String value);
 

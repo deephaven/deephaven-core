@@ -24,6 +24,26 @@ public class AutoCompleteResponse {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface ItemsListFieldType {
                 @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                public interface DocumentationFieldType {
+                    @JsOverlay
+                    static AutoCompleteResponse.ToObjectReturnType.CompletionItemsFieldType.ItemsListFieldType.DocumentationFieldType create() {
+                        return Js.uncheckedCast(JsPropertyMap.of());
+                    }
+
+                    @JsProperty
+                    String getKind();
+
+                    @JsProperty
+                    String getValue();
+
+                    @JsProperty
+                    void setKind(String kind);
+
+                    @JsProperty
+                    void setValue(String value);
+                }
+
+                @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                 public interface TextEditFieldType {
                     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                     public interface RangeFieldType {
@@ -100,7 +120,7 @@ public class AutoCompleteResponse {
                 String getDetail();
 
                 @JsProperty
-                String getDocumentation();
+                AutoCompleteResponse.ToObjectReturnType.CompletionItemsFieldType.ItemsListFieldType.DocumentationFieldType getDocumentation();
 
                 @JsProperty
                 String getFilterText();
@@ -155,7 +175,8 @@ public class AutoCompleteResponse {
                 void setDetail(String detail);
 
                 @JsProperty
-                void setDocumentation(String documentation);
+                void setDocumentation(
+                        AutoCompleteResponse.ToObjectReturnType.CompletionItemsFieldType.ItemsListFieldType.DocumentationFieldType documentation);
 
                 @JsProperty
                 void setFilterText(String filterText);
@@ -227,13 +248,13 @@ public class AutoCompleteResponse {
             }
 
             @JsProperty
-            String getContents();
+            Object getContents();
 
             @JsProperty
             Object getRange();
 
             @JsProperty
-            void setContents(String contents);
+            void setContents(Object contents);
 
             @JsProperty
             void setRange(Object range);
@@ -251,13 +272,13 @@ public class AutoCompleteResponse {
                     }
 
                     @JsProperty
-                    String getDocumentation();
+                    Object getDocumentation();
 
                     @JsProperty
                     String getLabel();
 
                     @JsProperty
-                    void setDocumentation(String documentation);
+                    void setDocumentation(Object documentation);
 
                     @JsProperty
                     void setLabel(String label);
@@ -272,7 +293,7 @@ public class AutoCompleteResponse {
                 double getActiveParameter();
 
                 @JsProperty
-                String getDocumentation();
+                Object getDocumentation();
 
                 @JsProperty
                 String getLabel();
@@ -284,7 +305,7 @@ public class AutoCompleteResponse {
                 void setActiveParameter(double activeParameter);
 
                 @JsProperty
-                void setDocumentation(String documentation);
+                void setDocumentation(Object documentation);
 
                 @JsProperty
                 void setLabel(String label);
@@ -379,6 +400,26 @@ public class AutoCompleteResponse {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface ItemsListFieldType {
                 @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                public interface DocumentationFieldType {
+                    @JsOverlay
+                    static AutoCompleteResponse.ToObjectReturnType0.CompletionItemsFieldType.ItemsListFieldType.DocumentationFieldType create() {
+                        return Js.uncheckedCast(JsPropertyMap.of());
+                    }
+
+                    @JsProperty
+                    String getKind();
+
+                    @JsProperty
+                    String getValue();
+
+                    @JsProperty
+                    void setKind(String kind);
+
+                    @JsProperty
+                    void setValue(String value);
+                }
+
+                @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                 public interface TextEditFieldType {
                     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                     public interface RangeFieldType {
@@ -455,7 +496,7 @@ public class AutoCompleteResponse {
                 String getDetail();
 
                 @JsProperty
-                String getDocumentation();
+                AutoCompleteResponse.ToObjectReturnType0.CompletionItemsFieldType.ItemsListFieldType.DocumentationFieldType getDocumentation();
 
                 @JsProperty
                 String getFilterText();
@@ -510,7 +551,8 @@ public class AutoCompleteResponse {
                 void setDetail(String detail);
 
                 @JsProperty
-                void setDocumentation(String documentation);
+                void setDocumentation(
+                        AutoCompleteResponse.ToObjectReturnType0.CompletionItemsFieldType.ItemsListFieldType.DocumentationFieldType documentation);
 
                 @JsProperty
                 void setFilterText(String filterText);
@@ -582,13 +624,13 @@ public class AutoCompleteResponse {
             }
 
             @JsProperty
-            String getContents();
+            Object getContents();
 
             @JsProperty
             Object getRange();
 
             @JsProperty
-            void setContents(String contents);
+            void setContents(Object contents);
 
             @JsProperty
             void setRange(Object range);
@@ -606,13 +648,13 @@ public class AutoCompleteResponse {
                     }
 
                     @JsProperty
-                    String getDocumentation();
+                    Object getDocumentation();
 
                     @JsProperty
                     String getLabel();
 
                     @JsProperty
-                    void setDocumentation(String documentation);
+                    void setDocumentation(Object documentation);
 
                     @JsProperty
                     void setLabel(String label);
@@ -627,7 +669,7 @@ public class AutoCompleteResponse {
                 double getActiveParameter();
 
                 @JsProperty
-                String getDocumentation();
+                Object getDocumentation();
 
                 @JsProperty
                 String getLabel();
@@ -639,7 +681,7 @@ public class AutoCompleteResponse {
                 void setActiveParameter(double activeParameter);
 
                 @JsProperty
-                void setDocumentation(String documentation);
+                void setDocumentation(Object documentation);
 
                 @JsProperty
                 void setLabel(String label);
@@ -745,13 +787,13 @@ public class AutoCompleteResponse {
 
     public native GetCompletionItemsResponse getCompletionItems();
 
-    public native Hover getHover();
+    public native GetHoverResponse getHover();
 
     public native int getRequestId();
 
     public native int getResponseCase();
 
-    public native SignatureHelp getSignatures();
+    public native GetSignatureHelpResponse getSignatures();
 
     public native boolean getSuccess();
 
@@ -769,13 +811,13 @@ public class AutoCompleteResponse {
 
     public native void setHover();
 
-    public native void setHover(Hover value);
+    public native void setHover(GetHoverResponse value);
 
     public native void setRequestId(int value);
 
     public native void setSignatures();
 
-    public native void setSignatures(SignatureHelp value);
+    public native void setSignatures(GetSignatureHelpResponse value);
 
     public native void setSuccess(boolean value);
 

@@ -26,6 +26,26 @@ public class GetSignatureHelpRequest {
                 @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                 public interface SignaturesListFieldType {
                     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                    public interface DocumentationFieldType {
+                        @JsOverlay
+                        static GetSignatureHelpRequest.ToObjectReturnType.ContextFieldType.ActiveSignatureHelpFieldType.SignaturesListFieldType.DocumentationFieldType create() {
+                            return Js.uncheckedCast(JsPropertyMap.of());
+                        }
+
+                        @JsProperty
+                        String getKind();
+
+                        @JsProperty
+                        String getValue();
+
+                        @JsProperty
+                        void setKind(String kind);
+
+                        @JsProperty
+                        void setValue(String value);
+                    }
+
+                    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                     public interface ParametersListFieldType {
                         @JsOverlay
                         static GetSignatureHelpRequest.ToObjectReturnType.ContextFieldType.ActiveSignatureHelpFieldType.SignaturesListFieldType.ParametersListFieldType create() {
@@ -33,13 +53,13 @@ public class GetSignatureHelpRequest {
                         }
 
                         @JsProperty
-                        String getDocumentation();
+                        Object getDocumentation();
 
                         @JsProperty
                         String getLabel();
 
                         @JsProperty
-                        void setDocumentation(String documentation);
+                        void setDocumentation(Object documentation);
 
                         @JsProperty
                         void setLabel(String label);
@@ -54,7 +74,7 @@ public class GetSignatureHelpRequest {
                     double getActiveParameter();
 
                     @JsProperty
-                    String getDocumentation();
+                    GetSignatureHelpRequest.ToObjectReturnType.ContextFieldType.ActiveSignatureHelpFieldType.SignaturesListFieldType.DocumentationFieldType getDocumentation();
 
                     @JsProperty
                     String getLabel();
@@ -66,7 +86,8 @@ public class GetSignatureHelpRequest {
                     void setActiveParameter(double activeParameter);
 
                     @JsProperty
-                    void setDocumentation(String documentation);
+                    void setDocumentation(
+                            GetSignatureHelpRequest.ToObjectReturnType.ContextFieldType.ActiveSignatureHelpFieldType.SignaturesListFieldType.DocumentationFieldType documentation);
 
                     @JsProperty
                     void setLabel(String label);
@@ -168,6 +189,26 @@ public class GetSignatureHelpRequest {
             void setLine(double line);
         }
 
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface TextDocumentFieldType {
+            @JsOverlay
+            static GetSignatureHelpRequest.ToObjectReturnType.TextDocumentFieldType create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            String getUri();
+
+            @JsProperty
+            double getVersion();
+
+            @JsProperty
+            void setUri(String uri);
+
+            @JsProperty
+            void setVersion(double version);
+        }
+
         @JsOverlay
         static GetSignatureHelpRequest.ToObjectReturnType create() {
             return Js.uncheckedCast(JsPropertyMap.of());
@@ -180,10 +221,17 @@ public class GetSignatureHelpRequest {
         GetSignatureHelpRequest.ToObjectReturnType.PositionFieldType getPosition();
 
         @JsProperty
+        GetSignatureHelpRequest.ToObjectReturnType.TextDocumentFieldType getTextDocument();
+
+        @JsProperty
         void setContext(GetSignatureHelpRequest.ToObjectReturnType.ContextFieldType context);
 
         @JsProperty
         void setPosition(GetSignatureHelpRequest.ToObjectReturnType.PositionFieldType position);
+
+        @JsProperty
+        void setTextDocument(
+                GetSignatureHelpRequest.ToObjectReturnType.TextDocumentFieldType textDocument);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -195,6 +243,26 @@ public class GetSignatureHelpRequest {
                 @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                 public interface SignaturesListFieldType {
                     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                    public interface DocumentationFieldType {
+                        @JsOverlay
+                        static GetSignatureHelpRequest.ToObjectReturnType0.ContextFieldType.ActiveSignatureHelpFieldType.SignaturesListFieldType.DocumentationFieldType create() {
+                            return Js.uncheckedCast(JsPropertyMap.of());
+                        }
+
+                        @JsProperty
+                        String getKind();
+
+                        @JsProperty
+                        String getValue();
+
+                        @JsProperty
+                        void setKind(String kind);
+
+                        @JsProperty
+                        void setValue(String value);
+                    }
+
+                    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                     public interface ParametersListFieldType {
                         @JsOverlay
                         static GetSignatureHelpRequest.ToObjectReturnType0.ContextFieldType.ActiveSignatureHelpFieldType.SignaturesListFieldType.ParametersListFieldType create() {
@@ -202,13 +270,13 @@ public class GetSignatureHelpRequest {
                         }
 
                         @JsProperty
-                        String getDocumentation();
+                        Object getDocumentation();
 
                         @JsProperty
                         String getLabel();
 
                         @JsProperty
-                        void setDocumentation(String documentation);
+                        void setDocumentation(Object documentation);
 
                         @JsProperty
                         void setLabel(String label);
@@ -223,7 +291,7 @@ public class GetSignatureHelpRequest {
                     double getActiveParameter();
 
                     @JsProperty
-                    String getDocumentation();
+                    GetSignatureHelpRequest.ToObjectReturnType0.ContextFieldType.ActiveSignatureHelpFieldType.SignaturesListFieldType.DocumentationFieldType getDocumentation();
 
                     @JsProperty
                     String getLabel();
@@ -235,7 +303,8 @@ public class GetSignatureHelpRequest {
                     void setActiveParameter(double activeParameter);
 
                     @JsProperty
-                    void setDocumentation(String documentation);
+                    void setDocumentation(
+                            GetSignatureHelpRequest.ToObjectReturnType0.ContextFieldType.ActiveSignatureHelpFieldType.SignaturesListFieldType.DocumentationFieldType documentation);
 
                     @JsProperty
                     void setLabel(String label);
@@ -337,6 +406,26 @@ public class GetSignatureHelpRequest {
             void setLine(double line);
         }
 
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface TextDocumentFieldType {
+            @JsOverlay
+            static GetSignatureHelpRequest.ToObjectReturnType0.TextDocumentFieldType create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            String getUri();
+
+            @JsProperty
+            double getVersion();
+
+            @JsProperty
+            void setUri(String uri);
+
+            @JsProperty
+            void setVersion(double version);
+        }
+
         @JsOverlay
         static GetSignatureHelpRequest.ToObjectReturnType0 create() {
             return Js.uncheckedCast(JsPropertyMap.of());
@@ -349,10 +438,17 @@ public class GetSignatureHelpRequest {
         GetSignatureHelpRequest.ToObjectReturnType0.PositionFieldType getPosition();
 
         @JsProperty
+        GetSignatureHelpRequest.ToObjectReturnType0.TextDocumentFieldType getTextDocument();
+
+        @JsProperty
         void setContext(GetSignatureHelpRequest.ToObjectReturnType0.ContextFieldType context);
 
         @JsProperty
         void setPosition(GetSignatureHelpRequest.ToObjectReturnType0.PositionFieldType position);
+
+        @JsProperty
+        void setTextDocument(
+                GetSignatureHelpRequest.ToObjectReturnType0.TextDocumentFieldType textDocument);
     }
 
     public static native GetSignatureHelpRequest deserializeBinary(Uint8Array bytes);
@@ -369,13 +465,19 @@ public class GetSignatureHelpRequest {
 
     public native void clearPosition();
 
+    public native void clearTextDocument();
+
     public native SignatureHelpContext getContext();
 
     public native Position getPosition();
 
+    public native VersionedTextDocumentIdentifier getTextDocument();
+
     public native boolean hasContext();
 
     public native boolean hasPosition();
+
+    public native boolean hasTextDocument();
 
     public native Uint8Array serializeBinary();
 
@@ -386,6 +488,10 @@ public class GetSignatureHelpRequest {
     public native void setPosition();
 
     public native void setPosition(Position value);
+
+    public native void setTextDocument();
+
+    public native void setTextDocument(VersionedTextDocumentIdentifier value);
 
     public native GetSignatureHelpRequest.ToObjectReturnType0 toObject();
 

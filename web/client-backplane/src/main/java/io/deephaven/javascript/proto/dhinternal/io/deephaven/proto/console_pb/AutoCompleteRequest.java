@@ -90,6 +90,26 @@ public class AutoCompleteRequest {
                 void setText(String text);
             }
 
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface TextDocumentFieldType {
+                @JsOverlay
+                static AutoCompleteRequest.ToObjectReturnType.ChangeDocumentFieldType.TextDocumentFieldType create() {
+                    return Js.uncheckedCast(JsPropertyMap.of());
+                }
+
+                @JsProperty
+                String getUri();
+
+                @JsProperty
+                double getVersion();
+
+                @JsProperty
+                void setUri(String uri);
+
+                @JsProperty
+                void setVersion(double version);
+            }
+
             @JsOverlay
             static AutoCompleteRequest.ToObjectReturnType.ChangeDocumentFieldType create() {
                 return Js.uncheckedCast(JsPropertyMap.of());
@@ -102,7 +122,7 @@ public class AutoCompleteRequest {
             JsArray<AutoCompleteRequest.ToObjectReturnType.ChangeDocumentFieldType.ContentChangesListFieldType> getContentChangesList();
 
             @JsProperty
-            Object getTextDocument();
+            AutoCompleteRequest.ToObjectReturnType.ChangeDocumentFieldType.TextDocumentFieldType getTextDocument();
 
             @JsProperty
             void setConsoleId(Object consoleId);
@@ -120,7 +140,8 @@ public class AutoCompleteRequest {
                     JsArray<AutoCompleteRequest.ToObjectReturnType.ChangeDocumentFieldType.ContentChangesListFieldType> contentChangesList);
 
             @JsProperty
-            void setTextDocument(Object textDocument);
+            void setTextDocument(
+                    AutoCompleteRequest.ToObjectReturnType.ChangeDocumentFieldType.TextDocumentFieldType textDocument);
         }
 
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -271,7 +292,13 @@ public class AutoCompleteRequest {
             Object getPosition();
 
             @JsProperty
+            Object getTextDocument();
+
+            @JsProperty
             void setPosition(Object position);
+
+            @JsProperty
+            void setTextDocument(Object textDocument);
         }
 
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -283,6 +310,26 @@ public class AutoCompleteRequest {
                     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                     public interface SignaturesListFieldType {
                         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                        public interface DocumentationFieldType {
+                            @JsOverlay
+                            static AutoCompleteRequest.ToObjectReturnType.GetSignatureHelpFieldType.ContextFieldType.ActiveSignatureHelpFieldType.SignaturesListFieldType.DocumentationFieldType create() {
+                                return Js.uncheckedCast(JsPropertyMap.of());
+                            }
+
+                            @JsProperty
+                            String getKind();
+
+                            @JsProperty
+                            String getValue();
+
+                            @JsProperty
+                            void setKind(String kind);
+
+                            @JsProperty
+                            void setValue(String value);
+                        }
+
+                        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                         public interface ParametersListFieldType {
                             @JsOverlay
                             static AutoCompleteRequest.ToObjectReturnType.GetSignatureHelpFieldType.ContextFieldType.ActiveSignatureHelpFieldType.SignaturesListFieldType.ParametersListFieldType create() {
@@ -290,13 +337,13 @@ public class AutoCompleteRequest {
                             }
 
                             @JsProperty
-                            String getDocumentation();
+                            Object getDocumentation();
 
                             @JsProperty
                             String getLabel();
 
                             @JsProperty
-                            void setDocumentation(String documentation);
+                            void setDocumentation(Object documentation);
 
                             @JsProperty
                             void setLabel(String label);
@@ -311,7 +358,7 @@ public class AutoCompleteRequest {
                         double getActiveParameter();
 
                         @JsProperty
-                        String getDocumentation();
+                        AutoCompleteRequest.ToObjectReturnType.GetSignatureHelpFieldType.ContextFieldType.ActiveSignatureHelpFieldType.SignaturesListFieldType.DocumentationFieldType getDocumentation();
 
                         @JsProperty
                         String getLabel();
@@ -323,7 +370,8 @@ public class AutoCompleteRequest {
                         void setActiveParameter(double activeParameter);
 
                         @JsProperty
-                        void setDocumentation(String documentation);
+                        void setDocumentation(
+                                AutoCompleteRequest.ToObjectReturnType.GetSignatureHelpFieldType.ContextFieldType.ActiveSignatureHelpFieldType.SignaturesListFieldType.DocumentationFieldType documentation);
 
                         @JsProperty
                         void setLabel(String label);
@@ -417,11 +465,17 @@ public class AutoCompleteRequest {
             Object getPosition();
 
             @JsProperty
+            Object getTextDocument();
+
+            @JsProperty
             void setContext(
                     AutoCompleteRequest.ToObjectReturnType.GetSignatureHelpFieldType.ContextFieldType context);
 
             @JsProperty
             void setPosition(Object position);
+
+            @JsProperty
+            void setTextDocument(Object textDocument);
         }
 
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -477,26 +531,6 @@ public class AutoCompleteRequest {
                     AutoCompleteRequest.ToObjectReturnType.OpenDocumentFieldType.TextDocumentFieldType textDocument);
         }
 
-        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-        public interface TextDocumentFieldType {
-            @JsOverlay
-            static AutoCompleteRequest.ToObjectReturnType.TextDocumentFieldType create() {
-                return Js.uncheckedCast(JsPropertyMap.of());
-            }
-
-            @JsProperty
-            String getUri();
-
-            @JsProperty
-            double getVersion();
-
-            @JsProperty
-            void setUri(String uri);
-
-            @JsProperty
-            void setVersion(double version);
-        }
-
         @JsOverlay
         static AutoCompleteRequest.ToObjectReturnType create() {
             return Js.uncheckedCast(JsPropertyMap.of());
@@ -527,9 +561,6 @@ public class AutoCompleteRequest {
         double getRequestId();
 
         @JsProperty
-        AutoCompleteRequest.ToObjectReturnType.TextDocumentFieldType getTextDocument();
-
-        @JsProperty
         void setChangeDocument(
                 AutoCompleteRequest.ToObjectReturnType.ChangeDocumentFieldType changeDocument);
 
@@ -556,9 +587,6 @@ public class AutoCompleteRequest {
 
         @JsProperty
         void setRequestId(double requestId);
-
-        @JsProperty
-        void setTextDocument(AutoCompleteRequest.ToObjectReturnType.TextDocumentFieldType textDocument);
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -633,6 +661,26 @@ public class AutoCompleteRequest {
                 void setText(String text);
             }
 
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface TextDocumentFieldType {
+                @JsOverlay
+                static AutoCompleteRequest.ToObjectReturnType0.ChangeDocumentFieldType.TextDocumentFieldType create() {
+                    return Js.uncheckedCast(JsPropertyMap.of());
+                }
+
+                @JsProperty
+                String getUri();
+
+                @JsProperty
+                double getVersion();
+
+                @JsProperty
+                void setUri(String uri);
+
+                @JsProperty
+                void setVersion(double version);
+            }
+
             @JsOverlay
             static AutoCompleteRequest.ToObjectReturnType0.ChangeDocumentFieldType create() {
                 return Js.uncheckedCast(JsPropertyMap.of());
@@ -645,7 +693,7 @@ public class AutoCompleteRequest {
             JsArray<AutoCompleteRequest.ToObjectReturnType0.ChangeDocumentFieldType.ContentChangesListFieldType> getContentChangesList();
 
             @JsProperty
-            Object getTextDocument();
+            AutoCompleteRequest.ToObjectReturnType0.ChangeDocumentFieldType.TextDocumentFieldType getTextDocument();
 
             @JsProperty
             void setConsoleId(Object consoleId);
@@ -663,7 +711,8 @@ public class AutoCompleteRequest {
                     JsArray<AutoCompleteRequest.ToObjectReturnType0.ChangeDocumentFieldType.ContentChangesListFieldType> contentChangesList);
 
             @JsProperty
-            void setTextDocument(Object textDocument);
+            void setTextDocument(
+                    AutoCompleteRequest.ToObjectReturnType0.ChangeDocumentFieldType.TextDocumentFieldType textDocument);
         }
 
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -814,7 +863,13 @@ public class AutoCompleteRequest {
             Object getPosition();
 
             @JsProperty
+            Object getTextDocument();
+
+            @JsProperty
             void setPosition(Object position);
+
+            @JsProperty
+            void setTextDocument(Object textDocument);
         }
 
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -826,6 +881,26 @@ public class AutoCompleteRequest {
                     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                     public interface SignaturesListFieldType {
                         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                        public interface DocumentationFieldType {
+                            @JsOverlay
+                            static AutoCompleteRequest.ToObjectReturnType0.GetSignatureHelpFieldType.ContextFieldType.ActiveSignatureHelpFieldType.SignaturesListFieldType.DocumentationFieldType create() {
+                                return Js.uncheckedCast(JsPropertyMap.of());
+                            }
+
+                            @JsProperty
+                            String getKind();
+
+                            @JsProperty
+                            String getValue();
+
+                            @JsProperty
+                            void setKind(String kind);
+
+                            @JsProperty
+                            void setValue(String value);
+                        }
+
+                        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
                         public interface ParametersListFieldType {
                             @JsOverlay
                             static AutoCompleteRequest.ToObjectReturnType0.GetSignatureHelpFieldType.ContextFieldType.ActiveSignatureHelpFieldType.SignaturesListFieldType.ParametersListFieldType create() {
@@ -833,13 +908,13 @@ public class AutoCompleteRequest {
                             }
 
                             @JsProperty
-                            String getDocumentation();
+                            Object getDocumentation();
 
                             @JsProperty
                             String getLabel();
 
                             @JsProperty
-                            void setDocumentation(String documentation);
+                            void setDocumentation(Object documentation);
 
                             @JsProperty
                             void setLabel(String label);
@@ -854,7 +929,7 @@ public class AutoCompleteRequest {
                         double getActiveParameter();
 
                         @JsProperty
-                        String getDocumentation();
+                        AutoCompleteRequest.ToObjectReturnType0.GetSignatureHelpFieldType.ContextFieldType.ActiveSignatureHelpFieldType.SignaturesListFieldType.DocumentationFieldType getDocumentation();
 
                         @JsProperty
                         String getLabel();
@@ -866,7 +941,8 @@ public class AutoCompleteRequest {
                         void setActiveParameter(double activeParameter);
 
                         @JsProperty
-                        void setDocumentation(String documentation);
+                        void setDocumentation(
+                                AutoCompleteRequest.ToObjectReturnType0.GetSignatureHelpFieldType.ContextFieldType.ActiveSignatureHelpFieldType.SignaturesListFieldType.DocumentationFieldType documentation);
 
                         @JsProperty
                         void setLabel(String label);
@@ -960,11 +1036,17 @@ public class AutoCompleteRequest {
             Object getPosition();
 
             @JsProperty
+            Object getTextDocument();
+
+            @JsProperty
             void setContext(
                     AutoCompleteRequest.ToObjectReturnType0.GetSignatureHelpFieldType.ContextFieldType context);
 
             @JsProperty
             void setPosition(Object position);
+
+            @JsProperty
+            void setTextDocument(Object textDocument);
         }
 
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -1020,26 +1102,6 @@ public class AutoCompleteRequest {
                     AutoCompleteRequest.ToObjectReturnType0.OpenDocumentFieldType.TextDocumentFieldType textDocument);
         }
 
-        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-        public interface TextDocumentFieldType {
-            @JsOverlay
-            static AutoCompleteRequest.ToObjectReturnType0.TextDocumentFieldType create() {
-                return Js.uncheckedCast(JsPropertyMap.of());
-            }
-
-            @JsProperty
-            String getUri();
-
-            @JsProperty
-            double getVersion();
-
-            @JsProperty
-            void setUri(String uri);
-
-            @JsProperty
-            void setVersion(double version);
-        }
-
         @JsOverlay
         static AutoCompleteRequest.ToObjectReturnType0 create() {
             return Js.uncheckedCast(JsPropertyMap.of());
@@ -1070,9 +1132,6 @@ public class AutoCompleteRequest {
         double getRequestId();
 
         @JsProperty
-        AutoCompleteRequest.ToObjectReturnType0.TextDocumentFieldType getTextDocument();
-
-        @JsProperty
         void setChangeDocument(
                 AutoCompleteRequest.ToObjectReturnType0.ChangeDocumentFieldType changeDocument);
 
@@ -1100,10 +1159,6 @@ public class AutoCompleteRequest {
 
         @JsProperty
         void setRequestId(double requestId);
-
-        @JsProperty
-        void setTextDocument(
-                AutoCompleteRequest.ToObjectReturnType0.TextDocumentFieldType textDocument);
     }
 
     public static native AutoCompleteRequest deserializeBinary(Uint8Array bytes);
@@ -1130,10 +1185,6 @@ public class AutoCompleteRequest {
 
     public native void clearOpenDocument();
 
-    public native void clearRequestId();
-
-    public native void clearTextDocument();
-
     public native ChangeDocumentRequest getChangeDocument();
 
     public native CloseDocumentRequest getCloseDocument();
@@ -1152,8 +1203,6 @@ public class AutoCompleteRequest {
 
     public native int getRequestId();
 
-    public native VersionedTextDocumentIdentifier getTextDocument();
-
     public native boolean hasChangeDocument();
 
     public native boolean hasCloseDocument();
@@ -1167,10 +1216,6 @@ public class AutoCompleteRequest {
     public native boolean hasGetSignatureHelp();
 
     public native boolean hasOpenDocument();
-
-    public native boolean hasRequestId();
-
-    public native boolean hasTextDocument();
 
     public native Uint8Array serializeBinary();
 
@@ -1203,10 +1248,6 @@ public class AutoCompleteRequest {
     public native void setOpenDocument(OpenDocumentRequest value);
 
     public native void setRequestId(int value);
-
-    public native void setTextDocument();
-
-    public native void setTextDocument(VersionedTextDocumentIdentifier value);
 
     public native AutoCompleteRequest.ToObjectReturnType0 toObject();
 

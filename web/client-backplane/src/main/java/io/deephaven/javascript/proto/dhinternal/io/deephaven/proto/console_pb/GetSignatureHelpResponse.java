@@ -14,35 +14,55 @@ import jsinterop.base.JsPropertyMap;
 
 @JsType(
         isNative = true,
-        name = "dhinternal.io.deephaven.proto.console_pb.SignatureHelp",
+        name = "dhinternal.io.deephaven.proto.console_pb.GetSignatureHelpResponse",
         namespace = JsPackage.GLOBAL)
-public class SignatureHelp {
+public class GetSignatureHelpResponse {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface SignaturesListFieldType {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-            public interface ParametersListFieldType {
+            public interface DocumentationFieldType {
                 @JsOverlay
-                static SignatureHelp.ToObjectReturnType.SignaturesListFieldType.ParametersListFieldType create() {
+                static GetSignatureHelpResponse.ToObjectReturnType.SignaturesListFieldType.DocumentationFieldType create() {
                     return Js.uncheckedCast(JsPropertyMap.of());
                 }
 
                 @JsProperty
-                String getDocumentation();
+                String getKind();
+
+                @JsProperty
+                String getValue();
+
+                @JsProperty
+                void setKind(String kind);
+
+                @JsProperty
+                void setValue(String value);
+            }
+
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface ParametersListFieldType {
+                @JsOverlay
+                static GetSignatureHelpResponse.ToObjectReturnType.SignaturesListFieldType.ParametersListFieldType create() {
+                    return Js.uncheckedCast(JsPropertyMap.of());
+                }
+
+                @JsProperty
+                Object getDocumentation();
 
                 @JsProperty
                 String getLabel();
 
                 @JsProperty
-                void setDocumentation(String documentation);
+                void setDocumentation(Object documentation);
 
                 @JsProperty
                 void setLabel(String label);
             }
 
             @JsOverlay
-            static SignatureHelp.ToObjectReturnType.SignaturesListFieldType create() {
+            static GetSignatureHelpResponse.ToObjectReturnType.SignaturesListFieldType create() {
                 return Js.uncheckedCast(JsPropertyMap.of());
             }
 
@@ -50,38 +70,39 @@ public class SignatureHelp {
             double getActiveParameter();
 
             @JsProperty
-            String getDocumentation();
+            GetSignatureHelpResponse.ToObjectReturnType.SignaturesListFieldType.DocumentationFieldType getDocumentation();
 
             @JsProperty
             String getLabel();
 
             @JsProperty
-            JsArray<SignatureHelp.ToObjectReturnType.SignaturesListFieldType.ParametersListFieldType> getParametersList();
+            JsArray<GetSignatureHelpResponse.ToObjectReturnType.SignaturesListFieldType.ParametersListFieldType> getParametersList();
 
             @JsProperty
             void setActiveParameter(double activeParameter);
 
             @JsProperty
-            void setDocumentation(String documentation);
+            void setDocumentation(
+                    GetSignatureHelpResponse.ToObjectReturnType.SignaturesListFieldType.DocumentationFieldType documentation);
 
             @JsProperty
             void setLabel(String label);
 
             @JsProperty
             void setParametersList(
-                    JsArray<SignatureHelp.ToObjectReturnType.SignaturesListFieldType.ParametersListFieldType> parametersList);
+                    JsArray<GetSignatureHelpResponse.ToObjectReturnType.SignaturesListFieldType.ParametersListFieldType> parametersList);
 
             @JsOverlay
             default void setParametersList(
-                    SignatureHelp.ToObjectReturnType.SignaturesListFieldType.ParametersListFieldType[] parametersList) {
+                    GetSignatureHelpResponse.ToObjectReturnType.SignaturesListFieldType.ParametersListFieldType[] parametersList) {
                 setParametersList(
-                        Js.<JsArray<SignatureHelp.ToObjectReturnType.SignaturesListFieldType.ParametersListFieldType>>uncheckedCast(
+                        Js.<JsArray<GetSignatureHelpResponse.ToObjectReturnType.SignaturesListFieldType.ParametersListFieldType>>uncheckedCast(
                                 parametersList));
             }
         }
 
         @JsOverlay
-        static SignatureHelp.ToObjectReturnType create() {
+        static GetSignatureHelpResponse.ToObjectReturnType create() {
             return Js.uncheckedCast(JsPropertyMap.of());
         }
 
@@ -92,7 +113,7 @@ public class SignatureHelp {
         double getActiveSignature();
 
         @JsProperty
-        JsArray<SignatureHelp.ToObjectReturnType.SignaturesListFieldType> getSignaturesList();
+        JsArray<GetSignatureHelpResponse.ToObjectReturnType.SignaturesListFieldType> getSignaturesList();
 
         @JsProperty
         void setActiveParameter(double activeParameter);
@@ -102,13 +123,13 @@ public class SignatureHelp {
 
         @JsProperty
         void setSignaturesList(
-                JsArray<SignatureHelp.ToObjectReturnType.SignaturesListFieldType> signaturesList);
+                JsArray<GetSignatureHelpResponse.ToObjectReturnType.SignaturesListFieldType> signaturesList);
 
         @JsOverlay
         default void setSignaturesList(
-                SignatureHelp.ToObjectReturnType.SignaturesListFieldType[] signaturesList) {
+                GetSignatureHelpResponse.ToObjectReturnType.SignaturesListFieldType[] signaturesList) {
             setSignaturesList(
-                    Js.<JsArray<SignatureHelp.ToObjectReturnType.SignaturesListFieldType>>uncheckedCast(
+                    Js.<JsArray<GetSignatureHelpResponse.ToObjectReturnType.SignaturesListFieldType>>uncheckedCast(
                             signaturesList));
         }
     }
@@ -118,27 +139,47 @@ public class SignatureHelp {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface SignaturesListFieldType {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-            public interface ParametersListFieldType {
+            public interface DocumentationFieldType {
                 @JsOverlay
-                static SignatureHelp.ToObjectReturnType0.SignaturesListFieldType.ParametersListFieldType create() {
+                static GetSignatureHelpResponse.ToObjectReturnType0.SignaturesListFieldType.DocumentationFieldType create() {
                     return Js.uncheckedCast(JsPropertyMap.of());
                 }
 
                 @JsProperty
-                String getDocumentation();
+                String getKind();
+
+                @JsProperty
+                String getValue();
+
+                @JsProperty
+                void setKind(String kind);
+
+                @JsProperty
+                void setValue(String value);
+            }
+
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface ParametersListFieldType {
+                @JsOverlay
+                static GetSignatureHelpResponse.ToObjectReturnType0.SignaturesListFieldType.ParametersListFieldType create() {
+                    return Js.uncheckedCast(JsPropertyMap.of());
+                }
+
+                @JsProperty
+                Object getDocumentation();
 
                 @JsProperty
                 String getLabel();
 
                 @JsProperty
-                void setDocumentation(String documentation);
+                void setDocumentation(Object documentation);
 
                 @JsProperty
                 void setLabel(String label);
             }
 
             @JsOverlay
-            static SignatureHelp.ToObjectReturnType0.SignaturesListFieldType create() {
+            static GetSignatureHelpResponse.ToObjectReturnType0.SignaturesListFieldType create() {
                 return Js.uncheckedCast(JsPropertyMap.of());
             }
 
@@ -146,38 +187,39 @@ public class SignatureHelp {
             double getActiveParameter();
 
             @JsProperty
-            String getDocumentation();
+            GetSignatureHelpResponse.ToObjectReturnType0.SignaturesListFieldType.DocumentationFieldType getDocumentation();
 
             @JsProperty
             String getLabel();
 
             @JsProperty
-            JsArray<SignatureHelp.ToObjectReturnType0.SignaturesListFieldType.ParametersListFieldType> getParametersList();
+            JsArray<GetSignatureHelpResponse.ToObjectReturnType0.SignaturesListFieldType.ParametersListFieldType> getParametersList();
 
             @JsProperty
             void setActiveParameter(double activeParameter);
 
             @JsProperty
-            void setDocumentation(String documentation);
+            void setDocumentation(
+                    GetSignatureHelpResponse.ToObjectReturnType0.SignaturesListFieldType.DocumentationFieldType documentation);
 
             @JsProperty
             void setLabel(String label);
 
             @JsProperty
             void setParametersList(
-                    JsArray<SignatureHelp.ToObjectReturnType0.SignaturesListFieldType.ParametersListFieldType> parametersList);
+                    JsArray<GetSignatureHelpResponse.ToObjectReturnType0.SignaturesListFieldType.ParametersListFieldType> parametersList);
 
             @JsOverlay
             default void setParametersList(
-                    SignatureHelp.ToObjectReturnType0.SignaturesListFieldType.ParametersListFieldType[] parametersList) {
+                    GetSignatureHelpResponse.ToObjectReturnType0.SignaturesListFieldType.ParametersListFieldType[] parametersList) {
                 setParametersList(
-                        Js.<JsArray<SignatureHelp.ToObjectReturnType0.SignaturesListFieldType.ParametersListFieldType>>uncheckedCast(
+                        Js.<JsArray<GetSignatureHelpResponse.ToObjectReturnType0.SignaturesListFieldType.ParametersListFieldType>>uncheckedCast(
                                 parametersList));
             }
         }
 
         @JsOverlay
-        static SignatureHelp.ToObjectReturnType0 create() {
+        static GetSignatureHelpResponse.ToObjectReturnType0 create() {
             return Js.uncheckedCast(JsPropertyMap.of());
         }
 
@@ -188,7 +230,7 @@ public class SignatureHelp {
         double getActiveSignature();
 
         @JsProperty
-        JsArray<SignatureHelp.ToObjectReturnType0.SignaturesListFieldType> getSignaturesList();
+        JsArray<GetSignatureHelpResponse.ToObjectReturnType0.SignaturesListFieldType> getSignaturesList();
 
         @JsProperty
         void setActiveParameter(double activeParameter);
@@ -198,26 +240,27 @@ public class SignatureHelp {
 
         @JsProperty
         void setSignaturesList(
-                JsArray<SignatureHelp.ToObjectReturnType0.SignaturesListFieldType> signaturesList);
+                JsArray<GetSignatureHelpResponse.ToObjectReturnType0.SignaturesListFieldType> signaturesList);
 
         @JsOverlay
         default void setSignaturesList(
-                SignatureHelp.ToObjectReturnType0.SignaturesListFieldType[] signaturesList) {
+                GetSignatureHelpResponse.ToObjectReturnType0.SignaturesListFieldType[] signaturesList) {
             setSignaturesList(
-                    Js.<JsArray<SignatureHelp.ToObjectReturnType0.SignaturesListFieldType>>uncheckedCast(
+                    Js.<JsArray<GetSignatureHelpResponse.ToObjectReturnType0.SignaturesListFieldType>>uncheckedCast(
                             signaturesList));
         }
     }
 
-    public static native SignatureHelp deserializeBinary(Uint8Array bytes);
+    public static native GetSignatureHelpResponse deserializeBinary(Uint8Array bytes);
 
-    public static native SignatureHelp deserializeBinaryFromReader(
-            SignatureHelp message, Object reader);
+    public static native GetSignatureHelpResponse deserializeBinaryFromReader(
+            GetSignatureHelpResponse message, Object reader);
 
-    public static native void serializeBinaryToWriter(SignatureHelp message, Object writer);
+    public static native void serializeBinaryToWriter(
+            GetSignatureHelpResponse message, Object writer);
 
-    public static native SignatureHelp.ToObjectReturnType toObject(
-            boolean includeInstance, SignatureHelp msg);
+    public static native GetSignatureHelpResponse.ToObjectReturnType toObject(
+            boolean includeInstance, GetSignatureHelpResponse msg);
 
     public native SignatureInformation addSignatures();
 
@@ -254,7 +297,7 @@ public class SignatureHelp {
         setSignaturesList(Js.<JsArray<SignatureInformation>>uncheckedCast(value));
     }
 
-    public native SignatureHelp.ToObjectReturnType0 toObject();
+    public native GetSignatureHelpResponse.ToObjectReturnType0 toObject();
 
-    public native SignatureHelp.ToObjectReturnType0 toObject(boolean includeInstance);
+    public native GetSignatureHelpResponse.ToObjectReturnType0 toObject(boolean includeInstance);
 }
