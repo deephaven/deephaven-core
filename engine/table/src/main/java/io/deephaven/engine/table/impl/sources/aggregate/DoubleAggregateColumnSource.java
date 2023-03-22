@@ -72,7 +72,7 @@ public final class DoubleAggregateColumnSource extends BaseAggregateColumnSource
         for (int di = 0; di < size; ++di) {
             final RowSet groupRowSetPrev = groupRowSetPrevChunk.get(di);
             final RowSet groupRowSetToUse = groupRowSetPrev.isTracking()
-                    ? groupRowSetPrev.trackingCast().copyPrev()
+                    ? groupRowSetPrev.trackingCast().prev()
                     : groupRowSetPrev;
             typedDestination.set(di, new DoubleVectorColumnWrapper(aggregatedSourcePrev, groupRowSetToUse));
         }

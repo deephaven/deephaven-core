@@ -500,7 +500,7 @@ public class TestRollingSum extends BaseUpdateByTest {
                     @Override
                     protected Table e() {
                         return bucketed ? t.updateBy(UpdateByOperation.RollingSum(prevTicks, postTicks), "Sym")
-                                : t.updateBy(UpdateByOperation.RollingSum(100));
+                                : t.updateBy(UpdateByOperation.RollingSum(prevTicks, postTicks));
                     }
                 }
         };

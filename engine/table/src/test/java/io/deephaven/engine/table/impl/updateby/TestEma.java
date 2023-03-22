@@ -67,9 +67,8 @@ public class TestEma extends BaseUpdateByTest {
         computeEma(t, "ts", 10 * MINUTE, skipControl);
         computeEma(t, "ts", 10 * MINUTE, resetControl);
     }
-
-
     // endregion
+
     // region Bucketed Tests
     @Test
     public void testStaticBucketed() {
@@ -421,11 +420,9 @@ public class TestEma extends BaseUpdateByTest {
             }
         }
     }
-
     // endregion
 
     // region Live Tests
-
     @Test
     public void testZeroKeyAppendOnly() {
         doTestTicking(false, true);
@@ -532,7 +529,6 @@ public class TestEma extends BaseUpdateByTest {
             }
         }
     }
-
     // endregion
 
     private void computeEma(TableDefaults source,

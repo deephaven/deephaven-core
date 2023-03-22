@@ -98,7 +98,7 @@ abstract class BaseAggregateColumnSource<DB_ARRAY_TYPE extends Vector, COMPONENT
     RowSet getPrevGroupRowSet(final long groupIndexKey) {
         final RowSet groupRowSetPrev = groupRowSetSource.getPrev(groupIndexKey);
         return groupRowSetPrev.isTracking()
-                ? groupRowSetPrev.trackingCast().copyPrev()
+                ? groupRowSetPrev.trackingCast().prev()
                 : groupRowSetPrev;
     }
 
@@ -249,5 +249,10 @@ abstract class BaseAggregateColumnSource<DB_ARRAY_TYPE extends Vector, COMPONENT
     @Override
     public boolean isStateless() {
         return aggregatedSource.isStateless() && groupRowSetSource.isStateless();
+    }
+
+    @Override
+    public boolean isImmutable() {
+        return aggregatedSource.isImmutable() && groupRowSetSource.isImmutable();
     }
 }

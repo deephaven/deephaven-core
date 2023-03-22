@@ -41,7 +41,7 @@ public final class BigDecimalRollingSumOperator extends BaseObjectUpdateByOperat
         }
 
         @Override
-        public void push(long key, int pos, int count) {
+        public void push(int pos, int count) {
             for (int ii = 0; ii < count; ii++) {
                 BigDecimal val = objectInfluencerValuesChunk.get(pos + ii);
                 objectWindowValues.add(val);

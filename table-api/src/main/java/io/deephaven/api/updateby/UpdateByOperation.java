@@ -344,6 +344,84 @@ public interface UpdateByOperation {
         return RollingSumSpec.ofTime(timestampCol, revTime, fwdTime).clause(pairs);
     }
 
+    /**
+     * Create {@link RollingGroupSpec rolling groups} for the supplied column name pairs, using ticks as the windowing
+     * unit. Uses the default OperationControl settings.
+     *
+     * @param prevTimeTicks the look-behind window size (in rows/ticks)
+     * @param pairs The input/output column name pairs
+     * @return The aggregation
+     */
+    static UpdateByOperation RollingGroup(long prevTimeTicks, String... pairs) {
+        return RollingGroupSpec.ofTicks(prevTimeTicks).clause(pairs);
+    }
+
+    /**
+     * Create {@link RollingGroupSpec rolling groups} for the supplied column name pairs, using ticks as the windowing
+     * unit. Uses the default OperationControl settings.
+     *
+     * @param prevTimeTicks the look-behind window size (in rows/ticks)
+     * @param fwdTimeTicks the look-ahead window size (in rows/ticks)
+     * @param pairs The input/output column name pairs
+     * @return The aggregation
+     */
+    static UpdateByOperation RollingGroup(long prevTimeTicks, long fwdTimeTicks, String... pairs) {
+        return RollingGroupSpec.ofTicks(prevTimeTicks, fwdTimeTicks).clause(pairs);
+    }
+
+    /**
+     * Create {@link RollingGroupSpec rolling groups} for the supplied column name pairs, using time as the windowing
+     * unit. Uses the default OperationControl settings.
+     *
+     * @param prevWindowDuration the look-behind window size (in Duration)
+     * @param pairs The input/output column name pairs
+     * @return The aggregation
+     */
+    static UpdateByOperation RollingGroup(String timestampCol, Duration prevWindowDuration, String... pairs) {
+        return RollingGroupSpec.ofTime(timestampCol, prevWindowDuration).clause(pairs);
+    }
+
+    /**
+     * Create {@link RollingGroupSpec rolling groups} for the supplied column name pairs, using time as the windowing
+     * unit. Uses the default OperationControl settings.
+     *
+     * @param prevWindowDuration the look-behind window size (in Duration)
+     * @param fwdWindowDuration the look-ahead window size (in Duration)
+     * @param pairs The input/output column name pairs
+     * @return The aggregation
+     */
+    static UpdateByOperation RollingGroup(String timestampCol, Duration prevWindowDuration, Duration fwdWindowDuration,
+            String... pairs) {
+        return RollingGroupSpec.ofTime(timestampCol, prevWindowDuration, fwdWindowDuration).clause(pairs);
+    }
+
+
+    /**
+     * Create {@link RollingGroupSpec rolling groups} for the supplied column name pairs, using time as the windowing
+     * unit. Uses the default OperationControl settings.
+     *
+     * @param prevWindowNanos the look-behind window size (in nanoseconds)
+     * @param pairs The input/output column name pairs
+     * @return The aggregation
+     */
+    static UpdateByOperation RollingGroup(String timestampCol, long prevWindowNanos, String... pairs) {
+        return RollingGroupSpec.ofTime(timestampCol, prevWindowNanos).clause(pairs);
+    }
+
+    /**
+     * Create {@link RollingGroupSpec rolling groups} for the supplied column name pairs, using time as the windowing
+     * unit. Uses the default OperationControl settings.
+     *
+     * @param prevWindowNanos the look-behind window size (in nanoseconds)
+     * @param fwdWindowNanos the look-ahead window size (in nanoseconds)
+     * @param pairs The input/output column name pairs
+     * @return The aggregation
+     */
+    static UpdateByOperation RollingGroup(String timestampCol, long prevWindowNanos, long fwdWindowNanos,
+            String... pairs) {
+        return RollingGroupSpec.ofTime(timestampCol, prevWindowNanos, fwdWindowNanos).clause(pairs);
+    }
+
     <T> T walk(Visitor<T> visitor);
 
     interface Visitor<T> {

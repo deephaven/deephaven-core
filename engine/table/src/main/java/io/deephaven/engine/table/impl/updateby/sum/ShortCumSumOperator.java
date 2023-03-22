@@ -31,7 +31,7 @@ public class ShortCumSumOperator extends BaseLongUpdateByOperator {
         }
 
         @Override
-        public void push(long key, int pos, int count) {
+        public void push(int pos, int count) {
             Assert.eq(count, "push count", 1);
 
             // read the value from the values chunk

@@ -19,7 +19,6 @@ import java.time.ZoneId;
 
 import io.deephaven.time.DateTime;
 
-import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.impl.DefaultGetContext;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
