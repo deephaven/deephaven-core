@@ -182,7 +182,7 @@ public interface UpdateByOperation {
      * </pre>
      *
      * @param timestampColumn the column in the source table to use for timestamps
-     * @param durationDecay the decay rate as {@Link Duration duration}
+     * @param durationDecay the decay rate as {@link Duration duration}
      * @param pairs The input/output column name pairs
      * @return The aggregation
      */
@@ -205,7 +205,7 @@ public interface UpdateByOperation {
      * @param control a {@link OperationControl control} object that defines how special cases should behave. See
      *        {@link OperationControl} for further details.
      * @param timestampColumn the column in the source table to use for timestamps
-     * @param durationDecay the decay rate as {@Link Duration duration}
+     * @param durationDecay the decay rate as {@link Duration duration}
      * @param pairs The input/output column name pairs
      * @return The aggregation
      */
@@ -233,8 +233,9 @@ public interface UpdateByOperation {
      * Create a {@link RollingSumSpec rolling sum} for the supplied column name pairs, using ticks as the windowing
      * unit. Ticks are row counts and you may specify the reverse and forward window in number of rows to include. The
      * current row is considered to belong to the reverse window but not the forward window. Also, negative values are
-     * allowed and can be used to generate completely forward or completely reverse windows. Here are some examples of
-     * window values:
+     * allowed and can be used to generate completely forward or completely reverse windows.
+     * <p>
+     * Here are some examples of window values:
      * <ul>
      * <li>{@code revTicks = 1, fwdTicks = 0} - contains only the current row</li>
      * <li>{@code revTicks = 10, fwdTicks = 0} - contains 9 previous rows and the current row</li>
@@ -263,7 +264,7 @@ public interface UpdateByOperation {
      * This function accepts {@link Duration duration} as the reverse window parameter. A row containing a {@code null}
      * in the timestamp column belongs to no window and will not have a value computed or be considered in the windows
      * of other rows.
-     *
+     * <p>
      * Here are some examples of window values:
      * <ul>
      * <li>{@code revDuration = 0m} - contains rows that exactly match the current row timestamp</li>
@@ -285,7 +286,7 @@ public interface UpdateByOperation {
      * are allowed and can be used to generate completely forward or completely reverse windows. A row containing a
      * {@code null} in the timestamp column belongs to no window and will not have a value computed or be considered in
      * the windows of other rows.
-     *
+     * <p>
      * Here are some examples of window values:
      * <ul>
      * <li>{@code revDuration = 0m, fwdDuration = 0m} - contains rows that exactly match the current row timestamp</li>
@@ -423,11 +424,11 @@ public interface UpdateByOperation {
     }
 
     /**
-     * Create a {@link RollingMinMaxSpec rolling sum} for the supplied column name pairs, using ticks as the windowing
-     * unit. Ticks are row counts and you may specify the previous window in number of rows to include. The current row
-     * is considered to belong to the reverse window, so calling this with {@code revTicks = 1} will simply return the
-     * current row. Specifying {@code revTicks = 10} will include the previous 9 rows to this one and this row for a
-     * total of 10 rows.
+     * Create a {@link RollingMinMaxSpec rolling minimum} for the supplied column name pairs, using ticks as the
+     * windowing unit. Ticks are row counts and you may specify the previous window in number of rows to include. The
+     * current row is considered to belong to the reverse window, so calling this with {@code revTicks = 1} will simply
+     * return the current row. Specifying {@code revTicks = 10} will include the previous 9 rows to this one and this
+     * row for a total of 10 rows.
      *
      * @param revTicks the look-behind window size (in rows/ticks)
      * @param pairs The input/output column name pairs
@@ -438,11 +439,12 @@ public interface UpdateByOperation {
     }
 
     /**
-     * Create a {@link RollingMinMaxSpec rolling sum} for the supplied column name pairs, using ticks as the windowing
-     * unit. Ticks are row counts and you may specify the reverse and forward window in number of rows to include. The
-     * current row is considered to belong to the reverse window but not the forward window. Also, negative values are
-     * allowed and can be used to generate completely forward or completely reverse windows. Here are some examples of
-     * window values:
+     * Create a {@link RollingMinMaxSpec rolling minimum} for the supplied column name pairs, using ticks as the
+     * windowing unit. Ticks are row counts and you may specify the reverse and forward window in number of rows to
+     * include. The current row is considered to belong to the reverse window but not the forward window. Also, negative
+     * values are allowed and can be used to generate completely forward or completely reverse windows.
+     * <p>
+     * Here are some examples of window values:
      * <ul>
      * <li>{@code revTicks = 1, fwdTicks = 0} - contains only the current row</li>
      * <li>{@code revTicks = 10, fwdTicks = 0} - contains 9 previous rows and the current row</li>
@@ -467,11 +469,11 @@ public interface UpdateByOperation {
     }
 
     /**
-     * Create a {@link RollingMinMaxSpec rolling sum} for the supplied column name pairs, using time as the windowing
-     * unit. This function accepts {@link Duration duration} as the reverse window parameter. A row containing a
-     * {@code null} in the timestamp column belongs to no window and will not have a value computed or be considered in
-     * the windows of other rows.
-     *
+     * Create a {@link RollingMinMaxSpec rolling minimum} for the supplied column name pairs, using time as the
+     * windowing unit. This function accepts {@link Duration duration} as the reverse window parameter. A row containing
+     * a {@code null} in the timestamp column belongs to no window and will not have a value computed or be considered
+     * in the windows of other rows.
+     * <p>
      * Here are some examples of window values:
      * <ul>
      * <li>{@code revDuration = 0m} - contains rows that exactly match the current row timestamp</li>
@@ -488,12 +490,12 @@ public interface UpdateByOperation {
     }
 
     /**
-     * Create a {@link RollingMinMaxSpec rolling sum} for the supplied column name pairs, using time as the windowing
-     * unit. This function accepts {@link Duration durations} as the reverse and forward window parameters. Negative
-     * values are allowed and can be used to generate completely forward or completely reverse windows. A row containing
-     * a {@code null} in the timestamp column belongs to no window and will not have a value computed or be considered
-     * in the windows of other rows.
-     *
+     * Create a {@link RollingMinMaxSpec rolling minimum} for the supplied column name pairs, using time as the
+     * windowing unit. This function accepts {@link Duration durations} as the reverse and forward window parameters.
+     * Negative values are allowed and can be used to generate completely forward or completely reverse windows. A row
+     * containing a {@code null} in the timestamp column belongs to no window and will not have a value computed or be
+     * considered in the windows of other rows.
+     * <p>
      * Here are some examples of window values:
      * <ul>
      * <li>{@code revDuration = 0m, fwdDuration = 0m} - contains rows that exactly match the current row timestamp</li>
@@ -521,10 +523,10 @@ public interface UpdateByOperation {
     }
 
     /**
-     * Create a {@link RollingMinMaxSpec rolling sum} for the supplied column name pairs, using time as the windowing
-     * unit. This function accepts {@code nanoseconds} as the reverse window parameters. A row containing a {@code null}
-     * in the timestamp column belongs to no window and will not have a value computed or be considered in the windows
-     * of other rows.
+     * Create a {@link RollingMinMaxSpec rolling minimum} for the supplied column name pairs, using time as the
+     * windowing unit. This function accepts {@code nanoseconds} as the reverse window parameters. A row containing a
+     * {@code null} in the timestamp column belongs to no window and will not have a value computed or be considered in
+     * the windows of other rows.
      *
      * @param timestampCol the name of the timestamp column
      * @param revTime the look-behind window size (in nanoseconds)
@@ -536,11 +538,11 @@ public interface UpdateByOperation {
     }
 
     /**
-     * Create a {@link RollingMinMaxSpec rolling sum} for the supplied column name pairs, using time as the windowing
-     * unit. This function accepts {@code nanoseconds} as the reverse and forward window parameters. Negative values are
-     * allowed and can be used to generate completely forward or completely reverse windows. A row containing a
-     * {@code null} in the timestamp column belongs to no window and will not have a value computed or be considered in
-     * the windows of other rows.
+     * Create a {@link RollingMinMaxSpec rolling minimum} for the supplied column name pairs, using time as the
+     * windowing unit. This function accepts {@code nanoseconds} as the reverse and forward window parameters. Negative
+     * values are allowed and can be used to generate completely forward or completely reverse windows. A row containing
+     * a {@code null} in the timestamp column belongs to no window and will not have a value computed or be considered
+     * in the windows of other rows.
      *
      * @param timestampCol the name of the timestamp column
      * @param revTime the look-behind window size (in nanoseconds)
@@ -553,11 +555,11 @@ public interface UpdateByOperation {
     }
 
     /**
-     * Create a {@link RollingMinMaxSpec rolling sum} for the supplied column name pairs, using ticks as the windowing
-     * unit. Ticks are row counts and you may specify the previous window in number of rows to include. The current row
-     * is considered to belong to the reverse window, so calling this with {@code revTicks = 1} will simply return the
-     * current row. Specifying {@code revTicks = 10} will include the previous 9 rows to this one and this row for a
-     * total of 10 rows.
+     * Create a {@link RollingMinMaxSpec rolling maximum} for the supplied column name pairs, using ticks as the
+     * windowing unit. Ticks are row counts and you may specify the previous window in number of rows to include. The
+     * current row is considered to belong to the reverse window, so calling this with {@code revTicks = 1} will simply
+     * return the current row. Specifying {@code revTicks = 10} will include the previous 9 rows to this one and this
+     * row for a total of 10 rows.
      *
      * @param revTicks the look-behind window size (in rows/ticks)
      * @param pairs The input/output column name pairs
@@ -568,11 +570,11 @@ public interface UpdateByOperation {
     }
 
     /**
-     * Create a {@link RollingMinMaxSpec rolling sum} for the supplied column name pairs, using ticks as the windowing
-     * unit. Ticks are row counts and you may specify the reverse and forward window in number of rows to include. The
-     * current row is considered to belong to the reverse window but not the forward window. Also, negative values are
-     * allowed and can be used to generate completely forward or completely reverse windows. Here are some examples of
-     * window values:
+     * Create a {@link RollingMinMaxSpec rolling maximum} for the supplied column name pairs, using ticks as the
+     * windowing unit. Ticks are row counts and you may specify the reverse and forward window in number of rows to
+     * include. The current row is considered to belong to the reverse window but not the forward window. Also, negative
+     * values are allowed and can be used to generate completely forward or completely reverse windows. Here are some
+     * examples of window values:
      * <ul>
      * <li>{@code revTicks = 1, fwdTicks = 0} - contains only the current row</li>
      * <li>{@code revTicks = 10, fwdTicks = 0} - contains 9 previous rows and the current row</li>
@@ -597,11 +599,11 @@ public interface UpdateByOperation {
     }
 
     /**
-     * Create a {@link RollingMinMaxSpec rolling sum} for the supplied column name pairs, using time as the windowing
-     * unit. This function accepts {@link Duration duration} as the reverse window parameter. A row containing a
-     * {@code null} in the timestamp column belongs to no window and will not have a value computed or be considered in
-     * the windows of other rows.
-     *
+     * Create a {@link RollingMinMaxSpec rolling maximum} for the supplied column name pairs, using time as the
+     * windowing unit. This function accepts {@link Duration duration} as the reverse window parameter. A row containing
+     * a {@code null} in the timestamp column belongs to no window and will not have a value computed or be considered
+     * in the windows of other rows.
+     * <p>
      * Here are some examples of window values:
      * <ul>
      * <li>{@code revDuration = 0m} - contains rows that exactly match the current row timestamp</li>
@@ -618,12 +620,12 @@ public interface UpdateByOperation {
     }
 
     /**
-     * Create a {@link RollingMinMaxSpec rolling sum} for the supplied column name pairs, using time as the windowing
-     * unit. This function accepts {@link Duration durations} as the reverse and forward window parameters. Negative
-     * values are allowed and can be used to generate completely forward or completely reverse windows. A row containing
-     * a {@code null} in the timestamp column belongs to no window and will not have a value computed or be considered
-     * in the windows of other rows.
-     *
+     * Create a {@link RollingMinMaxSpec rolling maximum} for the supplied column name pairs, using time as the
+     * windowing unit. This function accepts {@link Duration durations} as the reverse and forward window parameters.
+     * Negative values are allowed and can be used to generate completely forward or completely reverse windows. A row
+     * containing a {@code null} in the timestamp column belongs to no window and will not have a value computed or be
+     * considered in the windows of other rows.
+     * <p>
      * Here are some examples of window values:
      * <ul>
      * <li>{@code revDuration = 0m, fwdDuration = 0m} - contains rows that exactly match the current row timestamp</li>
@@ -651,10 +653,10 @@ public interface UpdateByOperation {
     }
 
     /**
-     * Create a {@link RollingMinMaxSpec rolling sum} for the supplied column name pairs, using time as the windowing
-     * unit. This function accepts {@code nanoseconds} as the reverse window parameters. A row containing a {@code null}
-     * in the timestamp column belongs to no window and will not have a value computed or be considered in the windows
-     * of other rows.
+     * Create a {@link RollingMinMaxSpec rolling maximum} for the supplied column name pairs, using time as the
+     * windowing unit. This function accepts {@code nanoseconds} as the reverse window parameters. A row containing a
+     * {@code null} in the timestamp column belongs to no window and will not have a value computed or be considered in
+     * the windows of other rows.
      *
      * @param timestampCol the name of the timestamp column
      * @param revTime the look-behind window size (in nanoseconds)
@@ -666,11 +668,11 @@ public interface UpdateByOperation {
     }
 
     /**
-     * Create a {@link RollingMinMaxSpec rolling sum} for the supplied column name pairs, using time as the windowing
-     * unit. This function accepts {@code nanoseconds} as the reverse and forward window parameters. Negative values are
-     * allowed and can be used to generate completely forward or completely reverse windows. A row containing a
-     * {@code null} in the timestamp column belongs to no window and will not have a value computed or be considered in
-     * the windows of other rows.
+     * Create a {@link RollingMinMaxSpec rolling maximum} for the supplied column name pairs, using time as the
+     * windowing unit. This function accepts {@code nanoseconds} as the reverse and forward window parameters. Negative
+     * values are allowed and can be used to generate completely forward or completely reverse windows. A row containing
+     * a {@code null} in the timestamp column belongs to no window and will not have a value computed or be considered
+     * in the windows of other rows.
      *
      * @param timestampCol the name of the timestamp column
      * @param revTime the look-behind window size (in nanoseconds)
