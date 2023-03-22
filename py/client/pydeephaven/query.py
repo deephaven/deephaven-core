@@ -434,4 +434,21 @@ class Query(TableInterface):
         Returns:
             self
         """
-        return super().update_by(ops=ops, by=by)
+        return super().update_by(ops, by)
+
+    def snapshot(self):
+        """ Add a snapshot operation to the query.
+
+        Returns:
+            self
+        """
+        return super().snapshot()
+
+    def snapshot_when(self, trigger_table: Any, stamp_cols: List[str] = None, initial: bool = False,
+                      incremental: bool = False, history: bool = False):
+        """ Add a snapshot_when operation to the query.
+
+        Returns:
+            self
+        """
+        return super().snapshot_when(trigger_table, stamp_cols, initial, incremental, history)

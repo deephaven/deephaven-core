@@ -23,7 +23,7 @@ public abstract class BaseObjectBinaryOperator<T> extends BaseObjectUpdateByOper
         }
 
         @Override
-        public void push(long key, int pos, int count) {
+        public void push(int pos, int count) {
             for (int ii = 0; ii < count; ii++) {
                 // read the value from the values chunk
                 final T currentVal = objectValueChunk.get(pos + ii);

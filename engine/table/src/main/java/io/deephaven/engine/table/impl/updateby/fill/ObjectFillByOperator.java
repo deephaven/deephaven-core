@@ -36,7 +36,7 @@ public class ObjectFillByOperator<T> extends BaseObjectUpdateByOperator<T> {
         }
 
         @Override
-        public void push(long key, int pos, int count) {
+        public void push(int pos, int count) {
             Assert.eq(count, "push count", 1);
 
             T val = ObjectValueChunk.get(pos);

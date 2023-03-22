@@ -43,13 +43,13 @@ public class IntTimsortKernel {
         }
 
         @Override
-        public void sort(WritableLongChunk<KEY_INDICES> indexKeys, WritableChunk<ATTR> valuesToSort) {
-            IntTimsortKernel.sort(this, indexKeys, valuesToSort.asWritableIntChunk());
+        public void sort(WritableLongChunk<KEY_INDICES> valuesToPermute, WritableChunk<ATTR> valuesToSort) {
+            IntTimsortKernel.sort(this, valuesToPermute, valuesToSort.asWritableIntChunk());
         }
 
         @Override
-        public void sort(WritableLongChunk<KEY_INDICES> indexKeys, WritableChunk<ATTR> valuesToSort, IntChunk<? extends ChunkPositions> offsetsIn, IntChunk<? extends ChunkLengths> lengthsIn) {
-            IntTimsortKernel.sort(this, indexKeys, valuesToSort.asWritableIntChunk(), offsetsIn, lengthsIn);
+        public void sort(WritableLongChunk<KEY_INDICES> valuesToPermute, WritableChunk<ATTR> valuesToSort, IntChunk<? extends ChunkPositions> offsetsIn, IntChunk<? extends ChunkLengths> lengthsIn) {
+            IntTimsortKernel.sort(this, valuesToPermute, valuesToSort.asWritableIntChunk(), offsetsIn, lengthsIn);
         }
 
         @Override

@@ -9,7 +9,6 @@ import java.nio.channels.Selector;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import io.deephaven.net.CommBase;
-import io.deephaven.base.Procedure;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.io.NioUtil;
 import io.deephaven.io.logger.LogCrashDump;
@@ -70,11 +69,7 @@ public class NIODriver implements Runnable {
     /**
      * A procedure which calls handoff(), to give the scheduler when we are running full-bore
      */
-    private static final Procedure.Nullary handoffProc = new Procedure.Nullary() {
-        public void call() {
-            handoff();
-        }
-    };
+    private static final Runnable handoffProc = NIODriver::handoff;
 
     /**
      * return a string telling how many threads are doing what

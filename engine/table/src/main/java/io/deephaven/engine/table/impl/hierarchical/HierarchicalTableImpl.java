@@ -21,6 +21,8 @@ import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot.SnapshotControl;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableConstantIntSource;
 import io.deephaven.engine.table.iterators.ByteColumnIterator;
+import io.deephaven.engine.table.iterators.ChunkedByteColumnIterator;
+import io.deephaven.engine.table.iterators.ChunkedColumnIterator;
 import io.deephaven.engine.table.iterators.ColumnIterator;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.hash.*;
@@ -1009,9 +1011,9 @@ abstract class HierarchicalTableImpl<IFACE_TYPE extends HierarchicalTable<IFACE_
 
         try (final RowSet prevRowSet = usePrev ? keyTable.getRowSet().copyPrev() : null) {
             final RowSequence rowsToExtract = usePrev ? prevRowSet : keyTable.getRowSet();
-            final ColumnIterator<?, ?> nodeKeyIter = ColumnIterator.make(nodeKeySource, rowsToExtract);
+            final ColumnIterator<?> nodeKeyIter = ChunkedColumnIterator.make(nodeKeySource, rowsToExtract);
             final ByteColumnIterator actionIter =
-                    actionSource == null ? null : new ByteColumnIterator(actionSource, rowsToExtract);
+                    actionSource == null ? null : new ChunkedByteColumnIterator(actionSource, rowsToExtract);
             // If no action source is supplied, we default to "Expand"
             final Supplier<VisitAction> nextAction = actionIter == null
                     ? () -> Expand

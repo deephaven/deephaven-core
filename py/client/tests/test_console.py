@@ -46,7 +46,7 @@ demo_table = (empty_table(table_size)
         '''
         self.session.run_script(server_script)
         self.assertIn('demo_table', self.session.tables)
-        pa_table = self.session.open_table('demo_table').snapshot()
+        pa_table = self.session.open_table('demo_table').to_arrow()
         df = pa_table.to_pandas()
         self.assertEquals(1000, len(df.index))
 

@@ -1,7 +1,6 @@
 #
 # Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
 #
-
 from abc import ABC, abstractmethod
 from typing import List, Any
 
@@ -531,3 +530,46 @@ class UpdateByOp(TableOp):
     def make_grpc_request_for_batch(self, result_id, source_id):
         return table_pb2.BatchTableRequest.Operation(
             update_by=self.make_grpc_request(result_id=result_id, source_id=source_id))
+
+
+class SnapshotTableOp(TableOp):
+    @classmethod
+    def get_stub_func(cls, table_service_stub: table_pb2_grpc.TableServiceStub):
+        return table_service_stub.Snapshot
+
+    def make_grpc_request(self, result_id, source_id):
+        return table_pb2.SnapshotTableRequest(result_id=result_id, source_id=source_id)
+
+    def make_grpc_request_for_batch(self, result_id, source_id):
+        return table_pb2.BatchTableRequest.Operation(
+            snapshot=self.make_grpc_request(result_id=result_id, source_id=source_id))
+
+
+class SnapshotWhenTableOp(TableOp):
+
+    def __init__(self, trigger_table: Any, stamp_cols: List[str] = None, initial: bool = False,
+                 incremental: bool = False, history: bool = False):
+        self.trigger_table = trigger_table
+        self.stamp_cols = stamp_cols
+        self.initial = initial
+        self.incremental = incremental
+        self.history = history
+
+    @classmethod
+    def get_stub_func(cls, table_service_stub: table_pb2_grpc.TableServiceStub):
+        return table_service_stub.SnapshotWhen
+
+    def make_grpc_request(self, result_id, source_id=None):
+        base_id = source_id
+        trigger_id = table_pb2.TableReference(ticket=self.trigger_table.ticket)
+        return table_pb2.SnapshotWhenTableRequest(result_id=result_id,
+                                                   base_id=base_id,
+                                                   trigger_id=trigger_id,
+                                                   initial=self.initial,
+                                                   incremental=self.incremental,
+                                                   history=self.history,
+                                                   stamp_columns=self.stamp_cols)
+
+    def make_grpc_request_for_batch(self, result_id, source_id):
+        return table_pb2.BatchTableRequest.Operation(
+            snapshot_when=self.make_grpc_request(result_id=result_id, source_id=source_id))

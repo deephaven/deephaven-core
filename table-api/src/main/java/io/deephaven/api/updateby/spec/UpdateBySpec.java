@@ -73,6 +73,8 @@ public interface UpdateBySpec {
         T visit(CumProdSpec p);
 
         T visit(RollingSumSpec p);
+
+        T visit(RollingGroupSpec p);
     }
     // endregion
 }

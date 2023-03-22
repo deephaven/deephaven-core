@@ -3,7 +3,7 @@
  */
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.base.Procedure;
+import io.deephaven.engine.primitive.function.CharConsumer;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
@@ -426,7 +426,7 @@ public class QueryTableSliceTest extends QueryTableTestBase {
     private void doSliceTest(QueryTable table, String expected, int firstPositionInclusive, int lastPositionExclusive) {
         final StringBuilder chars = new StringBuilder();
         table.slice(firstPositionInclusive, lastPositionExclusive).characterColumnIterator("letter")
-                .forEachRemaining((Procedure.UnaryChar) chars::append);
+                .forEachRemaining((CharConsumer) chars::append);
         final String result = chars.toString();
         assertEquals(expected, result);
     }

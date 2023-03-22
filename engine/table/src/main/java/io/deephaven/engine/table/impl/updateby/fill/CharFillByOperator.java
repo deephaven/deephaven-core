@@ -30,7 +30,7 @@ public class CharFillByOperator extends BaseCharUpdateByOperator {
         }
 
         @Override
-        public void push(long key, int pos, int count) {
+        public void push(int pos, int count) {
             Assert.eq(count, "push count", 1);
 
             char val = charValueChunk.get(pos);

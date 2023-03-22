@@ -2,10 +2,13 @@ package io.deephaven.engine.table.impl.updateby;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.TrackingRowSet;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.ssa.LongSegmentedSortedArray;
@@ -14,6 +17,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.OverridingMethodsMustInvokeSuper;
+import java.util.Arrays;
 
 /**
  * This is the base class of {@link UpdateByWindowRollingTicks} and {@link UpdateByWindowRollingTime}.
@@ -104,7 +108,6 @@ abstract class UpdateByWindowRollingBase extends UpdateByWindow {
 
     abstract void computeWindows(UpdateByWindowRollingBucketContext ctx);
 
-
     @Override
     void processWindowBucketOperatorSet(final UpdateByWindowBucketContext context,
             final int[] opIndices,
@@ -117,8 +120,26 @@ abstract class UpdateByWindowRollingBase extends UpdateByWindow {
 
         UpdateByWindowRollingBucketContext ctx = (UpdateByWindowRollingBucketContext) context;
 
+        final TrackingRowSet bucketRowSet =
+                ctx.timestampValidRowSet != null ? ctx.timestampValidRowSet : ctx.sourceRowSet;
+
+        final boolean operatorsRequirePositions = Arrays.stream(opIndices)
+                .anyMatch(opIdx -> operators[opIdx].requiresRowPositions());
+
         try (final RowSequence.Iterator affectedRowsIt = ctx.affectedRows.getRowSequenceIterator();
-                final RowSequence.Iterator influencerRowsIt = ctx.influencerRows.getRowSequenceIterator()) {
+                final RowSequence.Iterator influencerRowsIt = ctx.influencerRows.getRowSequenceIterator();
+                final RowSet affectedPosRs = operatorsRequirePositions
+                        ? bucketRowSet.invert(ctx.affectedRows)
+                        : null;
+                final RowSequence.Iterator affectedPosRsIt = operatorsRequirePositions
+                        ? affectedPosRs.getRowSequenceIterator()
+                        : null;
+                final RowSet influencerPosRs = operatorsRequirePositions
+                        ? bucketRowSet.invert(ctx.influencerRows)
+                        : null;
+                final RowSequence.Iterator influencerPosIt = operatorsRequirePositions
+                        ? influencerPosRs.getRowSequenceIterator()
+                        : null) {
 
             // Call the specialized version of `intializeUpdate()` for these operators.
             for (int ii = 0; ii < opIndices.length; ii++) {
@@ -128,7 +149,7 @@ abstract class UpdateByWindowRollingBase extends UpdateByWindow {
                     continue;
                 }
                 UpdateByOperator rollingOp = operators[opIdx];
-                rollingOp.initializeRolling(winOpContexts[ii]);
+                rollingOp.initializeRolling(winOpContexts[ii], bucketRowSet);
             }
 
             int affectedChunkOffset = 0;
@@ -141,6 +162,21 @@ abstract class UpdateByWindowRollingBase extends UpdateByWindow {
 
                 final int affectedChunkSize = affectedRs.intSize();
 
+                // create influencer position chunks when needed
+                final LongChunk<OrderedRowKeys> affectedPosChunk;
+                final LongChunk<OrderedRowKeys> influencePosChunk;
+                if (operatorsRequirePositions) {
+                    final RowSequence chunkAffectedPosRs =
+                            affectedPosRsIt.getNextRowSequenceWithLength(affectedChunkSize);
+                    affectedPosChunk = chunkAffectedPosRs.asRowKeyChunk();
+                    final RowSequence chunkInfluencerPosRs =
+                            influencerPosIt.getNextRowSequenceWithLength(influencerCount);
+                    influencePosChunk = chunkInfluencerPosRs.asRowKeyChunk();
+                } else {
+                    affectedPosChunk = null;
+                    influencePosChunk = null;
+                }
+
                 // Prep the chunk array needed by the accumulate call.
                 for (int ii = 0; ii < srcIndices.length; ii++) {
                     int srcIdx = srcIndices[ii];
@@ -150,13 +186,17 @@ abstract class UpdateByWindowRollingBase extends UpdateByWindow {
                 // Make the specialized call for windowed operators.
                 for (int ii = 0; ii < opIndices.length; ii++) {
                     final int opIdx = opIndices[ii];
+
                     if (!context.dirtyOperators.get(opIdx)) {
                         // Skip if not dirty.
                         continue;
                     }
+
                     winOpContexts[ii].accumulateRolling(
                             affectedRs,
                             chunkArr,
+                            affectedPosChunk,
+                            influencePosChunk,
                             ctx.pushChunks[affectedChunkOffset],
                             ctx.popChunks[affectedChunkOffset],
                             affectedChunkSize);

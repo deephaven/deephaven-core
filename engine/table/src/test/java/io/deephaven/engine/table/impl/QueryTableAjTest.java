@@ -6,9 +6,9 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.base.clock.Clock;
 import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.PartitionedTable;
-import io.deephaven.engine.table.iterators.ObjectColumnIterator;
 import io.deephaven.engine.testutil.ColumnInfo;
 import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.testutil.TstUtils;
@@ -1193,10 +1193,10 @@ public class QueryTableAjTest {
         final Table correlated = bucketResults.table()
                 .naturalJoin(leftBucket.table(), "Bucket", "Left=" + leftBucket.constituentColumnName())
                 .naturalJoin(rightBucket.table(), "Bucket", "Right=" + rightBucket.constituentColumnName());
-        try (final ObjectColumnIterator<Table> results =
+        try (final CloseableIterator<Table> results =
                 correlated.objectColumnIterator(bucketResults.constituentColumnName());
-                final ObjectColumnIterator<Table> lefts = correlated.objectColumnIterator("Left");
-                final ObjectColumnIterator<Table> rights = correlated.objectColumnIterator("Right")) {
+                final CloseableIterator<Table> lefts = correlated.objectColumnIterator("Left");
+                final CloseableIterator<Table> rights = correlated.objectColumnIterator("Right")) {
             while (results.hasNext()) {
                 checkAjResult(lefts.next(), rights.next(), results.next(), reverse, noexact);
             }

@@ -3,7 +3,7 @@
  */
 package io.deephaven.function;
 
-import io.deephaven.vector.BooleanVector;
+import io.deephaven.vector.ObjectVector;
 
 /**
  * Logic functions.
@@ -48,7 +48,7 @@ public class Logic {
      * @param values values.
      * @return logical and of all the values in the array. By convention, returns true if the array is empty.
      */
-    static public Boolean and(BooleanVector values) {
+    static public Boolean and(ObjectVector<Boolean> values) {
         for (int ii = 0; ii < values.size(); ++ii) {
             Boolean b = values.get(ii);
             if (!b) {
@@ -85,7 +85,7 @@ public class Logic {
      * @param nullValue value to use in place of null values.
      * @return logical and of all the values in the array. By convention, returns true if the array is empty.
      */
-    static public Boolean and(BooleanVector values, Boolean nullValue) {
+    static public Boolean and(ObjectVector<Boolean> values, Boolean nullValue) {
         for (int ii = 0; ii < values.size(); ++ii) {
             Boolean b = values.get(ii);
             b = b == null ? nullValue : b;

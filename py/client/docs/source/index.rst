@@ -23,6 +23,6 @@ Examples:
     >>> table1 = session.import_table(csv.read_csv("data1.csv"))
     >>> table2 = session.import_table(csv.read_csv("data2.csv"))
     >>> joined_table = table1.join(table2, on=["key_col_1", "key_col_2"], joins=["data_col1"])
-    >>> df = joined_table.snapshot().to_pandas()
+    >>> df = joined_table.to_arrow().to_pandas()
     >>> print(df)
     >>> session.close()

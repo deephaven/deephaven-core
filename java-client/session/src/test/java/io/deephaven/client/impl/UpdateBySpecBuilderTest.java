@@ -73,6 +73,13 @@ public class UpdateBySpecBuilderTest {
         public UpdateByColumn.UpdateBySpec visit(RollingSumSpec p) {
             return null;
         }
+
+        // TODO: add this correctly
+        @Override
+        public UpdateByColumn.UpdateBySpec visit(RollingGroupSpec p) {
+            return null;
+        }
+
     }
 
     @Test
