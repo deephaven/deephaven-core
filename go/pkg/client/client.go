@@ -58,12 +58,20 @@ type Client struct {
 //
 // The client should be closed using Close() after it is done being used.
 //
-// Keepalive messages are sent automatically by the client to the server at a regular interval (~30 seconds)
+// Keepalive messages are sent automatically by the client to the server at a regular interval
 // so that the connection remains open. The provided context is saved and used to send keepalive messages.
+//
+// host, port, and auth are used to connect to the Deephaven server.  host and port are the Deephaven server host and port.
+// auth is the authorization string used to get the first token.  Examples:
+//   - "Anonymous" is used for anonymous authentication.
+//   - "io.deephaven.authentication.psk.PskAuthenticationHandler <password>" is used for PSK authentication
+//
+// If auth is set to an empty string, anonymous authentication is used.
+// To see what authentication methods are available on the Deephaven server, navigate to: http://<host>:<port>/jsapi/authentication/.
 //
 // The option arguments can be used to specify other settings for the client.
 // See the With<XYZ> methods (e.g. WithConsole) for details on what options are available.
-func NewClient(ctx context.Context, host string, port string, options ...ClientOption) (*Client, error) {
+func NewClient(ctx context.Context, host string, port string, auth string, options ...ClientOption) (*Client, error) {
 	grpcChannel, err := grpc.Dial(host+":"+port, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, err
@@ -77,19 +85,31 @@ func NewClient(ctx context.Context, host string, port string, options ...ClientO
 
 	client.ticketFact = newTicketFactory()
 
-	client.sessionStub, err = newSessionStub(ctx, client)
+	client.flightStub, err = newFlightStub(client, host, port)
+	if err != nil {
+		client.Close()
+		return nil, err
+	}
+
+	cfgClient := configpb2.NewConfigServiceClient(grpcChannel)
+
+	if auth == "" {
+		auth = "Anonymous"
+	}
+
+	client.tokenMgr, err = newTokenManager(ctx, &client.flightStub, cfgClient, auth)
+	if err != nil {
+		client.Close()
+		return nil, err
+	}
+
+	client.sessionStub, err = newSessionStub(client)
 	if err != nil {
 		client.Close()
 		return nil, err
 	}
 
 	client.consoleStub, err = newConsoleStub(ctx, client, opts.scriptLanguage)
-	if err != nil {
-		client.Close()
-		return nil, err
-	}
-
-	client.flightStub, err = newFlightStub(client, host, port)
 	if err != nil {
 		client.Close()
 		return nil, err
