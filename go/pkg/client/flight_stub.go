@@ -38,6 +38,12 @@ func newFlightStub(client *Client, host string, port string) (flightStub, error)
 	return flightStub{client: client, stub: stub}, nil
 }
 
+// handshake creates a client for performing token handshakes with the Flight service.
+// The client can be used to obtain and refresh authentication tokens.
+func (fs *flightStub) handshake(ctx context.Context, opts ...grpc.CallOption) (flight.FlightService_HandshakeClient, error) {
+	return fs.stub.Handshake(ctx, opts...)
+}
+
 // snapshotRecord downloads the data currently in the provided table and returns it as an Arrow Record.
 func (fs *flightStub) snapshotRecord(ctx context.Context, ticket *ticketpb2.Ticket) (arrow.Record, error) {
 	ctx, err := fs.client.tokenMgr.withToken(ctx)
