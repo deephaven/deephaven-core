@@ -20,7 +20,8 @@ import org.jetbrains.annotations.NotNull;
 /**
  * {@link UngroupedColumnSource} implementation for {@link BaseAggregateColumnSource}s.
  */
-final class UngroupedAggregateColumnSource<DATA_TYPE> extends BaseUngroupedAggregateColumnSource<DATA_TYPE> {
+final class UngroupedAggregateColumnSource<DATA_TYPE>
+        extends BaseUngroupedAggregateColumnSource<DATA_TYPE, BaseAggregateColumnSource<?, DATA_TYPE>> {
 
     UngroupedAggregateColumnSource(@NotNull final BaseAggregateColumnSource<?, DATA_TYPE> aggregateColumnSource) {
         super(aggregateColumnSource, aggregateColumnSource.aggregatedSource.getType());
@@ -32,7 +33,7 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends BaseUngroupedAggre
         private UngroupedFillContext(@NotNull final BaseAggregateColumnSource<?, ?> aggregateColumnSource,
                 final int chunkCapacity,
                 final SharedContext sharedContext) {
-            super(aggregateColumnSource, aggregateColumnSource.aggregatedSource, chunkCapacity);
+            super(aggregateColumnSource.aggregatedSource, chunkCapacity);
 
             shareable = sharedContext == null
                     ? new Shareable(false, aggregateColumnSource.groupRowSetSource, chunkCapacity)
@@ -50,11 +51,10 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends BaseUngroupedAggre
          */
         private static final class SharingKey extends SharedContext.ExactReferenceSharingKey<Shareable> {
 
-            private SharingKey(@NotNull final ColumnSource groupRowSetSource) {
+            private SharingKey(@NotNull final ColumnSource<?> groupRowSetSource) {
                 super(groupRowSetSource);
             }
         }
-
 
         private static final class Shareable extends BaseUngroupedAggregateColumnSource.UngroupedFillContext.Shareable {
 
@@ -73,27 +73,27 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends BaseUngroupedAggre
                     reset();
                 }
 
-                currentIndexPosition = -1;
-                componentKeyIndices.setSize(0);
+                currentIndex = -1;
+                componentKeys.setSize(0);
                 rowSequence.forAllRowKeys((final long rowKey) -> {
                     final long indexrowKey = getGroupIndexKey(rowKey, base);
-                    if (currentIndexPosition == -1 || indexrowKey != rowsetKeyIndices.get(currentIndexPosition)) {
-                        ++currentIndexPosition;
-                        rowsetKeyIndices.set(currentIndexPosition, indexrowKey);
-                        sameIndexRunLengths.set(currentIndexPosition, 1);
+                    if (currentIndex == -1 || indexrowKey != rowKeys.get(currentIndex)) {
+                        ++currentIndex;
+                        rowKeys.set(currentIndex, indexrowKey);
+                        sameIndexRunLengths.set(currentIndex, 1);
                     } else {
-                        sameIndexRunLengths.set(currentIndexPosition,
-                                sameIndexRunLengths.get(currentIndexPosition) + 1);
+                        sameIndexRunLengths.set(currentIndex,
+                                sameIndexRunLengths.get(currentIndex) + 1);
                     }
                     final long componentrowKey = getOffsetInGroup(rowKey, base);
-                    componentKeyIndices.add(componentrowKey);
+                    componentKeys.add(componentrowKey);
                 });
-                rowsetKeyIndices.setSize(currentIndexPosition + 1);
-                sameIndexRunLengths.setSize(currentIndexPosition + 1);
+                rowKeys.setSize(currentIndex + 1);
+                sameIndexRunLengths.setSize(currentIndex + 1);
 
                 final ObjectChunk<RowSet, ? extends Values> indexes;
                 try (final RowSequence indexRowSequence =
-                        RowSequenceFactory.wrapRowKeysChunkAsRowSequence(rowsetKeyIndices)) {
+                        RowSequenceFactory.wrapRowKeysChunkAsRowSequence(rowKeys)) {
                     if (usePrev) {
                         indexes = groupRowSetSource.getPrevChunk(rowsetGetContext, indexRowSequence).asObjectChunk();
                     } else {
@@ -101,7 +101,7 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends BaseUngroupedAggre
                     }
                 }
 
-                int componentKeyIndicesPosition = 0;
+                currentIndex = 0;
                 for (int ii = 0; ii < indexes.size(); ++ii) {
                     final RowSet currRowSet = indexes.get(ii);
                     Assert.neqNull(currRowSet, "currRowSet");
@@ -110,12 +110,12 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends BaseUngroupedAggre
                     final int lengthFromThisIndex = sameIndexRunLengths.get(ii);
 
                     final WritableLongChunk<OrderedRowKeys> remappedComponentKeys =
-                            componentKeyIndicesSlice.resetFromTypedChunk(componentKeyIndices,
-                                    componentKeyIndicesPosition, lengthFromThisIndex);
-                    rowSet.getKeysForPositions(new LongChunkIterator(componentKeyIndicesSlice),
+                            componentKeySlice.resetFromTypedChunk(componentKeys,
+                                    currentIndex, lengthFromThisIndex);
+                    rowSet.getKeysForPositions(new LongChunkIterator(componentKeySlice),
                             new LongChunkAppender(remappedComponentKeys));
 
-                    componentKeyIndicesPosition += lengthFromThisIndex;
+                    currentIndex += lengthFromThisIndex;
                 }
 
                 stateReusable = shared;
@@ -125,10 +125,7 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends BaseUngroupedAggre
 
     @Override
     public FillContext makeFillContext(final int chunkCapacity, final SharedContext sharedContext) {
-        return new UngroupedFillContext(
-                (BaseAggregateColumnSource<?, ?>) aggregateColumnSource,
-                chunkCapacity,
-                sharedContext);
+        return new UngroupedFillContext(aggregateColumnSource, chunkCapacity, sharedContext);
     }
 
     @Override
@@ -139,10 +136,8 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends BaseUngroupedAggre
             return;
         }
         final UngroupedFillContext tc = (UngroupedFillContext) context;
-        // Cast to BaseAggregateColumnSource for processing.
-        BaseAggregateColumnSource<?, ?> aggSource = (BaseAggregateColumnSource<?, ?>) aggregateColumnSource;
-        tc.shareable.extractFillChunkInformation(aggSource.groupRowSetSource, base, false, rowSequence);
-        tc.doFillChunk(aggSource.aggregatedSource, false, destination);
+        tc.shareable.extractFillChunkInformation(aggregateColumnSource.groupRowSetSource, base, false, rowSequence);
+        tc.doFillChunk(aggregateColumnSource.aggregatedSource, false, destination);
     }
 
     @Override
@@ -153,10 +148,8 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends BaseUngroupedAggre
             return;
         }
         final UngroupedFillContext tc = (UngroupedFillContext) context;
-        // Cast to BaseAggregateColumnSource for processing.
-        BaseAggregateColumnSource<?, ?> aggSource = (BaseAggregateColumnSource<?, ?>) aggregateColumnSource;
-        tc.shareable.extractFillChunkInformation(aggSource.groupRowSetSource, getPrevBase(), true,
+        tc.shareable.extractFillChunkInformation(aggregateColumnSource.groupRowSetSource, getPrevBase(), true,
                 rowSequence);
-        tc.doFillChunk(aggSource.aggregatedSource, true, destination);
+        tc.doFillChunk(aggregateColumnSource.aggregatedSource, true, destination);
     }
 }

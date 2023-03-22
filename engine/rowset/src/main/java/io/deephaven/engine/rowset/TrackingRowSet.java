@@ -46,13 +46,14 @@ public interface TrackingRowSet extends RowSet {
     WritableRowSet copyPrev();
 
     /**
-     * Access the read-only value of this TrackingRowSet as of the end of the previous update graph cycle. Unlike other
-     * operations that return a {@link WritableRowSet}, the result does not need to be {@link #close() closed} by the
-     * caller when it is no longer needed.
+     * Access the read-only value of this TrackingRowSet as of the end of the previous update graph cycle. The returned
+     * {@link RowSet} must not be mutated or {@link #close() closed}; it belongs to this TrackingRowSet. Callers should
+     * be sure to only use the result during the updating phase of a cycle, and never across logical clock phases/steps.
      *
-     * @return The read-only version of the previous row set
+     * @return A read-only view of the previous value, owned by this TrackingRowSet
      */
     RowSet prev();
+
 
     /**
      * Same as {@code get(rowPosition)}, as of the end of the previous update graph cycle.

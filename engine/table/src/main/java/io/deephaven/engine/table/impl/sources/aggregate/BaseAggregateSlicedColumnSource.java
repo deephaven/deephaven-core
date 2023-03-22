@@ -372,4 +372,13 @@ public abstract class BaseAggregateSlicedColumnSource<VECTOR_TYPE extends Vector
                 && (startSource == null || startSource.isStateless())
                 && (endSource == null || endSource.isStateless());
     }
+
+
+    @Override
+    public boolean isImmutable() {
+        return aggregatedSource.isImmutable()
+                && groupRowSetSource.isImmutable()
+                && (startSource == null || startSource.isImmutable())
+                && (endSource == null || endSource.isImmutable());
+    }
 }

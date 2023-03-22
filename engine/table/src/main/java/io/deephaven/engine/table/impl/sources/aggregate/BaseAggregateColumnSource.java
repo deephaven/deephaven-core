@@ -250,4 +250,9 @@ abstract class BaseAggregateColumnSource<DB_ARRAY_TYPE extends Vector, COMPONENT
     public boolean isStateless() {
         return aggregatedSource.isStateless() && groupRowSetSource.isStateless();
     }
+
+    @Override
+    public boolean isImmutable() {
+        return aggregatedSource.isImmutable() && groupRowSetSource.isImmutable();
+    }
 }
