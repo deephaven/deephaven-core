@@ -171,8 +171,6 @@ func (client *Client) Close() error {
 
 	client.isOpen = false
 
-	client.sessionStub.Close()
-
 	if client.grpcChannel != nil {
 		client.grpcChannel.Close()
 		client.grpcChannel = nil

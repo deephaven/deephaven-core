@@ -38,15 +38,3 @@ func (hs *sessionStub) release(ctx context.Context, ticket *ticketpb2.Ticket) er
 	}
 	return nil
 }
-
-// Close closes the session stub and frees any associated resources.
-// The session stub should not be used after calling this function.
-// The token refresh loop will be stopped,
-// and any attempts to access the session token will return an error.
-// The client lock should be held when calling this function.
-func (hs *sessionStub) Close() {
-	if hs.cancelCh != nil {
-		close(hs.cancelCh)
-		hs.cancelCh = nil
-	}
-}
