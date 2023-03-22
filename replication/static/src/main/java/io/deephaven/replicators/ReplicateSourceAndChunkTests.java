@@ -16,8 +16,7 @@ import java.util.List;
 import static io.deephaven.replication.ReplicatePrimitiveCode.*;
 import static io.deephaven.replication.ReplicationUtils.*;
 
-public class
-ReplicateSourceAndChunkTests {
+public class ReplicateSourceAndChunkTests {
     public static void main(String[] args) throws IOException {
         ReplicateSourcesAndChunks.main(args);
 
