@@ -141,7 +141,7 @@ func (th *KeyBackedInputTable) AddTable(ctx context.Context, toAdd *TableHandle)
 // addTable makes the AddTableToInputTable gRPC request.
 // See the docs for AddTable on each kind of table for details.
 func (its *inputTableStub) addTable(ctx context.Context, inputTable *TableHandle, toAdd *TableHandle) error {
-	ctx, err := its.client.withToken(ctx)
+	ctx, err := its.client.tokenMgr.withToken(ctx)
 	if err != nil {
 		return err
 	}
@@ -168,7 +168,7 @@ func (th *KeyBackedInputTable) DeleteTable(ctx context.Context, toDelete *TableH
 // deleteTable makes the DeleteTableFromInputTable gRPC request.
 // See the docs for DeleteTable for details.
 func (its *inputTableStub) deleteTable(ctx context.Context, inputTable *TableHandle, toRemove *TableHandle) error {
-	ctx, err := its.client.withToken(ctx)
+	ctx, err := its.client.tokenMgr.withToken(ctx)
 	if err != nil {
 		return err
 	}

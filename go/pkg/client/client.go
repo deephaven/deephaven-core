@@ -20,10 +20,10 @@ import (
 	"sync"
 
 	apppb2 "github.com/deephaven/deephaven-core/go/internal/proto/application"
+	configpb2 "github.com/deephaven/deephaven-core/go/internal/proto/config"
 	consolepb2 "github.com/deephaven/deephaven-core/go/internal/proto/console"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/grpc/metadata"
 )
 
 // ErrClosedClient is returned as an error when trying to perform a network operation on a client that has been closed.
@@ -51,6 +51,7 @@ type Client struct {
 
 	appServiceClient apppb2.ApplicationServiceClient
 	ticketFact       ticketFactory
+	tokenMgr         *tokenManager
 }
 
 // NewClient starts a connection to a Deephaven server.
@@ -187,17 +188,6 @@ func (client *Client) Close() error {
 	return err
 }
 
-// withToken attaches the current session token to a context as metadata.
-func (client *Client) withToken(ctx context.Context) (context.Context, error) {
-	tok, err := client.getToken()
-
-	if err != nil {
-		return nil, err
-	}
-
-	return metadata.NewOutgoingContext(ctx, metadata.Pairs("authorization", string(tok))), nil
-}
-
 // RunScript executes a script on the deephaven server.
 //
 // The script language depends on the argument passed to WithConsole when creating the client.
@@ -207,7 +197,7 @@ func (client *Client) RunScript(ctx context.Context, script string) error {
 		return ErrNoConsole
 	}
 
-	ctx, err := client.consoleStub.client.withToken(ctx)
+	ctx, err := client.consoleStub.client.tokenMgr.withToken(ctx)
 	if err != nil {
 		return err
 	}

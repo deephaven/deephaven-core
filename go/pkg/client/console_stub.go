@@ -27,7 +27,7 @@ type consoleStub struct {
 // If sessionType is non-empty, it will start a console for use with scripts.
 // The sessionType determines what language the scripts will use. It can be either "python" or "groovy" and must match the server language.
 func newConsoleStub(ctx context.Context, client *Client, sessionType string) (consoleStub, error) {
-	ctx, err := client.withToken(ctx)
+	ctx, err := client.tokenMgr.withToken(ctx)
 	if err != nil {
 		return consoleStub{}, err
 	}
@@ -54,7 +54,7 @@ func newConsoleStub(ctx context.Context, client *Client, sessionType string) (co
 //
 // If WithConsole was not passed when creating the client, this will return ErrNoConsole.
 func (console *consoleStub) BindToVariable(ctx context.Context, name string, table *TableHandle) error {
-	ctx, err := console.client.withToken(ctx)
+	ctx, err := console.client.tokenMgr.withToken(ctx)
 	if err != nil {
 		return err
 	}
