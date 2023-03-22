@@ -26,10 +26,10 @@ type consoleStub struct {
 //
 // If sessionType is non-empty, it will start a console for use with scripts.
 // The sessionType determines what language the scripts will use. It can be either "python" or "groovy" and must match the server language.
-func newConsoleStub(ctx context.Context, client *Client, sessionType string) (consoleStub, error) {
+func newConsoleStub(ctx context.Context, client *Client, sessionType string) (*consoleStub, error) {
 	ctx, err := client.tokenMgr.withToken(ctx)
 	if err != nil {
-		return consoleStub{}, err
+		return nil, err
 	}
 
 	stub := consolepb2.NewConsoleServiceClient(client.grpcChannel)
@@ -41,13 +41,13 @@ func newConsoleStub(ctx context.Context, client *Client, sessionType string) (co
 		req := consolepb2.StartConsoleRequest{ResultId: &reqTicket, SessionType: sessionType}
 		resp, err := stub.StartConsole(ctx, &req)
 		if err != nil {
-			return consoleStub{}, err
+			return nil, err
 		}
 
 		consoleId = resp.ResultId
 	}
 
-	return consoleStub{client: client, stub: stub, consoleId: consoleId}, nil
+	return &consoleStub{client: client, stub: stub, consoleId: consoleId}, nil
 }
 
 // BindToVariable binds a table reference to a given name on the server so that it can be referenced by other clients or the web UI.

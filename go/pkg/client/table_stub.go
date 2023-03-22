@@ -23,10 +23,10 @@ type tableStub struct {
 }
 
 // newTableStub creates a new table stub that can be used to make table gRPC requests.
-func newTableStub(client *Client) tableStub {
+func newTableStub(client *Client) *tableStub {
 	stub := tablepb2.NewTableServiceClient(client.grpcChannel)
 
-	return tableStub{client: client, stub: stub}
+	return &tableStub{client: client, stub: stub}
 }
 
 // createInputTable simply wraps the CreateInputTable gRPC call and returns the resulting table.
@@ -705,7 +705,7 @@ func (state *serialOpsState) processNode(ctx context.Context, node QueryNode, al
 
 	// All of the children have either been locked by lockedTables,
 	// or are exclusively owned by this goroutine, so this method is safe.
-	tbl, err := op.execSerialOp(ctx, &state.client.tableStub, children)
+	tbl, err := op.execSerialOp(ctx, state.client.tableStub, children)
 	if err != nil {
 		return nil, wrapExecSerialError(err, node)
 	}

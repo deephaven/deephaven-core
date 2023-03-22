@@ -43,14 +43,14 @@ type Client struct {
 
 	suppressTableLeakWarning bool // When true, this disables the TableHandle finalizer warning.
 
-	sessionStub
-	consoleStub
-	flightStub
-	tableStub
-	inputTableStub
+	*sessionStub
+	*consoleStub
+	*flightStub
+	*tableStub
+	*inputTableStub
 
 	appServiceClient apppb2.ApplicationServiceClient
-	ticketFact       ticketFactory
+	ticketFact       *ticketFactory
 	tokenMgr         *tokenManager
 }
 
@@ -97,7 +97,7 @@ func NewClient(ctx context.Context, host string, port string, auth string, optio
 		auth = "Anonymous"
 	}
 
-	client.tokenMgr, err = newTokenManager(ctx, &client.flightStub, cfgClient, auth)
+	client.tokenMgr, err = newTokenManager(ctx, client.flightStub, cfgClient, auth)
 	if err != nil {
 		client.Close()
 		return nil, err
@@ -191,19 +191,30 @@ func (client *Client) Close() error {
 
 	client.isOpen = false
 
+	if client.tokenMgr != nil {
+		err := client.tokenMgr.Close()
+		if err != nil {
+			log.Println("unable to close client:", err.Error())
+			return err
+		}
+	}
+
+	// This is logged because most of the time this method is used with defer,
+	// which will discard the error value.
+	if client.flightStub != nil {
+		err := client.flightStub.Close()
+		if err != nil {
+			log.Println("unable to close client:", err.Error())
+			return err
+		}
+	}
+
 	if client.grpcChannel != nil {
 		client.grpcChannel.Close()
 		client.grpcChannel = nil
 	}
 
-	// This is logged because most of the time this method is used with defer,
-	// which will discard the error value.
-	err := client.flightStub.Close()
-	if err != nil {
-		log.Println("unable to close client:", err.Error())
-	}
-
-	return err
+	return nil
 }
 
 // RunScript executes a script on the deephaven server.

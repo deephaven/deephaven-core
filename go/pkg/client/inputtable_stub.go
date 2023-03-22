@@ -32,8 +32,8 @@ type inputTableStub struct {
 	stub inputtablepb2.InputTableServiceClient // The stub for performing inputtable gRPC requests.
 }
 
-func newInputTableStub(client *Client) inputTableStub {
-	return inputTableStub{client: client, stub: inputtablepb2.NewInputTableServiceClient(client.grpcChannel)}
+func newInputTableStub(client *Client) *inputTableStub {
+	return &inputTableStub{client: client, stub: inputtablepb2.NewInputTableServiceClient(client.grpcChannel)}
 }
 
 type inputTableKind = tablepb2.CreateInputTableRequest_InputTableKind

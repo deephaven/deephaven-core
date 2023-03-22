@@ -13,10 +13,10 @@ type sessionStub struct {
 }
 
 // Performs the first handshake to get a client token.
-func newSessionStub(client *Client) (sessionStub, error) {
+func newSessionStub(client *Client) (*sessionStub, error) {
 	stub := sessionpb2.NewSessionServiceClient(client.grpcChannel)
 
-	hs := sessionStub{
+	hs := &sessionStub{
 		client: client,
 		stub:   stub,
 	}

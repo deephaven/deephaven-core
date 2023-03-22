@@ -24,7 +24,7 @@ type flightStub struct {
 	stub flight.Client // The stub for performing Arrow Flight gRPC requests.
 }
 
-func newFlightStub(client *Client, host string, port string) (flightStub, error) {
+func newFlightStub(client *Client, host string, port string) (*flightStub, error) {
 	stub, err := flight.NewClientWithMiddleware(
 		net.JoinHostPort(host, port),
 		nil,
@@ -32,10 +32,10 @@ func newFlightStub(client *Client, host string, port string) (flightStub, error)
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 	if err != nil {
-		return flightStub{}, err
+		return nil, err
 	}
 
-	return flightStub{client: client, stub: stub}, nil
+	return &flightStub{client: client, stub: stub}, nil
 }
 
 // handshake creates a client for performing token handshakes with the Flight service.
