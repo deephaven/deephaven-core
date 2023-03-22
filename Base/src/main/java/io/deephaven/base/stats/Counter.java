@@ -3,7 +3,7 @@
  */
 package io.deephaven.base.stats;
 
-import io.deephaven.base.Function;
+import java.util.function.LongFunction;
 
 // --------------------------------------------------------------------
 /**
@@ -39,9 +39,5 @@ public class Counter extends Value {
         return TYPE_TAG;
     }
 
-    public static final Function.Unary<Counter, Long> FACTORY = new Function.Unary<Counter, Long>() {
-        public Counter call(Long now) {
-            return new Counter(now);
-        }
-    };
+    public static final LongFunction<Counter> FACTORY = Counter::new;
 }

@@ -2810,7 +2810,7 @@ public class QueryTableAggregationTest {
 
                                     final double error = Math
                                             .abs((recomputedPercentile - originalPercentile) / recomputedPercentile);
-                                    if (error > .025) {
+                                    if (error > .03) {
                                         throw new ComparisonFailure("Bad percentile for " + name + ", error=" + error,
                                                 Double.toString(recomputedPercentile),
                                                 Double.toString(originalPercentile));

@@ -87,11 +87,11 @@ class ArrowFlightService:
         except Exception as e:
             raise DHError("failed to create a Deephaven table from Arrow data.") from e
 
-    def snapshot_table(self, table:Table):
+    def do_get_table(self, table:Table):
         try:
             options = paflight.FlightCallOptions(headers=self.session.grpc_metadata)
             flight_ticket = paflight.Ticket(table.ticket.ticket)
             reader = self._flight_client.do_get(flight_ticket, options=options)
             return reader.read_all()
         except Exception as e:
-            raise DHError("failed to take a snapshot of the table.") from e
+            raise DHError("failed to perform a flight DoGet on the table.") from e

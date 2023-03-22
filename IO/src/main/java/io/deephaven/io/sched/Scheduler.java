@@ -3,8 +3,6 @@
  */
 package io.deephaven.io.sched;
 
-import io.deephaven.base.Procedure;
-
 import java.nio.channels.*;
 import java.util.*;
 import java.util.concurrent.Executor;
@@ -64,7 +62,7 @@ public interface Scheduler {
      *
      * @return true, if some job was dispatched
      */
-    public boolean work(long timeout, Procedure.Nullary handoff);
+    public boolean work(long timeout, Runnable handoff);
 
     /**
      * Shut down the scheduler, calling close() on the underlying Selector.
@@ -133,7 +131,7 @@ public interface Scheduler {
         public void cancelJob(Job job) {}
 
         @Override
-        public boolean work(long timeout, Procedure.Nullary handoff) {
+        public boolean work(long timeout, Runnable handoff) {
             return false;
         }
 

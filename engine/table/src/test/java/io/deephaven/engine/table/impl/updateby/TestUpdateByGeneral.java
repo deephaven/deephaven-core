@@ -117,22 +117,22 @@ public class TestUpdateByGeneral extends BaseUpdateByTest implements UpdateError
                         final String[] columnNamesArray = base.getDefinition().getColumnNamesArray();
                         final Collection<? extends UpdateByOperation> clauses = List.of(
                                 UpdateByOperation.Fill(),
-                                UpdateByOperation.RollingSum(100, 0,
+                                UpdateByOperation.RollingSum(50, 50,
                                         makeOpColNames(columnNamesArray, "_rollsumticksrev", "Sym", "ts", "boolCol")),
-                                UpdateByOperation.RollingSum("ts", Duration.ofMinutes(5), Duration.ofMinutes(0),
+                                UpdateByOperation.RollingSum("ts", Duration.ofMinutes(5), Duration.ofMinutes(5),
                                         makeOpColNames(columnNamesArray, "_rollsumtimerev", "Sym", "ts", "boolCol")),
 
-                                UpdateByOperation.RollingMin(100, 0,
+                                UpdateByOperation.RollingMin(50, 50,
                                         makeOpColNames(columnNamesArray, "_rollminticksrev", "Sym", "ts", "boolCol")),
-                                UpdateByOperation.RollingMin("ts", Duration.ofMinutes(5), Duration.ofMinutes(0),
+                                UpdateByOperation.RollingMin("ts", Duration.ofMinutes(5), Duration.ofMinutes(5),
                                         makeOpColNames(columnNamesArray, "_rollmintimerev", "Sym", "ts", "boolCol")),
 
-                                UpdateByOperation.RollingMax(100, 0,
+                                UpdateByOperation.RollingMax(50, 50,
                                         makeOpColNames(columnNamesArray, "_rollmaxticksrev", "Sym", "ts", "boolCol")),
-                                UpdateByOperation.RollingMax("ts", Duration.ofMinutes(5), Duration.ofMinutes(0),
+                                UpdateByOperation.RollingMax("ts", Duration.ofMinutes(5), Duration.ofMinutes(5),
                                         makeOpColNames(columnNamesArray, "_rollmaxtimerev", "Sym", "ts", "boolCol")),
 
-                                UpdateByOperation.Ema(skipControl, "ts", 10 * MINUTE,
+                                UpdateByOperation.Ema(skipControl, "ts", Duration.ofMinutes(10),
                                         makeOpColNames(columnNamesArray, "_ema", "Sym", "ts", "boolCol")),
                                 UpdateByOperation.CumSum(makeOpColNames(columnNamesArray, "_sum", "Sym", "ts")),
                                 UpdateByOperation.CumMin(makeOpColNames(columnNamesArray, "_min", "boolCol")),
@@ -249,7 +249,6 @@ public class TestUpdateByGeneral extends BaseUpdateByTest implements UpdateError
                         makeOpColNames(columnNamesArray, "_rollmaxticksrev", "Sym", "ts", "boolCol")),
                 UpdateByOperation.RollingMax("ts", Duration.ofMinutes(5), Duration.ofMinutes(0),
                         makeOpColNames(columnNamesArray, "_rollmaxtimerev", "Sym", "ts", "boolCol")),
-
 
                 UpdateByOperation.Ema(skipControl, "ts", 10 * MINUTE,
                         makeOpColNames(columnNamesArray, "_ema", "Sym", "ts", "boolCol")),

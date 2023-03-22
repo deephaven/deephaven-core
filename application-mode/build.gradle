@@ -13,6 +13,8 @@ dependencies {
 
     api project(':proto:proto-backplane-grpc')
 
+    implementation project(':Configuration')
+
     Classpaths.inheritJUnitPlatform(project)
     Classpaths.inheritAssertJ(project)
     testImplementation 'org.junit.jupiter:junit-jupiter'

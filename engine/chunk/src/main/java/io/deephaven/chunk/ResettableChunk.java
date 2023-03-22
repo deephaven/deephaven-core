@@ -9,6 +9,7 @@ import io.deephaven.chunk.attributes.Any;
  * {@link WritableChunk} that may have its backing storage reset to a slice of that belonging to another
  * {@link WritableChunk} or a native array.
  */
+@SuppressWarnings("rawtypes")
 public interface ResettableChunk<ATTR_BASE extends Any> extends Chunk {
 
     /**

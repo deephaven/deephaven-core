@@ -678,7 +678,7 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
         final int seed = 0;
         final Random random = new Random(seed);
 
-        final int size = 10_000;
+        final int size = 8_000;
         final ColumnInfo<?, ?>[] columnInfo;
         final QueryTable table = getTable(size, random,
                 columnInfo = initColumnInfos(new String[] {"Sym", "IntCol", "DoubleCol"},

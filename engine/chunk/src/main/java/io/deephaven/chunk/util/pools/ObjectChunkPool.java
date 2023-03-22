@@ -108,7 +108,7 @@ public final class ObjectChunkPool implements ChunkPool {
         return ChunkPoolReleaseTracking.onTake(WritableObjectChunk.makeWritableChunkForPool(capacity));
     }
 
-    public void giveWritableObjectChunk(@NotNull final WritableObjectChunk writableObjectChunk) {
+    public void giveWritableObjectChunk(@NotNull final WritableObjectChunk<?, ?> writableObjectChunk) {
         if (writableObjectChunk == EMPTY || writableObjectChunk.isAlias(EMPTY)) {
             return;
         }

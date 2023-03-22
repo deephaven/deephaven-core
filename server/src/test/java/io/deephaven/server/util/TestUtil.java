@@ -4,11 +4,11 @@
 package io.deephaven.server.util;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.util.FunctionalInterfaces;
+import io.deephaven.util.function.ThrowingRunnable;
 
 public class TestUtil {
     public static <ExceptionType extends Exception> void assertThrows(
-            final Class<ExceptionType> type, final FunctionalInterfaces.ThrowingRunnable<ExceptionType> runner) {
+            final Class<ExceptionType> type, final ThrowingRunnable<ExceptionType> runner) {
         boolean threwExpectedException = false;
         try {
             runner.run();

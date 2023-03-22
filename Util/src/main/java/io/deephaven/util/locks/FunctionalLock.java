@@ -3,14 +3,15 @@
  */
 package io.deephaven.util.locks;
 
-import io.deephaven.util.FunctionalInterfaces.ThrowingBooleanSupplier;
+import io.deephaven.util.function.ThrowingBooleanSupplier;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.locks.Lock;
 
-import static io.deephaven.util.FunctionalInterfaces.ThrowingRunnable;
-import static io.deephaven.util.FunctionalInterfaces.ThrowingSupplier;
+import io.deephaven.util.function.ThrowingRunnable;
+
+import io.deephaven.util.function.ThrowingSupplier;
 
 /**
  * Extension to the {@link Lock} interface to enable locking for the duration of a lambda or other
@@ -72,8 +73,8 @@ public interface FunctionalLock extends Lock {
     }
 
     /**
-     * Acquire the lock, invoke {@link ThrowingBooleanSupplier#get()} while holding the lock, and release the lock
-     * before returning the result.
+     * Acquire the lock, invoke {@link ThrowingBooleanSupplier#getAsBoolean()} while holding the lock, and release the
+     * lock before returning the result.
      *
      * @param supplier The {@link ThrowingBooleanSupplier} to get
      * @return The result of invoking {@code supplier}
@@ -83,7 +84,7 @@ public interface FunctionalLock extends Lock {
             @NotNull final ThrowingBooleanSupplier<EXCEPTION_TYPE> supplier) throws EXCEPTION_TYPE {
         lock();
         try {
-            return supplier.get();
+            return supplier.getAsBoolean();
         } finally {
             unlock();
         }

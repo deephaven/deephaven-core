@@ -142,7 +142,6 @@ public class FormulaTestUtil {
         QueryScope.addParam("myIntVector", new IntVectorDirect(BASE_VALUES));
         QueryScope.addParam("myByteVector", new ByteVectorDirect(ArrayTypeUtils
                 .getUnboxedArray(IntStream.of(BASE_VALUES).boxed().map(Integer::byteValue).toArray(Byte[]::new))));
-        // QueryScope.addParam("myBooleanVector", BooleanVector.class);
 
         QueryScope.addParam("ExampleQuantity", 1);
         QueryScope.addParam("ExampleQuantity2", 2d);

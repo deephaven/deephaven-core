@@ -11,7 +11,6 @@ package io.deephaven.engine.table.impl.sources.aggregate;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.vector.IntVector;
 import io.deephaven.engine.table.impl.vector.IntVectorColumnWrapper;
-import io.deephaven.engine.table.impl.vector.PrevIntVectorColumnWrapper;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.ObjectChunk;
@@ -43,11 +42,13 @@ public final class IntAggregateColumnSource extends BaseAggregateColumnSource<In
         if (rowKey == RowSequence.NULL_ROW_KEY) {
             return null;
         }
-        return new PrevIntVectorColumnWrapper(aggregatedSource, getPrevGroupRowSet(rowKey));
+        return new IntVectorColumnWrapper(aggregatedSourcePrev, getPrevGroupRowSet(rowKey));
     }
 
     @Override
-    public void fillChunk(@NotNull final FillContext context, @NotNull final WritableChunk<? super Values> destination,
+    public void fillChunk(
+            @NotNull final FillContext context,
+            @NotNull final WritableChunk<? super Values> destination,
             @NotNull final RowSequence rowSequence) {
         final ObjectChunk<RowSet, ? extends Values> groupRowSetChunk = groupRowSetSource
                 .getChunk(((AggregateFillContext) context).groupRowSetGetContext, rowSequence).asObjectChunk();
@@ -60,8 +61,10 @@ public final class IntAggregateColumnSource extends BaseAggregateColumnSource<In
     }
 
     @Override
-    public void fillPrevChunk(@NotNull final FillContext context,
-            @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence rowSequence) {
+    public void fillPrevChunk(
+            @NotNull final FillContext context,
+            @NotNull final WritableChunk<? super Values> destination,
+            @NotNull final RowSequence rowSequence) {
         final ObjectChunk<RowSet, ? extends Values> groupRowSetPrevChunk = groupRowSetSource
                 .getPrevChunk(((AggregateFillContext) context).groupRowSetGetContext, rowSequence).asObjectChunk();
         final WritableObjectChunk<IntVector, ? super Values> typedDestination = destination.asWritableObjectChunk();
@@ -69,9 +72,9 @@ public final class IntAggregateColumnSource extends BaseAggregateColumnSource<In
         for (int di = 0; di < size; ++di) {
             final RowSet groupRowSetPrev = groupRowSetPrevChunk.get(di);
             final RowSet groupRowSetToUse = groupRowSetPrev.isTracking()
-                    ? groupRowSetPrev.trackingCast().copyPrev()
+                    ? groupRowSetPrev.trackingCast().prev()
                     : groupRowSetPrev;
-            typedDestination.set(di, new PrevIntVectorColumnWrapper(aggregatedSource, groupRowSetToUse));
+            typedDestination.set(di, new IntVectorColumnWrapper(aggregatedSourcePrev, groupRowSetToUse));
         }
         typedDestination.setSize(size);
     }

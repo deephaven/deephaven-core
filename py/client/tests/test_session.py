@@ -88,7 +88,7 @@ class SessionTestCase(BaseTestCase):
     def test_import_table_long_csv(self):
         pa_table = csv.read_csv(self.csv_file)
         new_table = self.session.import_table(pa_table)
-        pa_table2 = new_table.snapshot()
+        pa_table2 = new_table.to_arrow()
         self.assertEqual(pa_table2, pa_table)
         df = pa_table2.to_pandas()
         self.assertEquals(1000, len(df.index))
@@ -99,7 +99,7 @@ class SessionTestCase(BaseTestCase):
         pa_record_batch = pa.RecordBatch.from_arrays([pa_array], names=['f1'])
         pa_table = pa.Table.from_batches([pa_record_batch])
         new_table = self.session.import_table(pa_table)
-        pa_table2 = new_table.snapshot()
+        pa_table2 = new_table.to_arrow()
         self.assertEqual(pa_table, pa_table2)
 
     @unittest.skip("GH ticket filed #941.")
@@ -111,7 +111,7 @@ class SessionTestCase(BaseTestCase):
             pa_record_batch = pa.RecordBatch.from_arrays([pa_array], names=['f1'])
             pa_table = pa.Table.from_batches([pa_record_batch])
             new_table = self.session.import_table(pa_table)
-            pa_table2 = new_table.snapshot()
+            pa_table2 = new_table.to_arrow()
             try:
                 self.assertEqual(pa_table, pa_table2)
             except Exception as e:
@@ -128,7 +128,7 @@ class SessionTestCase(BaseTestCase):
             pa_record_batch = pa.RecordBatch.from_arrays([pa_array], names=['f1'])
             pa_table = pa.Table.from_batches([pa_record_batch])
             new_table = self.session.import_table(pa_table)
-            pa_table2 = new_table.snapshot()
+            pa_table2 = new_table.to_arrow()
             # print(pa_table, pa_table2)
             try:
                 self.assertEqual(pa_table, pa_table2)
@@ -145,7 +145,7 @@ class SessionTestCase(BaseTestCase):
             pa_record_batch = pa.RecordBatch.from_arrays([pa_array], names=['f1'])
             pa_table = pa.Table.from_batches([pa_record_batch])
             new_table = self.session.import_table(pa_table)
-            pa_table2 = new_table.snapshot()
+            pa_table2 = new_table.to_arrow()
             try:
                 self.assertEqual(pa_table, pa_table2)
             except Exception as e:
@@ -161,7 +161,7 @@ class SessionTestCase(BaseTestCase):
             pa_record_batch = pa.RecordBatch.from_arrays([pa_array], names=['f1'])
             pa_table = pa.Table.from_batches([pa_record_batch])
             new_table = self.session.import_table(pa_table)
-            pa_table2 = new_table.snapshot()
+            pa_table2 = new_table.to_arrow()
             try:
                 self.assertEqual(pa_table, pa_table2)
             except Exception as e:
@@ -178,10 +178,14 @@ class SessionTestCase(BaseTestCase):
             pa_record_batch = pa.RecordBatch.from_arrays([pa_array], names=['f1'])
             pa_table = pa.Table.from_batches([pa_record_batch])
             new_table = self.session.import_table(pa_table)
-            pa_table2 = new_table.snapshot()
+            pa_table2 = new_table.to_arrow()
             try:
                 self.assertEqual(pa_table, pa_table2)
             except Exception as e:
                 exception_list.append(e)
 
         self.assertEqual(0, len(exception_list))
+
+
+if __name__ == '__main__':
+    unittest.main()

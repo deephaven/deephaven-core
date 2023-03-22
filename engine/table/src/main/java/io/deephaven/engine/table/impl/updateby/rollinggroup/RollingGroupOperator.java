@@ -456,7 +456,7 @@ public class RollingGroupOperator extends UpdateByOperator {
         }
         // Create the transformer to map from the input columns to the individual output column MCS.
         inputOutputTransformer =
-                inputModifiedColumnSet.newTransformer(getOutputColumnNames(), outputModifiedColumnSets);
+                inputModifiedColumnSet.newTransformer(getInputColumnNames(), outputModifiedColumnSets);
     }
 
     /**

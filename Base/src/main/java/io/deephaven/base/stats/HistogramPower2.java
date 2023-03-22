@@ -3,7 +3,7 @@
  */
 package io.deephaven.base.stats;
 
-import io.deephaven.base.Function;
+import java.util.function.LongFunction;
 
 /**
  * This class accumulates samples in a 64 bin histogram with the property that for a sample value of n, the bin index
@@ -82,9 +82,5 @@ public class HistogramPower2 extends Value {
         return TYPE_TAG;
     }
 
-    public static final Function.Unary<HistogramPower2, Long> FACTORY = new Function.Unary<HistogramPower2, Long>() {
-        public HistogramPower2 call(Long now) {
-            return new HistogramPower2(now);
-        }
-    };
+    public static final LongFunction<HistogramPower2> FACTORY = HistogramPower2::new;
 }

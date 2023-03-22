@@ -5,7 +5,6 @@ package io.deephaven.internal.log;
 
 import io.deephaven.base.ArrayUtil;
 import io.deephaven.base.ClassUtil;
-import io.deephaven.base.Function;
 import io.deephaven.base.pool.Pool;
 import io.deephaven.base.pool.ThreadSafeLenientFixedSizePool;
 import io.deephaven.io.log.LogBufferPool;
@@ -24,12 +23,7 @@ import org.slf4j.event.Level;
 public final class LoggerSlf4j implements Logger {
 
     private static final Pool<ByteBuffer> buffers =
-            new ThreadSafeLenientFixedSizePool<>(2048, new Function.Nullary<ByteBuffer>() {
-                @Override
-                public ByteBuffer call() {
-                    return ByteBuffer.allocate(512);
-                }
-            }, null);
+            new ThreadSafeLenientFixedSizePool<>(2048, () -> ByteBuffer.allocate(512), null);
 
     private static final LogBufferPool logBufferPool = new LogBufferPool() {
         @Override
@@ -106,12 +100,7 @@ public final class LoggerSlf4j implements Logger {
 
     /** Static pool shared among all loggers */
     private static final Pool<Entry> entries =
-            new ThreadSafeLenientFixedSizePool<>(1024, new Function.Nullary<Entry>() {
-                @Override
-                public Entry call() {
-                    return new Entry(logBufferPool);
-                }
-            }, null);
+            new ThreadSafeLenientFixedSizePool<>(1024, () -> new Entry(logBufferPool), null);
 
     /** Specialized sink for DH loggers */
     private enum Sink implements LogSink<Entry> {
