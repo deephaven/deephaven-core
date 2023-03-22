@@ -189,8 +189,7 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
                                 upstream.removed().intSize()),
                         (int) upstream.shifted().getEffectiveSize());
 
-                try (final RowSet fullPrevRowSet = source.getRowSet().copyPrev();
-                        final WritableRowSet previousToShift = fullPrevRowSet.minus(restampRemovals);
+                try (final WritableRowSet previousToShift = source.getRowSet().prev().minus(restampRemovals);
                         final ColumnSource.GetContext getContext = timestampColumnSource.makeGetContext(size)) {
 
                     final RowSetShiftData.Iterator sit = upstream.shifted().applyIterator();

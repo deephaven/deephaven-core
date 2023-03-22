@@ -44,3 +44,11 @@ configurations {
 artifacts {
     tests jarTests
 }
+
+spotless {
+    java {
+        targetExclude(
+                'src/test/java/io/deephaven/base/ringbuffer/AggregatingDoubleRingBufferTest.java'
+        )
+    }
+}

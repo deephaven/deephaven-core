@@ -19,7 +19,6 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.vector.DoubleVectorColumnWrapper;
-import io.deephaven.engine.table.impl.vector.PrevDoubleVectorColumnWrapper;
 import io.deephaven.vector.DoubleVector;
 import io.deephaven.vector.DoubleVectorDirect;
 import org.jetbrains.annotations.NotNull;
@@ -48,14 +47,14 @@ public final class SlicedDoubleAggregateColumnSource extends BaseAggregateSliced
 
     private DoubleVector makeVector(final RowSet rowSetSlice) {
         return rowSetSlice.isEmpty()
-                ? DoubleVectorDirect.ZERO_LEN_VECTOR
+                ? DoubleVectorDirect.ZERO_LENGTH_VECTOR
                 : new DoubleVectorColumnWrapper(aggregatedSource, rowSetSlice);
     }
 
     private DoubleVector makePrevVector(final RowSet rowSetSlice) {
         return rowSetSlice.isEmpty()
-                ? DoubleVectorDirect.ZERO_LEN_VECTOR
-                : new PrevDoubleVectorColumnWrapper(aggregatedSource, rowSetSlice);
+                ? DoubleVectorDirect.ZERO_LENGTH_VECTOR
+                : new DoubleVectorColumnWrapper(aggregatedSourcePrev, rowSetSlice);
     }
 
     @Override
@@ -72,7 +71,7 @@ public final class SlicedDoubleAggregateColumnSource extends BaseAggregateSliced
             return null;
         } else if (startPos == NULL_LONG) {
             // empty vector when only start is null
-            return DoubleVectorDirect.ZERO_LEN_VECTOR;
+            return DoubleVectorDirect.ZERO_LENGTH_VECTOR;
         }
 
         final RowSet bucketRowSet = groupRowSetSource.get(rowKey);
@@ -101,7 +100,7 @@ public final class SlicedDoubleAggregateColumnSource extends BaseAggregateSliced
             return null;
         } else if (startPos == NULL_LONG) {
             // empty vector when only start is null
-            return DoubleVectorDirect.ZERO_LEN_VECTOR;
+            return DoubleVectorDirect.ZERO_LENGTH_VECTOR;
         }
 
         final RowSet bucketRowSet = getPrevGroupRowSet(rowKey);
@@ -134,16 +133,15 @@ public final class SlicedDoubleAggregateColumnSource extends BaseAggregateSliced
         final WritableObjectChunk<DoubleVector, ? super Values> typedDestination = destination.asWritableObjectChunk();
         final int size = rowSequence.intSize();
         for (int di = 0; di < size; ++di) {
-            // Transition from revTicks that include the current row to strict position offsets.
             final long startPos = startChunk != null ? startChunk.get(di) : startOffset;
             final long endPos = endChunk != null ? endChunk.get(di) : endOffset;
 
             if (startPos == NULL_LONG && endPos == NULL_LONG) {
-                // null when both start/end are null.
+                // Null when both start/end are null.
                 typedDestination.set(di, null);
             } else if (startPos == NULL_LONG) {
-                // empty vector when only start is null
-                typedDestination.set(di, DoubleVectorDirect.ZERO_LEN_VECTOR);
+                // Empty vector when only start is null
+                typedDestination.set(di, DoubleVectorDirect.ZERO_LENGTH_VECTOR);
             } else {
                 final long rowKey = keyChunk.get(di);
                 final RowSet bucketRowSet = groupRowSetChunk.get(di);
@@ -187,12 +185,12 @@ public final class SlicedDoubleAggregateColumnSource extends BaseAggregateSliced
                 typedDestination.set(di, null);
             } else if (startPos == NULL_LONG) {
                 // empty vector when only start is null
-                typedDestination.set(di, DoubleVectorDirect.ZERO_LEN_VECTOR);
+                typedDestination.set(di, DoubleVectorDirect.ZERO_LENGTH_VECTOR);
             } else {
                 final long rowKey = keyChunk.get(di);
                 final RowSet groupRowSetPrev = groupRowSetPrevChunk.get(di);
                 final RowSet groupRowSetToUse = groupRowSetPrev.isTracking()
-                        ? groupRowSetPrev.trackingCast().copyPrev()
+                        ? groupRowSetPrev.trackingCast().prev()
                         : groupRowSetPrev;
                 final long rowPos = groupRowSetToUse.find(rowKey);
 

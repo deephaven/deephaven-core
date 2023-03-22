@@ -177,7 +177,7 @@ Deephaven natively supports PyArrow tables. This example converts between a PyAr
 
     #Convert the Deephaven table back to a pyarrow table
 
-    pyarrow_table = table.snapshot()
+    pyarrow_table = table.to_arrow()
 
 Execute a script server side
 ############################
@@ -200,7 +200,7 @@ Execute a script server side
 
     table = session.open_table("table")
 
-    print(table.snapshot())
+    print(table.to_arrow())
 
 Error handling
 ##############

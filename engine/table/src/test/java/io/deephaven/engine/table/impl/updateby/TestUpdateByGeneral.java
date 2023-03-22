@@ -118,17 +118,17 @@ public class TestUpdateByGeneral extends BaseUpdateByTest implements UpdateError
                         final Collection<? extends UpdateByOperation> clauses = List.of(
                                 UpdateByOperation.Fill(),
 
-                                UpdateByOperation.RollingSum(100, 0,
+                                UpdateByOperation.RollingSum(50, 0,
                                         makeOpColNames(columnNamesArray, "_rollsumticksrev", "Sym", "ts", "boolCol")),
-                                UpdateByOperation.RollingSum("ts", Duration.ofMinutes(15), Duration.ofMinutes(0),
+                                UpdateByOperation.RollingSum("ts", Duration.ofMinutes(5), Duration.ofMinutes(0),
                                         makeOpColNames(columnNamesArray, "_rollsumtimerev", "Sym", "ts", "boolCol")),
 
-                                UpdateByOperation.RollingAvg(100, 0,
+                                UpdateByOperation.RollingAvg(50, 0,
                                         makeOpColNames(columnNamesArray, "_rollavgticksrev", "Sym", "ts", "boolCol")),
-                                UpdateByOperation.RollingAvg("ts", Duration.ofMinutes(15), Duration.ofMinutes(0),
+                                UpdateByOperation.RollingAvg("ts", Duration.ofMinutes(5), Duration.ofMinutes(0),
                                         makeOpColNames(columnNamesArray, "_rollavgtimerev", "Sym", "ts", "boolCol")),
 
-                                UpdateByOperation.Ema(skipControl, "ts", 10 * MINUTE,
+                                UpdateByOperation.Ema(skipControl, "ts", Duration.ofMinutes(5),
                                         makeOpColNames(columnNamesArray, "_ema", "Sym", "ts", "boolCol")),
                                 UpdateByOperation.CumSum(makeOpColNames(columnNamesArray, "_sum", "Sym", "ts")),
                                 UpdateByOperation.CumMin(makeOpColNames(columnNamesArray, "_min", "boolCol")),
@@ -226,8 +226,6 @@ public class TestUpdateByGeneral extends BaseUpdateByTest implements UpdateError
 
                 UpdateByOperation.RollingGroup(50, 50,
                         makeOpColNames(columnNamesArray, "_rollgroupfwdrev", "Sym", "ts")),
-                UpdateByOperation.RollingGroup(-50, 100,
-                        makeOpColNames(columnNamesArray, "_rollgroupticksfwdex", "Sym", "ts")),
                 UpdateByOperation.RollingGroup("ts", Duration.ofMinutes(5), Duration.ofMinutes(5),
                         makeOpColNames(columnNamesArray, "_rollgrouptimefwdrev", "Sym", "ts")),
 

@@ -25,8 +25,8 @@ import io.deephaven.proto.backplane.grpc.SessionServiceGrpc;
 import io.deephaven.proto.backplane.grpc.TerminationNotificationRequest;
 import io.deephaven.proto.backplane.grpc.TerminationNotificationResponse;
 import io.deephaven.proto.util.Exceptions;
-import io.deephaven.util.FunctionalInterfaces;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.function.ThrowingRunnable;
 import io.grpc.Context;
 import io.grpc.ForwardingServerCall.SimpleForwardingServerCall;
 import io.grpc.ForwardingServerCallListener;
@@ -386,7 +386,7 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
             @NotNull final ServerCall<ReqT, RespT> call,
             @NotNull final Context context,
             @Nullable final SessionState session,
-            @NotNull final FunctionalInterfaces.ThrowingRunnable<InterruptedException> lambda) {
+            @NotNull final ThrowingRunnable<InterruptedException> lambda) {
         Context previous = context.attach();
         try (final SafeCloseable ignored1 = LivenessScopeStack.open();
                 final SafeCloseable ignored2 = session == null ? null : session.getExecutionContext().open()) {

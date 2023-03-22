@@ -19,7 +19,6 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.vector.IntVectorColumnWrapper;
-import io.deephaven.engine.table.impl.vector.PrevIntVectorColumnWrapper;
 import io.deephaven.vector.IntVector;
 import io.deephaven.vector.IntVectorDirect;
 import org.jetbrains.annotations.NotNull;
@@ -48,14 +47,14 @@ public final class SlicedIntAggregateColumnSource extends BaseAggregateSlicedCol
 
     private IntVector makeVector(final RowSet rowSetSlice) {
         return rowSetSlice.isEmpty()
-                ? IntVectorDirect.ZERO_LEN_VECTOR
+                ? IntVectorDirect.ZERO_LENGTH_VECTOR
                 : new IntVectorColumnWrapper(aggregatedSource, rowSetSlice);
     }
 
     private IntVector makePrevVector(final RowSet rowSetSlice) {
         return rowSetSlice.isEmpty()
-                ? IntVectorDirect.ZERO_LEN_VECTOR
-                : new PrevIntVectorColumnWrapper(aggregatedSource, rowSetSlice);
+                ? IntVectorDirect.ZERO_LENGTH_VECTOR
+                : new IntVectorColumnWrapper(aggregatedSourcePrev, rowSetSlice);
     }
 
     @Override
@@ -72,7 +71,7 @@ public final class SlicedIntAggregateColumnSource extends BaseAggregateSlicedCol
             return null;
         } else if (startPos == NULL_LONG) {
             // empty vector when only start is null
-            return IntVectorDirect.ZERO_LEN_VECTOR;
+            return IntVectorDirect.ZERO_LENGTH_VECTOR;
         }
 
         final RowSet bucketRowSet = groupRowSetSource.get(rowKey);
@@ -101,7 +100,7 @@ public final class SlicedIntAggregateColumnSource extends BaseAggregateSlicedCol
             return null;
         } else if (startPos == NULL_LONG) {
             // empty vector when only start is null
-            return IntVectorDirect.ZERO_LEN_VECTOR;
+            return IntVectorDirect.ZERO_LENGTH_VECTOR;
         }
 
         final RowSet bucketRowSet = getPrevGroupRowSet(rowKey);
@@ -134,16 +133,15 @@ public final class SlicedIntAggregateColumnSource extends BaseAggregateSlicedCol
         final WritableObjectChunk<IntVector, ? super Values> typedDestination = destination.asWritableObjectChunk();
         final int size = rowSequence.intSize();
         for (int di = 0; di < size; ++di) {
-            // Transition from revTicks that include the current row to strict position offsets.
             final long startPos = startChunk != null ? startChunk.get(di) : startOffset;
             final long endPos = endChunk != null ? endChunk.get(di) : endOffset;
 
             if (startPos == NULL_LONG && endPos == NULL_LONG) {
-                // null when both start/end are null.
+                // Null when both start/end are null.
                 typedDestination.set(di, null);
             } else if (startPos == NULL_LONG) {
-                // empty vector when only start is null
-                typedDestination.set(di, IntVectorDirect.ZERO_LEN_VECTOR);
+                // Empty vector when only start is null
+                typedDestination.set(di, IntVectorDirect.ZERO_LENGTH_VECTOR);
             } else {
                 final long rowKey = keyChunk.get(di);
                 final RowSet bucketRowSet = groupRowSetChunk.get(di);
@@ -187,12 +185,12 @@ public final class SlicedIntAggregateColumnSource extends BaseAggregateSlicedCol
                 typedDestination.set(di, null);
             } else if (startPos == NULL_LONG) {
                 // empty vector when only start is null
-                typedDestination.set(di, IntVectorDirect.ZERO_LEN_VECTOR);
+                typedDestination.set(di, IntVectorDirect.ZERO_LENGTH_VECTOR);
             } else {
                 final long rowKey = keyChunk.get(di);
                 final RowSet groupRowSetPrev = groupRowSetPrevChunk.get(di);
                 final RowSet groupRowSetToUse = groupRowSetPrev.isTracking()
-                        ? groupRowSetPrev.trackingCast().copyPrev()
+                        ? groupRowSetPrev.trackingCast().prev()
                         : groupRowSetPrev;
                 final long rowPos = groupRowSetToUse.find(rowKey);
 

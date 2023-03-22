@@ -368,8 +368,7 @@ public abstract class UpdateBy {
                 // for our sparse array output sources, we need to identify which rows will be affected by the upstream
                 // shifts and include them in our parallel update preparations
                 if (upstream.shifted().nonempty()) {
-                    try (final RowSet prev = source.getRowSet().copyPrev();
-                            final RowSequence.Iterator it = prev.getRowSequenceIterator()) {
+                    try (final RowSequence.Iterator it = source.getRowSet().prev().getRowSequenceIterator()) {
 
                         final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
                         final int size = upstream.shifted().size();
@@ -549,15 +548,13 @@ public abstract class UpdateBy {
 
                         if (!redirHelper.isRedirected() && upstream.shifted().nonempty()) {
                             // Shift the non-redirected output sources now, after parallelPopulation.
-                            try (final RowSet prevIdx = source.getRowSet().copyPrev()) {
-                                upstream.shifted().apply((begin, end, delta) -> {
-                                    try (final RowSet subRowSet = prevIdx.subSetByKeyRange(begin, end)) {
-                                        for (UpdateByOperator op : win.getOperators()) {
-                                            op.applyOutputShift(subRowSet, delta);
-                                        }
+                            upstream.shifted().apply((begin, end, delta) -> {
+                                try (final RowSet subRowSet = source.getRowSet().prev().subSetByKeyRange(begin, end)) {
+                                    for (UpdateByOperator op : win.getOperators()) {
+                                        op.applyOutputShift(subRowSet, delta);
                                     }
-                                });
-                            }
+                                }
+                            });
                         }
                     }, onParallelPopulationComplete, this::onError);
         }

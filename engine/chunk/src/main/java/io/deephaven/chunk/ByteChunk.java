@@ -27,6 +27,7 @@ import java.nio.ByteBuffer;
  */
 public class ByteChunk<ATTR extends Any> extends ChunkBase<ATTR> {
 
+    @SuppressWarnings("rawtypes")
     private static final ByteChunk EMPTY = new ByteChunk<>(ArrayTypeUtils.EMPTY_BYTE_ARRAY, 0, 0);
 
     public static <ATTR extends Any> ByteChunk<ATTR> getEmptyChunk() {
@@ -34,6 +35,7 @@ public class ByteChunk<ATTR extends Any> extends ChunkBase<ATTR> {
         return EMPTY;
     }
 
+    @SuppressWarnings("rawtypes")
     private static final ByteChunk[] EMPTY_BYTE_CHUNK_ARRAY = new ByteChunk[0];
 
     static <ATTR extends Any> ByteChunk<ATTR>[] getEmptyChunkArray() {
@@ -116,7 +118,7 @@ public class ByteChunk<ATTR extends Any> extends ChunkBase<ATTR> {
     }
 
     @Override
-    public final boolean isAlias(Chunk chunk) {
+    public final boolean isAlias(Chunk<?> chunk) {
         return chunk.isAlias(data);
     }
 
@@ -166,9 +168,9 @@ public class ByteChunk<ATTR extends Any> extends ChunkBase<ATTR> {
     // endregion CopyToBuffer
 
     // region downcast
-    public static <ATTR extends Any, ATTR_DERIV extends ATTR> WritableByteChunk<ATTR_DERIV> downcast(WritableByteChunk<ATTR> self) {
+    public static <ATTR extends Any, ATTR_DERIV extends ATTR> ByteChunk<ATTR_DERIV> downcast(ByteChunk<ATTR> self) {
         //noinspection unchecked
-        return (WritableByteChunk<ATTR_DERIV>) self;
+        return (ByteChunk<ATTR_DERIV>) self;
     }
     // endregion downcast
 }
