@@ -20,9 +20,8 @@ abstract class LiteralInt extends LiteralBase {
     public abstract int value();
 
     @Override
-    public final <V extends Visitor> V walk(V visitor) {
-        visitor.visit(value());
-        return visitor;
+    public final <T> T walk(Visitor<T> visitor) {
+        return visitor.visit(value());
     }
 
     @Check

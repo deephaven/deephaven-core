@@ -31,9 +31,8 @@ public abstract class ExpressionFunction implements Expression {
     public abstract List<Expression> arguments();
 
     @Override
-    public final <V extends Visitor> V walk(V visitor) {
-        visitor.visit(this);
-        return visitor;
+    public final <T> T walk(Expression.Visitor<T> visitor) {
+        return visitor.visit(this);
     }
 
     public interface Builder {

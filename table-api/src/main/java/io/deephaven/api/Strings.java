@@ -16,7 +16,6 @@ import io.deephaven.api.filter.FilterOr;
 import io.deephaven.api.literal.Literal;
 
 import java.util.Collection;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -90,26 +89,19 @@ public class Strings {
         if (selectable.newColumn().equals(selectable.expression())) {
             return lhs;
         }
-        String rhs = selectable.expression().walk(new UniversalAdapter()).getOut();
-        return String.format("%s=%s", lhs, rhs);
+        return String.format("%s=%s", lhs, of(selectable.expression()));
     }
 
     public static String of(Expression expression) {
-        final UniversalAdapter visitor = new UniversalAdapter();
-        expression.walk((Expression.Visitor) visitor);
-        return visitor.getOut();
+        return expression.walk(new UniversalAdapter());
     }
 
     public static String of(Filter filter) {
-        final UniversalAdapter visitor = new UniversalAdapter();
-        filter.walk((Filter.Visitor) visitor);
-        return visitor.getOut();
+        return filter.walk((Filter.Visitor<String>) new UniversalAdapter());
     }
 
     public static String of(Literal value) {
-        final UniversalAdapter visitor = new UniversalAdapter();
-        value.walk((Literal.Visitor) visitor);
-        return visitor.getOut();
+        return value.walk((Literal.Visitor<String>) new UniversalAdapter());
     }
 
     public static String of(ExpressionFunction function) {
@@ -121,81 +113,77 @@ public class Strings {
     /**
      * If we ever need to provide more specificity for a type, we can create a non-universal impl.
      */
-    private static class UniversalAdapter implements Expression.Visitor, Filter.Visitor, Literal.Visitor {
-        private String out;
+    private static class UniversalAdapter
+            implements Expression.Visitor<String>, Filter.Visitor<String>, Literal.Visitor<String> {
 
-        public String getOut() {
-            return Objects.requireNonNull(out);
+        @Override
+        public String visit(Filter filter) {
+            return filter.walk((Filter.Visitor<String>) this);
         }
 
         @Override
-        public void visit(Filter filter) {
-            filter.walk((Filter.Visitor) this);
+        public String visit(Literal literal) {
+            return literal.walk((Literal.Visitor<String>) this);
         }
 
         @Override
-        public void visit(Literal literal) {
-            literal.walk((Literal.Visitor) this);
+        public String visit(ColumnName name) {
+            return of(name);
         }
 
         @Override
-        public void visit(ColumnName name) {
-            out = of(name);
+        public String visit(RawString rawString) {
+            return of(rawString);
         }
 
         @Override
-        public void visit(RawString rawString) {
-            out = of(rawString);
+        public String visit(ExpressionFunction function) {
+            return of(function);
         }
 
         @Override
-        public void visit(ExpressionFunction function) {
-            out = of(function);
+        public String visit(FilterComparison comparison) {
+            return of(comparison);
         }
 
         @Override
-        public void visit(FilterComparison comparison) {
-            out = of(comparison);
+        public String visit(FilterIsNull isNull) {
+            return of(isNull);
         }
 
         @Override
-        public void visit(FilterIsNull isNull) {
-            out = of(isNull);
+        public String visit(FilterIsNotNull isNotNull) {
+            return of(isNotNull);
         }
 
         @Override
-        public void visit(FilterIsNotNull isNotNull) {
-            out = of(isNotNull);
+        public String visit(FilterNot<?> not) {
+            return of(not);
         }
 
         @Override
-        public void visit(FilterNot<?> not) {
-            out = of(not);
+        public String visit(FilterOr ors) {
+            return of(ors);
         }
 
         @Override
-        public void visit(FilterOr ors) {
-            out = of(ors);
+        public String visit(FilterAnd ands) {
+            return of(ands);
         }
 
         @Override
-        public void visit(FilterAnd ands) {
-            out = of(ands);
+        public String visit(int literal) {
+            return String.format("(int)%s", literal);
         }
 
         @Override
-        public void visit(int literal) {
-            out = String.format("(int)%s", literal);
+        public String visit(long literal) {
+            return String.format("%sL", literal);
         }
 
         @Override
-        public void visit(long literal) {
-            out = String.format("%sL", literal);
-        }
-
-        @Override
-        public void visit(boolean literal) {
-            out = Boolean.toString(literal);
+        public String visit(boolean literal) {
+            return Boolean.toString(literal);
         }
     }
 }

@@ -7,8 +7,6 @@ import io.deephaven.annotations.SimpleStyle;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
 
-import java.util.Optional;
-
 /**
  * Evaluates to {@code true} when the given {@link #filter() filter} evaluates to {@code false}.
  */
@@ -49,8 +47,7 @@ public abstract class FilterNot<F extends Filter> extends FilterBase {
     }
 
     @Override
-    public final <V extends Filter.Visitor> V walk(V visitor) {
-        visitor.visit(this);
-        return visitor;
+    public final <T> T walk(Visitor<T> visitor) {
+        return visitor.visit(this);
     }
 }

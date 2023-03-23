@@ -204,12 +204,12 @@ public interface WhereFilter extends Filter {
     }
 
     @Override
-    default <V extends Visitor> V walk(V visitor) {
+    default <T> T walk(Expression.Visitor<T> visitor) {
         throw new UnsupportedOperationException("WhereFilters do not implement walk");
     }
 
     @Override
-    default <V extends Expression.Visitor> V walk(V visitor) {
+    default <T> T walk(Filter.Visitor<T> visitor) {
         throw new UnsupportedOperationException("WhereFilters do not implement walk");
     }
 

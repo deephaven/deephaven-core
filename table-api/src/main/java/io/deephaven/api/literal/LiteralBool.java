@@ -5,6 +5,7 @@ package io.deephaven.api.literal;
 
 import io.deephaven.annotations.SimpleStyle;
 import io.deephaven.api.filter.Filter;
+import io.deephaven.api.literal.Literal.Visitor;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
 
@@ -25,14 +26,12 @@ abstract class LiteralBool extends LiteralBase implements LiteralFilter {
     }
 
     @Override
-    public final <V extends Literal.Visitor> V walk(V visitor) {
-        visitor.visit(value());
-        return visitor;
+    public final <T> T walk(Literal.Visitor<T> visitor) {
+        return visitor.visit(value());
     }
 
     @Override
-    public <V extends Filter.Visitor> V walk(V visitor) {
-        visitor.visit(value());
-        return visitor;
+    public final <T> T walk(Filter.Visitor<T> visitor) {
+        return visitor.visit(value());
     }
 }

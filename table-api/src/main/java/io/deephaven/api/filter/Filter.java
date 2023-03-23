@@ -192,24 +192,24 @@ public interface Filter extends Expression, Serializable {
      */
     Filter inverse();
 
-    <V extends Visitor> V walk(V visitor);
+    <T> T walk(Visitor<T> visitor);
 
-    interface Visitor {
+    interface Visitor<T> {
 
-        void visit(FilterIsNull isNull);
+        T visit(FilterIsNull isNull);
 
-        void visit(FilterIsNotNull isNotNull);
+        T visit(FilterIsNotNull isNotNull);
 
-        void visit(FilterComparison comparison);
+        T visit(FilterComparison comparison);
 
-        void visit(FilterNot<?> not);
+        T visit(FilterNot<?> not);
 
-        void visit(FilterOr ors);
+        T visit(FilterOr ors);
 
-        void visit(FilterAnd ands);
+        T visit(FilterAnd ands);
 
-        void visit(boolean literal);
+        T visit(boolean literal);
 
-        void visit(RawString rawString);
+        T visit(RawString rawString);
     }
 }

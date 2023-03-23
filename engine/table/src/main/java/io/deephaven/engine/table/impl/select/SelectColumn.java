@@ -35,7 +35,7 @@ public interface SelectColumn extends Selectable {
     static SelectColumn of(Selectable selectable) {
         return (selectable instanceof SelectColumn)
                 ? (SelectColumn) selectable
-                : selectable.expression().walk(new ExpressionAdapter(selectable.newColumn())).getOut();
+                : selectable.expression().walk(new ExpressionAdapter(selectable.newColumn()));
     }
 
     static SelectColumn[] from(Selectable... selectables) {
@@ -188,41 +188,36 @@ public interface SelectColumn extends Selectable {
      */
     SelectColumn copy();
 
-    class ExpressionAdapter implements Expression.Visitor {
+    class ExpressionAdapter implements Expression.Visitor<SelectColumn> {
         private final ColumnName lhs;
-        private SelectColumn out;
 
         ExpressionAdapter(ColumnName lhs) {
             this.lhs = Objects.requireNonNull(lhs);
         }
 
-        public SelectColumn getOut() {
-            return Objects.requireNonNull(out);
+        @Override
+        public SelectColumn visit(ColumnName rhs) {
+            return new SourceColumn(rhs.name(), lhs.name());
         }
 
         @Override
-        public void visit(ColumnName rhs) {
-            out = new SourceColumn(rhs.name(), lhs.name());
+        public SelectColumn visit(Literal rhs) {
+            return SelectColumnFactory.getExpression(String.format("%s=%s", lhs.name(), Strings.of(rhs)));
         }
 
         @Override
-        public void visit(Literal rhs) {
-            out = SelectColumnFactory.getExpression(String.format("%s=%s", lhs.name(), Strings.of(rhs)));
+        public SelectColumn visit(Filter rhs) {
+            return SelectColumnFactory.getExpression(String.format("%s=%s", lhs.name(), Strings.of(rhs)));
         }
 
         @Override
-        public void visit(Filter rhs) {
-            out = SelectColumnFactory.getExpression(String.format("%s=%s", lhs.name(), Strings.of(rhs)));
+        public SelectColumn visit(ExpressionFunction rhs) {
+            return SelectColumnFactory.getExpression(String.format("%s=%s", lhs.name(), Strings.of(rhs)));
         }
 
         @Override
-        public void visit(ExpressionFunction rhs) {
-            out = SelectColumnFactory.getExpression(String.format("%s=%s", lhs.name(), Strings.of(rhs)));
-        }
-
-        @Override
-        public void visit(RawString rhs) {
-            out = SelectColumnFactory.getExpression(String.format("%s=%s", lhs.name(), Strings.of(rhs)));
+        public SelectColumn visit(RawString rhs) {
+            return SelectColumnFactory.getExpression(String.format("%s=%s", lhs.name(), Strings.of(rhs)));
         }
     }
 

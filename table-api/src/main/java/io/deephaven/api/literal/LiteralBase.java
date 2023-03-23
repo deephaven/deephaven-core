@@ -8,8 +8,7 @@ import io.deephaven.api.expression.Expression;
 public abstract class LiteralBase implements Literal {
 
     @Override
-    public final <V extends Expression.Visitor> V walk(V visitor) {
-        visitor.visit(this);
-        return visitor;
+    public final <T> T walk(Expression.Visitor<T> visitor) {
+        return visitor.visit(this);
     }
 }

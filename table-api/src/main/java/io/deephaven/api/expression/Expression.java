@@ -21,17 +21,17 @@ import java.io.Serializable;
  */
 public interface Expression extends Serializable {
 
-    <V extends Visitor> V walk(V visitor);
+    <T> T walk(Visitor<T> visitor);
 
-    interface Visitor {
-        void visit(Literal literal);
+    interface Visitor<T> {
+        T visit(Literal literal);
 
-        void visit(ColumnName columnName);
+        T visit(ColumnName columnName);
 
-        void visit(Filter filter);
+        T visit(Filter filter);
 
-        void visit(ExpressionFunction function);
+        T visit(ExpressionFunction function);
 
-        void visit(RawString rawString);
+        T visit(RawString rawString);
     }
 }

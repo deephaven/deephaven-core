@@ -40,14 +40,14 @@ public interface Literal extends Expression {
         return LiteralLong.of(value);
     }
 
-    <V extends Visitor> V walk(V visitor);
+    <T> T walk(Visitor<T> visitor);
 
-    interface Visitor {
+    interface Visitor<T> {
 
-        void visit(boolean literal);
+        T visit(boolean literal);
 
-        void visit(int literal);
+        T visit(int literal);
 
-        void visit(long literal);
+        T visit(long literal);
     }
 }

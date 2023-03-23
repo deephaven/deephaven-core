@@ -565,65 +565,60 @@ class BatchTableRequestBuilder {
         return io.deephaven.proto.backplane.grpc.Literal.newBuilder().setBoolValue(x).build();
     }
 
-    static class ExpressionAdapter implements Expression.Visitor, Literal.Visitor {
+    static class ExpressionAdapter implements Expression.Visitor<io.deephaven.proto.backplane.grpc.Value>,
+            Literal.Visitor<io.deephaven.proto.backplane.grpc.Value> {
         static io.deephaven.proto.backplane.grpc.Value adapt(Expression expression) {
-            return expression.walk(new ExpressionAdapter()).out();
-        }
-
-        private io.deephaven.proto.backplane.grpc.Value out;
-
-        public io.deephaven.proto.backplane.grpc.Value out() {
-            return Objects.requireNonNull(out);
+            return expression.walk(new ExpressionAdapter());
         }
 
         @Override
-        public void visit(ColumnName x) {
-            out = io.deephaven.proto.backplane.grpc.Value.newBuilder().setReference(reference(x)).build();
+        public io.deephaven.proto.backplane.grpc.Value visit(ColumnName x) {
+            return io.deephaven.proto.backplane.grpc.Value.newBuilder().setReference(reference(x)).build();
         }
 
         @Override
-        public void visit(int literal) {
+        public io.deephaven.proto.backplane.grpc.Value visit(int literal) {
             throw new UnsupportedOperationException("Value does not support literal int");
         }
 
         @Override
-        public void visit(long literal) {
-            out = io.deephaven.proto.backplane.grpc.Value.newBuilder().setLiteral(literal(literal)).build();
+        public io.deephaven.proto.backplane.grpc.Value visit(long literal) {
+            return io.deephaven.proto.backplane.grpc.Value.newBuilder().setLiteral(literal(literal)).build();
         }
 
         @Override
-        public void visit(boolean literal) {
-            out = io.deephaven.proto.backplane.grpc.Value.newBuilder().setLiteral(literal(literal)).build();
+        public io.deephaven.proto.backplane.grpc.Value visit(boolean literal) {
+            return io.deephaven.proto.backplane.grpc.Value.newBuilder().setLiteral(literal(literal)).build();
         }
 
         @Override
-        public void visit(Literal literal) {
-            literal.walk((Literal.Visitor) this);
+        public io.deephaven.proto.backplane.grpc.Value visit(Literal literal) {
+            return literal.walk((Literal.Visitor<io.deephaven.proto.backplane.grpc.Value>) this);
         }
 
         @Override
-        public void visit(Filter filter) {
+        public io.deephaven.proto.backplane.grpc.Value visit(Filter filter) {
             throw new UnsupportedOperationException(
                     "Unable to create a io.deephaven.proto.backplane.grpc.Value from a Filter");
         }
 
         @Override
-        public void visit(ExpressionFunction function) {
+        public io.deephaven.proto.backplane.grpc.Value visit(ExpressionFunction function) {
             throw new UnsupportedOperationException(
                     "Unable to create a io.deephaven.proto.backplane.grpc.Value from an ExpressionFunction");
         }
 
         @Override
-        public void visit(RawString rawString) {
+        public io.deephaven.proto.backplane.grpc.Value visit(RawString rawString) {
             throw new UnsupportedOperationException(
                     "Unable to create a io.deephaven.proto.backplane.grpc.Value from a raw string");
         }
     }
 
-    static class FilterAdapter implements Filter.Visitor {
+    static class FilterAdapter implements Filter.Visitor<Condition> {
 
         static Condition of(Filter filter) {
-            return filter.walk(new FilterAdapter()).out();
+            return filter.walk(new FilterAdapter());
         }
 
         private static CompareOperation adapt(Operator operator) {
@@ -645,33 +640,27 @@ class BatchTableRequestBuilder {
             }
         }
 
-        private Condition out;
-
-        public Condition out() {
-            return Objects.requireNonNull(out);
-        }
-
         @Override
-        public void visit(FilterIsNull isNull) {
+        public Condition visit(FilterIsNull isNull) {
             if (!(isNull.expression() instanceof ColumnName)) {
                 // todo
                 throw new UnsupportedOperationException("Only supports null checking a reference to a column");
             }
-            out = Condition.newBuilder()
+            return Condition.newBuilder()
                     .setIsNull(IsNullCondition.newBuilder().setReference(reference((ColumnName) isNull.expression()))
                             .build())
                     .build();
         }
 
         @Override
-        public void visit(FilterIsNotNull isNotNull) {
-            visit(Filter.not(isNotNull.inverse()));
+        public Condition visit(FilterIsNotNull isNotNull) {
+            return visit(Filter.not(isNotNull.inverse()));
         }
 
         @Override
-        public void visit(FilterComparison comparison) {
+        public Condition visit(FilterComparison comparison) {
             FilterComparison preferred = comparison.maybeTranspose();
-            out = Condition.newBuilder()
+            return Condition.newBuilder()
                     .setCompare(CompareCondition.newBuilder()
                             .setOperation(adapt(preferred.operator()))
                             .setLhs(ExpressionAdapter.adapt(preferred.lhs()))
@@ -681,41 +670,41 @@ class BatchTableRequestBuilder {
         }
 
         @Override
-        public void visit(FilterNot<?> not) {
+        public Condition visit(FilterNot<?> not) {
             final Filter simplified = not.simplify();
             if (not.equals(simplified)) {
-                out = Condition.newBuilder().setNot(NotCondition.newBuilder().setFilter(of(not.filter())).build())
+                return Condition.newBuilder().setNot(NotCondition.newBuilder().setFilter(of(not.filter())).build())
                         .build();
             } else {
-                out = of(simplified);
+                return of(simplified);
             }
         }
 
         @Override
-        public void visit(FilterOr ors) {
+        public Condition visit(FilterOr ors) {
             OrCondition.Builder builder = OrCondition.newBuilder();
             for (Filter filter : ors) {
                 builder.addFilters(of(filter));
             }
-            out = Condition.newBuilder().setOr(builder.build()).build();
+            return Condition.newBuilder().setOr(builder.build()).build();
         }
 
         @Override
-        public void visit(FilterAnd ands) {
+        public Condition visit(FilterAnd ands) {
             AndCondition.Builder builder = AndCondition.newBuilder();
             for (Filter filter : ands) {
                 builder.addFilters(of(filter));
             }
-            out = Condition.newBuilder().setAnd(builder.build()).build();
+            return Condition.newBuilder().setAnd(builder.build()).build();
         }
 
         @Override
-        public void visit(boolean literal) {
+        public Condition visit(boolean literal) {
             throw new UnsupportedOperationException("Can't build Condition with literal");
         }
 
         @Override
-        public void visit(RawString rawString) {
+        public Condition visit(RawString rawString) {
             throw new UnsupportedOperationException("Can't build Condition with raw string");
         }
     }
