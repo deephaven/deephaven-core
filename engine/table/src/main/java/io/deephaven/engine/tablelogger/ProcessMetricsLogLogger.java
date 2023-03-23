@@ -11,12 +11,12 @@ import io.deephaven.engine.util.ColumnsSpecHelper;
 import java.io.IOException;
 
 public class ProcessMetricsLogLogger
-        extends TableLoggerImpl2<ProcessMetricsLogLogger.ISetter> implements ProcessMetricsLogLoggerInterface {
+        extends MemoryTableLogger<ProcessMetricsLogLogger.ISetter> implements ProcessMetricsLogLoggerInterface {
 
     private static final String TABLE_NAME = "ProcessMetricsLog";
 
     public ProcessMetricsLogLogger() {
-        super(TABLE_NAME);
+        super(TABLE_NAME, TABLE_DEFINITION);
     }
 
     public static String getDefaultTableName() {

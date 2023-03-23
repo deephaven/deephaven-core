@@ -14,11 +14,11 @@ import io.deephaven.tablelogger.WritableRowContainer;
 
 import java.io.IOException;
 
-public class ServerStateLog extends TableLoggerImpl2<ServerStateLog.ISetter> implements ServerStateLogInterface {
+public class ServerStateLog extends MemoryTableLogger<ServerStateLog.ISetter> implements ServerStateLogInterface {
     private static final String TABLE_NAME = "ServerStateLog";
 
     public ServerStateLog() {
-        super(TABLE_NAME);
+        super(TABLE_NAME, TABLE_DEFINITION);
     }
 
     public static String getDefaultTableName() {

@@ -42,38 +42,32 @@ public class MemoryTableLoggers {
     }
 
     private final ProcessInfo processInfo;
-    private final MemoryTableLogger<QueryPerformanceLogLogger> qplLogger;
-    private final MemoryTableLogger<QueryOperationPerformanceLogLogger> qoplLogger;
-    private final MemoryTableLogger<ProcessInfoLogLogger> processInfoLogger;
-    private final MemoryTableLogger<ProcessMetricsLogLogger> processMetricsLogger;
+    private final QueryPerformanceLogLogger qplLogger;
+    private final QueryOperationPerformanceLogLogger qoplLogger;
+    private final ProcessInfoLogLogger processInfoLogger;
+    private final ProcessMetricsLogLogger processMetricsLogger;
     private final StatsIntradayLogger statsLogger;
 
     private MemoryTableLoggers() {
         final Configuration configuration = Configuration.getInstance();
         final Logger log = LoggerFactory.getLogger(MemoryTableLoggers.class);
         ProcessInfo pInfo = null;
-        MemoryTableLogger<ProcessInfoLogLogger> pInfoLogger = null;
+        ProcessInfoLogLogger pInfoLogger = null;
         try {
             pInfo = ProcessInfoConfig.createForCurrentProcess(configuration);
-            pInfoLogger = new MemoryTableLogger<>(
-                    log, new ProcessInfoLogLogger(), ProcessInfoLogLogger.getTableDefinition(),
-                    DEFAULT_PROCESSS_INFO_LOG_SIZE);
-            new ProcessInfoStoreDBImpl(pInfoLogger.getTableLogger()).put(pInfo);
+            pInfoLogger = new ProcessInfoLogLogger(DEFAULT_PROCESSS_INFO_LOG_SIZE);
+            new ProcessInfoStoreDBImpl(pInfoLogger).put(pInfo);
         } catch (IOException e) {
             log.fatal().append("Failed to configure process info: ").append(e.toString()).endl();
         }
         processInfo = pInfo;
         processInfoLogger = pInfoLogger;
         final String pInfoId = pInfo.getId().value();
-        qplLogger = new MemoryTableLogger<>(
-                log, new QueryPerformanceLogLogger(pInfoId), QueryPerformanceLogLogger.getTableDefinition());
-        qoplLogger = new MemoryTableLogger<>(
-                log, new QueryOperationPerformanceLogLogger(pInfoId),
-                QueryOperationPerformanceLogLogger.getTableDefinition());
+        qplLogger = new QueryPerformanceLogLogger(pInfoId);
+        qoplLogger = new QueryOperationPerformanceLogLogger(pInfoId);
         if (STATS_LOGGING_ENABLED) {
-            processMetricsLogger = new MemoryTableLogger<>(
-                    log, new ProcessMetricsLogLogger(), ProcessMetricsLogLogger.getTableDefinition());
-            statsLogger = new StatsIntradayLoggerDBImpl(pInfo.getId(), processMetricsLogger.getTableLogger());
+            processMetricsLogger = new ProcessMetricsLogLogger();
+            statsLogger = new StatsIntradayLoggerDBImpl(pInfo.getId(), processMetricsLogger);
         } else {
             processMetricsLogger = null;
             statsLogger = null;
@@ -93,11 +87,11 @@ public class MemoryTableLoggers {
     }
 
     public QueryPerformanceLogLogger getQplLogger() {
-        return qplLogger.getTableLogger();
+        return qplLogger;
     }
 
     public QueryOperationPerformanceLogLogger getQoplLogger() {
-        return qoplLogger.getTableLogger();
+        return qoplLogger;
     }
 
     public QueryTable getProcessInfoQueryTable() {

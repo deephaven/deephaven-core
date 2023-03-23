@@ -35,13 +35,12 @@ public class ServerStateTracker {
 
     private final Logger logger;
 
-    private final MemoryTableLogger<ServerStateLog> processMemLogger;
+    private final ServerStateLog processMemLogger;
     private final UpdateGraphProcessor.AccumulatedCycleStats ugpAccumCycleStats;
 
     private ServerStateTracker() {
         logger = LoggerFactory.getLogger(ServerStateTracker.class);
-        processMemLogger = new MemoryTableLogger<>(
-                logger, new ServerStateLog(), ServerStateLog.getTableDefinition());
+        processMemLogger = new ServerStateLog();
         ugpAccumCycleStats = new UpdateGraphProcessor.AccumulatedCycleStats();
     }
 
@@ -163,7 +162,7 @@ public class ServerStateTracker {
             final int ugpSafePoints,
             final long ugpSafePointTimeMillis) {
         try {
-            processMemLogger.getTableLogger().log(
+            processMemLogger.log(
                     startMillis,
                     deltaMillisToMicros(endMillis - startMillis),
                     bytesToMiB(sample.totalMemory),

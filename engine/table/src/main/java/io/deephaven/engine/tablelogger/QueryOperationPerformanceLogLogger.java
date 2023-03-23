@@ -14,14 +14,14 @@ import io.deephaven.util.QueryConstants;
 import java.io.IOException;
 
 public class QueryOperationPerformanceLogLogger
-        extends TableLoggerImpl2<QueryOperationPerformanceLogLogger.ISetter> implements QueryOperationPerformanceLogLoggerInterface {
+        extends MemoryTableLogger<QueryOperationPerformanceLogLogger.ISetter> implements QueryOperationPerformanceLogLoggerInterface {
 
     private static final String TABLE_NAME = "QueryOperationPerformanceLog";
 
     private final String processUniqueId;
 
     public QueryOperationPerformanceLogLogger(final String processUniqueId) {
-        super(TABLE_NAME);
+        super(TABLE_NAME, TABLE_DEFINITION);
         this.processUniqueId = processUniqueId;
     }
 
