@@ -6,6 +6,7 @@ package io.deephaven.api.filter;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.RawString;
 import io.deephaven.api.Strings;
+import io.deephaven.api.expression.Expression;
 import io.deephaven.api.filter.FilterComparison.Operator;
 import io.deephaven.api.literal.Literal;
 import org.junit.jupiter.api.Test;
@@ -41,105 +42,27 @@ public class FilterComparisionTest {
     static final FilterComparison FOO_NEQ_E42 = FilterComparison.neq(FOO, E42);
 
     @Test
-    void lhs() {
-        assertThat(FOO_EQ_42.lhs()).isEqualTo(FOO);
-        assertThat(FOO_GT_42.lhs()).isEqualTo(FOO);
-        assertThat(FOO_GTE_42.lhs()).isEqualTo(FOO);
-        assertThat(FOO_LT_42.lhs()).isEqualTo(FOO);
-        assertThat(FOO_LTE_42.lhs()).isEqualTo(FOO);
-        assertThat(FOO_NEQ_42.lhs()).isEqualTo(FOO);
+    void properties() {
+        checkProperties(FOO_EQ_42, FOO, Operator.EQUALS, V42, "(Foo) == (42L)", FOO_NEQ_42);
+        checkProperties(FOO_GT_42, FOO, Operator.GREATER_THAN, V42, "(Foo) > (42L)", FOO_LTE_42);
+        checkProperties(FOO_GTE_42, FOO, Operator.GREATER_THAN_OR_EQUAL, V42, "(Foo) >= (42L)", FOO_LT_42);
+        checkProperties(FOO_LT_42, FOO, Operator.LESS_THAN, V42, "(Foo) < (42L)", FOO_GTE_42);
+        checkProperties(FOO_LTE_42, FOO, Operator.LESS_THAN_OR_EQUAL, V42, "(Foo) <= (42L)", FOO_GT_42);
+        checkProperties(FOO_NEQ_42, FOO, Operator.NOT_EQUALS, V42, "(Foo) != (42L)", FOO_EQ_42);
 
-        assertThat(FOO_EQ_BAR.lhs()).isEqualTo(FOO);
-        assertThat(FOO_GT_BAR.lhs()).isEqualTo(FOO);
-        assertThat(FOO_GTE_BAR.lhs()).isEqualTo(FOO);
-        assertThat(FOO_LT_BAR.lhs()).isEqualTo(FOO);
-        assertThat(FOO_LTE_BAR.lhs()).isEqualTo(FOO);
-        assertThat(FOO_NEQ_BAR.lhs()).isEqualTo(FOO);
+        checkProperties(FOO_EQ_BAR, FOO, Operator.EQUALS, BAR, "(Foo) == (Bar)", FOO_NEQ_BAR);
+        checkProperties(FOO_GT_BAR, FOO, Operator.GREATER_THAN, BAR, "(Foo) > (Bar)", FOO_LTE_BAR);
+        checkProperties(FOO_GTE_BAR, FOO, Operator.GREATER_THAN_OR_EQUAL, BAR, "(Foo) >= (Bar)", FOO_LT_BAR);
+        checkProperties(FOO_LT_BAR, FOO, Operator.LESS_THAN, BAR, "(Foo) < (Bar)", FOO_GTE_BAR);
+        checkProperties(FOO_LTE_BAR, FOO, Operator.LESS_THAN_OR_EQUAL, BAR, "(Foo) <= (Bar)", FOO_GT_BAR);
+        checkProperties(FOO_NEQ_BAR, FOO, Operator.NOT_EQUALS, BAR, "(Foo) != (Bar)", FOO_EQ_BAR);
 
-        assertThat(FOO_EQ_E42.lhs()).isEqualTo(FOO);
-        assertThat(FOO_GT_E42.lhs()).isEqualTo(FOO);
-        assertThat(FOO_GTE_E42.lhs()).isEqualTo(FOO);
-        assertThat(FOO_LT_E42.lhs()).isEqualTo(FOO);
-        assertThat(FOO_LTE_E42.lhs()).isEqualTo(FOO);
-        assertThat(FOO_NEQ_E42.lhs()).isEqualTo(FOO);
-    }
-
-    @Test
-    void rhs() {
-        assertThat(FOO_EQ_42.rhs()).isEqualTo(V42);
-        assertThat(FOO_GT_42.rhs()).isEqualTo(V42);
-        assertThat(FOO_GTE_42.rhs()).isEqualTo(V42);
-        assertThat(FOO_LT_42.rhs()).isEqualTo(V42);
-        assertThat(FOO_LTE_42.rhs()).isEqualTo(V42);
-        assertThat(FOO_NEQ_42.rhs()).isEqualTo(V42);
-
-        assertThat(FOO_EQ_BAR.rhs()).isEqualTo(BAR);
-        assertThat(FOO_GT_BAR.rhs()).isEqualTo(BAR);
-        assertThat(FOO_GTE_BAR.rhs()).isEqualTo(BAR);
-        assertThat(FOO_LT_BAR.rhs()).isEqualTo(BAR);
-        assertThat(FOO_LTE_BAR.rhs()).isEqualTo(BAR);
-        assertThat(FOO_NEQ_BAR.rhs()).isEqualTo(BAR);
-
-        assertThat(FOO_EQ_E42.rhs()).isEqualTo(E42);
-        assertThat(FOO_GT_E42.rhs()).isEqualTo(E42);
-        assertThat(FOO_GTE_E42.rhs()).isEqualTo(E42);
-        assertThat(FOO_LT_E42.rhs()).isEqualTo(E42);
-        assertThat(FOO_LTE_E42.rhs()).isEqualTo(E42);
-        assertThat(FOO_NEQ_E42.rhs()).isEqualTo(E42);
-    }
-
-    @Test
-    void operation() {
-        assertThat(FOO_EQ_42.operator()).isEqualTo(Operator.EQUALS);
-        assertThat(FOO_GT_42.operator()).isEqualTo(Operator.GREATER_THAN);
-        assertThat(FOO_GTE_42.operator()).isEqualTo(Operator.GREATER_THAN_OR_EQUAL);
-        assertThat(FOO_LT_42.operator()).isEqualTo(Operator.LESS_THAN);
-        assertThat(FOO_LTE_42.operator()).isEqualTo(Operator.LESS_THAN_OR_EQUAL);
-        assertThat(FOO_NEQ_42.operator()).isEqualTo(Operator.NOT_EQUALS);
-
-        assertThat(FOO_EQ_BAR.operator()).isEqualTo(Operator.EQUALS);
-        assertThat(FOO_GT_BAR.operator()).isEqualTo(Operator.GREATER_THAN);
-        assertThat(FOO_GTE_BAR.operator()).isEqualTo(Operator.GREATER_THAN_OR_EQUAL);
-        assertThat(FOO_LT_BAR.operator()).isEqualTo(Operator.LESS_THAN);
-        assertThat(FOO_LTE_BAR.operator()).isEqualTo(Operator.LESS_THAN_OR_EQUAL);
-        assertThat(FOO_NEQ_BAR.operator()).isEqualTo(Operator.NOT_EQUALS);
-
-        assertThat(FOO_EQ_E42.operator()).isEqualTo(Operator.EQUALS);
-        assertThat(FOO_GT_E42.operator()).isEqualTo(Operator.GREATER_THAN);
-        assertThat(FOO_GTE_E42.operator()).isEqualTo(Operator.GREATER_THAN_OR_EQUAL);
-        assertThat(FOO_LT_E42.operator()).isEqualTo(Operator.LESS_THAN);
-        assertThat(FOO_LTE_E42.operator()).isEqualTo(Operator.LESS_THAN_OR_EQUAL);
-        assertThat(FOO_NEQ_E42.operator()).isEqualTo(Operator.NOT_EQUALS);
-    }
-
-    @Test
-    void columnAndLongStrings() {
-        toString(FOO_EQ_42, "(Foo) == (42L)");
-        toString(FOO_GT_42, "(Foo) > (42L)");
-        toString(FOO_GTE_42, "(Foo) >= (42L)");
-        toString(FOO_LT_42, "(Foo) < (42L)");
-        toString(FOO_LTE_42, "(Foo) <= (42L)");
-        toString(FOO_NEQ_42, "(Foo) != (42L)");
-    }
-
-    @Test
-    void columnAndColumnStrings() {
-        toString(FOO_EQ_BAR, "(Foo) == (Bar)");
-        toString(FOO_GT_BAR, "(Foo) > (Bar)");
-        toString(FOO_GTE_BAR, "(Foo) >= (Bar)");
-        toString(FOO_LT_BAR, "(Foo) < (Bar)");
-        toString(FOO_LTE_BAR, "(Foo) <= (Bar)");
-        toString(FOO_NEQ_BAR, "(Foo) != (Bar)");
-    }
-
-    @Test
-    void columnAndExpressionStrings() {
-        toString(FOO_EQ_E42, "(Foo) == (41 + 1)");
-        toString(FOO_GT_E42, "(Foo) > (41 + 1)");
-        toString(FOO_GTE_E42, "(Foo) >= (41 + 1)");
-        toString(FOO_LT_E42, "(Foo) < (41 + 1)");
-        toString(FOO_LTE_E42, "(Foo) <= (41 + 1)");
-        toString(FOO_NEQ_E42, "(Foo) != (41 + 1)");
+        checkProperties(FOO_EQ_E42, FOO, Operator.EQUALS, E42, "(Foo) == (41 + 1)", FOO_NEQ_E42);
+        checkProperties(FOO_GT_E42, FOO, Operator.GREATER_THAN, E42, "(Foo) > (41 + 1)", FOO_LTE_E42);
+        checkProperties(FOO_GTE_E42, FOO, Operator.GREATER_THAN_OR_EQUAL, E42, "(Foo) >= (41 + 1)", FOO_LT_E42);
+        checkProperties(FOO_LT_E42, FOO, Operator.LESS_THAN, E42, "(Foo) < (41 + 1)", FOO_GTE_E42);
+        checkProperties(FOO_LTE_E42, FOO, Operator.LESS_THAN_OR_EQUAL, E42, "(Foo) <= (41 + 1)", FOO_GT_E42);
+        checkProperties(FOO_NEQ_E42, FOO, Operator.NOT_EQUALS, E42, "(Foo) != (41 + 1)", FOO_EQ_E42);
     }
 
     @Test
@@ -200,11 +123,12 @@ public class FilterComparisionTest {
         assertThat(FOO_LTE_E42.maybeTranspose()).isEqualTo(FOO_LTE_E42);
     }
 
-    private static void toString(FilterComparison condition, String expected) {
-        assertThat(toString(condition)).isEqualTo(expected);
-    }
-
-    private static String toString(FilterComparison filterCondition) {
-        return Strings.of(filterCondition);
+    private static void checkProperties(FilterComparison comparison, Expression lhs, Operator operator, Expression rhs,
+            String expected, FilterComparison expectedInverse) {
+        assertThat(comparison.lhs()).isEqualTo(lhs);
+        assertThat(comparison.operator()).isEqualTo(operator);
+        assertThat(comparison.rhs()).isEqualTo(rhs);
+        assertThat(Strings.of(comparison)).isEqualTo(expected);
+        assertThat(comparison.inverse()).isEqualTo(expectedInverse);
     }
 }

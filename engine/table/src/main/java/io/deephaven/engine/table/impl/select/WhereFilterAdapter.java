@@ -24,7 +24,7 @@ class WhereFilterAdapter implements Filter.Visitor {
         return filter.walk(new WhereFilterAdapter(false)).out();
     }
 
-    public static WhereFilter of(FilterNot not) {
+    public static WhereFilter of(FilterNot<?> not) {
         return not.filter().walk(new WhereFilterAdapter(true)).out();
     }
 
@@ -74,7 +74,7 @@ class WhereFilterAdapter implements Filter.Visitor {
     }
 
     @Override
-    public void visit(FilterNot not) {
+    public void visit(FilterNot<?> not) {
         out = inverted ? of(not.inverse()) : of(not);
     }
 

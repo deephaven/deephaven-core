@@ -117,55 +117,78 @@ public interface Filter extends Expression, Serializable {
      *
      * @param filter the filter
      * @return the not-filter
+     * @param <F> the type of filter
      */
-    static FilterNot not(Filter filter) {
+    static <F extends Filter> FilterNot<F> not(F filter) {
         return FilterNot.of(filter);
     }
 
     /**
-     * Creates an {@link FilterOr or-filter}.
+     * Creates a filter that evaluates to {@code true} when any of {@code filters} evaluates to {@code true}, and
+     * {@code false} when none of the {@code filters} evaluates to {@code true}. This implies that {@link #ofFalse()} is
+     * returned when {@code filters} is empty.
      *
      * @param filters the filters
-     * @return the or-filter
+     * @return the filter
      */
-    static FilterOr or(Filter... filters) {
+    static Filter or(Filter... filters) {
+        return or(Arrays.asList(filters));
+    }
+
+    /**
+     * Creates a filter that evaluates to {@code true} when any of {@code filters} evaluates to {@code true}, and
+     * {@code false} when none of the {@code filters} evaluates to {@code true}. This implies that {@link #ofFalse()} is
+     * returned when {@code filters} is empty.
+     *
+     * @param filters the filters
+     * @return the filter
+     */
+    static Filter or(Collection<? extends Filter> filters) {
+        if (filters.isEmpty()) {
+            return ofFalse();
+        }
+        if (filters.size() == 1) {
+            return filters.iterator().next();
+        }
         return FilterOr.of(filters);
     }
 
     /**
-     * Creates an {@link FilterOr or-filter}.
+     * Creates a filter that evaluates to {@code true} when all of the {@code filters} evaluate to {@code true}, and
+     * {@code false} when any of the {@code filters} evaluates to {@code false}. This implies that {@link #ofTrue()} is
+     * returned when {@code filters} is empty.
      *
      * @param filters the filters
-     * @return the or-filter
+     * @return the filter
      */
-    static FilterOr or(Iterable<? extends Filter> filters) {
-        return FilterOr.of(filters);
+    static Filter and(Filter... filters) {
+        return and(Arrays.asList(filters));
     }
 
     /**
-     * Creates an {@link FilterAnd and-filter}.
+     * Creates a filter that evaluates to {@code true} when all of the {@code filters} evaluate to {@code true}, and
+     * {@code false} when any of the {@code filters} evaluates to {@code false}. This implies that {@link #ofTrue()} is
+     * returned when {@code filters} is empty.
      *
      * @param filters the filters
-     * @return the and-filter
+     * @return the filter
      */
-    static FilterAnd and(Filter... filters) {
+    static Filter and(Collection<? extends Filter> filters) {
+        if (filters.isEmpty()) {
+            return ofTrue();
+        }
+        if (filters.size() == 1) {
+            return filters.iterator().next();
+        }
         return FilterAnd.of(filters);
     }
 
     /**
-     * Creates an {@link FilterAnd and-filter}.
-     *
-     * @param filters the filters
-     * @return the and-filter
-     */
-    static FilterAnd and(Iterable<? extends Filter> filters) {
-        return FilterAnd.of(filters);
-    }
-
-    /**
-     * The logical inversion of {@code this}.
+     * The logical inversion of {@code this}. While logically equivalent to {@code Filter.not(this)}, implementations of
+     * this method will return more specifically typed inversions where applicable.
      *
      * @return the inverse filter
+     * @see #not(Filter)
      */
     Filter inverse();
 
@@ -179,7 +202,7 @@ public interface Filter extends Expression, Serializable {
 
         void visit(FilterComparison comparison);
 
-        void visit(FilterNot not);
+        void visit(FilterNot<?> not);
 
         void visit(FilterOr ors);
 

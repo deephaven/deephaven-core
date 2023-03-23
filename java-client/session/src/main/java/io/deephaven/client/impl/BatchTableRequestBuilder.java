@@ -681,13 +681,13 @@ class BatchTableRequestBuilder {
         }
 
         @Override
-        public void visit(FilterNot not) {
-            final Optional<Filter> simplified = not.simplify();
-            if (simplified.isPresent()) {
-                out = of(simplified.get());
+        public void visit(FilterNot<?> not) {
+            final Filter simplified = not.simplify();
+            if (not.equals(simplified)) {
+                out = Condition.newBuilder().setNot(NotCondition.newBuilder().setFilter(of(not.filter())).build())
+                        .build();
             } else {
-                out = Condition.newBuilder()
-                        .setNot(NotCondition.newBuilder().setFilter(of(not.filter())).build()).build();
+                out = of(simplified);
             }
         }
 

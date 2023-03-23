@@ -28,7 +28,7 @@ public abstract class RawString implements Expression, Filter, Serializable {
     public abstract String value();
 
     @Override
-    public final FilterNot inverse() {
+    public final FilterNot<RawString> inverse() {
         return Filter.not(this);
     }
 

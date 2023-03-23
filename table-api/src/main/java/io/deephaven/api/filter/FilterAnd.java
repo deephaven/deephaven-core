@@ -14,7 +14,8 @@ import java.util.Spliterator;
 import java.util.function.Consumer;
 
 /**
- * Evaluates to {@code true} when all of the given {@link #filters() filters} evaluates to {@code true}.
+ * Evaluates to {@code true} when all of the {@link #filters() filters} evaluate to {@code true}, and {@code false} when
+ * any of the {@link #filters() filters} evaluates to {@code false}.
  */
 @Immutable
 @BuildableStyle

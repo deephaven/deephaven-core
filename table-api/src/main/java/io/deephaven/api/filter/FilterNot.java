@@ -4,7 +4,6 @@
 package io.deephaven.api.filter;
 
 import io.deephaven.annotations.SimpleStyle;
-import io.deephaven.api.expression.Expression;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
 
@@ -15,9 +14,9 @@ import java.util.Optional;
  */
 @Immutable
 @SimpleStyle
-public abstract class FilterNot extends FilterBase {
+public abstract class FilterNot<F extends Filter> extends FilterBase {
 
-    public static FilterNot of(Filter filter) {
+    public static <F extends Filter> FilterNot<F> of(F filter) {
         return ImmutableFilterNot.of(filter);
     }
 
@@ -27,7 +26,7 @@ public abstract class FilterNot extends FilterBase {
      * @return the filter
      */
     @Parameter
-    public abstract Filter filter();
+    public abstract F filter();
 
     /**
      * Equivalent to {@code filter()}.
@@ -35,13 +34,18 @@ public abstract class FilterNot extends FilterBase {
      * @return the inverse filter
      */
     @Override
-    public final Filter inverse() {
+    public final F inverse() {
         return filter();
     }
 
-    public final Optional<Filter> simplify() {
-        final Filter filterInverse = filter().inverse();
-        return equals(filterInverse) ? Optional.empty() : Optional.of(filterInverse);
+    /**
+     * Creates the logical equivalent of {@code this}. Equivalent to {@code filter().inverse()}. It's possible that the
+     * "simplification" is equal to {@code this}.
+     *
+     * @return the simplified filter
+     */
+    public final Filter simplify() {
+        return filter().inverse();
     }
 
     @Override

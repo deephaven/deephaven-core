@@ -38,7 +38,7 @@ public class Strings {
         return String.format("(%s) %s (%s)", lhs, comparison.operator().javaOperator(), rhs);
     }
 
-    public static String of(FilterNot not) {
+    public static String of(FilterNot<?> not) {
         return String.format("!(%s)", of(not.filter()));
     }
 
@@ -169,7 +169,7 @@ public class Strings {
         }
 
         @Override
-        public void visit(FilterNot not) {
+        public void visit(FilterNot<?> not) {
             out = of(not);
         }
 
