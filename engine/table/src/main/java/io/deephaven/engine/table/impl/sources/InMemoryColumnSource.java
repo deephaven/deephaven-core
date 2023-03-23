@@ -20,10 +20,18 @@ import org.jetbrains.annotations.Nullable;
 import java.time.Instant;
 
 /**
- * This is a marker interface for a column source that is entirely within memory; therefore select operations should not
- * try to copy it into memory a second time.
+ * This is a marker interface for a column source that might be entirely within memory; therefore select operations
+ * should not try to copy it into memory a second time.
  */
 public interface InMemoryColumnSource {
+
+    /**
+     * @return true if this column source is entirely in memory.
+     */
+    default boolean isInMemory() {
+        return true;
+    }
+
     // We would like to use jdk.internal.util.ArraysSupport.MAX_ARRAY_LENGTH, but it is not exported
     int TWO_DIMENSIONAL_COLUMN_SOURCE_THRESHOLD = ArrayUtil.MAX_ARRAY_SIZE;
 

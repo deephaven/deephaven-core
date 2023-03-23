@@ -14,6 +14,7 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.time.DateTime;
 import io.deephaven.engine.table.ModifiedColumnSet;
@@ -40,6 +41,8 @@ import java.util.Map;
 
 /**
  * Adapter for converting streams of data into columnar Deephaven {@link Table tables}.
+ *
+ * @implNote The constructor publishes {@code this} to the {@link UpdateGraphProcessor} and thus cannot be subclassed.
  */
 public class StreamToTableAdapter extends ReferenceCountedLivenessNode
         implements SafeCloseable, StreamConsumer, Runnable {
@@ -81,10 +84,6 @@ public class StreamToTableAdapter extends ReferenceCountedLivenessNode
         this.streamPublisher = streamPublisher;
         this.updateSourceRegistrar = updateSourceRegistrar;
         this.name = name;
-        streamPublisher.register(this);
-        log.info().append("Registering ").append(StreamToTableAdapter.class.getSimpleName()).append('-').append(name)
-                .endl();
-        updateSourceRegistrar.addSource(this);
 
         nullColumnSources = makeNullColumnSources(tableDefinition);
 
@@ -102,6 +101,11 @@ public class StreamToTableAdapter extends ReferenceCountedLivenessNode
             }
         };
         tableRef = new WeakReference<>(table);
+
+        log.info().append("Registering ").append(StreamToTableAdapter.class.getSimpleName()).append('-').append(name)
+                .endl();
+        streamPublisher.register(this);
+        updateSourceRegistrar.addSource(this);
     }
 
     /**

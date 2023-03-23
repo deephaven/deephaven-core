@@ -14,6 +14,7 @@ import io.deephaven.engine.liveness.Liveness;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessManager;
 import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -26,7 +27,7 @@ import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
 import io.deephaven.engine.table.impl.sources.UnionSourceManager;
-import io.deephaven.engine.table.iterators.ObjectColumnIterator;
+import io.deephaven.engine.table.iterators.ChunkedObjectColumnIterator;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -43,7 +44,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static io.deephaven.engine.table.impl.select.MatchFilter.MatchType.Inverted;
-import static io.deephaven.engine.table.iterators.ColumnIterator.*;
+import static io.deephaven.engine.table.iterators.ChunkedColumnIterator.DEFAULT_CHUNK_SIZE;
 
 /**
  * {@link PartitionedTable} implementation.
@@ -160,7 +161,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
             merged.setAttribute(Table.MERGED_TABLE_ATTRIBUTE, Boolean.TRUE);
             if (!constituentChangesPermitted) {
                 final Map<String, Object> sharedAttributes;
-                try (final ObjectColumnIterator<Table> constituents =
+                try (final CloseableIterator<Table> constituents =
                         table().objectColumnIterator(constituentColumnName)) {
                     sharedAttributes = computeSharedAttributes(constituents);
                 }
@@ -176,9 +177,17 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
         if (!constituents.hasNext()) {
             return Collections.emptyMap();
         }
-        final Map<String, Object> candidates = new HashMap<>(constituents.next().getAttributes());
+
+        boolean anyPreviousTableIsRefreshing = false;
+
+        Table constituent = constituents.next();
+        boolean currentTableIsRefreshing = constituent.isRefreshing();
+        final Map<String, Object> candidates = new HashMap<>(constituent.getAttributes());
+
         while (constituents.hasNext()) {
-            final Table constituent = constituents.next();
+            anyPreviousTableIsRefreshing |= currentTableIsRefreshing;
+            constituent = constituents.next();
+            currentTableIsRefreshing = constituent.isRefreshing();
             final Iterator<Map.Entry<String, Object>> candidatesIter = candidates.entrySet().iterator();
             while (candidatesIter.hasNext()) {
                 final Map.Entry<String, Object> candidate = candidatesIter.next();
@@ -194,6 +203,22 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
                 return Collections.emptyMap();
             }
         }
+
+        if (anyPreviousTableIsRefreshing) {
+            // if a previous table may grow and cause shifts, then the merged table cannot be add-only
+            candidates.remove(BaseTable.ADD_ONLY_TABLE_ATTRIBUTE);
+            // if a previous table may change then this cannot be append-only
+            candidates.remove(BaseTable.APPEND_ONLY_TABLE_ATTRIBUTE);
+        } else {
+            // otherwise, last constituent influences whether the merged result is add-only and/or append-only
+            if (constituent.hasAttribute(BaseTable.ADD_ONLY_TABLE_ATTRIBUTE)) {
+                candidates.put(BaseTable.ADD_ONLY_TABLE_ATTRIBUTE, true);
+            }
+            if (constituent.hasAttribute(BaseTable.APPEND_ONLY_TABLE_ATTRIBUTE)) {
+                candidates.put(BaseTable.APPEND_ONLY_TABLE_ATTRIBUTE, true);
+            }
+        }
+
         return candidates;
     }
 
@@ -424,7 +449,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
                     ? constituentColumnSource.getPrevSource()
                     : constituentColumnSource;
             try (final Stream<Table> constituentStream =
-                    new ObjectColumnIterator<Table>(chunkSourceToFetch, rowsToFetch).stream()) {
+                    new ChunkedObjectColumnIterator<Table>(chunkSourceToFetch, rowsToFetch).stream()) {
                 return constituentStream.toArray(Table[]::new);
             }
         }

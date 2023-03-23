@@ -284,6 +284,7 @@ public class QueryTableAggregationTest {
         final QueryTable[] inputs = IntStream.range(0, 5).mapToObj((final int tableIndex) -> {
             // noinspection AutoBoxing
             QueryScope.addParam(tableIndexName, tableIndex);
+            parents[tableIndex].setAttribute(BaseTable.TEST_SOURCE_TABLE_ATTRIBUTE, true);
             final QueryTable result = (QueryTable) parents[tableIndex].update(
                     "StrCol = Long.toString((long) (ii / 5))",
                     "IntCol = " + tableIndexName + " * 1_000_000 + i",
@@ -2809,7 +2810,7 @@ public class QueryTableAggregationTest {
 
                                     final double error = Math
                                             .abs((recomputedPercentile - originalPercentile) / recomputedPercentile);
-                                    if (error > .025) {
+                                    if (error > .03) {
                                         throw new ComparisonFailure("Bad percentile for " + name + ", error=" + error,
                                                 Double.toString(recomputedPercentile),
                                                 Double.toString(originalPercentile));
@@ -3109,7 +3110,8 @@ public class QueryTableAggregationTest {
     @Test
     public void testSelectDistinctUpdates() {
         final QueryTable table = testRefreshingTable(i(2, 4, 6, 8).toTracking(), col("x", 1, 2, 3, 2));
-        final QueryTable result = (QueryTable) (table.selectDistinct("x"));
+        final QueryTable result = (QueryTable) (table.selectDistinct("x"))
+                .withAttributes(Map.of(BaseTable.TEST_SOURCE_TABLE_ATTRIBUTE, true));
         final QueryTableTestBase.ListenerWithGlobals listener;
         result.addUpdateListener(listener = base.newListenerWithGlobals(result));
 

@@ -26,6 +26,7 @@ import java.nio.DoubleBuffer;
  */
 public class DoubleChunk<ATTR extends Any> extends ChunkBase<ATTR> {
 
+    @SuppressWarnings("rawtypes")
     private static final DoubleChunk EMPTY = new DoubleChunk<>(ArrayTypeUtils.EMPTY_DOUBLE_ARRAY, 0, 0);
 
     public static <ATTR extends Any> DoubleChunk<ATTR> getEmptyChunk() {
@@ -33,6 +34,7 @@ public class DoubleChunk<ATTR extends Any> extends ChunkBase<ATTR> {
         return EMPTY;
     }
 
+    @SuppressWarnings("rawtypes")
     private static final DoubleChunk[] EMPTY_DOUBLE_CHUNK_ARRAY = new DoubleChunk[0];
 
     static <ATTR extends Any> DoubleChunk<ATTR>[] getEmptyChunkArray() {
@@ -115,7 +117,7 @@ public class DoubleChunk<ATTR extends Any> extends ChunkBase<ATTR> {
     }
 
     @Override
-    public final boolean isAlias(Chunk chunk) {
+    public final boolean isAlias(Chunk<?> chunk) {
         return chunk.isAlias(data);
     }
 
@@ -158,9 +160,9 @@ public class DoubleChunk<ATTR extends Any> extends ChunkBase<ATTR> {
     // endregion CopyToBuffer
 
     // region downcast
-    public static <ATTR extends Any, ATTR_DERIV extends ATTR> WritableDoubleChunk<ATTR_DERIV> downcast(WritableDoubleChunk<ATTR> self) {
+    public static <ATTR extends Any, ATTR_DERIV extends ATTR> DoubleChunk<ATTR_DERIV> downcast(DoubleChunk<ATTR> self) {
         //noinspection unchecked
-        return (WritableDoubleChunk<ATTR_DERIV>) self;
+        return (DoubleChunk<ATTR_DERIV>) self;
     }
     // endregion downcast
 }

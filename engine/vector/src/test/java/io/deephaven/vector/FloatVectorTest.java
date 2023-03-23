@@ -8,126 +8,253 @@
  */
 package io.deephaven.vector;
 
-import junit.framework.TestCase;
+// region IteratorTypeImport
+import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfFloat;
+// endregion IteratorTypeImport
+import org.jetbrains.annotations.NotNull;
+import org.junit.Test;
+
+// region NullConstantImport
+import java.util.stream.IntStream;
 
 import static io.deephaven.util.QueryConstants.NULL_FLOAT;
+// endregion NullConstantImport
+import static junit.framework.TestCase.*;
 
-public class FloatVectorTest extends TestCase {
+/**
+ * Unit tests for various permutations of {@link FloatVector}.
+ */
+public abstract class FloatVectorTest {
 
-    public void testVectorDirect() {
-        FloatVector vector = new FloatVectorDirect((float)10, (float)20, (float)30);
+    protected abstract FloatVector makeTestVector(@NotNull final float... data);
+
+    @Test
+    public void testVector() {
+        final FloatVector vector = makeTestVector((float) 10, (float) 20, (float) 30);
+        validateIterator(vector);
         assertEquals(3, vector.size());
-        assertEquals((float)10, vector.get(0));
-        assertEquals((float)20, vector.get(1));
-        assertEquals((float)30, vector.get(2));
-        assertEquals(NULL_FLOAT,vector.get(3));
-        assertEquals(NULL_FLOAT,vector.get(-1));
+        assertEquals((float) 10, vector.get(0));
+        assertEquals((float) 20, vector.get(1));
+        assertEquals((float) 30, vector.get(2));
+        assertEquals(NULL_FLOAT, vector.get(3));
+        assertEquals(NULL_FLOAT, vector.get(-1));
+
         float[] floats = vector.toArray();
-        assertEquals((float)10, floats[0]);
-        assertEquals((float)20, floats[1]);
-        assertEquals((float)30, floats[2]);
+        assertEquals(vector, new FloatVectorDirect(floats));
+        assertEquals(vector.hashCode(), new FloatVectorDirect(floats).hashCode());
+        assertEquals((float) 10, floats[0]);
+        assertEquals((float) 20, floats[1]);
+        assertEquals((float) 30, floats[2]);
         assertEquals(3, floats.length);
-        assertEquals(0, vector.subVector(0, 0).size());
-        assertEquals(0, vector.subVector(0, 0).toArray().length);
-        assertEquals(NULL_FLOAT,vector.subVector(0, 0).get(0));
-        assertEquals(NULL_FLOAT,vector.subVector(0, 0).get(-1));
 
-        assertEquals(1, vector.subVector(0, 1).size());
-        float[] floats3 = vector.subVector(0, 1).toArray();
-        assertEquals(1,floats3.length);
-        assertEquals((float)10,floats3[0]);
+        FloatVector subVector = vector.subVector(0, 0);
+        validateIterator(subVector);
+        assertEquals(0, subVector.size());
+        floats = subVector.toArray();
+        assertEquals(subVector, new FloatVectorDirect(floats));
+        assertEquals(subVector.hashCode(), new FloatVectorDirect(floats).hashCode());
+        assertEquals(NULL_FLOAT, subVector.get(0));
+        assertEquals(NULL_FLOAT, subVector.get(-1));
 
-        assertEquals(NULL_FLOAT,vector.subVector(0, 1).get(1));
-        assertEquals(NULL_FLOAT,vector.subVector(0, 1).get(-1));
+        subVector = vector.subVector(0, 1);
+        validateIterator(subVector);
+        assertEquals(1, subVector.size());
+        floats = subVector.toArray();
+        assertEquals(subVector, new FloatVectorDirect(floats));
+        assertEquals(subVector.hashCode(), new FloatVectorDirect(floats).hashCode());
+        assertEquals(1, floats.length);
+        assertEquals((float) 10, floats[0]);
+        assertEquals(NULL_FLOAT, subVector.get(1));
+        assertEquals(NULL_FLOAT, subVector.get(-1));
 
-        assertEquals(1, vector.subVector(1, 2).size());
-        float[] floats1 = vector.subVector(1, 2).toArray();
-        assertEquals(1,floats1.length);
-        assertEquals((float)20,floats1[0]);
-        assertEquals(NULL_FLOAT,vector.subVector(0, 1).get(1));
-        assertEquals(NULL_FLOAT,vector.subVector(0, 1).get(-1));
+        subVector = vector.subVector(2, 3);
+        validateIterator(subVector);
+        assertEquals(1, subVector.size());
+        floats = subVector.toArray();
+        assertEquals(subVector, new FloatVectorDirect(floats));
+        assertEquals(subVector.hashCode(), new FloatVectorDirect(floats).hashCode());
+        assertEquals(1, floats.length);
+        assertEquals((float) 30, floats[0]);
+        assertEquals(NULL_FLOAT, subVector.get(1));
+        assertEquals(NULL_FLOAT, subVector.get(-1));
 
-        assertEquals(2, vector.subVector(1, 3).size());
-        float[] floats2 = vector.subVector(1, 3).toArray();
-        assertEquals(2,floats2.length);
-        assertEquals((float)20,floats2[0]);
-        assertEquals((float)30,floats2[1]);
-        assertEquals(NULL_FLOAT,vector.subVector(1, 3).get(2));
-        assertEquals(NULL_FLOAT,vector.subVector(0, 1).get(-1));
+        subVector = vector.subVector(1, 3);
+        validateIterator(subVector);
+        assertEquals(2, subVector.size());
+        floats = subVector.toArray();
+        assertEquals(subVector, new FloatVectorDirect(floats));
+        assertEquals(subVector.hashCode(), new FloatVectorDirect(floats).hashCode());
+        assertEquals(2, floats.length);
+        assertEquals((float) 20, floats[0]);
+        assertEquals((float) 30, floats[1]);
+        assertEquals(NULL_FLOAT, subVector.get(2));
+        assertEquals(NULL_FLOAT, subVector.get(-1));
+
+        subVector = vector.subVectorByPositions(new long[] {-1, 1, 2, 4});
+        validateIterator(subVector);
+        assertEquals(4, subVector.size());
+        floats = subVector.toArray();
+        assertEquals(subVector, new FloatVectorDirect(floats));
+        assertEquals(subVector.hashCode(), new FloatVectorDirect(floats).hashCode());
+        assertEquals(4, floats.length);
+        assertEquals(NULL_FLOAT, floats[0]);
+        assertEquals((float) 20, floats[1]);
+        assertEquals((float) 30, floats[2]);
+        assertEquals(NULL_FLOAT, floats[3]);
+        assertEquals(NULL_FLOAT, subVector.get(-1));
+        assertEquals(NULL_FLOAT, subVector.get(4));
+
+        subVector = subVector.subVectorByPositions(new long[] {-1, 0, 1, 4});
+        validateIterator(subVector);
+        assertEquals(4, subVector.size());
+        floats = subVector.toArray();
+        assertEquals(subVector, new FloatVectorDirect(floats));
+        assertEquals(subVector.hashCode(), new FloatVectorDirect(floats).hashCode());
+        assertEquals(4, floats.length);
+        assertEquals(NULL_FLOAT, floats[0]);
+        assertEquals(NULL_FLOAT, floats[1]);
+        assertEquals((float) 20, floats[2]);
+        assertEquals(NULL_FLOAT, floats[3]);
+        assertEquals(NULL_FLOAT, subVector.get(-1));
+        assertEquals(NULL_FLOAT, subVector.get(4));
+
+        subVector = subVector.subVector(0, 2);
+        validateIterator(subVector);
+
+        subVector = subVector.subVectorByPositions(new long[] {0, 1, 2});
+        validateIterator(subVector);
     }
 
-    public void testSubArray() {
-        FloatVector vector = new FloatVectorDirect((float) 10, (float) 20, (float) 30);
+    @Test
+    public void testLarge() {
+        final float[] data = new float[10_000];
+        for (int ei = 0; ei < data.length; ++ei) {
+            data[ei] = (float) ei;
+        }
+        final FloatVector vector = makeTestVector(data);
+        assertEquals(vector, new FloatVectorDirect(vector.toArray()));
+        validateIterator(vector, -data.length, data.length * 2);
+        validateIterator(vector, -5, data.length / 2);
+        validateIterator(vector, -5, data.length);
+        validateIterator(vector, data.length / 2, data.length);
+        validateIterator(vector, data.length / 2, data.length + 5);
+        validateIterator(vector, data.length, data.length + 5);
+    }
 
-        for (int start=-4; start<=4; start++){
-            for (int end=-1; end<=7; end++){
-                if (start>end){
+    @Test
+    public void testSubVector() {
+        FloatVector vector = makeTestVector((float) 10, (float) 20, (float) 30);
+        validateIterator(vector);
+
+        for (int start = -4; start <= 4; start++) {
+            for (int end = -1; end <= 7; end++) {
+                if (start > end) {
                     continue;
                 }
 
-                float result[]=new float[end-start];
+                final float[] result = new float[end - start];
 
-                for (int i=start; i<end; i++){
-                    result[i-start] =(i<0 || i>=vector.size()) ? NULL_FLOAT : vector.get(i);
+                for (int ei = start; ei < end; ei++) {
+                    result[ei - start] = (ei < 0 || ei >= vector.size()) ? NULL_FLOAT : vector.get(ei);
                 }
 
-                checkSubArray(vector, start, end, result);
+                checkSubVector(vector, start, end, result);
             }
         }
 
-        for (int start=-4; start<=4; start++){
-            for (int end=-1; end<=7; end++){
-                for (int start2=-4; start2<=4; start2++){
-                    for (int end2=-1; end2<=7; end2++){
-                        if (start>end || start2>end2){
+        for (int start = -4; start <= 4; start++) {
+            for (int end = -1; end <= 7; end++) {
+                for (int start2 = -4; start2 <= 4; start2++) {
+                    for (int end2 = -1; end2 <= 7; end2++) {
+                        if (start > end || start2 > end2) {
                             continue;
                         }
 
-                        float result[]=new float[end-start];
+                        final float[] result = new float[end - start];
 
-                        for (int i=start; i<end; i++){
-                            result[i-start] =(i<0 || i>=vector.size()) ? NULL_FLOAT : vector.get(i);
+                        for (int ei = start; ei < end; ei++) {
+                            result[ei - start] = (ei < 0 || ei >= vector.size()) ? NULL_FLOAT : vector.get(ei);
                         }
 
-                        float result2[]=new float[end2-start2];
+                        final float[] result2 = new float[end2 - start2];
 
-                        for (int i=start2; i<end2; i++){
-                            result2[i-start2] =(i<0 || i>=result.length) ? NULL_FLOAT : result[i];
+                        for (int ei = start2; ei < end2; ei++) {
+                            result2[ei - start2] = (ei < 0 || ei >= result.length) ? NULL_FLOAT : result[ei];
                         }
 
-                        checkDoubleSubArray(vector, start, end, start2, end2, result2);
+                        checkDoubleSubVector(vector, start, end, start2, end2, result2);
                     }
                 }
             }
         }
     }
 
+    @Test
     public void testType() {
+        // region TestType
         assertEquals(FloatVector.type().clazz(), FloatVector.class);
+        // endregion TestType
     }
 
-    private void checkSubArray(FloatVector vector, int start, int end, float result[]){
-        FloatVector subArray = vector.subVector(start, end);
-        float array[] = subArray.toArray();
-        assertEquals(result.length, subArray.size());
+    private static void checkSubVector(
+            final FloatVector vector,
+            final int start,
+            final int end,
+            final float[] result) {
+        final FloatVector subVector = vector.subVector(start, end);
+        validateIterator(subVector);
+        final float[] array = subVector.toArray();
+        assertEquals(subVector, new FloatVectorDirect(array));
+        assertEquals(subVector.hashCode(), new FloatVectorDirect(array).hashCode());
+        assertEquals(result.length, subVector.size());
         assertEquals(result.length, array.length);
 
-        for (int i=0; i<result.length; i++){
-            assertEquals(result[i], subArray.get(i));
-            assertEquals(result[i], array[i]);
+        for (int ei = 0; ei < result.length; ei++) {
+            assertEquals(result[ei], subVector.get(ei));
+            assertEquals(result[ei], array[ei]);
         }
     }
 
-    private void checkDoubleSubArray(FloatVector vector, int start, int end, int start2, int end2, float result[]){
-        FloatVector subArray = vector.subVector(start, end);
-        subArray = subArray.subVector(start2, end2);
-        float array[] = subArray.toArray();
-        assertEquals(result.length, subArray.size());
+    private static void checkDoubleSubVector(
+            final FloatVector vector,
+            final int start,
+            final int end,
+            final int start2,
+            final int end2,
+            final float[] result) {
+        FloatVector subVector = vector.subVector(start, end);
+        subVector = subVector.subVector(start2, end2);
+        validateIterator(subVector);
+        final float[] array = subVector.toArray();
+        assertEquals(subVector, new FloatVectorDirect(array));
+        assertEquals(subVector.hashCode(), new FloatVectorDirect(array).hashCode());
+        assertEquals(result.length, subVector.size());
         assertEquals(result.length, array.length);
 
-        for (int i=0; i<result.length; i++){
-            assertEquals(result[i], subArray.get(i));
-            assertEquals(result[i], array[i]);
+        for (int ei = 0; ei < result.length; ei++) {
+            assertEquals(result[ei], subVector.get(ei));
+            assertEquals(result[ei], array[ei]);
+        }
+    }
+
+    private static void validateIterator(@NotNull final FloatVector vector) {
+        for (long si = -2; si < vector.size() + 2; ++si) {
+            for (long ei = si; ei < vector.size() + 2; ++ei) {
+                validateIterator(vector, si, ei);
+            }
+        }
+    }
+
+    private static void validateIterator(
+            @NotNull final FloatVector vector,
+            final long startIndexInclusive,
+            final long endIndexExclusive) {
+        try (final CloseablePrimitiveIteratorOfFloat iterator =
+                vector.iterator(startIndexInclusive, endIndexExclusive)) {
+            for (long vi = startIndexInclusive; vi < endIndexExclusive; ++vi) {
+                assertEquals(vector.get(vi), iterator.nextFloat());
+            }
+            assertFalse(iterator.hasNext());
         }
     }
 }

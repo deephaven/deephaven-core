@@ -41,6 +41,13 @@ public class UnionRedirection {
     private static final int MINIMUM_ARRAY_SIZE = 8;
 
     /**
+     * Redirection size threshold after which we use {@link #priorCurrSlot} and {@link #priorPrevSlot} to resume slot
+     * searches when not using a context.
+     */
+    private static final int THREAD_LOCAL_PRIOR_SLOT_THRESHOLD =
+            Configuration.getInstance().getIntegerWithDefault("UnionRedirection.threadLocalPriorSlotThreshold", 1 << 7);
+
+    /**
      * Cached prior slot used by {@link #currSlotForRowKey(long)}.
      */
     private final ThreadLocal<Integer> priorCurrSlot = ThreadLocal.withInitial(() -> 0);
@@ -135,7 +142,11 @@ public class UnionRedirection {
      * @return Table slot that currently contains the row key
      */
     int currSlotForRowKey(final long rowKey) {
-        return slotForRowKey(rowKey, priorCurrSlot, currFirstRowKeys, currSize);
+        if (currSize >= THREAD_LOCAL_PRIOR_SLOT_THRESHOLD) {
+            return slotForRowKey(rowKey, priorCurrSlot, currFirstRowKeys, currSize);
+        } else {
+            return slotForRowKey(rowKey, 0, currFirstRowKeys, currSize);
+        }
     }
 
     /**
@@ -156,7 +167,11 @@ public class UnionRedirection {
      * @return Table slot that previously contained the row key
      */
     int prevSlotForRowKey(final long rowKey) {
-        return slotForRowKey(rowKey, priorPrevSlot, prevFirstRowKeys, prevSize);
+        if (prevSize >= THREAD_LOCAL_PRIOR_SLOT_THRESHOLD) {
+            return slotForRowKey(rowKey, priorPrevSlot, prevFirstRowKeys, prevSize);
+        } else {
+            return slotForRowKey(rowKey, 0, prevFirstRowKeys, prevSize);
+        }
     }
 
     /**

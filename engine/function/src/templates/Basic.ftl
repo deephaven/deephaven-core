@@ -741,7 +741,7 @@ public class Basic {
      *         the falseCase element if the condition element is false; or null if the condition element is null.
      *         Returns null if any of the inputs is null.
      */
-    public static <T> T[] ifelseObj(BooleanVector condition, ObjectVector<T> trueCase, ObjectVector<T> falseCase) {
+    public static <T> T[] ifelseObj(ObjectVector<Boolean> condition, ObjectVector<T> trueCase, ObjectVector<T> falseCase) {
         if (condition == null || trueCase == null || falseCase == null) {
             return null;
         }
@@ -783,7 +783,7 @@ public class Basic {
             return null;
         }
 
-        return ifelseObj(new BooleanVectorDirect(condition), new ObjectVectorDirect<T>(trueCase), new ObjectVectorDirect<T>(falseCase));
+        return ifelseObj(new ObjectVectorDirect<>(condition), new ObjectVectorDirect<T>(trueCase), new ObjectVectorDirect<T>(falseCase));
     }
 
     /**
@@ -797,7 +797,7 @@ public class Basic {
      *         falseCase if the condition element is false; or null if the condition element is null.
      *         Returns null if condition is null.
      */
-    public static <T> T[] ifelseObj(BooleanVector condition, T trueCase, T falseCase) {
+    public static <T> T[] ifelseObj(ObjectVector<Boolean> condition, T trueCase, T falseCase) {
         if (condition == null) {
             return null;
         }
@@ -839,7 +839,7 @@ public class Basic {
             return null;
         }
 
-        return ifelseObj(new BooleanVectorDirect(condition), trueCase, falseCase);
+        return ifelseObj(new ObjectVectorDirect<>(condition), trueCase, falseCase);
     }
 
     /**
@@ -888,34 +888,6 @@ public class Basic {
         final T[] result = values.toArray();
 
         T lastGood = null;
-        for (int ii = 0; ii < n; ii++) {
-            if (!isNull(values.get(ii))) {
-                lastGood = values.get(ii);
-            }
-
-            result[ii] = lastGood;
-        }
-        return result;
-    }
-
-    /**
-     * Copies the specified array, replacing elements that represent null in the Deephaven convention by the most
-     * recently encountered non-null value if one exists. Otherwise (if no such value exists), replaces those elements
-     * with null.
-     *
-     * @param values values.
-     * @return A copy of the specified array, with Deephaven null elements replaced as described above. If the specified
-     *         array is null, returns null.
-     */
-    public static Boolean[] forwardFillObj(BooleanVector values) {
-        if (values == null) {
-            return null;
-        }
-
-        final int n = values.intSize("forwardFill");
-        final Boolean[] result = values.toArray();
-
-        Boolean lastGood = null;
         for (int ii = 0; ii < n; ii++) {
             if (!isNull(values.get(ii))) {
                 lastGood = values.get(ii);
@@ -998,7 +970,7 @@ public class Basic {
      * @return array containing value, if value is not null according to Deephaven convention, replacement otherwise.
      */
     static public ${pt.primitive}[] replaceIfNull(${pt.primitive}[] values, ${pt.primitive} replacement) {
-        return replaceIfNull(new ${pt.dbArrayDirect}(values), replacement);
+        return replaceIfNull(new ${pt.vectorDirect}(values), replacement);
     }
 
     /**
@@ -1008,7 +980,7 @@ public class Basic {
      * @param replacement replacement to use when value is null according to Deephaven convention.
      * @return array containing value, if value is not null according to Deephaven convention, replacement otherwise.
      */
-    static public ${pt.primitive}[] replaceIfNull(${pt.dbArray} values, ${pt.primitive} replacement) {
+    static public ${pt.primitive}[] replaceIfNull(${pt.vector} values, ${pt.primitive} replacement) {
         final int n = values.intSize("replaceIfNull");
         ${pt.primitive}[] result = new ${pt.primitive}[n];
 
@@ -1044,7 +1016,7 @@ public class Basic {
             return NULL_LONG;
         }
 
-        return count(new ${pt.dbArrayDirect}(values));
+        return count(new ${pt.vectorDirect}(values));
     }
 
     /**
@@ -1053,7 +1025,7 @@ public class Basic {
      * @param values values.
      * @return number of non-null values.
      */
-    static public long count(${pt.dbArray} values) {
+    static public long count(${pt.vector} values) {
         if (values == null) {
             return NULL_LONG;
         }
@@ -1076,7 +1048,7 @@ public class Basic {
      * @param values values.
      * @return last value from the array.
      */
-    static public ${pt.primitive} last(${pt.dbArray} values) {
+    static public ${pt.primitive} last(${pt.vector} values) {
         if (values == null) {
             return QueryConstants.${pt.null};
         }
@@ -1110,7 +1082,7 @@ public class Basic {
      * @param values values.
      * @return first value from the array.
      */
-    static public ${pt.primitive} first(${pt.dbArray} values) {
+    static public ${pt.primitive} first(${pt.vector} values) {
         if (values == null || values.size() == 0) {
             return QueryConstants.${pt.null};
         }
@@ -1139,7 +1111,7 @@ public class Basic {
      * @param values values.
      * @return nth value from the array or null, if the index is outside of the array's index range.
      */
-    static public ${pt.primitive} nth(long index, ${pt.dbArray} values) {
+    static public ${pt.primitive} nth(long index, ${pt.vector} values) {
         if (index < 0 || index >= values.size()) {
             return QueryConstants.${pt.null};
         }
@@ -1164,7 +1136,7 @@ public class Basic {
      * @param values Deephaven vector
      * @return primitive array.
      */
-    public static ${pt.primitive}[] array(${pt.dbArray} values) {
+    public static ${pt.primitive}[] array(${pt.vector} values) {
         if (values == null) {
             return null;
         }
@@ -1178,8 +1150,8 @@ public class Basic {
      * @param values primitive array
      * @return Deephaven vector.
      */
-    public static ${pt.dbArray} vec(${pt.primitive}... values) {
-        return new ${pt.dbArrayDirect}(values);
+    public static ${pt.vector} vec(${pt.primitive}... values) {
+        return new ${pt.vectorDirect}(values);
     }
 
     <#if pt.valueType.isBoolean == false >
@@ -1231,7 +1203,7 @@ public class Basic {
             return QueryConstants.NULL_LONG;
         }
 
-        return countDistinct(new ${pt.dbArrayDirect}(values));
+        return countDistinct(new ${pt.vectorDirect}(values));
     }
 
     /**
@@ -1240,7 +1212,7 @@ public class Basic {
      * @param values values.
      * @return number of distinct non-null values.
      */
-    public static long countDistinct(final ${pt.dbArray} values) {
+    public static long countDistinct(final ${pt.vector} values) {
         return countDistinct(values, false);
     }
 
@@ -1256,7 +1228,7 @@ public class Basic {
             return QueryConstants.NULL_LONG;
         }
 
-        return countDistinct(new ${pt.dbArrayDirect}(values), countNull);
+        return countDistinct(new ${pt.vectorDirect}(values), countNull);
     }
 
     <#if pt.valueType.isBoolean == false >
@@ -1268,7 +1240,7 @@ public class Basic {
      * @param countNull true to count null values, and false to exclude null values.
      * @return number of distinct values.
      */
-    public static long countDistinct(final ${pt.dbArray} values, boolean countNull) {
+    public static long countDistinct(final ${pt.vector} values, boolean countNull) {
         if (values == null) {
             return QueryConstants.NULL_LONG;
         }
@@ -1305,7 +1277,7 @@ public class Basic {
      * @param countNull true to count null values, and false to exclude null values.
      * @return number of distinct values.
      */
-    public static long countDistinct(final ${pt.dbArray} values, boolean countNull) {
+    public static long countDistinct(final ${pt.vector} values, boolean countNull) {
         if (values == null) {
             return QueryConstants.NULL_LONG;
         }
@@ -1346,7 +1318,7 @@ public class Basic {
             return null;
         }
 
-        return distinct(new ${pt.dbArrayDirect}(values));
+        return distinct(new ${pt.vectorDirect}(values));
     }
 
     /**
@@ -1355,7 +1327,7 @@ public class Basic {
      * @param values values.
      * @return unsorted array containing only distinct non-null items from arr.
      */
-    public static ${pt.primitive}[] distinct(final ${pt.dbArray} values) {
+    public static ${pt.primitive}[] distinct(final ${pt.vector} values) {
         return distinct(values, false);
     }
 
@@ -1400,7 +1372,7 @@ public class Basic {
      * @param includeNull true to include null values, and false to exclude null values.
      * @return array containing only distinct items from arr.
      */
-    public static ${pt.primitive}[] distinct(final ${pt.dbArray} values, boolean includeNull) {
+    public static ${pt.primitive}[] distinct(final ${pt.vector} values, boolean includeNull) {
         if (values == null) {
             return null;
         }
@@ -1469,7 +1441,7 @@ public class Basic {
      * @param includeNull true to include null values, and false to exclude null values.
      * @return array containing only distinct items from arr.
      */
-    public static ${pt.primitive}[] distinct(final ${pt.dbArray} values, boolean includeNull) {
+    public static ${pt.primitive}[] distinct(final ${pt.vector} values, boolean includeNull) {
         if (values == null) {
             return null;
         }
@@ -1545,7 +1517,7 @@ public class Basic {
             return new ${pt.primitive}[0];
         }
 
-        return concat(Arrays.stream(values).map(e->e==null?null:new ${pt.dbArrayDirect}(e)).toArray(${pt.dbArray}[]::new));
+        return concat(Arrays.stream(values).map(e->e==null?null:new ${pt.vectorDirect}(e)).toArray(${pt.vector}[]::new));
     }
 
     /**
@@ -1554,14 +1526,14 @@ public class Basic {
      * @param values values.
      * @return concatenation of multiple arrays into a single array.
      */
-    public static ${pt.primitive}[] concat(${pt.dbArray}... values) {
+    public static ${pt.primitive}[] concat(${pt.vector}... values) {
         if (values == null) {
             return new ${pt.primitive}[0];
         }
 
         int n = 0;
 
-        for (${pt.dbArray} v : values) {
+        for (${pt.vector} v : values) {
             if (v != null) {
                 n += v.size();
             }
@@ -1570,7 +1542,7 @@ public class Basic {
         final ${pt.primitive}[] result = new ${pt.primitive}[n];
         int idx = 0;
 
-        for (${pt.dbArray} v : values) {
+        for (${pt.vector} v : values) {
             if (v != null) {
                 final long nn = v.size();
                 for (int i = 0; i < nn; i++) {
@@ -1594,7 +1566,7 @@ public class Basic {
             return null;
         }
 
-        return reverse(new ${pt.dbArrayDirect}(values));
+        return reverse(new ${pt.vectorDirect}(values));
     }
 
     /**
@@ -1603,7 +1575,7 @@ public class Basic {
      * @param values values.
      * @return array with the values reversed.
      */
-    public static ${pt.primitive}[] reverse(${pt.dbArray} values) {
+    public static ${pt.primitive}[] reverse(${pt.vector} values) {
         if (values == null) {
             return null;
         }
@@ -1630,7 +1602,7 @@ public class Basic {
             return NULL_LONG;
         }
 
-        return firstIndexOf(val, new ${pt.dbArrayDirect}(values));
+        return firstIndexOf(val, new ${pt.vectorDirect}(values));
     }
 
     /**
@@ -1640,7 +1612,7 @@ public class Basic {
      * @param val value to search for.
      * @return first index containing the value or null, if the value is not present.
      */
-    public static long firstIndexOf(${pt.primitive} val, ${pt.dbArray} values) {
+    public static long firstIndexOf(${pt.primitive} val, ${pt.vector} values) {
         if (values == null) {
             return NULL_LONG;
         }
@@ -1684,7 +1656,7 @@ public class Basic {
      *         the falseCase element if the condition element is false; or the Deephaven null constant if the condition element is null.
      *         Returns null if any of the inputs is null.
      */
-    public static ${pt.primitive}[] ifelse(BooleanVector condition, ${pt.dbArray} trueCase, ${pt.dbArray} falseCase) {
+    public static ${pt.primitive}[] ifelse(ObjectVector<Boolean> condition, ${pt.vector} trueCase, ${pt.vector} falseCase) {
         if (condition == null || trueCase == null || falseCase == null) {
             return null;
         }
@@ -1722,7 +1694,7 @@ public class Basic {
             return null;
         }
 
-        return ifelse(new BooleanVectorDirect(condition), new ${pt.dbArrayDirect}(trueCase), new ${pt.dbArrayDirect}(falseCase));
+        return ifelse(new ObjectVectorDirect<>(condition), new ${pt.vectorDirect}(trueCase), new ${pt.vectorDirect}(falseCase));
     }
 
     /**
@@ -1736,7 +1708,7 @@ public class Basic {
      *         falseCase if the condition element is false; or the Deephaven null constant if the condition element is null.
      *         Returns null if condition is null.
      */
-    public static ${pt.primitive}[] ifelse(BooleanVector condition, ${pt.primitive} trueCase, ${pt.primitive} falseCase) {
+    public static ${pt.primitive}[] ifelse(ObjectVector<Boolean> condition, ${pt.primitive} trueCase, ${pt.primitive} falseCase) {
         if (condition == null) {
             return null;
         }
@@ -1769,7 +1741,7 @@ public class Basic {
             return null;
         }
 
-        return ifelse(new BooleanVectorDirect(condition), trueCase, falseCase);
+        return ifelse(new ObjectVectorDirect<>(condition), trueCase, falseCase);
     }
 
     /**
@@ -1786,7 +1758,7 @@ public class Basic {
             return null;
         }
 
-        return forwardFill(new ${pt.dbArrayDirect}(values));
+        return forwardFill(new ${pt.vectorDirect}(values));
     }
 
     /**
@@ -1798,7 +1770,7 @@ public class Basic {
      * @return A copy of the specified array, with Deephaven null elements replaced as described above. If the
      *         specified array is null, returns null.
      */
-    public static ${pt.primitive}[] forwardFill(${pt.dbArray} values) {
+    public static ${pt.primitive}[] forwardFill(${pt.vector} values) {
         if (values == null) {
             return null;
         }

@@ -22,10 +22,10 @@ def main():
         bottom_5_fares_table = demo_chained_table_ops(taxi_data_table)
 
         # download the table to the client in the form of pyarrow table and convert it into a Pandas DataFrame
-        snapshot_data = bottom_5_fares_table.snapshot()
+        snapshot_data = bottom_5_fares_table.to_arrow()
         df = snapshot_data.to_pandas()
 
-        pd.set_option("max_columns", 20)
+        pd.set_option("display.max_columns", 20)
         print(df)
 
 

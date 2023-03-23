@@ -7,8 +7,8 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.time.DateTime;
-import io.deephaven.util.FunctionalInterfaces;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.function.ThrowingRunnable;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.junit.After;
@@ -308,7 +308,7 @@ public class JdbcToTableAdapterTest {
     }
 
     private void testArrayParseStrictHelper(
-            final FunctionalInterfaces.ThrowingRunnable<SQLException> insertRow,
+            final ThrowingRunnable<SQLException> insertRow,
             final double[] expectedRow) throws SQLException {
         stmt.executeUpdate("DROP TABLE IF EXISTS SingleTestTable");
         stmt.executeUpdate("CREATE TABLE SingleTestTable (" +

@@ -3,7 +3,6 @@
  */
 package io.deephaven.engine.table.impl.sources;
 
-import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.impl.DefaultGetContext;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
@@ -259,6 +258,13 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
             blocksToFlush.add(key >> BLOCK2_SHIFT);
         }
         return result;
+    }
+
+    private boolean shouldTrackPrevious() {
+        // prevFlusher == null means we are not tracking previous values yet (or maybe ever).
+        // If prepareForParallelPopulation was called on this cycle, it's assumed that all previous values have already
+        // been recorded.
+        return prevFlusher != null && prepareForParallelPopulationClockCycle != LogicalClock.DEFAULT.currentStep();
     }
 
     @Override
@@ -712,13 +718,6 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
                 offset += length;
             }
         }
-    }
-
-    private boolean shouldTrackPrevious() {
-        // prevFlusher == null means we are not tracking previous values yet (or maybe ever).
-        // If prepareForParallelPopulation was called on this cycle, it's assumed that all previous values have already
-        // been recorded.
-        return prevFlusher != null && prepareForParallelPopulationClockCycle != LogicalClock.DEFAULT.currentStep();
     }
     // endregion fillFromChunkByRanges
 

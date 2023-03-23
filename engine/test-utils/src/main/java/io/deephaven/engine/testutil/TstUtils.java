@@ -16,10 +16,12 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.ElementSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
+import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.PrevColumnSource;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.testutil.generator.TestDataGenerator;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.testutil.rowset.RowSetTstUtils;
 import io.deephaven.engine.testutil.sources.ByteTestSource;
 import io.deephaven.engine.testutil.sources.DateTimeTestSource;
@@ -436,10 +438,10 @@ public class TstUtils {
     }
 
     static WritableRowSet getInitialIndex(int size, Random random) {
-        final RowSetBuilderRandom builder = RowSetFactory.builderRandom();
+        final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
         long firstKey = 10;
         for (int i = 0; i < size; i++) {
-            builder.addKey(firstKey = firstKey + random.nextInt(3));
+            builder.appendKey(firstKey = firstKey + 1 + random.nextInt(3));
         }
         return builder.build();
     }
@@ -559,7 +561,9 @@ public class TstUtils {
 
     public static QueryTable testTable(TrackingRowSet rowSet, ColumnHolder<?>... columnHolders) {
         final Map<String, ColumnSource<?>> columns = getColumnSourcesFromHolders(rowSet, columnHolders);
-        return new QueryTable(rowSet, columns);
+        QueryTable queryTable = new QueryTable(rowSet, columns);
+        queryTable.setAttribute(BaseTable.TEST_SOURCE_TABLE_ATTRIBUTE, true);
+        return queryTable;
     }
 
     @NotNull
@@ -575,6 +579,7 @@ public class TstUtils {
     public static QueryTable testRefreshingTable(TrackingRowSet rowSet, ColumnHolder<?>... columnHolders) {
         final QueryTable queryTable = testTable(rowSet, columnHolders);
         queryTable.setRefreshing(true);
+        queryTable.setAttribute(BaseTable.TEST_SOURCE_TABLE_ATTRIBUTE, true);
         return queryTable;
     }
 

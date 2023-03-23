@@ -9,6 +9,7 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.partitioned.TableTransformationColumn;
+import io.deephaven.engine.table.iterators.ChunkedObjectColumnIterator;
 import io.deephaven.engine.table.iterators.ObjectColumnIterator;
 import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.engine.table.impl.*;
@@ -609,7 +610,7 @@ public class UnionSourceManager {
      * @return The iterator
      */
     private ObjectColumnIterator<Table> currConstituentIter(@NotNull final RowSequence rows) {
-        return new ObjectColumnIterator<>(constituentTables, rows);
+        return new ChunkedObjectColumnIterator<>(constituentTables, rows);
     }
 
     /**
@@ -619,7 +620,7 @@ public class UnionSourceManager {
      * @return The iterator
      */
     private ObjectColumnIterator<Table> prevConstituentIter(@NotNull final RowSequence rows) {
-        return new ObjectColumnIterator<>(constituentTables.getPrevSource(), rows);
+        return new ChunkedObjectColumnIterator<>(constituentTables.getPrevSource(), rows);
     }
 
     /**

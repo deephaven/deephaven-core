@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
 #
 
 from __future__ import annotations
@@ -47,6 +47,10 @@ class Table(TableInterface):
             pass
 
     @property
+    def is_refreshing(self):
+        return not self.is_static
+
+    @property
     def is_closed(self):
         return not self.ticket
 
@@ -66,7 +70,7 @@ class Table(TableInterface):
         reader = pyarrow.ipc.open_stream(schema_header)
         self.schema = reader.schema
 
-    def snapshot(self) -> pyarrow.Table:
+    def to_arrow(self) -> pyarrow.Table:
         """ Take a snapshot of the table and return a pyarrow Table.
 
         Returns:
@@ -75,4 +79,4 @@ class Table(TableInterface):
         Raises:
             DHError
         """
-        return self.session.flight_service.snapshot_table(self)
+        return self.session.flight_service.do_get_table(self)

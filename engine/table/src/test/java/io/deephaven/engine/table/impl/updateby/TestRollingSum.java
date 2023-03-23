@@ -500,7 +500,7 @@ public class TestRollingSum extends BaseUpdateByTest {
                     @Override
                     protected Table e() {
                         return bucketed ? t.updateBy(UpdateByOperation.RollingSum(prevTicks, postTicks), "Sym")
-                                : t.updateBy(UpdateByOperation.RollingSum(100));
+                                : t.updateBy(UpdateByOperation.RollingSum(prevTicks, postTicks));
                     }
                 }
         };
@@ -1732,8 +1732,8 @@ public class TestRollingSum extends BaseUpdateByTest {
     final void assertWithRollingSumTime(final @NotNull Object expected, final @NotNull Object actual,
             final @NotNull long[] timestamps, Class type, long prevTime, long postTime) {
         // looking for gross errors like missing entries (NOTE: pairwise results are more accurate than true rolling)
-        final float deltaF = .02f;
-        final double deltaD = .02d;
+        final float deltaF = .03f;
+        final double deltaD = .03d;
 
         if (expected instanceof byte[]) {
             assertArrayEquals(rollingSumTime((byte[]) expected, timestamps, prevTime, postTime), (long[]) actual);

@@ -51,7 +51,7 @@ public class DoubleRollingSumOperator extends BaseDoubleUpdateByOperator {
         }
 
         @Override
-        public void push(long key, int pos, int count) {
+        public void push(int pos, int count) {
             aggSum.ensureRemaining(count);
 
             for (int ii = 0; ii < count; ii++) {

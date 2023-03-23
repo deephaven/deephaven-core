@@ -8,14 +8,16 @@
 
 package io.deephaven.util.pool;
 
-import io.deephaven.base.Function;
 import io.deephaven.base.LockFreeArrayQueue;
 import io.deephaven.base.MathUtil;
-import io.deephaven.base.Procedure;
 import io.deephaven.base.pool.Pool;
 import io.deephaven.base.stats.Counter;
 import io.deephaven.base.stats.Stats;
 import io.deephaven.base.verify.Require;
+
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * A pool that
@@ -30,29 +32,29 @@ import io.deephaven.base.verify.Require;
  */
 public class ThreadSafeLenientFixedSizePool<T> implements Pool.MultiPool<T>, PoolEx<T> {
     /**
-     * Convert a Function.Nullary into a Function.Unary that ignores the argument.
+     * Convert a {@link Supplier} into a {@link Function} that ignores the argument.
      *
-     * @param callable The no-arg function
+     * @param supplier The supplier
      * @param <T> the type to be returned
      * @return a Function taking a ThreadSafeLenientFixedSizePool(ignored) and returning T
      */
-    private static <T> Function.Unary<T, ThreadSafeLenientFixedSizePool<T>> makeFactoryAdapter(
-            final Function.Nullary<T> callable) {
-        return arg -> callable.call();
+    private static <T> Function<ThreadSafeLenientFixedSizePool<T>, T> makeFactoryAdapter(
+            final Supplier<T> supplier) {
+        return arg -> supplier.get();
     }
 
     public static final int MIN_SIZE = 7;
 
     private final LockFreeArrayQueue<T> pool; // TODO: should be a stack
-    private final Function.Unary<T, ThreadSafeLenientFixedSizePool<T>> factory;
-    private final Procedure.Unary<? super T> clearingProcedure;
+    private final Function<ThreadSafeLenientFixedSizePool<T>, T> factory;
+    private final Consumer<? super T> clearingProcedure;
     private final Counter extraFactoryCalls;
 
     public ThreadSafeLenientFixedSizePool(String name,
             int size,
-            Function.Nullary<T> initFactory,
-            Function.Nullary<T> overflowFactory,
-            Procedure.Unary<? super T> clearingProcedure) {
+            Supplier<T> initFactory,
+            Supplier<T> overflowFactory,
+            Consumer<? super T> clearingProcedure) {
         this(
                 name,
                 Require.geq(size, "size", MIN_SIZE, "MIN_SIZE"),
@@ -63,9 +65,9 @@ public class ThreadSafeLenientFixedSizePool<T> implements Pool.MultiPool<T>, Poo
 
     public ThreadSafeLenientFixedSizePool(String name,
             int size,
-            Function.Unary<T, ThreadSafeLenientFixedSizePool<T>> initFactory,
-            Function.Unary<T, ThreadSafeLenientFixedSizePool<T>> overflowFactory,
-            Procedure.Unary<? super T> clearingProcedure) {
+            Function<ThreadSafeLenientFixedSizePool<T>, T> initFactory,
+            Function<ThreadSafeLenientFixedSizePool<T>, T> overflowFactory,
+            Consumer<? super T> clearingProcedure) {
         Require.geq(size, "size", MIN_SIZE, "MIN_SIZE");
         Require.neqNull(initFactory, "initFactory");
         Require.neqNull(overflowFactory, "overflowFactory");
@@ -73,7 +75,7 @@ public class ThreadSafeLenientFixedSizePool<T> implements Pool.MultiPool<T>, Poo
         this.clearingProcedure = clearingProcedure;
         this.pool = new LockFreeArrayQueue<T>(MathUtil.ceilLog2(size + 2));
         for (int i = 0; i < size; ++i) {
-            pool.enqueue(initFactory.call(this));
+            pool.enqueue(initFactory.apply(this));
         }
         extraFactoryCalls = name == null ? null : Stats.makeItem(name, "extraFactoryCalls", Counter.FACTORY).getValue();
     }
@@ -84,7 +86,7 @@ public class ThreadSafeLenientFixedSizePool<T> implements Pool.MultiPool<T>, Poo
             if (extraFactoryCalls != null) {
                 extraFactoryCalls.sample(1);
             }
-            return factory.call(this);
+            return factory.apply(this);
         }
         return item;
     }
@@ -98,7 +100,7 @@ public class ThreadSafeLenientFixedSizePool<T> implements Pool.MultiPool<T>, Poo
             return false;
         }
         if (null != clearingProcedure) {
-            clearingProcedure.call(item);
+            clearingProcedure.accept(item);
         }
         return pool.enqueue(item); // discard if enqueue fails
     }

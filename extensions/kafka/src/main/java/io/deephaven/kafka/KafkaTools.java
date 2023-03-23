@@ -122,7 +122,7 @@ public class KafkaTools {
 
     /**
      * Create an Avro schema object for a String containing a JSON encoded Avro schema definition.
-     * 
+     *
      * @param avroSchemaAsJsonString The JSON Avro schema definition
      * @return an Avro schema object
      */
@@ -1706,7 +1706,10 @@ public class KafkaTools {
                         "and can't automatically set it for type " + dataType);
     }
 
-    private static class StreamPartitionedTable extends PartitionedTableImpl implements Runnable {
+    /**
+     * @implNote The constructor publishes {@code this} to the {@link UpdateGraphProcessor} and cannot be subclassed.
+     */
+    private static final class StreamPartitionedTable extends PartitionedTableImpl implements Runnable {
 
         private static final String PARTITION_COLUMN_NAME = "Partition";
         private static final String CONSTITUENT_COLUMN_NAME = "Table";

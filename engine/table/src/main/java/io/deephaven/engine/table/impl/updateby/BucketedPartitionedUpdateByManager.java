@@ -44,8 +44,8 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
     /**
      * Perform a bucketed updateBy using {@code byColumns} as the keys
      *
-     * @param operators the operations to perform
-     * @param windows the unique windows for this UpdateBy
+     * @param windows the unique windows for this UpdateBy, each window contains operators that can share processing
+     *        resources
      * @param inputSources the primitive input sources
      * @param source the source table
      * @param preservedColumns columns from the source table that are unchanged in the result table
@@ -56,7 +56,6 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
      * @param control the control object.
      */
     protected BucketedPartitionedUpdateByManager(
-            @NotNull final UpdateByOperator[] operators,
             @NotNull final UpdateByWindow[] windows,
             @NotNull final ColumnSource<?>[] inputSources,
             @NotNull final QueryTable source,
@@ -66,7 +65,7 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
             @Nullable final String timestampColumnName,
             @Nullable final WritableRowRedirection rowRedirection,
             @NotNull final UpdateByControl control) {
-        super(source, operators, windows, inputSources, timestampColumnName, rowRedirection, control);
+        super(source, windows, inputSources, timestampColumnName, rowRedirection, control);
 
         // this table will always have the rowset of the source
         result = new QueryTable(source.getRowSet(), resultSources);
@@ -107,10 +106,10 @@ class BucketedPartitionedUpdateByManager extends UpdateBy {
             result.addParentReference(sourceListener);
 
             // create input and output modified column sets
-            for (UpdateByOperator op : operators) {
+            forAllOperators(op -> {
                 op.createInputModifiedColumnSet(source);
                 op.createOutputModifiedColumnSet(result);
-            }
+            });
 
             // make the source->result transformer from only the columns in the source that are present in result
             mcsTransformer = source.newModifiedColumnSetTransformer(result, preservedColumns);

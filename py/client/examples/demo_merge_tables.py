@@ -19,10 +19,10 @@ def main():
         bottom_5_fares_table = demo_chained_table_ops(taxi_data_table)
 
         combined_fares_table = dh_session.merge_tables(tables=[top_5_fares_table, bottom_5_fares_table])
-        snapshot_data = combined_fares_table.snapshot()
-        df = snapshot_data.to_pandas()
+        arrow_table = combined_fares_table.to_arrow()
+        df = arrow_table.to_pandas()
 
-        pd.set_option("max_columns", 20)
+        pd.set_option("display.max_columns", 20)
         print(df)
 
 

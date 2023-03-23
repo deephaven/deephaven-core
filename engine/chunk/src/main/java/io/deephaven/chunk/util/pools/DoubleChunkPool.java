@@ -110,7 +110,7 @@ public final class DoubleChunkPool implements ChunkPool {
         return ChunkPoolReleaseTracking.onTake(WritableDoubleChunk.makeWritableChunkForPool(capacity));
     }
 
-    public void giveWritableDoubleChunk(@NotNull final WritableDoubleChunk writableDoubleChunk) {
+    public void giveWritableDoubleChunk(@NotNull final WritableDoubleChunk<?> writableDoubleChunk) {
         if (writableDoubleChunk == EMPTY || writableDoubleChunk.isAlias(EMPTY)) {
             return;
         }

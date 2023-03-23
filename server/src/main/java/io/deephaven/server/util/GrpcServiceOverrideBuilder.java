@@ -4,7 +4,7 @@
 package io.deephaven.server.util;
 
 import com.google.rpc.Code;
-import io.deephaven.extensions.barrage.util.GrpcUtil;
+import io.deephaven.proto.util.Exceptions;
 import io.deephaven.server.browserstreaming.BrowserStream;
 import io.deephaven.server.browserstreaming.BrowserStreamInterceptor;
 import io.deephaven.server.browserstreaming.StreamData;
@@ -226,50 +226,49 @@ public class GrpcServiceOverrideBuilder {
             return this::invokeNext;
         }
 
-        public void invokeOpen(ReqT request, StreamObserver<RespT> responseObserver) {
-            GrpcUtil.rpcWrapper(log, responseObserver, () -> {
-                StreamData streamData = StreamData.STREAM_DATA_KEY.get();
-                SessionState session = sessionService.getCurrentSession();
-                if (streamData == null) {
-                    throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
-                            "no x-deephaven-stream headers, cannot handle open request");
-                }
+        public void invokeOpen(
+                @NotNull final ReqT request,
+                @NotNull final StreamObserver<RespT> responseObserver) {
+            StreamData streamData = StreamData.STREAM_DATA_KEY.get();
+            SessionState session = sessionService.getCurrentSession();
+            if (streamData == null) {
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
+                        "no x-deephaven-stream headers, cannot handle open request");
+            }
 
-                BrowserStream<ReqT> browserStream = factory.create(session, responseObserver);
-                browserStream.onMessageReceived(request, streamData);
+            BrowserStream<ReqT> browserStream = factory.create(session, responseObserver);
+            browserStream.onMessageReceived(request, streamData);
 
-                if (!streamData.isHalfClose()) {
-                    // if this isn't a half-close, we should export it for later calls - if it is, the client won't send
-                    // more messages
-                    session.newExport(streamData.getRpcTicket(), "rpcTicket")
-                            // not setting an onError here, failure can only happen if the session ends
-                            .submit(() -> browserStream);
-                }
-
-            });
+            if (!streamData.isHalfClose()) {
+                // if this isn't a half-close, we should export it for later calls - if it is, the client won't send
+                // more messages
+                session.newExport(streamData.getRpcTicket(), "rpcTicket")
+                        // not setting an onError here, failure can only happen if the session ends
+                        .submit(() -> browserStream);
+            }
         }
 
-        public void invokeNext(ReqT request, StreamObserver<NextRespT> responseObserver) {
+        public void invokeNext(
+                @NotNull final ReqT request,
+                @NotNull final StreamObserver<NextRespT> responseObserver) {
             StreamData streamData = StreamData.STREAM_DATA_KEY.get();
             if (streamData == null || streamData.getRpcTicket() == null) {
-                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
+                throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
                         "no x-deephaven-stream headers, cannot handle next request");
             }
-            GrpcUtil.rpcWrapper(log, responseObserver, () -> {
-                final SessionState session = sessionService.getCurrentSession();
+            final SessionState session = sessionService.getCurrentSession();
 
-                final SessionState.ExportObject<BrowserStream<ReqT>> browserStream =
-                        session.getExport(streamData.getRpcTicket(), "rpcTicket");
+            final SessionState.ExportObject<BrowserStream<ReqT>> browserStream =
+                    session.getExport(streamData.getRpcTicket(), "rpcTicket");
 
-                session.nonExport()
-                        .require(browserStream)
-                        .onError(responseObserver)
-                        .submit(() -> {
-                            browserStream.get().onMessageReceived(request, streamData);
-                            responseObserver.onNext(null);// TODO simple response payload
-                            responseObserver.onCompleted();
-                        });
-            });
+            session.nonExport()
+                    .require(browserStream)
+                    .onError(responseObserver)
+                    .submit(() -> {
+                        browserStream.get().onMessageReceived(request, streamData);
+                        responseObserver.onNext(null);// TODO simple response payload
+                        responseObserver.onCompleted();
+                    });
         }
     }
 

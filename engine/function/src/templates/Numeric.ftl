@@ -188,7 +188,7 @@ public class Numeric {
             return NULL_LONG;
         }
 
-        return countPos(new ${pt.dbArrayDirect}(values));
+        return countPos(new ${pt.vectorDirect}(values));
     }
 
     /**
@@ -197,7 +197,7 @@ public class Numeric {
      * @param values values.
      * @return number of positive values.
      */
-    public static long countPos(${pt.dbArray} values) {
+    public static long countPos(${pt.vector} values) {
         if (values == null) {
             return NULL_LONG;
         }
@@ -236,7 +236,7 @@ public class Numeric {
             return NULL_LONG;
         }
 
-        return countNeg(new ${pt.dbArrayDirect}(values));
+        return countNeg(new ${pt.vectorDirect}(values));
     }
 
     /**
@@ -245,7 +245,7 @@ public class Numeric {
      * @param values values.
      * @return number of negative values.
      */
-    public static long countNeg(${pt.dbArray} values) {
+    public static long countNeg(${pt.vector} values) {
         if (values == null) {
             return NULL_LONG;
         }
@@ -284,7 +284,7 @@ public class Numeric {
             return NULL_LONG;
         }
 
-        return countZero(new ${pt.dbArrayDirect}(values));
+        return countZero(new ${pt.vectorDirect}(values));
     }
 
     /**
@@ -293,7 +293,7 @@ public class Numeric {
      * @param values values.
      * @return number of zero values.
      */
-    public static long countZero(${pt.dbArray} values) {
+    public static long countZero(${pt.vector} values) {
         if (values == null) {
             return NULL_LONG;
         }
@@ -332,7 +332,7 @@ public class Numeric {
             return NULL_DOUBLE;
         }
 
-        return avg(new ${pt.dbArrayDirect}(values));
+        return avg(new ${pt.vectorDirect}(values));
     }
 
     /**
@@ -341,7 +341,7 @@ public class Numeric {
      * @param values values.
      * @return mean of non-null values.
      */
-    public static double avg(${pt.dbArray} values) {
+    public static double avg(${pt.vector} values) {
         if (values == null) {
             return NULL_DOUBLE;
         }
@@ -382,7 +382,7 @@ public class Numeric {
             return NULL_DOUBLE;
         }
 
-        return absAvg(new ${pt.dbArrayDirect}(values));
+        return absAvg(new ${pt.vectorDirect}(values));
     }
 
     /**
@@ -391,7 +391,7 @@ public class Numeric {
      * @param values values.
      * @return mean of the absolute value of non-null values.
      */
-    public static double absAvg(${pt.dbArray} values) {
+    public static double absAvg(${pt.vector} values) {
         if (values == null) {
             return NULL_DOUBLE;
         }
@@ -432,7 +432,7 @@ public class Numeric {
             return NULL_DOUBLE;
         }
 
-        return var(new ${pt.dbArrayDirect}(values));
+        return var(new ${pt.vectorDirect}(values));
     }
 
     /**
@@ -441,7 +441,7 @@ public class Numeric {
      * @param values values.
      * @return variance of non-null values.
      */
-    public static double var(${pt.dbArray} values) {
+    public static double var(${pt.vector} values) {
         if (values == null) {
             return NULL_DOUBLE;
         }
@@ -478,7 +478,7 @@ public class Numeric {
             return NULL_DOUBLE;
         }
 
-        return wvar(new ${pt.dbArrayDirect}(values), new ${pt2.dbArray}Direct(weights));
+        return wvar(new ${pt.vectorDirect}(values), new ${pt2.vector}Direct(weights));
     }
 
     /**
@@ -488,12 +488,12 @@ public class Numeric {
      * @param weights weights
      * @return weighted variance of non-null values.
      */
-    public static double wvar(${pt.primitive}[] values, ${pt2.dbArray} weights) {
+    public static double wvar(${pt.primitive}[] values, ${pt2.vector} weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return wvar(new ${pt.dbArrayDirect}(values), weights);
+        return wvar(new ${pt.vectorDirect}(values), weights);
     }
 
     /**
@@ -503,12 +503,12 @@ public class Numeric {
      * @param weights weights
      * @return weighted variance of non-null values.
      */
-    public static double wvar(${pt.dbArray} values, ${pt2.primitive}[] weights) {
+    public static double wvar(${pt.vector} values, ${pt2.primitive}[] weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return wvar(values, new ${pt2.dbArray}Direct(weights));
+        return wvar(values, new ${pt2.vector}Direct(weights));
     }
 
     /**
@@ -518,7 +518,7 @@ public class Numeric {
      * @param weights weights
      * @return weighted variance of non-null values.
      */
-    public static double wvar(${pt.dbArray} values, ${pt2.dbArray} weights) {
+    public static double wvar(${pt.vector} values, ${pt2.vector} weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
@@ -571,7 +571,7 @@ public class Numeric {
             return NULL_DOUBLE;
         }
 
-        return std(new ${pt.dbArrayDirect}(values));
+        return std(new ${pt.vectorDirect}(values));
     }
 
     /**
@@ -580,7 +580,7 @@ public class Numeric {
      * @param values values.
      * @return standard deviation of non-null values.
      */
-    public static double std(${pt.dbArray} values) {
+    public static double std(${pt.vector} values) {
         if (values == null) {
             return NULL_DOUBLE;
         }
@@ -604,7 +604,7 @@ public class Numeric {
             return NULL_DOUBLE;
         }
 
-        return wstd(new ${pt.dbArrayDirect}(values), new ${pt2.dbArray}Direct(weights));
+        return wstd(new ${pt.vectorDirect}(values), new ${pt2.vector}Direct(weights));
     }
 
     /**
@@ -614,12 +614,12 @@ public class Numeric {
      * @param weights weights
      * @return weighted standard deviation of non-null values.
      */
-    public static double wstd(${pt.primitive}[] values, ${pt2.dbArray} weights) {
+    public static double wstd(${pt.primitive}[] values, ${pt2.vector} weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return wstd(new ${pt.dbArrayDirect}(values), weights);
+        return wstd(new ${pt.vectorDirect}(values), weights);
     }
 
     /**
@@ -629,12 +629,12 @@ public class Numeric {
      * @param weights weights
      * @return weighted standard deviation of non-null values.
      */
-    public static double wstd(${pt.dbArray} values, ${pt2.primitive}[] weights) {
+    public static double wstd(${pt.vector} values, ${pt2.primitive}[] weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return wstd(values, new ${pt2.dbArray}Direct(weights));
+        return wstd(values, new ${pt2.vector}Direct(weights));
     }
 
     /**
@@ -644,7 +644,7 @@ public class Numeric {
      * @param weights weights
      * @return weighted standard deviation of non-null values.
      */
-    public static double wstd(${pt.dbArray} values, ${pt2.dbArray} weights) {
+    public static double wstd(${pt.vector} values, ${pt2.vector} weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
@@ -678,7 +678,7 @@ public class Numeric {
             return NULL_DOUBLE;
         }
 
-        return ste(new ${pt.dbArrayDirect}(values));
+        return ste(new ${pt.vectorDirect}(values));
     }
 
     /**
@@ -687,7 +687,7 @@ public class Numeric {
      * @param values values.
      * @return standard error of non-null values.
      */
-    public static double ste(${pt.dbArray} values) {
+    public static double ste(${pt.vector} values) {
         if (values == null) {
             return NULL_DOUBLE;
         }
@@ -712,7 +712,7 @@ public class Numeric {
             return NULL_DOUBLE;
         }
 
-        return wste(new ${pt.dbArrayDirect}(values), new ${pt2.dbArray}Direct(weights));
+        return wste(new ${pt.vectorDirect}(values), new ${pt2.vector}Direct(weights));
     }
 
     /**
@@ -722,12 +722,12 @@ public class Numeric {
      * @param weights weights
      * @return weighted standard error of non-null values.
      */
-    public static double wste(${pt.primitive}[] values, ${pt2.dbArray} weights) {
+    public static double wste(${pt.primitive}[] values, ${pt2.vector} weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return wste(new ${pt.dbArrayDirect}(values), weights);
+        return wste(new ${pt.vectorDirect}(values), weights);
     }
 
     /**
@@ -737,12 +737,12 @@ public class Numeric {
      * @param weights weights
      * @return weighted standard error of non-null values.
      */
-    public static double wste(${pt.dbArray} values, ${pt2.primitive}[] weights) {
+    public static double wste(${pt.vector} values, ${pt2.primitive}[] weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return wste(values, new ${pt2.dbArray}Direct(weights));
+        return wste(values, new ${pt2.vector}Direct(weights));
     }
 
     /**
@@ -752,7 +752,7 @@ public class Numeric {
      * @param weights weights
      * @return weighted standard error of non-null values.
      */
-    public static double wste(${pt.dbArray} values, ${pt2.dbArray} weights) {
+    public static double wste(${pt.vector} values, ${pt2.vector} weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
@@ -805,7 +805,7 @@ public class Numeric {
             return NULL_DOUBLE;
         }
 
-        return tstat(new ${pt.dbArrayDirect}(values));
+        return tstat(new ${pt.vectorDirect}(values));
     }
 
     /**
@@ -814,7 +814,7 @@ public class Numeric {
      * @param values values.
      * @return t-statistic of non-null values.
      */
-    public static double tstat(${pt.dbArray} values) {
+    public static double tstat(${pt.vector} values) {
         if (values == null) {
             return NULL_DOUBLE;
         }
@@ -839,7 +839,7 @@ public class Numeric {
             return NULL_DOUBLE;
         }
 
-        return wtstat(new ${pt.dbArrayDirect}(values), new ${pt2.dbArray}Direct(weights));
+        return wtstat(new ${pt.vectorDirect}(values), new ${pt2.vector}Direct(weights));
     }
 
     /**
@@ -849,12 +849,12 @@ public class Numeric {
      * @param weights weights
      * @return weighted t-statistic of non-null values.
      */
-    public static double wtstat(${pt.primitive}[] values, ${pt2.dbArray} weights) {
+    public static double wtstat(${pt.primitive}[] values, ${pt2.vector} weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return wtstat(new ${pt.dbArrayDirect}(values), weights);
+        return wtstat(new ${pt.vectorDirect}(values), weights);
     }
 
     /**
@@ -864,12 +864,12 @@ public class Numeric {
      * @param weights weights
      * @return weighted t-statistic of non-null values.
      */
-    public static double wtstat(${pt.dbArray} values, ${pt2.primitive}[] weights) {
+    public static double wtstat(${pt.vector} values, ${pt2.primitive}[] weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return wtstat(values, new ${pt2.dbArray}Direct(weights));
+        return wtstat(values, new ${pt2.vector}Direct(weights));
     }
 
     /**
@@ -879,7 +879,7 @@ public class Numeric {
      * @param weights weights
      * @return weighted t-statistic of non-null values.
      */
-    public static double wtstat(${pt.dbArray} values, ${pt2.dbArray} weights) {
+    public static double wtstat(${pt.vector} values, ${pt2.vector} weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
@@ -899,7 +899,7 @@ public class Numeric {
      * @param values values.
      * @return maximum of non-null values, or null if there are no non-null values.
      */
-    public static ${pt.primitive} max(${pt.dbArray} values) {
+    public static ${pt.primitive} max(${pt.vector} values) {
         final long idx = indexOfMax(values);
         return idx == NULL_LONG ? ${pt.null} : values.get(idx);
     }
@@ -915,7 +915,7 @@ public class Numeric {
             return ${pt.null};
         }
 
-        return max(new ${pt.dbArrayDirect}(values));
+        return max(new ${pt.vectorDirect}(values));
     }
 
     /**
@@ -935,7 +935,7 @@ public class Numeric {
      * @param values values.
      * @return minimum of non-null values, or null if there are no non-null values.
      */
-    public static ${pt.primitive} min(${pt.dbArray} values) {
+    public static ${pt.primitive} min(${pt.vector} values) {
         final long idx = indexOfMin(values);
         return idx == NULL_LONG ? ${pt.null} : values.get(idx);
     }
@@ -951,7 +951,7 @@ public class Numeric {
             return ${pt.null};
         }
 
-        return min(new ${pt.dbArrayDirect}(values));
+        return min(new ${pt.vectorDirect}(values));
     }
 
     /**
@@ -986,7 +986,7 @@ public class Numeric {
             return NULL_LONG;
         }
 
-        return indexOfMax(new ${pt.dbArrayDirect}(values));
+        return indexOfMax(new ${pt.vectorDirect}(values));
     }
 
     /**
@@ -995,7 +995,7 @@ public class Numeric {
      * @param values values.
      * @return index of the maximum value.
      */
-    public static long indexOfMax(${pt.dbArray} values) {
+    public static long indexOfMax(${pt.vector} values) {
         if (values == null) {
             return NULL_LONG;
         }
@@ -1038,7 +1038,7 @@ public class Numeric {
             return NULL_LONG;
         }
 
-        return indexOfMin(new ${pt.dbArrayDirect}(values));
+        return indexOfMin(new ${pt.vectorDirect}(values));
     }
 
     /**
@@ -1047,7 +1047,7 @@ public class Numeric {
      * @param values values.
      * @return index of the minimum value.
      */
-    public static long indexOfMin(${pt.dbArray} values) {
+    public static long indexOfMin(${pt.vector} values) {
         if (values == null) {
             return NULL_LONG;
         }
@@ -1090,7 +1090,7 @@ public class Numeric {
             return NULL_DOUBLE;
         }
 
-        return median(new ${pt.dbArrayDirect}(values));
+        return median(new ${pt.vectorDirect}(values));
     }
 
     /**
@@ -1099,7 +1099,7 @@ public class Numeric {
      * @param values values.
      * @return median.
      */
-    public static double median(${pt.dbArray} values) {
+    public static double median(${pt.vector} values) {
         if (values == null) {
             return NULL_DOUBLE;
         }
@@ -1129,7 +1129,7 @@ public class Numeric {
             return NULL_DOUBLE;
         }
 
-        return percentile(percentile, new ${pt.dbArrayDirect}(values));
+        return percentile(percentile, new ${pt.vectorDirect}(values));
     }
 
     /**
@@ -1139,7 +1139,7 @@ public class Numeric {
      * @param values values.
      * @return percentile, or null value in the Deephaven convention if values is null or empty.
      */
-    public static double percentile(double percentile, ${pt.dbArray} values) {
+    public static double percentile(double percentile, ${pt.vector} values) {
         if (values == null || values.isEmpty()) {
             return NULL_DOUBLE;
         }
@@ -1172,7 +1172,7 @@ public class Numeric {
             return NULL_DOUBLE;
         }
 
-        return cov(new ${pt.dbArrayDirect}(values0), new ${pt2.dbArray}Direct(values1));
+        return cov(new ${pt.vectorDirect}(values0), new ${pt2.vector}Direct(values1));
     }
 
     /**
@@ -1182,12 +1182,12 @@ public class Numeric {
      * @param values1 2nd set of values.
      * @return covariance of non-null values.
      */
-    public static double cov(${pt.primitive}[] values0, ${pt2.dbArray} values1) {
+    public static double cov(${pt.primitive}[] values0, ${pt2.vector} values1) {
         if (values0 == null || values1 == null) {
             return NULL_DOUBLE;
         }
 
-        return cov(new ${pt.dbArrayDirect}(values0), values1);
+        return cov(new ${pt.vectorDirect}(values0), values1);
     }
 
     /**
@@ -1197,12 +1197,12 @@ public class Numeric {
      * @param values1 2nd set of values.
      * @return covariance of non-null values.
      */
-    public static double cov(${pt.dbArray} values0, ${pt2.primitive}[] values1) {
+    public static double cov(${pt.vector} values0, ${pt2.primitive}[] values1) {
         if (values0 == null || values1 == null) {
             return NULL_DOUBLE;
         }
 
-        return cov(values0, new ${pt2.dbArray}Direct(values1));
+        return cov(values0, new ${pt2.vector}Direct(values1));
     }
 
     /**
@@ -1212,7 +1212,7 @@ public class Numeric {
      * @param values1 2nd set of values.
      * @return covariance of non-null values.
      */
-    public static double cov(${pt.dbArray} values0, ${pt2.dbArray} values1) {
+    public static double cov(${pt.vector} values0, ${pt2.vector} values1) {
         if (values0 == null || values1 == null) {
             return NULL_DOUBLE;
         }
@@ -1251,7 +1251,7 @@ public class Numeric {
             return NULL_DOUBLE;
         }
 
-        return cor(new ${pt.dbArrayDirect}(values0), new ${pt2.dbArray}Direct(values1));
+        return cor(new ${pt.vectorDirect}(values0), new ${pt2.vector}Direct(values1));
     }
 
     /**
@@ -1261,12 +1261,12 @@ public class Numeric {
      * @param values1 2nd set of values.
      * @return correlation of non-null values.
      */
-    public static double cor(${pt.primitive}[] values0, ${pt2.dbArray} values1) {
+    public static double cor(${pt.primitive}[] values0, ${pt2.vector} values1) {
         if (values0 == null || values1 == null) {
             return NULL_DOUBLE;
         }
 
-        return cor(new ${pt.dbArrayDirect}(values0), values1);
+        return cor(new ${pt.vectorDirect}(values0), values1);
     }
 
     /**
@@ -1276,12 +1276,12 @@ public class Numeric {
      * @param values1 2nd set of values.
      * @return correlation of non-null values.
      */
-    public static double cor(${pt.dbArray} values0, ${pt2.primitive}[] values1) {
+    public static double cor(${pt.vector} values0, ${pt2.primitive}[] values1) {
         if (values0 == null || values1 == null) {
             return NULL_DOUBLE;
         }
 
-        return cor(values0, new ${pt2.dbArray}Direct(values1));
+        return cor(values0, new ${pt2.vector}Direct(values1));
     }
 
     /**
@@ -1291,7 +1291,7 @@ public class Numeric {
      * @param values1 2nd set of values.
      * @return correlation of non-null values.
      */
-    public static double cor(${pt.dbArray} values0, ${pt2.dbArray} values1) {
+    public static double cor(${pt.vector} values0, ${pt2.vector} values1) {
         if (values0 == null || values1 == null) {
             return NULL_DOUBLE;
         }
@@ -1336,7 +1336,7 @@ public class Numeric {
      * @param values values.
      * @return sum of non-null values.
      */
-    public static ${pt.primitive} sum(${pt.dbArray} values) {
+    public static ${pt.primitive} sum(${pt.vector} values) {
         if (values == null) {
             return ${pt.null};
         }
@@ -1364,7 +1364,7 @@ public class Numeric {
             return ${pt.null};
         }
 
-        return sum(new ${pt.dbArrayDirect}(values));
+        return sum(new ${pt.vectorDirect}(values));
     }
 
     /**
@@ -1373,7 +1373,7 @@ public class Numeric {
      * @param values values.
      * @return product of non-null values.
      */
-    public static ${pt.primitive} product(${pt.dbArray} values) {
+    public static ${pt.primitive} product(${pt.vector} values) {
         if (values == null) {
             return ${pt.null};
         }
@@ -1408,7 +1408,7 @@ public class Numeric {
             return ${pt.null};
         }
 
-        return product(new ${pt.dbArrayDirect}(values));
+        return product(new ${pt.vectorDirect}(values));
     }
 
     /**
@@ -1458,7 +1458,7 @@ public class Numeric {
      * @param values values.
      * @return cumulative min of non-null values.
      */
-    public static ${pt.primitive}[] cummin(${pt.dbArray} values) {
+    public static ${pt.primitive}[] cummin(${pt.vector} values) {
         if (values == null) {
             return null;
         }
@@ -1525,7 +1525,7 @@ public class Numeric {
      * @param values values.
      * @return cumulative max of non-null values.
      */
-    public static ${pt.primitive}[] cummax(${pt.dbArray} values) {
+    public static ${pt.primitive}[] cummax(${pt.vector} values) {
         if (values == null) {
             return null;
         }
@@ -1593,7 +1593,7 @@ public class Numeric {
      * @param values values.
      * @return cumulative sum of non-null values.
      */
-    public static ${pt.primitive}[] cumsum(${pt.dbArray} values) {
+    public static ${pt.primitive}[] cumsum(${pt.vector} values) {
         if (values == null) {
             return null;
         }
@@ -1666,7 +1666,7 @@ public class Numeric {
      * @param values values.
      * @return cumulative product of non-null values.
      */
-    public static ${pt.primitive}[] cumprod(${pt.dbArray} values) {
+    public static ${pt.primitive}[] cumprod(${pt.vector} values) {
         if (values == null) {
             return null;
         }
@@ -2102,7 +2102,7 @@ public class Numeric {
             return NULL_DOUBLE;
         }
 
-        return wsum(new ${pt.dbArrayDirect}(values), new ${pt2.dbArray}Direct(weights));
+        return wsum(new ${pt.vectorDirect}(values), new ${pt2.vector}Direct(weights));
     }
 
     /**
@@ -2112,12 +2112,12 @@ public class Numeric {
      * @param weights weights
      * @return weighted sum of non-null values.
      */
-    public static double wsum(${pt.primitive}[] values, ${pt2.dbArray} weights) {
+    public static double wsum(${pt.primitive}[] values, ${pt2.vector} weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return wsum(new ${pt.dbArrayDirect}(values), weights);
+        return wsum(new ${pt.vectorDirect}(values), weights);
     }
 
     /**
@@ -2127,12 +2127,12 @@ public class Numeric {
      * @param weights weights
      * @return weighted sum of non-null values.
      */
-    public static double wsum(${pt.dbArray} values, ${pt2.primitive}[] weights) {
+    public static double wsum(${pt.vector} values, ${pt2.primitive}[] weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return wsum(values, new ${pt2.dbArray}Direct(weights));
+        return wsum(values, new ${pt2.vector}Direct(weights));
     }
 
     /**
@@ -2142,7 +2142,7 @@ public class Numeric {
      * @param weights weights
      * @return weighted sum of non-null values.
      */
-    public static double wsum(${pt.dbArray} values, ${pt2.dbArray} weights) {
+    public static double wsum(${pt.vector} values, ${pt2.vector} weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
@@ -2178,7 +2178,7 @@ public class Numeric {
             return NULL_DOUBLE;
         }
 
-        return wavg(new ${pt.dbArrayDirect}(values), new ${pt2.dbArray}Direct(weights));
+        return wavg(new ${pt.vectorDirect}(values), new ${pt2.vector}Direct(weights));
     }
 
     /**
@@ -2188,12 +2188,12 @@ public class Numeric {
      * @param weights weights
      * @return weighted average of non-null values.
      */
-    public static double wavg(${pt.primitive}[] values, ${pt2.dbArray} weights) {
+    public static double wavg(${pt.primitive}[] values, ${pt2.vector} weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return wavg(new ${pt.dbArrayDirect}(values), weights);
+        return wavg(new ${pt.vectorDirect}(values), weights);
     }
 
     /**
@@ -2203,12 +2203,12 @@ public class Numeric {
      * @param weights weights
      * @return weighted average of non-null values.
      */
-    public static double wavg(${pt.dbArray} values, ${pt2.primitive}[] weights) {
+    public static double wavg(${pt.vector} values, ${pt2.primitive}[] weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
-        return wavg(values, new ${pt2.dbArray}Direct(weights));
+        return wavg(values, new ${pt2.vector}Direct(weights));
     }
 
     /**
@@ -2218,7 +2218,7 @@ public class Numeric {
      * @param weights weights
      * @return weighted average of non-null values.
      */
-    public static double wavg(${pt.dbArray} values, ${pt2.dbArray} weights) {
+    public static double wavg(${pt.vector} values, ${pt2.vector} weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
@@ -2391,7 +2391,7 @@ public class Numeric {
      * @return array containing value, if value is not NaN, replacement otherwise.
      */
     static public ${pt.primitive}[] replaceIfNaN(${pt.primitive}[] values, ${pt.primitive} replacement) {
-        return replaceIfNaN(new ${pt.dbArrayDirect}(values), replacement);
+        return replaceIfNaN(new ${pt.vectorDirect}(values), replacement);
     }
 
     /**
@@ -2401,7 +2401,7 @@ public class Numeric {
      * @param replacement replacement to use when value is NaN.
      * @return array containing value, if value is not NaN, replacement otherwise.
      */
-    static public ${pt.primitive}[] replaceIfNaN(${pt.dbArray} values, ${pt.primitive} replacement) {
+    static public ${pt.primitive}[] replaceIfNaN(${pt.vector} values, ${pt.primitive} replacement) {
         final int n = values.intSize("replaceIfNaN");
         ${pt.primitive}[] result = new ${pt.primitive}[n];
 
@@ -2435,7 +2435,7 @@ public class Numeric {
      * @return array containing value, if value is neither NaN nor null according to Deephaven convention, replacement otherwise.
      */
     static public ${pt.primitive}[] replaceIfNullNaN(${pt.primitive}[] values, ${pt.primitive} replacement) {
-        return replaceIfNullNaN(new ${pt.dbArrayDirect}(values), replacement);
+        return replaceIfNullNaN(new ${pt.vectorDirect}(values), replacement);
     }
 
     /**
@@ -2445,7 +2445,7 @@ public class Numeric {
      * @param replacement replacement to use when value is NaN or null according to Deephaven convention.
      * @return array containing value, if value is neither NaN nor null according to Deephaven convention, replacement otherwise.
      */
-    static public ${pt.primitive}[] replaceIfNullNaN(${pt.dbArray} values, ${pt.primitive} replacement) {
+    static public ${pt.primitive}[] replaceIfNullNaN(${pt.vector} values, ${pt.primitive} replacement) {
         final int n = values.intSize("replaceIfNullNaN");
         ${pt.primitive}[] result = new ${pt.primitive}[n];
 
@@ -2475,7 +2475,7 @@ public class Numeric {
      * @return array containing value, if value is finite according to Deephaven convention, replacement otherwise.
      */
     static public ${pt.primitive}[] replaceIfNonFinite(${pt.primitive}[] values, ${pt.primitive} replacement) {
-        return replaceIfNonFinite(new ${pt.dbArrayDirect}(values), replacement);
+        return replaceIfNonFinite(new ${pt.vectorDirect}(values), replacement);
     }
 
     /**
@@ -2485,7 +2485,7 @@ public class Numeric {
      * @param replacement replacement to use when value is not finite according to Deephaven convention.
      * @return array containing value, if value is finite according to Deephaven convention, replacement otherwise.
      */
-    static public ${pt.primitive}[] replaceIfNonFinite(${pt.dbArray} values, ${pt.primitive} replacement) {
+    static public ${pt.primitive}[] replaceIfNonFinite(${pt.vector} values, ${pt.primitive} replacement) {
         final int n = values.intSize("replaceIfNonFinite");
         ${pt.primitive}[] result = new ${pt.primitive}[n];
 

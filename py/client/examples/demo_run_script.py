@@ -13,7 +13,7 @@ def run_script(dh_session: Session) -> Table:
     server_script = '''
 t2 = t.where("VendorID > 0")\
         .sort("VendorID", "fare_amount")\
-        .headBy(5, "VendorID")
+        .head_by(5, "VendorID")
 '''
     dh_session.run_script(server_script)
     return dh_session.open_table("t2")
@@ -26,10 +26,10 @@ def main():
         dh_session.bind_table(variable_name, taxi_data_table)
 
         bottom_5_fares_table = run_script(dh_session=dh_session)
-        snapshot_data = bottom_5_fares_table.snapshot()
-        df = snapshot_data.to_pandas()
+        arrow_table = bottom_5_fares_table.to_arrow()
+        df = arrow_table.to_pandas()
 
-        pd.set_option("max_columns", 20)
+        pd.set_option("display.max_columns", 20)
         print(df)
 
 

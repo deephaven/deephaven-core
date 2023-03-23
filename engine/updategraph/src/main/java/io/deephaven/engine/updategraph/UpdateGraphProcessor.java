@@ -24,18 +24,16 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.io.sched.Scheduler;
 import io.deephaven.io.sched.TimedJob;
 import io.deephaven.net.CommBase;
-import io.deephaven.util.FunctionalInterfaces;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.TestUseOnly;
 import io.deephaven.util.datastructures.SimpleReferenceManager;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedNode;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedQueue;
+import io.deephaven.util.function.ThrowingRunnable;
 import io.deephaven.util.locks.AwareFunctionalLock;
 import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.util.thread.NamingThreadFactory;
-import io.deephaven.util.thread.ThreadDump;
 import io.deephaven.util.thread.ThreadInitializationFactory;
-import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -944,7 +942,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
      * @param runnable the runnable to execute.
      */
     @TestUseOnly
-    public <T extends Exception> void runWithinUnitTestCycle(FunctionalInterfaces.ThrowingRunnable<T> runnable)
+    public <T extends Exception> void runWithinUnitTestCycle(ThrowingRunnable<T> runnable)
             throws T {
         startCycleForUnitTests();
         try {
@@ -1092,10 +1090,9 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
      */
     private void flushNotificationsAndCompleteCycle() {
         // We cannot proceed with normal notifications, nor are we satisfied, until all update source refresh
-        // notifications
-        // have been processed. Note that non-update source notifications that require dependency satisfaction are
-        // delivered first to the pendingNormalNotifications queue, and hence will not be processed until we advance to
-        // the flush* methods.
+        // notifications have been processed. Note that non-update source notifications that require dependency
+        // satisfaction are delivered first to the pendingNormalNotifications queue, and hence will not be processed
+        // until we advance to the flush* methods.
         // TODO: If and when we properly integrate update sources into the dependency tracking system, we can
         // discontinue this distinct phase, along with the requirement to treat the UGP itself as a Dependency.
         // Until then, we must delay the beginning of "normal" notification processing until all update sources are
@@ -1301,6 +1298,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
         private final Semaphore pendingNormalNotificationsCheckNeeded = new Semaphore(0, false);
 
         private volatile boolean running = true;
+        private volatile boolean isHealthy = true;
 
         public ConcurrentNotificationProcessor(@NotNull final ThreadFactory threadFactory,
                 final int updateThreadCount) {
@@ -1314,27 +1312,35 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
         private void processSatisfiedNotifications() {
             log.info().append(Thread.currentThread().getName())
                     .append(": starting to poll for satisfied notifications");
-            while (running) {
-                Notification satisfiedNotification = null;
-                synchronized (satisfiedNotifications) {
-                    while (running && (satisfiedNotification = satisfiedNotifications.poll()) == null) {
-                        try {
-                            satisfiedNotifications.wait();
-                        } catch (InterruptedException ignored) {
+            Notification satisfiedNotification = null;
+            try {
+                while (running) {
+                    synchronized (satisfiedNotifications) {
+                        while (running && (satisfiedNotification = satisfiedNotifications.poll()) == null) {
+                            try {
+                                satisfiedNotifications.wait();
+                            } catch (InterruptedException ignored) {
+                            }
                         }
                     }
-                }
-                if (satisfiedNotification == null) {
-                    break;
-                }
-                try {
+                    if (satisfiedNotification == null) {
+                        break;
+                    }
+
                     runNotification(satisfiedNotification);
-                } finally {
+                    satisfiedNotification = null;
                     outstandingNotifications.decrementAndGet();
                     pendingNormalNotificationsCheckNeeded.release();
                 }
+            } finally {
+                if (satisfiedNotification != null) {
+                    // if we were thrown out of the loop; decrement / release after setting the unhealthy flag
+                    isHealthy = false;
+                    outstandingNotifications.decrementAndGet();
+                    pendingNormalNotificationsCheckNeeded.release();
+                }
+                log.info().append(Thread.currentThread().getName()).append(": terminating");
             }
-            log.info().append(Thread.currentThread().getName()).append(": terminating");
         }
 
         @Override
@@ -1375,6 +1381,8 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
         public void doWork() {
             try {
                 pendingNormalNotificationsCheckNeeded.acquire();
+                // if a processing thread exits unexpectedly, propagate an error to the outer refresh thread
+                Assert.eqTrue(isHealthy, "isHealthy");
             } catch (InterruptedException ignored) {
             }
         }
@@ -1384,6 +1392,10 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
             while (outstandingNotificationsCount() > 0) {
                 doWork();
             }
+            // A successful and a failed notification may race the release of pendingNormalNotificationsCheckNeeded,
+            // causing this thread to miss a false isHealthy. Since isHealthy is set prior to decrementing
+            // outstandingNotificationsCount, we're guaranteed to read the correct value after exiting the while loop.
+            Assert.eqTrue(isHealthy, "isHealthy");
         }
 
         @Override

@@ -360,7 +360,11 @@ public class QueryTableSelectUpdateTest {
             if (indexPositionChangesAllowed) {
                 // we should make sure that our added + removed is equal to the source added + removed size
                 long sourceSizeChange = listener1.added.size() - listener1.removed.size();
-                long resultSizeChange = listener2.added.size() - listener2.removed.size();
+                long resultSizeChange = 0;
+                // if the update was determined to be irrelevant, listener2 may not receive any event
+                if (listener2.added != null && listener2.removed != null) {
+                    resultSizeChange = listener2.added.size() - listener2.removed.size();
+                }
                 if (sourceSizeChange != resultSizeChange) {
                     issues.add("Source changed size by " + sourceSizeChange + ", but result changed size by "
                             + resultSizeChange);
@@ -574,7 +578,7 @@ public class QueryTableSelectUpdateTest {
 
     private void testUpdateIncremental(final int seed, MutableInt numSteps) {
         final Random random = new Random(seed);
-        final ColumnInfo[] columnInfo;
+        final ColumnInfo<?, ?>[] columnInfo;
         final int size = 25;
         final QueryTable queryTable = getTable(size, random,
                 columnInfo = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol"},
@@ -872,9 +876,12 @@ public class QueryTableSelectUpdateTest {
         TestCase.assertEquals(Arrays.asList(0, 1), Arrays.asList(table2.getColumn("Position").get(0, table2.size())));
         // assertEquals(Arrays.asList("7", "9"), Arrays.asList(table2.getColumn("Key").get(0, table2.size())));
         TestCase.assertEquals(Arrays.asList(null, 0), Arrays.asList(table2.getColumn("PrevI").get(0, table2.size())));
-        TestCase.assertEquals(i(), base.added);
+
+        // note this modification is not reported to table2 since `update` is smart enough to notice that no columns
+        // are actually modified in the result table
+        TestCase.assertEquals(i(7, 9), base.added);
         TestCase.assertEquals(i(), base.removed);
-        TestCase.assertEquals(i(9), base.modified);
+        TestCase.assertEquals(i(), base.modified);
     }
 
     @Test
@@ -1071,5 +1078,17 @@ public class QueryTableSelectUpdateTest {
 
         Assert.assertEquals(4L, updated.getColumnSource("D").get(updated.getRowSet().get(1)));
         Assert.assertEquals(8L, updated.getColumnSource("D").getPrev(updated.getRowSet().copyPrev().get(2)));
+    }
+
+    @Test
+    public void testRegressionGH3562() {
+        final Table src = TableTools.emptyTable(3).update("A = true", "B = ii != 1", "C = ii != 2");
+        final Table result = src.select("And = and(A, B, C)", "Or = or(A, B, C)");
+
+        final Table expected = TableTools.newTable(
+                TableTools.col("And", true, false, false),
+                TableTools.col("Or", true, true, true));
+
+        assertTableEquals(expected, result);
     }
 }

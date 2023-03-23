@@ -8,11 +8,11 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.util.FunctionalInterfaces;
 import io.deephaven.util.MultiException;
 import io.deephaven.util.annotations.TestUseOnly;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedNode;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedQueue;
+import io.deephaven.util.function.ThrowingRunnable;
 import io.deephaven.util.locks.AwareFunctionalLock;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.jetbrains.annotations.NotNull;
@@ -47,7 +47,7 @@ public abstract class UpdateGraphLock {
 
         default void recordActionInterruptibly(
                 @NotNull final String description,
-                @NotNull final FunctionalInterfaces.ThrowingRunnable<InterruptedException> action)
+                @NotNull final ThrowingRunnable<InterruptedException> action)
                 throws InterruptedException {
             action.run();
         }

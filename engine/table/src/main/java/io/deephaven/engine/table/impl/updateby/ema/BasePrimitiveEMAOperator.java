@@ -2,8 +2,7 @@ package io.deephaven.engine.table.impl.updateby.ema;
 
 import io.deephaven.api.updateby.BadDataBehavior;
 import io.deephaven.api.updateby.OperationControl;
-import io.deephaven.chunk.LongChunk;
-import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
@@ -62,8 +61,9 @@ public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperato
     @Override
     public void initializeCumulative(@NotNull final UpdateByOperator.Context updateContext,
             final long firstUnmodifiedKey,
-            final long firstUnmodifiedTimestamp) {
-        super.initializeCumulative(updateContext, firstUnmodifiedKey, firstUnmodifiedTimestamp);
+            final long firstUnmodifiedTimestamp,
+            @NotNull final RowSet bucketRowSet) {
+        super.initializeCumulative(updateContext, firstUnmodifiedKey, firstUnmodifiedTimestamp, bucketRowSet);
 
         final Context ctx = (Context) updateContext;
         // rely on the caller to validate this is a valid timestamp (or NULL_LONG when appropriate)

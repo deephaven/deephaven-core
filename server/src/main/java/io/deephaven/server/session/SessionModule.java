@@ -29,7 +29,7 @@ public interface SessionModule {
     @Binds
     @IntoSet
     ServerInterceptor bindSessionServiceInterceptor(
-            SessionServiceGrpcImpl.AuthServerInterceptor sessionServiceInterceptor);
+            SessionServiceGrpcImpl.SessionServiceInterceptor sessionServiceGrpcInterceptor);
 
     @Binds
     @IntoSet
