@@ -312,9 +312,11 @@ public class MultiplexedWebsocketTransport implements Transport {
         cleanup.run();
         cleanup = JsRunnable.doNothing();
 
-        // release our reference to the transport, last one out will close the socket (if needed)
-        transport.release();
-        transport = null;
+        if (transport != null) {
+            // release our reference to the transport, last one out will close the socket (if needed)
+            transport.release();
+            transport = null;
+        }
     }
 
     private void onClose(Event event) {
