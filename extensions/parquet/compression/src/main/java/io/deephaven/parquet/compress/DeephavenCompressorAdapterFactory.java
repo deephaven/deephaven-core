@@ -71,7 +71,10 @@ public class DeephavenCompressorAdapterFactory {
         final Map<String, CompressionCodecName> codecToNames =
                 new HashMap<>(CompressionCodecName.values().length + explicitConfig.size());
         for (CompressionCodecName value : CompressionCodecName.values()) {
-            codecToNames.put(value.getHadoopCompressionCodecClassName(), value);
+            final String name = value.getHadoopCompressionCodecClassName();
+            if (name != null) {
+                codecToNames.put(name, value);
+            }
         }
         for (Entry<Class<? extends CompressionCodec>, CompressionCodecName> e : explicitConfig.entrySet()) {
             codecToNames.put(e.getKey().getName(), e.getValue());
