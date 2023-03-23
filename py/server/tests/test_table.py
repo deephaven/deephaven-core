@@ -630,7 +630,7 @@ class TableTestCase(BaseTestCase):
                 "color": "RED"
             }
         ])
-        verify_layout_hint(t, "front=d;back=b;hide=d;freeze=c;column_groups=name:Group1::children:a,b|name:Group2::children:c,d::color:#123456|name:Group3::children:e,f::color:#FF0000")
+        verify_layout_hint(t, "front=d;back=b;hide=d;freeze=c;columnGroups=name:Group1::children:a,b|name:Group2::children:c,d::color:#123456|name:Group3::children:e,f::color:#ff0000;")
 
         t = self.test_table.layout_hints(front=["d", "e"], back=["a", "b"], freeze=["c"], hide=["d"])
         verify_layout_hint(t, "front=d,e;back=a,b;hide=d;freeze=c;")
@@ -648,7 +648,7 @@ class TableTestCase(BaseTestCase):
         verify_layout_hint(t, "searchable=Hide;")
 
         t = self.test_table.layout_hints(search_display_mode=SearchDisplayMode.DEFAULT)
-        verify_layout_hint(t, "searchable=Default;")
+        verify_layout_hint(t, "")
 
         t = self.test_table.layout_hints()
         verify_layout_hint(t, "")
