@@ -3,24 +3,23 @@
  */
 package io.deephaven.engine.tablelogger;
 
-import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
-import io.deephaven.engine.util.ColumnsSpecHelper;
 import io.deephaven.tablelogger.*;
-
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.perf.QueryProcessingResults;
+import io.deephaven.engine.util.ColumnsSpecHelper;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.util.QueryConstants;
 import java.io.IOException;
 
-public class QueryOperationPerformanceLogLogger
-        extends MemoryTableLogger<QueryOperationPerformanceLogLogger.ISetter> implements QueryOperationPerformanceLogLoggerInterface {
+public class QueryPerformanceLogLoggerMemoryImpl extends MemoryTableLogger<QueryPerformanceLogLoggerMemoryImpl.ISetter> implements QueryPerformanceLogLoggerInterface {
 
-    private static final String TABLE_NAME = "QueryOperationPerformanceLog";
+    private static final String TABLE_NAME = "QueryPerformanceLog";
 
     private final String processUniqueId;
 
-    public QueryOperationPerformanceLogLogger(final String processUniqueId) {
+    public QueryPerformanceLogLoggerMemoryImpl(final String processUniqueId) {
         super(TABLE_NAME, TABLE_DEFINITION);
         this.processUniqueId = processUniqueId;
     }
@@ -30,68 +29,59 @@ public class QueryOperationPerformanceLogLogger
     }
 
     interface ISetter extends WritableRowContainer {
-        void log(Row.Flags flags, int operationNumber, QueryPerformanceNugget nugget) throws IOException;
+        void log(Row.Flags flags, final long evaluationNumber,
+                QueryProcessingResults queryProcessingResults, QueryPerformanceNugget nugget) throws IOException;
     }
 
     class DirectSetter extends BaseSetter implements ISetter {
         RowSetter<String> ProcessUniqueId;
-        RowSetter<Integer> EvaluationNumber;
-        RowSetter<Integer> OperationNumber;
-        RowSetter<Integer> Depth;
-        RowSetter<String> Description;
-        RowSetter<String> CallerLine;
-        RowSetter<Boolean> IsTopLevel;
-        RowSetter<Boolean> IsCompilation;
+        RowSetter<Long> EvaluationNumber;
         RowSetter<DateTime> StartTime;
         RowSetter<DateTime> EndTime;
         RowSetter<Long> DurationNanos;
         RowSetter<Long> CpuNanos;
         RowSetter<Long> UserCpuNanos;
+        RowSetter<Long> FreeMemory;
+        RowSetter<Long> TotalMemory;
         RowSetter<Long> FreeMemoryChange;
         RowSetter<Long> TotalMemoryChange;
         RowSetter<Long> Collections;
         RowSetter<Long> CollectionTimeNanos;
         RowSetter<Long> AllocatedBytes;
         RowSetter<Long> PoolAllocatedBytes;
-        RowSetter<Long> InputSizeLong;
         RowSetter<Boolean> WasInterrupted;
+        RowSetter<Boolean> IsReplayer;
+        RowSetter<String> Exception;
 
         DirectSetter() {
             ProcessUniqueId = row.getSetter("ProcessUniqueId", String.class);
-            EvaluationNumber = row.getSetter("EvaluationNumber", int.class);
-            OperationNumber = row.getSetter("OperationNumber", int.class);
-            Depth = row.getSetter("Depth", int.class);
-            Description = row.getSetter("Description", String.class);
-            CallerLine = row.getSetter("CallerLine", String.class);
-            IsTopLevel = row.getSetter("IsTopLevel", Boolean.class);
-            IsCompilation = row.getSetter("IsCompilation", Boolean.class);
+            EvaluationNumber = row.getSetter("EvaluationNumber", long.class);
             StartTime = row.getSetter("StartTime", DateTime.class);
             EndTime = row.getSetter("EndTime", DateTime.class);
             DurationNanos = row.getSetter("DurationNanos", long.class);
             CpuNanos = row.getSetter("CpuNanos", long.class);
             UserCpuNanos = row.getSetter("UserCpuNanos", long.class);
+            FreeMemory = row.getSetter("FreeMemory", long.class);
+            TotalMemory = row.getSetter("TotalMemory", long.class);
             FreeMemoryChange = row.getSetter("FreeMemoryChange", long.class);
             TotalMemoryChange = row.getSetter("TotalMemoryChange", long.class);
             Collections = row.getSetter("Collections", long.class);
             CollectionTimeNanos = row.getSetter("CollectionTimeNanos", long.class);
             AllocatedBytes = row.getSetter("AllocatedBytes", long.class);
             PoolAllocatedBytes = row.getSetter("PoolAllocatedBytes", long.class);
-            InputSizeLong = row.getSetter("InputSizeLong", long.class);
             WasInterrupted = row.getSetter("WasInterrupted", Boolean.class);
+            IsReplayer = row.getSetter("IsReplayer", Boolean.class);
+            Exception = row.getSetter("Exception", String.class);
         }
 
         @Override
-        public void log(final Row.Flags flags, final int operationNumber, final QueryPerformanceNugget nugget)
+        public void log(
+                final Row.Flags flags, final long evaluationNumber,
+                final QueryProcessingResults queryProcessingResults, final QueryPerformanceNugget nugget)
                 throws IOException {
             setRowFlags(flags);
             this.ProcessUniqueId.set(processUniqueId);
-            this.EvaluationNumber.setInt(nugget.getEvaluationNumber());
-            this.OperationNumber.setInt(operationNumber);
-            this.Depth.setInt(nugget.getDepth());
-            this.Description.set(nugget.getName());
-            this.CallerLine.set(nugget.getCallerLine());
-            this.IsTopLevel.setBoolean(nugget.isTopLevel());
-            this.IsCompilation.setBoolean(nugget.getName().startsWith("Compile:"));
+            this.EvaluationNumber.setLong(evaluationNumber);
             this.StartTime.set(DateTimeUtils.millisToTime(nugget.getStartClockTime()));
             this.EndTime.set(nugget.getTotalTimeNanos() == null
                     ? null
@@ -101,14 +91,17 @@ public class QueryOperationPerformanceLogLogger
                     nugget.getTotalTimeNanos() == null ? QueryConstants.NULL_LONG : nugget.getTotalTimeNanos());
             this.CpuNanos.setLong(nugget.getCpuNanos());
             this.UserCpuNanos.setLong(nugget.getUserCpuNanos());
+            this.FreeMemory.setLong(nugget.getEndFreeMemory());
+            this.TotalMemory.setLong(nugget.getEndTotalMemory());
             this.FreeMemoryChange.setLong(nugget.getDiffFreeMemory());
             this.TotalMemoryChange.setLong(nugget.getDiffTotalMemory());
             this.Collections.setLong(nugget.getDiffCollections());
             this.CollectionTimeNanos.setLong(nugget.getDiffCollectionTimeNanos());
             this.AllocatedBytes.setLong(nugget.getAllocatedBytes());
             this.PoolAllocatedBytes.setLong(nugget.getPoolAllocatedBytes());
-            this.InputSizeLong.setLong(nugget.getInputSize());
             this.WasInterrupted.setBoolean(nugget.wasInterrupted());
+            this.IsReplayer.setBoolean(queryProcessingResults.isReplayer());
+            this.Exception.set(queryProcessingResults.getException());
         }
     }
 
@@ -123,26 +116,23 @@ public class QueryOperationPerformanceLogLogger
     static {
         final ColumnsSpecHelper cols = new ColumnsSpecHelper()
                 .add("ProcessUniqueId", String.class)
-                .add("EvaluationNumber", int.class)
-                .add("OperationNumber", int.class)
-                .add("Depth", int.class)
-                .add("Description", String.class)
-                .add("CallerLine", String.class)
-                .add("IsTopLevel", Boolean.class)
-                .add("IsCompilation", Boolean.class)
+                .add("EvaluationNumber", long.class)
                 .add("StartTime", DateTime.class)
                 .add("EndTime", DateTime.class)
                 .add("DurationNanos", long.class)
                 .add("CpuNanos", long.class)
                 .add("UserCpuNanos", long.class)
+                .add("FreeMemory", long.class)
+                .add("TotalMemory", long.class)
                 .add("FreeMemoryChange", long.class)
                 .add("TotalMemoryChange", long.class)
                 .add("Collections", long.class)
                 .add("CollectionTimeNanos", long.class)
                 .add("AllocatedBytes", long.class)
                 .add("PoolAllocatedBytes", long.class)
-                .add("InputSizeLong", long.class)
-                .add("WasInterrupted", Boolean.class);
+                .add("WasInterrupted", Boolean.class)
+                .add("IsReplayer", Boolean.class)
+                .add("Exception", String.class);
         columnNames = cols.getColumnNames();
         columnDbTypes = cols.getTypes();
     }
@@ -154,19 +144,23 @@ public class QueryOperationPerformanceLogLogger
     }
 
     @Override
-    public void log(final int operationNumber, final QueryPerformanceNugget nugget) throws IOException {
-        log(DEFAULT_INTRADAY_LOGGER_FLAGS, operationNumber, nugget);
+    public void log(final long evaluationNumber,
+            final QueryProcessingResults queryProcessingResults,
+            final QueryPerformanceNugget nugget) throws IOException {
+        log(DEFAULT_INTRADAY_LOGGER_FLAGS, evaluationNumber, queryProcessingResults, nugget);
     }
 
     @Override
-    public void log(final Row.Flags flags, final int operationNumber, final QueryPerformanceNugget nugget)
+    public void log(
+            final Row.Flags flags, final long evaluationNumber,
+            final QueryProcessingResults queryProcessingResults, final QueryPerformanceNugget nugget)
             throws IOException {
         verifyCondition(isInitialized(), "init() must be called before calling log()");
         verifyCondition(!isClosed, "cannot call log() after the logger is closed");
         verifyCondition(!isShuttingDown, "cannot call log() while the logger is shutting down");
         final ISetter setter = setterPool.take();
         try {
-            setter.log(flags, operationNumber, nugget);
+            setter.log(flags, evaluationNumber, queryProcessingResults, nugget);
         } catch (Exception e) {
             setterPool.give(setter);
             throw e;

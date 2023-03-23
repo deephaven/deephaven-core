@@ -9,11 +9,11 @@ import io.deephaven.engine.util.ColumnsSpecHelper;
 
 import java.io.IOException;
 
-public class ProcessInfoLogLogger extends MemoryTableLogger<ProcessInfoLogLogger.ISetter> implements ProcessInfoLogLoggerInterface {
+public class ProcessInfoLogLoggerMemoryImpl extends MemoryTableLogger<ProcessInfoLogLoggerMemoryImpl.ISetter> implements ProcessInfoLogLoggerInterface {
 
     private static final String TABLE_NAME = "ProcessInfoLog";
 
-    public ProcessInfoLogLogger(final int initialSizeArg) {
+    public ProcessInfoLogLoggerMemoryImpl(final int initialSizeArg) {
         super(TABLE_NAME, TABLE_DEFINITION, initialSizeArg);
     }
 

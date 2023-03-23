@@ -3,16 +3,16 @@
  */
 package io.deephaven.process;
 
-import io.deephaven.engine.tablelogger.ProcessInfoLogLogger;
+import io.deephaven.engine.tablelogger.ProcessInfoLogLoggerMemoryImpl;
 import io.deephaven.properties.PropertyVisitorStringBase;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Objects;
 
 public class ProcessInfoStoreDBImpl implements ProcessInfoStore {
-    private final ProcessInfoLogLogger logger;
+    private final ProcessInfoLogLoggerMemoryImpl logger;
 
-    public ProcessInfoStoreDBImpl(final ProcessInfoLogLogger logger) {
+    public ProcessInfoStoreDBImpl(final ProcessInfoLogLoggerMemoryImpl logger) {
         this.logger = Objects.requireNonNull(logger, "logger");
     }
 

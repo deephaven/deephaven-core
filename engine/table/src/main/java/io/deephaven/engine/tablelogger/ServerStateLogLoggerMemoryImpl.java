@@ -14,10 +14,10 @@ import io.deephaven.tablelogger.WritableRowContainer;
 
 import java.io.IOException;
 
-public class ServerStateLog extends MemoryTableLogger<ServerStateLog.ISetter> implements ServerStateLogInterface {
+public class ServerStateLogLoggerMemoryImpl extends MemoryTableLogger<ServerStateLogLoggerMemoryImpl.ISetter> implements ServerStateLogInterface {
     private static final String TABLE_NAME = "ServerStateLog";
 
-    public ServerStateLog() {
+    public ServerStateLogLoggerMemoryImpl() {
         super(TABLE_NAME, TABLE_DEFINITION);
     }
 
@@ -118,9 +118,9 @@ public class ServerStateLog extends MemoryTableLogger<ServerStateLog.ISetter> im
     }
 
     @Override
-    protected ServerStateLog.ISetter createSetter() {
+    protected ServerStateLogLoggerMemoryImpl.ISetter createSetter() {
         outstandingSetters.getAndIncrement();
-        return new ServerStateLog.DirectSetter();
+        return new ServerStateLogLoggerMemoryImpl.DirectSetter();
     }
 
     @Override
@@ -164,7 +164,7 @@ public class ServerStateLog extends MemoryTableLogger<ServerStateLog.ISetter> im
         verifyCondition(isInitialized(), "init() must be called before calling log()");
         verifyCondition(!isClosed, "cannot call log() after the logger is closed");
         verifyCondition(!isShuttingDown, "cannot call log() while the logger is shutting down");
-        final ServerStateLog.ISetter setter = setterPool.take();
+        final ServerStateLogLoggerMemoryImpl.ISetter setter = setterPool.take();
         try {
             setter.log(flags,
                     intervalStartTime,

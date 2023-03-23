@@ -5,10 +5,10 @@ package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.base.clock.Clock;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.tablelogger.ProcessInfoLogLogger;
-import io.deephaven.engine.tablelogger.ProcessMetricsLogLogger;
-import io.deephaven.engine.tablelogger.QueryOperationPerformanceLogLogger;
-import io.deephaven.engine.tablelogger.QueryPerformanceLogLogger;
+import io.deephaven.engine.tablelogger.ProcessInfoLogLoggerMemoryImpl;
+import io.deephaven.engine.tablelogger.ProcessMetricsLogLoggerMemoryImpl;
+import io.deephaven.engine.tablelogger.QueryOperationPerformanceLogLoggerMemoryImpl;
+import io.deephaven.engine.tablelogger.QueryPerformanceLogLoggerMemoryImpl;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.stats.StatsIntradayLogger;
 import io.deephaven.engine.table.impl.QueryTable;
@@ -42,20 +42,20 @@ public class MemoryTableLoggers {
     }
 
     private final ProcessInfo processInfo;
-    private final QueryPerformanceLogLogger qplLogger;
-    private final QueryOperationPerformanceLogLogger qoplLogger;
-    private final ProcessInfoLogLogger processInfoLogger;
-    private final ProcessMetricsLogLogger processMetricsLogger;
+    private final QueryPerformanceLogLoggerMemoryImpl qplLogger;
+    private final QueryOperationPerformanceLogLoggerMemoryImpl qoplLogger;
+    private final ProcessInfoLogLoggerMemoryImpl processInfoLogger;
+    private final ProcessMetricsLogLoggerMemoryImpl processMetricsLogger;
     private final StatsIntradayLogger statsLogger;
 
     private MemoryTableLoggers() {
         final Configuration configuration = Configuration.getInstance();
         final Logger log = LoggerFactory.getLogger(MemoryTableLoggers.class);
         ProcessInfo pInfo = null;
-        ProcessInfoLogLogger pInfoLogger = null;
+        ProcessInfoLogLoggerMemoryImpl pInfoLogger = null;
         try {
             pInfo = ProcessInfoConfig.createForCurrentProcess(configuration);
-            pInfoLogger = new ProcessInfoLogLogger(DEFAULT_PROCESSS_INFO_LOG_SIZE);
+            pInfoLogger = new ProcessInfoLogLoggerMemoryImpl(DEFAULT_PROCESSS_INFO_LOG_SIZE);
             new ProcessInfoStoreDBImpl(pInfoLogger).put(pInfo);
         } catch (IOException e) {
             log.fatal().append("Failed to configure process info: ").append(e.toString()).endl();
@@ -63,10 +63,10 @@ public class MemoryTableLoggers {
         processInfo = pInfo;
         processInfoLogger = pInfoLogger;
         final String pInfoId = pInfo.getId().value();
-        qplLogger = new QueryPerformanceLogLogger(pInfoId);
-        qoplLogger = new QueryOperationPerformanceLogLogger(pInfoId);
+        qplLogger = new QueryPerformanceLogLoggerMemoryImpl(pInfoId);
+        qoplLogger = new QueryOperationPerformanceLogLoggerMemoryImpl(pInfoId);
         if (STATS_LOGGING_ENABLED) {
-            processMetricsLogger = new ProcessMetricsLogLogger();
+            processMetricsLogger = new ProcessMetricsLogLoggerMemoryImpl();
             statsLogger = new StatsIntradayLoggerDBImpl(pInfo.getId(), processMetricsLogger);
         } else {
             processMetricsLogger = null;
@@ -86,11 +86,11 @@ public class MemoryTableLoggers {
         return qoplLogger.getQueryTable();
     }
 
-    public QueryPerformanceLogLogger getQplLogger() {
+    public QueryPerformanceLogLoggerMemoryImpl getQplLogger() {
         return qplLogger;
     }
 
-    public QueryOperationPerformanceLogLogger getQoplLogger() {
+    public QueryOperationPerformanceLogLoggerMemoryImpl getQoplLogger() {
         return qoplLogger;
     }
 

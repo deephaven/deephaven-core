@@ -18,8 +18,8 @@ import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.perf.QueryProcessingResults;
 import io.deephaven.engine.table.impl.util.MemoryTableLoggers;
-import io.deephaven.engine.tablelogger.QueryOperationPerformanceLogLogger;
-import io.deephaven.engine.tablelogger.QueryPerformanceLogLogger;
+import io.deephaven.engine.tablelogger.QueryOperationPerformanceLogLoggerMemoryImpl;
+import io.deephaven.engine.tablelogger.QueryPerformanceLogLoggerMemoryImpl;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.hash.KeyedIntObjectHash;
 import io.deephaven.hash.KeyedIntObjectHashMap;
@@ -916,8 +916,8 @@ public class SessionState {
             }
             if ((shouldLog || caughtException != null) && queryProcessingResults != null) {
                 final MemoryTableLoggers memLoggers = MemoryTableLoggers.getInstance();
-                final QueryPerformanceLogLogger qplLogger = memLoggers.getQplLogger();
-                final QueryOperationPerformanceLogLogger qoplLogger = memLoggers.getQoplLogger();
+                final QueryPerformanceLogLoggerMemoryImpl qplLogger = memLoggers.getQplLogger();
+                final QueryOperationPerformanceLogLoggerMemoryImpl qoplLogger = memLoggers.getQoplLogger();
                 try {
                     final QueryPerformanceNugget nugget = Require.neqNull(
                             queryProcessingResults.getRecorder().getQueryLevelPerformanceData(),

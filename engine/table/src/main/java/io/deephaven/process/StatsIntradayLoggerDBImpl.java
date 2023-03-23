@@ -4,7 +4,7 @@
 package io.deephaven.process;
 
 import io.deephaven.stats.StatsIntradayLogger;
-import io.deephaven.engine.tablelogger.ProcessMetricsLogLogger;
+import io.deephaven.engine.tablelogger.ProcessMetricsLogLoggerMemoryImpl;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Objects;
@@ -17,9 +17,9 @@ public class StatsIntradayLoggerDBImpl implements StatsIntradayLogger {
     private static final char HISTOGRAM2_TAG = 'N'; // HistogramPower2.TYPE_TAG;
 
     private final ProcessUniqueId id;
-    private final ProcessMetricsLogLogger logger;
+    private final ProcessMetricsLogLoggerMemoryImpl logger;
 
-    public StatsIntradayLoggerDBImpl(final ProcessUniqueId id, final ProcessMetricsLogLogger logger) {
+    public StatsIntradayLoggerDBImpl(final ProcessUniqueId id, final ProcessMetricsLogLoggerMemoryImpl logger) {
         this.id = Objects.requireNonNull(id, "id");
         this.logger = Objects.requireNonNull(logger, "logger");
     }

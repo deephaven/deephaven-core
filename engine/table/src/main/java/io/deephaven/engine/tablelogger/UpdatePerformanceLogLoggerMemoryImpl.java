@@ -14,13 +14,13 @@ import static io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker.Inter
 
 import io.deephaven.engine.table.impl.perf.PerformanceEntry;
 
-public class UpdatePerformanceLogLogger extends MemoryTableLogger<UpdatePerformanceLogLogger.ISetter> implements UpdatePerformanceLogLoggerInterface {
+public class UpdatePerformanceLogLoggerMemoryImpl extends MemoryTableLogger<UpdatePerformanceLogLoggerMemoryImpl.ISetter> implements UpdatePerformanceLogLoggerInterface {
 
     private static final String TABLE_NAME = "UpdatePerformanceLog";
 
     private final String processUniqueId;
 
-    public UpdatePerformanceLogLogger(final String processUniqueId) {
+    public UpdatePerformanceLogLoggerMemoryImpl(final String processUniqueId) {
         super(TABLE_NAME, TABLE_DEFINITION);
         this.processUniqueId = processUniqueId;
     }
