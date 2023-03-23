@@ -14,7 +14,7 @@ import io.deephaven.tablelogger.WritableRowContainer;
 
 import java.io.IOException;
 
-public class ServerStateLog extends TableLoggerImpl2<ServerStateLog.ISetter> {
+public class ServerStateLog extends TableLoggerImpl2<ServerStateLog.ISetter> implements ServerStateLogInterface {
     private static final String TABLE_NAME = "ServerStateLog";
 
     public ServerStateLog() {
@@ -123,6 +123,7 @@ public class ServerStateLog extends TableLoggerImpl2<ServerStateLog.ISetter> {
         return new ServerStateLog.DirectSetter();
     }
 
+    @Override
     public void log(
             final long intervalStartTime,
             final int intervalDurationMicros,
@@ -147,6 +148,7 @@ public class ServerStateLog extends TableLoggerImpl2<ServerStateLog.ISetter> {
                 intervalUGPCyclesSafePointTimeMicros);
     }
 
+    @Override
     public void log(
             final Row.Flags flags,
             final long intervalStartTime,

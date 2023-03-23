@@ -11,7 +11,7 @@ import io.deephaven.engine.util.ColumnsSpecHelper;
 import java.io.IOException;
 
 public class ProcessMetricsLogLogger
-        extends TableLoggerImpl2<ProcessMetricsLogLogger.ISetter> {
+        extends TableLoggerImpl2<ProcessMetricsLogLogger.ISetter> implements ProcessMetricsLogLoggerInterface {
 
     private static final String TABLE_NAME = "ProcessMetricsLog";
 
@@ -114,6 +114,7 @@ public class ProcessMetricsLogLogger
         return new DirectSetter();
     }
 
+    @Override
     public void log(final long timestamp, final String processId, final String name, final String interval,
             final String type,
             final long n, final long sum, final long last, final long min, final long max, final long avg,
@@ -122,6 +123,7 @@ public class ProcessMetricsLogLogger
                 sum2, stdev);
     }
 
+    @Override
     public void log(final Row.Flags flags, final long timestamp, final String processId, final String name,
             final String interval, final String type,
             final long n, final long sum, final long last, final long min, final long max, final long avg,

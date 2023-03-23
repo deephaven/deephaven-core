@@ -14,7 +14,7 @@ import io.deephaven.util.QueryConstants;
 import java.io.IOException;
 
 public class QueryPerformanceLogLogger
-        extends TableLoggerImpl2<QueryPerformanceLogLogger.ISetter> {
+        extends TableLoggerImpl2<QueryPerformanceLogLogger.ISetter> implements QueryPerformanceLogLoggerInterface {
 
     private static final String TABLE_NAME = "QueryPerformanceLog";
 
@@ -144,12 +144,14 @@ public class QueryPerformanceLogLogger
         return new DirectSetter();
     }
 
+    @Override
     public void log(final long evaluationNumber,
             final QueryProcessingResults queryProcessingResults,
             final QueryPerformanceNugget nugget) throws IOException {
         log(DEFAULT_INTRADAY_LOGGER_FLAGS, evaluationNumber, queryProcessingResults, nugget);
     }
 
+    @Override
     public void log(
             final Row.Flags flags, final long evaluationNumber,
             final QueryProcessingResults queryProcessingResults, final QueryPerformanceNugget nugget)

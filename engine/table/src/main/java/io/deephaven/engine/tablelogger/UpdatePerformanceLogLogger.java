@@ -15,7 +15,7 @@ import static io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker.Inter
 import io.deephaven.engine.table.impl.perf.PerformanceEntry;
 
 public class UpdatePerformanceLogLogger
-        extends TableLoggerImpl2<UpdatePerformanceLogLogger.ISetter> {
+        extends TableLoggerImpl2<UpdatePerformanceLogLogger.ISetter> implements UpdatePerformanceLogLoggerInterface {
 
     private static final String TABLE_NAME = "UpdatePerformanceLog";
 
@@ -165,12 +165,14 @@ public class UpdatePerformanceLogLogger
         return new DirectSetter();
     }
 
+    @Override
     public void log(
             final IntervalLevelDetails intervalLevelDetails, final PerformanceEntry performanceEntry)
             throws IOException {
         log(DEFAULT_INTRADAY_LOGGER_FLAGS, intervalLevelDetails, performanceEntry);
     }
 
+    @Override
     public void log(
             final Row.Flags flags, final IntervalLevelDetails intervalLevelDetails,
             final PerformanceEntry performanceEntry)

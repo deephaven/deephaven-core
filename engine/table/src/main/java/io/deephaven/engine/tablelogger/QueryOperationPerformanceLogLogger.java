@@ -14,7 +14,7 @@ import io.deephaven.util.QueryConstants;
 import java.io.IOException;
 
 public class QueryOperationPerformanceLogLogger
-        extends TableLoggerImpl2<QueryOperationPerformanceLogLogger.ISetter> {
+        extends TableLoggerImpl2<QueryOperationPerformanceLogLogger.ISetter> implements QueryOperationPerformanceLogLoggerInterface {
 
     private static final String TABLE_NAME = "QueryOperationPerformanceLog";
 
@@ -153,10 +153,12 @@ public class QueryOperationPerformanceLogLogger
         return new DirectSetter();
     }
 
+    @Override
     public void log(final int operationNumber, final QueryPerformanceNugget nugget) throws IOException {
         log(DEFAULT_INTRADAY_LOGGER_FLAGS, operationNumber, nugget);
     }
 
+    @Override
     public void log(final Row.Flags flags, final int operationNumber, final QueryPerformanceNugget nugget)
             throws IOException {
         verifyCondition(isInitialized(), "init() must be called before calling log()");

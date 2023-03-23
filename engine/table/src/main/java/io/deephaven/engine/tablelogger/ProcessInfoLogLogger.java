@@ -9,7 +9,7 @@ import io.deephaven.engine.util.ColumnsSpecHelper;
 
 import java.io.IOException;
 
-public class ProcessInfoLogLogger extends TableLoggerImpl2<ProcessInfoLogLogger.ISetter> {
+public class ProcessInfoLogLogger extends TableLoggerImpl2<ProcessInfoLogLogger.ISetter> implements ProcessInfoLogLoggerInterface {
 
     private static final String TABLE_NAME = "ProcessInfoLog";
 
@@ -72,10 +72,12 @@ public class ProcessInfoLogLogger extends TableLoggerImpl2<ProcessInfoLogLogger.
         return new DirectSetter();
     }
 
+    @Override
     public void log(final String id, final String type, final String key, final String value) throws IOException {
         log(DEFAULT_INTRADAY_LOGGER_FLAGS, id, type, key, value);
     }
 
+    @Override
     public void log(
             final Row.Flags flags, final String id, final String type, final String key, final String value)
             throws IOException {
