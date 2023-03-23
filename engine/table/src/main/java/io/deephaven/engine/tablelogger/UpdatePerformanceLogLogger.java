@@ -6,7 +6,7 @@ import io.deephaven.tablelogger.Row;
 
 import java.io.IOException;
 
-public interface UpdatePerformanceLogLoggerInterface {
+public interface UpdatePerformanceLogLogger {
     void log(final UpdatePerformanceTracker.IntervalLevelDetails intervalLevelDetails, final PerformanceEntry performanceEntry) throws IOException;
 
     void log(final Row.Flags flags, final UpdatePerformanceTracker.IntervalLevelDetails intervalLevelDetails, final PerformanceEntry performanceEntry) throws IOException;

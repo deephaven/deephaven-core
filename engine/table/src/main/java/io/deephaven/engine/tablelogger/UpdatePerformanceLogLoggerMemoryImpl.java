@@ -14,7 +14,7 @@ import static io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker.Inter
 
 import io.deephaven.engine.table.impl.perf.PerformanceEntry;
 
-public class UpdatePerformanceLogLoggerMemoryImpl extends MemoryTableLogger<UpdatePerformanceLogLoggerMemoryImpl.ISetter> implements UpdatePerformanceLogLoggerInterface {
+public class UpdatePerformanceLogLoggerMemoryImpl extends MemoryTableLogger<UpdatePerformanceLogLoggerMemoryImpl.ISetter> implements UpdatePerformanceLogLogger {
 
     private static final String TABLE_NAME = "UpdatePerformanceLog";
 

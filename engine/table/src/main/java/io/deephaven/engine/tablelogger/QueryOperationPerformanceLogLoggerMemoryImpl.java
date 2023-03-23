@@ -13,7 +13,7 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.util.QueryConstants;
 import java.io.IOException;
 
-public class QueryOperationPerformanceLogLoggerMemoryImpl extends MemoryTableLogger<QueryOperationPerformanceLogLoggerMemoryImpl.ISetter> implements QueryOperationPerformanceLogLoggerInterface {
+public class QueryOperationPerformanceLogLoggerMemoryImpl extends MemoryTableLogger<QueryOperationPerformanceLogLoggerMemoryImpl.ISetter> implements QueryOperationPerformanceLogLogger {
 
     private static final String TABLE_NAME = "QueryOperationPerformanceLog";
 

@@ -14,7 +14,7 @@ import io.deephaven.tablelogger.WritableRowContainer;
 
 import java.io.IOException;
 
-public class ServerStateLogLoggerMemoryImpl extends MemoryTableLogger<ServerStateLogLoggerMemoryImpl.ISetter> implements ServerStateLogInterface {
+public class ServerStateLogLoggerMemoryImpl extends MemoryTableLogger<ServerStateLogLoggerMemoryImpl.ISetter> implements ServerStateLog {
     private static final String TABLE_NAME = "ServerStateLog";
 
     public ServerStateLogLoggerMemoryImpl() {

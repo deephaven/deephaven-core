@@ -6,7 +6,7 @@ import io.deephaven.tablelogger.Row;
 
 import java.io.IOException;
 
-public interface QueryPerformanceLogLoggerInterface {
+public interface QueryPerformanceLogLogger {
     void log(final long evaluationNumber, final QueryProcessingResults queryProcessingResults, final QueryPerformanceNugget nugget) throws IOException;
 
     void log(
