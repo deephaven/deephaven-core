@@ -68,7 +68,7 @@ func CheckError(t *testing.T, msg string, err error) {
 }
 
 // GetHost returns the host to connect to for the tests.
-// By default it is localhost, but can be overriden by setting the DH_HOST environment variable.
+// By default it is localhost, but can be overridden by setting the DH_HOST environment variable.
 func GetHost() string {
 	host := os.Getenv("DH_HOST")
 	if host == "" {
@@ -79,12 +79,23 @@ func GetHost() string {
 }
 
 // GetPort returns the port to connect to for the tests.
-// By default it is 10000, but can be overriden by setting the DH_PORT environment variable.
+// By default it is 10000, but can be overridden by setting the DH_PORT environment variable.
 func GetPort() string {
 	port := os.Getenv("DH_PORT")
 	if port == "" {
 		return "10000"
 	} else {
 		return port
+	}
+}
+
+// GetAuth returns the auth string to connect to for the tests.
+// By default it is Anonymous, but can be overridden by setting the DH_AUTH environment variable.
+func GetAuth() string {
+	auth := os.Getenv("DH_AUTH")
+	if auth == "" {
+		return "Anonymous"
+	} else {
+		return auth
 	}
 }
