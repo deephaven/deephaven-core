@@ -1,6 +1,6 @@
 package io.deephaven.engine.tablelogger;
 
-public class EngineTableLoggerProviderMemoryImpl implements EngineTableLoggerProvider.Interface {
+public class EngineTableLoggerProviderMemoryImpl implements EngineTableLoggerProvider.Factory {
     @Override
     public ProcessInfoLogLogger processInfoLogLogger() {
         return new ProcessInfoLogLoggerMemoryImpl();

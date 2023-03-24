@@ -5,17 +5,17 @@ public class EngineTableLoggerProvider {
         throw new UnsupportedOperationException();
     }
 
-    private static EngineTableLoggerProvider.Interface engineTableLoggerProvider = new EngineTableLoggerProviderMemoryImpl();
+    private static Factory engineTableLoggerProvider = new EngineTableLoggerProviderMemoryImpl();
 
-    public static EngineTableLoggerProvider.Interface getEngineTableLoggerProvider() {
+    public static Factory getEngineTableLoggerProvider() {
         return engineTableLoggerProvider;
     }
 
-    public static void setEngineTableLoggerProvider(EngineTableLoggerProvider.Interface engineTableLoggerProvider) {
+    public static void setEngineTableLoggerProvider(Factory engineTableLoggerProvider) {
         EngineTableLoggerProvider.engineTableLoggerProvider = engineTableLoggerProvider;
     }
 
-    public interface Interface {
+    public interface Factory {
         ProcessInfoLogLogger processInfoLogLogger();
 
         ProcessMetricsLogLogger processMetricsLogLogger();
