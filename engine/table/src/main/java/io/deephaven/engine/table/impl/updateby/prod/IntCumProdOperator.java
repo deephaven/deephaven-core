@@ -36,7 +36,7 @@ public class IntCumProdOperator extends BaseLongUpdateByOperator {
         }
 
         @Override
-        public void push(long key, int pos, int count) {
+        public void push(int pos, int count) {
             Assert.eq(count, "push count", 1);
 
             final int val = intValueChunk.get(pos);

@@ -13,7 +13,7 @@ import io.deephaven.engine.table.impl.NotificationStepSource;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.util.FunctionalInterfaces;
+import io.deephaven.util.function.ThrowingBiConsumer;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -206,7 +206,7 @@ public abstract class ModelFarmBase<DATATYPE> implements ModelFarm {
      * @return A function that runs a {@link }
      */
     @SuppressWarnings("WeakerAccess")
-    protected static FunctionalInterfaces.ThrowingBiConsumer<QueryDataRetrievalOperation, Table, RuntimeException> getDoLockedConsumer(
+    protected static ThrowingBiConsumer<QueryDataRetrievalOperation, Table, RuntimeException> getDoLockedConsumer(
             final GetDataLockType lockType) {
         switch (lockType) {
             case UGP_LOCK_ALREADY_HELD:

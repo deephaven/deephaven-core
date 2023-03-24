@@ -11,7 +11,7 @@ package io.deephaven.chunk;
 import io.deephaven.chunk.attributes.Any;
 
 public class IntChunkChunk<ATTR extends Any> extends ChunkChunkBase<ATTR> implements ChunkChunk<ATTR> {
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "rawtypes"})
     private static final IntChunkChunk EMPTY = new IntChunkChunk<>(new IntChunk[0], 0, 0);
 
     public static <ATTR extends Any> IntChunkChunk<ATTR> getEmptyChunk() {

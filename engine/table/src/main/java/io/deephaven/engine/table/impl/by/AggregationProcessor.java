@@ -100,7 +100,6 @@ import io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet;
 import io.deephaven.engine.table.impl.util.freezeby.FreezeByCountOperator;
 import io.deephaven.engine.table.impl.util.freezeby.FreezeByOperator;
 import io.deephaven.time.DateTime;
-import io.deephaven.util.FunctionalInterfaces.TriFunction;
 import io.deephaven.util.annotations.FinalDefault;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.jetbrains.annotations.NotNull;
@@ -1039,6 +1038,14 @@ public class AggregationProcessor implements AggregationContextFactory {
     // Rollup Reaggregated Aggregations
     // -----------------------------------------------------------------------------------------------------------------
 
+    @FunctionalInterface
+    private interface SsmBackOperatorFactory {
+        IterativeChunkedAggregationOperator apply(
+                @NotNull ColumnSource<SegmentedSortedMultiSet<?>> ssmSource,
+                @NotNull ColumnSource<?> priorResultSource,
+                @NotNull String resultName);
+    }
+
     /**
      * Implementation class for conversion from a collection of {@link Aggregation aggregations} to an
      * {@link AggregationContext} for rollup reaggregated (not base level) aggregations.
@@ -1180,8 +1187,7 @@ public class AggregationProcessor implements AggregationContextFactory {
             }
         }
 
-        private void reaggregateSsmBackedOperator(
-                TriFunction<ColumnSource<SegmentedSortedMultiSet<?>>, ColumnSource<?>, String, IterativeChunkedAggregationOperator> operatorFactory) {
+        private void reaggregateSsmBackedOperator(@NotNull final SsmBackOperatorFactory operatorFactory) {
             for (final Pair pair : resultPairs) {
                 final String resultName = pair.output().name();
                 final String ssmName = resultName + ROLLUP_DISTINCT_SSM_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;

@@ -14,7 +14,6 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.chunkfillers.ChunkFiller;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkMatchFilterFactory;
-import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.sources.UnboxedLongBackedColumnSource;
 import io.deephaven.time.DateTime;
 import io.deephaven.vector.*;
@@ -67,10 +66,7 @@ public abstract class AbstractColumnSource<T> implements
         if (type.isArray()) {
             componentType = type.getComponentType();
         } else if (Vector.class.isAssignableFrom(type)) {
-            // noinspection deprecation
-            if (BooleanVector.class.isAssignableFrom(type)) {
-                componentType = Boolean.class;
-            } else if (ByteVector.class.isAssignableFrom(type)) {
+            if (ByteVector.class.isAssignableFrom(type)) {
                 componentType = byte.class;
             } else if (CharVector.class.isAssignableFrom(type)) {
                 componentType = char.class;

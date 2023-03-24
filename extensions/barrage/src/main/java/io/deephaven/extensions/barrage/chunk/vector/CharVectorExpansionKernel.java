@@ -18,7 +18,7 @@ import io.deephaven.vector.CharVector;
 import io.deephaven.vector.CharVectorDirect;
 import io.deephaven.vector.Vector;
 
-import static io.deephaven.vector.CharVectorDirect.ZERO_LEN_VECTOR;
+import static io.deephaven.vector.CharVectorDirect.ZERO_LENGTH_VECTOR;
 
 public class CharVectorExpansionKernel implements VectorExpansionKernel {
     public final static CharVectorExpansionKernel INSTANCE = new CharVectorExpansionKernel();
@@ -78,7 +78,7 @@ public class CharVectorExpansionKernel implements VectorExpansionKernel {
         for (int i = 0; i < itemsInBatch; ++i) {
             final int ROW_LEN = perElementLengthDest.get(i + 1) - perElementLengthDest.get(i);
             if (ROW_LEN == 0) {
-                result.set(outOffset + i, ZERO_LEN_VECTOR);
+                result.set(outOffset + i, ZERO_LENGTH_VECTOR);
             } else {
                 final char[] row = new char[ROW_LEN];
                 for (int j = 0; j < ROW_LEN; ++j) {

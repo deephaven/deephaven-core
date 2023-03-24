@@ -1079,4 +1079,16 @@ public class QueryTableSelectUpdateTest {
         Assert.assertEquals(4L, updated.getColumnSource("D").get(updated.getRowSet().get(1)));
         Assert.assertEquals(8L, updated.getColumnSource("D").getPrev(updated.getRowSet().copyPrev().get(2)));
     }
+
+    @Test
+    public void testRegressionGH3562() {
+        final Table src = TableTools.emptyTable(3).update("A = true", "B = ii != 1", "C = ii != 2");
+        final Table result = src.select("And = and(A, B, C)", "Or = or(A, B, C)");
+
+        final Table expected = TableTools.newTable(
+                TableTools.col("And", true, false, false),
+                TableTools.col("Or", true, true, true));
+
+        assertTableEquals(expected, result);
+    }
 }

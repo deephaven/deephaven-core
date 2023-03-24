@@ -12,6 +12,7 @@ import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.engine.liveness.LivenessReferent;
+import io.deephaven.engine.primitive.iterator.*;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.hierarchical.RollupTable;
@@ -23,6 +24,7 @@ import java.lang.ref.WeakReference;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
@@ -152,6 +154,51 @@ public interface TableAdapter extends TableDefaults {
     }
 
     @Override
+    default <DATA_TYPE> CloseableIterator<DATA_TYPE> columnIterator(@NotNull String columnName) {
+        return throwUnsupported();
+    }
+
+    @Override
+    default CloseablePrimitiveIteratorOfChar characterColumnIterator(@NotNull String columnName) {
+        return throwUnsupported();
+    }
+
+    @Override
+    default CloseablePrimitiveIteratorOfByte byteColumnIterator(@NotNull String columnName) {
+        return throwUnsupported();
+    }
+
+    @Override
+    default CloseablePrimitiveIteratorOfShort shortColumnIterator(@NotNull String columnName) {
+        return throwUnsupported();
+    }
+
+    @Override
+    default CloseablePrimitiveIteratorOfInt integerColumnIterator(@NotNull String columnName) {
+        return throwUnsupported();
+    }
+
+    @Override
+    default CloseablePrimitiveIteratorOfLong longColumnIterator(@NotNull String columnName) {
+        return throwUnsupported();
+    }
+
+    @Override
+    default CloseablePrimitiveIteratorOfFloat floatColumnIterator(@NotNull String columnName) {
+        return throwUnsupported();
+    }
+
+    @Override
+    default CloseablePrimitiveIteratorOfDouble doubleColumnIterator(@NotNull String columnName) {
+        return throwUnsupported();
+    }
+
+    @Override
+    default <DATA_TYPE> CloseableIterator<DATA_TYPE> objectColumnIterator(@NotNull String columnName) {
+        return throwUnsupported();
+    }
+
+    @Override
     default Object[] getRecord(long rowNo, String... columnNames) {
         return throwUnsupported();
     }
@@ -231,6 +278,11 @@ public interface TableAdapter extends TableDefaults {
 
     @Override
     default Table tailBy(long nRows, String... groupByColumnNames) {
+        return throwUnsupported();
+    }
+
+    @Override
+    default <R> R apply(Function<Table, R> function) {
         return throwUnsupported();
     }
 
@@ -316,6 +368,11 @@ public interface TableAdapter extends TableDefaults {
     @Override
     default void removeUpdateListener(TableUpdateListener listener) {
         throwUnsupported();
+    }
+
+    @Override
+    default boolean isFailed() {
+        return throwUnsupported();
     }
 
     @Override

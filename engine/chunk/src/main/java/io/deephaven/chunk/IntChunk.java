@@ -26,6 +26,7 @@ import java.nio.IntBuffer;
  */
 public class IntChunk<ATTR extends Any> extends ChunkBase<ATTR> {
 
+    @SuppressWarnings("rawtypes")
     private static final IntChunk EMPTY = new IntChunk<>(ArrayTypeUtils.EMPTY_INT_ARRAY, 0, 0);
 
     public static <ATTR extends Any> IntChunk<ATTR> getEmptyChunk() {
@@ -33,6 +34,7 @@ public class IntChunk<ATTR extends Any> extends ChunkBase<ATTR> {
         return EMPTY;
     }
 
+    @SuppressWarnings("rawtypes")
     private static final IntChunk[] EMPTY_INT_CHUNK_ARRAY = new IntChunk[0];
 
     static <ATTR extends Any> IntChunk<ATTR>[] getEmptyChunkArray() {
@@ -115,7 +117,7 @@ public class IntChunk<ATTR extends Any> extends ChunkBase<ATTR> {
     }
 
     @Override
-    public final boolean isAlias(Chunk chunk) {
+    public final boolean isAlias(Chunk<?> chunk) {
         return chunk.isAlias(data);
     }
 
@@ -158,9 +160,9 @@ public class IntChunk<ATTR extends Any> extends ChunkBase<ATTR> {
     // endregion CopyToBuffer
 
     // region downcast
-    public static <ATTR extends Any, ATTR_DERIV extends ATTR> WritableIntChunk<ATTR_DERIV> downcast(WritableIntChunk<ATTR> self) {
+    public static <ATTR extends Any, ATTR_DERIV extends ATTR> IntChunk<ATTR_DERIV> downcast(IntChunk<ATTR> self) {
         //noinspection unchecked
-        return (WritableIntChunk<ATTR_DERIV>) self;
+        return (IntChunk<ATTR_DERIV>) self;
     }
     // endregion downcast
 }

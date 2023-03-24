@@ -169,7 +169,7 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
         try {
             responseObserver.onNext(update.build());
         } catch (final RuntimeException err) {
-            log.error().append(logPrefix).append("failed to notify listener of state change: ").append(err).endl();
+            log.debug().append(logPrefix).append("failed to notify listener of state change: ").append(err).endl();
             session.removeExportListener(this);
         }
     }

@@ -112,9 +112,23 @@ class UpdateByWindowCumulative extends UpdateByWindow {
             final boolean initialStep) {
         Assert.neqNull(context.inputSources, "assignInputSources() must be called before processRow()");
 
-        final int firstOpIdx = opIndices[0];
-        final UpdateByOperator firstOp = operators[firstOpIdx];
-        final UpdateByOperator.Context firstOpCtx = winOpContexts[0];
+        // Identify an operator to use for determining initialization state.
+        final UpdateByOperator firstOp;
+        final UpdateByOperator.Context firstOpCtx;
+
+        if (initialStep || timestampColumnName == null) {
+            // We can use any operator. When initialStep==true, we start from the beginning.
+            firstOp = operators[opIndices[0]];
+            firstOpCtx = winOpContexts[0];
+        } else {
+            // Use the first time-sensitive operator if one exists, or first overall otherwise.
+            final int match = IntStream.range(0, opIndices.length)
+                    .filter(ii -> operators[opIndices[ii]].timestampColumnName != null)
+                    .findAny()
+                    .orElse(0);
+            firstOp = operators[opIndices[match]];
+            firstOpCtx = winOpContexts[match];
+        }
 
         try (final RowSequence.Iterator affectedIt = context.affectedRows.getRowSequenceIterator();
                 ChunkSource.GetContext tsGetContext =
@@ -170,7 +184,7 @@ class UpdateByWindowCumulative extends UpdateByWindow {
                     continue;
                 }
                 UpdateByOperator cumOp = operators[opIdx];
-                cumOp.initializeCumulative(winOpContexts[ii], rowKey, timestamp);
+                cumOp.initializeCumulative(winOpContexts[ii], rowKey, timestamp, context.sourceRowSet);
             }
 
             while (affectedIt.hasMore()) {

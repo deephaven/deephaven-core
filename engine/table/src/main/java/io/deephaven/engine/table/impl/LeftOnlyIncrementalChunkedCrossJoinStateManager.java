@@ -207,8 +207,8 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
         this.tableHashPivot = tableSize;
         // endmixin rehash
 
-        overflowKeySources = new ArrayBackedColumnSource[keyColumnCount];
-        keySources = new ArrayBackedColumnSource[keyColumnCount];
+        overflowKeySources = new WritableColumnSource[keyColumnCount];
+        keySources = new WritableColumnSource[keyColumnCount];
 
         keyChunkTypes = new ChunkType[keyColumnCount];
         chunkHashers = new ChunkHasher[keyColumnCount];
@@ -1271,10 +1271,10 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
     private void updateWriteThroughState(ResettableWritableObjectChunk<TrackingWritableRowSet,Values> writeThroughState, long firstPosition, long expectedLastPosition) {
         final long firstBackingChunkPosition = rightRowSetSource.resetWritableChunkToBackingStore(writeThroughState, firstPosition);
         if (firstBackingChunkPosition != firstPosition) {
-            throw new IllegalStateException("ArrayBackedColumnSources have different block sizes!");
+            throw new IllegalStateException("Column sources have different block sizes!");
         }
         if (firstBackingChunkPosition + writeThroughState.size() - 1 != expectedLastPosition) {
-            throw new IllegalStateException("ArrayBackedColumnSources have different block sizes!");
+            throw new IllegalStateException("Column sources have different block sizes!");
         }
     }
     // endmixin allowUpdateWriteThroughState
@@ -1282,10 +1282,10 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
     private void updateWriteThroughOverflow(ResettableWritableIntChunk writeThroughOverflow, long firstPosition, long expectedLastPosition) {
         final long firstBackingChunkPosition = overflowLocationSource.resetWritableChunkToBackingStore(writeThroughOverflow, firstPosition);
         if (firstBackingChunkPosition != firstPosition) {
-            throw new IllegalStateException("ArrayBackedColumnSources have different block sizes!");
+            throw new IllegalStateException("Column sources have different block sizes!");
         }
         if (firstBackingChunkPosition + writeThroughOverflow.size() - 1 != expectedLastPosition) {
-            throw new IllegalStateException("ArrayBackedColumnSources have different block sizes!");
+            throw new IllegalStateException("Column sources have different block sizes!");
         }
     }
 
@@ -1304,10 +1304,10 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
         final long firstBackingChunkPosition = ((ChunkedBackingStoreExposedWritableSource)sources[0]).resetWritableChunkToBackingStore(writeThroughChunks[0], currentHashLocation);
         for (int jj = 1; jj < sources.length; ++jj) {
             if (((ChunkedBackingStoreExposedWritableSource)sources[jj]).resetWritableChunkToBackingStore(writeThroughChunks[jj], currentHashLocation) != firstBackingChunkPosition) {
-                throw new IllegalStateException("ArrayBackedColumnSources have different block sizes!");
+                throw new IllegalStateException("Column sources have different block sizes!");
             }
             if (writeThroughChunks[jj].size() != writeThroughChunks[0].size()) {
-                throw new IllegalStateException("ArrayBackedColumnSources have different block sizes!");
+                throw new IllegalStateException("Column sources have different block sizes!");
             }
         }
         return firstBackingChunkPosition;

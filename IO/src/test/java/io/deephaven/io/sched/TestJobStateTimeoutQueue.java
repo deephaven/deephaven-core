@@ -9,8 +9,6 @@ import junit.framework.TestCase;
 import java.nio.channels.SelectableChannel;
 import java.io.IOException;
 
-import io.deephaven.base.Procedure;
-
 public class TestJobStateTimeoutQueue extends TestCase {
 
     public void setUp() throws Exception {
@@ -25,7 +23,7 @@ public class TestJobStateTimeoutQueue extends TestCase {
      * A null Job implementation
      */
     private static class NullJob extends Job {
-        public int invoke(SelectableChannel channel, int readyOps, Procedure.Nullary handoff) throws IOException {
+        public int invoke(SelectableChannel channel, int readyOps, Runnable handoff) throws IOException {
             return 0;
         }
 

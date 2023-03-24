@@ -9,7 +9,7 @@ import elemental2.core.JsSet;
 import elemental2.dom.CustomEventInit;
 import elemental2.dom.DomGlobal;
 import elemental2.promise.Promise;
-import io.deephaven.web.client.ide.IdeConnection;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.TerminationNotificationResponse;
 import io.deephaven.web.client.ide.IdeSession;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.*;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
@@ -20,7 +20,6 @@ import io.deephaven.web.client.fu.LazyPromise;
 import io.deephaven.web.shared.data.ConnectToken;
 import io.deephaven.web.shared.fu.JsConsumer;
 import io.deephaven.web.shared.fu.JsRunnable;
-import io.deephaven.web.shared.fu.RemoverFn;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
 import jsinterop.base.JsPropertyMap;
@@ -28,6 +27,7 @@ import jsinterop.base.JsPropertyMap;
 import java.util.ArrayList;
 import java.util.List;
 
+import static io.deephaven.web.client.ide.IdeConnection.HACK_CONNECTION_FAILURE;
 import static io.deephaven.web.shared.fu.PromiseLike.CANCELLATION_MESSAGE;
 
 /**
@@ -55,8 +55,9 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>> exte
 
     public abstract Promise<ConnectOptions> getConnectOptions();
 
+    @Deprecated
     public void notifyConnectionError(ResponseStreamWrapper.Status status) {
-        if (notifiedConnectionError) {
+        if (notifiedConnectionError || !hasListeners(HACK_CONNECTION_FAILURE)) {
             return;
         }
         notifiedConnectionError = true;
@@ -66,7 +67,9 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>> exte
                 "status", status.getCode(),
                 "details", status.getDetails(),
                 "metadata", status.getMetadata()));
-        fireEvent(IdeConnection.HACK_CONNECTION_FAILURE, event);
+        fireEvent(HACK_CONNECTION_FAILURE, event);
+        JsLog.warn(
+                "The event dh.IdeConnection.HACK_CONNECTION_FAILURE is deprecated and will be removed in a later release");
     }
 
     protected Promise<Void> onConnected() {
@@ -87,6 +90,20 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>> exte
         throw new UnsupportedOperationException();
     }
 
+    /**
+     * Internal method to permit delegating to some orchestration tool to see if this worker can be connected to yet.
+     */
+    @JsIgnore
+    public Promise<Self> onReady() {
+        // noinspection unchecked
+        return Promise.resolve((Self) this);
+    }
+
+    /**
+     * Promise that resolves when this worker instance can be connected to, or rejects if it can't be used.
+     * 
+     * @return A promise that resolves with this instance.
+     */
     public abstract Promise<Self> running();
 
     @JsMethod
@@ -186,6 +203,7 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>> exte
         JsLog.debug(getClass(), " connected");
 
         connected = true;
+        notifiedConnectionError = false;
 
         fireEvent(QueryInfoConstants.EVENT_CONNECT);
 
@@ -226,4 +244,6 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>> exte
                     + "Query disconnected (to prevent this log message, handle the EVENT_DISCONNECT event)");
         }
     }
+
+    public abstract void notifyServerShutdown(TerminationNotificationResponse success);
 }

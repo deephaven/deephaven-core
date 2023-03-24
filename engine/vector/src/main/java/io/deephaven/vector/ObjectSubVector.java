@@ -3,50 +3,40 @@
  */
 package io.deephaven.vector;
 
-import io.deephaven.util.datastructures.LongSizedDataStructure;
 import org.jetbrains.annotations.NotNull;
 
-import java.lang.reflect.Array;
-
-public class ObjectSubVector<T> extends ObjectVector.Indirect<T> {
+/**
+ * A subset of a {@link ObjectVector} according to an array of positions.
+ */
+public class ObjectSubVector<COMPONENT_TYPE> extends ObjectVector.Indirect<COMPONENT_TYPE> {
 
     private static final long serialVersionUID = 1L;
 
-    private final ObjectVector<T> innerArray;
-    private final long positions[];
+    private final ObjectVector<COMPONENT_TYPE> innerVector;
+    private final long[] positions;
 
-    public ObjectSubVector(@NotNull final ObjectVector<T> innerArray, @NotNull final long[] positions) {
-        this.innerArray = innerArray;
+    public ObjectSubVector(@NotNull final ObjectVector<COMPONENT_TYPE> innerVector, @NotNull final long[] positions) {
+        this.innerVector = innerVector;
         this.positions = positions;
     }
 
     @Override
-    public T get(final long index) {
+    public COMPONENT_TYPE get(final long index) {
         if (index < 0 || index >= positions.length) {
             return null;
         }
-        return innerArray.get(positions[LongSizedDataStructure.intSize("subarray array access", index)]);
+        return innerVector.get(positions[(int) index]);
     }
 
     @Override
-    public ObjectVector<T> subVector(final long fromIndexInclusive, final long toIndexExclusive) {
-        return innerArray.subVectorByPositions(
+    public ObjectVector<COMPONENT_TYPE> subVector(final long fromIndexInclusive, final long toIndexExclusive) {
+        return innerVector.subVectorByPositions(
                 Vector.mapSelectedPositionRange(positions, fromIndexInclusive, toIndexExclusive));
     }
 
     @Override
-    public ObjectVector<T> subVectorByPositions(final long[] positions) {
-        return innerArray.subVectorByPositions(Vector.mapSelectedPositions(this.positions, positions));
-    }
-
-    @Override
-    public T[] toArray() {
-        // noinspection unchecked
-        final T[] result = (T[]) Array.newInstance(getComponentType(), positions.length);
-        for (int ii = 0; ii < positions.length; ++ii) {
-            result[ii] = get(ii);
-        }
-        return result;
+    public ObjectVector<COMPONENT_TYPE> subVectorByPositions(final long[] positions) {
+        return innerVector.subVectorByPositions(Vector.mapSelectedPositions(this.positions, positions));
     }
 
     @Override
@@ -55,17 +45,7 @@ public class ObjectSubVector<T> extends ObjectVector.Indirect<T> {
     }
 
     @Override
-    public Class<T> getComponentType() {
-        return innerArray.getComponentType();
-    }
-
-    @Override
-    public boolean isEmpty() {
-        return positions.length == 0;
-    }
-
-    @Override
-    public ObjectVector<T> getDirect() {
-        return new ObjectVectorDirect<>(toArray());
+    public Class<COMPONENT_TYPE> getComponentType() {
+        return innerVector.getComponentType();
     }
 }

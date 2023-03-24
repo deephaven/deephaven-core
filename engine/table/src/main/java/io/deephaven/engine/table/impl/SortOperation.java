@@ -8,6 +8,7 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.iterators.ChunkedLongColumnIterator;
 import io.deephaven.engine.table.iterators.LongColumnIterator;
 import io.deephaven.util.datastructures.hash.HashMapK4V4;
 import io.deephaven.util.datastructures.hash.HashMapLockFreeK4V4;
@@ -339,7 +340,8 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
             return LongUnaryOperator.identity();
         }
         final HashMapK4V4 reverseLookup = new HashMapLockFreeK4V4(sortResult.intSize(), .75f, RowSequence.NULL_ROW_KEY);
-        try (final LongColumnIterator innerRowKeys = new LongColumnIterator(sortRedirection, sortResult.getRowSet());
+        try (final LongColumnIterator innerRowKeys =
+                new ChunkedLongColumnIterator(sortRedirection, sortResult.getRowSet());
                 final RowSet.Iterator outerRowKeys = sortResult.getRowSet().iterator()) {
             while (outerRowKeys.hasNext()) {
                 reverseLookup.put(innerRowKeys.nextLong(), outerRowKeys.nextLong());

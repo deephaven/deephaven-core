@@ -3,8 +3,6 @@
  */
 package io.deephaven.engine.table.impl.perf;
 
-import io.deephaven.base.Function;
-import io.deephaven.base.Procedure;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
@@ -13,8 +11,9 @@ import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.updategraph.UpdateGraphLock;
-import io.deephaven.util.FunctionalInterfaces;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.function.ThrowingRunnable;
+import io.deephaven.util.function.ThrowingSupplier;
 import io.deephaven.util.profiling.ThreadProfiler;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
@@ -343,9 +342,9 @@ public class QueryPerformanceRecorder implements Serializable {
 
             @Override
             public void recordActionInterruptibly(@NotNull String description,
-                    @NotNull FunctionalInterfaces.ThrowingRunnable<InterruptedException> action)
+                    @NotNull ThrowingRunnable<InterruptedException> action)
                     throws InterruptedException {
-                QueryPerformanceRecorder.withNuggetThrowing(description, action::run);
+                QueryPerformanceRecorder.withNuggetThrowing(description, action);
             }
         });
     }
@@ -417,13 +416,13 @@ public class QueryPerformanceRecorder implements Serializable {
      * @param name the nugget name
      * @param r the stuff to run
      */
-    public static void withNugget(final String name, final Procedure.Nullary r) {
+    public static void withNugget(final String name, final Runnable r) {
         final boolean needClear = setCallsite();
         QueryPerformanceNugget nugget = null;
 
         try {
             nugget = getInstance().getNugget(name);
-            r.call();
+            r.run();
         } finally {
             finishAndClear(nugget, needClear);
         }
@@ -454,13 +453,14 @@ public class QueryPerformanceRecorder implements Serializable {
      * @param r the stuff to run
      * @throws T exception of type T
      */
-    public static <T extends Exception> void withNuggetThrowing(final String name, final Procedure.ThrowingNullary<T> r)
-            throws T {
+    public static <T extends Exception> void withNuggetThrowing(
+            final String name,
+            final ThrowingRunnable<T> r) throws T {
         final boolean needClear = setCallsite();
         QueryPerformanceNugget nugget = null;
         try {
             nugget = getInstance().getNugget(name);
-            r.call();
+            r.run();
         } finally {
             finishAndClear(nugget, needClear);
         }
@@ -474,13 +474,14 @@ public class QueryPerformanceRecorder implements Serializable {
      * @return the result of the stuff to run
      * @throws ExceptionType exception of type ExceptionType
      */
-    public static <R, ExceptionType extends Exception> R withNuggetThrowing(final String name,
-            final Function.ThrowingNullary<R, ExceptionType> r) throws ExceptionType {
+    public static <R, ExceptionType extends Exception> R withNuggetThrowing(
+            final String name,
+            final ThrowingSupplier<R, ExceptionType> r) throws ExceptionType {
         final boolean needClear = setCallsite();
         QueryPerformanceNugget nugget = null;
         try {
             nugget = getInstance().getNugget(name);
-            return r.call();
+            return r.get();
         } finally {
             finishAndClear(nugget, needClear);
         }
@@ -492,12 +493,12 @@ public class QueryPerformanceRecorder implements Serializable {
      * @param name the nugget name
      * @param r the stuff to run
      */
-    public static void withNugget(final String name, final long inputSize, final Procedure.Nullary r) {
+    public static void withNugget(final String name, final long inputSize, final Runnable r) {
         final boolean needClear = setCallsite();
         QueryPerformanceNugget nugget = null;
         try {
             nugget = getInstance().getNugget(name, inputSize);
-            r.call();
+            r.run();
         } finally {
             finishAndClear(nugget, needClear);
         }
@@ -528,13 +529,15 @@ public class QueryPerformanceRecorder implements Serializable {
      * @throws T exception of type T
      */
     @SuppressWarnings("unused")
-    public static <T extends Exception> void withNuggetThrowing(final String name, final long inputSize,
-            final Procedure.ThrowingNullary<T> r) throws T {
+    public static <T extends Exception> void withNuggetThrowing(
+            final String name,
+            final long inputSize,
+            final ThrowingRunnable<T> r) throws T {
         final boolean needClear = setCallsite();
         QueryPerformanceNugget nugget = null;
         try {
             nugget = getInstance().getNugget(name, inputSize);
-            r.call();
+            r.run();
         } finally {
             finishAndClear(nugget, needClear);
         }
@@ -549,13 +552,15 @@ public class QueryPerformanceRecorder implements Serializable {
      * @throws ExceptionType exception of type ExceptionType
      */
     @SuppressWarnings("unused")
-    public static <R, ExceptionType extends Exception> R withNuggetThrowing(final String name, final long inputSize,
-            final Function.ThrowingNullary<R, ExceptionType> r) throws ExceptionType {
+    public static <R, ExceptionType extends Exception> R withNuggetThrowing(
+            final String name,
+            final long inputSize,
+            final ThrowingSupplier<R, ExceptionType> r) throws ExceptionType {
         final boolean needClear = setCallsite();
         QueryPerformanceNugget nugget = null;
         try {
             nugget = getInstance().getNugget(name, inputSize);
-            return r.call();
+            return r.get();
         } finally {
             finishAndClear(nugget, needClear);
         }

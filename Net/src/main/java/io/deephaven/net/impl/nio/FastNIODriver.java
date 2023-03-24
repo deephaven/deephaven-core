@@ -3,7 +3,6 @@
  */
 package io.deephaven.net.impl.nio;
 
-import io.deephaven.base.Procedure;
 import io.deephaven.base.UnfairMutex;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.net.CommBase;
@@ -124,7 +123,7 @@ public final class FastNIODriver implements Runnable {
     private final UnfairMutex mutex;
     private final AtomicBoolean shutdown;
     private final long workTimeout;
-    private final Procedure.Nullary mutexUnlockHandoff;
+    private final Runnable mutexUnlockHandoff;
     private boolean alreadyHandedOff;
 
     private final AtomicInteger created;
@@ -147,18 +146,15 @@ public final class FastNIODriver implements Runnable {
         this.maxThreads = maxThreads;
         this.crashOnMax = crashOnMax;
         alreadyHandedOff = false;
-        mutexUnlockHandoff = new Procedure.Nullary() {
-            @Override
-            public void call() {
-                if (!alreadyHandedOff) {
-                    if (shouldCreate()) {
-                        // nobody to handoff too! let's create a new driver
-                        createNewThread(name, scheduler, mutex, shutdown, workTimeout, created, destroyed, available,
-                                maxThreads, crashOnMax).start();
-                    }
-                    mutex.unlock();
-                    alreadyHandedOff = true;
+        mutexUnlockHandoff = () -> {
+            if (!alreadyHandedOff) {
+                if (shouldCreate()) {
+                    // nobody to handoff to! let's create a new driver
+                    createNewThread(name, scheduler, mutex, shutdown, workTimeout, created, destroyed, available,
+                            maxThreads, crashOnMax).start();
                 }
+                mutex.unlock();
+                alreadyHandedOff = true;
             }
         };
     }
@@ -197,7 +193,7 @@ public final class FastNIODriver implements Runnable {
             mutex.lock();
             alreadyHandedOff = false;
             if (shutdown.get()) {
-                mutexUnlockHandoff.call();
+                mutexUnlockHandoff.run();
                 break;
             }
 
@@ -215,8 +211,8 @@ public final class FastNIODriver implements Runnable {
                 scheduler.installJob(new TimedJob() {
                     public void timedOut() {}
                 }, 0); // wake us up yo
-                mutexUnlockHandoff.call(); // we aren't sure whether the scheduler.work has already called the handoff
-                                           // or not yet, so go ahead and call it (it won't double release it)
+                mutexUnlockHandoff.run(); // we aren't sure whether the scheduler.work has already called the handoff
+                                          // or not yet, so go ahead and call it (it won't double release it)
                 long deadline = System.currentTimeMillis() + 5000;
                 // b/c we haven't destroyed ourself yet...
                 // meh spinning :/
