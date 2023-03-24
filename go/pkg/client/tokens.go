@@ -53,9 +53,7 @@ func (tk *tokenResp) getToken() ([]byte, error) {
 	if tk.Error != nil {
 		return nil, tk.Error
 	} else {
-		token := make([]byte, len(tk.Token))
-		copy(token, tk.Token)
-		return token, nil
+		return tk.Token, nil
 	}
 }
 
