@@ -1047,6 +1047,9 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
         if (startIndex == 0) {
             r = r1.deepCopy();
         } else {
+            if (startIndex == r1.size) {
+                return makeEmpty();
+            }
             r = new RspBitmap(r1, startIndex, r1.size - 1);
         }
         r.andNotEqualsUnsafeNoWriteCheck(r2);
