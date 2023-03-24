@@ -1,5 +1,7 @@
 package io.deephaven.engine.tablelogger;
 
+import io.deephaven.engine.tablelogger.impl.memory.EngineTableLoggerProviderMemoryImpl;
+
 public class EngineTableLoggerProvider {
     private EngineTableLoggerProvider() {
         throw new UnsupportedOperationException();

@@ -1,16 +1,17 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.engine.tablelogger;
+package io.deephaven.engine.tablelogger.impl.memory;
 
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.tablelogger.ProcessInfoLogLogger;
 import io.deephaven.tablelogger.*;
 import io.deephaven.engine.util.ColumnsSpecHelper;
 
 import java.io.IOException;
 
-public class ProcessInfoLogLoggerMemoryImpl extends MemoryTableLogger<ProcessInfoLogLoggerMemoryImpl.ISetter> implements ProcessInfoLogLogger {
+class ProcessInfoLogLoggerMemoryImpl extends MemoryTableLogger<ProcessInfoLogLoggerMemoryImpl.ISetter> implements ProcessInfoLogLogger {
 
     private static final String TABLE_NAME = "ProcessInfoLog";
     private static final int DEFAULT_PROCESSS_INFO_LOG_SIZE = Configuration.getInstance().getIntegerWithDefault(

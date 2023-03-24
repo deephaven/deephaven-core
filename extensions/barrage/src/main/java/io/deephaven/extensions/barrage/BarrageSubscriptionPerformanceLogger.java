@@ -4,7 +4,7 @@
 package io.deephaven.extensions.barrage;
 
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.tablelogger.MemoryTableLogger;
+import io.deephaven.engine.tablelogger.impl.memory.MemoryTableLogger;
 import io.deephaven.engine.util.ColumnsSpecHelper;
 import io.deephaven.tablelogger.Row;
 import io.deephaven.tablelogger.RowSetter;

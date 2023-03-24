@@ -2,7 +2,7 @@ package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.tablelogger.EngineTableLoggerProvider;
-import io.deephaven.engine.tablelogger.MemoryTableLogger;
+import io.deephaven.engine.tablelogger.impl.memory.MemoryTableLogger;
 
 public class TableLoggerWrapper<T extends EngineTableLoggerProvider.EngineTableLogger> {
     private final T tableLogger;

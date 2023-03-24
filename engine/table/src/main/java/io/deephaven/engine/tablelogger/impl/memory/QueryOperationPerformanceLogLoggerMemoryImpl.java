@@ -1,10 +1,11 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.engine.tablelogger;
+package io.deephaven.engine.tablelogger.impl.memory;
 
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.util.MemoryTableLoggers;
+import io.deephaven.engine.tablelogger.QueryOperationPerformanceLogLogger;
 import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.util.ColumnsSpecHelper;
@@ -14,7 +15,7 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.util.QueryConstants;
 import java.io.IOException;
 
-public class QueryOperationPerformanceLogLoggerMemoryImpl extends MemoryTableLogger<QueryOperationPerformanceLogLoggerMemoryImpl.ISetter> implements QueryOperationPerformanceLogLogger {
+class QueryOperationPerformanceLogLoggerMemoryImpl extends MemoryTableLogger<QueryOperationPerformanceLogLoggerMemoryImpl.ISetter> implements QueryOperationPerformanceLogLogger {
 
     private static final String TABLE_NAME = "QueryOperationPerformanceLog";
 

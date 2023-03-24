@@ -1,4 +1,12 @@
-package io.deephaven.engine.tablelogger;
+package io.deephaven.engine.tablelogger.impl.memory;
+
+import io.deephaven.engine.tablelogger.EngineTableLoggerProvider;
+import io.deephaven.engine.tablelogger.ProcessInfoLogLogger;
+import io.deephaven.engine.tablelogger.ProcessMetricsLogLogger;
+import io.deephaven.engine.tablelogger.QueryOperationPerformanceLogLogger;
+import io.deephaven.engine.tablelogger.QueryPerformanceLogLogger;
+import io.deephaven.engine.tablelogger.ServerStateLogLogger;
+import io.deephaven.engine.tablelogger.UpdatePerformanceLogLogger;
 
 public class EngineTableLoggerProviderMemoryImpl implements EngineTableLoggerProvider.Factory {
     @Override

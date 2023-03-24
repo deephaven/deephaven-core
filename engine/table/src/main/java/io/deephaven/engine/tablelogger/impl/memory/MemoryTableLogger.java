@@ -1,4 +1,4 @@
-package io.deephaven.engine.tablelogger;
+package io.deephaven.engine.tablelogger.impl.memory;
 
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.TableDefinition;

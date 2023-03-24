@@ -1,8 +1,9 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.engine.tablelogger;
+package io.deephaven.engine.tablelogger.impl.memory;
 
+import io.deephaven.engine.tablelogger.ProcessMetricsLogLogger;
 import io.deephaven.tablelogger.*;
 
 import io.deephaven.engine.table.TableDefinition;
@@ -10,7 +11,7 @@ import io.deephaven.engine.util.ColumnsSpecHelper;
 
 import java.io.IOException;
 
-public class ProcessMetricsLogLoggerMemoryImpl extends MemoryTableLogger<ProcessMetricsLogLoggerMemoryImpl.ISetter> implements ProcessMetricsLogLogger {
+class ProcessMetricsLogLoggerMemoryImpl extends MemoryTableLogger<ProcessMetricsLogLoggerMemoryImpl.ISetter> implements ProcessMetricsLogLogger {
 
     private static final String TABLE_NAME = "ProcessMetricsLog";
 

@@ -1,9 +1,10 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.engine.tablelogger;
+package io.deephaven.engine.tablelogger.impl.memory;
 
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.tablelogger.ServerStateLogLogger;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.util.ColumnsSpecHelper;
 import io.deephaven.time.DateTime;
@@ -14,7 +15,7 @@ import io.deephaven.tablelogger.WritableRowContainer;
 
 import java.io.IOException;
 
-public class ServerStateLogLoggerMemoryImpl extends MemoryTableLogger<ServerStateLogLoggerMemoryImpl.ISetter> implements ServerStateLogLogger {
+class ServerStateLogLoggerMemoryImpl extends MemoryTableLogger<ServerStateLogLoggerMemoryImpl.ISetter> implements ServerStateLogLogger {
     private static final String TABLE_NAME = "ServerStateLog";
 
     public ServerStateLogLoggerMemoryImpl() {
