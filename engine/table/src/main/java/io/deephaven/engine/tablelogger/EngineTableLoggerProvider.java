@@ -7,13 +7,18 @@ public class EngineTableLoggerProvider {
 
     private static Factory engineTableLoggerProvider = new EngineTableLoggerProviderMemoryImpl();
 
-    public static Factory getEngineTableLoggerProvider() {
+    public static Factory get() {
         return engineTableLoggerProvider;
     }
 
     public static void setEngineTableLoggerProvider(Factory engineTableLoggerProvider) {
         EngineTableLoggerProvider.engineTableLoggerProvider = engineTableLoggerProvider;
     }
+
+    /**
+     * Marker interface to associate internal table loggers with one another.
+     */
+    public interface EngineTableLogger {}
 
     public interface Factory {
         ProcessInfoLogLogger processInfoLogLogger();
@@ -24,7 +29,7 @@ public class EngineTableLoggerProvider {
 
         QueryPerformanceLogLogger queryPerformanceLogLogger();
 
-        ServerStateLog serverStateLog();
+        ServerStateLogLogger serverStateLog();
 
         UpdatePerformanceLogLogger updatePerformanceLogLogger();
     }

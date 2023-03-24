@@ -22,7 +22,7 @@ public class EngineTableLoggerProviderMemoryImpl implements EngineTableLoggerPro
     }
 
     @Override
-    public ServerStateLog serverStateLog() {
+    public ServerStateLogLogger serverStateLog() {
         return new ServerStateLogLoggerMemoryImpl();
     }
 

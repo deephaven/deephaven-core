@@ -5,10 +5,11 @@ package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.base.clock.Clock;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.tablelogger.ProcessInfoLogLoggerMemoryImpl;
-import io.deephaven.engine.tablelogger.ProcessMetricsLogLoggerMemoryImpl;
-import io.deephaven.engine.tablelogger.QueryOperationPerformanceLogLoggerMemoryImpl;
-import io.deephaven.engine.tablelogger.QueryPerformanceLogLoggerMemoryImpl;
+import io.deephaven.engine.tablelogger.EngineTableLoggerProvider;
+import io.deephaven.engine.tablelogger.ProcessInfoLogLogger;
+import io.deephaven.engine.tablelogger.ProcessMetricsLogLogger;
+import io.deephaven.engine.tablelogger.QueryOperationPerformanceLogLogger;
+import io.deephaven.engine.tablelogger.QueryPerformanceLogLogger;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.stats.StatsIntradayLogger;
 import io.deephaven.engine.table.impl.QueryTable;
@@ -50,27 +51,28 @@ public class MemoryTableLoggers {
         return INSTANCE;
     }
 
-    private final QueryPerformanceLogLoggerMemoryImpl qplLogger;
-    private final QueryOperationPerformanceLogLoggerMemoryImpl qoplLogger;
-    private final ProcessInfoLogLoggerMemoryImpl processInfoLogger;
-    private final ProcessMetricsLogLoggerMemoryImpl processMetricsLogger;
+    private final TableLoggerWrapper<QueryPerformanceLogLogger> qplLogger;
+    private final TableLoggerWrapper<QueryOperationPerformanceLogLogger> qoplLogger;
+    private final TableLoggerWrapper<ProcessInfoLogLogger> processInfoLogger;
+    private final TableLoggerWrapper<ProcessMetricsLogLogger> processMetricsLogger;
     private final StatsIntradayLogger statsLogger;
 
     private MemoryTableLoggers() {
+        EngineTableLoggerProvider.Factory tableLoggerFactory = EngineTableLoggerProvider.get();
         final Logger log = LoggerFactory.getLogger(MemoryTableLoggers.class);
-        ProcessInfoLogLoggerMemoryImpl pInfoLogger = null;
+        TableLoggerWrapper<ProcessInfoLogLogger> pInfoLogger = null;
         try {
-            pInfoLogger = new ProcessInfoLogLoggerMemoryImpl();
-            new ProcessInfoStoreDBImpl(pInfoLogger).put(processInfo);
+            pInfoLogger = new TableLoggerWrapper<>(tableLoggerFactory.processInfoLogLogger());
+            new ProcessInfoStoreDBImpl(pInfoLogger.getTableLogger()).put(processInfo);
         } catch (IOException e) {
             log.fatal().append("Failed to configure process info: ").append(e.toString()).endl();
         }
         processInfoLogger = pInfoLogger;
-        qplLogger = new QueryPerformanceLogLoggerMemoryImpl();
-        qoplLogger = new QueryOperationPerformanceLogLoggerMemoryImpl();
+        qplLogger = new TableLoggerWrapper<>(tableLoggerFactory.queryPerformanceLogLogger());
+        qoplLogger = new TableLoggerWrapper<>(tableLoggerFactory.queryOperationPerformanceLogLogger());
         if (STATS_LOGGING_ENABLED) {
-            processMetricsLogger = new ProcessMetricsLogLoggerMemoryImpl();
-            statsLogger = new StatsIntradayLoggerDBImpl(processInfo.getId(), processMetricsLogger);
+            processMetricsLogger = new TableLoggerWrapper<>(tableLoggerFactory.processMetricsLogLogger());
+            statsLogger = new StatsIntradayLoggerDBImpl(processInfo.getId(), processMetricsLogger.getTableLogger());
         } else {
             processMetricsLogger = null;
             statsLogger = null;
@@ -85,12 +87,12 @@ public class MemoryTableLoggers {
         return qoplLogger.getQueryTable();
     }
 
-    public QueryPerformanceLogLoggerMemoryImpl getQplLogger() {
-        return qplLogger;
+    public QueryPerformanceLogLogger getQplLogger() {
+        return qplLogger.getTableLogger();
     }
 
-    public QueryOperationPerformanceLogLoggerMemoryImpl getQoplLogger() {
-        return qoplLogger;
+    public QueryOperationPerformanceLogLogger getQoplLogger() {
+        return qoplLogger.getTableLogger();
     }
 
     public QueryTable getProcessInfoQueryTable() {
