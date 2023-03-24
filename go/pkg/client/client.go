@@ -71,7 +71,14 @@ type Client struct {
 //
 // The option arguments can be used to specify other settings for the client.
 // See the With<XYZ> methods (e.g. WithConsole) for details on what options are available.
-func NewClient(ctx context.Context, host string, port string, auth string, options ...ClientOption) (*Client, error) {
+func NewClient(ctx context.Context, host string, port string, auth string, options ...ClientOption) (client *Client, err error) {
+	defer func() {
+		if err != nil && client != nil {
+			e := client.Close()
+			log.Println("Error when closing failed client: ", e)
+		}
+	}()
+
 	grpcChannel, err := grpc.Dial(host+":"+port, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, err
@@ -79,7 +86,7 @@ func NewClient(ctx context.Context, host string, port string, auth string, optio
 
 	opts := newClientOptions(options...)
 
-	client := &Client{grpcChannel: grpcChannel, isOpen: true}
+	client = &Client{grpcChannel: grpcChannel, isOpen: true}
 
 	client.suppressTableLeakWarning = opts.suppressTableLeakWarning
 
@@ -87,7 +94,6 @@ func NewClient(ctx context.Context, host string, port string, auth string, optio
 
 	client.flightStub, err = newFlightStub(client, host, port)
 	if err != nil {
-		client.Close()
 		return nil, err
 	}
 
@@ -99,19 +105,16 @@ func NewClient(ctx context.Context, host string, port string, auth string, optio
 
 	client.tokenMgr, err = newTokenManager(ctx, client.flightStub, cfgClient, auth)
 	if err != nil {
-		client.Close()
 		return nil, err
 	}
 
 	client.sessionStub, err = newSessionStub(client)
 	if err != nil {
-		client.Close()
 		return nil, err
 	}
 
 	client.consoleStub, err = newConsoleStub(ctx, client, opts.scriptLanguage)
 	if err != nil {
-		client.Close()
 		return nil, err
 	}
 
