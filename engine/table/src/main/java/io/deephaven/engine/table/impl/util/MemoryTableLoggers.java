@@ -24,11 +24,20 @@ import java.io.IOException;
 public class MemoryTableLoggers {
     private static final boolean STATS_LOGGING_ENABLED = Configuration.getInstance().getBooleanWithDefault(
             "statsLoggingEnabled", true);
-
-    private static final int DEFAULT_PROCESSS_INFO_LOG_SIZE = Configuration.getInstance().getIntegerWithDefault(
-            "defaultProcessInfoLogSize", 400);
-
+    private static final ProcessInfo processInfo;
     private volatile static MemoryTableLoggers INSTANCE;
+
+    static {
+        try {
+            processInfo = ProcessInfoConfig.createForCurrentProcess(Configuration.getInstance());
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed to create process info.", e);
+        }
+    }
+
+    public static ProcessInfo getProcessInfo() {
+        return processInfo;
+    }
 
     public static MemoryTableLoggers getInstance() {
         if (INSTANCE == null) {
@@ -41,7 +50,6 @@ public class MemoryTableLoggers {
         return INSTANCE;
     }
 
-    private final ProcessInfo processInfo;
     private final QueryPerformanceLogLoggerMemoryImpl qplLogger;
     private final QueryOperationPerformanceLogLoggerMemoryImpl qoplLogger;
     private final ProcessInfoLogLoggerMemoryImpl processInfoLogger;
@@ -49,33 +57,24 @@ public class MemoryTableLoggers {
     private final StatsIntradayLogger statsLogger;
 
     private MemoryTableLoggers() {
-        final Configuration configuration = Configuration.getInstance();
         final Logger log = LoggerFactory.getLogger(MemoryTableLoggers.class);
-        ProcessInfo pInfo = null;
         ProcessInfoLogLoggerMemoryImpl pInfoLogger = null;
         try {
-            pInfo = ProcessInfoConfig.createForCurrentProcess(configuration);
-            pInfoLogger = new ProcessInfoLogLoggerMemoryImpl(DEFAULT_PROCESSS_INFO_LOG_SIZE);
-            new ProcessInfoStoreDBImpl(pInfoLogger).put(pInfo);
+            pInfoLogger = new ProcessInfoLogLoggerMemoryImpl();
+            new ProcessInfoStoreDBImpl(pInfoLogger).put(processInfo);
         } catch (IOException e) {
             log.fatal().append("Failed to configure process info: ").append(e.toString()).endl();
         }
-        processInfo = pInfo;
         processInfoLogger = pInfoLogger;
-        final String pInfoId = pInfo.getId().value();
-        qplLogger = new QueryPerformanceLogLoggerMemoryImpl(pInfoId);
-        qoplLogger = new QueryOperationPerformanceLogLoggerMemoryImpl(pInfoId);
+        qplLogger = new QueryPerformanceLogLoggerMemoryImpl();
+        qoplLogger = new QueryOperationPerformanceLogLoggerMemoryImpl();
         if (STATS_LOGGING_ENABLED) {
             processMetricsLogger = new ProcessMetricsLogLoggerMemoryImpl();
-            statsLogger = new StatsIntradayLoggerDBImpl(pInfo.getId(), processMetricsLogger);
+            statsLogger = new StatsIntradayLoggerDBImpl(processInfo.getId(), processMetricsLogger);
         } else {
             processMetricsLogger = null;
             statsLogger = null;
         }
-    }
-
-    public ProcessInfo getProcessInfo() {
-        return processInfo;
     }
 
     public QueryTable getQplLoggerQueryTable() {

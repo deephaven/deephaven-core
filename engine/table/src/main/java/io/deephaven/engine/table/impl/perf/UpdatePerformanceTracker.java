@@ -8,7 +8,6 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.tablelogger.UpdatePerformanceLogLoggerMemoryImpl;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.impl.*;
-import io.deephaven.engine.table.impl.util.MemoryTableLoggers;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.QueryConstants;
@@ -56,9 +55,7 @@ public class UpdatePerformanceTracker {
         if (INSTANCE == null) {
             synchronized (UpdatePerformanceTracker.class) {
                 if (INSTANCE == null) {
-                    final TableDefinition tableDefinition = UpdatePerformanceLogLoggerMemoryImpl.getTableDefinition();
-                    final String processInfoId = MemoryTableLoggers.getInstance().getProcessInfo().getId().value();
-                    INSTANCE = new UpdatePerformanceTracker(processInfoId, LoggerFactory.getLogger(UpdatePerformanceTracker.class));
+                    INSTANCE = new UpdatePerformanceTracker(LoggerFactory.getLogger(UpdatePerformanceTracker.class));
                 }
             }
         }
@@ -71,9 +68,9 @@ public class UpdatePerformanceTracker {
     private final AtomicInteger entryIdCounter = new AtomicInteger(1);
     private final Queue<WeakReference<PerformanceEntry>> entries = new LinkedBlockingDeque<>();
 
-    private UpdatePerformanceTracker(@NotNull final String processInfoId, @NotNull final Logger logger) {
+    private UpdatePerformanceTracker(@NotNull final Logger logger) {
         this.logger = logger;
-        tableLogger = new UpdatePerformanceLogLoggerMemoryImpl(processInfoId);
+        tableLogger = new UpdatePerformanceLogLoggerMemoryImpl();
     }
 
     private void startThread() {

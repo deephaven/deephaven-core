@@ -4,6 +4,7 @@
 package io.deephaven.engine.tablelogger;
 
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
+import io.deephaven.engine.table.impl.util.MemoryTableLoggers;
 import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.util.ColumnsSpecHelper;
@@ -19,9 +20,9 @@ public class QueryOperationPerformanceLogLoggerMemoryImpl extends MemoryTableLog
 
     private final String processUniqueId;
 
-    public QueryOperationPerformanceLogLoggerMemoryImpl(final String processUniqueId) {
+    public QueryOperationPerformanceLogLoggerMemoryImpl() {
         super(TABLE_NAME, TABLE_DEFINITION);
-        this.processUniqueId = processUniqueId;
+        this.processUniqueId = MemoryTableLoggers.getProcessInfo().getId().value();
     }
 
     public static String getDefaultTableName() {

@@ -16,13 +16,13 @@ public class EngineTableLoggerProvider {
     }
 
     public interface Interface {
-        ProcessInfoLogLogger processInfoLogLogger(final int initialSizeArg);
+        ProcessInfoLogLogger processInfoLogLogger();
 
         ProcessMetricsLogLogger processMetricsLogLogger();
 
-        QueryOperationPerformanceLogLogger queryOperationPerformanceLogLogger(final String processUniqueId);
+        QueryOperationPerformanceLogLogger queryOperationPerformanceLogLogger();
 
-        QueryPerformanceLogLogger queryPerformanceLogLogger(final String processUniqueId);
+        QueryPerformanceLogLogger queryPerformanceLogLogger();
 
         ServerStateLog serverStateLog();
 

@@ -2,8 +2,8 @@ package io.deephaven.engine.tablelogger;
 
 public class EngineTableLoggerProviderMemoryImpl implements EngineTableLoggerProvider.Interface {
     @Override
-    public ProcessInfoLogLogger processInfoLogLogger(final int initialSizeArg) {
-        return new ProcessInfoLogLoggerMemoryImpl(initialSizeArg);
+    public ProcessInfoLogLogger processInfoLogLogger() {
+        return new ProcessInfoLogLoggerMemoryImpl();
     }
 
     @Override
@@ -12,13 +12,13 @@ public class EngineTableLoggerProviderMemoryImpl implements EngineTableLoggerPro
     }
 
     @Override
-    public QueryOperationPerformanceLogLogger queryOperationPerformanceLogLogger(final String processUniqueId) {
-        return new QueryOperationPerformanceLogLoggerMemoryImpl(processUniqueId);
+    public QueryOperationPerformanceLogLogger queryOperationPerformanceLogLogger() {
+        return new QueryOperationPerformanceLogLoggerMemoryImpl();
     }
 
     @Override
-    public QueryPerformanceLogLogger queryPerformanceLogLogger(final String processUniqueId) {
-        return new QueryPerformanceLogLoggerMemoryImpl(processUniqueId);
+    public QueryPerformanceLogLogger queryPerformanceLogLogger() {
+        return new QueryPerformanceLogLoggerMemoryImpl();
     }
 
     @Override
@@ -28,6 +28,6 @@ public class EngineTableLoggerProviderMemoryImpl implements EngineTableLoggerPro
 
     @Override
     public UpdatePerformanceLogLogger updatePerformanceLogLogger() {
-        return null;
+        return new UpdatePerformanceLogLoggerMemoryImpl();
     }
 }

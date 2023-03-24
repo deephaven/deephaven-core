@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.tablelogger;
 
+import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.tablelogger.*;
 import io.deephaven.engine.util.ColumnsSpecHelper;
@@ -12,9 +13,11 @@ import java.io.IOException;
 public class ProcessInfoLogLoggerMemoryImpl extends MemoryTableLogger<ProcessInfoLogLoggerMemoryImpl.ISetter> implements ProcessInfoLogLogger {
 
     private static final String TABLE_NAME = "ProcessInfoLog";
+    private static final int DEFAULT_PROCESSS_INFO_LOG_SIZE = Configuration.getInstance().getIntegerWithDefault(
+            "defaultProcessInfoLogSize", 400);
 
-    public ProcessInfoLogLoggerMemoryImpl(final int initialSizeArg) {
-        super(TABLE_NAME, TABLE_DEFINITION, initialSizeArg);
+    public ProcessInfoLogLoggerMemoryImpl() {
+        super(TABLE_NAME, TABLE_DEFINITION, DEFAULT_PROCESSS_INFO_LOG_SIZE);
     }
 
     public static String getDefaultTableName() {

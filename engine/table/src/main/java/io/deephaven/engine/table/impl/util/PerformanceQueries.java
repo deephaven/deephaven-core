@@ -329,7 +329,7 @@ public class PerformanceQueries {
     }
 
     private static long getWorkerHeapSizeBytes() {
-        final OptionalLong opt = MemoryTableLoggers.getInstance().getProcessInfo().getMemoryInfo().heap().max();
+        final OptionalLong opt = MemoryTableLoggers.getProcessInfo().getMemoryInfo().heap().max();
         return opt.orElse(0);
     }
 
