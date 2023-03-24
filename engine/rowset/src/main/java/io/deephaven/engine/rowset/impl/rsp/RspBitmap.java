@@ -1028,6 +1028,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
      */
     public static RspBitmap andNotImpl(final RspBitmap r1, final RspBitmap r2) {
         final int minLen = Math.min(r1.size, r2.size);
+        // Detect if there is an "obvious" common prefix.
         int startIndex = 0;
         while (startIndex < minLen) {
             final long r1SpanInfo = r1.spanInfos[startIndex];
@@ -1037,10 +1038,17 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
             }
             final Object r1Span = r1.spans[startIndex];
             final Object r2Span = r2.spans[startIndex];
-            if (r1Span != r2Span) {
-                break;
+            if (r1Span != r2Span) { // if false, r1Span and r2Span are either both null or the same, shared, object
+                if (r1Span instanceof Long && r2Span instanceof Long) {
+                    if (((Long) r1Span).longValue() != ((Long) r2Span).longValue()) {
+                        break;
+                    }
+                } else {
+                    // in the case of containers, we only detect same object being shared;
+                    // we do not try to compare containers contents otherwise.
+                    break;
+                }
             }
-            // r1Span and r2Span are either both null or the same, shared, object
             ++startIndex;
         }
         final RspBitmap r;
