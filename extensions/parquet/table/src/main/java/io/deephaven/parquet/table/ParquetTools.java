@@ -11,6 +11,8 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.locations.util.TableDataRefreshService;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.vector.*;
 import io.deephaven.stringset.StringSet;
@@ -380,6 +382,9 @@ public class ParquetTools {
         final BasicFileAttributes sourceAttr = readAttributes(sourcePath);
         if (sourceAttr.isRegularFile()) {
             if (sourceFileName.endsWith(PARQUET_FILE_EXTENSION)) {
+                if (instructions.isRefreshing()) {
+                    throw new IllegalArgumentException("Unable to have a refreshing single parquet file");
+                }
                 final ParquetTableLocationKey tableLocationKey = new ParquetTableLocationKey(source, 0, null);
                 final Pair<List<ColumnDefinition<?>>, ParquetInstructions> schemaInfo = convertSchema(
                         tableLocationKey.getFileReader().getSchema(),
@@ -471,9 +476,14 @@ public class ParquetTools {
                 StandaloneTableKey.getInstance(),
                 locationKeyFinder,
                 new ParquetTableLocationFactory(readInstructions),
-                null);
-        return new PartitionAwareSourceTable(tableDefinition, "Read multiple parquet files with " + locationKeyFinder,
-                RegionedTableComponentFactoryImpl.INSTANCE, locationProvider, null);
+                readInstructions.isRefreshing() ? TableDataRefreshService.getSharedRefreshService() : null);
+        return new PartitionAwareSourceTable(
+                tableDefinition,
+                readInstructions.isRefreshing() ? "Read refreshing parquet files with " + locationKeyFinder
+                        : "Read multiple parquet files with " + locationKeyFinder,
+                RegionedTableComponentFactoryImpl.INSTANCE,
+                locationProvider,
+                readInstructions.isRefreshing() ? UpdateGraphProcessor.DEFAULT : null);
     }
 
     /**
@@ -487,11 +497,14 @@ public class ParquetTools {
     public static Table readPartitionedTableInferSchema(
             @NotNull final TableLocationKeyFinder<ParquetTableLocationKey> locationKeyFinder,
             @NotNull final ParquetInstructions readInstructions) {
-        final RecordingLocationKeyFinder<ParquetTableLocationKey> recordingLocationKeyFinder =
-                new RecordingLocationKeyFinder<>();
-        locationKeyFinder.findKeys(recordingLocationKeyFinder);
-        final List<ParquetTableLocationKey> foundKeys = recordingLocationKeyFinder.getRecordedKeys();
+        final RecordingLocationKeyFinder<ParquetTableLocationKey> initialKeys = new RecordingLocationKeyFinder<>();
+        locationKeyFinder.findKeys(initialKeys);
+        final List<ParquetTableLocationKey> foundKeys = initialKeys.getRecordedKeys();
         if (foundKeys.isEmpty()) {
+            if (readInstructions.isRefreshing()) {
+                throw new IllegalArgumentException(
+                        "Unable to create refreshing partitioned parquet table when there are no initial parquet files");
+            }
             return TableTools.emptyTable(0);
         }
         // TODO (https://github.com/deephaven/deephaven-core/issues/877): Support schema merge when discovering multiple
@@ -513,8 +526,8 @@ public class ParquetTools {
                     getUnboxedTypeIfBoxed(partitionValue.getClass()), null, ColumnDefinition.ColumnType.Partitioning));
         }
         allColumns.addAll(schemaInfo.getFirst());
-        return readPartitionedTable(recordingLocationKeyFinder, schemaInfo.getSecond(),
-                TableDefinition.of(allColumns));
+        return readPartitionedTable(readInstructions.isRefreshing() ? locationKeyFinder : initialKeys,
+                schemaInfo.getSecond(), TableDefinition.of(allColumns));
     }
 
     /**

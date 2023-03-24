@@ -82,6 +82,9 @@ public class ParquetMetadataFileLayout implements TableLocationKeyFinder<Parquet
     public ParquetMetadataFileLayout(@NotNull final File metadataFile,
             @Nullable final File commonMetadataFile,
             @NotNull final ParquetInstructions inputInstructions) {
+        if (inputInstructions.isRefreshing()) {
+            throw new IllegalArgumentException("ParquetMetadataFileLayout does not support refreshing");
+        }
         this.metadataFile = metadataFile;
         this.commonMetadataFile = commonMetadataFile;
         if (!metadataFile.exists()) {
