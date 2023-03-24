@@ -739,7 +739,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             }
             spanInfos[i] = src.spanInfos[isrc];
             final Object span = src.spans[isrc];
-            spans[i] = spans;
+            spans[i] = span;
             if (span == null || span == FULL_BLOCK_SPAN_MARKER) {
                 continue;
             }
