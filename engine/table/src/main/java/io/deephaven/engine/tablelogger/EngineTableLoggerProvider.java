@@ -1,20 +1,20 @@
 package io.deephaven.engine.tablelogger;
 
-import io.deephaven.engine.tablelogger.impl.memory.EngineTableLoggerProviderMemoryImpl;
+import io.deephaven.engine.tablelogger.impl.memory.EngineTableLoggerMemoryImplFactory;
 
 public class EngineTableLoggerProvider {
     private EngineTableLoggerProvider() {
         throw new UnsupportedOperationException();
     }
 
-    private static Factory engineTableLoggerProvider = new EngineTableLoggerProviderMemoryImpl();
+    private static Factory factory = new EngineTableLoggerMemoryImplFactory();
 
     public static Factory get() {
-        return engineTableLoggerProvider;
+        return factory;
     }
 
-    public static void setEngineTableLoggerProvider(Factory engineTableLoggerProvider) {
-        EngineTableLoggerProvider.engineTableLoggerProvider = engineTableLoggerProvider;
+    public static void set(Factory factory) {
+        EngineTableLoggerProvider.factory = factory;
     }
 
     /**
@@ -31,7 +31,7 @@ public class EngineTableLoggerProvider {
 
         QueryPerformanceLogLogger queryPerformanceLogLogger();
 
-        ServerStateLogLogger serverStateLog();
+        ServerStateLogLogger serverStateLogLogger();
 
         UpdatePerformanceLogLogger updatePerformanceLogLogger();
     }

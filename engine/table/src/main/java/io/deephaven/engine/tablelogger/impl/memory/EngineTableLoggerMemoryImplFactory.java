@@ -8,7 +8,7 @@ import io.deephaven.engine.tablelogger.QueryPerformanceLogLogger;
 import io.deephaven.engine.tablelogger.ServerStateLogLogger;
 import io.deephaven.engine.tablelogger.UpdatePerformanceLogLogger;
 
-public class EngineTableLoggerProviderMemoryImpl implements EngineTableLoggerProvider.Factory {
+public class EngineTableLoggerMemoryImplFactory implements EngineTableLoggerProvider.Factory {
     @Override
     public ProcessInfoLogLogger processInfoLogLogger() {
         return new ProcessInfoLogLoggerMemoryImpl();
@@ -30,7 +30,7 @@ public class EngineTableLoggerProviderMemoryImpl implements EngineTableLoggerPro
     }
 
     @Override
-    public ServerStateLogLogger serverStateLog() {
+    public ServerStateLogLogger serverStateLogLogger() {
         return new ServerStateLogLoggerMemoryImpl();
     }
 
