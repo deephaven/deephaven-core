@@ -49,6 +49,10 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
         super(src, startIdx, startOffset, endIdx, endOffset);
     }
 
+    public RspBitmap(final RspArray src, final int startIdx, final int endIdx) {
+        super(src, startIdx, endIdx);
+    }
+
     public static RspBitmap makeEmpty() {
         return new RspBitmap();
     }
@@ -1023,7 +1027,28 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
      * @return r1 and not r2 as a new RspArray.
      */
     public static RspBitmap andNotImpl(final RspBitmap r1, final RspBitmap r2) {
-        final RspBitmap r = r1.deepCopy();
+        final int minLen = Math.min(r1.size, r2.size);
+        int startIndex = 0;
+        while (startIndex < minLen) {
+            final long r1SpanInfo = r1.spanInfos[startIndex];
+            final long r2SpanInfo = r2.spanInfos[startIndex];
+            if (spanInfoToKey(r1SpanInfo) != spanInfoToKey(r2SpanInfo)) {
+                break;
+            }
+            final Object r1Span = r1.spans[startIndex];
+            final Object r2Span = r2.spans[startIndex];
+            if (r1Span != r2Span) {
+                break;
+            }
+            // r1Span and r2Span are either both null or the same, shared, object
+            ++startIndex;
+        }
+        final RspBitmap r;
+        if (startIndex == 0) {
+            r = r1.deepCopy();
+        } else {
+            r = new RspBitmap(r1, startIndex, r1.size - 1);
+        }
         r.andNotEqualsUnsafeNoWriteCheck(r2);
         return r;
     }
