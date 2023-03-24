@@ -66,7 +66,7 @@ type Client struct {
 //   - "Anonymous" is used for anonymous authentication.
 //   - "io.deephaven.authentication.psk.PskAuthenticationHandler <password>" is used for PSK authentication
 //
-// If auth is set to an empty string, anonymous authentication is used.
+// If auth is set to an empty string, DefaultAuth authentication is used.
 // To see what authentication methods are available on the Deephaven server, navigate to: http://<host>:<port>/jsapi/authentication/.
 //
 // The option arguments can be used to specify other settings for the client.
@@ -100,7 +100,7 @@ func NewClient(ctx context.Context, host string, port string, auth string, optio
 	cfgClient := configpb2.NewConfigServiceClient(grpcChannel)
 
 	if auth == "" {
-		auth = "Anonymous"
+		auth = DefaultAuth
 	}
 
 	client.tokenMgr, err = newTokenManager(ctx, client.flightStub, cfgClient, auth)

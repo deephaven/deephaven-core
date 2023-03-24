@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/apache/arrow/go/v8/arrow/flight"
 	configpb2 "github.com/deephaven/deephaven-core/go/internal/proto/config"
 	"google.golang.org/grpc/metadata"
@@ -123,10 +124,10 @@ func newTokenManager(ctx context.Context, fs *flightStub, cfg configpb2.ConfigSe
 		return nil, err
 	}
 
-	sessionDurationStr, ok := ac.ConfigValues["http.session.durationMs"]
+	sessionDurationStr, ok := ac.ConfigValues[TokenTimeoutConfigConstant]
 
 	if !ok {
-		return nil, errors.New("server configuration constants do not contain: http.session.durationMs")
+		return nil, errors.New(fmt.Sprintf("server configuration constants do not contain: %v", TokenTimeoutConfigConstant))
 	}
 
 	maxTimeoutMillis, err := strconv.Atoi(sessionDurationStr.GetStringValue())
