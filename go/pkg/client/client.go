@@ -75,7 +75,9 @@ func NewClient(ctx context.Context, host string, port string, auth string, optio
 	defer func() {
 		if err != nil && client != nil {
 			e := client.Close()
-			log.Println("Error when closing failed client: ", e)
+			if e != nil {
+				log.Println("Error when closing failed client: ", e)
+			}
 		}
 	}()
 
