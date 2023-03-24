@@ -149,6 +149,7 @@ def write(
     col_instructions: List[ColumnInstruction] = None,
     compression_codec_name: str = None,
     max_dictionary_keys: int = None,
+    target_page_size: int = None,
 ) -> None:
     """Write a table to a Parquet file.
 
@@ -161,6 +162,7 @@ def write(
         col_instructions (List[ColumnInstruction]): instructions for customizations while writing, default is None
         compression_codec_name (str): the default compression codec to use, if not specified, defaults to SNAPPY
         max_dictionary_keys (int): the maximum dictionary keys allowed, if not specified, defaults to 2^20 (1,048,576)
+        target_page_size (int): the target page size
 
     Raises:
         DHError
@@ -170,6 +172,7 @@ def write(
             col_instructions=col_instructions,
             compression_codec_name=compression_codec_name,
             max_dictionary_keys=max_dictionary_keys,
+            target_page_size=target_page_size,
             for_read=False,
         )
 
@@ -204,6 +207,7 @@ def batch_write(
     col_instructions: List[ColumnInstruction] = None,
     compression_codec_name: str = None,
     max_dictionary_keys: int = None,
+    target_page_size: int = None,
     grouping_cols: List[str] = None,
 ):
     """Writes tables to disk in parquet format to a supplied set of paths.
@@ -222,6 +226,7 @@ def batch_write(
         col_instructions (List[ColumnInstruction]): instructions for customizations while writing
         compression_codec_name (str): the compression codec to use, if not specified, defaults to SNAPPY
         max_dictionary_keys (int): the maximum dictionary keys allowed, if not specified, defaults to 2^20 (1,048,576)
+        target_page_size (int): the target page size
         grouping_cols (List[str]): the group column names
 
     Raises:
@@ -232,6 +237,7 @@ def batch_write(
             col_instructions=col_instructions,
             compression_codec_name=compression_codec_name,
             max_dictionary_keys=max_dictionary_keys,
+            target_page_size=target_page_size,
             for_read=False,
         )
 
