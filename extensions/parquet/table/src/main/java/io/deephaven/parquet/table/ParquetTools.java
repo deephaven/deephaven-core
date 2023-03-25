@@ -420,10 +420,13 @@ public class ParquetTools {
             final String firstEntryFileName = firstEntryPath.getFileName().toString();
             final BasicFileAttributes firstEntryAttr = readAttributes(firstEntryPath);
             if (firstEntryAttr.isDirectory() && firstEntryFileName.contains("=")) {
-                return readPartitionedTableInferSchema(new ParquetKeyValuePartitionedLayout(source, 32), instructions);
+                return readPartitionedTableInferSchema(
+                        TableLocationKeyFinder.safetyCheck(new ParquetKeyValuePartitionedLayout(source, 32)),
+                        instructions);
             }
             if (firstEntryAttr.isRegularFile() && firstEntryFileName.endsWith(PARQUET_FILE_EXTENSION)) {
-                return readPartitionedTableInferSchema(new ParquetFlatPartitionedLayout(source), instructions);
+                return readPartitionedTableInferSchema(
+                        TableLocationKeyFinder.safetyCheck(new ParquetFlatPartitionedLayout(source)), instructions);
             }
             throw new TableDataException("No recognized Parquet table layout found in " + source);
         }
@@ -479,7 +482,8 @@ public class ParquetTools {
                 readInstructions.isRefreshing() ? TableDataRefreshService.getSharedRefreshService() : null);
         return new PartitionAwareSourceTable(
                 tableDefinition,
-                readInstructions.isRefreshing() ? "Read refreshing parquet files with " + locationKeyFinder
+                readInstructions.isRefreshing()
+                        ? "Read refreshing parquet files with " + locationKeyFinder
                         : "Read multiple parquet files with " + locationKeyFinder,
                 RegionedTableComponentFactoryImpl.INSTANCE,
                 locationProvider,
@@ -503,7 +507,7 @@ public class ParquetTools {
         if (foundKeys.isEmpty()) {
             if (readInstructions.isRefreshing()) {
                 throw new IllegalArgumentException(
-                        "Unable to create refreshing partitioned parquet table when there are no initial parquet files");
+                        "Unable to infer schema for a refreshing partitioned parquet table when there are no initial parquet files");
             }
             return TableTools.emptyTable(0);
         }
@@ -541,7 +545,8 @@ public class ParquetTools {
             @NotNull final File directory,
             @NotNull final ParquetInstructions readInstructions) {
         final ParquetMetadataFileLayout layout = new ParquetMetadataFileLayout(directory, readInstructions);
-        return readPartitionedTable(layout, layout.getInstructions(), layout.getTableDefinition());
+        return readPartitionedTable(TableLocationKeyFinder.safetyCheck(layout), layout.getInstructions(),
+                layout.getTableDefinition());
     }
 
     private static final SimpleTypeMap<Class<?>> DB_ARRAY_TYPE_MAP = SimpleTypeMap.create(
