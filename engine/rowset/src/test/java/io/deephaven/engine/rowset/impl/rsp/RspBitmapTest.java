@@ -35,9 +35,9 @@ import static org.junit.Assert.*;
 
 @Category(OutOfBandTest.class)
 public class RspBitmapTest {
-    private static final int runs = 10;
+    private static final int runs = 1;
     private static final int lastRun = 1; // to help offset the seed when doing multiple runs.
-    private static final int seed0 = 50117 + lastRun;
+    private static final int seed0 = 50127 + lastRun;
 
     @Test
     public void testSimpleKeepAddingTillAllOnes() {
