@@ -730,7 +730,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
 
         long srcAccBeforeStart = -1;
         if (acc != null && src.acc != null) {
-            srcAccBeforeStart = src.acc[startIdx - 1];
+            srcAccBeforeStart = (startIdx == 0) ? 0 : src.acc[startIdx - 1];
         }
         for (int i = 0; i < size; ++i) {
             final int isrc = startIdx + i;

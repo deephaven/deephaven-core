@@ -35,9 +35,9 @@ import static org.junit.Assert.*;
 
 @Category(OutOfBandTest.class)
 public class RspBitmapTest {
-    private static final int runs = 1;
+    private static final int runs = 10;
     private static final int lastRun = 1; // to help offset the seed when doing multiple runs.
-    private static final int seed0 = 50116 + lastRun;
+    private static final int seed0 = 50117 + lastRun;
 
     @Test
     public void testSimpleKeepAddingTillAllOnes() {
@@ -1837,8 +1837,17 @@ public class RspBitmapTest {
                 getRandomRspBitmap(nblocks, r, 0.90f, 2000, 0, 12);
         final RspBitmap rb2 =
                 getRandomRspBitmap(nblocks, r, 0.90f, 2000, nblocks / 2, 12);
+        final String m = "seed==" + seed;
+        testBiOp(m, bitmapFun, boolFun, rb1, rb2);
+    }
+
+    private static void testBiOp(
+            final String m,
+            BiFunction<RspBitmap, RspBitmap, RspBitmap> bitmapFun,
+            BiFunction<Boolean, Boolean, Boolean> boolFun,
+            final RspBitmap rb1,
+            final RspBitmap rb2) {
         final RspBitmap rbres = bitmapFun.apply(rb1, rb2);
-        final String m = "seed=" + seed;
         rbres.validate(m);
         final RspRangeIterator itr = rbres.getRangeIterator();
         while (itr.hasNext()) {
@@ -1850,7 +1859,8 @@ public class RspBitmapTest {
                 final boolean in1 = rb1.contains(v);
                 final boolean in2 = rb2.contains(v);
                 final boolean boolResult = boolFun.apply(in1, in2);
-                assertEquals(m + ", v=" + v + ", inr=" + inr + ", in1=" + in1 + ", in2=" + in2, boolResult, inr);
+                assertEquals(m + " && v==" + v + " && inr==" + inr + " && in1==" + in1 + " && in2==" + in2,
+                        boolResult, inr);
             }
         }
         final RspRangeIterator it1 = rb1.getRangeIterator();
@@ -1863,7 +1873,8 @@ public class RspBitmapTest {
                 final boolean in1 = true; // rb1.contains(v);
                 final boolean in2 = rb2.contains(v);
                 final boolean boolResult = boolFun.apply(in1, in2);
-                assertEquals(m + ", v=" + v + ", inr=" + inr + ", in1=" + in1 + ", in2=" + in2, boolResult, inr);
+                assertEquals(m + " && v==" + v + " && inr==" + inr + " && in1==" + in1 + " && in2==" + in2,
+                        boolResult, inr);
             }
         }
         final RspRangeIterator it2 = rb2.getRangeIterator();
@@ -1876,7 +1887,8 @@ public class RspBitmapTest {
                 final boolean in1 = rb1.contains(v);
                 final boolean in2 = true; // rb2.contains(v);
                 final boolean boolResult = boolFun.apply(in1, in2);
-                assertEquals(m + ", v=" + v + ", inr=" + inr + ", in1=" + in1 + ", in2=" + in2, boolResult, inr);
+                assertEquals(m + " && v==" + v + " && inr==" + inr + " & in1==" + in1 + " && in2==" + in2,
+                        boolResult, inr);
             }
         }
     }
@@ -2552,7 +2564,7 @@ public class RspBitmapTest {
         System.out.println(pfxMsg);
         final Random r = new Random(seed);
         for (int j = 0; j < 2; ++j) {
-            final int nblocks = (j == 0) ? RspBitmap.accNullThreshold : 40;
+            final int nblocks = (j == 0) ? RspBitmap.accNullThreshold : (32 + RspBitmap.accNullThreshold);
             if (nblocks == 0) {
                 continue;
             }
@@ -2634,7 +2646,7 @@ public class RspBitmapTest {
         assertEquals(3 * BLOCK_SIZE, rb.getCardinality());
     }
 
-    private final RspBitmap str2rb(final String s) {
+    private RspBitmap str2rb(final String s) {
         final String[] ranges = s.split(",");
         final RspBitmap rb = new RspBitmap();
         for (String range : ranges) {
@@ -4246,7 +4258,7 @@ public class RspBitmapTest {
         final Random r = new Random(seed);
         final int nruns = 40;
         for (int nrun = 0; nrun < nruns; ++nrun) {
-            final int nblocks = r.nextBoolean() ? 60 : RspArray.accNullThreshold;
+            final int nblocks = r.nextBoolean() ? (52 + RspBitmap.accNullThreshold) : RspArray.accNullThreshold;
             final RspBitmap rb = getRandomRspBitmap(nblocks, r, 0.90f, 2000,
                     0, 0);
             final long rbc = rb.getCardinality();
@@ -4419,5 +4431,48 @@ public class RspBitmapTest {
         assertEquals(value0, ans2);
         final long ans3 = sit.binarySearchValue((long k, int ignored) -> Long.compare(rangeStart1, k), 1);
         assertEquals(rangeStart1, ans3);
+    }
+
+    private void testBiOpSimilarPrefix(
+            BiFunction<RspBitmap, RspBitmap, RspBitmap> bitmapFun,
+            BiFunction<Boolean, Boolean, Boolean> boolFun) {
+        final IntConsumer testFun = (final int seed) -> {
+            final String m = "seed==" + seed;
+            final Random rand = new Random(seed);
+            final int nblocks = (rand.nextInt(4) == 0)
+                    ? RspBitmap.accNullThreshold
+                    : (52 + RspBitmap.accNullThreshold)
+                    ;
+            final RspBitmap rb1 = getRandomRspBitmap(
+                    nblocks, rand, 0.90f, 2000, 0, 12);
+            for (int common = 0; common <= rb1.size; ++common) {
+                final String m1 = m + " && common==" + common;
+                RspBitmap rb2;
+                if (common == 0) {
+                    rb2 = RspBitmap.makeEmpty();
+                } else {
+                    rb2 = new RspBitmap(rb1, 0, common - 1);
+                }
+                for (int i = 0; i < rb1.size; ++i) {
+                    final long k = (common == 0) ? (rb1.first() & ~BLOCK_LAST) : (rb1.spanInfos[i] & ~BLOCK_LAST);
+                    final int start = rand.nextInt(BLOCK_SIZE);
+                    final int end = start + rand.nextInt(BLOCK_SIZE - start);
+                    rb2 = rb2.addRange(k + start, k + end);
+                }
+                rb2.validate();
+                testBiOp(m1, bitmapFun, boolFun, rb1, rb2);
+            }
+        };
+        randomizedTest(testFun);
+    }
+
+    @Test
+    public void testOrSimilarPrefix() {
+        testBiOpSimilarPrefix(RspBitmap::or, (Boolean b1, Boolean b2) -> b1 || b2);
+    }
+
+    @Test
+    public void testAndNotSimilarPrefix() {
+        testBiOpSimilarPrefix(RspBitmap::andNot, (Boolean b1, Boolean b2) -> b1 && !b2);
     }
 }
