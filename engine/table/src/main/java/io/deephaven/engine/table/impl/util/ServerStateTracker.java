@@ -36,12 +36,12 @@ public class ServerStateTracker {
 
     private final Logger logger;
 
-    private final TableLoggerWrapper<ServerStateLogLogger> processMemLogger;
+    private final MemoryTableLoggerWrapper<ServerStateLogLogger> processMemLogger;
     private final UpdateGraphProcessor.AccumulatedCycleStats ugpAccumCycleStats;
 
     private ServerStateTracker() {
         logger = LoggerFactory.getLogger(ServerStateTracker.class);
-        processMemLogger = new TableLoggerWrapper<>(EngineTableLoggerProvider.get().serverStateLogLogger());
+        processMemLogger = new MemoryTableLoggerWrapper<>(EngineTableLoggerProvider.get().serverStateLogLogger());
         ugpAccumCycleStats = new UpdateGraphProcessor.AccumulatedCycleStats();
     }
 

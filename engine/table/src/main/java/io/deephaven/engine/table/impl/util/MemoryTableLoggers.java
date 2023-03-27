@@ -51,27 +51,27 @@ public class MemoryTableLoggers {
         return INSTANCE;
     }
 
-    private final TableLoggerWrapper<QueryPerformanceLogLogger> qplLogger;
-    private final TableLoggerWrapper<QueryOperationPerformanceLogLogger> qoplLogger;
-    private final TableLoggerWrapper<ProcessInfoLogLogger> processInfoLogger;
-    private final TableLoggerWrapper<ProcessMetricsLogLogger> processMetricsLogger;
+    private final MemoryTableLoggerWrapper<QueryPerformanceLogLogger> qplLogger;
+    private final MemoryTableLoggerWrapper<QueryOperationPerformanceLogLogger> qoplLogger;
+    private final MemoryTableLoggerWrapper<ProcessInfoLogLogger> processInfoLogger;
+    private final MemoryTableLoggerWrapper<ProcessMetricsLogLogger> processMetricsLogger;
     private final StatsIntradayLogger statsLogger;
 
     private MemoryTableLoggers() {
         EngineTableLoggerProvider.Factory tableLoggerFactory = EngineTableLoggerProvider.get();
         final Logger log = LoggerFactory.getLogger(MemoryTableLoggers.class);
-        TableLoggerWrapper<ProcessInfoLogLogger> pInfoLogger = null;
+        MemoryTableLoggerWrapper<ProcessInfoLogLogger> pInfoLogger = null;
         try {
-            pInfoLogger = new TableLoggerWrapper<>(tableLoggerFactory.processInfoLogLogger());
+            pInfoLogger = new MemoryTableLoggerWrapper<>(tableLoggerFactory.processInfoLogLogger());
             new ProcessInfoStoreDBImpl(pInfoLogger.getTableLogger()).put(processInfo);
         } catch (IOException e) {
             log.fatal().append("Failed to configure process info: ").append(e.toString()).endl();
         }
         processInfoLogger = pInfoLogger;
-        qplLogger = new TableLoggerWrapper<>(tableLoggerFactory.queryPerformanceLogLogger());
-        qoplLogger = new TableLoggerWrapper<>(tableLoggerFactory.queryOperationPerformanceLogLogger());
+        qplLogger = new MemoryTableLoggerWrapper<>(tableLoggerFactory.queryPerformanceLogLogger());
+        qoplLogger = new MemoryTableLoggerWrapper<>(tableLoggerFactory.queryOperationPerformanceLogLogger());
         if (STATS_LOGGING_ENABLED) {
-            processMetricsLogger = new TableLoggerWrapper<>(tableLoggerFactory.processMetricsLogLogger());
+            processMetricsLogger = new MemoryTableLoggerWrapper<>(tableLoggerFactory.processMetricsLogLogger());
             statsLogger = new StatsIntradayLoggerDBImpl(processInfo.getId(), processMetricsLogger.getTableLogger());
         } else {
             processMetricsLogger = null;
