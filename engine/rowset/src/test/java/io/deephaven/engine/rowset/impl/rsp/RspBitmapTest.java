@@ -4441,8 +4441,7 @@ public class RspBitmapTest {
             final Random rand = new Random(seed);
             final int nblocks = (rand.nextInt(4) == 0)
                     ? RspBitmap.accNullThreshold
-                    : (52 + RspBitmap.accNullThreshold)
-                    ;
+                    : (52 + RspBitmap.accNullThreshold);
             final RspBitmap rb1 = getRandomRspBitmap(
                     nblocks, rand, 0.90f, 2000, 0, 12);
             for (int common = 0; common <= rb1.size; ++common) {
