@@ -113,7 +113,8 @@ public class ReplicateUpdateBy {
                 fixupByte(f);
             }
         }
-        ReplicatePrimitiveCode.floatToAllFloatingPoints("engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingavg/FloatRollingAvgOperator.java");
+        ReplicatePrimitiveCode.floatToAllFloatingPoints(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingavg/FloatRollingAvgOperator.java");
     }
 
     private static void replicateNumericOperator(@NotNull final String shortClass, @NotNull final String floatClass)
