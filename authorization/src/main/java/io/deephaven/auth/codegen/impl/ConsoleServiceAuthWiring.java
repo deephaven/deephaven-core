@@ -11,6 +11,7 @@ import io.deephaven.auth.AuthContext;
 import io.deephaven.auth.ServiceAuthWiring;
 import io.deephaven.proto.backplane.script.grpc.AutoCompleteRequest;
 import io.deephaven.proto.backplane.script.grpc.BindTableToVariableRequest;
+import io.deephaven.proto.backplane.script.grpc.CancelAutoCompleteRequest;
 import io.deephaven.proto.backplane.script.grpc.CancelCommandRequest;
 import io.deephaven.proto.backplane.script.grpc.ConsoleServiceGrpc;
 import io.deephaven.proto.backplane.script.grpc.ExecuteCommandRequest;
@@ -52,6 +53,8 @@ public interface ConsoleServiceAuthWiring extends ServiceAuthWiring<ConsoleServi
         serviceBuilder.addMethod(ServiceAuthWiring.intercept(
                 service, "AutoCompleteStream", this::onCallStartedAutoCompleteStream,
                 this::onMessageReceivedAutoCompleteStream));
+        serviceBuilder.addMethod(ServiceAuthWiring.intercept(
+                service, "CancelAutoComplete", null, this::onMessageReceivedCancelAutoComplete));
         serviceBuilder.addMethod(ServiceAuthWiring.intercept(
                 service, "OpenAutoCompleteStream", null, this::onMessageReceivedOpenAutoCompleteStream));
         serviceBuilder.addMethod(ServiceAuthWiring.intercept(
@@ -142,6 +145,16 @@ public interface ConsoleServiceAuthWiring extends ServiceAuthWiring<ConsoleServi
     void onMessageReceivedAutoCompleteStream(AuthContext authContext, AutoCompleteRequest request);
 
     /**
+     * Authorize a request to CancelAutoComplete.
+     *
+     * @param authContext the authentication context of the request
+     * @param request the request to authorize
+     * @throws io.grpc.StatusRuntimeException if the user is not authorized to invoke CancelAutoComplete
+     */
+    void onMessageReceivedCancelAutoComplete(AuthContext authContext,
+            CancelAutoCompleteRequest request);
+
+    /**
      * Authorize a request to OpenAutoCompleteStream.
      *
      * @param authContext the authentication context of the request
@@ -186,6 +199,9 @@ public interface ConsoleServiceAuthWiring extends ServiceAuthWiring<ConsoleServi
 
         public void onMessageReceivedAutoCompleteStream(AuthContext authContext,
                 AutoCompleteRequest request) {}
+
+        public void onMessageReceivedCancelAutoComplete(AuthContext authContext,
+                CancelAutoCompleteRequest request) {}
 
         public void onMessageReceivedOpenAutoCompleteStream(AuthContext authContext,
                 AutoCompleteRequest request) {}
@@ -235,6 +251,11 @@ public interface ConsoleServiceAuthWiring extends ServiceAuthWiring<ConsoleServi
 
         public void onMessageReceivedAutoCompleteStream(AuthContext authContext,
                 AutoCompleteRequest request) {
+            ServiceAuthWiring.operationNotAllowed();
+        }
+
+        public void onMessageReceivedCancelAutoComplete(AuthContext authContext,
+                CancelAutoCompleteRequest request) {
             ServiceAuthWiring.operationNotAllowed();
         }
 
@@ -310,6 +331,13 @@ public interface ConsoleServiceAuthWiring extends ServiceAuthWiring<ConsoleServi
                 AutoCompleteRequest request) {
             if (delegate != null) {
                 delegate.onMessageReceivedAutoCompleteStream(authContext, request);
+            }
+        }
+
+        public void onMessageReceivedCancelAutoComplete(AuthContext authContext,
+                CancelAutoCompleteRequest request) {
+            if (delegate != null) {
+                delegate.onMessageReceivedCancelAutoComplete(authContext, request);
             }
         }
 
