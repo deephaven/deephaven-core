@@ -1,57 +1,52 @@
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharRollingMinMaxOperator and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
 package io.deephaven.engine.table.impl.updateby.rollingminmax;
 
-import io.deephaven.base.ringbuffer.AggregatingIntRingBuffer;
+import io.deephaven.base.ringbuffer.AggregatingCharRingBuffer;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
-import io.deephaven.chunk.IntChunk;
+import io.deephaven.chunk.CharChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
-import io.deephaven.engine.table.impl.updateby.internal.BaseIntUpdateByOperator;
+import io.deephaven.engine.table.impl.updateby.internal.BaseCharUpdateByOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static io.deephaven.util.QueryConstants.*;
 
-public class IntRollingMinMaxOperator extends BaseIntUpdateByOperator {
+public class CharRollingMinMaxOperator extends BaseCharUpdateByOperator {
     private final boolean isMax;
     private static final int BUFFER_INITIAL_CAPACITY = 128;
     // region extra-fields
     // endregion extra-fields
 
-    protected class Context extends BaseIntUpdateByOperator.Context {
-        protected IntChunk<? extends Values> intInfluencerValuesChunk;
-        protected AggregatingIntRingBuffer aggMinMax;
+    protected class Context extends BaseCharUpdateByOperator.Context {
+        protected CharChunk<? extends Values> charInfluencerValuesChunk;
+        protected AggregatingCharRingBuffer aggMinMax;
         protected boolean evaluationNeeded;
 
         protected Context(final int chunkSize) {
             super(chunkSize);
             if (isMax) {
-                aggMinMax = new AggregatingIntRingBuffer(BUFFER_INITIAL_CAPACITY, Integer.MIN_VALUE, (a, b) -> {
-                    if (a == NULL_INT) {
+                aggMinMax = new AggregatingCharRingBuffer(BUFFER_INITIAL_CAPACITY, Character.MIN_VALUE, (a, b) -> {
+                    if (a == NULL_CHAR) {
                         return b;
-                    } else if (b == NULL_INT) {
+                    } else if (b == NULL_CHAR) {
                         return a;
                     }
-                    return (int)Math.max(a, b);
+                    return (char)Math.max(a, b);
                 });
             } else {
-                aggMinMax = new AggregatingIntRingBuffer(BUFFER_INITIAL_CAPACITY, Integer.MAX_VALUE, (a, b) -> {
-                    if (a == NULL_INT) {
+                aggMinMax = new AggregatingCharRingBuffer(BUFFER_INITIAL_CAPACITY, Character.MAX_VALUE, (a, b) -> {
+                    if (a == NULL_CHAR) {
                         return b;
-                    } else if (b == NULL_INT) {
+                    } else if (b == NULL_CHAR) {
                         return a;
                     }
-                    return (int)Math.min(a, b);
+                    return (char)Math.min(a, b);
                 });
             }
-            curVal = isMax ? Integer.MIN_VALUE : Integer.MAX_VALUE;
+            curVal = isMax ? Character.MIN_VALUE : Character.MAX_VALUE;
             evaluationNeeded = false;
         }
 
@@ -63,7 +58,7 @@ public class IntRollingMinMaxOperator extends BaseIntUpdateByOperator {
 
         @Override
         public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            intInfluencerValuesChunk = valuesChunk.asIntChunk();
+            charInfluencerValuesChunk = valuesChunk.asCharChunk();
         }
 
         @Override
@@ -71,12 +66,12 @@ public class IntRollingMinMaxOperator extends BaseIntUpdateByOperator {
             aggMinMax.ensureRemaining(count);
 
             for (int ii = 0; ii < count; ii++) {
-                int val = intInfluencerValuesChunk.get(pos + ii);
+                char val = charInfluencerValuesChunk.get(pos + ii);
                 aggMinMax.addUnsafe(val);
 
-                if (val == NULL_INT) {
+                if (val == NULL_CHAR) {
                     nullCount++;
-                } else if (curVal == NULL_INT) {
+                } else if (curVal == NULL_CHAR) {
                     curVal = val;
                     evaluationNeeded = false;
                 } else if (isMax && curVal < val) {
@@ -94,12 +89,12 @@ public class IntRollingMinMaxOperator extends BaseIntUpdateByOperator {
 
         @Override
         public void pop(int count) {
-            Assert.geq(aggMinMax.size(), "intWindowValues.size()", count);
+            Assert.geq(aggMinMax.size(), "charWindowValues.size()", count);
 
             for (int ii = 0; ii < count; ii++) {
-                int val = aggMinMax.removeUnsafe();
+                char val = aggMinMax.removeUnsafe();
 
-                if (val == NULL_INT) {
+                if (val == NULL_CHAR) {
                     nullCount--;
                 } else {
                     // Only revaluate if we pop something equal to our current value.  Otherwise we have perfect
@@ -114,7 +109,7 @@ public class IntRollingMinMaxOperator extends BaseIntUpdateByOperator {
         @Override
         public void writeToOutputChunk(int outIdx) {
             if (aggMinMax.size() == nullCount) {
-                curVal = NULL_INT;
+                curVal = NULL_CHAR;
             } else if (evaluationNeeded) {
                 curVal = aggMinMax.evaluate();
             }
@@ -126,7 +121,7 @@ public class IntRollingMinMaxOperator extends BaseIntUpdateByOperator {
         public void reset() {
             super.reset();
             aggMinMax.clear();
-            curVal = isMax ? Integer.MIN_VALUE : Integer.MAX_VALUE;
+            curVal = isMax ? Character.MIN_VALUE : Character.MAX_VALUE;
             evaluationNeeded = false;
         }
     }
@@ -137,7 +132,7 @@ public class IntRollingMinMaxOperator extends BaseIntUpdateByOperator {
         return new Context(chunkSize);
     }
 
-    public IntRollingMinMaxOperator(@NotNull final MatchPair pair,
+    public CharRollingMinMaxOperator(@NotNull final MatchPair pair,
                                      @NotNull final String[] affectingColumns,
                                      @Nullable final RowRedirection rowRedirection,
                                      @Nullable final String timestampColumnName,

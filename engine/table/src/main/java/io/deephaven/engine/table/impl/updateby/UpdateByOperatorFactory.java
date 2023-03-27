@@ -637,6 +637,10 @@ public class UpdateByOperatorFactory {
                 return new ByteRollingMinMaxOperator(pair, affectingColumns, rowRedirection,
                         rmm.revWindowScale().timestampCol(),
                         prevWindowScaleUnits, fwdWindowScaleUnits, rmm.isMax());
+            } else if (csType == char.class || csType == Character.class) {
+                return new CharRollingMinMaxOperator(pair, affectingColumns, rowRedirection,
+                        rmm.revWindowScale().timestampCol(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits, rmm.isMax());
             } else if (csType == short.class || csType == Short.class) {
                 return new ShortRollingMinMaxOperator(pair, affectingColumns, rowRedirection,
                         rmm.revWindowScale().timestampCol(),

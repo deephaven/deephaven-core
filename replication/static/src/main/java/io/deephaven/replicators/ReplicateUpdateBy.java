@@ -100,11 +100,11 @@ public class ReplicateUpdateBy {
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingsum/ShortRollingSumOperator.java",
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingsum/FloatRollingSumOperator.java");
 
-        files = ReplicatePrimitiveCode.shortToAllNumericals(
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingminmax/ShortRollingMinMaxOperator.java",
-                null);
+        files = ReplicatePrimitiveCode.charToAllButBoolean(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingminmax/CharRollingMinMaxOperator.java",
+                exemptions);
         for (final String f : files) {
-            if (f.contains("Integer")) {
+            if (f.contains("Int")) {
                 fixupInteger(f);
             }
         }

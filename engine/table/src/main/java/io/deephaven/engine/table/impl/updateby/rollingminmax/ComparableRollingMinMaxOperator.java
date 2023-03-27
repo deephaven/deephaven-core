@@ -69,16 +69,14 @@ public class ComparableRollingMinMaxOperator<T extends Comparable<T>> extends Ba
 
                 if (val == null) {
                     nullCount++;
-                } else {
-                    if (curVal == null) {
-                        curVal = val;
-                    } else if (isMax && curVal.compareTo(val) < 0) {
-                        curVal = val;
-                        evaluationNeeded = false;
-                    } else if (!isMax && curVal.compareTo(val) > 0) {
-                        curVal = val;
-                        evaluationNeeded = false;
-                    }
+                } else if (curVal == null) {
+                    curVal = val;
+                } else if (isMax && curVal.compareTo(val) < 0) {
+                    curVal = val;
+                    evaluationNeeded = false;
+                } else if (!isMax && curVal.compareTo(val) > 0) {
+                    curVal = val;
+                    evaluationNeeded = false;
                 }
             }
         }
@@ -105,14 +103,12 @@ public class ComparableRollingMinMaxOperator<T extends Comparable<T>> extends Ba
         @Override
         public void writeToOutputChunk(int outIdx) {
             if (aggMinMax.size() == nullCount) {
-                outputValues.set(outIdx, null);
-            } else {
-                if (evaluationNeeded) {
-                    curVal = aggMinMax.evaluate();
-                }
-                outputValues.set(outIdx, curVal);
-                evaluationNeeded = false;
+                curVal = null;
+            } else if (evaluationNeeded) {
+                curVal = aggMinMax.evaluate();
             }
+            outputValues.set(outIdx, curVal);
+            evaluationNeeded = false;
         }
 
         @Override

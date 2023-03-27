@@ -1,6 +1,6 @@
 /*
  * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit ShortRollingMinMaxOperator and regenerate
+ * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharRollingMinMaxOperator and regenerate
  * ---------------------------------------------------------------------------------------------------------------------
  */
 package io.deephaven.engine.table.impl.updateby.rollingminmax;
@@ -17,7 +17,7 @@ import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
+import static io.deephaven.util.QueryConstants.*;
 
 public class DoubleRollingMinMaxOperator extends BaseDoubleUpdateByOperator {
     private final boolean isMax;
@@ -76,16 +76,19 @@ public class DoubleRollingMinMaxOperator extends BaseDoubleUpdateByOperator {
 
                 if (val == NULL_DOUBLE) {
                     nullCount++;
-                } else {
-                    // If we push a new extreme, we can skip evaluation.
-                    if (isMax && curVal < val) {
-                        curVal = val;
-                        evaluationNeeded = false;
-                    } else if (!isMax && curVal > val) {
-                        curVal = val;
-                        evaluationNeeded = false;
-                    }
+                } else if (curVal == NULL_DOUBLE) {
+                    curVal = val;
+                    evaluationNeeded = false;
+                } else if (isMax && curVal < val) {
+                    curVal = val;
+                    // Can skip evaluation when we push a new extreme.
+                    evaluationNeeded = false;
+                } else if (!isMax && curVal > val) {
+                    curVal = val;
+                    // Can skip evaluation when we push a new extreme.
+                    evaluationNeeded = false;
                 }
+
             }
         }
 
@@ -111,14 +114,12 @@ public class DoubleRollingMinMaxOperator extends BaseDoubleUpdateByOperator {
         @Override
         public void writeToOutputChunk(int outIdx) {
             if (aggMinMax.size() == nullCount) {
-                outputValues.set(outIdx, NULL_DOUBLE);
-            } else {
-                if (evaluationNeeded) {
-                    curVal = aggMinMax.evaluate();
-                }
-                outputValues.set(outIdx, curVal);
-                evaluationNeeded = false;
+                curVal = NULL_DOUBLE;
+            } else if (evaluationNeeded) {
+                curVal = aggMinMax.evaluate();
             }
+            outputValues.set(outIdx, curVal);
+            evaluationNeeded = false;
         }
 
         @Override
@@ -137,14 +138,14 @@ public class DoubleRollingMinMaxOperator extends BaseDoubleUpdateByOperator {
     }
 
     public DoubleRollingMinMaxOperator(@NotNull final MatchPair pair,
-                                      @NotNull final String[] affectingColumns,
-                                      @Nullable final RowRedirection rowRedirection,
-                                      @Nullable final String timestampColumnName,
-                                      final long reverseWindowScaleUnits,
-                                      final long forwardWindowScaleUnits,
-                                      final boolean isMax
-                                      // region extra-constructor-args
-                                      // endregion extra-constructor-args
+                                     @NotNull final String[] affectingColumns,
+                                     @Nullable final RowRedirection rowRedirection,
+                                     @Nullable final String timestampColumnName,
+                                     final long reverseWindowScaleUnits,
+                                     final long forwardWindowScaleUnits,
+                                     final boolean isMax
+                                     // region extra-constructor-args
+                                     // endregion extra-constructor-args
     ) {
         super(pair, affectingColumns, rowRedirection, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true);
         this.isMax = isMax;

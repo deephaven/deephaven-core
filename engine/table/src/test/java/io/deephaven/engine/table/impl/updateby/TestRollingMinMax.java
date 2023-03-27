@@ -10,6 +10,7 @@ import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.testutil.GenerateTableUpdates;
 import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.testutil.generator.CharGenerator;
 import io.deephaven.engine.testutil.generator.SortedDateTimeGenerator;
 import io.deephaven.engine.testutil.generator.TestDataGenerator;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
@@ -24,6 +25,7 @@ import java.math.BigInteger;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
 import java.util.function.Function;
 
@@ -39,6 +41,7 @@ public class TestRollingMinMax extends BaseUpdateByTest {
      * are performed on BigInteger/BigDecimal columns as well.
      */
     final String[] primitiveColumns = new String[] {
+            "charCol",
             "byteCol",
             "shortCol",
             "intCol",
@@ -51,6 +54,7 @@ public class TestRollingMinMax extends BaseUpdateByTest {
      * These are used in the ticking table evaluations where we verify dynamic vs static tables.
      */
     final String[] columns = new String[] {
+            "charCol",
             "byteCol",
             "shortCol",
             "intCol",
@@ -70,6 +74,25 @@ public class TestRollingMinMax extends BaseUpdateByTest {
         return isMax
                 ? Arrays.stream(columns).map(c -> c + "=max(" + c + ")").toArray(String[]::new)
                 : Arrays.stream(columns).map(c -> c + "=min(" + c + ")").toArray(String[]::new);
+    }
+
+    // For verification, we will upcast some columns and use already-defined Numeric class functions.
+    private String[] getUpcastingFormulas(String[] columns) {
+        return Arrays.stream(columns)
+                .map(c -> c.equals("charCol")
+                        ? String.format("%s=(short)%s", c, c)
+                        : null)
+                .filter(Objects::nonNull)
+                .toArray(String[]::new);
+    }
+
+    private String[] getDowncastingFormulas(String[] columns) {
+        return Arrays.stream(columns)
+                .map(c -> c.equals("charCol")
+                        ? String.format("%s=(char)%s", c, c)
+                        : null)
+                .filter(Objects::nonNull)
+                .toArray(String[]::new);
     }
 
     // region Object Helper functions
@@ -531,16 +554,22 @@ public class TestRollingMinMax extends BaseUpdateByTest {
     }
 
     private void doTestStaticZeroKey(final int prevTicks, final int postTicks) {
-        final QueryTable t = createTestTable(STATIC_TABLE_SIZE, true, false, false, 0x31313131).t;
+        final QueryTable t = createTestTable(STATIC_TABLE_SIZE, false, false, false, 0x31313131,
+                new String[] {"charCol"},
+                new TestDataGenerator[] {new CharGenerator('A', 'z', 0.1)}).t;
 
         final Table actualMin = t.updateBy(UpdateByOperation.RollingMin(prevTicks, postTicks, primitiveColumns));
-        final Table expectedMin = t.updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, primitiveColumns))
-                .update(getFormulas(false, primitiveColumns));
+        final Table expectedMin = t.update(getUpcastingFormulas(primitiveColumns))
+                .updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, primitiveColumns))
+                .update(getFormulas(false, primitiveColumns))
+                .update(getDowncastingFormulas(primitiveColumns));
         TstUtils.assertTableEquals(expectedMin, actualMin, TableDiff.DiffItems.DoublesExact);
 
         final Table actualMax = t.updateBy(UpdateByOperation.RollingMax(prevTicks, postTicks, primitiveColumns));
-        final Table expectedMax = t.updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, primitiveColumns))
-                .update(getFormulas(true, primitiveColumns));
+        final Table expectedMax = t.update(getUpcastingFormulas(primitiveColumns))
+                .updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, primitiveColumns))
+                .update(getFormulas(true, primitiveColumns))
+                .update(getDowncastingFormulas(primitiveColumns));
         TstUtils.assertTableEquals(expectedMax, actualMax, TableDiff.DiffItems.DoublesExact);
 
         doTestStaticZeroKeyBigNumbers(t, prevTicks, postTicks);
@@ -548,18 +577,23 @@ public class TestRollingMinMax extends BaseUpdateByTest {
 
     private void doTestStaticZeroKeyTimed(final Duration prevTime, final Duration postTime) {
         final QueryTable t = createTestTable(STATIC_TABLE_SIZE, false, false, false, 0xFFFABBBC,
-                new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
+                new String[] {"ts", "charCol"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
                         convertDateTime("2022-03-09T09:00:00.000 NY"),
-                        convertDateTime("2022-03-09T16:30:00.000 NY"))}).t;
+                        convertDateTime("2022-03-09T16:30:00.000 NY")),
+                        new CharGenerator('A', 'z', 0.1)}).t;
 
         final Table actualMin = t.updateBy(UpdateByOperation.RollingMin("ts", prevTime, postTime, primitiveColumns));
-        final Table expectedMin = t.updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, primitiveColumns))
-                .update(getFormulas(false, primitiveColumns));
+        final Table expectedMin = t.update(getUpcastingFormulas(primitiveColumns))
+                .updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, primitiveColumns))
+                .update(getFormulas(false, primitiveColumns))
+                .update(getDowncastingFormulas(primitiveColumns));
         TstUtils.assertTableEquals(expectedMin, actualMin, TableDiff.DiffItems.DoublesExact);
 
         final Table actualMax = t.updateBy(UpdateByOperation.RollingMax("ts", prevTime, postTime, primitiveColumns));
-        final Table expectedMax = t.updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, primitiveColumns))
-                .update(getFormulas(true, primitiveColumns));
+        final Table expectedMax = t.update(getUpcastingFormulas(primitiveColumns))
+                .updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, primitiveColumns))
+                .update(getFormulas(true, primitiveColumns))
+                .update(getDowncastingFormulas(primitiveColumns));
         TstUtils.assertTableEquals(expectedMax, actualMax, TableDiff.DiffItems.DoublesExact);
 
         doTestStaticZeroKeyTimedBigNumbers(t, prevTime, postTime);
@@ -658,17 +692,22 @@ public class TestRollingMinMax extends BaseUpdateByTest {
     }
 
     private void doTestStaticBucketed(boolean grouped, int prevTicks, int postTicks) {
-        final QueryTable t = createTestTable(STATIC_TABLE_SIZE, true, grouped, false, 0x31313131).t;
+        final QueryTable t = createTestTable(STATIC_TABLE_SIZE, true, grouped, false, 0x31313131,
+                new String[] {"charCol"},
+                new TestDataGenerator[] {new CharGenerator('A', 'z', 0.1)}).t;
 
         final Table actualMin = t.updateBy(UpdateByOperation.RollingMin(prevTicks, postTicks, primitiveColumns));
-        final Table expectedMin = t.updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, primitiveColumns))
-                .update(getFormulas(false, primitiveColumns));
+        final Table expectedMin = t.update(getUpcastingFormulas(primitiveColumns))
+                .updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, primitiveColumns))
+                .update(getFormulas(false, primitiveColumns))
+                .update(getDowncastingFormulas(primitiveColumns));
         TstUtils.assertTableEquals(expectedMin, actualMin, TableDiff.DiffItems.DoublesExact);
 
         final Table actualMax = t.updateBy(UpdateByOperation.RollingMax(prevTicks, postTicks, primitiveColumns), "Sym");
-        final Table expectedMax =
-                t.updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, primitiveColumns), "Sym")
-                        .update(getFormulas(true, primitiveColumns));
+        final Table expectedMax = t.update(getUpcastingFormulas(primitiveColumns))
+                .updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, primitiveColumns), "Sym")
+                .update(getFormulas(true, primitiveColumns))
+                .update(getDowncastingFormulas(primitiveColumns));
         TstUtils.assertTableEquals(expectedMax, actualMax, TableDiff.DiffItems.DoublesExact);
 
         doTestStaticBucketedBigNumbers(t, prevTicks, postTicks);
@@ -676,22 +715,25 @@ public class TestRollingMinMax extends BaseUpdateByTest {
 
     private void doTestStaticBucketedTimed(boolean grouped, Duration prevTime, Duration postTime) {
         final QueryTable t = createTestTable(STATIC_TABLE_SIZE, true, grouped, false, 0xFFFABBBC,
-                new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
+                new String[] {"ts", "charCol"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
                         convertDateTime("2022-03-09T09:00:00.000 NY"),
-                        convertDateTime("2022-03-09T16:30:00.000 NY"))}).t;
+                        convertDateTime("2022-03-09T16:30:00.000 NY")),
+                        new CharGenerator('A', 'z', 0.1)}).t;
 
         final Table actualMin =
                 t.updateBy(UpdateByOperation.RollingMin("ts", prevTime, postTime, primitiveColumns), "Sym");
-        final Table expectedMin =
-                t.updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, primitiveColumns), "Sym")
-                        .update(getFormulas(false, primitiveColumns));
+        final Table expectedMin = t.update(getUpcastingFormulas(primitiveColumns))
+                .updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, primitiveColumns), "Sym")
+                .update(getFormulas(false, primitiveColumns))
+                .update(getDowncastingFormulas(primitiveColumns));
         TstUtils.assertTableEquals(expectedMin, actualMin, TableDiff.DiffItems.DoublesExact);
 
         final Table actualMax =
                 t.updateBy(UpdateByOperation.RollingMax("ts", prevTime, postTime, primitiveColumns), "Sym");
-        final Table expectedMax =
-                t.updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, primitiveColumns), "Sym")
-                        .update(getFormulas(true, primitiveColumns));
+        final Table expectedMax = t.update(getUpcastingFormulas(primitiveColumns))
+                .updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, primitiveColumns), "Sym")
+                .update(getFormulas(true, primitiveColumns))
+                .update(getDowncastingFormulas(primitiveColumns));
         TstUtils.assertTableEquals(expectedMax, actualMax, TableDiff.DiffItems.DoublesExact);
 
         doTestStaticBucketedTimedBigNumbers(t, prevTime, postTime);
@@ -854,17 +896,18 @@ public class TestRollingMinMax extends BaseUpdateByTest {
     }
 
     private void doTestAppendOnly(boolean bucketed, int prevTicks, int postTicks) {
-        final CreateResult result = createTestTable(DYNAMIC_TABLE_SIZE, bucketed, false, true, 0x31313131);
+        final CreateResult result = createTestTable(DYNAMIC_TABLE_SIZE, bucketed, false, true, 0x31313131,
+                new String[] {"charCol"},
+                new TestDataGenerator[] {new CharGenerator('A', 'z', 0.1)});
         final QueryTable t = result.t;
-        t.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
+        t.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
 
         final EvalNugget[] nuggets = new EvalNugget[] {
                 new EvalNugget() {
                     @Override
                     protected Table e() {
                         return bucketed
-                                ? t.updateBy(UpdateByOperation.RollingMin(prevTicks, postTicks, columns),
-                                        "Sym")
+                                ? t.updateBy(UpdateByOperation.RollingMin(prevTicks, postTicks, columns), "Sym")
                                 : t.updateBy(UpdateByOperation.RollingMin(prevTicks, postTicks, columns));
                     }
                 },
@@ -872,8 +915,7 @@ public class TestRollingMinMax extends BaseUpdateByTest {
                     @Override
                     protected Table e() {
                         return bucketed
-                                ? t.updateBy(UpdateByOperation.RollingMax(prevTicks, postTicks, columns),
-                                        "Sym")
+                                ? t.updateBy(UpdateByOperation.RollingMax(prevTicks, postTicks, columns), "Sym")
                                 : t.updateBy(UpdateByOperation.RollingMax(prevTicks, postTicks, columns));
                     }
                 }
@@ -889,33 +931,20 @@ public class TestRollingMinMax extends BaseUpdateByTest {
 
     private void doTestAppendOnlyTimed(boolean bucketed, Duration prevTime, Duration postTime) {
         final CreateResult result = createTestTable(DYNAMIC_TABLE_SIZE, bucketed, false, true, 0x31313131,
-                new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
+                new String[] {"ts", "charCol"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
                         convertDateTime("2022-03-09T09:00:00.000 NY"),
-                        convertDateTime("2022-03-09T16:30:00.000 NY"))});
+                        convertDateTime("2022-03-09T16:30:00.000 NY")),
+                        new CharGenerator('A', 'z', 0.1)});
         final QueryTable t = result.t;
-        t.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
-
-        t.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
+        t.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
 
         final EvalNugget[] nuggets = new EvalNugget[] {
-                new EvalNugget() {
-                    @Override
-                    protected Table e() {
-                        return bucketed ? t.updateBy(
-                                UpdateByOperation.RollingMin("ts", prevTime, postTime, columns), "Sym")
-                                : t.updateBy(
-                                        UpdateByOperation.RollingMin("ts", prevTime, postTime, columns));
-                    }
-                },
-                new EvalNugget() {
-                    @Override
-                    protected Table e() {
-                        return bucketed ? t.updateBy(
-                                UpdateByOperation.RollingMax("ts", prevTime, postTime, columns), "Sym")
-                                : t.updateBy(
-                                        UpdateByOperation.RollingMax("ts", prevTime, postTime, columns));
-                    }
-                }
+                EvalNugget.from(() -> bucketed ? t.updateBy(
+                        UpdateByOperation.RollingMin("ts", prevTime, postTime, columns), "Sym")
+                        : t.updateBy(UpdateByOperation.RollingMin("ts", prevTime, postTime, columns))),
+                EvalNugget.from(() -> bucketed ? t.updateBy(
+                        UpdateByOperation.RollingMax("ts", prevTime, postTime, columns), "Sym")
+                        : t.updateBy(UpdateByOperation.RollingMax("ts", prevTime, postTime, columns)))
         };
 
         final Random billy = new Random(0xB177B177);
@@ -1043,29 +1072,18 @@ public class TestRollingMinMax extends BaseUpdateByTest {
     }
 
     private void doTestTicking(final boolean bucketed, final long prevTicks, final long fwdTicks) {
-
-        final CreateResult result = createTestTable(DYNAMIC_TABLE_SIZE, bucketed, false, true, 0x31313131);
+        final CreateResult result = createTestTable(DYNAMIC_TABLE_SIZE, bucketed, false, true, 0x31313131,
+                new String[] {"charCol"},
+                new TestDataGenerator[] {new CharGenerator('A', 'z', 0.1)});
         final QueryTable t = result.t;
 
         final EvalNugget[] nuggets = new EvalNugget[] {
-                new EvalNugget() {
-                    @Override
-                    protected Table e() {
-                        return bucketed ? t.updateBy(
-                                UpdateByOperation.RollingMin(prevTicks, fwdTicks, columns), "Sym")
-                                : t.updateBy(
-                                        UpdateByOperation.RollingMin(prevTicks, fwdTicks, columns));
-                    }
-                },
-                new EvalNugget() {
-                    @Override
-                    protected Table e() {
-                        return bucketed ? t.updateBy(
-                                UpdateByOperation.RollingMax(prevTicks, fwdTicks, columns), "Sym")
-                                : t.updateBy(
-                                        UpdateByOperation.RollingMax(prevTicks, fwdTicks, columns));
-                    }
-                }
+                EvalNugget.from(() -> bucketed ? t.updateBy(
+                        UpdateByOperation.RollingMin(prevTicks, fwdTicks, columns), "Sym")
+                        : t.updateBy(UpdateByOperation.RollingMin(prevTicks, fwdTicks, columns))),
+                EvalNugget.from(() -> bucketed ? t.updateBy(
+                        UpdateByOperation.RollingMax(prevTicks, fwdTicks, columns), "Sym")
+                        : t.updateBy(UpdateByOperation.RollingMax(prevTicks, fwdTicks, columns)))
         };
 
 
@@ -1078,33 +1096,21 @@ public class TestRollingMinMax extends BaseUpdateByTest {
     }
 
     private void doTestTickingTimed(final boolean bucketed, final Duration prevTime, final Duration postTime) {
-
         final CreateResult result = createTestTable(DYNAMIC_TABLE_SIZE, bucketed, false, true, 0x31313131,
-                new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
+                new String[] {"ts", "charCol"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
                         convertDateTime("2022-03-09T09:00:00.000 NY"),
-                        convertDateTime("2022-03-09T16:30:00.000 NY"))});
+                        convertDateTime("2022-03-09T16:30:00.000 NY")),
+                        new CharGenerator('A', 'z', 0.1)});
 
         final QueryTable t = result.t;
 
         final EvalNugget[] nuggets = new EvalNugget[] {
-                new EvalNugget() {
-                    @Override
-                    protected Table e() {
-                        return bucketed ? t.updateBy(
-                                UpdateByOperation.RollingMin("ts", prevTime, postTime, columns), "Sym")
-                                : t.updateBy(
-                                        UpdateByOperation.RollingMin("ts", prevTime, postTime, columns));
-                    }
-                },
-                new EvalNugget() {
-                    @Override
-                    protected Table e() {
-                        return bucketed ? t.updateBy(
-                                UpdateByOperation.RollingMax("ts", prevTime, postTime, columns), "Sym")
-                                : t.updateBy(
-                                        UpdateByOperation.RollingMax("ts", prevTime, postTime, columns));
-                    }
-                }
+                EvalNugget.from(() -> bucketed ? t.updateBy(
+                        UpdateByOperation.RollingMin("ts", prevTime, postTime, columns), "Sym")
+                        : t.updateBy(UpdateByOperation.RollingMin("ts", prevTime, postTime, columns))),
+                EvalNugget.from(() -> bucketed ? t.updateBy(
+                        UpdateByOperation.RollingMax("ts", prevTime, postTime, columns), "Sym")
+                        : t.updateBy(UpdateByOperation.RollingMax("ts", prevTime, postTime, columns)))
         };
 
 
@@ -1121,20 +1127,17 @@ public class TestRollingMinMax extends BaseUpdateByTest {
         final int prevTicks = 100;
         final int postTicks = 0;
 
-        final CreateResult result = createTestTable(DYNAMIC_TABLE_SIZE, true, false, true, 0x31313131);
+        final CreateResult result = createTestTable(DYNAMIC_TABLE_SIZE, true, false, true, 0x31313131,
+                new String[] {"charCol"},
+                new TestDataGenerator[] {new CharGenerator('A', 'z', 0.1)});
         final QueryTable t = result.t;
 
         final UpdateByControl control = UpdateByControl.builder().useRedirection(true).build();
 
         final EvalNugget[] nuggets = new EvalNugget[] {
-                new EvalNugget() {
-                    @Override
-                    protected Table e() {
-                        return t.updateBy(control,
-                                List.of(UpdateByOperation.RollingMin(prevTicks, postTicks, columns)),
-                                ColumnName.from("Sym"));
-                    }
-                }
+                EvalNugget.from(() -> t.updateBy(control,
+                        List.of(UpdateByOperation.RollingMin(prevTicks, postTicks, columns)),
+                        ColumnName.from("Sym")))
         };
 
         final Random billy = new Random(0xB177B177);
@@ -1154,23 +1157,19 @@ public class TestRollingMinMax extends BaseUpdateByTest {
         final Duration postTime = Duration.ofMinutes(0);
 
         final CreateResult result = createTestTable(DYNAMIC_TABLE_SIZE, true, false, true, 0x31313131,
-                new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
+                new String[] {"ts", "charCol"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
                         convertDateTime("2022-03-09T09:00:00.000 NY"),
-                        convertDateTime("2022-03-09T16:30:00.000 NY"))});
+                        convertDateTime("2022-03-09T16:30:00.000 NY")),
+                        new CharGenerator('A', 'z', 0.1)});
 
         final QueryTable t = result.t;
 
         final UpdateByControl control = UpdateByControl.builder().useRedirection(true).build();
 
         final EvalNugget[] nuggets = new EvalNugget[] {
-                new EvalNugget() {
-                    @Override
-                    protected Table e() {
-                        return t.updateBy(control,
-                                List.of(UpdateByOperation.RollingMin("ts", prevTime, postTime, columns)),
-                                ColumnName.from("Sym"));
-                    }
-                }
+                EvalNugget.from(() -> t.updateBy(control,
+                        List.of(UpdateByOperation.RollingMin("ts", prevTime, postTime, columns)),
+                        ColumnName.from("Sym")))
         };
 
         final Random billy = new Random(0xB177B177);
