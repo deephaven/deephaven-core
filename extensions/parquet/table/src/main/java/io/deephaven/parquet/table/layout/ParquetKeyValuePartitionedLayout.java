@@ -17,7 +17,7 @@ public class ParquetKeyValuePartitionedLayout extends KeyValuePartitionLayout<Pa
     public ParquetKeyValuePartitionedLayout(@NotNull final File tableRootDirectory,
             final int maxPartitioningLevels) {
         super(tableRootDirectory,
-                path -> path.getFileName().toString().endsWith(ParquetTableWriter.PARQUET_FILE_EXTENSION),
+                ParquetFileHelper::fileNameMatches,
                 (path, partitions) -> new ParquetTableLocationKey(path.toFile(), 0, partitions),
                 maxPartitioningLevels);
     }

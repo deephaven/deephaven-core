@@ -13,26 +13,14 @@ import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
-import java.nio.file.PathMatcher;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
-
-import static io.deephaven.parquet.table.ParquetTableWriter.PARQUET_FILE_EXTENSION;
 
 /**
  * Parquet {@link TableLocationKeyFinder location finder} that will discover multiple files in a single directory.
  */
 public final class ParquetFlatPartitionedLayout implements TableLocationKeyFinder<ParquetTableLocationKey> {
-    private static final PathMatcher MATCHER;
-
-    static {
-        MATCHER = FileSystems.getDefault().getPathMatcher(String.format("glob:*%s", PARQUET_FILE_EXTENSION));
-    }
-
-    private static boolean fileNameMatches(Path path) {
-        return MATCHER.matches(path.getFileName());
-    }
 
     private static ParquetTableLocationKey locationKey(Path path) {
         return new ParquetTableLocationKey(path.toFile(), 0, null);
@@ -56,7 +44,7 @@ public final class ParquetFlatPartitionedLayout implements TableLocationKeyFinde
     @Override
     public void findKeys(@NotNull final Consumer<ParquetTableLocationKey> locationKeyObserver) {
         try (final DirectoryStream<Path> parquetFileStream = FileSystems.getDefault().provider()
-                .newDirectoryStream(tableRootDirectory.toPath(), ParquetFlatPartitionedLayout::fileNameMatches)) {
+                .newDirectoryStream(tableRootDirectory.toPath(), ParquetFileHelper::fileNameMatches)) {
             for (final Path parquetFilePath : parquetFileStream) {
                 locationKeyObserver
                         .accept(cache.computeIfAbsent(parquetFilePath, ParquetFlatPartitionedLayout::locationKey));
