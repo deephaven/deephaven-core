@@ -34,6 +34,7 @@ service ConsoleService {
      * time.
      */
     rpc AutoCompleteStream(stream AutoCompleteRequest) returns (stream AutoCompleteResponse) {}
+    rpc CancelAutoComplete(CancelAutoCompleteRequest) returns (CancelAutoCompleteResponse) {}
 
     /*
      * Half of the browser-based (browser's can't do bidirectional streams without websockets)
@@ -148,6 +149,9 @@ message AutoCompleteRequest {
         // Request for help about what the user is hovering over
         GetHoverRequest get_hover = 8;
 
+        // Request to perform file diagnostics
+        GetDiagnosticRequest get_diagnostic = 9;
+
         // Closes the document, indicating that it will not be referenced again
         CloseDocumentRequest close_document = 4;
     }
@@ -159,6 +163,8 @@ message AutoCompleteResponse {
         GetCompletionItemsResponse completion_items = 1;
         GetSignatureHelpResponse signatures = 4;
         GetHoverResponse hover = 5;
+        GetPullDiagnosticResponse diagnostic = 6;
+        GetPublishDiagnosticResponse diagnostic_publish = 7;
     }
 }
 
@@ -294,10 +300,24 @@ message GetHoverResponse {
 }
 
 message GetDiagnosticRequest {
-
+    VersionedTextDocumentIdentifier text_document = 1;
+    optional string identifier = 2;
+    optional string previous_result_id = 3;
 }
 
-message GetDiagnosticResponse {
+message GetPullDiagnosticResponse {
+    string kind = 1;
+    optional string result_id = 2;
+    repeated Diagnostic items = 3;
+}
+
+message GetPublishDiagnosticResponse {
+    string uri = 1;
+    optional int32 version = 2;
+    repeated Diagnostic diagnostics = 3;
+}
+
+message Diagnostic {
     enum DiagnosticSeverity {
         NOT_SET_SEVERITY = 0;
         ERROR = 1;
