@@ -282,6 +282,32 @@ public class AutoCompleteRequest {
         }
 
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface GetDiagnosticFieldType {
+            @JsOverlay
+            static AutoCompleteRequest.ToObjectReturnType.GetDiagnosticFieldType create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            String getIdentifier();
+
+            @JsProperty
+            String getPreviousResultId();
+
+            @JsProperty
+            Object getTextDocument();
+
+            @JsProperty
+            void setIdentifier(String identifier);
+
+            @JsProperty
+            void setPreviousResultId(String previousResultId);
+
+            @JsProperty
+            void setTextDocument(Object textDocument);
+        }
+
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface GetHoverFieldType {
             @JsOverlay
             static AutoCompleteRequest.ToObjectReturnType.GetHoverFieldType create() {
@@ -549,6 +575,9 @@ public class AutoCompleteRequest {
         AutoCompleteRequest.ToObjectReturnType.GetCompletionItemsFieldType getGetCompletionItems();
 
         @JsProperty
+        AutoCompleteRequest.ToObjectReturnType.GetDiagnosticFieldType getGetDiagnostic();
+
+        @JsProperty
         AutoCompleteRequest.ToObjectReturnType.GetHoverFieldType getGetHover();
 
         @JsProperty
@@ -574,6 +603,10 @@ public class AutoCompleteRequest {
         @JsProperty
         void setGetCompletionItems(
                 AutoCompleteRequest.ToObjectReturnType.GetCompletionItemsFieldType getCompletionItems);
+
+        @JsProperty
+        void setGetDiagnostic(
+                AutoCompleteRequest.ToObjectReturnType.GetDiagnosticFieldType getDiagnostic);
 
         @JsProperty
         void setGetHover(AutoCompleteRequest.ToObjectReturnType.GetHoverFieldType getHover);
@@ -853,6 +886,32 @@ public class AutoCompleteRequest {
         }
 
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface GetDiagnosticFieldType {
+            @JsOverlay
+            static AutoCompleteRequest.ToObjectReturnType0.GetDiagnosticFieldType create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            String getIdentifier();
+
+            @JsProperty
+            String getPreviousResultId();
+
+            @JsProperty
+            Object getTextDocument();
+
+            @JsProperty
+            void setIdentifier(String identifier);
+
+            @JsProperty
+            void setPreviousResultId(String previousResultId);
+
+            @JsProperty
+            void setTextDocument(Object textDocument);
+        }
+
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface GetHoverFieldType {
             @JsOverlay
             static AutoCompleteRequest.ToObjectReturnType0.GetHoverFieldType create() {
@@ -1120,6 +1179,9 @@ public class AutoCompleteRequest {
         AutoCompleteRequest.ToObjectReturnType0.GetCompletionItemsFieldType getGetCompletionItems();
 
         @JsProperty
+        AutoCompleteRequest.ToObjectReturnType0.GetDiagnosticFieldType getGetDiagnostic();
+
+        @JsProperty
         AutoCompleteRequest.ToObjectReturnType0.GetHoverFieldType getGetHover();
 
         @JsProperty
@@ -1145,6 +1207,10 @@ public class AutoCompleteRequest {
         @JsProperty
         void setGetCompletionItems(
                 AutoCompleteRequest.ToObjectReturnType0.GetCompletionItemsFieldType getCompletionItems);
+
+        @JsProperty
+        void setGetDiagnostic(
+                AutoCompleteRequest.ToObjectReturnType0.GetDiagnosticFieldType getDiagnostic);
 
         @JsProperty
         void setGetHover(AutoCompleteRequest.ToObjectReturnType0.GetHoverFieldType getHover);
@@ -1179,6 +1245,8 @@ public class AutoCompleteRequest {
 
     public native void clearGetCompletionItems();
 
+    public native void clearGetDiagnostic();
+
     public native void clearGetHover();
 
     public native void clearGetSignatureHelp();
@@ -1192,6 +1260,8 @@ public class AutoCompleteRequest {
     public native Ticket getConsoleId();
 
     public native GetCompletionItemsRequest getGetCompletionItems();
+
+    public native GetDiagnosticRequest getGetDiagnostic();
 
     public native GetHoverRequest getGetHover();
 
@@ -1210,6 +1280,8 @@ public class AutoCompleteRequest {
     public native boolean hasConsoleId();
 
     public native boolean hasGetCompletionItems();
+
+    public native boolean hasGetDiagnostic();
 
     public native boolean hasGetHover();
 
@@ -1234,6 +1306,10 @@ public class AutoCompleteRequest {
     public native void setGetCompletionItems();
 
     public native void setGetCompletionItems(GetCompletionItemsRequest value);
+
+    public native void setGetDiagnostic();
+
+    public native void setGetDiagnostic(GetDiagnosticRequest value);
 
     public native void setGetHover();
 

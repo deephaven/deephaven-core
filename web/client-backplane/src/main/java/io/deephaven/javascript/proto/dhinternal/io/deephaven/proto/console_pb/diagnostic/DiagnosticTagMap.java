@@ -1,7 +1,7 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.getdiagnosticresponse;
+package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.diagnostic;
 
 import jsinterop.annotations.JsOverlay;
 import jsinterop.annotations.JsPackage;
@@ -12,7 +12,7 @@ import jsinterop.base.JsPropertyMap;
 
 @JsType(
         isNative = true,
-        name = "dhinternal.io.deephaven.proto.console_pb.GetDiagnosticResponse.DiagnosticTagMap",
+        name = "dhinternal.io.deephaven.proto.console_pb.Diagnostic.DiagnosticTagMap",
         namespace = JsPackage.GLOBAL)
 public interface DiagnosticTagMap {
     @JsOverlay

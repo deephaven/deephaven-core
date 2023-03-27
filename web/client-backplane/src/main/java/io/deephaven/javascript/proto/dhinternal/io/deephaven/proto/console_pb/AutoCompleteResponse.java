@@ -241,6 +241,192 @@ public class AutoCompleteResponse {
         }
 
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface DiagnosticFieldType {
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface ItemsListFieldType {
+                @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                public interface CodeDescriptionFieldType {
+                    @JsOverlay
+                    static AutoCompleteResponse.ToObjectReturnType.DiagnosticFieldType.ItemsListFieldType.CodeDescriptionFieldType create() {
+                        return Js.uncheckedCast(JsPropertyMap.of());
+                    }
+
+                    @JsProperty
+                    String getHref();
+
+                    @JsProperty
+                    void setHref(String href);
+                }
+
+                @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                public interface GetDataUnionType {
+                    @JsOverlay
+                    static AutoCompleteResponse.ToObjectReturnType.DiagnosticFieldType.ItemsListFieldType.GetDataUnionType of(
+                            Object o) {
+                        return Js.cast(o);
+                    }
+
+                    @JsOverlay
+                    default String asString() {
+                        return Js.asString(this);
+                    }
+
+                    @JsOverlay
+                    default Uint8Array asUint8Array() {
+                        return Js.cast(this);
+                    }
+
+                    @JsOverlay
+                    default boolean isString() {
+                        return (Object) this instanceof String;
+                    }
+
+                    @JsOverlay
+                    default boolean isUint8Array() {
+                        return (Object) this instanceof Uint8Array;
+                    }
+                }
+
+                @JsOverlay
+                static AutoCompleteResponse.ToObjectReturnType.DiagnosticFieldType.ItemsListFieldType create() {
+                    return Js.uncheckedCast(JsPropertyMap.of());
+                }
+
+                @JsProperty
+                String getCode();
+
+                @JsProperty
+                AutoCompleteResponse.ToObjectReturnType.DiagnosticFieldType.ItemsListFieldType.CodeDescriptionFieldType getCodeDescription();
+
+                @JsProperty
+                AutoCompleteResponse.ToObjectReturnType.DiagnosticFieldType.ItemsListFieldType.GetDataUnionType getData();
+
+                @JsProperty
+                String getMessage();
+
+                @JsProperty
+                Object getRange();
+
+                @JsProperty
+                double getSeverity();
+
+                @JsProperty
+                String getSource();
+
+                @JsProperty
+                JsArray<Double> getTagsList();
+
+                @JsProperty
+                void setCode(String code);
+
+                @JsProperty
+                void setCodeDescription(
+                        AutoCompleteResponse.ToObjectReturnType.DiagnosticFieldType.ItemsListFieldType.CodeDescriptionFieldType codeDescription);
+
+                @JsProperty
+                void setData(
+                        AutoCompleteResponse.ToObjectReturnType.DiagnosticFieldType.ItemsListFieldType.GetDataUnionType data);
+
+                @JsOverlay
+                default void setData(String data) {
+                    setData(
+                            Js.<AutoCompleteResponse.ToObjectReturnType.DiagnosticFieldType.ItemsListFieldType.GetDataUnionType>uncheckedCast(
+                                    data));
+                }
+
+                @JsOverlay
+                default void setData(Uint8Array data) {
+                    setData(
+                            Js.<AutoCompleteResponse.ToObjectReturnType.DiagnosticFieldType.ItemsListFieldType.GetDataUnionType>uncheckedCast(
+                                    data));
+                }
+
+                @JsProperty
+                void setMessage(String message);
+
+                @JsProperty
+                void setRange(Object range);
+
+                @JsProperty
+                void setSeverity(double severity);
+
+                @JsProperty
+                void setSource(String source);
+
+                @JsProperty
+                void setTagsList(JsArray<Double> tagsList);
+
+                @JsOverlay
+                default void setTagsList(double[] tagsList) {
+                    setTagsList(Js.<JsArray<Double>>uncheckedCast(tagsList));
+                }
+            }
+
+            @JsOverlay
+            static AutoCompleteResponse.ToObjectReturnType.DiagnosticFieldType create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            JsArray<AutoCompleteResponse.ToObjectReturnType.DiagnosticFieldType.ItemsListFieldType> getItemsList();
+
+            @JsProperty
+            String getKind();
+
+            @JsProperty
+            String getResultId();
+
+            @JsOverlay
+            default void setItemsList(
+                    AutoCompleteResponse.ToObjectReturnType.DiagnosticFieldType.ItemsListFieldType[] itemsList) {
+                setItemsList(
+                        Js.<JsArray<AutoCompleteResponse.ToObjectReturnType.DiagnosticFieldType.ItemsListFieldType>>uncheckedCast(
+                                itemsList));
+            }
+
+            @JsProperty
+            void setItemsList(
+                    JsArray<AutoCompleteResponse.ToObjectReturnType.DiagnosticFieldType.ItemsListFieldType> itemsList);
+
+            @JsProperty
+            void setKind(String kind);
+
+            @JsProperty
+            void setResultId(String resultId);
+        }
+
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface DiagnosticPublishFieldType {
+            @JsOverlay
+            static AutoCompleteResponse.ToObjectReturnType.DiagnosticPublishFieldType create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            JsArray<Object> getDiagnosticsList();
+
+            @JsProperty
+            String getUri();
+
+            @JsProperty
+            double getVersion();
+
+            @JsProperty
+            void setDiagnosticsList(JsArray<Object> diagnosticsList);
+
+            @JsOverlay
+            default void setDiagnosticsList(Object[] diagnosticsList) {
+                setDiagnosticsList(Js.<JsArray<Object>>uncheckedCast(diagnosticsList));
+            }
+
+            @JsProperty
+            void setUri(String uri);
+
+            @JsProperty
+            void setVersion(double version);
+        }
+
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface HoverFieldType {
             @JsOverlay
             static AutoCompleteResponse.ToObjectReturnType.HoverFieldType create() {
@@ -365,6 +551,12 @@ public class AutoCompleteResponse {
         AutoCompleteResponse.ToObjectReturnType.CompletionItemsFieldType getCompletionItems();
 
         @JsProperty
+        AutoCompleteResponse.ToObjectReturnType.DiagnosticFieldType getDiagnostic();
+
+        @JsProperty
+        AutoCompleteResponse.ToObjectReturnType.DiagnosticPublishFieldType getDiagnosticPublish();
+
+        @JsProperty
         AutoCompleteResponse.ToObjectReturnType.HoverFieldType getHover();
 
         @JsProperty
@@ -379,6 +571,13 @@ public class AutoCompleteResponse {
         @JsProperty
         void setCompletionItems(
                 AutoCompleteResponse.ToObjectReturnType.CompletionItemsFieldType completionItems);
+
+        @JsProperty
+        void setDiagnostic(AutoCompleteResponse.ToObjectReturnType.DiagnosticFieldType diagnostic);
+
+        @JsProperty
+        void setDiagnosticPublish(
+                AutoCompleteResponse.ToObjectReturnType.DiagnosticPublishFieldType diagnosticPublish);
 
         @JsProperty
         void setHover(AutoCompleteResponse.ToObjectReturnType.HoverFieldType hover);
@@ -617,6 +816,192 @@ public class AutoCompleteResponse {
         }
 
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface DiagnosticFieldType {
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface ItemsListFieldType {
+                @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                public interface CodeDescriptionFieldType {
+                    @JsOverlay
+                    static AutoCompleteResponse.ToObjectReturnType0.DiagnosticFieldType.ItemsListFieldType.CodeDescriptionFieldType create() {
+                        return Js.uncheckedCast(JsPropertyMap.of());
+                    }
+
+                    @JsProperty
+                    String getHref();
+
+                    @JsProperty
+                    void setHref(String href);
+                }
+
+                @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                public interface GetDataUnionType {
+                    @JsOverlay
+                    static AutoCompleteResponse.ToObjectReturnType0.DiagnosticFieldType.ItemsListFieldType.GetDataUnionType of(
+                            Object o) {
+                        return Js.cast(o);
+                    }
+
+                    @JsOverlay
+                    default String asString() {
+                        return Js.asString(this);
+                    }
+
+                    @JsOverlay
+                    default Uint8Array asUint8Array() {
+                        return Js.cast(this);
+                    }
+
+                    @JsOverlay
+                    default boolean isString() {
+                        return (Object) this instanceof String;
+                    }
+
+                    @JsOverlay
+                    default boolean isUint8Array() {
+                        return (Object) this instanceof Uint8Array;
+                    }
+                }
+
+                @JsOverlay
+                static AutoCompleteResponse.ToObjectReturnType0.DiagnosticFieldType.ItemsListFieldType create() {
+                    return Js.uncheckedCast(JsPropertyMap.of());
+                }
+
+                @JsProperty
+                String getCode();
+
+                @JsProperty
+                AutoCompleteResponse.ToObjectReturnType0.DiagnosticFieldType.ItemsListFieldType.CodeDescriptionFieldType getCodeDescription();
+
+                @JsProperty
+                AutoCompleteResponse.ToObjectReturnType0.DiagnosticFieldType.ItemsListFieldType.GetDataUnionType getData();
+
+                @JsProperty
+                String getMessage();
+
+                @JsProperty
+                Object getRange();
+
+                @JsProperty
+                double getSeverity();
+
+                @JsProperty
+                String getSource();
+
+                @JsProperty
+                JsArray<Double> getTagsList();
+
+                @JsProperty
+                void setCode(String code);
+
+                @JsProperty
+                void setCodeDescription(
+                        AutoCompleteResponse.ToObjectReturnType0.DiagnosticFieldType.ItemsListFieldType.CodeDescriptionFieldType codeDescription);
+
+                @JsProperty
+                void setData(
+                        AutoCompleteResponse.ToObjectReturnType0.DiagnosticFieldType.ItemsListFieldType.GetDataUnionType data);
+
+                @JsOverlay
+                default void setData(String data) {
+                    setData(
+                            Js.<AutoCompleteResponse.ToObjectReturnType0.DiagnosticFieldType.ItemsListFieldType.GetDataUnionType>uncheckedCast(
+                                    data));
+                }
+
+                @JsOverlay
+                default void setData(Uint8Array data) {
+                    setData(
+                            Js.<AutoCompleteResponse.ToObjectReturnType0.DiagnosticFieldType.ItemsListFieldType.GetDataUnionType>uncheckedCast(
+                                    data));
+                }
+
+                @JsProperty
+                void setMessage(String message);
+
+                @JsProperty
+                void setRange(Object range);
+
+                @JsProperty
+                void setSeverity(double severity);
+
+                @JsProperty
+                void setSource(String source);
+
+                @JsProperty
+                void setTagsList(JsArray<Double> tagsList);
+
+                @JsOverlay
+                default void setTagsList(double[] tagsList) {
+                    setTagsList(Js.<JsArray<Double>>uncheckedCast(tagsList));
+                }
+            }
+
+            @JsOverlay
+            static AutoCompleteResponse.ToObjectReturnType0.DiagnosticFieldType create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            JsArray<AutoCompleteResponse.ToObjectReturnType0.DiagnosticFieldType.ItemsListFieldType> getItemsList();
+
+            @JsProperty
+            String getKind();
+
+            @JsProperty
+            String getResultId();
+
+            @JsOverlay
+            default void setItemsList(
+                    AutoCompleteResponse.ToObjectReturnType0.DiagnosticFieldType.ItemsListFieldType[] itemsList) {
+                setItemsList(
+                        Js.<JsArray<AutoCompleteResponse.ToObjectReturnType0.DiagnosticFieldType.ItemsListFieldType>>uncheckedCast(
+                                itemsList));
+            }
+
+            @JsProperty
+            void setItemsList(
+                    JsArray<AutoCompleteResponse.ToObjectReturnType0.DiagnosticFieldType.ItemsListFieldType> itemsList);
+
+            @JsProperty
+            void setKind(String kind);
+
+            @JsProperty
+            void setResultId(String resultId);
+        }
+
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface DiagnosticPublishFieldType {
+            @JsOverlay
+            static AutoCompleteResponse.ToObjectReturnType0.DiagnosticPublishFieldType create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            JsArray<Object> getDiagnosticsList();
+
+            @JsProperty
+            String getUri();
+
+            @JsProperty
+            double getVersion();
+
+            @JsProperty
+            void setDiagnosticsList(JsArray<Object> diagnosticsList);
+
+            @JsOverlay
+            default void setDiagnosticsList(Object[] diagnosticsList) {
+                setDiagnosticsList(Js.<JsArray<Object>>uncheckedCast(diagnosticsList));
+            }
+
+            @JsProperty
+            void setUri(String uri);
+
+            @JsProperty
+            void setVersion(double version);
+        }
+
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface HoverFieldType {
             @JsOverlay
             static AutoCompleteResponse.ToObjectReturnType0.HoverFieldType create() {
@@ -741,6 +1126,12 @@ public class AutoCompleteResponse {
         AutoCompleteResponse.ToObjectReturnType0.CompletionItemsFieldType getCompletionItems();
 
         @JsProperty
+        AutoCompleteResponse.ToObjectReturnType0.DiagnosticFieldType getDiagnostic();
+
+        @JsProperty
+        AutoCompleteResponse.ToObjectReturnType0.DiagnosticPublishFieldType getDiagnosticPublish();
+
+        @JsProperty
         AutoCompleteResponse.ToObjectReturnType0.HoverFieldType getHover();
 
         @JsProperty
@@ -755,6 +1146,13 @@ public class AutoCompleteResponse {
         @JsProperty
         void setCompletionItems(
                 AutoCompleteResponse.ToObjectReturnType0.CompletionItemsFieldType completionItems);
+
+        @JsProperty
+        void setDiagnostic(AutoCompleteResponse.ToObjectReturnType0.DiagnosticFieldType diagnostic);
+
+        @JsProperty
+        void setDiagnosticPublish(
+                AutoCompleteResponse.ToObjectReturnType0.DiagnosticPublishFieldType diagnosticPublish);
 
         @JsProperty
         void setHover(AutoCompleteResponse.ToObjectReturnType0.HoverFieldType hover);
@@ -781,11 +1179,19 @@ public class AutoCompleteResponse {
 
     public native void clearCompletionItems();
 
+    public native void clearDiagnostic();
+
+    public native void clearDiagnosticPublish();
+
     public native void clearHover();
 
     public native void clearSignatures();
 
     public native GetCompletionItemsResponse getCompletionItems();
+
+    public native GetPullDiagnosticResponse getDiagnostic();
+
+    public native GetPublishDiagnosticResponse getDiagnosticPublish();
 
     public native GetHoverResponse getHover();
 
@@ -799,6 +1205,10 @@ public class AutoCompleteResponse {
 
     public native boolean hasCompletionItems();
 
+    public native boolean hasDiagnostic();
+
+    public native boolean hasDiagnosticPublish();
+
     public native boolean hasHover();
 
     public native boolean hasSignatures();
@@ -808,6 +1218,14 @@ public class AutoCompleteResponse {
     public native void setCompletionItems();
 
     public native void setCompletionItems(GetCompletionItemsResponse value);
+
+    public native void setDiagnostic();
+
+    public native void setDiagnostic(GetPullDiagnosticResponse value);
+
+    public native void setDiagnosticPublish();
+
+    public native void setDiagnosticPublish(GetPublishDiagnosticResponse value);
 
     public native void setHover();
 

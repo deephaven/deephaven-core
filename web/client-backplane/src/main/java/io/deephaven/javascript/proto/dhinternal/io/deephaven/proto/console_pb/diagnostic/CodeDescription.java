@@ -1,7 +1,7 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.getdiagnosticresponse;
+package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.diagnostic;
 
 import elemental2.core.Uint8Array;
 import jsinterop.annotations.JsOverlay;
@@ -13,7 +13,7 @@ import jsinterop.base.JsPropertyMap;
 
 @JsType(
         isNative = true,
-        name = "dhinternal.io.deephaven.proto.console_pb.GetDiagnosticResponse.CodeDescription",
+        name = "dhinternal.io.deephaven.proto.console_pb.Diagnostic.CodeDescription",
         namespace = JsPackage.GLOBAL)
 public class CodeDescription {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)

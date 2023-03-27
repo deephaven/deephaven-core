@@ -5,9 +5,9 @@ package io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb;
 
 import elemental2.core.JsArray;
 import elemental2.core.Uint8Array;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.getdiagnosticresponse.CodeDescription;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.getdiagnosticresponse.DiagnosticSeverityMap;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.getdiagnosticresponse.DiagnosticTagMap;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.diagnostic.CodeDescription;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.diagnostic.DiagnosticSeverityMap;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.diagnostic.DiagnosticTagMap;
 import jsinterop.annotations.JsOverlay;
 import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsProperty;
@@ -17,13 +17,13 @@ import jsinterop.base.JsPropertyMap;
 
 @JsType(
         isNative = true,
-        name = "dhinternal.io.deephaven.proto.console_pb.GetDiagnosticResponse",
+        name = "dhinternal.io.deephaven.proto.console_pb.Diagnostic",
         namespace = JsPackage.GLOBAL)
-public class GetDiagnosticResponse {
+public class Diagnostic {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface GetDataUnionType {
         @JsOverlay
-        static GetDiagnosticResponse.GetDataUnionType of(Object o) {
+        static Diagnostic.GetDataUnionType of(Object o) {
             return Js.cast(o);
         }
 
@@ -51,7 +51,7 @@ public class GetDiagnosticResponse {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface SetDataValueUnionType {
         @JsOverlay
-        static GetDiagnosticResponse.SetDataValueUnionType of(Object o) {
+        static Diagnostic.SetDataValueUnionType of(Object o) {
             return Js.cast(o);
         }
 
@@ -81,7 +81,7 @@ public class GetDiagnosticResponse {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface CodeDescriptionFieldType {
             @JsOverlay
-            static GetDiagnosticResponse.ToObjectReturnType.CodeDescriptionFieldType create() {
+            static Diagnostic.ToObjectReturnType.CodeDescriptionFieldType create() {
                 return Js.uncheckedCast(JsPropertyMap.of());
             }
 
@@ -95,7 +95,7 @@ public class GetDiagnosticResponse {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface GetDataUnionType {
             @JsOverlay
-            static GetDiagnosticResponse.ToObjectReturnType.GetDataUnionType of(Object o) {
+            static Diagnostic.ToObjectReturnType.GetDataUnionType of(Object o) {
                 return Js.cast(o);
             }
 
@@ -125,7 +125,7 @@ public class GetDiagnosticResponse {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface StartFieldType {
                 @JsOverlay
-                static GetDiagnosticResponse.ToObjectReturnType.RangeFieldType.StartFieldType create() {
+                static Diagnostic.ToObjectReturnType.RangeFieldType.StartFieldType create() {
                     return Js.uncheckedCast(JsPropertyMap.of());
                 }
 
@@ -143,7 +143,7 @@ public class GetDiagnosticResponse {
             }
 
             @JsOverlay
-            static GetDiagnosticResponse.ToObjectReturnType.RangeFieldType create() {
+            static Diagnostic.ToObjectReturnType.RangeFieldType create() {
                 return Js.uncheckedCast(JsPropertyMap.of());
             }
 
@@ -151,17 +151,17 @@ public class GetDiagnosticResponse {
             Object getEnd();
 
             @JsProperty
-            GetDiagnosticResponse.ToObjectReturnType.RangeFieldType.StartFieldType getStart();
+            Diagnostic.ToObjectReturnType.RangeFieldType.StartFieldType getStart();
 
             @JsProperty
             void setEnd(Object end);
 
             @JsProperty
-            void setStart(GetDiagnosticResponse.ToObjectReturnType.RangeFieldType.StartFieldType start);
+            void setStart(Diagnostic.ToObjectReturnType.RangeFieldType.StartFieldType start);
         }
 
         @JsOverlay
-        static GetDiagnosticResponse.ToObjectReturnType create() {
+        static Diagnostic.ToObjectReturnType create() {
             return Js.uncheckedCast(JsPropertyMap.of());
         }
 
@@ -169,16 +169,16 @@ public class GetDiagnosticResponse {
         String getCode();
 
         @JsProperty
-        GetDiagnosticResponse.ToObjectReturnType.CodeDescriptionFieldType getCodeDescription();
+        Diagnostic.ToObjectReturnType.CodeDescriptionFieldType getCodeDescription();
 
         @JsProperty
-        GetDiagnosticResponse.ToObjectReturnType.GetDataUnionType getData();
+        Diagnostic.ToObjectReturnType.GetDataUnionType getData();
 
         @JsProperty
         String getMessage();
 
         @JsProperty
-        GetDiagnosticResponse.ToObjectReturnType.RangeFieldType getRange();
+        Diagnostic.ToObjectReturnType.RangeFieldType getRange();
 
         @JsProperty
         double getSeverity();
@@ -193,27 +193,26 @@ public class GetDiagnosticResponse {
         void setCode(String code);
 
         @JsProperty
-        void setCodeDescription(
-                GetDiagnosticResponse.ToObjectReturnType.CodeDescriptionFieldType codeDescription);
+        void setCodeDescription(Diagnostic.ToObjectReturnType.CodeDescriptionFieldType codeDescription);
 
         @JsProperty
-        void setData(GetDiagnosticResponse.ToObjectReturnType.GetDataUnionType data);
+        void setData(Diagnostic.ToObjectReturnType.GetDataUnionType data);
 
         @JsOverlay
         default void setData(String data) {
-            setData(Js.<GetDiagnosticResponse.ToObjectReturnType.GetDataUnionType>uncheckedCast(data));
+            setData(Js.<Diagnostic.ToObjectReturnType.GetDataUnionType>uncheckedCast(data));
         }
 
         @JsOverlay
         default void setData(Uint8Array data) {
-            setData(Js.<GetDiagnosticResponse.ToObjectReturnType.GetDataUnionType>uncheckedCast(data));
+            setData(Js.<Diagnostic.ToObjectReturnType.GetDataUnionType>uncheckedCast(data));
         }
 
         @JsProperty
         void setMessage(String message);
 
         @JsProperty
-        void setRange(GetDiagnosticResponse.ToObjectReturnType.RangeFieldType range);
+        void setRange(Diagnostic.ToObjectReturnType.RangeFieldType range);
 
         @JsProperty
         void setSeverity(double severity);
@@ -235,7 +234,7 @@ public class GetDiagnosticResponse {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface CodeDescriptionFieldType {
             @JsOverlay
-            static GetDiagnosticResponse.ToObjectReturnType0.CodeDescriptionFieldType create() {
+            static Diagnostic.ToObjectReturnType0.CodeDescriptionFieldType create() {
                 return Js.uncheckedCast(JsPropertyMap.of());
             }
 
@@ -249,7 +248,7 @@ public class GetDiagnosticResponse {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface GetDataUnionType {
             @JsOverlay
-            static GetDiagnosticResponse.ToObjectReturnType0.GetDataUnionType of(Object o) {
+            static Diagnostic.ToObjectReturnType0.GetDataUnionType of(Object o) {
                 return Js.cast(o);
             }
 
@@ -279,7 +278,7 @@ public class GetDiagnosticResponse {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface StartFieldType {
                 @JsOverlay
-                static GetDiagnosticResponse.ToObjectReturnType0.RangeFieldType.StartFieldType create() {
+                static Diagnostic.ToObjectReturnType0.RangeFieldType.StartFieldType create() {
                     return Js.uncheckedCast(JsPropertyMap.of());
                 }
 
@@ -297,7 +296,7 @@ public class GetDiagnosticResponse {
             }
 
             @JsOverlay
-            static GetDiagnosticResponse.ToObjectReturnType0.RangeFieldType create() {
+            static Diagnostic.ToObjectReturnType0.RangeFieldType create() {
                 return Js.uncheckedCast(JsPropertyMap.of());
             }
 
@@ -305,17 +304,17 @@ public class GetDiagnosticResponse {
             Object getEnd();
 
             @JsProperty
-            GetDiagnosticResponse.ToObjectReturnType0.RangeFieldType.StartFieldType getStart();
+            Diagnostic.ToObjectReturnType0.RangeFieldType.StartFieldType getStart();
 
             @JsProperty
             void setEnd(Object end);
 
             @JsProperty
-            void setStart(GetDiagnosticResponse.ToObjectReturnType0.RangeFieldType.StartFieldType start);
+            void setStart(Diagnostic.ToObjectReturnType0.RangeFieldType.StartFieldType start);
         }
 
         @JsOverlay
-        static GetDiagnosticResponse.ToObjectReturnType0 create() {
+        static Diagnostic.ToObjectReturnType0 create() {
             return Js.uncheckedCast(JsPropertyMap.of());
         }
 
@@ -323,16 +322,16 @@ public class GetDiagnosticResponse {
         String getCode();
 
         @JsProperty
-        GetDiagnosticResponse.ToObjectReturnType0.CodeDescriptionFieldType getCodeDescription();
+        Diagnostic.ToObjectReturnType0.CodeDescriptionFieldType getCodeDescription();
 
         @JsProperty
-        GetDiagnosticResponse.ToObjectReturnType0.GetDataUnionType getData();
+        Diagnostic.ToObjectReturnType0.GetDataUnionType getData();
 
         @JsProperty
         String getMessage();
 
         @JsProperty
-        GetDiagnosticResponse.ToObjectReturnType0.RangeFieldType getRange();
+        Diagnostic.ToObjectReturnType0.RangeFieldType getRange();
 
         @JsProperty
         double getSeverity();
@@ -348,26 +347,26 @@ public class GetDiagnosticResponse {
 
         @JsProperty
         void setCodeDescription(
-                GetDiagnosticResponse.ToObjectReturnType0.CodeDescriptionFieldType codeDescription);
+                Diagnostic.ToObjectReturnType0.CodeDescriptionFieldType codeDescription);
 
         @JsProperty
-        void setData(GetDiagnosticResponse.ToObjectReturnType0.GetDataUnionType data);
+        void setData(Diagnostic.ToObjectReturnType0.GetDataUnionType data);
 
         @JsOverlay
         default void setData(String data) {
-            setData(Js.<GetDiagnosticResponse.ToObjectReturnType0.GetDataUnionType>uncheckedCast(data));
+            setData(Js.<Diagnostic.ToObjectReturnType0.GetDataUnionType>uncheckedCast(data));
         }
 
         @JsOverlay
         default void setData(Uint8Array data) {
-            setData(Js.<GetDiagnosticResponse.ToObjectReturnType0.GetDataUnionType>uncheckedCast(data));
+            setData(Js.<Diagnostic.ToObjectReturnType0.GetDataUnionType>uncheckedCast(data));
         }
 
         @JsProperty
         void setMessage(String message);
 
         @JsProperty
-        void setRange(GetDiagnosticResponse.ToObjectReturnType0.RangeFieldType range);
+        void setRange(Diagnostic.ToObjectReturnType0.RangeFieldType range);
 
         @JsProperty
         void setSeverity(double severity);
@@ -387,15 +386,14 @@ public class GetDiagnosticResponse {
     public static DiagnosticSeverityMap DiagnosticSeverity;
     public static DiagnosticTagMap DiagnosticTag;
 
-    public static native GetDiagnosticResponse deserializeBinary(Uint8Array bytes);
+    public static native Diagnostic deserializeBinary(Uint8Array bytes);
 
-    public static native GetDiagnosticResponse deserializeBinaryFromReader(
-            GetDiagnosticResponse message, Object reader);
+    public static native Diagnostic deserializeBinaryFromReader(Diagnostic message, Object reader);
 
-    public static native void serializeBinaryToWriter(GetDiagnosticResponse message, Object writer);
+    public static native void serializeBinaryToWriter(Diagnostic message, Object writer);
 
-    public static native GetDiagnosticResponse.ToObjectReturnType toObject(
-            boolean includeInstance, GetDiagnosticResponse msg);
+    public static native Diagnostic.ToObjectReturnType toObject(
+            boolean includeInstance, Diagnostic msg);
 
     public native double addTags(double value, double index);
 
@@ -417,7 +415,7 @@ public class GetDiagnosticResponse {
 
     public native CodeDescription getCodeDescription();
 
-    public native GetDiagnosticResponse.GetDataUnionType getData();
+    public native Diagnostic.GetDataUnionType getData();
 
     public native String getData_asB64();
 
@@ -451,16 +449,16 @@ public class GetDiagnosticResponse {
 
     public native void setCodeDescription(CodeDescription value);
 
-    public native void setData(GetDiagnosticResponse.SetDataValueUnionType value);
+    public native void setData(Diagnostic.SetDataValueUnionType value);
 
     @JsOverlay
     public final void setData(String value) {
-        setData(Js.<GetDiagnosticResponse.SetDataValueUnionType>uncheckedCast(value));
+        setData(Js.<Diagnostic.SetDataValueUnionType>uncheckedCast(value));
     }
 
     @JsOverlay
     public final void setData(Uint8Array value) {
-        setData(Js.<GetDiagnosticResponse.SetDataValueUnionType>uncheckedCast(value));
+        setData(Js.<Diagnostic.SetDataValueUnionType>uncheckedCast(value));
     }
 
     public native void setMessage(String value);
@@ -480,7 +478,7 @@ public class GetDiagnosticResponse {
         setTagsList(Js.<JsArray<Double>>uncheckedCast(value));
     }
 
-    public native GetDiagnosticResponse.ToObjectReturnType0 toObject();
+    public native Diagnostic.ToObjectReturnType0 toObject();
 
-    public native GetDiagnosticResponse.ToObjectReturnType0 toObject(boolean includeInstance);
+    public native Diagnostic.ToObjectReturnType0 toObject(boolean includeInstance);
 }
