@@ -10,12 +10,16 @@ import io.deephaven.chunk.attributes.Values;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
 
+import java.util.Objects;
 import java.util.regex.Pattern;
 
 public class GenericRecordObjectFieldCopier extends GenericRecordFieldCopier {
 
-    public GenericRecordObjectFieldCopier(final String fieldPathStr, final Pattern separator, final Schema schema) {
+    private final Class<?> dataType;
+
+    public GenericRecordObjectFieldCopier(final String fieldPathStr, final Pattern separator, final Schema schema, final Class<?> dataType) {
         super(fieldPathStr, separator, schema);
+        this.dataType = Objects.requireNonNull(dataType);
     }
 
     @Override
@@ -29,6 +33,9 @@ public class GenericRecordObjectFieldCopier extends GenericRecordFieldCopier {
         for (int ii = 0; ii < length; ++ii) {
             final GenericRecord record = (GenericRecord) inputChunk.get(ii + sourceOffset);
             final Object value = GenericRecordUtil.getPath(record, fieldPath);
+            if (value != null && !dataType.isInstance(value)) {
+                throw new IllegalStateException(String.format("Unexpected value type %s, expected instance of %s", value.getClass(), dataType));
+            }
             output.set(ii + destOffset, value);
         }
     }
