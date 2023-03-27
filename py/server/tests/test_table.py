@@ -91,6 +91,12 @@ class TableTestCase(BaseTestCase):
         ct = t.coalesce()
         self.assertEqual(self.test_table.size, ct.size)
 
+    def test_flatten(self):
+        t = self.test_table.update_view(["A = a * b"])
+        self.assertFalse(t.is_flat)
+        ct = t.flatten()
+        self.assertTrue(ct.is_flat)
+
     def test_drop_columns(self):
         column_names = [f.name for f in self.test_table.columns]
         result_table = self.test_table.drop_columns(cols=column_names[:-1])

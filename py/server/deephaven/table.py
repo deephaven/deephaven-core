@@ -519,6 +519,7 @@ class Table(JObjectWrapper):
         self._definition = self.j_table.getDefinition()
         self._schema = None
         self._is_refreshing = None
+        self._is_flat = None
 
     def __repr__(self):
         default_repr = super().__repr__()
@@ -547,6 +548,13 @@ class Table(JObjectWrapper):
         if self._is_refreshing is None:
             self._is_refreshing = self.j_table.isRefreshing()
         return self._is_refreshing
+
+    @property
+    def is_flat(self) -> bool:
+        """Whether this table is guaranteed to be flat, i.e. its row set will be from 0 to number of rows - 1."""
+        if self._is_flat is None:
+            self._is_flat = self.j_table.isFlat()
+        return self._is_flat
 
     @property
     def columns(self) -> List[Column]:
@@ -616,6 +624,10 @@ class Table(JObjectWrapper):
     def coalesce(self) -> Table:
         """Returns a coalesced child table."""
         return Table(j_table=self.j_table.coalesce())
+
+    def flatten(self) -> Table:
+        """Returns a new version of this table with a flat row set, i.e. from 0 to number of rows - 1."""
+        return Table(j_table=self.j_table.flatten())
 
     def snapshot(self) -> Table:
         """Returns a static snapshot table.
