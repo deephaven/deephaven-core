@@ -1,11 +1,11 @@
 /*
  * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit ShortRollingProductOperator and regenerate
+ * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharRollingProductOperator and regenerate
  * ---------------------------------------------------------------------------------------------------------------------
  */
 package io.deephaven.engine.table.impl.updateby.rollingproduct;
 
-import io.deephaven.base.ringbuffer.*;
+import io.deephaven.base.ringbuffer.AggregatingDoubleRingBuffer;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
@@ -13,12 +13,9 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseDoubleUpdateByOperator;
-import io.deephaven.engine.table.impl.updateby.internal.BaseLongUpdateByOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.math.BigInteger;
 
 import static io.deephaven.util.QueryConstants.*;
 
@@ -124,13 +121,13 @@ public class LongRollingProductOperator extends BaseDoubleUpdateByOperator {
     }
 
     public LongRollingProductOperator(@NotNull final MatchPair pair,
-                                       @NotNull final String[] affectingColumns,
-                                       @Nullable final RowRedirection rowRedirection,
-                                       @Nullable final String timestampColumnName,
-                                       final long reverseWindowScaleUnits,
-                                       final long forwardWindowScaleUnits
-                                       // region extra-constructor-args
-                                       // endregion extra-constructor-args
+                                      @NotNull final String[] affectingColumns,
+                                      @Nullable final RowRedirection rowRedirection,
+                                      @Nullable final String timestampColumnName,
+                                      final long reverseWindowScaleUnits,
+                                      final long forwardWindowScaleUnits
+                                      // region extra-constructor-args
+                                      // endregion extra-constructor-args
     ) {
         super(pair, affectingColumns, rowRedirection, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true);
         // region constructor

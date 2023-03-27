@@ -626,9 +626,9 @@ public class UpdateByOperatorFactory {
 
             final String[] affectingColumns;
             if (rs.revWindowScale().timestampCol() == null) {
-                affectingColumns = new String[]{pair.rightColumn};
+                affectingColumns = new String[] {pair.rightColumn};
             } else {
-                affectingColumns = new String[]{rs.revWindowScale().timestampCol(), pair.rightColumn};
+                affectingColumns = new String[] {rs.revWindowScale().timestampCol(), pair.rightColumn};
             }
 
             final long prevWindowScaleUnits = rs.revWindowScale().timescaleUnits();
@@ -658,14 +658,14 @@ public class UpdateByOperatorFactory {
                 return new DoubleRollingProductOperator(pair, affectingColumns, rowRedirection,
                         rs.revWindowScale().timestampCol(),
                         prevWindowScaleUnits, fwdWindowScaleUnits);
-//            } else if (csType == BigDecimal.class) {
-//                return new BigDecimalRollingProductOperator(pair, affectingColumns, rowRedirection,
-//                        rs.revWindowScale().timestampCol(),
-//                        prevWindowScaleUnits, fwdWindowScaleUnits, control.mathContextOrDefault());
-//            } else if (csType == BigInteger.class) {
-//                return new BigIntegerRollingProductOperator(pair, affectingColumns, rowRedirection,
-//                        rs.revWindowScale().timestampCol(),
-//                        prevWindowScaleUnits, fwdWindowScaleUnits);
+            } else if (csType == BigDecimal.class) {
+                return new BigDecimalRollingProductOperator(pair, affectingColumns, rowRedirection,
+                        rs.revWindowScale().timestampCol(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits, control.mathContextOrDefault());
+            } else if (csType == BigInteger.class) {
+                return new BigIntegerRollingProductOperator(pair, affectingColumns, rowRedirection,
+                        rs.revWindowScale().timestampCol(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits);
             }
 
             throw new IllegalArgumentException("Can not perform RollingSum on type " + csType);

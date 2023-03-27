@@ -1,14 +1,9 @@
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharRollingProductOperator and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
 package io.deephaven.engine.table.impl.updateby.rollingproduct;
 
 import io.deephaven.base.ringbuffer.AggregatingDoubleRingBuffer;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
-import io.deephaven.chunk.FloatChunk;
+import io.deephaven.chunk.CharChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
@@ -19,14 +14,14 @@ import org.jetbrains.annotations.Nullable;
 
 import static io.deephaven.util.QueryConstants.*;
 
-public class FloatRollingProductOperator extends BaseDoubleUpdateByOperator {
+public class CharRollingProductOperator extends BaseDoubleUpdateByOperator {
     private static final int BUFFER_INITIAL_SIZE = 64;
 
     // region extra-fields
     // endregion extra-fields
 
     protected class Context extends BaseDoubleUpdateByOperator.Context {
-        protected FloatChunk<? extends Values> floatInfluencerValuesChunk;
+        protected CharChunk<? extends Values> charInfluencerValuesChunk;
         protected AggregatingDoubleRingBuffer buffer;
 
         private int zeroCount;
@@ -59,7 +54,7 @@ public class FloatRollingProductOperator extends BaseDoubleUpdateByOperator {
 
         @Override
         public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            floatInfluencerValuesChunk = valuesChunk.asFloatChunk();
+            charInfluencerValuesChunk = valuesChunk.asCharChunk();
         }
 
         @Override
@@ -67,9 +62,9 @@ public class FloatRollingProductOperator extends BaseDoubleUpdateByOperator {
             buffer.ensureRemaining(count);
 
             for (int ii = 0; ii < count; ii++) {
-                float val = floatInfluencerValuesChunk.get(pos + ii);
+                char val = charInfluencerValuesChunk.get(pos + ii);
 
-                if (val == NULL_FLOAT) {
+                if (val == NULL_CHAR) {
                     buffer.addUnsafe(NULL_DOUBLE);
                     nullCount++;
                 } else {
@@ -83,7 +78,7 @@ public class FloatRollingProductOperator extends BaseDoubleUpdateByOperator {
 
         @Override
         public void pop(int count) {
-            Assert.geq(buffer.size(), "floatWindowValues.size()", count);
+            Assert.geq(buffer.size(), "buffer.size()", count);
 
             for (int ii = 0; ii < count; ii++) {
                 double val = buffer.removeUnsafe();
@@ -120,7 +115,7 @@ public class FloatRollingProductOperator extends BaseDoubleUpdateByOperator {
         return new Context(chunkSize);
     }
 
-    public FloatRollingProductOperator(@NotNull final MatchPair pair,
+    public CharRollingProductOperator(@NotNull final MatchPair pair,
                                       @NotNull final String[] affectingColumns,
                                       @Nullable final RowRedirection rowRedirection,
                                       @Nullable final String timestampColumnName,

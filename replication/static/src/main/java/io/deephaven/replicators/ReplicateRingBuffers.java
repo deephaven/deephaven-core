@@ -79,6 +79,8 @@ public class ReplicateRingBuffers {
                 "Object apply\\(Object a, Object b\\);", "T apply(T a, T b);",
                 "public Object evaluate", "public T evaluate",
                 "ObjectFunction aggFunction", "ObjectFunction<T> aggFunction",
+                "ObjectFunction aggTreeFunction", "ObjectFunction<T> aggTreeFunction",
+                "ObjectFunction aggInitialFunction", "ObjectFunction<T> aggInitialFunction",
                 "private Object\\[\\] treeStorage", "private T[] treeStorage",
                 "new Object\\[", "(T[]) new Object[",
                 "Object\\[\\]", "T[]",

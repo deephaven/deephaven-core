@@ -21,8 +21,8 @@ import java.util.NoSuchElementException;
  */
 public class AggregatingObjectRingBuffer<T> {
     private final ObjectRingBuffer<T> internalBuffer;
-    private final ObjectFunction aggInitialFunction;
-    private final ObjectFunction aggTreeFunction;
+    private final ObjectFunction<T> aggInitialFunction;
+    private final ObjectFunction<T> aggTreeFunction;
     private final T identityVal;
     private T defaultValueForThisType;
     private T[] treeStorage;
@@ -94,8 +94,8 @@ public class AggregatingObjectRingBuffer<T> {
      */
     public AggregatingObjectRingBuffer(final int capacity,
             final T identityVal,
-            @NotNull final ObjectFunction aggTreeFunction,
-            @NotNull final ObjectFunction aggInitialFunction) {
+            @NotNull final ObjectFunction<T> aggTreeFunction,
+            @NotNull final ObjectFunction<T> aggInitialFunction) {
         this(capacity, identityVal, aggTreeFunction, aggInitialFunction, true);
     }
 
@@ -127,8 +127,8 @@ public class AggregatingObjectRingBuffer<T> {
      */
     public AggregatingObjectRingBuffer(final int capacity,
             final T identityVal,
-            @NotNull final ObjectFunction aggTreeFunction,
-            @NotNull final ObjectFunction aggInitialFunction,
+            @NotNull final ObjectFunction<T> aggTreeFunction,
+            @NotNull final ObjectFunction<T> aggInitialFunction,
             final boolean growable) {
         internalBuffer = new ObjectRingBuffer<>(capacity, growable);
         this.aggTreeFunction = aggTreeFunction;
@@ -696,7 +696,8 @@ public class AggregatingObjectRingBuffer<T> {
      * <p>
      * The provided ranges ore closed-interval. The head and tail are both included in the range.
      */
-    private void evaluateThreeRanges(int r1h, int r1t, int r2h, int r2t, int r3h, int r3t, ObjectFunction<T> evalFunction) {
+    private void evaluateThreeRanges(int r1h, int r1t, int r2h, int r2t, int r3h, int r3t,
+            ObjectFunction<T> evalFunction) {
         while (true) {
             if (r1t >= r2h) {
                 // r1 and r2 overlap. Collapse them together and call the two range version.

@@ -37,6 +37,9 @@ import static io.deephaven.time.DateTimeUtils.convertDateTime;
 
 @Category(OutOfBandTest.class)
 public class TestRollingProduct extends BaseUpdateByTest {
+    private final BigDecimal allowableFraction = BigDecimal.valueOf(0.000001);
+    private final MathContext mathContextDefault = UpdateByControl.mathContextDefault();
+
     /**
      * Because of the pairwise functions performing re-ordering of the values during summation, we can get very small
      * comparison errors in floating point values. This class tolerates larger differences in the float/double operator
@@ -54,7 +57,7 @@ public class TestRollingProduct extends BaseUpdateByTest {
      * These are used in the static tests and leverage the Numeric class functions for verification. Additional tests
      * are performed on BigInteger/BigDecimal columns as well.
      */
-    final String[] primitiveColumns = new String[]{
+    final String[] primitiveColumns = new String[] {
             "byteCol",
             "shortCol",
             "intCol",
@@ -66,15 +69,14 @@ public class TestRollingProduct extends BaseUpdateByTest {
     /**
      * These are used in the ticking table evaluations where we verify dynamic vs static tables.
      */
-    final String[] columns = new String[]{
+    final String[] columns = new String[] {
             "byteCol",
             "shortCol",
             "intCol",
             "longCol",
             "floatCol",
             "doubleCol",
-            // "bigIntCol",
-            // "bigDecimalCol",
+            "bigIntCol",
     };
 
     final int STATIC_TABLE_SIZE = 10_000;
@@ -97,72 +99,66 @@ public class TestRollingProduct extends BaseUpdateByTest {
 
     // region Object Helper functions
 
-    final Function<ObjectVector<BigInteger>, BigDecimal> avgBigInt = bigIntegerObjectVector -> {
-        MathContext mathContextDefault = UpdateByControl.mathContextDefault();
+    final Function<ObjectVector<BigInteger>, BigInteger> prodBigInt = bigIntegerObjectVector -> {
 
         if (bigIntegerObjectVector == null || bigIntegerObjectVector.size() == 0) {
             return null;
         }
 
-        BigDecimal sum = new BigDecimal(0);
-        long count = 0;
+        BigInteger product = BigInteger.ONE;
 
         final long n = bigIntegerObjectVector.size();
+        long nullCount = 0;
 
         for (long i = 0; i < n; i++) {
             BigInteger val = bigIntegerObjectVector.get(i);
             if (!isNull(val)) {
-                final BigDecimal decVal = new BigDecimal(val);
-                sum = sum.add(decVal, mathContextDefault);
-                count++;
+                product = product.multiply(val);
+            } else {
+                nullCount++;
             }
         }
-        if (count == 0) {
-            return null;
-        }
-        return sum.divide(new BigDecimal(count), mathContextDefault);
+        return nullCount == n ? null : product;
     };
 
-    final Function<ObjectVector<BigDecimal>, BigDecimal> avgBigDec = bigDecimalObjectVector -> {
+    final Function<ObjectVector<BigDecimal>, BigDecimal> prodBigDec = bigDecimalObjectVector -> {
         MathContext mathContextDefault = UpdateByControl.mathContextDefault();
 
         if (bigDecimalObjectVector == null || bigDecimalObjectVector.size() == 0) {
             return null;
         }
 
-        BigDecimal sum = new BigDecimal(0);
-        long count = 0;
+        BigDecimal product = BigDecimal.ONE;
 
         final long n = bigDecimalObjectVector.size();
+        long nullCount = 0;
 
         for (long i = 0; i < n; i++) {
             BigDecimal val = bigDecimalObjectVector.get(i);
             if (!isNull(val)) {
-                sum = sum.add(val, mathContextDefault);
-                count++;
+                product = product.multiply(val, mathContextDefault);
+            } else {
+                nullCount++;
             }
         }
-        if (count == 0) {
-            return null;
-        }
-        return sum.divide(new BigDecimal(count), mathContextDefault);
+        return nullCount == n ? null : product;
     };
 
     private void doTestStaticZeroKeyBigNumbers(final QueryTable t, final int prevTicks, final int postTicks) {
-        QueryScope.addParam("avgBigInt", avgBigInt);
-        QueryScope.addParam("avgBigDec", avgBigDec);
+        QueryScope.addParam("prodBigInt", prodBigInt);
+        QueryScope.addParam("prodBigDec", prodBigDec);
 
         Table actual = t.updateBy(UpdateByOperation.RollingProduct(prevTicks, postTicks, "bigIntCol", "bigDecimalCol"));
         Table expected = t.updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, "bigIntCol", "bigDecimalCol"))
-                .update("bigIntCol=avgBigInt.apply(bigIntCol)", "bigDecimalCol=avgBigDec.apply(bigDecimalCol)");
+                .update("bigIntCol=prodBigInt.apply(bigIntCol)", "bigDecimalCol=prodBigDec.apply(bigDecimalCol)");
 
-        BigDecimal[] biActual = (BigDecimal[]) actual.getColumn("bigIntCol").getDirect();
+        BigInteger[] biActual = (BigInteger[]) actual.getColumn("bigIntCol").getDirect();
         Object[] biExpected = (Object[]) expected.getColumn("bigIntCol").getDirect();
 
         Assert.eq(biActual.length, "array length", biExpected.length);
         for (int ii = 0; ii < biActual.length; ii++) {
-            BigDecimal actualVal = biActual[ii];
-            BigDecimal expectedVal = (BigDecimal) biExpected[ii];
+            BigInteger actualVal = biActual[ii];
+            BigInteger expectedVal = (BigInteger) biExpected[ii];
             if (actualVal != null || expectedVal != null) {
                 Assert.eqTrue(actualVal.compareTo(expectedVal) == 0, "values match");
             }
@@ -176,29 +172,35 @@ public class TestRollingProduct extends BaseUpdateByTest {
             BigDecimal actualVal = bdActual[ii];
             BigDecimal expectedVal = (BigDecimal) bdExpected[ii];
             if (actualVal != null || expectedVal != null) {
-                Assert.eqTrue(actualVal.compareTo(expectedVal) == 0, "values match");
+                // Do a fuzzy compare.
+                BigDecimal diff = actualVal.subtract(expectedVal, mathContextDefault).abs();
+                if (!diff.equals(BigDecimal.ZERO)) {
+                    BigDecimal diffFraction = diff.divide(actualVal, mathContextDefault).abs();
+                    Assert.eqTrue(allowableFraction.compareTo(diffFraction) == 1, "values match");
+                }
             }
         }
     }
 
     private void doTestStaticZeroKeyTimedBigNumbers(final QueryTable t, final Duration prevTime,
-                                                    final Duration postTime) {
-        QueryScope.addParam("avgBigInt", avgBigInt);
-        QueryScope.addParam("avgBigDec", avgBigDec);
+            final Duration postTime) {
+        QueryScope.addParam("prodBigInt", prodBigInt);
+        QueryScope.addParam("prodBigDec", prodBigDec);
 
         Table actual =
                 t.updateBy(UpdateByOperation.RollingProduct("ts", prevTime, postTime, "bigIntCol", "bigDecimalCol"));
         Table expected =
                 t.updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, "bigIntCol", "bigDecimalCol"))
-                        .update("bigIntCol=avgBigInt.apply(bigIntCol)", "bigDecimalCol=avgBigDec.apply(bigDecimalCol)");
+                        .update("bigIntCol=prodBigInt.apply(bigIntCol)",
+                                "bigDecimalCol=prodBigDec.apply(bigDecimalCol)");
 
-        BigDecimal[] biActual = (BigDecimal[]) actual.getColumn("bigIntCol").getDirect();
+        BigInteger[] biActual = (BigInteger[]) actual.getColumn("bigIntCol").getDirect();
         Object[] biExpected = (Object[]) expected.getColumn("bigIntCol").getDirect();
 
         Assert.eq(biActual.length, "array length", biExpected.length);
         for (int ii = 0; ii < biActual.length; ii++) {
-            BigDecimal actualVal = biActual[ii];
-            BigDecimal expectedVal = (BigDecimal) biExpected[ii];
+            BigInteger actualVal = biActual[ii];
+            BigInteger expectedVal = (BigInteger) biExpected[ii];
             if (actualVal != null || expectedVal != null) {
                 Assert.eqTrue(actualVal.compareTo(expectedVal) == 0, "values match");
             }
@@ -212,28 +214,34 @@ public class TestRollingProduct extends BaseUpdateByTest {
             BigDecimal actualVal = bdActual[ii];
             BigDecimal expectedVal = (BigDecimal) bdExpected[ii];
             if (actualVal != null || expectedVal != null) {
-                Assert.eqTrue(actualVal.compareTo(expectedVal) == 0, "values match");
+                // Do a fuzzy compare.
+                BigDecimal diff = actualVal.subtract(expectedVal, mathContextDefault).abs();
+                if (!diff.equals(BigDecimal.ZERO)) {
+                    BigDecimal diffFraction = diff.divide(actualVal, mathContextDefault).abs();
+                    Assert.eqTrue(allowableFraction.compareTo(diffFraction) == 1, "values match");
+                }
             }
         }
     }
 
     private void doTestStaticBucketedBigNumbers(final QueryTable t, final int prevTicks, final int postTicks) {
-        QueryScope.addParam("avgBigInt", avgBigInt);
-        QueryScope.addParam("avgBigDec", avgBigDec);
+        QueryScope.addParam("prodBigInt", prodBigInt);
+        QueryScope.addParam("prodBigDec", prodBigDec);
 
         Table actual =
                 t.updateBy(UpdateByOperation.RollingProduct(prevTicks, postTicks, "bigIntCol", "bigDecimalCol"), "Sym");
         Table expected =
                 t.updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, "bigIntCol", "bigDecimalCol"), "Sym")
-                        .update("bigIntCol=avgBigInt.apply(bigIntCol)", "bigDecimalCol=avgBigDec.apply(bigDecimalCol)");
+                        .update("bigIntCol=prodBigInt.apply(bigIntCol)",
+                                "bigDecimalCol=prodBigDec.apply(bigDecimalCol)");
 
-        BigDecimal[] biActual = (BigDecimal[]) actual.getColumn("bigIntCol").getDirect();
+        BigInteger[] biActual = (BigInteger[]) actual.getColumn("bigIntCol").getDirect();
         Object[] biExpected = (Object[]) expected.getColumn("bigIntCol").getDirect();
 
         Assert.eq(biActual.length, "array length", biExpected.length);
         for (int ii = 0; ii < biActual.length; ii++) {
-            BigDecimal actualVal = biActual[ii];
-            BigDecimal expectedVal = (BigDecimal) biExpected[ii];
+            BigInteger actualVal = biActual[ii];
+            BigInteger expectedVal = (BigInteger) biExpected[ii];
             if (actualVal != null || expectedVal != null) {
                 Assert.eqTrue(actualVal.compareTo(expectedVal) == 0, "values match");
             }
@@ -247,30 +255,35 @@ public class TestRollingProduct extends BaseUpdateByTest {
             BigDecimal actualVal = bdActual[ii];
             BigDecimal expectedVal = (BigDecimal) bdExpected[ii];
             if (actualVal != null || expectedVal != null) {
-                Assert.eqTrue(actualVal.compareTo(expectedVal) == 0, "values match");
+                // Do a fuzzy compare.
+                BigDecimal diff = actualVal.subtract(expectedVal, mathContextDefault).abs();
+                if (!diff.equals(BigDecimal.ZERO)) {
+                    BigDecimal diffFraction = diff.divide(actualVal, mathContextDefault).abs();
+                    Assert.eqTrue(allowableFraction.compareTo(diffFraction) == 1, "values match");
+                }
             }
         }
     }
 
     private void doTestStaticBucketedTimedBigNumbers(final QueryTable t, final Duration prevTime,
-                                                     final Duration postTime) {
-        QueryScope.addParam("avgBigInt", avgBigInt);
-        QueryScope.addParam("avgBigDec", avgBigDec);
+            final Duration postTime) {
+        QueryScope.addParam("prodBigInt", prodBigInt);
+        QueryScope.addParam("prodBigDec", prodBigDec);
 
         Table actual =
                 t.updateBy(UpdateByOperation.RollingProduct("ts", prevTime, postTime, "bigIntCol", "bigDecimalCol"),
                         "Sym");
         Table expected = t
                 .updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, "bigIntCol", "bigDecimalCol"), "Sym")
-                .update("bigIntCol=avgBigInt.apply(bigIntCol)", "bigDecimalCol=avgBigDec.apply(bigDecimalCol)");
+                .update("bigIntCol=prodBigInt.apply(bigIntCol)", "bigDecimalCol=prodBigDec.apply(bigDecimalCol)");
 
-        BigDecimal[] biActual = (BigDecimal[]) actual.getColumn("bigIntCol").getDirect();
+        BigInteger[] biActual = (BigInteger[]) actual.getColumn("bigIntCol").getDirect();
         Object[] biExpected = (Object[]) expected.getColumn("bigIntCol").getDirect();
 
         Assert.eq(biActual.length, "array length", biExpected.length);
         for (int ii = 0; ii < biActual.length; ii++) {
-            BigDecimal actualVal = biActual[ii];
-            BigDecimal expectedVal = (BigDecimal) biExpected[ii];
+            BigInteger actualVal = biActual[ii];
+            BigInteger expectedVal = (BigInteger) biExpected[ii];
             if (actualVal != null || expectedVal != null) {
                 Assert.eqTrue(actualVal.compareTo(expectedVal) == 0, "values match");
             }
@@ -284,7 +297,12 @@ public class TestRollingProduct extends BaseUpdateByTest {
             BigDecimal actualVal = bdActual[ii];
             BigDecimal expectedVal = (BigDecimal) bdExpected[ii];
             if (actualVal != null || expectedVal != null) {
-                Assert.eqTrue(actualVal.compareTo(expectedVal) == 0, "values match");
+                // Do a fuzzy compare.
+                BigDecimal diff = actualVal.subtract(expectedVal, mathContextDefault).abs();
+                if (!diff.equals(BigDecimal.ZERO)) {
+                    BigDecimal diffFraction = diff.divide(actualVal, mathContextDefault).abs();
+                    Assert.eqTrue(allowableFraction.compareTo(diffFraction) == 1, "values match");
+                }
             }
         }
     }
@@ -379,14 +397,15 @@ public class TestRollingProduct extends BaseUpdateByTest {
         final Table expected = t.update(getCastingFormulas(primitiveColumns))
                 .updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, primitiveColumns))
                 .update(getFormulas(primitiveColumns));
-        TstUtils.assertTableEquals(expected, actual, TableDiff.DiffItems.DoublesExact, TableDiff.DiffItems.DoubleFraction);
+        TstUtils.assertTableEquals(expected, actual, TableDiff.DiffItems.DoublesExact,
+                TableDiff.DiffItems.DoubleFraction);
 
-        // doTestStaticZeroKeyBigNumbers(t, prevTicks, postTicks);
+        doTestStaticZeroKeyBigNumbers(t, prevTicks, postTicks);
     }
 
     private void doTestStaticZeroKeyTimed(final Duration prevTime, final Duration postTime) {
         final QueryTable t = createTestTable(STATIC_TABLE_SIZE, false, false, false, 0xFFFABBBC,
-                new String[]{"ts"}, new TestDataGenerator[]{new SortedDateTimeGenerator(
+                new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
                         convertDateTime("2022-03-09T09:00:00.000 NY"),
                         convertDateTime("2022-03-09T16:30:00.000 NY"))}).t;
 
@@ -394,9 +413,10 @@ public class TestRollingProduct extends BaseUpdateByTest {
         final Table expected = t.update(getCastingFormulas(primitiveColumns))
                 .updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, primitiveColumns))
                 .update(getFormulas(primitiveColumns));
-        TstUtils.assertTableEquals(expected, actual, TableDiff.DiffItems.DoublesExact, TableDiff.DiffItems.DoubleFraction);
+        TstUtils.assertTableEquals(expected, actual, TableDiff.DiffItems.DoublesExact,
+                TableDiff.DiffItems.DoubleFraction);
 
-        // doTestStaticZeroKeyTimedBigNumbers(t, prevTime, postTime);
+        doTestStaticZeroKeyTimedBigNumbers(t, prevTime, postTime);
     }
 
     // endregion
@@ -494,18 +514,20 @@ public class TestRollingProduct extends BaseUpdateByTest {
     private void doTestStaticBucketed(boolean grouped, int prevTicks, int postTicks) {
         final QueryTable t = createTestTable(STATIC_TABLE_SIZE, true, grouped, false, 0x31313131).t;
 
-        final Table actual = t.updateBy(UpdateByOperation.RollingProduct(prevTicks, postTicks, primitiveColumns), "Sym");
+        final Table actual =
+                t.updateBy(UpdateByOperation.RollingProduct(prevTicks, postTicks, primitiveColumns), "Sym");
         final Table expected = t.update(getCastingFormulas(primitiveColumns))
                 .updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, primitiveColumns), "Sym")
                 .update(getFormulas(primitiveColumns));
-        TstUtils.assertTableEquals(expected, actual, TableDiff.DiffItems.DoublesExact, TableDiff.DiffItems.DoubleFraction);
+        TstUtils.assertTableEquals(expected, actual, TableDiff.DiffItems.DoublesExact,
+                TableDiff.DiffItems.DoubleFraction);
 
-//        doTestStaticBucketedBigNumbers(t, prevTicks, postTicks);
+        doTestStaticBucketedBigNumbers(t, prevTicks, postTicks);
     }
 
     private void doTestStaticBucketedTimed(boolean grouped, Duration prevTime, Duration postTime) {
         final QueryTable t = createTestTable(STATIC_TABLE_SIZE, true, grouped, false, 0xFFFABBBC,
-                new String[]{"ts"}, new TestDataGenerator[]{new SortedDateTimeGenerator(
+                new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
                         convertDateTime("2022-03-09T09:00:00.000 NY"),
                         convertDateTime("2022-03-09T16:30:00.000 NY"))}).t;
 
@@ -514,9 +536,10 @@ public class TestRollingProduct extends BaseUpdateByTest {
         final Table expected = t.update(getCastingFormulas(primitiveColumns))
                 .updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, primitiveColumns), "Sym")
                 .update(getFormulas(primitiveColumns));
-        TstUtils.assertTableEquals(expected, actual, TableDiff.DiffItems.DoublesExact, TableDiff.DiffItems.DoubleFraction);
+        TstUtils.assertTableEquals(expected, actual, TableDiff.DiffItems.DoublesExact,
+                TableDiff.DiffItems.DoubleFraction);
 
-//        doTestStaticBucketedTimedBigNumbers(t, prevTime, postTime);
+        doTestStaticBucketedTimedBigNumbers(t, prevTime, postTime);
     }
 
     // endregion
@@ -680,13 +703,13 @@ public class TestRollingProduct extends BaseUpdateByTest {
         final QueryTable t = result.t;
         t.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
 
-        final EvalNugget[] nuggets = new EvalNugget[]{
+        final EvalNugget[] nuggets = new EvalNugget[] {
                 new FuzzyEvalNugget() {
                     @Override
                     protected Table e() {
                         return bucketed
                                 ? t.updateBy(UpdateByOperation.RollingProduct(prevTicks, postTicks, columns),
-                                "Sym")
+                                        "Sym")
                                 : t.updateBy(UpdateByOperation.RollingProduct(prevTicks, postTicks, columns));
                     }
                 }
@@ -702,7 +725,7 @@ public class TestRollingProduct extends BaseUpdateByTest {
 
     private void doTestAppendOnlyTimed(boolean bucketed, Duration prevTime, Duration postTime) {
         final CreateResult result = createTestTable(DYNAMIC_TABLE_SIZE, bucketed, false, true, 0x31313131,
-                new String[]{"ts"}, new TestDataGenerator[]{new SortedDateTimeGenerator(
+                new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
                         convertDateTime("2022-03-09T09:00:00.000 NY"),
                         convertDateTime("2022-03-09T16:30:00.000 NY"))});
         final QueryTable t = result.t;
@@ -710,14 +733,14 @@ public class TestRollingProduct extends BaseUpdateByTest {
 
         t.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
 
-        final EvalNugget[] nuggets = new EvalNugget[]{
+        final EvalNugget[] nuggets = new EvalNugget[] {
                 new FuzzyEvalNugget() {
                     @Override
                     protected Table e() {
                         return bucketed ? t.updateBy(
                                 UpdateByOperation.RollingProduct("ts", prevTime, postTime, columns), "Sym")
                                 : t.updateBy(
-                                UpdateByOperation.RollingProduct("ts", prevTime, postTime, columns));
+                                        UpdateByOperation.RollingProduct("ts", prevTime, postTime, columns));
                     }
                 }
         };
@@ -851,14 +874,14 @@ public class TestRollingProduct extends BaseUpdateByTest {
         final CreateResult result = createTestTable(DYNAMIC_TABLE_SIZE, bucketed, false, true, 0x31313131);
         final QueryTable t = result.t;
 
-        final EvalNugget[] nuggets = new EvalNugget[]{
+        final EvalNugget[] nuggets = new EvalNugget[] {
                 new FuzzyEvalNugget() {
                     @Override
                     protected Table e() {
                         return bucketed ? t.updateBy(
                                 UpdateByOperation.RollingProduct(prevTicks, fwdTicks, columns), "Sym")
                                 : t.updateBy(
-                                UpdateByOperation.RollingProduct(prevTicks, fwdTicks, columns));
+                                        UpdateByOperation.RollingProduct(prevTicks, fwdTicks, columns));
                     }
                 }
         };
@@ -875,20 +898,20 @@ public class TestRollingProduct extends BaseUpdateByTest {
     private void doTestTickingTimed(final boolean bucketed, final Duration prevTime, final Duration postTime) {
 
         final CreateResult result = createTestTable(DYNAMIC_TABLE_SIZE, bucketed, false, true, 0x31313131,
-                new String[]{"ts"}, new TestDataGenerator[]{new SortedDateTimeGenerator(
+                new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
                         convertDateTime("2022-03-09T09:00:00.000 NY"),
                         convertDateTime("2022-03-09T16:30:00.000 NY"))});
 
         final QueryTable t = result.t;
 
-        final EvalNugget[] nuggets = new EvalNugget[]{
+        final EvalNugget[] nuggets = new EvalNugget[] {
                 new FuzzyEvalNugget() {
                     @Override
                     protected Table e() {
                         return bucketed ? t.updateBy(
                                 UpdateByOperation.RollingProduct("ts", prevTime, postTime, columns), "Sym")
                                 : t.updateBy(
-                                UpdateByOperation.RollingProduct("ts", prevTime, postTime, columns));
+                                        UpdateByOperation.RollingProduct("ts", prevTime, postTime, columns));
                     }
                 }
         };
@@ -912,7 +935,7 @@ public class TestRollingProduct extends BaseUpdateByTest {
 
         final UpdateByControl control = UpdateByControl.builder().useRedirection(true).build();
 
-        final EvalNugget[] nuggets = new EvalNugget[]{
+        final EvalNugget[] nuggets = new EvalNugget[] {
                 new FuzzyEvalNugget() {
                     @Override
                     protected Table e() {
@@ -940,7 +963,7 @@ public class TestRollingProduct extends BaseUpdateByTest {
         final Duration postTime = Duration.ofMinutes(0);
 
         final CreateResult result = createTestTable(DYNAMIC_TABLE_SIZE, true, false, true, 0x31313131,
-                new String[]{"ts"}, new TestDataGenerator[]{new SortedDateTimeGenerator(
+                new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
                         convertDateTime("2022-03-09T09:00:00.000 NY"),
                         convertDateTime("2022-03-09T16:30:00.000 NY"))});
 
@@ -948,7 +971,7 @@ public class TestRollingProduct extends BaseUpdateByTest {
 
         final UpdateByControl control = UpdateByControl.builder().useRedirection(true).build();
 
-        final EvalNugget[] nuggets = new EvalNugget[]{
+        final EvalNugget[] nuggets = new EvalNugget[] {
                 new FuzzyEvalNugget() {
                     @Override
                     protected Table e() {

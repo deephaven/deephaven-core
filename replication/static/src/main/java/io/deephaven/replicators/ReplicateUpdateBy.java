@@ -104,15 +104,13 @@ public class ReplicateUpdateBy {
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingproduct/ShortRollingProductOperator.java",
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingproduct/FloatRollingProductOperator.java");
 
-        files = ReplicatePrimitiveCode.shortToAllNumericals(
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingproduct/ShortRollingProductOperator.java",
-                null);
+        files = ReplicatePrimitiveCode.charToAllButBoolean(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingproduct/CharRollingProductOperator.java");
         for (final String f : files) {
             if (f.contains("Integer")) {
                 fixupInteger(f);
             }
         }
-
     }
 
     private static void replicateNumericOperator(@NotNull final String shortClass, @NotNull final String floatClass)
