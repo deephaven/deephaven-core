@@ -642,6 +642,10 @@ public class UpdateByOperatorFactory {
                 return new ByteRollingAvgOperator(pair, affectingColumns, rowRedirection,
                         rs.revWindowScale().timestampCol(),
                         prevWindowScaleUnits, fwdWindowScaleUnits, NULL_BYTE);
+            } else if (csType == char.class || csType == Character.class) {
+                return new CharRollingAvgOperator(pair, affectingColumns, rowRedirection,
+                        rs.revWindowScale().timestampCol(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits);
             } else if (csType == short.class || csType == Short.class) {
                 return new ShortRollingAvgOperator(pair, affectingColumns, rowRedirection,
                         rs.revWindowScale().timestampCol(),

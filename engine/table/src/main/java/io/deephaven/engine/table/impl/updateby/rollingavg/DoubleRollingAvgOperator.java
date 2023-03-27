@@ -102,13 +102,13 @@ public class DoubleRollingAvgOperator extends BaseDoubleUpdateByOperator {
     }
 
     public DoubleRollingAvgOperator(@NotNull final MatchPair pair,
-                                   @NotNull final String[] affectingColumns,
-                                   @Nullable final RowRedirection rowRedirection,
-                                   @Nullable final String timestampColumnName,
-                                   final long reverseWindowScaleUnits,
-                                   final long forwardWindowScaleUnits
-                                   // region extra-constructor-args
-                                   // endregion extra-constructor-args
+                                  @NotNull final String[] affectingColumns,
+                                  @Nullable final RowRedirection rowRedirection,
+                                  @Nullable final String timestampColumnName,
+                                  final long reverseWindowScaleUnits,
+                                  final long forwardWindowScaleUnits
+                                  // region extra-constructor-args
+                                  // endregion extra-constructor-args
     ) {
         super(pair, affectingColumns, rowRedirection, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true);
         // region constructor

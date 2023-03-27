@@ -1,14 +1,9 @@
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharRollingAvgOperator and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
 package io.deephaven.engine.table.impl.updateby.rollingavg;
 
-import io.deephaven.base.ringbuffer.ByteRingBuffer;
+import io.deephaven.base.ringbuffer.CharRingBuffer;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
-import io.deephaven.chunk.ByteChunk;
+import io.deephaven.chunk.CharChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
@@ -19,42 +14,41 @@ import org.jetbrains.annotations.Nullable;
 
 import static io.deephaven.util.QueryConstants.*;
 
-public class ByteRollingAvgOperator extends BaseDoubleUpdateByOperator {
+public class CharRollingAvgOperator extends BaseDoubleUpdateByOperator {
     private static final int BUFFER_INITIAL_CAPACITY = 128;
     // region extra-fields
-    final byte nullValue;
     // endregion extra-fields
 
     protected class Context extends BaseDoubleUpdateByOperator.Context {
-        protected ByteChunk<? extends Values> byteInfluencerValuesChunk;
-        protected ByteRingBuffer byteWindowValues;
+        protected CharChunk<? extends Values> charInfluencerValuesChunk;
+        protected CharRingBuffer charWindowValues;
 
         protected Context(final int chunkSize) {
             super(chunkSize);
-            byteWindowValues = new ByteRingBuffer(BUFFER_INITIAL_CAPACITY, true);
+            charWindowValues = new CharRingBuffer(BUFFER_INITIAL_CAPACITY, true);
         }
 
         @Override
         public void close() {
             super.close();
-            byteWindowValues = null;
+            charWindowValues = null;
         }
 
         @Override
         public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            byteInfluencerValuesChunk = valuesChunk.asByteChunk();
+            charInfluencerValuesChunk = valuesChunk.asCharChunk();
         }
 
         @Override
         public void push(int pos, int count) {
-            byteWindowValues.ensureRemaining(count);
+            charWindowValues.ensureRemaining(count);
 
             for (int ii = 0; ii < count; ii++) {
-                final byte val = byteInfluencerValuesChunk.get(pos + ii);
-                byteWindowValues.addUnsafe(val);
+                final char val = charInfluencerValuesChunk.get(pos + ii);
+                charWindowValues.addUnsafe(val);
 
                 // increase the running sum
-                if (val != nullValue) {
+                if (val != NULL_CHAR) {
                     if (curVal == NULL_DOUBLE) {
                         curVal = val;
                     } else {
@@ -68,13 +62,13 @@ public class ByteRollingAvgOperator extends BaseDoubleUpdateByOperator {
 
         @Override
         public void pop(int count) {
-            Assert.geq(byteWindowValues.size(), "byteWindowValues.size()", count);
+            Assert.geq(charWindowValues.size(), "charWindowValues.size()", count);
 
             for (int ii = 0; ii < count; ii++) {
-                byte val = byteWindowValues.removeUnsafe();
+                char val = charWindowValues.removeUnsafe();
 
                 // reduce the running sum
-                if (val != nullValue) {
+                if (val != NULL_CHAR) {
                     curVal -= val;
                 } else {
                     nullCount--;
@@ -84,10 +78,10 @@ public class ByteRollingAvgOperator extends BaseDoubleUpdateByOperator {
 
         @Override
         public void writeToOutputChunk(int outIdx) {
-            if (byteWindowValues.size() == 0) {
+            if (charWindowValues.size() == 0) {
                 outputValues.set(outIdx, NULL_DOUBLE);
             } else {
-                final int count = byteWindowValues.size() - nullCount;
+                final int count = charWindowValues.size() - nullCount;
                 outputValues.set(outIdx, curVal / (double)count);
             }
         }
@@ -95,7 +89,7 @@ public class ByteRollingAvgOperator extends BaseDoubleUpdateByOperator {
         @Override
         public void reset() {
             super.reset();
-            byteWindowValues.clear();
+            charWindowValues.clear();
         }
     }
 
@@ -105,19 +99,17 @@ public class ByteRollingAvgOperator extends BaseDoubleUpdateByOperator {
         return new Context(chunkSize);
     }
 
-    public ByteRollingAvgOperator(@NotNull final MatchPair pair,
+    public CharRollingAvgOperator(@NotNull final MatchPair pair,
                                   @NotNull final String[] affectingColumns,
                                   @Nullable final RowRedirection rowRedirection,
                                   @Nullable final String timestampColumnName,
                                   final long reverseWindowScaleUnits,
                                   final long forwardWindowScaleUnits
                                   // region extra-constructor-args
-                               ,final byte nullValue
                                   // endregion extra-constructor-args
     ) {
         super(pair, affectingColumns, rowRedirection, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true);
         // region constructor
-        this.nullValue = nullValue;
         // endregion constructor
     }
 }
