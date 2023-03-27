@@ -33,10 +33,7 @@ public class GenericRecordObjectFieldCopier extends GenericRecordFieldCopier {
         for (int ii = 0; ii < length; ++ii) {
             final GenericRecord record = (GenericRecord) inputChunk.get(ii + sourceOffset);
             final Object value = GenericRecordUtil.getPath(record, fieldPath);
-            if (value != null && !dataType.isInstance(value)) {
-                throw new IllegalStateException(String.format("Unexpected value type %s, expected instance of %s", value.getClass(), dataType));
-            }
-            output.set(ii + destOffset, value);
+            output.set(ii + destOffset, dataType.cast(value));
         }
     }
 }
