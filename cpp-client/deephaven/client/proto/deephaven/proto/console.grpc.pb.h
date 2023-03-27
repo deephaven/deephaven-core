@@ -110,6 +110,13 @@ class ConsoleService final {
     std::unique_ptr< ::grpc::ClientAsyncReaderWriterInterface< ::io::deephaven::proto::backplane::script::grpc::AutoCompleteRequest, ::io::deephaven::proto::backplane::script::grpc::AutoCompleteResponse>> PrepareAsyncAutoCompleteStream(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncReaderWriterInterface< ::io::deephaven::proto::backplane::script::grpc::AutoCompleteRequest, ::io::deephaven::proto::backplane::script::grpc::AutoCompleteResponse>>(PrepareAsyncAutoCompleteStreamRaw(context, cq));
     }
+    virtual ::grpc::Status CancelAutoComplete(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteRequest& request, ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteResponse* response) = 0;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteResponse>> AsyncCancelAutoComplete(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteResponse>>(AsyncCancelAutoCompleteRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteResponse>> PrepareAsyncCancelAutoComplete(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteResponse>>(PrepareAsyncCancelAutoCompleteRaw(context, request, cq));
+    }
     //
     // Half of the browser-based (browser's can't do bidirectional streams without websockets)
     // implementation for AutoCompleteStream.
@@ -153,6 +160,8 @@ class ConsoleService final {
       // be closed as well. A given document should only be edited within one stream at a
       // time.
       virtual void AutoCompleteStream(::grpc::ClientContext* context, ::grpc::ClientBidiReactor< ::io::deephaven::proto::backplane::script::grpc::AutoCompleteRequest,::io::deephaven::proto::backplane::script::grpc::AutoCompleteResponse>* reactor) = 0;
+      virtual void CancelAutoComplete(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteRequest* request, ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteResponse* response, std::function<void(::grpc::Status)>) = 0;
+      virtual void CancelAutoComplete(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteRequest* request, ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteResponse* response, ::grpc::ClientUnaryReactor* reactor) = 0;
       //
       // Half of the browser-based (browser's can't do bidirectional streams without websockets)
       // implementation for AutoCompleteStream.
@@ -184,6 +193,8 @@ class ConsoleService final {
     virtual ::grpc::ClientReaderWriterInterface< ::io::deephaven::proto::backplane::script::grpc::AutoCompleteRequest, ::io::deephaven::proto::backplane::script::grpc::AutoCompleteResponse>* AutoCompleteStreamRaw(::grpc::ClientContext* context) = 0;
     virtual ::grpc::ClientAsyncReaderWriterInterface< ::io::deephaven::proto::backplane::script::grpc::AutoCompleteRequest, ::io::deephaven::proto::backplane::script::grpc::AutoCompleteResponse>* AsyncAutoCompleteStreamRaw(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq, void* tag) = 0;
     virtual ::grpc::ClientAsyncReaderWriterInterface< ::io::deephaven::proto::backplane::script::grpc::AutoCompleteRequest, ::io::deephaven::proto::backplane::script::grpc::AutoCompleteResponse>* PrepareAsyncAutoCompleteStreamRaw(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteResponse>* AsyncCancelAutoCompleteRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteRequest& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteResponse>* PrepareAsyncCancelAutoCompleteRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteRequest& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientReaderInterface< ::io::deephaven::proto::backplane::script::grpc::AutoCompleteResponse>* OpenAutoCompleteStreamRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::script::grpc::AutoCompleteRequest& request) = 0;
     virtual ::grpc::ClientAsyncReaderInterface< ::io::deephaven::proto::backplane::script::grpc::AutoCompleteResponse>* AsyncOpenAutoCompleteStreamRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::script::grpc::AutoCompleteRequest& request, ::grpc::CompletionQueue* cq, void* tag) = 0;
     virtual ::grpc::ClientAsyncReaderInterface< ::io::deephaven::proto::backplane::script::grpc::AutoCompleteResponse>* PrepareAsyncOpenAutoCompleteStreamRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::script::grpc::AutoCompleteRequest& request, ::grpc::CompletionQueue* cq) = 0;
@@ -253,6 +264,13 @@ class ConsoleService final {
     std::unique_ptr<  ::grpc::ClientAsyncReaderWriter< ::io::deephaven::proto::backplane::script::grpc::AutoCompleteRequest, ::io::deephaven::proto::backplane::script::grpc::AutoCompleteResponse>> PrepareAsyncAutoCompleteStream(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncReaderWriter< ::io::deephaven::proto::backplane::script::grpc::AutoCompleteRequest, ::io::deephaven::proto::backplane::script::grpc::AutoCompleteResponse>>(PrepareAsyncAutoCompleteStreamRaw(context, cq));
     }
+    ::grpc::Status CancelAutoComplete(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteRequest& request, ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteResponse* response) override;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteResponse>> AsyncCancelAutoComplete(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteResponse>>(AsyncCancelAutoCompleteRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteResponse>> PrepareAsyncCancelAutoComplete(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteResponse>>(PrepareAsyncCancelAutoCompleteRaw(context, request, cq));
+    }
     std::unique_ptr< ::grpc::ClientReader< ::io::deephaven::proto::backplane::script::grpc::AutoCompleteResponse>> OpenAutoCompleteStream(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::script::grpc::AutoCompleteRequest& request) {
       return std::unique_ptr< ::grpc::ClientReader< ::io::deephaven::proto::backplane::script::grpc::AutoCompleteResponse>>(OpenAutoCompleteStreamRaw(context, request));
     }
@@ -286,6 +304,8 @@ class ConsoleService final {
       void BindTableToVariable(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::script::grpc::BindTableToVariableRequest* request, ::io::deephaven::proto::backplane::script::grpc::BindTableToVariableResponse* response, std::function<void(::grpc::Status)>) override;
       void BindTableToVariable(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::script::grpc::BindTableToVariableRequest* request, ::io::deephaven::proto::backplane::script::grpc::BindTableToVariableResponse* response, ::grpc::ClientUnaryReactor* reactor) override;
       void AutoCompleteStream(::grpc::ClientContext* context, ::grpc::ClientBidiReactor< ::io::deephaven::proto::backplane::script::grpc::AutoCompleteRequest,::io::deephaven::proto::backplane::script::grpc::AutoCompleteResponse>* reactor) override;
+      void CancelAutoComplete(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteRequest* request, ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteResponse* response, std::function<void(::grpc::Status)>) override;
+      void CancelAutoComplete(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteRequest* request, ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteResponse* response, ::grpc::ClientUnaryReactor* reactor) override;
       void OpenAutoCompleteStream(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::script::grpc::AutoCompleteRequest* request, ::grpc::ClientReadReactor< ::io::deephaven::proto::backplane::script::grpc::AutoCompleteResponse>* reactor) override;
       void NextAutoCompleteStream(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::script::grpc::AutoCompleteRequest* request, ::io::deephaven::proto::backplane::script::grpc::BrowserNextResponse* response, std::function<void(::grpc::Status)>) override;
       void NextAutoCompleteStream(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::script::grpc::AutoCompleteRequest* request, ::io::deephaven::proto::backplane::script::grpc::BrowserNextResponse* response, ::grpc::ClientUnaryReactor* reactor) override;
@@ -318,6 +338,8 @@ class ConsoleService final {
     ::grpc::ClientReaderWriter< ::io::deephaven::proto::backplane::script::grpc::AutoCompleteRequest, ::io::deephaven::proto::backplane::script::grpc::AutoCompleteResponse>* AutoCompleteStreamRaw(::grpc::ClientContext* context) override;
     ::grpc::ClientAsyncReaderWriter< ::io::deephaven::proto::backplane::script::grpc::AutoCompleteRequest, ::io::deephaven::proto::backplane::script::grpc::AutoCompleteResponse>* AsyncAutoCompleteStreamRaw(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq, void* tag) override;
     ::grpc::ClientAsyncReaderWriter< ::io::deephaven::proto::backplane::script::grpc::AutoCompleteRequest, ::io::deephaven::proto::backplane::script::grpc::AutoCompleteResponse>* PrepareAsyncAutoCompleteStreamRaw(::grpc::ClientContext* context, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteResponse>* AsyncCancelAutoCompleteRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteRequest& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteResponse>* PrepareAsyncCancelAutoCompleteRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteRequest& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientReader< ::io::deephaven::proto::backplane::script::grpc::AutoCompleteResponse>* OpenAutoCompleteStreamRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::script::grpc::AutoCompleteRequest& request) override;
     ::grpc::ClientAsyncReader< ::io::deephaven::proto::backplane::script::grpc::AutoCompleteResponse>* AsyncOpenAutoCompleteStreamRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::script::grpc::AutoCompleteRequest& request, ::grpc::CompletionQueue* cq, void* tag) override;
     ::grpc::ClientAsyncReader< ::io::deephaven::proto::backplane::script::grpc::AutoCompleteResponse>* PrepareAsyncOpenAutoCompleteStreamRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::script::grpc::AutoCompleteRequest& request, ::grpc::CompletionQueue* cq) override;
@@ -331,6 +353,7 @@ class ConsoleService final {
     const ::grpc::internal::RpcMethod rpcmethod_CancelCommand_;
     const ::grpc::internal::RpcMethod rpcmethod_BindTableToVariable_;
     const ::grpc::internal::RpcMethod rpcmethod_AutoCompleteStream_;
+    const ::grpc::internal::RpcMethod rpcmethod_CancelAutoComplete_;
     const ::grpc::internal::RpcMethod rpcmethod_OpenAutoCompleteStream_;
     const ::grpc::internal::RpcMethod rpcmethod_NextAutoCompleteStream_;
   };
@@ -353,6 +376,7 @@ class ConsoleService final {
     // be closed as well. A given document should only be edited within one stream at a
     // time.
     virtual ::grpc::Status AutoCompleteStream(::grpc::ServerContext* context, ::grpc::ServerReaderWriter< ::io::deephaven::proto::backplane::script::grpc::AutoCompleteResponse, ::io::deephaven::proto::backplane::script::grpc::AutoCompleteRequest>* stream);
+    virtual ::grpc::Status CancelAutoComplete(::grpc::ServerContext* context, const ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteRequest* request, ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteResponse* response);
     //
     // Half of the browser-based (browser's can't do bidirectional streams without websockets)
     // implementation for AutoCompleteStream.
@@ -522,12 +546,32 @@ class ConsoleService final {
     }
   };
   template <class BaseClass>
+  class WithAsyncMethod_CancelAutoComplete : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithAsyncMethod_CancelAutoComplete() {
+      ::grpc::Service::MarkMethodAsync(8);
+    }
+    ~WithAsyncMethod_CancelAutoComplete() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status CancelAutoComplete(::grpc::ServerContext* /*context*/, const ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteRequest* /*request*/, ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestCancelAutoComplete(::grpc::ServerContext* context, ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteRequest* request, ::grpc::ServerAsyncResponseWriter< ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteResponse>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(8, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  template <class BaseClass>
   class WithAsyncMethod_OpenAutoCompleteStream : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_OpenAutoCompleteStream() {
-      ::grpc::Service::MarkMethodAsync(8);
+      ::grpc::Service::MarkMethodAsync(9);
     }
     ~WithAsyncMethod_OpenAutoCompleteStream() override {
       BaseClassMustBeDerivedFromService(this);
@@ -538,7 +582,7 @@ class ConsoleService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestOpenAutoCompleteStream(::grpc::ServerContext* context, ::io::deephaven::proto::backplane::script::grpc::AutoCompleteRequest* request, ::grpc::ServerAsyncWriter< ::io::deephaven::proto::backplane::script::grpc::AutoCompleteResponse>* writer, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncServerStreaming(8, context, request, writer, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncServerStreaming(9, context, request, writer, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -547,7 +591,7 @@ class ConsoleService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_NextAutoCompleteStream() {
-      ::grpc::Service::MarkMethodAsync(9);
+      ::grpc::Service::MarkMethodAsync(10);
     }
     ~WithAsyncMethod_NextAutoCompleteStream() override {
       BaseClassMustBeDerivedFromService(this);
@@ -558,10 +602,10 @@ class ConsoleService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestNextAutoCompleteStream(::grpc::ServerContext* context, ::io::deephaven::proto::backplane::script::grpc::AutoCompleteRequest* request, ::grpc::ServerAsyncResponseWriter< ::io::deephaven::proto::backplane::script::grpc::BrowserNextResponse>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(9, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(10, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
-  typedef WithAsyncMethod_GetConsoleTypes<WithAsyncMethod_StartConsole<WithAsyncMethod_GetHeapInfo<WithAsyncMethod_SubscribeToLogs<WithAsyncMethod_ExecuteCommand<WithAsyncMethod_CancelCommand<WithAsyncMethod_BindTableToVariable<WithAsyncMethod_AutoCompleteStream<WithAsyncMethod_OpenAutoCompleteStream<WithAsyncMethod_NextAutoCompleteStream<Service > > > > > > > > > > AsyncService;
+  typedef WithAsyncMethod_GetConsoleTypes<WithAsyncMethod_StartConsole<WithAsyncMethod_GetHeapInfo<WithAsyncMethod_SubscribeToLogs<WithAsyncMethod_ExecuteCommand<WithAsyncMethod_CancelCommand<WithAsyncMethod_BindTableToVariable<WithAsyncMethod_AutoCompleteStream<WithAsyncMethod_CancelAutoComplete<WithAsyncMethod_OpenAutoCompleteStream<WithAsyncMethod_NextAutoCompleteStream<Service > > > > > > > > > > > AsyncService;
   template <class BaseClass>
   class WithCallbackMethod_GetConsoleTypes : public BaseClass {
    private:
@@ -770,12 +814,39 @@ class ConsoleService final {
       { return nullptr; }
   };
   template <class BaseClass>
+  class WithCallbackMethod_CancelAutoComplete : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithCallbackMethod_CancelAutoComplete() {
+      ::grpc::Service::MarkMethodCallback(8,
+          new ::grpc::internal::CallbackUnaryHandler< ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteRequest, ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteResponse>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteRequest* request, ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteResponse* response) { return this->CancelAutoComplete(context, request, response); }));}
+    void SetMessageAllocatorFor_CancelAutoComplete(
+        ::grpc::MessageAllocator< ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteRequest, ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteResponse>* allocator) {
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(8);
+      static_cast<::grpc::internal::CallbackUnaryHandler< ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteRequest, ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteResponse>*>(handler)
+              ->SetMessageAllocator(allocator);
+    }
+    ~WithCallbackMethod_CancelAutoComplete() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status CancelAutoComplete(::grpc::ServerContext* /*context*/, const ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteRequest* /*request*/, ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* CancelAutoComplete(
+      ::grpc::CallbackServerContext* /*context*/, const ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteRequest* /*request*/, ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteResponse* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
   class WithCallbackMethod_OpenAutoCompleteStream : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithCallbackMethod_OpenAutoCompleteStream() {
-      ::grpc::Service::MarkMethodCallback(8,
+      ::grpc::Service::MarkMethodCallback(9,
           new ::grpc::internal::CallbackServerStreamingHandler< ::io::deephaven::proto::backplane::script::grpc::AutoCompleteRequest, ::io::deephaven::proto::backplane::script::grpc::AutoCompleteResponse>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::io::deephaven::proto::backplane::script::grpc::AutoCompleteRequest* request) { return this->OpenAutoCompleteStream(context, request); }));
@@ -797,13 +868,13 @@ class ConsoleService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithCallbackMethod_NextAutoCompleteStream() {
-      ::grpc::Service::MarkMethodCallback(9,
+      ::grpc::Service::MarkMethodCallback(10,
           new ::grpc::internal::CallbackUnaryHandler< ::io::deephaven::proto::backplane::script::grpc::AutoCompleteRequest, ::io::deephaven::proto::backplane::script::grpc::BrowserNextResponse>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::io::deephaven::proto::backplane::script::grpc::AutoCompleteRequest* request, ::io::deephaven::proto::backplane::script::grpc::BrowserNextResponse* response) { return this->NextAutoCompleteStream(context, request, response); }));}
     void SetMessageAllocatorFor_NextAutoCompleteStream(
         ::grpc::MessageAllocator< ::io::deephaven::proto::backplane::script::grpc::AutoCompleteRequest, ::io::deephaven::proto::backplane::script::grpc::BrowserNextResponse>* allocator) {
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(9);
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(10);
       static_cast<::grpc::internal::CallbackUnaryHandler< ::io::deephaven::proto::backplane::script::grpc::AutoCompleteRequest, ::io::deephaven::proto::backplane::script::grpc::BrowserNextResponse>*>(handler)
               ->SetMessageAllocator(allocator);
     }
@@ -818,7 +889,7 @@ class ConsoleService final {
     virtual ::grpc::ServerUnaryReactor* NextAutoCompleteStream(
       ::grpc::CallbackServerContext* /*context*/, const ::io::deephaven::proto::backplane::script::grpc::AutoCompleteRequest* /*request*/, ::io::deephaven::proto::backplane::script::grpc::BrowserNextResponse* /*response*/)  { return nullptr; }
   };
-  typedef WithCallbackMethod_GetConsoleTypes<WithCallbackMethod_StartConsole<WithCallbackMethod_GetHeapInfo<WithCallbackMethod_SubscribeToLogs<WithCallbackMethod_ExecuteCommand<WithCallbackMethod_CancelCommand<WithCallbackMethod_BindTableToVariable<WithCallbackMethod_AutoCompleteStream<WithCallbackMethod_OpenAutoCompleteStream<WithCallbackMethod_NextAutoCompleteStream<Service > > > > > > > > > > CallbackService;
+  typedef WithCallbackMethod_GetConsoleTypes<WithCallbackMethod_StartConsole<WithCallbackMethod_GetHeapInfo<WithCallbackMethod_SubscribeToLogs<WithCallbackMethod_ExecuteCommand<WithCallbackMethod_CancelCommand<WithCallbackMethod_BindTableToVariable<WithCallbackMethod_AutoCompleteStream<WithCallbackMethod_CancelAutoComplete<WithCallbackMethod_OpenAutoCompleteStream<WithCallbackMethod_NextAutoCompleteStream<Service > > > > > > > > > > > CallbackService;
   typedef CallbackService ExperimentalCallbackService;
   template <class BaseClass>
   class WithGenericMethod_GetConsoleTypes : public BaseClass {
@@ -957,12 +1028,29 @@ class ConsoleService final {
     }
   };
   template <class BaseClass>
+  class WithGenericMethod_CancelAutoComplete : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithGenericMethod_CancelAutoComplete() {
+      ::grpc::Service::MarkMethodGeneric(8);
+    }
+    ~WithGenericMethod_CancelAutoComplete() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status CancelAutoComplete(::grpc::ServerContext* /*context*/, const ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteRequest* /*request*/, ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+  };
+  template <class BaseClass>
   class WithGenericMethod_OpenAutoCompleteStream : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_OpenAutoCompleteStream() {
-      ::grpc::Service::MarkMethodGeneric(8);
+      ::grpc::Service::MarkMethodGeneric(9);
     }
     ~WithGenericMethod_OpenAutoCompleteStream() override {
       BaseClassMustBeDerivedFromService(this);
@@ -979,7 +1067,7 @@ class ConsoleService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_NextAutoCompleteStream() {
-      ::grpc::Service::MarkMethodGeneric(9);
+      ::grpc::Service::MarkMethodGeneric(10);
     }
     ~WithGenericMethod_NextAutoCompleteStream() override {
       BaseClassMustBeDerivedFromService(this);
@@ -1151,12 +1239,32 @@ class ConsoleService final {
     }
   };
   template <class BaseClass>
+  class WithRawMethod_CancelAutoComplete : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawMethod_CancelAutoComplete() {
+      ::grpc::Service::MarkMethodRaw(8);
+    }
+    ~WithRawMethod_CancelAutoComplete() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status CancelAutoComplete(::grpc::ServerContext* /*context*/, const ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteRequest* /*request*/, ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestCancelAutoComplete(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(8, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  template <class BaseClass>
   class WithRawMethod_OpenAutoCompleteStream : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_OpenAutoCompleteStream() {
-      ::grpc::Service::MarkMethodRaw(8);
+      ::grpc::Service::MarkMethodRaw(9);
     }
     ~WithRawMethod_OpenAutoCompleteStream() override {
       BaseClassMustBeDerivedFromService(this);
@@ -1167,7 +1275,7 @@ class ConsoleService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestOpenAutoCompleteStream(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncWriter< ::grpc::ByteBuffer>* writer, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncServerStreaming(8, context, request, writer, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncServerStreaming(9, context, request, writer, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -1176,7 +1284,7 @@ class ConsoleService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_NextAutoCompleteStream() {
-      ::grpc::Service::MarkMethodRaw(9);
+      ::grpc::Service::MarkMethodRaw(10);
     }
     ~WithRawMethod_NextAutoCompleteStream() override {
       BaseClassMustBeDerivedFromService(this);
@@ -1187,7 +1295,7 @@ class ConsoleService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestNextAutoCompleteStream(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(9, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(10, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -1368,12 +1476,34 @@ class ConsoleService final {
       { return nullptr; }
   };
   template <class BaseClass>
+  class WithRawCallbackMethod_CancelAutoComplete : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawCallbackMethod_CancelAutoComplete() {
+      ::grpc::Service::MarkMethodRawCallback(8,
+          new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
+            [this](
+                   ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->CancelAutoComplete(context, request, response); }));
+    }
+    ~WithRawCallbackMethod_CancelAutoComplete() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status CancelAutoComplete(::grpc::ServerContext* /*context*/, const ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteRequest* /*request*/, ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    virtual ::grpc::ServerUnaryReactor* CancelAutoComplete(
+      ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)  { return nullptr; }
+  };
+  template <class BaseClass>
   class WithRawCallbackMethod_OpenAutoCompleteStream : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawCallbackMethod_OpenAutoCompleteStream() {
-      ::grpc::Service::MarkMethodRawCallback(8,
+      ::grpc::Service::MarkMethodRawCallback(9,
           new ::grpc::internal::CallbackServerStreamingHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
                    ::grpc::CallbackServerContext* context, const::grpc::ByteBuffer* request) { return this->OpenAutoCompleteStream(context, request); }));
@@ -1395,7 +1525,7 @@ class ConsoleService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawCallbackMethod_NextAutoCompleteStream() {
-      ::grpc::Service::MarkMethodRawCallback(9,
+      ::grpc::Service::MarkMethodRawCallback(10,
           new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
                    ::grpc::CallbackServerContext* context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->NextAutoCompleteStream(context, request, response); }));
@@ -1574,12 +1704,39 @@ class ConsoleService final {
     virtual ::grpc::Status StreamedBindTableToVariable(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::io::deephaven::proto::backplane::script::grpc::BindTableToVariableRequest,::io::deephaven::proto::backplane::script::grpc::BindTableToVariableResponse>* server_unary_streamer) = 0;
   };
   template <class BaseClass>
+  class WithStreamedUnaryMethod_CancelAutoComplete : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithStreamedUnaryMethod_CancelAutoComplete() {
+      ::grpc::Service::MarkMethodStreamed(8,
+        new ::grpc::internal::StreamedUnaryHandler<
+          ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteRequest, ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteResponse>(
+            [this](::grpc::ServerContext* context,
+                   ::grpc::ServerUnaryStreamer<
+                     ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteRequest, ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteResponse>* streamer) {
+                       return this->StreamedCancelAutoComplete(context,
+                         streamer);
+                  }));
+    }
+    ~WithStreamedUnaryMethod_CancelAutoComplete() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable regular version of this method
+    ::grpc::Status CancelAutoComplete(::grpc::ServerContext* /*context*/, const ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteRequest* /*request*/, ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    // replace default version of method with streamed unary
+    virtual ::grpc::Status StreamedCancelAutoComplete(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteRequest,::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteResponse>* server_unary_streamer) = 0;
+  };
+  template <class BaseClass>
   class WithStreamedUnaryMethod_NextAutoCompleteStream : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_NextAutoCompleteStream() {
-      ::grpc::Service::MarkMethodStreamed(9,
+      ::grpc::Service::MarkMethodStreamed(10,
         new ::grpc::internal::StreamedUnaryHandler<
           ::io::deephaven::proto::backplane::script::grpc::AutoCompleteRequest, ::io::deephaven::proto::backplane::script::grpc::BrowserNextResponse>(
             [this](::grpc::ServerContext* context,
@@ -1600,7 +1757,7 @@ class ConsoleService final {
     // replace default version of method with streamed unary
     virtual ::grpc::Status StreamedNextAutoCompleteStream(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::io::deephaven::proto::backplane::script::grpc::AutoCompleteRequest,::io::deephaven::proto::backplane::script::grpc::BrowserNextResponse>* server_unary_streamer) = 0;
   };
-  typedef WithStreamedUnaryMethod_GetConsoleTypes<WithStreamedUnaryMethod_StartConsole<WithStreamedUnaryMethod_GetHeapInfo<WithStreamedUnaryMethod_ExecuteCommand<WithStreamedUnaryMethod_CancelCommand<WithStreamedUnaryMethod_BindTableToVariable<WithStreamedUnaryMethod_NextAutoCompleteStream<Service > > > > > > > StreamedUnaryService;
+  typedef WithStreamedUnaryMethod_GetConsoleTypes<WithStreamedUnaryMethod_StartConsole<WithStreamedUnaryMethod_GetHeapInfo<WithStreamedUnaryMethod_ExecuteCommand<WithStreamedUnaryMethod_CancelCommand<WithStreamedUnaryMethod_BindTableToVariable<WithStreamedUnaryMethod_CancelAutoComplete<WithStreamedUnaryMethod_NextAutoCompleteStream<Service > > > > > > > > StreamedUnaryService;
   template <class BaseClass>
   class WithSplitStreamingMethod_SubscribeToLogs : public BaseClass {
    private:
@@ -1634,7 +1791,7 @@ class ConsoleService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithSplitStreamingMethod_OpenAutoCompleteStream() {
-      ::grpc::Service::MarkMethodStreamed(8,
+      ::grpc::Service::MarkMethodStreamed(9,
         new ::grpc::internal::SplitServerStreamingHandler<
           ::io::deephaven::proto::backplane::script::grpc::AutoCompleteRequest, ::io::deephaven::proto::backplane::script::grpc::AutoCompleteResponse>(
             [this](::grpc::ServerContext* context,
@@ -1656,7 +1813,7 @@ class ConsoleService final {
     virtual ::grpc::Status StreamedOpenAutoCompleteStream(::grpc::ServerContext* context, ::grpc::ServerSplitStreamer< ::io::deephaven::proto::backplane::script::grpc::AutoCompleteRequest,::io::deephaven::proto::backplane::script::grpc::AutoCompleteResponse>* server_split_streamer) = 0;
   };
   typedef WithSplitStreamingMethod_SubscribeToLogs<WithSplitStreamingMethod_OpenAutoCompleteStream<Service > > SplitStreamedService;
-  typedef WithStreamedUnaryMethod_GetConsoleTypes<WithStreamedUnaryMethod_StartConsole<WithStreamedUnaryMethod_GetHeapInfo<WithSplitStreamingMethod_SubscribeToLogs<WithStreamedUnaryMethod_ExecuteCommand<WithStreamedUnaryMethod_CancelCommand<WithStreamedUnaryMethod_BindTableToVariable<WithSplitStreamingMethod_OpenAutoCompleteStream<WithStreamedUnaryMethod_NextAutoCompleteStream<Service > > > > > > > > > StreamedService;
+  typedef WithStreamedUnaryMethod_GetConsoleTypes<WithStreamedUnaryMethod_StartConsole<WithStreamedUnaryMethod_GetHeapInfo<WithSplitStreamingMethod_SubscribeToLogs<WithStreamedUnaryMethod_ExecuteCommand<WithStreamedUnaryMethod_CancelCommand<WithStreamedUnaryMethod_BindTableToVariable<WithStreamedUnaryMethod_CancelAutoComplete<WithSplitStreamingMethod_OpenAutoCompleteStream<WithStreamedUnaryMethod_NextAutoCompleteStream<Service > > > > > > > > > > StreamedService;
 };
 
 }  // namespace grpc
