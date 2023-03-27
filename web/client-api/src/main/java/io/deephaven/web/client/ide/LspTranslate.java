@@ -4,10 +4,7 @@
 package io.deephaven.web.client.ide;
 
 import elemental2.core.JsArray;
-import io.deephaven.web.shared.ide.lsp.CompletionItem;
-import io.deephaven.web.shared.ide.lsp.DocumentRange;
-import io.deephaven.web.shared.ide.lsp.Position;
-import io.deephaven.web.shared.ide.lsp.TextEdit;
+import io.deephaven.web.shared.ide.lsp.*;
 
 /**
  * LspTranslate:
@@ -33,8 +30,8 @@ public class LspTranslate {
         if (!src.getDetail().isEmpty()) {
             item.detail = src.getDetail();
         }
-        if (!src.getDocumentation().isEmpty()) {
-            item.documentation = src.getDocumentation();
+        if (src.hasDocumentation()) {
+            item.documentation = toJs(src.getDocumentation());
         }
         if (!src.getFilterText().isEmpty()) {
             item.filterText = src.getFilterText();
@@ -80,6 +77,58 @@ public class LspTranslate {
         final Position item = new Position();
         item.line = (int) src.getLine();
         item.character = (int) src.getCharacter();
+        return item;
+    }
+
+    private static MarkupContent toJs(
+            final io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.MarkupContent src) {
+        final MarkupContent content = new MarkupContent();
+
+        content.kind = src.getKind();
+        content.value = src.getValue();
+        return content;
+    }
+
+    public static SignatureInformation toJs(
+            io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.SignatureInformation src) {
+        final SignatureInformation item = new SignatureInformation();
+        item.label = src.getLabel();
+        if (src.hasDocumentation()) {
+            item.documentation = toJs(src.getDocumentation());
+        }
+        if (src.hasActiveParameter()) {
+            item.activeParameter = src.getActiveParameter();
+        }
+
+        final JsArray<ParameterInformation> params = new JsArray<>();
+        final JsArray<io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.ParameterInformation> paramsList =
+                src.getParametersList();
+        for (int i = 0; i < paramsList.getLength(); i++) {
+            params.push(toJs(paramsList.getAt(i)));
+        }
+        item.setParameters(params);
+        return item;
+    }
+
+    private static ParameterInformation toJs(
+            final io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.ParameterInformation src) {
+        final ParameterInformation item = new ParameterInformation();
+        item.label = src.getLabel();
+        item.documentation = toJs(src.getDocumentation());
+        return item;
+    }
+
+    public static Hover toJs(
+            final io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.GetHoverResponse src) {
+        final Hover item = new Hover();
+
+        if (src.hasContents()) {
+            item.contents = toJs(src.getContents());
+        }
+        if (src.hasRange()) {
+            item.range = toJs(src.getRange());
+        }
+
         return item;
     }
 }
