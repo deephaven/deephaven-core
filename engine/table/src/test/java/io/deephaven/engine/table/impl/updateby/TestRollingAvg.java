@@ -26,6 +26,7 @@ import java.math.MathContext;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
 import java.util.function.Function;
 
@@ -82,7 +83,8 @@ public class TestRollingAvg extends BaseUpdateByTest {
         return Arrays.stream(columns)
                 .map(c -> c.equals("charCol")
                         ? String.format("%s=(short)%s", c, c)
-                        : c)
+                        : null)
+                .filter(Objects::nonNull)
                 .toArray(String[]::new);
     }
 
