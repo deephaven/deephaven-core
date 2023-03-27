@@ -47,10 +47,10 @@ public abstract class FilterAnd extends FilterBase implements Iterable<Filter> {
      * @return the inverse filter
      */
     @Override
-    public final FilterOr inverse() {
+    public final FilterOr invert() {
         final FilterOr.Builder builder = FilterOr.builder();
         for (Filter filter : filters()) {
-            builder.addFilters(filter.inverse());
+            builder.addFilters(filter.invert());
         }
         return builder.build();
     }

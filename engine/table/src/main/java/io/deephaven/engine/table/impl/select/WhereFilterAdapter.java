@@ -65,36 +65,36 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
 
     @Override
     public WhereFilter visit(FilterComparison comparison) {
-        return of(inverted ? comparison.inverse() : comparison);
+        return of(inverted ? comparison.invert() : comparison);
     }
 
     @Override
     public WhereFilter visit(FilterNot<?> not) {
-        return inverted ? of(not.inverse()) : of(not);
+        return inverted ? of(not.invert()) : of(not);
     }
 
     @Override
     public WhereFilter visit(FilterIsNull isNull) {
-        return inverted ? of(isNull.inverse()) : of(isNull);
+        return inverted ? of(isNull.invert()) : of(isNull);
     }
 
     @Override
     public WhereFilter visit(FilterIsNotNull isNotNull) {
-        return inverted ? of(isNotNull.inverse()) : of(isNotNull);
+        return inverted ? of(isNotNull.invert()) : of(isNotNull);
     }
 
     @Override
     public WhereFilter visit(FilterOr ors) {
         // !A && !B && ... && !Z
         // A || B || ... || Z
-        return inverted ? of(ors.inverse()) : of(ors);
+        return inverted ? of(ors.invert()) : of(ors);
     }
 
     @Override
     public WhereFilter visit(FilterAnd ands) {
         // !A || !B || ... || !Z
         // A && B && ... && Z
-        return inverted ? of(ands.inverse()) : of(ands);
+        return inverted ? of(ands.invert()) : of(ands);
     }
 
     @Override

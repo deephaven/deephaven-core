@@ -32,7 +32,7 @@ public abstract class FilterNot<F extends Filter> extends FilterBase {
      * @return the inverse filter
      */
     @Override
-    public final F inverse() {
+    public final F invert() {
         return filter();
     }
 
@@ -43,7 +43,7 @@ public abstract class FilterNot<F extends Filter> extends FilterBase {
      * @return the simplified filter
      */
     public final Filter simplify() {
-        return filter().inverse();
+        return filter().invert();
     }
 
     @Override

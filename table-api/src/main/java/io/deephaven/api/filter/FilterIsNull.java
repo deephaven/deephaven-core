@@ -33,7 +33,7 @@ public abstract class FilterIsNull extends FilterBase {
      * @return the inverse filter
      */
     @Override
-    public final FilterIsNotNull inverse() {
+    public final FilterIsNotNull invert() {
         return Filter.isNotNull(expression());
     }
 

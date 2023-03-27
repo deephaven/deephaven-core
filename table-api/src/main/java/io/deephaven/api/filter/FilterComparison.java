@@ -69,7 +69,7 @@ public abstract class FilterComparison extends FilterBase implements Serializabl
          *
          * @return the inverted operator
          */
-        public Operator inverse() {
+        public Operator invert() {
             switch (this) {
                 case LESS_THAN:
                     return GREATER_THAN_OR_EQUAL;
@@ -203,8 +203,8 @@ public abstract class FilterComparison extends FilterBase implements Serializabl
      * @return the inverted filter
      */
     @Override
-    public final FilterComparison inverse() {
-        return operator().inverse().of(lhs(), rhs());
+    public final FilterComparison invert() {
+        return operator().invert().of(lhs(), rhs());
     }
 
     @Override

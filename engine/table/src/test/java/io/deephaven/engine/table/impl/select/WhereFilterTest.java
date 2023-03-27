@@ -209,6 +209,6 @@ public class WhereFilterTest extends TestCase {
 
     private static void opposite(Filter filter, Class<? extends WhereFilter> clazz, String expected) {
         expect(Filter.not(filter), clazz, expected);
-        expect(filter.inverse(), clazz, expected);
+        expect(filter.invert(), clazz, expected);
     }
 }

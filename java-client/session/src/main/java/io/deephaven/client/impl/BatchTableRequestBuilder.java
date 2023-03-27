@@ -68,6 +68,7 @@ import io.deephaven.proto.backplane.grpc.TimeTableRequest;
 import io.deephaven.proto.backplane.grpc.UngroupRequest;
 import io.deephaven.proto.backplane.grpc.UnstructuredFilterTableRequest;
 import io.deephaven.proto.backplane.grpc.UpdateByRequest;
+import io.deephaven.proto.backplane.grpc.Value;
 import io.deephaven.proto.backplane.grpc.WhereInRequest;
 import io.deephaven.proto.util.ExportTicketHelper;
 import io.deephaven.qst.table.AggregateAllTable;
@@ -114,7 +115,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
@@ -565,51 +565,54 @@ class BatchTableRequestBuilder {
         return io.deephaven.proto.backplane.grpc.Literal.newBuilder().setBoolValue(x).build();
     }
 
-    static class ExpressionAdapter implements Expression.Visitor<io.deephaven.proto.backplane.grpc.Value>,
-            Literal.Visitor<io.deephaven.proto.backplane.grpc.Value> {
-        static io.deephaven.proto.backplane.grpc.Value adapt(Expression expression) {
+    static class ExpressionAdapter implements Expression.Visitor<Value>, Literal.Visitor<Value> {
+        static Value adapt(Expression expression) {
             return expression.walk(new ExpressionAdapter());
         }
 
         @Override
-        public io.deephaven.proto.backplane.grpc.Value visit(ColumnName x) {
-            return io.deephaven.proto.backplane.grpc.Value.newBuilder().setReference(reference(x)).build();
+        public Value visit(ColumnName x) {
+            return Value.newBuilder().setReference(reference(x)).build();
         }
 
         @Override
-        public io.deephaven.proto.backplane.grpc.Value visit(int literal) {
+        public Value visit(int literal) {
+            // TODO(deephaven-core#3609): Update gRPC expression / filter / literal structures
             throw new UnsupportedOperationException("Value does not support literal int");
         }
 
         @Override
-        public io.deephaven.proto.backplane.grpc.Value visit(long literal) {
-            return io.deephaven.proto.backplane.grpc.Value.newBuilder().setLiteral(literal(literal)).build();
+        public Value visit(long literal) {
+            return Value.newBuilder().setLiteral(literal(literal)).build();
         }
 
         @Override
-        public io.deephaven.proto.backplane.grpc.Value visit(boolean literal) {
-            return io.deephaven.proto.backplane.grpc.Value.newBuilder().setLiteral(literal(literal)).build();
+        public Value visit(boolean literal) {
+            return Value.newBuilder().setLiteral(literal(literal)).build();
         }
 
         @Override
-        public io.deephaven.proto.backplane.grpc.Value visit(Literal literal) {
-            return literal.walk((Literal.Visitor<io.deephaven.proto.backplane.grpc.Value>) this);
+        public Value visit(Literal literal) {
+            return literal.walk((Literal.Visitor<Value>) this);
         }
 
         @Override
-        public io.deephaven.proto.backplane.grpc.Value visit(Filter filter) {
+        public Value visit(Filter filter) {
+            // TODO(deephaven-core#3609): Update gRPC expression / filter / literal structures
             throw new UnsupportedOperationException(
                     "Unable to create a io.deephaven.proto.backplane.grpc.Value from a Filter");
         }
 
         @Override
-        public io.deephaven.proto.backplane.grpc.Value visit(ExpressionFunction function) {
+        public Value visit(ExpressionFunction function) {
+            // TODO(deephaven-core#3609): Update gRPC expression / filter / literal structures
             throw new UnsupportedOperationException(
                     "Unable to create a io.deephaven.proto.backplane.grpc.Value from an ExpressionFunction");
         }
 
         @Override
-        public io.deephaven.proto.backplane.grpc.Value visit(RawString rawString) {
+        public Value visit(RawString rawString) {
+            // TODO(deephaven-core#3609): Update gRPC expression / filter / literal structures
             throw new UnsupportedOperationException(
                     "Unable to create a io.deephaven.proto.backplane.grpc.Value from a raw string");
         }
@@ -643,7 +646,7 @@ class BatchTableRequestBuilder {
         @Override
         public Condition visit(FilterIsNull isNull) {
             if (!(isNull.expression() instanceof ColumnName)) {
-                // todo
+                // TODO(deephaven-core#3609): Update gRPC expression / filter / literal structures
                 throw new UnsupportedOperationException("Only supports null checking a reference to a column");
             }
             return Condition.newBuilder()
@@ -654,7 +657,7 @@ class BatchTableRequestBuilder {
 
         @Override
         public Condition visit(FilterIsNotNull isNotNull) {
-            return visit(Filter.not(isNotNull.inverse()));
+            return visit(Filter.not(isNotNull.invert()));
         }
 
         @Override
@@ -700,11 +703,13 @@ class BatchTableRequestBuilder {
 
         @Override
         public Condition visit(boolean literal) {
+            // TODO(deephaven-core#3609): Update gRPC expression / filter / literal structures
             throw new UnsupportedOperationException("Can't build Condition with literal");
         }
 
         @Override
         public Condition visit(RawString rawString) {
+            // TODO(deephaven-core#3609): Update gRPC expression / filter / literal structures
             throw new UnsupportedOperationException("Can't build Condition with raw string");
         }
     }

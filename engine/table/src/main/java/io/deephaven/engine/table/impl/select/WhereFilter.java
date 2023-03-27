@@ -199,8 +199,8 @@ public interface WhereFilter extends Filter {
     // region Filter impl
 
     @Override
-    default Filter inverse() {
-        throw new UnsupportedOperationException("WhereFilters do not implement inverse");
+    default Filter invert() {
+        throw new UnsupportedOperationException("WhereFilters do not implement invert");
     }
 
     @Override

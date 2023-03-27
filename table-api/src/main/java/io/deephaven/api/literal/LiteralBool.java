@@ -21,7 +21,7 @@ abstract class LiteralBool extends LiteralBase implements LiteralFilter {
     public abstract boolean value();
 
     @Override
-    public final LiteralBool inverse() {
+    public final LiteralBool invert() {
         return of(!value());
     }
 

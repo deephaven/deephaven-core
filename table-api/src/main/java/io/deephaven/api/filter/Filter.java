@@ -113,7 +113,7 @@ public interface Filter extends Expression, Serializable {
 
     /**
      * Creates a {@link FilterNot not-filter} from {@code filter}. Callers should typically prefer
-     * {@link Filter#inverse()}, unless the "not" context needs to be preserved.
+     * {@link Filter#invert()}, unless the "not" context needs to be preserved.
      *
      * @param filter the filter
      * @return the not-filter
@@ -190,7 +190,7 @@ public interface Filter extends Expression, Serializable {
      * @return the inverse filter
      * @see #not(Filter)
      */
-    Filter inverse();
+    Filter invert();
 
     <T> T walk(Visitor<T> visitor);
 

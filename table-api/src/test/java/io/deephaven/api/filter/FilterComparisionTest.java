@@ -66,20 +66,20 @@ public class FilterComparisionTest {
     }
 
     @Test
-    void inverse() {
-        assertThat(FOO_EQ_42.inverse()).isEqualTo(FOO_NEQ_42);
-        assertThat(FOO_NEQ_42.inverse()).isEqualTo(FOO_EQ_42);
-        assertThat(FOO_GT_42.inverse()).isEqualTo(FOO_LTE_42);
-        assertThat(FOO_GTE_42.inverse()).isEqualTo(FOO_LT_42);
-        assertThat(FOO_LT_42.inverse()).isEqualTo(FOO_GTE_42);
-        assertThat(FOO_LTE_42.inverse()).isEqualTo(FOO_GT_42);
+    void invert() {
+        assertThat(FOO_EQ_42.invert()).isEqualTo(FOO_NEQ_42);
+        assertThat(FOO_NEQ_42.invert()).isEqualTo(FOO_EQ_42);
+        assertThat(FOO_GT_42.invert()).isEqualTo(FOO_LTE_42);
+        assertThat(FOO_GTE_42.invert()).isEqualTo(FOO_LT_42);
+        assertThat(FOO_LT_42.invert()).isEqualTo(FOO_GTE_42);
+        assertThat(FOO_LTE_42.invert()).isEqualTo(FOO_GT_42);
 
-        assertThat(FOO_EQ_E42.inverse()).isEqualTo(FOO_NEQ_E42);
-        assertThat(FOO_NEQ_E42.inverse()).isEqualTo(FOO_EQ_E42);
-        assertThat(FOO_GT_E42.inverse()).isEqualTo(FOO_LTE_E42);
-        assertThat(FOO_GTE_E42.inverse()).isEqualTo(FOO_LT_E42);
-        assertThat(FOO_LT_E42.inverse()).isEqualTo(FOO_GTE_E42);
-        assertThat(FOO_LTE_E42.inverse()).isEqualTo(FOO_GT_E42);
+        assertThat(FOO_EQ_E42.invert()).isEqualTo(FOO_NEQ_E42);
+        assertThat(FOO_NEQ_E42.invert()).isEqualTo(FOO_EQ_E42);
+        assertThat(FOO_GT_E42.invert()).isEqualTo(FOO_LTE_E42);
+        assertThat(FOO_GTE_E42.invert()).isEqualTo(FOO_LT_E42);
+        assertThat(FOO_LT_E42.invert()).isEqualTo(FOO_GTE_E42);
+        assertThat(FOO_LTE_E42.invert()).isEqualTo(FOO_GT_E42);
     }
 
     @Test
@@ -129,6 +129,6 @@ public class FilterComparisionTest {
         assertThat(comparison.operator()).isEqualTo(operator);
         assertThat(comparison.rhs()).isEqualTo(rhs);
         assertThat(Strings.of(comparison)).isEqualTo(expected);
-        assertThat(comparison.inverse()).isEqualTo(expectedInverse);
+        assertThat(comparison.invert()).isEqualTo(expectedInverse);
     }
 }
