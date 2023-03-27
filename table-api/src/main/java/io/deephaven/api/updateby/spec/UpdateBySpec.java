@@ -62,19 +62,22 @@ public interface UpdateBySpec {
     <T> T walk(Visitor<T> visitor);
 
     interface Visitor<T> {
-        T visit(EmaSpec ema);
+        T visit(EmaSpec es);
 
-        T visit(FillBySpec f);
+        T visit(FillBySpec fbs);
 
-        T visit(CumSumSpec c);
+        T visit(CumSumSpec css);
 
-        T visit(CumMinMaxSpec m);
+        T visit(CumMinMaxSpec cmms);
 
-        T visit(CumProdSpec p);
+        T visit(CumProdSpec cps);
 
-        T visit(RollingSumSpec p);
+        T visit(RollingSumSpec rss);
 
-        T visit(RollingGroupSpec p);
+        T visit(RollingGroupSpec rgs);
+
+        T visit(RollingProductSpec rps);
+
     }
     // endregion
 }

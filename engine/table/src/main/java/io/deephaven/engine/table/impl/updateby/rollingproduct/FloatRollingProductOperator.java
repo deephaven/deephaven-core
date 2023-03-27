@@ -1,102 +1,119 @@
 /*
  * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit FloatRollingSumOperator and regenerate
+ * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit ShortRollingProductOperator and regenerate
  * ---------------------------------------------------------------------------------------------------------------------
  */
-package io.deephaven.engine.table.impl.updateby.rollingsum;
+package io.deephaven.engine.table.impl.updateby.rollingproduct;
 
-import io.deephaven.base.ringbuffer.AggregatingDoubleRingBuffer;
+import io.deephaven.base.ringbuffer.*;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
-import io.deephaven.chunk.DoubleChunk;
+import io.deephaven.chunk.FloatChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseDoubleUpdateByOperator;
+import io.deephaven.engine.table.impl.updateby.internal.BaseLongUpdateByOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
-import static io.deephaven.util.QueryConstants.NULL_LONG;
+import java.math.BigInteger;
 
-public class DoubleRollingSumOperator extends BaseDoubleUpdateByOperator {
+import static io.deephaven.util.QueryConstants.*;
+
+public class FloatRollingProductOperator extends BaseDoubleUpdateByOperator {
     private static final int BUFFER_INITIAL_SIZE = 64;
+
     // region extra-fields
     // endregion extra-fields
 
     protected class Context extends BaseDoubleUpdateByOperator.Context {
-        protected DoubleChunk<? extends Values> doubleInfluencerValuesChunk;
-        protected AggregatingDoubleRingBuffer aggSum;
+        protected FloatChunk<? extends Values> floatInfluencerValuesChunk;
+        protected AggregatingDoubleRingBuffer buffer;
+
+        private int zeroCount;
 
         protected Context(final int chunkSize) {
             super(chunkSize);
-            aggSum = new AggregatingDoubleRingBuffer(BUFFER_INITIAL_SIZE,
-                    0,
-                    Double::sum, // tree function
+            buffer = new AggregatingDoubleRingBuffer(BUFFER_INITIAL_SIZE,
+                    1L,
+                    (a, b) -> a * b, // tree function
                     (a, b) -> { // value function
                         if (a == NULL_DOUBLE && b == NULL_DOUBLE) {
-                            return 0; // identity val
+                            return 1L; // identity val
                         } else if (a == NULL_DOUBLE) {
                             return b;
                         } else if (b == NULL_DOUBLE) {
-                            return a;
+                            return  a;
                         }
-                        return a + b;
+                        return a * b;
                     },
                     true);
+            zeroCount = 0;
         }
 
         @Override
         public void close() {
             super.close();
+            buffer = null;
         }
+
 
         @Override
         public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            doubleInfluencerValuesChunk = valuesChunk.asDoubleChunk();
+            floatInfluencerValuesChunk = valuesChunk.asFloatChunk();
         }
 
         @Override
         public void push(int pos, int count) {
-            aggSum.ensureRemaining(count);
+            buffer.ensureRemaining(count);
 
             for (int ii = 0; ii < count; ii++) {
-                double val = doubleInfluencerValuesChunk.get(pos + ii);
-                aggSum.addUnsafe(val);
+                float val = floatInfluencerValuesChunk.get(pos + ii);
 
-                if (val == NULL_DOUBLE) {
+                if (val == NULL_FLOAT) {
+                    buffer.addUnsafe(NULL_DOUBLE);
                     nullCount++;
+                } else {
+                    buffer.addUnsafe(val);
+                    if (val == 0) {
+                        zeroCount++;
+                    }
                 }
             }
         }
 
         @Override
         public void pop(int count) {
-            Assert.geq(aggSum.size(), "aggSum.size()", count);
+            Assert.geq(buffer.size(), "floatWindowValues.size()", count);
 
             for (int ii = 0; ii < count; ii++) {
-                double val = aggSum.removeUnsafe();
+                double val = buffer.removeUnsafe();
 
                 if (val == NULL_DOUBLE) {
                     nullCount--;
+                } else if (val == 0) {
+                    --zeroCount;
                 }
             }
         }
 
         @Override
         public void writeToOutputChunk(int outIdx) {
-            if (aggSum.size() == nullCount) {
+            if (buffer.size() == nullCount) {
                 outputValues.set(outIdx, NULL_DOUBLE);
+                curVal = NULL_LONG;
             } else {
-                outputValues.set(outIdx, aggSum.evaluate());
+                outputValues.set(outIdx, zeroCount > 0 ? 0.0 : buffer.evaluate());
             }
         }
 
         @Override
         public void reset() {
             super.reset();
-            aggSum.clear();
+            zeroCount = 0;
+            buffer.clear();
         }
     }
 
@@ -106,14 +123,14 @@ public class DoubleRollingSumOperator extends BaseDoubleUpdateByOperator {
         return new Context(chunkSize);
     }
 
-    public DoubleRollingSumOperator(@NotNull final MatchPair pair,
-                                   @NotNull final String[] affectingColumns,
-                                   @Nullable final RowRedirection rowRedirection,
-                                   @Nullable final String timestampColumnName,
-                                   final long reverseWindowScaleUnits,
-                                   final long forwardWindowScaleUnits
-                                   // region extra-constructor-args
-                                   // endregion extra-constructor-args
+    public FloatRollingProductOperator(@NotNull final MatchPair pair,
+                                       @NotNull final String[] affectingColumns,
+                                       @Nullable final RowRedirection rowRedirection,
+                                       @Nullable final String timestampColumnName,
+                                       final long reverseWindowScaleUnits,
+                                       final long forwardWindowScaleUnits
+                                       // region extra-constructor-args
+                                       // endregion extra-constructor-args
     ) {
         super(pair, affectingColumns, rowRedirection, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true);
         // region constructor

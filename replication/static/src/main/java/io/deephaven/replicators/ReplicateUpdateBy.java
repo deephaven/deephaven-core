@@ -99,6 +99,20 @@ public class ReplicateUpdateBy {
         replicateNumericOperator(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingsum/ShortRollingSumOperator.java",
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingsum/FloatRollingSumOperator.java");
+
+        replicateNumericOperator(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingproduct/ShortRollingProductOperator.java",
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingproduct/FloatRollingProductOperator.java");
+
+        files = ReplicatePrimitiveCode.shortToAllNumericals(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingproduct/ShortRollingProductOperator.java",
+                null);
+        for (final String f : files) {
+            if (f.contains("Integer")) {
+                fixupInteger(f);
+            }
+        }
+
     }
 
     private static void replicateNumericOperator(@NotNull final String shortClass, @NotNull final String floatClass)

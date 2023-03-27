@@ -91,6 +91,7 @@ public class ReplicateRingBuffers {
                 "Object val", "T val",
                 "Object notFullResult", "T notFullResult",
                 "Object onEmpty", "T onEmpty",
+                "ObjectFunction evalFunction", "ObjectFunction<T> evalFunction",
                 "private static Object defaultValueForThisType", "private T defaultValueForThisType",
                 "final ObjectRingBuffer internalBuffer", "final ObjectRingBuffer<T> internalBuffer",
                 "internalBuffer = new ObjectRingBuffer\\(", "internalBuffer = new ObjectRingBuffer<>(",
