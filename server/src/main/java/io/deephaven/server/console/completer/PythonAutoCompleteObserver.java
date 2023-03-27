@@ -260,7 +260,8 @@ public class PythonAutoCompleteObserver extends SessionCloseableObserver<AutoCom
             signature.get(2).asList().forEach(obj -> {
                 final List<PyObject> param = obj.asList();
                 item.addParameters(ParameterInformation.newBuilder().setLabel(param.get(0).getStringValue())
-                        .setDocumentation(MarkupContent.newBuilder().setValue(param.get(1).getStringValue()).setKind("plaintext").build()));
+                        .setDocumentation(MarkupContent.newBuilder().setValue(param.get(1).getStringValue())
+                                .setKind("plaintext").build()));
             });
 
             finalItems.add(item.build());
@@ -289,7 +290,9 @@ public class PythonAutoCompleteObserver extends SessionCloseableObserver<AutoCom
         // Monaco in the web auto-detects the word range for the hover if not set
         final List<PyObject> hover = result.asList();
 
-        return GetHoverResponse.newBuilder().setContents(MarkupContent.newBuilder().setValue(hover.get(0).getStringValue()).setKind("markdown")).build();
+        return GetHoverResponse.newBuilder()
+                .setContents(MarkupContent.newBuilder().setValue(hover.get(0).getStringValue()).setKind("markdown"))
+                .build();
     }
 
     private String toMillis(final long totalNanos) {

@@ -100,8 +100,8 @@ public class JavaAutoCompleteObserver extends SessionCloseableObserver<AutoCompl
     }
 
     private void handleAutocompleteRequest(AutoCompleteRequest request,
-                                           SessionState.ExportObject<ScriptSession> exportedConsole,
-                                           StreamObserver<AutoCompleteResponse> responseObserver) {
+            SessionState.ExportObject<ScriptSession> exportedConsole,
+            StreamObserver<AutoCompleteResponse> responseObserver) {
         // Maintain compatibility with older clients
         // The only autocomplete type supported before the consoleId was moved to the parent request was
         // GetCompletionItems
@@ -112,7 +112,8 @@ public class JavaAutoCompleteObserver extends SessionCloseableObserver<AutoCompl
 
             switch (request.getRequestCase()) {
                 case GET_COMPLETION_ITEMS: {
-                    response.setCompletionItems(getCompletionItems(request.getGetCompletionItems(), exportedConsole, parser, responseObserver));
+                    response.setCompletionItems(getCompletionItems(request.getGetCompletionItems(), exportedConsole,
+                            parser, responseObserver));
                     break;
                 }
                 case GET_SIGNATURE_HELP: {
@@ -122,7 +123,8 @@ public class JavaAutoCompleteObserver extends SessionCloseableObserver<AutoCompl
                 }
                 case GET_HOVER: {
                     // Not implemented. Return empty hover help
-                    response.setHover(GetHoverResponse.newBuilder().setContents(MarkupContent.newBuilder().build()).build());
+                    response.setHover(
+                            GetHoverResponse.newBuilder().setContents(MarkupContent.newBuilder().build()).build());
                     break;
                 }
                 case GET_DIAGNOSTIC: {
@@ -143,10 +145,10 @@ public class JavaAutoCompleteObserver extends SessionCloseableObserver<AutoCompl
                 log.trace().append("Completion canceled").append(exception).endl();
             }
             safelyOnNext(responseObserver,
-                AutoCompleteResponse.newBuilder()
-                        .setSuccess(false)
-                        .setRequestId(request.getRequestId())
-                        .build());
+                    AutoCompleteResponse.newBuilder()
+                            .setSuccess(false)
+                            .setRequestId(request.getRequestId())
+                            .build());
         } catch (Throwable exception) {
             if (ConsoleServiceGrpcImpl.QUIET_AUTOCOMPLETE_ERRORS) {
                 if (log.isTraceEnabled()) {
@@ -170,29 +172,29 @@ public class JavaAutoCompleteObserver extends SessionCloseableObserver<AutoCompl
             SessionState.ExportObject<ScriptSession> exportedConsole, CompletionParser parser,
             StreamObserver<AutoCompleteResponse> responseObserver) {
         final ScriptSession scriptSession = exportedConsole.get();
-            final VariableProvider vars = scriptSession.getVariableProvider();
-            final VersionedTextDocumentIdentifier doc = request.getTextDocument();
-            final CompletionLookups h = CompletionLookups.preload(scriptSession);
-            // The only stateful part of a completer is the CompletionLookups, which are already
-            // once-per-session-cached
-            // so, we'll just create a new completer for each request. No need to hang onto these guys.
-            final ChunkerCompleter completer = new ChunkerCompleter(log, vars, h);
+        final VariableProvider vars = scriptSession.getVariableProvider();
+        final VersionedTextDocumentIdentifier doc = request.getTextDocument();
+        final CompletionLookups h = CompletionLookups.preload(scriptSession);
+        // The only stateful part of a completer is the CompletionLookups, which are already
+        // once-per-session-cached
+        // so, we'll just create a new completer for each request. No need to hang onto these guys.
+        final ChunkerCompleter completer = new ChunkerCompleter(log, vars, h);
 
-            final ParsedDocument parsed = parser.finish(doc.getUri());
+        final ParsedDocument parsed = parser.finish(doc.getUri());
 
-            int offset = LspTools.getOffsetFromPosition(parsed.getSource(),
-                    request.getPosition());
-            final Collection<CompletionItem.Builder> results =
-                    completer.runCompletion(parsed, request.getPosition(), offset);
-            return GetCompletionItemsResponse.newBuilder()
-                            .setSuccess(true)
-                            .setRequestId(request.getRequestId())
-                            .addAllItems(results.stream().map(
-                                    // insertTextFormat is a default we used to set in constructor; for now, we'll
-                                    // just process the objects before sending back to client
-                                    item -> item.setInsertTextFormat(2).build())
-                                    .collect(Collectors.toSet()))
-                            .build();
+        int offset = LspTools.getOffsetFromPosition(parsed.getSource(),
+                request.getPosition());
+        final Collection<CompletionItem.Builder> results =
+                completer.runCompletion(parsed, request.getPosition(), offset);
+        return GetCompletionItemsResponse.newBuilder()
+                .setSuccess(true)
+                .setRequestId(request.getRequestId())
+                .addAllItems(results.stream().map(
+                        // insertTextFormat is a default we used to set in constructor; for now, we'll
+                        // just process the objects before sending back to client
+                        item -> item.setInsertTextFormat(2).build())
+                        .collect(Collectors.toSet()))
+                .build();
     }
 
     @Override
