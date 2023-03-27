@@ -12,6 +12,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.impl.*;
+import io.deephaven.engine.rowset.impl.rsp.container.ArrayContainer;
 import io.deephaven.engine.rowset.impl.rsp.container.Container;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.datastructures.LongAbortableConsumer;
@@ -4473,5 +4474,40 @@ public class RspBitmapTest {
     @Test
     public void testAndNotSimilarPrefix() {
         testBiOpSimilarPrefix(RspBitmap::andNot, (Boolean b1, Boolean b2) -> b1 && !b2);
+    }
+
+    @Test
+    public void testAndNotSimilarPrefixForCoverage() {
+        // need to cover the case of exactly the same.
+        {
+            final RspBitmap r1 = RspBitmap.makeSingleRange(10L, 20L);
+            final RspBitmap r2 = r1.deepCopy();
+            final OrderedLongSet o = r1.ixMinusOnNew(r2);
+            assertTrue(o.ixIsEmpty());
+        }
+
+        // need to cover the case of different Long spans.
+        {
+            final RspBitmap r1 = RspBitmap.makeSingleRange(10L, 10L + 3*BLOCK_SIZE);
+            RspBitmap r2 = r1.deepCopy();
+            final long lonelyLastValue = 20L + 5*BLOCK_SIZE;
+            r2 = r2.add(lonelyLastValue);
+            final OrderedLongSet o = r2.ixMinusOnNew(r1);
+            assertEquals(1, r2.ixCardinality());
+            assertEquals(lonelyLastValue, r2.first());
+        }
+    }
+
+    @Test
+    public void testRspArrayCtorBySpanRangeForCoverage() {
+        // need to cover the case of ArrayContainer as short[]
+        RspBitmap r1 = RspBitmap.makeEmpty();
+        // Trickle some values in
+        for (long x = 0; x < ArrayContainer.SWITCH_CONTAINER_CARDINALITY_THRESHOLD; ++x) {
+            r1 = r1.add(1 + 2*x);
+        }
+        final RspBitmap r2 = new RspBitmap(r1, 0, 0);
+        assertEquals(r2.ixCardinality(), r1.ixCardinality());
+        assertTrue(r2.ixMinusOnNew(r1).ixIsEmpty());
     }
 }
