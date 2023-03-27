@@ -25,18 +25,19 @@ import java.io.IOException;
 public class MemoryTableLoggers {
     private static final boolean STATS_LOGGING_ENABLED = Configuration.getInstance().getBooleanWithDefault(
             "statsLoggingEnabled", true);
-    private static final ProcessInfo processInfo;
+    private volatile static ProcessInfo processInfo;
     private volatile static MemoryTableLoggers INSTANCE;
 
-    static {
-        try {
-            processInfo = ProcessInfoConfig.createForCurrentProcess(Configuration.getInstance());
-        } catch (IOException e) {
-            throw new IllegalStateException("Failed to create process info.", e);
-        }
-    }
-
     public static ProcessInfo getProcessInfo() {
+        if (processInfo == null) {
+            synchronized (MemoryTableLoggers.class) {
+                try {
+                    processInfo = ProcessInfoConfig.createForCurrentProcess(Configuration.getInstance());
+                } catch (IOException e) {
+                    throw new IllegalStateException("Failed to create process info.", e);
+                }
+            }
+        }
         return processInfo;
     }
 
@@ -60,10 +61,12 @@ public class MemoryTableLoggers {
     private MemoryTableLoggers() {
         EngineTableLoggerProvider.Factory tableLoggerFactory = EngineTableLoggerProvider.get();
         final Logger log = LoggerFactory.getLogger(MemoryTableLoggers.class);
+        ProcessInfo pInfo = null;
         MemoryTableLoggerWrapper<ProcessInfoLogLogger> pInfoLogger = null;
         try {
+            pInfo = getProcessInfo();
             pInfoLogger = new MemoryTableLoggerWrapper<>(tableLoggerFactory.processInfoLogLogger());
-            new ProcessInfoStoreDBImpl(pInfoLogger.getTableLogger()).put(processInfo);
+            new ProcessInfoStoreDBImpl(pInfoLogger.getTableLogger()).put(pInfo);
         } catch (IOException e) {
             log.fatal().append("Failed to configure process info: ").append(e.toString()).endl();
         }
@@ -72,7 +75,7 @@ public class MemoryTableLoggers {
         qoplLogger = new MemoryTableLoggerWrapper<>(tableLoggerFactory.queryOperationPerformanceLogLogger());
         if (STATS_LOGGING_ENABLED) {
             processMetricsLogger = new MemoryTableLoggerWrapper<>(tableLoggerFactory.processMetricsLogLogger());
-            statsLogger = new StatsIntradayLoggerDBImpl(processInfo.getId(), processMetricsLogger.getTableLogger());
+            statsLogger = new StatsIntradayLoggerDBImpl(pInfo.getId(), processMetricsLogger.getTableLogger());
         } else {
             processMetricsLogger = null;
             statsLogger = null;
