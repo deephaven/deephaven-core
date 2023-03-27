@@ -27,6 +27,13 @@ public class ParquetFileReader {
     private static final int FOOTER_LENGTH_SIZE = 4;
     private static final String MAGIC_STR = "PAR1";
     static final byte[] MAGIC = MAGIC_STR.getBytes(StandardCharsets.US_ASCII);
+
+    public static class ParquetFileReaderException extends RuntimeException {
+        public ParquetFileReaderException(String message) {
+            super(message);
+        }
+    }
+
     public final FileMetaData fileMetaData;
     private final SeekableChannelsProvider channelsProvider;
     private final Path rootPath;
@@ -45,7 +52,8 @@ public class ParquetFileReader {
             final long fileLen = readChannel.size();
             if (fileLen < MAGIC.length + FOOTER_LENGTH_SIZE + MAGIC.length) { // MAGIC + data + footer +
                 // footerIndex + MAGIC
-                throw new RuntimeException(filePath + " is not a Parquet file (too small length: " + fileLen + ")");
+                throw new ParquetFileReaderException(
+                        filePath + " is not a Parquet file (too small length: " + fileLen + ")");
             }
 
             final long footerLengthIndex = fileLen - FOOTER_LENGTH_SIZE - MAGIC.length;
@@ -55,13 +63,13 @@ public class ParquetFileReader {
             final byte[] magic = new byte[MAGIC.length];
             Helpers.readBytes(readChannel, magic);
             if (!Arrays.equals(MAGIC, magic)) {
-                throw new RuntimeException(
+                throw new ParquetFileReaderException(
                         filePath + " is not a Parquet file. expected magic number at tail "
                                 + Arrays.toString(MAGIC) + " but found " + Arrays.toString(magic));
             }
             final long footerIndex = footerLengthIndex - footerLength;
             if (footerIndex < MAGIC.length || footerIndex >= footerLengthIndex) {
-                throw new RuntimeException(
+                throw new ParquetFileReaderException(
                         "corrupted file: the footer index is not within the file: " + footerIndex);
             }
             readChannel.position(footerIndex);
@@ -165,7 +173,7 @@ public class ParquetFileReader {
         tempBuf.order(ByteOrder.LITTLE_ENDIAN);
         int read = f.read(tempBuf);
         if (read != 4) {
-            throw new IOException("Expected for bytes, only read " + read);
+            throw new IOException("Expected four bytes, only read " + read);
         }
         tempBuf.flip();
         return tempBuf.getInt();
@@ -270,7 +278,7 @@ public class ParquetFileReader {
             case NANOS:
                 return LogicalTypeAnnotation.TimeUnit.NANOS;
             default:
-                throw new RuntimeException("Unknown time unit " + unit);
+                throw new ParquetFileReaderException("Unknown time unit " + unit);
         }
     }
 
@@ -307,7 +315,7 @@ public class ParquetFileReader {
                 return LogicalTypeAnnotation.timestampType(timestamp.isAdjustedToUTC,
                         convertTimeUnit(timestamp.unit));
             default:
-                throw new RuntimeException("Unknown logical type " + type);
+                throw new ParquetFileReaderException("Unknown logical type " + type);
         }
     }
 
@@ -335,7 +343,7 @@ public class ParquetFileReader {
             case FIXED_LEN_BYTE_ARRAY:
                 return PrimitiveType.PrimitiveTypeName.FIXED_LEN_BYTE_ARRAY;
             default:
-                throw new RuntimeException("Unknown type " + type);
+                throw new ParquetFileReaderException("Unknown type " + type);
         }
     }
 
@@ -401,7 +409,7 @@ public class ParquetFileReader {
             case BSON:
                 return LogicalTypeAnnotation.bsonType();
             default:
-                throw new RuntimeException(
+                throw new ParquetFileReaderException(
                         "Can't convert converted type to logical type, unknown converted type " + type);
         }
     }
