@@ -23,7 +23,8 @@ public class EngineTableLoggerProvider {
     /**
      * Marker interface to associate engine table loggers with one another.
      */
-    public interface EngineTableLogger {}
+    public interface EngineTableLogger {
+    }
 
     public interface Factory {
         ProcessInfoLogLogger processInfoLogLogger();

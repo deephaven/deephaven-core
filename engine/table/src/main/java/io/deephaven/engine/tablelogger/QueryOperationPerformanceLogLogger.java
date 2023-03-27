@@ -8,7 +8,8 @@ import java.io.IOException;
 import static io.deephaven.tablelogger.TableLogger.DEFAULT_INTRADAY_LOGGER_FLAGS;
 
 /**
- * Logs data that describes performance details on initialization times and memory usage of specific operations within queries.
+ * Logs data that describes performance details on initialization times and memory usage of specific operations within
+ * queries.
  */
 public interface QueryOperationPerformanceLogLogger extends EngineTableLoggerProvider.EngineTableLogger {
     default void log(final int operationNumber, final QueryPerformanceNugget nugget) throws IOException {

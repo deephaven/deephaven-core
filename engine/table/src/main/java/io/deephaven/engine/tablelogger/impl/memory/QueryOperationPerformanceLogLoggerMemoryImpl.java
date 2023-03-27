@@ -15,7 +15,9 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.util.QueryConstants;
 import java.io.IOException;
 
-class QueryOperationPerformanceLogLoggerMemoryImpl extends MemoryTableLogger<QueryOperationPerformanceLogLoggerMemoryImpl.ISetter> implements QueryOperationPerformanceLogLogger {
+class QueryOperationPerformanceLogLoggerMemoryImpl
+        extends MemoryTableLogger<QueryOperationPerformanceLogLoggerMemoryImpl.ISetter>
+        implements QueryOperationPerformanceLogLogger {
 
     private static final String TABLE_NAME = "QueryOperationPerformanceLog";
 

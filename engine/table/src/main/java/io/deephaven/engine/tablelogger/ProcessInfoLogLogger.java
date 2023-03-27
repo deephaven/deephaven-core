@@ -14,5 +14,6 @@ public interface ProcessInfoLogLogger extends EngineTableLoggerProvider.EngineTa
         log(DEFAULT_INTRADAY_LOGGER_FLAGS, id, type, key, value);
     }
 
-    void log(final Row.Flags flags, final String id, final String type, final String key, final String value) throws IOException;
+    void log(final Row.Flags flags, final String id, final String type, final String key, final String value)
+            throws IOException;
 }

@@ -11,7 +11,8 @@ import io.deephaven.engine.util.ColumnsSpecHelper;
 
 import java.io.IOException;
 
-class ProcessMetricsLogLoggerMemoryImpl extends MemoryTableLogger<ProcessMetricsLogLoggerMemoryImpl.ISetter> implements ProcessMetricsLogLogger {
+class ProcessMetricsLogLoggerMemoryImpl extends MemoryTableLogger<ProcessMetricsLogLoggerMemoryImpl.ISetter>
+        implements ProcessMetricsLogLogger {
 
     private static final String TABLE_NAME = "ProcessMetricsLog";
 

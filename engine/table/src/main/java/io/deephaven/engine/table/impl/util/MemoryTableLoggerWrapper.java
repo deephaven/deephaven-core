@@ -5,7 +5,10 @@ import io.deephaven.engine.tablelogger.EngineTableLoggerProvider;
 import io.deephaven.engine.tablelogger.impl.memory.MemoryTableLogger;
 
 /**
- * This class is an artifact of DHC reliance on the memory table logger implementation before engine table loggers were generalized. It handles runtime type checking for clients and throws {@link UnsupportedOperationException} where the previous memory table logger coupling fails.
+ * This class is an artifact of DHC reliance on the memory table logger implementation before engine table loggers were
+ * generalized. It handles runtime type checking for clients and throws {@link UnsupportedOperationException} where the
+ * previous memory table logger coupling fails.
+ * 
  * @param <T> Engine table logger type in which can instance can be retrieved
  */
 public class MemoryTableLoggerWrapper<T extends EngineTableLoggerProvider.EngineTableLogger> {

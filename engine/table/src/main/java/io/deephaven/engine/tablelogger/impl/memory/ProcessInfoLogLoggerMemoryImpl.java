@@ -11,7 +11,8 @@ import io.deephaven.engine.util.ColumnsSpecHelper;
 
 import java.io.IOException;
 
-class ProcessInfoLogLoggerMemoryImpl extends MemoryTableLogger<ProcessInfoLogLoggerMemoryImpl.ISetter> implements ProcessInfoLogLogger {
+class ProcessInfoLogLoggerMemoryImpl extends MemoryTableLogger<ProcessInfoLogLoggerMemoryImpl.ISetter>
+        implements ProcessInfoLogLogger {
 
     private static final String TABLE_NAME = "ProcessInfoLog";
     private static final int DEFAULT_PROCESSS_INFO_LOG_SIZE = Configuration.getInstance().getIntegerWithDefault(

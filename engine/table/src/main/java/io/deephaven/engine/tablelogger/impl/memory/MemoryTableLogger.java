@@ -18,15 +18,16 @@ import java.io.UncheckedIOException;
 public abstract class MemoryTableLogger<T extends WritableRowContainer> extends TableLoggerImpl2<T> {
     private final DynamicTableWriter tableWriter;
 
-    protected MemoryTableLogger(final String tableName, final TableDefinition tableDefinition, final int initialSizeArg) {
+    protected MemoryTableLogger(final String tableName, final TableDefinition tableDefinition,
+            final int initialSizeArg) {
         super(tableName);
 
         final Class loggerClass = this.getClass();
         final int initialSize = (initialSizeArg == -1)
                 ? Configuration.getInstance().getIntegerForClassWithDefault(
-                MemoryTableLogger.class,
-                loggerClass.getSimpleName() + ".logQueueSize",
-                10000)
+                        MemoryTableLogger.class,
+                        loggerClass.getSimpleName() + ".logQueueSize",
+                        10000)
                 : initialSizeArg;
         try {
             tableWriter = new DynamicTableWriter(tableDefinition);
