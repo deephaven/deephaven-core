@@ -14,6 +14,8 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
 import static io.deephaven.parquet.table.ParquetTableWriter.PARQUET_FILE_EXTENSION;
@@ -32,13 +34,19 @@ public final class ParquetFlatPartitionedLayout implements TableLocationKeyFinde
         return MATCHER.matches(path.getFileName());
     }
 
+    private static ParquetTableLocationKey locationKey(Path path) {
+        return new ParquetTableLocationKey(path.toFile(), 0, null);
+    }
+
     private final File tableRootDirectory;
+    private final Map<Path, ParquetTableLocationKey> cache;
 
     /**
      * @param tableRootDirectory The directory to search for .parquet files.
      */
     public ParquetFlatPartitionedLayout(@NotNull final File tableRootDirectory) {
         this.tableRootDirectory = tableRootDirectory;
+        cache = new ConcurrentHashMap<>();
     }
 
     public String toString() {
@@ -50,7 +58,8 @@ public final class ParquetFlatPartitionedLayout implements TableLocationKeyFinde
         try (final DirectoryStream<Path> parquetFileStream = FileSystems.getDefault().provider()
                 .newDirectoryStream(tableRootDirectory.toPath(), ParquetFlatPartitionedLayout::fileNameMatches)) {
             for (final Path parquetFilePath : parquetFileStream) {
-                locationKeyObserver.accept(new ParquetTableLocationKey(parquetFilePath.toFile(), 0, null));
+                locationKeyObserver
+                        .accept(cache.computeIfAbsent(parquetFilePath, ParquetFlatPartitionedLayout::locationKey));
             }
         } catch (final IOException e) {
             throw new TableDataException("Error finding parquet locations under " + tableRootDirectory, e);
