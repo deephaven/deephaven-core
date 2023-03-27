@@ -12,6 +12,9 @@ import io.deephaven.tablelogger.WritableRowContainer;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 
+/**
+ * Base class for memory table loggers that create and initialize a {@link DynamicTableWriter}.
+ */
 public abstract class MemoryTableLogger<T extends WritableRowContainer> extends TableLoggerImpl2<T> {
     private final DynamicTableWriter tableWriter;
 

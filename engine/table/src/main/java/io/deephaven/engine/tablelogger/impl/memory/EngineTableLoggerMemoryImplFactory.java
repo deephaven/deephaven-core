@@ -8,6 +8,9 @@ import io.deephaven.engine.tablelogger.QueryPerformanceLogLogger;
 import io.deephaven.engine.tablelogger.ServerStateLogLogger;
 import io.deephaven.engine.tablelogger.UpdatePerformanceLogLogger;
 
+/**
+ * Provides memory table logger implementations for the engine table loggers.
+ */
 public class EngineTableLoggerMemoryImplFactory implements EngineTableLoggerProvider.Factory {
     @Override
     public ProcessInfoLogLogger processInfoLogLogger() {

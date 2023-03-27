@@ -6,8 +6,15 @@ import io.deephaven.tablelogger.Row;
 
 import java.io.IOException;
 
+import static io.deephaven.tablelogger.TableLogger.DEFAULT_INTRADAY_LOGGER_FLAGS;
+
+/**
+ * Logs data that describes what a worker spent time on during its data refresh cycle.
+ */
 public interface UpdatePerformanceLogLogger extends EngineTableLoggerProvider.EngineTableLogger {
-    void log(final UpdatePerformanceTracker.IntervalLevelDetails intervalLevelDetails, final PerformanceEntry performanceEntry) throws IOException;
+    default void log(final UpdatePerformanceTracker.IntervalLevelDetails intervalLevelDetails, final PerformanceEntry performanceEntry) throws IOException {
+        log(DEFAULT_INTRADAY_LOGGER_FLAGS, intervalLevelDetails, performanceEntry);
+    }
 
     void log(final Row.Flags flags, final UpdatePerformanceTracker.IntervalLevelDetails intervalLevelDetails, final PerformanceEntry performanceEntry) throws IOException;
 }
