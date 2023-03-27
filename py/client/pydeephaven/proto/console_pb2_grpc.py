@@ -56,6 +56,11 @@ class ConsoleServiceStub(object):
                 request_serializer=deephaven_dot_proto_dot_console__pb2.AutoCompleteRequest.SerializeToString,
                 response_deserializer=deephaven_dot_proto_dot_console__pb2.AutoCompleteResponse.FromString,
                 )
+        self.CancelAutoComplete = channel.unary_unary(
+                '/io.deephaven.proto.backplane.script.grpc.ConsoleService/CancelAutoComplete',
+                request_serializer=deephaven_dot_proto_dot_console__pb2.CancelAutoCompleteRequest.SerializeToString,
+                response_deserializer=deephaven_dot_proto_dot_console__pb2.CancelAutoCompleteResponse.FromString,
+                )
         self.OpenAutoCompleteStream = channel.unary_stream(
                 '/io.deephaven.proto.backplane.script.grpc.ConsoleService/OpenAutoCompleteStream',
                 request_serializer=deephaven_dot_proto_dot_console__pb2.AutoCompleteRequest.SerializeToString,
@@ -126,6 +131,12 @@ class ConsoleServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def CancelAutoComplete(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def OpenAutoCompleteStream(self, request, context):
         """
         Half of the browser-based (browser's can't do bidirectional streams without websockets)
@@ -185,6 +196,11 @@ def add_ConsoleServiceServicer_to_server(servicer, server):
                     servicer.AutoCompleteStream,
                     request_deserializer=deephaven_dot_proto_dot_console__pb2.AutoCompleteRequest.FromString,
                     response_serializer=deephaven_dot_proto_dot_console__pb2.AutoCompleteResponse.SerializeToString,
+            ),
+            'CancelAutoComplete': grpc.unary_unary_rpc_method_handler(
+                    servicer.CancelAutoComplete,
+                    request_deserializer=deephaven_dot_proto_dot_console__pb2.CancelAutoCompleteRequest.FromString,
+                    response_serializer=deephaven_dot_proto_dot_console__pb2.CancelAutoCompleteResponse.SerializeToString,
             ),
             'OpenAutoCompleteStream': grpc.unary_stream_rpc_method_handler(
                     servicer.OpenAutoCompleteStream,
@@ -341,6 +357,23 @@ class ConsoleService(object):
         return grpc.experimental.stream_stream(request_iterator, target, '/io.deephaven.proto.backplane.script.grpc.ConsoleService/AutoCompleteStream',
             deephaven_dot_proto_dot_console__pb2.AutoCompleteRequest.SerializeToString,
             deephaven_dot_proto_dot_console__pb2.AutoCompleteResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def CancelAutoComplete(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.script.grpc.ConsoleService/CancelAutoComplete',
+            deephaven_dot_proto_dot_console__pb2.CancelAutoCompleteRequest.SerializeToString,
+            deephaven_dot_proto_dot_console__pb2.CancelAutoCompleteResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
