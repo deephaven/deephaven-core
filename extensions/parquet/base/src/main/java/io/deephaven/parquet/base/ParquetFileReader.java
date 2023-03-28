@@ -28,12 +28,6 @@ public class ParquetFileReader {
     private static final String MAGIC_STR = "PAR1";
     static final byte[] MAGIC = MAGIC_STR.getBytes(StandardCharsets.US_ASCII);
 
-    public static class ParquetFileReaderException extends RuntimeException {
-        public ParquetFileReaderException(String message) {
-            super(message);
-        }
-    }
-
     public final FileMetaData fileMetaData;
     private final SeekableChannelsProvider channelsProvider;
     private final Path rootPath;

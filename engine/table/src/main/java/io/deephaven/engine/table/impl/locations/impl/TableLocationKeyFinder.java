@@ -15,13 +15,14 @@ import java.util.function.Consumer;
 public interface TableLocationKeyFinder<TLK extends TableLocationKey> {
 
     /**
-     * May create a new {@link TableLocationKeyFinder} with additional safety checks.
+     * May create a new TableLocationKeyFinder with additional safety checks.
      *
-     * @param finder the finder
-     * @return the finder, potentially with additionaly safety checks
-     * @param <TLK> the table location key type
+     * @param finder The finder
+     * @return The finder, potentially with additional safety checks
+     * @param <TLK> The {@link TableLocationKey} type
      */
-    static <TLK extends TableLocationKey> TableLocationKeyFinder<TLK> safetyCheck(TableLocationKeyFinder<TLK> finder) {
+    static <TLK extends TableLocationKey> TableLocationKeyFinder<TLK> safetyCheck(
+            @NotNull TableLocationKeyFinder<TLK> finder) {
         return new TableLocationKeySafetyImpl<>(finder);
     }
 

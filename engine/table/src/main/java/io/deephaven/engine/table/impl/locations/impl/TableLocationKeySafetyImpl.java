@@ -5,6 +5,7 @@ import io.deephaven.engine.table.impl.locations.TableLocationKey;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -38,7 +39,7 @@ final class TableLocationKeySafetyImpl<TLK extends TableLocationKey> implements 
         @Override
         public void accept(TLK tlk) {
             if (partitionsKeys == null) {
-                partitionsKeys = new HashSet<>(tlk.getPartitionKeys());
+                partitionsKeys = new LinkedHashSet<>(tlk.getPartitionKeys());
             } else if (!partitionsKeys.equals(tlk.getPartitionKeys())) {
                 throw new TableDataException(String
                         .format("TableLocationKeyFinder %s has produced an inconsistent TableLocationKey with unexpected partition keys. expected=%s actual=%s.",
@@ -55,7 +56,8 @@ final class TableLocationKeySafetyImpl<TLK extends TableLocationKey> implements 
             for (TLK tlk : tlks) {
                 if (!seen.contains(tlk)) {
                     throw new TableDataException(
-                            String.format("TableLocationKeyFinder %s has remove a previously seen TableLocationKey %s.",
+                            String.format(
+                                    "TableLocationKeyFinder %s has removed a previously seen TableLocationKey %s.",
                                     finder, tlk));
                 }
             }

@@ -6,7 +6,7 @@ package io.deephaven.parquet.table.layout;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
 import io.deephaven.parquet.base.ParquetFileReader;
-import io.deephaven.parquet.base.ParquetFileReader.ParquetFileReaderException;
+import io.deephaven.parquet.base.ParquetFileReaderException;
 import io.deephaven.parquet.base.util.LocalFSChannelProvider;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
 import org.jetbrains.annotations.NotNull;
@@ -14,7 +14,7 @@ import org.jetbrains.annotations.NotNull;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
-import java.nio.file.FileSystems;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
@@ -46,8 +46,8 @@ public final class ParquetFlatPartitionedLayout implements TableLocationKeyFinde
 
     @Override
     public synchronized void findKeys(@NotNull final Consumer<ParquetTableLocationKey> locationKeyObserver) {
-        try (final DirectoryStream<Path> parquetFileStream = FileSystems.getDefault().provider()
-                .newDirectoryStream(tableRootDirectory.toPath(), ParquetFileHelper::fileNameMatches)) {
+        try (final DirectoryStream<Path> parquetFileStream =
+                Files.newDirectoryStream(tableRootDirectory.toPath(), ParquetFileHelper::fileNameMatches)) {
             for (final Path parquetFilePath : parquetFileStream) {
                 ParquetTableLocationKey locationKey = cache.get(parquetFilePath);
                 if (locationKey == null) {
