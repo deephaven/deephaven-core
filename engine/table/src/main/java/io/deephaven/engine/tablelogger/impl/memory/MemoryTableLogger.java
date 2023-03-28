@@ -18,7 +18,7 @@ import java.io.UncheckedIOException;
 public abstract class MemoryTableLogger<T extends WritableRowContainer> extends TableLoggerImpl2<T> {
     public static QueryTable maybeGetQueryTable(final Object maybeMemoryTableLogger) {
         if (maybeMemoryTableLogger instanceof MemoryTableLogger) {
-            return ((MemoryTableLogger)maybeMemoryTableLogger).getQueryTable();
+            return ((MemoryTableLogger) maybeMemoryTableLogger).getQueryTable();
         }
 
         throw new UnsupportedOperationException("Only supported for memory table loggers.");
