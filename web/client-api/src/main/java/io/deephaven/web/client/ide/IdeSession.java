@@ -208,7 +208,7 @@ public class IdeSession extends HasEventHandling {
                 pendingAutocompleteCalls.remove(res.getRequestId()).succeed(res);
             } else {
                 pendingAutocompleteCalls.remove(res.getRequestId())
-                        .fail("Error occurred handling autocomplete on the server, probably request is out of date");;
+                        .fail("Error occurred handling autocomplete on the server, probably request is out of date");
             }
         });
         currentStream.onStatus(status -> {

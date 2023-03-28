@@ -118,18 +118,18 @@ public class JavaAutoCompleteObserver extends SessionCloseableObserver<AutoCompl
                 }
                 case GET_SIGNATURE_HELP: {
                     // Not implemented. Return empty signature list
-                    response.setSignatures(GetSignatureHelpResponse.newBuilder().build());
+                    response.setSignatures(GetSignatureHelpResponse.getDefaultInstance());
                     break;
                 }
                 case GET_HOVER: {
                     // Not implemented. Return empty hover help
                     response.setHover(
-                            GetHoverResponse.newBuilder().setContents(MarkupContent.newBuilder().build()).build());
+                            GetHoverResponse.newBuilder().setContents(MarkupContent.getDefaultInstance()).build());
                     break;
                 }
                 case GET_DIAGNOSTIC: {
                     // Not implemented. Return empty diagnostics
-                    response.setDiagnostic(GetPullDiagnosticResponse.newBuilder().build());
+                    response.setDiagnostic(GetPullDiagnosticResponse.getDefaultInstance());
                     break;
                 }
             }
@@ -149,7 +149,7 @@ public class JavaAutoCompleteObserver extends SessionCloseableObserver<AutoCompl
                             .setSuccess(false)
                             .setRequestId(request.getRequestId())
                             .build());
-        } catch (Throwable exception) {
+        } catch (Exception exception) {
             if (ConsoleServiceGrpcImpl.QUIET_AUTOCOMPLETE_ERRORS) {
                 if (log.isTraceEnabled()) {
                     log.trace().append("Exception occurred during autocomplete").append(exception).endl();
@@ -162,9 +162,6 @@ public class JavaAutoCompleteObserver extends SessionCloseableObserver<AutoCompl
                             .setSuccess(false)
                             .setRequestId(request.getRequestId())
                             .build());
-            if (exception instanceof Error) {
-                throw exception;
-            }
         }
     }
 

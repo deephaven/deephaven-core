@@ -21,25 +21,4 @@ public class ParameterInformation implements Serializable {
                 ", documentation='" + documentation + '\'' +
                 '}';
     }
-
-    @Override
-    @JsIgnore
-    public boolean equals(Object o) {
-        if (this == o)
-            return true;
-        if (o == null || getClass() != o.getClass())
-            return false;
-
-        final ParameterInformation paramInfo = (ParameterInformation) o;
-
-        return label.equals(paramInfo.label) && documentation.equals(paramInfo.documentation);
-    }
-
-    @Override
-    @JsIgnore
-    public int hashCode() {
-        int result = label.hashCode();
-        result = 31 * result + documentation.hashCode();
-        return result;
-    }
 }

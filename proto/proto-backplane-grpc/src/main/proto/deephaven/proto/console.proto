@@ -232,9 +232,9 @@ message CompletionContext {
 message GetCompletionItemsResponse {
     repeated CompletionItem items = 1;
 
-    // These fields are maintained for backwards compatibility
-    // Use the same fields on AutoCompleteResponse instead
+    // Maintained for backwards compatibility. Use the same field on AutoCompleteResponse instead
     int32 request_id = 2 [deprecated=true];
+    // Maintained for backwards compatibility. Use the same field on AutoCompleteResponse instead
     bool success = 3 [deprecated=true];
 }
 message CompletionItem {

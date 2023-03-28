@@ -32,25 +32,4 @@ public class MarkupContent implements Serializable {
                 ", value=" + value +
                 '}';
     }
-
-    @Override
-    @JsIgnore
-    public boolean equals(Object o) {
-        if (this == o)
-            return true;
-        if (o == null || getClass() != o.getClass())
-            return false;
-
-        final MarkupContent content = (MarkupContent) o;
-
-        return kind.equals(content.kind) && value.equals(content.value);
-    }
-
-    @Override
-    @JsIgnore
-    public int hashCode() {
-        int result = kind.hashCode();
-        result = 31 * result + value.hashCode();
-        return result;
-    }
 }

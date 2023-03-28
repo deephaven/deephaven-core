@@ -23,25 +23,4 @@ public class Hover implements Serializable {
                 ", range='" + range.toString() + '\'' +
                 '}';
     }
-
-    @Override
-    @JsIgnore
-    public boolean equals(Object o) {
-        if (this == o)
-            return true;
-        if (o == null || getClass() != o.getClass())
-            return false;
-
-        final Hover paramInfo = (Hover) o;
-
-        return contents.equals(paramInfo.contents) && range.equals(paramInfo.range);
-    }
-
-    @Override
-    @JsIgnore
-    public int hashCode() {
-        int result = contents.hashCode();
-        result = 31 * result + range.hashCode();
-        return result;
-    }
 }

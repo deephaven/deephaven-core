@@ -70,7 +70,7 @@ public class PythonAutoCompleteObserver extends SessionCloseableObserver<AutoCom
                 }
 
                 completer.callMethod("update_doc", document, uri, version);
-                // TODO: Response stream
+                // TODO (https://github.com/deephaven/deephaven-core/issues/3614): Add publish diagnostics
                 // responseObserver.onNext(AutoCompleteResponse.newBuilder().setDiagnosticPublish());
                 break;
             }
@@ -139,8 +139,8 @@ public class PythonAutoCompleteObserver extends SessionCloseableObserver<AutoCom
                     break;
                 }
                 case GET_DIAGNOSTIC: {
-                    // TODO: Fetch diagnostics
-                    response.setDiagnostic(GetPullDiagnosticResponse.newBuilder().build());
+                    // TODO (https://github.com/deephaven/deephaven-core/issues/3614): Add user requested diagnostics
+                    response.setDiagnostic(GetPullDiagnosticResponse.getDefaultInstance());
                     break;
                 }
             }
@@ -151,7 +151,7 @@ public class PythonAutoCompleteObserver extends SessionCloseableObserver<AutoCom
                             .setRequestId(requestId)
                             .build());
 
-        } catch (Throwable exception) {
+        } catch (Exception exception) {
             if (ConsoleServiceGrpcImpl.QUIET_AUTOCOMPLETE_ERRORS) {
                 exception.printStackTrace();
                 if (log.isTraceEnabled()) {
@@ -165,9 +165,6 @@ public class PythonAutoCompleteObserver extends SessionCloseableObserver<AutoCom
                             .setSuccess(false)
                             .setRequestId(requestId)
                             .build());
-            if (exception instanceof Error) {
-                throw exception;
-            }
         }
     }
 
