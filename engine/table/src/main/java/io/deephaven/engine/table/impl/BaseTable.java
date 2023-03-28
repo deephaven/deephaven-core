@@ -619,7 +619,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         Assert.neqNull(update.shifted(), "shifted");
 
         if (isFlat()) {
-            Assert.assertion(getRowSet().isFlat(), "build().isFlat()", getRowSet(), "build()");
+            Assert.assertion(getRowSet().isFlat(), "getRowSet().isFlat()", getRowSet(), "getRowSet()");
         }
         if (isAppendOnly() || isAddOnly()) {
             Assert.assertion(update.removed().isEmpty(), "update.removed.empty()");
@@ -629,6 +629,12 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         if (isAppendOnly()) {
             Assert.assertion(getRowSet().sizePrev() == 0 || getRowSet().lastRowKeyPrev() < update.added().firstRowKey(),
                     "getRowSet().lastRowKeyPrev() < update.added().firstRowKey()");
+        }
+        if (isStream()) {
+            Assert.eq(update.added().size(), "added size", getRowSet().size(), "current table size");
+            Assert.eq(update.removed().size(), "removed size", getRowSet().sizePrev(), "previous table size");
+            Assert.assertion(update.modified().isEmpty(), "update.modified.isEmpty()");
+            Assert.assertion(update.shifted().empty(), "update.shifted.empty()");
         }
 
         // First validate that each rowSet is in a sane state.
