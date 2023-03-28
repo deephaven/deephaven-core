@@ -32,13 +32,13 @@ public class Strings {
     }
 
     public static String of(FilterComparison comparison) {
-        final String lhs = of(comparison.lhs());
-        final String rhs = of(comparison.rhs());
-        return String.format("(%s) %s (%s)", lhs, comparison.operator().javaOperator(), rhs);
+        final String lhs = ofEncapsulated(comparison.lhs());
+        final String rhs = ofEncapsulated(comparison.rhs());
+        return String.format("%s %s %s", lhs, comparison.operator().javaOperator(), rhs);
     }
 
     public static String of(FilterNot<?> not) {
-        return String.format("!(%s)", of(not.filter()));
+        return String.format("!%s", ofEncapsulated(not.filter()));
     }
 
     public static String of(FilterIsNull isNull) {
@@ -50,13 +50,11 @@ public class Strings {
     }
 
     public static String of(FilterOr filterOr) {
-        return filterOr.filters().stream().map(Strings::of)
-                .collect(Collectors.joining(") || (", "(", ")"));
+        return filterOr.filters().stream().map(Strings::ofEncapsulated).collect(Collectors.joining(" || "));
     }
 
     public static String of(FilterAnd filterAnd) {
-        return filterAnd.filters().stream().map(Strings::of)
-                .collect(Collectors.joining(") && (", "(", ")"));
+        return filterAnd.filters().stream().map(Strings::ofEncapsulated).collect(Collectors.joining(" && "));
     }
 
     public static String of(Pair pair) {
@@ -93,15 +91,15 @@ public class Strings {
     }
 
     public static String of(Expression expression) {
-        return expression.walk(new UniversalAdapter());
+        return expression.walk(new UniversalAdapter(false));
     }
 
     public static String of(Filter filter) {
-        return filter.walk((Filter.Visitor<String>) new UniversalAdapter());
+        return filter.walk((Filter.Visitor<String>) new UniversalAdapter(false));
     }
 
     public static String of(Literal value) {
-        return value.walk((Literal.Visitor<String>) new UniversalAdapter());
+        return value.walk((Literal.Visitor<String>) new UniversalAdapter(false));
     }
 
     public static String of(ExpressionFunction function) {
@@ -110,11 +108,37 @@ public class Strings {
                 + function.arguments().stream().map(Strings::of).collect(Collectors.joining(", ", "(", ")"));
     }
 
+    public static String of(boolean literal) {
+        return Boolean.toString(literal);
+    }
+
+    private static String ofEncapsulated(Expression expression) {
+        return expression.walk(new UniversalAdapter(true));
+    }
+
+    private static String ofEncapsulated(Filter filter) {
+        return filter.walk((Filter.Visitor<String>) new UniversalAdapter(true));
+    }
+
+    private static String ofEncapsulated(Literal value) {
+        return value.walk((Literal.Visitor<String>) new UniversalAdapter(true));
+    }
+
     /**
      * If we ever need to provide more specificity for a type, we can create a non-universal impl.
      */
     private static class UniversalAdapter
             implements Expression.Visitor<String>, Filter.Visitor<String>, Literal.Visitor<String> {
+
+        private final boolean encapsulate;
+
+        UniversalAdapter(boolean encapsulate) {
+            this.encapsulate = encapsulate;
+        }
+
+        private String encapsulate(String x) {
+            return encapsulate ? "(" + x + ")" : x;
+        }
 
         @Override
         public String visit(Filter filter) {
@@ -133,7 +157,7 @@ public class Strings {
 
         @Override
         public String visit(RawString rawString) {
-            return of(rawString);
+            return encapsulate(of(rawString));
         }
 
         @Override
@@ -143,7 +167,7 @@ public class Strings {
 
         @Override
         public String visit(FilterComparison comparison) {
-            return of(comparison);
+            return encapsulate(of(comparison));
         }
 
         @Override
@@ -163,12 +187,12 @@ public class Strings {
 
         @Override
         public String visit(FilterOr ors) {
-            return of(ors);
+            return encapsulate(of(ors));
         }
 
         @Override
         public String visit(FilterAnd ands) {
-            return of(ands);
+            return encapsulate(of(ands));
         }
 
         @Override
@@ -183,7 +207,7 @@ public class Strings {
 
         @Override
         public String visit(boolean literal) {
-            return Boolean.toString(literal);
+            return of(literal);
         }
     }
 }

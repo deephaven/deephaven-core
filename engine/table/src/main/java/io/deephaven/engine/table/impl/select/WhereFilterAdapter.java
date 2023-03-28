@@ -48,12 +48,19 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
         return isNotNull.expression().walk(new ExpressionIsNullAdapter(true));
     }
 
+    public static WhereFilter of(ColumnName columnName, boolean inverted) {
+        return inverted
+                ? WhereFilterFactory.getExpression(String.format("!%s", columnName.name()))
+                : WhereFilterFactory.getExpression(columnName.name());
+    }
+
     public static WhereFilter of(boolean literal) {
         return literal ? WhereAllFilter.INSTANCE : WhereNoneFilter.INSTANCE;
     }
 
     public static WhereFilter of(RawString rawString, boolean inverted) {
-        return inverted ? WhereFilterFactory.getExpression(String.format("!(%s)", rawString.value()))
+        return inverted
+                ? WhereFilterFactory.getExpression(String.format("!(%s)", rawString.value()))
                 : WhereFilterFactory.getExpression(rawString.value());
     }
 
@@ -95,6 +102,11 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
         // !A || !B || ... || !Z
         // A && B && ... && Z
         return inverted ? of(ands.invert()) : of(ands);
+    }
+
+    @Override
+    public WhereFilter visit(ColumnName columnName) {
+        return of(columnName, inverted);
     }
 
     @Override

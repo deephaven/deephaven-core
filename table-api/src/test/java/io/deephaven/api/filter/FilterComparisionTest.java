@@ -43,26 +43,26 @@ public class FilterComparisionTest {
 
     @Test
     void properties() {
-        checkProperties(FOO_EQ_42, FOO, Operator.EQUALS, V42, "(Foo) == (42L)", FOO_NEQ_42);
-        checkProperties(FOO_GT_42, FOO, Operator.GREATER_THAN, V42, "(Foo) > (42L)", FOO_LTE_42);
-        checkProperties(FOO_GTE_42, FOO, Operator.GREATER_THAN_OR_EQUAL, V42, "(Foo) >= (42L)", FOO_LT_42);
-        checkProperties(FOO_LT_42, FOO, Operator.LESS_THAN, V42, "(Foo) < (42L)", FOO_GTE_42);
-        checkProperties(FOO_LTE_42, FOO, Operator.LESS_THAN_OR_EQUAL, V42, "(Foo) <= (42L)", FOO_GT_42);
-        checkProperties(FOO_NEQ_42, FOO, Operator.NOT_EQUALS, V42, "(Foo) != (42L)", FOO_EQ_42);
+        checkProperties(FOO_EQ_42, FOO, Operator.EQUALS, V42, "Foo == 42L", FOO_NEQ_42);
+        checkProperties(FOO_GT_42, FOO, Operator.GREATER_THAN, V42, "Foo > 42L", FOO_LTE_42);
+        checkProperties(FOO_GTE_42, FOO, Operator.GREATER_THAN_OR_EQUAL, V42, "Foo >= 42L", FOO_LT_42);
+        checkProperties(FOO_LT_42, FOO, Operator.LESS_THAN, V42, "Foo < 42L", FOO_GTE_42);
+        checkProperties(FOO_LTE_42, FOO, Operator.LESS_THAN_OR_EQUAL, V42, "Foo <= 42L", FOO_GT_42);
+        checkProperties(FOO_NEQ_42, FOO, Operator.NOT_EQUALS, V42, "Foo != 42L", FOO_EQ_42);
 
-        checkProperties(FOO_EQ_BAR, FOO, Operator.EQUALS, BAR, "(Foo) == (Bar)", FOO_NEQ_BAR);
-        checkProperties(FOO_GT_BAR, FOO, Operator.GREATER_THAN, BAR, "(Foo) > (Bar)", FOO_LTE_BAR);
-        checkProperties(FOO_GTE_BAR, FOO, Operator.GREATER_THAN_OR_EQUAL, BAR, "(Foo) >= (Bar)", FOO_LT_BAR);
-        checkProperties(FOO_LT_BAR, FOO, Operator.LESS_THAN, BAR, "(Foo) < (Bar)", FOO_GTE_BAR);
-        checkProperties(FOO_LTE_BAR, FOO, Operator.LESS_THAN_OR_EQUAL, BAR, "(Foo) <= (Bar)", FOO_GT_BAR);
-        checkProperties(FOO_NEQ_BAR, FOO, Operator.NOT_EQUALS, BAR, "(Foo) != (Bar)", FOO_EQ_BAR);
+        checkProperties(FOO_EQ_BAR, FOO, Operator.EQUALS, BAR, "Foo == Bar", FOO_NEQ_BAR);
+        checkProperties(FOO_GT_BAR, FOO, Operator.GREATER_THAN, BAR, "Foo > Bar", FOO_LTE_BAR);
+        checkProperties(FOO_GTE_BAR, FOO, Operator.GREATER_THAN_OR_EQUAL, BAR, "Foo >= Bar", FOO_LT_BAR);
+        checkProperties(FOO_LT_BAR, FOO, Operator.LESS_THAN, BAR, "Foo < Bar", FOO_GTE_BAR);
+        checkProperties(FOO_LTE_BAR, FOO, Operator.LESS_THAN_OR_EQUAL, BAR, "Foo <= Bar", FOO_GT_BAR);
+        checkProperties(FOO_NEQ_BAR, FOO, Operator.NOT_EQUALS, BAR, "Foo != Bar", FOO_EQ_BAR);
 
-        checkProperties(FOO_EQ_E42, FOO, Operator.EQUALS, E42, "(Foo) == (41 + 1)", FOO_NEQ_E42);
-        checkProperties(FOO_GT_E42, FOO, Operator.GREATER_THAN, E42, "(Foo) > (41 + 1)", FOO_LTE_E42);
-        checkProperties(FOO_GTE_E42, FOO, Operator.GREATER_THAN_OR_EQUAL, E42, "(Foo) >= (41 + 1)", FOO_LT_E42);
-        checkProperties(FOO_LT_E42, FOO, Operator.LESS_THAN, E42, "(Foo) < (41 + 1)", FOO_GTE_E42);
-        checkProperties(FOO_LTE_E42, FOO, Operator.LESS_THAN_OR_EQUAL, E42, "(Foo) <= (41 + 1)", FOO_GT_E42);
-        checkProperties(FOO_NEQ_E42, FOO, Operator.NOT_EQUALS, E42, "(Foo) != (41 + 1)", FOO_EQ_E42);
+        checkProperties(FOO_EQ_E42, FOO, Operator.EQUALS, E42, "Foo == (41 + 1)", FOO_NEQ_E42);
+        checkProperties(FOO_GT_E42, FOO, Operator.GREATER_THAN, E42, "Foo > (41 + 1)", FOO_LTE_E42);
+        checkProperties(FOO_GTE_E42, FOO, Operator.GREATER_THAN_OR_EQUAL, E42, "Foo >= (41 + 1)", FOO_LT_E42);
+        checkProperties(FOO_LT_E42, FOO, Operator.LESS_THAN, E42, "Foo < (41 + 1)", FOO_GTE_E42);
+        checkProperties(FOO_LTE_E42, FOO, Operator.LESS_THAN_OR_EQUAL, E42, "Foo <= (41 + 1)", FOO_GT_E42);
+        checkProperties(FOO_NEQ_E42, FOO, Operator.NOT_EQUALS, E42, "Foo != (41 + 1)", FOO_EQ_E42);
     }
 
     @Test

@@ -19,6 +19,14 @@ public class WhereFilterTest extends TestCase {
     private static final ColumnName BAR = ColumnName.of("Bar");
     private static final Literal V42 = Literal.of(42L);
 
+    public void testFoo() {
+        expect(FOO, ConditionFilter.class, "Foo");
+    }
+
+    public void testNotFoo() {
+        opposite(FOO, ConditionFilter.class, "!Foo");
+    }
+
     public void testFooIsTrue() {
         expect(Filter.isTrue(FOO), MatchFilter.class, "Foo in [true]");
     }
@@ -67,21 +75,21 @@ public class WhereFilterTest extends TestCase {
     public void testEq() {
         expect(FilterComparison.eq(FOO, V42), MatchFilter.class, "Foo in [42]");
         expect(FilterComparison.eq(V42, FOO), MatchFilter.class, "Foo in [42]");
-        expect(FilterComparison.eq(FOO, BAR), ConditionFilter.class, "(Foo) == (Bar)");
+        expect(FilterComparison.eq(FOO, BAR), ConditionFilter.class, "Foo == Bar");
 
         opposite(FilterComparison.eq(FOO, V42), MatchFilter.class, "Foo not in [42]");
         opposite(FilterComparison.eq(V42, FOO), MatchFilter.class, "Foo not in [42]");
-        opposite(FilterComparison.eq(FOO, BAR), ConditionFilter.class, "(Foo) != (Bar)");
+        opposite(FilterComparison.eq(FOO, BAR), ConditionFilter.class, "Foo != Bar");
     }
 
     public void testNeq() {
         expect(FilterComparison.neq(FOO, V42), MatchFilter.class, "Foo not in [42]");
         expect(FilterComparison.neq(V42, FOO), MatchFilter.class, "Foo not in [42]");
-        expect(FilterComparison.neq(FOO, BAR), ConditionFilter.class, "(Foo) != (Bar)");
+        expect(FilterComparison.neq(FOO, BAR), ConditionFilter.class, "Foo != Bar");
 
         opposite(FilterComparison.neq(FOO, V42), MatchFilter.class, "Foo in [42]");
         opposite(FilterComparison.neq(V42, FOO), MatchFilter.class, "Foo in [42]");
-        opposite(FilterComparison.neq(FOO, BAR), ConditionFilter.class, "(Foo) == (Bar)");
+        opposite(FilterComparison.neq(FOO, BAR), ConditionFilter.class, "Foo == Bar");
     }
 
     public void testGt() {
@@ -89,13 +97,13 @@ public class WhereFilterTest extends TestCase {
                 "RangeConditionFilter(Foo greater than 42)");
         expect(FilterComparison.gt(V42, FOO), RangeConditionFilter.class,
                 "RangeConditionFilter(Foo less than 42)");
-        expect(FilterComparison.gt(FOO, BAR), ConditionFilter.class, "(Foo) > (Bar)");
+        expect(FilterComparison.gt(FOO, BAR), ConditionFilter.class, "Foo > Bar");
 
         opposite(FilterComparison.gt(FOO, V42), RangeConditionFilter.class,
                 "RangeConditionFilter(Foo less than or equal to 42)");
         opposite(FilterComparison.gt(V42, FOO), RangeConditionFilter.class,
                 "RangeConditionFilter(Foo greater than or equal to 42)");
-        opposite(FilterComparison.gt(FOO, BAR), ConditionFilter.class, "(Foo) <= (Bar)");
+        opposite(FilterComparison.gt(FOO, BAR), ConditionFilter.class, "Foo <= Bar");
     }
 
     public void testGte() {
@@ -103,13 +111,13 @@ public class WhereFilterTest extends TestCase {
                 "RangeConditionFilter(Foo greater than or equal to 42)");
         expect(FilterComparison.gte(V42, FOO), RangeConditionFilter.class,
                 "RangeConditionFilter(Foo less than or equal to 42)");
-        expect(FilterComparison.gte(FOO, BAR), ConditionFilter.class, "(Foo) >= (Bar)");
+        expect(FilterComparison.gte(FOO, BAR), ConditionFilter.class, "Foo >= Bar");
 
         opposite(FilterComparison.gte(FOO, V42), RangeConditionFilter.class,
                 "RangeConditionFilter(Foo less than 42)");
         opposite(FilterComparison.gte(V42, FOO), RangeConditionFilter.class,
                 "RangeConditionFilter(Foo greater than 42)");
-        opposite(FilterComparison.gte(FOO, BAR), ConditionFilter.class, "(Foo) < (Bar)");
+        opposite(FilterComparison.gte(FOO, BAR), ConditionFilter.class, "Foo < Bar");
     }
 
     public void testLt() {
@@ -117,13 +125,13 @@ public class WhereFilterTest extends TestCase {
                 "RangeConditionFilter(Foo less than 42)");
         expect(FilterComparison.lt(V42, FOO), RangeConditionFilter.class,
                 "RangeConditionFilter(Foo greater than 42)");
-        expect(FilterComparison.lt(FOO, BAR), ConditionFilter.class, "(Foo) < (Bar)");
+        expect(FilterComparison.lt(FOO, BAR), ConditionFilter.class, "Foo < Bar");
 
         opposite(FilterComparison.lt(FOO, V42), RangeConditionFilter.class,
                 "RangeConditionFilter(Foo greater than or equal to 42)");
         opposite(FilterComparison.lt(V42, FOO), RangeConditionFilter.class,
                 "RangeConditionFilter(Foo less than or equal to 42)");
-        opposite(FilterComparison.lt(FOO, BAR), ConditionFilter.class, "(Foo) >= (Bar)");
+        opposite(FilterComparison.lt(FOO, BAR), ConditionFilter.class, "Foo >= Bar");
     }
 
     public void testLte() {
@@ -131,29 +139,29 @@ public class WhereFilterTest extends TestCase {
                 "RangeConditionFilter(Foo less than or equal to 42)");
         expect(FilterComparison.lte(V42, FOO), RangeConditionFilter.class,
                 "RangeConditionFilter(Foo greater than or equal to 42)");
-        expect(FilterComparison.lte(FOO, BAR), ConditionFilter.class, "(Foo) <= (Bar)");
+        expect(FilterComparison.lte(FOO, BAR), ConditionFilter.class, "Foo <= Bar");
 
         opposite(FilterComparison.lte(FOO, V42), RangeConditionFilter.class,
                 "RangeConditionFilter(Foo greater than 42)");
         opposite(FilterComparison.lte(V42, FOO), RangeConditionFilter.class,
                 "RangeConditionFilter(Foo less than 42)");
-        opposite(FilterComparison.lte(FOO, BAR), ConditionFilter.class, "(Foo) > (Bar)");
+        opposite(FilterComparison.lte(FOO, BAR), ConditionFilter.class, "Foo > Bar");
     }
 
     public void testFunctionIsTrue() {
         expect(Filter.isTrue(ExpressionFunction.builder().name("someMethod").addArguments(FOO, BAR).build()),
-                ConditionFilter.class, "(someMethod(Foo, Bar)) == (true)");
+                ConditionFilter.class, "someMethod(Foo, Bar) == true");
         expect(Filter
                 .not(Filter.isTrue(ExpressionFunction.builder().name("someMethod").addArguments(FOO, BAR).build())),
-                ConditionFilter.class, "(someMethod(Foo, Bar)) != (true)");
+                ConditionFilter.class, "someMethod(Foo, Bar) != true");
     }
 
     public void testFunctionIsFalse() {
         expect(Filter.isFalse(ExpressionFunction.builder().name("someMethod").addArguments(FOO, BAR).build()),
-                ConditionFilter.class, "(someMethod(Foo, Bar)) == (false)");
+                ConditionFilter.class, "someMethod(Foo, Bar) == false");
         expect(Filter
                 .not(Filter.isFalse(ExpressionFunction.builder().name("someMethod").addArguments(FOO, BAR).build())),
-                ConditionFilter.class, "(someMethod(Foo, Bar)) != (false)");
+                ConditionFilter.class, "someMethod(Foo, Bar) != false");
     }
 
     public void testFunctionIsNull() {
@@ -173,13 +181,13 @@ public class WhereFilterTest extends TestCase {
     }
 
     public void testLiteralIsTrue() {
-        expect(Filter.isTrue(Literal.of(42)), ConditionFilter.class, "((int)42) == (true)");
-        opposite(Filter.isTrue(Literal.of(42)), ConditionFilter.class, "((int)42) != (true)");
+        expect(Filter.isTrue(Literal.of(42)), ConditionFilter.class, "(int)42 == true");
+        opposite(Filter.isTrue(Literal.of(42)), ConditionFilter.class, "(int)42 != true");
     }
 
     public void testLiteralIsFalse() {
-        expect(Filter.isFalse(Literal.of(42)), ConditionFilter.class, "((int)42) == (false)");
-        opposite(Filter.isFalse(Literal.of(42)), ConditionFilter.class, "((int)42) != (false)");
+        expect(Filter.isFalse(Literal.of(42)), ConditionFilter.class, "(int)42 == false");
+        opposite(Filter.isFalse(Literal.of(42)), ConditionFilter.class, "(int)42 != false");
     }
 
     public void testLiteralIsNull() {

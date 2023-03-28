@@ -4,55 +4,138 @@
 package io.deephaven.api.filter;
 
 import io.deephaven.api.ColumnName;
-import io.deephaven.api.Strings;
-import io.deephaven.api.literal.Literal;
+import io.deephaven.api.RawString;
 import org.junit.jupiter.api.Test;
 
+import static io.deephaven.api.Strings.of;
+import static io.deephaven.api.filter.Filter.and;
+import static io.deephaven.api.filter.Filter.isFalse;
+import static io.deephaven.api.filter.Filter.isNotNull;
+import static io.deephaven.api.filter.Filter.isNull;
+import static io.deephaven.api.filter.Filter.isTrue;
+import static io.deephaven.api.filter.Filter.not;
+import static io.deephaven.api.filter.Filter.ofFalse;
+import static io.deephaven.api.filter.Filter.ofTrue;
+import static io.deephaven.api.filter.Filter.or;
+import static io.deephaven.api.filter.FilterComparison.gt;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class FilterTest {
 
+    private static final ColumnName FOO = ColumnName.of("Foo");
+    private static final ColumnName BAR = ColumnName.of("Bar");
+
     @Test
-    void condition() {
-        toString(FilterComparison.gt(ColumnName.of("Foo"), Literal.of(42L)), "(Foo) > (42L)");
+    void filterIsNull() {
+        toString(isNull(FOO), "isNull(Foo)");
     }
 
     @Test
-    void isNull() {
-        toString(Filter.isNull(ColumnName.of("Foo")), "isNull(Foo)");
+    void filterIsNotNull() {
+        toString(isNotNull(FOO), "!isNull(Foo)");
     }
 
     @Test
-    void isNotNull() {
-        toString(Filter.isNotNull(ColumnName.of("Foo")), "!isNull(Foo)");
+    void filterNot() {
+        toString(not(isNull(FOO)), "!isNull(Foo)");
     }
 
     @Test
-    void not() {
-        toString(Filter.not(Filter.isNull(ColumnName.of("Foo"))), "!(isNull(Foo))");
+    void filterAnd() {
+        toString(and(isNotNull(FOO), isNotNull(BAR)), "!isNull(Foo) && !isNull(Bar)");
     }
 
     @Test
-    void ands() {
-        toString(
-                Filter.and(Filter.isNotNull(ColumnName.of("Foo")),
-                        FilterComparison.gt(ColumnName.of("Foo"), Literal.of(42L))),
-                "(!isNull(Foo)) && ((Foo) > (42L))");
+    void filterOr() {
+        toString(or(isNull(FOO), gt(FOO, BAR)), "isNull(Foo) || (Foo > Bar)");
     }
 
     @Test
-    void ors() {
-        toString(
-                Filter.or(Filter.isNull(ColumnName.of("Foo")),
-                        FilterComparison.eq(ColumnName.of("Foo"), Literal.of(42L))),
-                "(isNull(Foo)) || ((Foo) == (42L))");
+    void filterOfTrue() {
+        toString(ofTrue(), "true");
+    }
+
+    @Test
+    void filterOfFalse() {
+        toString(ofFalse(), "false");
+    }
+
+    @Test
+    void filterIsTrue() {
+        toString(isTrue(FOO), "Foo == true");
+    }
+
+    @Test
+    void filterIsFalse() {
+        toString(isFalse(FOO), "Foo == false");
+    }
+
+    @Test
+    void filterColumnName() {
+        toString(FOO, "Foo");
+    }
+
+    @Test
+    void filterNotColumnName() {
+        toString(not(FOO), "!Foo");
+    }
+
+    @Test
+    void filterNotNotColumnName() {
+        toString(not(not(FOO)), "!!Foo");
     }
 
     private static void toString(Filter filter, String expected) {
-        assertThat(toString(filter)).isEqualTo(expected);
+        assertThat(of(filter)).isEqualTo(expected);
+        assertThat(filter.walk(FilterSpecificString.INSTANCE)).isEqualTo(expected);
     }
 
-    private static String toString(Filter filter) {
-        return Strings.of(filter);
+    private enum FilterSpecificString implements Filter.Visitor<String> {
+        INSTANCE;
+
+        @Override
+        public String visit(FilterIsNull isNull) {
+            return of(isNull);
+        }
+
+        @Override
+        public String visit(FilterIsNotNull isNotNull) {
+            return of(isNotNull);
+        }
+
+        @Override
+        public String visit(FilterComparison comparison) {
+            return of(comparison);
+        }
+
+        @Override
+        public String visit(FilterNot<?> not) {
+            return of(not);
+        }
+
+        @Override
+        public String visit(FilterOr ors) {
+            return of(ors);
+        }
+
+        @Override
+        public String visit(FilterAnd ands) {
+            return of(ands);
+        }
+
+        @Override
+        public String visit(ColumnName columnName) {
+            return of(columnName);
+        }
+
+        @Override
+        public String visit(boolean literal) {
+            return of(literal);
+        }
+
+        @Override
+        public String visit(RawString rawString) {
+            return of(rawString);
+        }
     }
 }
