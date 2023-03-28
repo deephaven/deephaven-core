@@ -396,7 +396,7 @@ public class KafkaTools {
                 break;
             }
             case MAP:
-                columnsOut.add(ColumnDefinition.fromGenericType(mappedNameForColumn, GenericRecord.class));
+                columnsOut.add(ColumnDefinition.fromGenericType(mappedNameForColumn, Map.class));
                 break;
             case NULL:
             default:

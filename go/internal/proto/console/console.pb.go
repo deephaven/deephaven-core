@@ -776,14 +776,19 @@ func (x *GetHeapInfoResponse) GetFreeMemory() int64 {
 	return 0
 }
 
+// Presently you get _all_ logs, not just your console. A future version might take a specific console_id to
+// restrict this to a single console.
 type LogSubscriptionRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// presently you get _all_ logs, not just your console
-	//
 	//	Ticket console_id = 1;
+	//
+	// If a non-zero value is specified, represents the timestamp in microseconds since the unix epoch when
+	// the client last saw a message. Technically this might skip messages if more than one message was
+	// logged at the same microsecond that connection was lost - to avoid this, subtract one from the last
+	// seen message's micros, and expect to receive some messages that have already been seen.
 	LastSeenLogTimestamp int64    `protobuf:"varint,1,opt,name=last_seen_log_timestamp,json=lastSeenLogTimestamp,proto3" json:"last_seen_log_timestamp,omitempty"`
 	Levels               []string `protobuf:"bytes,2,rep,name=levels,proto3" json:"levels,omitempty"`
 }
