@@ -2363,11 +2363,12 @@ type GetCompletionItemsResponse struct {
 	unknownFields protoimpl.UnknownFields
 
 	Items []*CompletionItem `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
-	// These fields are maintained for backwards compatibility
-	// Use the same fields on AutoCompleteResponse instead
+	// Maintained for backwards compatibility. Use the same field on AutoCompleteResponse instead
 	//
 	// Deprecated: Do not use.
 	RequestId int32 `protobuf:"varint,2,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
+	// Maintained for backwards compatibility. Use the same field on AutoCompleteResponse instead
+	//
 	// Deprecated: Do not use.
 	Success bool `protobuf:"varint,3,opt,name=success,proto3" json:"success,omitempty"`
 }
