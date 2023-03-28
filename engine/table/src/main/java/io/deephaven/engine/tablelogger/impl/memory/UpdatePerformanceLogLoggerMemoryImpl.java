@@ -5,7 +5,7 @@ package io.deephaven.engine.tablelogger.impl.memory;
 
 import java.io.IOException;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.impl.util.MemoryTableLoggers;
+import io.deephaven.engine.table.impl.util.EngineMetrics;
 import io.deephaven.engine.tablelogger.UpdatePerformanceLogLogger;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.util.ColumnsSpecHelper;
@@ -25,7 +25,7 @@ class UpdatePerformanceLogLoggerMemoryImpl extends MemoryTableLogger<UpdatePerfo
 
     public UpdatePerformanceLogLoggerMemoryImpl() {
         super(TABLE_NAME, TABLE_DEFINITION);
-        this.processUniqueId = MemoryTableLoggers.getProcessInfo().getId().value();
+        this.processUniqueId = EngineMetrics.getProcessInfo().getId().value();
     }
 
     interface ISetter extends WritableRowContainer {

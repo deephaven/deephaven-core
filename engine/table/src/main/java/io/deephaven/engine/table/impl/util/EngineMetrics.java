@@ -23,15 +23,15 @@ import io.deephaven.stats.Driver;
 
 import java.io.IOException;
 
-public class MemoryTableLoggers {
+public class EngineMetrics {
     private static final boolean STATS_LOGGING_ENABLED = Configuration.getInstance().getBooleanWithDefault(
             "statsLoggingEnabled", true);
     private volatile static ProcessInfo processInfo;
-    private volatile static MemoryTableLoggers INSTANCE;
+    private volatile static EngineMetrics INSTANCE;
 
     public static ProcessInfo getProcessInfo() {
         if (processInfo == null) {
-            synchronized (MemoryTableLoggers.class) {
+            synchronized (EngineMetrics.class) {
                 try {
                     processInfo = ProcessInfoConfig.createForCurrentProcess(Configuration.getInstance());
                 } catch (IOException e) {
@@ -42,11 +42,11 @@ public class MemoryTableLoggers {
         return processInfo;
     }
 
-    public static MemoryTableLoggers getInstance() {
+    public static EngineMetrics getInstance() {
         if (INSTANCE == null) {
-            synchronized (MemoryTableLoggers.class) {
+            synchronized (EngineMetrics.class) {
                 if (INSTANCE == null) {
-                    INSTANCE = new MemoryTableLoggers();
+                    INSTANCE = new EngineMetrics();
                 }
             }
         }
@@ -59,9 +59,9 @@ public class MemoryTableLoggers {
     private final ProcessMetricsLogLogger processMetricsLogger;
     private final StatsIntradayLogger statsLogger;
 
-    private MemoryTableLoggers() {
+    private EngineMetrics() {
         EngineTableLoggerProvider.Factory tableLoggerFactory = EngineTableLoggerProvider.get();
-        final Logger log = LoggerFactory.getLogger(MemoryTableLoggers.class);
+        final Logger log = LoggerFactory.getLogger(EngineMetrics.class);
         ProcessInfo pInfo = null;
         ProcessInfoLogLogger pInfoLogger = null;
         try {
@@ -115,12 +115,12 @@ public class MemoryTableLoggers {
     }
 
     public static boolean maybeStartStatsCollection() {
-        if (!MemoryTableLoggers.STATS_LOGGING_ENABLED) {
+        if (!EngineMetrics.STATS_LOGGING_ENABLED) {
             return false;
         }
         final boolean fdStatsLoggingEnabled = Configuration.getInstance().getBooleanWithDefault(
                 "fdStatsLoggingEnabled", false);
-        Driver.start(Clock.system(), MemoryTableLoggers.getInstance().getStatsLogger(), fdStatsLoggingEnabled);
+        Driver.start(Clock.system(), EngineMetrics.getInstance().getStatsLogger(), fdStatsLoggingEnabled);
         return true;
     }
 }
