@@ -128,6 +128,16 @@ public class TestUpdateByGeneral extends BaseUpdateByTest implements UpdateError
                                 UpdateByOperation.RollingAvg("ts", Duration.ofMinutes(5), Duration.ofMinutes(5),
                                         makeOpColNames(columnNamesArray, "_rollavgtimerev", "Sym", "ts", "boolCol")),
 
+                                UpdateByOperation.RollingMin(50, 50,
+                                        makeOpColNames(columnNamesArray, "_rollminticksrev", "Sym", "ts", "boolCol")),
+                                UpdateByOperation.RollingMin("ts", Duration.ofMinutes(5), Duration.ofMinutes(5),
+                                        makeOpColNames(columnNamesArray, "_rollmintimerev", "Sym", "ts", "boolCol")),
+
+                                UpdateByOperation.RollingMax(50, 50,
+                                        makeOpColNames(columnNamesArray, "_rollmaxticksrev", "Sym", "ts", "boolCol")),
+                                UpdateByOperation.RollingMax("ts", Duration.ofMinutes(5), Duration.ofMinutes(5),
+                                        makeOpColNames(columnNamesArray, "_rollmaxtimerev", "Sym", "ts", "boolCol")),
+
                                 UpdateByOperation.Ema(skipControl, "ts", Duration.ofMinutes(10),
                                         makeOpColNames(columnNamesArray, "_ema", "Sym", "ts", "boolCol")),
                                 UpdateByOperation.CumSum(makeOpColNames(columnNamesArray, "_sum", "Sym", "ts")),
@@ -238,6 +248,16 @@ public class TestUpdateByGeneral extends BaseUpdateByTest implements UpdateError
                         makeOpColNames(columnNamesArray, "_rollavgticksrev", "Sym", "ts", "boolCol")),
                 UpdateByOperation.RollingAvg("ts", Duration.ofMinutes(15), Duration.ofMinutes(0),
                         makeOpColNames(columnNamesArray, "_rollavgtimerev", "Sym", "ts", "boolCol")),
+
+                UpdateByOperation.RollingMin(100, 0,
+                        makeOpColNames(columnNamesArray, "_rollminticksrev", "Sym", "ts", "boolCol")),
+                UpdateByOperation.RollingMin("ts", Duration.ofMinutes(5), Duration.ofMinutes(0),
+                        makeOpColNames(columnNamesArray, "_rollmintimerev", "Sym", "ts", "boolCol")),
+
+                UpdateByOperation.RollingMax(100, 0,
+                        makeOpColNames(columnNamesArray, "_rollmaxticksrev", "Sym", "ts", "boolCol")),
+                UpdateByOperation.RollingMax("ts", Duration.ofMinutes(5), Duration.ofMinutes(0),
+                        makeOpColNames(columnNamesArray, "_rollmaxtimerev", "Sym", "ts", "boolCol")),
 
                 UpdateByOperation.Ema(skipControl, "ts", 10 * MINUTE,
                         makeOpColNames(columnNamesArray, "_ema", "Sym", "ts", "boolCol")),

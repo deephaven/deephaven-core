@@ -86,6 +86,12 @@ public class UpdateBySpecBuilderTest {
         public UpdateByColumn.UpdateBySpec visit(RollingAvgSpec p) {
             return null;
         }
+
+        // TODO: add this correctly (DHC #3392)
+        @Override
+        public UpdateByColumn.UpdateBySpec visit(RollingMinMaxSpec p) {
+            return null;
+        }
     }
 
     @Test

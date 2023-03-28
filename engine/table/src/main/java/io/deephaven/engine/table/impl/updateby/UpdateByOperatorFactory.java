@@ -13,8 +13,9 @@ import io.deephaven.engine.table.impl.updateby.ema.*;
 import io.deephaven.engine.table.impl.updateby.fill.*;
 import io.deephaven.engine.table.impl.updateby.minmax.*;
 import io.deephaven.engine.table.impl.updateby.prod.*;
-import io.deephaven.engine.table.impl.updateby.rollingavg.*;
 import io.deephaven.engine.table.impl.updateby.rollinggroup.*;
+import io.deephaven.engine.table.impl.updateby.rollingavg.*;
+import io.deephaven.engine.table.impl.updateby.rollingminmax.*;
 import io.deephaven.engine.table.impl.updateby.rollingsum.*;
 import io.deephaven.engine.table.impl.updateby.sum.*;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
@@ -386,6 +387,20 @@ public class UpdateByOperatorFactory {
             return null;
         }
 
+        @Override
+        public Void visit(@NotNull final RollingMinMaxSpec rmm) {
+            final boolean isTimeBased = rmm.revWindowScale().isTimeBased();
+            final String timestampCol = rmm.revWindowScale().timestampCol();
+
+            Arrays.stream(pairs)
+                    .filter(p -> !isTimeBased || !p.rightColumn().equals(timestampCol))
+                    .map(fc -> makeRollingMinMaxOperator(fc,
+                            source,
+                            rmm))
+                    .forEach(ops::add);
+            return null;
+        }
+
         private UpdateByOperator makeEmaOperator(@NotNull final MatchPair pair,
                 @NotNull final Table source,
                 @NotNull final EmaSpec ema) {
@@ -677,6 +692,60 @@ public class UpdateByOperatorFactory {
             }
 
             throw new IllegalArgumentException("Can not perform RollingSum on type " + csType);
+        }
+
+        private UpdateByOperator makeRollingMinMaxOperator(@NotNull MatchPair pair,
+                @NotNull Table source,
+                @NotNull RollingMinMaxSpec rmm) {
+            final ColumnSource<?> columnSource = source.getColumnSource(pair.rightColumn);
+            final Class<?> csType = columnSource.getType();
+
+            final String[] affectingColumns;
+            if (rmm.revWindowScale().timestampCol() == null) {
+                affectingColumns = new String[] {pair.rightColumn};
+            } else {
+                affectingColumns = new String[] {rmm.revWindowScale().timestampCol(), pair.rightColumn};
+            }
+
+            final long prevWindowScaleUnits = rmm.revWindowScale().timescaleUnits();
+            final long fwdWindowScaleUnits = rmm.fwdWindowScale().timescaleUnits();
+
+            if (csType == byte.class || csType == Byte.class) {
+                return new ByteRollingMinMaxOperator(pair, affectingColumns, rowRedirection,
+                        rmm.revWindowScale().timestampCol(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits, rmm.isMax());
+            } else if (csType == char.class || csType == Character.class) {
+                return new CharRollingMinMaxOperator(pair, affectingColumns, rowRedirection,
+                        rmm.revWindowScale().timestampCol(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits, rmm.isMax());
+            } else if (csType == short.class || csType == Short.class) {
+                return new ShortRollingMinMaxOperator(pair, affectingColumns, rowRedirection,
+                        rmm.revWindowScale().timestampCol(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits, rmm.isMax());
+            } else if (csType == int.class || csType == Integer.class) {
+                return new IntRollingMinMaxOperator(pair, affectingColumns, rowRedirection,
+                        rmm.revWindowScale().timestampCol(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits, rmm.isMax());
+            } else if (csType == long.class || csType == Long.class || isTimeType(csType)) {
+                return new LongRollingMinMaxOperator(pair, affectingColumns, rowRedirection,
+                        rmm.revWindowScale().timestampCol(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits, rmm.isMax());
+            } else if (csType == float.class || csType == Float.class) {
+                return new FloatRollingMinMaxOperator(pair, affectingColumns, rowRedirection,
+                        rmm.revWindowScale().timestampCol(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits, rmm.isMax());
+            } else if (csType == double.class || csType == Double.class) {
+                return new DoubleRollingMinMaxOperator(pair, affectingColumns, rowRedirection,
+                        rmm.revWindowScale().timestampCol(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits, rmm.isMax());
+            } else if (Comparable.class.isAssignableFrom(csType)) {
+                // noinspection rawtypes
+                return new ComparableRollingMinMaxOperator<>(pair, affectingColumns, rowRedirection,
+                        rmm.revWindowScale().timestampCol(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits, rmm.isMax(), csType);
+            }
+
+            throw new IllegalArgumentException("Can not perform Rolling Min/Max on type " + csType);
         }
     }
 }
