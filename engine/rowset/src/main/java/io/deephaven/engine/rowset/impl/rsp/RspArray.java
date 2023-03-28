@@ -721,17 +721,19 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         size = endIdx - startIdx + 1;
         spanInfos = new long[size];
         spans = new Object[size];
+        long srcAccBeforeStart = -1;
         if (size > accNullThreshold) {
             acc = new long[size];
-            cardData = size - 1;
+            if (src.acc == null) {
+                cardData = -1;
+            } else {
+                srcAccBeforeStart = (startIdx == 0) ? 0 : src.acc[startIdx - 1];
+                cardData = size - 1;
+            }
         } else {
             acc = null;
         }
 
-        long srcAccBeforeStart = -1;
-        if (acc != null && src.acc != null) {
-            srcAccBeforeStart = (startIdx == 0) ? 0 : src.acc[startIdx - 1];
-        }
         for (int i = 0; i < size; ++i) {
             final int isrc = startIdx + i;
             if (srcAccBeforeStart != -1) {
@@ -752,6 +754,8 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         }
         if (acc == null) {
             ensureCardData(false);
+        } else if (src.acc == null) {
+            ensureCardinalityCache(false);
         }
         ifDebugValidate();
     }
