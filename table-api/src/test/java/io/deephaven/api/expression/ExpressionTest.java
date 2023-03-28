@@ -6,7 +6,6 @@ package io.deephaven.api.expression;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.RawString;
 import io.deephaven.api.filter.Filter;
-import io.deephaven.api.filter.FilterComparison;
 import io.deephaven.api.literal.Literal;
 import org.junit.jupiter.api.Test;
 
@@ -17,7 +16,9 @@ import static io.deephaven.api.filter.Filter.isNull;
 import static io.deephaven.api.filter.Filter.ofFalse;
 import static io.deephaven.api.filter.Filter.ofTrue;
 import static io.deephaven.api.filter.Filter.or;
+import static io.deephaven.api.filter.FilterComparison.eq;
 import static io.deephaven.api.filter.FilterComparison.gt;
+import static io.deephaven.api.filter.FilterComparison.neq;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class ExpressionTest {
@@ -45,8 +46,10 @@ public class ExpressionTest {
 
     @Test
     void expressionFunctionThatTakesFilters() {
-        toString(f("some_func", gt(FOO, BAR), BAZ, ofTrue(), ofFalse(), and(isNull(FOO), isNotNull(BAR))),
-                "some_func(Foo > Bar, Baz, true, false, isNull(Foo) && !isNull(Bar))");
+        toString(
+                f("some_func", gt(FOO, BAR), BAZ, ofTrue(), ofFalse(),
+                        and(isNull(FOO), isNotNull(BAR), or(eq(FOO, BAR), neq(FOO, BAZ)))),
+                "some_func(Foo > Bar, Baz, true, false, isNull(Foo) && !isNull(Bar) && ((Foo == Bar) || (Foo != Baz)))");
     }
 
     @Test

@@ -17,13 +17,17 @@ import static io.deephaven.api.filter.Filter.not;
 import static io.deephaven.api.filter.Filter.ofFalse;
 import static io.deephaven.api.filter.Filter.ofTrue;
 import static io.deephaven.api.filter.Filter.or;
+import static io.deephaven.api.filter.FilterComparison.eq;
 import static io.deephaven.api.filter.FilterComparison.gt;
+import static io.deephaven.api.filter.FilterComparison.neq;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class FilterTest {
 
     private static final ColumnName FOO = ColumnName.of("Foo");
     private static final ColumnName BAR = ColumnName.of("Bar");
+    private static final ColumnName BAZ = ColumnName.of("Baz");
+
 
     @Test
     void filterIsNull() {
@@ -83,6 +87,11 @@ public class FilterTest {
     @Test
     void filterNotNotColumnName() {
         toString(not(not(FOO)), "!!Foo");
+    }
+
+    @Test
+    void filterEqPrecedence() {
+        toString(eq(or(FOO, eq(BAR, BAZ)), and(FOO, neq(BAR, BAZ))), "(Foo || (Bar == Baz)) == (Foo && (Bar != Baz))");
     }
 
     private static void toString(Filter filter, String expected) {

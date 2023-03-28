@@ -120,10 +120,6 @@ public class Strings {
         return filter.walk((Filter.Visitor<String>) new UniversalAdapter(true));
     }
 
-    private static String ofEncapsulated(Literal value) {
-        return value.walk((Literal.Visitor<String>) new UniversalAdapter(true));
-    }
-
     /**
      * If we ever need to provide more specificity for a type, we can create a non-universal impl.
      */

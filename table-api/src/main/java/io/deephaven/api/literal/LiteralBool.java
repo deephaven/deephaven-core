@@ -5,7 +5,6 @@ package io.deephaven.api.literal;
 
 import io.deephaven.annotations.SimpleStyle;
 import io.deephaven.api.filter.Filter;
-import io.deephaven.api.literal.Literal.Visitor;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
 
