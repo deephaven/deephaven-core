@@ -5,9 +5,9 @@ package io.deephaven.engine.table.impl.perf;
 
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.util.MemoryTableLoggerWrapper;
 import io.deephaven.engine.tablelogger.EngineTableLoggerProvider;
 import io.deephaven.engine.tablelogger.UpdatePerformanceLogLogger;
+import io.deephaven.engine.tablelogger.impl.memory.MemoryTableLogger;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.internal.log.LoggerFactory;
@@ -65,14 +65,14 @@ public class UpdatePerformanceTracker {
     }
 
     private final Logger logger;
-    private final MemoryTableLoggerWrapper<UpdatePerformanceLogLogger> tableLogger;
+    private final UpdatePerformanceLogLogger tableLogger;
 
     private final AtomicInteger entryIdCounter = new AtomicInteger(1);
     private final Queue<WeakReference<PerformanceEntry>> entries = new LinkedBlockingDeque<>();
 
     private UpdatePerformanceTracker(@NotNull final Logger logger) {
         this.logger = logger;
-        tableLogger = new MemoryTableLoggerWrapper<>(EngineTableLoggerProvider.get().updatePerformanceLogLogger());
+        tableLogger = EngineTableLoggerProvider.get().updatePerformanceLogLogger();
     }
 
     private void startThread() {
@@ -195,7 +195,7 @@ public class UpdatePerformanceTracker {
             final boolean encounteredErrorLoggingToMemory) {
         if (!encounteredErrorLoggingToMemory) {
             try {
-                tableLogger.getTableLogger().log(intervalLevelDetails, entry);
+                tableLogger.log(intervalLevelDetails, entry);
             } catch (IOException e) {
                 // Don't want to log this more than once in a report
                 logger.error().append("Error sending UpdatePerformanceLog data to memory").append(e).endl();
@@ -234,6 +234,6 @@ public class UpdatePerformanceTracker {
     }
 
     public QueryTable getQueryTable() {
-        return tableLogger.getQueryTable();
+        return MemoryTableLogger.maybeGetQueryTable(tableLogger);
     }
 }

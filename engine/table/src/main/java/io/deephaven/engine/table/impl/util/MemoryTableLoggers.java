@@ -10,6 +10,7 @@ import io.deephaven.engine.tablelogger.ProcessInfoLogLogger;
 import io.deephaven.engine.tablelogger.ProcessMetricsLogLogger;
 import io.deephaven.engine.tablelogger.QueryOperationPerformanceLogLogger;
 import io.deephaven.engine.tablelogger.QueryPerformanceLogLogger;
+import io.deephaven.engine.tablelogger.impl.memory.MemoryTableLogger;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.stats.StatsIntradayLogger;
 import io.deephaven.engine.table.impl.QueryTable;
@@ -52,30 +53,30 @@ public class MemoryTableLoggers {
         return INSTANCE;
     }
 
-    private final MemoryTableLoggerWrapper<QueryPerformanceLogLogger> qplLogger;
-    private final MemoryTableLoggerWrapper<QueryOperationPerformanceLogLogger> qoplLogger;
-    private final MemoryTableLoggerWrapper<ProcessInfoLogLogger> processInfoLogger;
-    private final MemoryTableLoggerWrapper<ProcessMetricsLogLogger> processMetricsLogger;
+    private final QueryPerformanceLogLogger qplLogger;
+    private final QueryOperationPerformanceLogLogger qoplLogger;
+    private final ProcessInfoLogLogger processInfoLogger;
+    private final ProcessMetricsLogLogger processMetricsLogger;
     private final StatsIntradayLogger statsLogger;
 
     private MemoryTableLoggers() {
         EngineTableLoggerProvider.Factory tableLoggerFactory = EngineTableLoggerProvider.get();
         final Logger log = LoggerFactory.getLogger(MemoryTableLoggers.class);
         ProcessInfo pInfo = null;
-        MemoryTableLoggerWrapper<ProcessInfoLogLogger> pInfoLogger = null;
+        ProcessInfoLogLogger pInfoLogger = null;
         try {
             pInfo = getProcessInfo();
-            pInfoLogger = new MemoryTableLoggerWrapper<>(tableLoggerFactory.processInfoLogLogger());
-            new ProcessInfoStoreDBImpl(pInfoLogger.getTableLogger()).put(pInfo);
+            pInfoLogger = tableLoggerFactory.processInfoLogLogger();
+            new ProcessInfoStoreDBImpl(pInfoLogger).put(pInfo);
         } catch (IOException e) {
             log.fatal().append("Failed to configure process info: ").append(e.toString()).endl();
         }
         processInfoLogger = pInfoLogger;
-        qplLogger = new MemoryTableLoggerWrapper<>(tableLoggerFactory.queryPerformanceLogLogger());
-        qoplLogger = new MemoryTableLoggerWrapper<>(tableLoggerFactory.queryOperationPerformanceLogLogger());
+        qplLogger = tableLoggerFactory.queryPerformanceLogLogger();
+        qoplLogger = tableLoggerFactory.queryOperationPerformanceLogLogger();
         if (STATS_LOGGING_ENABLED) {
-            processMetricsLogger = new MemoryTableLoggerWrapper<>(tableLoggerFactory.processMetricsLogLogger());
-            statsLogger = new StatsIntradayLoggerDBImpl(pInfo.getId(), processMetricsLogger.getTableLogger());
+            processMetricsLogger = tableLoggerFactory.processMetricsLogLogger();
+            statsLogger = new StatsIntradayLoggerDBImpl(pInfo.getId(), processMetricsLogger);
         } else {
             processMetricsLogger = null;
             statsLogger = null;
@@ -83,28 +84,28 @@ public class MemoryTableLoggers {
     }
 
     public QueryTable getQplLoggerQueryTable() {
-        return qplLogger.getQueryTable();
+        return MemoryTableLogger.maybeGetQueryTable(qplLogger);
     }
 
     public QueryTable getQoplLoggerQueryTable() {
-        return qoplLogger.getQueryTable();
+        return MemoryTableLogger.maybeGetQueryTable(qoplLogger);
     }
 
     public QueryPerformanceLogLogger getQplLogger() {
-        return qplLogger.getTableLogger();
+        return qplLogger;
     }
 
     public QueryOperationPerformanceLogLogger getQoplLogger() {
-        return qoplLogger.getTableLogger();
+        return qoplLogger;
     }
 
     public QueryTable getProcessInfoQueryTable() {
-        return processInfoLogger.getQueryTable();
+        return MemoryTableLogger.maybeGetQueryTable(processInfoLogger);
     }
 
     public QueryTable getProcessMetricsQueryTable() {
         if (processMetricsLogger != null) {
-            return processMetricsLogger.getQueryTable();
+            return MemoryTableLogger.maybeGetQueryTable(processMetricsLogger);
         }
         return null;
     }

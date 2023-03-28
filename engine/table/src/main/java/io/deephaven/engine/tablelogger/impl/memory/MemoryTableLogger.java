@@ -16,6 +16,14 @@ import java.io.UncheckedIOException;
  * Base class for memory table loggers that create and initialize a {@link DynamicTableWriter}.
  */
 public abstract class MemoryTableLogger<T extends WritableRowContainer> extends TableLoggerImpl2<T> {
+    public static QueryTable maybeGetQueryTable(final Object maybeMemoryTableLogger) {
+        if (maybeMemoryTableLogger instanceof MemoryTableLogger) {
+            return ((MemoryTableLogger)maybeMemoryTableLogger).getQueryTable();
+        }
+
+        throw new UnsupportedOperationException("Only supported for memory table loggers.");
+    }
+
     private final DynamicTableWriter tableWriter;
 
     protected MemoryTableLogger(final String tableName, final TableDefinition tableDefinition,
