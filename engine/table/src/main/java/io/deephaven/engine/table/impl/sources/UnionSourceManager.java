@@ -499,10 +499,12 @@ public class UnionSourceManager {
             }
 
             if (changes == null || changes.empty()) {
+                // constituent is either static or did not change this cycle
                 if (slotAllocationChanged) {
                     currFirstRowKeys[nextCurrentSlot + 1] = checkOverflow(nextSlotPrevFirstRowKey + shiftDelta);
                     resultRows.insertWithShift(currFirstRowKey, constituent.getRowSet());
-                    if (shiftDelta != 0) {
+                    // don't bother shifting if the constituent is empty
+                    if (shiftDelta != 0 && constituent.size() > 0) {
                         downstreamShiftBuilder.shiftRange(prevFirstRowKey, prevLastRowKey, shiftDelta);
                     }
                 }
@@ -556,8 +558,13 @@ public class UnionSourceManager {
                     resultRows.insertWithShift(currFirstRowKey, constituent.getRowSet());
                 }
             } else if (shiftDelta != 0) {
-                Assert.assertion(slotAllocationChanged, "slotAllocationChanged");
-                downstreamShiftBuilder.shiftRange(prevFirstRowKey, prevLastRowKey, shiftDelta);
+                try (final RowSet prevRowSet = constituent.getRowSet().copyPrev()) {
+                    // if prev row set is identical to rows removed, then we do not need to shift
+                    if (!prevRowSet.equals(changes.removed())) {
+                        Assert.assertion(slotAllocationChanged, "slotAllocationChanged");
+                        downstreamShiftBuilder.shiftRange(prevFirstRowKey, prevLastRowKey, shiftDelta);
+                    }
+                }
             }
         }
 

@@ -630,6 +630,9 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
             Assert.assertion(getRowSet().sizePrev() == 0 || getRowSet().lastRowKeyPrev() < update.added().firstRowKey(),
                     "getRowSet().lastRowKeyPrev() < update.added().firstRowKey()");
         }
+        if (isStream()) {
+            Assert.assertion(update.shifted().empty(), "update.shifted.empty()");
+        }
 
         // First validate that each rowSet is in a sane state.
         if (VALIDATE_UPDATE_INDICES) {
