@@ -502,9 +502,9 @@ public class UnionSourceManager {
                 // Constituent is either static or did not change this cycle
                 if (slotAllocationChanged) {
                     currFirstRowKeys[nextCurrentSlot + 1] = checkOverflow(nextSlotPrevFirstRowKey + shiftDelta);
-                    resultRows.insertWithShift(currFirstRowKey, constituent.getRowSet());
                     // Don't bother shifting or re-inserting if the constituent is empty
-                    if (shiftDelta != 0 && constituent.size() > 0) {
+                    if (constituent.size() > 0) {
+                        resultRows.insertWithShift(currFirstRowKey, constituent.getRowSet());
                         downstreamShiftBuilder.shiftRange(prevFirstRowKey, prevLastRowKey, shiftDelta);
                     }
                 }
@@ -531,7 +531,10 @@ public class UnionSourceManager {
                 nextSlotCurrFirstRowKey = nextSlotPrevFirstRowKey;
             }
 
-            final boolean needToProcessShifts = changes.shifted().nonempty() && constituent.getRowSet().isNonempty();
+            // Ignore shifts if the constituent was empty or became empty
+            final boolean needToProcessShifts = changes.shifted().nonempty()
+                    && constituent.getRowSet().isNonempty()
+                    && constituent.getRowSet().sizePrev() != 0;
 
             if (slotAllocationChanged) {
                 resultRows.insertWithShift(currFirstRowKey, constituent.getRowSet());
@@ -557,14 +560,11 @@ public class UnionSourceManager {
                     resultRows.removeRange(prevFirstRowKey, prevLastRowKey);
                     resultRows.insertWithShift(currFirstRowKey, constituent.getRowSet());
                 }
-            } else if (shiftDelta != 0) {
-                try (final RowSet prevRowSet = constituent.getRowSet().copyPrev()) {
-                    // if prev row set is identical to rows removed, then we do not need to shift
-                    if (!prevRowSet.equals(changes.removed())) {
-                        Assert.assertion(slotAllocationChanged, "slotAllocationChanged");
-                        downstreamShiftBuilder.shiftRange(prevFirstRowKey, prevLastRowKey, shiftDelta);
-                    }
-                }
+            } else if (shiftDelta != 0 && constituent.getRowSet().sizePrev() != changes.removed().size()) {
+                // Note that changes.removed() must be a subset of the constituent's previous row set.
+                // If constituent is removing all of its previous rows, then we do not need to propagate a shift.
+                Assert.assertion(slotAllocationChanged, "slotAllocationChanged");
+                downstreamShiftBuilder.shiftRange(prevFirstRowKey, prevLastRowKey, shiftDelta);
             }
         }
 

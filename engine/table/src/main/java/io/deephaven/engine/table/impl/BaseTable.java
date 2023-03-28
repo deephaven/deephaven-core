@@ -619,7 +619,7 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
         Assert.neqNull(update.shifted(), "shifted");
 
         if (isFlat()) {
-            Assert.assertion(getRowSet().isFlat(), "build().isFlat()", getRowSet(), "build()");
+            Assert.assertion(getRowSet().isFlat(), "getRowSet().isFlat()", getRowSet(), "getRowSet()");
         }
         if (isAppendOnly() || isAddOnly()) {
             Assert.assertion(update.removed().isEmpty(), "update.removed.empty()");
