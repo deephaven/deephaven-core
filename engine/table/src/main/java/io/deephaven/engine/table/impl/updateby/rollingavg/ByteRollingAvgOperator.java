@@ -1,9 +1,9 @@
 /*
  * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit ShortRollingSumOperator and regenerate
+ * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharRollingAvgOperator and regenerate
  * ---------------------------------------------------------------------------------------------------------------------
  */
-package io.deephaven.engine.table.impl.updateby.rollingsum;
+package io.deephaven.engine.table.impl.updateby.rollingavg;
 
 import io.deephaven.base.ringbuffer.ByteRingBuffer;
 import io.deephaven.base.verify.Assert;
@@ -12,27 +12,26 @@ import io.deephaven.chunk.ByteChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
-import io.deephaven.engine.table.impl.updateby.internal.BaseLongUpdateByOperator;
+import io.deephaven.engine.table.impl.updateby.internal.BaseDoubleUpdateByOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static io.deephaven.util.QueryConstants.*;
 
-public class ByteRollingSumOperator extends BaseLongUpdateByOperator {
-    private static final int RING_BUFFER_INITIAL_CAPACITY = 512;
+public class ByteRollingAvgOperator extends BaseDoubleUpdateByOperator {
+    private static final int BUFFER_INITIAL_CAPACITY = 128;
     // region extra-fields
     final byte nullValue;
     // endregion extra-fields
 
-    protected class Context extends BaseLongUpdateByOperator.Context {
+    protected class Context extends BaseDoubleUpdateByOperator.Context {
         protected ByteChunk<? extends Values> byteInfluencerValuesChunk;
         protected ByteRingBuffer byteWindowValues;
 
-
         protected Context(final int chunkSize) {
             super(chunkSize);
-            byteWindowValues = new ByteRingBuffer(RING_BUFFER_INITIAL_CAPACITY, true);
+            byteWindowValues = new ByteRingBuffer(BUFFER_INITIAL_CAPACITY, true);
         }
 
         @Override
@@ -40,7 +39,6 @@ public class ByteRollingSumOperator extends BaseLongUpdateByOperator {
             super.close();
             byteWindowValues = null;
         }
-
 
         @Override
         public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
@@ -52,12 +50,12 @@ public class ByteRollingSumOperator extends BaseLongUpdateByOperator {
             byteWindowValues.ensureRemaining(count);
 
             for (int ii = 0; ii < count; ii++) {
-                byte val = byteInfluencerValuesChunk.get(pos + ii);
+                final byte val = byteInfluencerValuesChunk.get(pos + ii);
                 byteWindowValues.addUnsafe(val);
 
                 // increase the running sum
                 if (val != nullValue) {
-                    if (curVal == NULL_LONG) {
+                    if (curVal == NULL_DOUBLE) {
                         curVal = val;
                     } else {
                         curVal += val;
@@ -86,10 +84,11 @@ public class ByteRollingSumOperator extends BaseLongUpdateByOperator {
 
         @Override
         public void writeToOutputChunk(int outIdx) {
-            if (byteWindowValues.size() == nullCount) {
-                outputValues.set(outIdx, NULL_LONG);
+            if (byteWindowValues.size() == 0) {
+                outputValues.set(outIdx, NULL_DOUBLE);
             } else {
-                outputValues.set(outIdx, curVal);
+                final int count = byteWindowValues.size() - nullCount;
+                outputValues.set(outIdx, curVal / (double)count);
             }
         }
 
@@ -106,15 +105,15 @@ public class ByteRollingSumOperator extends BaseLongUpdateByOperator {
         return new Context(chunkSize);
     }
 
-    public ByteRollingSumOperator(@NotNull final MatchPair pair,
-                                   @NotNull final String[] affectingColumns,
-                                   @Nullable final RowRedirection rowRedirection,
-                                   @Nullable final String timestampColumnName,
-                                   final long reverseWindowScaleUnits,
-                                   final long forwardWindowScaleUnits
-                                   // region extra-constructor-args
+    public ByteRollingAvgOperator(@NotNull final MatchPair pair,
+                                  @NotNull final String[] affectingColumns,
+                                  @Nullable final RowRedirection rowRedirection,
+                                  @Nullable final String timestampColumnName,
+                                  final long reverseWindowScaleUnits,
+                                  final long forwardWindowScaleUnits
+                                  // region extra-constructor-args
                                ,final byte nullValue
-                                   // endregion extra-constructor-args
+                                  // endregion extra-constructor-args
     ) {
         super(pair, affectingColumns, rowRedirection, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true);
         // region constructor

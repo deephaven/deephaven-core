@@ -74,18 +74,24 @@ public class UpdateBySpecBuilderTest {
             return null;
         }
 
-        // TODO: add this correctly
+        // TODO: add this correctly (DHC #3392)
         @Override
         public UpdateByColumn.UpdateBySpec visit(RollingGroupSpec p) {
             return null;
         }
 
-        // TODO: add this correctly
+
+        // TODO: add this correctly (DHC #3392)
+        @Override
+        public UpdateByColumn.UpdateBySpec visit(RollingAvgSpec p) {
+            return null;
+        }
+
+        // TODO: add this correctly (DHC #3392)
         @Override
         public UpdateByColumn.UpdateBySpec visit(RollingMinMaxSpec p) {
             return null;
         }
-
     }
 
     @Test
