@@ -499,7 +499,7 @@ public class UnionSourceManager {
             }
 
             if (changes == null || changes.empty()) {
-                // constituent is either static or did not change this cycle
+                // Constituent is either static or did not change this cycle
                 if (slotAllocationChanged) {
                     currFirstRowKeys[nextCurrentSlot + 1] = checkOverflow(nextSlotPrevFirstRowKey + shiftDelta);
                     resultRows.insertWithShift(currFirstRowKey, constituent.getRowSet());
