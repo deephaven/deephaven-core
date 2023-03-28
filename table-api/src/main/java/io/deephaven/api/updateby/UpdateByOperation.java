@@ -819,21 +819,6 @@ public interface UpdateByOperation {
 
     /**
      * Create a {@link RollingProductSpec rolling product} for the supplied column name pairs, using ticks as the
-     * windowing unit. Ticks are row counts and you may specify the previous window in number of rows to include. The
-     * current row is considered to belong to the reverse window, so calling this with {@code revTicks = 1} will simply
-     * return the current row. Specifying {@code revTicks = 10} will include the previous 9 rows to this one and this
-     * row for a total of 10 rows.
-     *
-     * @param revTicks the look-behind window size (in rows/ticks)
-     * @param pairs The input/output column name pairs
-     * @return The aggregation
-     */
-    static UpdateByOperation RollingProduct(long revTicks, String... pairs) {
-        return RollingProductSpec.ofTicks(revTicks).clause(pairs);
-    }
-
-    /**
-     * Create a {@link RollingProductSpec rolling product} for the supplied column name pairs, using ticks as the
      * windowing unit. Ticks are row counts and you may specify the reverse and forward window in number of rows to
      * include. The current row is considered to belong to the reverse window but not the forward window. Also, negative
      * values are allowed and can be used to generate completely forward or completely reverse windows. Here are some
