@@ -59,7 +59,7 @@ public abstract class RollingMinMaxSpec extends RollingOpSpec {
         return
         // is primitive or boxed numeric?
         applicableToNumeric(inputType)
-
+                || inputType == char.class || inputType == Character.class
                 // is comparable?
                 || (Comparable.class.isAssignableFrom(inputType) && inputType != Boolean.class);
     }
