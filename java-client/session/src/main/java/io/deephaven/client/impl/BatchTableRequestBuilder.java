@@ -674,12 +674,13 @@ class BatchTableRequestBuilder {
 
         @Override
         public Condition visit(FilterNot<?> not) {
-            final Filter simplified = not.simplify();
-            if (not.equals(simplified)) {
+            // This is a shallow simplification that removes the need for setNot when it is not needed.
+            final Filter invertedFilter = not.invertFilter();
+            if (not.equals(invertedFilter)) {
                 return Condition.newBuilder().setNot(NotCondition.newBuilder().setFilter(of(not.filter())).build())
                         .build();
             } else {
-                return of(simplified);
+                return of(invertedFilter);
             }
         }
 

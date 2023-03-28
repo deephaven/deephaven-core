@@ -37,12 +37,12 @@ public abstract class FilterNot<F extends Filter> extends FilterBase {
     }
 
     /**
-     * Creates the logical equivalent of {@code this}. Equivalent to {@code filter().inverse()}. It's possible that the
-     * "simplification" is equal to {@code this}.
+     * Creates a logical equivalent of {@code this} equal to {@code filter().inverse()}. It's possible that the result
+     * is equal to {@code this}.
      *
-     * @return the simplified filter
+     * @return the inverted filter
      */
-    public final Filter simplify() {
+    public final Filter invertFilter() {
         return filter().invert();
     }
 
