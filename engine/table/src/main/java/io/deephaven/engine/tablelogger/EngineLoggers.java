@@ -1,29 +1,21 @@
 package io.deephaven.engine.tablelogger;
 
-import io.deephaven.engine.tablelogger.impl.memory.EngineTableLoggerMemoryImplFactory;
+import io.deephaven.engine.tablelogger.impl.memory.EngineLoggersFactoryMemoryImpl;
 
 /**
  * Provides the factory for providing engine table loggers.
  */
-public class EngineTableLoggerProvider {
-    private EngineTableLoggerProvider() {
-        throw new UnsupportedOperationException();
-    }
+public class EngineLoggers {
+    private EngineLoggers() {}
 
-    private static Factory factory = new EngineTableLoggerMemoryImplFactory();
+    private static Factory factory = new EngineLoggersFactoryMemoryImpl();
 
     public static Factory get() {
         return factory;
     }
 
     public static void set(final Factory factory) {
-        EngineTableLoggerProvider.factory = factory;
-    }
-
-    /**
-     * Marker interface to associate engine table loggers with one another.
-     */
-    public interface EngineTableLogger {
+        EngineLoggers.factory = factory;
     }
 
     public interface Factory {

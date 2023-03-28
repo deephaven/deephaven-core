@@ -11,7 +11,7 @@ import static io.deephaven.tablelogger.TableLogger.DEFAULT_INTRADAY_LOGGER_FLAGS
 /**
  * Logs data that describes what a worker spent time on during its data refresh cycle.
  */
-public interface UpdatePerformanceLogLogger extends EngineTableLoggerProvider.EngineTableLogger {
+public interface UpdatePerformanceLogLogger {
     default void log(final UpdatePerformanceTracker.IntervalLevelDetails intervalLevelDetails,
             final PerformanceEntry performanceEntry) throws IOException {
         log(DEFAULT_INTRADAY_LOGGER_FLAGS, intervalLevelDetails, performanceEntry);

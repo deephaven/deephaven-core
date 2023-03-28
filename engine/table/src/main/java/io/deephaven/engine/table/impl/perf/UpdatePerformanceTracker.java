@@ -5,7 +5,7 @@ package io.deephaven.engine.table.impl.perf;
 
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.tablelogger.EngineTableLoggerProvider;
+import io.deephaven.engine.tablelogger.EngineLoggers;
 import io.deephaven.engine.tablelogger.UpdatePerformanceLogLogger;
 import io.deephaven.engine.tablelogger.impl.memory.MemoryTableLogger;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
@@ -72,7 +72,7 @@ public class UpdatePerformanceTracker {
 
     private UpdatePerformanceTracker(@NotNull final Logger logger) {
         this.logger = logger;
-        tableLogger = EngineTableLoggerProvider.get().updatePerformanceLogLogger();
+        tableLogger = EngineLoggers.get().updatePerformanceLogLogger();
     }
 
     private void startThread() {

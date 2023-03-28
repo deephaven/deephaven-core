@@ -12,7 +12,7 @@ import java.io.IOException;
  */
 import static io.deephaven.tablelogger.TableLogger.DEFAULT_INTRADAY_LOGGER_FLAGS;
 
-public interface QueryPerformanceLogLogger extends EngineTableLoggerProvider.EngineTableLogger {
+public interface QueryPerformanceLogLogger {
     default void log(final long evaluationNumber, final QueryProcessingResults queryProcessingResults,
             final QueryPerformanceNugget nugget) throws IOException {
         log(DEFAULT_INTRADAY_LOGGER_FLAGS, evaluationNumber, queryProcessingResults, nugget);

@@ -11,7 +11,7 @@ import static io.deephaven.tablelogger.TableLogger.DEFAULT_INTRADAY_LOGGER_FLAGS
  * Logs data that describes performance details on initialization times and memory usage of specific operations within
  * queries.
  */
-public interface QueryOperationPerformanceLogLogger extends EngineTableLoggerProvider.EngineTableLogger {
+public interface QueryOperationPerformanceLogLogger {
     default void log(final int operationNumber, final QueryPerformanceNugget nugget) throws IOException {
         log(DEFAULT_INTRADAY_LOGGER_FLAGS, operationNumber, nugget);
     }

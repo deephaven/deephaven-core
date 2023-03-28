@@ -5,7 +5,7 @@ package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.base.clock.Clock;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.tablelogger.EngineTableLoggerProvider;
+import io.deephaven.engine.tablelogger.EngineLoggers;
 import io.deephaven.engine.tablelogger.ProcessInfoLogLogger;
 import io.deephaven.engine.tablelogger.ProcessMetricsLogLogger;
 import io.deephaven.engine.tablelogger.QueryOperationPerformanceLogLogger;
@@ -60,7 +60,7 @@ public class EngineMetrics {
     private final StatsIntradayLogger statsLogger;
 
     private EngineMetrics() {
-        EngineTableLoggerProvider.Factory tableLoggerFactory = EngineTableLoggerProvider.get();
+        EngineLoggers.Factory tableLoggerFactory = EngineLoggers.get();
         final Logger log = LoggerFactory.getLogger(EngineMetrics.class);
         ProcessInfo pInfo = null;
         ProcessInfoLogLogger pInfoLogger = null;

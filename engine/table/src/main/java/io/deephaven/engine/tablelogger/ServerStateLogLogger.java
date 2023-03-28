@@ -9,7 +9,7 @@ import static io.deephaven.tablelogger.TableLogger.DEFAULT_INTRADAY_LOGGER_FLAGS
 /**
  * Logs data that describes the top-level view of the free and total memory available to the process.
  */
-public interface ServerStateLogLogger extends EngineTableLoggerProvider.EngineTableLogger {
+public interface ServerStateLogLogger {
     default void log(final long intervalStartTime, final int intervalDurationMicros, final int totalMemoryMiB,
             final int freeMemoryMiB, final short intervalCollections, final int intervalCollectionTimeMicros,
             final short intervalUGPCyclesOnBudget, final int[] intervalUGPCyclesTimeMicros,
