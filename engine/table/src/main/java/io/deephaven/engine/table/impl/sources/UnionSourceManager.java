@@ -534,7 +534,7 @@ public class UnionSourceManager {
             // Ignore shifts if the constituent was empty or became empty
             final boolean needToProcessShifts = changes.shifted().nonempty()
                     && constituent.getRowSet().isNonempty()
-                    && constituent.getRowSet().sizePrev() != 0;
+                    && constituent.getRowSet().sizePrev() != changes.removed().size();
 
             if (slotAllocationChanged) {
                 resultRows.insertWithShift(currFirstRowKey, constituent.getRowSet());
