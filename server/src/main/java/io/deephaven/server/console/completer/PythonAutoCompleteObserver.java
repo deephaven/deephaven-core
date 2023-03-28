@@ -151,7 +151,7 @@ public class PythonAutoCompleteObserver extends SessionCloseableObserver<AutoCom
                             .setRequestId(requestId)
                             .build());
 
-        } catch (Exception exception) {
+        } catch (Throwable exception) {
             if (ConsoleServiceGrpcImpl.QUIET_AUTOCOMPLETE_ERRORS) {
                 exception.printStackTrace();
                 if (log.isTraceEnabled()) {
@@ -165,6 +165,9 @@ public class PythonAutoCompleteObserver extends SessionCloseableObserver<AutoCom
                             .setSuccess(false)
                             .setRequestId(requestId)
                             .build());
+            if (exception instanceof Error) {
+                throw exception;
+            }
         }
     }
 
