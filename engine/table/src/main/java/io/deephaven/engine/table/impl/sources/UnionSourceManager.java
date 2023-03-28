@@ -503,7 +503,7 @@ public class UnionSourceManager {
                 if (slotAllocationChanged) {
                     currFirstRowKeys[nextCurrentSlot + 1] = checkOverflow(nextSlotPrevFirstRowKey + shiftDelta);
                     resultRows.insertWithShift(currFirstRowKey, constituent.getRowSet());
-                    // don't bother shifting if the constituent is empty
+                    // Don't bother shifting or re-inserting if the constituent is empty
                     if (shiftDelta != 0 && constituent.size() > 0) {
                         downstreamShiftBuilder.shiftRange(prevFirstRowKey, prevLastRowKey, shiftDelta);
                     }
