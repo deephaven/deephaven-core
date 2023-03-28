@@ -65,12 +65,8 @@ public final class BigIntegerRollingProductOperator extends BaseObjectUpdateByOp
 
                 if (val == null) {
                     nullCount++;
-                } else if (curVal == null) {
-                    curVal = val;
-                } else {
-                    if (val.equals(BigInteger.ZERO)) {
-                        zeroCount++;
-                    }
+                } else if (val.equals(BigInteger.ZERO)) {
+                    zeroCount++;
                 }
             }
         }
@@ -94,7 +90,6 @@ public final class BigIntegerRollingProductOperator extends BaseObjectUpdateByOp
         public void writeToOutputChunk(int outIdx) {
             if (buffer.size() == nullCount) {
                 outputValues.set(outIdx, null);
-                curVal = null;
             } else {
                 outputValues.set(outIdx, zeroCount > 0 ? BigInteger.ZERO : buffer.evaluate());
             }

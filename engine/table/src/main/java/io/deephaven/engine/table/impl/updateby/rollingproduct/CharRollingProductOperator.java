@@ -95,7 +95,6 @@ public class CharRollingProductOperator extends BaseDoubleUpdateByOperator {
         public void writeToOutputChunk(int outIdx) {
             if (buffer.size() == nullCount) {
                 outputValues.set(outIdx, NULL_DOUBLE);
-                curVal = NULL_LONG;
             } else {
                 outputValues.set(outIdx, zeroCount > 0 ? 0.0 : buffer.evaluate());
             }

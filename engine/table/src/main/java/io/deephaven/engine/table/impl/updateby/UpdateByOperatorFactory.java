@@ -638,6 +638,10 @@ public class UpdateByOperatorFactory {
                 return new ByteRollingProductOperator(pair, affectingColumns, rowRedirection,
                         rs.revWindowScale().timestampCol(),
                         prevWindowScaleUnits, fwdWindowScaleUnits);
+            } else if (csType == char.class || csType == Character.class) {
+                return new CharRollingProductOperator(pair, affectingColumns, rowRedirection,
+                        rs.revWindowScale().timestampCol(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits);
             } else if (csType == short.class || csType == Short.class) {
                 return new ShortRollingProductOperator(pair, affectingColumns, rowRedirection,
                         rs.revWindowScale().timestampCol(),
@@ -668,7 +672,7 @@ public class UpdateByOperatorFactory {
                         prevWindowScaleUnits, fwdWindowScaleUnits);
             }
 
-            throw new IllegalArgumentException("Can not perform RollingSum on type " + csType);
+            throw new IllegalArgumentException("Can not perform RollingProduct on type " + csType);
         }
     }
 }

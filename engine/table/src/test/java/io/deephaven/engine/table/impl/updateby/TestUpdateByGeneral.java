@@ -117,10 +117,18 @@ public class TestUpdateByGeneral extends BaseUpdateByTest implements UpdateError
                         final String[] columnNamesArray = base.getDefinition().getColumnNamesArray();
                         final Collection<? extends UpdateByOperation> clauses = List.of(
                                 UpdateByOperation.Fill(),
-                                UpdateByOperation.RollingSum(100, 0,
+                                UpdateByOperation.RollingSum(50, 50,
                                         makeOpColNames(columnNamesArray, "_rollsumticksrev", "Sym", "ts", "boolCol")),
-                                UpdateByOperation.RollingSum("ts", Duration.ofMinutes(15), Duration.ofMinutes(0),
+                                UpdateByOperation.RollingSum("ts", Duration.ofMinutes(5), Duration.ofMinutes(5),
                                         makeOpColNames(columnNamesArray, "_rollsumtimerev", "Sym", "ts", "boolCol")),
+
+                                // Excluding 'bigDecimalCol' because we need fuzzy matching which doesn't exist for BD
+                                UpdateByOperation.RollingProduct(50, 50,
+                                        makeOpColNames(columnNamesArray, "_rollprodticksrev", "Sym", "ts", "boolCol",
+                                                "bigDecimalCol")),
+                                UpdateByOperation.RollingProduct("ts", Duration.ofMinutes(5), Duration.ofMinutes(5),
+                                        makeOpColNames(columnNamesArray, "_rollprodtimerev", "Sym", "ts", "boolCol",
+                                                "bigDecimalCol")),
 
                                 UpdateByOperation.Ema(skipControl, "ts", 10 * MINUTE,
                                         makeOpColNames(columnNamesArray, "_ema", "Sym", "ts", "boolCol")),

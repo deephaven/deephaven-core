@@ -53,6 +53,8 @@ public abstract class RollingProductSpec extends RollingOpSpec {
         return
         // is primitive or boxed numeric
         applicableToNumeric(inputType)
+                // char supported
+                || inputType == char.class || inputType == Character.class
                 // is boolean?
                 || inputType == boolean.class || inputType == Boolean.class;
     }

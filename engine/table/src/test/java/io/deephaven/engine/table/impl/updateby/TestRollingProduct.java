@@ -10,6 +10,7 @@ import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.testutil.GenerateTableUpdates;
 import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.testutil.generator.CharGenerator;
 import io.deephaven.engine.testutil.generator.SortedDateTimeGenerator;
 import io.deephaven.engine.testutil.generator.TestDataGenerator;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
@@ -58,6 +59,7 @@ public class TestRollingProduct extends BaseUpdateByTest {
      * are performed on BigInteger/BigDecimal columns as well.
      */
     final String[] primitiveColumns = new String[] {
+            "charCol",
             "byteCol",
             "shortCol",
             "intCol",
@@ -70,6 +72,7 @@ public class TestRollingProduct extends BaseUpdateByTest {
      * These are used in the ticking table evaluations where we verify dynamic vs static tables.
      */
     final String[] columns = new String[] {
+            "charCol",
             "byteCol",
             "shortCol",
             "intCol",
@@ -391,7 +394,9 @@ public class TestRollingProduct extends BaseUpdateByTest {
     }
 
     private void doTestStaticZeroKey(final int prevTicks, final int postTicks) {
-        final QueryTable t = createTestTable(STATIC_TABLE_SIZE, true, false, false, 0x31313131).t;
+        final QueryTable t = createTestTable(STATIC_TABLE_SIZE, true, false, false, 0x31313131,
+                new String[] {"charCol"},
+                new TestDataGenerator[] {new CharGenerator('A', 'z', 0.1)}).t;
 
         final Table actual = t.updateBy(UpdateByOperation.RollingProduct(prevTicks, postTicks, primitiveColumns));
         final Table expected = t.update(getCastingFormulas(primitiveColumns))
@@ -405,9 +410,10 @@ public class TestRollingProduct extends BaseUpdateByTest {
 
     private void doTestStaticZeroKeyTimed(final Duration prevTime, final Duration postTime) {
         final QueryTable t = createTestTable(STATIC_TABLE_SIZE, false, false, false, 0xFFFABBBC,
-                new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
+                new String[] {"ts", "charCol"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
                         convertDateTime("2022-03-09T09:00:00.000 NY"),
-                        convertDateTime("2022-03-09T16:30:00.000 NY"))}).t;
+                        convertDateTime("2022-03-09T16:30:00.000 NY")),
+                        new CharGenerator('A', 'z', 0.1)}).t;
 
         final Table actual = t.updateBy(UpdateByOperation.RollingProduct("ts", prevTime, postTime, primitiveColumns));
         final Table expected = t.update(getCastingFormulas(primitiveColumns))
@@ -512,7 +518,9 @@ public class TestRollingProduct extends BaseUpdateByTest {
     }
 
     private void doTestStaticBucketed(boolean grouped, int prevTicks, int postTicks) {
-        final QueryTable t = createTestTable(STATIC_TABLE_SIZE, true, grouped, false, 0x31313131).t;
+        final QueryTable t = createTestTable(STATIC_TABLE_SIZE, true, grouped, false, 0x31313131,
+                new String[] {"charCol"},
+                new TestDataGenerator[] {new CharGenerator('A', 'z', 0.1)}).t;
 
         final Table actual =
                 t.updateBy(UpdateByOperation.RollingProduct(prevTicks, postTicks, primitiveColumns), "Sym");
@@ -527,9 +535,10 @@ public class TestRollingProduct extends BaseUpdateByTest {
 
     private void doTestStaticBucketedTimed(boolean grouped, Duration prevTime, Duration postTime) {
         final QueryTable t = createTestTable(STATIC_TABLE_SIZE, true, grouped, false, 0xFFFABBBC,
-                new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
+                new String[] {"ts", "charCol"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
                         convertDateTime("2022-03-09T09:00:00.000 NY"),
-                        convertDateTime("2022-03-09T16:30:00.000 NY"))}).t;
+                        convertDateTime("2022-03-09T16:30:00.000 NY")),
+                        new CharGenerator('A', 'z', 0.1)}).t;
 
         final Table actual =
                 t.updateBy(UpdateByOperation.RollingProduct("ts", prevTime, postTime, primitiveColumns), "Sym");
@@ -699,9 +708,11 @@ public class TestRollingProduct extends BaseUpdateByTest {
     }
 
     private void doTestAppendOnly(boolean bucketed, int prevTicks, int postTicks) {
-        final CreateResult result = createTestTable(DYNAMIC_TABLE_SIZE, bucketed, false, true, 0x31313131);
+        final CreateResult result = createTestTable(DYNAMIC_TABLE_SIZE, bucketed, false, true, 0x31313131,
+                new String[] {"charCol"},
+                new TestDataGenerator[] {new CharGenerator('A', 'z', 0.1)});
         final QueryTable t = result.t;
-        t.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
+        t.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
 
         final EvalNugget[] nuggets = new EvalNugget[] {
                 new FuzzyEvalNugget() {
@@ -725,13 +736,12 @@ public class TestRollingProduct extends BaseUpdateByTest {
 
     private void doTestAppendOnlyTimed(boolean bucketed, Duration prevTime, Duration postTime) {
         final CreateResult result = createTestTable(DYNAMIC_TABLE_SIZE, bucketed, false, true, 0x31313131,
-                new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
+                new String[] {"ts", "charCol"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
                         convertDateTime("2022-03-09T09:00:00.000 NY"),
-                        convertDateTime("2022-03-09T16:30:00.000 NY"))});
+                        convertDateTime("2022-03-09T16:30:00.000 NY")),
+                        new CharGenerator('A', 'z', 0.1)});
         final QueryTable t = result.t;
-        t.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
-
-        t.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
+        t.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
 
         final EvalNugget[] nuggets = new EvalNugget[] {
                 new FuzzyEvalNugget() {
@@ -870,8 +880,9 @@ public class TestRollingProduct extends BaseUpdateByTest {
     }
 
     private void doTestTicking(final boolean bucketed, final long prevTicks, final long fwdTicks) {
-
-        final CreateResult result = createTestTable(DYNAMIC_TABLE_SIZE, bucketed, false, true, 0x31313131);
+        final CreateResult result = createTestTable(DYNAMIC_TABLE_SIZE, bucketed, false, true, 0x31313131,
+                new String[] {"charCol"},
+                new TestDataGenerator[] {new CharGenerator('A', 'z', 0.1)});
         final QueryTable t = result.t;
 
         final EvalNugget[] nuggets = new EvalNugget[] {
@@ -896,11 +907,11 @@ public class TestRollingProduct extends BaseUpdateByTest {
     }
 
     private void doTestTickingTimed(final boolean bucketed, final Duration prevTime, final Duration postTime) {
-
         final CreateResult result = createTestTable(DYNAMIC_TABLE_SIZE, bucketed, false, true, 0x31313131,
-                new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
+                new String[] {"ts", "charCol"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
                         convertDateTime("2022-03-09T09:00:00.000 NY"),
-                        convertDateTime("2022-03-09T16:30:00.000 NY"))});
+                        convertDateTime("2022-03-09T16:30:00.000 NY")),
+                        new CharGenerator('A', 'z', 0.1)});
 
         final QueryTable t = result.t;
 
@@ -930,7 +941,9 @@ public class TestRollingProduct extends BaseUpdateByTest {
         final int prevTicks = 100;
         final int postTicks = 0;
 
-        final CreateResult result = createTestTable(DYNAMIC_TABLE_SIZE, true, false, true, 0x31313131);
+        final CreateResult result = createTestTable(DYNAMIC_TABLE_SIZE, true, false, true, 0x31313131,
+                new String[] {"charCol"},
+                new TestDataGenerator[] {new CharGenerator('A', 'z', 0.1)});
         final QueryTable t = result.t;
 
         final UpdateByControl control = UpdateByControl.builder().useRedirection(true).build();
@@ -963,9 +976,10 @@ public class TestRollingProduct extends BaseUpdateByTest {
         final Duration postTime = Duration.ofMinutes(0);
 
         final CreateResult result = createTestTable(DYNAMIC_TABLE_SIZE, true, false, true, 0x31313131,
-                new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
+                new String[] {"ts", "charCol"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
                         convertDateTime("2022-03-09T09:00:00.000 NY"),
-                        convertDateTime("2022-03-09T16:30:00.000 NY"))});
+                        convertDateTime("2022-03-09T16:30:00.000 NY")),
+                        new CharGenerator('A', 'z', 0.1)});
 
         final QueryTable t = result.t;
 
