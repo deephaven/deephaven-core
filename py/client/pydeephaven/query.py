@@ -464,3 +464,19 @@ class Query(TableInterface):
             self
         """
         return super().snapshot_when(trigger_table, stamp_cols, initial, incremental, history)
+
+    def where_in(self, filter_table: Any, cols: List[str]):
+        """ Add a where_in operation to the query.
+
+        Returns:
+            self
+        """
+        return super().where_in(filter_table, cols)
+
+    def where_not_in(self, filter_table: Any, cols: List[str]):
+        """ Add a where_not_in operation to the query.
+
+        Returns:
+            self
+        """
+        return super().where_not_in(filter_table, cols)

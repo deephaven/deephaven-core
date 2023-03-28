@@ -10,7 +10,8 @@ from typing import List, Any
 from pydeephaven import agg
 from pydeephaven._table_ops import UpdateOp, LazyUpdateOp, ViewOp, UpdateViewOp, SelectOp, DropColumnsOp, \
     SelectDistinctOp, SortOp, UnstructuredFilterOp, HeadOp, TailOp, HeadByOp, TailByOp, UngroupOp, NaturalJoinOp, \
-    ExactJoinOp, CrossJoinOp, AsOfJoinOp, UpdateByOp, SnapshotTableOp, SnapshotWhenTableOp, AggregateOp, AggregateAllOp
+    ExactJoinOp, CrossJoinOp, AsOfJoinOp, UpdateByOp, SnapshotTableOp, SnapshotWhenTableOp, WhereInTableOp, \
+    AggregateAllOp, AggregateOp
 from pydeephaven.agg import Aggregation, _AggregationColumns
 from pydeephaven.constants import MatchRule, SortDirection
 from pydeephaven.dherror import DHError
@@ -632,4 +633,38 @@ class TableInterface(ABC):
         """
         table_op = SnapshotWhenTableOp(trigger_table=trigger_table, stamp_cols=stamp_cols, initial=initial,
                                        incremental=incremental, history=history)
+        return self.table_op_handler(table_op)
+
+    def where_in(self, filter_table: Any, cols: List[str]):
+        """The where_in method creates a new table containing rows from the source table, where the rows match
+        values in the filter table.
+
+        Args:
+            filter_table (Table): the table containing the set of values to filter on
+            cols (List[str]]): the column name(s)
+
+        Returns:
+            a new table
+
+        Raises:
+            DHError
+        """
+        table_op = WhereInTableOp(filter_table=filter_table, cols=cols, inverted=False)
+        return self.table_op_handler(table_op)
+
+    def where_not_in(self, filter_table: Any, cols: List[str]):
+        """The where_not_in method creates a new table containing rows from the source table, where the rows do not
+        match values in the filter table.
+
+        Args:
+            filter_table (Table): the table containing the set of values to filter on
+            cols (List[str]]): the column name(s)
+
+        Returns:
+            a new table
+
+        Raises:
+            DHError
+        """
+        table_op = WhereInTableOp(filter_table=filter_table, cols=cols, inverted=True)
         return self.table_op_handler(table_op)
