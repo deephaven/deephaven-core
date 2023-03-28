@@ -117,12 +117,18 @@ public class TestUpdateByGeneral extends BaseUpdateByTest implements UpdateError
                         final String[] columnNamesArray = base.getDefinition().getColumnNamesArray();
                         final Collection<? extends UpdateByOperation> clauses = List.of(
                                 UpdateByOperation.Fill(),
-                                UpdateByOperation.RollingSum(100, 0,
+
+                                UpdateByOperation.RollingSum(50, 50,
                                         makeOpColNames(columnNamesArray, "_rollsumticksrev", "Sym", "ts", "boolCol")),
-                                UpdateByOperation.RollingSum("ts", Duration.ofMinutes(15), Duration.ofMinutes(0),
+                                UpdateByOperation.RollingSum("ts", Duration.ofMinutes(5), Duration.ofMinutes(5),
                                         makeOpColNames(columnNamesArray, "_rollsumtimerev", "Sym", "ts", "boolCol")),
 
-                                UpdateByOperation.Ema(skipControl, "ts", 10 * MINUTE,
+                                UpdateByOperation.RollingAvg(50, 50,
+                                        makeOpColNames(columnNamesArray, "_rollavgticksrev", "Sym", "ts", "boolCol")),
+                                UpdateByOperation.RollingAvg("ts", Duration.ofMinutes(5), Duration.ofMinutes(5),
+                                        makeOpColNames(columnNamesArray, "_rollavgtimerev", "Sym", "ts", "boolCol")),
+
+                                UpdateByOperation.Ema(skipControl, "ts", Duration.ofMinutes(10),
                                         makeOpColNames(columnNamesArray, "_ema", "Sym", "ts", "boolCol")),
                                 UpdateByOperation.CumSum(makeOpColNames(columnNamesArray, "_sum", "Sym", "ts")),
                                 UpdateByOperation.CumMin(makeOpColNames(columnNamesArray, "_min", "boolCol")),
@@ -217,31 +223,21 @@ public class TestUpdateByGeneral extends BaseUpdateByTest implements UpdateError
         final String[] columnNamesArray = result.t.getDefinition().getColumnNamesArray();
         final Collection<? extends UpdateByOperation> clauses = List.of(
                 UpdateByOperation.Fill(),
+
+                UpdateByOperation.RollingGroup(50, 50,
+                        makeOpColNames(columnNamesArray, "_rollgroupfwdrev", "Sym", "ts")),
+                UpdateByOperation.RollingGroup("ts", Duration.ofMinutes(5), Duration.ofMinutes(5),
+                        makeOpColNames(columnNamesArray, "_rollgrouptimefwdrev", "Sym", "ts")),
+
                 UpdateByOperation.RollingSum(100, 0,
                         makeOpColNames(columnNamesArray, "_rollsumticksrev", "Sym", "ts", "boolCol")),
                 UpdateByOperation.RollingSum("ts", Duration.ofMinutes(15), Duration.ofMinutes(0),
                         makeOpColNames(columnNamesArray, "_rollsumtimerev", "Sym", "ts", "boolCol")),
-                UpdateByOperation.RollingSum(0, 100,
-                        makeOpColNames(columnNamesArray, "_rollsumticksfwd", "Sym", "ts", "boolCol")),
-                UpdateByOperation.RollingSum(-50, 100,
-                        makeOpColNames(columnNamesArray, "_rollsumticksfwdex", "Sym", "ts", "boolCol")),
-                UpdateByOperation.RollingSum("ts", Duration.ofMinutes(0), Duration.ofMinutes(15),
-                        makeOpColNames(columnNamesArray, "_rollsumtimefwd", "Sym", "ts", "boolCol")),
-                UpdateByOperation.RollingSum("ts", Duration.ofMinutes(-10), Duration.ofMinutes(15),
-                        makeOpColNames(columnNamesArray, "_rollsumtimefwdex", "Sym", "ts", "boolCol")),
-                UpdateByOperation.RollingSum(50, 50,
-                        makeOpColNames(columnNamesArray, "_rollsumticksfwdrev", "Sym", "ts",
-                                "boolCol")),
-                UpdateByOperation.RollingSum("ts", Duration.ofMinutes(5), Duration.ofMinutes(5),
-                        makeOpColNames(columnNamesArray, "_rollsumtimebothfwdrev", "Sym", "ts",
-                                "boolCol")),
 
-                UpdateByOperation.RollingGroup(50, 50,
-                        makeOpColNames(columnNamesArray, "_rollgroupfwdrev", "Sym", "ts")),
-                UpdateByOperation.RollingGroup(-50, 100,
-                        makeOpColNames(columnNamesArray, "_rollgroupticksfwdex", "Sym", "ts")),
-                UpdateByOperation.RollingGroup("ts", Duration.ofMinutes(5), Duration.ofMinutes(5),
-                        makeOpColNames(columnNamesArray, "_rollgrouptimefwdrev", "Sym", "ts")),
+                UpdateByOperation.RollingAvg(100, 0,
+                        makeOpColNames(columnNamesArray, "_rollavgticksrev", "Sym", "ts", "boolCol")),
+                UpdateByOperation.RollingAvg("ts", Duration.ofMinutes(15), Duration.ofMinutes(0),
+                        makeOpColNames(columnNamesArray, "_rollavgtimerev", "Sym", "ts", "boolCol")),
 
                 UpdateByOperation.Ema(skipControl, "ts", 10 * MINUTE,
                         makeOpColNames(columnNamesArray, "_ema", "Sym", "ts", "boolCol")),
