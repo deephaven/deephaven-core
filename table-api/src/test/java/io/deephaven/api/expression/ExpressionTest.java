@@ -6,10 +6,18 @@ package io.deephaven.api.expression;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.RawString;
 import io.deephaven.api.filter.Filter;
+import io.deephaven.api.filter.FilterComparison;
 import io.deephaven.api.literal.Literal;
 import org.junit.jupiter.api.Test;
 
 import static io.deephaven.api.Strings.of;
+import static io.deephaven.api.filter.Filter.and;
+import static io.deephaven.api.filter.Filter.isNotNull;
+import static io.deephaven.api.filter.Filter.isNull;
+import static io.deephaven.api.filter.Filter.ofFalse;
+import static io.deephaven.api.filter.Filter.ofTrue;
+import static io.deephaven.api.filter.Filter.or;
+import static io.deephaven.api.filter.FilterComparison.gt;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class ExpressionTest {
@@ -24,9 +32,21 @@ public class ExpressionTest {
     }
 
     @Test
+    void filter() {
+        toString(or(gt(FOO, BAR), gt(FOO, BAZ), and(isNull(FOO), isNotNull(BAR), isNotNull(BAZ))),
+                "(Foo > Bar) || (Foo > Baz) || (isNull(Foo) && !isNull(Bar) && !isNull(Baz))");
+    }
+
+    @Test
     void expressionFunction() {
         toString(f("plus", FOO, BAR), "plus(Foo, Bar)");
         toString(f("plus", FOO, f("minus", BAR, BAZ)), "plus(Foo, minus(Bar, Baz))");
+    }
+
+    @Test
+    void expressionFunctionThatTakesFilters() {
+        toString(f("some_func", gt(FOO, BAR), BAZ, ofTrue(), ofFalse(), and(isNull(FOO), isNotNull(BAR))),
+                "some_func(Foo > Bar, Baz, true, false, isNull(Foo) && !isNull(Bar))");
     }
 
     @Test
