@@ -631,6 +631,9 @@ public abstract class BaseTable<IMPL_TYPE extends BaseTable<IMPL_TYPE>> extends 
                     "getRowSet().lastRowKeyPrev() < update.added().firstRowKey()");
         }
         if (isStream()) {
+            Assert.eq(update.added().size(), "added size", getRowSet().size(), "current table size");
+            Assert.eq(update.removed().size(), "removed size", getRowSet().sizePrev(), "previous table size");
+            Assert.assertion(update.modified().isEmpty(), "update.modified.isEmpty()");
             Assert.assertion(update.shifted().empty(), "update.shifted.empty()");
         }
 
