@@ -1,4 +1,5 @@
 plugins {
+    id 'java-library'
     id 'io.deephaven.project.register'
 }
 
@@ -8,6 +9,7 @@ configurations {
 }
 
 dependencies {
+    api project(':engine-query-constants')
     implementation project(':log-factory')
 
     testRuntimeOnly project(path: ':configs')

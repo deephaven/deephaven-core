@@ -4,6 +4,7 @@
 package io.deephaven.api.literal;
 
 import io.deephaven.annotations.SimpleStyle;
+import io.deephaven.util.QueryConstants;
 import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
@@ -26,9 +27,9 @@ abstract class LiteralInt extends LiteralBase {
 
     @Check
     final void checkNotDeephavenNull() {
-        if (value() == Integer.MIN_VALUE) {
+        if (value() == QueryConstants.NULL_INT) {
             throw new IllegalArgumentException(
-                    "Can't represent Integer.MIN_VALUE, is Deephaven null representation");
+                    "Can't represent QueryConstants.NULL_INT, is Deephaven null representation");
         }
     }
 }
