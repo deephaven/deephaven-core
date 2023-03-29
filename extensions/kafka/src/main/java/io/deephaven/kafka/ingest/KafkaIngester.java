@@ -296,10 +296,10 @@ public class KafkaIngester {
                         .append(": polls=").append(periodPolls)
                         .append(", messages=").append(periodMessages)
                         .append(", bytes=").append(periodBytes)
-                        .append(", time=").append(periodNanos / 1000_000L).append("ms, ")
+                        .append(", time=").append(periodNanos / 1000_000L).append("ms")
                         .append(", polls/sec=").append(rateFormat.format(unitsPerSec(periodPolls, periodNanos)))
-                        .append(" msgs/sec=").append(rateFormat.format(unitsPerSec(periodMessages, periodNanos)))
-                        .append(" bytes/sec=").append(rateFormat.format(unitsPerSec(periodBytes, periodNanos)))
+                        .append(", msgs/sec=").append(rateFormat.format(unitsPerSec(periodMessages, periodNanos)))
+                        .append(", bytes/sec=").append(rateFormat.format(unitsPerSec(periodBytes, periodNanos)))
                         .endl();
                 lastReportNanos = afterPoll;
                 nextReport = lastReportNanos + reportIntervalNanos;
