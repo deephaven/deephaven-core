@@ -75,7 +75,7 @@ def j_map_to_dict(m) -> Dict[Any, Any]:
 def j_list_to_list(jlist) -> List[Any]:
     """Converts a java list to a python list."""
     if not jlist:
-        return None
+        return []
 
     return [wrap_j_object(jlist.get(i)) for i in range(jlist.size())]
 
