@@ -18,8 +18,8 @@ def topics(kafka_config: Dict) -> List[str]:
 
     Args:
         kafka_config (Dict): configuration for the associated Kafka consumer.
-        The content is used to call the constructor of
-        org.apache.kafka.clients.Admin; pass any Admin specific desired configuration here
+        The content is used to call the constructor of org.apache.kafka.clients.Admin;
+        pass any Admin specific desired configuration here
 
     Returns:
         a list of topic names
