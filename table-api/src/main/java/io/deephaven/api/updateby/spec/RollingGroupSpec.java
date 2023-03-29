@@ -39,11 +39,11 @@ public abstract class RollingGroupSpec extends RollingOpSpec {
     }
 
     // internal use constructors
-    private static RollingGroupSpec of(WindowScale revWindowScale) {
+    public static RollingGroupSpec of(WindowScale revWindowScale) {
         return ImmutableRollingGroupSpec.builder().revWindowScale(revWindowScale).build();
     }
 
-    private static RollingGroupSpec of(WindowScale revWindowScale, WindowScale fwdWindowScale) {
+    public static RollingGroupSpec of(WindowScale revWindowScale, WindowScale fwdWindowScale) {
         return ImmutableRollingGroupSpec.builder().revWindowScale(revWindowScale).fwdWindowScale(fwdWindowScale)
                 .build();
     }

@@ -39,11 +39,11 @@ public abstract class RollingAvgSpec extends RollingOpSpec {
     }
 
     // internal use constructors
-    private static RollingAvgSpec of(WindowScale revWindowScale) {
+    public static RollingAvgSpec of(WindowScale revWindowScale) {
         return ImmutableRollingAvgSpec.builder().revWindowScale(revWindowScale).build();
     }
 
-    private static RollingAvgSpec of(WindowScale revWindowScale, WindowScale fwdWindowScale) {
+    public static RollingAvgSpec of(WindowScale revWindowScale, WindowScale fwdWindowScale) {
         return ImmutableRollingAvgSpec.builder().revWindowScale(revWindowScale).fwdWindowScale(fwdWindowScale).build();
     }
 
