@@ -268,14 +268,14 @@ public class KafkaIngester {
     private void consumerLoop() {
         final long reportIntervalNanos = REPORT_INTERVAL_MS * 1_000_000L;
         long lastReportNanos = System.nanoTime();
-        final DecimalFormat rateFormat = new DecimalFormat("#.0000");
+        long nextReport = lastReportNanos + reportIntervalNanos;
+        final DecimalFormat rateFormat = new DecimalFormat("#.###");
         while (!done) {
             while (needsAssignment) {
                 needsAssignment = false;
                 assign();
             }
             final long beforePoll = System.nanoTime();
-            final long nextReport = lastReportNanos + reportIntervalNanos;
             final long remainingNanos = beforePoll > nextReport ? 0 : (nextReport - beforePoll);
             boolean more = pollOnce(Duration.ofNanos(remainingNanos));
             if (!more) {
@@ -297,11 +297,12 @@ public class KafkaIngester {
                         .append(", messages=").append(periodMessages)
                         .append(", bytes=").append(periodBytes)
                         .append(", time=").append(periodNanos / 1000_000L).append("ms, ")
-                        .append(rateFormat.format(unitsPerSec(periodPolls, periodNanos))).append(" polls/sec")
-                        .append(rateFormat.format(unitsPerSec(periodMessages, periodNanos))).append(" msgs/sec")
-                        .append(rateFormat.format(unitsPerSec(periodBytes, periodNanos))).append(" bytes/sec")
+                        .append(", polls/sec=").append(rateFormat.format(unitsPerSec(periodPolls, periodNanos)))
+                        .append(" msgs/sec=").append(rateFormat.format(unitsPerSec(periodMessages, periodNanos)))
+                        .append(" bytes/sec=").append(rateFormat.format(unitsPerSec(periodBytes, periodNanos)))
                         .endl();
                 lastReportNanos = afterPoll;
+                nextReport = lastReportNanos + reportIntervalNanos;
                 lastMessages = messagesProcessed;
                 lastBytes = bytesProcessed;
                 lastPollCalls = pollCalls;
