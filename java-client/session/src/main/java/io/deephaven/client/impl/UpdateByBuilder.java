@@ -158,7 +158,6 @@ class UpdateByBuilder {
             return null;
         }
 
-
         // TODO: add this correctly to `table.proto` (DHC #3392)
         @Override
         public UpdateByColumn.UpdateBySpec visit(RollingGroupSpec spec) {
@@ -171,6 +170,23 @@ class UpdateByBuilder {
             return null;
         }
 
+        // TODO: add this correctly to `table.proto` (DHC #3392)
+        @Override
+        public UpdateByColumn.UpdateBySpec visit(RollingAvgSpec ra) {
+            return null;
+        }
+
+        // TODO: add this correctly to `table.proto` (DHC #3392)
+        @Override
+        public UpdateByColumn.UpdateBySpec visit(RollingMinMaxSpec spec) {
+            return null;
+        }
+
+        // TODO: add this correctly to `table.proto` (DHC #3392)
+        @Override
+        public UpdateByColumn.UpdateBySpec visit(RollingProductSpec rps) {
+            return null;
+        }
     }
 
     static UpdateByColumn.UpdateBySpec adapt(UpdateBySpec spec) {

@@ -44,8 +44,8 @@ public class ByteCumSumOperator extends BaseLongUpdateByOperator {
             final byte currentVal = byteValueChunk.get(pos);
 
             if(curVal == NULL_LONG) {
-                curVal = currentVal == NULL_BYTE ? NULL_LONG : currentVal;
-            } else if (currentVal != NULL_BYTE) {
+                curVal = currentVal == nullValue ? NULL_LONG : currentVal;
+            } else if (currentVal != nullValue) {
                 curVal += currentVal;
             }
         }

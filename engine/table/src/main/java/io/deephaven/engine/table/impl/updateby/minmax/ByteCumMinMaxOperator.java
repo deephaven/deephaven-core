@@ -22,6 +22,7 @@ public class ByteCumMinMaxOperator extends BaseByteUpdateByOperator {
     private final boolean isMax;
 
     // region extra-fields
+    final byte nullValue;
     // endregion extra-fields
 
     protected class Context extends BaseByteUpdateByOperator.Context {
@@ -42,9 +43,9 @@ public class ByteCumMinMaxOperator extends BaseByteUpdateByOperator {
 
             final byte val = byteValueChunk.get(pos);
 
-            if (curVal == NULL_BYTE) {
+            if (curVal == nullValue) {
                 curVal = val;
-            } else if (val != NULL_BYTE) {
+            } else if (val != nullValue) {
                 if ((isMax && val > curVal) ||
                         (!isMax && val < curVal)) {
                     curVal = val;
@@ -57,11 +58,13 @@ public class ByteCumMinMaxOperator extends BaseByteUpdateByOperator {
                                   final boolean isMax,
                                   @Nullable final RowRedirection rowRedirection
                                 // region extra-constructor-args
+                               ,final byte nullValue
                                 // endregion extra-constructor-args
     ) {
         super(pair, new String[] { pair.rightColumn }, rowRedirection);
         this.isMax = isMax;
         // region constructor
+        this.nullValue = nullValue;
         // endregion constructor
     }
     // region extra-methods

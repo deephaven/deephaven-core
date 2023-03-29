@@ -16,7 +16,7 @@ public abstract class RollingOpSpec extends UpdateBySpecBase {
         return WindowScale.ofTicks(0);
     }
 
-    // {rovide a default forward-looking timescale
+    // Provide a default forward-looking timescale
     @Value.Default
     public WindowScale fwdWindowScale() {
         return WindowScale.ofTicks(0);
