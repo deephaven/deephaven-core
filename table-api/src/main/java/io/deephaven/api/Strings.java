@@ -6,6 +6,7 @@ package io.deephaven.api;
 import io.deephaven.api.agg.Pair;
 import io.deephaven.api.expression.Expression;
 import io.deephaven.api.expression.Function;
+import io.deephaven.api.expression.IfThenElse;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.filter.FilterAnd;
 import io.deephaven.api.filter.FilterComparison;
@@ -108,6 +109,14 @@ public class Strings {
                 + function.arguments().stream().map(Strings::of).collect(Collectors.joining(", ", "(", ")"));
     }
 
+    public static String of(IfThenElse ifThenElse) {
+        // <condition> ? <if-true> : <if-false>
+        return String.format("%s ? %s : %s",
+                ofEncapsulated(ifThenElse.condition()),
+                ofEncapsulated(ifThenElse.ifTrue()),
+                ofEncapsulated(ifThenElse.ifFalse()));
+    }
+
     public static String of(boolean literal) {
         return Boolean.toString(literal);
     }
@@ -159,6 +168,11 @@ public class Strings {
         @Override
         public String visit(Function function) {
             return of(function);
+        }
+
+        @Override
+        public String visit(IfThenElse ifThenElse) {
+            return encapsulate(of(ifThenElse));
         }
 
         @Override

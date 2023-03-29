@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl.select;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.RawString;
 import io.deephaven.api.expression.Function;
+import io.deephaven.api.expression.IfThenElse;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.filter.FilterComparison;
 import io.deephaven.api.literal.Literal;
@@ -17,6 +18,7 @@ public class WhereFilterTest extends TestCase {
 
     private static final ColumnName FOO = ColumnName.of("Foo");
     private static final ColumnName BAR = ColumnName.of("Bar");
+    private static final ColumnName BAZ = ColumnName.of("Baz");
     private static final Literal V42 = Literal.of(42L);
 
     public void testFoo() {
@@ -171,6 +173,11 @@ public class WhereFilterTest extends TestCase {
                 "!isNull(someMethod(Foo, Bar))");
         expect(Filter.not(Filter.isNotNull(Function.of("someMethod", FOO, BAR))), ConditionFilter.class,
                 "isNull(someMethod(Foo, Bar))");
+    }
+
+    public void testIfThenElse() {
+        expect(IfThenElse.of(FOO, BAR, BAZ), ConditionFilter.class, "Foo ? Bar : Baz");
+        opposite(IfThenElse.of(FOO, BAR, BAZ), ConditionFilter.class, "!(Foo ? Bar : Baz)");
     }
 
     public void testLiteralIsTrue() {

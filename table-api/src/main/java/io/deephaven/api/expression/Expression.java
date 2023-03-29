@@ -17,6 +17,7 @@ import java.io.Serializable;
  * @see ColumnName
  * @see Filter
  * @see Function
+ * @see IfThenElse
  * @see RawString
  */
 public interface Expression extends Serializable {
@@ -31,6 +32,8 @@ public interface Expression extends Serializable {
         T visit(Filter filter);
 
         T visit(Function function);
+
+        T visit(IfThenElse ifThenElse);
 
         T visit(RawString rawString);
     }

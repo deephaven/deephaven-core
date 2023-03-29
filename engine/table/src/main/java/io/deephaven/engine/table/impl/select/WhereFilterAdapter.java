@@ -5,6 +5,7 @@ import io.deephaven.api.RawString;
 import io.deephaven.api.Strings;
 import io.deephaven.api.expression.Expression;
 import io.deephaven.api.expression.Function;
+import io.deephaven.api.expression.IfThenElse;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.filter.FilterAnd;
 import io.deephaven.api.filter.FilterComparison;
@@ -58,6 +59,12 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
         return inverted
                 ? WhereFilterFactory.getExpression(String.format("!%s", Strings.of(function)))
                 : WhereFilterFactory.getExpression(Strings.of(function));
+    }
+
+    public static WhereFilter of(IfThenElse ifThenElse, boolean inverted) {
+        return inverted
+                ? WhereFilterFactory.getExpression(String.format("!(%s)", Strings.of(ifThenElse)))
+                : WhereFilterFactory.getExpression(Strings.of(ifThenElse));
     }
 
     public static WhereFilter of(boolean literal) {
@@ -118,6 +125,11 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
     @Override
     public WhereFilter visit(Function function) {
         return of(function, inverted);
+    }
+
+    @Override
+    public WhereFilter visit(IfThenElse ifThenElse) {
+        return of(ifThenElse, inverted);
     }
 
     @Override
@@ -239,6 +251,11 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
             }
 
             @Override
+            public WhereFilter visit(IfThenElse ifThenElse) {
+                return WhereFilterFactory.getExpression(Strings.of(original));
+            }
+
+            @Override
             public WhereFilter visit(Literal value) {
                 return value.walk((Literal.Visitor<WhereFilter>) this);
             }
@@ -265,6 +282,11 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
         @Override
         public WhereFilter visit(Function lhs) {
             return WhereFilterFactory.getExpression(Strings.of(original));
+        }
+
+        @Override
+        public WhereFilter visit(IfThenElse ifThenElse) {
+            return WhereFilterFactory.getExpression(Strings.of(ifThenElse));
         }
 
         @Override
@@ -305,6 +327,11 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
                     .getExpression(String.format(inverted ? "!isNull(%s)" : "isNull(%s)", Strings.of(function)));
         }
 
+        public static WhereFilter of(IfThenElse ifThenElse, boolean inverted) {
+            return WhereFilterFactory
+                    .getExpression(String.format(inverted ? "!isNull(%s)" : "isNull(%s)", Strings.of(ifThenElse)));
+        }
+
         public static WhereFilter of(RawString rawString, boolean inverted) {
             return WhereFilterFactory
                     .getExpression(String.format(inverted ? "!isNull(%s)" : "isNull(%s)", Strings.of(rawString)));
@@ -334,6 +361,11 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
         @Override
         public WhereFilter visit(Function function) {
             return of(function, inverted);
+        }
+
+        @Override
+        public WhereFilter visit(IfThenElse ifThenElse) {
+            return of(ifThenElse, inverted);
         }
 
         @Override

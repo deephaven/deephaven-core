@@ -6,6 +6,7 @@ package io.deephaven.api.filter;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.RawString;
 import io.deephaven.api.expression.Function;
+import io.deephaven.api.expression.IfThenElse;
 import org.junit.jupiter.api.Test;
 
 import static io.deephaven.api.Strings.of;
@@ -102,6 +103,11 @@ public class FilterTest {
         toString(Function.of("MyFunction3", FOO, BAR), "MyFunction3(Foo, Bar)");
     }
 
+    @Test
+    void filterIfThenElse() {
+        toString(IfThenElse.of(FOO, BAR, BAZ), "Foo ? Bar : Baz");
+    }
+
     private static void toString(Filter filter, String expected) {
         assertThat(of(filter)).isEqualTo(expected);
         assertThat(filter.walk(FilterSpecificString.INSTANCE)).isEqualTo(expected);
@@ -148,6 +154,11 @@ public class FilterTest {
         @Override
         public String visit(Function function) {
             return of(function);
+        }
+
+        @Override
+        public String visit(IfThenElse ifThenElse) {
+            return of(ifThenElse);
         }
 
         @Override
