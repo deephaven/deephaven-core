@@ -1,6 +1,6 @@
 package io.deephaven.engine.tablelogger.impl.memory;
 
-import io.deephaven.engine.tablelogger.EngineLoggers;
+import io.deephaven.engine.tablelogger.EngineTableLoggers;
 import io.deephaven.engine.tablelogger.ProcessInfoLogLogger;
 import io.deephaven.engine.tablelogger.ProcessMetricsLogLogger;
 import io.deephaven.engine.tablelogger.QueryOperationPerformanceLogLogger;
@@ -11,7 +11,7 @@ import io.deephaven.engine.tablelogger.UpdatePerformanceLogLogger;
 /**
  * Provides memory table logger implementations for the engine table loggers.
  */
-public class EngineLoggersFactoryMemoryImpl implements EngineLoggers.Factory {
+public class EngineTableLoggersFactoryMemoryImpl implements EngineTableLoggers.Factory {
     @Override
     public ProcessInfoLogLogger processInfoLogLogger() {
         return new ProcessInfoLogLoggerMemoryImpl();
