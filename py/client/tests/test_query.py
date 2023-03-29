@@ -7,7 +7,7 @@ import unittest
 
 from pyarrow import csv
 
-from pydeephaven import DHError
+from pydeephaven import DHError, agg
 from pydeephaven.updateby import ema_tick_decay, cum_prod
 from tests.testbase import BaseTestCase
 
@@ -85,6 +85,24 @@ class QueryTestCase(BaseTestCase):
                                                                initial=True, incremental=True, history=False)
         result_table = query.exec()
         self.assertEqual(len(result_table.schema), len(source_table.schema) + 1)
+
+    def test_agg_by(self):
+        pa_table = csv.read_csv(self.csv_file)
+        table = self.session.import_table(pa_table)
+        query = self.session.query(table).agg_by(aggs=[agg.avg(cols=["a"])], by=["b"])\
+            .update(formulas=["Col1 = i + 1"]) \
+            .tail(5).update(formulas=["Col2=i*i"])
+        result_table = query.exec()
+        self.assertEqual(5, result_table.size)
+
+    def test_agg_all_by(self):
+        pa_table = csv.read_csv(self.csv_file)
+        table = self.session.import_table(pa_table)
+        query = self.session.query(table).agg_all_by(agg=agg.avg(), by=["b"])\
+            .update(formulas=["Col1 = i + 1"]) \
+            .tail(5).update(formulas=["Col2=i*i"])
+        result_table = query.exec()
+        self.assertEqual(5, result_table.size)
 
 
 if __name__ == '__main__':

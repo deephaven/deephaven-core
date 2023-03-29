@@ -26,7 +26,6 @@ Examples:
 from .table import Table
 from .session import Session
 from .dherror import DHError
-from .combo_agg import ComboAggregation
 from .constants import SortDirection, MatchRule
 from .query import Query
 

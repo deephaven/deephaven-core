@@ -4,8 +4,7 @@
 from abc import ABC, abstractmethod
 from typing import List, Any
 
-from pydeephaven._constants import AggType
-from pydeephaven.combo_agg import ComboAggregation
+from pydeephaven.agg import Aggregation
 from pydeephaven.constants import SortDirection, MatchRule
 from pydeephaven.proto import table_pb2, table_pb2_grpc
 from pydeephaven.updateby import UpdateByOperation
@@ -448,58 +447,6 @@ class FlattenOp(TableOp):
             flatten=self.make_grpc_request(result_id=result_id, source_id=source_id))
 
 
-class DedicatedAggOp(TableOp):
-    def __init__(self, agg_type: AggType, column_names: List[str] = [], count_column: str = None):
-        self.agg_type = agg_type
-        self.column_names = column_names
-        self.count_column = count_column
-
-    @classmethod
-    def get_stub_func(cls, table_service_stub: table_pb2_grpc.TableServiceStub):
-        return table_service_stub.ComboAggregate
-
-    def make_grpc_request(self, result_id, source_id):
-        aggregates = []
-        if self.agg_type == AggType.COUNT and self.count_column:
-            agg = table_pb2.ComboAggregateRequest.Aggregate(type=self.agg_type.value, column_name=self.count_column)
-        else:
-            agg = table_pb2.ComboAggregateRequest.Aggregate(type=self.agg_type.value)
-        aggregates.append(agg)
-
-        return table_pb2.ComboAggregateRequest(result_id=result_id,
-                                               source_id=source_id,
-                                               aggregates=aggregates,
-                                               group_by_columns=self.column_names)
-
-    def make_grpc_request_for_batch(self, result_id, source_id):
-        return table_pb2.BatchTableRequest.Operation(
-            combo_aggregate=self.make_grpc_request(result_id=result_id, source_id=source_id))
-
-
-class ComboAggOp(TableOp):
-    def __init__(self, column_names: List[str], combo_aggregation: ComboAggregation):
-        self.column_names = column_names
-        self.combo_aggregation = combo_aggregation
-
-    @classmethod
-    def get_stub_func(cls, table_service_stub: table_pb2_grpc.TableServiceStub):
-        return table_service_stub.ComboAggregate
-
-    def make_grpc_request(self, result_id, source_id):
-        aggregates = []
-        for agg in self.combo_aggregation.aggregates:
-            aggregates.append(agg.make_grpc_request())
-
-        return table_pb2.ComboAggregateRequest(result_id=result_id,
-                                               source_id=source_id,
-                                               aggregates=aggregates,
-                                               group_by_columns=self.column_names)
-
-    def make_grpc_request_for_batch(self, result_id, source_id):
-        return table_pb2.BatchTableRequest.Operation(
-            combo_aggregate=self.make_grpc_request(result_id=result_id, source_id=source_id))
-
-
 class FetchTableOp(TableOp):
     @classmethod
     def get_stub_func(cls, table_service_stub: table_pb2_grpc.TableServiceStub):
@@ -523,7 +470,7 @@ class UpdateByOp(TableOp):
         return table_service_stub.UpdateBy
 
     def make_grpc_request(self, result_id, source_id=None):
-        operations = [op.make_grpc_request() for op in self.operations]
+        operations = [op.make_grpc_message() for op in self.operations]
         return table_pb2.UpdateByRequest(result_id=result_id, source_id=source_id, operations=operations,
                                          group_by_columns=self.by)
 
@@ -563,13 +510,50 @@ class SnapshotWhenTableOp(TableOp):
         base_id = source_id
         trigger_id = table_pb2.TableReference(ticket=self.trigger_table.ticket)
         return table_pb2.SnapshotWhenTableRequest(result_id=result_id,
-                                                   base_id=base_id,
-                                                   trigger_id=trigger_id,
-                                                   initial=self.initial,
-                                                   incremental=self.incremental,
-                                                   history=self.history,
-                                                   stamp_columns=self.stamp_cols)
+                                                  base_id=base_id,
+                                                  trigger_id=trigger_id,
+                                                  initial=self.initial,
+                                                  incremental=self.incremental,
+                                                  history=self.history,
+                                                  stamp_columns=self.stamp_cols)
 
     def make_grpc_request_for_batch(self, result_id, source_id):
         return table_pb2.BatchTableRequest.Operation(
             snapshot_when=self.make_grpc_request(result_id=result_id, source_id=source_id))
+
+
+class AggregateOp(TableOp):
+    def __init__(self, aggs: List[Aggregation], by: List[str]):
+        self.aggs = aggs
+        self.by = by
+
+    @classmethod
+    def get_stub_func(cls, table_service_stub: table_pb2_grpc.TableServiceStub):
+        return table_service_stub.Aggregate
+
+    def make_grpc_request(self, result_id, source_id=None):
+        aggregations = [agg.make_grpc_message() for agg in self.aggs]
+        return table_pb2.AggregateRequest(result_id=result_id, source_id=source_id, aggregations=aggregations,
+                                          group_by_columns=self.by)
+
+    def make_grpc_request_for_batch(self, result_id, source_id):
+        return table_pb2.BatchTableRequest.Operation(
+            aggregate=self.make_grpc_request(result_id=result_id, source_id=source_id))
+
+
+class AggregateAllOp(TableOp):
+    def __init__(self, agg: Aggregation, by: List[str]):
+        self.agg_spec = agg.agg_spec
+        self.by = by
+
+    @classmethod
+    def get_stub_func(cls, table_service_stub: table_pb2_grpc.TableServiceStub):
+        return table_service_stub.AggregateAll
+
+    def make_grpc_request(self, result_id, source_id=None):
+        return table_pb2.AggregateAllRequest(result_id=result_id, source_id=source_id, spec=self.agg_spec,
+                                             group_by_columns=self.by)
+
+    def make_grpc_request_for_batch(self, result_id, source_id):
+        return table_pb2.BatchTableRequest.Operation(
+            aggregate_all=self.make_grpc_request(result_id=result_id, source_id=source_id))
