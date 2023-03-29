@@ -8,6 +8,7 @@ from typing import Dict
 
 import jpy
 
+from deephaven import DHError
 from deephaven.jcompat import j_properties
 
 
@@ -23,6 +24,6 @@ def topics(kafka_config: Dict):
     """
     try:
         kafka_config = j_properties(kafka_config)
-        return _JKafkaTools.list_topics(kafka_config)
+        return _JKafkaTools.listTopics(kafka_config)
     except Exception as e:
-        raise DHErrpr(e, "failed to list Kafka topics") from e
+        raise DHError(e, "failed to list Kafka topics") from e
