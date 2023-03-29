@@ -5,7 +5,7 @@
 """ This module provides Java compatibility support including convenience functions to create some widely used Java
 data structures from corresponding Python ones in order to be able to call Java methods. """
 
-from typing import Any, Iterable, Dict, Set, TypeVar, Callable, Union, Sequence
+from typing import Any, Callable, Dict, Iterable, List, Sequence, Set, TypeVar, Union
 
 import jpy
 
@@ -71,6 +71,13 @@ def j_map_to_dict(m) -> Dict[Any, Any]:
 
     return {e.getKey(): wrap_j_object(e.getValue()) for e in m.entrySet().toArray()}
 
+
+def j_list_to_list(jlist) -> List[Any]:
+    """Converts a java list to a python list."""
+    if not jlist:
+        return []
+
+    return [wrap_j_object(jlist.get(i)) for i in range(jlist.size())]
 
 T = TypeVar("T")
 R = TypeVar("R")

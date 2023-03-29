@@ -7,6 +7,7 @@ import unittest
 
 from deephaven import kafka_producer as pk, new_table
 from deephaven.column import string_col, int_col, double_col
+from deephaven.stream import kafka
 from deephaven.stream.kafka.producer import KeyValueSpec
 from tests.testbase import BaseTestCase
 
@@ -116,14 +117,16 @@ class KafkaProducerTestCase(BaseTestCase):
         r = os.system(sys_str)
         self.assertEqual(0, r)
 
+        kafka_config = {
+            'bootstrap.servers': 'redpanda:29092',
+            'schema.registry.url': 'http://redpanda:8081'
+        }
+        topic = 'share_price_timestamped'
         t = table_helper()
         cleanup = pk.produce(
             t,
-            {
-                'bootstrap.servers': 'redpanda:29092',
-                'schema.registry.url': 'http://redpanda:8081'
-            },
-            'share_price_timestamped',
+            kafka_config,
+            topic,
             key_spec=KeyValueSpec.IGNORE,
             value_spec=pk.avro_spec(
                 'share_price_timestamped_record',
@@ -131,6 +134,10 @@ class KafkaProducerTestCase(BaseTestCase):
             ),
             last_by_key_columns=False
         )
+
+        topics = kafka.topics(kafka_config)
+        self.assertTrue(len(topics) > 0)
+        self.assertIn(topic, topics)
 
         self.assertIsNotNone(cleanup)
         cleanup()

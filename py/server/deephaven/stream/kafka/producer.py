@@ -43,7 +43,9 @@ def produce(
 
     Args:
         table (Table): the source table to publish to Kafka
-        kafka_config (Dict): configuration for the associated kafka producer
+        kafka_config (Dict): configuration for the associated kafka producer.
+            This is used to call the constructor of org.apache.kafka.clients.producer.KafkaProducer;
+            pass any KafkaProducer specific desired configuration here
         topic (str): the topic name
         key_spec (KeyValueSpec): specifies how to map table column(s) to the Key field in produced Kafka messages.
             This should be the result of calling one of the functions simple_spec(), avro_spec() or json_spec() in this
