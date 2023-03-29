@@ -18,7 +18,8 @@ public interface ConsumerRecordToStreamPublisherAdapter {
      * Consume a List of Kafka records, producing zero or more rows in the output.
      *
      * @param records the records received from {@link org.apache.kafka.clients.consumer.KafkaConsumer#poll(Duration)}.
+     * @return the number of bytes processed
      * @throws IOException if there was an error writing to the output table
      */
-    void consumeRecords(List<? extends ConsumerRecord<?, ?>> records) throws IOException;
+    long consumeRecords(List<? extends ConsumerRecord<?, ?>> records) throws IOException;
 }

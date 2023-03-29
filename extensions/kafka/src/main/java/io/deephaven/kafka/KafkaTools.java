@@ -2171,11 +2171,12 @@ public class KafkaTools {
         }
 
         @Override
-        public void accept(List<? extends ConsumerRecord<?, ?>> consumerRecords) {
+        public long consume(List<? extends ConsumerRecord<?, ?>> consumerRecords) {
             try {
-                adapter.consumeRecords(consumerRecords);
+                return adapter.consumeRecords(consumerRecords);
             } catch (Exception e) {
                 acceptFailure(e);
+                return 0;
             }
         }
 
