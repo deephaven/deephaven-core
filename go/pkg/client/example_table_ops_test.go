@@ -89,7 +89,7 @@ func doImmediateOps() (string, error) {
 	// If you don't have any specific requirements, context.Background() is a good default.
 	ctx := context.Background()
 
-	cl, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), test_tools.GetAuth())
+	cl, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), test_tools.GetAuthType(), test_tools.GetAuthToken())
 	if err != nil {
 		fmt.Println("error when connecting to server:", err.Error())
 		return "", err
@@ -172,7 +172,7 @@ func doQueryOps() (string, error) {
 	// If you don't have any specific requirements, context.Background() is a good default.
 	ctx := context.Background()
 
-	cl, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), test_tools.GetAuth())
+	cl, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), test_tools.GetAuthType(), test_tools.GetAuthToken())
 	if err != nil {
 		fmt.Println("error when connecting to server:", err.Error())
 		return "", err
