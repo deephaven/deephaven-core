@@ -248,7 +248,7 @@ def pct(percentile: float, cols: List[str] = None) -> Aggregation:
         an aggregation
     """
     agg_spec = _GrpcAggSpec(percentile=_GrpcAggSpec.AggSpecPercentile(percentile=percentile,
-                                                                      average_evenly_divided=True))
+                                                                      average_evenly_divided=False))
     return _AggregationColumns(agg_spec=agg_spec, cols=cols)
 
 
