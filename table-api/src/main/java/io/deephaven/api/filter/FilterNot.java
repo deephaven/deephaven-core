@@ -47,7 +47,7 @@ public abstract class FilterNot<F extends Filter> extends FilterBase {
     }
 
     @Override
-    public final <T> T walk(Visitor<T> visitor) {
+    public final <T> T walk(Filter.Visitor<T> visitor) {
         return visitor.visit(this);
     }
 }

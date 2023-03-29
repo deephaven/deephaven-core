@@ -5,7 +5,7 @@ package io.deephaven.api;
 
 import io.deephaven.api.agg.Pair;
 import io.deephaven.api.expression.Expression;
-import io.deephaven.api.expression.ExpressionFunction;
+import io.deephaven.api.expression.Function;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.filter.FilterAnd;
 import io.deephaven.api.filter.FilterComparison;
@@ -102,7 +102,7 @@ public class Strings {
         return value.walk((Literal.Visitor<String>) new UniversalAdapter(false));
     }
 
-    public static String of(ExpressionFunction function) {
+    public static String of(Function function) {
         // <name>(<exp-1>, <exp-2>, ..., <exp-N>)
         return function.name()
                 + function.arguments().stream().map(Strings::of).collect(Collectors.joining(", ", "(", ")"));
@@ -157,7 +157,7 @@ public class Strings {
         }
 
         @Override
-        public String visit(ExpressionFunction function) {
+        public String visit(Function function) {
             return of(function);
         }
 

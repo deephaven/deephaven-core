@@ -4,7 +4,7 @@ import io.deephaven.api.ColumnName;
 import io.deephaven.api.RawString;
 import io.deephaven.api.Strings;
 import io.deephaven.api.expression.Expression;
-import io.deephaven.api.expression.ExpressionFunction;
+import io.deephaven.api.expression.Function;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.filter.FilterAnd;
 import io.deephaven.api.filter.FilterComparison;
@@ -52,6 +52,12 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
         return inverted
                 ? WhereFilterFactory.getExpression(String.format("!%s", columnName.name()))
                 : WhereFilterFactory.getExpression(columnName.name());
+    }
+
+    public static WhereFilter of(Function function, boolean inverted) {
+        return inverted
+                ? WhereFilterFactory.getExpression(String.format("!%s", Strings.of(function)))
+                : WhereFilterFactory.getExpression(Strings.of(function));
     }
 
     public static WhereFilter of(boolean literal) {
@@ -107,6 +113,11 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
     @Override
     public WhereFilter visit(ColumnName columnName) {
         return of(columnName, inverted);
+    }
+
+    @Override
+    public WhereFilter visit(Function function) {
+        return of(function, inverted);
     }
 
     @Override
@@ -223,7 +234,7 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
             }
 
             @Override
-            public WhereFilter visit(ExpressionFunction function) {
+            public WhereFilter visit(Function function) {
                 return WhereFilterFactory.getExpression(Strings.of(original));
             }
 
@@ -252,7 +263,7 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
         }
 
         @Override
-        public WhereFilter visit(ExpressionFunction lhs) {
+        public WhereFilter visit(Function lhs) {
             return WhereFilterFactory.getExpression(Strings.of(original));
         }
 
@@ -289,7 +300,7 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
                     .getExpression(String.format(inverted ? "!isNull(%s)" : "isNull(%s)", Strings.of(filter)));
         }
 
-        public static WhereFilter of(ExpressionFunction function, boolean inverted) {
+        public static WhereFilter of(Function function, boolean inverted) {
             return WhereFilterFactory
                     .getExpression(String.format(inverted ? "!isNull(%s)" : "isNull(%s)", Strings.of(function)));
         }
@@ -321,7 +332,7 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
         }
 
         @Override
-        public WhereFilter visit(ExpressionFunction function) {
+        public WhereFilter visit(Function function) {
             return of(function, inverted);
         }
 

@@ -16,7 +16,7 @@ import io.deephaven.api.SortColumn.Order;
 import io.deephaven.api.Strings;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.expression.Expression;
-import io.deephaven.api.expression.ExpressionFunction;
+import io.deephaven.api.expression.Function;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.filter.FilterAnd;
 import io.deephaven.api.filter.FilterComparison;
@@ -604,7 +604,7 @@ class BatchTableRequestBuilder {
         }
 
         @Override
-        public Value visit(ExpressionFunction function) {
+        public Value visit(Function function) {
             // TODO(deephaven-core#3609): Update gRPC expression / filter / literal structures
             throw new UnsupportedOperationException(
                     "Unable to create a io.deephaven.proto.backplane.grpc.Value from an ExpressionFunction");
@@ -706,6 +706,12 @@ class BatchTableRequestBuilder {
         public Condition visit(ColumnName columnName) {
             // TODO(deephaven-core#3609): Update gRPC expression / filter / literal structures
             throw new UnsupportedOperationException("Can't build Condition with ColumnName");
+        }
+
+        @Override
+        public Condition visit(Function function) {
+            // TODO(deephaven-core#3609): Update gRPC expression / filter / literal structures
+            throw new UnsupportedOperationException("Can't build Condition with Function");
         }
 
         @Override

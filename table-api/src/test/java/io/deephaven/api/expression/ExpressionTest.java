@@ -40,14 +40,14 @@ public class ExpressionTest {
 
     @Test
     void expressionFunction() {
-        toString(f("plus", FOO, BAR), "plus(Foo, Bar)");
-        toString(f("plus", FOO, f("minus", BAR, BAZ)), "plus(Foo, minus(Bar, Baz))");
+        toString(Function.of("plus", FOO, BAR), "plus(Foo, Bar)");
+        toString(Function.of("plus", FOO, Function.of("minus", BAR, BAZ)), "plus(Foo, minus(Bar, Baz))");
     }
 
     @Test
     void expressionFunctionThatTakesFilters() {
         toString(
-                f("some_func", gt(FOO, BAR), BAZ, ofTrue(), ofFalse(),
+                Function.of("some_func", gt(FOO, BAR), BAZ, ofTrue(), ofFalse(),
                         and(isNull(FOO), isNotNull(BAR), or(eq(FOO, BAR), neq(FOO, BAZ)))),
                 "some_func(Foo > Bar, Baz, true, false, isNull(Foo) && !isNull(Bar) && ((Foo == Bar) || (Foo != Baz)))");
     }
@@ -70,10 +70,6 @@ public class ExpressionTest {
         assertThat(expression.walk(SpecificMethod.INSTANCE)).isEqualTo(expected);
     }
 
-    private static ExpressionFunction f(String name, Expression... expressions) {
-        return ExpressionFunction.builder().name(name).addArguments(expressions).build();
-    }
-
     private enum SpecificMethod implements Expression.Visitor<String> {
         INSTANCE;
 
@@ -93,7 +89,7 @@ public class ExpressionTest {
         }
 
         @Override
-        public String visit(ExpressionFunction function) {
+        public String visit(Function function) {
             return of(function);
         }
 

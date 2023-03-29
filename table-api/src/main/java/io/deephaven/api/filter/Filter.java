@@ -6,6 +6,7 @@ package io.deephaven.api.filter;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.RawString;
 import io.deephaven.api.expression.Expression;
+import io.deephaven.api.expression.Function;
 import io.deephaven.api.literal.Literal;
 import io.deephaven.api.literal.LiteralFilter;
 
@@ -25,6 +26,7 @@ import java.util.stream.Collectors;
  * @see FilterOr
  * @see FilterAnd
  * @see ColumnName
+ * @see Function
  * @see LiteralFilter
  * @see RawString
  */
@@ -211,6 +213,8 @@ public interface Filter extends Expression, Serializable {
         T visit(FilterAnd ands);
 
         T visit(ColumnName columnName);
+
+        T visit(Function function);
 
         T visit(boolean literal);
 

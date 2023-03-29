@@ -16,7 +16,7 @@ import java.io.Serializable;
  * @see Literal
  * @see ColumnName
  * @see Filter
- * @see ExpressionFunction
+ * @see Function
  * @see RawString
  */
 public interface Expression extends Serializable {
@@ -30,7 +30,7 @@ public interface Expression extends Serializable {
 
         T visit(Filter filter);
 
-        T visit(ExpressionFunction function);
+        T visit(Function function);
 
         T visit(RawString rawString);
     }

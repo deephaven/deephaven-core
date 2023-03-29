@@ -5,7 +5,7 @@ package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.RawString;
-import io.deephaven.api.expression.ExpressionFunction;
+import io.deephaven.api.expression.Function;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.filter.FilterComparison;
 import io.deephaven.api.literal.Literal;
@@ -148,36 +148,29 @@ public class WhereFilterTest extends TestCase {
         opposite(FilterComparison.lte(FOO, BAR), ConditionFilter.class, "Foo > Bar");
     }
 
-    public void testFunctionIsTrue() {
-        expect(Filter.isTrue(ExpressionFunction.builder().name("someMethod").addArguments(FOO, BAR).build()),
-                ConditionFilter.class, "someMethod(Foo, Bar) == true");
-        expect(Filter
-                .not(Filter.isTrue(ExpressionFunction.builder().name("someMethod").addArguments(FOO, BAR).build())),
-                ConditionFilter.class, "someMethod(Foo, Bar) != true");
-    }
+    public void testFunction() {
+        expect(Function.of("someMethod"), ConditionFilter.class, "someMethod()");
+        expect(Filter.not(Function.of("someMethod")), ConditionFilter.class, "!someMethod()");
 
-    public void testFunctionIsFalse() {
-        expect(Filter.isFalse(ExpressionFunction.builder().name("someMethod").addArguments(FOO, BAR).build()),
-                ConditionFilter.class, "someMethod(Foo, Bar) == false");
-        expect(Filter
-                .not(Filter.isFalse(ExpressionFunction.builder().name("someMethod").addArguments(FOO, BAR).build())),
-                ConditionFilter.class, "someMethod(Foo, Bar) != false");
+        expect(Function.of("someMethod", FOO), ConditionFilter.class, "someMethod(Foo)");
+        expect(Filter.not(Function.of("someMethod", FOO)), ConditionFilter.class, "!someMethod(Foo)");
+
+        expect(Function.of("someMethod", FOO, BAR), ConditionFilter.class, "someMethod(Foo, Bar)");
+        expect(Filter.not(Function.of("someMethod", FOO, BAR)), ConditionFilter.class, "!someMethod(Foo, Bar)");
     }
 
     public void testFunctionIsNull() {
-        expect(Filter.isNull(ExpressionFunction.builder().name("someMethod").addArguments(FOO, BAR).build()),
-                ConditionFilter.class, "isNull(someMethod(Foo, Bar))");
-        expect(Filter
-                .not(Filter.isNull(ExpressionFunction.builder().name("someMethod").addArguments(FOO, BAR).build())),
-                ConditionFilter.class, "!isNull(someMethod(Foo, Bar))");
+        expect(Filter.isNull(Function.of("someMethod", FOO, BAR)), ConditionFilter.class,
+                "isNull(someMethod(Foo, Bar))");
+        expect(Filter.not(Filter.isNull(Function.of("someMethod", FOO, BAR))), ConditionFilter.class,
+                "!isNull(someMethod(Foo, Bar))");
     }
 
     public void testFunctionIsNotNull() {
-        expect(Filter.isNotNull(ExpressionFunction.builder().name("someMethod").addArguments(FOO, BAR).build()),
-                ConditionFilter.class, "!isNull(someMethod(Foo, Bar))");
-        expect(Filter
-                .not(Filter.isNotNull(ExpressionFunction.builder().name("someMethod").addArguments(FOO, BAR).build())),
-                ConditionFilter.class, "isNull(someMethod(Foo, Bar))");
+        expect(Filter.isNotNull(Function.of("someMethod", FOO, BAR)), ConditionFilter.class,
+                "!isNull(someMethod(Foo, Bar))");
+        expect(Filter.not(Filter.isNotNull(Function.of("someMethod", FOO, BAR))), ConditionFilter.class,
+                "isNull(someMethod(Foo, Bar))");
     }
 
     public void testLiteralIsTrue() {

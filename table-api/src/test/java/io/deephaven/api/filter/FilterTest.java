@@ -5,6 +5,7 @@ package io.deephaven.api.filter;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.RawString;
+import io.deephaven.api.expression.Function;
 import org.junit.jupiter.api.Test;
 
 import static io.deephaven.api.Strings.of;
@@ -94,6 +95,13 @@ public class FilterTest {
         toString(eq(or(FOO, eq(BAR, BAZ)), and(FOO, neq(BAR, BAZ))), "(Foo || (Bar == Baz)) == (Foo && (Bar != Baz))");
     }
 
+    @Test
+    void filterFunction() {
+        toString(Function.of("MyFunction1"), "MyFunction1()");
+        toString(Function.of("MyFunction2", FOO), "MyFunction2(Foo)");
+        toString(Function.of("MyFunction3", FOO, BAR), "MyFunction3(Foo, Bar)");
+    }
+
     private static void toString(Filter filter, String expected) {
         assertThat(of(filter)).isEqualTo(expected);
         assertThat(filter.walk(FilterSpecificString.INSTANCE)).isEqualTo(expected);
@@ -135,6 +143,11 @@ public class FilterTest {
         @Override
         public String visit(ColumnName columnName) {
             return of(columnName);
+        }
+
+        @Override
+        public String visit(Function function) {
+            return of(function);
         }
 
         @Override
