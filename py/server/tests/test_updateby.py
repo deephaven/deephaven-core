@@ -104,64 +104,65 @@ class UpdateByTestCase(BaseTestCase):
                         with ugp.exclusive_lock():
                             self.assertEqual(ct.size, rct.size)
 
-    def test_rolling_ops(self):
-        ops = [
-            # rolling sum
-            rolling_sum_tick(cols=["rsum_a = a", "rsum_d = d"], rev_ticks=10),
-            rolling_sum_tick(cols=["rsum_a = a", "rsum_d = d"], rev_ticks=10, fwd_ticks=10),
-            rolling_sum_time(ts_col="Timestamp", cols=["rsum_b = b", "rsum_e = e"], rev_time="00:00:10"),
-            rolling_sum_time(ts_col="Timestamp", cols=["rsum_b = b", "rsum_e = e"], rev_time=10_000_000_000,
-                             fwd_time=-10_000_000_00),
-            rolling_sum_time(ts_col="Timestamp", cols=["rsum_b = b", "rsum_e = e"], rev_time="00:00:30",
-                             fwd_time="-00:00:20"),
-            
-            # rolling group
-            rolling_group_tick(cols=["rgroup_a = a", "rgroup_d = d"], rev_ticks=10),
-            rolling_group_tick(cols=["rgroup_a = a", "rgroup_d = d"], rev_ticks=10, fwd_ticks=10),
-            rolling_group_time(ts_col="Timestamp", cols=["rgroup_b = b", "rgroup_e = e"], rev_time="00:00:10"),
-            rolling_group_time(ts_col="Timestamp", cols=["rgroup_b = b", "rgroup_e = e"], rev_time=10_000_000_000,
-                               fwd_time=-10_000_000_00),
-            rolling_group_time(ts_col="Timestamp", cols=["rgroup_b = b", "rgroup_e = e"], rev_time="00:00:30",
-                               fwd_time="-00:00:20"),
-            
-            # rolling average
-            rolling_avg_tick(cols=["ravg_a = a", "ravg_d = d"], rev_ticks=10),
-            rolling_avg_tick(cols=["ravg_a = a", "ravg_d = d"], rev_ticks=10, fwd_ticks=10),
-            rolling_avg_time(ts_col="Timestamp", cols=["ravg_b = b", "ravg_e = e"], rev_time="00:00:10"),
-            rolling_avg_time(ts_col="Timestamp", cols=["ravg_b = b", "ravg_e = e"], rev_time=10_000_000_000,
-                             fwd_time=-10_000_000_00),
-            rolling_avg_time(ts_col="Timestamp", cols=["ravg_b = b", "ravg_e = e"], rev_time="00:00:30",
-                             fwd_time="-00:00:20"),
-        
-            # rolling minimum
-            rolling_min_tick(cols=["rmin_a = a", "rmin_d = d"], rev_ticks=10),
-            rolling_min_tick(cols=["rmin_a = a", "rmin_d = d"], rev_ticks=10, fwd_ticks=10),
-            rolling_min_time(ts_col="Timestamp", cols=["rmin_b = b", "rmin_e = e"], rev_time="00:00:10"),
-            rolling_min_time(ts_col="Timestamp", cols=["rmin_b = b", "rmin_e = e"], rev_time=10_000_000_000,
-                             fwd_time=-10_000_000_00),
-            rolling_min_time(ts_col="Timestamp", cols=["rmin_b = b", "rmin_e = e"], rev_time="00:00:30",
-                             fwd_time="-00:00:20"),
-            
-            # rolling maximum
-            rolling_max_tick(cols=["rmax_a = a", "rmax_d = d"], rev_ticks=10),
-            rolling_max_tick(cols=["rmax_a = a", "rmax_d = d"], rev_ticks=10, fwd_ticks=10),
-            rolling_max_time(ts_col="Timestamp", cols=["rmax_b = b", "rmax_e = e"], rev_time="00:00:10"),
-            rolling_max_time(ts_col="Timestamp", cols=["rmax_b = b", "rmax_e = e"], rev_time=10_000_000_000,
-                             fwd_time=-10_000_000_00),
-            rolling_max_time(ts_col="Timestamp", cols=["rmax_b = b", "rmax_e = e"], rev_time="00:00:30",
-                             fwd_time="-00:00:20"),
-            
-            # rolling product
-            rolling_prod_tick(cols=["rprod_a = a", "rprod_d = d"], rev_ticks=10),
-            rolling_prod_tick(cols=["rprod_a = a", "rprod_d = d"], rev_ticks=10, fwd_ticks=10),
-            rolling_prod_time(ts_col="Timestamp", cols=["rprod_b = b", "rprod_e = e"], rev_time="00:00:10"),
-            rolling_prod_time(ts_col="Timestamp", cols=["rprod_b = b", "rprod_e = e"], rev_time=10_000_000_000,
-                             fwd_time=-10_000_000_00),
-            rolling_prod_time(ts_col="Timestamp", cols=["rprod_b = b", "rprod_e = e"], rev_time="00:00:30",
-                             fwd_time="-00:00:20"),
-        ]
+    # Rolling Operators list shared with test_rolling_ops / test_rolling_ops_proxy
+    rolling_ops = [
+        # rolling sum
+        rolling_sum_tick(cols=["rsum_a = a", "rsum_d = d"], rev_ticks=10),
+        rolling_sum_tick(cols=["rsum_a = a", "rsum_d = d"], rev_ticks=10, fwd_ticks=10),
+        rolling_sum_time(ts_col="Timestamp", cols=["rsum_b = b", "rsum_e = e"], rev_time="00:00:10"),
+        rolling_sum_time(ts_col="Timestamp", cols=["rsum_b = b", "rsum_e = e"], rev_time=10_000_000_000,
+                         fwd_time=-10_000_000_00),
+        rolling_sum_time(ts_col="Timestamp", cols=["rsum_b = b", "rsum_e = e"], rev_time="00:00:30",
+                         fwd_time="-00:00:20"),
 
-        for op in ops:
+        # rolling group
+        rolling_group_tick(cols=["rgroup_a = a", "rgroup_d = d"], rev_ticks=10),
+        rolling_group_tick(cols=["rgroup_a = a", "rgroup_d = d"], rev_ticks=10, fwd_ticks=10),
+        rolling_group_time(ts_col="Timestamp", cols=["rgroup_b = b", "rgroup_e = e"], rev_time="00:00:10"),
+        rolling_group_time(ts_col="Timestamp", cols=["rgroup_b = b", "rgroup_e = e"], rev_time=10_000_000_000,
+                           fwd_time=-10_000_000_00),
+        rolling_group_time(ts_col="Timestamp", cols=["rgroup_b = b", "rgroup_e = e"], rev_time="00:00:30",
+                           fwd_time="-00:00:20"),
+
+        # rolling average
+        rolling_avg_tick(cols=["ravg_a = a", "ravg_d = d"], rev_ticks=10),
+        rolling_avg_tick(cols=["ravg_a = a", "ravg_d = d"], rev_ticks=10, fwd_ticks=10),
+        rolling_avg_time(ts_col="Timestamp", cols=["ravg_b = b", "ravg_e = e"], rev_time="00:00:10"),
+        rolling_avg_time(ts_col="Timestamp", cols=["ravg_b = b", "ravg_e = e"], rev_time=10_000_000_000,
+                         fwd_time=-10_000_000_00),
+        rolling_avg_time(ts_col="Timestamp", cols=["ravg_b = b", "ravg_e = e"], rev_time="00:00:30",
+                         fwd_time="-00:00:20"),
+
+        # rolling minimum
+        rolling_min_tick(cols=["rmin_a = a", "rmin_d = d"], rev_ticks=10),
+        rolling_min_tick(cols=["rmin_a = a", "rmin_d = d"], rev_ticks=10, fwd_ticks=10),
+        rolling_min_time(ts_col="Timestamp", cols=["rmin_b = b", "rmin_e = e"], rev_time="00:00:10"),
+        rolling_min_time(ts_col="Timestamp", cols=["rmin_b = b", "rmin_e = e"], rev_time=10_000_000_000,
+                         fwd_time=-10_000_000_00),
+        rolling_min_time(ts_col="Timestamp", cols=["rmin_b = b", "rmin_e = e"], rev_time="00:00:30",
+                         fwd_time="-00:00:20"),
+
+        # rolling maximum
+        rolling_max_tick(cols=["rmax_a = a", "rmax_d = d"], rev_ticks=10),
+        rolling_max_tick(cols=["rmax_a = a", "rmax_d = d"], rev_ticks=10, fwd_ticks=10),
+        rolling_max_time(ts_col="Timestamp", cols=["rmax_b = b", "rmax_e = e"], rev_time="00:00:10"),
+        rolling_max_time(ts_col="Timestamp", cols=["rmax_b = b", "rmax_e = e"], rev_time=10_000_000_000,
+                         fwd_time=-10_000_000_00),
+        rolling_max_time(ts_col="Timestamp", cols=["rmax_b = b", "rmax_e = e"], rev_time="00:00:30",
+                         fwd_time="-00:00:20"),
+
+        # rolling product
+        rolling_prod_tick(cols=["rprod_a = a", "rprod_d = d"], rev_ticks=10),
+        rolling_prod_tick(cols=["rprod_a = a", "rprod_d = d"], rev_ticks=10, fwd_ticks=10),
+        rolling_prod_time(ts_col="Timestamp", cols=["rprod_b = b", "rprod_e = e"], rev_time="00:00:10"),
+        rolling_prod_time(ts_col="Timestamp", cols=["rprod_b = b", "rprod_e = e"], rev_time=10_000_000_000,
+                          fwd_time=-10_000_000_00),
+        rolling_prod_time(ts_col="Timestamp", cols=["rprod_b = b", "rprod_e = e"], rev_time="00:00:30",
+                          fwd_time="-00:00:20"),
+    ]
+
+    def test_rolling_ops(self):
+        for op in self.rolling_ops:
             with self.subTest(op):
                 for t in (self.static_table, self.ticking_table):
                     rt = t.update_by(ops=op, by="c")
@@ -171,67 +172,11 @@ class UpdateByTestCase(BaseTestCase):
                         self.assertEqual(rt.size, t.size)
 
     def test_rolling_ops_proxy(self):
-        ops = [
-            # rolling sum
-            rolling_sum_tick(cols=["rsum_a = a", "rsum_d = d"], rev_ticks=10),
-            rolling_sum_tick(cols=["rsum_a = a", "rsum_d = d"], rev_ticks=10, fwd_ticks=10),
-            rolling_sum_time(ts_col="Timestamp", cols=["rsum_b = b", "rsum_e = e"], rev_time="00:00:10"),
-            rolling_sum_time(ts_col="Timestamp", cols=["rsum_b = b", "rsum_e = e"], rev_time=10_000_000_000,
-                             fwd_time=-10_000_000_00),
-            rolling_sum_time(ts_col="Timestamp", cols=["rsum_b = b", "rsum_e = e"], rev_time="00:00:30",
-                             fwd_time="-00:00:20"),
-
-            # rolling group
-            rolling_group_tick(cols=["rgroup_a = a", "rgroup_d = d"], rev_ticks=10),
-            rolling_group_tick(cols=["rgroup_a = a", "rgroup_d = d"], rev_ticks=10, fwd_ticks=10),
-            rolling_group_time(ts_col="Timestamp", cols=["rgroup_b = b", "rgroup_e = e"], rev_time="00:00:10"),
-            rolling_group_time(ts_col="Timestamp", cols=["rgroup_b = b", "rgroup_e = e"], rev_time=10_000_000_000,
-                               fwd_time=-10_000_000_00),
-            rolling_group_time(ts_col="Timestamp", cols=["rgroup_b = b", "rgroup_e = e"], rev_time="00:00:30",
-                               fwd_time="-00:00:20"),
-
-            # rolling average
-            rolling_avg_tick(cols=["ravg_a = a", "ravg_d = d"], rev_ticks=10),
-            rolling_avg_tick(cols=["ravg_a = a", "ravg_d = d"], rev_ticks=10, fwd_ticks=10),
-            rolling_avg_time(ts_col="Timestamp", cols=["ravg_b = b", "ravg_e = e"], rev_time="00:00:10"),
-            rolling_avg_time(ts_col="Timestamp", cols=["ravg_b = b", "ravg_e = e"], rev_time=10_000_000_000,
-                             fwd_time=-10_000_000_00),
-            rolling_avg_time(ts_col="Timestamp", cols=["ravg_b = b", "ravg_e = e"], rev_time="00:00:30",
-                             fwd_time="-00:00:20"),
-
-            # rolling minimum
-            rolling_min_tick(cols=["rmin_a = a", "rmin_d = d"], rev_ticks=10),
-            rolling_min_tick(cols=["rmin_a = a", "rmin_d = d"], rev_ticks=10, fwd_ticks=10),
-            rolling_min_time(ts_col="Timestamp", cols=["rmin_b = b", "rmin_e = e"], rev_time="00:00:10"),
-            rolling_min_time(ts_col="Timestamp", cols=["rmin_b = b", "rmin_e = e"], rev_time=10_000_000_000,
-                             fwd_time=-10_000_000_00),
-            rolling_min_time(ts_col="Timestamp", cols=["rmin_b = b", "rmin_e = e"], rev_time="00:00:30",
-                             fwd_time="-00:00:20"),
-
-            # rolling maximum
-            rolling_max_tick(cols=["rmax_a = a", "rmax_d = d"], rev_ticks=10),
-            rolling_max_tick(cols=["rmax_a = a", "rmax_d = d"], rev_ticks=10, fwd_ticks=10),
-            rolling_max_time(ts_col="Timestamp", cols=["rmax_b = b", "rmax_e = e"], rev_time="00:00:10"),
-            rolling_max_time(ts_col="Timestamp", cols=["rmax_b = b", "rmax_e = e"], rev_time=10_000_000_000,
-                             fwd_time=-10_000_000_00),
-            rolling_max_time(ts_col="Timestamp", cols=["rmax_b = b", "rmax_e = e"], rev_time="00:00:30",
-                             fwd_time="-00:00:20"),
-
-            # rolling product
-            rolling_prod_tick(cols=["rprod_a = a", "rprod_d = d"], rev_ticks=10),
-            rolling_prod_tick(cols=["rprod_a = a", "rprod_d = d"], rev_ticks=10, fwd_ticks=10),
-            rolling_prod_time(ts_col="Timestamp", cols=["rprod_b = b", "rprod_e = e"], rev_time="00:00:10"),
-            rolling_prod_time(ts_col="Timestamp", cols=["rprod_b = b", "rprod_e = e"], rev_time=10_000_000_000,
-                              fwd_time=-10_000_000_00),
-            rolling_prod_time(ts_col="Timestamp", cols=["rprod_b = b", "rprod_e = e"], rev_time="00:00:30",
-                              fwd_time="-00:00:20"),
-        ]
-
         pt_proxies = [self.static_table.partition_by("b").proxy(),
                       self.ticking_table.partition_by("b").proxy(),
                       ]
 
-        for op in ops:
+        for op in self.rolling_ops:
             with self.subTest(op):
                 for pt_proxy in pt_proxies:
                     rt_proxy = pt_proxy.update_by(op, by="c")
