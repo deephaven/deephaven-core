@@ -2197,9 +2197,9 @@ public class KafkaTools {
         }
     }
 
-    public static List<String> listTopics(@NotNull final Properties kafkaProperties) {
-        final ArrayList<String> r = new ArrayList<>(topics(kafkaProperties));
-        Collections.sort(r);
-        return r;
+    public static String[] listTopics(@NotNull final Properties kafkaProperties) {
+        final Set<String> topics = topics(kafkaProperties);
+        final String[] r = new String[topics.size()];
+        return topics.toArray(r);
     }
 }
