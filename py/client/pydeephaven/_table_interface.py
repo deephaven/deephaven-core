@@ -531,7 +531,8 @@ class TableInterface(ABC):
         return self.table_op_handler(table_op)
 
     def agg_by(self, aggs: List[Aggregation], by: List[str]):
-        """ Perform an Aggregate operation on the table and return the result table.
+        """ Create a new table containing grouping columns and grouped data. The resulting grouped data is defined by
+        the aggregations specified.
 
         Args:
             aggs (List[Aggregation]): the aggregations to be applied
@@ -547,12 +548,12 @@ class TableInterface(ABC):
             if hasattr(agg, 'cols') and not agg.cols:
                 raise DHError(message="No columns specified for the aggregation operation {agg}.")
 
-
         table_op = AggregateOp(aggs=aggs, by=by)
         return self.table_op_handler(table_op)
 
     def agg_all_by(self, agg: Aggregation, by: List[str]):
-        """ Perform an AggregateAll operation on the table and return the result table.
+        """ Create a new table containing grouping columns and grouped data. The resulting grouped data is defined by
+        the aggregation specified.
 
         Note, because agg_all_by applies the aggregation to all the columns of the table, it will ignore
         any column names specified for the aggregation.

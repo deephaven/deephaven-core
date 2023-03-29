@@ -22,6 +22,7 @@ from pydeephaven.proto import ticket_pb2
 from pydeephaven.query import Query
 from pydeephaven.table import Table
 
+
 class Session:
     """ A Session object represents a connection to the Deephaven data server. It contains a number of convenience
     methods for asking the server to create tables, import Arrow data into tables, merge tables, run Python scripts, and
@@ -86,7 +87,8 @@ class Session:
     def tables(self):
         with self._r_lock:
             fields = self._fetch_fields()
-            return [field.field_name for field in fields if field.application_id == 'scope' and field.typed_ticket.type == 'Table']
+            return [field.field_name for field in fields if
+                    field.application_id == 'scope' and field.typed_ticket.type == 'Table']
 
     @property
     def grpc_metadata(self):
@@ -216,7 +218,6 @@ class Session:
         Raises:
             DHError
         """
-
         with self._r_lock:
             response = self.console_service.run_script(script)
             if response.error_message != '':
@@ -251,7 +252,6 @@ class Session:
                 # Explicitly close the table without releasing it (because it isn't ours)
                 faketable.ticket = None
                 faketable.schema = None
-
 
     def bind_table(self, name: str, table: Table) -> None:
         """ Bind a table to the given name on the server so that it can be referenced by that name.
