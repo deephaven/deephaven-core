@@ -201,37 +201,39 @@ public final class UpdateByGrpcImpl extends GrpcTableOperation<UpdateByRequest> 
         return builder.build();
     }
 
-    private static RollingSumSpec adaptRollingSum(
-            @SuppressWarnings("unused") UpdateByColumn.UpdateBySpec.UpdateByRollingSum sum) {
-        return RollingSumSpec.of(adaptTimescale(sum.getReverseTimescale()), adaptTimescale(sum.getForwardTimescale()));
+    private static RollingSumSpec adaptRollingSum(UpdateByColumn.UpdateBySpec.UpdateByRollingSum sum) {
+        return RollingSumSpec.of(
+                adaptTimescale(sum.getReverseTimescale()),
+                adaptTimescale(sum.getForwardTimescale()));
     }
 
-    private static RollingGroupSpec adaptRollingGroup(
-            @SuppressWarnings("unused") UpdateByColumn.UpdateBySpec.UpdateByRollingGroup group) {
-        return RollingGroupSpec.of(adaptTimescale(group.getReverseTimescale()),
+    private static RollingGroupSpec adaptRollingGroup(UpdateByColumn.UpdateBySpec.UpdateByRollingGroup group) {
+        return RollingGroupSpec.of(
+                adaptTimescale(group.getReverseTimescale()),
                 adaptTimescale(group.getForwardTimescale()));
     }
 
-    private static RollingAvgSpec adaptRollingAvg(
-            @SuppressWarnings("unused") UpdateByColumn.UpdateBySpec.UpdateByRollingAvg avg) {
-        return RollingAvgSpec.of(adaptTimescale(avg.getReverseTimescale()), adaptTimescale(avg.getForwardTimescale()));
+    private static RollingAvgSpec adaptRollingAvg(UpdateByColumn.UpdateBySpec.UpdateByRollingAvg avg) {
+        return RollingAvgSpec.of(
+                adaptTimescale(avg.getReverseTimescale()),
+                adaptTimescale(avg.getForwardTimescale()));
     }
 
-    private static RollingMinMaxSpec adaptRollingMin(
-            @SuppressWarnings("unused") UpdateByColumn.UpdateBySpec.UpdateByRollingMin min) {
-        return RollingMinMaxSpec.of(false, adaptTimescale(min.getReverseTimescale()),
+    private static RollingMinMaxSpec adaptRollingMin(UpdateByColumn.UpdateBySpec.UpdateByRollingMin min) {
+        return RollingMinMaxSpec.of(false,
+                adaptTimescale(min.getReverseTimescale()),
                 adaptTimescale(min.getForwardTimescale()));
     }
 
-    private static RollingMinMaxSpec adaptRollingMax(
-            @SuppressWarnings("unused") UpdateByColumn.UpdateBySpec.UpdateByRollingMax max) {
-        return RollingMinMaxSpec.of(true, adaptTimescale(max.getReverseTimescale()),
+    private static RollingMinMaxSpec adaptRollingMax(UpdateByColumn.UpdateBySpec.UpdateByRollingMax max) {
+        return RollingMinMaxSpec.of(true,
+                adaptTimescale(max.getReverseTimescale()),
                 adaptTimescale(max.getForwardTimescale()));
     }
 
-    private static RollingProductSpec adaptRollingProduct(
-            @SuppressWarnings("unused") UpdateByColumn.UpdateBySpec.UpdateByRollingProduct product) {
-        return RollingProductSpec.of(adaptTimescale(product.getReverseTimescale()),
+    private static RollingProductSpec adaptRollingProduct(UpdateByColumn.UpdateBySpec.UpdateByRollingProduct product) {
+        return RollingProductSpec.of(
+                adaptTimescale(product.getReverseTimescale()),
                 adaptTimescale(product.getForwardTimescale()));
     }
 

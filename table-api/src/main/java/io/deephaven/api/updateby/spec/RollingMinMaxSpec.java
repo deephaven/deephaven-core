@@ -41,7 +41,6 @@ public abstract class RollingMinMaxSpec extends RollingOpSpec {
                 WindowScale.ofTime(timestampCol, fwdDuration));
     }
 
-    // internal use constructors
     public static RollingMinMaxSpec of(boolean isMax, WindowScale revWindowScale) {
         return ImmutableRollingMinMaxSpec.builder().isMax(isMax).revWindowScale(revWindowScale).build();
     }

@@ -38,7 +38,6 @@ public abstract class RollingAvgSpec extends RollingOpSpec {
                 WindowScale.ofTime(timestampCol, fwdDuration));
     }
 
-    // internal use constructors
     public static RollingAvgSpec of(WindowScale revWindowScale) {
         return ImmutableRollingAvgSpec.builder().revWindowScale(revWindowScale).build();
     }

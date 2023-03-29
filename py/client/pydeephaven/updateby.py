@@ -13,7 +13,7 @@ _GrpcUpdateByColumn = _GrpcUpdateByOperation.UpdateByColumn
 _GrpcUpdateBySpec = _GrpcUpdateByColumn.UpdateBySpec
 _GrpcUpdateByEma = _GrpcUpdateBySpec.UpdateByEma
 _GrpcUpdateByEmaOptions = _GrpcUpdateByEma.UpdateByEmaOptions
-_GrpcUpdateByEmaTimescale = _GrpcUpdateByEma.UpdateByEmaTimescale
+_GrpcUpdateByEmaTimescale = table_pb2.UpdateByEmaTimescale
 _GrpcUpdateByEmaTicks = _GrpcUpdateByEmaTimescale.UpdateByEmaTicks
 _GrpcUpdateByEmaTime = _GrpcUpdateByEmaTimescale.UpdateByEmaTime
 _GrpcMathContext = table_pb2.MathContext
@@ -216,7 +216,6 @@ def ema_time_decay(ts_col: str, time_scale: int, cols: List[str],
 
      Args:
         ts_col (str): the column in the source table to use for timestamps
-
         time_scale (int): the decay rate, in nanoseconds
         cols ([str]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the ema operation on all columns.

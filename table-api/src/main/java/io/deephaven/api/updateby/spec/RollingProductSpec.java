@@ -38,7 +38,6 @@ public abstract class RollingProductSpec extends RollingOpSpec {
                 WindowScale.ofTime(timestampCol, fwdDuration));
     }
 
-    // internal use constructors
     public static RollingProductSpec of(WindowScale revWindowScale) {
         return ImmutableRollingProductSpec.builder().revWindowScale(revWindowScale).build();
     }
