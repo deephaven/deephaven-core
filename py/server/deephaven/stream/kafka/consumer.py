@@ -111,7 +111,7 @@ def _dict_to_j_func(dict_mapping: Dict, mapped_only: bool) -> Callable[[str], st
     if not mapped_only:
         return _JPythonTools.functionFromMapWithIdentityDefaults(java_map)
     return _JPythonTools.functionFromMapWithDefault(java_map, None)
-
+o
 
 def _build_column_definitions(ts: List[Tuple[str, DType]]) -> List[Column]:
     """Converts a list of two-element tuples in the form of (name, DType) to a list of Columns."""
