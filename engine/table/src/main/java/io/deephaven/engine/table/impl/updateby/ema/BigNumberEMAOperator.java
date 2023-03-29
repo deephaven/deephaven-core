@@ -5,6 +5,7 @@ import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.locations.TableDataException;
@@ -75,7 +76,7 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
             @NotNull final OperationControl control,
             @Nullable final String timestampColumnName,
             final long windowScaleUnits,
-            final ColumnSource<?> valueSource) {
+            @NotNull final ColumnSource<?> valueSource) {
         super(pair, affectingColumns, rowRedirection, timestampColumnName, windowScaleUnits, 0, false,
                 BigDecimal.class);
 
@@ -96,8 +97,9 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
     @Override
     public void initializeCumulative(@NotNull final UpdateByOperator.Context updateContext,
             final long firstUnmodifiedKey,
-            final long firstUnmodifiedTimestamp) {
-        super.initializeCumulative(updateContext, firstUnmodifiedKey, firstUnmodifiedTimestamp);
+            final long firstUnmodifiedTimestamp,
+            @NotNull final RowSet bucketRowSet) {
+        super.initializeCumulative(updateContext, firstUnmodifiedKey, firstUnmodifiedTimestamp, bucketRowSet);
 
         final Context ctx = (Context) updateContext;
         // rely on the caller to validate this is a valid timestamp (or NULL_LONG when appropriate)

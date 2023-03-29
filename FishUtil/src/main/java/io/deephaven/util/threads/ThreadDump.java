@@ -3,13 +3,13 @@
  */
 package io.deephaven.util.threads;
 
-import io.deephaven.base.Procedure;
 import io.deephaven.io.logger.Logger;
 
 import java.io.PrintStream;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
+import java.util.function.Consumer;
 
 /**
  * A simple method for generating a Thread dump for this JVM; it doesn't do all the stuff that the kill -3 does; but you
@@ -32,13 +32,13 @@ public class ThreadDump {
         return builder.toString();
     }
 
-    private static void doDump(Procedure.Unary<String> output) {
+    private static void doDump(Consumer<String> output) {
         ThreadMXBean threadMXBean = ManagementFactory.getPlatformMXBean(ThreadMXBean.class);
 
         ThreadInfo[] threadInfos = threadMXBean.dumpAllThreads(true, true);
 
         for (ThreadInfo threadInfo : threadInfos) {
-            output.call(threadInfo.toString());
+            output.accept(threadInfo.toString());
         }
     }
 

@@ -13,12 +13,13 @@ import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.iterators.ColumnIterator;
 import io.deephaven.engine.updategraph.NotificationQueue.Dependency;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableArray;
 import org.jetbrains.annotations.NotNull;
+
+import static io.deephaven.engine.table.iterators.ChunkedColumnIterator.DEFAULT_CHUNK_SIZE;
 
 /**
  * A ConstituentDependency is used to establish a {@link Dependency dependency} relationship between a table and the
@@ -96,7 +97,7 @@ public class ConstituentDependency implements Dependency {
             if (lastSatisfiedStep == step) {
                 return true;
             }
-            final int chunkSize = Math.toIntExact(Math.min(ColumnIterator.DEFAULT_CHUNK_SIZE, resultRows.size()));
+            final int chunkSize = Math.toIntExact(Math.min(DEFAULT_CHUNK_SIZE, resultRows.size()));
             final int numColumns = dependencyColumns.length;
             final ChunkSource.GetContext[] contexts = new ChunkSource.GetContext[numColumns];
             try (final SharedContext sharedContext = numColumns > 1 ? SharedContext.makeSharedContext() : null;

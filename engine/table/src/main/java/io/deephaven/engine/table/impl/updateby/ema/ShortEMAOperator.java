@@ -17,6 +17,8 @@ import static io.deephaven.util.QueryConstants.*;
 
 public class ShortEMAOperator extends BasePrimitiveEMAOperator {
     public final ColumnSource<?> valueSource;
+    // region extra-fields
+    // endregion extra-fields
 
     protected class Context extends BasePrimitiveEMAOperator.Context {
 
@@ -95,7 +97,7 @@ public class ShortEMAOperator extends BasePrimitiveEMAOperator {
         }
 
         @Override
-        public void push(long key, int pos, int count) {
+        public void push(int pos, int count) {
             throw new IllegalStateException("EMAOperator#push() is not used");
         }
     }

@@ -16,13 +16,13 @@ public enum VectorFactory {
     Boolean() {
         @Override
         @NotNull
-        public final Vector vectorWrap(@NotNull final Object array) {
+        public final Vector<?> vectorWrap(@NotNull final Object array) {
             throw new UnsupportedOperationException("Vector is not implemented for primitive booleans");
         }
 
         @Override
         @NotNull
-        public Vector vectorWrap(@NotNull final Object array, int offset, int capacity) {
+        public Vector<?> vectorWrap(@NotNull final Object array, int offset, int capacity) {
             throw new UnsupportedOperationException("Vector is not implemented for primitive booleans");
         }
     },
@@ -30,13 +30,13 @@ public enum VectorFactory {
     Char() {
         @Override
         @NotNull
-        public final CharVectorDirect vectorWrap(@NotNull final Object array) {
+        public final CharVector vectorWrap(@NotNull final Object array) {
             return new CharVectorDirect((char[]) array);
         }
 
         @Override
         @NotNull
-        public CharVectorSlice vectorWrap(@NotNull final Object array, int offset, int capacity) {
+        public CharVector vectorWrap(@NotNull final Object array, int offset, int capacity) {
             return new CharVectorSlice(vectorWrap(array), offset, capacity);
         }
     },
@@ -44,13 +44,13 @@ public enum VectorFactory {
     Byte() {
         @Override
         @NotNull
-        public final ByteVectorDirect vectorWrap(@NotNull final Object array) {
+        public final ByteVector vectorWrap(@NotNull final Object array) {
             return new ByteVectorDirect((byte[]) array);
         }
 
         @Override
         @NotNull
-        public ByteVectorSlice vectorWrap(@NotNull final Object array, int offset, int capacity) {
+        public ByteVector vectorWrap(@NotNull final Object array, int offset, int capacity) {
             return new ByteVectorSlice(vectorWrap(array), offset, capacity);
         }
     },
@@ -58,13 +58,13 @@ public enum VectorFactory {
     Short() {
         @Override
         @NotNull
-        public final ShortVectorDirect vectorWrap(@NotNull final Object array) {
+        public final ShortVector vectorWrap(@NotNull final Object array) {
             return new ShortVectorDirect((short[]) array);
         }
 
         @Override
         @NotNull
-        public ShortVectorSlice vectorWrap(@NotNull final Object array, int offset, int capacity) {
+        public ShortVector vectorWrap(@NotNull final Object array, int offset, int capacity) {
             return new ShortVectorSlice(vectorWrap(array), offset, capacity);
         }
     },
@@ -72,13 +72,13 @@ public enum VectorFactory {
     Int() {
         @Override
         @NotNull
-        public final IntVectorDirect vectorWrap(@NotNull final Object array) {
+        public final IntVector vectorWrap(@NotNull final Object array) {
             return new IntVectorDirect((int[]) array);
         }
 
         @Override
         @NotNull
-        public IntVectorSlice vectorWrap(@NotNull final Object array, int offset, int capacity) {
+        public IntVector vectorWrap(@NotNull final Object array, int offset, int capacity) {
             return new IntVectorSlice(vectorWrap(array), offset, capacity);
         }
     },
@@ -86,13 +86,13 @@ public enum VectorFactory {
     Long() {
         @Override
         @NotNull
-        public final LongVectorDirect vectorWrap(@NotNull final Object array) {
+        public final LongVector vectorWrap(@NotNull final Object array) {
             return new LongVectorDirect((long[]) array);
         }
 
         @Override
         @NotNull
-        public LongVectorSlice vectorWrap(@NotNull final Object array, int offset, int capacity) {
+        public LongVector vectorWrap(@NotNull final Object array, int offset, int capacity) {
             return new LongVectorSlice(vectorWrap(array), offset, capacity);
         }
     },
@@ -100,13 +100,13 @@ public enum VectorFactory {
     Float() {
         @Override
         @NotNull
-        public final FloatVectorDirect vectorWrap(@NotNull final Object array) {
+        public final FloatVector vectorWrap(@NotNull final Object array) {
             return new FloatVectorDirect((float[]) array);
         }
 
         @Override
         @NotNull
-        public FloatVectorSlice vectorWrap(@NotNull final Object array, int offset, int capacity) {
+        public FloatVector vectorWrap(@NotNull final Object array, int offset, int capacity) {
             return new FloatVectorSlice(vectorWrap(array), offset, capacity);
         }
     },
@@ -114,13 +114,13 @@ public enum VectorFactory {
     Double() {
         @Override
         @NotNull
-        public final DoubleVectorDirect vectorWrap(@NotNull final Object array) {
+        public final DoubleVector vectorWrap(@NotNull final Object array) {
             return new DoubleVectorDirect((double[]) array);
         }
 
         @Override
         @NotNull
-        public DoubleVectorSlice vectorWrap(@NotNull final Object array, int offset, int capacity) {
+        public DoubleVector vectorWrap(@NotNull final Object array, int offset, int capacity) {
             return new DoubleVectorSlice(vectorWrap(array), offset, capacity);
         }
     },
@@ -128,16 +128,14 @@ public enum VectorFactory {
     Object() {
         @Override
         @NotNull
-        public final ObjectVectorDirect<?> vectorWrap(@NotNull final Object array) {
-            //noinspection unchecked
-            return new ObjectVectorDirect((Object[]) array);
+        public final ObjectVector<?> vectorWrap(@NotNull final Object array) {
+            return new ObjectVectorDirect<>((Object[]) array);
         }
 
         @Override
         @NotNull
-        public ObjectVectorSlice<?> vectorWrap(@NotNull final Object array, int offset, int capacity) {
-            //noinspection unchecked
-            return new ObjectVectorSlice(vectorWrap(array), offset, capacity);
+        public ObjectVector<?> vectorWrap(@NotNull final Object array, int offset, int capacity) {
+            return new ObjectVectorSlice<>(vectorWrap(array), offset, capacity);
         }
     };
 
@@ -152,8 +150,8 @@ public enum VectorFactory {
     }
 
     @NotNull
-    public abstract Vector vectorWrap(@NotNull Object array);
+    public abstract Vector<?> vectorWrap(@NotNull Object array);
 
     @NotNull
-    public abstract Vector vectorWrap(@NotNull Object array, int offset, int capacity);
+    public abstract Vector<?> vectorWrap(@NotNull Object array, int offset, int capacity);
 }

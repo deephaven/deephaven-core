@@ -26,6 +26,7 @@ import java.nio.FloatBuffer;
  */
 public class FloatChunk<ATTR extends Any> extends ChunkBase<ATTR> {
 
+    @SuppressWarnings("rawtypes")
     private static final FloatChunk EMPTY = new FloatChunk<>(ArrayTypeUtils.EMPTY_FLOAT_ARRAY, 0, 0);
 
     public static <ATTR extends Any> FloatChunk<ATTR> getEmptyChunk() {
@@ -33,6 +34,7 @@ public class FloatChunk<ATTR extends Any> extends ChunkBase<ATTR> {
         return EMPTY;
     }
 
+    @SuppressWarnings("rawtypes")
     private static final FloatChunk[] EMPTY_FLOAT_CHUNK_ARRAY = new FloatChunk[0];
 
     static <ATTR extends Any> FloatChunk<ATTR>[] getEmptyChunkArray() {
@@ -115,7 +117,7 @@ public class FloatChunk<ATTR extends Any> extends ChunkBase<ATTR> {
     }
 
     @Override
-    public final boolean isAlias(Chunk chunk) {
+    public final boolean isAlias(Chunk<?> chunk) {
         return chunk.isAlias(data);
     }
 
@@ -158,9 +160,9 @@ public class FloatChunk<ATTR extends Any> extends ChunkBase<ATTR> {
     // endregion CopyToBuffer
 
     // region downcast
-    public static <ATTR extends Any, ATTR_DERIV extends ATTR> WritableFloatChunk<ATTR_DERIV> downcast(WritableFloatChunk<ATTR> self) {
+    public static <ATTR extends Any, ATTR_DERIV extends ATTR> FloatChunk<ATTR_DERIV> downcast(FloatChunk<ATTR> self) {
         //noinspection unchecked
-        return (WritableFloatChunk<ATTR_DERIV>) self;
+        return (FloatChunk<ATTR_DERIV>) self;
     }
     // endregion downcast
 }

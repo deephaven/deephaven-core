@@ -81,9 +81,14 @@ message GetHeapInfoResponse {
     int64 free_memory = 3 [jstype=JS_STRING];
 }
 
+// Presently you get _all_ logs, not just your console. A future version might take a specific console_id to
+// restrict this to a single console.
 message LogSubscriptionRequest {
-    // presently you get _all_ logs, not just your console
 //    Ticket console_id = 1;
+    // If a non-zero value is specified, represents the timestamp in microseconds since the unix epoch when
+    // the client last saw a message. Technically this might skip messages if more than one message was
+    // logged at the same microsecond that connection was lost - to avoid this, subtract one from the last
+    // seen message's micros, and expect to receive some messages that have already been seen.
     int64 last_seen_log_timestamp = 1 [jstype=JS_STRING];
     repeated string levels = 2;
 }

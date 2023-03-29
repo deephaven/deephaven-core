@@ -68,8 +68,8 @@ public class DateTimeSsmSourceWrapper extends AbstractColumnSource<ObjectVector>
         }
 
         @Override
-        public DateTime get(long i) {
-            return nanosToTime(underlying.get(i));
+        public DateTime get(long index) {
+            return nanosToTime(underlying.get(index));
         }
 
         @Override

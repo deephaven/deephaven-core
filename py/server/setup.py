@@ -51,7 +51,7 @@ setup(
         'Programming Language :: Python :: 3.11',
     ],
     keywords='Deephaven Development',
-    python_requires='>=3.7',
+    python_requires='>=3.8',
     install_requires=[
         'jpy>=0.13.0',
         'deephaven-plugin',

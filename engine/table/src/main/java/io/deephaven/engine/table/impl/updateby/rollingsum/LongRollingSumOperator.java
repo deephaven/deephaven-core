@@ -47,7 +47,7 @@ public class LongRollingSumOperator extends BaseLongUpdateByOperator {
         }
 
         @Override
-        public void push(long key, int pos, int count) {
+        public void push(int pos, int count) {
             longWindowValues.ensureRemaining(count);
 
             for (int ii = 0; ii < count; ii++) {

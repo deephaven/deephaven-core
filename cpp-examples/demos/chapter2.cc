@@ -57,9 +57,16 @@ inline OptionalAdaptor<ARROW_OPTIONAL> adaptOptional(const ARROW_OPTIONAL &optio
 }
 }  // namespace
 
-int main() {
+int main(int argc, char *argv[]) {
   try {
     const char *server = "localhost:10000";
+    if (argc > 1) {
+      if (argc != 2 || std::strcmp("-h", argv[1]) == 0) {
+        std::cerr << "Usage: " << argv[0] << " [host:port]" << std::endl;
+        std::exit(1);
+      }
+      server = argv[1];
+    }
     auto client = Client::connect(server);
     auto manager = client.getManager();
 

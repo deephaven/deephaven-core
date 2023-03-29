@@ -4,6 +4,8 @@
 package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.primitive.iterator.CloseableIterator;
+import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfInt;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.Table;
@@ -19,7 +21,6 @@ import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.*;
-import io.deephaven.engine.table.iterators.IntegerColumnIterator;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.chunk.*;
 import junit.framework.TestCase;
@@ -56,8 +57,8 @@ public class TestColumnsToRowsTransform extends RefreshingTableTestCase {
         final Table ex3 = TableTools.newTable(stringCol("Sym", "AAPL", "AAPL", "AAPL", "SPY", "SPY", "SPY"),
                 stringCol("Label", "First", "Second", "Third", "First", "Second", "Third"), intCol("Value", expected));
         assertTableEquals(ex3, out3);
-        final Iterator<Integer> it = out3.columnIterator("Value");
-        final IntegerColumnIterator it2 = out3.integerColumnIterator("Value");
+        final CloseableIterator<Integer> it = out3.columnIterator("Value");
+        final CloseablePrimitiveIteratorOfInt it2 = out3.integerColumnIterator("Value");
         int position = 0;
         while (it.hasNext()) {
             assertEquals(expected[position++], (int) it.next());

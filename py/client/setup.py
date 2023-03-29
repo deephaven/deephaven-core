@@ -28,7 +28,7 @@ setup(
         'License :: Other/Proprietary License',
         'Programming Language :: Python :: 3.7',
     ],
-    python_requires='>3.7',
+    python_requires='>=3.8',
     install_requires=['pyarrow',
                       'bitstring',
                       'grpcio',

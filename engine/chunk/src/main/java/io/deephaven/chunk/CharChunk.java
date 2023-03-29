@@ -21,6 +21,7 @@ import java.nio.CharBuffer;
  */
 public class CharChunk<ATTR extends Any> extends ChunkBase<ATTR> {
 
+    @SuppressWarnings("rawtypes")
     private static final CharChunk EMPTY = new CharChunk<>(ArrayTypeUtils.EMPTY_CHAR_ARRAY, 0, 0);
 
     public static <ATTR extends Any> CharChunk<ATTR> getEmptyChunk() {
@@ -28,6 +29,7 @@ public class CharChunk<ATTR extends Any> extends ChunkBase<ATTR> {
         return EMPTY;
     }
 
+    @SuppressWarnings("rawtypes")
     private static final CharChunk[] EMPTY_CHAR_CHUNK_ARRAY = new CharChunk[0];
 
     static <ATTR extends Any> CharChunk<ATTR>[] getEmptyChunkArray() {
@@ -110,7 +112,7 @@ public class CharChunk<ATTR extends Any> extends ChunkBase<ATTR> {
     }
 
     @Override
-    public final boolean isAlias(Chunk chunk) {
+    public final boolean isAlias(Chunk<?> chunk) {
         return chunk.isAlias(data);
     }
 
@@ -153,9 +155,9 @@ public class CharChunk<ATTR extends Any> extends ChunkBase<ATTR> {
     // endregion CopyToBuffer
 
     // region downcast
-    public static <ATTR extends Any, ATTR_DERIV extends ATTR> WritableCharChunk<ATTR_DERIV> downcast(WritableCharChunk<ATTR> self) {
+    public static <ATTR extends Any, ATTR_DERIV extends ATTR> CharChunk<ATTR_DERIV> downcast(CharChunk<ATTR> self) {
         //noinspection unchecked
-        return (WritableCharChunk<ATTR_DERIV>) self;
+        return (CharChunk<ATTR_DERIV>) self;
     }
     // endregion downcast
 }

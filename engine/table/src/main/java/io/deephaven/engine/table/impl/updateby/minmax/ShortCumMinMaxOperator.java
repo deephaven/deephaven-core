@@ -32,7 +32,7 @@ public class ShortCumMinMaxOperator extends BaseShortUpdateByOperator {
         }
 
         @Override
-        public void push(long key, int pos, int count) {
+        public void push(int pos, int count) {
             Assert.eq(count, "push count", 1);
 
             final short val = shortValueChunk.get(pos);

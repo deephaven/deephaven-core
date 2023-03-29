@@ -20,7 +20,7 @@ func Example_inputTable() {
 	// If you don't have any specific requirements, context.Background() is a good default.
 	ctx := context.Background()
 
-	cl, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort())
+	cl, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), test_tools.GetAuth())
 	if err != nil {
 		fmt.Println("error when connecting to server:", err.Error())
 		return

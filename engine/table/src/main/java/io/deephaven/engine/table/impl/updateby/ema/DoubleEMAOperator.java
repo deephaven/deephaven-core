@@ -108,7 +108,7 @@ public class DoubleEMAOperator extends BasePrimitiveEMAOperator {
 
 
         @Override
-        public void push(long key, int pos, int count) {
+        public void push(int pos, int count) {
             throw new IllegalStateException("EMAOperator#push() is not used");
         }
     }

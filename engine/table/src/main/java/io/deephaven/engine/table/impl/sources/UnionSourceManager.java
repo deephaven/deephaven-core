@@ -9,6 +9,7 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.partitioned.TableTransformationColumn;
+import io.deephaven.engine.table.iterators.ChunkedObjectColumnIterator;
 import io.deephaven.engine.table.iterators.ObjectColumnIterator;
 import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.engine.table.impl.*;
@@ -498,10 +499,12 @@ public class UnionSourceManager {
             }
 
             if (changes == null || changes.empty()) {
+                // Constituent is either static or did not change this cycle
                 if (slotAllocationChanged) {
                     currFirstRowKeys[nextCurrentSlot + 1] = checkOverflow(nextSlotPrevFirstRowKey + shiftDelta);
-                    resultRows.insertWithShift(currFirstRowKey, constituent.getRowSet());
-                    if (shiftDelta != 0) {
+                    // Don't bother shifting or re-inserting if the constituent is empty
+                    if (constituent.size() > 0) {
+                        resultRows.insertWithShift(currFirstRowKey, constituent.getRowSet());
                         downstreamShiftBuilder.shiftRange(prevFirstRowKey, prevLastRowKey, shiftDelta);
                     }
                 }
@@ -528,7 +531,9 @@ public class UnionSourceManager {
                 nextSlotCurrFirstRowKey = nextSlotPrevFirstRowKey;
             }
 
-            final boolean needToProcessShifts = changes.shifted().nonempty() && constituent.getRowSet().isNonempty();
+            // Ignore shifts if the constituent was empty or became empty
+            final boolean needToProcessShifts = changes.shifted().nonempty()
+                    && constituent.getRowSet().sizePrev() != changes.removed().size();
 
             if (slotAllocationChanged) {
                 resultRows.insertWithShift(currFirstRowKey, constituent.getRowSet());
@@ -554,7 +559,9 @@ public class UnionSourceManager {
                     resultRows.removeRange(prevFirstRowKey, prevLastRowKey);
                     resultRows.insertWithShift(currFirstRowKey, constituent.getRowSet());
                 }
-            } else if (shiftDelta != 0) {
+            } else if (shiftDelta != 0 && constituent.getRowSet().sizePrev() != changes.removed().size()) {
+                // Note that changes.removed() must be a subset of the constituent's previous row set.
+                // If constituent is removing all of its previous rows, then we do not need to propagate a shift.
                 Assert.assertion(slotAllocationChanged, "slotAllocationChanged");
                 downstreamShiftBuilder.shiftRange(prevFirstRowKey, prevLastRowKey, shiftDelta);
             }
@@ -609,7 +616,7 @@ public class UnionSourceManager {
      * @return The iterator
      */
     private ObjectColumnIterator<Table> currConstituentIter(@NotNull final RowSequence rows) {
-        return new ObjectColumnIterator<>(constituentTables, rows);
+        return new ChunkedObjectColumnIterator<>(constituentTables, rows);
     }
 
     /**
@@ -619,7 +626,7 @@ public class UnionSourceManager {
      * @return The iterator
      */
     private ObjectColumnIterator<Table> prevConstituentIter(@NotNull final RowSequence rows) {
-        return new ObjectColumnIterator<>(constituentTables.getPrevSource(), rows);
+        return new ChunkedObjectColumnIterator<>(constituentTables.getPrevSource(), rows);
     }
 
     /**

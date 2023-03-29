@@ -3,15 +3,15 @@
  */
 package io.deephaven.integrations.python;
 
-import io.deephaven.util.FunctionalInterfaces;
 import io.deephaven.util.annotations.ScriptApi;
+import io.deephaven.util.function.ThrowingRunnable;
 import org.jpy.PyObject;
 
 /**
- * A {@link FunctionalInterfaces.ThrowingRunnable} implementation which executes a Python callable.
+ * A {@link ThrowingRunnable} implementation which executes a Python callable.
  */
 @ScriptApi
-public class PythonThrowingRunnable implements FunctionalInterfaces.ThrowingRunnable<Exception> {
+public class PythonThrowingRunnable implements ThrowingRunnable<Exception> {
     private final PyObject pyCallable;
 
     /**
