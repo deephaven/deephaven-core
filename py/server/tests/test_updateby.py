@@ -46,6 +46,31 @@ class UpdateByTestCase(BaseTestCase):
                     with ugp.exclusive_lock():
                         self.assertEqual(rt.size, t.size)
 
+    def test_ema_proxy(self):
+        op_ctrl = OperationControl(on_null=BadDataBehavior.THROW,
+                                   on_nan=BadDataBehavior.RESET,
+                                   big_value_context=MathContext.UNLIMITED)
+
+        ops = [ema_tick_decay(time_scale_ticks=100, cols="ema_a = a"),
+               ema_tick_decay(time_scale_ticks=100, cols="ema_a = a", op_control=op_ctrl),
+               ema_time_decay(ts_col="Timestamp", time_scale=10, cols="ema_a = a"),
+               ema_time_decay(ts_col="Timestamp", time_scale=100, cols="ema_c = c",
+                              op_control=op_ctrl),
+               ]
+        pt_proxies = [self.static_table.partition_by("b").proxy(),
+                      self.ticking_table.partition_by("b").proxy(),
+                      ]
+
+        for op in ops:
+            with self.subTest(op):
+                for pt_proxy in pt_proxies:
+                    rt_proxy = pt_proxy.update_by(op, by="e")
+                    for ct, rct in zip(pt_proxy.target.constituent_tables, rt_proxy.target.constituent_tables):
+                        self.assertTrue(rct.is_refreshing is ct.is_refreshing)
+                        self.assertEqual(len(rct.columns), 1 + len(ct.columns))
+                        with ugp.exclusive_lock():
+                            self.assertEqual(ct.size, rct.size)                        
+
     def test_simple_ops(self):
         op_builders = [cum_sum, cum_prod, cum_min, cum_max, forward_fill]
         pairs = ["UA=a", "UB=b"]
@@ -79,33 +104,9 @@ class UpdateByTestCase(BaseTestCase):
                         with ugp.exclusive_lock():
                             self.assertEqual(ct.size, rct.size)
 
-    def test_ema_proxy(self):
-        op_ctrl = OperationControl(on_null=BadDataBehavior.THROW,
-                                   on_nan=BadDataBehavior.RESET,
-                                   big_value_context=MathContext.UNLIMITED)
-
-        ops = [ema_tick_decay(time_scale_ticks=100, cols="ema_a = a"),
-               ema_tick_decay(time_scale_ticks=100, cols="ema_a = a", op_control=op_ctrl),
-               ema_time_decay(ts_col="Timestamp", time_scale=10, cols="ema_a = a"),
-               ema_time_decay(ts_col="Timestamp", time_scale=100, cols="ema_c = c",
-                              op_control=op_ctrl),
-               ]
-        pt_proxies = [self.static_table.partition_by("b").proxy(),
-                      self.ticking_table.partition_by("b").proxy(),
-                      ]
-
-        for op in ops:
-            with self.subTest(op):
-                for pt_proxy in pt_proxies:
-                    rt_proxy = pt_proxy.update_by(op, by="e")
-                    for ct, rct in zip(pt_proxy.target.constituent_tables, rt_proxy.target.constituent_tables):
-                        self.assertTrue(rct.is_refreshing is ct.is_refreshing)
-                        self.assertEqual(len(rct.columns), 1 + len(ct.columns))
-                        with ugp.exclusive_lock():
-                            self.assertEqual(ct.size, rct.size)
-
-    def test_rolling_sum(self):
+    def test_rolling_ops(self):
         ops = [
+            # rolling sum
             rolling_sum_tick(cols=["rsum_a = a", "rsum_d = d"], rev_ticks=10),
             rolling_sum_tick(cols=["rsum_a = a", "rsum_d = d"], rev_ticks=10, fwd_ticks=10),
             rolling_sum_time(ts_col="Timestamp", cols=["rsum_b = b", "rsum_e = e"], rev_time="00:00:10"),
@@ -113,48 +114,50 @@ class UpdateByTestCase(BaseTestCase):
                              fwd_time=-10_000_000_00),
             rolling_sum_time(ts_col="Timestamp", cols=["rsum_b = b", "rsum_e = e"], rev_time="00:00:30",
                              fwd_time="-00:00:20"),
-        ]
-
-        for op in ops:
-            with self.subTest(op):
-                for t in (self.static_table, self.ticking_table):
-                    rt = t.update_by(ops=op, by="c")
-                    self.assertTrue(rt.is_refreshing is t.is_refreshing)
-                    self.assertEqual(len(rt.columns), 2 + len(t.columns))
-                    with ugp.exclusive_lock():
-                        self.assertEqual(rt.size, t.size)
-
-    def test_rolling_sum_proxy(self):
-        ops = [
-            rolling_sum_tick(cols=["rsum_a = a", "rsum_d = d"], rev_ticks=10),
-            rolling_sum_tick(cols=["rsum_a = a", "rsum_d = d"], rev_ticks=10, fwd_ticks=10),
-            rolling_sum_time(ts_col="Timestamp", cols=["rsum_b = b", "rsum_e = e"], rev_time="00:00:10"),
-            rolling_sum_time(ts_col="Timestamp", cols=["rsum_b = b", "rsum_e = e"], rev_time="00:00:10",
-                             fwd_time=-10_000_000_00),
-        ]
-
-        pt_proxies = [self.static_table.partition_by("b").proxy(),
-                      self.ticking_table.partition_by("b").proxy(),
-                      ]
-
-        for op in ops:
-            with self.subTest(op):
-                for pt_proxy in pt_proxies:
-                    rt_proxy = pt_proxy.update_by(op, by="c")
-                    for ct, rct in zip(pt_proxy.target.constituent_tables, rt_proxy.target.constituent_tables):
-                        self.assertTrue(rct.is_refreshing is ct.is_refreshing)
-                        self.assertEqual(len(rct.columns), 2 + len(ct.columns))
-                        with ugp.exclusive_lock():
-                            self.assertEqual(ct.size, rct.size)
-
-    def test_rolling_group(self):
-        ops = [
+            
+            # rolling group
             rolling_group_tick(cols=["rgroup_a = a", "rgroup_d = d"], rev_ticks=10),
             rolling_group_tick(cols=["rgroup_a = a", "rgroup_d = d"], rev_ticks=10, fwd_ticks=10),
             rolling_group_time(ts_col="Timestamp", cols=["rgroup_b = b", "rgroup_e = e"], rev_time="00:00:10"),
             rolling_group_time(ts_col="Timestamp", cols=["rgroup_b = b", "rgroup_e = e"], rev_time=10_000_000_000,
-                             fwd_time=-10_000_000_00),
+                               fwd_time=-10_000_000_00),
             rolling_group_time(ts_col="Timestamp", cols=["rgroup_b = b", "rgroup_e = e"], rev_time="00:00:30",
+                               fwd_time="-00:00:20"),
+            
+            # rolling average
+            rolling_avg_tick(cols=["ravg_a = a", "ravg_d = d"], rev_ticks=10),
+            rolling_avg_tick(cols=["ravg_a = a", "ravg_d = d"], rev_ticks=10, fwd_ticks=10),
+            rolling_avg_time(ts_col="Timestamp", cols=["ravg_b = b", "ravg_e = e"], rev_time="00:00:10"),
+            rolling_avg_time(ts_col="Timestamp", cols=["ravg_b = b", "ravg_e = e"], rev_time=10_000_000_000,
+                             fwd_time=-10_000_000_00),
+            rolling_avg_time(ts_col="Timestamp", cols=["ravg_b = b", "ravg_e = e"], rev_time="00:00:30",
+                             fwd_time="-00:00:20"),
+        
+            # rolling minimum
+            rolling_min_tick(cols=["rmin_a = a", "rmin_d = d"], rev_ticks=10),
+            rolling_min_tick(cols=["rmin_a = a", "rmin_d = d"], rev_ticks=10, fwd_ticks=10),
+            rolling_min_time(ts_col="Timestamp", cols=["rmin_b = b", "rmin_e = e"], rev_time="00:00:10"),
+            rolling_min_time(ts_col="Timestamp", cols=["rmin_b = b", "rmin_e = e"], rev_time=10_000_000_000,
+                             fwd_time=-10_000_000_00),
+            rolling_min_time(ts_col="Timestamp", cols=["rmin_b = b", "rmin_e = e"], rev_time="00:00:30",
+                             fwd_time="-00:00:20"),
+            
+            # rolling maximum
+            rolling_max_tick(cols=["rmax_a = a", "rmax_d = d"], rev_ticks=10),
+            rolling_max_tick(cols=["rmax_a = a", "rmax_d = d"], rev_ticks=10, fwd_ticks=10),
+            rolling_max_time(ts_col="Timestamp", cols=["rmax_b = b", "rmax_e = e"], rev_time="00:00:10"),
+            rolling_max_time(ts_col="Timestamp", cols=["rmax_b = b", "rmax_e = e"], rev_time=10_000_000_000,
+                             fwd_time=-10_000_000_00),
+            rolling_max_time(ts_col="Timestamp", cols=["rmax_b = b", "rmax_e = e"], rev_time="00:00:30",
+                             fwd_time="-00:00:20"),
+            
+            # rolling product
+            rolling_prod_tick(cols=["rprod_a = a", "rprod_d = d"], rev_ticks=10),
+            rolling_prod_tick(cols=["rprod_a = a", "rprod_d = d"], rev_ticks=10, fwd_ticks=10),
+            rolling_prod_time(ts_col="Timestamp", cols=["rprod_b = b", "rprod_e = e"], rev_time="00:00:10"),
+            rolling_prod_time(ts_col="Timestamp", cols=["rprod_b = b", "rprod_e = e"], rev_time=10_000_000_000,
+                             fwd_time=-10_000_000_00),
+            rolling_prod_time(ts_col="Timestamp", cols=["rprod_b = b", "rprod_e = e"], rev_time="00:00:30",
                              fwd_time="-00:00:20"),
         ]
 
@@ -167,185 +170,61 @@ class UpdateByTestCase(BaseTestCase):
                     with ugp.exclusive_lock():
                         self.assertEqual(rt.size, t.size)
 
-    def test_rolling_group_proxy(self):
+    def test_rolling_ops_proxy(self):
         ops = [
+            # rolling sum
+            rolling_sum_tick(cols=["rsum_a = a", "rsum_d = d"], rev_ticks=10),
+            rolling_sum_tick(cols=["rsum_a = a", "rsum_d = d"], rev_ticks=10, fwd_ticks=10),
+            rolling_sum_time(ts_col="Timestamp", cols=["rsum_b = b", "rsum_e = e"], rev_time="00:00:10"),
+            rolling_sum_time(ts_col="Timestamp", cols=["rsum_b = b", "rsum_e = e"], rev_time=10_000_000_000,
+                             fwd_time=-10_000_000_00),
+            rolling_sum_time(ts_col="Timestamp", cols=["rsum_b = b", "rsum_e = e"], rev_time="00:00:30",
+                             fwd_time="-00:00:20"),
+
+            # rolling group
             rolling_group_tick(cols=["rgroup_a = a", "rgroup_d = d"], rev_ticks=10),
             rolling_group_tick(cols=["rgroup_a = a", "rgroup_d = d"], rev_ticks=10, fwd_ticks=10),
             rolling_group_time(ts_col="Timestamp", cols=["rgroup_b = b", "rgroup_e = e"], rev_time="00:00:10"),
-            rolling_group_time(ts_col="Timestamp", cols=["rgroup_b = b", "rgroup_e = e"], rev_time="00:00:10",
-                             fwd_time=-10_000_000_00),
-        ]
+            rolling_group_time(ts_col="Timestamp", cols=["rgroup_b = b", "rgroup_e = e"], rev_time=10_000_000_000,
+                               fwd_time=-10_000_000_00),
+            rolling_group_time(ts_col="Timestamp", cols=["rgroup_b = b", "rgroup_e = e"], rev_time="00:00:30",
+                               fwd_time="-00:00:20"),
 
-        pt_proxies = [self.static_table.partition_by("b").proxy(),
-                      self.ticking_table.partition_by("b").proxy(),
-                      ]
-
-        for op in ops:
-            with self.subTest(op):
-                for pt_proxy in pt_proxies:
-                    rt_proxy = pt_proxy.update_by(op, by="c")
-                    for ct, rct in zip(pt_proxy.target.constituent_tables, rt_proxy.target.constituent_tables):
-                        self.assertTrue(rct.is_refreshing is ct.is_refreshing)
-                        self.assertEqual(len(rct.columns), 2 + len(ct.columns))
-                        with ugp.exclusive_lock():
-                            self.assertEqual(ct.size, rct.size)
-
-    def test_rolling_avg(self):
-        ops = [
+            # rolling average
             rolling_avg_tick(cols=["ravg_a = a", "ravg_d = d"], rev_ticks=10),
             rolling_avg_tick(cols=["ravg_a = a", "ravg_d = d"], rev_ticks=10, fwd_ticks=10),
             rolling_avg_time(ts_col="Timestamp", cols=["ravg_b = b", "ravg_e = e"], rev_time="00:00:10"),
             rolling_avg_time(ts_col="Timestamp", cols=["ravg_b = b", "ravg_e = e"], rev_time=10_000_000_000,
-                               fwd_time=-10_000_000_00),
+                             fwd_time=-10_000_000_00),
             rolling_avg_time(ts_col="Timestamp", cols=["ravg_b = b", "ravg_e = e"], rev_time="00:00:30",
-                               fwd_time="-00:00:20"),
-        ]
+                             fwd_time="-00:00:20"),
 
-        for op in ops:
-            with self.subTest(op):
-                for t in (self.static_table, self.ticking_table):
-                    rt = t.update_by(ops=op, by="c")
-                    self.assertTrue(rt.is_refreshing is t.is_refreshing)
-                    self.assertEqual(len(rt.columns), 2 + len(t.columns))
-                    with ugp.exclusive_lock():
-                        self.assertEqual(rt.size, t.size)
-
-    def test_rolling_avg_proxy(self):
-        ops = [
-            rolling_avg_tick(cols=["ravg_a = a", "ravg_d = d"], rev_ticks=10),
-            rolling_avg_tick(cols=["ravg_a = a", "ravg_d = d"], rev_ticks=10, fwd_ticks=10),
-            rolling_avg_time(ts_col="Timestamp", cols=["ravg_b = b", "ravg_e = e"], rev_time="00:00:10"),
-            rolling_avg_time(ts_col="Timestamp", cols=["ravg_b = b", "ravg_e = e"], rev_time="00:00:10",
-                               fwd_time=-10_000_000_00),
-        ]
-
-        pt_proxies = [self.static_table.partition_by("b").proxy(),
-                      self.ticking_table.partition_by("b").proxy(),
-                      ]
-
-        for op in ops:
-            with self.subTest(op):
-                for pt_proxy in pt_proxies:
-                    rt_proxy = pt_proxy.update_by(op, by="c")
-                    for ct, rct in zip(pt_proxy.target.constituent_tables, rt_proxy.target.constituent_tables):
-                        self.assertTrue(rct.is_refreshing is ct.is_refreshing)
-                        self.assertEqual(len(rct.columns), 2 + len(ct.columns))
-                        with ugp.exclusive_lock():
-                            self.assertEqual(ct.size, rct.size)
-
-    def test_rolling_min(self):
-        ops = [
+            # rolling minimum
             rolling_min_tick(cols=["rmin_a = a", "rmin_d = d"], rev_ticks=10),
             rolling_min_tick(cols=["rmin_a = a", "rmin_d = d"], rev_ticks=10, fwd_ticks=10),
             rolling_min_time(ts_col="Timestamp", cols=["rmin_b = b", "rmin_e = e"], rev_time="00:00:10"),
             rolling_min_time(ts_col="Timestamp", cols=["rmin_b = b", "rmin_e = e"], rev_time=10_000_000_000,
-                               fwd_time=-10_000_000_00),
+                             fwd_time=-10_000_000_00),
             rolling_min_time(ts_col="Timestamp", cols=["rmin_b = b", "rmin_e = e"], rev_time="00:00:30",
-                               fwd_time="-00:00:20"),
-        ]
+                             fwd_time="-00:00:20"),
 
-        for op in ops:
-            with self.subTest(op):
-                for t in (self.static_table, self.ticking_table):
-                    rt = t.update_by(ops=op, by="c")
-                    self.assertTrue(rt.is_refreshing is t.is_refreshing)
-                    self.assertEqual(len(rt.columns), 2 + len(t.columns))
-                    with ugp.exclusive_lock():
-                        self.assertEqual(rt.size, t.size)
-
-    def test_rolling_min_proxy(self):
-        ops = [
-            rolling_min_tick(cols=["rmin_a = a", "rmin_d = d"], rev_ticks=10),
-            rolling_min_tick(cols=["rmin_a = a", "rmin_d = d"], rev_ticks=10, fwd_ticks=10),
-            rolling_min_time(ts_col="Timestamp", cols=["rmin_b = b", "rmin_e = e"], rev_time="00:00:10"),
-            rolling_min_time(ts_col="Timestamp", cols=["rmin_b = b", "rmin_e = e"], rev_time="00:00:10",
-                               fwd_time=-10_000_000_00),
-        ]
-
-        pt_proxies = [self.static_table.partition_by("b").proxy(),
-                      self.ticking_table.partition_by("b").proxy(),
-                      ]
-
-        for op in ops:
-            with self.subTest(op):
-                for pt_proxy in pt_proxies:
-                    rt_proxy = pt_proxy.update_by(op, by="c")
-                    for ct, rct in zip(pt_proxy.target.constituent_tables, rt_proxy.target.constituent_tables):
-                        self.assertTrue(rct.is_refreshing is ct.is_refreshing)
-                        self.assertEqual(len(rct.columns), 2 + len(ct.columns))
-                        with ugp.exclusive_lock():
-                            self.assertEqual(ct.size, rct.size)
-
-    def test_rolling_max(self):
-        ops = [
+            # rolling maximum
             rolling_max_tick(cols=["rmax_a = a", "rmax_d = d"], rev_ticks=10),
             rolling_max_tick(cols=["rmax_a = a", "rmax_d = d"], rev_ticks=10, fwd_ticks=10),
             rolling_max_time(ts_col="Timestamp", cols=["rmax_b = b", "rmax_e = e"], rev_time="00:00:10"),
             rolling_max_time(ts_col="Timestamp", cols=["rmax_b = b", "rmax_e = e"], rev_time=10_000_000_000,
-                               fwd_time=-10_000_000_00),
+                             fwd_time=-10_000_000_00),
             rolling_max_time(ts_col="Timestamp", cols=["rmax_b = b", "rmax_e = e"], rev_time="00:00:30",
-                               fwd_time="-00:00:20"),
-        ]
+                             fwd_time="-00:00:20"),
 
-        for op in ops:
-            with self.subTest(op):
-                for t in (self.static_table, self.ticking_table):
-                    rt = t.update_by(ops=op, by="c")
-                    self.assertTrue(rt.is_refreshing is t.is_refreshing)
-                    self.assertEqual(len(rt.columns), 2 + len(t.columns))
-                    with ugp.exclusive_lock():
-                        self.assertEqual(rt.size, t.size)
-
-    def test_rolling_max_proxy(self):
-        ops = [
-            rolling_max_tick(cols=["rmax_a = a", "rmax_d = d"], rev_ticks=10),
-            rolling_max_tick(cols=["rmax_a = a", "rmax_d = d"], rev_ticks=10, fwd_ticks=10),
-            rolling_max_time(ts_col="Timestamp", cols=["rmax_b = b", "rmax_e = e"], rev_time="00:00:10"),
-            rolling_max_time(ts_col="Timestamp", cols=["rmax_b = b", "rmax_e = e"], rev_time="00:00:10",
-                               fwd_time=-10_000_000_00),
-        ]
-
-        pt_proxies = [self.static_table.partition_by("b").proxy(),
-                      self.ticking_table.partition_by("b").proxy(),
-                      ]
-
-        for op in ops:
-            with self.subTest(op):
-                for pt_proxy in pt_proxies:
-                    rt_proxy = pt_proxy.update_by(op, by="c")
-                    for ct, rct in zip(pt_proxy.target.constituent_tables, rt_proxy.target.constituent_tables):
-                        self.assertTrue(rct.is_refreshing is ct.is_refreshing)
-                        self.assertEqual(len(rct.columns), 2 + len(ct.columns))
-                        with ugp.exclusive_lock():
-                            self.assertEqual(ct.size, rct.size)
-
-    def test_rolling_prod(self):
-        ops = [
+            # rolling product
             rolling_prod_tick(cols=["rprod_a = a", "rprod_d = d"], rev_ticks=10),
             rolling_prod_tick(cols=["rprod_a = a", "rprod_d = d"], rev_ticks=10, fwd_ticks=10),
             rolling_prod_time(ts_col="Timestamp", cols=["rprod_b = b", "rprod_e = e"], rev_time="00:00:10"),
             rolling_prod_time(ts_col="Timestamp", cols=["rprod_b = b", "rprod_e = e"], rev_time=10_000_000_000,
-                               fwd_time=-10_000_000_00),
+                              fwd_time=-10_000_000_00),
             rolling_prod_time(ts_col="Timestamp", cols=["rprod_b = b", "rprod_e = e"], rev_time="00:00:30",
-                               fwd_time="-00:00:20"),
-        ]
-
-        for op in ops:
-            with self.subTest(op):
-                for t in (self.static_table, self.ticking_table):
-                    rt = t.update_by(ops=op, by="c")
-                    self.assertTrue(rt.is_refreshing is t.is_refreshing)
-                    self.assertEqual(len(rt.columns), 2 + len(t.columns))
-                    with ugp.exclusive_lock():
-                        self.assertEqual(rt.size, t.size)
-
-    def test_rolling_prod_proxy(self):
-        ops = [
-            rolling_prod_tick(cols=["rprod_a = a", "rprod_d = d"], rev_ticks=10),
-            rolling_prod_tick(cols=["rprod_a = a", "rprod_d = d"], rev_ticks=10, fwd_ticks=10),
-            rolling_prod_time(ts_col="Timestamp", cols=["rprod_b = b", "rprod_e = e"], rev_time="00:00:10"),
-            rolling_prod_time(ts_col="Timestamp", cols=["rprod_b = b", "rprod_e = e"], rev_time="00:00:10",
-                               fwd_time=-10_000_000_00),
+                              fwd_time="-00:00:20"),
         ]
 
         pt_proxies = [self.static_table.partition_by("b").proxy(),
@@ -360,7 +239,7 @@ class UpdateByTestCase(BaseTestCase):
                         self.assertTrue(rct.is_refreshing is ct.is_refreshing)
                         self.assertEqual(len(rct.columns), 2 + len(ct.columns))
                         with ugp.exclusive_lock():
-                            self.assertEqual(ct.size, rct.size)
+                            self.assertEqual(ct.size, rct.size)                       
 
 if __name__ == '__main__':
     unittest.main()

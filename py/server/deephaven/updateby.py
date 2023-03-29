@@ -330,7 +330,7 @@ def rolling_sum_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[i
             following the current row timestamp (inclusive), this is a purely forwards looking window
     
     Args:
-        ts_col (str):
+        ts_col (str): the timestamp column for determining the window
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the rolling sum operation on all columns.
         rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
@@ -412,7 +412,7 @@ def rolling_group_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union
             following the current row timestamp (inclusive), this is a purely forwards looking window
     
     Args:
-        ts_col (str):
+        ts_col (str): the timestamp column for determining the window
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the rolling group operation on all columns.
         rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
@@ -494,7 +494,7 @@ def rolling_avg_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[i
             following the current row timestamp (inclusive), this is a purely forwards looking window
     
     Args:
-        ts_col (str):
+        ts_col (str): the timestamp column for determining the window
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the rolling average operation on all columns.
         rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
@@ -576,7 +576,7 @@ def rolling_min_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[i
             following the current row timestamp (inclusive), this is a purely forwards looking window
     
     Args:
-        ts_col (str):
+        ts_col (str): the timestamp column for determining the window
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the rolling minimum operation on all columns.
         rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
@@ -658,7 +658,7 @@ def rolling_max_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[i
             following the current row timestamp (inclusive), this is a purely forwards looking window
     
     Args:
-        ts_col (str):
+        ts_col (str): the timestamp column for determining the window
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the rolling maximum operation on all columns.
         rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
@@ -739,7 +739,7 @@ def rolling_prod_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[
             following the current row timestamp (inclusive), this is a purely forwards looking window
     
     Args:
-        ts_col (str):
+        ts_col (str): the timestamp column for determining the window
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the rolling product operation on all columns.
         rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
