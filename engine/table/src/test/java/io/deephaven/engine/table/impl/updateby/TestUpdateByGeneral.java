@@ -138,7 +138,15 @@ public class TestUpdateByGeneral extends BaseUpdateByTest implements UpdateError
                                 UpdateByOperation.RollingMax("ts", Duration.ofMinutes(5), Duration.ofMinutes(5),
                                         makeOpColNames(columnNamesArray, "_rollmaxtimerev", "Sym", "ts", "boolCol")),
 
-                                UpdateByOperation.Ema(skipControl, "ts", Duration.ofMinutes(10),
+                                // Excluding 'bigDecimalCol' because we need fuzzy matching which doesn't exist for BD
+                                UpdateByOperation.RollingProduct(50, 50,
+                                        makeOpColNames(columnNamesArray, "_rollprodticksrev", "Sym", "ts", "boolCol",
+                                                "bigDecimalCol")),
+                                UpdateByOperation.RollingProduct("ts", Duration.ofMinutes(5), Duration.ofMinutes(5),
+                                        makeOpColNames(columnNamesArray, "_rollprodtimerev", "Sym", "ts", "boolCol",
+                                                "bigDecimalCol")),
+
+                                UpdateByOperation.Ema(skipControl, "ts", 10 * MINUTE,
                                         makeOpColNames(columnNamesArray, "_ema", "Sym", "ts", "boolCol")),
                                 UpdateByOperation.CumSum(makeOpColNames(columnNamesArray, "_sum", "Sym", "ts")),
                                 UpdateByOperation.CumMin(makeOpColNames(columnNamesArray, "_min", "boolCol")),

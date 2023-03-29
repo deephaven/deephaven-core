@@ -79,6 +79,8 @@ public interface UpdateBySpec {
         T visit(RollingAvgSpec spec);
 
         T visit(RollingMinMaxSpec spec);
+
+        T visit(RollingProductSpec spec);
     }
     // endregion
 }

@@ -3,6 +3,8 @@
  */
 package io.deephaven.base.ringbuffer;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.util.Arrays;
 import java.util.NoSuchElementException;
 
@@ -14,7 +16,8 @@ import java.util.NoSuchElementException;
  */
 public class AggregatingCharRingBuffer {
     private final CharRingBuffer internalBuffer;
-    private final CharFunction aggFunction;
+    private final CharFunction aggInitialFunction;
+    private final CharFunction aggTreeFunction;
     private final char identityVal;
     private static char defaultValueForThisType;
     private char[] treeStorage;
@@ -54,8 +57,41 @@ public class AggregatingCharRingBuffer {
      *        and Math.max(). This data structure maintains a tree of partially-evaluated subranges of the data,
      *        combining them efficiently whenever the data changes.
      */
-    public AggregatingCharRingBuffer(int capacity, char identityVal, CharFunction aggFunction) {
-        this(capacity, identityVal, aggFunction, true);
+    public AggregatingCharRingBuffer(final int capacity, final char identityVal,
+            @NotNull final CharFunction aggFunction) {
+        this(capacity, identityVal, aggFunction, aggFunction, true);
+    }
+
+    /**
+     * Creates a ring buffer for char values which aggregates its contents according to a user-defined aggregation
+     * function. This aggregation calculation is performed lazily, when the user calls evaluate(). Internally the class
+     * manages a tree of intermediate aggregation values. This allows the class to efficiently update the final
+     * aggregated value when entries enter and leave the buffer, without necessarily running the calculation over the
+     * whole buffer.
+     * <p>
+     * The buffer expands its capacity as needed, employing a capacity-doubling strategy. However, note that the data
+     * structure never gives back storage: i.e. its capacity never shrinks.
+     *
+     * @param capacity the minimum size for the structure to hold
+     * @param identityVal The identity value associated with the aggregation function. This is a value e that satisfies
+     *        f(x,e) == x and f(e,x) == x for all x. For example, for the AggregatingFloatRingBuffer, if the aggFunction
+     *        is addition, multiplication, Math.min, or Math.max, the corresponding identity values would be 0.0f, 1.0f,
+     *        Float.MAX_VALUE, and -Float.MAX_VALUE respectively.
+     * @param aggTreeFunction A function used to aggregate the data in the ring buffer. The function must be
+     *        associative: that is it must satisfy f(f(a, b), c) == f(a, f(b, c)). For example, addition is associative,
+     *        because (a + b) + c == a + (b + c). Some examples of associative functions are addition, multiplication,
+     *        Math.min(), and Math.max(). This data structure maintains a tree of partially-evaluated subranges of the
+     *        data, combining them efficiently whenever the data changes.
+     * @param aggInitialFunction An associative function separate from {@code aggTreeFunction} to be applied only to the
+     *        user-supplied values in the ring buffer. The results of this function will be populated into the tree for
+     *        later evaluation by {@code aggTreeFunction}. This function could be used to filter or translate data
+     *        values at the leaf of the tree without affecting later computation.
+     */
+    public AggregatingCharRingBuffer(final int capacity,
+            final char identityVal,
+            @NotNull final CharFunction aggTreeFunction,
+            @NotNull final CharFunction aggInitialFunction) {
+        this(capacity, identityVal, aggTreeFunction, aggInitialFunction, true);
     }
 
     /**
@@ -73,16 +109,25 @@ public class AggregatingCharRingBuffer {
      *        f(x,e) == x and f(e,x) == x for all x. For example, for the AggregatingFloatRingBuffer, if the aggFunction
      *        is addition, multiplication, Math.min, or Math.max, the corresponding identity values would be 0.0f, 1.0f,
      *        Float.MAX_VALUE, and -Float.MAX_VALUE respectively.
-     * @param aggFunction A function used to aggregate the data in the ring buffer. The function must be associative:
-     *        that is it must satisfy f(f(a, b), c) == f(a, f(b, c)). For example, addition is associative, because (a +
-     *        b) + c == a + (b + c). Some examples of associative functions are addition, multiplication, Math.min(),
-     *        and Math.max(). This data structure maintains a tree of partially-evaluated subranges of the data,
-     *        combining them efficiently whenever the data changes.
+     * @param aggTreeFunction A function used to aggregate the data in the ring buffer. The function must be
+     *        associative: that is it must satisfy f(f(a, b), c) == f(a, f(b, c)). For example, addition is associative,
+     *        because (a + b) + c == a + (b + c). Some examples of associative functions are addition, multiplication,
+     *        Math.min(), and Math.max(). This data structure maintains a tree of partially-evaluated subranges of the
+     *        data, combining them efficiently whenever the data changes.
+     * @param aggInitialFunction An associative function separate from {@code aggTreeFunction} to be applied only to the
+     *        user-supplied values in the ring buffer. The results of this function will be populated into the tree for
+     *        later evaluation by {@code aggTreeFunction}. This function could be used to filter or translate data
+     *        values at the leaf of the tree without affecting later computation.
      * @param growable whether to allow growth when the buffer is full.
      */
-    public AggregatingCharRingBuffer(int capacity, char identityVal, CharFunction aggFunction, boolean growable) {
+    public AggregatingCharRingBuffer(final int capacity,
+            final char identityVal,
+            @NotNull final CharFunction aggTreeFunction,
+            @NotNull final CharFunction aggInitialFunction,
+            final boolean growable) {
         internalBuffer = new CharRingBuffer(capacity, growable);
-        this.aggFunction = aggFunction;
+        this.aggTreeFunction = aggTreeFunction;
+        this.aggInitialFunction = aggInitialFunction;
         this.identityVal = identityVal;
 
         treeStorage = new char[internalBuffer.storage.length];
@@ -532,9 +577,10 @@ public class AggregatingCharRingBuffer {
                 final int r1t = r1TailNormal - 1; // change to inclusive
 
                 // Evaluate the values in the storage buffer (results stored in the tree)
-                evaluateAndStoreResults(r1h, r1t, internalBuffer.storage, offset);
+                evaluateAndStoreResults(r1h, r1t, internalBuffer.storage, offset, aggInitialFunction);
                 // Evaluate the single range in the tree.
-                evaluateRange(offset + (r1h / 2), offset + (r1t / 2));
+                evaluateRange(offset + (r1h / 2), offset + (r1t / 2),
+                        aggTreeFunction);
                 return;
             }
 
@@ -545,12 +591,13 @@ public class AggregatingCharRingBuffer {
             final int r2t = internalBuffer.storage.length - 1; // change to inclusive
 
             // Evaluate the values in the storage buffer (results stored in the tree)
-            evaluateAndStoreResults(r1h, r1t, internalBuffer.storage, offset);
-            evaluateAndStoreResults(r2h, r2t, internalBuffer.storage, offset);
+            evaluateAndStoreResults(r1h, r1t, internalBuffer.storage, offset, aggInitialFunction);
+            evaluateAndStoreResults(r2h, r2t, internalBuffer.storage, offset, aggInitialFunction);
 
             // Evaluate the two ranges in the tree.
             evaluateTwoRanges(offset + (r1h / 2), offset + (r1t / 2),
-                    offset + (r2h / 2), offset + (r2t / 2));
+                    offset + (r2h / 2), offset + (r2t / 2),
+                    aggTreeFunction);
         }
 
         // r1 and r2 both need to be evaluated. Take advantage of the fact that at most one will wrap. Also sort the
@@ -586,12 +633,13 @@ public class AggregatingCharRingBuffer {
             final int r2t = r2TailNormal - 1; // change to inclusive
 
             // Evaluate the values from the storage buffer and store into the evaluation tree.
-            evaluateAndStoreResults(r1h, r1t, internalBuffer.storage, offset);
-            evaluateAndStoreResults(r2h, r2t, internalBuffer.storage, offset);
+            evaluateAndStoreResults(r1h, r1t, internalBuffer.storage, offset, aggInitialFunction);
+            evaluateAndStoreResults(r2h, r2t, internalBuffer.storage, offset, aggInitialFunction);
 
             // Evaluate the two disjoint ranges in the tree.
             evaluateTwoRanges(offset + (r1h / 2), offset + (r1t / 2),
-                    offset + (r2h / 2), offset + (r2t / 2));
+                    offset + (r2h / 2), offset + (r2t / 2),
+                    aggTreeFunction);
             return;
         }
         if (r1TailNormal <= internalBuffer.storage.length) {
@@ -604,14 +652,15 @@ public class AggregatingCharRingBuffer {
             final int r3t = internalBuffer.storage.length - 1; // change to inclusive
 
             // Evaluate the values from the storage buffer and store into the evaluation tree.
-            evaluateAndStoreResults(r1h, r1t, internalBuffer.storage, offset);
-            evaluateAndStoreResults(r2h, r2t, internalBuffer.storage, offset);
-            evaluateAndStoreResults(r3h, r3t, internalBuffer.storage, offset);
+            evaluateAndStoreResults(r1h, r1t, internalBuffer.storage, offset, aggInitialFunction);
+            evaluateAndStoreResults(r2h, r2t, internalBuffer.storage, offset, aggInitialFunction);
+            evaluateAndStoreResults(r3h, r3t, internalBuffer.storage, offset, aggInitialFunction);
 
             // Evaluate the three disjoint ranges in the tree.
             evaluateThreeRanges(offset + (r1h / 2), offset + (r1t / 2),
                     offset + (r2h / 2), offset + (r2t / 2),
-                    offset + (r3h / 2), offset + (r3t / 2));
+                    offset + (r3h / 2), offset + (r3t / 2),
+                    aggTreeFunction);
             return;
         }
         // r1 wraps, r2 does not.
@@ -623,41 +672,42 @@ public class AggregatingCharRingBuffer {
         final int r3t = internalBuffer.storage.length - 1; // change to inclusive
 
         // Evaluate the values from the storage buffer and store into the evaluation tree.
-        evaluateAndStoreResults(r1h, r1t, internalBuffer.storage, offset);
-        evaluateAndStoreResults(r2h, r2t, internalBuffer.storage, offset);
-        evaluateAndStoreResults(r3h, r3t, internalBuffer.storage, offset);
+        evaluateAndStoreResults(r1h, r1t, internalBuffer.storage, offset, aggInitialFunction);
+        evaluateAndStoreResults(r2h, r2t, internalBuffer.storage, offset, aggInitialFunction);
+        evaluateAndStoreResults(r3h, r3t, internalBuffer.storage, offset, aggInitialFunction);
 
         // Evaluate the three disjoint ranges in the tree.
         evaluateThreeRanges(offset + (r1h / 2), offset + (r1t / 2),
                 offset + (r2h / 2), offset + (r2t / 2),
-                offset + (r3h / 2), offset + (r3t / 2));
+                offset + (r3h / 2), offset + (r3t / 2),
+                aggTreeFunction);
     }
 
     /**
      * This function accepts three disjoint ranges in the evaluation tree and iteratively computes aggregation results
      * of value pairs in the range which are stored in parent nodes. Each iteration will shrink the ranges by a factor
      * of 2. As the ranges shrink, they will eventually overlap. When this happens, this function will transfer to
-     * {@link #evaluateTwoRanges(int, int, int, int)} for better performance.
+     * {@link #evaluateTwoRanges(int, int, int, int, CharFunction)} for better performance.
      * <p>
      * The provided ranges ore closed-interval. The head and tail are both included in the range.
      */
-    private void evaluateThreeRanges(int r1h, int r1t, int r2h, int r2t, int r3h, int r3t) {
+    private void evaluateThreeRanges(int r1h, int r1t, int r2h, int r2t, int r3h, int r3t, CharFunction evalFunction) {
         while (true) {
             if (r1t >= r2h) {
                 // r1 and r2 overlap. Collapse them together and call the two range version.
-                evaluateTwoRanges(r1h, r2t, r3h, r3t);
+                evaluateTwoRanges(r1h, r2t, r3h, r3t, evalFunction);
                 return;
             }
             if (r2t >= r3h) {
                 // r2 and r3 overlap. Collapse them together and call the two range version.
-                evaluateTwoRanges(r1h, r1t, r2h, r3t);
+                evaluateTwoRanges(r1h, r1t, r2h, r3t, evalFunction);
                 return;
             }
 
             // No collapse is possible. Evaluate the disjoint ranges.
-            evaluateAndStoreResults(r1h, r1t, treeStorage, 0);
-            evaluateAndStoreResults(r2h, r2t, treeStorage, 0);
-            evaluateAndStoreResults(r3h, r3t, treeStorage, 0);
+            evaluateAndStoreResults(r1h, r1t, treeStorage, 0, evalFunction);
+            evaluateAndStoreResults(r2h, r2t, treeStorage, 0, evalFunction);
+            evaluateAndStoreResults(r3h, r3t, treeStorage, 0, evalFunction);
 
             // Determine the new parent ranges and loop until two ranges collapse
             r1h /= 2;
@@ -673,21 +723,21 @@ public class AggregatingCharRingBuffer {
      * This function accepts two disjoint ranges in the evaluation tree and iteratively computes aggregation results of
      * value pairs in the range which are stored in parent nodes. Each iteration will shrink the ranges by a factor of
      * 2. As the ranges shrink, they will eventually overlap. When this happens, this function will transfer to
-     * {@link #evaluateRange(int, int)} for better performance.
+     * {@link #evaluateRange(int, int, CharFunction)} for better performance.
      * <p>
      * The provided ranges ore closed-interval. The head and tail are both included in the range.
      */
-    private void evaluateTwoRanges(int r1h, int r1t, int r2h, int r2t) {
+    private void evaluateTwoRanges(int r1h, int r1t, int r2h, int r2t, CharFunction evalFunction) {
         while (true) {
             if (r1t >= r2h) {
                 // r1 and r2 overlap. Collapse them together and call the single range version.
-                evaluateRange(r1h, r2t);
+                evaluateRange(r1h, r2t, evalFunction);
                 return;
             }
 
             // No collapse is possible. Evaluate the disjoint ranges.
-            evaluateAndStoreResults(r1h, r1t, treeStorage, 0);
-            evaluateAndStoreResults(r2h, r2t, treeStorage, 0);
+            evaluateAndStoreResults(r1h, r1t, treeStorage, 0, evalFunction);
+            evaluateAndStoreResults(r2h, r2t, treeStorage, 0, evalFunction);
 
             // Determine the new parent ranges and loop until two ranges collapse
             r1h /= 2;
@@ -705,10 +755,10 @@ public class AggregatingCharRingBuffer {
      * <p>
      * The provided range is closed-interval. The head and tail are both included in the range.
      */
-    private void evaluateRange(int r1h, int r1t) {
+    private void evaluateRange(int r1h, int r1t, CharFunction evalFunction) {
         while (r1t > 1) {
             // Evaluate the single range
-            evaluateAndStoreResults(r1h, r1t, treeStorage, 0);
+            evaluateAndStoreResults(r1h, r1t, treeStorage, 0, evalFunction);
 
             // Determine the new parent range and loop until the range reaches the root (tail = 1).
             r1h /= 2;
@@ -724,7 +774,7 @@ public class AggregatingCharRingBuffer {
      * The source of the data is either the storage buffer (when we are evaluating the bottommost row of the tree) or
      * the tree area (at all other times). The destination is always the tree area.
      */
-    private void evaluateAndStoreResults(int start, int end, char[] src, int dstOffset) {
+    private void evaluateAndStoreResults(int start, int end, char[] src, int dstOffset, CharFunction evalFunction) {
         // Everything from start to end (inclusive) should be evaluated
         for (int left = start & 0xFFFFFFFE; left <= end; left += 2) {
             final int right = left + 1;
@@ -736,7 +786,7 @@ public class AggregatingCharRingBuffer {
 
             // Compute and store. Unlike src, which may be point to the storage buffer or tree area,
             // the destination is always in the tree area.
-            final char computeVal = aggFunction.apply(leftVal, rightVal);
+            final char computeVal = evalFunction.apply(leftVal, rightVal);
             treeStorage[parent + dstOffset] = computeVal;
         }
     }
