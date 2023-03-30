@@ -7,8 +7,8 @@ import unittest
 
 from pyarrow import csv
 
-from pydeephaven import SortDirection
 from pydeephaven import DHError
+from pydeephaven import SortDirection
 from pydeephaven.agg import sum_, avg, pct, weighted_avg, count_, partition
 from pydeephaven.table import Table
 from tests.testbase import BaseTestCase
@@ -272,6 +272,22 @@ class TableTestCase(BaseTestCase):
                 test_table.agg_all_by(agg=partition(col="aggPartition"), by=["a"])
             with self.assertRaises(DHError) as cm:
                 test_table.agg_all_by(agg=count_(col="ca"), by=["a"])
+
+    def test_where_in(self):
+        pa_table = csv.read_csv(self.csv_file)
+        test_table = self.session.import_table(pa_table)
+
+        unique_table = test_table.head(num_rows=50).select_distinct(
+            cols=["a", "c"]
+        )
+
+        with self.subTest("where-in filter"):
+            result_table = test_table.where_in(unique_table, cols=["c"])
+            self.assertLessEqual(unique_table.size, result_table.size)
+
+        with self.subTest("where-not-in filter"):
+            result_table2 = test_table.where_not_in(unique_table, cols=["c"])
+            self.assertEqual(result_table.size, test_table.size - result_table2.size)
 
 
 if __name__ == '__main__':

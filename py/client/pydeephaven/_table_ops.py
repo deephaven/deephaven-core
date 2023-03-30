@@ -600,3 +600,27 @@ class CreateInputTableOp(TableOp):
     def make_grpc_request_for_batch(self, result_id, source_id):
         return table_pb2.BatchTableRequest.Operation(
             create_input_table=self.make_grpc_request(result_id=result_id, source_id=source_id))
+
+
+class WhereInTableOp(TableOp):
+
+    def __init__(self, filter_table: Any, cols: List[str], inverted: bool):
+        self.filter_table = filter_table
+        self.cols = cols
+        self.inverted = inverted
+
+    @classmethod
+    def get_stub_func(cls, table_service_stub: table_pb2_grpc.TableServiceStub):
+        return table_service_stub.WhereIn
+
+    def make_grpc_request(self, result_id, source_id=None):
+        right_id = table_pb2.TableReference(ticket=self.filter_table.ticket)
+        return table_pb2.WhereInRequest(result_id=result_id,
+                                        left_id=source_id,
+                                        right_id=right_id,
+                                        inverted=self.inverted,
+                                        columns_to_match=self.cols)
+
+    def make_grpc_request_for_batch(self, result_id, source_id):
+        return table_pb2.BatchTableRequest.Operation(
+            where_in=self.make_grpc_request(result_id=result_id, source_id=source_id))
