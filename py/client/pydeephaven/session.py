@@ -7,23 +7,23 @@ import threading
 from typing import List
 
 import grpc
-import pyarrow
+import pyarrow as pa
 import pyarrow.flight as paflight
 from bitstring import BitArray
-from pyarrow import ArrowNotImplementedError
 from pyarrow._flight import ClientMiddlewareFactory, ClientMiddleware, ClientAuthHandler
 
 from pydeephaven._app_service import AppService
 from pydeephaven._arrow_flight_service import ArrowFlightService
 from pydeephaven._config_service import ConfigService
 from pydeephaven._console_service import ConsoleService
+from pydeephaven._input_table_service import InputTableService
 from pydeephaven._session_service import SessionService
-from pydeephaven._table_ops import TimeTableOp, EmptyTableOp, MergeTablesOp, FetchTableOp
+from pydeephaven._table_ops import TimeTableOp, EmptyTableOp, MergeTablesOp, FetchTableOp, CreateInputTableOp
 from pydeephaven._table_service import TableService
 from pydeephaven.dherror import DHError
 from pydeephaven.proto import ticket_pb2
 from pydeephaven.query import Query
-from pydeephaven.table import Table
+from pydeephaven.table import Table, InputTable
 
 
 class _DhClientAuthMiddlewareFactory(ClientMiddlewareFactory):
@@ -131,6 +131,7 @@ class Session:
         self._console_service = None
         self._flight_service = None
         self._app_service = None
+        self._input_table_service = None
         self._never_timeout = never_timeout
         self._keep_alive_timer = None
         self._session_type = session_type
@@ -160,32 +161,32 @@ class Session:
         return [(b'authorization', self._auth_token)]
 
     @property
-    def table_service(self):
+    def table_service(self) -> TableService:
         if not self._table_service:
             self._table_service = TableService(self)
         return self._table_service
 
     @property
-    def session_service(self):
+    def session_service(self) -> SessionService:
         if not self._session_service:
             self._session_service = SessionService(self)
         return self._session_service
 
     @property
-    def console_service(self):
+    def console_service(self) -> ConsoleService:
         if not self._console_service:
             self._console_service = ConsoleService(self)
         return self._console_service
 
     @property
-    def flight_service(self):
+    def flight_service(self) -> ArrowFlightService:
         if not self._flight_service:
             self._flight_service = ArrowFlightService(self, self._flight_client)
 
         return self._flight_service
 
     @property
-    def app_service(self):
+    def app_service(self) -> AppService:
         if not self._app_service:
             self._app_service = AppService(self)
 
@@ -197,6 +198,13 @@ class Session:
             self._config_service = ConfigService(self)
 
         return self._config_service
+
+    @property
+    def input_table_service(self) -> InputTableService:
+        if not self._input_table_service:
+            self._input_table_service = InputTableService(self)
+
+        return self._input_table_service
 
     def make_ticket(self, ticket_no=None):
         if not ticket_no:
@@ -371,7 +379,7 @@ class Session:
         return self.table_service.grpc_table_op(None, table_op)
 
     def empty_table(self, size: int) -> Table:
-        """ create an empty table on the server.
+        """ Create an empty table on the server.
 
         Args:
             size (int): the size of the empty table in number of rows
@@ -385,14 +393,14 @@ class Session:
         table_op = EmptyTableOp(size=size)
         return self.table_service.grpc_table_op(None, table_op)
 
-    def import_table(self, data: pyarrow.Table) -> Table:
+    def import_table(self, data: pa.Table) -> Table:
         """ Import the pyarrow table as a new Deephaven table on the server.
 
         Deephaven supports most of the Arrow data types. However, if the pyarrow table contains any field with a data
         type not supported by Deephaven, the import operation will fail.
 
         Args:
-            data (pyarrow.Table): a pyarrow Table object
+            data (pa.Table): a pyarrow Table object
 
         Returns:
             a Table object
@@ -431,3 +439,29 @@ class Session:
             DHError
         """
         return Query(self, table)
+
+    def input_table(self, schema: pa.Schema = None, init_table: Table = None,
+                    key_cols: List[str] = None) -> InputTable:
+        """ Create an InputTable from either Arrow schema or initial table. When key columns are
+        provided, the InputTable will be keyed, otherwise it will be append-only.
+
+        Args:
+            schema (pa.Schema): the schema for the InputTable
+            init_table (Table): the initial table
+            key_cols (Union[str, Sequence[str]): the name(s) of the key column(s)
+
+        Returns:
+            an InputTable
+
+        Raises:
+            DHError, ValueError
+        """
+        if schema is None and init_table is None:
+            raise ValueError("either arrow schema or init table should be provided.")
+        elif schema and init_table:
+            raise ValueError("both arrow schema and init table are provided.")
+
+        table_op = CreateInputTableOp(schema=schema, init_table=init_table, key_cols=key_cols)
+        input_table = self.table_service.grpc_table_op(None, table_op, table_class=InputTable)
+        input_table.key_cols = key_cols
+        return input_table

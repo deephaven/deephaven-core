@@ -4,6 +4,9 @@
 from abc import ABC, abstractmethod
 from typing import List, Any
 
+import pyarrow as pa
+
+from pydeephaven._arrow import map_arrow_type
 from pydeephaven.agg import Aggregation
 from pydeephaven.constants import SortDirection, MatchRule
 from pydeephaven.proto import table_pb2, table_pb2_grpc
@@ -557,3 +560,43 @@ class AggregateAllOp(TableOp):
     def make_grpc_request_for_batch(self, result_id, source_id):
         return table_pb2.BatchTableRequest.Operation(
             aggregate_all=self.make_grpc_request(result_id=result_id, source_id=source_id))
+
+
+class CreateInputTableOp(TableOp):
+    def __init__(self, schema: pa.schema, init_table: Any, key_cols: List[str] = None):
+        self.schema = schema
+        self.init_table = init_table
+        self.key_cols = key_cols
+
+    @classmethod
+    def get_stub_func(cls, table_service_stub: table_pb2_grpc.TableServiceStub):
+        return table_service_stub.CreateInputTable
+
+    def make_grpc_request(self, result_id, source_id=None):
+        if self.key_cols:
+            key_backed = table_pb2.CreateInputTableRequest.InputTableKind.InMemoryKeyBacked(
+                key_columns=self.key_cols)
+            input_table_kind = table_pb2.CreateInputTableRequest.InputTableKind(in_memory_key_backed=key_backed)
+        else:
+            append_only = table_pb2.CreateInputTableRequest.InputTableKind.InMemoryAppendOnly()
+            input_table_kind = table_pb2.CreateInputTableRequest.InputTableKind(in_memory_append_only=append_only)
+
+        if self.schema:
+            dh_fields = []
+            for f in self.schema:
+                dh_fields.append(pa.field(name=f.name, type=f.type, metadata=map_arrow_type(f.type)))
+            dh_schema = pa.schema(dh_fields)
+
+            schema = dh_schema.serialize().to_pybytes()
+            return table_pb2.CreateInputTableRequest(result_id=result_id,
+                                                     schema=schema,
+                                                     kind=input_table_kind)
+        else:
+            source_table_id = table_pb2.TableReference(ticket=self.init_table.ticket)
+            return table_pb2.CreateInputTableRequest(result_id=result_id,
+                                                     source_table_id=source_table_id,
+                                                     kind=input_table_kind)
+
+    def make_grpc_request_for_batch(self, result_id, source_id):
+        return table_pb2.BatchTableRequest.Operation(
+            create_input_table=self.make_grpc_request(result_id=result_id, source_id=source_id))
