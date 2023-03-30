@@ -113,6 +113,12 @@ import static org.apache.arrow.vector.ipc.message.MessageSerializer.IPC_CONTINUA
  * <li>{@link ArrowObjectColumnSource ArrowObjectColumnSource&lt;LocalDateTime&gt;} - uses {@link DateMilliVector} under
  * the hood, returns LocalDateTime</li>
  * </ul>
+ *
+ * <p>
+ * Note that Arrow's Java implementation only supports feather v2, as a result this class only supports feather v2.
+ * <p>
+ * There are some performance issues under certain data access patterns. See deephaven-core#3633 for details and
+ * suggested future improvements.
  */
 public class ArrowWrapperTools {
     private static final int MAX_POOL_SIZE = Math.max(UpdateGraphProcessor.DEFAULT.getUpdateThreads(),
@@ -139,8 +145,8 @@ public class ArrowWrapperTools {
             for (int ii = 0; ii < blocks.length; ++ii) {
                 final ArrowBlock block = recordBlocks.get(ii);
                 if (block.getMetadataLength() > ArrayUtil.MAX_ARRAY_SIZE) {
-                    throw new SizeException("Metadata length exceeds maximum array size.", block.getMetadataLength(),
-                            ArrayUtil.MAX_ARRAY_SIZE);
+                    throw new SizeException("Metadata length exceeds maximum array size. Failed reading block " + ii
+                            + " of '" + path + "'", block.getMetadataLength(), ArrayUtil.MAX_ARRAY_SIZE);
                 }
                 while (block.getMetadataLength() > metadataBufLen) {
                     metadataBufLen = Math.min(2 * metadataBufLen, ArrayUtil.MAX_ARRAY_SIZE);
@@ -152,7 +158,7 @@ public class ArrowWrapperTools {
                 final ByteBuffer metadataBuf = ByteBuffer.wrap(rawMetadataBuf, 0, block.getMetadataLength());
                 int numRead = channel.read(metadataBuf);
                 if (numRead != block.getMetadataLength()) {
-                    throw new IOException("Unexpected end of input trying to read batch.");
+                    throw new IOException("Unexpected end of input trying to read block " + ii + " of '" + path + "'");
                 }
 
                 metadataBuf.flip();
