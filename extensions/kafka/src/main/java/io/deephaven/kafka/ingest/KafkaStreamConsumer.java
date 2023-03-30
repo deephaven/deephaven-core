@@ -17,10 +17,10 @@ public interface KafkaStreamConsumer extends StreamFailureConsumer {
      * Consume a list of ConsumerRecords coming from Kafka.
      *
      * @param records the records to consume
-     * @return the total number of message bytes processed, according whether any key and/or value fields
-     * were processed, and the corresponding values for
-     * {@code org.apache.kafka.clients.consumer.ConsumerRecord.serializedKeySize}
-     * {@code org.apache.kafka.clients.consumer.ConsumerRecord.serializedValueSize}
+     * @return the total number of message bytes processed, according whether any key and/or value fields were
+     *         processed, and the corresponding values for
+     *         {@code org.apache.kafka.clients.consumer.ConsumerRecord.serializedKeySize}
+     *         {@code org.apache.kafka.clients.consumer.ConsumerRecord.serializedValueSize}
      */
     long consume(List<? extends ConsumerRecord<?, ?>> records);
 }
