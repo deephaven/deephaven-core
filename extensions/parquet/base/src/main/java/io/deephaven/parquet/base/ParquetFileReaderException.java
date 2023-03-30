@@ -1,6 +1,8 @@
 package io.deephaven.parquet.base;
 
-public class ParquetFileReaderException extends RuntimeException {
+import java.io.IOException;
+
+public class ParquetFileReaderException extends IOException {
     public ParquetFileReaderException(String message) {
         super(message);
     }

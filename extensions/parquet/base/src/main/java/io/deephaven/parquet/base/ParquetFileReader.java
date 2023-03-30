@@ -182,8 +182,8 @@ public class ParquetFileReader {
                 getSchema());
     }
 
-    private static MessageType fromParquetSchema(List<SchemaElement> schema,
-            List<ColumnOrder> columnOrders) {
+    private static MessageType fromParquetSchema(List<SchemaElement> schema, List<ColumnOrder> columnOrders)
+            throws ParquetFileReaderException {
         final Iterator<SchemaElement> iterator = schema.iterator();
         final SchemaElement root = iterator.next();
         final Types.MessageTypeBuilder builder = Types.buildMessage();
@@ -195,7 +195,7 @@ public class ParquetFileReader {
     }
 
     private static void buildChildren(Types.GroupBuilder builder, Iterator<SchemaElement> schema,
-            int childrenCount, List<ColumnOrder> columnOrders, int columnCount) {
+            int childrenCount, List<ColumnOrder> columnOrders, int columnCount) throws ParquetFileReaderException {
         for (int i = 0; i < childrenCount; ++i) {
             SchemaElement schemaElement = schema.next();
             Object childBuilder;
@@ -262,8 +262,7 @@ public class ParquetFileReader {
 
     }
 
-    private static LogicalTypeAnnotation.TimeUnit convertTimeUnit(
-            TimeUnit unit) {
+    private static LogicalTypeAnnotation.TimeUnit convertTimeUnit(TimeUnit unit) throws ParquetFileReaderException {
         switch (unit.getSetField()) {
             case MICROS:
                 return LogicalTypeAnnotation.TimeUnit.MICROS;
@@ -276,7 +275,7 @@ public class ParquetFileReader {
         }
     }
 
-    static LogicalTypeAnnotation getLogicalTypeAnnotation(LogicalType type) {
+    static LogicalTypeAnnotation getLogicalTypeAnnotation(LogicalType type) throws ParquetFileReaderException {
         switch (type.getSetField()) {
             case MAP:
                 return LogicalTypeAnnotation.mapType();
@@ -292,8 +291,7 @@ public class ParquetFileReader {
                 return LogicalTypeAnnotation.listType();
             case TIME:
                 TimeType time = type.getTIME();
-                return LogicalTypeAnnotation.timeType(time.isAdjustedToUTC,
-                        convertTimeUnit(time.unit));
+                return LogicalTypeAnnotation.timeType(time.isAdjustedToUTC, convertTimeUnit(time.unit));
             case STRING:
                 return LogicalTypeAnnotation.stringType();
             case DECIMAL:
@@ -306,19 +304,17 @@ public class ParquetFileReader {
                 return null;
             case TIMESTAMP:
                 TimestampType timestamp = type.getTIMESTAMP();
-                return LogicalTypeAnnotation.timestampType(timestamp.isAdjustedToUTC,
-                        convertTimeUnit(timestamp.unit));
+                return LogicalTypeAnnotation.timestampType(timestamp.isAdjustedToUTC, convertTimeUnit(timestamp.unit));
             default:
                 throw new ParquetFileReaderException("Unknown logical type " + type);
         }
     }
 
-    private static org.apache.parquet.schema.Type.Repetition fromParquetRepetition(
-            FieldRepetitionType repetition) {
+    private static org.apache.parquet.schema.Type.Repetition fromParquetRepetition(FieldRepetitionType repetition) {
         return org.apache.parquet.schema.Type.Repetition.valueOf(repetition.name());
     }
 
-    private static PrimitiveType.PrimitiveTypeName getPrimitive(Type type) {
+    private static PrimitiveType.PrimitiveTypeName getPrimitive(Type type) throws ParquetFileReaderException {
         switch (type) {
             case BYTE_ARRAY: // TODO: rename BINARY and remove this switch
                 return PrimitiveType.PrimitiveTypeName.BINARY;
@@ -349,8 +345,8 @@ public class ParquetFileReader {
         return org.apache.parquet.schema.ColumnOrder.undefined();
     }
 
-    private static LogicalTypeAnnotation getLogicalTypeAnnotation(ConvertedType type,
-            SchemaElement schemaElement) {
+    private static LogicalTypeAnnotation getLogicalTypeAnnotation(ConvertedType type, SchemaElement schemaElement)
+            throws ParquetFileReaderException {
         switch (type) {
             case UTF8:
                 return LogicalTypeAnnotation.stringType();
@@ -369,17 +365,13 @@ public class ParquetFileReader {
             case DATE:
                 return LogicalTypeAnnotation.dateType();
             case TIME_MILLIS:
-                return LogicalTypeAnnotation.timeType(true,
-                        LogicalTypeAnnotation.TimeUnit.MILLIS);
+                return LogicalTypeAnnotation.timeType(true, LogicalTypeAnnotation.TimeUnit.MILLIS);
             case TIME_MICROS:
-                return LogicalTypeAnnotation.timeType(true,
-                        LogicalTypeAnnotation.TimeUnit.MICROS);
+                return LogicalTypeAnnotation.timeType(true, LogicalTypeAnnotation.TimeUnit.MICROS);
             case TIMESTAMP_MILLIS:
-                return LogicalTypeAnnotation.timestampType(true,
-                        LogicalTypeAnnotation.TimeUnit.MILLIS);
+                return LogicalTypeAnnotation.timestampType(true, LogicalTypeAnnotation.TimeUnit.MILLIS);
             case TIMESTAMP_MICROS:
-                return LogicalTypeAnnotation.timestampType(true,
-                        LogicalTypeAnnotation.TimeUnit.MICROS);
+                return LogicalTypeAnnotation.timestampType(true, LogicalTypeAnnotation.TimeUnit.MICROS);
             case INTERVAL:
                 return LogicalTypeAnnotation.IntervalLogicalTypeAnnotation.getInstance();
             case INT_8:

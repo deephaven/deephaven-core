@@ -5,9 +5,6 @@ package io.deephaven.parquet.table.layout;
 
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
-import io.deephaven.parquet.base.ParquetFileReader;
-import io.deephaven.parquet.base.ParquetFileReaderException;
-import io.deephaven.parquet.base.util.LocalFSChannelProvider;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
 import org.jetbrains.annotations.NotNull;
 
@@ -51,13 +48,14 @@ public final class ParquetFlatPartitionedLayout implements TableLocationKeyFinde
             for (final Path parquetFilePath : parquetFileStream) {
                 ParquetTableLocationKey locationKey = cache.get(parquetFilePath);
                 if (locationKey == null) {
+                    locationKey = locationKey(parquetFilePath);
                     try {
-                        new ParquetFileReader(parquetFilePath.toString(), new LocalFSChannelProvider());
-                    } catch (IOException | ParquetFileReaderException e) {
+                        locationKey.getFileReaderIo();
+                    } catch (IOException e) {
                         // Either this is not a real parquet file, or it's in the process of being written.
                         continue;
                     }
-                    cache.put(parquetFilePath, locationKey = locationKey(parquetFilePath));
+                    cache.put(parquetFilePath, locationKey);
                 }
                 locationKeyObserver.accept(locationKey);
             }

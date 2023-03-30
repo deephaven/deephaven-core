@@ -73,6 +73,20 @@ public class ParquetTableLocationKey extends FileTableLocationKey {
     }
 
     /**
+     * Get a previously-{@link #setFileReader(ParquetFileReader) set} or on-demand created {@link ParquetFileReader} for
+     * this location key's {@code file}.
+     *
+     * @return A {@link ParquetFileReader} for this location key's {@code file}.
+     * @throws IOException if an IOException occurs
+     */
+    public synchronized ParquetFileReader getFileReaderIo() throws IOException {
+        if (fileReader != null) {
+            return fileReader;
+        }
+        return fileReader = ParquetTools.getParquetFileReaderIo(file);
+    }
+
+    /**
      * Set the {@link ParquetFileReader} that will be returned by {@link #getFileReader()}. Pass {@code null} to force
      * on-demand construction at the next invocation. Always clears cached {@link ParquetMetadata} and {@link RowGroup}
      * indices.

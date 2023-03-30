@@ -623,13 +623,24 @@ public class ParquetTools {
      */
     public static ParquetFileReader getParquetFileReader(@NotNull final File parquetFile) {
         try {
-            return new ParquetFileReader(
-                    parquetFile.getAbsolutePath(),
-                    new CachedChannelProvider(
-                            new TrackedSeekableChannelsProvider(TrackedFileHandleFactory.getInstance()), 1 << 7));
+            return getParquetFileReaderIo(parquetFile);
         } catch (IOException e) {
             throw new TableDataException("Failed to create Parquet file reader: " + parquetFile, e);
         }
+    }
+
+    /**
+     * Make a {@link ParquetFileReader} for the supplied {@link File}.
+     *
+     * @param parquetFile The {@link File} to read
+     * @return The new {@link ParquetFileReader}
+     * @throws IOException if an IO exception occurs
+     */
+    public static ParquetFileReader getParquetFileReaderIo(@NotNull File parquetFile) throws IOException {
+        return new ParquetFileReader(
+                parquetFile.getAbsolutePath(),
+                new CachedChannelProvider(
+                        new TrackedSeekableChannelsProvider(TrackedFileHandleFactory.getInstance()), 1 << 7));
     }
 
     @VisibleForTesting
