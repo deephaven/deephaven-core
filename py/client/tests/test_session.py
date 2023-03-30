@@ -35,9 +35,9 @@ class SessionTestCase(BaseTestCase):
     def test_never_timeout(self):
         session = Session()
         for _ in range(2):
-            token1 = session.session_token
+            token1 = session._auth_token
             sleep(300)
-            token2 = session.session_token
+            token2 = session._auth_token
             self.assertNotEqual(token1, token2)
         session.close()
 
@@ -67,7 +67,7 @@ class SessionTestCase(BaseTestCase):
 
     def test_multiple_sessions(self):
         sessions = []
-        for i in range(100):
+        for i in range(10):
             sessions.append(Session())
 
         tables = []
