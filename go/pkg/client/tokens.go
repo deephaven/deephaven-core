@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"github.com/apache/arrow/go/v8/arrow/flight"
@@ -11,7 +12,6 @@ import (
 	"strconv"
 	"sync"
 	"time"
-	"encoding/base64"
 )
 
 // makeAuthString creates an authentication string from an authentication type and an authentication token.
