@@ -330,7 +330,7 @@ def rolling_sum_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[i
             following the current row timestamp (inclusive), this is a purely forwards looking window
     
     Args:
-        ts_col (str):
+        ts_col (str): the timestamp column for determining the window
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the rolling sum operation on all columns.
         rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
@@ -351,3 +351,412 @@ def rolling_sum_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[i
         return UpdateByOperation(j_updateby_op=_JUpdateByOperation.RollingSum(ts_col, rev_time, fwd_time, *cols))
     except Exception as e:
         raise DHError(e, "failed to create a rolling sum (time) UpdateByOperation.") from e
+
+def rolling_group_tick(cols: Union[str, List[str]], rev_ticks: int, fwd_ticks: int = 0) -> UpdateByOperation:
+    """Creates a rolling group UpdateByOperation for the supplied column names, using ticks as the windowing unit. Ticks 
+    are row counts, and you may specify the reverse and forward window in number of rows to include. The current row
+    is considered to belong to the reverse window but not the forward window. Also, negative values are allowed and 
+    can be used to generate completely forward or completely reverse windows. 
+
+    Here are some examples of window values:
+        rev_ticks = 1, fwd_ticks = 0 - contains only the current row
+        rev_ticks = 10, fwd_ticks = 0 - contains 9 previous rows and the current row
+        rev_ticks = 0, fwd_ticks = 10 - contains the following 10 rows, excludes the current row
+        rev_ticks = 10, fwd_ticks = 10 - contains the previous 9 rows, the current row and the 10 rows following
+        rev_ticks = 10, fwd_ticks = -5 - contains 5 rows, beginning at 9 rows before, ending at 5 rows before  the
+            current row (inclusive)
+        rev_ticks = 11, fwd_ticks = -1 - contains 10 rows, beginning at 10 rows before, ending at 1 row before the
+            current row (inclusive)
+        rev_ticks = -5, fwd_ticks = 10 - contains 5 rows, beginning 5 rows following, ending at 10 rows  following the
+            current row (inclusive)
+
+
+    Args:
+        cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
+            i.e. "new_col = col"; when empty, update_by perform the rolling group operation on all columns.
+        rev_ticks (int): the look-behind window size (in rows/ticks)
+        fwd_ticks (int): the look-forward window size (int rows/ticks), default is 0
+
+    Returns:
+        an UpdateByOperation
+
+    Raises:
+        DHError
+    """
+    try:
+        cols = to_sequence(cols)
+        return UpdateByOperation(j_updateby_op=_JUpdateByOperation.RollingGroup(rev_ticks, fwd_ticks, *cols))
+    except Exception as e:
+        raise DHError(e, "failed to create a rolling group (tick) UpdateByOperation.") from e
+
+
+def rolling_group_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[int, str],
+                     fwd_time: Union[int, str] = 0) -> UpdateByOperation:
+    """Creates a rolling group UpdateByOperation for the supplied column names, using time as the windowing unit. This
+    function accepts nanoseconds or time strings as the reverse and forward window parameters. Negative values are
+    allowed and can be used to generate completely forward or completely reverse windows. A row containing a null in
+    the timestamp column belongs to no window and will not have a value computed or be considered in the windows of
+    other rows.
+     
+    Here are some examples of window values:
+        rev_time = 0, fwd_time = 0 - contains rows that exactly match the current row timestamp
+        rev_time = "00:10:00", fwd_time = "0" - contains rows from 10m before through the current row timestamp (
+            inclusive)
+        rev_time = 0, fwd_time = 600_000_000_000 - contains rows from the current row through 10m following the
+            current row timestamp (inclusive)
+        rev_time = "00:10:00", fwd_time = "00:10:00" - contains rows from 10m before through 10m following
+            the current row timestamp (inclusive)
+        rev_time = "00:10:00", fwd_time = "-00:05:00" - contains rows from 10m before through 5m before the
+            current row timestamp (inclusive), this is a purely backwards looking window
+        rev_time = "-00:05:00", fwd_time = "00:10:00"} - contains rows from 5m following through 10m
+            following the current row timestamp (inclusive), this is a purely forwards looking window
+    
+    Args:
+        ts_col (str): the timestamp column for determining the window
+        cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
+            i.e. "new_col = col"; when empty, update_by perform the rolling group operation on all columns.
+        rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
+            interval string, e.g. "00:00:00.001"
+        fwd_time (int): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
+            interval string, e.g. "00:00:00.001", default is 0
+
+    Returns:
+        an UpdateByOperation
+
+    Raises:
+        DHError
+    """
+    try:
+        cols = to_sequence(cols)
+        rev_time = _JDateTimeUtils.expressionToNanos(rev_time) if isinstance(rev_time, str) else rev_time
+        fwd_time = _JDateTimeUtils.expressionToNanos(fwd_time) if isinstance(fwd_time, str) else fwd_time
+        return UpdateByOperation(j_updateby_op=_JUpdateByOperation.RollingGroup(ts_col, rev_time, fwd_time, *cols))
+    except Exception as e:
+        raise DHError(e, "failed to create a rolling group (time) UpdateByOperation.") from e
+
+def rolling_avg_tick(cols: Union[str, List[str]], rev_ticks: int, fwd_ticks: int = 0) -> UpdateByOperation:
+    """Creates a rolling average UpdateByOperation for the supplied column names, using ticks as the windowing unit. Ticks
+    are row counts, and you may specify the reverse and forward window in number of rows to include. The current row
+    is considered to belong to the reverse window but not the forward window. Also, negative values are allowed and
+    can be used to generate completely forward or completely reverse windows.
+
+    Here are some examples of window values:
+        rev_ticks = 1, fwd_ticks = 0 - contains only the current row
+        rev_ticks = 10, fwd_ticks = 0 - contains 9 previous rows and the current row
+        rev_ticks = 0, fwd_ticks = 10 - contains the following 10 rows, excludes the current row
+        rev_ticks = 10, fwd_ticks = 10 - contains the previous 9 rows, the current row and the 10 rows following
+        rev_ticks = 10, fwd_ticks = -5 - contains 5 rows, beginning at 9 rows before, ending at 5 rows before  the
+            current row (inclusive)
+        rev_ticks = 11, fwd_ticks = -1 - contains 10 rows, beginning at 10 rows before, ending at 1 row before the
+            current row (inclusive)
+        rev_ticks = -5, fwd_ticks = 10 - contains 5 rows, beginning 5 rows following, ending at 10 rows  following the
+            current row (inclusive)
+
+
+    Args:
+        cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
+            i.e. "new_col = col"; when empty, update_by perform the rolling average operation on all columns.
+        rev_ticks (int): the look-behind window size (in rows/ticks)
+        fwd_ticks (int): the look-forward window size (int rows/ticks), default is 0
+
+    Returns:
+        an UpdateByOperation
+
+    Raises:
+        DHError
+    """
+    try:
+        cols = to_sequence(cols)
+        return UpdateByOperation(j_updateby_op=_JUpdateByOperation.RollingAvg(rev_ticks, fwd_ticks, *cols))
+    except Exception as e:
+        raise DHError(e, "failed to create a rolling average (tick) UpdateByOperation.") from e
+
+
+def rolling_avg_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[int, str],
+                       fwd_time: Union[int, str] = 0) -> UpdateByOperation:
+    """Creates a rolling average UpdateByOperation for the supplied column names, using time as the windowing unit. This
+    function accepts nanoseconds or time strings as the reverse and forward window parameters. Negative values are
+    allowed and can be used to generate completely forward or completely reverse windows. A row containing a null in
+    the timestamp column belongs to no window and will not have a value computed or be considered in the windows of
+    other rows.
+     
+    Here are some examples of window values:
+        rev_time = 0, fwd_time = 0 - contains rows that exactly match the current row timestamp
+        rev_time = "00:10:00", fwd_time = "0" - contains rows from 10m before through the current row timestamp (
+            inclusive)
+        rev_time = 0, fwd_time = 600_000_000_000 - contains rows from the current row through 10m following the
+            current row timestamp (inclusive)
+        rev_time = "00:10:00", fwd_time = "00:10:00" - contains rows from 10m before through 10m following
+            the current row timestamp (inclusive)
+        rev_time = "00:10:00", fwd_time = "-00:05:00" - contains rows from 10m before through 5m before the
+            current row timestamp (inclusive), this is a purely backwards looking window
+        rev_time = "-00:05:00", fwd_time = "00:10:00"} - contains rows from 5m following through 10m
+            following the current row timestamp (inclusive), this is a purely forwards looking window
+    
+    Args:
+        ts_col (str): the timestamp column for determining the window
+        cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
+            i.e. "new_col = col"; when empty, update_by perform the rolling average operation on all columns.
+        rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
+            interval string, e.g. "00:00:00.001"
+        fwd_time (int): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
+            interval string, e.g. "00:00:00.001", default is 0
+
+    Returns:
+        an UpdateByOperation
+
+    Raises:
+        DHError
+    """
+    try:
+        cols = to_sequence(cols)
+        rev_time = _JDateTimeUtils.expressionToNanos(rev_time) if isinstance(rev_time, str) else rev_time
+        fwd_time = _JDateTimeUtils.expressionToNanos(fwd_time) if isinstance(fwd_time, str) else fwd_time
+        return UpdateByOperation(j_updateby_op=_JUpdateByOperation.RollingAvg(ts_col, rev_time, fwd_time, *cols))
+    except Exception as e:
+        raise DHError(e, "failed to create a rolling average (time) UpdateByOperation.") from e
+
+def rolling_min_tick(cols: Union[str, List[str]], rev_ticks: int, fwd_ticks: int = 0) -> UpdateByOperation:
+    """Creates a rolling minimum UpdateByOperation for the supplied column names, using ticks as the windowing unit. Ticks
+    are row counts, and you may specify the reverse and forward window in number of rows to include. The current row
+    is considered to belong to the reverse window but not the forward window. Also, negative values are allowed and
+    can be used to generate completely forward or completely reverse windows.
+
+    Here are some examples of window values:
+        rev_ticks = 1, fwd_ticks = 0 - contains only the current row
+        rev_ticks = 10, fwd_ticks = 0 - contains 9 previous rows and the current row
+        rev_ticks = 0, fwd_ticks = 10 - contains the following 10 rows, excludes the current row
+        rev_ticks = 10, fwd_ticks = 10 - contains the previous 9 rows, the current row and the 10 rows following
+        rev_ticks = 10, fwd_ticks = -5 - contains 5 rows, beginning at 9 rows before, ending at 5 rows before  the
+            current row (inclusive)
+        rev_ticks = 11, fwd_ticks = -1 - contains 10 rows, beginning at 10 rows before, ending at 1 row before the
+            current row (inclusive)
+        rev_ticks = -5, fwd_ticks = 10 - contains 5 rows, beginning 5 rows following, ending at 10 rows  following the
+            current row (inclusive)
+
+
+    Args:
+        cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
+            i.e. "new_col = col"; when empty, update_by perform the rolling minimum operation on all columns.
+        rev_ticks (int): the look-behind window size (in rows/ticks)
+        fwd_ticks (int): the look-forward window size (int rows/ticks), default is 0
+
+    Returns:
+        an UpdateByOperation
+
+    Raises:
+        DHError
+    """
+    try:
+        cols = to_sequence(cols)
+        return UpdateByOperation(j_updateby_op=_JUpdateByOperation.RollingMin(rev_ticks, fwd_ticks, *cols))
+    except Exception as e:
+        raise DHError(e, "failed to create a rolling minimum (tick) UpdateByOperation.") from e
+
+
+def rolling_min_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[int, str],
+                       fwd_time: Union[int, str] = 0) -> UpdateByOperation:
+    """Creates a rolling minimum UpdateByOperation for the supplied column names, using time as the windowing unit. This
+    function accepts nanoseconds or time strings as the reverse and forward window parameters. Negative values are
+    allowed and can be used to generate completely forward or completely reverse windows. A row containing a null in
+    the timestamp column belongs to no window and will not have a value computed or be considered in the windows of
+    other rows.
+     
+    Here are some examples of window values:
+        rev_time = 0, fwd_time = 0 - contains rows that exactly match the current row timestamp
+        rev_time = "00:10:00", fwd_time = "0" - contains rows from 10m before through the current row timestamp (
+            inclusive)
+        rev_time = 0, fwd_time = 600_000_000_000 - contains rows from the current row through 10m following the
+            current row timestamp (inclusive)
+        rev_time = "00:10:00", fwd_time = "00:10:00" - contains rows from 10m before through 10m following
+            the current row timestamp (inclusive)
+        rev_time = "00:10:00", fwd_time = "-00:05:00" - contains rows from 10m before through 5m before the
+            current row timestamp (inclusive), this is a purely backwards looking window
+        rev_time = "-00:05:00", fwd_time = "00:10:00"} - contains rows from 5m following through 10m
+            following the current row timestamp (inclusive), this is a purely forwards looking window
+    
+    Args:
+        ts_col (str): the timestamp column for determining the window
+        cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
+            i.e. "new_col = col"; when empty, update_by perform the rolling minimum operation on all columns.
+        rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
+            interval string, e.g. "00:00:00.001"
+        fwd_time (int): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
+            interval string, e.g. "00:00:00.001", default is 0
+
+    Returns:
+        an UpdateByOperation
+
+    Raises:
+        DHError
+    """
+    try:
+        cols = to_sequence(cols)
+        rev_time = _JDateTimeUtils.expressionToNanos(rev_time) if isinstance(rev_time, str) else rev_time
+        fwd_time = _JDateTimeUtils.expressionToNanos(fwd_time) if isinstance(fwd_time, str) else fwd_time
+        return UpdateByOperation(j_updateby_op=_JUpdateByOperation.RollingMin(ts_col, rev_time, fwd_time, *cols))
+    except Exception as e:
+        raise DHError(e, "failed to create a rolling minimum (time) UpdateByOperation.") from e
+
+def rolling_max_tick(cols: Union[str, List[str]], rev_ticks: int, fwd_ticks: int = 0) -> UpdateByOperation:
+    """Creates a rolling maximum UpdateByOperation for the supplied column names, using ticks as the windowing unit. Ticks
+    are row counts, and you may specify the reverse and forward window in number of rows to include. The current row
+    is considered to belong to the reverse window but not the forward window. Also, negative values are allowed and
+    can be used to generate completely forward or completely reverse windows.
+
+    Here are some examples of window values:
+        rev_ticks = 1, fwd_ticks = 0 - contains only the current row
+        rev_ticks = 10, fwd_ticks = 0 - contains 9 previous rows and the current row
+        rev_ticks = 0, fwd_ticks = 10 - contains the following 10 rows, excludes the current row
+        rev_ticks = 10, fwd_ticks = 10 - contains the previous 9 rows, the current row and the 10 rows following
+        rev_ticks = 10, fwd_ticks = -5 - contains 5 rows, beginning at 9 rows before, ending at 5 rows before  the
+            current row (inclusive)
+        rev_ticks = 11, fwd_ticks = -1 - contains 10 rows, beginning at 10 rows before, ending at 1 row before the
+            current row (inclusive)
+        rev_ticks = -5, fwd_ticks = 10 - contains 5 rows, beginning 5 rows following, ending at 10 rows  following the
+            current row (inclusive)
+
+
+    Args:
+        cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
+            i.e. "new_col = col"; when empty, update_by perform the rolling maximum operation on all columns.
+        rev_ticks (int): the look-behind window size (in rows/ticks)
+        fwd_ticks (int): the look-forward window size (int rows/ticks), default is 0
+
+    Returns:
+        an UpdateByOperation
+
+    Raises:
+        DHError
+    """
+    try:
+        cols = to_sequence(cols)
+        return UpdateByOperation(j_updateby_op=_JUpdateByOperation.RollingMax(rev_ticks, fwd_ticks, *cols))
+    except Exception as e:
+        raise DHError(e, "failed to create a rolling maximum (tick) UpdateByOperation.") from e
+
+
+def rolling_max_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[int, str],
+                       fwd_time: Union[int, str] = 0) -> UpdateByOperation:
+    """Creates a rolling maximum UpdateByOperation for the supplied column names, using time as the windowing unit. This
+    function accepts nanoseconds or time strings as the reverse and forward window parameters. Negative values are
+    allowed and can be used to generate completely forward or completely reverse windows. A row containing a null in
+    the timestamp column belongs to no window and will not have a value computed or be considered in the windows of
+    other rows.
+     
+    Here are some examples of window values:
+        rev_time = 0, fwd_time = 0 - contains rows that exactly match the current row timestamp
+        rev_time = "00:10:00", fwd_time = "0" - contains rows from 10m before through the current row timestamp (
+            inclusive)
+        rev_time = 0, fwd_time = 600_000_000_000 - contains rows from the current row through 10m following the
+            current row timestamp (inclusive)
+        rev_time = "00:10:00", fwd_time = "00:10:00" - contains rows from 10m before through 10m following
+            the current row timestamp (inclusive)
+        rev_time = "00:10:00", fwd_time = "-00:05:00" - contains rows from 10m before through 5m before the
+            current row timestamp (inclusive), this is a purely backwards looking window
+        rev_time = "-00:05:00", fwd_time = "00:10:00"} - contains rows from 5m following through 10m
+            following the current row timestamp (inclusive), this is a purely forwards looking window
+    
+    Args:
+        ts_col (str): the timestamp column for determining the window
+        cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
+            i.e. "new_col = col"; when empty, update_by perform the rolling maximum operation on all columns.
+        rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
+            interval string, e.g. "00:00:00.001"
+        fwd_time (int): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
+            interval string, e.g. "00:00:00.001", default is 0
+
+    Returns:
+        an UpdateByOperation
+
+    Raises:
+        DHError
+    """
+    try:
+        cols = to_sequence(cols)
+        rev_time = _JDateTimeUtils.expressionToNanos(rev_time) if isinstance(rev_time, str) else rev_time
+        fwd_time = _JDateTimeUtils.expressionToNanos(fwd_time) if isinstance(fwd_time, str) else fwd_time
+        return UpdateByOperation(j_updateby_op=_JUpdateByOperation.RollingMax(ts_col, rev_time, fwd_time, *cols))
+    except Exception as e:
+        raise DHError(e, "failed to create a rolling maximum (time) UpdateByOperation.") from e
+
+def rolling_prod_tick(cols: Union[str, List[str]], rev_ticks: int, fwd_ticks: int = 0) -> UpdateByOperation:
+    """Creates a rolling product UpdateByOperation for the supplied column names, using ticks as the windowing unit. Ticks
+    are row counts, and you may specify the reverse and forward window in number of rows to include. The current row
+    is considered to belong to the reverse window but not the forward window. Also, negative values are allowed and
+    can be used to generate completely forward or completely reverse windows.
+
+    Here are some examples of window values:
+        rev_ticks = 1, fwd_ticks = 0 - contains only the current row
+        rev_ticks = 10, fwd_ticks = 0 - contains 9 previous rows and the current row
+        rev_ticks = 0, fwd_ticks = 10 - contains the following 10 rows, excludes the current row
+        rev_ticks = 10, fwd_ticks = 10 - contains the previous 9 rows, the current row and the 10 rows following
+        rev_ticks = 10, fwd_ticks = -5 - contains 5 rows, beginning at 9 rows before, ending at 5 rows before  the
+            current row (inclusive)
+        rev_ticks = 11, fwd_ticks = -1 - contains 10 rows, beginning at 10 rows before, ending at 1 row before the
+            current row (inclusive)
+        rev_ticks = -5, fwd_ticks = 10 - contains 5 rows, beginning 5 rows following, ending at 10 rows  following the
+            current row (inclusive)
+
+
+    Args:
+        cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
+            i.e. "new_col = col"; when empty, update_by perform the rolling product operation on all columns.
+        rev_ticks (int): the look-behind window size (in rows/ticks)
+        fwd_ticks (int): the look-forward window size (int rows/ticks), default is 0
+
+    Returns:
+        an UpdateByOperation
+
+    Raises:
+        DHError
+    """
+    try:
+        cols = to_sequence(cols)
+        return UpdateByOperation(j_updateby_op=_JUpdateByOperation.RollingProduct(rev_ticks, fwd_ticks, *cols))
+    except Exception as e:
+        raise DHError(e, "failed to create a rolling product (tick) UpdateByOperation.") from e
+
+def rolling_prod_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[int, str],
+                       fwd_time: Union[int, str] = 0) -> UpdateByOperation:
+    """Creates a rolling product UpdateByOperation for the supplied column names, using time as the windowing unit. This
+    function accepts nanoseconds or time strings as the reverse and forward window parameters. Negative values are
+    allowed and can be used to generate completely forward or completely reverse windows. A row containing a null in
+    the timestamp column belongs to no window and will not have a value computed or be considered in the windows of
+    other rows.
+     
+    Here are some examples of window values:
+        rev_time = 0, fwd_time = 0 - contains rows that exactly match the current row timestamp
+        rev_time = "00:10:00", fwd_time = "0" - contains rows from 10m before through the current row timestamp (
+            inclusive)
+        rev_time = 0, fwd_time = 600_000_000_000 - contains rows from the current row through 10m following the
+            current row timestamp (inclusive)
+        rev_time = "00:10:00", fwd_time = "00:10:00" - contains rows from 10m before through 10m following
+            the current row timestamp (inclusive)
+        rev_time = "00:10:00", fwd_time = "-00:05:00" - contains rows from 10m before through 5m before the
+            current row timestamp (inclusive), this is a purely backwards looking window
+        rev_time = "-00:05:00", fwd_time = "00:10:00"} - contains rows from 5m following through 10m
+            following the current row timestamp (inclusive), this is a purely forwards looking window
+    
+    Args:
+        ts_col (str): the timestamp column for determining the window
+        cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
+            i.e. "new_col = col"; when empty, update_by perform the rolling product operation on all columns.
+        rev_time (int): the look-behind window size, can be expressed as an integer in nanoseconds or a time
+            interval string, e.g. "00:00:00.001"
+        fwd_time (int): the look-ahead window size, can be expressed as an integer in nanoseconds or a time
+            interval string, e.g. "00:00:00.001", default is 0
+
+    Returns:
+        an UpdateByOperation
+
+    Raises:
+        DHError
+    """
+    try:
+        cols = to_sequence(cols)
+        rev_time = _JDateTimeUtils.expressionToNanos(rev_time) if isinstance(rev_time, str) else rev_time
+        fwd_time = _JDateTimeUtils.expressionToNanos(fwd_time) if isinstance(fwd_time, str) else fwd_time
+        return UpdateByOperation(j_updateby_op=_JUpdateByOperation.RollingProduct(ts_col, rev_time, fwd_time, *cols))
+    except Exception as e:
+        raise DHError(e, "failed to create a rolling product (time) UpdateByOperation.") from e
