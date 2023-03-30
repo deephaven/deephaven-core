@@ -1,29 +1,36 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-package io.deephaven.engine.table.impl.util;
+package io.deephaven.engine.tablelogger.impl.memory;
 
 import io.deephaven.configuration.Configuration;
-import io.deephaven.io.logger.Logger;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.tablelogger.TableLogger;
-import org.jetbrains.annotations.NotNull;
+import io.deephaven.engine.table.impl.util.DynamicTableWriter;
+import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.io.logger.Logger;
+import io.deephaven.tablelogger.TableLoggerImpl2;
+import io.deephaven.tablelogger.WritableRowContainer;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
 
-public class MemoryTableLogger<T extends TableLogger> {
+/**
+ * Base class for memory table loggers that create and initialize a {@link DynamicTableWriter}.
+ */
+public abstract class MemoryTableLogger<T extends WritableRowContainer> extends TableLoggerImpl2<T> {
+    public static QueryTable maybeGetQueryTable(final Object maybeMemoryTableLogger) {
+        if (maybeMemoryTableLogger instanceof MemoryTableLogger) {
+            return ((MemoryTableLogger) maybeMemoryTableLogger).getQueryTable();
+        }
+
+        throw new UnsupportedOperationException("Only supported for memory table loggers.");
+    }
+
     private final DynamicTableWriter tableWriter;
-    private final T tableLogger;
-    private final TableDefinition tableDefinition;
 
-    public MemoryTableLogger(@NotNull Logger logger, @NotNull T tableLogger, @NotNull TableDefinition tableDefinition,
+    protected MemoryTableLogger(final String tableName, final TableDefinition tableDefinition,
             final int initialSizeArg) {
-        this.tableLogger = tableLogger;
-        this.tableDefinition = tableDefinition;
+        super(tableName);
 
-        final Class loggerClass = tableLogger.getClass();
+        final Class loggerClass = this.getClass();
         final int initialSize = (initialSizeArg == -1)
                 ? Configuration.getInstance().getIntegerForClassWithDefault(
                         MemoryTableLogger.class,
@@ -32,8 +39,9 @@ public class MemoryTableLogger<T extends TableLogger> {
                 : initialSizeArg;
         try {
             tableWriter = new DynamicTableWriter(tableDefinition);
-            tableLogger.init(tableWriter, initialSize);
+            init(tableWriter, initialSize);
         } catch (IOException e) {
+            final Logger logger = LoggerFactory.getLogger(loggerClass);
             // If we can't get the table definition there's a real problem
             logger.error()
                     .append("Error creating in-memory performance logger for ")
@@ -45,12 +53,8 @@ public class MemoryTableLogger<T extends TableLogger> {
         }
     }
 
-    public MemoryTableLogger(@NotNull Logger logger, @NotNull T tableLogger, @NotNull TableDefinition tableDefinition) {
-        this(logger, tableLogger, tableDefinition, -1);
-    }
-
-    public T getTableLogger() {
-        return tableLogger;
+    protected MemoryTableLogger(final String tableName, final TableDefinition tableDefinition) {
+        this(tableName, tableDefinition, -1);
     }
 
     public DynamicTableWriter getTableWriter() {

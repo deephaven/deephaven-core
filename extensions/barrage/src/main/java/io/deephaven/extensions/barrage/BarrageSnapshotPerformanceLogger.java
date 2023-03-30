@@ -4,22 +4,22 @@
 package io.deephaven.extensions.barrage;
 
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.tablelogger.impl.memory.MemoryTableLogger;
 import io.deephaven.engine.util.ColumnsSpecHelper;
 import io.deephaven.tablelogger.Row;
 import io.deephaven.tablelogger.RowSetter;
-import io.deephaven.tablelogger.TableLoggerImpl2;
 import io.deephaven.tablelogger.WritableRowContainer;
 import io.deephaven.time.DateTime;
 
 import java.io.IOException;
 
 public class BarrageSnapshotPerformanceLogger
-        extends TableLoggerImpl2<BarrageSnapshotPerformanceLogger.ISetter> {
+        extends MemoryTableLogger<BarrageSnapshotPerformanceLogger.ISetter> {
 
     private static final String TABLE_NAME = "BarrageSnapshotPerformanceLog";
 
     public BarrageSnapshotPerformanceLogger() {
-        super(TABLE_NAME);
+        super(TABLE_NAME, TABLE_DEFINITION);
     }
 
     @SuppressWarnings("rawtypes")

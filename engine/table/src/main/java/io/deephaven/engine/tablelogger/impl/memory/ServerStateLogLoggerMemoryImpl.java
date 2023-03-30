@@ -1,9 +1,10 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.engine.tablelogger;
+package io.deephaven.engine.tablelogger.impl.memory;
 
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.tablelogger.ServerStateLogLogger;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.util.ColumnsSpecHelper;
 import io.deephaven.time.DateTime;
@@ -14,11 +15,12 @@ import io.deephaven.tablelogger.WritableRowContainer;
 
 import java.io.IOException;
 
-public class ServerStateLog extends TableLoggerImpl2<ServerStateLog.ISetter> {
+class ServerStateLogLoggerMemoryImpl extends MemoryTableLogger<ServerStateLogLoggerMemoryImpl.ISetter>
+        implements ServerStateLogLogger {
     private static final String TABLE_NAME = "ServerStateLog";
 
-    public ServerStateLog() {
-        super(TABLE_NAME);
+    public ServerStateLogLoggerMemoryImpl() {
+        super(TABLE_NAME, TABLE_DEFINITION);
     }
 
     public static String getDefaultTableName() {
@@ -118,11 +120,12 @@ public class ServerStateLog extends TableLoggerImpl2<ServerStateLog.ISetter> {
     }
 
     @Override
-    protected ServerStateLog.ISetter createSetter() {
+    protected ServerStateLogLoggerMemoryImpl.ISetter createSetter() {
         outstandingSetters.getAndIncrement();
-        return new ServerStateLog.DirectSetter();
+        return new ServerStateLogLoggerMemoryImpl.DirectSetter();
     }
 
+    @Override
     public void log(
             final long intervalStartTime,
             final int intervalDurationMicros,
@@ -147,6 +150,7 @@ public class ServerStateLog extends TableLoggerImpl2<ServerStateLog.ISetter> {
                 intervalUGPCyclesSafePointTimeMicros);
     }
 
+    @Override
     public void log(
             final Row.Flags flags,
             final long intervalStartTime,
@@ -162,7 +166,7 @@ public class ServerStateLog extends TableLoggerImpl2<ServerStateLog.ISetter> {
         verifyCondition(isInitialized(), "init() must be called before calling log()");
         verifyCondition(!isClosed, "cannot call log() after the logger is closed");
         verifyCondition(!isShuttingDown, "cannot call log() while the logger is shutting down");
-        final ServerStateLog.ISetter setter = setterPool.take();
+        final ServerStateLogLoggerMemoryImpl.ISetter setter = setterPool.take();
         try {
             setter.log(flags,
                     intervalStartTime,

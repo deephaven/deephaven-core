@@ -7,7 +7,7 @@ import io.deephaven.auth.AuthenticationRequestHandler;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
-import io.deephaven.engine.table.impl.util.MemoryTableLoggers;
+import io.deephaven.engine.table.impl.util.EngineMetrics;
 import io.deephaven.engine.table.impl.util.ServerStateTracker;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.AbstractScriptSession;
@@ -130,7 +130,7 @@ public class DeephavenApiServer {
         log.info().append("Starting UGP...").endl();
         ugp.start();
 
-        MemoryTableLoggers.maybeStartStatsCollection();
+        EngineMetrics.maybeStartStatsCollection();
 
         log.info().append("Starting Performance Trackers...").endl();
         QueryPerformanceRecorder.installPoolAllocationRecorder();

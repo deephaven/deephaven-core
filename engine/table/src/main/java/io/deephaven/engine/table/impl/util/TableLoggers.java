@@ -29,7 +29,7 @@ public class TableLoggers {
      */
     @ScriptApi
     public static QueryTable queryPerformanceLog() {
-        return MemoryTableLoggers.getInstance().getQplLoggerQueryTable();
+        return EngineMetrics.getInstance().getQplLoggerQueryTable();
     }
 
     /**
@@ -39,7 +39,7 @@ public class TableLoggers {
      */
     @ScriptApi
     public static QueryTable queryOperationPerformanceLog() {
-        return MemoryTableLoggers.getInstance().getQoplLoggerQueryTable();
+        return EngineMetrics.getInstance().getQoplLoggerQueryTable();
     }
 
     /**
@@ -49,7 +49,7 @@ public class TableLoggers {
      */
     @ScriptApi
     public static QueryTable processMetricsLog() {
-        return MemoryTableLoggers.getInstance().getProcessMetricsQueryTable();
+        return EngineMetrics.getInstance().getProcessMetricsQueryTable();
     }
 
     /**
@@ -59,7 +59,7 @@ public class TableLoggers {
      */
     @ScriptApi
     public static QueryTable processInfoLog() {
-        return MemoryTableLoggers.getInstance().getProcessInfoQueryTable();
+        return EngineMetrics.getInstance().getProcessInfoQueryTable();
     }
 
     /**

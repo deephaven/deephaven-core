@@ -8,7 +8,6 @@ import io.deephaven.engine.table.AttributeMap;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.util.MemoryTableLogger;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.time.DateTime;
@@ -81,19 +80,16 @@ public class BarragePerformanceLog {
         return null;
     }
 
-    private final MemoryTableLogger<BarrageSubscriptionPerformanceLogger> barrageSubscriptionPerformanceLogger;
-    private final MemoryTableLogger<BarrageSnapshotPerformanceLogger> barrageSnapshotPerformanceLogger;
+    private final BarrageSubscriptionPerformanceLogger barrageSubscriptionPerformanceLogger;
+    private final BarrageSnapshotPerformanceLogger barrageSnapshotPerformanceLogger;
 
     private BarragePerformanceLog() {
         final Logger log = LoggerFactory.getLogger(BarragePerformanceLog.class);
-        barrageSubscriptionPerformanceLogger = new MemoryTableLogger<>(
-                log, new BarrageSubscriptionPerformanceLogger(),
-                BarrageSubscriptionPerformanceLogger.getTableDefinition());
+        barrageSubscriptionPerformanceLogger = new BarrageSubscriptionPerformanceLogger();
         barrageSubscriptionPerformanceLogger.getQueryTable().setAttribute(
                 BaseTable.BARRAGE_PERFORMANCE_KEY_ATTRIBUTE,
                 BarrageSubscriptionPerformanceLogger.getDefaultTableName());
-        barrageSnapshotPerformanceLogger = new MemoryTableLogger<>(
-                log, new BarrageSnapshotPerformanceLogger(), BarrageSnapshotPerformanceLogger.getTableDefinition());
+        barrageSnapshotPerformanceLogger = new BarrageSnapshotPerformanceLogger();
         barrageSnapshotPerformanceLogger.getQueryTable().setAttribute(
                 BaseTable.BARRAGE_PERFORMANCE_KEY_ATTRIBUTE, BarrageSnapshotPerformanceLogger.getDefaultTableName());
     }
@@ -103,7 +99,7 @@ public class BarragePerformanceLog {
     }
 
     public BarrageSubscriptionPerformanceLogger getSubscriptionLogger() {
-        return barrageSubscriptionPerformanceLogger.getTableLogger();
+        return barrageSubscriptionPerformanceLogger;
     }
 
     public QueryTable getSnapshotTable() {
@@ -111,7 +107,7 @@ public class BarragePerformanceLog {
     }
 
     public BarrageSnapshotPerformanceLogger getSnapshotLogger() {
-        return barrageSnapshotPerformanceLogger.getTableLogger();
+        return barrageSnapshotPerformanceLogger;
     }
 
     public interface WriteMetricsConsumer {

@@ -5,7 +5,6 @@ package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.engine.table.Table;
 
-import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.ScriptApi;
 
@@ -329,7 +328,7 @@ public class PerformanceQueries {
     }
 
     private static long getWorkerHeapSizeBytes() {
-        final OptionalLong opt = MemoryTableLoggers.getInstance().getProcessInfo().getMemoryInfo().heap().max();
+        final OptionalLong opt = EngineMetrics.getProcessInfo().getMemoryInfo().heap().max();
         return opt.orElse(0);
     }
 

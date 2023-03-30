@@ -3,8 +3,8 @@
  */
 package io.deephaven.process;
 
-import io.deephaven.stats.StatsIntradayLogger;
 import io.deephaven.engine.tablelogger.ProcessMetricsLogLogger;
+import io.deephaven.stats.StatsIntradayLogger;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Objects;
