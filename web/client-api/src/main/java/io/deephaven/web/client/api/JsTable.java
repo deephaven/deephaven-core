@@ -24,7 +24,6 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.Seek
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SelectDistinctRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SnapshotTableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SnapshotWhenTableRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.comboaggregaterequest.Aggregate;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.runchartdownsamplerequest.ZoomRange;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.TypedTicket;
@@ -75,7 +74,7 @@ import static io.deephaven.web.client.fu.LazyPromise.logError;
  * TODO provide hooks into the event handlers so we can see if no one is listening any more and release the table
  * handle/viewport.
  */
-public class JsTable extends HasEventHandling implements HasTableBinding, HasLifecycle {
+public class JsTable extends HasLifecycle implements HasTableBinding {
     @JsProperty(namespace = "dh.Table")
     public static final String EVENT_SIZECHANGED = "sizechanged",
             EVENT_UPDATED = "updated",
@@ -1113,7 +1112,6 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
         }
     }
 
-    @Override
     public void revive(ClientTableState state) {
         JsLog.debug("Revive!", (state == state()), this);
         if (state == state()) {
@@ -1123,10 +1121,6 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
                 getBinding().maybeReviveSubscription();
             });
         }
-    }
-
-    public void die(Object error) {
-        notifyDeath(this, error);
     }
 
     public Promise<JsTable> downsample(LongWrapper[] zoomRange, int pixelCount, String xCol, String[] yCols) {
@@ -1662,11 +1656,6 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
     @Override
     public void rollback() {
         getBinding().rollback();
-    }
-
-    @Override
-    public void disconnected() {
-        notifyDisconnect(this);
     }
 
     public void setSize(double s) {
