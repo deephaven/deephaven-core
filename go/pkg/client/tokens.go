@@ -15,14 +15,13 @@ import (
 )
 
 // makeAuthString creates an authentication string from an authentication type and an authentication token.
-func makeAuthString(authType string, authToken string) {
+func makeAuthString(authType string, authToken string) string {
 	if authType == "Anonymous" {
 		return authType
 	} else if authType == "Basic" {
-		authTokenBase64 = base64.StdEncoding.EncodeToString([]byte(authToken))
-		return "Basic " + authTokenBase64
+		return "Basic " + base64.StdEncoding.EncodeToString([]byte(authToken))
 	} else {
-		return str(authType) + " " + authToken
+		return authType + " " + authToken
 	}
 }
 
@@ -123,7 +122,7 @@ func (tr *tokenManager) Close() error {
 // "user:password"; when auth_type is DefaultAuth, it will be ignored; when auth_type is a custom-built
 // authenticator, it must conform to the specific requirement of the authenticator.
 func newTokenManager(ctx context.Context, fs *flightStub, cfg configpb2.ConfigServiceClient, authType string, authToken string) (*tokenManager, error) {
-	authString = makeAuthString(authType, authToken)
+	authString := makeAuthString(authType, authToken)
 
 	handshakeClient, err := fs.handshake(withAuth(ctx, authString))
 
