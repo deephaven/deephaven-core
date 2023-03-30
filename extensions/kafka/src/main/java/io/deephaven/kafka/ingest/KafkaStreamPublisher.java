@@ -149,8 +149,8 @@ public class KafkaStreamPublisher implements ConsumerRecordToStreamPublisherAdap
     }
 
     @Override
-    public void consumeRecords(List<? extends ConsumerRecord<?, ?>> records) {
-        publisher.doLocked(() -> doConsumeRecords(records));
+    public long consumeRecords(List<? extends ConsumerRecord<?, ?>> records) {
+        return publisher.doLocked(() -> doConsumeRecords(records));
     }
 
     private boolean haveKey() {
@@ -162,13 +162,15 @@ public class KafkaStreamPublisher implements ConsumerRecordToStreamPublisherAdap
     }
 
     @SuppressWarnings("unchecked")
-    private void doConsumeRecords(List<? extends ConsumerRecord<?, ?>> records) {
+    // returns the number of bytes processed.
+    private long doConsumeRecords(List<? extends ConsumerRecord<?, ?>> records) {
         WritableChunk[] chunks = publisher.getChunks();
         checkChunkSizes(chunks);
         int remaining = chunks[0].capacity() - chunks[0].size();
 
         final int chunkSize = Math.min(records.size(), chunks[0].capacity());
 
+        long bytesProcessed = 0;
         try (final WritableObjectChunk<Object, Values> keyChunkCloseable = haveKey()
                 ? WritableObjectChunk.makeWritableChunk(chunkSize)
                 : null;
@@ -263,9 +265,17 @@ public class KafkaStreamPublisher implements ConsumerRecordToStreamPublisherAdap
 
                 if (keyChunk != null) {
                     keyChunk.add(keyToChunkObjectMapper.apply(record.key()));
+                    final int keyBytes = record.serializedKeySize();
+                    if (keyBytes > 0) {
+                        bytesProcessed += keyBytes;
+                    }
                 }
                 if (valueChunk != null) {
                     valueChunk.add(valueToChunkObjectMapper.apply(record.value()));
+                    final int valueBytes = record.serializedValueSize();
+                    if (valueBytes > 0) {
+                        bytesProcessed += valueBytes;
+                    }
                 }
             }
             if (keyChunk != null) {
@@ -277,6 +287,7 @@ public class KafkaStreamPublisher implements ConsumerRecordToStreamPublisherAdap
 
             checkChunkSizes(chunks);
         }
+        return bytesProcessed;
     }
 
     private void checkChunkSizes(WritableChunk[] chunks) {
