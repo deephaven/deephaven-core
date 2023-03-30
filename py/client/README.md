@@ -205,19 +205,19 @@ session.bind_table(name="my_table", table=table)
 Deephaven natively supports [PyArrow tables](https://arrow.apache.org/docs/python/index.html). This example converts between a PyArrow table and a Deephaven table.
 
 ```
-import pyarrow
+import pyarrow as pa
 from pydeephaven import Session
 
 session = Session()
 
-arr = pyarrow.array([4,5,6], type=pyarrow.int32())
-pyarrow_table = pyarrow.Table.from_arrays([arr], names=["Integers"])
+arr = pa.array([4,5,6], type=pa.int32())
+pa_table = pa.Table.from_arrays([arr], names=["Integers"])
 
-table = session.import_table(pyarrow_table)
+table = session.import_table(pa_table)
 session.bind_table(name="my_table", table=table)
 
 #Convert the Deephaven table back to a pyarrow table
-pyarrow_table = table.to_arrow()
+pa_table = table.to_arrow()
 ```
 
 ## Execute a script server side
