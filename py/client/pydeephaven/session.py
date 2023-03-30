@@ -1,19 +1,22 @@
 #
-# Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
 #
-
+import base64
 import os
 import threading
 from typing import List
 
-import pyarrow
-from bitstring import BitArray
-
 import grpc
+import pyarrow
+import pyarrow.flight as paflight
+from bitstring import BitArray
+from pyarrow import ArrowNotImplementedError
+from pyarrow._flight import ClientMiddlewareFactory, ClientMiddleware, ClientAuthHandler
 
-from pydeephaven._arrow_flight_service import ArrowFlightService
-from pydeephaven._console_service import ConsoleService
 from pydeephaven._app_service import AppService
+from pydeephaven._arrow_flight_service import ArrowFlightService
+from pydeephaven._config_service import ConfigService
+from pydeephaven._console_service import ConsoleService
 from pydeephaven._session_service import SessionService
 from pydeephaven._table_ops import TimeTableOp, EmptyTableOp, MergeTablesOp, FetchTableOp
 from pydeephaven._table_service import TableService
@@ -21,6 +24,50 @@ from pydeephaven.dherror import DHError
 from pydeephaven.proto import ticket_pb2
 from pydeephaven.query import Query
 from pydeephaven.table import Table
+
+
+class _DhClientAuthMiddlewareFactory(ClientMiddlewareFactory):
+    def __init__(self, session):
+        super().__init__()
+        self._session = session
+
+    def start_call(self, info):
+        return _DhClientAuthMiddleware(self._session)
+
+
+class _DhClientAuthMiddleware(ClientMiddleware):
+    def __init__(self, session):
+        super().__init__()
+        self._session = session
+
+    def call_completed(self, exception):
+        super().call_completed(exception)
+
+    def received_headers(self, headers):
+        super().received_headers(headers)
+        if headers:
+            auth_token = bytes(headers.get("authorization")[0], encoding='ascii')
+            if auth_token and auth_token != self._session._auth_token:
+                self._session._auth_token = auth_token
+
+    def sending_headers(self):
+        return {
+            "authorization": self._session._auth_token
+        }
+
+
+class _DhClientAuthHandler(ClientAuthHandler):
+    def __init__(self, session):
+        super().__init__()
+        self._session = session
+        self._token = b''
+
+    def authenticate(self, outgoing, incoming):
+        outgoing.write(self._session._auth_token)
+        self._token = incoming.read()
+
+    def get_token(self):
+        return self._token
 
 
 class Session:
@@ -36,19 +83,26 @@ class Session:
         is_alive (bool): check if the session is still alive (may refresh the session)
     """
 
-    def __init__(self, host: str = None, port: int = None, never_timeout: bool = True, session_type: str = 'python'):
+    def __init__(self, host: str = None, port: int = None, auth_type: str = "Anonymous", auth_token: str = "",
+                 never_timeout: bool = True, session_type: str = 'python'):
         """ Initialize a Session object that connects to the Deephaven server
 
         Args:
             host (str): the host name or IP address of the remote machine, default is 'localhost'
             port (int): the port number that Deephaven server is listening on, default is 10000
+            auth_type (str): the authentication type string, can be "Anonymous', 'Basic", or any custom-built
+                authenticator in the server, such as "io.deephaven.authentication.psk.PskAuthenticationHandler",
+                default is 'Anonymous'.
+            auth_token (str): the authentication token string. When auth_type is 'Basic', it must be
+                "user:password"; when auth_type is "Anonymous', it will be ignored; when auth_type is a custom-built
+                authenticator, it must conform to the specific requirement of the authenticator
             never_timeout (bool, optional): never allow the session to timeout, default is True
             session_type (str, optional): the Deephaven session type. Defaults to 'python'
 
         Raises:
             DHError
         """
-        self._r_lock = threading.RLock()
+        self._r_lock = threading.RLock()  # for thread-safety when accessing/changing session global state
         self._last_ticket = 0
         self._ticket_bitarray = BitArray(1024)
 
@@ -61,7 +115,15 @@ class Session:
             self.port = int(os.environ.get("DH_PORT", 10000))
 
         self.is_connected = False
-        self.session_token = None
+
+        if auth_type == "Anonymous":
+            self._auth_token = auth_type
+        elif auth_type == "Basic":
+            auth_token_base64 = base64.b64encode(auth_token.encode("ascii")).decode("ascii")
+            self._auth_token = "Basic " + auth_token_base64
+        else:
+            self._auth_token = str(auth_type) + " " + auth_token
+
         self.grpc_channel = None
         self._session_service = None
         self._table_service = None
@@ -72,6 +134,9 @@ class Session:
         self._never_timeout = never_timeout
         self._keep_alive_timer = None
         self._session_type = session_type
+        self._flight_client = None
+        self._auth_handler = None
+        self._config_service = None
 
         self._connect()
 
@@ -92,7 +157,7 @@ class Session:
 
     @property
     def grpc_metadata(self):
-        return [(b'authorization', self.session_token)]
+        return [(b'authorization', self._auth_token)]
 
     @property
     def table_service(self):
@@ -115,7 +180,7 @@ class Session:
     @property
     def flight_service(self):
         if not self._flight_service:
-            self._flight_service = ArrowFlightService(self)
+            self._flight_service = ArrowFlightService(self, self._flight_client)
 
         return self._flight_service
 
@@ -125,6 +190,13 @@ class Session:
             self._app_service = AppService(self)
 
         return self._app_service
+
+    @property
+    def config_service(self):
+        if not self._config_service:
+            self._config_service = ConfigService(self)
+
+        return self._config_service
 
     def make_ticket(self, ticket_no=None):
         if not ticket_no:
@@ -155,11 +227,26 @@ class Session:
 
     def _connect(self):
         with self._r_lock:
-            self.grpc_channel, self.session_token, self._timeout = self.session_service.connect()
-            self.is_connected = True
+            try:
+                self._flight_client = paflight.connect(location=(self.host, self.port), middleware=[
+                    _DhClientAuthMiddlewareFactory(self)])
+                self._auth_handler = _DhClientAuthHandler(self)
+                self._flight_client.authenticate(self._auth_handler)
+            except Exception as e:
+                raise DHError("failed to connect to the server.") from e
 
+            self.grpc_channel = self.session_service.connect()
+
+            config_dict = self.config_service.get_configuration_constants()
+            session_duration = config_dict.get("http.session.durationMs")
+            if not session_duration:
+                raise DHError("server configuration is missing http.session.durationMs")
+
+            self._timeout = int(session_duration.string_value)
             if self._never_timeout:
                 self._keep_alive()
+
+            self.is_connected = True
 
     def _keep_alive(self):
         if self._keep_alive_timer:
@@ -171,9 +258,10 @@ class Session:
     def _refresh_token(self):
         with self._r_lock:
             try:
-                self.session_token, self._timeout = self.session_service.refresh_token()
-            except DHError:
+                self._flight_client.authenticate(self._auth_handler)
+            except Exception as e:
                 self.is_connected = False
+                raise DHError("failed to refresh auth token") from e
 
     @property
     def is_alive(self):
@@ -185,7 +273,7 @@ class Session:
                 return True
 
             try:
-                self.session_token = self.session_service.refresh_token()
+                self.session_service.refresh_token()
                 return True
             except DHError as e:
                 self.is_connected = False
@@ -203,7 +291,7 @@ class Session:
                 self.grpc_channel.close()
                 self.is_connected = False
                 self._last_ticket = 0
-                # self._executor.shutdown()
+                self._flight_client.close()
 
     def release(self, ticket):
         self.session_service.release(ticket)
