@@ -9,8 +9,12 @@ import io.deephaven.hash.KeyedObjectKey;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Objects;
 
 /**
  * Partial {@link TableLocationProvider} implementation for standalone use or as part of a {@link TableDataService}.
@@ -45,6 +49,7 @@ public abstract class AbstractTableLocationProvider
 
     private volatile boolean initialized;
 
+    private List<String> partitionKeys;
     private boolean locationCreatedRecorder;
 
     /**
@@ -56,6 +61,7 @@ public abstract class AbstractTableLocationProvider
     protected AbstractTableLocationProvider(@NotNull final TableKey tableKey, final boolean supportsSubscriptions) {
         super(supportsSubscriptions);
         this.tableKey = tableKey.makeImmutable();
+        this.partitionKeys = null;
     }
 
     /**
@@ -103,9 +109,11 @@ public abstract class AbstractTableLocationProvider
             // observeInsert out of the business of subscription processing.
             locationCreatedRecorder = false;
             final Object result = tableLocations.putIfAbsent(locationKey, this::observeInsert);
-            if (locationCreatedRecorder && subscriptions.deliverNotification(Listener::handleTableLocationKey,
-                    toKeyImmutable(result), true)) {
-                onEmpty();
+            if (locationCreatedRecorder) {
+                verifyPartitionKeys(locationKey);
+                if (subscriptions.deliverNotification(Listener::handleTableLocationKey, toKeyImmutable(result), true)) {
+                    onEmpty();
+                }
             }
         }
     }
@@ -196,6 +204,16 @@ public abstract class AbstractTableLocationProvider
         }
     }
 
+    private void verifyPartitionKeys(@NotNull TableLocationKey locationKey) {
+        if (partitionKeys == null) {
+            partitionKeys = new ArrayList<>(locationKey.getPartitionKeys());
+        } else if (!equals(partitionKeys, locationKey.getPartitionKeys())) {
+            throw new TableDataException(String.format(
+                    "%s has produced an inconsistent TableLocationKey with unexpected partition keys. expected=%s actual=%s.",
+                    this, partitionKeys, locationKey.getPartitionKeys()));
+        }
+    }
+
     /**
      * Key definition for {@link TableLocation} or {@link TableLocationKey} lookup by {@link TableLocationKey}.
      */
@@ -224,5 +242,18 @@ public abstract class AbstractTableLocationProvider
 
     private static ImmutableTableLocationKey toKeyImmutable(@NotNull final Object keyOrLocation) {
         return (ImmutableTableLocationKey) toKey(keyOrLocation);
+    }
+
+    private static <T> boolean equals(Collection<T> c1, Collection<T> c2) {
+        final Iterator<T> i2 = c2.iterator();
+        for (T t1 : c1) {
+            if (!i2.hasNext()) {
+                return false;
+            }
+            if (!Objects.equals(t1, i2.next())) {
+                return false;
+            }
+        }
+        return !i2.hasNext();
     }
 }

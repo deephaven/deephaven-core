@@ -49,10 +49,7 @@ public final class ParquetFlatPartitionedLayout implements TableLocationKeyFinde
                 ParquetTableLocationKey locationKey = cache.get(parquetFilePath);
                 if (locationKey == null) {
                     locationKey = locationKey(parquetFilePath);
-                    try {
-                        locationKey.getFileReaderIo();
-                    } catch (IOException e) {
-                        // Either this is not a real parquet file, or it's in the process of being written.
+                    if (!locationKey.verifyFileReader()) {
                         continue;
                     }
                     cache.put(parquetFilePath, locationKey);
