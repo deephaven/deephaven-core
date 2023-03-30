@@ -421,12 +421,13 @@ public class ParquetTools {
             final BasicFileAttributes firstEntryAttr = readAttributes(firstEntryPath);
             if (firstEntryAttr.isDirectory() && firstEntryFileName.contains("=")) {
                 return readPartitionedTableInferSchema(
-                        TableLocationKeyFinder.safetyCheck(new ParquetKeyValuePartitionedLayout(source, 32)),
+                        TableLocationKeyFinder.safetyCheck(new ParquetKeyValuePartitionedLayout(source, 32), true),
                         instructions);
             }
             if (firstEntryAttr.isRegularFile() && firstEntryFileName.endsWith(PARQUET_FILE_EXTENSION)) {
                 return readPartitionedTableInferSchema(
-                        TableLocationKeyFinder.safetyCheck(new ParquetFlatPartitionedLayout(source)), instructions);
+                        TableLocationKeyFinder.safetyCheck(new ParquetFlatPartitionedLayout(source), true),
+                        instructions);
             }
             throw new TableDataException("No recognized Parquet table layout found in " + source);
         }
@@ -545,7 +546,7 @@ public class ParquetTools {
             @NotNull final File directory,
             @NotNull final ParquetInstructions readInstructions) {
         final ParquetMetadataFileLayout layout = new ParquetMetadataFileLayout(directory, readInstructions);
-        return readPartitionedTable(TableLocationKeyFinder.safetyCheck(layout), layout.getInstructions(),
+        return readPartitionedTable(TableLocationKeyFinder.safetyCheck(layout, true), layout.getInstructions(),
                 layout.getTableDefinition());
     }
 
