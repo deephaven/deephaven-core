@@ -611,14 +611,15 @@ public class ParquetTools {
     }
 
     /**
-     * Make a {@link ParquetFileReader} for the supplied {@link File}.
+     * Make a {@link ParquetFileReader} for the supplied {@link File}. Wraps {@link IOException} as
+     * {@link TableDataException}.
      *
      * @param parquetFile The {@link File} to read
      * @return The new {@link ParquetFileReader}
      */
     public static ParquetFileReader getParquetFileReader(@NotNull final File parquetFile) {
         try {
-            return getParquetFileReaderIo(parquetFile);
+            return getParquetFileReaderChecked(parquetFile);
         } catch (IOException e) {
             throw new TableDataException("Failed to create Parquet file reader: " + parquetFile, e);
         }
@@ -631,7 +632,7 @@ public class ParquetTools {
      * @return The new {@link ParquetFileReader}
      * @throws IOException if an IO exception occurs
      */
-    public static ParquetFileReader getParquetFileReaderIo(@NotNull File parquetFile) throws IOException {
+    public static ParquetFileReader getParquetFileReaderChecked(@NotNull File parquetFile) throws IOException {
         return new ParquetFileReader(
                 parquetFile.getAbsolutePath(),
                 new CachedChannelProvider(

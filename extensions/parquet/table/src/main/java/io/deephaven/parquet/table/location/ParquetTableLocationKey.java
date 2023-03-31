@@ -71,7 +71,8 @@ public class ParquetTableLocationKey extends FileTableLocationKey {
      * <li>is a corrupt parquet file</li>
      * </ol>
      *
-     * Callers wishing to handle these cases more explicit may call {@link ParquetTools#getParquetFileReaderIo(File)}.
+     * Callers wishing to handle these cases more explicit may call
+     * {@link ParquetTools#getParquetFileReaderChecked(File)}.
      *
      * @return true if the file reader exists or was successfully created
      */
@@ -80,7 +81,7 @@ public class ParquetTableLocationKey extends FileTableLocationKey {
             return true;
         }
         try {
-            fileReader = ParquetTools.getParquetFileReaderIo(file);
+            fileReader = ParquetTools.getParquetFileReaderChecked(file);
         } catch (IOException e) {
             return false;
         }
