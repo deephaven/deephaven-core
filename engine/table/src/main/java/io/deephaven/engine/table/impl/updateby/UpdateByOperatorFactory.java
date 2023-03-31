@@ -865,27 +865,38 @@ public class UpdateByOperatorFactory {
             if (csType == byte.class || csType == Byte.class) {
                 return new ByteRollingWAvgOperator(pair, affectingColumns, rowRedirection,
                         rs.revWindowScale().timestampCol(),
-                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.weightCol(), weightChunkType);
+                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.weightCol(), weightChunkType,
+                        weightCsType);
+            } else if (csType == char.class || csType == Character.class) {
+                return new CharRollingWAvgOperator(pair, affectingColumns, rowRedirection,
+                        rs.revWindowScale().timestampCol(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.weightCol(), weightChunkType,
+                        weightCsType);
             } else if (csType == short.class || csType == Short.class) {
                 return new ShortRollingWAvgOperator(pair, affectingColumns, rowRedirection,
                         rs.revWindowScale().timestampCol(),
-                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.weightCol(), weightChunkType);
+                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.weightCol(), weightChunkType,
+                        weightCsType);
             } else if (csType == int.class || csType == Integer.class) {
                 return new IntRollingWAvgOperator(pair, affectingColumns, rowRedirection,
                         rs.revWindowScale().timestampCol(),
-                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.weightCol(), weightChunkType);
+                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.weightCol(), weightChunkType,
+                        weightCsType);
             } else if (csType == long.class || csType == Long.class) {
                 return new LongRollingWAvgOperator(pair, affectingColumns, rowRedirection,
                         rs.revWindowScale().timestampCol(),
-                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.weightCol(), weightChunkType);
+                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.weightCol(), weightChunkType,
+                        weightCsType);
             } else if (csType == float.class || csType == Float.class) {
                 return new FloatRollingWAvgOperator(pair, affectingColumns, rowRedirection,
                         rs.revWindowScale().timestampCol(),
-                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.weightCol(), weightChunkType);
+                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.weightCol(), weightChunkType,
+                        weightCsType);
             } else if (csType == double.class || csType == Double.class) {
                 return new DoubleRollingWAvgOperator(pair, affectingColumns, rowRedirection,
                         rs.revWindowScale().timestampCol(),
-                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.weightCol(), weightChunkType);
+                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.weightCol(), weightChunkType,
+                        weightCsType);
             } else if (csType == BigDecimal.class) {
                 return new BigDecimalRollingWAvgOperator(pair, affectingColumns, rowRedirection,
                         rs.revWindowScale().timestampCol(),

@@ -1,11 +1,6 @@
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharRollingWAvgOperator and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
 package io.deephaven.engine.table.impl.updateby.rollingwavg;
 
-import io.deephaven.chunk.ShortChunk;
+import io.deephaven.chunk.CharChunk;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.attributes.Values;
@@ -17,12 +12,12 @@ import org.jetbrains.annotations.Nullable;
 
 import static io.deephaven.util.QueryConstants.*;
 
-public class ShortRollingWAvgOperator extends BasePrimitiveRollingWAvgOperator {
+public class CharRollingWAvgOperator extends BasePrimitiveRollingWAvgOperator {
     // region extra-fields
     // endregion extra-fields
 
     protected class Context extends BasePrimitiveRollingWAvgOperator.Context {
-        protected ShortChunk<? extends Values> influencerValuesChunk;
+        protected CharChunk<? extends Values> influencerValuesChunk;
 
         protected Context(int affectedChunkSize, int influencerChunkSize) {
             super(affectedChunkSize, influencerChunkSize);
@@ -31,7 +26,7 @@ public class ShortRollingWAvgOperator extends BasePrimitiveRollingWAvgOperator {
         @Override
         public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
             super.setValueChunks(valueChunks);
-            influencerValuesChunk = valueChunks[0].asShortChunk();
+            influencerValuesChunk = valueChunks[0].asCharChunk();
         }
 
         @Override
@@ -40,10 +35,10 @@ public class ShortRollingWAvgOperator extends BasePrimitiveRollingWAvgOperator {
             windowWeightValues.ensureRemaining(count);
 
             for (int ii = 0; ii < count; ii++) {
-                final short val = influencerValuesChunk.get(pos + ii);
+                final char val = influencerValuesChunk.get(pos + ii);
                 final double weight = influencerWeightValuesChunk.get(pos + ii);
 
-                if (val == NULL_SHORT || weight == NULL_DOUBLE) {
+                if (val == NULL_CHAR || weight == NULL_DOUBLE) {
                     windowValues.addUnsafe(NULL_DOUBLE);
                     windowWeightValues.addUnsafe(NULL_DOUBLE);
                     nullCount++;
@@ -63,7 +58,7 @@ public class ShortRollingWAvgOperator extends BasePrimitiveRollingWAvgOperator {
         return new Context(affectedChunkSize, influencerChunkSize);
     }
 
-    public ShortRollingWAvgOperator(@NotNull final MatchPair pair,
+    public CharRollingWAvgOperator(@NotNull final MatchPair pair,
                                    @NotNull final String[] affectingColumns,
                                    @Nullable final RowRedirection rowRedirection,
                                    @Nullable final String timestampColumnName,

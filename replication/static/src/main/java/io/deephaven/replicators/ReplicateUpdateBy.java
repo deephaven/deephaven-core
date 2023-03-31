@@ -133,20 +133,11 @@ public class ReplicateUpdateBy {
             }
         }
 
-        files = ReplicatePrimitiveCode.shortToAllNumericals(
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingwavg/ShortRollingWAvgOperator.java",
-                null);
+        files = ReplicatePrimitiveCode.charToAllButBoolean(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingwavg/CharRollingWAvgOperator.java");
         for (final String f : files) {
             if (f.contains("Integer")) {
                 fixupInteger(f);
-            }
-
-            if (f.contains("Byte") && (f.contains("CumSum") || f.contains("RollingSum"))) {
-                fixupByte(f);
-            }
-
-            if (f.contains("Long") && f.contains("MinMax")) {
-                augmentLongWithReinterps(f);
             }
         }
     }

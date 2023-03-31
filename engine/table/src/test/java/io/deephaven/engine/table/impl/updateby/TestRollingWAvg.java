@@ -26,6 +26,7 @@ import java.math.MathContext;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.Random;
 
 import static io.deephaven.engine.testutil.GenerateTableUpdates.generateAppends;
@@ -64,6 +65,7 @@ public class TestRollingWAvg extends BaseUpdateByTest {
      * are performed on BigInteger/BigDecimal columns as well.
      */
     final String[] primitiveColumns = new String[] {
+            "charCol",
             "byteCol",
             "shortCol",
             "intCol",
@@ -76,6 +78,7 @@ public class TestRollingWAvg extends BaseUpdateByTest {
      * These are used in the ticking table evaluations where we verify dynamic vs static tables.
      */
     final String[] columns = new String[] {
+            "charCol",
             "byteCol",
             "shortCol",
             "intCol",
@@ -94,6 +97,16 @@ public class TestRollingWAvg extends BaseUpdateByTest {
     private String[] getFormulas(String[] columns, String weightCol) {
         return Arrays.stream(columns)
                 .map(c -> String.format("%s=wavg(%s,%s)", c, c, weightCol))
+                .toArray(String[]::new);
+    }
+
+    // For verification, we will upcast some columns and use already-defined Numeric class functions.
+    private String[] getCastingFormulas(String[] columns) {
+        return Arrays.stream(columns)
+                .map(c -> c.equals("charCol")
+                        ? String.format("%s=(short)%s", c, c)
+                        : null)
+                .filter(Objects::nonNull)
                 .toArray(String[]::new);
     }
 
@@ -465,8 +478,11 @@ public class TestRollingWAvg extends BaseUpdateByTest {
         String weightCol = "doubleWeightCol";
 
         QueryTable t = createTestTable(STATIC_TABLE_SIZE, bucketed, false, false, 0x31313131,
-                new String[] {weightCol},
-                new TestDataGenerator[] {new DoubleGenerator(10.1, 20.1, .1)}).t;
+                new String[] {"charCol", weightCol},
+                new TestDataGenerator[] {
+                        new CharGenerator('A', 'z', 0.1),
+                        new DoubleGenerator(10.1, 20.1, .1)
+                }).t;
 
         Table actual;
         Table expected;
@@ -475,16 +491,15 @@ public class TestRollingWAvg extends BaseUpdateByTest {
             actual =
                     t.updateBy(UpdateByOperation.RollingWAvg(prevTicks, fwdTicks, weightCol, primitiveColumns), "Sym");
             // We need the weight column as vector here for comparison
-            expected = t.updateBy(
+            expected = t.update(getCastingFormulas(primitiveColumns)).updateBy(
                     List.of(UpdateByOperation.RollingGroup(prevTicks, fwdTicks, primitiveColumns),
                             UpdateByOperation.RollingGroup(prevTicks, fwdTicks, weightCol)),
                     "Sym")
                     .update(getFormulas(primitiveColumns, weightCol));
         } else {
-            actual =
-                    t.updateBy(UpdateByOperation.RollingWAvg(prevTicks, fwdTicks, weightCol, primitiveColumns));
+            actual = t.updateBy(UpdateByOperation.RollingWAvg(prevTicks, fwdTicks, weightCol, primitiveColumns));
             // We need the weight column as vector here for comparison
-            expected = t.updateBy(
+            expected = t.update(getCastingFormulas(primitiveColumns)).updateBy(
                     List.of(UpdateByOperation.RollingGroup(prevTicks, fwdTicks, primitiveColumns),
                             UpdateByOperation.RollingGroup(prevTicks, fwdTicks, weightCol)))
                     .update(getFormulas(primitiveColumns, weightCol));
@@ -504,13 +519,16 @@ public class TestRollingWAvg extends BaseUpdateByTest {
         weightCol = "shortWeightCol";
 
         t = createTestTable(STATIC_TABLE_SIZE, bucketed, false, false, 0x31313131,
-                new String[] {weightCol},
-                new TestDataGenerator[] {new ShortGenerator((short) -6000, (short) 65535, .1)}).t;
+                new String[] {"charCol", weightCol},
+                new TestDataGenerator[] {
+                        new CharGenerator('A', 'z', 0.1),
+                        new ShortGenerator((short) -6000, (short) 65535, .1)
+                }).t;
 
         if (bucketed) {
             actual = t.updateBy(UpdateByOperation.RollingWAvg(prevTicks, fwdTicks, weightCol, primitiveColumns), "Sym");
             // We need the weight column as vector here for comparison
-            expected = t.updateBy(
+            expected = t.update(getCastingFormulas(primitiveColumns)).updateBy(
                     List.of(UpdateByOperation.RollingGroup(prevTicks, fwdTicks, primitiveColumns),
                             UpdateByOperation.RollingGroup(prevTicks, fwdTicks, weightCol)),
                     "Sym")
@@ -518,7 +536,7 @@ public class TestRollingWAvg extends BaseUpdateByTest {
         } else {
             actual = t.updateBy(UpdateByOperation.RollingWAvg(prevTicks, fwdTicks, weightCol, primitiveColumns));
             // We need the weight column as vector here for comparison
-            expected = t.updateBy(
+            expected = t.update(getCastingFormulas(primitiveColumns)).updateBy(
                     List.of(UpdateByOperation.RollingGroup(prevTicks, fwdTicks, primitiveColumns),
                             UpdateByOperation.RollingGroup(prevTicks, fwdTicks, weightCol)))
                     .update(getFormulas(primitiveColumns, weightCol));
@@ -557,10 +575,14 @@ public class TestRollingWAvg extends BaseUpdateByTest {
         String weightCol = "doubleWeightCol";
 
         QueryTable t = createTestTable(STATIC_TABLE_SIZE, bucketed, false, false, 0xFFFABBBC,
-                new String[] {"ts", weightCol}, new TestDataGenerator[] {new SortedDateTimeGenerator(
-                        convertDateTime("2022-03-09T09:00:00.000 NY"),
-                        convertDateTime("2022-03-09T16:30:00.000 NY")),
-                        new DoubleGenerator(10.1, 20.1, .1)}).t;
+                new String[] {"ts", "charCol", weightCol}, new TestDataGenerator[] {
+                        new SortedDateTimeGenerator(
+                                convertDateTime("2022-03-09T09:00:00.000 NY"),
+                                convertDateTime("2022-03-09T16:30:00.000 NY")),
+                        new CharGenerator('A', 'z', 0.1),
+                        new DoubleGenerator(10.1, 20.1, .1)
+                }).t;
+
 
         Table actual;
         Table expected;
@@ -570,7 +592,7 @@ public class TestRollingWAvg extends BaseUpdateByTest {
                     t.updateBy(UpdateByOperation.RollingWAvg("ts", prevTime, postTime, weightCol, primitiveColumns),
                             "Sym");
             // We need the weight column as vector here for comparison.
-            expected = t.updateBy(
+            expected = t.update(getCastingFormulas(primitiveColumns)).updateBy(
                     List.of(UpdateByOperation.RollingGroup("ts", prevTime, postTime, primitiveColumns),
                             UpdateByOperation.RollingGroup("ts", prevTime, postTime, weightCol)),
                     "Sym")
@@ -579,7 +601,7 @@ public class TestRollingWAvg extends BaseUpdateByTest {
             actual =
                     t.updateBy(UpdateByOperation.RollingWAvg("ts", prevTime, postTime, weightCol, primitiveColumns));
             // We need the weight column as vector here for comparison.
-            expected = t.updateBy(
+            expected = t.update(getCastingFormulas(primitiveColumns)).updateBy(
                     List.of(UpdateByOperation.RollingGroup("ts", prevTime, postTime, primitiveColumns),
                             UpdateByOperation.RollingGroup("ts", prevTime, postTime, weightCol)))
                     .update(getFormulas(primitiveColumns, weightCol));
@@ -599,16 +621,19 @@ public class TestRollingWAvg extends BaseUpdateByTest {
         weightCol = "shortWeightCol";
 
         t = createTestTable(STATIC_TABLE_SIZE, bucketed, false, false, 0xFFFABBBC,
-                new String[] {"ts", weightCol}, new TestDataGenerator[] {new SortedDateTimeGenerator(
-                        convertDateTime("2022-03-09T09:00:00.000 NY"),
-                        convertDateTime("2022-03-09T16:30:00.000 NY")),
-                        new ShortGenerator((short) -6000, (short) 65535, .1)}).t;
+                new String[] {"ts", "charCol", weightCol}, new TestDataGenerator[] {
+                        new SortedDateTimeGenerator(
+                                convertDateTime("2022-03-09T09:00:00.000 NY"),
+                                convertDateTime("2022-03-09T16:30:00.000 NY")),
+                        new CharGenerator('A', 'z', 0.1),
+                        new ShortGenerator((short) -6000, (short) 65535, .1)
+                }).t;
 
         if (bucketed) {
             actual = t.updateBy(UpdateByOperation.RollingWAvg("ts", prevTime, postTime, weightCol, primitiveColumns),
                     "Sym");
             // We need the weight column as vector here for comparison.
-            expected = t.updateBy(
+            expected = t.update(getCastingFormulas(primitiveColumns)).updateBy(
                     List.of(UpdateByOperation.RollingGroup("ts", prevTime, postTime, primitiveColumns),
                             UpdateByOperation.RollingGroup("ts", prevTime, postTime, weightCol)),
                     "Sym")
@@ -616,7 +641,7 @@ public class TestRollingWAvg extends BaseUpdateByTest {
         } else {
             actual = t.updateBy(UpdateByOperation.RollingWAvg("ts", prevTime, postTime, weightCol, primitiveColumns));
             // We need the weight column as vector here for comparison.
-            expected = t.updateBy(
+            expected = t.update(getCastingFormulas(primitiveColumns)).updateBy(
                     List.of(UpdateByOperation.RollingGroup("ts", prevTime, postTime, primitiveColumns),
                             UpdateByOperation.RollingGroup("ts", prevTime, postTime, weightCol)))
                     .update(getFormulas(primitiveColumns, weightCol));
@@ -984,8 +1009,12 @@ public class TestRollingWAvg extends BaseUpdateByTest {
         final String doubleWeightCol = "doubleWeightCol";
 
         final CreateResult result = createTestTable(DYNAMIC_TABLE_SIZE, bucketed, false, true, 0x31313131,
-                new String[] {doubleWeightCol},
-                new TestDataGenerator[] {new DoubleGenerator(10.1, 20.1, .1)});
+                new String[] {"charCol", doubleWeightCol},
+                new TestDataGenerator[] {
+                        new CharGenerator('A', 'z', 0.1),
+                        new DoubleGenerator(10.1, 20.1, .1)
+                });
+
         final QueryTable t = result.t;
         t.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
 
@@ -1016,8 +1045,12 @@ public class TestRollingWAvg extends BaseUpdateByTest {
         final String shortWeightCol = "shortWeightCol";
 
         final CreateResult result2 = createTestTable(DYNAMIC_TABLE_SIZE, bucketed, false, true, 0x31313131,
-                new String[] {shortWeightCol},
-                new TestDataGenerator[] {new ShortGenerator((short) -6000, (short) 65535, .1)});
+                new String[] {"charCol", shortWeightCol},
+                new TestDataGenerator[] {
+                        new CharGenerator('A', 'z', 0.1),
+                        new ShortGenerator((short) -6000, (short) 65535, .1)
+                });
+
         final QueryTable t2 = result2.t;
         t2.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
 
@@ -1047,9 +1080,11 @@ public class TestRollingWAvg extends BaseUpdateByTest {
         // Test with a double type weight value
         final String doubleWeightCol = "doubleWeightCol";
         final CreateResult result = createTestTable(DYNAMIC_TABLE_SIZE, bucketed, false, true, 0xFFFABBBC,
-                new String[] {"ts", doubleWeightCol}, new TestDataGenerator[] {new SortedDateTimeGenerator(
-                        convertDateTime("2022-03-09T09:00:00.000 NY"),
-                        convertDateTime("2022-03-09T16:30:00.000 NY")),
+                new String[] {"ts", "charCol", doubleWeightCol}, new TestDataGenerator[] {
+                        new SortedDateTimeGenerator(
+                                convertDateTime("2022-03-09T09:00:00.000 NY"),
+                                convertDateTime("2022-03-09T16:30:00.000 NY")),
+                        new CharGenerator('A', 'z', 0.1),
                         new DoubleGenerator(10.1, 20.1, .1)});
 
         final QueryTable t = result.t;
@@ -1084,9 +1119,11 @@ public class TestRollingWAvg extends BaseUpdateByTest {
         final String shortWeightCol = "shortWeightCol";
 
         final CreateResult result2 = createTestTable(DYNAMIC_TABLE_SIZE, bucketed, false, true, 0xFFFABBBC,
-                new String[] {"ts", shortWeightCol}, new TestDataGenerator[] {new SortedDateTimeGenerator(
-                        convertDateTime("2022-03-09T09:00:00.000 NY"),
-                        convertDateTime("2022-03-09T16:30:00.000 NY")),
+                new String[] {"ts", "charCol", shortWeightCol}, new TestDataGenerator[] {
+                        new SortedDateTimeGenerator(
+                                convertDateTime("2022-03-09T09:00:00.000 NY"),
+                                convertDateTime("2022-03-09T16:30:00.000 NY")),
+                        new CharGenerator('A', 'z', 0.1),
                         new ShortGenerator((short) -6000, (short) 65535, .1)});
 
         final QueryTable t2 = result2.t;
@@ -1236,8 +1273,11 @@ public class TestRollingWAvg extends BaseUpdateByTest {
         final String doubleWeightCol = "doubleWeightCol";
 
         final CreateResult result = createTestTable(DYNAMIC_TABLE_SIZE, bucketed, false, true, 0x31313131,
-                new String[] {doubleWeightCol},
-                new TestDataGenerator[] {new DoubleGenerator(10.1, 20.1, .1)});
+                new String[] {"charCol", doubleWeightCol},
+                new TestDataGenerator[] {
+                        new CharGenerator('A', 'z', 0.1),
+                        new DoubleGenerator(10.1, 20.1, .1)
+                });
         final QueryTable t = result.t;
 
         EvalNugget[] nuggets = new EvalNugget[] {
@@ -1267,8 +1307,11 @@ public class TestRollingWAvg extends BaseUpdateByTest {
         final String shortWeightCol = "shortWeightCol";
 
         final CreateResult result2 = createTestTable(DYNAMIC_TABLE_SIZE, bucketed, false, true, 0x31313131,
-                new String[] {shortWeightCol},
-                new TestDataGenerator[] {new ShortGenerator((short) -6000, (short) 65535, .1)});
+                new String[] {"charCol", shortWeightCol},
+                new TestDataGenerator[] {
+                        new CharGenerator('A', 'z', 0.1),
+                        new ShortGenerator((short) -6000, (short) 65535, .1)
+                });
         final QueryTable t2 = result2.t;
 
         nuggets = new EvalNugget[] {
@@ -1297,9 +1340,11 @@ public class TestRollingWAvg extends BaseUpdateByTest {
         // Test with a double type weight value
         final String doubleWeightCol = "doubleWeightCol";
         final CreateResult result = createTestTable(DYNAMIC_TABLE_SIZE, bucketed, false, true, 0xFFFABBBC,
-                new String[] {"ts", doubleWeightCol}, new TestDataGenerator[] {new SortedDateTimeGenerator(
-                        convertDateTime("2022-03-09T09:00:00.000 NY"),
-                        convertDateTime("2022-03-09T16:30:00.000 NY")),
+                new String[] {"ts", "charCol", doubleWeightCol}, new TestDataGenerator[] {
+                        new SortedDateTimeGenerator(
+                                convertDateTime("2022-03-09T09:00:00.000 NY"),
+                                convertDateTime("2022-03-09T16:30:00.000 NY")),
+                        new CharGenerator('A', 'z', 0.1),
                         new DoubleGenerator(10.1, 20.1, .1)});
 
         final QueryTable t = result.t;
@@ -1333,9 +1378,11 @@ public class TestRollingWAvg extends BaseUpdateByTest {
         final String shortWeightCol = "shortWeightCol";
 
         final CreateResult result2 = createTestTable(DYNAMIC_TABLE_SIZE, bucketed, false, true, 0xFFFABBBC,
-                new String[] {"ts", shortWeightCol}, new TestDataGenerator[] {new SortedDateTimeGenerator(
-                        convertDateTime("2022-03-09T09:00:00.000 NY"),
-                        convertDateTime("2022-03-09T16:30:00.000 NY")),
+                new String[] {"ts", "charCol", shortWeightCol}, new TestDataGenerator[] {
+                        new SortedDateTimeGenerator(
+                                convertDateTime("2022-03-09T09:00:00.000 NY"),
+                                convertDateTime("2022-03-09T16:30:00.000 NY")),
+                        new CharGenerator('A', 'z', 0.1),
                         new ShortGenerator((short) -6000, (short) 65535, .1)});
 
         final QueryTable t2 = result2.t;
@@ -1374,8 +1421,12 @@ public class TestRollingWAvg extends BaseUpdateByTest {
         final String doubleWeightCol = "doubleWeightCol";
 
         final CreateResult result = createTestTable(DYNAMIC_TABLE_SIZE, true, false, true, 0x31313131,
-                new String[] {doubleWeightCol},
-                new TestDataGenerator[] {new DoubleGenerator(10.1, 20.1, .1)});
+                new String[] {"charCol", doubleWeightCol},
+                new TestDataGenerator[] {
+                        new CharGenerator('A', 'z', 0.1),
+                        new DoubleGenerator(10.1, 20.1, .1)
+                });
+
         final QueryTable t = result.t;
 
         EvalNugget[] nuggets = new EvalNugget[] {
@@ -1405,8 +1456,12 @@ public class TestRollingWAvg extends BaseUpdateByTest {
         final String shortWeightCol = "shortWeightCol";
 
         final CreateResult result2 = createTestTable(DYNAMIC_TABLE_SIZE, true, false, true, 0x31313131,
-                new String[] {shortWeightCol},
-                new TestDataGenerator[] {new ShortGenerator((short) -6000, (short) 65535, .1)});
+                new String[] {"charCol", shortWeightCol},
+                new TestDataGenerator[] {
+                        new CharGenerator('A', 'z', 0.1),
+                        new ShortGenerator((short) -6000, (short) 65535, .1)
+                });
+
         final QueryTable t2 = result2.t;
 
         nuggets = new EvalNugget[] {
@@ -1441,9 +1496,11 @@ public class TestRollingWAvg extends BaseUpdateByTest {
         // Test with a double type weight value
         final String doubleWeightCol = "doubleWeightCol";
         final CreateResult result = createTestTable(DYNAMIC_TABLE_SIZE, true, false, true, 0xFFFABBBC,
-                new String[] {"ts", doubleWeightCol}, new TestDataGenerator[] {new SortedDateTimeGenerator(
-                        convertDateTime("2022-03-09T09:00:00.000 NY"),
-                        convertDateTime("2022-03-09T16:30:00.000 NY")),
+                new String[] {"ts", "charCol", doubleWeightCol}, new TestDataGenerator[] {
+                        new SortedDateTimeGenerator(
+                                convertDateTime("2022-03-09T09:00:00.000 NY"),
+                                convertDateTime("2022-03-09T16:30:00.000 NY")),
+                        new CharGenerator('A', 'z', 0.1),
                         new DoubleGenerator(10.1, 20.1, .1)});
 
         final QueryTable t = result.t;
@@ -1476,9 +1533,11 @@ public class TestRollingWAvg extends BaseUpdateByTest {
         final String shortWeightCol = "shortWeightCol";
 
         final CreateResult result2 = createTestTable(DYNAMIC_TABLE_SIZE, true, false, true, 0xFFFABBBC,
-                new String[] {"ts", shortWeightCol}, new TestDataGenerator[] {new SortedDateTimeGenerator(
-                        convertDateTime("2022-03-09T09:00:00.000 NY"),
-                        convertDateTime("2022-03-09T16:30:00.000 NY")),
+                new String[] {"ts", "charCol", shortWeightCol}, new TestDataGenerator[] {
+                        new SortedDateTimeGenerator(
+                                convertDateTime("2022-03-09T09:00:00.000 NY"),
+                                convertDateTime("2022-03-09T16:30:00.000 NY")),
+                        new CharGenerator('A', 'z', 0.1),
                         new ShortGenerator((short) -6000, (short) 65535, .1)});
 
         final QueryTable t2 = result2.t;
