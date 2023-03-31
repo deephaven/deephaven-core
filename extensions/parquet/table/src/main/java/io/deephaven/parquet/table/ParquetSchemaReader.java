@@ -352,6 +352,8 @@ public class ParquetSchemaReader {
             @Override
             public Optional<Class<?>> visit(
                     final LogicalTypeAnnotation.TimestampLogicalTypeAnnotation timestampLogicalType) {
+                // TODO(deephaven-core#3588): Unable to read parquet TimestampLogicalTypeAnnotation that is not adjusted
+                // to UTC
                 if (timestampLogicalType.isAdjustedToUTC()) {
                     switch (timestampLogicalType.getUnit()) {
                         case MILLIS:
