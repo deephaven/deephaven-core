@@ -2,6 +2,8 @@ plugins {
     id 'base'
     id 'io.deephaven.lifecycle-conventions'
     id 'io.deephaven.repository-conventions'
+    // TODO: choose a better location for this. Should each project opt in instead? (Probably, yes)
+    id 'io.deephaven.python-coding-conventions'
 }
 
 group = 'io.deephaven'
