@@ -12,7 +12,7 @@ import (
 func TestConnectError(t *testing.T) {
 	ctx := context.Background()
 
-	_, err := client.NewClient(ctx, "foobar", "1234", test_tools.GetAuth())
+	_, err := client.NewClient(ctx, "foobar", "1234", test_tools.GetAuthType(), test_tools.GetAuthToken())
 	if err == nil {
 		t.Fatalf("client did not fail to connect")
 	}
@@ -21,7 +21,7 @@ func TestConnectError(t *testing.T) {
 func TestAuthError(t *testing.T) {
 	ctx := context.Background()
 
-	_, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "garbage in")
+	_, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), "garbage in", "badtoken")
 	if err == nil {
 		t.Fatalf("client did not fail to connect")
 	}
@@ -30,7 +30,7 @@ func TestAuthError(t *testing.T) {
 func TestClosedClient(t *testing.T) {
 	ctx := context.Background()
 
-	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), test_tools.GetAuth())
+	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), test_tools.GetAuthType(), test_tools.GetAuthToken())
 	if err != nil {
 		t.Fatalf("NewClient err %s", err.Error())
 	}
@@ -49,7 +49,7 @@ func TestClosedClient(t *testing.T) {
 func TestMismatchedScript(t *testing.T) {
 	ctx := context.Background()
 
-	_, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), test_tools.GetAuth(), client.WithConsole("groovy"))
+	_, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), test_tools.GetAuthType(), test_tools.GetAuthToken(), client.WithConsole("groovy"))
 	if err == nil {
 		t.Fatalf("client did not fail to connect")
 	}
@@ -61,7 +61,7 @@ func TestEmptyTable(t *testing.T) {
 
 	ctx := context.Background()
 
-	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), test_tools.GetAuth())
+	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), test_tools.GetAuthType(), test_tools.GetAuthToken())
 	if err != nil {
 		t.Fatalf("NewClient err %s", err.Error())
 	}
@@ -92,7 +92,7 @@ func TestEmptyTable(t *testing.T) {
 func TestTimeTable(t *testing.T) {
 	ctx := context.Background()
 
-	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), test_tools.GetAuth())
+	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), test_tools.GetAuthType(), test_tools.GetAuthToken())
 	if err != nil {
 		t.Fatalf("NewClient err %s", err.Error())
 	}
@@ -119,7 +119,7 @@ func TestTableUpload(t *testing.T) {
 	defer r.Release()
 
 	ctx := context.Background()
-	s, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), test_tools.GetAuth())
+	s, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), test_tools.GetAuthType(), test_tools.GetAuthToken())
 	if err != nil {
 		t.Fatalf("NewClient err %s", err.Error())
 		return
@@ -205,7 +205,7 @@ func waitForTable(ctx context.Context, cl *client.Client, names []string, timeou
 func TestFieldSync(t *testing.T) {
 	ctx := context.Background()
 
-	client1, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), test_tools.GetAuth(), client.WithConsole("python"))
+	client1, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), test_tools.GetAuthType(), test_tools.GetAuthToken(), client.WithConsole("python"))
 	test_tools.CheckError(t, "NewClient", err)
 	defer client1.Close()
 
@@ -215,7 +215,7 @@ gotesttable1 = None
 `)
 	test_tools.CheckError(t, "RunScript", err)
 
-	client2, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), test_tools.GetAuth(), client.WithConsole("python"))
+	client2, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), test_tools.GetAuthType(), test_tools.GetAuthToken(), client.WithConsole("python"))
 	test_tools.CheckError(t, "NewClient", err)
 	defer client2.Close()
 

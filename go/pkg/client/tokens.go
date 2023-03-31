@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"github.com/apache/arrow/go/v8/arrow/flight"
@@ -12,6 +13,17 @@ import (
 	"sync"
 	"time"
 )
+
+// makeAuthString creates an authentication string from an authentication type and an authentication token.
+func makeAuthString(authType string, authToken string) string {
+	if authType == "Anonymous" {
+		return authType
+	} else if authType == "Basic" {
+		return "Basic " + base64.StdEncoding.EncodeToString([]byte(authToken))
+	} else {
+		return authType + " " + authToken
+	}
+}
 
 // withAuth returns a context decorated with authentication data.
 func withAuth(ctx context.Context, authString string) context.Context {
@@ -102,10 +114,16 @@ func (tr *tokenManager) Close() error {
 // newTokenManager creates a tokenManager that begins a background goroutine that continually refreshes
 // the token so that it does not time out.
 //
-// authString is the authorization string used to get the first token.  Examples:
-//   - "Anonymous" is used for anonymous authentication.
-//   - "io.deephaven.authentication.psk.PskAuthenticationHandler <password>" is used for PSK authentication
-func newTokenManager(ctx context.Context, fs *flightStub, cfg configpb2.ConfigServiceClient, authString string) (*tokenManager, error) {
+// authType is the type of authentication to use.  This can be 'Anonymous', 'Basic', or any custom-built
+// authenticator in the server, such as "io.deephaven.authentication.psk.PskAuthenticationHandler",  The default is 'Anonymous'.
+// To see what authentication methods are available on the Deephaven server, navigate to: http://<host>:<port>/jsapi/authentication/.
+//
+// authToken is the authentication token string. When authType is 'Basic', it must be
+// "user:password"; when auth_type is DefaultAuth, it will be ignored; when auth_type is a custom-built
+// authenticator, it must conform to the specific requirement of the authenticator.
+func newTokenManager(ctx context.Context, fs *flightStub, cfg configpb2.ConfigServiceClient, authType string, authToken string) (*tokenManager, error) {
+	authString := makeAuthString(authType, authToken)
+
 	handshakeClient, err := fs.handshake(withAuth(ctx, authString))
 
 	if err != nil {

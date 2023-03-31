@@ -89,12 +89,23 @@ func GetPort() string {
 	}
 }
 
-// GetAuth returns the auth string to connect to for the tests.
-// By default it is Anonymous, but can be overridden by setting the DH_AUTH environment variable.
-func GetAuth() string {
-	auth := os.Getenv("DH_AUTH")
+// GetAuthType returns the auth type to use for the tests.
+// By default it is Anonymous but can be overridden by setting the DH_AUTH_TYPE environment variable.
+func GetAuthType() string {
+	auth := os.Getenv("DH_AUTH_TYPE")
 	if auth == "" {
 		return "Anonymous"
+	} else {
+		return auth
+	}
+}
+
+// GetAuthToken returns the auth token to use for the tests.
+// By default it is "" but can be overridden by setting the DH_AUTH_TOKEN environment variable.
+func GetAuthToken() string {
+	auth := os.Getenv("DH_AUTH_TOKEN")
+	if auth == "" {
+		return ""
 	} else {
 		return auth
 	}
