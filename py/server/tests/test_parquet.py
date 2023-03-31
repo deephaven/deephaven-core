@@ -19,7 +19,7 @@ from tests.testbase import BaseTestCase
 
 
 class ParquetTestCase(BaseTestCase):
-    """ Test cases for the deephaven.ParquetTools module (performed locally) """
+    """Test cases for the deephaven.ParquetTools module (performed locally)"""
 
     @classmethod
     def setUpClass(cls):
@@ -31,13 +31,15 @@ class ParquetTestCase(BaseTestCase):
         cls.temp_dir.cleanup()
 
     def test_crd(self):
-        """ Test suite for reading, writing, and deleting a table to disk """
+        """Test suite for reading, writing, and deleting a table to disk"""
 
-        table = empty_table(3).update(formulas=["x=i", "y=(double)(i/10.0)", "z=(double)(i*i)"])
+        table = empty_table(3).update(
+            formulas=["x=i", "y=(double)(i/10.0)", "z=(double)(i*i)"]
+        )
         definition = table.columns
         base_dir = os.path.join(self.temp_dir.name, "testCreation")
-        file_location = os.path.join(base_dir, 'table1.parquet')
-        file_location2 = os.path.join(base_dir, 'table2.parquet')
+        file_location = os.path.join(base_dir, "table1.parquet")
+        file_location2 = os.path.join(base_dir, "table2.parquet")
 
         # make sure that the test workspace is clean
         if os.path.exists(file_location):
@@ -71,13 +73,15 @@ class ParquetTestCase(BaseTestCase):
         shutil.rmtree(base_dir)
 
     def test_crd_with_instructions(self):
-        """ Test suite for reading, writing, and deleting a table to disk """
+        """Test suite for reading, writing, and deleting a table to disk"""
 
-        table = empty_table(3).update(formulas=["x=i", "y=String.valueOf((double)(i/10.0))", "z=(double)(i*i)"])
+        table = empty_table(3).update(
+            formulas=["x=i", "y=String.valueOf((double)(i/10.0))", "z=(double)(i*i)"]
+        )
         col_definitions = table.columns
         base_dir = os.path.join(self.temp_dir.name, "testCreation")
-        file_location = os.path.join(base_dir, 'table1.parquet')
-        file_location2 = os.path.join(base_dir, 'table2.parquet')
+        file_location = os.path.join(base_dir, "table1.parquet")
+        file_location2 = os.path.join(base_dir, "table2.parquet")
 
         # make sure that the test workspace is clean
         if os.path.exists(file_location):
@@ -94,14 +98,25 @@ class ParquetTestCase(BaseTestCase):
             self.assertTrue(os.path.exists(file_location))
             shutil.rmtree(base_dir)
 
-        with self.subTest(msg="write_table(Table, str, col_instructions, max_dictionary_keys)"):
-            write(table, file_location, col_instructions=[col_inst, col_inst1], max_dictionary_keys=10)
+        with self.subTest(
+            msg="write_table(Table, str, col_instructions, max_dictionary_keys)"
+        ):
+            write(
+                table,
+                file_location,
+                col_instructions=[col_inst, col_inst1],
+                max_dictionary_keys=10,
+            )
             self.assertTrue(os.path.exists(file_location))
             shutil.rmtree(base_dir)
 
         with self.subTest(msg="write_tables(Table[], destinations, col_definitions, "):
-            batch_write([table, table], [file_location, file_location2], col_definitions,
-                        col_instructions=[col_inst, col_inst1])
+            batch_write(
+                [table, table],
+                [file_location, file_location2],
+                col_definitions,
+                col_instructions=[col_inst, col_inst1],
+            )
             self.assertTrue(os.path.exists(file_location))
             self.assertTrue(os.path.exists(file_location2))
             shutil.rmtree(base_dir)
@@ -127,14 +142,20 @@ class ParquetTestCase(BaseTestCase):
 
     def test_big_decimal(self):
         j_type = dtypes.BigDecimal.j_type
-        big_decimal_list = [j_type.valueOf(301, 2),
-                            j_type.valueOf(201, 2),
-                            j_type.valueOf(101, 2)]
-        bd_col = InputColumn(name='decimal_value', data_type=dtypes.BigDecimal, input_data=big_decimal_list)
+        big_decimal_list = [
+            j_type.valueOf(301, 2),
+            j_type.valueOf(201, 2),
+            j_type.valueOf(101, 2),
+        ]
+        bd_col = InputColumn(
+            name="decimal_value",
+            data_type=dtypes.BigDecimal,
+            input_data=big_decimal_list,
+        )
         table = new_table([bd_col])
         self.assertIsNotNone(table)
-        base_dir = os.path.join(self.temp_dir.name, 'testCreation')
-        file_location = os.path.join(base_dir, 'table1.parquet')
+        base_dir = os.path.join(self.temp_dir.name, "testCreation")
+        file_location = os.path.join(base_dir, "table1.parquet")
         if os.path.exists(file_location):
             shutil.rmtree(file_location)
 
@@ -152,36 +173,38 @@ class ParquetTestCase(BaseTestCase):
         """
 
         # create a table with columns to test different types and edge cases
-        dh_table = empty_table(20).update(formulas=[
-            "someStringColumn = i % 10 == 0?null:(`` + (i % 101))",
-            "nonNullString = `` + (i % 60)",
-            "nonNullPolyString = `` + (i % 600)",
-            "someIntColumn = i",
-            "someLongColumn = ii",
-            "someDoubleColumn = i*1.1",
-            "someFloatColumn = (float)(i*1.1)",
-            "someBoolColumn = i % 3 == 0?true:i%3 == 1?false:null",
-            "someShortColumn = (short)i",
-            "someByteColumn = (byte)i",
-            "someCharColumn = (char)i",
-            # TODO(deephaven-core#3151) pyarrow indicates this value is out of the allowed range
-            # "someTime = DateTime.now() + i",
-            "someKey = `` + (int)(i /100)",
-            "nullKey = i < -1?`123`:null",
-            "nullIntColumn = (int)null",
-            "nullLongColumn = (long)null",
-            "nullDoubleColumn = (double)null",
-            "nullFloatColumn = (float)null",
-            "nullBoolColumn = (Boolean)null",
-            "nullShortColumn = (short)null",
-            "nullByteColumn = (byte)null",
-            "nullCharColumn = (char)null",
-            "nullTime = (DateTime)null",
-            "nullString = (String)null",
-            # TODO(deephaven-core#3151) BigInteger/BigDecimal columns don't roundtrip cleanly
-            # "nullBigDecColumn = (java.math.BigDecimal)null",
-            # "nullBigIntColumn = (java.math.BigInteger)null"
-        ])
+        dh_table = empty_table(20).update(
+            formulas=[
+                "someStringColumn = i % 10 == 0?null:(`` + (i % 101))",
+                "nonNullString = `` + (i % 60)",
+                "nonNullPolyString = `` + (i % 600)",
+                "someIntColumn = i",
+                "someLongColumn = ii",
+                "someDoubleColumn = i*1.1",
+                "someFloatColumn = (float)(i*1.1)",
+                "someBoolColumn = i % 3 == 0?true:i%3 == 1?false:null",
+                "someShortColumn = (short)i",
+                "someByteColumn = (byte)i",
+                "someCharColumn = (char)i",
+                # TODO(deephaven-core#3151) pyarrow indicates this value is out of the allowed range
+                # "someTime = DateTime.now() + i",
+                "someKey = `` + (int)(i /100)",
+                "nullKey = i < -1?`123`:null",
+                "nullIntColumn = (int)null",
+                "nullLongColumn = (long)null",
+                "nullDoubleColumn = (double)null",
+                "nullFloatColumn = (float)null",
+                "nullBoolColumn = (Boolean)null",
+                "nullShortColumn = (short)null",
+                "nullByteColumn = (byte)null",
+                "nullCharColumn = (char)null",
+                "nullTime = (DateTime)null",
+                "nullString = (String)null",
+                # TODO(deephaven-core#3151) BigInteger/BigDecimal columns don't roundtrip cleanly
+                # "nullBigDecColumn = (java.math.BigDecimal)null",
+                # "nullBigIntColumn = (java.math.BigInteger)null"
+            ]
+        )
         # These tests are done with each of the fully-supported compression formats
         self.round_trip_with_compression("UNCOMPRESSED", dh_table)
         self.round_trip_with_compression("SNAPPY", dh_table)
@@ -194,14 +217,25 @@ class ParquetTestCase(BaseTestCase):
 
     def round_trip_with_compression(self, compression_codec_name, dh_table):
         # dh->parquet->dataframe (via pyarrow)->dh
-        write(dh_table, "data_from_dh.parquet", compression_codec_name=compression_codec_name)
-        dataframe = pandas.read_parquet('data_from_dh.parquet', use_nullable_dtypes=True)
+        write(
+            dh_table,
+            "data_from_dh.parquet",
+            compression_codec_name=compression_codec_name,
+        )
+        dataframe = pandas.read_parquet(
+            "data_from_dh.parquet", use_nullable_dtypes=True
+        )
         result_table = to_table(dataframe)
         self.assert_table_equals(dh_table, result_table)
 
         # dh->parquet->dataframe (via pyarrow)->parquet->dh
-        dataframe.to_parquet('data_from_pandas.parquet', compression=None if compression_codec_name is 'UNCOMPRESSED' else compression_codec_name)
-        result_table = read('data_from_pandas.parquet')
+        dataframe.to_parquet(
+            "data_from_pandas.parquet",
+            compression=None
+            if compression_codec_name is "UNCOMPRESSED"
+            else compression_codec_name,
+        )
+        result_table = read("data_from_pandas.parquet")
         self.assert_table_equals(dh_table, result_table)
 
         # dh->dataframe (via pyarrow)->parquet->dh
@@ -211,5 +245,6 @@ class ParquetTestCase(BaseTestCase):
         # result_table = read('data_from_pandas.parquet')
         # self.assert_table_equals(dh_table, result_table)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

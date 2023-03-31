@@ -4,8 +4,7 @@
 import unittest
 
 from deephaven import read_csv, empty_table
-from deephaven.agg import sum_, avg, count_, first, last, max_, min_, std, abs_sum, \
-    var
+from deephaven.agg import sum_, avg, count_, first, last, max_, min_, std, abs_sum, var
 from deephaven.filters import Filter
 from deephaven.table import NodeType
 from tests.testbase import BaseTestCase
@@ -35,15 +34,25 @@ class RollupAndTreeTableTestCase(BaseTestCase):
         )
 
         with self.subTest("with node operations"):
-            rollup_table = test_table.rollup(aggs=self.aggs_for_rollup, by='grp_id')
-            node_op = rollup_table.node_operation_recorder(NodeType.AGGREGATED).sort("aggVar").sort_descending(
-                "aggMax").format_column("aggSum=`aliceblue`")
+            rollup_table = test_table.rollup(aggs=self.aggs_for_rollup, by="grp_id")
+            node_op = (
+                rollup_table.node_operation_recorder(NodeType.AGGREGATED)
+                .sort("aggVar")
+                .sort_descending("aggMax")
+                .format_column("aggSum=`aliceblue`")
+            )
             rt = rollup_table.with_node_operations([node_op])
             self.assertIsNotNone(rt)
 
-            rollup_table = test_table.rollup(aggs=self.aggs_for_rollup, by='grp_id', include_constituents=True)
-            node_op_1 = rollup_table.node_operation_recorder(NodeType.CONSTITUENT).sort("weights").sort_descending(
-                "var").format_column("grp_id=`aliceblue`")
+            rollup_table = test_table.rollup(
+                aggs=self.aggs_for_rollup, by="grp_id", include_constituents=True
+            )
+            node_op_1 = (
+                rollup_table.node_operation_recorder(NodeType.CONSTITUENT)
+                .sort("weights")
+                .sort_descending("var")
+                .format_column("grp_id=`aliceblue`")
+            )
             rt = rollup_table.with_node_operations([node_op, node_op_1])
             self.assertIsNotNone(rt)
 
@@ -55,9 +64,14 @@ class RollupAndTreeTableTestCase(BaseTestCase):
             self.assertTrue(all([rt, rt1]))
 
     def test_tree_table(self):
-        tree_table = self.test_table.tail(10).tree(id_col='a', parent_col='c')
+        tree_table = self.test_table.tail(10).tree(id_col="a", parent_col="c")
         with self.subTest("with node operations"):
-            node_op = tree_table.node_operation_recorder().sort("b").where("e > 0").format_column("d=`aliceblue`")
+            node_op = (
+                tree_table.node_operation_recorder()
+                .sort("b")
+                .where("e > 0")
+                .format_column("d=`aliceblue`")
+            )
             rt = tree_table.with_node_operations(node_op)
             self.assertIsNotNone(rt)
 

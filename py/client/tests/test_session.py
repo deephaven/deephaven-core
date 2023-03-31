@@ -15,7 +15,6 @@ from tests.testbase import BaseTestCase
 
 
 class SessionTestCase(BaseTestCase):
-
     def test_connect(self):
         session = Session()
         self.assertEqual(True, session.is_connected)
@@ -60,7 +59,9 @@ class SessionTestCase(BaseTestCase):
         table1 = session.import_table(pa_table)
         table2 = table1.group_by(by=["a", "c"]).ungroup(cols=["b", "d", "e"])
         table3 = table1.where(["a % 2 > 0 && b % 3 == 1"])
-        result_table = session.merge_tables(tables=[table1, table2, table3], order_by="a")
+        result_table = session.merge_tables(
+            tables=[table1, table2, table3], order_by="a"
+        )
 
         self.assertTrue(result_table.size > table1.size)
         self.assertTrue(result_table.size > table2.size)
@@ -96,8 +97,8 @@ class SessionTestCase(BaseTestCase):
 
     @unittest.skip("GH ticket filed #941.")
     def test_import_table_time64(self):
-        pa_array = pa.array([1, 2], type=pa.time64('ns'))
-        pa_record_batch = pa.RecordBatch.from_arrays([pa_array], names=['f1'])
+        pa_array = pa.array([1, 2], type=pa.time64("ns"))
+        pa_record_batch = pa.RecordBatch.from_arrays([pa_array], names=["f1"])
         pa_table = pa.Table.from_batches([pa_record_batch])
         new_table = self.session.import_table(pa_table)
         pa_table2 = new_table.to_arrow()
@@ -109,7 +110,7 @@ class SessionTestCase(BaseTestCase):
         exception_list = []
         for t in types:
             pa_array = pa.array([-1, 0, 127], type=t)
-            pa_record_batch = pa.RecordBatch.from_arrays([pa_array], names=['f1'])
+            pa_record_batch = pa.RecordBatch.from_arrays([pa_array], names=["f1"])
             pa_table = pa.Table.from_batches([pa_record_batch])
             new_table = self.session.import_table(pa_table)
             pa_table2 = new_table.to_arrow()
@@ -126,7 +127,7 @@ class SessionTestCase(BaseTestCase):
         exception_list = []
         for t in types:
             pa_array = pa.array([0, 255, 65535], type=t)
-            pa_record_batch = pa.RecordBatch.from_arrays([pa_array], names=['f1'])
+            pa_record_batch = pa.RecordBatch.from_arrays([pa_array], names=["f1"])
             pa_table = pa.Table.from_batches([pa_record_batch])
             new_table = self.session.import_table(pa_table)
             pa_table2 = new_table.to_arrow()
@@ -143,7 +144,7 @@ class SessionTestCase(BaseTestCase):
         exception_list = []
         for t in types:
             pa_array = pa.array([1.111, 2.222], type=t)
-            pa_record_batch = pa.RecordBatch.from_arrays([pa_array], names=['f1'])
+            pa_record_batch = pa.RecordBatch.from_arrays([pa_array], names=["f1"])
             pa_table = pa.Table.from_batches([pa_record_batch])
             new_table = self.session.import_table(pa_table)
             pa_table2 = new_table.to_arrow()
@@ -158,8 +159,8 @@ class SessionTestCase(BaseTestCase):
         types = [pa.string(), pa.utf8()]
         exception_list = []
         for t in types:
-            pa_array = pa.array(['text1', "text2"], type=t)
-            pa_record_batch = pa.RecordBatch.from_arrays([pa_array], names=['f1'])
+            pa_array = pa.array(["text1", "text2"], type=t)
+            pa_record_batch = pa.RecordBatch.from_arrays([pa_array], names=["f1"])
             pa_table = pa.Table.from_batches([pa_record_batch])
             new_table = self.session.import_table(pa_table)
             pa_table2 = new_table.to_arrow()
@@ -176,7 +177,7 @@ class SessionTestCase(BaseTestCase):
         exception_list = []
         for t in types:
             pa_array = pa.array([1245, 123456], type=t)
-            pa_record_batch = pa.RecordBatch.from_arrays([pa_array], names=['f1'])
+            pa_record_batch = pa.RecordBatch.from_arrays([pa_array], names=["f1"])
             pa_table = pa.Table.from_batches([pa_record_batch])
             new_table = self.session.import_table(pa_table)
             pa_table2 = new_table.to_arrow()
@@ -203,10 +204,10 @@ class SessionTestCase(BaseTestCase):
         ]
         pa_data = [
             pa.array([True, False]),
-            pa.array([2 ** 7 - 1, -2 ** 7 + 1]),
-            pa.array([2 ** 15 - 1, -2 ** 15 + 1]),
-            pa.array([2 ** 31 - 1, -2 ** 31 + 1]),
-            pa.array([2 ** 63 - 1, -2 ** 63 + 1]),
+            pa.array([2**7 - 1, -(2**7) + 1]),
+            pa.array([2**15 - 1, -(2**15) + 1]),
+            pa.array([2**31 - 1, -(2**31) + 1]),
+            pa.array([2**63 - 1, -(2**63) + 1]),
             # pa.array([pd.Timestamp('2017-01-01T12:01:01', tz='UTC'),
             #           pd.Timestamp('2017-01-01T11:01:01', tz='Europe/Paris')]),
             # pa.array([pd.Timestamp('2017-01-01T2:01:01', tz='UTC'),
@@ -250,5 +251,5 @@ class SessionTestCase(BaseTestCase):
                 append_input_t.delete(dh_table)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

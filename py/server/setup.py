@@ -22,42 +22,44 @@ def normalize_version(version):
     return str(packaging.version.Version(version))
 
 
-__deephaven_version__ = os.environ['DEEPHAVEN_VERSION']
+__deephaven_version__ = os.environ["DEEPHAVEN_VERSION"]
 __normalized_version__ = normalize_version(__deephaven_version__)
 
 setup(
-    name='deephaven-core',
+    name="deephaven-core",
     version=__normalized_version__,
-    description='Deephaven Engine Python Package',
+    description="Deephaven Engine Python Package",
     long_description=README,
-    long_description_content_type='text/markdown',
-    packages=find_namespace_packages(exclude=("tests", "tests.*", "integration-tests", "test_helper")),
-    url='https://deephaven.io/',
-    author='Deephaven Data Labs',
-    author_email='python@deephaven.io',
-    license='Deephaven Community License',
-    test_loader='unittest:TestLoader',
+    long_description_content_type="text/markdown",
+    packages=find_namespace_packages(
+        exclude=("tests", "tests.*", "integration-tests", "test_helper")
+    ),
+    url="https://deephaven.io/",
+    author="Deephaven Data Labs",
+    author_email="python@deephaven.io",
+    license="Deephaven Community License",
+    test_loader="unittest:TestLoader",
     classifiers=[
-        'Development Status :: 2 - Pre-Alpha',
-        'Intended Audience :: Developers',
-        'Intended Audience :: Science/Research',
-        'Topic :: Software Development :: Build Tools',
-        'License :: Other/Proprietary License',
-        'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.7',
-        'Programming Language :: Python :: 3.8',
-        'Programming Language :: Python :: 3.9',
-        'Programming Language :: Python :: 3.10',
-        'Programming Language :: Python :: 3.11',
+        "Development Status :: 2 - Pre-Alpha",
+        "Intended Audience :: Developers",
+        "Intended Audience :: Science/Research",
+        "Topic :: Software Development :: Build Tools",
+        "License :: Other/Proprietary License",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
     ],
-    keywords='Deephaven Development',
-    python_requires='>=3.8',
+    keywords="Deephaven Development",
+    python_requires=">=3.8",
     install_requires=[
-        'jpy>=0.13.0',
-        'deephaven-plugin',
-        'numpy',
-        'pandas',
-        'pyarrow',
+        "jpy>=0.13.0",
+        "deephaven-plugin",
+        "numpy",
+        "pandas",
+        "pyarrow",
         # Numba does not support 3.11 yet
         # https://github.com/numba/numba/issues/8304
         # TODO(deephaven-core#3082): Remove numba dependency workarounds
@@ -67,6 +69,8 @@ setup(
         "autocomplete": ["jedi==0.18.2"],
     },
     entry_points={
-        'deephaven.plugin': ['registration_cls = deephaven.pandasplugin:PandasPluginRegistration']
-    }
+        "deephaven.plugin": [
+            "registration_cls = deephaven.pandasplugin:PandasPluginRegistration"
+        ]
+    },
 )

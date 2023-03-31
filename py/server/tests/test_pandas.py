@@ -9,8 +9,20 @@ import numpy as np
 import pandas as pd
 
 from deephaven import dtypes, new_table, DHError
-from deephaven.column import byte_col, char_col, short_col, bool_col, int_col, long_col, float_col, double_col, \
-    string_col, datetime_col, pyobj_col, jobj_col
+from deephaven.column import (
+    byte_col,
+    char_col,
+    short_col,
+    bool_col,
+    int_col,
+    long_col,
+    float_col,
+    double_col,
+    string_col,
+    datetime_col,
+    pyobj_col,
+    jobj_col,
+)
 from deephaven.constants import NULL_LONG, NULL_SHORT, NULL_INT, NULL_BYTE
 from deephaven.jcompat import j_array_list
 from deephaven.pandas import to_pandas, to_table
@@ -32,7 +44,7 @@ class PandasTestCase(BaseTestCase):
         input_cols = [
             bool_col(name="Boolean", data=[True, False]),
             byte_col(name="Byte", data=(1, -1)),
-            char_col(name="Char", data='-1'),
+            char_col(name="Char", data="-1"),
             short_col(name="Short", data=[1, -1]),
             int_col(name="Int_", data=[1, -1]),
             long_col(name="Long_", data=[1, NULL_LONG]),
@@ -40,10 +52,12 @@ class PandasTestCase(BaseTestCase):
             float_col(name="Float_", data=[1.01, -1.01]),
             double_col(name="Double_", data=[1.01, -1.01]),
             string_col(name="String", data=["foo", "bar"]),
-            datetime_col(name="Datetime", data=[dtypes.DateTime(1), dtypes.DateTime(-1)]),
+            datetime_col(
+                name="Datetime", data=[dtypes.DateTime(1), dtypes.DateTime(-1)]
+            ),
             pyobj_col(name="PyObj", data=[CustomClass(1, "1"), CustomClass(-1, "-1")]),
             pyobj_col(name="PyObj1", data=[[1, 2, 3], CustomClass(-1, "-1")]),
-            pyobj_col(name="PyObj2", data=[False, 'False']),
+            pyobj_col(name="PyObj2", data=[False, "False"]),
             jobj_col(name="JObj", data=[j_array_list1, j_array_list2]),
         ]
         self.test_table = new_table(cols=input_cols)
@@ -67,30 +81,29 @@ class PandasTestCase(BaseTestCase):
 
     def test_to_pandas_remaps(self):
         prepared_table = self.test_table.update(
-            formulas=["Long = isNull(Long_) ? Double.NaN : Long_"])
+            formulas=["Long = isNull(Long_) ? Double.NaN : Long_"]
+        )
 
         df = to_pandas(prepared_table, cols=["Boolean", "Long"])
-        self.assertEqual(df['Long'].dtype, np.float64)
-        self.assertEqual(df['Boolean'].values.dtype, np.bool_)
+        self.assertEqual(df["Long"].dtype, np.float64)
+        self.assertEqual(df["Boolean"].values.dtype, np.bool_)
 
-        df1 = pd.DataFrame([[1, float('Nan')], [True, False]])
+        df1 = pd.DataFrame([[1, float("Nan")], [True, False]])
         df1.equals(df)
 
     def test_vector_column(self):
         strings = ["Str1", "Str1", "Str2", "Str2", "Str2"]
         doubles = [1.0, 2.0, 4.0, 8.0, 16.0]
-        test_table = new_table([
-            string_col("String", strings),
-            double_col("Doubles", doubles)
-        ]
+        test_table = new_table(
+            [string_col("String", strings), double_col("Doubles", doubles)]
         )
 
         test_table = test_table.group_by(["String"])
         df = to_pandas(test_table, cols=["String", "Doubles"])
-        self.assertEqual(df['String'].dtype, np.object_)
-        self.assertEqual(df['Doubles'].dtype, np.object_)
+        self.assertEqual(df["String"].dtype, np.object_)
+        self.assertEqual(df["Doubles"].dtype, np.object_)
 
-        double_series = df['Doubles']
+        double_series = df["Doubles"]
         self.assertEqual([1.0, 2.0], list(double_series[0].toArray()))
         self.assertEqual([4.0, 8.0, 16.0], list(double_series[1].toArray()))
 
@@ -104,7 +117,7 @@ class PandasTestCase(BaseTestCase):
         input_cols = [
             bool_col(name="Boolean", data=[True, False]),
             byte_col(name="Byte", data=(1, -1)),
-            char_col(name="Char", data='-1'),
+            char_col(name="Char", data="-1"),
             short_col(name="Short", data=[1, -1]),
             int_col(name="Int", data=[1, -1]),
             long_col(name="Long", data=[1, NULL_LONG]),
@@ -121,7 +134,10 @@ class PandasTestCase(BaseTestCase):
         input_cols = [bool_col(name="Boolean", data=[True, None])]
         table_with_null_bool = new_table(cols=input_cols)
         prepared_table = table_with_null_bool.update(
-            formulas=["Boolean = isNull(Boolean) ? (byte)NULL_BYTE : (Boolean == true ? 1: 0)"])
+            formulas=[
+                "Boolean = isNull(Boolean) ? (byte)NULL_BYTE : (Boolean == true ? 1: 0)"
+            ]
+        )
         df = to_pandas(prepared_table)
         table_from_df = to_table(df)
         self.assert_table_equals(table_from_df, prepared_table)
@@ -133,7 +149,9 @@ class PandasTestCase(BaseTestCase):
         datetime_str = "2021-12-10T23:59:59 HI"
         dt1 = to_datetime(datetime_str)
 
-        input_cols = [datetime_col(name="Datetime", data=[dtypes.DateTime(1), None, dt, dt1])]
+        input_cols = [
+            datetime_col(name="Datetime", data=[dtypes.DateTime(1), None, dt, dt1])
+        ]
         table_with_null_dt = new_table(cols=input_cols)
 
         df = to_pandas(table_with_null_dt)
@@ -148,7 +166,7 @@ class PandasTestCase(BaseTestCase):
         # jobj_col(name="JObj", data=[j_array_list, None]),
         input_cols = [
             byte_col(name="Byte", data=(1, NULL_BYTE)),
-            char_col(name="Char", data='-1'),
+            char_col(name="Char", data="-1"),
             short_col(name="Short", data=[1, NULL_SHORT]),
             int_col(name="Int_", data=[1, NULL_INT]),
             long_col(name="Long_", data=[1, NULL_LONG]),
@@ -182,17 +200,19 @@ class PandasTestCase(BaseTestCase):
         string_array = pd.array(["s11", "s22", None], dtype=pd.StringDtype())
         object_array = pd.array([pd.NA, "s22", None], dtype=object)
 
-        df = pd.DataFrame({
-                              "NullableBoolean": boolean_array,
-                              "NullableInt8": int8_array,
-                              "NullableInt16": int16_array,
-                              "NullableInt32": int32_array,
-                              "NullableInt64": int64_array,
-                              "NullableFloat": float_array,
-                              "NullableDouble": double_array,
-                              "NullableString": string_array,
-                              "NullableObject": object_array,
-        })
+        df = pd.DataFrame(
+            {
+                "NullableBoolean": boolean_array,
+                "NullableInt8": int8_array,
+                "NullableInt16": int16_array,
+                "NullableInt32": int32_array,
+                "NullableInt64": int64_array,
+                "NullableFloat": float_array,
+                "NullableDouble": double_array,
+                "NullableString": string_array,
+                "NullableObject": object_array,
+            }
+        )
 
         table = to_table(df)
         self.assertIs(table.columns[0].data_type, dtypes.bool_)
@@ -209,5 +229,5 @@ class PandasTestCase(BaseTestCase):
         self.assertEqual(9, table_string.count("null"))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

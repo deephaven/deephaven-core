@@ -11,8 +11,18 @@ import pyarrow as pa
 import pyarrow.parquet as papq
 
 from deephaven import arrow as dharrow, dtypes, new_table, time_table
-from deephaven.column import byte_col, char_col, short_col, int_col, long_col, float_col, double_col, \
-    string_col, datetime_col, bool_col
+from deephaven.column import (
+    byte_col,
+    char_col,
+    short_col,
+    int_col,
+    long_col,
+    float_col,
+    double_col,
+    string_col,
+    datetime_col,
+    bool_col,
+)
 from deephaven.table import Table
 from tests.testbase import BaseTestCase
 
@@ -25,7 +35,7 @@ class ArrowTestCase(BaseTestCase):
         cols = [
             bool_col(name="Boolean", data=[True, False]),
             byte_col(name="Byte", data=(1, -1)),
-            char_col(name="Char", data='-1'),
+            char_col(name="Char", data="-1"),
             short_col(name="Short", data=[1, -1]),
             int_col(name="Int", data=[1, -1]),
             long_col(name="Long", data=[1, -1]),
@@ -33,7 +43,9 @@ class ArrowTestCase(BaseTestCase):
             float_col(name="Float", data=[1.01, -1.01]),
             double_col(name="Double", data=[1.01, -1.01]),
             string_col(name="String", data=["foo", "bar"]),
-            datetime_col(name="Datetime", data=[dtypes.DateTime(1), dtypes.DateTime(-1)]),
+            datetime_col(
+                name="Datetime", data=[dtypes.DateTime(1), dtypes.DateTime(-1)]
+            ),
         ]
         cls.test_table = new_table(cols=cols)
 
@@ -41,7 +53,12 @@ class ArrowTestCase(BaseTestCase):
     def tearDownClass(cls) -> None:
         del cls.test_table
 
-    def verify_type_conversion(self, pa_types: List[pa.DataType], pa_data: List[Any], cast_for_round_trip: bool = False):
+    def verify_type_conversion(
+        self,
+        pa_types: List[pa.DataType],
+        pa_data: List[Any],
+        cast_for_round_trip: bool = False,
+    ):
         fields = [pa.field(f"f{i}", ty) for i, ty in enumerate(pa_types)]
         schema = pa.schema(fields)
         pa_table = pa.table(pa_data, schema=schema)
@@ -70,25 +87,35 @@ class ArrowTestCase(BaseTestCase):
                 pa.int64(),
             ]
             pa_data = [
-                pa.array([2 ** 7 - 1, -2 ** 7 + 1]),
-                pa.array([2 ** 15 - 1, -2 ** 15 + 1]),
-                pa.array([2 ** 31 - 1, -2 ** 31 + 1]),
-                pa.array([2 ** 63 - 1, -2 ** 63 + 1]),
+                pa.array([2**7 - 1, -(2**7) + 1]),
+                pa.array([2**15 - 1, -(2**15) + 1]),
+                pa.array([2**31 - 1, -(2**31) + 1]),
+                pa.array([2**63 - 1, -(2**63) + 1]),
             ]
             self.verify_type_conversion(pa_types=pa_types, pa_data=pa_data)
 
     def test_arrow_types_timestamp(self):
         pa_types = [
-            pa.timestamp('ns'),
-            pa.timestamp('ns', tz='MST'),
+            pa.timestamp("ns"),
+            pa.timestamp("ns", tz="MST"),
         ]
         pa_data = [
-            pa.array([pd.Timestamp('2017-01-01T12:01:01', tz='UTC'),
-                      pd.Timestamp('2017-01-01T11:01:01', tz='Europe/Paris')]),
-            pa.array([pd.Timestamp('2017-01-01T2:01:01', tz='UTC'),
-                      pd.Timestamp('2017-01-01T1:01:01', tz='Europe/Paris')]),
+            pa.array(
+                [
+                    pd.Timestamp("2017-01-01T12:01:01", tz="UTC"),
+                    pd.Timestamp("2017-01-01T11:01:01", tz="Europe/Paris"),
+                ]
+            ),
+            pa.array(
+                [
+                    pd.Timestamp("2017-01-01T2:01:01", tz="UTC"),
+                    pd.Timestamp("2017-01-01T1:01:01", tz="Europe/Paris"),
+                ]
+            ),
         ]
-        self.verify_type_conversion(pa_types=pa_types, pa_data=pa_data, cast_for_round_trip=True)
+        self.verify_type_conversion(
+            pa_types=pa_types, pa_data=pa_data, cast_for_round_trip=True
+        )
 
     @unittest.skip("Not correctly widened")
     def test_arrow_types_unsigned_integers(self):
@@ -97,22 +124,26 @@ class ArrowTestCase(BaseTestCase):
                 pa.uint16(),
             ]
             pa_data = [
-                pa.array([2 ** 16 - 1, 0]),
+                pa.array([2**16 - 1, 0]),
             ]
 
     @unittest.skip("Not correctly converted by DH, marked as unsupported now.")
     def test_arrow_types_time(self):
         pa_types = [
-            pa.time64('ns'),
+            pa.time64("ns"),
             pa.date32(),
-            pa.timestamp('ns', tz='MST'),
+            pa.timestamp("ns", tz="MST"),
         ]
 
         pa_data = [
             pa.array([1_000_001, 1_000_002]),
             pa.array([datetime(2022, 12, 7), datetime(2022, 12, 30)]),
-            pa.array([pd.Timestamp('2017-01-01T12:01:01', tz='UTC'),
-                      pd.Timestamp('2017-01-01T11:01:01', tz='Europe/Paris')]),
+            pa.array(
+                [
+                    pd.Timestamp("2017-01-01T12:01:01", tz="UTC"),
+                    pd.Timestamp("2017-01-01T11:01:01", tz="Europe/Paris"),
+                ]
+            ),
         ]
         self.verify_type_conversion(pa_types=pa_types, pa_data=pa_data)
 
@@ -138,15 +169,22 @@ class ArrowTestCase(BaseTestCase):
 
     def test_against_parquet(self):
         arrow_table = papq.read_table("tests/data/crypto_trades.parquet")
-        dh_table = dharrow.to_table(arrow_table, cols=["t_ts", "t_instrument", "t_price"])
+        dh_table = dharrow.to_table(
+            arrow_table, cols=["t_ts", "t_instrument", "t_price"]
+        )
         from deephaven import parquet
+
         dh_table_1 = parquet.read("tests/data/crypto_trades.parquet")
-        self.assert_table_equals(dh_table, dh_table_1.view(formulas=["t_ts", "t_instrument", "t_price"]))
+        self.assert_table_equals(
+            dh_table, dh_table_1.view(formulas=["t_ts", "t_instrument", "t_price"])
+        )
 
     def test_round_trip(self):
         arrow_table = papq.read_table("tests/data/crypto_trades.parquet")
 
-        dh_table = dharrow.to_table(arrow_table, cols=["t_ts", "t_instrument", "t_price"])
+        dh_table = dharrow.to_table(
+            arrow_table, cols=["t_ts", "t_instrument", "t_price"]
+        )
         pa_table = dharrow.to_arrow(dh_table)
         dh_table_rt = dharrow.to_table(pa_table)
         self.assertGreater(dh_table.size, 0)
@@ -162,7 +200,7 @@ class ArrowTestCase(BaseTestCase):
     def test_round_trip_empty(self):
         cols = [
             byte_col(name="Byte", data=()),
-            char_col(name="Char", data=''),
+            char_col(name="Char", data=""),
             short_col(name="Short", data=[]),
             int_col(name="Int", data=[]),
             long_col(name="Long", data=[]),
@@ -194,5 +232,5 @@ class ArrowTestCase(BaseTestCase):
         self.assertGreaterEqual(pa_table.num_rows, 100)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

@@ -13,9 +13,11 @@ _JDateTimeZone = jpy.get_type("org.joda.time.DateTimeZone")
 
 
 def get_server_timezone() -> TimeZone:
-    """ Returns the server's time zone. """
+    """Returns the server's time zone."""
     try:
-        j_timezone = _JDateTimeZone.forTimeZone(_JDHConfig.getInstance().getServerTimezone())
+        j_timezone = _JDateTimeZone.forTimeZone(
+            _JDHConfig.getInstance().getServerTimezone()
+        )
         for tz in TimeZone:
             if j_timezone == tz.value.getTimeZone():
                 return tz

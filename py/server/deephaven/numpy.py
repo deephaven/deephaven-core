@@ -14,26 +14,32 @@ from deephaven import DHError, dtypes, empty_table, new_table
 from deephaven.column import Column, InputColumn
 from deephaven.table import Table
 
-_JPrimitiveArrayConversionUtility = jpy.get_type("io.deephaven.integrations.common.PrimitiveArrayConversionUtility")
+_JPrimitiveArrayConversionUtility = jpy.get_type(
+    "io.deephaven.integrations.common.PrimitiveArrayConversionUtility"
+)
 
 
 def _to_column_name(name: str) -> str:
-    """ Transforms the given name string into a valid table column name. """
+    """Transforms the given name string into a valid table column name."""
     tmp_name = re.sub(r"\W+", " ", str(name)).strip()
     return re.sub(r"\s+", "_", tmp_name)
 
 
 def column_to_numpy_array(col_def: Column, j_array: jpy.JType) -> np.ndarray:
-    """ Produces a numpy array from the given Java array and the Table column definition. """
+    """Produces a numpy array from the given Java array and the Table column definition."""
     try:
         if col_def.data_type.is_primitive:
             np_array = np.frombuffer(j_array, col_def.data_type.np_type)
         elif col_def.data_type == dtypes.DateTime:
-            longs = _JPrimitiveArrayConversionUtility.translateArrayDateTimeToLong(j_array)
+            longs = _JPrimitiveArrayConversionUtility.translateArrayDateTimeToLong(
+                j_array
+            )
             np_long_array = np.frombuffer(longs, np.int64)
             np_array = np_long_array.view(col_def.data_type.np_type)
         elif col_def.data_type == dtypes.bool_:
-            bytes_ = _JPrimitiveArrayConversionUtility.translateArrayBooleanToByte(j_array)
+            bytes_ = _JPrimitiveArrayConversionUtility.translateArrayBooleanToByte(
+                j_array
+            )
             np_array = np.frombuffer(bytes_, col_def.data_type.np_type)
         elif col_def.data_type == dtypes.string:
             np_array = np.array([s for s in j_array], dtypes.string.np_type)
@@ -49,36 +55,46 @@ def column_to_numpy_array(col_def: Column, j_array: jpy.JType) -> np.ndarray:
     except DHError:
         raise
     except Exception as e:
-        raise DHError(e, f"failed to create a numpy array for the column {col_def.name}") from e
+        raise DHError(
+            e, f"failed to create a numpy array for the column {col_def.name}"
+        ) from e
 
 
-def _columns_to_2d_numpy_array(col_def: Column, j_arrays: List[jpy.JType]) -> np.ndarray:
-    """ Produces a 2d numpy array from the given Java arrays of the same component type and the Table column
-    definition """
+def _columns_to_2d_numpy_array(
+    col_def: Column, j_arrays: List[jpy.JType]
+) -> np.ndarray:
+    """Produces a 2d numpy array from the given Java arrays of the same component type and the Table column
+    definition"""
     try:
         if col_def.data_type.is_primitive:
-            np_array = np.empty(shape=(len(j_arrays[0]), len(j_arrays)), dtype=col_def.data_type.np_type)
+            np_array = np.empty(
+                shape=(len(j_arrays[0]), len(j_arrays)), dtype=col_def.data_type.np_type
+            )
             for i, j_array in enumerate(j_arrays):
                 np_array[:, i] = np.frombuffer(j_array, col_def.data_type.np_type)
             return np_array
         else:
             np_arrays = []
             for j_array in j_arrays:
-                np_arrays.append(column_to_numpy_array(col_def=col_def, j_array=j_array))
+                np_arrays.append(
+                    column_to_numpy_array(col_def=col_def, j_array=j_array)
+                )
             return np.stack(np_arrays, axis=1)
     except DHError:
         raise
     except Exception as e:
-        raise DHError(e, f"failed to create a numpy array for the column {col_def.name}") from e
+        raise DHError(
+            e, f"failed to create a numpy array for the column {col_def.name}"
+        ) from e
 
 
 def _make_input_column(col: str, np_array: np.ndarray, dtype: DType) -> InputColumn:
-    """ Creates a InputColumn with the given column name and the numpy array. """
+    """Creates a InputColumn with the given column name and the numpy array."""
     return InputColumn(name=_to_column_name(col), data_type=dtype, input_data=np_array)
 
 
 def to_numpy(table: Table, cols: List[str] = None) -> np.ndarray:
-    """  Produces a numpy array from a table.
+    """Produces a numpy array from a table.
 
     Note that the **entire table** is going to be cloned into memory, so the total number of entries in the table
     should be considered before blindly doing this. For large tables, consider using the Deephaven query language to
@@ -123,7 +139,7 @@ def to_numpy(table: Table, cols: List[str] = None) -> np.ndarray:
 
 
 def to_table(np_array: np.ndarray, cols: List[str]) -> Table:
-    """  Creates a new table from a numpy array.
+    """Creates a new table from a numpy array.
 
     Args:
         np_array (np.ndarray): the numpy array
@@ -142,19 +158,28 @@ def to_table(np_array: np.ndarray, cols: List[str]) -> Table:
             if not cols or len(cols) != dims[0]:
                 raise DHError(
                     message=f"the number of array columns {dims[0]} doesn't match "
-                            f"the number of column names {len(cols)}")
+                    f"the number of column names {len(cols)}"
+                )
 
         input_cols = []
         dtype = dtypes.from_np_dtype(np_array.dtype)
 
         if len(cols) == 1:
-            input_cols.append(_make_input_column(cols[0], np.stack(np_array, axis=1)[0], dtype))
+            input_cols.append(
+                _make_input_column(cols[0], np.stack(np_array, axis=1)[0], dtype)
+            )
         else:
             for i, col in enumerate(cols):
-                input_cols.append(_make_input_column(col, np.stack(np_array[:, [i]], axis=1)[0], dtype))
+                input_cols.append(
+                    _make_input_column(
+                        col, np.stack(np_array[:, [i]], axis=1)[0], dtype
+                    )
+                )
 
         return new_table(cols=input_cols)
     except DHError:
         raise
     except Exception as e:
-        raise DHError(e, "failed to create a Deephaven Table from a Pandas DataFrame.") from e
+        raise DHError(
+            e, "failed to create a Deephaven Table from a Pandas DataFrame."
+        ) from e

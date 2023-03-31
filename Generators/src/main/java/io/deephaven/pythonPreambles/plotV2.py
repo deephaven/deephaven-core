@@ -20,8 +20,16 @@ import jpy
 from deephaven import DHError, dtypes
 from deephaven._wrapper import JObjectWrapper
 from deephaven.dtypes import DateTime, PyObject
-from deephaven.plot import LineStyle, PlotStyle, Color, Font, AxisFormat, Shape, AxisTransform, \
-    SelectableDataSet
+from deephaven.plot import (
+    LineStyle,
+    PlotStyle,
+    Color,
+    Font,
+    AxisFormat,
+    Shape,
+    AxisTransform,
+    SelectableDataSet,
+)
 from deephaven.table import Table
 from deephaven.calendar import BusinessCalendar
 from deephaven.jcompat import j_function
@@ -41,11 +49,18 @@ def _assert_type(name: str, obj: Any, types: List) -> None:
         DHError
     """
 
-    types_no_subscript = tuple(set(t.__origin__ if isinstance(t, _GenericAlias) else t for t in types))
+    types_no_subscript = tuple(
+        set(t.__origin__ if isinstance(t, _GenericAlias) else t for t in types)
+    )
 
     if not isinstance(obj, types_no_subscript):
-        supported = [t._name if isinstance(t, _GenericAlias) else t.__name__ for t in types_no_subscript]
-        raise DHError(message=f"Improper input type: name={name} type={type(obj)} supported={supported}")
+        supported = [
+            t._name if isinstance(t, _GenericAlias) else t.__name__
+            for t in types_no_subscript
+        ]
+        raise DHError(
+            message=f"Improper input type: name={name} type={type(obj)} supported={supported}"
+        )
 
 
 def _no_convert_j(name: str, obj: Any, types: List) -> Any:
@@ -99,13 +114,13 @@ def _convert_j(name: str, obj: Any, types: List) -> Any:
 
 
 class Figure(JObjectWrapper):
-    """ A Figure represents a graphical figure such as a plot, chart, line, axis, color, etc. A Figure is immutable,
-    and all function calls return a new immutable Figure instance. """
+    """A Figure represents a graphical figure such as a plot, chart, line, axis, color, etc. A Figure is immutable,
+    and all function calls return a new immutable Figure instance."""
 
     j_object_type = jpy.get_type("io.deephaven.plot.Figure")
 
     def __init__(self, rows: int = 1, cols: int = 1, j_figure: jpy.JType = None):
-        """ Initializes a Figure object that is used for displaying plots
+        """Initializes a Figure object that is used for displaying plots
 
         Args:
             rows (int, optional): Number of rows in the figure. Defaults to 1.

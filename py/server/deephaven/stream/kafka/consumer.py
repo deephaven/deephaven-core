@@ -67,18 +67,18 @@ class TableType(JObjectWrapper):
 
     @staticmethod
     def stream():
-        """ Consume all partitions into a single interleaved stream table, which will present only newly-available rows
-         to downstream operations and visualizations."""
+        """Consume all partitions into a single interleaved stream table, which will present only newly-available rows
+        to downstream operations and visualizations."""
         return TableType(TableType.j_object_type.stream())
 
     @staticmethod
     def append():
-        """ Consume all partitions into a single interleaved in-memory append-only table."""
+        """Consume all partitions into a single interleaved in-memory append-only table."""
         return TableType(TableType.j_object_type.append())
 
     @staticmethod
     def ring(capacity: int):
-        """ Consume all partitions into a single in-memory ring table."""
+        """Consume all partitions into a single in-memory ring table."""
         return TableType(TableType.j_object_type.ring(capacity))
 
     def __init__(self, j_table_type: jpy.JType):
@@ -122,13 +122,13 @@ def _build_column_definitions(ts: List[Tuple[str, DType]]) -> List[Column]:
 
 
 def consume(
-        kafka_config: Dict,
-        topic: str,
-        partitions: List[int] = None,
-        offsets: Dict[int, int] = None,
-        key_spec: KeyValueSpec = None,
-        value_spec: KeyValueSpec = None,
-        table_type: TableType = TableType.stream(),
+    kafka_config: Dict,
+    topic: str,
+    partitions: List[int] = None,
+    offsets: Dict[int, int] = None,
+    key_spec: KeyValueSpec = None,
+    value_spec: KeyValueSpec = None,
+    table_type: TableType = TableType.stream(),
 ) -> Table:
     """Consume from Kafka to a Deephaven table.
 
@@ -163,17 +163,26 @@ def consume(
         DHError
     """
 
-    return _consume(kafka_config, topic, partitions, offsets, key_spec, value_spec, table_type, to_partitioned=False)
+    return _consume(
+        kafka_config,
+        topic,
+        partitions,
+        offsets,
+        key_spec,
+        value_spec,
+        table_type,
+        to_partitioned=False,
+    )
 
 
 def consume_to_partitioned_table(
-        kafka_config: Dict,
-        topic: str,
-        partitions: List[int] = None,
-        offsets: Dict[int, int] = None,
-        key_spec: KeyValueSpec = None,
-        value_spec: KeyValueSpec = None,
-        table_type: TableType = TableType.stream(),
+    kafka_config: Dict,
+    topic: str,
+    partitions: List[int] = None,
+    offsets: Dict[int, int] = None,
+    key_spec: KeyValueSpec = None,
+    value_spec: KeyValueSpec = None,
+    table_type: TableType = TableType.stream(),
 ) -> PartitionedTable:
     """Consume from Kafka to a Deephaven partitioned table.
 
@@ -211,18 +220,27 @@ def consume_to_partitioned_table(
         DHError
     """
 
-    return _consume(kafka_config, topic, partitions, offsets, key_spec, value_spec, table_type, to_partitioned=True)
+    return _consume(
+        kafka_config,
+        topic,
+        partitions,
+        offsets,
+        key_spec,
+        value_spec,
+        table_type,
+        to_partitioned=True,
+    )
 
 
 def _consume(
-        kafka_config: Dict,
-        topic: str,
-        partitions: List[int] = None,
-        offsets: Dict[int, int] = None,
-        key_spec: KeyValueSpec = None,
-        value_spec: KeyValueSpec = None,
-        table_type: TableType = TableType.stream(),
-        to_partitioned: bool = False,
+    kafka_config: Dict,
+    topic: str,
+    partitions: List[int] = None,
+    offsets: Dict[int, int] = None,
+    key_spec: KeyValueSpec = None,
+    value_spec: KeyValueSpec = None,
+    table_type: TableType = TableType.stream(),
+    to_partitioned: bool = False,
 ) -> Union[Table, PartitionedTable]:
     try:
         partitions = j_partitions(partitions)
@@ -244,7 +262,9 @@ def _consume(
         value_spec = KeyValueSpec.FROM_PROPERTIES if value_spec is None else value_spec
 
         if key_spec is KeyValueSpec.IGNORE and value_spec is KeyValueSpec.IGNORE:
-            raise ValueError("at least one argument for 'key' or 'value' must be different from KeyValueSpec.IGNORE")
+            raise ValueError(
+                "at least one argument for 'key' or 'value' must be different from KeyValueSpec.IGNORE"
+            )
 
         kafka_config = j_properties(kafka_config)
         if not to_partitioned:
@@ -260,24 +280,26 @@ def _consume(
                 )
             )
         else:
-            return PartitionedTable(j_partitioned_table=_JKafkaTools.consumeToPartitionedTable(
-                kafka_config,
-                topic,
-                partitions,
-                offsets,
-                key_spec.j_object,
-                value_spec.j_object,
-                table_type.j_object,
-            ))
+            return PartitionedTable(
+                j_partitioned_table=_JKafkaTools.consumeToPartitionedTable(
+                    kafka_config,
+                    topic,
+                    partitions,
+                    offsets,
+                    key_spec.j_object,
+                    value_spec.j_object,
+                    table_type.j_object,
+                )
+            )
     except Exception as e:
         raise DHError(e, "failed to consume a Kafka stream.") from e
 
 
 def avro_spec(
-        schema: str,
-        schema_version: str = "latest",
-        mapping: Dict[str, str] = None,
-        mapped_only: bool = False,
+    schema: str,
+    schema_version: str = "latest",
+    mapping: Dict[str, str] = None,
+    mapped_only: bool = False,
 ) -> KeyValueSpec:
     """Creates a spec for how to use an Avro schema when consuming a Kafka stream to a Deephaven table.
 
@@ -305,20 +327,20 @@ def avro_spec(
             mapping = _dict_to_j_func(mapping, mapped_only)
 
         if schema.strip().startswith("{"):
-            jschema = _JKafkaTools.getAvroSchema(schema);
+            jschema = _JKafkaTools.getAvroSchema(schema)
             if mapping:
                 return KeyValueSpec(
                     j_spec=_JKafkaTools_Consume.avroSpec(jschema, mapping)
                 )
             else:
-                return KeyValueSpec(
-                    j_spec=_JKafkaTools_Consume.avroSpec(jschema)
-                )
+                return KeyValueSpec(j_spec=_JKafkaTools_Consume.avroSpec(jschema))
 
         else:
             if mapping:
                 return KeyValueSpec(
-                    j_spec=_JKafkaTools_Consume.avroSpec(schema, schema_version, mapping)
+                    j_spec=_JKafkaTools_Consume.avroSpec(
+                        schema, schema_version, mapping
+                    )
                 )
             else:
                 return KeyValueSpec(

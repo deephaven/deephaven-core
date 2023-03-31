@@ -10,11 +10,11 @@ from pydeephaven import Session, Table
 
 
 def run_script(dh_session: Session) -> Table:
-    server_script = '''
+    server_script = """
 t2 = t.where("VendorID > 0")\
         .sort("VendorID", "fare_amount")\
         .head_by(5, "VendorID")
-'''
+"""
     dh_session.run_script(server_script)
     return dh_session.open_table("t2")
 
@@ -33,5 +33,5 @@ def main():
         print(df)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

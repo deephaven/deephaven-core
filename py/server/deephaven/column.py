@@ -17,7 +17,9 @@ from deephaven.dtypes import DType
 _JColumnHeader = jpy.get_type("io.deephaven.qst.column.header.ColumnHeader")
 _JColumn = jpy.get_type("io.deephaven.qst.column.Column")
 _JColumnDefinition = jpy.get_type("io.deephaven.engine.table.ColumnDefinition")
-_JColumnDefinitionType = jpy.get_type("io.deephaven.engine.table.ColumnDefinition$ColumnType")
+_JColumnDefinitionType = jpy.get_type(
+    "io.deephaven.engine.table.ColumnDefinition$ColumnType"
+)
 
 
 class ColumnType(Enum):
@@ -34,7 +36,8 @@ class ColumnType(Enum):
 
 @dataclass
 class Column:
-    """ A Column object represents a column definition in a Deephaven Table. """
+    """A Column object represents a column definition in a Deephaven Table."""
+
     name: str
     data_type: DType
     component_type: DType = None
@@ -46,18 +49,23 @@ class Column:
 
     @property
     def j_column_definition(self):
-        if hasattr(self.data_type.j_type, 'jclass'):
+        if hasattr(self.data_type.j_type, "jclass"):
             j_data_type = self.data_type.j_type.jclass
         else:
             j_data_type = self.data_type.qst_type.clazz()
-        j_component_type = self.component_type.qst_type.clazz() if self.component_type else None
+        j_component_type = (
+            self.component_type.qst_type.clazz() if self.component_type else None
+        )
         j_column_type = self.column_type.value
-        return _JColumnDefinition.fromGenericType(self.name, j_data_type, j_component_type, j_column_type)
+        return _JColumnDefinition.fromGenericType(
+            self.name, j_data_type, j_component_type, j_column_type
+        )
 
 
 @dataclass
 class InputColumn(Column):
-    """ An InputColumn represents a user defined column with some input data. """
+    """An InputColumn represents a user defined column with some input data."""
+
     input_data: Any = field(default=None)
 
     def __post_init__(self):
@@ -66,15 +74,20 @@ class InputColumn(Column):
                 self.j_column = _JColumn.empty(self.j_column_header)
             else:
                 if self.data_type.is_primitive:
-                    self.j_column = _JColumn.ofUnsafe(self.name, dtypes.array(self.data_type, self.input_data))
+                    self.j_column = _JColumn.ofUnsafe(
+                        self.name, dtypes.array(self.data_type, self.input_data)
+                    )
                 else:
-                    self.j_column = _JColumn.of(self.j_column_header, dtypes.array(self.data_type, self.input_data))
+                    self.j_column = _JColumn.of(
+                        self.j_column_header,
+                        dtypes.array(self.data_type, self.input_data),
+                    )
         except Exception as e:
             raise DHError(e, "failed to create an InputColumn.") from e
 
 
 def bool_col(name: str, data: Sequence) -> InputColumn:
-    """ Creates an input column containing Boolean data.
+    """Creates an input column containing Boolean data.
 
     Args:
         name (str): the column name
@@ -87,7 +100,7 @@ def bool_col(name: str, data: Sequence) -> InputColumn:
 
 
 def byte_col(name: str, data: Sequence) -> InputColumn:
-    """ Creates an input column containing primitive byte data.
+    """Creates an input column containing primitive byte data.
 
     Args:
         name (str): the column name
@@ -100,7 +113,7 @@ def byte_col(name: str, data: Sequence) -> InputColumn:
 
 
 def char_col(name: str, data: Sequence) -> InputColumn:
-    """ Creates an input column containing primitive char data.
+    """Creates an input column containing primitive char data.
 
     Args:
         name (str): the column name
@@ -113,7 +126,7 @@ def char_col(name: str, data: Sequence) -> InputColumn:
 
 
 def short_col(name: str, data: Sequence) -> InputColumn:
-    """ Creates an input column containing primitive short data.
+    """Creates an input column containing primitive short data.
 
     Args:
         name (str): the column name
@@ -126,7 +139,7 @@ def short_col(name: str, data: Sequence) -> InputColumn:
 
 
 def int_col(name: str, data: Sequence) -> InputColumn:
-    """ Creates an input column containing primitive int data.
+    """Creates an input column containing primitive int data.
 
     Args:
         name (str): the column name
@@ -139,7 +152,7 @@ def int_col(name: str, data: Sequence) -> InputColumn:
 
 
 def long_col(name: str, data: Sequence) -> InputColumn:
-    """ Creates an input column containing primitive long data.
+    """Creates an input column containing primitive long data.
 
     Args:
         name (str): the column name
@@ -152,7 +165,7 @@ def long_col(name: str, data: Sequence) -> InputColumn:
 
 
 def float_col(name: str, data: Sequence) -> InputColumn:
-    """ Creates an input column containing primitive float data.
+    """Creates an input column containing primitive float data.
 
     Args:
         name (str): the column name
@@ -165,7 +178,7 @@ def float_col(name: str, data: Sequence) -> InputColumn:
 
 
 def double_col(name: str, data: Sequence) -> InputColumn:
-    """ Creates an input column containing primitive double data.
+    """Creates an input column containing primitive double data.
 
     Args:
         name (str): the column name
@@ -178,7 +191,7 @@ def double_col(name: str, data: Sequence) -> InputColumn:
 
 
 def string_col(name: str, data: Sequence) -> InputColumn:
-    """ Creates an input column containing string data.
+    """Creates an input column containing string data.
 
     Args:
         name (str): the column name
@@ -191,7 +204,7 @@ def string_col(name: str, data: Sequence) -> InputColumn:
 
 
 def datetime_col(name: str, data: Sequence) -> InputColumn:
-    """ Creates an input column containing Deephaven Datetime instances.
+    """Creates an input column containing Deephaven Datetime instances.
 
     Args:
         name (str): the column name
@@ -204,7 +217,7 @@ def datetime_col(name: str, data: Sequence) -> InputColumn:
 
 
 def pyobj_col(name: str, data: Sequence) -> InputColumn:
-    """ Creates an input column containing complex, non-primitive-like Python objects.
+    """Creates an input column containing complex, non-primitive-like Python objects.
 
     Args:
         name (str): the column name
@@ -217,7 +230,7 @@ def pyobj_col(name: str, data: Sequence) -> InputColumn:
 
 
 def jobj_col(name: str, data: Sequence) -> InputColumn:
-    """ Creates an input column containing Java objects.
+    """Creates an input column containing Java objects.
 
     Args:
         name (str): the column name

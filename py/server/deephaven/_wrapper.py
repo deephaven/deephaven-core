@@ -23,7 +23,7 @@ _has_all_wrappers_imported = False
 
 
 def _recursive_import(package_path: str) -> None:
-    """ Recursively import every module in a package. """
+    """Recursively import every module in a package."""
     try:
         pkg = importlib.import_module(package_path)
     except ModuleNotFoundError:
@@ -44,7 +44,9 @@ class JObjectWrapper(ABC):
     def __init_subclass__(cls, *args, **kwargs):
         required_cls_attr = "j_object_type"
         if not hasattr(cls, required_cls_attr):
-            raise NotImplementedError(f"Class {cls} lacks required `{required_cls_attr}` class attribute")
+            raise NotImplementedError(
+                f"Class {cls} lacks required `{required_cls_attr}` class attribute"
+            )
         if not isinstance(getattr(cls, required_cls_attr), type):
             raise TypeError(f"{required_cls_attr!r} of Class {cls} is not a Class")
 
@@ -67,26 +69,50 @@ class JObjectWrapper(ABC):
         return hash(self.j_object)
 
     def __eq__(self, other):
-        return self.j_object == other.j_object if isinstance(other, self.__class__) else NotImplemented
+        return (
+            self.j_object == other.j_object
+            if isinstance(other, self.__class__)
+            else NotImplemented
+        )
 
     def __ne__(self, other):
-        return self.j_object != other.j_object if isinstance(other, self.__class__) else NotImplemented
+        return (
+            self.j_object != other.j_object
+            if isinstance(other, self.__class__)
+            else NotImplemented
+        )
 
     def __lt__(self, other):
-        return self.j_object < other.j_object if isinstance(other, self.__class__) else NotImplemented
+        return (
+            self.j_object < other.j_object
+            if isinstance(other, self.__class__)
+            else NotImplemented
+        )
 
     def __le__(self, other):
-        return self.j_object <= other.j_object if isinstance(other, self.__class__) else NotImplemented
+        return (
+            self.j_object <= other.j_object
+            if isinstance(other, self.__class__)
+            else NotImplemented
+        )
 
     def __gt__(self, other):
-        return self.j_object > other.j_object if isinstance(other, self.__class__) else NotImplemented
+        return (
+            self.j_object > other.j_object
+            if isinstance(other, self.__class__)
+            else NotImplemented
+        )
 
     def __ge__(self, other):
-        return self.j_object >= other.j_object if isinstance(other, self.__class__) else NotImplemented
+        return (
+            self.j_object >= other.j_object
+            if isinstance(other, self.__class__)
+            else NotImplemented
+        )
 
 
 def _is_direct_initialisable(cls) -> bool:
-    """ Returns whether a wrapper class instance can be initialized with a Java object. """
+    """Returns whether a wrapper class instance can be initialized with a Java object."""
     funcs = inspect.getmembers(cls, inspect.isfunction)
     init_funcs = [func for name, func in funcs if name == "__init__"]
     if init_funcs:
@@ -94,14 +120,17 @@ def _is_direct_initialisable(cls) -> bool:
         sig = inspect.signature(init_func)
         if len(sig.parameters) == 2:
             _, param_meta = list(sig.parameters.items())[1]
-            if param_meta.annotation == 'jpy.JType' or param_meta.annotation == jpy.JType:
+            if (
+                param_meta.annotation == "jpy.JType"
+                or param_meta.annotation == jpy.JType
+            ):
                 return True
 
     return False
 
 
 def _lookup_wrapped_class(j_obj: jpy.JType) -> Optional[type]:
-    """ Returns the wrapper class for the specified Java object. """
+    """Returns the wrapper class for the specified Java object."""
     # load every module in the deephaven package so that all the wrapper classes are loaded and available to wrap
     # the Java objects returned by calling resolve()
     global _has_all_wrappers_imported
@@ -118,8 +147,8 @@ def _lookup_wrapped_class(j_obj: jpy.JType) -> Optional[type]:
 
 
 def wrap_j_object(j_obj: jpy.JType) -> Union[JObjectWrapper, jpy.JType]:
-    """ Wraps the specified Java object as an instance of a custom wrapper class if one is available, otherwise returns
-    the raw Java object. """
+    """Wraps the specified Java object as an instance of a custom wrapper class if one is available, otherwise returns
+    the raw Java object."""
     if j_obj is None:
         return None
 
@@ -129,7 +158,7 @@ def wrap_j_object(j_obj: jpy.JType) -> Union[JObjectWrapper, jpy.JType]:
 
 
 def unwrap(obj: Any) -> Union[jpy.JType, Any]:
-    """ Returns the wrapped raw Java object if this is a wrapped Java object. Otherwise, returns the same object. """
+    """Returns the wrapped raw Java object if this is a wrapped Java object. Otherwise, returns the same object."""
     if isinstance(obj, JObjectWrapper):
         return obj.j_object
 

@@ -17,12 +17,12 @@ _JPlottingConvenience = jpy.get_type("io.deephaven.plot.PlottingConvenience")
 
 
 def font_family_names():
-    """ A list of supported font family names. """
+    """A list of supported font family names."""
     return list(_JPlottingConvenience.fontFamilyNames())
 
 
 class FontStyle(Enum):
-    """ An enum of predefined font styles. """
+    """An enum of predefined font styles."""
 
     PLAIN = _JFontStyle.PLAIN
     """ Plain text. """
@@ -38,7 +38,7 @@ class FontStyle(Enum):
 
 
 class Font(JObjectWrapper):
-    """  A specific font, defined in terms of family, style, and size. """
+    """A specific font, defined in terms of family, style, and size."""
 
     j_object_type = _JFont
 
@@ -46,8 +46,10 @@ class Font(JObjectWrapper):
     def j_object(self) -> jpy.JType:
         return self.j_font
 
-    def __init__(self, family: str = 'Arial', style: FontStyle = FontStyle.PLAIN, size: int = 8):
-        """ Creates a Font object.
+    def __init__(
+        self, family: str = "Arial", style: FontStyle = FontStyle.PLAIN, size: int = 8
+    ):
+        """Creates a Font object.
 
         Args:
             family (str): the font family, defaults to 'Arial'

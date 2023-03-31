@@ -31,6 +31,8 @@ def time_window(table: Table, ts_col: str, window: int, bool_col: str) -> Table:
         DHError
     """
     try:
-        return Table(j_table=_JWindowCheck.addTimeWindow(table.j_table, ts_col, window, bool_col))
+        return Table(
+            j_table=_JWindowCheck.addTimeWindow(table.j_table, ts_col, window, bool_col)
+        )
     except Exception as e:
         raise DHError(e, "failed to create a time window table.") from e

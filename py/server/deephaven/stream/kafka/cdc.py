@@ -20,7 +20,8 @@ _JCDCSpec = jpy.get_type("io.deephaven.kafka.CdcTools$CdcSpec")
 
 
 class CDCSpec(JObjectWrapper):
-    """ A specification for how to consume a CDC Kafka stream. """
+    """A specification for how to consume a CDC Kafka stream."""
+
     j_object_type = _JCDCSpec
 
     @property
@@ -32,13 +33,13 @@ class CDCSpec(JObjectWrapper):
 
 
 def consume(
-        kafka_config: Dict,
-        cdc_spec: CDCSpec,
-        partitions: List[int] = None,
-        stream_table: bool = False,
-        cols_to_drop: List[str] = None,
+    kafka_config: Dict,
+    cdc_spec: CDCSpec,
+    partitions: List[int] = None,
+    stream_table: bool = False,
+    cols_to_drop: List[str] = None,
 ) -> Table:
-    """ Consume from a Change Data Capture (CDC) Kafka stream (as, eg, produced by Debezium), tracking the underlying
+    """Consume from a Change Data Capture (CDC) Kafka stream (as, eg, produced by Debezium), tracking the underlying
     database table to a Deephaven table.
 
     Args:
@@ -65,18 +66,21 @@ def consume(
         partitions = j_partitions(partitions)
         kafka_config = j_properties(kafka_config)
         return Table(
-            j_table=_JCdcTools.consumeToTable(kafka_config, cdc_spec.j_object, partitions, stream_table, cols_to_drop))
+            j_table=_JCdcTools.consumeToTable(
+                kafka_config, cdc_spec.j_object, partitions, stream_table, cols_to_drop
+            )
+        )
     except Exception as e:
         raise DHError(e, "failed to consume a CDC stream.") from e
 
 
 def consume_raw(
-        kafka_config: dict,
-        cdc_spec: CDCSpec,
-        partitions=None,
-        table_type: TableType = TableType.stream(),
+    kafka_config: dict,
+    cdc_spec: CDCSpec,
+    partitions=None,
+    table_type: TableType = TableType.stream(),
 ) -> Table:
-    """ Consume the raw events from a Change Data Capture (CDC) Kafka stream to a Deephaven table.
+    """Consume the raw events from a Change Data Capture (CDC) Kafka stream to a Deephaven table.
 
     Args:
         kafka_config (Dict): configuration for the associated kafka consumer and also the resulting table. Passed
@@ -97,19 +101,23 @@ def consume_raw(
         partitions = j_partitions(partitions)
         kafka_config = j_properties(kafka_config)
         table_type_enum = table_type.value
-        return Table(j_table=_JCdcTools.consumeRawToTable(kafka_config, cdc_spec.j_object, partitions, table_type_enum))
+        return Table(
+            j_table=_JCdcTools.consumeRawToTable(
+                kafka_config, cdc_spec.j_object, partitions, table_type_enum
+            )
+        )
     except Exception as e:
         raise DHError(e, "failed to consume a raw CDC stream.") from e
 
 
 def cdc_long_spec(
-        topic: str,
-        key_schema_name: str,
-        key_schema_version: str,
-        value_schema_name: str,
-        value_schema_version: str,
+    topic: str,
+    key_schema_name: str,
+    key_schema_version: str,
+    value_schema_name: str,
+    value_schema_version: str,
 ) -> CDCSpec:
-    """ Creates a CDCSpec with all the required configuration options.
+    """Creates a CDCSpec with all the required configuration options.
 
     Args:
         topic (str):  the Kafka topic for the CDC events associated to the desired table data.
@@ -131,14 +139,21 @@ def cdc_long_spec(
         DHError
     """
     try:
-        return CDCSpec(j_spec=_JCdcTools.cdcLongSpec(topic, key_schema_name, key_schema_version, value_schema_name,
-                                                     value_schema_version))
+        return CDCSpec(
+            j_spec=_JCdcTools.cdcLongSpec(
+                topic,
+                key_schema_name,
+                key_schema_version,
+                value_schema_name,
+                value_schema_version,
+            )
+        )
     except Exception as e:
         raise DHError(e, "failed to create a CDC spec in cdc_long_spec.") from e
 
 
 def cdc_short_spec(server_name: str, db_name: str, table_name: str):
-    """ Creates a CDCSpec in the debezium style from the provided server name, database name and table name.
+    """Creates a CDCSpec in the debezium style from the provided server name, database name and table name.
 
     The topic name, and key and value schema names are implied by convention:
       - Topic is the concatenation of the arguments using "." as separator.

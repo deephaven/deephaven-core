@@ -1,2 +1,2 @@
 def plus42(x):
-  return x + 42
+    return x + 42

@@ -18,8 +18,12 @@ from deephaven.ugp import auto_locking_ctx
 _JOuterJoinTools = jpy.get_type("io.deephaven.engine.util.OuterJoinTools")
 
 
-def full_outer_join(l_table: Table, r_table: Table, on: Union[str, Sequence[str]] = None,
-                    joins: Union[str, Sequence[str]] = None) -> Table:
+def full_outer_join(
+    l_table: Table,
+    r_table: Table,
+    on: Union[str, Sequence[str]] = None,
+    joins: Union[str, Sequence[str]] = None,
+) -> Table:
     """The full_outer_join function creates a new table containing rows that have matching values in both tables.
     If there are multiple matches between a row from the left able and rows from the right table, all matching
     combinations will be included. Additionally, non-matching rows from both tables will also be included in the new
@@ -45,16 +49,27 @@ def full_outer_join(l_table: Table, r_table: Table, on: Union[str, Sequence[str]
         joins = to_sequence(joins)
         with auto_locking_ctx(l_table, r_table):
             if joins:
-                return Table(j_table=_JOuterJoinTools.fullOuterJoin(l_table.j_table, r_table.j_table,
-                                                                    ",".join(on), ",".join(joins)))
+                return Table(
+                    j_table=_JOuterJoinTools.fullOuterJoin(
+                        l_table.j_table, r_table.j_table, ",".join(on), ",".join(joins)
+                    )
+                )
             else:
-                return Table(j_table=_JOuterJoinTools.fullOuterJoin(l_table.j_table, r_table.j_table, ",".join(on)))
+                return Table(
+                    j_table=_JOuterJoinTools.fullOuterJoin(
+                        l_table.j_table, r_table.j_table, ",".join(on)
+                    )
+                )
     except Exception as e:
         raise DHError(e, message="failed to perform full-outer-join on tables.") from e
 
 
-def left_outer_join(l_table: Table, r_table: Table, on: Union[str, Sequence[str]] = None,
-                    joins: Union[str, Sequence[str]] = None) -> Table:
+def left_outer_join(
+    l_table: Table,
+    r_table: Table,
+    on: Union[str, Sequence[str]] = None,
+    joins: Union[str, Sequence[str]] = None,
+) -> Table:
     """The left_outer_join function creates a new table containing rows that have matching values in both tables.
     If there are multiple matches between a row from the left able and rows from the right table, all matching
     combinations will be included. Additionally, non-matching rows from the left tables will also be included in the new
@@ -80,9 +95,16 @@ def left_outer_join(l_table: Table, r_table: Table, on: Union[str, Sequence[str]
         joins = to_sequence(joins)
         with auto_locking_ctx(l_table, r_table):
             if joins:
-                return Table(j_table=_JOuterJoinTools.leftOuterJoin(l_table.j_table, r_table.j_table,
-                                                                    ",".join(on), ",".join(joins)))
+                return Table(
+                    j_table=_JOuterJoinTools.leftOuterJoin(
+                        l_table.j_table, r_table.j_table, ",".join(on), ",".join(joins)
+                    )
+                )
             else:
-                return Table(j_table=_JOuterJoinTools.leftOuterJoin(l_table.j_table, r_table.j_table, ",".join(on)))
+                return Table(
+                    j_table=_JOuterJoinTools.leftOuterJoin(
+                        l_table.j_table, r_table.j_table, ",".join(on)
+                    )
+                )
     except Exception as e:
         raise DHError(e, message="failed to perform left-outer-join on tables.") from e

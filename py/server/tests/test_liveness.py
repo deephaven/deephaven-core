@@ -74,5 +74,5 @@ class LivenessTestCase(BaseTestCase):
         self.assertFalse(nested_to_discard.j_table.tryRetainReference())
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

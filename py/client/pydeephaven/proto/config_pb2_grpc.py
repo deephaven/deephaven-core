@@ -19,15 +19,15 @@ class ConfigServiceStub(object):
             channel: A grpc.Channel.
         """
         self.GetAuthenticationConstants = channel.unary_unary(
-                '/io.deephaven.proto.backplane.grpc.ConfigService/GetAuthenticationConstants',
-                request_serializer=deephaven_dot_proto_dot_config__pb2.AuthenticationConstantsRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_config__pb2.AuthenticationConstantsResponse.FromString,
-                )
+            "/io.deephaven.proto.backplane.grpc.ConfigService/GetAuthenticationConstants",
+            request_serializer=deephaven_dot_proto_dot_config__pb2.AuthenticationConstantsRequest.SerializeToString,
+            response_deserializer=deephaven_dot_proto_dot_config__pb2.AuthenticationConstantsResponse.FromString,
+        )
         self.GetConfigurationConstants = channel.unary_unary(
-                '/io.deephaven.proto.backplane.grpc.ConfigService/GetConfigurationConstants',
-                request_serializer=deephaven_dot_proto_dot_config__pb2.ConfigurationConstantsRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_config__pb2.ConfigurationConstantsResponse.FromString,
-                )
+            "/io.deephaven.proto.backplane.grpc.ConfigService/GetConfigurationConstants",
+            request_serializer=deephaven_dot_proto_dot_config__pb2.ConfigurationConstantsRequest.SerializeToString,
+            response_deserializer=deephaven_dot_proto_dot_config__pb2.ConfigurationConstantsResponse.FromString,
+        )
 
 
 class ConfigServiceServicer(object):
@@ -40,35 +40,36 @@ class ConfigServiceServicer(object):
     def GetAuthenticationConstants(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def GetConfigurationConstants(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
 
 def add_ConfigServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
-            'GetAuthenticationConstants': grpc.unary_unary_rpc_method_handler(
-                    servicer.GetAuthenticationConstants,
-                    request_deserializer=deephaven_dot_proto_dot_config__pb2.AuthenticationConstantsRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_config__pb2.AuthenticationConstantsResponse.SerializeToString,
-            ),
-            'GetConfigurationConstants': grpc.unary_unary_rpc_method_handler(
-                    servicer.GetConfigurationConstants,
-                    request_deserializer=deephaven_dot_proto_dot_config__pb2.ConfigurationConstantsRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_config__pb2.ConfigurationConstantsResponse.SerializeToString,
-            ),
+        "GetAuthenticationConstants": grpc.unary_unary_rpc_method_handler(
+            servicer.GetAuthenticationConstants,
+            request_deserializer=deephaven_dot_proto_dot_config__pb2.AuthenticationConstantsRequest.FromString,
+            response_serializer=deephaven_dot_proto_dot_config__pb2.AuthenticationConstantsResponse.SerializeToString,
+        ),
+        "GetConfigurationConstants": grpc.unary_unary_rpc_method_handler(
+            servicer.GetConfigurationConstants,
+            request_deserializer=deephaven_dot_proto_dot_config__pb2.ConfigurationConstantsRequest.FromString,
+            response_serializer=deephaven_dot_proto_dot_config__pb2.ConfigurationConstantsResponse.SerializeToString,
+        ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-            'io.deephaven.proto.backplane.grpc.ConfigService', rpc_method_handlers)
+        "io.deephaven.proto.backplane.grpc.ConfigService", rpc_method_handlers
+    )
     server.add_generic_rpc_handlers((generic_handler,))
 
 
- # This class is part of an EXPERIMENTAL API.
+# This class is part of an EXPERIMENTAL API.
 class ConfigService(object):
     """*
     Provides simple configuration data to users. Unauthenticated users may call GetAuthenticationConstants
@@ -77,35 +78,59 @@ class ConfigService(object):
     """
 
     @staticmethod
-    def GetAuthenticationConstants(request,
+    def GetAuthenticationConstants(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.ConfigService/GetAuthenticationConstants',
+            "/io.deephaven.proto.backplane.grpc.ConfigService/GetAuthenticationConstants",
             deephaven_dot_proto_dot_config__pb2.AuthenticationConstantsRequest.SerializeToString,
             deephaven_dot_proto_dot_config__pb2.AuthenticationConstantsResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
 
     @staticmethod
-    def GetConfigurationConstants(request,
+    def GetConfigurationConstants(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.ConfigService/GetConfigurationConstants',
+            "/io.deephaven.proto.backplane.grpc.ConfigService/GetConfigurationConstants",
             deephaven_dot_proto_dot_config__pb2.ConfigurationConstantsRequest.SerializeToString,
             deephaven_dot_proto_dot_config__pb2.ConfigurationConstantsResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )

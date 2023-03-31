@@ -1,0 +1,12 @@
+plugins {
+    id 'com.diffplug.spotless'
+}
+
+spotless {
+    python {
+        target '**/*.py'
+        black('22.12.0')
+    }
+}
+
+project.tasks.getByName('quick').dependsOn project.tasks.getByName('spotlessCheck')

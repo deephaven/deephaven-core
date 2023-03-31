@@ -9,13 +9,14 @@ from pydeephaven.proto import application_pb2_grpc, application_pb2
 class AppService:
     def __init__(self, session):
         self.session = session
-        self._grpc_app_stub = application_pb2_grpc.ApplicationServiceStub(session.grpc_channel)
+        self._grpc_app_stub = application_pb2_grpc.ApplicationServiceStub(
+            session.grpc_channel
+        )
 
     def list_fields(self):
         try:
             fields = self._grpc_app_stub.ListFields(
-                application_pb2.ListFieldsRequest(),
-                metadata=self.session.grpc_metadata
+                application_pb2.ListFieldsRequest(), metadata=self.session.grpc_metadata
             )
             return fields
         except Exception as e:

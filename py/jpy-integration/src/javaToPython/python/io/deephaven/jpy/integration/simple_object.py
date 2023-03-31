@@ -1,2 +1,2 @@
-class SimpleObject( object ):
-  pass
+class SimpleObject(object):
+    pass

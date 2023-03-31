@@ -18,11 +18,16 @@ from deephaven.ugp import auto_locking_ctx
 
 _JTableFactory = jpy.get_type("io.deephaven.engine.table.TableFactory")
 _JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
-_JDynamicTableWriter = jpy.get_type("io.deephaven.engine.table.impl.util.DynamicTableWriter")
+_JDynamicTableWriter = jpy.get_type(
+    "io.deephaven.engine.table.impl.util.DynamicTableWriter"
+)
 _JMutableInputTable = jpy.get_type("io.deephaven.engine.util.config.MutableInputTable")
 _JAppendOnlyArrayBackedMutableTable = jpy.get_type(
-    "io.deephaven.engine.table.impl.util.AppendOnlyArrayBackedMutableTable")
-_JKeyedArrayBackedMutableTable = jpy.get_type("io.deephaven.engine.table.impl.util.KeyedArrayBackedMutableTable")
+    "io.deephaven.engine.table.impl.util.AppendOnlyArrayBackedMutableTable"
+)
+_JKeyedArrayBackedMutableTable = jpy.get_type(
+    "io.deephaven.engine.table.impl.util.KeyedArrayBackedMutableTable"
+)
 _JTableDefinition = jpy.get_type("io.deephaven.engine.table.TableDefinition")
 _JTable = jpy.get_type("io.deephaven.engine.table.Table")
 _J_INPUT_TABLE_ATTRIBUTE = _JTable.INPUT_TABLE_ATTRIBUTE
@@ -125,7 +130,9 @@ def merge_sorted(tables: List[Table], order_by: str) -> Table:
     """
     try:
         with auto_locking_ctx(*tables):
-            return Table(j_table=_JTableTools.mergeSorted(order_by, *[t.j_table for t in tables]))
+            return Table(
+                j_table=_JTableTools.mergeSorted(order_by, *[t.j_table for t in tables])
+            )
     except Exception as e:
         raise DHError(e, "merge sorted operation failed.") from e
 
@@ -150,7 +157,9 @@ class DynamicTableWriter(JObjectWrapper):
         col_names = list(col_defs.keys())
         col_dtypes = list(col_defs.values())
         try:
-            self._j_table_writer = _JDynamicTableWriter(col_names, [t.qst_type for t in col_dtypes])
+            self._j_table_writer = _JDynamicTableWriter(
+                col_names, [t.qst_type for t in col_dtypes]
+            )
             self.table = Table(j_table=self._j_table_writer.getTable())
         except Exception as e:
             raise DHError(e, "failed to create a DynamicTableWriter.") from e
@@ -206,8 +215,12 @@ class InputTable(Table):
     The keyed input tablet has keys for each row and supports addition/deletion/modification of rows by the keys.
     """
 
-    def __init__(self, col_defs: Dict[str, DType] = None, init_table: Table = None,
-                 key_cols: Union[str, Sequence[str]] = None):
+    def __init__(
+        self,
+        col_defs: Dict[str, DType] = None,
+        init_table: Table = None,
+        key_cols: Union[str, Sequence[str]] = None,
+    ):
         """Creates an InputTable instance from either column definitions or initial table. When key columns are
         provided, the InputTable will be keyed, otherwise it will be append-only.
 
@@ -221,13 +234,19 @@ class InputTable(Table):
         """
         try:
             if col_defs is None and init_table is None:
-                raise ValueError("either column definitions or init table should be provided.")
+                raise ValueError(
+                    "either column definitions or init table should be provided."
+                )
             elif col_defs and init_table:
                 raise ValueError("both column definitions and init table are provided.")
 
             if col_defs:
                 j_arg_1 = _JTableDefinition.of(
-                    [Column(name=n, data_type=t).j_column_definition for n, t in col_defs.items()])
+                    [
+                        Column(name=n, data_type=t).j_column_definition
+                        for n, t in col_defs.items()
+                    ]
+                )
             else:
                 j_arg_1 = init_table.j_table
 
@@ -268,14 +287,19 @@ class InputTable(Table):
         """
         try:
             if not self.key_columns:
-                raise PermissionError("deletion on an append-only input table is not allowed.")
+                raise PermissionError(
+                    "deletion on an append-only input table is not allowed."
+                )
             self.j_input_table.delete(table.j_table)
         except Exception as e:
             raise DHError(e, "delete data in the InputTable failed.") from e
 
 
-def input_table(col_defs: Dict[str, DType] = None, init_table: Table = None,
-                key_cols: Union[str, Sequence[str]] = None) -> InputTable:
+def input_table(
+    col_defs: Dict[str, DType] = None,
+    init_table: Table = None,
+    key_cols: Union[str, Sequence[str]] = None,
+) -> InputTable:
     """Creates an InputTable from either column definitions or initial table. When key columns are
     provided, the InputTable will be keyed, otherwise it will be append-only.
 

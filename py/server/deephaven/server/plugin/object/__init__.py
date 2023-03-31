@@ -8,8 +8,8 @@ from typing import Optional
 from deephaven.plugin.object import Exporter, ObjectType, Reference
 from deephaven._wrapper import JObjectWrapper
 
-_JReference = jpy.get_type('io.deephaven.plugin.type.ObjectType$Exporter$Reference')
-_JExporterAdapter = jpy.get_type('io.deephaven.server.plugin.python.ExporterAdapter')
+_JReference = jpy.get_type("io.deephaven.plugin.type.ObjectType$Exporter$Reference")
+_JExporterAdapter = jpy.get_type("io.deephaven.server.plugin.python.ExporterAdapter")
 
 
 def _adapt_reference(ref: _JReference) -> Reference:
@@ -27,12 +27,16 @@ class ExporterAdapter(Exporter):
     def __init__(self, exporter: _JExporterAdapter):
         self._exporter = exporter
 
-    def reference(self, object, allow_unknown_type : bool = False, force_new : bool = False) -> Optional[Reference]:
+    def reference(
+        self, object, allow_unknown_type: bool = False, force_new: bool = False
+    ) -> Optional[Reference]:
         object = _unwrap(object)
         if isinstance(object, jpy.JType):
             ref = self._exporter.reference(object, allow_unknown_type, force_new)
         else:
-            ref = self._exporter.referencePyObject(object, allow_unknown_type, force_new)
+            ref = self._exporter.referencePyObject(
+                object, allow_unknown_type, force_new
+            )
         return _adapt_reference(ref) if ref else None
 
     def __str__(self):

@@ -4,7 +4,7 @@
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import List 
+from typing import List
 
 from pydeephaven.proto import table_pb2
 
@@ -51,7 +51,9 @@ class _AggregationPartition(Aggregation):
     include_by_columns: bool
 
     def make_grpc_message(self) -> _GrpcAggregation:
-        agg_count = _GrpcAggregationPartition(column_name=self.col, include_group_by_columns=self.include_by_columns)
+        agg_count = _GrpcAggregationPartition(
+            column_name=self.col, include_group_by_columns=self.include_by_columns
+        )
         return _GrpcAggregation(partition=agg_count)
 
 
@@ -176,7 +178,9 @@ def formula(formula: str, formula_param: str, cols: List[str] = None) -> Aggrega
     Returns:
         an aggregation
     """
-    agg_spec = _GrpcAggSpec(formula=_GrpcAggSpec.AggSpecFormula(formula=formula, param_token=formula_param))
+    agg_spec = _GrpcAggSpec(
+        formula=_GrpcAggSpec.AggSpecFormula(formula=formula, param_token=formula_param)
+    )
     return _AggregationColumns(agg_spec=agg_spec, cols=cols)
 
 
@@ -232,7 +236,9 @@ def median(cols: List[str] = None) -> Aggregation:
     Returns:
         an aggregation
     """
-    agg_spec = _GrpcAggSpec(median=_GrpcAggSpec.AggSpecMedian(average_evenly_divided=True))
+    agg_spec = _GrpcAggSpec(
+        median=_GrpcAggSpec.AggSpecMedian(average_evenly_divided=True)
+    )
     return _AggregationColumns(agg_spec=agg_spec, cols=cols)
 
 
@@ -247,8 +253,11 @@ def pct(percentile: float, cols: List[str] = None) -> Aggregation:
     Returns:
         an aggregation
     """
-    agg_spec = _GrpcAggSpec(percentile=_GrpcAggSpec.AggSpecPercentile(percentile=percentile,
-                                                                      average_evenly_divided=False))
+    agg_spec = _GrpcAggSpec(
+        percentile=_GrpcAggSpec.AggSpecPercentile(
+            percentile=percentile, average_evenly_divided=False
+        )
+    )
     return _AggregationColumns(agg_spec=agg_spec, cols=cols)
 
 
@@ -264,7 +273,9 @@ def sorted_first(order_by: str, cols: List[str] = None) -> Aggregation:
         an aggregation
     """
     sorted_column = _GrpcAggSpec.AggSpecSortedColumn(column_name=order_by)
-    agg_spec = _GrpcAggSpec(sorted_first=_GrpcAggSpec.AggSpecSorted(columns=[sorted_column]))
+    agg_spec = _GrpcAggSpec(
+        sorted_first=_GrpcAggSpec.AggSpecSorted(columns=[sorted_column])
+    )
     return _AggregationColumns(agg_spec=agg_spec, cols=cols)
 
 
@@ -280,7 +291,9 @@ def sorted_last(order_by: str, cols: List[str] = None) -> Aggregation:
         an aggregation
     """
     sorted_column = _GrpcAggSpec.AggSpecSortedColumn(column_name=order_by)
-    agg_spec = _GrpcAggSpec(sorted_last=_GrpcAggSpec.AggSpecSorted(columns=[sorted_column]))
+    agg_spec = _GrpcAggSpec(
+        sorted_last=_GrpcAggSpec.AggSpecSorted(columns=[sorted_column])
+    )
     return _AggregationColumns(agg_spec=agg_spec, cols=cols)
 
 
@@ -308,7 +321,9 @@ def unique(cols: List[str] = None) -> Aggregation:
     Returns:
         an aggregation
     """
-    agg_spec = _GrpcAggSpec(unique=_GrpcAggSpec.AggSpecUnique(include_nulls=False, non_unique_sentinel=None))
+    agg_spec = _GrpcAggSpec(
+        unique=_GrpcAggSpec.AggSpecUnique(include_nulls=False, non_unique_sentinel=None)
+    )
     return _AggregationColumns(agg_spec=agg_spec, cols=cols)
 
 
@@ -337,7 +352,9 @@ def weighted_avg(wcol: str, cols: List[str] = None) -> Aggregation:
     Returns:
         an aggregation
     """
-    agg_spec = _GrpcAggSpec(weighted_avg=_GrpcAggSpec.AggSpecWeighted(weight_column=wcol))
+    agg_spec = _GrpcAggSpec(
+        weighted_avg=_GrpcAggSpec.AggSpecWeighted(weight_column=wcol)
+    )
     return _AggregationColumns(agg_spec=agg_spec, cols=cols)
 
 
@@ -352,5 +369,7 @@ def weighted_sum(wcol: str, cols: List[str] = None) -> Aggregation:
     Returns:
         an aggregation
     """
-    agg_spec = _GrpcAggSpec(weighted_sum=_GrpcAggSpec.AggSpecWeighted(weight_column=wcol))
+    agg_spec = _GrpcAggSpec(
+        weighted_sum=_GrpcAggSpec.AggSpecWeighted(weight_column=wcol)
+    )
     return _AggregationColumns(agg_spec=agg_spec, cols=cols)

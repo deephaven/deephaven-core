@@ -11,11 +11,10 @@ from tests.testbase import BaseTestCase
 
 
 class ConfigTestCase(BaseTestCase):
-
     def test_get_server_timezone(self):
         tz = get_server_timezone()
         self.assertIn(tz, [tz for tz in TimeZone])
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

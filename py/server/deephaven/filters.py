@@ -22,6 +22,7 @@ _JFilterNot = jpy.get_type("io.deephaven.api.filter.FilterNot")
 
 class Filter(JObjectWrapper):
     """A Filter object represents a filter that can be used in Table's filtering(where) operations."""
+
     j_object_type = _JFilter
 
     @property
@@ -46,7 +47,10 @@ class Filter(JObjectWrapper):
         """
         conditions = to_sequence(conditions)
         try:
-            filters = [cls(j_filter=j_filter) for j_filter in _JFilter.from_(conditions).toArray()]
+            filters = [
+                cls(j_filter=j_filter)
+                for j_filter in _JFilter.from_(conditions).toArray()
+            ]
             return filters if len(filters) != 1 else filters[0]
         except Exception as e:
             raise DHError(e, "failed to create filters.") from e
@@ -89,7 +93,7 @@ def not_(filter_: Filter) -> Filter:
 
 
 class RegexFilter(Filter):
-    """ The RegexFilter is a filter that matches using a regular expression. """
+    """The RegexFilter is a filter that matches using a regular expression."""
 
     j_object_type = _JRegexFilter
 

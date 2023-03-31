@@ -48,5 +48,5 @@ def unwrap_to_java_type(object):
         return object
     if isinstance(object, JObjectWrapper):
         return object.j_object
-     # add more here when/if necessary
+    # add more here when/if necessary
     return None

@@ -10,8 +10,11 @@ def glob_package_names(packages):
         rst.append(package.__name__)
 
         if hasattr(package, "__path__"):
-            for importer, modname, ispkg in pkgutil.walk_packages(path=package.__path__, prefix=package.__name__ + '.',
-                                                                  onerror=lambda x: None):
+            for importer, modname, ispkg in pkgutil.walk_packages(
+                path=package.__path__,
+                prefix=package.__name__ + ".",
+                onerror=lambda x: None,
+            ):
                 rst.append(modname)
 
     return rst
@@ -30,7 +33,7 @@ def _add_package(tree, package):
 def package_tree(package_names):
     rst = {}
     for pn in package_names:
-        spn = pn.split('.')
+        spn = pn.split(".")
         _add_package(rst, spn)
     return rst
 
@@ -48,8 +51,10 @@ def make_rst_tree(package, tree):
             pn = ".".join(p)
             toctree += "%s%s <%s>\n" % (" " * 4, k, pn)
 
-    rst = "%s\n%s\n\n%s\n.. automodule:: %s\n    :members:\n    :no-undoc-members:\n    :show-inheritance:\n    :inherited-members:\n\n" % (
-    package_name, "=" * len(package_name), toctree, package_name)
+    rst = (
+        "%s\n%s\n\n%s\n.. automodule:: %s\n    :members:\n    :no-undoc-members:\n    :show-inheritance:\n    :inherited-members:\n\n"
+        % (package_name, "=" * len(package_name), toctree, package_name)
+    )
 
     if len(package) > 0:
         filename = f"code/{package_name}.rst"
@@ -64,7 +69,7 @@ def make_rst_tree(package, tree):
 
 
 def make_rst_modules(docs_title, package_roots):
-    rst = f'''
+    rst = f"""
 Python Modules
 ##############
 
@@ -73,7 +78,7 @@ Python Modules
 .. toctree::
     :glob:
 
-'''
+"""
 
     for pr in package_roots:
         rst += "\n%s./code/%s" % (" " * 4, pr.__name__)

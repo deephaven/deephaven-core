@@ -15,7 +15,9 @@ import jpy
 
 from deephaven import DHError
 
-_JUpdateGraphProcessor = jpy.get_type("io.deephaven.engine.updategraph.UpdateGraphProcessor")
+_JUpdateGraphProcessor = jpy.get_type(
+    "io.deephaven.engine.updategraph.UpdateGraphProcessor"
+)
 _j_exclusive_lock = _JUpdateGraphProcessor.DEFAULT.exclusiveLock()
 _j_shared_lock = _JUpdateGraphProcessor.DEFAULT.sharedLock()
 
@@ -112,10 +114,12 @@ def auto_locking_op(f: Callable) -> Callable:
 
     @wraps(f)
     def do_locked(*args, **kwargs):
-        if (not _has_refreshing_tables(*args, **kwargs)
-                or not auto_locking
-                or has_shared_lock()
-                or has_exclusive_lock()):
+        if (
+            not _has_refreshing_tables(*args, **kwargs)
+            or not auto_locking
+            or has_shared_lock()
+            or has_exclusive_lock()
+        ):
             return f(*args, **kwargs)
 
         with shared_lock():
@@ -129,10 +133,12 @@ def auto_locking_ctx(*args, **kwargs):
     """An auto-locking aware context manager. It ensures that the enclosed code block runs under the UGP shared lock if
     ugp.auto_locking is True, the target table-like object or any table-like arguments are refreshing, and the current
     thread doesn't own any UGP locks."""
-    if (not _has_refreshing_tables(*args, **kwargs)
-            or not auto_locking
-            or has_shared_lock()
-            or has_exclusive_lock()):
+    if (
+        not _has_refreshing_tables(*args, **kwargs)
+        or not auto_locking
+        or has_shared_lock()
+        or has_exclusive_lock()
+    ):
         yield
     else:
         with shared_lock():

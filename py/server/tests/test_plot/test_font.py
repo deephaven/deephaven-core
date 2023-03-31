@@ -38,9 +38,11 @@ class FontTestCase(BaseTestCase):
         custom_color = Color.of_hsl(h=128, s=58, l=68, alpha=0.6)
         custom_font = Font(family="SansSerif", style=FontStyle.BOLD_ITALIC, size=18)
         new_f = figure.plot_xy("plot1", self.test_table, x="a", y="b")
-        new_chart_title = new_f.chart_title(title="Dummy Char", color=custom_color, font=custom_font)
+        new_chart_title = new_f.chart_title(
+            title="Dummy Char", color=custom_color, font=custom_font
+        )
         self.assertIsNotNone(new_chart_title)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

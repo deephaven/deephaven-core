@@ -14,13 +14,13 @@ class TeeStream(io.TextIOBase):
         if hasattr(py_stream, "encoding"):
             encoding = py_stream.encoding
         else:
-            encoding = 'UTF-8'
+            encoding = "UTF-8"
         return TeeStream(
             orig_stream=py_stream,
             should_write_to_orig_stream=True,
             write_func=lambda t: java_stream.write(bytes(t, encoding)),
             flush_func=lambda: java_stream.flush(),
-            close_func=lambda: java_stream.close()
+            close_func=lambda: java_stream.close(),
         )
 
     @classmethod
@@ -28,16 +28,23 @@ class TeeStream(io.TextIOBase):
         if hasattr(py_stream, "encoding"):
             encoding = py_stream.encoding
         else:
-            encoding = 'UTF-8'
+            encoding = "UTF-8"
         return TeeStream(
             orig_stream=py_stream,
             should_write_to_orig_stream=False,
             write_func=lambda t: java_stream.write(bytes(t, encoding)),
             flush_func=lambda: java_stream.flush(),
-            close_func=lambda: java_stream.close()
+            close_func=lambda: java_stream.close(),
         )
 
-    def __init__(self, orig_stream, should_write_to_orig_stream, write_func, flush_func, close_func):
+    def __init__(
+        self,
+        orig_stream,
+        should_write_to_orig_stream,
+        write_func,
+        flush_func,
+        close_func,
+    ):
         """Creates a new TeeStream to let output be written from out place, but be sent to multiple places.
 
         Ideally, the stream would be passed as more funcs, but we have to manage correctly propagating certain non-java
@@ -69,10 +76,10 @@ class TeeStream(io.TextIOBase):
 
     @property
     def encoding(self):
-        if hasattr(self._stream, 'encoding') and self._stream.encoding is not None:
+        if hasattr(self._stream, "encoding") and self._stream.encoding is not None:
             return self._stream.encoding
         else:
-            return 'UTF-8'
+            return "UTF-8"
 
     def write(self, string):
         self.write_func(string)

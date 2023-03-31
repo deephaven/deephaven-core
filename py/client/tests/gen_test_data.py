@@ -12,7 +12,9 @@ import pyarrow as pa
 from pyarrow import csv
 
 
-def make_random_csv(num_cols=2, num_rows=10, linesep='\r\n', write_names=True, output_file='csv_data'):
+def make_random_csv(
+    num_cols=2, num_rows=10, linesep="\r\n", write_names=True, output_file="csv_data"
+):
     arr = np.random.RandomState(42).randint(0, 1000, size=(num_cols, num_rows))
     csv_writer = io.StringIO()
     col_names = list(itertools.islice(generate_col_names(), num_cols))

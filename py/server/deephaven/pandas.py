@@ -12,11 +12,21 @@ import pandas as pd
 
 from deephaven import DHError, new_table, dtypes
 from deephaven.column import Column
-from deephaven.constants import NULL_BYTE, NULL_SHORT, NULL_INT, NULL_LONG, NULL_FLOAT, NULL_DOUBLE, NULL_BOOLEAN
+from deephaven.constants import (
+    NULL_BYTE,
+    NULL_SHORT,
+    NULL_INT,
+    NULL_LONG,
+    NULL_FLOAT,
+    NULL_DOUBLE,
+    NULL_BOOLEAN,
+)
 from deephaven.numpy import column_to_numpy_array, _make_input_column
 from deephaven.table import Table
 
-_JPrimitiveArrayConversionUtility = jpy.get_type("io.deephaven.integrations.common.PrimitiveArrayConversionUtility")
+_JPrimitiveArrayConversionUtility = jpy.get_type(
+    "io.deephaven.integrations.common.PrimitiveArrayConversionUtility"
+)
 
 
 def _column_to_series(table: Table, col_def: Column) -> pandas.Series:
@@ -79,9 +89,11 @@ def to_pandas(table: Table, cols: List[str] = None) -> pandas.DataFrame:
 
         dtype_set = set([v.dtype for k, v in data.items()])
         if len(dtype_set) == 1:
-            return pandas.DataFrame(data=np.stack([v.array for k, v in data.items()], axis=1),
-                                    columns=cols,
-                                    copy=False)
+            return pandas.DataFrame(
+                data=np.stack([v.array for k, v in data.items()], axis=1),
+                columns=cols,
+                copy=False,
+            )
         else:
             return pandas.DataFrame(data=data, columns=cols, copy=False)
     except DHError:
@@ -152,4 +164,6 @@ def to_table(df: pandas.DataFrame, cols: List[str] = None) -> Table:
     except DHError:
         raise
     except Exception as e:
-        raise DHError(e, "failed to create a Deephaven Table from a Pandas DataFrame.") from e
+        raise DHError(
+            e, "failed to create a Deephaven Table from a Pandas DataFrame."
+        ) from e

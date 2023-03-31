@@ -13,7 +13,7 @@ from pydeephaven._table_interface import TableInterface
 
 
 class Table(TableInterface):
-    """ A Table object represents a reference to a table on the server. It is the core data structure of
+    """A Table object represents a reference to a table on the server. It is the core data structure of
     Deephaven and supports a rich set of operations such as filtering, sorting, aggregating, joining, snapshotting etc.
 
     Note, an application should never instantiate a Table object directly. Table objects are always provided through
@@ -27,7 +27,9 @@ class Table(TableInterface):
     def table_op_handler(self, table_op):
         return self.session.table_service.grpc_table_op(self, table_op)
 
-    def __init__(self, session, ticket, schema_header=b'', size=None, is_static=None, schema=None):
+    def __init__(
+        self, session, ticket, schema_header=b"", size=None, is_static=None, schema=None
+    ):
         if not session or not session.is_alive:
             raise DHError("Must be associated with a active session")
         self.session = session
@@ -57,7 +59,7 @@ class Table(TableInterface):
         return not self.ticket
 
     def close(self) -> None:
-        """ Close the table reference on the server.
+        """Close the table reference on the server.
 
         Raises:
             DHError
@@ -73,7 +75,7 @@ class Table(TableInterface):
         self.schema = reader.schema
 
     def to_arrow(self) -> pa.Table:
-        """ Take a snapshot of the table and return a pyarrow Table.
+        """Take a snapshot of the table and return a pyarrow Table.
 
         Returns:
             a pyarrow.Table
@@ -94,9 +96,17 @@ class InputTable(Table):
     The keyed input tablet has keys for each row and supports addition/deletion/modification of rows by the keys.
     """
 
-    def __init__(self, session, ticket, schema_header=b'', size=None, is_static=None, schema=None):
-        super().__init__(session=session, ticket=ticket, schema_header=schema_header, size=size,
-                         is_static=is_static, schema=schema)
+    def __init__(
+        self, session, ticket, schema_header=b"", size=None, is_static=None, schema=None
+    ):
+        super().__init__(
+            session=session,
+            ticket=ticket,
+            schema_header=schema_header,
+            size=size,
+            is_static=is_static,
+            schema=schema,
+        )
         self.key_cols: List[str] = None
 
     def add(self, table: Table) -> None:
@@ -125,7 +135,9 @@ class InputTable(Table):
             DHError, PermissionError
         """
         if not self.key_cols:
-            raise PermissionError("deletion on an append-only input table is not allowed.")
+            raise PermissionError(
+                "deletion on an append-only input table is not allowed."
+            )
         try:
             self.session.input_table_service.delete(self, table)
         except Exception as e:

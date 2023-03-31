@@ -18,7 +18,9 @@ from deephaven import DHError
 
 _JQstType = jpy.get_type("io.deephaven.qst.type.Type")
 _JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
-_JPrimitiveArrayConversionUtility = jpy.get_type("io.deephaven.integrations.common.PrimitiveArrayConversionUtility")
+_JPrimitiveArrayConversionUtility = jpy.get_type(
+    "io.deephaven.integrations.common.PrimitiveArrayConversionUtility"
+)
 
 _j_name_type_map: Dict[str, DType] = {}
 
@@ -28,10 +30,16 @@ def _qst_custom_type(cls_name: str):
 
 
 class DType:
-    """ A class representing a data type in Deephaven."""
+    """A class representing a data type in Deephaven."""
 
-    def __init__(self, j_name: str, j_type: Type = None, qst_type: jpy.JType = None, is_primitive: bool = False,
-                 np_type: Any = np.object_):
+    def __init__(
+        self,
+        j_name: str,
+        j_type: Type = None,
+        qst_type: jpy.JType = None,
+        is_primitive: bool = False,
+        np_type: Any = np.object_,
+    ):
         """
         Args:
              j_name (str): the full qualified name of the Java class
@@ -62,43 +70,72 @@ class DType:
             raise DHError(e, f"failed to create an instance of {self.j_name}") from e
 
 
-bool_ = DType(j_name="java.lang.Boolean", qst_type=_JQstType.booleanType(), np_type=np.bool_)
+bool_ = DType(
+    j_name="java.lang.Boolean", qst_type=_JQstType.booleanType(), np_type=np.bool_
+)
 """Boolean type"""
-byte = DType(j_name="byte", qst_type=_JQstType.byteType(), is_primitive=True, np_type=np.int8)
+byte = DType(
+    j_name="byte", qst_type=_JQstType.byteType(), is_primitive=True, np_type=np.int8
+)
 """Signed byte integer type"""
 int8 = byte
 """Signed byte integer type"""
-short = DType(j_name="short", qst_type=_JQstType.shortType(), is_primitive=True, np_type=np.int16)
+short = DType(
+    j_name="short", qst_type=_JQstType.shortType(), is_primitive=True, np_type=np.int16
+)
 """Signed short integer type"""
 int16 = short
 """Signed short integer type"""
-char = DType(j_name="char", qst_type=_JQstType.charType(), is_primitive=True, np_type=np.dtype('uint16'))
+char = DType(
+    j_name="char",
+    qst_type=_JQstType.charType(),
+    is_primitive=True,
+    np_type=np.dtype("uint16"),
+)
 """Character type"""
-int32 = DType(j_name="int", qst_type=_JQstType.intType(), is_primitive=True, np_type=np.int32)
+int32 = DType(
+    j_name="int", qst_type=_JQstType.intType(), is_primitive=True, np_type=np.int32
+)
 """Signed 32bit integer type"""
-long = DType(j_name="long", qst_type=_JQstType.longType(), is_primitive=True, np_type=np.int64)
+long = DType(
+    j_name="long", qst_type=_JQstType.longType(), is_primitive=True, np_type=np.int64
+)
 """Signed 64bit integer type"""
 int64 = long
 """Signed 64bit integer type"""
 int_ = long
 """Signed 64bit integer type"""
-float32 = DType(j_name="float", qst_type=_JQstType.floatType(), is_primitive=True, np_type=np.float32)
+float32 = DType(
+    j_name="float",
+    qst_type=_JQstType.floatType(),
+    is_primitive=True,
+    np_type=np.float32,
+)
 """Single-precision floating-point number type"""
 single = float32
 """Single-precision floating-point number type"""
-float64 = DType(j_name="double", qst_type=_JQstType.doubleType(), is_primitive=True, np_type=np.float64)
+float64 = DType(
+    j_name="double",
+    qst_type=_JQstType.doubleType(),
+    is_primitive=True,
+    np_type=np.float64,
+)
 """Double-precision floating-point number type"""
 double = float64
 """Double-precision floating-point number type"""
 float_ = float64
 """Double-precision floating-point number type"""
-string = DType(j_name="java.lang.String", qst_type=_JQstType.stringType(), np_type=np.str_)
+string = DType(
+    j_name="java.lang.String", qst_type=_JQstType.stringType(), np_type=np.str_
+)
 """String type"""
 BigDecimal = DType(j_name="java.math.BigDecimal")
 """Java BigDecimal type"""
 StringSet = DType(j_name="io.deephaven.stringset.StringSet")
 """Deephaven StringSet type"""
-DateTime = DType(j_name="io.deephaven.time.DateTime", np_type=np.dtype("datetime64[ns]"))
+DateTime = DType(
+    j_name="io.deephaven.time.DateTime", np_type=np.dtype("datetime64[ns]")
+)
 """Deephaven DateTime type"""
 Period = DType(j_name="io.deephaven.time.Period")
 """Deephaven time period type"""
@@ -106,40 +143,40 @@ PyObject = DType(j_name="org.jpy.PyObject")
 """Python object type"""
 JObject = DType(j_name="java.lang.Object")
 """Java Object type"""
-byte_array = DType(j_name='[B')
+byte_array = DType(j_name="[B")
 """Byte array type"""
 int8_array = byte_array
 """Byte array type"""
-short_array = DType(j_name='[S')
+short_array = DType(j_name="[S")
 """Short array type"""
 int16_array = short_array
 """Short array type"""
-int32_array = DType(j_name='[I')
+int32_array = DType(j_name="[I")
 """32bit integer array type"""
-long_array = DType(j_name='[J')
+long_array = DType(j_name="[J")
 """64bit integer array type"""
 int64_array = long_array
 """64bit integer array type"""
 int_array = long_array
 """64bit integer array type"""
-single_array = DType(j_name='[S')
+single_array = DType(j_name="[S")
 """Single-precision floating-point array type"""
 float32_array = single_array
 """Single-precision floating-point array type"""
-double_array = DType(j_name='[D')
+double_array = DType(j_name="[D")
 """Double-precision floating-point array type"""
 float64_array = double_array
 """Double-precision floating-point array type"""
 float_array = double_array
 """Double-precision floating-point array type"""
-string_array = DType(j_name='[Ljava.lang.String;')
+string_array = DType(j_name="[Ljava.lang.String;")
 """Java String array type"""
-datetime_array = DType(j_name='[Lio.deephaven.time.DateTime;')
+datetime_array = DType(j_name="[Lio.deephaven.time.DateTime;")
 """Deephaven DateTime array type"""
 
 
 def array(dtype: DType, seq: Sequence, remap: Callable[[Any], Any] = None) -> jpy.JType:
-    """ Creates a Java array of the specified data type populated with values from a sequence.
+    """Creates a Java array of the specified data type populated with values from a sequence.
 
     Note:
         this method does unsafe casting, meaning precision and values might be lost with down cast
@@ -169,10 +206,14 @@ def array(dtype: DType, seq: Sequence, remap: Callable[[Any], Any] = None) -> jp
             if dtype == bool_:
                 bytes_ = seq.astype(dtype=np.int8)
                 j_bytes = array(byte, bytes_)
-                seq = _JPrimitiveArrayConversionUtility.translateArrayByteToBoolean(j_bytes)
+                seq = _JPrimitiveArrayConversionUtility.translateArrayByteToBoolean(
+                    j_bytes
+                )
             elif dtype == DateTime:
-                longs = jpy.array('long', seq.astype('datetime64[ns]').astype('int64'))
-                seq = _JPrimitiveArrayConversionUtility.translateArrayLongToDateTime(longs)
+                longs = jpy.array("long", seq.astype("datetime64[ns]").astype("int64"))
+                seq = _JPrimitiveArrayConversionUtility.translateArrayLongToDateTime(
+                    longs
+                )
 
         return jpy.array(dtype.j_type, seq)
     except Exception as e:
@@ -180,7 +221,7 @@ def array(dtype: DType, seq: Sequence, remap: Callable[[Any], Any] = None) -> jp
 
 
 def from_jtype(j_class: Any) -> DType:
-    """ looks up a DType that matches the java type, if not found, creates a DType for it. """
+    """looks up a DType that matches the java type, if not found, creates a DType for it."""
     if not j_class:
         return None
 
@@ -193,8 +234,8 @@ def from_jtype(j_class: Any) -> DType:
 
 
 def from_np_dtype(np_dtype: Union[np.dtype, pd.api.extensions.ExtensionDtype]) -> DType:
-    """ Looks up a DType that matches the provided numpy dtype or Pandas's nullable equivalent; if not found,
-    returns PyObject. """
+    """Looks up a DType that matches the provided numpy dtype or Pandas's nullable equivalent; if not found,
+    returns PyObject."""
 
     if isinstance(np_dtype, pd.api.extensions.ExtensionDtype):
         # check if it is a Pandas nullable numeric types such as pd.Float64Dtype/Int32Dtype/BooleanDtype etc.
@@ -205,7 +246,7 @@ def from_np_dtype(np_dtype: Union[np.dtype, pd.api.extensions.ExtensionDtype]) -
         else:
             return PyObject
 
-    if np_dtype.kind in {'U', 'S'}:
+    if np_dtype.kind in {"U", "S"}:
         return string
 
     for _, dtype in _j_name_type_map.items():

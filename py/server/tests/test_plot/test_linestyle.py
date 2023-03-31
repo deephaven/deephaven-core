@@ -29,8 +29,11 @@ class LineStyleTestCase(BaseTestCase):
         for end_style in LineEndStyle:
             for join_style in LineJoinStyle:
                 with self.subTest("No dash pattern."):
-                    line_style = LineStyle(width=random.random(), end_style=end_style,
-                                           join_style=join_style)
+                    line_style = LineStyle(
+                        width=random.random(),
+                        end_style=end_style,
+                        join_style=join_style,
+                    )
                     self.assertIsNotNone(line_style)
 
     def test_line_style_dash_pattern(self):
@@ -39,20 +42,31 @@ class LineStyleTestCase(BaseTestCase):
         for end_style in LineEndStyle:
             for join_style in LineJoinStyle:
                 with self.subTest("No dash pattern."):
-                    line_style = LineStyle(width=random.random(), end_style=end_style,
-                                           join_style=join_style, dash_pattern=dash_pattern)
+                    line_style = LineStyle(
+                        width=random.random(),
+                        end_style=end_style,
+                        join_style=join_style,
+                        dash_pattern=dash_pattern,
+                    )
                     self.assertIsNotNone(line_style)
 
     def test_line(self):
         figure = Figure()
         new_f = figure.plot_xy("plot1", self.test_table, x="a", y="b")
-        line = new_f.line(color=Colors.ANTIQUEWHITE, style=LineStyle(width=1.0, end_style=LineEndStyle.ROUND))
+        line = new_f.line(
+            color=Colors.ANTIQUEWHITE,
+            style=LineStyle(width=1.0, end_style=LineEndStyle.ROUND),
+        )
         self.assertIsNotNone(line)
 
         with self.assertRaises(DHError):
-            line = new_f.line(color=Colors.ANTIQUEWHITE,
-                              style=LineStyle(width=1.0, end_style=LineEndStyle.ROUND, dash_pattern=[-1]))
+            line = new_f.line(
+                color=Colors.ANTIQUEWHITE,
+                style=LineStyle(
+                    width=1.0, end_style=LineEndStyle.ROUND, dash_pattern=[-1]
+                ),
+            )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

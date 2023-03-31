@@ -53,12 +53,16 @@ class TimeTableOp(TableOp):
         return table_service_stub.TimeTable
 
     def make_grpc_request(self, result_id, source_id=None):
-        return table_pb2.TimeTableRequest(result_id=result_id, start_time_nanos=self.start_time,
-                                          period_nanos=self.period)
+        return table_pb2.TimeTableRequest(
+            result_id=result_id,
+            start_time_nanos=self.start_time,
+            period_nanos=self.period,
+        )
 
     def make_grpc_request_for_batch(self, result_id, source_id=None):
         return table_pb2.BatchTableRequest.Operation(
-            time_table=self.make_grpc_request(result_id=result_id, source_id=source_id))
+            time_table=self.make_grpc_request(result_id=result_id, source_id=source_id)
+        )
 
 
 class EmptyTableOp(TableOp):
@@ -74,7 +78,8 @@ class EmptyTableOp(TableOp):
 
     def make_grpc_request_for_batch(self, result_id, source_id=None):
         return table_pb2.BatchTableRequest.Operation(
-            empty_table=self.make_grpc_request(result_id=result_id, source_id=source_id))
+            empty_table=self.make_grpc_request(result_id=result_id, source_id=source_id)
+        )
 
 
 class DropColumnsOp(TableOp):
@@ -86,18 +91,23 @@ class DropColumnsOp(TableOp):
         return table_service_stub.DropColumns
 
     def make_grpc_request(self, result_id, source_id):
-        return table_pb2.DropColumnsRequest(result_id=result_id, source_id=source_id,
-                                            column_names=self.column_names)
+        return table_pb2.DropColumnsRequest(
+            result_id=result_id, source_id=source_id, column_names=self.column_names
+        )
 
     def make_grpc_request_for_batch(self, result_id, source_id):
         return table_pb2.BatchTableRequest.Operation(
-            drop_columns=self.make_grpc_request(result_id=result_id, source_id=source_id))
+            drop_columns=self.make_grpc_request(
+                result_id=result_id, source_id=source_id
+            )
+        )
 
 
 class USVOp(TableOp):
     def make_grpc_request(self, result_id, source_id):
-        return table_pb2.SelectOrUpdateRequest(result_id=result_id, source_id=source_id,
-                                               column_specs=self.column_specs)
+        return table_pb2.SelectOrUpdateRequest(
+            result_id=result_id, source_id=source_id, column_specs=self.column_specs
+        )
 
 
 class UpdateOp(USVOp):
@@ -110,7 +120,8 @@ class UpdateOp(USVOp):
 
     def make_grpc_request_for_batch(self, result_id, source_id):
         return table_pb2.BatchTableRequest.Operation(
-            update=self.make_grpc_request(result_id=result_id, source_id=source_id))
+            update=self.make_grpc_request(result_id=result_id, source_id=source_id)
+        )
 
 
 class LazyUpdateOp(USVOp):
@@ -123,7 +134,8 @@ class LazyUpdateOp(USVOp):
 
     def make_grpc_request_for_batch(self, result_id, source_id):
         return table_pb2.BatchTableRequest.Operation(
-            lazy_update=self.make_grpc_request(result_id=result_id, source_id=source_id))
+            lazy_update=self.make_grpc_request(result_id=result_id, source_id=source_id)
+        )
 
 
 class ViewOp(USVOp):
@@ -136,7 +148,8 @@ class ViewOp(USVOp):
 
     def make_grpc_request_for_batch(self, result_id, source_id):
         return table_pb2.BatchTableRequest.Operation(
-            view=self.make_grpc_request(result_id=result_id, source_id=source_id))
+            view=self.make_grpc_request(result_id=result_id, source_id=source_id)
+        )
 
 
 class UpdateViewOp(USVOp):
@@ -149,7 +162,8 @@ class UpdateViewOp(USVOp):
 
     def make_grpc_request_for_batch(self, result_id, source_id):
         return table_pb2.BatchTableRequest.Operation(
-            update_view=self.make_grpc_request(result_id=result_id, source_id=source_id))
+            update_view=self.make_grpc_request(result_id=result_id, source_id=source_id)
+        )
 
 
 class SelectOp(USVOp):
@@ -162,7 +176,8 @@ class SelectOp(USVOp):
 
     def make_grpc_request_for_batch(self, result_id, source_id):
         return table_pb2.BatchTableRequest.Operation(
-            select=self.make_grpc_request(result_id=result_id, source_id=source_id))
+            select=self.make_grpc_request(result_id=result_id, source_id=source_id)
+        )
 
 
 class SelectDistinctOp(TableOp):
@@ -174,12 +189,16 @@ class SelectDistinctOp(TableOp):
         return table_service_stub.SelectDistinct
 
     def make_grpc_request(self, result_id, source_id):
-        return table_pb2.SelectDistinctRequest(result_id=result_id, source_id=source_id,
-                                               column_names=self.column_names)
+        return table_pb2.SelectDistinctRequest(
+            result_id=result_id, source_id=source_id, column_names=self.column_names
+        )
 
     def make_grpc_request_for_batch(self, result_id, source_id):
         return table_pb2.BatchTableRequest.Operation(
-            select_distinct=self.make_grpc_request(result_id=result_id, source_id=source_id))
+            select_distinct=self.make_grpc_request(
+                result_id=result_id, source_id=source_id
+            )
+        )
 
 
 class UnstructuredFilterOp(TableOp):
@@ -191,12 +210,16 @@ class UnstructuredFilterOp(TableOp):
         return table_service_stub.UnstructuredFilter
 
     def make_grpc_request(self, result_id, source_id):
-        return table_pb2.UnstructuredFilterTableRequest(result_id=result_id,
-                                                        source_id=source_id, filters=self.filters)
+        return table_pb2.UnstructuredFilterTableRequest(
+            result_id=result_id, source_id=source_id, filters=self.filters
+        )
 
     def make_grpc_request_for_batch(self, result_id, source_id):
         return table_pb2.BatchTableRequest.Operation(
-            unstructured_filter=self.make_grpc_request(result_id=result_id, source_id=source_id))
+            unstructured_filter=self.make_grpc_request(
+                result_id=result_id, source_id=source_id
+            )
+        )
 
 
 class SortOp(TableOp):
@@ -210,27 +233,32 @@ class SortOp(TableOp):
 
     def make_grpc_request(self, result_id, source_id):
         from itertools import zip_longest
+
         sort_specs = zip_longest(self.column_names, self.directions)
         sort_descriptors = []
         for sp in sort_specs:
             if not sp[0]:
                 break
             direction = sp[1] if sp[1] else SortDirection.ASCENDING
-            sort_descriptor = table_pb2.SortDescriptor(column_name=sp[0],
-                                                       direction=direction.value)
+            sort_descriptor = table_pb2.SortDescriptor(
+                column_name=sp[0], direction=direction.value
+            )
             sort_descriptors.append(sort_descriptor)
-        return table_pb2.SortTableRequest(result_id=result_id,
-                                          source_id=source_id, sorts=sort_descriptors)
+        return table_pb2.SortTableRequest(
+            result_id=result_id, source_id=source_id, sorts=sort_descriptors
+        )
 
     def make_grpc_request_for_batch(self, result_id, source_id):
         return table_pb2.BatchTableRequest.Operation(
-            sort=self.make_grpc_request(result_id=result_id, source_id=source_id))
+            sort=self.make_grpc_request(result_id=result_id, source_id=source_id)
+        )
 
 
 class HeadOrTailOp(TableOp):
     def make_grpc_request(self, result_id, source_id):
-        return table_pb2.HeadOrTailRequest(result_id=result_id, source_id=source_id,
-                                           num_rows=self.num_rows)
+        return table_pb2.HeadOrTailRequest(
+            result_id=result_id, source_id=source_id, num_rows=self.num_rows
+        )
 
 
 class HeadOp(HeadOrTailOp):
@@ -243,7 +271,8 @@ class HeadOp(HeadOrTailOp):
 
     def make_grpc_request_for_batch(self, result_id, source_id):
         return table_pb2.BatchTableRequest.Operation(
-            head=self.make_grpc_request(result_id=result_id, source_id=source_id))
+            head=self.make_grpc_request(result_id=result_id, source_id=source_id)
+        )
 
 
 class TailOp(HeadOrTailOp):
@@ -256,14 +285,18 @@ class TailOp(HeadOrTailOp):
 
     def make_grpc_request_for_batch(self, result_id, source_id):
         return table_pb2.BatchTableRequest.Operation(
-            tail=self.make_grpc_request(result_id=result_id, source_id=source_id))
+            tail=self.make_grpc_request(result_id=result_id, source_id=source_id)
+        )
 
 
 class HeadOrTailByOp(TableOp):
     def make_grpc_request(self, result_id, source_id):
-        return table_pb2.HeadOrTailByRequest(result_id=result_id,
-                                             source_id=source_id, num_rows=self.num_rows,
-                                             group_by_column_specs=self.column_names)
+        return table_pb2.HeadOrTailByRequest(
+            result_id=result_id,
+            source_id=source_id,
+            num_rows=self.num_rows,
+            group_by_column_specs=self.column_names,
+        )
 
 
 class HeadByOp(HeadOrTailByOp):
@@ -277,7 +310,8 @@ class HeadByOp(HeadOrTailByOp):
 
     def make_grpc_request_for_batch(self, result_id, source_id):
         return table_pb2.BatchTableRequest.Operation(
-            head_by=self.make_grpc_request(result_id=result_id, source_id=source_id))
+            head_by=self.make_grpc_request(result_id=result_id, source_id=source_id)
+        )
 
 
 class TailByOp(HeadOrTailByOp):
@@ -291,7 +325,8 @@ class TailByOp(HeadOrTailByOp):
 
     def make_grpc_request_for_batch(self, result_id, source_id):
         return table_pb2.BatchTableRequest.Operation(
-            tail_by=self.make_grpc_request(result_id=result_id, source_id=source_id))
+            tail_by=self.make_grpc_request(result_id=result_id, source_id=source_id)
+        )
 
 
 class UngroupOp(TableOp):
@@ -304,13 +339,17 @@ class UngroupOp(TableOp):
         return table_service_stub.Ungroup
 
     def make_grpc_request(self, result_id, source_id):
-        return table_pb2.UngroupRequest(result_id=result_id,
-                                        source_id=source_id,
-                                        null_fill=self.null_fill, columns_to_ungroup=self.column_names)
+        return table_pb2.UngroupRequest(
+            result_id=result_id,
+            source_id=source_id,
+            null_fill=self.null_fill,
+            columns_to_ungroup=self.column_names,
+        )
 
     def make_grpc_request_for_batch(self, result_id, source_id):
         return table_pb2.BatchTableRequest.Operation(
-            ungroup=self.make_grpc_request(result_id=result_id, source_id=source_id))
+            ungroup=self.make_grpc_request(result_id=result_id, source_id=source_id)
+        )
 
 
 class MergeTablesOp(TableOp):
@@ -327,13 +366,14 @@ class MergeTablesOp(TableOp):
         for tbl in self.tables:
             table_references.append(table_pb2.TableReference(ticket=tbl.ticket))
 
-        return table_pb2.MergeTablesRequest(result_id=result_id,
-                                            source_ids=table_references,
-                                            key_column=self.key_column)
+        return table_pb2.MergeTablesRequest(
+            result_id=result_id, source_ids=table_references, key_column=self.key_column
+        )
 
     def make_grpc_request_for_batch(self, result_id, source_id):
         return table_pb2.BatchTableRequest.Operation(
-            merge=self.make_grpc_request(result_id=result_id, source_id=source_id))
+            merge=self.make_grpc_request(result_id=result_id, source_id=source_id)
+        )
 
 
 class NaturalJoinOp(TableOp):
@@ -349,15 +389,20 @@ class NaturalJoinOp(TableOp):
     def make_grpc_request(self, result_id, source_id):
         left_id = source_id
         right_id = table_pb2.TableReference(ticket=self.table.ticket)
-        return table_pb2.NaturalJoinTablesRequest(result_id=result_id,
-                                                  left_id=left_id,
-                                                  right_id=right_id,
-                                                  columns_to_match=self.keys,
-                                                  columns_to_add=self.columns_to_add)
+        return table_pb2.NaturalJoinTablesRequest(
+            result_id=result_id,
+            left_id=left_id,
+            right_id=right_id,
+            columns_to_match=self.keys,
+            columns_to_add=self.columns_to_add,
+        )
 
     def make_grpc_request_for_batch(self, result_id, source_id):
         return table_pb2.BatchTableRequest.Operation(
-            natural_join=self.make_grpc_request(result_id=result_id, source_id=source_id))
+            natural_join=self.make_grpc_request(
+                result_id=result_id, source_id=source_id
+            )
+        )
 
 
 class ExactJoinOp(TableOp):
@@ -373,19 +418,28 @@ class ExactJoinOp(TableOp):
     def make_grpc_request(self, result_id, source_id):
         left_id = source_id
         right_id = table_pb2.TableReference(ticket=self.table.ticket)
-        return table_pb2.ExactJoinTablesRequest(result_id=result_id,
-                                                left_id=left_id,
-                                                right_id=right_id,
-                                                columns_to_match=self.keys,
-                                                columns_to_add=self.columns_to_add)
+        return table_pb2.ExactJoinTablesRequest(
+            result_id=result_id,
+            left_id=left_id,
+            right_id=right_id,
+            columns_to_match=self.keys,
+            columns_to_add=self.columns_to_add,
+        )
 
     def make_grpc_request_for_batch(self, result_id, source_id):
         return table_pb2.BatchTableRequest.Operation(
-            exact_join=self.make_grpc_request(result_id=result_id, source_id=source_id))
+            exact_join=self.make_grpc_request(result_id=result_id, source_id=source_id)
+        )
 
 
 class CrossJoinOp(TableOp):
-    def __init__(self, table: Any, keys: List[str] = [], columns_to_add: List[str] = [], reserve_bits: int = 10):
+    def __init__(
+        self,
+        table: Any,
+        keys: List[str] = [],
+        columns_to_add: List[str] = [],
+        reserve_bits: int = 10,
+    ):
         self.table = table
         self.keys = keys
         self.columns_to_add = columns_to_add
@@ -398,21 +452,29 @@ class CrossJoinOp(TableOp):
     def make_grpc_request(self, result_id, source_id):
         left_id = source_id
         right_id = table_pb2.TableReference(ticket=self.table.ticket)
-        return table_pb2.CrossJoinTablesRequest(result_id=result_id,
-                                                left_id=left_id,
-                                                right_id=right_id,
-                                                columns_to_match=self.keys,
-                                                columns_to_add=self.columns_to_add,
-                                                reserve_bits=self.reserve_bits)
+        return table_pb2.CrossJoinTablesRequest(
+            result_id=result_id,
+            left_id=left_id,
+            right_id=right_id,
+            columns_to_match=self.keys,
+            columns_to_add=self.columns_to_add,
+            reserve_bits=self.reserve_bits,
+        )
 
     def make_grpc_request_for_batch(self, result_id, source_id):
         return table_pb2.BatchTableRequest.Operation(
-            cross_join=self.make_grpc_request(result_id=result_id, source_id=source_id))
+            cross_join=self.make_grpc_request(result_id=result_id, source_id=source_id)
+        )
 
 
 class AsOfJoinOp(TableOp):
-    def __init__(self, table: Any, keys: List[str] = [], columns_to_add: List[str] = [],
-                 match_rule: MatchRule = MatchRule.LESS_THAN_EQUAL):
+    def __init__(
+        self,
+        table: Any,
+        keys: List[str] = [],
+        columns_to_add: List[str] = [],
+        match_rule: MatchRule = MatchRule.LESS_THAN_EQUAL,
+    ):
         self.table = table
         self.keys = keys
         self.columns_to_add = columns_to_add
@@ -425,16 +487,19 @@ class AsOfJoinOp(TableOp):
     def make_grpc_request(self, result_id, source_id):
         left_id = source_id
         right_id = table_pb2.TableReference(ticket=self.table.ticket)
-        return table_pb2.AsOfJoinTablesRequest(result_id=result_id,
-                                               left_id=left_id,
-                                               right_id=right_id,
-                                               columns_to_match=self.keys,
-                                               columns_to_add=self.columns_to_add,
-                                               as_of_match_rule=self.match_rule.value)
+        return table_pb2.AsOfJoinTablesRequest(
+            result_id=result_id,
+            left_id=left_id,
+            right_id=right_id,
+            columns_to_match=self.keys,
+            columns_to_add=self.columns_to_add,
+            as_of_match_rule=self.match_rule.value,
+        )
 
     def make_grpc_request_for_batch(self, result_id, source_id):
         return table_pb2.BatchTableRequest.Operation(
-            as_of_join=self.make_grpc_request(result_id=result_id, source_id=source_id))
+            as_of_join=self.make_grpc_request(result_id=result_id, source_id=source_id)
+        )
 
 
 class FlattenOp(TableOp):
@@ -447,7 +512,8 @@ class FlattenOp(TableOp):
 
     def make_grpc_request_for_batch(self, result_id, source_id):
         return table_pb2.BatchTableRequest.Operation(
-            flatten=self.make_grpc_request(result_id=result_id, source_id=source_id))
+            flatten=self.make_grpc_request(result_id=result_id, source_id=source_id)
+        )
 
 
 class FetchTableOp(TableOp):
@@ -460,7 +526,8 @@ class FetchTableOp(TableOp):
 
     def make_grpc_request_for_batch(self, result_id, source_id):
         return table_pb2.BatchTableRequest.Operation(
-            fetch_table=self.make_grpc_request(result_id=result_id, source_id=source_id))
+            fetch_table=self.make_grpc_request(result_id=result_id, source_id=source_id)
+        )
 
 
 class UpdateByOp(TableOp):
@@ -474,12 +541,17 @@ class UpdateByOp(TableOp):
 
     def make_grpc_request(self, result_id, source_id=None):
         operations = [op.make_grpc_message() for op in self.operations]
-        return table_pb2.UpdateByRequest(result_id=result_id, source_id=source_id, operations=operations,
-                                         group_by_columns=self.by)
+        return table_pb2.UpdateByRequest(
+            result_id=result_id,
+            source_id=source_id,
+            operations=operations,
+            group_by_columns=self.by,
+        )
 
     def make_grpc_request_for_batch(self, result_id, source_id):
         return table_pb2.BatchTableRequest.Operation(
-            update_by=self.make_grpc_request(result_id=result_id, source_id=source_id))
+            update_by=self.make_grpc_request(result_id=result_id, source_id=source_id)
+        )
 
 
 class SnapshotTableOp(TableOp):
@@ -492,13 +564,19 @@ class SnapshotTableOp(TableOp):
 
     def make_grpc_request_for_batch(self, result_id, source_id):
         return table_pb2.BatchTableRequest.Operation(
-            snapshot=self.make_grpc_request(result_id=result_id, source_id=source_id))
+            snapshot=self.make_grpc_request(result_id=result_id, source_id=source_id)
+        )
 
 
 class SnapshotWhenTableOp(TableOp):
-
-    def __init__(self, trigger_table: Any, stamp_cols: List[str] = None, initial: bool = False,
-                 incremental: bool = False, history: bool = False):
+    def __init__(
+        self,
+        trigger_table: Any,
+        stamp_cols: List[str] = None,
+        initial: bool = False,
+        incremental: bool = False,
+        history: bool = False,
+    ):
         self.trigger_table = trigger_table
         self.stamp_cols = stamp_cols
         self.initial = initial
@@ -512,17 +590,22 @@ class SnapshotWhenTableOp(TableOp):
     def make_grpc_request(self, result_id, source_id=None):
         base_id = source_id
         trigger_id = table_pb2.TableReference(ticket=self.trigger_table.ticket)
-        return table_pb2.SnapshotWhenTableRequest(result_id=result_id,
-                                                  base_id=base_id,
-                                                  trigger_id=trigger_id,
-                                                  initial=self.initial,
-                                                  incremental=self.incremental,
-                                                  history=self.history,
-                                                  stamp_columns=self.stamp_cols)
+        return table_pb2.SnapshotWhenTableRequest(
+            result_id=result_id,
+            base_id=base_id,
+            trigger_id=trigger_id,
+            initial=self.initial,
+            incremental=self.incremental,
+            history=self.history,
+            stamp_columns=self.stamp_cols,
+        )
 
     def make_grpc_request_for_batch(self, result_id, source_id):
         return table_pb2.BatchTableRequest.Operation(
-            snapshot_when=self.make_grpc_request(result_id=result_id, source_id=source_id))
+            snapshot_when=self.make_grpc_request(
+                result_id=result_id, source_id=source_id
+            )
+        )
 
 
 class AggregateOp(TableOp):
@@ -536,12 +619,17 @@ class AggregateOp(TableOp):
 
     def make_grpc_request(self, result_id, source_id=None):
         aggregations = [agg.make_grpc_message() for agg in self.aggs]
-        return table_pb2.AggregateRequest(result_id=result_id, source_id=source_id, aggregations=aggregations,
-                                          group_by_columns=self.by)
+        return table_pb2.AggregateRequest(
+            result_id=result_id,
+            source_id=source_id,
+            aggregations=aggregations,
+            group_by_columns=self.by,
+        )
 
     def make_grpc_request_for_batch(self, result_id, source_id):
         return table_pb2.BatchTableRequest.Operation(
-            aggregate=self.make_grpc_request(result_id=result_id, source_id=source_id))
+            aggregate=self.make_grpc_request(result_id=result_id, source_id=source_id)
+        )
 
 
 class AggregateAllOp(TableOp):
@@ -554,12 +642,19 @@ class AggregateAllOp(TableOp):
         return table_service_stub.AggregateAll
 
     def make_grpc_request(self, result_id, source_id=None):
-        return table_pb2.AggregateAllRequest(result_id=result_id, source_id=source_id, spec=self.agg_spec,
-                                             group_by_columns=self.by)
+        return table_pb2.AggregateAllRequest(
+            result_id=result_id,
+            source_id=source_id,
+            spec=self.agg_spec,
+            group_by_columns=self.by,
+        )
 
     def make_grpc_request_for_batch(self, result_id, source_id):
         return table_pb2.BatchTableRequest.Operation(
-            aggregate_all=self.make_grpc_request(result_id=result_id, source_id=source_id))
+            aggregate_all=self.make_grpc_request(
+                result_id=result_id, source_id=source_id
+            )
+        )
 
 
 class CreateInputTableOp(TableOp):
@@ -574,36 +669,51 @@ class CreateInputTableOp(TableOp):
 
     def make_grpc_request(self, result_id, source_id=None):
         if self.key_cols:
-            key_backed = table_pb2.CreateInputTableRequest.InputTableKind.InMemoryKeyBacked(
-                key_columns=self.key_cols)
-            input_table_kind = table_pb2.CreateInputTableRequest.InputTableKind(in_memory_key_backed=key_backed)
+            key_backed = (
+                table_pb2.CreateInputTableRequest.InputTableKind.InMemoryKeyBacked(
+                    key_columns=self.key_cols
+                )
+            )
+            input_table_kind = table_pb2.CreateInputTableRequest.InputTableKind(
+                in_memory_key_backed=key_backed
+            )
         else:
-            append_only = table_pb2.CreateInputTableRequest.InputTableKind.InMemoryAppendOnly()
-            input_table_kind = table_pb2.CreateInputTableRequest.InputTableKind(in_memory_append_only=append_only)
+            append_only = (
+                table_pb2.CreateInputTableRequest.InputTableKind.InMemoryAppendOnly()
+            )
+            input_table_kind = table_pb2.CreateInputTableRequest.InputTableKind(
+                in_memory_append_only=append_only
+            )
 
         if self.schema:
             dh_fields = []
             for f in self.schema:
-                dh_fields.append(pa.field(name=f.name, type=f.type, metadata=map_arrow_type(f.type)))
+                dh_fields.append(
+                    pa.field(name=f.name, type=f.type, metadata=map_arrow_type(f.type))
+                )
             dh_schema = pa.schema(dh_fields)
 
             schema = dh_schema.serialize().to_pybytes()
-            return table_pb2.CreateInputTableRequest(result_id=result_id,
-                                                     schema=schema,
-                                                     kind=input_table_kind)
+            return table_pb2.CreateInputTableRequest(
+                result_id=result_id, schema=schema, kind=input_table_kind
+            )
         else:
             source_table_id = table_pb2.TableReference(ticket=self.init_table.ticket)
-            return table_pb2.CreateInputTableRequest(result_id=result_id,
-                                                     source_table_id=source_table_id,
-                                                     kind=input_table_kind)
+            return table_pb2.CreateInputTableRequest(
+                result_id=result_id,
+                source_table_id=source_table_id,
+                kind=input_table_kind,
+            )
 
     def make_grpc_request_for_batch(self, result_id, source_id):
         return table_pb2.BatchTableRequest.Operation(
-            create_input_table=self.make_grpc_request(result_id=result_id, source_id=source_id))
+            create_input_table=self.make_grpc_request(
+                result_id=result_id, source_id=source_id
+            )
+        )
 
 
 class WhereInTableOp(TableOp):
-
     def __init__(self, filter_table: Any, cols: List[str], inverted: bool):
         self.filter_table = filter_table
         self.cols = cols
@@ -615,12 +725,15 @@ class WhereInTableOp(TableOp):
 
     def make_grpc_request(self, result_id, source_id=None):
         right_id = table_pb2.TableReference(ticket=self.filter_table.ticket)
-        return table_pb2.WhereInRequest(result_id=result_id,
-                                        left_id=source_id,
-                                        right_id=right_id,
-                                        inverted=self.inverted,
-                                        columns_to_match=self.cols)
+        return table_pb2.WhereInRequest(
+            result_id=result_id,
+            left_id=source_id,
+            right_id=right_id,
+            inverted=self.inverted,
+            columns_to_match=self.cols,
+        )
 
     def make_grpc_request_for_batch(self, result_id, source_id):
         return table_pb2.BatchTableRequest.Operation(
-            where_in=self.make_grpc_request(result_id=result_id, source_id=source_id))
+            where_in=self.make_grpc_request(result_id=result_id, source_id=source_id)
+        )
