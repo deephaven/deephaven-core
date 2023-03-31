@@ -64,6 +64,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
 
     private static final int MIN_DEFAULT_PAGE_SIZE = 64 << 10;
     private static volatile int defaultTargetPageSize = 1 << 20;
+    private static final boolean DEFAULT_IS_REFRESHING = false;
 
     /**
      * Set the default target page size (in bytes) used to section rows of data into pages during column writing. This
@@ -124,6 +125,11 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
 
     public abstract int getTargetPageSize();
 
+    /**
+     * @return if the data source is refreshing
+     */
+    public abstract boolean isRefreshing();
+
     @VisibleForTesting
     public static boolean sameColumnNamesAndCodecMappings(final ParquetInstructions i1, final ParquetInstructions i2) {
         if (i1 == EMPTY) {
@@ -182,6 +188,11 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         @Override
         public int getTargetPageSize() {
             return defaultTargetPageSize;
+        }
+
+        @Override
+        public boolean isRefreshing() {
+            return DEFAULT_IS_REFRESHING;
         }
     };
 
@@ -247,8 +258,8 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         private final String compressionCodecName;
         private int maximumDictionaryKeys;
         private final boolean isLegacyParquet;
-
         private final int targetPageSize;
+        private final boolean isRefreshing;
 
         private ReadOnly(
                 final KeyedObjectHashMap<String, ColumnInstructions> columnNameToInstructions,
@@ -256,13 +267,15 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
                 final String compressionCodecName,
                 final int maximumDictionaryKeys,
                 final boolean isLegacyParquet,
-                final int targetPageSize) {
+                final int targetPageSize,
+                final boolean isRefreshing) {
             this.columnNameToInstructions = columnNameToInstructions;
             this.parquetColumnNameToInstructions = parquetColumnNameToColumnName;
             this.compressionCodecName = compressionCodecName;
             this.maximumDictionaryKeys = maximumDictionaryKeys;
             this.isLegacyParquet = isLegacyParquet;
             this.targetPageSize = targetPageSize;
+            this.isRefreshing = isRefreshing;
         }
 
         private String getOrDefault(final String columnName, final String defaultValue,
@@ -341,6 +354,11 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             return targetPageSize;
         }
 
+        @Override
+        public boolean isRefreshing() {
+            return isRefreshing;
+        }
+
         KeyedObjectHashMap<String, ColumnInstructions> copyColumnNameToInstructions() {
             // noinspection unchecked
             return (columnNameToInstructions == null)
@@ -388,8 +406,8 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         private String compressionCodecName = defaultCompressionCodecName;
         private int maximumDictionaryKeys = defaultMaximumDictionaryKeys;
         private boolean isLegacyParquet;
-
         private int targetPageSize = defaultTargetPageSize;
+        private boolean isRefreshing = DEFAULT_IS_REFRESHING;
 
         public Builder() {}
 
@@ -544,6 +562,11 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             return this;
         }
 
+        public Builder setIsRefreshing(final boolean isRefreshing) {
+            this.isRefreshing = isRefreshing;
+            return this;
+        }
+
         public ParquetInstructions build() {
             final KeyedObjectHashMap<String, ColumnInstructions> columnNameToInstructionsOut = columnNameToInstructions;
             columnNameToInstructions = null;
@@ -551,7 +574,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
                     parquetColumnNameToInstructions;
             parquetColumnNameToInstructions = null;
             return new ReadOnly(columnNameToInstructionsOut, parquetColumnNameToColumnNameOut, compressionCodecName,
-                    maximumDictionaryKeys, isLegacyParquet, targetPageSize);
+                    maximumDictionaryKeys, isLegacyParquet, targetPageSize, isRefreshing);
         }
     }
 

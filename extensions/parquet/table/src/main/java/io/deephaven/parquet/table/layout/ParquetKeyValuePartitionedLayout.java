@@ -4,7 +4,6 @@
 package io.deephaven.parquet.table.layout;
 
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
-import io.deephaven.parquet.table.ParquetTableWriter;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
@@ -17,7 +16,7 @@ public class ParquetKeyValuePartitionedLayout extends KeyValuePartitionLayout<Pa
     public ParquetKeyValuePartitionedLayout(@NotNull final File tableRootDirectory,
             final int maxPartitioningLevels) {
         super(tableRootDirectory,
-                path -> path.getFileName().toString().endsWith(ParquetTableWriter.PARQUET_FILE_EXTENSION),
+                ParquetFileHelper::fileNameMatches,
                 (path, partitions) -> new ParquetTableLocationKey(path.toFile(), 0, partitions),
                 maxPartitioningLevels);
     }

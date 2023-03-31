@@ -13,22 +13,28 @@ import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Consumer;
-
-import static io.deephaven.parquet.table.ParquetTableWriter.PARQUET_FILE_EXTENSION;
 
 /**
  * Parquet {@link TableLocationKeyFinder location finder} that will discover multiple files in a single directory.
  */
 public final class ParquetFlatPartitionedLayout implements TableLocationKeyFinder<ParquetTableLocationKey> {
 
+    private static ParquetTableLocationKey locationKey(Path path) {
+        return new ParquetTableLocationKey(path.toFile(), 0, null);
+    }
+
     private final File tableRootDirectory;
+    private final Map<Path, ParquetTableLocationKey> cache;
 
     /**
      * @param tableRootDirectory The directory to search for .parquet files.
      */
     public ParquetFlatPartitionedLayout(@NotNull final File tableRootDirectory) {
         this.tableRootDirectory = tableRootDirectory;
+        cache = new HashMap<>();
     }
 
     public String toString() {
@@ -36,11 +42,19 @@ public final class ParquetFlatPartitionedLayout implements TableLocationKeyFinde
     }
 
     @Override
-    public void findKeys(@NotNull final Consumer<ParquetTableLocationKey> locationKeyObserver) {
+    public synchronized void findKeys(@NotNull final Consumer<ParquetTableLocationKey> locationKeyObserver) {
         try (final DirectoryStream<Path> parquetFileStream =
-                Files.newDirectoryStream(tableRootDirectory.toPath(), "*" + PARQUET_FILE_EXTENSION)) {
+                Files.newDirectoryStream(tableRootDirectory.toPath(), ParquetFileHelper::fileNameMatches)) {
             for (final Path parquetFilePath : parquetFileStream) {
-                locationKeyObserver.accept(new ParquetTableLocationKey(parquetFilePath.toFile(), 0, null));
+                ParquetTableLocationKey locationKey = cache.get(parquetFilePath);
+                if (locationKey == null) {
+                    locationKey = locationKey(parquetFilePath);
+                    if (!locationKey.verifyFileReader()) {
+                        continue;
+                    }
+                    cache.put(parquetFilePath, locationKey);
+                }
+                locationKeyObserver.accept(locationKey);
             }
         } catch (final IOException e) {
             throw new TableDataException("Error finding parquet locations under " + tableRootDirectory, e);
