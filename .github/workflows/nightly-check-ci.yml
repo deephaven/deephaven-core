@@ -15,7 +15,7 @@ jobs:
       fail-fast: false
       matrix:
         gradle-task: ['check', 'testSerial', 'testParallel', 'testOutOfBand']
-        test-jvm-version: ['11', '17', '18']
+        test-jvm-version: ['11', '17', '20']
     if: ${{ github.repository_owner == 'deephaven' || github.event_name != 'schedule' }}
     runs-on: ubuntu-22.04
     steps:
