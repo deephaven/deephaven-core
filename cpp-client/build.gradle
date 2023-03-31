@@ -4,7 +4,6 @@ plugins {
     id 'com.bmuschko.docker-remote-api'
     id 'io.deephaven.project.register'
     id 'io.deephaven.deephaven-in-docker'
-    id 'license'
 }
 
 evaluationDependsOn Docker.registryProject('cpp-client-base')
@@ -29,23 +28,6 @@ tasks.register('updateProtobuf', Sync) {
     from configurations.cpp
     into protoSourceDir
 }
-
-license {
-    header rootProject.file('license-header')
-    include '**/*.h'
-    include '**/*.cc'
-    strictCheck true
-    useDefaultMappings true
-    ignoreFailures true
-}
-tasks.getByName('license').dependsOn(tasks.create("licensePy", com.hierynomus.gradle.license.tasks.LicenseCheck) {
-    source = ['deephaven', 'tests', '../cpp-examples']
-})
-tasks.getByName('licenseFormat').dependsOn(tasks.create("licenseFormatPy", com.hierynomus.gradle.license.tasks.LicenseFormat) {
-    source = ['deephaven', 'tests', '../cpp-examples']
-})
-
-project.tasks.getByName('quick').dependsOn project.tasks.getByName('license')
 
 // start a grpc-api server
 String randomSuffix = UUID.randomUUID().toString();
