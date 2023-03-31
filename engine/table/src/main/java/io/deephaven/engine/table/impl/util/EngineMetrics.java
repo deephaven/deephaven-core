@@ -32,10 +32,12 @@ public class EngineMetrics {
     public static ProcessInfo getProcessInfo() {
         if (processInfo == null) {
             synchronized (EngineMetrics.class) {
-                try {
-                    processInfo = ProcessInfoConfig.createForCurrentProcess(Configuration.getInstance());
-                } catch (IOException e) {
-                    throw new IllegalStateException("Failed to create process info.", e);
+                if (processInfo == null) {
+                    try {
+                        processInfo = ProcessInfoConfig.createForCurrentProcess(Configuration.getInstance());
+                    } catch (IOException e) {
+                        throw new IllegalStateException("Failed to create process info.", e);
+                    }
                 }
             }
         }
