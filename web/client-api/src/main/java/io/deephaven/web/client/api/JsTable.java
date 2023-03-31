@@ -58,6 +58,7 @@ import io.deephaven.web.shared.fu.JsConsumer;
 import io.deephaven.web.shared.fu.JsProvider;
 import io.deephaven.web.shared.fu.JsRunnable;
 import io.deephaven.web.shared.fu.RemoverFn;
+import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsProperty;
@@ -168,6 +169,13 @@ public class JsTable extends HasLifecycle implements HasTableBinding {
     @JsMethod(namespace = "dh.Table")
     public static Sort reverse() {
         return Sort.reverse();
+    }
+
+    @JsIgnore
+    @Override
+    public Promise<JsTable> refetch() {
+        // TODO(deephaven-core#3604) consider supporting this method when new session reconnects are supported
+        return Promise.reject("Cannot reconnect a Table with refetch(), see deephaven-core#3604");
     }
 
     @JsMethod

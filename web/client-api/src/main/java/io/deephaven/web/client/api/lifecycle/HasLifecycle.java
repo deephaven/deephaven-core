@@ -9,8 +9,6 @@ import elemental2.promise.Promise;
 import io.deephaven.web.client.api.HasEventHandling;
 import io.deephaven.web.client.api.JsTable;
 import io.deephaven.web.client.fu.JsLog;
-import io.deephaven.web.client.fu.LazyPromise;
-import io.deephaven.web.client.state.ClientTableState;
 
 import static io.deephaven.web.client.api.JsTable.EVENT_RECONNECTFAILED;
 
