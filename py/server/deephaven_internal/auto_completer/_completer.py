@@ -62,7 +62,7 @@ def wrap_plaintext(txt: str) -> str:
     return ''
 
 
-class Completer(object):
+class Completer:
     def __init__(self):
         self._docs = {}
         self._versions = {}
@@ -120,12 +120,10 @@ class Completer(object):
 
     def get_completer(self, uri: str) -> Union[Interpreter, Script]:
         txt = self.get_doc(uri)
-        return (
+        if self.__mode == Mode.SAFE:
             # The Script completer is static analysis only, so we should actually be feeding it a whole document at once
-            Script(txt)
-            if self.__mode == Mode.SAFE
-            else Interpreter(txt, [self.__scope])
-        )
+            return Script(txt)
+        return Interpreter(txt, [self.__scope])
 
     def do_completion(
         self, uri: str, version: int, line: int, col: int
@@ -143,7 +141,7 @@ class Completer(object):
         # Path completions don't seem useful with our setup
         # It also doesn't suggest nested paths/files when the string is a parent path
         # Might just be a client issue, but either way not useful right now
-        completions = filter(lambda c: c.type != "path", completer.complete(line, col))
+        completions = [c for c in completer.complete(line, col) if c.type != "path"]
 
         # for now, a simple sorting based on number of preceding _
         # we may want to apply additional sorting to each list before combining
