@@ -15,10 +15,14 @@ def main():
     with Session(host="localhost", port=10000) as dh_session:
         taxi_data_table = import_taxi_records(dh_session)
 
-        top_5_fares_table = demo_query(dh_session=dh_session, taxi_data_table=taxi_data_table)
+        top_5_fares_table = demo_query(
+            dh_session=dh_session, taxi_data_table=taxi_data_table
+        )
         bottom_5_fares_table = demo_chained_table_ops(taxi_data_table)
 
-        combined_fares_table = dh_session.merge_tables(tables=[top_5_fares_table, bottom_5_fares_table])
+        combined_fares_table = dh_session.merge_tables(
+            tables=[top_5_fares_table, bottom_5_fares_table]
+        )
         arrow_table = combined_fares_table.to_arrow()
         df = arrow_table.to_pandas()
 
@@ -26,5 +30,5 @@ def main():
         print(df)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

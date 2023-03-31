@@ -14,7 +14,7 @@ import traceback
 
 
 class DHError(Exception):
-    """ The custom exception class for the Deephaven Python package.
+    """The custom exception class for the Deephaven Python package.
 
     This exception can be raised due to user errors or system errors when Deephaven resources and functions
     are accessed, for example, during reading a CSV/Parquet file into a Deephaven table or performing an
@@ -59,17 +59,17 @@ class DHError(Exception):
 
     @property
     def root_cause(self):
-        """ The root cause of the exception. """
+        """The root cause of the exception."""
         return self._root_cause
 
     @property
     def traceback(self):
-        """ The traceback of the exception. """
+        """The traceback of the exception."""
         return self._traceback
 
     @property
     def compact_traceback(self) -> str:
-        """ The compact traceback of the exception. """
+        """The compact traceback of the exception."""
         return "\n".join(self._compact_tb)
 
     def __str__(self):

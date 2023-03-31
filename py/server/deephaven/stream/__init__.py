@@ -13,7 +13,7 @@ _JStreamTableTools = jpy.get_type("io.deephaven.engine.table.impl.StreamTableToo
 
 
 def stream_to_append_only(table: Table) -> Table:
-    """ Creates an 'append only' table from the stream table.
+    """Creates an 'append only' table from the stream table.
 
     Args:
         table (Table): a stream table

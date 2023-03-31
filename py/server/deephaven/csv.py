@@ -39,7 +39,7 @@ def read(
         path (str): a file path or a URL string
         header (Dict[str, DType]): a dict to define the table columns with key being the name, value being the data type
         skip_rows (long): number of data rows to skip before processing data. This is useful when you want to parse data in chunks. Defaults to 0
-        num_rows (long): max number of rows to process. This is useful when you want to parse data in chunks. Defaults to {@link Long#MAX_VALUE} 
+        num_rows (long): max number of rows to process. This is useful when you want to parse data in chunks. Defaults to {@link Long#MAX_VALUE}
         allow_missing_columns (bool): whether the library should allow missing columns in the input. If this flag is set, then rows that are too short (that have fewer columns than the header row) will be interpreted as if the missing columns contained the empty string. Defaults to false.
         ignore_excess_columns (bool): whether the library should allow excess columns in the input. If this flag is set, then rows that are too long (that have more columns than the header row) will have those excess columns dropped. Defaults to false.
         headless (bool): indicates if the CSV data is headless, default is False
@@ -110,4 +110,3 @@ def write(table: Table, path: str, cols: List[str] = []) -> None:
         _JCsvTools.writeCsv(table.j_table, False, path, *cols)
     except Exception as e:
         raise DHError(message="write csv failed.") from e
-

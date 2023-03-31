@@ -6,14 +6,18 @@
 import numpy
 import jpy
 
-_JAbstractMAType = jpy.get_type('io.deephaven.numerics.movingaverages.AbstractMa$Type')
-_JAbstractMATMode = jpy.get_type('io.deephaven.numerics.movingaverages.AbstractMa$Mode')
-_JBadDataBehavior = jpy.get_type('io.deephaven.numerics.movingaverages.ByEma$BadDataBehavior')
-_JTimeUnit = jpy.get_type('java.util.concurrent.TimeUnit')
-_JByEmaSimple = jpy.get_type('io.deephaven.numerics.movingaverages.ByEmaSimple')
-_JEma = jpy.get_type('io.deephaven.numerics.movingaverages.Ema')
-_JEmaArray = jpy.get_type('io.deephaven.numerics.movingaverages.EmaArray')
-_JExponentiallyDecayedSum = jpy.get_type('io.deephaven.numerics.movingaverages.ExponentiallyDecayedSum')
+_JAbstractMAType = jpy.get_type("io.deephaven.numerics.movingaverages.AbstractMa$Type")
+_JAbstractMATMode = jpy.get_type("io.deephaven.numerics.movingaverages.AbstractMa$Mode")
+_JBadDataBehavior = jpy.get_type(
+    "io.deephaven.numerics.movingaverages.ByEma$BadDataBehavior"
+)
+_JTimeUnit = jpy.get_type("java.util.concurrent.TimeUnit")
+_JByEmaSimple = jpy.get_type("io.deephaven.numerics.movingaverages.ByEmaSimple")
+_JEma = jpy.get_type("io.deephaven.numerics.movingaverages.Ema")
+_JEmaArray = jpy.get_type("io.deephaven.numerics.movingaverages.EmaArray")
+_JExponentiallyDecayedSum = jpy.get_type(
+    "io.deephaven.numerics.movingaverages.ExponentiallyDecayedSum"
+)
 
 
 def _convertEnumBehavior(value, enumType):
@@ -88,8 +92,12 @@ def EmaArray(type, mode, timeScales):
 
     type = _convertEnumBehavior(type, _JAbstractMAType)
     mode = _convertEnumBehavior(mode, _JAbstractMATMode)
-    if isinstance(timeScales, list) or isinstance(timeScales, tuple) or isinstance(timeScales, numpy.ndarray):
-        timeScales = jpy.array('double', timeScales)
+    if (
+        isinstance(timeScales, list)
+        or isinstance(timeScales, tuple)
+        or isinstance(timeScales, numpy.ndarray)
+    ):
+        timeScales = jpy.array("double", timeScales)
     return _JEmaArray(type, mode, timeScales)
 
 

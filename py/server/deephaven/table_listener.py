@@ -21,10 +21,16 @@ from deephaven.jcompat import to_sequence
 from deephaven.numpy import column_to_numpy_array
 from deephaven.table import Table
 
-_JPythonListenerAdapter = jpy.get_type("io.deephaven.integrations.python.PythonListenerAdapter")
-_JPythonReplayListenerAdapter = jpy.get_type("io.deephaven.integrations.python.PythonReplayListenerAdapter")
+_JPythonListenerAdapter = jpy.get_type(
+    "io.deephaven.integrations.python.PythonListenerAdapter"
+)
+_JPythonReplayListenerAdapter = jpy.get_type(
+    "io.deephaven.integrations.python.PythonReplayListenerAdapter"
+)
 _JTableUpdate = jpy.get_type("io.deephaven.engine.table.TableUpdate")
-_JTableUpdateDataReader = jpy.get_type("io.deephaven.integrations.python.PythonListenerTableUpdateDataReader")
+_JTableUpdateDataReader = jpy.get_type(
+    "io.deephaven.integrations.python.PythonListenerTableUpdateDataReader"
+)
 
 
 def _col_defs(table: Table, cols: Union[str, List[str]]) -> List[Column]:
@@ -37,8 +43,13 @@ def _col_defs(table: Table, cols: Union[str, List[str]]) -> List[Column]:
     return col_defs
 
 
-def _changes_to_numpy(table: Table, cols: Union[str, List[str]], row_set, chunk_size: Optional[int],
-                      prev: bool = False) -> Generator[Dict[str, numpy.ndarray], None, None]:
+def _changes_to_numpy(
+    table: Table,
+    cols: Union[str, List[str]],
+    row_set,
+    chunk_size: Optional[int],
+    prev: bool = False,
+) -> Generator[Dict[str, numpy.ndarray], None, None]:
     col_defs = _col_defs(table, cols)
 
     row_sequence_iterator = row_set.getRowSequenceIterator()
@@ -47,9 +58,13 @@ def _changes_to_numpy(table: Table, cols: Union[str, List[str]], row_set, chunk_
     j_reader_context = _JTableUpdateDataReader.makeContext(chunk_size, *col_sources)
     try:
         while row_sequence_iterator.hasMore():
-            chunk_row_set = row_sequence_iterator.getNextRowSequenceWithLength(chunk_size)
+            chunk_row_set = row_sequence_iterator.getNextRowSequenceWithLength(
+                chunk_size
+            )
 
-            j_array = _JTableUpdateDataReader.readChunkColumnMajor(j_reader_context, chunk_row_set, col_sources, prev)
+            j_array = _JTableUpdateDataReader.readChunkColumnMajor(
+                j_reader_context, chunk_row_set, col_sources, prev
+            )
 
             col_dict = {}
             for i, col_def in enumerate(col_defs):
@@ -88,13 +103,19 @@ class TableUpdate(JObjectWrapper):
 
         try:
             return next(
-                _changes_to_numpy(table=self.table, cols=cols, row_set=self.j_table_update.added.asRowSet(),
-                                  chunk_size=None))
+                _changes_to_numpy(
+                    table=self.table,
+                    cols=cols,
+                    row_set=self.j_table_update.added.asRowSet(),
+                    chunk_size=None,
+                )
+            )
         except StopIteration:
             return {}
 
-    def added_chunks(self, chunk_size: int, cols: Union[str, List[str]] = None) -> Generator[
-        Dict[str, numpy.ndarray], None, None]:
+    def added_chunks(
+        self, chunk_size: int, cols: Union[str, List[str]] = None
+    ) -> Generator[Dict[str, numpy.ndarray], None, None]:
         """Returns a generator that on each iteration, only returns a chunk of added rows in the form of a dict with
         each key being a column name and each value being a NumPy array of the rows in the chunk.
 
@@ -108,8 +129,12 @@ class TableUpdate(JObjectWrapper):
         if not self.j_table_update.added:
             return (_ for _ in ())
 
-        return _changes_to_numpy(table=self.table, cols=cols, row_set=self.j_table_update.added.asRowSet(),
-                                 chunk_size=chunk_size)
+        return _changes_to_numpy(
+            table=self.table,
+            cols=cols,
+            row_set=self.j_table_update.added.asRowSet(),
+            chunk_size=chunk_size,
+        )
 
     def removed(self, cols: Union[str, List[str]] = None) -> Dict[str, numpy.ndarray]:
         """Returns a dict with each key being a column name and each value being a NumPy array of
@@ -126,13 +151,20 @@ class TableUpdate(JObjectWrapper):
 
         try:
             return next(
-                _changes_to_numpy(table=self.table, cols=cols, row_set=self.j_table_update.removed.asRowSet(),
-                                  chunk_size=None, prev=True))
+                _changes_to_numpy(
+                    table=self.table,
+                    cols=cols,
+                    row_set=self.j_table_update.removed.asRowSet(),
+                    chunk_size=None,
+                    prev=True,
+                )
+            )
         except StopIteration:
             return {}
 
-    def removed_chunks(self, chunk_size: int, cols: Union[str, List[str]] = None) -> Generator[
-        Dict[str, numpy.ndarray], None, None]:
+    def removed_chunks(
+        self, chunk_size: int, cols: Union[str, List[str]] = None
+    ) -> Generator[Dict[str, numpy.ndarray], None, None]:
         """Returns a generator that on each iteration, only returns a chunk of removed rows in the form of a dict with
         each key being a column name and each value being a NumPy array of the rows in the chunk.
 
@@ -146,8 +178,13 @@ class TableUpdate(JObjectWrapper):
         if not self.j_table_update.removed:
             return (_ for _ in ())
 
-        return _changes_to_numpy(table=self.table, cols=cols, row_set=self.j_table_update.removed.asRowSet(),
-                                 chunk_size=chunk_size, prev=True)
+        return _changes_to_numpy(
+            table=self.table,
+            cols=cols,
+            row_set=self.j_table_update.removed.asRowSet(),
+            chunk_size=chunk_size,
+            prev=True,
+        )
 
     def modified(self, cols: Union[str, List[str]] = None) -> Dict[str, numpy.ndarray]:
         """Returns a dict with each key being a column name and each value being a NumPy array of the current values of
@@ -164,13 +201,19 @@ class TableUpdate(JObjectWrapper):
 
         try:
             return next(
-                _changes_to_numpy(self.table, cols=cols, row_set=self.j_table_update.modified.asRowSet(),
-                                  chunk_size=None))
+                _changes_to_numpy(
+                    self.table,
+                    cols=cols,
+                    row_set=self.j_table_update.modified.asRowSet(),
+                    chunk_size=None,
+                )
+            )
         except StopIteration:
             return {}
 
-    def modified_chunks(self, chunk_size: int, cols: Union[str, List[str]] = None) -> Generator[
-        Dict[str, numpy.ndarray], None, None]:
+    def modified_chunks(
+        self, chunk_size: int, cols: Union[str, List[str]] = None
+    ) -> Generator[Dict[str, numpy.ndarray], None, None]:
         """Returns a generator that on each iteration, only returns a chunk of modified rows in the form of a dict with
         each key being a column name and each value being a NumPy array of the current values of the rows in the chunk.
 
@@ -184,10 +227,16 @@ class TableUpdate(JObjectWrapper):
         if not self.j_table_update.modified:
             return (_ for _ in ())
 
-        return _changes_to_numpy(self.table, cols=cols, row_set=self.j_table_update.modified.asRowSet(),
-                                 chunk_size=chunk_size)
+        return _changes_to_numpy(
+            self.table,
+            cols=cols,
+            row_set=self.j_table_update.modified.asRowSet(),
+            chunk_size=chunk_size,
+        )
 
-    def modified_prev(self, cols: Union[str, List[str]] = None) -> Dict[str, numpy.ndarray]:
+    def modified_prev(
+        self, cols: Union[str, List[str]] = None
+    ) -> Dict[str, numpy.ndarray]:
         """Returns a dict with each key being a column name and each value being a NumPy array of the previous values of
         all the modified rows in the columns.
 
@@ -202,13 +251,20 @@ class TableUpdate(JObjectWrapper):
 
         try:
             return next(
-                _changes_to_numpy(self.table, cols=cols, row_set=self.j_table_update.modified.asRowSet(),
-                                  chunk_size=None, prev=True))
+                _changes_to_numpy(
+                    self.table,
+                    cols=cols,
+                    row_set=self.j_table_update.modified.asRowSet(),
+                    chunk_size=None,
+                    prev=True,
+                )
+            )
         except StopIteration:
             return {}
 
-    def modified_prev_chunks(self, chunk_size: int, cols: Union[str, List[str]] = None) -> Generator[
-        Dict[str, numpy.ndarray], None, None]:
+    def modified_prev_chunks(
+        self, chunk_size: int, cols: Union[str, List[str]] = None
+    ) -> Generator[Dict[str, numpy.ndarray], None, None]:
         """Returns a generator that on each iteration, only returns a chunk of modified rows in the form of a dict with
         each key being a column name and each value being a NumPy array of the previous values of the rows in the chunk.
 
@@ -222,8 +278,13 @@ class TableUpdate(JObjectWrapper):
         if not self.j_table_update.modified:
             return (_ for _ in ())
 
-        return _changes_to_numpy(self.table, cols=cols, row_set=self.j_table_update.modified.asRowSet(),
-                                 chunk_size=chunk_size, prev=True)
+        return _changes_to_numpy(
+            self.table,
+            cols=cols,
+            row_set=self.j_table_update.modified.asRowSet(),
+            chunk_size=chunk_size,
+            prev=True,
+        )
 
     @property
     def shifted(self):
@@ -291,20 +352,29 @@ def _listener_wrapper(table: Table):
 def _wrap_listener_func(t: Table, listener: Callable):
     n_params = len(signature(listener).parameters)
     if n_params != 2:
-        raise ValueError("listener function must have 2 (update, is_replay) parameters.")
+        raise ValueError(
+            "listener function must have 2 (update, is_replay) parameters."
+        )
     return _listener_wrapper(table=t)(listener)
 
 
 def _wrap_listener_obj(t: Table, listener: TableListener):
     n_params = len(signature(listener.on_update).parameters)
     if n_params != 2:
-        raise ValueError(f"The on_update method must have 2 (update, is_replay) parameters.")
+        raise ValueError(
+            f"The on_update method must have 2 (update, is_replay) parameters."
+        )
     listener.on_update = _listener_wrapper(table=t)(listener.on_update)
     return listener
 
 
-def listen(t: Table, listener: Union[Callable, TableListener], description: str = None, do_replay: bool = False,
-           replay_lock: str = "shared"):
+def listen(
+    t: Table,
+    listener: Union[Callable, TableListener],
+    description: str = None,
+    do_replay: bool = False,
+    replay_lock: str = "shared",
+):
     """This is a convenience function that creates a TableListenerHandle object and immediately starts it to listen
     for table updates.
 
@@ -325,7 +395,9 @@ def listen(t: Table, listener: Union[Callable, TableListener], description: str 
     Raises:
         DHError
     """
-    table_listener_handle = TableListenerHandle(t=t, listener=listener, description=description)
+    table_listener_handle = TableListenerHandle(
+        t=t, listener=listener, description=description
+    )
     table_listener_handle.start(do_replay=do_replay, replay_lock=replay_lock)
     return table_listener_handle
 
@@ -333,7 +405,12 @@ def listen(t: Table, listener: Union[Callable, TableListener], description: str 
 class TableListenerHandle:
     """A handle to manage a table listener's lifecycle."""
 
-    def __init__(self, t: Table, listener: Union[Callable, TableListener], description: str = None):
+    def __init__(
+        self,
+        t: Table,
+        listener: Union[Callable, TableListener],
+        description: str = None,
+    ):
         """Creates a new table listener handle.
 
         Table change events are processed by 'listener', which can be either
@@ -363,7 +440,9 @@ class TableListenerHandle:
             listener_wrapped = _wrap_listener_obj(t, listener)
         else:
             raise ValueError("listener is neither callable nor TableListener object")
-        self.listener = _JPythonReplayListenerAdapter(description, t.j_table, False, listener_wrapped)
+        self.listener = _JPythonReplayListenerAdapter(
+            description, t.j_table, False, listener_wrapped
+        )
 
         self.started = False
 
@@ -381,6 +460,7 @@ class TableListenerHandle:
             raise RuntimeError("Attempting to start an already started listener..")
 
         try:
+
             def _start():
                 if do_replay:
                     self.listener.replay()

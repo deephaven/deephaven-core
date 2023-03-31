@@ -20,10 +20,10 @@ _JLearnScatterer = jpy.get_type("io.deephaven.integrations.learn.Scatterer")
 
 
 class Input:
-    """ Input specifies how to gather data from a Deephaven table into an object. """
+    """Input specifies how to gather data from a Deephaven table into an object."""
 
     def __init__(self, col_names: Union[str, List[str]], gather_func: Callable):
-        """  Initializes an Input object with the given arguments.
+        """Initializes an Input object with the given arguments.
 
         Args:
             col_names (str|list) : column name or list of column names from which to gather input.
@@ -32,15 +32,15 @@ class Input:
         self.input = _JLearnInput(col_names, gather_func)
 
     def __str__(self):
-        """ Returns the Input object as a string containing a printable representation of the Input object."""
+        """Returns the Input object as a string containing a printable representation of the Input object."""
         return self.input.toString()
 
 
 class Output:
-    """ Output specifies how to scatter data from an object into a table column. """
+    """Output specifies how to scatter data from an object into a table column."""
 
     def __init__(self, col_name: str, scatter_func: Callable, col_type: Type):
-        """ Initializes an Output object with the given arguments.
+        """Initializes an Output object with the given arguments.
 
         Args:
             col_name (str) : name of the new column that will store results.
@@ -51,12 +51,12 @@ class Output:
         self.output = _JLearnOutput(col_name, scatter_func, col_type)
 
     def __str__(self):
-        """ Returns the Output object as a string containing a printable representation of the Output object. """
+        """Returns the Output object as a string containing a printable representation of the Output object."""
         return self.output.toString()
 
 
 def _validate(inputs: Input, outputs: Output, table: Table):
-    """ Ensures that all input columns exist in the table, and that no output column names already exist in the table.
+    """Ensures that all input columns exist in the table, and that no output column names already exist in the table.
 
     Args:
         inputs (Input)  : list of Inputs to validate.
@@ -68,8 +68,11 @@ def _validate(inputs: Input, outputs: Output, table: Table):
         ValueError : if at least one of the Output columns already exists in the table.
         ValueError : if there are duplicates in the Output column names.
     """
-    input_columns_list = [input_.input.getColNames()[i] for input_ in inputs for i in
-                          range(len(input_.input.getColNames()))]
+    input_columns_list = [
+        input_.input.getColNames()[i]
+        for input_ in inputs
+        for i in range(len(input_.input.getColNames()))
+    ]
     input_columns = set(input_columns_list)
     table_columns = {col.name for col in table.columns}
     if table_columns >= input_columns:
@@ -77,20 +80,29 @@ def _validate(inputs: Input, outputs: Output, table: Table):
             output_columns_list = [output.output.getColName() for output in outputs]
             output_columns = set(output_columns_list)
             if len(output_columns_list) != len(output_columns):
-                repeats = set([column for column in output_columns_list if output_columns_list.count(column) > 1])
-                raise ValueError(f"Cannot assign the same column name {repeats} to multiple columns.")
+                repeats = set(
+                    [
+                        column
+                        for column in output_columns_list
+                        if output_columns_list.count(column) > 1
+                    ]
+                )
+                raise ValueError(
+                    f"Cannot assign the same column name {repeats} to multiple columns."
+                )
             elif table_columns & output_columns:
                 overlap = output_columns & table_columns
                 raise ValueError(
                     f"The columns {overlap} already exist in the table. Please choose Output column names that are "
-                    f"not already in the table.")
+                    f"not already in the table."
+                )
     else:
         difference = input_columns - table_columns
         raise ValueError(f"Cannot find columns {difference} in the table.")
 
 
 def _create_non_conflicting_col_name(table: Table, base_col_name: str) -> str:
-    """ Creates a column name that is not present in the table.
+    """Creates a column name that is not present in the table.
 
     Args:
         table (Table): table to check column name against.
@@ -110,9 +122,14 @@ def _create_non_conflicting_col_name(table: Table, base_col_name: str) -> str:
         return base_col_name
 
 
-def learn(table: Table = None, model_func: Callable = None, inputs: List[Input] = [], outputs: List[Output] = [],
-          batch_size: int = None) -> Table:
-    """ Learn gathers data from multiple rows of the input table, performs a calculation, and scatters values from the
+def learn(
+    table: Table = None,
+    model_func: Callable = None,
+    inputs: List[Input] = [],
+    outputs: List[Output] = [],
+    batch_size: int = None,
+) -> Table:
+    """Learn gathers data from multiple rows of the input table, performs a calculation, and scatters values from the
     calculation into an output table. This is a common computing paradigm for artificial intelligence, machine learning,
     and deep learning.
 
@@ -134,10 +151,13 @@ def learn(table: Table = None, model_func: Callable = None, inputs: List[Input] 
         _validate(inputs, outputs, table)
 
         if batch_size is None:
-            raise ValueError("Batch size cannot be inferred. Please specify a batch size.")
+            raise ValueError(
+                "Batch size cannot be inferred. Please specify a batch size."
+            )
 
-        __computer = _JLearnComputer(table.j_table, model_func,
-                [input_.input for input_ in inputs], batch_size)
+        __computer = _JLearnComputer(
+            table.j_table, model_func, [input_.input for input_ in inputs], batch_size
+        )
 
         future_offset = _create_non_conflicting_col_name(table, "__FutureOffset")
         clean = _create_non_conflicting_col_name(table, "__CleanComputer")
@@ -145,24 +165,44 @@ def learn(table: Table = None, model_func: Callable = None, inputs: List[Input] 
         if outputs is not None:
             __scatterer = _JLearnScatterer([output.output for output in outputs])
 
-            return (table
-                    .update(formulas=[f"{future_offset} = __computer.compute(k)", ])
-                    .update(formulas=[__scatterer.generateQueryStrings(f"{future_offset}"), ])
-                    .update(formulas=[f"{clean} = __computer.clear()", ])
-                    .drop_columns(cols=[f"{future_offset}", f"{clean}", ]))
+            return (
+                table.update(
+                    formulas=[
+                        f"{future_offset} = __computer.compute(k)",
+                    ]
+                )
+                .update(
+                    formulas=[
+                        __scatterer.generateQueryStrings(f"{future_offset}"),
+                    ]
+                )
+                .update(
+                    formulas=[
+                        f"{clean} = __computer.clear()",
+                    ]
+                )
+                .drop_columns(
+                    cols=[
+                        f"{future_offset}",
+                        f"{clean}",
+                    ]
+                )
+            )
 
         result = _create_non_conflicting_col_name(table, "__Result")
 
-        return (table
-                .update(formulas=[
-                    f"{future_offset} = __computer.compute(k)",
-                    f"{result} = {future_offset}.getFuture().get()",
-                    f"{clean} = __computer.clear()",
-                ])
-                .drop_columns(cols=[
-                    f"{future_offset}",
-                    f"{clean}",
-                    f"{result}",
-                ]))
+        return table.update(
+            formulas=[
+                f"{future_offset} = __computer.compute(k)",
+                f"{result} = {future_offset}.getFuture().get()",
+                f"{clean} = __computer.clear()",
+            ]
+        ).drop_columns(
+            cols=[
+                f"{future_offset}",
+                f"{clean}",
+                f"{result}",
+            ]
+        )
     except Exception as e:
         raise DHError(e, "failed to complete the learn function.") from e

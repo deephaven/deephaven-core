@@ -21,6 +21,7 @@ class LivenessScope(JObjectWrapper):
 
     Note, LivenessScope should not be instantiated directly but rather through the 'liveness_scope' function.
     """
+
     j_object_type = _JLivenessScope
 
     def __init__(self, j_scope: jpy.JType):
@@ -64,7 +65,9 @@ class LivenessScope(JObjectWrapper):
             _JLivenessScopeStack.peek().manage(wrapper.j_object)
             _JLivenessScopeStack.push(self.j_scope)
         except Exception as e:
-            raise DHError(e, message="failed to preserve a wrapped object in this LivenessScope.")
+            raise DHError(
+                e, message="failed to preserve a wrapped object in this LivenessScope."
+            )
 
 
 def liveness_scope() -> LivenessScope:

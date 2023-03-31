@@ -3,4 +3,5 @@
 #
 
 from test_helper import start_jvm
+
 start_jvm()

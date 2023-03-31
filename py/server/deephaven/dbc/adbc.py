@@ -16,8 +16,10 @@ from deephaven.table import Table
 try:
     import adbc_driver_manager.dbapi
 except ImportError:
-    raise DHError(message="import ADBC driver manager failed, please install ADBC driver manager and your "
-                          "targeted database driver first.")
+    raise DHError(
+        message="import ADBC driver manager failed, please install ADBC driver manager and your "
+        "targeted database driver first."
+    )
 
 
 def read_cursor(cursor: adbc_driver_manager.dbapi.Cursor) -> Table:
@@ -35,11 +37,15 @@ def read_cursor(cursor: adbc_driver_manager.dbapi.Cursor) -> Table:
     """
 
     if not isinstance(cursor, adbc_driver_manager.dbapi.Cursor):
-        raise TypeError(f"expect {adbc_driver_manager.dbapi.Cursor} got {type(cursor)} instead.")
+        raise TypeError(
+            f"expect {adbc_driver_manager.dbapi.Cursor} got {type(cursor)} instead."
+        )
 
     try:
         pa_table = cursor.fetch_arrow_table()
     except Exception as e:
-        raise DHError(e, message="failed to fetch ADBC result as an Arrow table.") from e
+        raise DHError(
+            e, message="failed to fetch ADBC result as an Arrow table."
+        ) from e
 
     return dharrow.to_table(pa_table)

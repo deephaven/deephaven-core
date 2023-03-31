@@ -2,7 +2,9 @@
 """Client and server classes corresponding to protobuf-defined services."""
 import grpc
 
-from pydeephaven.proto import partitionedtable_pb2 as deephaven_dot_proto_dot_partitionedtable__pb2
+from pydeephaven.proto import (
+    partitionedtable_pb2 as deephaven_dot_proto_dot_partitionedtable__pb2,
+)
 from pydeephaven.proto import table_pb2 as deephaven_dot_proto_dot_table__pb2
 
 
@@ -18,20 +20,20 @@ class PartitionedTableServiceStub(object):
             channel: A grpc.Channel.
         """
         self.PartitionBy = channel.unary_unary(
-                '/io.deephaven.proto.backplane.grpc.PartitionedTableService/PartitionBy',
-                request_serializer=deephaven_dot_proto_dot_partitionedtable__pb2.PartitionByRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_partitionedtable__pb2.PartitionByResponse.FromString,
-                )
+            "/io.deephaven.proto.backplane.grpc.PartitionedTableService/PartitionBy",
+            request_serializer=deephaven_dot_proto_dot_partitionedtable__pb2.PartitionByRequest.SerializeToString,
+            response_deserializer=deephaven_dot_proto_dot_partitionedtable__pb2.PartitionByResponse.FromString,
+        )
         self.Merge = channel.unary_unary(
-                '/io.deephaven.proto.backplane.grpc.PartitionedTableService/Merge',
-                request_serializer=deephaven_dot_proto_dot_partitionedtable__pb2.MergeRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-                )
+            "/io.deephaven.proto.backplane.grpc.PartitionedTableService/Merge",
+            request_serializer=deephaven_dot_proto_dot_partitionedtable__pb2.MergeRequest.SerializeToString,
+            response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+        )
         self.GetTable = channel.unary_unary(
-                '/io.deephaven.proto.backplane.grpc.PartitionedTableService/GetTable',
-                request_serializer=deephaven_dot_proto_dot_partitionedtable__pb2.GetTableRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-                )
+            "/io.deephaven.proto.backplane.grpc.PartitionedTableService/GetTable",
+            request_serializer=deephaven_dot_proto_dot_partitionedtable__pb2.GetTableRequest.SerializeToString,
+            response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+        )
 
 
 class PartitionedTableServiceServicer(object):
@@ -45,16 +47,16 @@ class PartitionedTableServiceServicer(object):
         addressable. The result will be a FetchObjectResponse populated with a PartitionedTable.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def Merge(self, request, context):
         """
         Given a partitioned table, returns a table with the contents of all of the constituent tables.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def GetTable(self, request, context):
         """
@@ -72,86 +74,123 @@ class PartitionedTableServiceServicer(object):
         GetTable request.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
 
 def add_PartitionedTableServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
-            'PartitionBy': grpc.unary_unary_rpc_method_handler(
-                    servicer.PartitionBy,
-                    request_deserializer=deephaven_dot_proto_dot_partitionedtable__pb2.PartitionByRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_partitionedtable__pb2.PartitionByResponse.SerializeToString,
-            ),
-            'Merge': grpc.unary_unary_rpc_method_handler(
-                    servicer.Merge,
-                    request_deserializer=deephaven_dot_proto_dot_partitionedtable__pb2.MergeRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
-            ),
-            'GetTable': grpc.unary_unary_rpc_method_handler(
-                    servicer.GetTable,
-                    request_deserializer=deephaven_dot_proto_dot_partitionedtable__pb2.GetTableRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
-            ),
+        "PartitionBy": grpc.unary_unary_rpc_method_handler(
+            servicer.PartitionBy,
+            request_deserializer=deephaven_dot_proto_dot_partitionedtable__pb2.PartitionByRequest.FromString,
+            response_serializer=deephaven_dot_proto_dot_partitionedtable__pb2.PartitionByResponse.SerializeToString,
+        ),
+        "Merge": grpc.unary_unary_rpc_method_handler(
+            servicer.Merge,
+            request_deserializer=deephaven_dot_proto_dot_partitionedtable__pb2.MergeRequest.FromString,
+            response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
+        ),
+        "GetTable": grpc.unary_unary_rpc_method_handler(
+            servicer.GetTable,
+            request_deserializer=deephaven_dot_proto_dot_partitionedtable__pb2.GetTableRequest.FromString,
+            response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
+        ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-            'io.deephaven.proto.backplane.grpc.PartitionedTableService', rpc_method_handlers)
+        "io.deephaven.proto.backplane.grpc.PartitionedTableService", rpc_method_handlers
+    )
     server.add_generic_rpc_handlers((generic_handler,))
 
 
- # This class is part of an EXPERIMENTAL API.
+# This class is part of an EXPERIMENTAL API.
 class PartitionedTableService(object):
     """
     This service provides tools to create and query partitioned tables.
     """
 
     @staticmethod
-    def PartitionBy(request,
+    def PartitionBy(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.PartitionedTableService/PartitionBy',
+            "/io.deephaven.proto.backplane.grpc.PartitionedTableService/PartitionBy",
             deephaven_dot_proto_dot_partitionedtable__pb2.PartitionByRequest.SerializeToString,
             deephaven_dot_proto_dot_partitionedtable__pb2.PartitionByResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
 
     @staticmethod
-    def Merge(request,
+    def Merge(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.PartitionedTableService/Merge',
+            "/io.deephaven.proto.backplane.grpc.PartitionedTableService/Merge",
             deephaven_dot_proto_dot_partitionedtable__pb2.MergeRequest.SerializeToString,
             deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
 
     @staticmethod
-    def GetTable(request,
+    def GetTable(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.PartitionedTableService/GetTable',
+            "/io.deephaven.proto.backplane.grpc.PartitionedTableService/GetTable",
             deephaven_dot_proto_dot_partitionedtable__pb2.GetTableRequest.SerializeToString,
             deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )

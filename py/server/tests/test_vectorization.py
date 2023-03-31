@@ -43,11 +43,17 @@ class VectorizationTestCase(BaseTestCase):
         with self.subTest("parameter number mismatch"):
             with self.assertRaises(DHError) as cm:
                 t1 = t.update("X = vectorized_func(i)")
-            self.assertRegex(str(cm.exception), r".*count.*mismatch", )
+            self.assertRegex(
+                str(cm.exception),
+                r".*count.*mismatch",
+            )
 
             with self.assertRaises(DHError) as cm:
                 t1 = t.update("X = auto_func(i)")
-            self.assertRegex(str(cm.exception), r"missing 1 required positional argument", )
+            self.assertRegex(
+                str(cm.exception),
+                r"missing 1 required positional argument",
+            )
 
         with self.subTest("can't cast return value"):
             with self.assertRaises(DHError) as cm:
@@ -132,7 +138,11 @@ class VectorizationTestCase(BaseTestCase):
         def pyfunc(p1, p2, p3) -> int:
             return p1 + p2 + p3
 
-        t = empty_table(1).update("X = i").update(["Y = pyfunc(X, i, 33)", "Z = pyfunc(X, ii, 66)"])
+        t = (
+            empty_table(1)
+            .update("X = i")
+            .update(["Y = pyfunc(X, i, 33)", "Z = pyfunc(X, ii, 66)"])
+        )
         self.assertEqual(deephaven.table._vectorized_count, 2)
         self.assertIn("33", t.to_string(cols=["Y"]))
         self.assertIn("66", t.to_string(cols=["Z"]))
@@ -142,7 +152,11 @@ class VectorizationTestCase(BaseTestCase):
         def pyfunc(p1, p2, p3) -> int:
             return p1 + p2 + p3
 
-        t = empty_table(1).update("X = i").update(["Y = pyfunc(X, i, 33)", "Z = pyfunc(X, ii, 66)"])
+        t = (
+            empty_table(1)
+            .update("X = i")
+            .update(["Y = pyfunc(X, i, 33)", "Z = pyfunc(X, ii, 66)"])
+        )
         self.assertEqual(deephaven.table._vectorized_count, 3)
         self.assertIn("33", t.to_string(cols=["Y"]))
         self.assertIn("66", t.to_string(cols=["Z"]))
@@ -155,11 +169,19 @@ class VectorizationTestCase(BaseTestCase):
             return p1 * p2 * p3
 
         with self.assertRaises(DHError) as cm:
-            t = empty_table(10).view(formulas=["I=ii", "J=(ii * 2)"]).where("pyfunc_int(I, 3, J)")
+            t = (
+                empty_table(10)
+                .view(formulas=["I=ii", "J=(ii * 2)"])
+                .where("pyfunc_int(I, 3, J)")
+            )
         self.assertEqual(deephaven.table._vectorized_count, 0)
         self.assertIn("boolean required", str(cm.exception))
 
-        t = empty_table(10).view(formulas=["I=ii", "J=(ii * 2)"]).where("pyfunc_bool(I, 3, J)")
+        t = (
+            empty_table(10)
+            .view(formulas=["I=ii", "J=(ii * 2)"])
+            .where("pyfunc_bool(I, 3, J)")
+        )
         self.assertEqual(deephaven.table._vectorized_count, 1)
         self.assertGreater(t.size, 1)
 

@@ -11,9 +11,11 @@ from pydeephaven import Session, Table
 
 
 def demo_chained_table_ops(taxi_data_table: Table) -> Table:
-    return taxi_data_table.where(filters=["VendorID > 0"]) \
-        .sort(order_by=["VendorID", "fare_amount"]) \
+    return (
+        taxi_data_table.where(filters=["VendorID > 0"])
+        .sort(order_by=["VendorID", "fare_amount"])
         .head_by(num_rows=5, by=["VendorID"])
+    )
 
 
 def main():
@@ -29,5 +31,5 @@ def main():
         print(df)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

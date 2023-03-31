@@ -31,7 +31,9 @@ class UgpTestCase(BaseTestCase):
 
     def test_ugp_context_manager(self):
         with self.assertRaises(DHError) as cm:
-            test_table = time_table("00:00:00.001").update(["X=i%11"]).sort("X").tail(16)
+            test_table = (
+                time_table("00:00:00.001").update(["X=i%11"]).sort("X").tail(16)
+            )
         self.assertRegex(str(cm.exception), r"IllegalStateException")
 
         with ugp.exclusive_lock():
@@ -50,7 +52,9 @@ class UgpTestCase(BaseTestCase):
             with ugp.shared_lock():
                 with ugp.exclusive_lock():
                     test_table = time_table("00:00:00.001").update(["TS=currentTime()"])
-        self.assertRegex(str(cm.exception), "Cannot upgrade a shared lock to an exclusive lock")
+        self.assertRegex(
+            str(cm.exception), "Cannot upgrade a shared lock to an exclusive lock"
+        )
 
     def test_ugp_decorator_exclusive(self):
         def ticking_table_op(tail_size: int, period: str = "00:00:01"):
@@ -141,13 +145,7 @@ class UgpTestCase(BaseTestCase):
 
         left_table = test_table.drop_columns(["Z", "Timestamp"])
         right_table = test_table.drop_columns(["Y", "Timestamp"])
-        ops = [
-            Table.natural_join,
-            Table.exact_join,
-            Table.join,
-            Table.aj,
-            Table.raj
-        ]
+        ops = [Table.natural_join, Table.exact_join, Table.join, Table.aj, Table.raj]
 
         for op in ops:
             with self.subTest(op=op):
@@ -190,7 +188,9 @@ class UgpTestCase(BaseTestCase):
     def test_auto_locking_head_tail_by(self):
         ops = [Table.head_by, Table.tail_by]
         with ugp.shared_lock():
-            test_table = time_table("00:00:00.001").update(["X=i%11"]).sort("X").tail(16)
+            test_table = (
+                time_table("00:00:00.001").update(["X=i%11"]).sort("X").tail(16)
+            )
 
         for op in ops:
             with self.subTest(op=op):
@@ -260,7 +260,9 @@ class UgpTestCase(BaseTestCase):
         with ugp.shared_lock():
             test_table = time_table("00:00:01").update(["X=i", "Y=i%13", "Z=X*Y"])
         proxy = test_table.drop_columns(["Timestamp", "Y"]).partition_by(by="X").proxy()
-        proxy2 = test_table.drop_columns(["Timestamp", "Z"]).partition_by(by="X").proxy()
+        proxy2 = (
+            test_table.drop_columns(["Timestamp", "Z"]).partition_by(by="X").proxy()
+        )
 
         with self.assertRaises(DHError) as cm:
             joined_pt_proxy = proxy.natural_join(proxy2, on="X")

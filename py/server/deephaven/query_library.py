@@ -46,7 +46,10 @@ def import_static(name: str) -> None:
         j_class = _JClass.forName(name)
         _JExecutionContext.getContext().getQueryLibrary().importStatic(j_class)
     except Exception as e:
-        raise DHError(e, "failed to add the static members of the Java class to the Query Library.") from e
+        raise DHError(
+            e,
+            "failed to add the static members of the Java class to the Query Library.",
+        ) from e
 
 
 def import_package(name: str) -> None:
@@ -64,7 +67,9 @@ def import_package(name: str) -> None:
         j_package = _JPackage.getPackage(name)
         _JExecutionContext.getContext().getQueryLibrary().importPackage(j_package)
     except Exception as e:
-        raise DHError(e, "failed to add the Java package into to the Query Library.") from e
+        raise DHError(
+            e, "failed to add the Java package into to the Query Library."
+        ) from e
 
 
 def imports() -> List[str]:
@@ -73,4 +78,6 @@ def imports() -> List[str]:
     Returns:
         a list of strings
     """
-    return list(_JExecutionContext.getContext().getQueryLibrary().getImportStrings().toArray())[1:]
+    return list(
+        _JExecutionContext.getContext().getQueryLibrary().getImportStrings().toArray()
+    )[1:]

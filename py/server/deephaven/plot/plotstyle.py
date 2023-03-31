@@ -12,7 +12,7 @@ _JPlotStyle = jpy.get_type("io.deephaven.plot.PlotStyle")
 
 
 class PlotStyle(Enum):
-    """ An enum defining the styles of a plot (e.g. line, bar, etc.). """
+    """An enum defining the styles of a plot (e.g. line, bar, etc.)."""
 
     BAR = _JPlotStyle.BAR
     """ A bar chart. """

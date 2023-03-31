@@ -15,7 +15,8 @@ _JApplicationState = jpy.get_type("io.deephaven.appmode.ApplicationState")
 
 
 class ApplicationState(JObjectWrapper):
-    """ The ApplicationState represents the state of an application. """
+    """The ApplicationState represents the state of an application."""
+
     j_object_type = _JApplicationState
 
     @property
@@ -60,7 +61,7 @@ class ApplicationState(JObjectWrapper):
 
 
 def get_app_state():
-    """ Get the current application state object.
+    """Get the current application state object.
 
     Raises:
          DHError

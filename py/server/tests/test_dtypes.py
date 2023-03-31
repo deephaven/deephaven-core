@@ -18,7 +18,7 @@ from tests.testbase import BaseTestCase
 
 
 def remap_double(v, null_value):
-    if v != v or v == NULL_DOUBLE or v == float('inf'):
+    if v != v or v == NULL_DOUBLE or v == float("inf"):
         return null_value
     return v
 
@@ -44,8 +44,12 @@ class DTypesTestCase(BaseTestCase):
         self.assertEqual(dtypes.double.j_type, jpy.get_type("double"))
         self.assertEqual(dtypes.string.j_type, jpy.get_type("java.lang.String"))
         self.assertEqual(dtypes.BigDecimal.j_type, jpy.get_type("java.math.BigDecimal"))
-        self.assertEqual(dtypes.StringSet.j_type, jpy.get_type("io.deephaven.stringset.StringSet"))
-        self.assertEqual(dtypes.DateTime.j_type, jpy.get_type("io.deephaven.time.DateTime"))
+        self.assertEqual(
+            dtypes.StringSet.j_type, jpy.get_type("io.deephaven.stringset.StringSet")
+        )
+        self.assertEqual(
+            dtypes.DateTime.j_type, jpy.get_type("io.deephaven.time.DateTime")
+        )
         self.assertEqual(dtypes.Period.j_type, jpy.get_type("io.deephaven.time.Period"))
         self.assertEqual(dtypes.PyObject.j_type, jpy.get_type("org.jpy.PyObject"))
         self.assertEqual(dtypes.JObject.j_type, jpy.get_type("java.lang.Object"))
@@ -54,7 +58,7 @@ class DTypesTestCase(BaseTestCase):
         self.assertEqual(dtypes.bool_.np_type, np.bool_)
         self.assertEqual(dtypes.byte.np_type, np.int8)
         self.assertEqual(dtypes.short.np_type, np.int16)
-        self.assertEqual(dtypes.char.np_type, np.dtype('uint16'))
+        self.assertEqual(dtypes.char.np_type, np.dtype("uint16"))
         self.assertEqual(dtypes.int_.np_type, np.int64)
         self.assertEqual(dtypes.long.np_type, np.int64)
         self.assertEqual(dtypes.float_.np_type, np.float64)
@@ -92,9 +96,14 @@ class DTypesTestCase(BaseTestCase):
         self.assertTrue(np.array_equal(np_array, expected))
 
     def test_integer_array(self):
-        np_array = np.array([float('nan'), NULL_DOUBLE, np.inf], dtype=np.float64)
+        np_array = np.array([float("nan"), NULL_DOUBLE, np.inf], dtype=np.float64)
 
-        nulls = {dtypes.int64: NULL_LONG, dtypes.int32: NULL_INT, dtypes.short: NULL_SHORT, dtypes.byte: NULL_BYTE}
+        nulls = {
+            dtypes.int64: NULL_LONG,
+            dtypes.int32: NULL_INT,
+            dtypes.short: NULL_SHORT,
+            dtypes.byte: NULL_BYTE,
+        }
         for dt, nv in nulls.items():
             map_fn = functools.partial(remap_double, null_value=nv)
             with self.subTest(f"numpy double array to {dt}"):
@@ -121,23 +130,31 @@ class DTypesTestCase(BaseTestCase):
 
         nulls = {dtypes.float_: NULL_FLOAT, dtypes.double: NULL_DOUBLE}
 
-        np_array = np.array([float('nan'), 1.7976931348623157e+300, NULL_DOUBLE, 1.1, float('inf')], dtype=np.float64)
+        np_array = np.array(
+            [float("nan"), 1.7976931348623157e300, NULL_DOUBLE, 1.1, float("inf")],
+            dtype=np.float64,
+        )
         for dt, nv in nulls.items():
             map_fn = functools.partial(remap_double, null_value=nv)
             with self.subTest(f"numpy double array to {dt} with mapping"):
-                expected = [nv, 1.7976931348623157e+300, nv, 1.1, nv]
+                expected = [nv, 1.7976931348623157e300, nv, 1.1, nv]
                 j_array = dtypes.array(dt, np_array, remap=map_fn)
                 py_array = [x for x in j_array]
                 for i in range(4):
                     # downcast from double to float results in inf when the value is outside of float range
-                    self.assertTrue(math.isclose(expected[i], py_array[i], rel_tol=1e-7) or py_array[i] == float('inf'))
+                    self.assertTrue(
+                        math.isclose(expected[i], py_array[i], rel_tol=1e-7)
+                        or py_array[i] == float("inf")
+                    )
 
         with self.subTest("double array from numpy array"):
-            np_array = np.array([float('nan'), NULL_DOUBLE, 1.1, float('inf')], dtype=np.float64)
+            np_array = np.array(
+                [float("nan"), NULL_DOUBLE, 1.1, float("inf")], dtype=np.float64
+            )
             pd_series = pd.Series(np_array)
             j_array = dtypes.array(dtypes.double, pd_series)
             py_array = [x for x in j_array]
-            expected = [float('nan'), NULL_DOUBLE, 1.1, float('inf')]
+            expected = [float("nan"), NULL_DOUBLE, 1.1, float("inf")]
             self.assertTrue(math.isnan(py_array[0]))
             self.assertEqual(expected[1:], py_array[1:])
 
@@ -200,5 +217,5 @@ class DTypesTestCase(BaseTestCase):
         self.assertEqual(j_array[1], j_array2[1])
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

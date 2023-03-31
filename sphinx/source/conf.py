@@ -16,22 +16,28 @@
 
 # -- Project information -----------------------------------------------------
 
-project = 'Deephaven'
-copyright = '2021, Deephaven Data Labs'
-author = 'Deephaven Data Labs'
+project = "Deephaven"
+copyright = "2021, Deephaven Data Labs"
+author = "Deephaven Data Labs"
 
 # The full version, including alpha/beta/rc tags
-#release = '0.0.1'
+# release = '0.0.1'
 
 # -- General configuration ---------------------------------------------------
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.napoleon', 'sphinx.ext.todo', 'sphinx.ext.viewcode', "sphinx_autodoc_typehints"]
+extensions = [
+    "sphinx.ext.autodoc",
+    "sphinx.ext.napoleon",
+    "sphinx.ext.todo",
+    "sphinx.ext.viewcode",
+    "sphinx_autodoc_typehints",
+]
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
+templates_path = ["_templates"]
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -43,15 +49,15 @@ exclude_patterns = []
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'furo'
+html_theme = "furo"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+html_static_path = ["_static"]
 
 # Custom CSS files
-html_css_files = ['custom.css']
+html_css_files = ["custom.css"]
 
 # Theme options
 # see https://alabaster.readthedocs.io/en/latest/customization.html
@@ -59,14 +65,14 @@ html_css_files = ['custom.css']
 html_theme_options = {
     #'logo' : 'deephaven.png',
     #'logo_name' : 'Deephaven',
-    'page_width' : '80%',
-    'sidebar_width' : '35%',
+    "page_width": "80%",
+    "sidebar_width": "35%",
 }
 
 # A boolean that decides whether module names are prepended to all object names (for object types where a “module” of some kind is defined), e.g. for py:function directives. Default is True.
 add_module_names = False
 # if we allow sphinx to generate type hints for signatures (default), it would make the generated doc cluttered and hard to read
-autodoc_typehints = 'none'
+autodoc_typehints = "none"
 
 #########################################################################################################################################################################
 
@@ -78,39 +84,47 @@ autodoc_typehints = 'none'
 from glob import glob
 import os
 
-workspace = os.environ.get('DEEPHAVEN_WORKSPACE', '.')
-propfile = os.environ.get('DEEPHAVEN_PROPFILE', 'dh-defaults.prop')
+workspace = os.environ.get("DEEPHAVEN_WORKSPACE", ".")
+propfile = os.environ.get("DEEPHAVEN_PROPFILE", "dh-defaults.prop")
 jvm_properties = {
-    'Configuration.rootFile': propfile,
-    'deephaven.dataDir': os.path.realpath(workspace),
+    "Configuration.rootFile": propfile,
+    "deephaven.dataDir": os.path.realpath(workspace),
 }
 
 jvm_options = {
     # Allow access to java.nio.Buffer fields
-    '--add-opens=java.base/java.nio=ALL-UNNAMED',
+    "--add-opens=java.base/java.nio=ALL-UNNAMED",
     # Allow our hotspot-impl project to access internals
-    '--add-exports=java.management/sun.management=ALL-UNNAMED',
+    "--add-exports=java.management/sun.management=ALL-UNNAMED",
     # Allow our clock-impl project to access internals
-    '--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED',
+    "--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED",
 }
 
 from deephaven_internal import jvm
+
 jvm.init_jvm(
-    jvm_classpath=glob(os.environ.get('DEEPHAVEN_CLASSPATH')),
+    jvm_classpath=glob(os.environ.get("DEEPHAVEN_CLASSPATH")),
     jvm_properties=jvm_properties,
     jvm_options=jvm_options,
 )
 
 import jpy
-py_scope_jpy = jpy.get_type("io.deephaven.engine.util.PythonScopeJpyImpl").ofMainGlobals()
-py_dh_session = jpy.get_type("io.deephaven.integrations.python.PythonDeephavenSession")(py_scope_jpy)
+
+py_scope_jpy = jpy.get_type(
+    "io.deephaven.engine.util.PythonScopeJpyImpl"
+).ofMainGlobals()
+py_dh_session = jpy.get_type("io.deephaven.integrations.python.PythonDeephavenSession")(
+    py_scope_jpy
+)
 py_dh_session.getExecutionContext().open()
 
 
 import deephaven
+
 docs_title = "Deephaven python modules."
 package_roots = [jpy, deephaven]
-package_excludes = ['._']
+package_excludes = ["._"]
 
 import dh_sphinx
+
 dh_sphinx.gen_sphinx_modules(docs_title, package_roots, package_excludes)

@@ -16,200 +16,200 @@ class TableServiceStub(object):
             channel: A grpc.Channel.
         """
         self.GetExportedTableCreationResponse = channel.unary_unary(
-                '/io.deephaven.proto.backplane.grpc.TableService/GetExportedTableCreationResponse',
-                request_serializer=deephaven_dot_proto_dot_ticket__pb2.Ticket.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-                )
+            "/io.deephaven.proto.backplane.grpc.TableService/GetExportedTableCreationResponse",
+            request_serializer=deephaven_dot_proto_dot_ticket__pb2.Ticket.SerializeToString,
+            response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+        )
         self.FetchTable = channel.unary_unary(
-                '/io.deephaven.proto.backplane.grpc.TableService/FetchTable',
-                request_serializer=deephaven_dot_proto_dot_table__pb2.FetchTableRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-                )
+            "/io.deephaven.proto.backplane.grpc.TableService/FetchTable",
+            request_serializer=deephaven_dot_proto_dot_table__pb2.FetchTableRequest.SerializeToString,
+            response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+        )
         self.ApplyPreviewColumns = channel.unary_unary(
-                '/io.deephaven.proto.backplane.grpc.TableService/ApplyPreviewColumns',
-                request_serializer=deephaven_dot_proto_dot_table__pb2.ApplyPreviewColumnsRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-                )
+            "/io.deephaven.proto.backplane.grpc.TableService/ApplyPreviewColumns",
+            request_serializer=deephaven_dot_proto_dot_table__pb2.ApplyPreviewColumnsRequest.SerializeToString,
+            response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+        )
         self.EmptyTable = channel.unary_unary(
-                '/io.deephaven.proto.backplane.grpc.TableService/EmptyTable',
-                request_serializer=deephaven_dot_proto_dot_table__pb2.EmptyTableRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-                )
+            "/io.deephaven.proto.backplane.grpc.TableService/EmptyTable",
+            request_serializer=deephaven_dot_proto_dot_table__pb2.EmptyTableRequest.SerializeToString,
+            response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+        )
         self.TimeTable = channel.unary_unary(
-                '/io.deephaven.proto.backplane.grpc.TableService/TimeTable',
-                request_serializer=deephaven_dot_proto_dot_table__pb2.TimeTableRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-                )
+            "/io.deephaven.proto.backplane.grpc.TableService/TimeTable",
+            request_serializer=deephaven_dot_proto_dot_table__pb2.TimeTableRequest.SerializeToString,
+            response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+        )
         self.DropColumns = channel.unary_unary(
-                '/io.deephaven.proto.backplane.grpc.TableService/DropColumns',
-                request_serializer=deephaven_dot_proto_dot_table__pb2.DropColumnsRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-                )
+            "/io.deephaven.proto.backplane.grpc.TableService/DropColumns",
+            request_serializer=deephaven_dot_proto_dot_table__pb2.DropColumnsRequest.SerializeToString,
+            response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+        )
         self.Update = channel.unary_unary(
-                '/io.deephaven.proto.backplane.grpc.TableService/Update',
-                request_serializer=deephaven_dot_proto_dot_table__pb2.SelectOrUpdateRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-                )
+            "/io.deephaven.proto.backplane.grpc.TableService/Update",
+            request_serializer=deephaven_dot_proto_dot_table__pb2.SelectOrUpdateRequest.SerializeToString,
+            response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+        )
         self.LazyUpdate = channel.unary_unary(
-                '/io.deephaven.proto.backplane.grpc.TableService/LazyUpdate',
-                request_serializer=deephaven_dot_proto_dot_table__pb2.SelectOrUpdateRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-                )
+            "/io.deephaven.proto.backplane.grpc.TableService/LazyUpdate",
+            request_serializer=deephaven_dot_proto_dot_table__pb2.SelectOrUpdateRequest.SerializeToString,
+            response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+        )
         self.View = channel.unary_unary(
-                '/io.deephaven.proto.backplane.grpc.TableService/View',
-                request_serializer=deephaven_dot_proto_dot_table__pb2.SelectOrUpdateRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-                )
+            "/io.deephaven.proto.backplane.grpc.TableService/View",
+            request_serializer=deephaven_dot_proto_dot_table__pb2.SelectOrUpdateRequest.SerializeToString,
+            response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+        )
         self.UpdateView = channel.unary_unary(
-                '/io.deephaven.proto.backplane.grpc.TableService/UpdateView',
-                request_serializer=deephaven_dot_proto_dot_table__pb2.SelectOrUpdateRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-                )
+            "/io.deephaven.proto.backplane.grpc.TableService/UpdateView",
+            request_serializer=deephaven_dot_proto_dot_table__pb2.SelectOrUpdateRequest.SerializeToString,
+            response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+        )
         self.Select = channel.unary_unary(
-                '/io.deephaven.proto.backplane.grpc.TableService/Select',
-                request_serializer=deephaven_dot_proto_dot_table__pb2.SelectOrUpdateRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-                )
+            "/io.deephaven.proto.backplane.grpc.TableService/Select",
+            request_serializer=deephaven_dot_proto_dot_table__pb2.SelectOrUpdateRequest.SerializeToString,
+            response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+        )
         self.UpdateBy = channel.unary_unary(
-                '/io.deephaven.proto.backplane.grpc.TableService/UpdateBy',
-                request_serializer=deephaven_dot_proto_dot_table__pb2.UpdateByRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-                )
+            "/io.deephaven.proto.backplane.grpc.TableService/UpdateBy",
+            request_serializer=deephaven_dot_proto_dot_table__pb2.UpdateByRequest.SerializeToString,
+            response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+        )
         self.SelectDistinct = channel.unary_unary(
-                '/io.deephaven.proto.backplane.grpc.TableService/SelectDistinct',
-                request_serializer=deephaven_dot_proto_dot_table__pb2.SelectDistinctRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-                )
+            "/io.deephaven.proto.backplane.grpc.TableService/SelectDistinct",
+            request_serializer=deephaven_dot_proto_dot_table__pb2.SelectDistinctRequest.SerializeToString,
+            response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+        )
         self.Filter = channel.unary_unary(
-                '/io.deephaven.proto.backplane.grpc.TableService/Filter',
-                request_serializer=deephaven_dot_proto_dot_table__pb2.FilterTableRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-                )
+            "/io.deephaven.proto.backplane.grpc.TableService/Filter",
+            request_serializer=deephaven_dot_proto_dot_table__pb2.FilterTableRequest.SerializeToString,
+            response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+        )
         self.UnstructuredFilter = channel.unary_unary(
-                '/io.deephaven.proto.backplane.grpc.TableService/UnstructuredFilter',
-                request_serializer=deephaven_dot_proto_dot_table__pb2.UnstructuredFilterTableRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-                )
+            "/io.deephaven.proto.backplane.grpc.TableService/UnstructuredFilter",
+            request_serializer=deephaven_dot_proto_dot_table__pb2.UnstructuredFilterTableRequest.SerializeToString,
+            response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+        )
         self.Sort = channel.unary_unary(
-                '/io.deephaven.proto.backplane.grpc.TableService/Sort',
-                request_serializer=deephaven_dot_proto_dot_table__pb2.SortTableRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-                )
+            "/io.deephaven.proto.backplane.grpc.TableService/Sort",
+            request_serializer=deephaven_dot_proto_dot_table__pb2.SortTableRequest.SerializeToString,
+            response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+        )
         self.Head = channel.unary_unary(
-                '/io.deephaven.proto.backplane.grpc.TableService/Head',
-                request_serializer=deephaven_dot_proto_dot_table__pb2.HeadOrTailRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-                )
+            "/io.deephaven.proto.backplane.grpc.TableService/Head",
+            request_serializer=deephaven_dot_proto_dot_table__pb2.HeadOrTailRequest.SerializeToString,
+            response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+        )
         self.Tail = channel.unary_unary(
-                '/io.deephaven.proto.backplane.grpc.TableService/Tail',
-                request_serializer=deephaven_dot_proto_dot_table__pb2.HeadOrTailRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-                )
+            "/io.deephaven.proto.backplane.grpc.TableService/Tail",
+            request_serializer=deephaven_dot_proto_dot_table__pb2.HeadOrTailRequest.SerializeToString,
+            response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+        )
         self.HeadBy = channel.unary_unary(
-                '/io.deephaven.proto.backplane.grpc.TableService/HeadBy',
-                request_serializer=deephaven_dot_proto_dot_table__pb2.HeadOrTailByRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-                )
+            "/io.deephaven.proto.backplane.grpc.TableService/HeadBy",
+            request_serializer=deephaven_dot_proto_dot_table__pb2.HeadOrTailByRequest.SerializeToString,
+            response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+        )
         self.TailBy = channel.unary_unary(
-                '/io.deephaven.proto.backplane.grpc.TableService/TailBy',
-                request_serializer=deephaven_dot_proto_dot_table__pb2.HeadOrTailByRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-                )
+            "/io.deephaven.proto.backplane.grpc.TableService/TailBy",
+            request_serializer=deephaven_dot_proto_dot_table__pb2.HeadOrTailByRequest.SerializeToString,
+            response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+        )
         self.Ungroup = channel.unary_unary(
-                '/io.deephaven.proto.backplane.grpc.TableService/Ungroup',
-                request_serializer=deephaven_dot_proto_dot_table__pb2.UngroupRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-                )
+            "/io.deephaven.proto.backplane.grpc.TableService/Ungroup",
+            request_serializer=deephaven_dot_proto_dot_table__pb2.UngroupRequest.SerializeToString,
+            response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+        )
         self.MergeTables = channel.unary_unary(
-                '/io.deephaven.proto.backplane.grpc.TableService/MergeTables',
-                request_serializer=deephaven_dot_proto_dot_table__pb2.MergeTablesRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-                )
+            "/io.deephaven.proto.backplane.grpc.TableService/MergeTables",
+            request_serializer=deephaven_dot_proto_dot_table__pb2.MergeTablesRequest.SerializeToString,
+            response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+        )
         self.CrossJoinTables = channel.unary_unary(
-                '/io.deephaven.proto.backplane.grpc.TableService/CrossJoinTables',
-                request_serializer=deephaven_dot_proto_dot_table__pb2.CrossJoinTablesRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-                )
+            "/io.deephaven.proto.backplane.grpc.TableService/CrossJoinTables",
+            request_serializer=deephaven_dot_proto_dot_table__pb2.CrossJoinTablesRequest.SerializeToString,
+            response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+        )
         self.NaturalJoinTables = channel.unary_unary(
-                '/io.deephaven.proto.backplane.grpc.TableService/NaturalJoinTables',
-                request_serializer=deephaven_dot_proto_dot_table__pb2.NaturalJoinTablesRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-                )
+            "/io.deephaven.proto.backplane.grpc.TableService/NaturalJoinTables",
+            request_serializer=deephaven_dot_proto_dot_table__pb2.NaturalJoinTablesRequest.SerializeToString,
+            response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+        )
         self.ExactJoinTables = channel.unary_unary(
-                '/io.deephaven.proto.backplane.grpc.TableService/ExactJoinTables',
-                request_serializer=deephaven_dot_proto_dot_table__pb2.ExactJoinTablesRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-                )
+            "/io.deephaven.proto.backplane.grpc.TableService/ExactJoinTables",
+            request_serializer=deephaven_dot_proto_dot_table__pb2.ExactJoinTablesRequest.SerializeToString,
+            response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+        )
         self.LeftJoinTables = channel.unary_unary(
-                '/io.deephaven.proto.backplane.grpc.TableService/LeftJoinTables',
-                request_serializer=deephaven_dot_proto_dot_table__pb2.LeftJoinTablesRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-                )
+            "/io.deephaven.proto.backplane.grpc.TableService/LeftJoinTables",
+            request_serializer=deephaven_dot_proto_dot_table__pb2.LeftJoinTablesRequest.SerializeToString,
+            response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+        )
         self.AsOfJoinTables = channel.unary_unary(
-                '/io.deephaven.proto.backplane.grpc.TableService/AsOfJoinTables',
-                request_serializer=deephaven_dot_proto_dot_table__pb2.AsOfJoinTablesRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-                )
+            "/io.deephaven.proto.backplane.grpc.TableService/AsOfJoinTables",
+            request_serializer=deephaven_dot_proto_dot_table__pb2.AsOfJoinTablesRequest.SerializeToString,
+            response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+        )
         self.ComboAggregate = channel.unary_unary(
-                '/io.deephaven.proto.backplane.grpc.TableService/ComboAggregate',
-                request_serializer=deephaven_dot_proto_dot_table__pb2.ComboAggregateRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-                )
+            "/io.deephaven.proto.backplane.grpc.TableService/ComboAggregate",
+            request_serializer=deephaven_dot_proto_dot_table__pb2.ComboAggregateRequest.SerializeToString,
+            response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+        )
         self.AggregateAll = channel.unary_unary(
-                '/io.deephaven.proto.backplane.grpc.TableService/AggregateAll',
-                request_serializer=deephaven_dot_proto_dot_table__pb2.AggregateAllRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-                )
+            "/io.deephaven.proto.backplane.grpc.TableService/AggregateAll",
+            request_serializer=deephaven_dot_proto_dot_table__pb2.AggregateAllRequest.SerializeToString,
+            response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+        )
         self.Aggregate = channel.unary_unary(
-                '/io.deephaven.proto.backplane.grpc.TableService/Aggregate',
-                request_serializer=deephaven_dot_proto_dot_table__pb2.AggregateRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-                )
+            "/io.deephaven.proto.backplane.grpc.TableService/Aggregate",
+            request_serializer=deephaven_dot_proto_dot_table__pb2.AggregateRequest.SerializeToString,
+            response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+        )
         self.Snapshot = channel.unary_unary(
-                '/io.deephaven.proto.backplane.grpc.TableService/Snapshot',
-                request_serializer=deephaven_dot_proto_dot_table__pb2.SnapshotTableRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-                )
+            "/io.deephaven.proto.backplane.grpc.TableService/Snapshot",
+            request_serializer=deephaven_dot_proto_dot_table__pb2.SnapshotTableRequest.SerializeToString,
+            response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+        )
         self.SnapshotWhen = channel.unary_unary(
-                '/io.deephaven.proto.backplane.grpc.TableService/SnapshotWhen',
-                request_serializer=deephaven_dot_proto_dot_table__pb2.SnapshotWhenTableRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-                )
+            "/io.deephaven.proto.backplane.grpc.TableService/SnapshotWhen",
+            request_serializer=deephaven_dot_proto_dot_table__pb2.SnapshotWhenTableRequest.SerializeToString,
+            response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+        )
         self.Flatten = channel.unary_unary(
-                '/io.deephaven.proto.backplane.grpc.TableService/Flatten',
-                request_serializer=deephaven_dot_proto_dot_table__pb2.FlattenRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-                )
+            "/io.deephaven.proto.backplane.grpc.TableService/Flatten",
+            request_serializer=deephaven_dot_proto_dot_table__pb2.FlattenRequest.SerializeToString,
+            response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+        )
         self.RunChartDownsample = channel.unary_unary(
-                '/io.deephaven.proto.backplane.grpc.TableService/RunChartDownsample',
-                request_serializer=deephaven_dot_proto_dot_table__pb2.RunChartDownsampleRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-                )
+            "/io.deephaven.proto.backplane.grpc.TableService/RunChartDownsample",
+            request_serializer=deephaven_dot_proto_dot_table__pb2.RunChartDownsampleRequest.SerializeToString,
+            response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+        )
         self.CreateInputTable = channel.unary_unary(
-                '/io.deephaven.proto.backplane.grpc.TableService/CreateInputTable',
-                request_serializer=deephaven_dot_proto_dot_table__pb2.CreateInputTableRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-                )
+            "/io.deephaven.proto.backplane.grpc.TableService/CreateInputTable",
+            request_serializer=deephaven_dot_proto_dot_table__pb2.CreateInputTableRequest.SerializeToString,
+            response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+        )
         self.WhereIn = channel.unary_unary(
-                '/io.deephaven.proto.backplane.grpc.TableService/WhereIn',
-                request_serializer=deephaven_dot_proto_dot_table__pb2.WhereInRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-                )
+            "/io.deephaven.proto.backplane.grpc.TableService/WhereIn",
+            request_serializer=deephaven_dot_proto_dot_table__pb2.WhereInRequest.SerializeToString,
+            response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+        )
         self.Batch = channel.unary_stream(
-                '/io.deephaven.proto.backplane.grpc.TableService/Batch',
-                request_serializer=deephaven_dot_proto_dot_table__pb2.BatchTableRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-                )
+            "/io.deephaven.proto.backplane.grpc.TableService/Batch",
+            request_serializer=deephaven_dot_proto_dot_table__pb2.BatchTableRequest.SerializeToString,
+            response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+        )
         self.ExportedTableUpdates = channel.unary_stream(
-                '/io.deephaven.proto.backplane.grpc.TableService/ExportedTableUpdates',
-                request_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableUpdatesRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableUpdateMessage.FromString,
-                )
+            "/io.deephaven.proto.backplane.grpc.TableService/ExportedTableUpdates",
+            request_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableUpdatesRequest.SerializeToString,
+            response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableUpdateMessage.FromString,
+        )
         self.SeekRow = channel.unary_unary(
-                '/io.deephaven.proto.backplane.grpc.TableService/SeekRow',
-                request_serializer=deephaven_dot_proto_dot_table__pb2.SeekRowRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_table__pb2.SeekRowResponse.FromString,
-                )
+            "/io.deephaven.proto.backplane.grpc.TableService/SeekRow",
+            request_serializer=deephaven_dot_proto_dot_table__pb2.SeekRowRequest.SerializeToString,
+            response_deserializer=deephaven_dot_proto_dot_table__pb2.SeekRowResponse.FromString,
+        )
 
 
 class TableServiceServicer(object):
@@ -220,168 +220,168 @@ class TableServiceServicer(object):
         Request an ETCR for this ticket. Ticket must reference a Table.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def FetchTable(self, request, context):
         """
         Fetches a Table from an existing source ticket and exports it to the local session result ticket.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def ApplyPreviewColumns(self, request, context):
         """
         Create a table that has preview columns applied to an existing source table.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def EmptyTable(self, request, context):
         """
         Create an empty table with the given column names and types.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def TimeTable(self, request, context):
         """
         Create a time table with the given start time and period.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def DropColumns(self, request, context):
         """
         Drop columns from the parent table.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def Update(self, request, context):
         """
         Add columns to the given table using the given column specifications and the update table operation.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def LazyUpdate(self, request, context):
         """
         Add columns to the given table using the given column specifications and the lazyUpdate table operation.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def View(self, request, context):
         """
         Add columns to the given table using the given column specifications and the view table operation.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def UpdateView(self, request, context):
         """
         Add columns to the given table using the given column specifications and the updateView table operation.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def Select(self, request, context):
         """
         Select the given columns from the given table.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def UpdateBy(self, request, context):
         """
         Returns the result of an updateBy table operation.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def SelectDistinct(self, request, context):
         """
         Returns a new table definition with the unique tuples of the specified columns
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def Filter(self, request, context):
         """
         Filter parent table with structured filters.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def UnstructuredFilter(self, request, context):
         """
         Filter parent table with unstructured filters.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def Sort(self, request, context):
         """
         Sort parent table via the provide sort descriptors.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def Head(self, request, context):
         """
         Extract rows from the head of the parent table.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def Tail(self, request, context):
         """
         Extract rows from the tail of the parent table.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def HeadBy(self, request, context):
         """
         Run the headBy table operation for the given group by columns on the given table.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def TailBy(self, request, context):
         """
         Run the tailBy operation for the given group by columns on the given table.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def Ungroup(self, request, context):
         """
         Ungroup the given columns (all columns will be ungrouped if columnsToUngroup is empty or unspecified).
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def MergeTables(self, request, context):
         """
@@ -389,48 +389,48 @@ class TableServiceServicer(object):
         merged will be performed using that column.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def CrossJoinTables(self, request, context):
         """
         Returns the result of a cross join operation. Also known as the cartesian product.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def NaturalJoinTables(self, request, context):
         """
         Returns the result of a natural join operation.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def ExactJoinTables(self, request, context):
         """
         Returns the result of an exact join operation.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def LeftJoinTables(self, request, context):
         """
         Returns the result of a left join operation.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def AsOfJoinTables(self, request, context):
         """
         Returns the result of an as of join operation.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def ComboAggregate(self, request, context):
         """
@@ -439,16 +439,16 @@ class TableServiceServicer(object):
         Deprecated: Please use AggregateAll or Aggregate instead
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def AggregateAll(self, request, context):
         """
         Aggregates all non-grouping columns against a single aggregation specification.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def Aggregate(self, request, context):
         """
@@ -458,16 +458,16 @@ class TableServiceServicer(object):
         changes.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def Snapshot(self, request, context):
         """
         Takes a single snapshot of the source_id table.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def SnapshotWhen(self, request, context):
         """
@@ -477,16 +477,16 @@ class TableServiceServicer(object):
         remaining columns in the result table come from base_id table, the table being snapshotted.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def Flatten(self, request, context):
         """
         Returns a new table with a flattened row set.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def RunChartDownsample(self, request, context):
         """*
@@ -495,8 +495,8 @@ class TableServiceServicer(object):
         column to support zooming in.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def CreateInputTable(self, request, context):
         """*
@@ -504,8 +504,8 @@ class TableServiceServicer(object):
         in this interface, or can be interacted with via the InputTableService to modify its contents.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def WhereIn(self, request, context):
         """*
@@ -515,8 +515,8 @@ class TableServiceServicer(object):
         thus the intention is that the right table is fairly slow moving compared with the left table.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def Batch(self, request, context):
         """
@@ -525,8 +525,8 @@ class TableServiceServicer(object):
         are no longer depended upon.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def ExportedTableUpdates(self, request, context):
         """
@@ -537,884 +537,1353 @@ class TableServiceServicer(object):
         initial update had been sent.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def SeekRow(self, request, context):
         """
         Seek a row number within a table.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
 
 def add_TableServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
-            'GetExportedTableCreationResponse': grpc.unary_unary_rpc_method_handler(
-                    servicer.GetExportedTableCreationResponse,
-                    request_deserializer=deephaven_dot_proto_dot_ticket__pb2.Ticket.FromString,
-                    response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
-            ),
-            'FetchTable': grpc.unary_unary_rpc_method_handler(
-                    servicer.FetchTable,
-                    request_deserializer=deephaven_dot_proto_dot_table__pb2.FetchTableRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
-            ),
-            'ApplyPreviewColumns': grpc.unary_unary_rpc_method_handler(
-                    servicer.ApplyPreviewColumns,
-                    request_deserializer=deephaven_dot_proto_dot_table__pb2.ApplyPreviewColumnsRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
-            ),
-            'EmptyTable': grpc.unary_unary_rpc_method_handler(
-                    servicer.EmptyTable,
-                    request_deserializer=deephaven_dot_proto_dot_table__pb2.EmptyTableRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
-            ),
-            'TimeTable': grpc.unary_unary_rpc_method_handler(
-                    servicer.TimeTable,
-                    request_deserializer=deephaven_dot_proto_dot_table__pb2.TimeTableRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
-            ),
-            'DropColumns': grpc.unary_unary_rpc_method_handler(
-                    servicer.DropColumns,
-                    request_deserializer=deephaven_dot_proto_dot_table__pb2.DropColumnsRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
-            ),
-            'Update': grpc.unary_unary_rpc_method_handler(
-                    servicer.Update,
-                    request_deserializer=deephaven_dot_proto_dot_table__pb2.SelectOrUpdateRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
-            ),
-            'LazyUpdate': grpc.unary_unary_rpc_method_handler(
-                    servicer.LazyUpdate,
-                    request_deserializer=deephaven_dot_proto_dot_table__pb2.SelectOrUpdateRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
-            ),
-            'View': grpc.unary_unary_rpc_method_handler(
-                    servicer.View,
-                    request_deserializer=deephaven_dot_proto_dot_table__pb2.SelectOrUpdateRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
-            ),
-            'UpdateView': grpc.unary_unary_rpc_method_handler(
-                    servicer.UpdateView,
-                    request_deserializer=deephaven_dot_proto_dot_table__pb2.SelectOrUpdateRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
-            ),
-            'Select': grpc.unary_unary_rpc_method_handler(
-                    servicer.Select,
-                    request_deserializer=deephaven_dot_proto_dot_table__pb2.SelectOrUpdateRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
-            ),
-            'UpdateBy': grpc.unary_unary_rpc_method_handler(
-                    servicer.UpdateBy,
-                    request_deserializer=deephaven_dot_proto_dot_table__pb2.UpdateByRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
-            ),
-            'SelectDistinct': grpc.unary_unary_rpc_method_handler(
-                    servicer.SelectDistinct,
-                    request_deserializer=deephaven_dot_proto_dot_table__pb2.SelectDistinctRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
-            ),
-            'Filter': grpc.unary_unary_rpc_method_handler(
-                    servicer.Filter,
-                    request_deserializer=deephaven_dot_proto_dot_table__pb2.FilterTableRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
-            ),
-            'UnstructuredFilter': grpc.unary_unary_rpc_method_handler(
-                    servicer.UnstructuredFilter,
-                    request_deserializer=deephaven_dot_proto_dot_table__pb2.UnstructuredFilterTableRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
-            ),
-            'Sort': grpc.unary_unary_rpc_method_handler(
-                    servicer.Sort,
-                    request_deserializer=deephaven_dot_proto_dot_table__pb2.SortTableRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
-            ),
-            'Head': grpc.unary_unary_rpc_method_handler(
-                    servicer.Head,
-                    request_deserializer=deephaven_dot_proto_dot_table__pb2.HeadOrTailRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
-            ),
-            'Tail': grpc.unary_unary_rpc_method_handler(
-                    servicer.Tail,
-                    request_deserializer=deephaven_dot_proto_dot_table__pb2.HeadOrTailRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
-            ),
-            'HeadBy': grpc.unary_unary_rpc_method_handler(
-                    servicer.HeadBy,
-                    request_deserializer=deephaven_dot_proto_dot_table__pb2.HeadOrTailByRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
-            ),
-            'TailBy': grpc.unary_unary_rpc_method_handler(
-                    servicer.TailBy,
-                    request_deserializer=deephaven_dot_proto_dot_table__pb2.HeadOrTailByRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
-            ),
-            'Ungroup': grpc.unary_unary_rpc_method_handler(
-                    servicer.Ungroup,
-                    request_deserializer=deephaven_dot_proto_dot_table__pb2.UngroupRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
-            ),
-            'MergeTables': grpc.unary_unary_rpc_method_handler(
-                    servicer.MergeTables,
-                    request_deserializer=deephaven_dot_proto_dot_table__pb2.MergeTablesRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
-            ),
-            'CrossJoinTables': grpc.unary_unary_rpc_method_handler(
-                    servicer.CrossJoinTables,
-                    request_deserializer=deephaven_dot_proto_dot_table__pb2.CrossJoinTablesRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
-            ),
-            'NaturalJoinTables': grpc.unary_unary_rpc_method_handler(
-                    servicer.NaturalJoinTables,
-                    request_deserializer=deephaven_dot_proto_dot_table__pb2.NaturalJoinTablesRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
-            ),
-            'ExactJoinTables': grpc.unary_unary_rpc_method_handler(
-                    servicer.ExactJoinTables,
-                    request_deserializer=deephaven_dot_proto_dot_table__pb2.ExactJoinTablesRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
-            ),
-            'LeftJoinTables': grpc.unary_unary_rpc_method_handler(
-                    servicer.LeftJoinTables,
-                    request_deserializer=deephaven_dot_proto_dot_table__pb2.LeftJoinTablesRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
-            ),
-            'AsOfJoinTables': grpc.unary_unary_rpc_method_handler(
-                    servicer.AsOfJoinTables,
-                    request_deserializer=deephaven_dot_proto_dot_table__pb2.AsOfJoinTablesRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
-            ),
-            'ComboAggregate': grpc.unary_unary_rpc_method_handler(
-                    servicer.ComboAggregate,
-                    request_deserializer=deephaven_dot_proto_dot_table__pb2.ComboAggregateRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
-            ),
-            'AggregateAll': grpc.unary_unary_rpc_method_handler(
-                    servicer.AggregateAll,
-                    request_deserializer=deephaven_dot_proto_dot_table__pb2.AggregateAllRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
-            ),
-            'Aggregate': grpc.unary_unary_rpc_method_handler(
-                    servicer.Aggregate,
-                    request_deserializer=deephaven_dot_proto_dot_table__pb2.AggregateRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
-            ),
-            'Snapshot': grpc.unary_unary_rpc_method_handler(
-                    servicer.Snapshot,
-                    request_deserializer=deephaven_dot_proto_dot_table__pb2.SnapshotTableRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
-            ),
-            'SnapshotWhen': grpc.unary_unary_rpc_method_handler(
-                    servicer.SnapshotWhen,
-                    request_deserializer=deephaven_dot_proto_dot_table__pb2.SnapshotWhenTableRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
-            ),
-            'Flatten': grpc.unary_unary_rpc_method_handler(
-                    servicer.Flatten,
-                    request_deserializer=deephaven_dot_proto_dot_table__pb2.FlattenRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
-            ),
-            'RunChartDownsample': grpc.unary_unary_rpc_method_handler(
-                    servicer.RunChartDownsample,
-                    request_deserializer=deephaven_dot_proto_dot_table__pb2.RunChartDownsampleRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
-            ),
-            'CreateInputTable': grpc.unary_unary_rpc_method_handler(
-                    servicer.CreateInputTable,
-                    request_deserializer=deephaven_dot_proto_dot_table__pb2.CreateInputTableRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
-            ),
-            'WhereIn': grpc.unary_unary_rpc_method_handler(
-                    servicer.WhereIn,
-                    request_deserializer=deephaven_dot_proto_dot_table__pb2.WhereInRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
-            ),
-            'Batch': grpc.unary_stream_rpc_method_handler(
-                    servicer.Batch,
-                    request_deserializer=deephaven_dot_proto_dot_table__pb2.BatchTableRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
-            ),
-            'ExportedTableUpdates': grpc.unary_stream_rpc_method_handler(
-                    servicer.ExportedTableUpdates,
-                    request_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableUpdatesRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableUpdateMessage.SerializeToString,
-            ),
-            'SeekRow': grpc.unary_unary_rpc_method_handler(
-                    servicer.SeekRow,
-                    request_deserializer=deephaven_dot_proto_dot_table__pb2.SeekRowRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_table__pb2.SeekRowResponse.SerializeToString,
-            ),
+        "GetExportedTableCreationResponse": grpc.unary_unary_rpc_method_handler(
+            servicer.GetExportedTableCreationResponse,
+            request_deserializer=deephaven_dot_proto_dot_ticket__pb2.Ticket.FromString,
+            response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
+        ),
+        "FetchTable": grpc.unary_unary_rpc_method_handler(
+            servicer.FetchTable,
+            request_deserializer=deephaven_dot_proto_dot_table__pb2.FetchTableRequest.FromString,
+            response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
+        ),
+        "ApplyPreviewColumns": grpc.unary_unary_rpc_method_handler(
+            servicer.ApplyPreviewColumns,
+            request_deserializer=deephaven_dot_proto_dot_table__pb2.ApplyPreviewColumnsRequest.FromString,
+            response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
+        ),
+        "EmptyTable": grpc.unary_unary_rpc_method_handler(
+            servicer.EmptyTable,
+            request_deserializer=deephaven_dot_proto_dot_table__pb2.EmptyTableRequest.FromString,
+            response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
+        ),
+        "TimeTable": grpc.unary_unary_rpc_method_handler(
+            servicer.TimeTable,
+            request_deserializer=deephaven_dot_proto_dot_table__pb2.TimeTableRequest.FromString,
+            response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
+        ),
+        "DropColumns": grpc.unary_unary_rpc_method_handler(
+            servicer.DropColumns,
+            request_deserializer=deephaven_dot_proto_dot_table__pb2.DropColumnsRequest.FromString,
+            response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
+        ),
+        "Update": grpc.unary_unary_rpc_method_handler(
+            servicer.Update,
+            request_deserializer=deephaven_dot_proto_dot_table__pb2.SelectOrUpdateRequest.FromString,
+            response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
+        ),
+        "LazyUpdate": grpc.unary_unary_rpc_method_handler(
+            servicer.LazyUpdate,
+            request_deserializer=deephaven_dot_proto_dot_table__pb2.SelectOrUpdateRequest.FromString,
+            response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
+        ),
+        "View": grpc.unary_unary_rpc_method_handler(
+            servicer.View,
+            request_deserializer=deephaven_dot_proto_dot_table__pb2.SelectOrUpdateRequest.FromString,
+            response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
+        ),
+        "UpdateView": grpc.unary_unary_rpc_method_handler(
+            servicer.UpdateView,
+            request_deserializer=deephaven_dot_proto_dot_table__pb2.SelectOrUpdateRequest.FromString,
+            response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
+        ),
+        "Select": grpc.unary_unary_rpc_method_handler(
+            servicer.Select,
+            request_deserializer=deephaven_dot_proto_dot_table__pb2.SelectOrUpdateRequest.FromString,
+            response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
+        ),
+        "UpdateBy": grpc.unary_unary_rpc_method_handler(
+            servicer.UpdateBy,
+            request_deserializer=deephaven_dot_proto_dot_table__pb2.UpdateByRequest.FromString,
+            response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
+        ),
+        "SelectDistinct": grpc.unary_unary_rpc_method_handler(
+            servicer.SelectDistinct,
+            request_deserializer=deephaven_dot_proto_dot_table__pb2.SelectDistinctRequest.FromString,
+            response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
+        ),
+        "Filter": grpc.unary_unary_rpc_method_handler(
+            servicer.Filter,
+            request_deserializer=deephaven_dot_proto_dot_table__pb2.FilterTableRequest.FromString,
+            response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
+        ),
+        "UnstructuredFilter": grpc.unary_unary_rpc_method_handler(
+            servicer.UnstructuredFilter,
+            request_deserializer=deephaven_dot_proto_dot_table__pb2.UnstructuredFilterTableRequest.FromString,
+            response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
+        ),
+        "Sort": grpc.unary_unary_rpc_method_handler(
+            servicer.Sort,
+            request_deserializer=deephaven_dot_proto_dot_table__pb2.SortTableRequest.FromString,
+            response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
+        ),
+        "Head": grpc.unary_unary_rpc_method_handler(
+            servicer.Head,
+            request_deserializer=deephaven_dot_proto_dot_table__pb2.HeadOrTailRequest.FromString,
+            response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
+        ),
+        "Tail": grpc.unary_unary_rpc_method_handler(
+            servicer.Tail,
+            request_deserializer=deephaven_dot_proto_dot_table__pb2.HeadOrTailRequest.FromString,
+            response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
+        ),
+        "HeadBy": grpc.unary_unary_rpc_method_handler(
+            servicer.HeadBy,
+            request_deserializer=deephaven_dot_proto_dot_table__pb2.HeadOrTailByRequest.FromString,
+            response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
+        ),
+        "TailBy": grpc.unary_unary_rpc_method_handler(
+            servicer.TailBy,
+            request_deserializer=deephaven_dot_proto_dot_table__pb2.HeadOrTailByRequest.FromString,
+            response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
+        ),
+        "Ungroup": grpc.unary_unary_rpc_method_handler(
+            servicer.Ungroup,
+            request_deserializer=deephaven_dot_proto_dot_table__pb2.UngroupRequest.FromString,
+            response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
+        ),
+        "MergeTables": grpc.unary_unary_rpc_method_handler(
+            servicer.MergeTables,
+            request_deserializer=deephaven_dot_proto_dot_table__pb2.MergeTablesRequest.FromString,
+            response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
+        ),
+        "CrossJoinTables": grpc.unary_unary_rpc_method_handler(
+            servicer.CrossJoinTables,
+            request_deserializer=deephaven_dot_proto_dot_table__pb2.CrossJoinTablesRequest.FromString,
+            response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
+        ),
+        "NaturalJoinTables": grpc.unary_unary_rpc_method_handler(
+            servicer.NaturalJoinTables,
+            request_deserializer=deephaven_dot_proto_dot_table__pb2.NaturalJoinTablesRequest.FromString,
+            response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
+        ),
+        "ExactJoinTables": grpc.unary_unary_rpc_method_handler(
+            servicer.ExactJoinTables,
+            request_deserializer=deephaven_dot_proto_dot_table__pb2.ExactJoinTablesRequest.FromString,
+            response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
+        ),
+        "LeftJoinTables": grpc.unary_unary_rpc_method_handler(
+            servicer.LeftJoinTables,
+            request_deserializer=deephaven_dot_proto_dot_table__pb2.LeftJoinTablesRequest.FromString,
+            response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
+        ),
+        "AsOfJoinTables": grpc.unary_unary_rpc_method_handler(
+            servicer.AsOfJoinTables,
+            request_deserializer=deephaven_dot_proto_dot_table__pb2.AsOfJoinTablesRequest.FromString,
+            response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
+        ),
+        "ComboAggregate": grpc.unary_unary_rpc_method_handler(
+            servicer.ComboAggregate,
+            request_deserializer=deephaven_dot_proto_dot_table__pb2.ComboAggregateRequest.FromString,
+            response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
+        ),
+        "AggregateAll": grpc.unary_unary_rpc_method_handler(
+            servicer.AggregateAll,
+            request_deserializer=deephaven_dot_proto_dot_table__pb2.AggregateAllRequest.FromString,
+            response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
+        ),
+        "Aggregate": grpc.unary_unary_rpc_method_handler(
+            servicer.Aggregate,
+            request_deserializer=deephaven_dot_proto_dot_table__pb2.AggregateRequest.FromString,
+            response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
+        ),
+        "Snapshot": grpc.unary_unary_rpc_method_handler(
+            servicer.Snapshot,
+            request_deserializer=deephaven_dot_proto_dot_table__pb2.SnapshotTableRequest.FromString,
+            response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
+        ),
+        "SnapshotWhen": grpc.unary_unary_rpc_method_handler(
+            servicer.SnapshotWhen,
+            request_deserializer=deephaven_dot_proto_dot_table__pb2.SnapshotWhenTableRequest.FromString,
+            response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
+        ),
+        "Flatten": grpc.unary_unary_rpc_method_handler(
+            servicer.Flatten,
+            request_deserializer=deephaven_dot_proto_dot_table__pb2.FlattenRequest.FromString,
+            response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
+        ),
+        "RunChartDownsample": grpc.unary_unary_rpc_method_handler(
+            servicer.RunChartDownsample,
+            request_deserializer=deephaven_dot_proto_dot_table__pb2.RunChartDownsampleRequest.FromString,
+            response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
+        ),
+        "CreateInputTable": grpc.unary_unary_rpc_method_handler(
+            servicer.CreateInputTable,
+            request_deserializer=deephaven_dot_proto_dot_table__pb2.CreateInputTableRequest.FromString,
+            response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
+        ),
+        "WhereIn": grpc.unary_unary_rpc_method_handler(
+            servicer.WhereIn,
+            request_deserializer=deephaven_dot_proto_dot_table__pb2.WhereInRequest.FromString,
+            response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
+        ),
+        "Batch": grpc.unary_stream_rpc_method_handler(
+            servicer.Batch,
+            request_deserializer=deephaven_dot_proto_dot_table__pb2.BatchTableRequest.FromString,
+            response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
+        ),
+        "ExportedTableUpdates": grpc.unary_stream_rpc_method_handler(
+            servicer.ExportedTableUpdates,
+            request_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableUpdatesRequest.FromString,
+            response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableUpdateMessage.SerializeToString,
+        ),
+        "SeekRow": grpc.unary_unary_rpc_method_handler(
+            servicer.SeekRow,
+            request_deserializer=deephaven_dot_proto_dot_table__pb2.SeekRowRequest.FromString,
+            response_serializer=deephaven_dot_proto_dot_table__pb2.SeekRowResponse.SerializeToString,
+        ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-            'io.deephaven.proto.backplane.grpc.TableService', rpc_method_handlers)
+        "io.deephaven.proto.backplane.grpc.TableService", rpc_method_handlers
+    )
     server.add_generic_rpc_handlers((generic_handler,))
 
 
- # This class is part of an EXPERIMENTAL API.
+# This class is part of an EXPERIMENTAL API.
 class TableService(object):
     """Missing associated documentation comment in .proto file."""
 
     @staticmethod
-    def GetExportedTableCreationResponse(request,
+    def GetExportedTableCreationResponse(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/GetExportedTableCreationResponse',
+            "/io.deephaven.proto.backplane.grpc.TableService/GetExportedTableCreationResponse",
             deephaven_dot_proto_dot_ticket__pb2.Ticket.SerializeToString,
             deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
 
     @staticmethod
-    def FetchTable(request,
+    def FetchTable(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/FetchTable',
+            "/io.deephaven.proto.backplane.grpc.TableService/FetchTable",
             deephaven_dot_proto_dot_table__pb2.FetchTableRequest.SerializeToString,
             deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
 
     @staticmethod
-    def ApplyPreviewColumns(request,
+    def ApplyPreviewColumns(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/ApplyPreviewColumns',
+            "/io.deephaven.proto.backplane.grpc.TableService/ApplyPreviewColumns",
             deephaven_dot_proto_dot_table__pb2.ApplyPreviewColumnsRequest.SerializeToString,
             deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
 
     @staticmethod
-    def EmptyTable(request,
+    def EmptyTable(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/EmptyTable',
+            "/io.deephaven.proto.backplane.grpc.TableService/EmptyTable",
             deephaven_dot_proto_dot_table__pb2.EmptyTableRequest.SerializeToString,
             deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
 
     @staticmethod
-    def TimeTable(request,
+    def TimeTable(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/TimeTable',
+            "/io.deephaven.proto.backplane.grpc.TableService/TimeTable",
             deephaven_dot_proto_dot_table__pb2.TimeTableRequest.SerializeToString,
             deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
 
     @staticmethod
-    def DropColumns(request,
+    def DropColumns(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/DropColumns',
+            "/io.deephaven.proto.backplane.grpc.TableService/DropColumns",
             deephaven_dot_proto_dot_table__pb2.DropColumnsRequest.SerializeToString,
             deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
 
     @staticmethod
-    def Update(request,
+    def Update(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/Update',
+            "/io.deephaven.proto.backplane.grpc.TableService/Update",
             deephaven_dot_proto_dot_table__pb2.SelectOrUpdateRequest.SerializeToString,
             deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
 
     @staticmethod
-    def LazyUpdate(request,
+    def LazyUpdate(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/LazyUpdate',
+            "/io.deephaven.proto.backplane.grpc.TableService/LazyUpdate",
             deephaven_dot_proto_dot_table__pb2.SelectOrUpdateRequest.SerializeToString,
             deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
 
     @staticmethod
-    def View(request,
+    def View(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/View',
+            "/io.deephaven.proto.backplane.grpc.TableService/View",
             deephaven_dot_proto_dot_table__pb2.SelectOrUpdateRequest.SerializeToString,
             deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
 
     @staticmethod
-    def UpdateView(request,
+    def UpdateView(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/UpdateView',
+            "/io.deephaven.proto.backplane.grpc.TableService/UpdateView",
             deephaven_dot_proto_dot_table__pb2.SelectOrUpdateRequest.SerializeToString,
             deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
 
     @staticmethod
-    def Select(request,
+    def Select(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/Select',
+            "/io.deephaven.proto.backplane.grpc.TableService/Select",
             deephaven_dot_proto_dot_table__pb2.SelectOrUpdateRequest.SerializeToString,
             deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
 
     @staticmethod
-    def UpdateBy(request,
+    def UpdateBy(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/UpdateBy',
+            "/io.deephaven.proto.backplane.grpc.TableService/UpdateBy",
             deephaven_dot_proto_dot_table__pb2.UpdateByRequest.SerializeToString,
             deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
 
     @staticmethod
-    def SelectDistinct(request,
+    def SelectDistinct(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/SelectDistinct',
+            "/io.deephaven.proto.backplane.grpc.TableService/SelectDistinct",
             deephaven_dot_proto_dot_table__pb2.SelectDistinctRequest.SerializeToString,
             deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
 
     @staticmethod
-    def Filter(request,
+    def Filter(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/Filter',
+            "/io.deephaven.proto.backplane.grpc.TableService/Filter",
             deephaven_dot_proto_dot_table__pb2.FilterTableRequest.SerializeToString,
             deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
 
     @staticmethod
-    def UnstructuredFilter(request,
+    def UnstructuredFilter(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/UnstructuredFilter',
+            "/io.deephaven.proto.backplane.grpc.TableService/UnstructuredFilter",
             deephaven_dot_proto_dot_table__pb2.UnstructuredFilterTableRequest.SerializeToString,
             deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
 
     @staticmethod
-    def Sort(request,
+    def Sort(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/Sort',
+            "/io.deephaven.proto.backplane.grpc.TableService/Sort",
             deephaven_dot_proto_dot_table__pb2.SortTableRequest.SerializeToString,
             deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
 
     @staticmethod
-    def Head(request,
+    def Head(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/Head',
+            "/io.deephaven.proto.backplane.grpc.TableService/Head",
             deephaven_dot_proto_dot_table__pb2.HeadOrTailRequest.SerializeToString,
             deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
 
     @staticmethod
-    def Tail(request,
+    def Tail(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/Tail',
+            "/io.deephaven.proto.backplane.grpc.TableService/Tail",
             deephaven_dot_proto_dot_table__pb2.HeadOrTailRequest.SerializeToString,
             deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
 
     @staticmethod
-    def HeadBy(request,
+    def HeadBy(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/HeadBy',
+            "/io.deephaven.proto.backplane.grpc.TableService/HeadBy",
             deephaven_dot_proto_dot_table__pb2.HeadOrTailByRequest.SerializeToString,
             deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
 
     @staticmethod
-    def TailBy(request,
+    def TailBy(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/TailBy',
+            "/io.deephaven.proto.backplane.grpc.TableService/TailBy",
             deephaven_dot_proto_dot_table__pb2.HeadOrTailByRequest.SerializeToString,
             deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
 
     @staticmethod
-    def Ungroup(request,
+    def Ungroup(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/Ungroup',
+            "/io.deephaven.proto.backplane.grpc.TableService/Ungroup",
             deephaven_dot_proto_dot_table__pb2.UngroupRequest.SerializeToString,
             deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
 
     @staticmethod
-    def MergeTables(request,
+    def MergeTables(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/MergeTables',
+            "/io.deephaven.proto.backplane.grpc.TableService/MergeTables",
             deephaven_dot_proto_dot_table__pb2.MergeTablesRequest.SerializeToString,
             deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
 
     @staticmethod
-    def CrossJoinTables(request,
+    def CrossJoinTables(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/CrossJoinTables',
+            "/io.deephaven.proto.backplane.grpc.TableService/CrossJoinTables",
             deephaven_dot_proto_dot_table__pb2.CrossJoinTablesRequest.SerializeToString,
             deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
 
     @staticmethod
-    def NaturalJoinTables(request,
+    def NaturalJoinTables(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/NaturalJoinTables',
+            "/io.deephaven.proto.backplane.grpc.TableService/NaturalJoinTables",
             deephaven_dot_proto_dot_table__pb2.NaturalJoinTablesRequest.SerializeToString,
             deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
 
     @staticmethod
-    def ExactJoinTables(request,
+    def ExactJoinTables(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/ExactJoinTables',
+            "/io.deephaven.proto.backplane.grpc.TableService/ExactJoinTables",
             deephaven_dot_proto_dot_table__pb2.ExactJoinTablesRequest.SerializeToString,
             deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
 
     @staticmethod
-    def LeftJoinTables(request,
+    def LeftJoinTables(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/LeftJoinTables',
+            "/io.deephaven.proto.backplane.grpc.TableService/LeftJoinTables",
             deephaven_dot_proto_dot_table__pb2.LeftJoinTablesRequest.SerializeToString,
             deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
 
     @staticmethod
-    def AsOfJoinTables(request,
+    def AsOfJoinTables(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/AsOfJoinTables',
+            "/io.deephaven.proto.backplane.grpc.TableService/AsOfJoinTables",
             deephaven_dot_proto_dot_table__pb2.AsOfJoinTablesRequest.SerializeToString,
             deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
 
     @staticmethod
-    def ComboAggregate(request,
+    def ComboAggregate(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/ComboAggregate',
+            "/io.deephaven.proto.backplane.grpc.TableService/ComboAggregate",
             deephaven_dot_proto_dot_table__pb2.ComboAggregateRequest.SerializeToString,
             deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
 
     @staticmethod
-    def AggregateAll(request,
+    def AggregateAll(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/AggregateAll',
+            "/io.deephaven.proto.backplane.grpc.TableService/AggregateAll",
             deephaven_dot_proto_dot_table__pb2.AggregateAllRequest.SerializeToString,
             deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
 
     @staticmethod
-    def Aggregate(request,
+    def Aggregate(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/Aggregate',
+            "/io.deephaven.proto.backplane.grpc.TableService/Aggregate",
             deephaven_dot_proto_dot_table__pb2.AggregateRequest.SerializeToString,
             deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
 
     @staticmethod
-    def Snapshot(request,
+    def Snapshot(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/Snapshot',
+            "/io.deephaven.proto.backplane.grpc.TableService/Snapshot",
             deephaven_dot_proto_dot_table__pb2.SnapshotTableRequest.SerializeToString,
             deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
 
     @staticmethod
-    def SnapshotWhen(request,
+    def SnapshotWhen(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/SnapshotWhen',
+            "/io.deephaven.proto.backplane.grpc.TableService/SnapshotWhen",
             deephaven_dot_proto_dot_table__pb2.SnapshotWhenTableRequest.SerializeToString,
             deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
 
     @staticmethod
-    def Flatten(request,
+    def Flatten(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/Flatten',
+            "/io.deephaven.proto.backplane.grpc.TableService/Flatten",
             deephaven_dot_proto_dot_table__pb2.FlattenRequest.SerializeToString,
             deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
 
     @staticmethod
-    def RunChartDownsample(request,
+    def RunChartDownsample(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/RunChartDownsample',
+            "/io.deephaven.proto.backplane.grpc.TableService/RunChartDownsample",
             deephaven_dot_proto_dot_table__pb2.RunChartDownsampleRequest.SerializeToString,
             deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
 
     @staticmethod
-    def CreateInputTable(request,
+    def CreateInputTable(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/CreateInputTable',
+            "/io.deephaven.proto.backplane.grpc.TableService/CreateInputTable",
             deephaven_dot_proto_dot_table__pb2.CreateInputTableRequest.SerializeToString,
             deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
 
     @staticmethod
-    def WhereIn(request,
+    def WhereIn(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/WhereIn',
+            "/io.deephaven.proto.backplane.grpc.TableService/WhereIn",
             deephaven_dot_proto_dot_table__pb2.WhereInRequest.SerializeToString,
             deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
 
     @staticmethod
-    def Batch(request,
+    def Batch(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_stream(
+            request,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_stream(request, target, '/io.deephaven.proto.backplane.grpc.TableService/Batch',
+            "/io.deephaven.proto.backplane.grpc.TableService/Batch",
             deephaven_dot_proto_dot_table__pb2.BatchTableRequest.SerializeToString,
             deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
 
     @staticmethod
-    def ExportedTableUpdates(request,
+    def ExportedTableUpdates(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_stream(
+            request,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_stream(request, target, '/io.deephaven.proto.backplane.grpc.TableService/ExportedTableUpdates',
+            "/io.deephaven.proto.backplane.grpc.TableService/ExportedTableUpdates",
             deephaven_dot_proto_dot_table__pb2.ExportedTableUpdatesRequest.SerializeToString,
             deephaven_dot_proto_dot_table__pb2.ExportedTableUpdateMessage.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
 
     @staticmethod
-    def SeekRow(request,
+    def SeekRow(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/SeekRow',
+            "/io.deephaven.proto.backplane.grpc.TableService/SeekRow",
             deephaven_dot_proto_dot_table__pb2.SeekRowRequest.SerializeToString,
             deephaven_dot_proto_dot_table__pb2.SeekRowResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )

@@ -29,40 +29,40 @@ class SessionServiceStub(object):
             channel: A grpc.Channel.
         """
         self.NewSession = channel.unary_unary(
-                '/io.deephaven.proto.backplane.grpc.SessionService/NewSession',
-                request_serializer=deephaven_dot_proto_dot_session__pb2.HandshakeRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_session__pb2.HandshakeResponse.FromString,
-                )
+            "/io.deephaven.proto.backplane.grpc.SessionService/NewSession",
+            request_serializer=deephaven_dot_proto_dot_session__pb2.HandshakeRequest.SerializeToString,
+            response_deserializer=deephaven_dot_proto_dot_session__pb2.HandshakeResponse.FromString,
+        )
         self.RefreshSessionToken = channel.unary_unary(
-                '/io.deephaven.proto.backplane.grpc.SessionService/RefreshSessionToken',
-                request_serializer=deephaven_dot_proto_dot_session__pb2.HandshakeRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_session__pb2.HandshakeResponse.FromString,
-                )
+            "/io.deephaven.proto.backplane.grpc.SessionService/RefreshSessionToken",
+            request_serializer=deephaven_dot_proto_dot_session__pb2.HandshakeRequest.SerializeToString,
+            response_deserializer=deephaven_dot_proto_dot_session__pb2.HandshakeResponse.FromString,
+        )
         self.CloseSession = channel.unary_unary(
-                '/io.deephaven.proto.backplane.grpc.SessionService/CloseSession',
-                request_serializer=deephaven_dot_proto_dot_session__pb2.HandshakeRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_session__pb2.CloseSessionResponse.FromString,
-                )
+            "/io.deephaven.proto.backplane.grpc.SessionService/CloseSession",
+            request_serializer=deephaven_dot_proto_dot_session__pb2.HandshakeRequest.SerializeToString,
+            response_deserializer=deephaven_dot_proto_dot_session__pb2.CloseSessionResponse.FromString,
+        )
         self.Release = channel.unary_unary(
-                '/io.deephaven.proto.backplane.grpc.SessionService/Release',
-                request_serializer=deephaven_dot_proto_dot_session__pb2.ReleaseRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_session__pb2.ReleaseResponse.FromString,
-                )
+            "/io.deephaven.proto.backplane.grpc.SessionService/Release",
+            request_serializer=deephaven_dot_proto_dot_session__pb2.ReleaseRequest.SerializeToString,
+            response_deserializer=deephaven_dot_proto_dot_session__pb2.ReleaseResponse.FromString,
+        )
         self.ExportFromTicket = channel.unary_unary(
-                '/io.deephaven.proto.backplane.grpc.SessionService/ExportFromTicket',
-                request_serializer=deephaven_dot_proto_dot_session__pb2.ExportRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_session__pb2.ExportResponse.FromString,
-                )
+            "/io.deephaven.proto.backplane.grpc.SessionService/ExportFromTicket",
+            request_serializer=deephaven_dot_proto_dot_session__pb2.ExportRequest.SerializeToString,
+            response_deserializer=deephaven_dot_proto_dot_session__pb2.ExportResponse.FromString,
+        )
         self.ExportNotifications = channel.unary_stream(
-                '/io.deephaven.proto.backplane.grpc.SessionService/ExportNotifications',
-                request_serializer=deephaven_dot_proto_dot_session__pb2.ExportNotificationRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_session__pb2.ExportNotification.FromString,
-                )
+            "/io.deephaven.proto.backplane.grpc.SessionService/ExportNotifications",
+            request_serializer=deephaven_dot_proto_dot_session__pb2.ExportNotificationRequest.SerializeToString,
+            response_deserializer=deephaven_dot_proto_dot_session__pb2.ExportNotification.FromString,
+        )
         self.TerminationNotification = channel.unary_unary(
-                '/io.deephaven.proto.backplane.grpc.SessionService/TerminationNotification',
-                request_serializer=deephaven_dot_proto_dot_session__pb2.TerminationNotificationRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_session__pb2.TerminationNotificationResponse.FromString,
-                )
+            "/io.deephaven.proto.backplane.grpc.SessionService/TerminationNotification",
+            request_serializer=deephaven_dot_proto_dot_session__pb2.TerminationNotificationRequest.SerializeToString,
+            response_deserializer=deephaven_dot_proto_dot_session__pb2.TerminationNotificationResponse.FromString,
+        )
 
 
 class SessionServiceServicer(object):
@@ -90,8 +90,8 @@ class SessionServiceServicer(object):
         Deprecated: Please use Flight's Handshake or http authorization headers instead.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def RefreshSessionToken(self, request, context):
         """
@@ -101,8 +101,8 @@ class SessionServiceServicer(object):
         Deprecated: Please use Flight's Handshake with an empty payload.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def CloseSession(self, request, context):
         """
@@ -110,8 +110,8 @@ class SessionServiceServicer(object):
         unreleased exports will be automatically released.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def Release(self, request, context):
         """
@@ -121,8 +121,8 @@ class SessionServiceServicer(object):
         (i.e. the dependencies that are staying around should first be in EXPORTED state).
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def ExportFromTicket(self, request, context):
         """
@@ -130,8 +130,8 @@ class SessionServiceServicer(object):
         a client managed ticket.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def ExportNotifications(self, request, context):
         """
@@ -142,8 +142,8 @@ class SessionServiceServicer(object):
         updated exports. An export id of zero will be sent to indicate all pre-existing exports have been sent.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def TerminationNotification(self, request, context):
         """
@@ -151,54 +151,55 @@ class SessionServiceServicer(object):
         guaranteed.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
 
 def add_SessionServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
-            'NewSession': grpc.unary_unary_rpc_method_handler(
-                    servicer.NewSession,
-                    request_deserializer=deephaven_dot_proto_dot_session__pb2.HandshakeRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_session__pb2.HandshakeResponse.SerializeToString,
-            ),
-            'RefreshSessionToken': grpc.unary_unary_rpc_method_handler(
-                    servicer.RefreshSessionToken,
-                    request_deserializer=deephaven_dot_proto_dot_session__pb2.HandshakeRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_session__pb2.HandshakeResponse.SerializeToString,
-            ),
-            'CloseSession': grpc.unary_unary_rpc_method_handler(
-                    servicer.CloseSession,
-                    request_deserializer=deephaven_dot_proto_dot_session__pb2.HandshakeRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_session__pb2.CloseSessionResponse.SerializeToString,
-            ),
-            'Release': grpc.unary_unary_rpc_method_handler(
-                    servicer.Release,
-                    request_deserializer=deephaven_dot_proto_dot_session__pb2.ReleaseRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_session__pb2.ReleaseResponse.SerializeToString,
-            ),
-            'ExportFromTicket': grpc.unary_unary_rpc_method_handler(
-                    servicer.ExportFromTicket,
-                    request_deserializer=deephaven_dot_proto_dot_session__pb2.ExportRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_session__pb2.ExportResponse.SerializeToString,
-            ),
-            'ExportNotifications': grpc.unary_stream_rpc_method_handler(
-                    servicer.ExportNotifications,
-                    request_deserializer=deephaven_dot_proto_dot_session__pb2.ExportNotificationRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_session__pb2.ExportNotification.SerializeToString,
-            ),
-            'TerminationNotification': grpc.unary_unary_rpc_method_handler(
-                    servicer.TerminationNotification,
-                    request_deserializer=deephaven_dot_proto_dot_session__pb2.TerminationNotificationRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_session__pb2.TerminationNotificationResponse.SerializeToString,
-            ),
+        "NewSession": grpc.unary_unary_rpc_method_handler(
+            servicer.NewSession,
+            request_deserializer=deephaven_dot_proto_dot_session__pb2.HandshakeRequest.FromString,
+            response_serializer=deephaven_dot_proto_dot_session__pb2.HandshakeResponse.SerializeToString,
+        ),
+        "RefreshSessionToken": grpc.unary_unary_rpc_method_handler(
+            servicer.RefreshSessionToken,
+            request_deserializer=deephaven_dot_proto_dot_session__pb2.HandshakeRequest.FromString,
+            response_serializer=deephaven_dot_proto_dot_session__pb2.HandshakeResponse.SerializeToString,
+        ),
+        "CloseSession": grpc.unary_unary_rpc_method_handler(
+            servicer.CloseSession,
+            request_deserializer=deephaven_dot_proto_dot_session__pb2.HandshakeRequest.FromString,
+            response_serializer=deephaven_dot_proto_dot_session__pb2.CloseSessionResponse.SerializeToString,
+        ),
+        "Release": grpc.unary_unary_rpc_method_handler(
+            servicer.Release,
+            request_deserializer=deephaven_dot_proto_dot_session__pb2.ReleaseRequest.FromString,
+            response_serializer=deephaven_dot_proto_dot_session__pb2.ReleaseResponse.SerializeToString,
+        ),
+        "ExportFromTicket": grpc.unary_unary_rpc_method_handler(
+            servicer.ExportFromTicket,
+            request_deserializer=deephaven_dot_proto_dot_session__pb2.ExportRequest.FromString,
+            response_serializer=deephaven_dot_proto_dot_session__pb2.ExportResponse.SerializeToString,
+        ),
+        "ExportNotifications": grpc.unary_stream_rpc_method_handler(
+            servicer.ExportNotifications,
+            request_deserializer=deephaven_dot_proto_dot_session__pb2.ExportNotificationRequest.FromString,
+            response_serializer=deephaven_dot_proto_dot_session__pb2.ExportNotification.SerializeToString,
+        ),
+        "TerminationNotification": grpc.unary_unary_rpc_method_handler(
+            servicer.TerminationNotification,
+            request_deserializer=deephaven_dot_proto_dot_session__pb2.TerminationNotificationRequest.FromString,
+            response_serializer=deephaven_dot_proto_dot_session__pb2.TerminationNotificationResponse.SerializeToString,
+        ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-            'io.deephaven.proto.backplane.grpc.SessionService', rpc_method_handlers)
+        "io.deephaven.proto.backplane.grpc.SessionService", rpc_method_handlers
+    )
     server.add_generic_rpc_handlers((generic_handler,))
 
 
- # This class is part of an EXPERIMENTAL API.
+# This class is part of an EXPERIMENTAL API.
 class SessionService(object):
     """
     User supplied Flight.Ticket(s) should begin with 'e' byte followed by an signed little-endian int. The client is only
@@ -217,120 +218,204 @@ class SessionService(object):
     """
 
     @staticmethod
-    def NewSession(request,
+    def NewSession(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.SessionService/NewSession',
+            "/io.deephaven.proto.backplane.grpc.SessionService/NewSession",
             deephaven_dot_proto_dot_session__pb2.HandshakeRequest.SerializeToString,
             deephaven_dot_proto_dot_session__pb2.HandshakeResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
 
     @staticmethod
-    def RefreshSessionToken(request,
+    def RefreshSessionToken(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.SessionService/RefreshSessionToken',
+            "/io.deephaven.proto.backplane.grpc.SessionService/RefreshSessionToken",
             deephaven_dot_proto_dot_session__pb2.HandshakeRequest.SerializeToString,
             deephaven_dot_proto_dot_session__pb2.HandshakeResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
 
     @staticmethod
-    def CloseSession(request,
+    def CloseSession(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.SessionService/CloseSession',
+            "/io.deephaven.proto.backplane.grpc.SessionService/CloseSession",
             deephaven_dot_proto_dot_session__pb2.HandshakeRequest.SerializeToString,
             deephaven_dot_proto_dot_session__pb2.CloseSessionResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
 
     @staticmethod
-    def Release(request,
+    def Release(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.SessionService/Release',
+            "/io.deephaven.proto.backplane.grpc.SessionService/Release",
             deephaven_dot_proto_dot_session__pb2.ReleaseRequest.SerializeToString,
             deephaven_dot_proto_dot_session__pb2.ReleaseResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
 
     @staticmethod
-    def ExportFromTicket(request,
+    def ExportFromTicket(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.SessionService/ExportFromTicket',
+            "/io.deephaven.proto.backplane.grpc.SessionService/ExportFromTicket",
             deephaven_dot_proto_dot_session__pb2.ExportRequest.SerializeToString,
             deephaven_dot_proto_dot_session__pb2.ExportResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
 
     @staticmethod
-    def ExportNotifications(request,
+    def ExportNotifications(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_stream(
+            request,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_stream(request, target, '/io.deephaven.proto.backplane.grpc.SessionService/ExportNotifications',
+            "/io.deephaven.proto.backplane.grpc.SessionService/ExportNotifications",
             deephaven_dot_proto_dot_session__pb2.ExportNotificationRequest.SerializeToString,
             deephaven_dot_proto_dot_session__pb2.ExportNotification.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
 
     @staticmethod
-    def TerminationNotification(request,
+    def TerminationNotification(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.SessionService/TerminationNotification',
+            "/io.deephaven.proto.backplane.grpc.SessionService/TerminationNotification",
             deephaven_dot_proto_dot_session__pb2.TerminationNotificationRequest.SerializeToString,
             deephaven_dot_proto_dot_session__pb2.TerminationNotificationResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )

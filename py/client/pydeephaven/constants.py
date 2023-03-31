@@ -8,7 +8,7 @@ from pydeephaven.proto import table_pb2
 
 
 class MatchRule(Enum):
-    """ An enum defining the match rules for the as-of and reverse-as-of joins."""
+    """An enum defining the match rules for the as-of and reverse-as-of joins."""
 
     """"""
     LESS_THAN_EQUAL = table_pb2.AsOfJoinTablesRequest.MatchRule.LESS_THAN_EQUAL
@@ -23,6 +23,7 @@ class MatchRule(Enum):
 
 class SortDirection(Enum):
     """An enum defining the sorting orders."""
+
     UNKNOWN = table_pb2.SortDescriptor.SortDirection.UNKNOWN
     """"""
     DESCENDING = table_pb2.SortDescriptor.SortDirection.DESCENDING
@@ -31,5 +32,3 @@ class SortDirection(Enum):
     """"""
     REVERSE = table_pb2.SortDescriptor.SortDirection.REVERSE
     """"""
-
-

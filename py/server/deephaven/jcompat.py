@@ -79,6 +79,7 @@ def j_list_to_list(jlist) -> List[Any]:
 
     return [wrap_j_object(jlist.get(i)) for i in range(jlist.size())]
 
+
 T = TypeVar("T")
 R = TypeVar("R")
 
@@ -110,9 +111,9 @@ def j_unary_operator(func: Callable[[T], T], dtype: DType) -> jpy.JType:
     Returns:
         io.deephaven.integrations.python.PythonFunction instance
     """
-    return jpy.get_type("io.deephaven.integrations.python.PythonFunction$PythonUnaryOperator")(
-        func, dtype.qst_type.clazz()
-    )
+    return jpy.get_type(
+        "io.deephaven.integrations.python.PythonFunction$PythonUnaryOperator"
+    )(func, dtype.qst_type.clazz())
 
 
 def j_binary_operator(func: Callable[[T, T], T], dtype: DType) -> jpy.JType:
@@ -126,9 +127,9 @@ def j_binary_operator(func: Callable[[T, T], T], dtype: DType) -> jpy.JType:
     Returns:
         io.deephaven.integrations.python.PythonFunction instance
     """
-    return jpy.get_type("io.deephaven.integrations.python.PythonBiFunction$PythonBinaryOperator")(
-        func, dtype.qst_type.clazz()
-    )
+    return jpy.get_type(
+        "io.deephaven.integrations.python.PythonBiFunction$PythonBinaryOperator"
+    )(func, dtype.qst_type.clazz())
 
 
 def to_sequence(v: Union[T, Sequence[T]] = None) -> Sequence[Union[T, jpy.JType]]:
@@ -141,6 +142,6 @@ def to_sequence(v: Union[T, Sequence[T]] = None) -> Sequence[Union[T, jpy.JType]
     if not v:
         return ()
     if not isinstance(v, Sequence) or isinstance(v, str):
-        return (unwrap(v), )
+        return (unwrap(v),)
     else:
         return tuple((unwrap(o) for o in v))

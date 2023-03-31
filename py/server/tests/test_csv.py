@@ -19,7 +19,7 @@ class CsvTestCase(BaseTestCase):
         col_names = ["Strings", "Longs", "Floats"]
         col_types = [dtypes.string, dtypes.long, dtypes.float_]
         table_header = {k: v for k, v in zip(col_names, col_types)}
-        t = read_csv('tests/data/test_csv.csv', header=table_header)
+        t = read_csv("tests/data/test_csv.csv", header=table_header)
         t_col_names = [col.name for col in t.columns]
         self.assertEqual(col_names, t_col_names)
 
@@ -28,7 +28,7 @@ class CsvTestCase(BaseTestCase):
         col_types = [dtypes.string, dtypes.float_, dtypes.long]
         table_header = {k: v for k, v in zip(col_names, col_types)}
         with self.assertRaises(DHError) as cm:
-            t = read_csv('tests/data/test_csv.csv', header=table_header)
+            t = read_csv("tests/data/test_csv.csv", header=table_header)
 
         self.assertIsNotNone(cm.exception.compact_traceback)
 
@@ -37,7 +37,7 @@ class CsvTestCase(BaseTestCase):
         col_types = [dtypes.string, dtypes.long, dtypes.float_]
         table_header = {k: v for k, v in zip(col_names, col_types)}
         with self.assertRaises(DHError) as cm:
-            t = read_csv('tests/data/test_csv.csv', header=table_header, quote=",")
+            t = read_csv("tests/data/test_csv.csv", header=table_header, quote=",")
 
         self.assertIsNotNone(cm.exception.compact_traceback)
 
@@ -51,14 +51,15 @@ class CsvTestCase(BaseTestCase):
         col_names = ["Strings", "Longs", "Floats"]
         col_types = [dtypes.string, dtypes.long, dtypes.float_]
         table_header = {k: v for k, v in zip(col_names, col_types)}
-        t = read_csv('tests/data/test_csv.csv', header=table_header)
+        t = read_csv("tests/data/test_csv.csv", header=table_header)
         write_csv(t, "./test_write.csv", cols=col_names)
-        t = read_csv('./test_write.csv')
+        t = read_csv("./test_write.csv")
         self.assertEqual(col_names, [c.name for c in t.columns])
 
         import os
+
         os.remove("./test_write.csv")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

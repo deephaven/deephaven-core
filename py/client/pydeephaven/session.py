@@ -18,7 +18,13 @@ from pydeephaven._config_service import ConfigService
 from pydeephaven._console_service import ConsoleService
 from pydeephaven._input_table_service import InputTableService
 from pydeephaven._session_service import SessionService
-from pydeephaven._table_ops import TimeTableOp, EmptyTableOp, MergeTablesOp, FetchTableOp, CreateInputTableOp
+from pydeephaven._table_ops import (
+    TimeTableOp,
+    EmptyTableOp,
+    MergeTablesOp,
+    FetchTableOp,
+    CreateInputTableOp,
+)
 from pydeephaven._table_service import TableService
 from pydeephaven.dherror import DHError
 from pydeephaven.proto import ticket_pb2
@@ -46,21 +52,19 @@ class _DhClientAuthMiddleware(ClientMiddleware):
     def received_headers(self, headers):
         super().received_headers(headers)
         if headers:
-            auth_token = bytes(headers.get("authorization")[0], encoding='ascii')
+            auth_token = bytes(headers.get("authorization")[0], encoding="ascii")
             if auth_token and auth_token != self._session._auth_token:
                 self._session._auth_token = auth_token
 
     def sending_headers(self):
-        return {
-            "authorization": self._session._auth_token
-        }
+        return {"authorization": self._session._auth_token}
 
 
 class _DhClientAuthHandler(ClientAuthHandler):
     def __init__(self, session):
         super().__init__()
         self._session = session
-        self._token = b''
+        self._token = b""
 
     def authenticate(self, outgoing, incoming):
         outgoing.write(self._session._auth_token)
@@ -71,7 +75,7 @@ class _DhClientAuthHandler(ClientAuthHandler):
 
 
 class Session:
-    """ A Session object represents a connection to the Deephaven data server. It contains a number of convenience
+    """A Session object represents a connection to the Deephaven data server. It contains a number of convenience
     methods for asking the server to create tables, import Arrow data into tables, merge tables, run Python scripts, and
     execute queries.
 
@@ -83,9 +87,16 @@ class Session:
         is_alive (bool): check if the session is still alive (may refresh the session)
     """
 
-    def __init__(self, host: str = None, port: int = None, auth_type: str = "Anonymous", auth_token: str = "",
-                 never_timeout: bool = True, session_type: str = 'python'):
-        """ Initialize a Session object that connects to the Deephaven server
+    def __init__(
+        self,
+        host: str = None,
+        port: int = None,
+        auth_type: str = "Anonymous",
+        auth_token: str = "",
+        never_timeout: bool = True,
+        session_type: str = "python",
+    ):
+        """Initialize a Session object that connects to the Deephaven server
 
         Args:
             host (str): the host name or IP address of the remote machine, default is 'localhost'
@@ -102,7 +113,9 @@ class Session:
         Raises:
             DHError
         """
-        self._r_lock = threading.RLock()  # for thread-safety when accessing/changing session global state
+        self._r_lock = (
+            threading.RLock()
+        )  # for thread-safety when accessing/changing session global state
         self._last_ticket = 0
         self._ticket_bitarray = BitArray(1024)
 
@@ -119,7 +132,9 @@ class Session:
         if auth_type == "Anonymous":
             self._auth_token = auth_type
         elif auth_type == "Basic":
-            auth_token_base64 = base64.b64encode(auth_token.encode("ascii")).decode("ascii")
+            auth_token_base64 = base64.b64encode(auth_token.encode("ascii")).decode(
+                "ascii"
+            )
             self._auth_token = "Basic " + auth_token_base64
         else:
             self._auth_token = str(auth_type) + " " + auth_token
@@ -153,12 +168,16 @@ class Session:
     def tables(self):
         with self._r_lock:
             fields = self._fetch_fields()
-            return [field.field_name for field in fields if
-                    field.application_id == 'scope' and field.typed_ticket.type == 'Table']
+            return [
+                field.field_name
+                for field in fields
+                if field.application_id == "scope"
+                and field.typed_ticket.type == "Table"
+            ]
 
     @property
     def grpc_metadata(self):
-        return [(b'authorization', self._auth_token)]
+        return [(b"authorization", self._auth_token)]
 
     @property
     def table_service(self) -> TableService:
@@ -209,19 +228,19 @@ class Session:
     def make_ticket(self, ticket_no=None):
         if not ticket_no:
             ticket_no = self.get_ticket()
-        ticket_bytes = ticket_no.to_bytes(4, byteorder='little', signed=True)
-        return ticket_pb2.Ticket(ticket=b'e' + ticket_bytes)
+        ticket_bytes = ticket_no.to_bytes(4, byteorder="little", signed=True)
+        return ticket_pb2.Ticket(ticket=b"e" + ticket_bytes)
 
     def get_ticket(self):
         with self._r_lock:
             self._last_ticket += 1
-            if self._last_ticket == 2 ** 31 - 1:
+            if self._last_ticket == 2**31 - 1:
                 raise DHError("fatal error: out of free internal ticket")
 
             return self._last_ticket
 
     def _fetch_fields(self):
-        """ Returns a list of available fields on the server.
+        """Returns a list of available fields on the server.
 
         Raises:
             DHError
@@ -236,8 +255,10 @@ class Session:
     def _connect(self):
         with self._r_lock:
             try:
-                self._flight_client = paflight.connect(location=(self.host, self.port), middleware=[
-                    _DhClientAuthMiddlewareFactory(self)])
+                self._flight_client = paflight.connect(
+                    location=(self.host, self.port),
+                    middleware=[_DhClientAuthMiddlewareFactory(self)],
+                )
                 self._auth_handler = _DhClientAuthHandler(self)
                 self._flight_client.authenticate(self._auth_handler)
             except Exception as e:
@@ -259,7 +280,9 @@ class Session:
     def _keep_alive(self):
         if self._keep_alive_timer:
             self._refresh_token()
-        self._keep_alive_timer = threading.Timer(self._timeout / 2 / 1000, self._keep_alive)
+        self._keep_alive_timer = threading.Timer(
+            self._timeout / 2 / 1000, self._keep_alive
+        )
         self._keep_alive_timer.daemon = True
         self._keep_alive_timer.start()
 
@@ -288,7 +311,7 @@ class Session:
                 return False
 
     def close(self) -> None:
-        """ Close the Session object if it hasn't timed out already.
+        """Close the Session object if it hasn't timed out already.
 
         Raises:
             DHError
@@ -306,7 +329,7 @@ class Session:
 
     # convenience/factory methods
     def run_script(self, script: str) -> None:
-        """ Run the supplied Python script on the server.
+        """Run the supplied Python script on the server.
 
         Args:
             script (str): the Python script code
@@ -316,11 +339,11 @@ class Session:
         """
         with self._r_lock:
             response = self.console_service.run_script(script)
-            if response.error_message != '':
+            if response.error_message != "":
                 raise DHError("could not run script: " + response.error_message)
 
     def open_table(self, name: str) -> Table:
-        """ Open a table in the global scope with the given name on the server.
+        """Open a table in the global scope with the given name on the server.
 
         Args:
             name (str): the name of the table
@@ -332,7 +355,7 @@ class Session:
             DHError
         """
         with self._r_lock:
-            ticket = ticket_pb2.Ticket(ticket=f's/{name}'.encode(encoding='ascii'))
+            ticket = ticket_pb2.Ticket(ticket=f"s/{name}".encode(encoding="ascii"))
 
             faketable = Table(session=self, ticket=ticket)
 
@@ -350,7 +373,7 @@ class Session:
                 faketable.schema = None
 
     def bind_table(self, name: str, table: Table) -> None:
-        """ Bind a table to the given name on the server so that it can be referenced by that name.
+        """Bind a table to the given name on the server so that it can be referenced by that name.
 
         Args:
             name (str): name for the table
@@ -363,7 +386,7 @@ class Session:
             self.console_service.bind_table(table=table, variable_name=name)
 
     def time_table(self, period: int, start_time: int = None) -> Table:
-        """ Create a time table on the server.
+        """Create a time table on the server.
 
         Args:
             period (int): the interval (in nano seconds) at which the time table ticks (adds a row)
@@ -379,7 +402,7 @@ class Session:
         return self.table_service.grpc_table_op(None, table_op)
 
     def empty_table(self, size: int) -> Table:
-        """ Create an empty table on the server.
+        """Create an empty table on the server.
 
         Args:
             size (int): the size of the empty table in number of rows
@@ -394,7 +417,7 @@ class Session:
         return self.table_service.grpc_table_op(None, table_op)
 
     def import_table(self, data: pa.Table) -> Table:
-        """ Import the pyarrow table as a new Deephaven table on the server.
+        """Import the pyarrow table as a new Deephaven table on the server.
 
         Deephaven supports most of the Arrow data types. However, if the pyarrow table contains any field with a data
         type not supported by Deephaven, the import operation will fail.
@@ -411,7 +434,7 @@ class Session:
         return self.flight_service.import_table(data=data)
 
     def merge_tables(self, tables: List[Table], order_by: str = None) -> Table:
-        """ Merge several tables into one table on the server.
+        """Merge several tables into one table on the server.
 
         Args:
             tables (list[Table]): the list of Table objects to merge
@@ -427,7 +450,7 @@ class Session:
         return self.table_service.grpc_table_op(None, table_op)
 
     def query(self, table: Table) -> Query:
-        """ Create a Query object to define a sequence of operations on a Deephaven table.
+        """Create a Query object to define a sequence of operations on a Deephaven table.
 
         Args:
             table (Table): a Table object
@@ -440,9 +463,13 @@ class Session:
         """
         return Query(self, table)
 
-    def input_table(self, schema: pa.Schema = None, init_table: Table = None,
-                    key_cols: List[str] = None) -> InputTable:
-        """ Create an InputTable from either Arrow schema or initial table. When key columns are
+    def input_table(
+        self,
+        schema: pa.Schema = None,
+        init_table: Table = None,
+        key_cols: List[str] = None,
+    ) -> InputTable:
+        """Create an InputTable from either Arrow schema or initial table. When key columns are
         provided, the InputTable will be keyed, otherwise it will be append-only.
 
         Args:
@@ -461,7 +488,11 @@ class Session:
         elif schema and init_table:
             raise ValueError("both arrow schema and init table are provided.")
 
-        table_op = CreateInputTableOp(schema=schema, init_table=init_table, key_cols=key_cols)
-        input_table = self.table_service.grpc_table_op(None, table_op, table_class=InputTable)
+        table_op = CreateInputTableOp(
+            schema=schema, init_table=init_table, key_cols=key_cols
+        )
+        input_table = self.table_service.grpc_table_op(
+            None, table_op, table_class=InputTable
+        )
         input_table.key_cols = key_cols
         return input_table

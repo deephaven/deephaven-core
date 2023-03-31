@@ -12,7 +12,6 @@ from deephaven import dtypes
 
 
 class KafkaConsumerTestCase(BaseTestCase):
-
     def _assert_common_cols(self, cols):
         self.assertEqual("KafkaPartition", cols[0].name)
         self.assertEqual(dtypes.int32, cols[0].data_type)
@@ -37,10 +36,11 @@ class KafkaConsumerTestCase(BaseTestCase):
         Check a simple Kafka subscription creates the right table.
         """
         t = ck.consume(
-            {'bootstrap.servers': 'redpanda:29092'},
-            'orders',
+            {"bootstrap.servers": "redpanda:29092"},
+            "orders",
             key_spec=KeyValueSpec.IGNORE,
-            value_spec=ck.simple_spec('Price', dtypes.double))
+            value_spec=ck.simple_spec("Price", dtypes.double),
+        )
 
         cols = t.columns
         self.assertEqual(4, len(cols))
@@ -54,24 +54,26 @@ class KafkaConsumerTestCase(BaseTestCase):
         """
 
         t = ck.consume(
-            {'bootstrap.servers': 'redpanda:29092'},
-            'orders',
+            {"bootstrap.servers": "redpanda:29092"},
+            "orders",
             key_spec=KeyValueSpec.IGNORE,
             value_spec=ck.json_spec(
-                [('Symbol', dtypes.string),
-                 ('Side', dtypes.string),
-                 ('Price', dtypes.double),
-                 ('Qty', dtypes.int_),
-                 ('Tstamp', dtypes.DateTime)],
+                [
+                    ("Symbol", dtypes.string),
+                    ("Side", dtypes.string),
+                    ("Price", dtypes.double),
+                    ("Qty", dtypes.int_),
+                    ("Tstamp", dtypes.DateTime),
+                ],
                 mapping={
-                    'jsymbol': 'Symbol',
-                    'jside': 'Side',
-                    'jprice': 'Price',
-                    'jqty': 'Qty',
-                    'jts': 'Tstamp'
-                }
+                    "jsymbol": "Symbol",
+                    "jside": "Side",
+                    "jprice": "Price",
+                    "jqty": "Qty",
+                    "jts": "Tstamp",
+                },
             ),
-            table_type=TableType.append()
+            table_type=TableType.append(),
         )
 
         cols = t.columns
@@ -94,8 +96,7 @@ class KafkaConsumerTestCase(BaseTestCase):
         Check an Avro Kafka subscription creates the right table.
         """
 
-        schema = \
-            """
+        schema = """
             { "type" : "record",
               "namespace" : "io.deephaven.examples",
               "name" : "share_price",
@@ -108,30 +109,33 @@ class KafkaConsumerTestCase(BaseTestCase):
             }
             """
 
-        schema_str = '{ "schema" : "%s" }' % \
-                     schema.replace('\n', ' ').replace('"', '\\"')
+        schema_str = '{ "schema" : "%s" }' % schema.replace("\n", " ").replace(
+            '"', '\\"'
+        )
 
-        sys_str = \
+        sys_str = (
             """
             curl -X POST \
                 -H 'Content-type: application/vnd.schemaregistry.v1+json; artifactType=AVRO' \
                 --data-binary '%s' \
                 http://redpanda:8081/subjects/share_price_record/versions
-            """ % schema_str
+            """
+            % schema_str
+        )
 
         r = os.system(sys_str)
         self.assertEqual(0, r)
 
-        with self.subTest(msg='straight schema, no mapping'):
+        with self.subTest(msg="straight schema, no mapping"):
             t = ck.consume(
                 {
-                    'bootstrap.servers': 'redpanda:29092',
-                    'schema.registry.url': 'http://redpanda:8081'
+                    "bootstrap.servers": "redpanda:29092",
+                    "schema.registry.url": "http://redpanda:8081",
                 },
-                'share_price',
+                "share_price",
                 key_spec=KeyValueSpec.IGNORE,
-                value_spec=ck.avro_spec('share_price_record', schema_version='1'),
-                table_type=TableType.append()
+                value_spec=ck.avro_spec("share_price_record", schema_version="1"),
+                table_type=TableType.append(),
             )
 
             cols = t.columns
@@ -147,17 +151,19 @@ class KafkaConsumerTestCase(BaseTestCase):
             self.assertEqual("Price", cols[6].name)
             self.assertEqual(dtypes.double, cols[6].data_type)
 
-        with self.subTest(msg='mapping_only (filter out some schema fields)'):
-            m = {'Symbol': 'Ticker', 'Price': 'Dollars'}
+        with self.subTest(msg="mapping_only (filter out some schema fields)"):
+            m = {"Symbol": "Ticker", "Price": "Dollars"}
             t = ck.consume(
                 {
-                    'bootstrap.servers': 'redpanda:29092',
-                    'schema.registry.url': 'http://redpanda:8081'
+                    "bootstrap.servers": "redpanda:29092",
+                    "schema.registry.url": "http://redpanda:8081",
                 },
-                'share_price',
+                "share_price",
                 key_spec=KeyValueSpec.IGNORE,
-                value_spec=ck.avro_spec('share_price_record', mapping=m, mapped_only=True),
-                table_type=TableType.append()
+                value_spec=ck.avro_spec(
+                    "share_price_record", mapping=m, mapped_only=True
+                ),
+                table_type=TableType.append(),
             )
 
             cols = t.columns
@@ -169,17 +175,17 @@ class KafkaConsumerTestCase(BaseTestCase):
             self.assertEqual("Dollars", cols[4].name)
             self.assertEqual(dtypes.double, cols[4].data_type)
 
-        with self.subTest(msg='mapping (rename some fields)'):
-            m = {'Symbol': 'Ticker', 'Qty': 'Quantity'}
+        with self.subTest(msg="mapping (rename some fields)"):
+            m = {"Symbol": "Ticker", "Qty": "Quantity"}
             t = ck.consume(
                 {
-                    'bootstrap.servers': 'redpanda:29092',
-                    'schema.registry.url': 'http://redpanda:8081'
+                    "bootstrap.servers": "redpanda:29092",
+                    "schema.registry.url": "http://redpanda:8081",
                 },
-                'share_price',
+                "share_price",
                 key_spec=KeyValueSpec.IGNORE,
-                value_spec=ck.avro_spec('share_price_record', mapping=m),
-                table_type=TableType.append()
+                value_spec=ck.avro_spec("share_price_record", mapping=m),
+                table_type=TableType.append(),
             )
 
             cols = t.columns
@@ -213,24 +219,26 @@ class KafkaConsumerTestCase(BaseTestCase):
 
     def test_json_spec_partitioned_table(self):
         pt = ck.consume_to_partitioned_table(
-            {'bootstrap.servers': 'redpanda:29092'},
-            'orders',
+            {"bootstrap.servers": "redpanda:29092"},
+            "orders",
             key_spec=KeyValueSpec.IGNORE,
             value_spec=ck.json_spec(
-                [('Symbol', dtypes.string),
-                 ('Side', dtypes.string),
-                 ('Price', dtypes.double),
-                 ('Qty', dtypes.int_),
-                 ('Tstamp', dtypes.DateTime)],
+                [
+                    ("Symbol", dtypes.string),
+                    ("Side", dtypes.string),
+                    ("Price", dtypes.double),
+                    ("Qty", dtypes.int_),
+                    ("Tstamp", dtypes.DateTime),
+                ],
                 mapping={
-                    'jsymbol': 'Symbol',
-                    'jside': 'Side',
-                    'jprice': 'Price',
-                    'jqty': 'Qty',
-                    'jts': 'Tstamp'
-                }
+                    "jsymbol": "Symbol",
+                    "jside": "Side",
+                    "jprice": "Price",
+                    "jqty": "Qty",
+                    "jts": "Tstamp",
+                },
             ),
-            table_type=TableType.append()
+            table_type=TableType.append(),
         )
 
         cols = pt.constituent_table_columns

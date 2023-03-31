@@ -23,16 +23,23 @@ class ArrowFlightService:
             ticket = self.session.get_ticket()
             dh_fields = []
             for f in data.schema:
-                dh_fields.append(pa.field(name=f.name, type=f.type, metadata=map_arrow_type(f.type)))
+                dh_fields.append(
+                    pa.field(name=f.name, type=f.type, metadata=map_arrow_type(f.type))
+                )
             dh_schema = pa.schema(dh_fields)
 
             writer, reader = self._flight_client.do_put(
-                pa.flight.FlightDescriptor.for_path("export", str(ticket)), dh_schema, options=options)
+                pa.flight.FlightDescriptor.for_path("export", str(ticket)),
+                dh_schema,
+                options=options,
+            )
             writer.write_table(data)
             writer.close()
             _ = reader.read()
             flight_ticket = self.session.make_ticket(ticket)
-            return Table(self.session, ticket=flight_ticket, size=data.num_rows, schema=dh_schema)
+            return Table(
+                self.session, ticket=flight_ticket, size=data.num_rows, schema=dh_schema
+            )
         except Exception as e:
             raise DHError("failed to create a Deephaven table from Arrow data.") from e
 

@@ -22,8 +22,12 @@ class Aggregation:
     Note: It should not be instantiated directly by user code but rather through the static methods on the class.
     """
 
-    def __init__(self, j_agg_spec: jpy.JType = None, j_aggregation: jpy.JType = None,
-                 cols: Union[str, List[str]] = None):
+    def __init__(
+        self,
+        j_agg_spec: jpy.JType = None,
+        j_aggregation: jpy.JType = None,
+        cols: Union[str, List[str]] = None,
+    ):
         self._j_agg_spec = j_agg_spec
         self._j_aggregation = j_aggregation
         self._cols = to_sequence(cols)
@@ -34,8 +38,12 @@ class Aggregation:
             return self._j_aggregation
         else:
             if not self._cols:
-                raise DHError(message="No columns specified for the aggregation operation.")
-            return self._j_agg_spec.aggregation(*[_JPair.parse(col) for col in self._cols])
+                raise DHError(
+                    message="No columns specified for the aggregation operation."
+                )
+            return self._j_agg_spec.aggregation(
+                *[_JPair.parse(col) for col in self._cols]
+            )
 
     @property
     def j_agg_spec(self):
@@ -118,7 +126,9 @@ def partition(col: str, include_by_columns: bool = True) -> Aggregation:
     Returns:
         an aggregation
     """
-    return Aggregation(j_aggregation=_JAggregation.AggPartition(col, include_by_columns))
+    return Aggregation(
+        j_aggregation=_JAggregation.AggPartition(col, include_by_columns)
+    )
 
 
 def count_distinct(cols: Union[str, List[str]] = None) -> Aggregation:
@@ -147,7 +157,9 @@ def first(cols: Union[str, List[str]] = None) -> Aggregation:
     return Aggregation(j_agg_spec=_JAggSpec.first(), cols=cols)
 
 
-def formula(formula: str, formula_param: str, cols: Union[str, List[str]] = None) -> Aggregation:
+def formula(
+    formula: str, formula_param: str, cols: Union[str, List[str]] = None
+) -> Aggregation:
     """Create a user defined formula aggregation.
 
     Args:

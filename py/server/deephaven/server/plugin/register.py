@@ -10,7 +10,7 @@ from deephaven.plugin import Plugin, Registration
 from deephaven.plugin.object import ObjectType
 from .object import ObjectTypeAdapter
 
-_JCallbackAdapter = jpy.get_type('io.deephaven.server.plugin.python.CallbackAdapter')
+_JCallbackAdapter = jpy.get_type("io.deephaven.server.plugin.python.CallbackAdapter")
 
 
 def initialize_all_and_register_into(callback: _JCallbackAdapter):

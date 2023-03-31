@@ -20,7 +20,7 @@ _JPlottingConvenience = jpy.get_type("io.deephaven.plot.PlottingConvenience")
 
 
 class LineEndStyle(Enum):
-    """ An enum defining styles for shapes drawn at the end of a line. """
+    """An enum defining styles for shapes drawn at the end of a line."""
 
     BUTT = _JLineEndStyle.BUTT
     """ Square line ending with edge against the end data points. """
@@ -33,7 +33,7 @@ class LineEndStyle(Enum):
 
 
 class LineJoinStyle(Enum):
-    """ An enum defining styles for drawing the connections between line segments. """
+    """An enum defining styles for drawing the connections between line segments."""
 
     BEVEL = _JLineJoinStyle.BEVEL
     """ Line joins are flat. """
@@ -46,7 +46,7 @@ class LineJoinStyle(Enum):
 
 
 class LineStyle(JObjectWrapper):
-    """ A LineStyle object represents the style of a line which includes line thickness, dash patterns, end styles,
+    """A LineStyle object represents the style of a line which includes line thickness, dash patterns, end styles,
     segment join styles, and dash patterns.
 
     Line thickness is 1 by default. Larger numbers draw thicker lines.
@@ -61,9 +61,14 @@ class LineStyle(JObjectWrapper):
 
     j_object_type = _JLineStyle
 
-    def __init__(self, width: float = 1.0, end_style: LineEndStyle = LineEndStyle.ROUND,
-                 join_style: LineJoinStyle = LineJoinStyle.ROUND, dash_pattern: List[Number] = None):
-        """ Creates a LineStyle object.
+    def __init__(
+        self,
+        width: float = 1.0,
+        end_style: LineEndStyle = LineEndStyle.ROUND,
+        join_style: LineJoinStyle = LineJoinStyle.ROUND,
+        dash_pattern: List[Number] = None,
+    ):
+        """Creates a LineStyle object.
 
         Args:
             width (float): the width of the line, default is 1.0
@@ -76,9 +81,13 @@ class LineStyle(JObjectWrapper):
         """
         try:
             if dash_pattern:
-                self.j_line_style = _JLineStyle.lineStyle(width, end_style.value, join_style.value, *dash_pattern)
+                self.j_line_style = _JLineStyle.lineStyle(
+                    width, end_style.value, join_style.value, *dash_pattern
+                )
             else:
-                self.j_line_style = _JLineStyle.lineStyle(width, end_style.value, join_style.value, None)
+                self.j_line_style = _JLineStyle.lineStyle(
+                    width, end_style.value, join_style.value, None
+                )
 
             self.width = width
             self.end_style = end_style
@@ -90,5 +99,3 @@ class LineStyle(JObjectWrapper):
     @property
     def j_object(self) -> jpy.JType:
         return self.j_line_style
-
-

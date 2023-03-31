@@ -59,11 +59,14 @@ class BadDataBehavior(Enum):
 
 class OperationControl(_UpdateByBase):
     """A OperationControl represents control parameters for performing operations with the table
-        UpdateByOperation."""
+    UpdateByOperation."""
 
-    def __init__(self, on_null: BadDataBehavior = BadDataBehavior.SKIP,
-                 on_nan: BadDataBehavior = BadDataBehavior.SKIP,
-                 big_value_context: MathContext = MathContext.DECIMAL128):
+    def __init__(
+        self,
+        on_null: BadDataBehavior = BadDataBehavior.SKIP,
+        on_nan: BadDataBehavior = BadDataBehavior.SKIP,
+        big_value_context: MathContext = MathContext.DECIMAL128,
+    ):
         """Initializes an OperationControl for use with certain UpdateByOperation, such as EMAs.
 
         Args:
@@ -77,9 +80,14 @@ class OperationControl(_UpdateByBase):
         self.big_value_context = big_value_context
 
     def make_grpc_message(self):
-        return _GrpcUpdateByEmaOptions(on_null_value=self.on_null.value, on_nan_value=self.on_nan.value,
-                                      big_value_context=_GrpcMathContext(precision=self.big_value_context.value[0],
-                                                                         rounding_mode=self.big_value_context.value[1]))
+        return _GrpcUpdateByEmaOptions(
+            on_null_value=self.on_null.value,
+            on_nan_value=self.on_nan.value,
+            big_value_context=_GrpcMathContext(
+                precision=self.big_value_context.value[0],
+                rounding_mode=self.big_value_context.value[1],
+            ),
+        )
 
 
 class UpdateByOperation(_UpdateByBase):
@@ -173,8 +181,9 @@ def forward_fill(cols: List[str]) -> UpdateByOperation:
     return UpdateByOperation(ub_column=ub_column)
 
 
-def ema_tick_decay(time_scale_ticks: int, cols: List[str],
-                   op_control: OperationControl = None) -> UpdateByOperation:
+def ema_tick_decay(
+    time_scale_ticks: int, cols: List[str], op_control: OperationControl = None
+) -> UpdateByOperation:
     """Creates an EMA (exponential moving average) UpdateByOperation for the supplied column names, using ticks as
     the decay unit.
 
@@ -196,8 +205,13 @@ def ema_tick_decay(time_scale_ticks: int, cols: List[str],
         DHError
     """
     try:
-        timescale = _GrpcUpdateByEmaTimescale(ticks=_GrpcUpdateByEmaTicks(ticks=time_scale_ticks))
-        ub_ema = _GrpcUpdateByEma(options=op_control.make_grpc_message() if op_control else None, timescale=timescale)
+        timescale = _GrpcUpdateByEmaTimescale(
+            ticks=_GrpcUpdateByEmaTicks(ticks=time_scale_ticks)
+        )
+        ub_ema = _GrpcUpdateByEma(
+            options=op_control.make_grpc_message() if op_control else None,
+            timescale=timescale,
+        )
         ub_spec = _GrpcUpdateBySpec(ema=ub_ema)
         ub_column = _GrpcUpdateByColumn(spec=ub_spec, match_pairs=cols)
         return UpdateByOperation(ub_column=ub_column)
@@ -205,8 +219,9 @@ def ema_tick_decay(time_scale_ticks: int, cols: List[str],
         raise DHError("failed to create a tick-decay EMA UpdateByOperation.") from e
 
 
-def ema_time_decay(ts_col: str, time_scale: int, cols: List[str],
-                   op_control: OperationControl = None) -> UpdateByOperation:
+def ema_time_decay(
+    ts_col: str, time_scale: int, cols: List[str], op_control: OperationControl = None
+) -> UpdateByOperation:
     """Creates an EMA(exponential moving average) UpdateByOperation for the supplied column names, using time as the
     decay unit.
 
@@ -230,8 +245,13 @@ def ema_time_decay(ts_col: str, time_scale: int, cols: List[str],
         DHError
     """
     try:
-        timescale = _GrpcUpdateByEmaTimescale(time=_GrpcUpdateByEmaTime(column=ts_col, period_nanos=time_scale))
-        ub_ema = _GrpcUpdateByEma(options=op_control.make_grpc_message() if op_control else None, timescale=timescale)
+        timescale = _GrpcUpdateByEmaTimescale(
+            time=_GrpcUpdateByEmaTime(column=ts_col, period_nanos=time_scale)
+        )
+        ub_ema = _GrpcUpdateByEma(
+            options=op_control.make_grpc_message() if op_control else None,
+            timescale=timescale,
+        )
 
         ub_spec = _GrpcUpdateBySpec(ema=ub_ema)
         ub_column = _GrpcUpdateByColumn(spec=ub_spec, match_pairs=cols)

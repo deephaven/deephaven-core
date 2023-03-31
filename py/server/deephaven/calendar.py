@@ -23,7 +23,7 @@ _JBusinessCalendar = jpy.get_type("io.deephaven.time.calendar.BusinessCalendar")
 
 
 def calendar_names() -> List[str]:
-    """ Returns the names of all available calendars.
+    """Returns the names of all available calendars.
 
     Returns:
         a list of names of all available calendars
@@ -38,7 +38,7 @@ def calendar_names() -> List[str]:
 
 
 def default_calendar_name():
-    """ Returns the default calendar name which is set by the 'Calendar.default' property in the configuration file
+    """Returns the default calendar name which is set by the 'Calendar.default' property in the configuration file
     that the Deephaven server is started with.
 
     Returns:
@@ -54,7 +54,8 @@ def default_calendar_name():
 
 
 class DayOfWeek(Enum):
-    """ A Enum that defines the days of a week. """
+    """A Enum that defines the days of a week."""
+
     MONDAY = _JDayOfWeek.MONDAY
     TUESDAY = _JDayOfWeek.TUESDAY
     WEDNESDAY = _JDayOfWeek.WEDNESDAY
@@ -65,7 +66,7 @@ class DayOfWeek(Enum):
 
 
 class BusinessPeriod(JObjectWrapper):
-    """ A period of business time during a business day. """
+    """A period of business time during a business day."""
 
     j_object_type = _JBusinessPeriod
 
@@ -84,22 +85,23 @@ class BusinessPeriod(JObjectWrapper):
 
     @property
     def start_time(self) -> DateTime:
-        """ The start of the period. """
+        """The start of the period."""
         return self.j_business_period.getStartTime()
 
     @property
     def end_time(self) -> DateTime:
-        """ The end of the period. """
+        """The end of the period."""
         return self.j_business_period.getEndTime()
 
     @property
     def length(self) -> int:
-        """ The length of the period in nanoseconds. """
+        """The length of the period in nanoseconds."""
         return self.j_business_period.getLength()
 
 
 class BusinessSchedule(JObjectWrapper):
-    """ A business schedule defines a single business day. """
+    """A business schedule defines a single business day."""
+
     j_object_type = _JBusinessSchedule
 
     def __init__(self, j_business_schedule):
@@ -111,7 +113,7 @@ class BusinessSchedule(JObjectWrapper):
 
     @property
     def business_periods(self) -> List[BusinessPeriod]:
-        """ The business periods of the day.
+        """The business periods of the day.
 
         Returns:
              List[BusinessPeriod]
@@ -124,16 +126,16 @@ class BusinessSchedule(JObjectWrapper):
 
     @property
     def start_of_day(self) -> DateTime:
-        """ The start of the business day. """
+        """The start of the business day."""
         return self.j_business_schedule.getStartOfBusinessDay()
 
     @property
     def end_of_day(self) -> DateTime:
-        """ The end of the business day. """
+        """The end of the business day."""
         return self.j_business_schedule.getEndOfBusinessDay()
 
     def is_business_day(self) -> bool:
-        """ Whether it is a business day.
+        """Whether it is a business day.
 
         Returns:
             bool
@@ -141,7 +143,7 @@ class BusinessSchedule(JObjectWrapper):
         return self.j_business_schedule.isBusinessDay()
 
     def is_business_time(self, time: DateTime) -> bool:
-        """ Whether the specified time is a business time for the day.
+        """Whether the specified time is a business time for the day.
 
         Args:
              time (DateTime): the time during the day
@@ -152,7 +154,7 @@ class BusinessSchedule(JObjectWrapper):
         return self.j_business_schedule.isBusinessTime(time)
 
     def business_time_elapsed(self, time: DateTime) -> int:
-        """ Returns the amount of business time in nanoseconds that has elapsed on the given day by the specified
+        """Returns the amount of business time in nanoseconds that has elapsed on the given day by the specified
         time.
 
         Args:
@@ -173,16 +175,16 @@ class Calendar(JObjectWrapper):
 
     @property
     def current_day(self) -> str:
-        """ The current day. """
+        """The current day."""
         return self.j_calendar.currentDay()
 
     @property
     def time_zone(self) -> TimeZone:
-        """ Returns the timezone of the calendar. """
+        """Returns the timezone of the calendar."""
         return TimeZone(self.j_calendar.timeZone())
 
     def previous_day(self, date: str) -> str:
-        """ Gets the day prior to the given date.
+        """Gets the day prior to the given date.
 
         Args:
             date (str): the date of interest
@@ -199,7 +201,7 @@ class Calendar(JObjectWrapper):
             raise DHError(e, "failed in previous_day.") from e
 
     def next_day(self, date: str) -> str:
-        """ Gets the day after the given date.
+        """Gets the day after the given date.
 
         Args:
             date (str): the date of interest
@@ -216,7 +218,7 @@ class Calendar(JObjectWrapper):
             raise DHError(e, "failed in next_day.") from e
 
     def day_of_week(self, date: str) -> DayOfWeek:
-        """ The day of week for the given date.
+        """The day of week for the given date.
 
         Args:
             date (str): the date of interest
@@ -233,7 +235,7 @@ class Calendar(JObjectWrapper):
             raise DHError(e, "failed in day_of_week.") from e
 
     def days_in_range(self, start: str, end: str) -> List[str]:
-        """ Returns the days between the specified start and end dates.
+        """Returns the days between the specified start and end dates.
 
         Args:
             start (str): the start day of the range
@@ -252,7 +254,7 @@ class Calendar(JObjectWrapper):
             raise DHError(e, "failed in days_in_range.") from e
 
     def number_of_days(self, start: str, end: str, end_inclusive: bool = False) -> int:
-        """ Returns the number of days between the start and end dates.
+        """Returns the number of days between the start and end dates.
 
         Args:
             start (str): the start day of the range
@@ -272,12 +274,12 @@ class Calendar(JObjectWrapper):
 
 
 class BusinessCalendar(Calendar):
-    """ A business calendar. """
+    """A business calendar."""
 
     j_object_type = _JBusinessCalendar
 
     def __init__(self, name: str = None):
-        """ Loads a business calendar.
+        """Loads a business calendar.
 
         Args:
             name (str) : name of the calendar, default is None, which means to use the default Deephaven calendar
@@ -297,24 +299,24 @@ class BusinessCalendar(Calendar):
 
     @property
     def is_business_day(self) -> bool:
-        """ If today is a business day. """
+        """If today is a business day."""
         return self.j_calendar.isBusinessDay()
 
     @property
     def default_business_periods(self) -> List[str]:
-        """ The default business periods for the business days. Returns a list of strings with a comma separating
-        open and close times. """
+        """The default business periods for the business days. Returns a list of strings with a comma separating
+        open and close times."""
 
         default_business_periods = self.j_calendar.getDefaultBusinessPeriods()
         return list(default_business_periods.toArray())
 
     @property
     def standard_business_day_length(self) -> int:
-        """ The length of a standard business day in nanoseconds. """
+        """The length of a standard business day in nanoseconds."""
         return self.j_calendar.standardBusinessDayLengthNanos()
 
     def business_schedule(self, date: str) -> BusinessSchedule:
-        """ Returns the specified day's business schedule.
+        """Returns the specified day's business schedule.
 
         Args:
              date (str): the date str, format must be "yyyy-MM-dd"
@@ -326,12 +328,14 @@ class BusinessCalendar(Calendar):
             DHError
         """
         try:
-            return BusinessSchedule(j_business_schedule=self.j_calendar.getBusinessSchedule(date))
+            return BusinessSchedule(
+                j_business_schedule=self.j_calendar.getBusinessSchedule(date)
+            )
         except Exception as e:
             raise DHError(e, "failed in get_business_schedule.") from e
 
     def previous_business_day(self, date: str) -> str:
-        """ Gets the business day prior to the given date.
+        """Gets the business day prior to the given date.
 
         Args:
             date (str): the date of interest
@@ -348,7 +352,7 @@ class BusinessCalendar(Calendar):
             raise DHError(e, "failed in previous_business_day.") from e
 
     def previous_non_business_day(self, date: str) -> str:
-        """ Gets the non-business day prior to the given date.
+        """Gets the non-business day prior to the given date.
 
         Args:
             date (str): the date of interest
@@ -365,7 +369,7 @@ class BusinessCalendar(Calendar):
             raise DHError(e, "failed in previous_non_business_day.") from e
 
     def next_business_day(self, date: str) -> str:
-        """ Gets the business day after the given date.
+        """Gets the business day after the given date.
 
         Args:
             date (str): the date of interest
@@ -382,7 +386,7 @@ class BusinessCalendar(Calendar):
             raise DHError(e, "failed in next_business_day.") from e
 
     def next_non_business_day(self, date: str) -> str:
-        """ Gets the non-business day after the given date.
+        """Gets the non-business day after the given date.
 
         Args:
             date (str): the date of interest
@@ -399,7 +403,7 @@ class BusinessCalendar(Calendar):
             raise DHError(e, "failed in next_non_business_day.") from e
 
     def business_days_in_range(self, start: str, end: str) -> List[str]:
-        """ Returns the business days between the specified start and end dates.
+        """Returns the business days between the specified start and end dates.
 
         Args:
             start (str): the start day of the range
@@ -418,7 +422,7 @@ class BusinessCalendar(Calendar):
             raise DHError(e, "failed in business_days_in_range.") from e
 
     def non_business_days_in_range(self, start: str, end: str) -> List[str]:
-        """ Returns the non-business days between the specified start and end dates.
+        """Returns the non-business days between the specified start and end dates.
 
         Args:
             start (str): the start day of the range
@@ -436,8 +440,10 @@ class BusinessCalendar(Calendar):
         except Exception as e:
             raise DHError(e, "failed in non_business_days_in_range.") from e
 
-    def number_of_business_days(self, start: str, end: str, end_inclusive: bool = False) -> int:
-        """ Returns the number of business days between the start and end dates.
+    def number_of_business_days(
+        self, start: str, end: str, end_inclusive: bool = False
+    ) -> int:
+        """Returns the number of business days between the start and end dates.
 
         Args:
             start (str): the start day of the range
@@ -455,8 +461,10 @@ class BusinessCalendar(Calendar):
         except Exception as e:
             raise DHError(e, "failed in number_of_business_days.") from e
 
-    def number_of_non_business_days(self, start: str, end: str, end_inclusive: bool = False) -> int:
-        """ Returns the number of non-business days between the start and end dates.
+    def number_of_non_business_days(
+        self, start: str, end: str, end_inclusive: bool = False
+    ) -> int:
+        """Returns the number of non-business days between the start and end dates.
 
         Args:
             start (str): the start day of the range
@@ -475,7 +483,7 @@ class BusinessCalendar(Calendar):
             raise DHError(e, "failed in number_of_non_business_days.") from e
 
     def is_last_business_day_of_month(self, date: str) -> bool:
-        """ Returns if the specified date is the last business day of the month.
+        """Returns if the specified date is the last business day of the month.
 
         Args:
             date (str): the date
@@ -492,7 +500,7 @@ class BusinessCalendar(Calendar):
             raise DHError(e, "failed in is_last_business_day_of_month.") from e
 
     def is_last_business_day_of_week(self, date: str) -> bool:
-        """ Returns if the specified date is the last business day of the week.
+        """Returns if the specified date is the last business day of the week.
 
         Args:
             date (str): the date

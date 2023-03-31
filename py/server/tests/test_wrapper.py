@@ -12,14 +12,18 @@ from tests.testbase import BaseTestCase
 def alpha():
     return MyObject(0, "ALPHA")
 
+
 def beta():
     return MyObject(1, "BETA")
+
 
 def charlie():
     return MyObject(2, "CHARLIE")
 
+
 def delta():
     return MyObject(3, "DELTA")
+
 
 def other():
     return Other(0, "ALPHA")
@@ -28,7 +32,7 @@ def other():
 class MyObject(JObjectWrapper):
     j_object_type = jpy.get_type("io.deephaven.integrations.pyserver.wrapper.MyObject")
 
-    def __init__(self, hash : int, s : str):
+    def __init__(self, hash: int, s: str):
         self._j_my_object = MyObject.j_object_type(hash, s)
 
     @property
@@ -39,7 +43,7 @@ class MyObject(JObjectWrapper):
 class Other(JObjectWrapper):
     j_object_type = jpy.get_type("io.deephaven.integrations.pyserver.wrapper.MyObject")
 
-    def __init__(self, hash : int, s : str):
+    def __init__(self, hash: int, s: str):
         self._j_my_object = Other.j_object_type(hash, s)
 
     @property

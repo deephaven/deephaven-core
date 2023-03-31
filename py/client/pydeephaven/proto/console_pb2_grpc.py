@@ -17,55 +17,55 @@ class ConsoleServiceStub(object):
             channel: A grpc.Channel.
         """
         self.GetConsoleTypes = channel.unary_unary(
-                '/io.deephaven.proto.backplane.script.grpc.ConsoleService/GetConsoleTypes',
-                request_serializer=deephaven_dot_proto_dot_console__pb2.GetConsoleTypesRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_console__pb2.GetConsoleTypesResponse.FromString,
-                )
+            "/io.deephaven.proto.backplane.script.grpc.ConsoleService/GetConsoleTypes",
+            request_serializer=deephaven_dot_proto_dot_console__pb2.GetConsoleTypesRequest.SerializeToString,
+            response_deserializer=deephaven_dot_proto_dot_console__pb2.GetConsoleTypesResponse.FromString,
+        )
         self.StartConsole = channel.unary_unary(
-                '/io.deephaven.proto.backplane.script.grpc.ConsoleService/StartConsole',
-                request_serializer=deephaven_dot_proto_dot_console__pb2.StartConsoleRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_console__pb2.StartConsoleResponse.FromString,
-                )
+            "/io.deephaven.proto.backplane.script.grpc.ConsoleService/StartConsole",
+            request_serializer=deephaven_dot_proto_dot_console__pb2.StartConsoleRequest.SerializeToString,
+            response_deserializer=deephaven_dot_proto_dot_console__pb2.StartConsoleResponse.FromString,
+        )
         self.GetHeapInfo = channel.unary_unary(
-                '/io.deephaven.proto.backplane.script.grpc.ConsoleService/GetHeapInfo',
-                request_serializer=deephaven_dot_proto_dot_console__pb2.GetHeapInfoRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_console__pb2.GetHeapInfoResponse.FromString,
-                )
+            "/io.deephaven.proto.backplane.script.grpc.ConsoleService/GetHeapInfo",
+            request_serializer=deephaven_dot_proto_dot_console__pb2.GetHeapInfoRequest.SerializeToString,
+            response_deserializer=deephaven_dot_proto_dot_console__pb2.GetHeapInfoResponse.FromString,
+        )
         self.SubscribeToLogs = channel.unary_stream(
-                '/io.deephaven.proto.backplane.script.grpc.ConsoleService/SubscribeToLogs',
-                request_serializer=deephaven_dot_proto_dot_console__pb2.LogSubscriptionRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_console__pb2.LogSubscriptionData.FromString,
-                )
+            "/io.deephaven.proto.backplane.script.grpc.ConsoleService/SubscribeToLogs",
+            request_serializer=deephaven_dot_proto_dot_console__pb2.LogSubscriptionRequest.SerializeToString,
+            response_deserializer=deephaven_dot_proto_dot_console__pb2.LogSubscriptionData.FromString,
+        )
         self.ExecuteCommand = channel.unary_unary(
-                '/io.deephaven.proto.backplane.script.grpc.ConsoleService/ExecuteCommand',
-                request_serializer=deephaven_dot_proto_dot_console__pb2.ExecuteCommandRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_console__pb2.ExecuteCommandResponse.FromString,
-                )
+            "/io.deephaven.proto.backplane.script.grpc.ConsoleService/ExecuteCommand",
+            request_serializer=deephaven_dot_proto_dot_console__pb2.ExecuteCommandRequest.SerializeToString,
+            response_deserializer=deephaven_dot_proto_dot_console__pb2.ExecuteCommandResponse.FromString,
+        )
         self.CancelCommand = channel.unary_unary(
-                '/io.deephaven.proto.backplane.script.grpc.ConsoleService/CancelCommand',
-                request_serializer=deephaven_dot_proto_dot_console__pb2.CancelCommandRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_console__pb2.CancelCommandResponse.FromString,
-                )
+            "/io.deephaven.proto.backplane.script.grpc.ConsoleService/CancelCommand",
+            request_serializer=deephaven_dot_proto_dot_console__pb2.CancelCommandRequest.SerializeToString,
+            response_deserializer=deephaven_dot_proto_dot_console__pb2.CancelCommandResponse.FromString,
+        )
         self.BindTableToVariable = channel.unary_unary(
-                '/io.deephaven.proto.backplane.script.grpc.ConsoleService/BindTableToVariable',
-                request_serializer=deephaven_dot_proto_dot_console__pb2.BindTableToVariableRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_console__pb2.BindTableToVariableResponse.FromString,
-                )
+            "/io.deephaven.proto.backplane.script.grpc.ConsoleService/BindTableToVariable",
+            request_serializer=deephaven_dot_proto_dot_console__pb2.BindTableToVariableRequest.SerializeToString,
+            response_deserializer=deephaven_dot_proto_dot_console__pb2.BindTableToVariableResponse.FromString,
+        )
         self.AutoCompleteStream = channel.stream_stream(
-                '/io.deephaven.proto.backplane.script.grpc.ConsoleService/AutoCompleteStream',
-                request_serializer=deephaven_dot_proto_dot_console__pb2.AutoCompleteRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_console__pb2.AutoCompleteResponse.FromString,
-                )
+            "/io.deephaven.proto.backplane.script.grpc.ConsoleService/AutoCompleteStream",
+            request_serializer=deephaven_dot_proto_dot_console__pb2.AutoCompleteRequest.SerializeToString,
+            response_deserializer=deephaven_dot_proto_dot_console__pb2.AutoCompleteResponse.FromString,
+        )
         self.OpenAutoCompleteStream = channel.unary_stream(
-                '/io.deephaven.proto.backplane.script.grpc.ConsoleService/OpenAutoCompleteStream',
-                request_serializer=deephaven_dot_proto_dot_console__pb2.AutoCompleteRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_console__pb2.AutoCompleteResponse.FromString,
-                )
+            "/io.deephaven.proto.backplane.script.grpc.ConsoleService/OpenAutoCompleteStream",
+            request_serializer=deephaven_dot_proto_dot_console__pb2.AutoCompleteRequest.SerializeToString,
+            response_deserializer=deephaven_dot_proto_dot_console__pb2.AutoCompleteResponse.FromString,
+        )
         self.NextAutoCompleteStream = channel.unary_unary(
-                '/io.deephaven.proto.backplane.script.grpc.ConsoleService/NextAutoCompleteStream',
-                request_serializer=deephaven_dot_proto_dot_console__pb2.AutoCompleteRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_console__pb2.BrowserNextResponse.FromString,
-                )
+            "/io.deephaven.proto.backplane.script.grpc.ConsoleService/NextAutoCompleteStream",
+            request_serializer=deephaven_dot_proto_dot_console__pb2.AutoCompleteRequest.SerializeToString,
+            response_deserializer=deephaven_dot_proto_dot_console__pb2.BrowserNextResponse.FromString,
+        )
 
 
 class ConsoleServiceServicer(object):
@@ -76,44 +76,44 @@ class ConsoleServiceServicer(object):
     def GetConsoleTypes(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def StartConsole(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def GetHeapInfo(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def SubscribeToLogs(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def ExecuteCommand(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def CancelCommand(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def BindTableToVariable(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def AutoCompleteStream(self, request_iterator, context):
         """
@@ -123,8 +123,8 @@ class ConsoleServiceServicer(object):
         time.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def OpenAutoCompleteStream(self, request, context):
         """
@@ -132,248 +132,369 @@ class ConsoleServiceServicer(object):
         implementation for AutoCompleteStream.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def NextAutoCompleteStream(self, request, context):
         """
         Other half of the browser-based implementation for AutoCompleteStream.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
 
 def add_ConsoleServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
-            'GetConsoleTypes': grpc.unary_unary_rpc_method_handler(
-                    servicer.GetConsoleTypes,
-                    request_deserializer=deephaven_dot_proto_dot_console__pb2.GetConsoleTypesRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_console__pb2.GetConsoleTypesResponse.SerializeToString,
-            ),
-            'StartConsole': grpc.unary_unary_rpc_method_handler(
-                    servicer.StartConsole,
-                    request_deserializer=deephaven_dot_proto_dot_console__pb2.StartConsoleRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_console__pb2.StartConsoleResponse.SerializeToString,
-            ),
-            'GetHeapInfo': grpc.unary_unary_rpc_method_handler(
-                    servicer.GetHeapInfo,
-                    request_deserializer=deephaven_dot_proto_dot_console__pb2.GetHeapInfoRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_console__pb2.GetHeapInfoResponse.SerializeToString,
-            ),
-            'SubscribeToLogs': grpc.unary_stream_rpc_method_handler(
-                    servicer.SubscribeToLogs,
-                    request_deserializer=deephaven_dot_proto_dot_console__pb2.LogSubscriptionRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_console__pb2.LogSubscriptionData.SerializeToString,
-            ),
-            'ExecuteCommand': grpc.unary_unary_rpc_method_handler(
-                    servicer.ExecuteCommand,
-                    request_deserializer=deephaven_dot_proto_dot_console__pb2.ExecuteCommandRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_console__pb2.ExecuteCommandResponse.SerializeToString,
-            ),
-            'CancelCommand': grpc.unary_unary_rpc_method_handler(
-                    servicer.CancelCommand,
-                    request_deserializer=deephaven_dot_proto_dot_console__pb2.CancelCommandRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_console__pb2.CancelCommandResponse.SerializeToString,
-            ),
-            'BindTableToVariable': grpc.unary_unary_rpc_method_handler(
-                    servicer.BindTableToVariable,
-                    request_deserializer=deephaven_dot_proto_dot_console__pb2.BindTableToVariableRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_console__pb2.BindTableToVariableResponse.SerializeToString,
-            ),
-            'AutoCompleteStream': grpc.stream_stream_rpc_method_handler(
-                    servicer.AutoCompleteStream,
-                    request_deserializer=deephaven_dot_proto_dot_console__pb2.AutoCompleteRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_console__pb2.AutoCompleteResponse.SerializeToString,
-            ),
-            'OpenAutoCompleteStream': grpc.unary_stream_rpc_method_handler(
-                    servicer.OpenAutoCompleteStream,
-                    request_deserializer=deephaven_dot_proto_dot_console__pb2.AutoCompleteRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_console__pb2.AutoCompleteResponse.SerializeToString,
-            ),
-            'NextAutoCompleteStream': grpc.unary_unary_rpc_method_handler(
-                    servicer.NextAutoCompleteStream,
-                    request_deserializer=deephaven_dot_proto_dot_console__pb2.AutoCompleteRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_console__pb2.BrowserNextResponse.SerializeToString,
-            ),
+        "GetConsoleTypes": grpc.unary_unary_rpc_method_handler(
+            servicer.GetConsoleTypes,
+            request_deserializer=deephaven_dot_proto_dot_console__pb2.GetConsoleTypesRequest.FromString,
+            response_serializer=deephaven_dot_proto_dot_console__pb2.GetConsoleTypesResponse.SerializeToString,
+        ),
+        "StartConsole": grpc.unary_unary_rpc_method_handler(
+            servicer.StartConsole,
+            request_deserializer=deephaven_dot_proto_dot_console__pb2.StartConsoleRequest.FromString,
+            response_serializer=deephaven_dot_proto_dot_console__pb2.StartConsoleResponse.SerializeToString,
+        ),
+        "GetHeapInfo": grpc.unary_unary_rpc_method_handler(
+            servicer.GetHeapInfo,
+            request_deserializer=deephaven_dot_proto_dot_console__pb2.GetHeapInfoRequest.FromString,
+            response_serializer=deephaven_dot_proto_dot_console__pb2.GetHeapInfoResponse.SerializeToString,
+        ),
+        "SubscribeToLogs": grpc.unary_stream_rpc_method_handler(
+            servicer.SubscribeToLogs,
+            request_deserializer=deephaven_dot_proto_dot_console__pb2.LogSubscriptionRequest.FromString,
+            response_serializer=deephaven_dot_proto_dot_console__pb2.LogSubscriptionData.SerializeToString,
+        ),
+        "ExecuteCommand": grpc.unary_unary_rpc_method_handler(
+            servicer.ExecuteCommand,
+            request_deserializer=deephaven_dot_proto_dot_console__pb2.ExecuteCommandRequest.FromString,
+            response_serializer=deephaven_dot_proto_dot_console__pb2.ExecuteCommandResponse.SerializeToString,
+        ),
+        "CancelCommand": grpc.unary_unary_rpc_method_handler(
+            servicer.CancelCommand,
+            request_deserializer=deephaven_dot_proto_dot_console__pb2.CancelCommandRequest.FromString,
+            response_serializer=deephaven_dot_proto_dot_console__pb2.CancelCommandResponse.SerializeToString,
+        ),
+        "BindTableToVariable": grpc.unary_unary_rpc_method_handler(
+            servicer.BindTableToVariable,
+            request_deserializer=deephaven_dot_proto_dot_console__pb2.BindTableToVariableRequest.FromString,
+            response_serializer=deephaven_dot_proto_dot_console__pb2.BindTableToVariableResponse.SerializeToString,
+        ),
+        "AutoCompleteStream": grpc.stream_stream_rpc_method_handler(
+            servicer.AutoCompleteStream,
+            request_deserializer=deephaven_dot_proto_dot_console__pb2.AutoCompleteRequest.FromString,
+            response_serializer=deephaven_dot_proto_dot_console__pb2.AutoCompleteResponse.SerializeToString,
+        ),
+        "OpenAutoCompleteStream": grpc.unary_stream_rpc_method_handler(
+            servicer.OpenAutoCompleteStream,
+            request_deserializer=deephaven_dot_proto_dot_console__pb2.AutoCompleteRequest.FromString,
+            response_serializer=deephaven_dot_proto_dot_console__pb2.AutoCompleteResponse.SerializeToString,
+        ),
+        "NextAutoCompleteStream": grpc.unary_unary_rpc_method_handler(
+            servicer.NextAutoCompleteStream,
+            request_deserializer=deephaven_dot_proto_dot_console__pb2.AutoCompleteRequest.FromString,
+            response_serializer=deephaven_dot_proto_dot_console__pb2.BrowserNextResponse.SerializeToString,
+        ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-            'io.deephaven.proto.backplane.script.grpc.ConsoleService', rpc_method_handlers)
+        "io.deephaven.proto.backplane.script.grpc.ConsoleService", rpc_method_handlers
+    )
     server.add_generic_rpc_handlers((generic_handler,))
 
 
- # This class is part of an EXPERIMENTAL API.
+# This class is part of an EXPERIMENTAL API.
 class ConsoleService(object):
     """
     Console interaction service
     """
 
     @staticmethod
-    def GetConsoleTypes(request,
+    def GetConsoleTypes(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.script.grpc.ConsoleService/GetConsoleTypes',
+            "/io.deephaven.proto.backplane.script.grpc.ConsoleService/GetConsoleTypes",
             deephaven_dot_proto_dot_console__pb2.GetConsoleTypesRequest.SerializeToString,
             deephaven_dot_proto_dot_console__pb2.GetConsoleTypesResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
 
     @staticmethod
-    def StartConsole(request,
+    def StartConsole(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.script.grpc.ConsoleService/StartConsole',
+            "/io.deephaven.proto.backplane.script.grpc.ConsoleService/StartConsole",
             deephaven_dot_proto_dot_console__pb2.StartConsoleRequest.SerializeToString,
             deephaven_dot_proto_dot_console__pb2.StartConsoleResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
 
     @staticmethod
-    def GetHeapInfo(request,
+    def GetHeapInfo(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.script.grpc.ConsoleService/GetHeapInfo',
+            "/io.deephaven.proto.backplane.script.grpc.ConsoleService/GetHeapInfo",
             deephaven_dot_proto_dot_console__pb2.GetHeapInfoRequest.SerializeToString,
             deephaven_dot_proto_dot_console__pb2.GetHeapInfoResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
 
     @staticmethod
-    def SubscribeToLogs(request,
+    def SubscribeToLogs(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_stream(
+            request,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_stream(request, target, '/io.deephaven.proto.backplane.script.grpc.ConsoleService/SubscribeToLogs',
+            "/io.deephaven.proto.backplane.script.grpc.ConsoleService/SubscribeToLogs",
             deephaven_dot_proto_dot_console__pb2.LogSubscriptionRequest.SerializeToString,
             deephaven_dot_proto_dot_console__pb2.LogSubscriptionData.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
 
     @staticmethod
-    def ExecuteCommand(request,
+    def ExecuteCommand(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.script.grpc.ConsoleService/ExecuteCommand',
+            "/io.deephaven.proto.backplane.script.grpc.ConsoleService/ExecuteCommand",
             deephaven_dot_proto_dot_console__pb2.ExecuteCommandRequest.SerializeToString,
             deephaven_dot_proto_dot_console__pb2.ExecuteCommandResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
 
     @staticmethod
-    def CancelCommand(request,
+    def CancelCommand(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.script.grpc.ConsoleService/CancelCommand',
+            "/io.deephaven.proto.backplane.script.grpc.ConsoleService/CancelCommand",
             deephaven_dot_proto_dot_console__pb2.CancelCommandRequest.SerializeToString,
             deephaven_dot_proto_dot_console__pb2.CancelCommandResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
 
     @staticmethod
-    def BindTableToVariable(request,
+    def BindTableToVariable(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.script.grpc.ConsoleService/BindTableToVariable',
+            "/io.deephaven.proto.backplane.script.grpc.ConsoleService/BindTableToVariable",
             deephaven_dot_proto_dot_console__pb2.BindTableToVariableRequest.SerializeToString,
             deephaven_dot_proto_dot_console__pb2.BindTableToVariableResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
 
     @staticmethod
-    def AutoCompleteStream(request_iterator,
+    def AutoCompleteStream(
+        request_iterator,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.stream_stream(
+            request_iterator,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.stream_stream(request_iterator, target, '/io.deephaven.proto.backplane.script.grpc.ConsoleService/AutoCompleteStream',
+            "/io.deephaven.proto.backplane.script.grpc.ConsoleService/AutoCompleteStream",
             deephaven_dot_proto_dot_console__pb2.AutoCompleteRequest.SerializeToString,
             deephaven_dot_proto_dot_console__pb2.AutoCompleteResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
 
     @staticmethod
-    def OpenAutoCompleteStream(request,
+    def OpenAutoCompleteStream(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_stream(
+            request,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_stream(request, target, '/io.deephaven.proto.backplane.script.grpc.ConsoleService/OpenAutoCompleteStream',
+            "/io.deephaven.proto.backplane.script.grpc.ConsoleService/OpenAutoCompleteStream",
             deephaven_dot_proto_dot_console__pb2.AutoCompleteRequest.SerializeToString,
             deephaven_dot_proto_dot_console__pb2.AutoCompleteResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
 
     @staticmethod
-    def NextAutoCompleteStream(request,
+    def NextAutoCompleteStream(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.script.grpc.ConsoleService/NextAutoCompleteStream',
+            "/io.deephaven.proto.backplane.script.grpc.ConsoleService/NextAutoCompleteStream",
             deephaven_dot_proto_dot_console__pb2.AutoCompleteRequest.SerializeToString,
             deephaven_dot_proto_dot_console__pb2.BrowserNextResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )

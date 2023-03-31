@@ -13,6 +13,7 @@ from deephaven.jcompat import j_list_to_list, j_properties
 
 _JKafkaTools = jpy.get_type("io.deephaven.kafka.KafkaTools")
 
+
 def topics(kafka_config: Dict) -> List[str]:
     """Returns a list of topic names available from Kafka.
 

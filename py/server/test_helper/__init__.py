@@ -25,51 +25,49 @@ def start_jvm(jvm_props: Dict[str, str] = None):
     if not jpy.has_jvm():
 
         # we will try to initialize the jvm
-        propfile = os.environ.get('DEEPHAVEN_PROPFILE', 'dh-defaults.prop')
+        propfile = os.environ.get("DEEPHAVEN_PROPFILE", "dh-defaults.prop")
 
         jvm_properties = {
-            'PyObject.cleanup_on_thread': 'false',
-
-            'java.awt.headless': 'true',
-            'MetricsManager.enabled': 'true',
-
-            'Configuration.rootFile': propfile,
-            'deephaven.dataDir': '/data',
-            'deephaven.cacheDir': '/cache',
+            "PyObject.cleanup_on_thread": "false",
+            "java.awt.headless": "true",
+            "MetricsManager.enabled": "true",
+            "Configuration.rootFile": propfile,
+            "deephaven.dataDir": "/data",
+            "deephaven.cacheDir": "/cache",
         }
 
         if jvm_props:
             jvm_properties.update(jvm_props)
 
         jvm_options = {
-            '-XX:InitialRAMPercentage=25.0',
-            '-XX:MinRAMPercentage=70.0',
-            '-XX:MaxRAMPercentage=80.0',
-
+            "-XX:InitialRAMPercentage=25.0",
+            "-XX:MinRAMPercentage=70.0",
+            "-XX:MaxRAMPercentage=80.0",
             # Allow access to java.nio.Buffer fields
-            '--add-opens=java.base/java.nio=ALL-UNNAMED',
-
+            "--add-opens=java.base/java.nio=ALL-UNNAMED",
             # Allow our hotspot-impl project to access internals
-            '--add-exports=java.management/sun.management=ALL-UNNAMED',
-
+            "--add-exports=java.management/sun.management=ALL-UNNAMED",
             # Allow our clock-impl project to access internals
-            '--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED',
+            "--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED",
         }
-        jvm_classpath = os.environ.get('DEEPHAVEN_CLASSPATH', '')
-
+        jvm_classpath = os.environ.get("DEEPHAVEN_CLASSPATH", "")
 
         # Start up the JVM
         jpy.VerboseExceptions.enabled = True
         jvm.init_jvm(
             jvm_classpath=_expandWildcardsInList(jvm_classpath.split(os.path.pathsep)),
             jvm_properties=jvm_properties,
-            jvm_options=jvm_options
+            jvm_options=jvm_options,
         )
 
         # Set up a Deephaven Python session
-        py_scope_jpy = jpy.get_type("io.deephaven.engine.util.PythonScopeJpyImpl").ofMainGlobals()
+        py_scope_jpy = jpy.get_type(
+            "io.deephaven.engine.util.PythonScopeJpyImpl"
+        ).ofMainGlobals()
         global py_dh_session
-        py_dh_session = jpy.get_type("io.deephaven.integrations.python.PythonDeephavenSession")(py_scope_jpy)
+        py_dh_session = jpy.get_type(
+            "io.deephaven.integrations.python.PythonDeephavenSession"
+        )(py_scope_jpy)
 
 
 def _expandWildcardsInList(elements):
@@ -106,7 +104,9 @@ def _expandWildcardsInItem(element):
         # expand base
         return glob("{}/*.jar".format(base))
     except AttributeError:
-        return [element, ]
+        return [
+            element,
+        ]
 
 
 def _flatten(orig):
@@ -119,16 +119,22 @@ def _flatten(orig):
     """
 
     if isinstance(orig, str):
-        return [orig, ]
-    elif not hasattr(orig, '__iter__'):
+        return [
+            orig,
+        ]
+    elif not hasattr(orig, "__iter__"):
         raise ValueError("The flatten method only accepts string or iterable input")
 
     out = []
     for x in orig:
         if isinstance(x, str):
             out.append(x)
-        elif hasattr(x, '__iter__'):
+        elif hasattr(x, "__iter__"):
             out.extend(_flatten(x))
         else:
-            raise ValueError("The flatten method encountered an invalid entry of type {}".format(type(x)))
+            raise ValueError(
+                "The flatten method encountered an invalid entry of type {}".format(
+                    type(x)
+                )
+            )
     return out

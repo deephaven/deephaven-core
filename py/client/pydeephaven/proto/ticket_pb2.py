@@ -6,23 +6,28 @@ from google.protobuf.internal import builder as _builder
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import descriptor_pool as _descriptor_pool
 from google.protobuf import symbol_database as _symbol_database
+
 # @@protoc_insertion_point(imports)
 
 _sym_db = _symbol_database.Default()
 
 
-
-
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1c\x64\x65\x65phaven/proto/ticket.proto\x12!io.deephaven.proto.backplane.grpc\"\x18\n\x06Ticket\x12\x0e\n\x06ticket\x18\x01 \x01(\x0c\"V\n\x0bTypedTicket\x12\x39\n\x06ticket\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x0c\n\x04type\x18\x02 \x01(\tBBH\x01P\x01Z<github.com/deephaven/deephaven-core/go/internal/proto/ticketb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
+    b'\n\x1c\x64\x65\x65phaven/proto/ticket.proto\x12!io.deephaven.proto.backplane.grpc"\x18\n\x06Ticket\x12\x0e\n\x06ticket\x18\x01 \x01(\x0c"V\n\x0bTypedTicket\x12\x39\n\x06ticket\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x0c\n\x04type\x18\x02 \x01(\tBBH\x01P\x01Z<github.com/deephaven/deephaven-core/go/internal/proto/ticketb\x06proto3'
+)
 
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, globals())
-_builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'deephaven.proto.ticket_pb2', globals())
+_builder.BuildTopDescriptorsAndMessages(
+    DESCRIPTOR, "deephaven.proto.ticket_pb2", globals()
+)
 if _descriptor._USE_C_DESCRIPTORS == False:
 
-  DESCRIPTOR._options = None
-  DESCRIPTOR._serialized_options = b'H\001P\001Z<github.com/deephaven/deephaven-core/go/internal/proto/ticket'
-  _TICKET._serialized_start=67
-  _TICKET._serialized_end=91
-  _TYPEDTICKET._serialized_start=93
-  _TYPEDTICKET._serialized_end=179
+    DESCRIPTOR._options = None
+    DESCRIPTOR._serialized_options = (
+        b"H\001P\001Z<github.com/deephaven/deephaven-core/go/internal/proto/ticket"
+    )
+    _TICKET._serialized_start = 67
+    _TICKET._serialized_end = 91
+    _TYPEDTICKET._serialized_start = 93
+    _TYPEDTICKET._serialized_end = 179
 # @@protoc_insertion_point(module_scope)

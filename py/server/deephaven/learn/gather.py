@@ -16,7 +16,7 @@ _JGatherer = jpy.get_type("io.deephaven.integrations.learn.gather.NumPy")
 
 
 class MemoryLayout(enum.Enum):
-    """ Memory layouts for an array. """
+    """Memory layouts for an array."""
 
     ROW_MAJOR = True
     """ Row-major memory layout."""
@@ -32,7 +32,7 @@ class MemoryLayout(enum.Enum):
 
 
 def _convert_to_numpy_dtype(np_type: Type) -> Type:
-    """ Converts an input type to the corresponding NumPy data type. """
+    """Converts an input type to the corresponding NumPy data type."""
     if np_type.__module__ == np.__name__:
         return np_type
     elif np_type == bool:
@@ -42,12 +42,19 @@ def _convert_to_numpy_dtype(np_type: Type) -> Type:
     elif np_type == int:
         np_type = np.intc
     else:
-        raise ValueError(f"{np_type} is not a data type that can be converted to a NumPy dtype.")
+        raise ValueError(
+            f"{np_type} is not a data type that can be converted to a NumPy dtype."
+        )
     return np_type
 
 
-def table_to_numpy_2d(row_set, col_set, order: MemoryLayout = MemoryLayout.ROW_MAJOR, np_type: Type = np.intc) -> np.ndarray:
-    """ Converts Deephaven table data to a 2d NumPy array of the appropriate size
+def table_to_numpy_2d(
+    row_set,
+    col_set,
+    order: MemoryLayout = MemoryLayout.ROW_MAJOR,
+    np_type: Type = np.intc,
+) -> np.ndarray:
+    """Converts Deephaven table data to a 2d NumPy array of the appropriate size
 
     Args:
         row_set: a RowSequence describing the number of rows in the table
@@ -68,15 +75,21 @@ def table_to_numpy_2d(row_set, col_set, order: MemoryLayout = MemoryLayout.ROW_M
         if np_type == np.byte:
             buffer = _JGatherer.tensorBuffer2DByte(row_set, col_set, order.is_row_major)
         elif np_type == np.short:
-            buffer = _JGatherer.tensorBuffer2DShort(row_set, col_set, order.is_row_major)
+            buffer = _JGatherer.tensorBuffer2DShort(
+                row_set, col_set, order.is_row_major
+            )
         elif np_type == np.intc:
             buffer = _JGatherer.tensorBuffer2DInt(row_set, col_set, order.is_row_major)
         elif np_type == np.int_:
             buffer = _JGatherer.tensorBuffer2DLong(row_set, col_set, order.is_row_major)
         elif np_type == np.single:
-            buffer = _JGatherer.tensorBuffer2DFloat(row_set, col_set, order.is_row_major)
+            buffer = _JGatherer.tensorBuffer2DFloat(
+                row_set, col_set, order.is_row_major
+            )
         elif np_type == np.double:
-            buffer = _JGatherer.tensorBuffer2DDouble(row_set, col_set, order.is_row_major)
+            buffer = _JGatherer.tensorBuffer2DDouble(
+                row_set, col_set, order.is_row_major
+            )
         else:
             raise ValueError(f"Data type {np_type} is not supported.")
 
@@ -89,4 +102,7 @@ def table_to_numpy_2d(row_set, col_set, order: MemoryLayout = MemoryLayout.ROW_M
             tensor.shape = (row_set.intSize(), len(col_set))
             return tensor
     except Exception as e:
-        raise DHError(e, f"failed to convert rows: {row_set} and cols: {col_set} to a 2D NumPy array") from e
+        raise DHError(
+            e,
+            f"failed to convert rows: {row_set} and cols: {col_set} to a 2D NumPy array",
+        ) from e

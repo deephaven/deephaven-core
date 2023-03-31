@@ -17,15 +17,15 @@ class InputTableServiceStub(object):
             channel: A grpc.Channel.
         """
         self.AddTableToInputTable = channel.unary_unary(
-                '/io.deephaven.proto.backplane.grpc.InputTableService/AddTableToInputTable',
-                request_serializer=deephaven_dot_proto_dot_inputtable__pb2.AddTableRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_inputtable__pb2.AddTableResponse.FromString,
-                )
+            "/io.deephaven.proto.backplane.grpc.InputTableService/AddTableToInputTable",
+            request_serializer=deephaven_dot_proto_dot_inputtable__pb2.AddTableRequest.SerializeToString,
+            response_deserializer=deephaven_dot_proto_dot_inputtable__pb2.AddTableResponse.FromString,
+        )
         self.DeleteTableFromInputTable = channel.unary_unary(
-                '/io.deephaven.proto.backplane.grpc.InputTableService/DeleteTableFromInputTable',
-                request_serializer=deephaven_dot_proto_dot_inputtable__pb2.DeleteTableRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_inputtable__pb2.DeleteTableResponse.FromString,
-                )
+            "/io.deephaven.proto.backplane.grpc.InputTableService/DeleteTableFromInputTable",
+            request_serializer=deephaven_dot_proto_dot_inputtable__pb2.DeleteTableRequest.SerializeToString,
+            response_deserializer=deephaven_dot_proto_dot_inputtable__pb2.DeleteTableResponse.FromString,
+        )
 
 
 class InputTableServiceServicer(object):
@@ -39,8 +39,8 @@ class InputTableServiceServicer(object):
         columns (name, types, and order) which match the given input table's columns.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
     def DeleteTableFromInputTable(self, request, context):
         """
@@ -48,64 +48,89 @@ class InputTableServiceServicer(object):
         to remove are expected to only have columns that match the key columns of the input table.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
 
 
 def add_InputTableServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
-            'AddTableToInputTable': grpc.unary_unary_rpc_method_handler(
-                    servicer.AddTableToInputTable,
-                    request_deserializer=deephaven_dot_proto_dot_inputtable__pb2.AddTableRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_inputtable__pb2.AddTableResponse.SerializeToString,
-            ),
-            'DeleteTableFromInputTable': grpc.unary_unary_rpc_method_handler(
-                    servicer.DeleteTableFromInputTable,
-                    request_deserializer=deephaven_dot_proto_dot_inputtable__pb2.DeleteTableRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_inputtable__pb2.DeleteTableResponse.SerializeToString,
-            ),
+        "AddTableToInputTable": grpc.unary_unary_rpc_method_handler(
+            servicer.AddTableToInputTable,
+            request_deserializer=deephaven_dot_proto_dot_inputtable__pb2.AddTableRequest.FromString,
+            response_serializer=deephaven_dot_proto_dot_inputtable__pb2.AddTableResponse.SerializeToString,
+        ),
+        "DeleteTableFromInputTable": grpc.unary_unary_rpc_method_handler(
+            servicer.DeleteTableFromInputTable,
+            request_deserializer=deephaven_dot_proto_dot_inputtable__pb2.DeleteTableRequest.FromString,
+            response_serializer=deephaven_dot_proto_dot_inputtable__pb2.DeleteTableResponse.SerializeToString,
+        ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-            'io.deephaven.proto.backplane.grpc.InputTableService', rpc_method_handlers)
+        "io.deephaven.proto.backplane.grpc.InputTableService", rpc_method_handlers
+    )
     server.add_generic_rpc_handlers((generic_handler,))
 
 
- # This class is part of an EXPERIMENTAL API.
+# This class is part of an EXPERIMENTAL API.
 class InputTableService(object):
     """
     This service offers methods to manipulate the contents of input tables.
     """
 
     @staticmethod
-    def AddTableToInputTable(request,
+    def AddTableToInputTable(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.InputTableService/AddTableToInputTable',
+            "/io.deephaven.proto.backplane.grpc.InputTableService/AddTableToInputTable",
             deephaven_dot_proto_dot_inputtable__pb2.AddTableRequest.SerializeToString,
             deephaven_dot_proto_dot_inputtable__pb2.AddTableResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
 
     @staticmethod
-    def DeleteTableFromInputTable(request,
+    def DeleteTableFromInputTable(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
             target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.InputTableService/DeleteTableFromInputTable',
+            "/io.deephaven.proto.backplane.grpc.InputTableService/DeleteTableFromInputTable",
             deephaven_dot_proto_dot_inputtable__pb2.DeleteTableRequest.SerializeToString,
             deephaven_dot_proto_dot_inputtable__pb2.DeleteTableResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
