@@ -38,8 +38,8 @@ public class IntRollingWAvgOperator extends BaseDoubleUpdateByOperator {
         protected AggregatingDoubleRingBuffer windowValues;
         protected AggregatingDoubleRingBuffer windowWeightValues;
 
-        protected Context(final int chunkSize, final int influencerChunkSize) {
-            super(chunkSize);
+        protected Context(final int affectedChunkSize, final int influencerChunkSize) {
+            super(affectedChunkSize);
             castKernel = ToDoubleCast.makeToDoubleCast(weightChunkType, influencerChunkSize);
             windowValues = new AggregatingDoubleRingBuffer(BUFFER_INITIAL_CAPACITY, 0.0, (a, b) -> {
                 if (a == NULL_DOUBLE) {

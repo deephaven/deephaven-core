@@ -25,11 +25,11 @@ public class LongRollingAvgOperator extends BaseDoubleUpdateByOperator {
     // endregion extra-fields
 
     protected class Context extends BaseDoubleUpdateByOperator.Context {
-        protected LongChunk<? extends Values> longInfluencerValuesChunk;
+        protected LongChunk<? extends Values> influencerValuesChunk;
         protected LongRingBuffer longWindowValues;
 
-        protected Context(final int chunkSize) {
-            super(chunkSize);
+        protected Context(final int affectedChunkSize, final int influencerChunkSize) {
+            super(affectedChunkSize);
             longWindowValues = new LongRingBuffer(BUFFER_INITIAL_CAPACITY, true);
         }
 
@@ -40,8 +40,8 @@ public class LongRollingAvgOperator extends BaseDoubleUpdateByOperator {
         }
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            longInfluencerValuesChunk = valuesChunk.asLongChunk();
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
+            influencerValuesChunk = valueChunks[0].asLongChunk();
         }
 
         @Override
@@ -49,7 +49,7 @@ public class LongRollingAvgOperator extends BaseDoubleUpdateByOperator {
             longWindowValues.ensureRemaining(count);
 
             for (int ii = 0; ii < count; ii++) {
-                final long val = longInfluencerValuesChunk.get(pos + ii);
+                final long val = influencerValuesChunk.get(pos + ii);
                 longWindowValues.addUnsafe(val);
 
                 // increase the running sum
@@ -100,8 +100,8 @@ public class LongRollingAvgOperator extends BaseDoubleUpdateByOperator {
 
     @NotNull
     @Override
-    public UpdateByOperator.Context makeUpdateContext(final int chunkSize) {
-        return new Context(chunkSize);
+    public UpdateByOperator.Context makeUpdateContext(final int affectedChunkSize, final int influencerChunkSize) {
+        return new Context(affectedChunkSize, influencerChunkSize);
     }
 
     public LongRollingAvgOperator(@NotNull final MatchPair pair,

@@ -23,8 +23,8 @@ public final class BigDecimalRollingAvgOperator extends BaseObjectUpdateByOperat
         protected ObjectChunk<BigDecimal, ? extends Values> objectInfluencerValuesChunk;
         protected RingBuffer<BigDecimal> objectWindowValues;
 
-        protected Context(final int chunkSize) {
-            super(chunkSize);
+        protected Context(final int affectedChunkSize, final int influencerChunkSize) {
+            super(affectedChunkSize);
             objectWindowValues = new RingBuffer<>(RING_BUFFER_INITIAL_CAPACITY);
         }
 
@@ -36,8 +36,8 @@ public final class BigDecimalRollingAvgOperator extends BaseObjectUpdateByOperat
 
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            objectInfluencerValuesChunk = valuesChunk.asObjectChunk();
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
+            objectInfluencerValuesChunk = valueChunks[0].asObjectChunk();
         }
 
         @Override
@@ -95,8 +95,8 @@ public final class BigDecimalRollingAvgOperator extends BaseObjectUpdateByOperat
 
     @NotNull
     @Override
-    public UpdateByOperator.Context makeUpdateContext(final int chunkSize) {
-        return new Context(chunkSize);
+    public UpdateByOperator.Context makeUpdateContext(final int affectedChunkSize, final int influencerChunkSize) {
+        return new Context(affectedChunkSize, influencerChunkSize);
     }
 
     public BigDecimalRollingAvgOperator(@NotNull final MatchPair pair,

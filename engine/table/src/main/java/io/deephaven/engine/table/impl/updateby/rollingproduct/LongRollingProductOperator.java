@@ -31,8 +31,8 @@ public class LongRollingProductOperator extends BaseDoubleUpdateByOperator {
 
         private int zeroCount;
 
-        protected Context(final int chunkSize) {
-            super(chunkSize);
+        protected Context(final int affectedChunkSize, final int influencerChunkSize) {
+            super(affectedChunkSize);
             buffer = new AggregatingDoubleRingBuffer(BUFFER_INITIAL_SIZE,
                     1L,
                     (a, b) -> a * b, // tree function
@@ -58,8 +58,8 @@ public class LongRollingProductOperator extends BaseDoubleUpdateByOperator {
 
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            longInfluencerValuesChunk = valuesChunk.asLongChunk();
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
+            longInfluencerValuesChunk = valueChunks[0].asLongChunk();
         }
 
         @Override
@@ -115,8 +115,8 @@ public class LongRollingProductOperator extends BaseDoubleUpdateByOperator {
 
     @NotNull
     @Override
-    public UpdateByOperator.Context makeUpdateContext(final int chunkSize) {
-        return new Context(chunkSize);
+    public UpdateByOperator.Context makeUpdateContext(final int affectedChunkSize, final int influencerChunkSize) {
+        return new Context(affectedChunkSize, influencerChunkSize);
     }
 
     public LongRollingProductOperator(@NotNull final MatchPair pair,

@@ -67,7 +67,17 @@ public abstract class RollingWAvgSpec extends RollingOpSpec {
     public final boolean applicableTo(Class<?> inputType) {
         return
         // is primitive or boxed numeric
-        applicableToNumeric(inputType);
+        applicableToNumeric(inputType)
+                // or char
+                || inputType == char.class || inputType == Character.class;
+    }
+
+    public final boolean weightColumnApplicableTo(Class<?> inputType) {
+        return
+        // is primitive or boxed numeric
+        applicableToNumeric(inputType)
+                // or char
+                || inputType == char.class || inputType == Character.class;
     }
 
     @Override

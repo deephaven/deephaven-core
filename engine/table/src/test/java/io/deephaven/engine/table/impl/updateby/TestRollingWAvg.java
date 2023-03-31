@@ -3,21 +3,26 @@ package io.deephaven.engine.table.impl.updateby;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.api.updateby.UpdateByOperation;
+import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.testutil.GenerateTableUpdates;
 import io.deephaven.engine.testutil.TstUtils;
-import io.deephaven.engine.testutil.generator.DoubleGenerator;
-import io.deephaven.engine.testutil.generator.ShortGenerator;
-import io.deephaven.engine.testutil.generator.SortedDateTimeGenerator;
-import io.deephaven.engine.testutil.generator.TestDataGenerator;
+import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableDiff;
 import io.deephaven.test.types.OutOfBandTest;
+import io.deephaven.vector.DoubleVector;
+import io.deephaven.vector.ObjectVector;
+import io.deephaven.vector.ShortVector;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.math.MathContext;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
@@ -25,10 +30,35 @@ import java.util.Random;
 
 import static io.deephaven.engine.testutil.GenerateTableUpdates.generateAppends;
 import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.simulateShiftAwareStep;
+import static io.deephaven.function.Basic.isNull;
 import static io.deephaven.time.DateTimeUtils.convertDateTime;
 
 @Category(OutOfBandTest.class)
 public class TestRollingWAvg extends BaseUpdateByTest {
+    private final BigDecimal allowableDelta = BigDecimal.valueOf(0.000000001);
+    private final BigDecimal allowableFraction = BigDecimal.valueOf(0.000001);
+    final static MathContext mathContextDefault = UpdateByControl.mathContextDefault();
+
+    final boolean fuzzyEquals(BigDecimal actualVal, BigDecimal expectedVal) {
+        if (actualVal == null && expectedVal == null) {
+            return true;
+        } else if (actualVal == null) {
+            return false;
+        } else if (expectedVal == null) {
+            return false;
+        }
+
+        BigDecimal diff = actualVal.subtract(expectedVal, mathContextDefault).abs();
+        // Equal if the difference is zero or smaller than the allowed delta
+        if (diff.equals(BigDecimal.ZERO) || allowableDelta.compareTo(diff) == 1) {
+            return true;
+        }
+
+        // Equal if the difference is smaller than the allowable fraction.
+        BigDecimal diffFraction = diff.divide(actualVal, mathContextDefault).abs();
+        return allowableFraction.compareTo(diffFraction) == 1;
+    }
+
     /**
      * These are used in the static tests and leverage the Numeric class functions for verification. Additional tests
      * are performed on BigInteger/BigDecimal columns as well.
@@ -52,11 +82,11 @@ public class TestRollingWAvg extends BaseUpdateByTest {
             "longCol",
             "floatCol",
             "doubleCol",
-            // "bigIntCol",
-            // "bigDecimalCol",
+            "bigIntCol",
+            "bigDecimalCol",
     };
 
-    final int STATIC_TABLE_SIZE = 10_000;
+    final int STATIC_TABLE_SIZE = 5_000;
     final int DYNAMIC_TABLE_SIZE = 1_000;
     final int DYNAMIC_UPDATE_SIZE = 100;
     final int DYNAMIC_UPDATE_STEPS = 20;
@@ -68,206 +98,567 @@ public class TestRollingWAvg extends BaseUpdateByTest {
     }
 
     // region Object Helper functions
-    //
-    // final Function<ObjectVector<BigInteger>, BigDecimal> avgBigInt = bigIntegerObjectVector -> {
-    // MathContext mathContextDefault = UpdateByControl.mathContextDefault();
-    //
-    // if (bigIntegerObjectVector == null) {
-    // return null;
-    // }
-    //
-    // BigDecimal sum = new BigDecimal(0);
-    // long count = 0;
-    //
-    // final long n = bigIntegerObjectVector.size();
-    //
-    // for (long i = 0; i < n; i++) {
-    // BigInteger val = bigIntegerObjectVector.get(i);
-    // if (!isNull(val)) {
-    // final BigDecimal decVal = new BigDecimal(val);
-    // sum = sum.add(decVal, mathContextDefault);
-    // count++;
-    // }
-    // }
-    // if (count == 0) {
-    // return null;
-    // }
-    // return sum.divide(new BigDecimal(count), mathContextDefault);
-    // };
-    //
-    // final Function<ObjectVector<BigDecimal>, BigDecimal> avgBigDec = bigDecimalObjectVector -> {
-    // MathContext mathContextDefault = UpdateByControl.mathContextDefault();
-    //
-    // if (bigDecimalObjectVector == null) {
-    // return null;
-    // }
-    //
-    // BigDecimal sum = new BigDecimal(0);
-    // long count = 0;
-    //
-    // final long n = bigDecimalObjectVector.size();
-    //
-    // for (long i = 0; i < n; i++) {
-    // BigDecimal val = bigDecimalObjectVector.get(i);
-    // if (!isNull(val)) {
-    // sum = sum.add(val, mathContextDefault);
-    // count++;
-    // }
-    // }
-    // if (count == 0) {
-    // return null;
-    // }
-    // return sum.divide(new BigDecimal(count), mathContextDefault);
-    // };
-    //
-    // private void doTestStaticZeroKeyBigNumbers(final QueryTable t, final int prevTicks, final int fwdTicks) {
-    // QueryScope.addParam("avgBigInt", avgBigInt);
-    // QueryScope.addParam("avgBigDec", avgBigDec);
-    //
-    // Table actual = t.updateBy(UpdateByOperation.RollingAvg(prevTicks, fwdTicks, "bigIntCol", "bigDecimalCol"));
-    // Table expected = t.updateBy(UpdateByOperation.RollingGroup(prevTicks, fwdTicks, "bigIntCol", "bigDecimalCol"))
-    // .update("bigIntCol=avgBigInt.apply(bigIntCol)", "bigDecimalCol=avgBigDec.apply(bigDecimalCol)");
-    //
-    // BigDecimal[] biActual = (BigDecimal[]) actual.getColumn("bigIntCol").getDirect();
-    // Object[] biExpected = (Object[]) expected.getColumn("bigIntCol").getDirect();
-    //
-    // Assert.eq(biActual.length, "array length", biExpected.length);
-    // for (int ii = 0; ii < biActual.length; ii++) {
-    // BigDecimal actualVal = biActual[ii];
-    // BigDecimal expectedVal = (BigDecimal) biExpected[ii];
-    // if (actualVal != null || expectedVal != null) {
-    // Assert.eqTrue(actualVal.compareTo(expectedVal) == 0, "values match");
-    // }
-    // }
-    //
-    // BigDecimal[] bdActual = (BigDecimal[]) actual.getColumn("bigDecimalCol").getDirect();
-    // Object[] bdExpected = (Object[]) expected.getColumn("bigDecimalCol").getDirect();
-    //
-    // Assert.eq(bdActual.length, "array length", bdExpected.length);
-    // for (int ii = 0; ii < bdActual.length; ii++) {
-    // BigDecimal actualVal = bdActual[ii];
-    // BigDecimal expectedVal = (BigDecimal) bdExpected[ii];
-    // if (actualVal != null || expectedVal != null) {
-    // Assert.eqTrue(actualVal.compareTo(expectedVal) == 0, "values match");
-    // }
-    // }
-    // }
-    //
-    // private void doTestStaticZeroKeyTimedBigNumbers(final QueryTable t, final Duration prevTime,
-    // final Duration postTime) {
-    // QueryScope.addParam("avgBigInt", avgBigInt);
-    // QueryScope.addParam("avgBigDec", avgBigDec);
-    //
-    // Table actual = t.updateBy(UpdateByOperation.RollingAvg("ts", prevTime, postTime, "bigIntCol", "bigDecimalCol"));
-    // Table expected =
-    // t.updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, "bigIntCol", "bigDecimalCol"))
-    // .update("bigIntCol=avgBigInt.apply(bigIntCol)", "bigDecimalCol=avgBigDec.apply(bigDecimalCol)");
-    //
-    // BigDecimal[] biActual = (BigDecimal[]) actual.getColumn("bigIntCol").getDirect();
-    // Object[] biExpected = (Object[]) expected.getColumn("bigIntCol").getDirect();
-    //
-    // Assert.eq(biActual.length, "array length", biExpected.length);
-    // for (int ii = 0; ii < biActual.length; ii++) {
-    // BigDecimal actualVal = biActual[ii];
-    // BigDecimal expectedVal = (BigDecimal) biExpected[ii];
-    // if (actualVal != null || expectedVal != null) {
-    // Assert.eqTrue(actualVal.compareTo(expectedVal) == 0, "values match");
-    // }
-    // }
-    //
-    // BigDecimal[] bdActual = (BigDecimal[]) actual.getColumn("bigDecimalCol").getDirect();
-    // Object[] bdExpected = (Object[]) expected.getColumn("bigDecimalCol").getDirect();
-    //
-    // Assert.eq(bdActual.length, "array length", bdExpected.length);
-    // for (int ii = 0; ii < bdActual.length; ii++) {
-    // BigDecimal actualVal = bdActual[ii];
-    // BigDecimal expectedVal = (BigDecimal) bdExpected[ii];
-    // if (actualVal != null || expectedVal != null) {
-    // Assert.eqTrue(actualVal.compareTo(expectedVal) == 0, "values match");
-    // }
-    // }
-    // }
-    //
-    // private void doTestStaticBucketedBigNumbers(final QueryTable t, final int prevTicks, final int fwdTicks) {
-    // QueryScope.addParam("avgBigInt", avgBigInt);
-    // QueryScope.addParam("avgBigDec", avgBigDec);
-    //
-    // Table actual =
-    // t.updateBy(UpdateByOperation.RollingAvg(prevTicks, fwdTicks, "bigIntCol", "bigDecimalCol"), "Sym");
-    // Table expected =
-    // t.updateBy(UpdateByOperation.RollingGroup(prevTicks, fwdTicks, "bigIntCol", "bigDecimalCol"), "Sym")
-    // .update("bigIntCol=avgBigInt.apply(bigIntCol)", "bigDecimalCol=avgBigDec.apply(bigDecimalCol)");
-    //
-    // BigDecimal[] biActual = (BigDecimal[]) actual.getColumn("bigIntCol").getDirect();
-    // Object[] biExpected = (Object[]) expected.getColumn("bigIntCol").getDirect();
-    //
-    // Assert.eq(biActual.length, "array length", biExpected.length);
-    // for (int ii = 0; ii < biActual.length; ii++) {
-    // BigDecimal actualVal = biActual[ii];
-    // BigDecimal expectedVal = (BigDecimal) biExpected[ii];
-    // if (actualVal != null || expectedVal != null) {
-    // Assert.eqTrue(actualVal.compareTo(expectedVal) == 0, "values match");
-    // }
-    // }
-    //
-    // BigDecimal[] bdActual = (BigDecimal[]) actual.getColumn("bigDecimalCol").getDirect();
-    // Object[] bdExpected = (Object[]) expected.getColumn("bigDecimalCol").getDirect();
-    //
-    // Assert.eq(bdActual.length, "array length", bdExpected.length);
-    // for (int ii = 0; ii < bdActual.length; ii++) {
-    // BigDecimal actualVal = bdActual[ii];
-    // BigDecimal expectedVal = (BigDecimal) bdExpected[ii];
-    // if (actualVal != null || expectedVal != null) {
-    // Assert.eqTrue(actualVal.compareTo(expectedVal) == 0, "values match");
-    // }
-    // }
-    // }
-    //
-    // private void doTestStaticBucketedTimedBigNumbers(final QueryTable t, final Duration prevTime,
-    // final Duration postTime) {
-    // QueryScope.addParam("avgBigInt", avgBigInt);
-    // QueryScope.addParam("avgBigDec", avgBigDec);
-    //
-    // Table actual =
-    // t.updateBy(UpdateByOperation.RollingAvg("ts", prevTime, postTime, "bigIntCol", "bigDecimalCol"), "Sym");
-    // Table expected = t
-    // .updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, "bigIntCol", "bigDecimalCol"), "Sym")
-    // .update("bigIntCol=avgBigInt.apply(bigIntCol)", "bigDecimalCol=avgBigDec.apply(bigDecimalCol)");
-    //
-    // BigDecimal[] biActual = (BigDecimal[]) actual.getColumn("bigIntCol").getDirect();
-    // Object[] biExpected = (Object[]) expected.getColumn("bigIntCol").getDirect();
-    //
-    // Assert.eq(biActual.length, "array length", biExpected.length);
-    // for (int ii = 0; ii < biActual.length; ii++) {
-    // BigDecimal actualVal = biActual[ii];
-    // BigDecimal expectedVal = (BigDecimal) biExpected[ii];
-    // if (actualVal != null || expectedVal != null) {
-    // Assert.eqTrue(actualVal.compareTo(expectedVal) == 0, "values match");
-    // }
-    // }
-    //
-    // BigDecimal[] bdActual = (BigDecimal[]) actual.getColumn("bigDecimalCol").getDirect();
-    // Object[] bdExpected = (Object[]) expected.getColumn("bigDecimalCol").getDirect();
-    //
-    // Assert.eq(bdActual.length, "array length", bdExpected.length);
-    // for (int ii = 0; ii < bdActual.length; ii++) {
-    // BigDecimal actualVal = bdActual[ii];
-    // BigDecimal expectedVal = (BigDecimal) bdExpected[ii];
-    // if (actualVal != null || expectedVal != null) {
-    // Assert.eqTrue(actualVal.compareTo(expectedVal) == 0, "values match");
-    // }
-    // }
-    // }
+    public interface BiFunction<T1, T2, R> {
+        R apply(T1 val1, T2 val2);
+    }
+
+    final BiFunction<ObjectVector<BigInteger>, DoubleVector, BigDecimal> wavgBigIntDouble =
+            (bigIntegerObjectVector, doubleVector) -> {
+                if (bigIntegerObjectVector == null || doubleVector == null) {
+                    return null;
+                }
+
+                BigDecimal weightValueSum = new BigDecimal(0);
+                BigDecimal weightSum = new BigDecimal(0);
+                long count = 0;
+
+                final long n = bigIntegerObjectVector.size();
+
+                for (long i = 0; i < n; i++) {
+                    final BigInteger val = bigIntegerObjectVector.get(i);
+                    final double weightVal = doubleVector.get(i);
+                    if (!isNull(val) && !isNull(weightVal)) {
+                        final BigDecimal decVal = new BigDecimal(val);
+                        final BigDecimal weightDecVal = BigDecimal.valueOf(weightVal);
+
+                        final BigDecimal weightedVal = decVal.multiply(weightDecVal, mathContextDefault);
+                        weightValueSum = weightValueSum.add(weightedVal, mathContextDefault);
+                        weightSum = weightSum.add(weightDecVal, mathContextDefault);
+                        count++;
+                    }
+                }
+                if (count == 0) {
+                    return null;
+                }
+                return weightValueSum.divide(weightSum, mathContextDefault);
+            };
+
+    final BiFunction<ObjectVector<BigInteger>, ShortVector, BigDecimal> wavgBigIntShort =
+            (valueVector, weightVector) -> {
+                if (valueVector == null || weightVector == null) {
+                    return null;
+                }
+
+                BigDecimal weightValueSum = new BigDecimal(0);
+                BigDecimal weightSum = new BigDecimal(0);
+                long count = 0;
+
+                final long n = valueVector.size();
+
+                for (long i = 0; i < n; i++) {
+                    final BigInteger val = valueVector.get(i);
+                    final short weightVal = weightVector.get(i);
+                    if (!isNull(val) && !isNull(weightVal)) {
+                        final BigDecimal decVal = new BigDecimal(val);
+                        final BigDecimal weightDecVal = BigDecimal.valueOf(weightVal);
+
+                        final BigDecimal weightedVal = decVal.multiply(weightDecVal, mathContextDefault);
+                        weightValueSum = weightValueSum.add(weightedVal, mathContextDefault);
+                        weightSum = weightSum.add(weightDecVal, mathContextDefault);
+                        count++;
+                    }
+                }
+                if (count == 0) {
+                    return null;
+                }
+                return weightValueSum.divide(weightSum, mathContextDefault);
+            };
+
+    final BiFunction<ObjectVector<BigInteger>, ObjectVector<BigInteger>, BigDecimal> wavgBigIntBigInt =
+            (valueVector, weightVector) -> {
+                if (valueVector == null || weightVector == null) {
+                    return null;
+                }
+
+                BigDecimal weightValueSum = new BigDecimal(0);
+                BigDecimal weightSum = new BigDecimal(0);
+                long count = 0;
+
+                final long n = valueVector.size();
+
+                for (long i = 0; i < n; i++) {
+                    final BigInteger val = valueVector.get(i);
+                    final BigInteger weightVal = weightVector.get(i);
+                    if (!isNull(val) && !isNull(weightVal)) {
+                        final BigDecimal decVal = new BigDecimal(val);
+                        final BigDecimal weightDecVal = new BigDecimal(weightVal);
+
+                        final BigDecimal weightedVal = decVal.multiply(weightDecVal, mathContextDefault);
+                        weightValueSum = weightValueSum.add(weightedVal, mathContextDefault);
+                        weightSum = weightSum.add(weightDecVal, mathContextDefault);
+                        count++;
+                    }
+                }
+                if (count == 0 || weightSum.equals(BigDecimal.ZERO)) {
+                    return null;
+                }
+                return weightValueSum.divide(weightSum, mathContextDefault);
+            };
+
+    final BiFunction<ObjectVector<BigInteger>, ObjectVector<BigDecimal>, BigDecimal> wavgBigIntBigDec =
+            (valueVector, weightVector) -> {
+                if (valueVector == null || weightVector == null) {
+                    return null;
+                }
+
+                BigDecimal weightValueSum = new BigDecimal(0);
+                BigDecimal weightSum = new BigDecimal(0);
+                long count = 0;
+
+                final long n = valueVector.size();
+
+                for (long i = 0; i < n; i++) {
+                    final BigInteger val = valueVector.get(i);
+                    final BigDecimal weightVal = weightVector.get(i);
+                    if (!isNull(val) && !isNull(weightVal)) {
+                        final BigDecimal decVal = new BigDecimal(val);
+
+                        final BigDecimal weightedVal = decVal.multiply(weightVal, mathContextDefault);
+                        weightValueSum = weightValueSum.add(weightedVal, mathContextDefault);
+                        weightSum = weightSum.add(weightVal, mathContextDefault);
+                        count++;
+                    }
+                }
+                if (count == 0 || weightSum.equals(BigDecimal.ZERO)) {
+                    return null;
+                }
+                return weightValueSum.divide(weightSum, mathContextDefault);
+            };
+
+    final BiFunction<ObjectVector<BigDecimal>, DoubleVector, BigDecimal> wavgBigDecDouble =
+            (valueVector, weightVector) -> {
+                if (valueVector == null || weightVector == null) {
+                    return null;
+                }
+
+                BigDecimal weightValueSum = new BigDecimal(0);
+                BigDecimal weightSum = new BigDecimal(0);
+                long count = 0;
+
+                final long n = valueVector.size();
+
+                for (long i = 0; i < n; i++) {
+                    final BigDecimal val = valueVector.get(i);
+                    final double weightVal = weightVector.get(i);
+                    if (!isNull(val) && !isNull(weightVal)) {
+                        final BigDecimal weightDecVal = BigDecimal.valueOf(weightVal);
+
+                        final BigDecimal weightedVal = val.multiply(weightDecVal, mathContextDefault);
+                        weightValueSum = weightValueSum.add(weightedVal, mathContextDefault);
+                        weightSum = weightSum.add(weightDecVal, mathContextDefault);
+                        count++;
+                    }
+                }
+                if (count == 0 || weightSum.equals(BigDecimal.ZERO)) {
+                    return null;
+                }
+                return weightValueSum.divide(weightSum, mathContextDefault);
+            };
+
+    final BiFunction<ObjectVector<BigDecimal>, ShortVector, BigDecimal> wavgBigDecShort =
+            (valueVector, weightVector) -> {
+                if (valueVector == null || weightVector == null) {
+                    return null;
+                }
+
+                BigDecimal weightValueSum = new BigDecimal(0);
+                BigDecimal weightSum = new BigDecimal(0);
+                long count = 0;
+
+                final long n = valueVector.size();
+
+                for (long i = 0; i < n; i++) {
+                    final BigDecimal val = valueVector.get(i);
+                    final short weightVal = weightVector.get(i);
+                    if (!isNull(val) && !isNull(weightVal)) {
+                        final BigDecimal weightDecVal = BigDecimal.valueOf(weightVal);
+
+                        final BigDecimal weightedVal = val.multiply(weightDecVal, mathContextDefault);
+                        weightValueSum = weightValueSum.add(weightedVal, mathContextDefault);
+                        weightSum = weightSum.add(weightDecVal, mathContextDefault);
+                        count++;
+                    }
+                }
+                if (count == 0 || weightSum.equals(BigDecimal.ZERO)) {
+                    return null;
+                }
+                return weightValueSum.divide(weightSum, mathContextDefault);
+            };
+
+    final BiFunction<ObjectVector<BigDecimal>, ObjectVector<BigInteger>, BigDecimal> wavgBigDecBigInt =
+            (valueVector, weightVector) -> {
+                if (valueVector == null || weightVector == null) {
+                    return null;
+                }
+
+                BigDecimal weightValueSum = new BigDecimal(0);
+                BigDecimal weightSum = new BigDecimal(0);
+                long count = 0;
+
+                final long n = valueVector.size();
+
+                for (long i = 0; i < n; i++) {
+                    final BigDecimal val = valueVector.get(i);
+                    final BigInteger weightVal = weightVector.get(i);
+                    if (!isNull(val) && !isNull(weightVal)) {
+                        final BigDecimal weightDecVal = new BigDecimal(weightVal);
+
+                        final BigDecimal weightedVal = val.multiply(weightDecVal, mathContextDefault);
+                        weightValueSum = weightValueSum.add(weightedVal, mathContextDefault);
+                        weightSum = weightSum.add(weightDecVal, mathContextDefault);
+                        count++;
+                    }
+                }
+                if (count == 0 || weightSum.equals(BigDecimal.ZERO)) {
+                    return null;
+                }
+                return weightValueSum.divide(weightSum, mathContextDefault);
+            };
+
+    final BiFunction<ObjectVector<BigDecimal>, ObjectVector<BigDecimal>, BigDecimal> wavgBigDecBigDec =
+            (valueVector, weightVector) -> {
+                if (valueVector == null || weightVector == null) {
+                    return null;
+                }
+
+                BigDecimal weightValueSum = new BigDecimal(0);
+                BigDecimal weightSum = new BigDecimal(0);
+                long count = 0;
+
+                final long n = valueVector.size();
+
+                for (long i = 0; i < n; i++) {
+                    final BigDecimal val = valueVector.get(i);
+                    final BigDecimal weightVal = weightVector.get(i);
+                    if (!isNull(val) && !isNull(weightVal)) {
+                        final BigDecimal weightedVal = val.multiply(weightVal, mathContextDefault);
+                        weightValueSum = weightValueSum.add(weightedVal, mathContextDefault);
+                        weightSum = weightSum.add(weightVal, mathContextDefault);
+                        count++;
+                    }
+                }
+                if (count == 0 || weightSum.equals(BigDecimal.ZERO)) {
+                    return null;
+                }
+                return weightValueSum.divide(weightSum, mathContextDefault);
+            };
+
+    private void doTestStaticBigNumbers(final QueryTable t,
+            final int prevTicks,
+            final int fwdTicks,
+            final boolean bucketed,
+            final String weightCol,
+            final BiFunction bigIntFunction,
+            final BiFunction bigDecFunction) {
+        QueryScope.addParam("wavgBigInt", bigIntFunction);
+        QueryScope.addParam("wavgBigDec", bigDecFunction);
+
+        final String[] updateCols = new String[] {
+                String.format("bigIntCol=wavgBigInt.apply(bigIntCol, %s)", weightCol),
+                String.format("bigDecimalCol=wavgBigDec.apply(bigDecimalCol, %s)", weightCol),
+        };
+
+        final Table actual;
+        final Table expected;
+        if (bucketed) {
+            actual = t.updateBy(
+                    UpdateByOperation.RollingWAvg(prevTicks, fwdTicks, weightCol, "bigIntCol", "bigDecimalCol"), "Sym");
+            expected = t
+                    .updateBy(UpdateByOperation.RollingGroup(prevTicks, fwdTicks, "bigIntCol", "bigDecimalCol",
+                            weightCol), "Sym")
+                    .update(updateCols);
+        } else {
+            actual =
+                    t.updateBy(UpdateByOperation.RollingWAvg(prevTicks, fwdTicks, weightCol, "bigIntCol",
+                            "bigDecimalCol"));
+            expected =
+                    t.updateBy(UpdateByOperation.RollingGroup(prevTicks, fwdTicks, "bigIntCol", "bigDecimalCol",
+                            weightCol))
+                            .update(updateCols);
+        }
+
+        BigDecimal[] biActual = (BigDecimal[]) actual.getColumn("bigIntCol").getDirect();
+        Object[] biExpected = (Object[]) expected.getColumn("bigIntCol").getDirect();
+
+        Assert.eq(biActual.length, "array length", biExpected.length);
+        for (int ii = 0; ii < biActual.length; ii++) {
+            BigDecimal actualVal = biActual[ii];
+            BigDecimal expectedVal = (BigDecimal) biExpected[ii];
+
+            Assert.eqTrue(fuzzyEquals(actualVal, expectedVal), "values match");
+        }
+
+        BigDecimal[] bdActual = (BigDecimal[]) actual.getColumn("bigDecimalCol").getDirect();
+        Object[] bdExpected = (Object[]) expected.getColumn("bigDecimalCol").getDirect();
+
+        Assert.eq(bdActual.length, "array length", bdExpected.length);
+        for (int ii = 0; ii < bdActual.length; ii++) {
+            BigDecimal actualVal = bdActual[ii];
+            BigDecimal expectedVal = (BigDecimal) bdExpected[ii];
+
+            Assert.eqTrue(fuzzyEquals(actualVal, expectedVal), "values match");
+        }
+    }
+
+    private void doTestStaticTimedBigNumbers(final QueryTable t,
+            final Duration prevTime,
+            final Duration postTime,
+            final boolean bucketed,
+            final String weightCol,
+            final BiFunction bigIntFunction,
+            final BiFunction bigDecFunction) {
+        QueryScope.addParam("wavgBigInt", bigIntFunction);
+        QueryScope.addParam("wavgBigDec", bigDecFunction);
+
+        final String[] updateCols = new String[] {
+                String.format("bigIntCol=wavgBigInt.apply(bigIntCol, %s)", weightCol),
+                String.format("bigDecimalCol=wavgBigDec.apply(bigDecimalCol, %s)", weightCol),
+        };
+
+        final Table actual;
+        final Table expected;
+        if (bucketed) {
+            actual = t.updateBy(
+                    UpdateByOperation.RollingWAvg("ts", prevTime, postTime, weightCol, "bigIntCol", "bigDecimalCol"),
+                    "Sym");
+            expected =
+                    t.updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, "bigIntCol", "bigDecimalCol",
+                            weightCol), "Sym")
+                            .update(updateCols);
+        } else {
+            actual = t.updateBy(
+                    UpdateByOperation.RollingWAvg("ts", prevTime, postTime, weightCol, "bigIntCol", "bigDecimalCol"));
+            expected =
+                    t.updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, "bigIntCol", "bigDecimalCol",
+                            weightCol))
+                            .update(updateCols);
+        }
+
+        BigDecimal[] biActual = (BigDecimal[]) actual.getColumn("bigIntCol").getDirect();
+        Object[] biExpected = (Object[]) expected.getColumn("bigIntCol").getDirect();
+
+        Assert.eq(biActual.length, "array length", biExpected.length);
+        for (int ii = 0; ii < biActual.length; ii++) {
+            BigDecimal actualVal = biActual[ii];
+            BigDecimal expectedVal = (BigDecimal) biExpected[ii];
+
+            Assert.eqTrue(fuzzyEquals(actualVal, expectedVal), "values match");
+        }
+
+        BigDecimal[] bdActual = (BigDecimal[]) actual.getColumn("bigDecimalCol").getDirect();
+        Object[] bdExpected = (Object[]) expected.getColumn("bigDecimalCol").getDirect();
+
+        Assert.eq(bdActual.length, "array length", bdExpected.length);
+        for (int ii = 0; ii < bdActual.length; ii++) {
+            BigDecimal actualVal = bdActual[ii];
+            BigDecimal expectedVal = (BigDecimal) bdExpected[ii];
+
+            Assert.eqTrue(fuzzyEquals(actualVal, expectedVal), "values match");
+        }
+    }
     // endregion
 
     // region Static Zero Key Tests
+
+    private void doTestStatic(boolean bucketed, int prevTicks, int fwdTicks) {
+        // Test with a double type weight value
+        String weightCol = "doubleWeightCol";
+
+        QueryTable t = createTestTable(STATIC_TABLE_SIZE, bucketed, false, false, 0x31313131,
+                new String[] {weightCol},
+                new TestDataGenerator[] {new DoubleGenerator(10.1, 20.1, .1)}).t;
+
+        Table actual;
+        Table expected;
+
+        if (bucketed) {
+            actual =
+                    t.updateBy(UpdateByOperation.RollingWAvg(prevTicks, fwdTicks, weightCol, primitiveColumns), "Sym");
+            // We need the weight column as vector here for comparison
+            expected = t.updateBy(
+                    List.of(UpdateByOperation.RollingGroup(prevTicks, fwdTicks, primitiveColumns),
+                            UpdateByOperation.RollingGroup(prevTicks, fwdTicks, weightCol)),
+                    "Sym")
+                    .update(getFormulas(primitiveColumns, weightCol));
+        } else {
+            actual =
+                    t.updateBy(UpdateByOperation.RollingWAvg(prevTicks, fwdTicks, weightCol, primitiveColumns));
+            // We need the weight column as vector here for comparison
+            expected = t.updateBy(
+                    List.of(UpdateByOperation.RollingGroup(prevTicks, fwdTicks, primitiveColumns),
+                            UpdateByOperation.RollingGroup(prevTicks, fwdTicks, weightCol)))
+                    .update(getFormulas(primitiveColumns, weightCol));
+        }
+
+        // Drop the weight column before comparing.
+        TstUtils.assertTableEquals(
+                expected.dropColumns(weightCol),
+                actual.dropColumns(weightCol),
+                TableDiff.DiffItems.DoublesExact, TableDiff.DiffItems.DoubleFraction);
+
+        doTestStaticBigNumbers(t, prevTicks, fwdTicks, bucketed, weightCol, wavgBigIntDouble, wavgBigDecDouble);
+
+        ///////////////////////////////////////////////////////////////////////////
+
+        // Test with a short type weight value
+        weightCol = "shortWeightCol";
+
+        t = createTestTable(STATIC_TABLE_SIZE, bucketed, false, false, 0x31313131,
+                new String[] {weightCol},
+                new TestDataGenerator[] {new ShortGenerator((short) -6000, (short) 65535, .1)}).t;
+
+        if (bucketed) {
+            actual = t.updateBy(UpdateByOperation.RollingWAvg(prevTicks, fwdTicks, weightCol, primitiveColumns), "Sym");
+            // We need the weight column as vector here for comparison
+            expected = t.updateBy(
+                    List.of(UpdateByOperation.RollingGroup(prevTicks, fwdTicks, primitiveColumns),
+                            UpdateByOperation.RollingGroup(prevTicks, fwdTicks, weightCol)),
+                    "Sym")
+                    .update(getFormulas(primitiveColumns, weightCol));
+        } else {
+            actual = t.updateBy(UpdateByOperation.RollingWAvg(prevTicks, fwdTicks, weightCol, primitiveColumns));
+            // We need the weight column as vector here for comparison
+            expected = t.updateBy(
+                    List.of(UpdateByOperation.RollingGroup(prevTicks, fwdTicks, primitiveColumns),
+                            UpdateByOperation.RollingGroup(prevTicks, fwdTicks, weightCol)))
+                    .update(getFormulas(primitiveColumns, weightCol));
+        }
+
+        // Drop the weight column before comparing.
+        TstUtils.assertTableEquals(
+                expected.dropColumns(weightCol),
+                actual.dropColumns(weightCol),
+                TableDiff.DiffItems.DoublesExact, TableDiff.DiffItems.DoubleFraction);
+
+        doTestStaticBigNumbers(t, prevTicks, fwdTicks, bucketed, weightCol, wavgBigIntShort, wavgBigDecShort);
+
+        ///////////////////////////////////////////////////////////////////////////
+
+        // Test with BigInteger/BigDecimal weight values
+
+        weightCol = "bigIntWeightCol";
+        t = createTestTable(STATIC_TABLE_SIZE, bucketed, false, false, 0x31313131,
+                new String[] {weightCol},
+                new TestDataGenerator[] {
+                        new BigIntegerGenerator(BigInteger.valueOf(-10), BigInteger.valueOf(10), .1)}).t;
+
+        doTestStaticBigNumbers(t, prevTicks, fwdTicks, bucketed, weightCol, wavgBigIntBigInt, wavgBigDecBigInt);
+
+        weightCol = "bigDecWeightCol";
+        t = createTestTable(STATIC_TABLE_SIZE, bucketed, false, false, 0x31313131,
+                new String[] {weightCol},
+                new TestDataGenerator[] {
+                        new BigDecimalGenerator(BigInteger.valueOf(1), BigInteger.valueOf(2), 5, .1)}).t;
+
+        doTestStaticBigNumbers(t, prevTicks, fwdTicks, bucketed, weightCol, wavgBigIntBigDec, wavgBigDecBigDec);
+    }
+
+    private void doTestStaticTimed(boolean bucketed, Duration prevTime, Duration postTime) {
+        String weightCol = "doubleWeightCol";
+
+        QueryTable t = createTestTable(STATIC_TABLE_SIZE, bucketed, false, false, 0xFFFABBBC,
+                new String[] {"ts", weightCol}, new TestDataGenerator[] {new SortedDateTimeGenerator(
+                        convertDateTime("2022-03-09T09:00:00.000 NY"),
+                        convertDateTime("2022-03-09T16:30:00.000 NY")),
+                        new DoubleGenerator(10.1, 20.1, .1)}).t;
+
+        Table actual;
+        Table expected;
+
+        if (bucketed) {
+            actual =
+                    t.updateBy(UpdateByOperation.RollingWAvg("ts", prevTime, postTime, weightCol, primitiveColumns),
+                            "Sym");
+            // We need the weight column as vector here for comparison.
+            expected = t.updateBy(
+                    List.of(UpdateByOperation.RollingGroup("ts", prevTime, postTime, primitiveColumns),
+                            UpdateByOperation.RollingGroup("ts", prevTime, postTime, weightCol)),
+                    "Sym")
+                    .update(getFormulas(primitiveColumns, weightCol));
+        } else {
+            actual =
+                    t.updateBy(UpdateByOperation.RollingWAvg("ts", prevTime, postTime, weightCol, primitiveColumns));
+            // We need the weight column as vector here for comparison.
+            expected = t.updateBy(
+                    List.of(UpdateByOperation.RollingGroup("ts", prevTime, postTime, primitiveColumns),
+                            UpdateByOperation.RollingGroup("ts", prevTime, postTime, weightCol)))
+                    .update(getFormulas(primitiveColumns, weightCol));
+        }
+
+        // Drop the weight column before comparing.
+        TstUtils.assertTableEquals(
+                expected.dropColumns(weightCol),
+                actual.dropColumns(weightCol),
+                TableDiff.DiffItems.DoublesExact, TableDiff.DiffItems.DoubleFraction);
+
+        doTestStaticTimedBigNumbers(t, prevTime, postTime, bucketed, weightCol, wavgBigIntDouble, wavgBigDecDouble);
+
+        ///////////////////////////////////////////////////////////////////////////
+
+        // Test with a short type weight value
+        weightCol = "shortWeightCol";
+
+        t = createTestTable(STATIC_TABLE_SIZE, bucketed, false, false, 0xFFFABBBC,
+                new String[] {"ts", weightCol}, new TestDataGenerator[] {new SortedDateTimeGenerator(
+                        convertDateTime("2022-03-09T09:00:00.000 NY"),
+                        convertDateTime("2022-03-09T16:30:00.000 NY")),
+                        new ShortGenerator((short) -6000, (short) 65535, .1)}).t;
+
+        if (bucketed) {
+            actual = t.updateBy(UpdateByOperation.RollingWAvg("ts", prevTime, postTime, weightCol, primitiveColumns),
+                    "Sym");
+            // We need the weight column as vector here for comparison.
+            expected = t.updateBy(
+                    List.of(UpdateByOperation.RollingGroup("ts", prevTime, postTime, primitiveColumns),
+                            UpdateByOperation.RollingGroup("ts", prevTime, postTime, weightCol)),
+                    "Sym")
+                    .update(getFormulas(primitiveColumns, weightCol));
+        } else {
+            actual = t.updateBy(UpdateByOperation.RollingWAvg("ts", prevTime, postTime, weightCol, primitiveColumns));
+            // We need the weight column as vector here for comparison.
+            expected = t.updateBy(
+                    List.of(UpdateByOperation.RollingGroup("ts", prevTime, postTime, primitiveColumns),
+                            UpdateByOperation.RollingGroup("ts", prevTime, postTime, weightCol)))
+                    .update(getFormulas(primitiveColumns, weightCol));
+        }
+
+        // Drop the weight column before comparing.
+        TstUtils.assertTableEquals(
+                expected.dropColumns(weightCol),
+                actual.dropColumns(weightCol),
+                TableDiff.DiffItems.DoublesExact, TableDiff.DiffItems.DoubleFraction);
+
+        doTestStaticTimedBigNumbers(t, prevTime, postTime, bucketed, weightCol, wavgBigIntShort, wavgBigDecShort);
+
+        ///////////////////////////////////////////////////////////////////////////
+
+        // Test with BigInteger/BigDecimal weight values
+
+        weightCol = "bigIntWeightCol";
+        t = createTestTable(STATIC_TABLE_SIZE, bucketed, false, false, 0x31313131,
+                new String[] {"ts", weightCol}, new TestDataGenerator[] {new SortedDateTimeGenerator(
+                        convertDateTime("2022-03-09T09:00:00.000 NY"),
+                        convertDateTime("2022-03-09T16:30:00.000 NY")),
+                        new BigIntegerGenerator(BigInteger.valueOf(-10), BigInteger.valueOf(10), .1)}).t;
+
+        doTestStaticTimedBigNumbers(t, prevTime, postTime, bucketed, weightCol, wavgBigIntBigInt, wavgBigDecBigInt);
+
+        weightCol = "bigDecWeightCol";
+        t = createTestTable(STATIC_TABLE_SIZE, bucketed, false, false, 0x31313131,
+                new String[] {"ts", weightCol}, new TestDataGenerator[] {new SortedDateTimeGenerator(
+                        convertDateTime("2022-03-09T09:00:00.000 NY"),
+                        convertDateTime("2022-03-09T16:30:00.000 NY")),
+                        new BigDecimalGenerator(BigInteger.valueOf(1), BigInteger.valueOf(2), 5, .1)}).t;
+
+        doTestStaticTimedBigNumbers(t, prevTime, postTime, bucketed, weightCol, wavgBigIntBigDec, wavgBigDecBigDec);
+    }
 
     @Test
     public void testStaticZeroKeyRev() {
         final int prevTicks = 100;
         final int fwdTicks = 0;
 
-        doTestStaticZeroKey(prevTicks, fwdTicks);
+        doTestStatic(false, prevTicks, fwdTicks);
     }
 
     @Test
@@ -275,7 +666,7 @@ public class TestRollingWAvg extends BaseUpdateByTest {
         final int prevTicks = 100;
         final int fwdTicks = -50;
 
-        doTestStaticZeroKey(prevTicks, fwdTicks);
+        doTestStatic(false, prevTicks, fwdTicks);
     }
 
     @Test
@@ -283,7 +674,7 @@ public class TestRollingWAvg extends BaseUpdateByTest {
         final int prevTicks = 0;
         final int fwdTicks = 100;
 
-        doTestStaticZeroKey(prevTicks, fwdTicks);
+        doTestStatic(false, prevTicks, fwdTicks);
     }
 
     @Test
@@ -291,7 +682,7 @@ public class TestRollingWAvg extends BaseUpdateByTest {
         final int prevTicks = -50;
         final int fwdTicks = 100;
 
-        doTestStaticZeroKey(prevTicks, fwdTicks);
+        doTestStatic(false, prevTicks, fwdTicks);
     }
 
     @Test
@@ -299,7 +690,7 @@ public class TestRollingWAvg extends BaseUpdateByTest {
         final int prevTicks = 100;
         final int fwdTicks = 100;
 
-        doTestStaticZeroKey(prevTicks, fwdTicks);
+        doTestStatic(false, prevTicks, fwdTicks);
     }
 
     @Test
@@ -307,7 +698,7 @@ public class TestRollingWAvg extends BaseUpdateByTest {
         final Duration prevTime = Duration.ofMinutes(10);
         final Duration postTime = Duration.ZERO;
 
-        doTestStaticZeroKeyTimed(prevTime, postTime);
+        doTestStaticTimed(false, prevTime, postTime);
     }
 
     @Test
@@ -315,7 +706,7 @@ public class TestRollingWAvg extends BaseUpdateByTest {
         final Duration prevTime = Duration.ofMinutes(10);
         final Duration postTime = Duration.ofMinutes(-5);
 
-        doTestStaticZeroKeyTimed(prevTime, postTime);
+        doTestStaticTimed(false, prevTime, postTime);
     }
 
     @Test
@@ -323,7 +714,7 @@ public class TestRollingWAvg extends BaseUpdateByTest {
         final Duration prevTime = Duration.ZERO;
         final Duration postTime = Duration.ofMinutes(10);
 
-        doTestStaticZeroKeyTimed(prevTime, postTime);
+        doTestStaticTimed(false, prevTime, postTime);
     }
 
     @Test
@@ -331,7 +722,7 @@ public class TestRollingWAvg extends BaseUpdateByTest {
         final Duration prevTime = Duration.ofMinutes(-5);
         final Duration postTime = Duration.ofMinutes(10);
 
-        doTestStaticZeroKeyTimed(prevTime, postTime);
+        doTestStaticTimed(false, prevTime, postTime);
     }
 
     @Test
@@ -339,102 +730,8 @@ public class TestRollingWAvg extends BaseUpdateByTest {
         final Duration prevTime = Duration.ofMinutes(10);
         final Duration postTime = Duration.ofMinutes(10);
 
-        doTestStaticZeroKeyTimed(prevTime, postTime);
+        doTestStaticTimed(false, prevTime, postTime);
     }
-
-    private void doTestStaticZeroKey(final int prevTicks, final int fwdTicks) {
-        // Test with a double type weight value
-        String weightCol = "doubleWeightCol";
-
-        QueryTable t = createTestTable(STATIC_TABLE_SIZE, false, false, false, 0x31313131,
-                new String[] {weightCol},
-                new TestDataGenerator[] {new DoubleGenerator(10.1, 20.1, .1)}).t;
-
-        Table actual = t.updateBy(UpdateByOperation.RollingWAvg(prevTicks, fwdTicks, weightCol, primitiveColumns));
-        // We need the weight column as vector here for comparison
-        Table expected = t.updateBy(
-                List.of(UpdateByOperation.RollingGroup(prevTicks, fwdTicks, primitiveColumns),
-                        UpdateByOperation.RollingGroup(prevTicks, fwdTicks, weightCol)))
-                .update(getFormulas(primitiveColumns, weightCol));
-
-        // Drop the weight column before comparing.
-        TstUtils.assertTableEquals(
-                expected.dropColumns(weightCol),
-                actual.dropColumns(weightCol),
-                TableDiff.DiffItems.DoublesExact, TableDiff.DiffItems.DoubleFraction);
-
-        ///////////////////////////////////////////////////////////////////////////
-
-        // Test with a short type weight value
-        weightCol = "shortWeightCol";
-
-        t = createTestTable(STATIC_TABLE_SIZE, false, false, false, 0x31313131,
-                new String[] {weightCol},
-                new TestDataGenerator[] {new ShortGenerator((short) -6000, (short) 65535, .1)}).t;
-
-        actual = t.updateBy(UpdateByOperation.RollingWAvg(prevTicks, fwdTicks, weightCol, primitiveColumns));
-        // We need the weight column as vector here for comparison
-        expected = t.updateBy(
-                List.of(UpdateByOperation.RollingGroup(prevTicks, fwdTicks, primitiveColumns),
-                        UpdateByOperation.RollingGroup(prevTicks, fwdTicks, weightCol)))
-                .update(getFormulas(primitiveColumns, weightCol));
-
-        // Drop the weight column before comparing.
-        TstUtils.assertTableEquals(
-                expected.dropColumns(weightCol),
-                actual.dropColumns(weightCol),
-                TableDiff.DiffItems.DoublesExact, TableDiff.DiffItems.DoubleFraction);
-
-        // doTestStaticZeroKeyBigNumbers(t, prevTicks, fwdTicks);
-    }
-
-    private void doTestStaticZeroKeyTimed(final Duration prevTime, final Duration postTime) {
-        String weightCol = "doubleWeightCol";
-
-        QueryTable t = createTestTable(STATIC_TABLE_SIZE, false, false, false, 0xFFFABBBC,
-                new String[] {"ts", weightCol}, new TestDataGenerator[] {new SortedDateTimeGenerator(
-                        convertDateTime("2022-03-09T09:00:00.000 NY"),
-                        convertDateTime("2022-03-09T16:30:00.000 NY")),
-                        new DoubleGenerator(10.1, 20.1, .1)}).t;
-
-        Table actual = t.updateBy(UpdateByOperation.RollingWAvg("ts", prevTime, postTime, weightCol, primitiveColumns));
-        // We need the weight column as vector here for comparison.
-        Table expected = t.updateBy(
-                List.of(UpdateByOperation.RollingGroup("ts", prevTime, postTime, primitiveColumns),
-                        UpdateByOperation.RollingGroup("ts", prevTime, postTime, weightCol)))
-                .update(getFormulas(primitiveColumns, weightCol));
-        // Drop the weight column before comparing.
-        TstUtils.assertTableEquals(
-                expected.dropColumns(weightCol),
-                actual.dropColumns(weightCol),
-                TableDiff.DiffItems.DoublesExact, TableDiff.DiffItems.DoubleFraction);
-
-        ///////////////////////////////////////////////////////////////////////////
-
-        // Test with a short type weight value
-        weightCol = "shortWeightCol";
-
-        t = createTestTable(STATIC_TABLE_SIZE, false, false, false, 0xFFFABBBC,
-                new String[] {"ts", weightCol}, new TestDataGenerator[] {new SortedDateTimeGenerator(
-                        convertDateTime("2022-03-09T09:00:00.000 NY"),
-                        convertDateTime("2022-03-09T16:30:00.000 NY")),
-                        new ShortGenerator((short) -6000, (short) 65535, .1)}).t;
-
-        actual = t.updateBy(UpdateByOperation.RollingWAvg("ts", prevTime, postTime, weightCol, primitiveColumns));
-        // We need the weight column as vector here for comparison.
-        expected = t.updateBy(
-                List.of(UpdateByOperation.RollingGroup("ts", prevTime, postTime, primitiveColumns),
-                        UpdateByOperation.RollingGroup("ts", prevTime, postTime, weightCol)))
-                .update(getFormulas(primitiveColumns, weightCol));
-        // Drop the weight column before comparing.
-        TstUtils.assertTableEquals(
-                expected.dropColumns(weightCol),
-                actual.dropColumns(weightCol),
-                TableDiff.DiffItems.DoublesExact, TableDiff.DiffItems.DoubleFraction);
-
-        // doTestStaticZeroKeyTimedBigNumbers(t, prevTime, postTime);
-    }
-
     // endregion
 
     // region Static Bucketed Tests
@@ -444,7 +741,7 @@ public class TestRollingWAvg extends BaseUpdateByTest {
         final int prevTicks = 100;
         final int fwdTicks = 0;
 
-        doTestStaticBucketed(true, prevTicks, fwdTicks);
+        doTestStatic(true, prevTicks, fwdTicks);
     }
 
     @Test
@@ -452,7 +749,7 @@ public class TestRollingWAvg extends BaseUpdateByTest {
         final Duration prevTime = Duration.ofMinutes(10);
         final Duration postTime = Duration.ofMinutes(0);
 
-        doTestStaticBucketedTimed(true, prevTime, postTime);
+        doTestStaticTimed(true, prevTime, postTime);
     }
 
     @Test
@@ -460,7 +757,7 @@ public class TestRollingWAvg extends BaseUpdateByTest {
         final int prevTicks = 100;
         final int fwdTicks = 0;
 
-        doTestStaticBucketed(false, prevTicks, fwdTicks);
+        doTestStatic(true, prevTicks, fwdTicks);
     }
 
     @Test
@@ -468,7 +765,7 @@ public class TestRollingWAvg extends BaseUpdateByTest {
         final int prevTicks = 100;
         final int fwdTicks = -50;
 
-        doTestStaticBucketed(false, prevTicks, fwdTicks);
+        doTestStatic(true, prevTicks, fwdTicks);
     }
 
     @Test
@@ -476,7 +773,7 @@ public class TestRollingWAvg extends BaseUpdateByTest {
         final int prevTicks = 0;
         final int fwdTicks = 100;
 
-        doTestStaticBucketed(false, prevTicks, fwdTicks);
+        doTestStatic(true, prevTicks, fwdTicks);
     }
 
     @Test
@@ -484,7 +781,7 @@ public class TestRollingWAvg extends BaseUpdateByTest {
         final int prevTicks = -50;
         final int fwdTicks = 100;
 
-        doTestStaticBucketed(false, prevTicks, fwdTicks);
+        doTestStatic(true, prevTicks, fwdTicks);
     }
 
     @Test
@@ -492,7 +789,7 @@ public class TestRollingWAvg extends BaseUpdateByTest {
         final Duration prevTime = Duration.ofMinutes(10);
         final Duration postTime = Duration.ofMinutes(0);
 
-        doTestStaticBucketedTimed(false, prevTime, postTime);
+        doTestStaticTimed(true, prevTime, postTime);
     }
 
     @Test
@@ -500,7 +797,7 @@ public class TestRollingWAvg extends BaseUpdateByTest {
         final Duration prevTime = Duration.ofMinutes(10);
         final Duration postTime = Duration.ofMinutes(-5);
 
-        doTestStaticBucketedTimed(false, prevTime, postTime);
+        doTestStaticTimed(true, prevTime, postTime);
     }
 
     @Test
@@ -508,7 +805,7 @@ public class TestRollingWAvg extends BaseUpdateByTest {
         final Duration prevTime = Duration.ofMinutes(0);
         final Duration postTime = Duration.ofMinutes(10);
 
-        doTestStaticBucketedTimed(false, prevTime, postTime);
+        doTestStaticTimed(true, prevTime, postTime);
     }
 
     @Test
@@ -516,7 +813,7 @@ public class TestRollingWAvg extends BaseUpdateByTest {
         final Duration prevTime = Duration.ofMinutes(-5);
         final Duration postTime = Duration.ofMinutes(10);
 
-        doTestStaticBucketedTimed(false, prevTime, postTime);
+        doTestStaticTimed(true, prevTime, postTime);
     }
 
     @Test
@@ -524,109 +821,8 @@ public class TestRollingWAvg extends BaseUpdateByTest {
         final Duration prevTime = Duration.ofMinutes(5);
         final Duration postTime = Duration.ofMinutes(5);
 
-        doTestStaticBucketedTimed(false, prevTime, postTime);
+        doTestStaticTimed(true, prevTime, postTime);
     }
-
-    private void doTestStaticBucketed(boolean grouped, int prevTicks, int fwdTicks) {
-        // Test with a double type weight value
-        String weightCol = "doubleWeightCol";
-
-        QueryTable t = createTestTable(STATIC_TABLE_SIZE, true, false, false, 0x31313131,
-                new String[] {weightCol},
-                new TestDataGenerator[] {new DoubleGenerator(10.1, 20.1, .1)}).t;
-
-        Table actual =
-                t.updateBy(UpdateByOperation.RollingWAvg(prevTicks, fwdTicks, weightCol, primitiveColumns), "Sym");
-        // We need the weight column as vector here for comparison
-        Table expected = t.updateBy(
-                List.of(UpdateByOperation.RollingGroup(prevTicks, fwdTicks, primitiveColumns),
-                        UpdateByOperation.RollingGroup(prevTicks, fwdTicks, weightCol)),
-                "Sym")
-                .update(getFormulas(primitiveColumns, weightCol));
-
-        // Drop the weight column before comparing.
-        TstUtils.assertTableEquals(
-                expected.dropColumns(weightCol),
-                actual.dropColumns(weightCol),
-                TableDiff.DiffItems.DoublesExact, TableDiff.DiffItems.DoubleFraction);
-
-        ///////////////////////////////////////////////////////////////////////////
-
-        // Test with a short type weight value
-        weightCol = "shortWeightCol";
-
-        t = createTestTable(STATIC_TABLE_SIZE, true, false, false, 0x31313131,
-                new String[] {weightCol},
-                new TestDataGenerator[] {new ShortGenerator((short) -6000, (short) 65535, .1)}).t;
-
-        actual = t.updateBy(UpdateByOperation.RollingWAvg(prevTicks, fwdTicks, weightCol, primitiveColumns), "Sym");
-        // We need the weight column as vector here for comparison
-        expected = t.updateBy(
-                List.of(UpdateByOperation.RollingGroup(prevTicks, fwdTicks, primitiveColumns),
-                        UpdateByOperation.RollingGroup(prevTicks, fwdTicks, weightCol)),
-                "Sym")
-                .update(getFormulas(primitiveColumns, weightCol));
-
-        // Drop the weight column before comparing.
-        TstUtils.assertTableEquals(
-                expected.dropColumns(weightCol),
-                actual.dropColumns(weightCol),
-                TableDiff.DiffItems.DoublesExact, TableDiff.DiffItems.DoubleFraction);
-
-        // doTestStaticBucketedBigNumbers(t, prevTicks, fwdTicks);
-    }
-
-    private void doTestStaticBucketedTimed(boolean grouped, Duration prevTime, Duration postTime) {
-        String weightCol = "doubleWeightCol";
-
-        QueryTable t = createTestTable(STATIC_TABLE_SIZE, true, false, false, 0xFFFABBBC,
-                new String[] {"ts", weightCol}, new TestDataGenerator[] {new SortedDateTimeGenerator(
-                        convertDateTime("2022-03-09T09:00:00.000 NY"),
-                        convertDateTime("2022-03-09T16:30:00.000 NY")),
-                        new DoubleGenerator(10.1, 20.1, .1)}).t;
-
-        Table actual =
-                t.updateBy(UpdateByOperation.RollingWAvg("ts", prevTime, postTime, weightCol, primitiveColumns), "Sym");
-        // We need the weight column as vector here for comparison.
-        Table expected = t.updateBy(
-                List.of(UpdateByOperation.RollingGroup("ts", prevTime, postTime, primitiveColumns),
-                        UpdateByOperation.RollingGroup("ts", prevTime, postTime, weightCol)),
-                "Sym")
-                .update(getFormulas(primitiveColumns, weightCol));
-        // Drop the weight column before comparing.
-        TstUtils.assertTableEquals(
-                expected.dropColumns(weightCol),
-                actual.dropColumns(weightCol),
-                TableDiff.DiffItems.DoublesExact, TableDiff.DiffItems.DoubleFraction);
-
-        ///////////////////////////////////////////////////////////////////////////
-
-        // Test with a short type weight value
-        weightCol = "shortWeightCol";
-
-        t = createTestTable(STATIC_TABLE_SIZE, true, false, false, 0xFFFABBBC,
-                new String[] {"ts", weightCol}, new TestDataGenerator[] {new SortedDateTimeGenerator(
-                        convertDateTime("2022-03-09T09:00:00.000 NY"),
-                        convertDateTime("2022-03-09T16:30:00.000 NY")),
-                        new ShortGenerator((short) -6000, (short) 65535, .1)}).t;
-
-        actual = t.updateBy(UpdateByOperation.RollingWAvg("ts", prevTime, postTime, weightCol, primitiveColumns),
-                "Sym");
-        // We need the weight column as vector here for comparison.
-        expected = t.updateBy(
-                List.of(UpdateByOperation.RollingGroup("ts", prevTime, postTime, primitiveColumns),
-                        UpdateByOperation.RollingGroup("ts", prevTime, postTime, weightCol)),
-                "Sym")
-                .update(getFormulas(primitiveColumns, weightCol));
-        // Drop the weight column before comparing.
-        TstUtils.assertTableEquals(
-                expected.dropColumns(weightCol),
-                actual.dropColumns(weightCol),
-                TableDiff.DiffItems.DoublesExact, TableDiff.DiffItems.DoubleFraction);
-
-        // doTestStaticBucketedTimedBigNumbers(t, prevTime, postTime);
-    }
-
     // endregion
 
     // region Append Only Tests

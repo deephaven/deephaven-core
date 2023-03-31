@@ -30,8 +30,8 @@ public class DoubleRollingMinMaxOperator extends BaseDoubleUpdateByOperator {
         protected AggregatingDoubleRingBuffer aggMinMax;
         protected boolean evaluationNeeded;
 
-        protected Context(final int chunkSize) {
-            super(chunkSize);
+        protected Context(final int affectedChunkSize, final int influencerChunkSize) {
+            super(affectedChunkSize);
             if (isMax) {
                 aggMinMax = new AggregatingDoubleRingBuffer(BUFFER_INITIAL_CAPACITY, Double.MIN_VALUE, (a, b) -> {
                     if (a == NULL_DOUBLE) {
@@ -62,8 +62,8 @@ public class DoubleRollingMinMaxOperator extends BaseDoubleUpdateByOperator {
         }
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            doubleInfluencerValuesChunk = valuesChunk.asDoubleChunk();
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
+            doubleInfluencerValuesChunk = valueChunks[0].asDoubleChunk();
         }
 
         @Override
@@ -133,8 +133,8 @@ public class DoubleRollingMinMaxOperator extends BaseDoubleUpdateByOperator {
 
     @NotNull
     @Override
-    public UpdateByOperator.Context makeUpdateContext(final int chunkSize) {
-        return new Context(chunkSize);
+    public UpdateByOperator.Context makeUpdateContext(final int affectedChunkSize, final int influencerChunkSize) {
+        return new Context(affectedChunkSize, influencerChunkSize);
     }
 
     public DoubleRollingMinMaxOperator(@NotNull final MatchPair pair,

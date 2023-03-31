@@ -846,6 +846,11 @@ public class UpdateByOperatorFactory {
 
             final ColumnSource weightColumnSource = source.getColumnSource(rs.weightCol());
             final ChunkType weightChunkType = weightColumnSource.getChunkType();
+            final Class<?> weightCsType = weightColumnSource.getType();
+
+            if (!rs.weightColumnApplicableTo(weightCsType)) {
+                throw new IllegalArgumentException("Can not perform RollingWAvg on weight column type " + csType);
+            }
 
             final String[] affectingColumns;
             if (rs.revWindowScale().timestampCol() == null) {
@@ -881,16 +886,17 @@ public class UpdateByOperatorFactory {
                 return new DoubleRollingWAvgOperator(pair, affectingColumns, rowRedirection,
                         rs.revWindowScale().timestampCol(),
                         prevWindowScaleUnits, fwdWindowScaleUnits, rs.weightCol(), weightChunkType);
+            } else if (csType == BigDecimal.class) {
+                return new BigDecimalRollingWAvgOperator(pair, affectingColumns, rowRedirection,
+                        rs.revWindowScale().timestampCol(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.weightCol(), weightChunkType,
+                        weightCsType, control.mathContextOrDefault());
+            } else if (csType == BigInteger.class) {
+                return new BigIntegerRollingWAvgOperator(pair, affectingColumns, rowRedirection,
+                        rs.revWindowScale().timestampCol(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.weightCol(), weightChunkType,
+                        weightCsType, control.mathContextOrDefault());
             }
-            // else if (csType == BigDecimal.class) {
-            // return new BigDecimalRollingWAvgOperator(pair, affectingColumns, rowRedirection,
-            // rs.revWindowScale().timestampCol(),
-            // prevWindowScaleUnits, fwdWindowScaleUnits, control.mathContextOrDefault());
-            // } else if (csType == BigInteger.class) {
-            // return new BigIntegerRollingWAvgOperator(pair, affectingColumns, rowRedirection,
-            // rs.revWindowScale().timestampCol(),
-            // prevWindowScaleUnits, fwdWindowScaleUnits);
-            // }
 
             throw new IllegalArgumentException("Can not perform RollingWAvg on type " + csType);
         }
