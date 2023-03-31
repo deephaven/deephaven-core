@@ -13,8 +13,6 @@ public class Hover implements Serializable {
     public MarkupContent contents;
     public DocumentRange range;
 
-
-
     @Override
     @JsIgnore
     public String toString() {

@@ -140,7 +140,10 @@ class Completer(object):
             return []
 
         completer = self.get_completer(uri)
-        completions = completer.complete(line, col)
+        # Path completions don't seem useful with our setup
+        # It also doesn't suggest nested paths/files when the string is a parent path
+        # Might just be a client issue, but either way not useful right now
+        completions = filter(lambda c: c.type != "path", completer.complete(line, col))
 
         # for now, a simple sorting based on number of preceding _
         # we may want to apply additional sorting to each list before combining

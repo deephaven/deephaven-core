@@ -15,15 +15,6 @@ public class MarkupContent implements Serializable {
     public String kind;
     public String value;
 
-    public MarkupContent() {}
-
-    @JsIgnore
-    public MarkupContent(MarkupContent source) {
-        this();
-        this.kind = source.kind;
-        this.value = source.value;
-    }
-
     @Override
     @JsIgnore
     public String toString() {
