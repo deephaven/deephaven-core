@@ -15,17 +15,14 @@ from deephaven.table import Table
 
 _JParquetTools = jpy.get_type("io.deephaven.parquet.table.ParquetTools")
 _JFile = jpy.get_type("java.io.File")
-_JCompressionCodecName = jpy.get_type(
-    "org.apache.parquet.hadoop.metadata.CompressionCodecName"
-)
+_JCompressionCodecName = jpy.get_type("org.apache.parquet.hadoop.metadata.CompressionCodecName")
 _JParquetInstructions = jpy.get_type("io.deephaven.parquet.table.ParquetInstructions")
 _JTableDefinition = jpy.get_type("io.deephaven.engine.table.TableDefinition")
 
 
 @dataclass
 class ColumnInstruction:
-    """This class specifies the instructions for reading/writing a Parquet column."""
-
+    """  This class specifies the instructions for reading/writing a Parquet column. """
     column_name: str = None
     parquet_column_name: str = None
     codec_name: str = None
@@ -92,7 +89,7 @@ def read(
     is_legacy_parquet: bool = None,
     is_refreshing: bool = None,
 ) -> Table:
-    """Reads in a table from a single parquet, metadata file, or directory with recognized layout.
+    """ Reads in a table from a single parquet, metadata file, or directory with recognized layout.
 
     Args:
         path (str): the file or directory to examine
@@ -128,7 +125,7 @@ def _j_file_array(paths: List[str]):
 
 
 def delete(path: str) -> None:
-    """Deletes a Parquet table on disk.
+    """ Deletes a Parquet table on disk.
 
     Args:
         path (str): path to delete
@@ -151,7 +148,7 @@ def write(
     max_dictionary_keys: int = None,
     target_page_size: int = None,
 ) -> None:
-    """Write a table to a Parquet file.
+    """ Write a table to a Parquet file.
 
     Args:
         table (Table): the source table
@@ -178,22 +175,16 @@ def write(
 
         table_definition = None
         if col_definitions is not None:
-            table_definition = _JTableDefinition.of(
-                [col.j_column_definition for col in col_definitions]
-            )
+            table_definition = _JTableDefinition.of([col.j_column_definition for col in col_definitions])
 
         if table_definition:
             if write_instructions:
-                _JParquetTools.writeTable(
-                    table.j_table, path, table_definition, write_instructions
-                )
+                _JParquetTools.writeTable(table.j_table, path, table_definition, write_instructions)
             else:
                 _JParquetTools.writeTable(table.j_table, _JFile(path), table_definition)
         else:
             if write_instructions:
-                _JParquetTools.writeTable(
-                    table.j_table, _JFile(path), write_instructions
-                )
+                _JParquetTools.writeTable(table.j_table, _JFile(path), write_instructions)
             else:
                 _JParquetTools.writeTable(table.j_table, path)
     except Exception as e:
@@ -210,7 +201,7 @@ def batch_write(
     target_page_size: int = None,
     grouping_cols: List[str] = None,
 ):
-    """Writes tables to disk in parquet format to a supplied set of paths.
+    """ Writes tables to disk in parquet format to a supplied set of paths.
 
     If you specify grouping columns, there must already be grouping information for those columns in the sources.
     This can be accomplished with .groupBy(<grouping columns>).ungroup() or .sort(<grouping column>).
@@ -241,21 +232,13 @@ def batch_write(
             for_read=False,
         )
 
-        table_definition = _JTableDefinition.of(
-            [col.j_column_definition for col in col_definitions]
-        )
+        table_definition = _JTableDefinition.of([col.j_column_definition for col in col_definitions])
 
         if grouping_cols:
-            _JParquetTools.writeParquetTables(
-                [t.j_table for t in tables],
-                table_definition,
-                write_instructions,
-                _j_file_array(paths),
-                grouping_cols,
-            )
+            _JParquetTools.writeParquetTables([t.j_table for t in tables], table_definition, write_instructions,
+                                              _j_file_array(paths), grouping_cols)
         else:
-            _JParquetTools.writeTables(
-                [t.j_table for t in tables], table_definition, _j_file_array(paths)
-            )
+            _JParquetTools.writeTables([t.j_table for t in tables], table_definition,
+                                       _j_file_array(paths))
     except Exception as e:
         raise DHError(e, "write multiple tables to parquet data failed.") from e
