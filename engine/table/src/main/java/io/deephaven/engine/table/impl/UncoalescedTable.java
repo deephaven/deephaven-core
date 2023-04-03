@@ -341,6 +341,13 @@ public abstract class UncoalescedTable<IMPL_TYPE extends UncoalescedTable<IMPL_T
     }
 
     @Override
+    public Table rangeJoin(@NotNull Table rightTable, @NotNull Collection<? extends JoinMatch> columnsToMatch,
+            @NotNull RangeStartRule rangeStartRule, @NotNull RangeEndRule rangeEndRule,
+            @NotNull Collection<? extends Aggregation> aggregations) {
+        return coalesce().rangeJoin(rightTable, columnsToMatch, rangeStartRule, rangeEndRule, aggregations);
+    }
+
+    @Override
     @ConcurrentMethod
     public Table aggAllBy(AggSpec spec, ColumnName... groupByColumns) {
         return coalesce().aggAllBy(spec, groupByColumns);

@@ -23,6 +23,7 @@ import io.deephaven.api.util.ConcurrentMethod;
 import io.deephaven.engine.util.ColumnFormatting;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.util.annotations.FinalDefault;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 import java.util.function.UnaryOperator;
@@ -433,6 +434,21 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
     @FinalDefault
     default Table join(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd) {
         return join(rightTable, columnsToMatch, columnsToAdd, CrossJoinHelper.DEFAULT_NUM_RIGHT_BITS_TO_RESERVE);
+    }
+
+    @Override
+    @FinalDefault
+    default Table rangeJoin(
+            @NotNull final Table rightTable,
+            @NotNull final Collection<String> columnsToMatch,
+            @NotNull final Collection<? extends Aggregation> aggregations) {
+        final RangeJoinMatchFactory.Result parsed = RangeJoinMatchFactory.parse(columnsToMatch);
+        return rangeJoin(
+                rightTable,
+                Arrays.asList(parsed.joinMatches),
+                parsed.rangeStartRule,
+                parsed.rangeEndRule,
+                aggregations);
     }
 
     @Override

@@ -117,7 +117,7 @@ public class QueryTable extends BaseTable<QueryTable> {
             public final T resultNode;
             public final TableUpdateListener resultListener; // may be null if parent is non-ticking
 
-            public Result(final @NotNull T resultNode) {
+            public Result(@NotNull final T resultNode) {
                 this(resultNode, null);
             }
 
@@ -128,7 +128,7 @@ public class QueryTable extends BaseTable<QueryTable> {
              * @param resultNode the result of the operation
              * @param resultListener the listener that should be attached to the parent (or null)
              */
-            public Result(final @NotNull T resultNode,
+            public Result(@NotNull final T resultNode,
                     final @Nullable TableUpdateListener resultListener) {
                 this.resultNode = resultNode;
                 this.resultListener = resultListener;
@@ -2010,6 +2010,17 @@ public class QueryTable extends BaseTable<QueryTable> {
 
                     return sentinelAdded ? ungroupedResult.dropColumns("__sentinel__") : ungroupedResult;
                 });
+    }
+
+    @Override
+    public Table rangeJoin(
+            @NotNull final Table rightTable,
+            @NotNull final Collection<? extends JoinMatch> columnsToMatch,
+            @NotNull final RangeStartRule rangeStartRule,
+            @NotNull final RangeEndRule rangeEndRule,
+            @NotNull final Collection<? extends Aggregation> aggregations) {
+        // TODO-RWC: Implement rangeJoin
+        throw new UnsupportedOperationException();
     }
 
     /**

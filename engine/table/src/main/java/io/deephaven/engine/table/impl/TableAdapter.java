@@ -272,6 +272,13 @@ public interface TableAdapter extends TableDefaults {
     }
 
     @Override
+    default Table rangeJoin(@NotNull Table rightTable, @NotNull Collection<? extends JoinMatch> columnsToMatch,
+            @NotNull RangeStartRule rangeStartRule, @NotNull RangeEndRule rangeEndRule,
+            @NotNull Collection<? extends Aggregation> aggregations) {
+        return throwUnsupported();
+    }
+
+    @Override
     default Table headBy(long nRows, String... groupByColumnNames) {
         return throwUnsupported();
     }
