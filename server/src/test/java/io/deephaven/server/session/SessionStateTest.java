@@ -746,11 +746,12 @@ public class SessionStateTest {
     @Test
     public void testExportListenerOnCompleteOnRemoval() {
         final QueueingExportListener listener = new QueueingExportListener();
+        SafeCloseable remove;
         try (final SafeCloseable ignored = LivenessScopeStack.open()) {
-            session.addExportListener(listener);
+            remove = session.addExportListener(listener);
         }
         Assert.eqFalse(listener.isComplete, "listener.isComplete");
-        session.removeExportListener(listener);
+        remove.close();
         Assert.eqTrue(listener.isComplete, "listener.isComplete");
     }
 
@@ -1345,7 +1346,7 @@ public class SessionStateTest {
         return ticketToExportId(notification.getTicket(), "test");
     }
 
-    private static class QueueingExportListener implements StreamObserver<ExportNotification> {
+    private static class QueueingExportListener implements SessionState.ExportNotificationObserver {
         boolean isComplete = false;
         final ArrayList<ExportNotification> notifications = new ArrayList<>();
 
@@ -1355,11 +1356,6 @@ public class SessionStateTest {
                 throw new IllegalStateException("illegal to invoke onNext after onComplete");
             }
             notifications.add(value);
-        }
-
-        @Override
-        public void onError(final Throwable t) {
-            isComplete = true;
         }
 
         @Override

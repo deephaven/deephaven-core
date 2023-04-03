@@ -4,6 +4,7 @@
 package io.deephaven.server.util;
 
 import com.google.rpc.Code;
+import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.proto.util.Exceptions;
 import io.deephaven.server.browserstreaming.BrowserStream;
 import io.deephaven.server.browserstreaming.BrowserStreamInterceptor;
@@ -266,8 +267,7 @@ public class GrpcServiceOverrideBuilder {
                     .onError(responseObserver)
                     .submit(() -> {
                         browserStream.get().onMessageReceived(request, streamData);
-                        responseObserver.onNext(null);// TODO simple response payload
-                        responseObserver.onCompleted();
+                        GrpcUtil.safelyComplete(responseObserver, null);
                     });
         }
     }

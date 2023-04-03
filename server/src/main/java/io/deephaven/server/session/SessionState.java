@@ -21,6 +21,7 @@ import io.deephaven.engine.table.impl.util.EngineMetrics;
 import io.deephaven.engine.tablelogger.QueryOperationPerformanceLogLogger;
 import io.deephaven.engine.tablelogger.QueryPerformanceLogLogger;
 import io.deephaven.engine.updategraph.DynamicNode;
+import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.hash.KeyedIntObjectHash;
 import io.deephaven.hash.KeyedIntObjectHashMap;
 import io.deephaven.hash.KeyedIntObjectKey;
@@ -39,9 +40,11 @@ import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.auth.AuthContext;
 import io.deephaven.util.datastructures.SimpleReferenceManager;
 import io.grpc.StatusRuntimeException;
+import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 import org.apache.arrow.flight.impl.Flight;
 import org.apache.commons.lang3.mutable.MutableObject;
+import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
@@ -115,6 +118,29 @@ public class SessionState {
         ExportObject<T> exportObject = new ExportObject<>(null);
         exportObject.caughtException = caughtException;
         return exportObject;
+    }
+
+    /**
+     * Listener that can handle state changes to exports.
+     */
+    public interface ExportNotificationObserver {
+        public static ExportNotificationObserver of(StreamObserver<ExportNotification> streamObserver) {
+            return new ExportNotificationObserver() {
+                @Override
+                public void onNext(ExportNotification notification) {
+                    GrpcUtil.safelyOnNext(streamObserver, notification);
+                }
+
+                @Override
+                public void onCompleted() {
+                    GrpcUtil.safelyComplete(streamObserver);
+                }
+            };
+        }
+
+        void onNext(ExportNotification notification);
+
+        void onCompleted();
     }
 
     private static final Logger log = LoggerFactory.getLogger(SessionState.class);
@@ -1042,7 +1068,27 @@ public class SessionState {
         }
     }
 
-    public void addExportListener(final StreamObserver<ExportNotification> observer) {
+
+    /**
+     * Adds an export listener to this SessionState, allowing it to receive updates about changes to exports. When the
+     * gRPC stream is canceled, will automatically clean itself up.
+     * 
+     * @param observer implementation of ExportNotificationObserver to handle export changes or closing the stream.
+     * @param clientStream the client gRPC stream to attach a cancelation handler to
+     */
+    public void addExportListener(final ExportNotificationObserver observer, StreamObserver<?> clientStream) {
+        SafeCloseable remove = addExportListener(observer);
+        ((ServerCallStreamObserver<?>) clientStream).setOnCancelHandler(remove::close);
+    }
+
+    /**
+     * Internal helper suitable for testing. Unlike its two-argument counterpart, will not correctly listen to the gRPC
+     * stream's cancellation handlers, so its lifecycle must be managed directly by invoking the SafeCloseable it
+     * returns.
+     */
+    @VisibleForTesting
+    @CheckReturnValue
+    public SafeCloseable addExportListener(final ExportNotificationObserver observer) {
         final int versionId;
         final ExportListener listener;
         synchronized (exportListeners) {
@@ -1056,33 +1102,18 @@ public class SessionState {
         }
 
         listener.initialize(versionId);
+        return () -> removeExportListener(listener);
     }
 
     /**
      * Remove an on-close callback bound to the life of the session.
      *
-     * @param observer the observer to no longer be subscribed
-     * @return The item if it was removed, else null
+     * @param listener the observer to no longer be subscribed
      */
-    public StreamObserver<ExportNotification> removeExportListener(final StreamObserver<ExportNotification> observer) {
-        final MutableObject<ExportListener> wrappedListener = new MutableObject<>();
-        final boolean found = exportListeners.removeIf(wrap -> {
-            if (wrappedListener.getValue() != null) {
-                return false;
-            }
-
-            final boolean matches = wrap.listener == observer;
-            if (matches) {
-                wrappedListener.setValue(wrap);
-            }
-            return matches;
-        });
-
-        if (found) {
-            wrappedListener.getValue().onRemove();
+    private void removeExportListener(final ExportListener listener) {
+        if (exportListeners.remove(listener)) {
+            listener.onRemove();
         }
-
-        return found ? observer : null;
     }
 
     @VisibleForTesting
@@ -1093,9 +1124,9 @@ public class SessionState {
     private class ExportListener {
         private volatile boolean isClosed = false;
 
-        private final StreamObserver<ExportNotification> listener;
+        private final ExportNotificationObserver listener;
 
-        private ExportListener(final StreamObserver<ExportNotification> listener) {
+        private ExportListener(final ExportNotificationObserver listener) {
             this.listener = listener;
         }
 
@@ -1110,12 +1141,7 @@ public class SessionState {
             }
 
             try (final SafeCloseable ignored = LivenessScopeStack.open()) {
-                synchronized (listener) {
-                    listener.onNext(notification);
-                }
-            } catch (final RuntimeException e) {
-                log.error().append("Failed to notify listener: ").append(e).endl();
-                removeExportListener(listener);
+                listener.onNext(notification);
             }
         }
 
@@ -1173,7 +1199,7 @@ public class SessionState {
                 isClosed = true;
             }
 
-            safelyComplete(listener);
+            listener.onCompleted();
         }
     }
 
