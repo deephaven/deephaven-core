@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
+	"sort"
 	"testing"
 
 	"github.com/apache/arrow/go/v8/arrow"
@@ -109,4 +110,35 @@ func GetAuthToken() string {
 	} else {
 		return auth
 	}
+}
+
+type metadata arrow.Metadata
+
+func (m metadata) Len() int           { md := arrow.Metadata(m); return md.Len() }
+func (m metadata) Less(i, j int) bool { md := arrow.Metadata(m); return md.Keys()[i] < md.Keys()[j] }
+func (m metadata) Swap(i, j int) {
+	md := arrow.Metadata(m)
+	k := md.Keys()
+	v := md.Values()
+	k[i], k[j] = k[j], k[i]
+	v[i], v[j] = v[j], v[i]
+}
+
+// StringRecord returns a string representation of a record in a deterministic way that is safe to use for diffs.
+func StringRecord(r arrow.Record) string {
+
+	if s := r.Schema(); s != nil {
+		sort.Sort(metadata(s.Metadata()))
+
+		for _, f := range s.Fields() {
+			sort.Sort(metadata(f.Metadata))
+		}
+	}
+
+	return fmt.Sprintf("%v", r)
+}
+
+// PrintRecord prints a record in a deterministic way that is safe to use for diffs.
+func PrintRecord(r arrow.Record) {
+	fmt.Println(StringRecord(r))
 }
