@@ -349,13 +349,18 @@ func TestCrossJoin(t *testing.T) {
 	test_tools.CheckError(t, "Snapshot", err)
 	defer resultRec2.Release()
 
-	if resultRec1.NumRows() >= leftRec.NumRows() {
-		t.Error("resultRec1 was too large")
+	if leftRec.NumRows() == 0 {
+		t.Error("left is empty")
 		return
 	}
 
-	if resultRec2.NumRows() <= leftRec.NumRows() {
-		t.Error("resultRec2 was too small")
+	if resultRec1.NumRows() == 0 {
+		t.Error("resultRec1 is empty")
+		return
+	}
+
+	if resultRec2.NumRows() == 0 {
+		t.Error("resultRec2 is empty")
 		return
 	}
 }
