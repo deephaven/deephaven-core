@@ -29,4 +29,4 @@ from .dherror import DHError
 from .constants import SortDirection, MatchRule
 from .query import Query
 
-__version__ = "0.23.0"
+__version__ = "0.24.0"
