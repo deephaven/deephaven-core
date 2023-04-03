@@ -11,8 +11,8 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
 
-public final class BigIntegerRollingWAvgOperator extends BigNumberRollingWAvgOperator<BigInteger> {
-    protected class Context extends BigNumberRollingWAvgOperator<BigInteger>.Context {
+public final class BigIntegerRollingWAvgOperator extends BaseBigNumberRollingWAvgOperator<BigInteger> {
+    protected class Context extends BaseBigNumberRollingWAvgOperator<BigInteger>.Context {
 
         protected Context(final int affectedChunkSize, final int influencerChunkSize) {
             super(affectedChunkSize, influencerChunkSize);

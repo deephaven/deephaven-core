@@ -8,11 +8,10 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.math.MathContext;
 
-public final class BigDecimalRollingWAvgOperator extends BigNumberRollingWAvgOperator<BigDecimal> {
-    protected class Context extends BigNumberRollingWAvgOperator<BigDecimal>.Context {
+public final class BigDecimalRollingWAvgOperator extends BaseBigNumberRollingWAvgOperator<BigDecimal> {
+    protected class Context extends BaseBigNumberRollingWAvgOperator<BigDecimal>.Context {
 
         protected Context(final int affectedChunkSize, final int influencerChunkSize) {
             super(affectedChunkSize, influencerChunkSize);

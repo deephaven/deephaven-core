@@ -145,7 +145,7 @@ abstract class BasePrimitiveRollingWAvgOperator extends BaseDoubleUpdateByOperat
         @Override
         public void writeToOutputChunk(int outIdx) {
             if (windowValues.size() == nullCount) {
-                // Looks weird but is consistent with Numeric#wavg and AggWAvg
+                // Looks weird but returning NaN is consistent with Numeric#wavg and AggWAvg
                 outputValues.set(outIdx, Double.NaN);
             } else {
                 final double weightedValSum = windowValues.evaluate();

@@ -15,7 +15,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
 
-public abstract class BigNumberRollingWAvgOperator<T> extends BaseObjectUpdateByOperator<BigDecimal> {
+public abstract class BaseBigNumberRollingWAvgOperator<T> extends BaseObjectUpdateByOperator<BigDecimal> {
     private static final int BUFFER_INITIAL_CAPACITY = 128;
     @NotNull
     final MathContext mathContext;
@@ -161,7 +161,7 @@ public abstract class BigNumberRollingWAvgOperator<T> extends BaseObjectUpdateBy
             } else {
                 final BigDecimal weightSum = windowWeightValues.evaluate();
                 // Divide by zero will result in null.
-                if (weightSum != BigDecimal.ZERO) {
+                if (!weightSum.equals(BigDecimal.ZERO)) {
                     final BigDecimal weightedValSum = windowValues.evaluate();
                     outputValues.set(outIdx, weightedValSum.divide(weightSum, mathContext));
                 } else {
@@ -178,7 +178,7 @@ public abstract class BigNumberRollingWAvgOperator<T> extends BaseObjectUpdateBy
         }
     }
 
-    public BigNumberRollingWAvgOperator(@NotNull final MatchPair pair,
+    public BaseBigNumberRollingWAvgOperator(@NotNull final MatchPair pair,
             @NotNull final String[] affectingColumns,
             @Nullable final RowRedirection rowRedirection,
             @Nullable final String timestampColumnName,
