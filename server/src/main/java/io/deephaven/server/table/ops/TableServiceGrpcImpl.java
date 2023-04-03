@@ -34,6 +34,7 @@ import io.deephaven.proto.backplane.grpc.HeadOrTailRequest;
 import io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.Literal;
 import io.deephaven.proto.backplane.grpc.MergeTablesRequest;
+import io.deephaven.proto.backplane.grpc.MetaTableRequest;
 import io.deephaven.proto.backplane.grpc.NaturalJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.RunChartDownsampleRequest;
 import io.deephaven.proto.backplane.grpc.SeekRowRequest;
@@ -277,6 +278,13 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
             @NotNull final FlattenRequest request,
             @NotNull final StreamObserver<ExportedTableCreationResponse> responseObserver) {
         oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.FLATTEN, request, responseObserver);
+    }
+
+    @Override
+    public void metaTable(
+            @NotNull final MetaTableRequest request,
+            @NotNull final StreamObserver<ExportedTableCreationResponse> responseObserver) {
+        oneShotOperationWrapper(OpCase.META_TABLE, request, responseObserver);
     }
 
     @Override

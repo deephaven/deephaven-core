@@ -8,6 +8,7 @@ from typing import List
 
 import pyarrow as pa
 
+from pydeephaven._table_ops import MetaTableOp
 from pydeephaven.dherror import DHError
 from pydeephaven._table_interface import TableInterface
 
@@ -71,6 +72,12 @@ class Table(TableInterface):
 
         reader = pa.ipc.open_stream(schema_header)
         self.schema = reader.schema
+
+    @property
+    def meta_table(self) -> Table:
+        """ The column definitions of the table in a Table form. """
+        table_op = MetaTableOp()
+        return self.session.table_service.grpc_table_op(self, table_op)
 
     def to_arrow(self) -> pa.Table:
         """ Take a snapshot of the table and return a pyarrow Table.

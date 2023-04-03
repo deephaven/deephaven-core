@@ -127,6 +127,8 @@ type TableServiceClient interface {
 	ExportedTableUpdates(ctx context.Context, in *ExportedTableUpdatesRequest, opts ...grpc.CallOption) (TableService_ExportedTableUpdatesClient, error)
 	// Seek a row number within a table.
 	SeekRow(ctx context.Context, in *SeekRowRequest, opts ...grpc.CallOption) (*SeekRowResponse, error)
+	// Returns the meta table of a table.
+	MetaTable(ctx context.Context, in *MetaTableRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error)
 }
 
 type tableServiceClient struct {
@@ -535,6 +537,15 @@ func (c *tableServiceClient) SeekRow(ctx context.Context, in *SeekRowRequest, op
 	return out, nil
 }
 
+func (c *tableServiceClient) MetaTable(ctx context.Context, in *MetaTableRequest, opts ...grpc.CallOption) (*ExportedTableCreationResponse, error) {
+	out := new(ExportedTableCreationResponse)
+	err := c.cc.Invoke(ctx, "/io.deephaven.proto.backplane.grpc.TableService/MetaTable", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // TableServiceServer is the server API for TableService service.
 // All implementations must embed UnimplementedTableServiceServer
 // for forward compatibility
@@ -643,6 +654,8 @@ type TableServiceServer interface {
 	ExportedTableUpdates(*ExportedTableUpdatesRequest, TableService_ExportedTableUpdatesServer) error
 	// Seek a row number within a table.
 	SeekRow(context.Context, *SeekRowRequest) (*SeekRowResponse, error)
+	// Returns the meta table of a table.
+	MetaTable(context.Context, *MetaTableRequest) (*ExportedTableCreationResponse, error)
 	mustEmbedUnimplementedTableServiceServer()
 }
 
@@ -766,6 +779,9 @@ func (UnimplementedTableServiceServer) ExportedTableUpdates(*ExportedTableUpdate
 }
 func (UnimplementedTableServiceServer) SeekRow(context.Context, *SeekRowRequest) (*SeekRowResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SeekRow not implemented")
+}
+func (UnimplementedTableServiceServer) MetaTable(context.Context, *MetaTableRequest) (*ExportedTableCreationResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method MetaTable not implemented")
 }
 func (UnimplementedTableServiceServer) mustEmbedUnimplementedTableServiceServer() {}
 
@@ -1488,6 +1504,24 @@ func _TableService_SeekRow_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
+func _TableService_MetaTable_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MetaTableRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TableServiceServer).MetaTable(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/io.deephaven.proto.backplane.grpc.TableService/MetaTable",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TableServiceServer).MetaTable(ctx, req.(*MetaTableRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // TableService_ServiceDesc is the grpc.ServiceDesc for TableService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -1642,6 +1676,10 @@ var TableService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SeekRow",
 			Handler:    _TableService_SeekRow_Handler,
+		},
+		{
+			MethodName: "MetaTable",
+			Handler:    _TableService_MetaTable_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{
