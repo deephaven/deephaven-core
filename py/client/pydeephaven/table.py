@@ -38,6 +38,7 @@ class Table(TableInterface):
         self.size = size
         if not schema:
             self._parse_schema(schema_header)
+        self._meta_table = None
 
     def __del__(self):
         try:
@@ -76,8 +77,10 @@ class Table(TableInterface):
     @property
     def meta_table(self) -> Table:
         """ The column definitions of the table in a Table form. """
-        table_op = MetaTableOp()
-        return self.session.table_service.grpc_table_op(self, table_op)
+        if self._meta_table is None:
+            table_op = MetaTableOp()
+            self._meta_table = self.session.table_service.grpc_table_op(self, table_op)
+        return self._meta_table
 
     def to_arrow(self) -> pa.Table:
         """ Take a snapshot of the table and return a pyarrow Table.
