@@ -31,7 +31,7 @@ func Example_importTable() {
 	defer sampleRecord.Release()
 
 	fmt.Println("Data Before:")
-	test_tools.PrintRecord(sampleRecord)
+	test_tools.RecordPrint(sampleRecord)
 
 	// Now we upload the record so that we can manipulate its data using the server.
 	// We get back a TableHandle, which is a reference to a table on the server.
@@ -68,7 +68,7 @@ func Example_importTable() {
 	defer filteredRecord.Release()
 
 	fmt.Println("Data After:")
-	test_tools.PrintRecord(filteredRecord)
+	test_tools.RecordPrint(filteredRecord)
 
 	// Output:
 	// Data Before:

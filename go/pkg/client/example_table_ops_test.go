@@ -160,7 +160,7 @@ func doImmediateOps() (string, error) {
 	}
 	defer magRecord.Release()
 
-	return fmt.Sprintf("Data Before:\n%s\nNew data:\n%s\n%s", test_tools.StringRecord(sampleRecord), test_tools.StringRecord(midRecord), test_tools.StringRecord(magRecord)), nil
+	return fmt.Sprintf("Data Before:\n%s\nNew data:\n%s\n%s", test_tools.RecordString(sampleRecord), test_tools.RecordString(midRecord), test_tools.RecordString(magRecord)), nil
 }
 
 // This function demonstrates how to use query-graph table operations.
@@ -240,5 +240,5 @@ func doQueryOps() (string, error) {
 	}
 	defer magRecord.Release()
 
-	return fmt.Sprintf("Data Before:\n%s\nNew data:\n%s\n%s", test_tools.StringRecord(sampleRecord), test_tools.StringRecord(midRecord), test_tools.StringRecord(magRecord)), nil
+	return fmt.Sprintf("Data Before:\n%s\nNew data:\n%s\n%s", test_tools.RecordString(sampleRecord), test_tools.RecordString(midRecord), test_tools.RecordString(magRecord)), nil
 }

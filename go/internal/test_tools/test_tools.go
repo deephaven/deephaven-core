@@ -112,11 +112,14 @@ func GetAuthToken() string {
 	}
 }
 
-type metadata arrow.Metadata
+type sortableMetadata arrow.Metadata
 
-func (m metadata) Len() int           { md := arrow.Metadata(m); return md.Len() }
-func (m metadata) Less(i, j int) bool { md := arrow.Metadata(m); return md.Keys()[i] < md.Keys()[j] }
-func (m metadata) Swap(i, j int) {
+func (m sortableMetadata) Len() int { md := arrow.Metadata(m); return md.Len() }
+func (m sortableMetadata) Less(i, j int) bool {
+	md := arrow.Metadata(m)
+	return md.Keys()[i] < md.Keys()[j]
+}
+func (m sortableMetadata) Swap(i, j int) {
 	md := arrow.Metadata(m)
 	k := md.Keys()
 	v := md.Values()
@@ -124,21 +127,21 @@ func (m metadata) Swap(i, j int) {
 	v[i], v[j] = v[j], v[i]
 }
 
-// StringRecord returns a string representation of a record in a deterministic way that is safe to use for diffs.
-func StringRecord(r arrow.Record) string {
+// RecordString returns a string representation of a record in a deterministic way that is safe to use for diffs.
+func RecordString(r arrow.Record) string {
 
 	if s := r.Schema(); s != nil {
-		sort.Sort(metadata(s.Metadata()))
+		sort.Sort(sortableMetadata(s.Metadata()))
 
 		for _, f := range s.Fields() {
-			sort.Sort(metadata(f.Metadata))
+			sort.Sort(sortableMetadata(f.Metadata))
 		}
 	}
 
 	return fmt.Sprintf("%v", r)
 }
 
-// PrintRecord prints a record in a deterministic way that is safe to use for diffs.
-func PrintRecord(r arrow.Record) {
-	fmt.Println(StringRecord(r))
+// RecordPrint prints a record in a deterministic way that is safe to use for diffs.
+func RecordPrint(r arrow.Record) {
+	fmt.Println(RecordString(r))
 }

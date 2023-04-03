@@ -113,7 +113,7 @@ func Example_inputTable() {
 		}
 
 		fmt.Println("Got the output table!")
-		test_tools.PrintRecord(outputRec)
+		test_tools.RecordPrint(outputRec)
 		outputRec.Release()
 		break
 	}
