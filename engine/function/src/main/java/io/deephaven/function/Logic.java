@@ -49,8 +49,7 @@ public class Logic {
      * @return logical and of all the values in the array. By convention, returns true if the array is empty.
      */
     static public Boolean and(ObjectVector<Boolean> values) {
-        for (final Iterator<Boolean> vi = values.iterator(); vi.hasNext(); ){
-            final Boolean b = vi.next();
+        for (final Boolean b : values) {
             if (!b) {
                 return false;
             }
@@ -86,11 +85,10 @@ public class Logic {
      * @return logical and of all the values in the array. By convention, returns true if the array is empty.
      */
     static public Boolean and(ObjectVector<Boolean> values, Boolean nullValue) {
-        for (final Iterator<Boolean> vi = values.iterator(); vi.hasNext(); ){
-            final Boolean b = vi.next();
-            b = b == null ? nullValue : b;
+        for (final Boolean b : values) {
+            final Boolean b2 = b == null ? nullValue : b;
 
-            if (!b) {
+            if (!b2) {
                 return false;
             }
         }

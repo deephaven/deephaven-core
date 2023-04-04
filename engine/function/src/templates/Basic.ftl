@@ -124,9 +124,11 @@ public class Basic {
     static public <T> T[] replaceIfNull(ObjectVector<T> values, T replacement) {
         final int n = values.intSize("replaceIfNull");
         T[] result = values.toArray();
+        int i = 0;
 
-        for (int i = 0; i < n; i++) {
+        for (final T v : values) {
             result[i] = replaceIfNull(values.get(i), replacement);
+            i++;
         }
 
         return result;
@@ -190,9 +192,7 @@ public class Basic {
         final long n = values.size();
         long count = 0;
 
-        for (long i = 0; i < n; i++) {
-            T c = values.get(i);
-
+        for(final T c : values) {
             if (!isNull(c)) {
                 count++;
             }
@@ -223,7 +223,7 @@ public class Basic {
      * @return last value from the array.
      */
     static public <T> T lastObj(ObjectVector<T> values) {
-        if (values == null || values.size() == 0) {
+        if (values == null || values.isEmpty()) {
             return null;
         }
 
@@ -252,7 +252,7 @@ public class Basic {
      * @return first value from the array.
      */
     static public <T> T firstObj(ObjectVector<T> values) {
-        if (values == null || values.size() == 0) {
+        if (values == null || values.isEmpty()) {
             return null;
         }
 
@@ -356,10 +356,8 @@ public class Basic {
      */
     static public <T> boolean inObj(T testedValue, ObjectVector<T> possibleValues) {
         final boolean testedIsNull = isNull(testedValue);
-        final long size = possibleValues.size();
 
-        for (long i = 0; i < size; i++) {
-            final T possibleValue = possibleValues.get(i);
+        for (final T possibleValue : possibleValues) {
             final boolean possibleIsNull = isNull(possibleValue);
 
             if (testedIsNull == possibleIsNull && (testedIsNull || testedValue.equals(possibleValue))) {
@@ -439,8 +437,8 @@ public class Basic {
 
         final THashSet<T> keys = new THashSet<>();
 
-        for (long ii = 0; ii < n; ii++) {
-            keys.add(values.get(ii));
+        for (final T v : values) {
+            keys.add(v);
         }
 
         if (!countNull) {
@@ -529,8 +527,7 @@ public class Basic {
         final List<T> orderedList = new ArrayList<>();
         final THashSet<T> counts = new THashSet<>();
 
-        for (long ii = 0; ii < n; ii++) {
-            T val = values.get(ii);
+        for (final T val : values) {
             if ((includeNull || !isNull(val)) && counts.add(val)) {
                 orderedList.add(val);
             }
@@ -623,9 +620,8 @@ public class Basic {
 
         for (ObjectVector<T> v : values) {
             if (v != null) {
-                final long nn = v.size();
-                for (long i = 0; i < nn; i++) {
-                    result[idx] = v.get(i);
+                for (final T vv : v) {
+                    result[idx] = vv;
                     idx++;
                 }
             }
@@ -662,9 +658,11 @@ public class Basic {
 
         final int n = values.intSize("reverseObj");
         @SuppressWarnings("unchecked") final T[] result = (T[])Array.newInstance(values.getComponentType(), n);
+        int i = 0;
 
-        for (int i=0; i<n; i++) {
-            result[i] = values.get(i);
+        for (final T v : values) {
+            result[i] = v;
+            i++;
         }
 
         ArrayUtils.reverse(result);
@@ -701,14 +699,16 @@ public class Basic {
 
         final boolean isNullVal = isNull(val);
         final long L = values.size();
+        long i = 0;
 
-        for (long i = 0; i < L; ++i) {
-            T c = values.get(i);
+        for (final T c : values) {
             final boolean isnullc = isNull(c);
 
             if ((isnullc && isNullVal) || (!isnullc && c.equals(val)) ) {
                 return i;
             }
+
+            i++;
         }
 
         return NULL_LONG;
@@ -814,10 +814,11 @@ public class Basic {
         }
 
         @SuppressWarnings("unchecked") final T[] result = (T[])Array.newInstance(typeToUse.getClass(), n_c);
+        int i = 0;
 
-        for (int i=0; i < n_c; i++) {
-            final Boolean c = condition.get(i);
+        for (final Boolean c : condition) {
             result[i] = c == null ? null : (c ? trueCase : falseCase);
+            i++;
         }
 
         return result;
@@ -888,12 +889,14 @@ public class Basic {
         final T[] result = values.toArray();
 
         T lastGood = null;
-        for (int ii = 0; ii < n; ii++) {
-            if (!isNull(values.get(ii))) {
-                lastGood = values.get(ii);
+        int ii = 0;
+        for (final T v : values) {
+            if (!isNull(v)) {
+                lastGood = v;
             }
 
             result[ii] = lastGood;
+            ii++;
         }
         return result;
     }
@@ -1716,10 +1719,11 @@ public class Basic {
         final int n_c = condition.intSize("condition");
 
         final ${pt.primitive}[] result = new ${pt.primitive}[n_c];
+        int i = 0;
 
-        for (int i=0; i < n_c; i++) {
-            final Boolean c = condition.get(i);
+        for (final Boolean c : condition) {
             result[i] = c == null ? ${pt.null} : (c ? trueCase : falseCase);
+            i++;
         }
 
         return result;
