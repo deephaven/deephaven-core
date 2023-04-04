@@ -12,6 +12,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.impl.*;
+import io.deephaven.engine.rowset.impl.rsp.container.ArrayContainer;
 import io.deephaven.engine.rowset.impl.rsp.container.Container;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.datastructures.LongAbortableConsumer;
@@ -29,6 +30,7 @@ import java.util.function.BiFunction;
 import java.util.function.IntConsumer;
 import java.util.function.LongConsumer;
 
+import static io.deephaven.engine.rowset.impl.rsp.RspArray.BITS_PER_BLOCK;
 import static io.deephaven.engine.rowset.impl.rsp.RspArray.BLOCK_LAST;
 import static io.deephaven.engine.rowset.impl.rsp.RspArray.BLOCK_SIZE;
 import static org.junit.Assert.*;
@@ -37,7 +39,7 @@ import static org.junit.Assert.*;
 public class RspBitmapTest {
     private static final int runs = 1;
     private static final int lastRun = 1; // to help offset the seed when doing multiple runs.
-    private static final int seed0 = 50116 + lastRun;
+    private static final int seed0 = 50150 + lastRun;
 
     @Test
     public void testSimpleKeepAddingTillAllOnes() {
@@ -944,7 +946,6 @@ public class RspBitmapTest {
         final int count = 10000;
         final TLongSet set = ValidationSet.make(count);
         final String pfxMsg = "doTestSearchIteratorSingle seed == " + seed;
-        System.out.println(pfxMsg);
         final Random r = new Random(seed);
         final RspBitmap rb = populateRandom(pfxMsg, r, count, 1, 10000, 150, 50, set, true);
         assertEquals(set.size(), rb.getCardinality());
@@ -1080,7 +1081,6 @@ public class RspBitmapTest {
         final int count = 100000;
         final TLongSet set = ValidationSet.make(count);
         final String pfxMsg = "doTestGetFind2 seed == " + seed;
-        System.out.println(pfxMsg);
         final RspBitmap rb = populateRandom(pfxMsg, new Random(seed), count, 10, 30000000, 150, 50, set, true);
         assertEquals(set.size(), rb.getCardinality());
         rb.validate();
@@ -1091,7 +1091,7 @@ public class RspBitmapTest {
         for (int i = 0; i < arr.length; ++i) {
             long vi = arr[i];
             final long gi = rb.get(i);
-            assertEquals("i == " + i, vi, gi);
+            assertEquals(pfxMsg + " && i==" + i, vi, gi);
         }
         assertEquals(-1, rb.get(arr.length));
 
@@ -1100,11 +1100,11 @@ public class RspBitmapTest {
             int j = i + 1;
             long vi = arr[i];
             final long posi = rb.find(vi);
-            assertEquals("i == " + i, i, posi);
+            assertEquals(pfxMsg + " && i==" + i, i, posi);
             long vj = arr[j];
             for (long v = vi + 1; v < vj; ++v) {
                 final long pos = rb.find(v);
-                assertEquals(pfxMsg + " && i == " + i + " && v == " + v, -(i + 1) - 1, pos);
+                assertEquals(pfxMsg + " && i==" + i + " && v==" + v, -(i + 1) - 1, pos);
             }
         }
         assertEquals(arr.length - 1, rb.find(arr[arr.length - 1]));
@@ -1386,7 +1386,6 @@ public class RspBitmapTest {
         final TLongSet set = ValidationSet.make(count);
         final Random r = new Random(seed);
         final String pfxMsg = "doTestFindRange seed == " + seed;
-        System.out.println(pfxMsg);
         final RspBitmap rb = populateRandom(pfxMsg, r, count, 10, 30000000, 150, 50, set, true);
         assertEquals(set.size(), rb.getCardinality());
         final long[] arr = new long[set.size()];
@@ -1568,7 +1567,6 @@ public class RspBitmapTest {
         final int count = 100000;
         final TLongSet set = ValidationSet.make(count);
         final String pfxMsg = "doTestGetRange seed == " + seed;
-        System.out.println(pfxMsg);
         final Random r = new Random(seed);
         final RspBitmap rb = populateRandom(pfxMsg, r, count, 10, 30000000, 150, 50, set, true);
         assertEquals(set.size(), rb.getCardinality());
@@ -1837,48 +1835,40 @@ public class RspBitmapTest {
                 getRandomRspBitmap(nblocks, r, 0.90f, 2000, 0, 12);
         final RspBitmap rb2 =
                 getRandomRspBitmap(nblocks, r, 0.90f, 2000, nblocks / 2, 12);
+        final String m = "seed==" + seed;
+        testBiOp(m, bitmapFun, boolFun, rb1, rb2);
+    }
+
+    private static void testBiOp(
+            final String m,
+            BiFunction<RspBitmap, RspBitmap, RspBitmap> bitmapFun,
+            BiFunction<Boolean, Boolean, Boolean> boolFun,
+            final RspBitmap rb1,
+            final RspBitmap rb2) {
         final RspBitmap rbres = bitmapFun.apply(rb1, rb2);
-        final String m = "seed=" + seed;
         rbres.validate(m);
-        final RspRangeIterator itr = rbres.getRangeIterator();
-        while (itr.hasNext()) {
-            itr.next();
-            final long s = itr.start();
-            final long e = itr.end();
-            for (long v = s; v <= e; ++v) {
-                final boolean inr = true; // rbres.contains(v);
-                final boolean in1 = rb1.contains(v);
-                final boolean in2 = rb2.contains(v);
-                final boolean boolResult = boolFun.apply(in1, in2);
-                assertEquals(m + ", v=" + v + ", inr=" + inr + ", in1=" + in1 + ", in2=" + in2, boolResult, inr);
+        long calculatedCardinality = 0;
+        final RowSetUtils.CombinedRangeIterator itCombined =
+                new RowSetUtils.CombinedRangeIterator(rb1.ixRangeIterator(), rb2.ixRangeIterator());
+        while (itCombined.hasNext()) {
+            itCombined.next();
+            final long s = itCombined.currentRangeStart();
+            final long e = itCombined.currentRangeEnd();
+            final RowSetUtils.CombinedRangeIterator.RangeMembership membership = itCombined.currentRangeMembership();
+            final boolean in1 = membership.hasFirst();
+            final boolean in2 = membership.hasSecond();
+            final boolean boolResult = boolFun.apply(in1, in2);
+            if (boolResult) {
+                calculatedCardinality += e - s + 1;
             }
-        }
-        final RspRangeIterator it1 = rb1.getRangeIterator();
-        while (it1.hasNext()) {
-            it1.next();
-            final long s = it1.start();
-            final long e = it1.end();
+            final String m2 = m + " && s==" + s + " && e==" + e;
             for (long v = s; v <= e; ++v) {
                 final boolean inr = rbres.contains(v);
-                final boolean in1 = true; // rb1.contains(v);
-                final boolean in2 = rb2.contains(v);
-                final boolean boolResult = boolFun.apply(in1, in2);
-                assertEquals(m + ", v=" + v + ", inr=" + inr + ", in1=" + in1 + ", in2=" + in2, boolResult, inr);
+                assertEquals(m2 + " && v==" + v,
+                        boolResult, inr);
             }
         }
-        final RspRangeIterator it2 = rb2.getRangeIterator();
-        while (it2.hasNext()) {
-            it2.next();
-            final long s = it2.start();
-            final long e = it2.end();
-            for (long v = s; v <= e; ++v) {
-                final boolean inr = rbres.contains(v);
-                final boolean in1 = rb1.contains(v);
-                final boolean in2 = true; // rb2.contains(v);
-                final boolean boolResult = boolFun.apply(in1, in2);
-                assertEquals(m + ", v=" + v + ", inr=" + inr + ", in1=" + in1 + ", in2=" + in2, boolResult, inr);
-            }
-        }
+        assertEquals(calculatedCardinality, rbres.getCardinality());
     }
 
     @Test
@@ -2060,7 +2050,6 @@ public class RspBitmapTest {
         final boolean fullCheck = false;
         final boolean partialCheck = true;
         final String pfxMsg = "doTestRandomSingles seed == " + seed;
-        System.out.println(pfxMsg);
         final TestContext tc = new TestContext(pfxMsg, count, fullCheck, partialCheck);
         long lastv = -1;
         for (int i = 0; i < count; ++i) {
@@ -2087,7 +2076,6 @@ public class RspBitmapTest {
         final boolean fullCheck = false;
         final boolean partialCheck = true;
         final String pfxMsg = "doTestSequentialSingles seed == " + seed;
-        System.out.println(pfxMsg);
         final TestContext tc = new TestContext(pfxMsg, count, fullCheck, partialCheck);
         final Random r = new Random(seed);
         final int step = 10;
@@ -2135,7 +2123,6 @@ public class RspBitmapTest {
         final boolean fullCheck = false;
         final boolean partialCheck = false;
         final String pfxMsg = "doTestRandomInserts seed==" + seed;
-        System.out.println(pfxMsg);
         for (int topMax = startMax; topMax <= endMax; topMax *= 10) {
             final TestContext tc =
                     getRandom(pfxMsg, seed, count, topMin, topMax, rangeMin, rangeMax, fullCheck, partialCheck);
@@ -2157,7 +2144,6 @@ public class RspBitmapTest {
         final boolean fullCheck = false;
         final boolean partialCheck = false;
         final String pfxMsg = "doTestRangeIterator seed == " + seed;
-        System.out.println(pfxMsg);
         final TestContext tc =
                 getRandom(pfxMsg, seed, count, topMin, topMax, rangeMin, rangeMax, fullCheck, partialCheck);
         tc.endCheck();
@@ -2379,7 +2365,6 @@ public class RspBitmapTest {
 
     private static void doTestApplyOffset(final int seed) {
         final String pfxMsg = "doTestApplyOffset seed=" + seed;
-        System.out.println(pfxMsg);
         final Random r = new Random(seed);
         final long[] offsets = new long[] {
                 RspArray.BLOCK_SIZE - 1,
@@ -2393,7 +2378,7 @@ public class RspBitmapTest {
             final RspBitmap rb =
                     populateRandom(pfxMsg, r, count,
                             10, 30000000, 150, 50, set, true);
-            final String m = pfxMsg + ", offset=" + offset;
+            final String m = pfxMsg + " && offset==" + offset;
             final RspBitmap orb = rb.applyOffsetOnNew(offset);
             orb.validate(m);
             assertEquals(set.size(), rb.getCardinality());
@@ -2407,7 +2392,7 @@ public class RspBitmapTest {
                     minmax[min] = v;
                 if (v > minmax[max])
                     minmax[max] = v;
-                assertTrue(m + ", v=" + v, orb.contains(v + offset));
+                assertTrue(m + " && v==" + v, orb.contains(v + offset));
                 return true;
             });
             assertEquals(m, minmax[min] + offset, orb.first());
@@ -2548,11 +2533,10 @@ public class RspBitmapTest {
     }
 
     private static void doTestInvert(final int seed) {
-        final String pfxMsg = "doTestInvert seed=" + seed;
-        System.out.println(pfxMsg);
+        final String pfxMsg = "doTestInvert seed==" + seed;
         final Random r = new Random(seed);
         for (int j = 0; j < 2; ++j) {
-            final int nblocks = (j == 0) ? RspBitmap.accNullThreshold : 40;
+            final int nblocks = (j == 0) ? RspBitmap.accNullThreshold : (32 + RspBitmap.accNullThreshold);
             if (nblocks == 0) {
                 continue;
             }
@@ -2565,7 +2549,7 @@ public class RspBitmapTest {
             final long rbc = rb.getCardinality();
             final int ntests = 30;
             for (int t = 0; t < ntests; ++t) {
-                final String m = pfxMsg + ", t=" + t;
+                final String m = pfxMsg + " && t==" + t;
                 final int npicks;
                 if (t == 0) {
                     npicks = 0;
@@ -2634,7 +2618,7 @@ public class RspBitmapTest {
         assertEquals(3 * BLOCK_SIZE, rb.getCardinality());
     }
 
-    private final RspBitmap str2rb(final String s) {
+    private RspBitmap str2rb(final String s) {
         final String[] ranges = s.split(",");
         final RspBitmap rb = new RspBitmap();
         for (String range : ranges) {
@@ -4246,7 +4230,7 @@ public class RspBitmapTest {
         final Random r = new Random(seed);
         final int nruns = 40;
         for (int nrun = 0; nrun < nruns; ++nrun) {
-            final int nblocks = r.nextBoolean() ? 60 : RspArray.accNullThreshold;
+            final int nblocks = r.nextBoolean() ? (52 + RspBitmap.accNullThreshold) : RspArray.accNullThreshold;
             final RspBitmap rb = getRandomRspBitmap(nblocks, r, 0.90f, 2000,
                     0, 0);
             final long rbc = rb.getCardinality();
@@ -4419,5 +4403,92 @@ public class RspBitmapTest {
         assertEquals(value0, ans2);
         final long ans3 = sit.binarySearchValue((long k, int ignored) -> Long.compare(rangeStart1, k), 1);
         assertEquals(rangeStart1, ans3);
+    }
+
+    private void testBiOpSimilarPrefix(
+            BiFunction<RspBitmap, RspBitmap, RspBitmap> bitmapFun,
+            BiFunction<Boolean, Boolean, Boolean> boolFun) {
+        final IntConsumer testFun = (final int seed) -> {
+            final String m = "seed==" + seed;
+            final Random rand = new Random(seed);
+            final int nblocks = (rand.nextInt(4) == 0)
+                    ? RspBitmap.accNullThreshold
+                    : (12 + RspBitmap.accNullThreshold);
+            final RspBitmap rb1 = getRandomRspBitmap(
+                    nblocks, rand, 0.90f, 2000, 0, 12);
+            for (int common = 0; common <= rb1.size; ++common) {
+                final String m1 = m + " && common==" + common;
+                RspBitmap rb2;
+                if (common == 0) {
+                    rb2 = RspBitmap.makeEmpty();
+                } else {
+                    rb2 = new RspBitmap(rb1, 0, common - 1);
+                }
+                for (int i = 0; i < rb1.size; ++i) {
+                    final long k = (common == 0) ? (rb1.first() & ~BLOCK_LAST) : (rb1.spanInfos[i] & ~BLOCK_LAST);
+                    final int start = rand.nextInt(BLOCK_SIZE);
+                    final int end = start + rand.nextInt(BLOCK_SIZE - start);
+                    rb2 = rb2.addRange(k + start, k + end);
+                }
+                rb2.validate();
+                testBiOp(m1, bitmapFun, boolFun, rb1, rb2);
+            }
+        };
+        randomizedTest(testFun);
+    }
+
+    @Test
+    public void testOrSimilarPrefix() {
+        testBiOpSimilarPrefix(RspBitmap::or, (Boolean b1, Boolean b2) -> b1 || b2);
+    }
+
+    @Test
+    public void testAndNotSimilarPrefix() {
+        testBiOpSimilarPrefix(RspBitmap::andNot, (Boolean b1, Boolean b2) -> b1 && !b2);
+    }
+
+    @Test
+    public void testAndNotSimilarPrefixForCoverage() {
+        // need to cover the case of exactly the same.
+        {
+            final RspBitmap r1 = RspBitmap.makeSingleRange(10L, 20L);
+            final RspBitmap r2 = r1.deepCopy();
+            final OrderedLongSet o = r1.ixMinusOnNew(r2);
+            assertTrue(o.ixIsEmpty());
+        }
+
+        // need to cover the case of different Long spans.
+        {
+            final long spanLengthThatNeedsLong = 1L << (BITS_PER_BLOCK + 1);
+            final long r1Start = BLOCK_SIZE;
+            final long r1End = spanLengthThatNeedsLong * BLOCK_SIZE + BLOCK_LAST;
+            final RspBitmap r1 = RspBitmap.makeSingleRange(r1Start, r1End);
+            RspBitmap r2 = RspBitmap.makeSingleRange(r1Start, r1End);
+            final long lonelyLastValue = 20L + (spanLengthThatNeedsLong + 3) * BLOCK_SIZE;
+            r2 = r2.add(lonelyLastValue);
+            OrderedLongSet minus = r2.ixMinusOnNew(r1);
+            assertEquals(1, minus.ixCardinality());
+            assertEquals(lonelyLastValue, minus.ixFirstKey());
+
+            r2 = RspBitmap.makeSingleRange(r1Start, r1End + BLOCK_SIZE);
+            r2 = r2.add(lonelyLastValue);
+            minus = r2.ixMinusOnNew(r1);
+            assertEquals(1 + BLOCK_SIZE, minus.ixCardinality());
+            assertEquals(r1End + 1, minus.ixFirstKey());
+            assertEquals(lonelyLastValue, minus.ixLastKey());
+        }
+    }
+
+    @Test
+    public void testRspArrayCtorBySpanRangeForCoverage() {
+        // need to cover the case of ArrayContainer as short[]
+        RspBitmap r1 = RspBitmap.makeEmpty();
+        // Trickle some values in
+        for (long x = 0; x < ArrayContainer.SWITCH_CONTAINER_CARDINALITY_THRESHOLD; ++x) {
+            r1 = r1.add(1 + 2 * x);
+        }
+        final RspBitmap r2 = new RspBitmap(r1, 0, 0);
+        assertEquals(r2.ixCardinality(), r1.ixCardinality());
+        assertTrue(r2.ixMinusOnNew(r1).ixIsEmpty());
     }
 }

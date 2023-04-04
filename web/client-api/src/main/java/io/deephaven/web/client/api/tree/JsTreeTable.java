@@ -38,6 +38,7 @@ import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
 import io.deephaven.web.client.api.barrage.def.InitialTableDefinition;
 import io.deephaven.web.client.api.barrage.stream.BiDiStream;
 import io.deephaven.web.client.api.filter.FilterCondition;
+import io.deephaven.web.client.api.lifecycle.HasLifecycle;
 import io.deephaven.web.client.api.subscription.ViewportData;
 import io.deephaven.web.client.api.subscription.ViewportRow;
 import io.deephaven.web.client.api.tree.JsTreeTable.TreeViewportData.TreeRow;
@@ -76,7 +77,7 @@ import static io.deephaven.web.client.api.subscription.ViewportData.NO_ROW_FORMA
  * The table size will be -1 until a viewport has been fetched.
  */
 @JsType(namespace = "dh", name = "TreeTable")
-public class JsTreeTable extends HasEventHandling {
+public class JsTreeTable extends HasLifecycle {
     public static final String EVENT_UPDATED = "updated",
             EVENT_DISCONNECT = "disconnect",
             EVENT_RECONNECT = "reconnect",
@@ -360,6 +361,11 @@ public class JsTreeTable extends HasEventHandling {
     public JsTreeTable(WorkerConnection workerConnection, JsWidget widget) {
         this.connection = workerConnection;
         this.widget = widget;
+
+        // register for same-session disconnect/reconnect callbacks
+        this.connection.registerSimpleReconnectable(this);
+
+        // TODO(deephaven-core#3604) factor most of the rest of this out for a refetch, in case of new session
         HierarchicalTableDescriptor treeDescriptor =
                 HierarchicalTableDescriptor.deserializeBinary(widget.getDataAsU8());
 
@@ -864,6 +870,8 @@ public class JsTreeTable extends HasEventHandling {
     public void close() {
         JsLog.debug("Closing tree table", this);
 
+        connection.unregisterSimpleReconnectable(this);
+
         // Presently it is never necessary to release widget tickets, since they can't be export tickets.
         // connection.releaseTicket(widget.getTicket());
 
@@ -886,6 +894,13 @@ public class JsTreeTable extends HasEventHandling {
                 return null;
             });
             stream = null;
+        }
+
+        if (sourceTable.isAvailable()) {
+            sourceTable.get().then(table -> {
+                table.close();
+                return null;
+            });
         }
     }
 

@@ -4,7 +4,9 @@
 
 from __future__ import annotations
 
-import pyarrow
+from typing import List
+
+import pyarrow as pa
 
 from pydeephaven.dherror import DHError
 from pydeephaven._table_interface import TableInterface
@@ -67,10 +69,10 @@ class Table(TableInterface):
         if not schema_header:
             return
 
-        reader = pyarrow.ipc.open_stream(schema_header)
+        reader = pa.ipc.open_stream(schema_header)
         self.schema = reader.schema
 
-    def to_arrow(self) -> pyarrow.Table:
+    def to_arrow(self) -> pa.Table:
         """ Take a snapshot of the table and return a pyarrow Table.
 
         Returns:
@@ -80,3 +82,51 @@ class Table(TableInterface):
             DHError
         """
         return self.session.flight_service.do_get_table(self)
+
+
+class InputTable(Table):
+    """InputTable is a subclass of Table that allows the users to dynamically add/delete/modify data in it. There are two
+    types of InputTable - append-only and keyed.
+
+    The append-only input table is not keyed, all rows are added to the end of the table, and deletions and edits are
+    not permitted.
+
+    The keyed input tablet has keys for each row and supports addition/deletion/modification of rows by the keys.
+    """
+
+    def __init__(self, session, ticket, schema_header=b'', size=None, is_static=None, schema=None):
+        super().__init__(session=session, ticket=ticket, schema_header=schema_header, size=size,
+                         is_static=is_static, schema=schema)
+        self.key_cols: List[str] = None
+
+    def add(self, table: Table) -> None:
+        """Write rows from the provided table to this input table. If this is a keyed input table, added rows with keys
+        that match existing rows will replace those rows.
+
+        Args:
+            table (Table): the table that provides the rows to write
+
+        Raises:
+            DHError
+        """
+        try:
+            self.session.input_table_service.add(self, table)
+        except Exception as e:
+            raise DHError("add to InputTable failed.") from e
+
+    def delete(self, table: Table) -> None:
+        """Delete the keys contained in the provided table from this keyed input table. If this method is called on an
+        append-only input table, a PermissionError will be raised.
+
+        Args:
+            table (Table): the table with the keys to delete
+
+        Raises:
+            DHError, PermissionError
+        """
+        if not self.key_cols:
+            raise PermissionError("deletion on an append-only input table is not allowed.")
+        try:
+            self.session.input_table_service.delete(self, table)
+        except Exception as e:
+            raise DHError("delete data in the InputTable failed.") from e

@@ -716,6 +716,52 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
 
     public RspArray(
             final RspArray src,
+            final int startIdx,
+            final int endIdx) {
+        size = endIdx - startIdx + 1;
+        spanInfos = new long[size];
+        spans = new Object[size];
+        long srcAccBeforeStart = -1;
+        if (size > accNullThreshold) {
+            acc = new long[size];
+            if (src.acc == null) {
+                cardData = -1;
+            } else {
+                srcAccBeforeStart = (startIdx == 0) ? 0 : src.acc[startIdx - 1];
+                cardData = size - 1;
+            }
+        } else {
+            acc = null;
+        }
+
+        for (int i = 0; i < size; ++i) {
+            final int isrc = startIdx + i;
+            if (srcAccBeforeStart != -1) {
+                acc[i] = src.acc[isrc] - srcAccBeforeStart;
+            }
+            spanInfos[i] = src.spanInfos[isrc];
+            final Object span = src.spans[isrc];
+            spans[i] = span;
+            if (span == null || span == FULL_BLOCK_SPAN_MARKER) {
+                continue;
+            }
+            if (span instanceof short[]) {
+                spanInfos[i] |= SPANINFO_ARRAYCONTAINER_SHARED_BITMASK;
+                continue;
+            }
+            // span instanceof Container
+            ((Container) span).setCopyOnWrite();
+        }
+        if (acc == null) {
+            ensureCardData(false);
+        } else if (src.acc == null) {
+            ensureCardinalityCache(false);
+        }
+        ifDebugValidate();
+    }
+
+    public RspArray(
+            final RspArray src,
             final int startIdx, final long startOffset,
             final int endIdx, final long endOffset) {
         // an initial full block span that needs to be split may result in a sequence of spans as follows,
@@ -1527,6 +1573,19 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
         return ref;
     }
 
+    void ensureCardData(final boolean optimizeContainers) {
+        acc = null;
+        long c = 0;
+        for (int i = 0; i < size; ++i) {
+            c += getSpanCardinalityAtIndex(i, optimizeContainers);
+            if (c > Integer.MAX_VALUE) {
+                cardData = -1;
+                return;
+            }
+        }
+        cardData = (int) c;
+    }
+
     void ensureCardinalityCache(final boolean optimizeContainers) {
         if (size == 0) {
             acc = null;
@@ -1535,16 +1594,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             return;
         }
         if (size <= accNullThreshold) {
-            acc = null;
-            long c = 0;
-            for (int i = 0; i < size; ++i) {
-                c += getSpanCardinalityAtIndex(i, optimizeContainers);
-                if (c > Integer.MAX_VALUE) {
-                    cardData = -1;
-                    return;
-                }
-            }
-            cardData = (int) c;
+            ensureCardData(optimizeContainers);
             return;
         }
         if (acc == null) {

@@ -69,6 +69,12 @@ extern BindTableToVariableResponseDefaultTypeInternal _BindTableToVariableRespon
 class BrowserNextResponse;
 struct BrowserNextResponseDefaultTypeInternal;
 extern BrowserNextResponseDefaultTypeInternal _BrowserNextResponse_default_instance_;
+class CancelAutoCompleteRequest;
+struct CancelAutoCompleteRequestDefaultTypeInternal;
+extern CancelAutoCompleteRequestDefaultTypeInternal _CancelAutoCompleteRequest_default_instance_;
+class CancelAutoCompleteResponse;
+struct CancelAutoCompleteResponseDefaultTypeInternal;
+extern CancelAutoCompleteResponseDefaultTypeInternal _CancelAutoCompleteResponse_default_instance_;
 class CancelCommandRequest;
 struct CancelCommandRequestDefaultTypeInternal;
 extern CancelCommandRequestDefaultTypeInternal _CancelCommandRequest_default_instance_;
@@ -90,6 +96,12 @@ extern CompletionContextDefaultTypeInternal _CompletionContext_default_instance_
 class CompletionItem;
 struct CompletionItemDefaultTypeInternal;
 extern CompletionItemDefaultTypeInternal _CompletionItem_default_instance_;
+class Diagnostic;
+struct DiagnosticDefaultTypeInternal;
+extern DiagnosticDefaultTypeInternal _Diagnostic_default_instance_;
+class Diagnostic_CodeDescription;
+struct Diagnostic_CodeDescriptionDefaultTypeInternal;
+extern Diagnostic_CodeDescriptionDefaultTypeInternal _Diagnostic_CodeDescription_default_instance_;
 class DocumentRange;
 struct DocumentRangeDefaultTypeInternal;
 extern DocumentRangeDefaultTypeInternal _DocumentRange_default_instance_;
@@ -156,24 +168,57 @@ extern GetConsoleTypesRequestDefaultTypeInternal _GetConsoleTypesRequest_default
 class GetConsoleTypesResponse;
 struct GetConsoleTypesResponseDefaultTypeInternal;
 extern GetConsoleTypesResponseDefaultTypeInternal _GetConsoleTypesResponse_default_instance_;
+class GetDiagnosticRequest;
+struct GetDiagnosticRequestDefaultTypeInternal;
+extern GetDiagnosticRequestDefaultTypeInternal _GetDiagnosticRequest_default_instance_;
 class GetHeapInfoRequest;
 struct GetHeapInfoRequestDefaultTypeInternal;
 extern GetHeapInfoRequestDefaultTypeInternal _GetHeapInfoRequest_default_instance_;
 class GetHeapInfoResponse;
 struct GetHeapInfoResponseDefaultTypeInternal;
 extern GetHeapInfoResponseDefaultTypeInternal _GetHeapInfoResponse_default_instance_;
+class GetHoverRequest;
+struct GetHoverRequestDefaultTypeInternal;
+extern GetHoverRequestDefaultTypeInternal _GetHoverRequest_default_instance_;
+class GetHoverResponse;
+struct GetHoverResponseDefaultTypeInternal;
+extern GetHoverResponseDefaultTypeInternal _GetHoverResponse_default_instance_;
+class GetPublishDiagnosticResponse;
+struct GetPublishDiagnosticResponseDefaultTypeInternal;
+extern GetPublishDiagnosticResponseDefaultTypeInternal _GetPublishDiagnosticResponse_default_instance_;
+class GetPullDiagnosticResponse;
+struct GetPullDiagnosticResponseDefaultTypeInternal;
+extern GetPullDiagnosticResponseDefaultTypeInternal _GetPullDiagnosticResponse_default_instance_;
+class GetSignatureHelpRequest;
+struct GetSignatureHelpRequestDefaultTypeInternal;
+extern GetSignatureHelpRequestDefaultTypeInternal _GetSignatureHelpRequest_default_instance_;
+class GetSignatureHelpResponse;
+struct GetSignatureHelpResponseDefaultTypeInternal;
+extern GetSignatureHelpResponseDefaultTypeInternal _GetSignatureHelpResponse_default_instance_;
 class LogSubscriptionData;
 struct LogSubscriptionDataDefaultTypeInternal;
 extern LogSubscriptionDataDefaultTypeInternal _LogSubscriptionData_default_instance_;
 class LogSubscriptionRequest;
 struct LogSubscriptionRequestDefaultTypeInternal;
 extern LogSubscriptionRequestDefaultTypeInternal _LogSubscriptionRequest_default_instance_;
+class MarkupContent;
+struct MarkupContentDefaultTypeInternal;
+extern MarkupContentDefaultTypeInternal _MarkupContent_default_instance_;
 class OpenDocumentRequest;
 struct OpenDocumentRequestDefaultTypeInternal;
 extern OpenDocumentRequestDefaultTypeInternal _OpenDocumentRequest_default_instance_;
+class ParameterInformation;
+struct ParameterInformationDefaultTypeInternal;
+extern ParameterInformationDefaultTypeInternal _ParameterInformation_default_instance_;
 class Position;
 struct PositionDefaultTypeInternal;
 extern PositionDefaultTypeInternal _Position_default_instance_;
+class SignatureHelpContext;
+struct SignatureHelpContextDefaultTypeInternal;
+extern SignatureHelpContextDefaultTypeInternal _SignatureHelpContext_default_instance_;
+class SignatureInformation;
+struct SignatureInformationDefaultTypeInternal;
+extern SignatureInformationDefaultTypeInternal _SignatureInformation_default_instance_;
 class StartConsoleRequest;
 struct StartConsoleRequestDefaultTypeInternal;
 extern StartConsoleRequestDefaultTypeInternal _StartConsoleRequest_default_instance_;
@@ -201,6 +246,8 @@ template<> ::io::deephaven::proto::backplane::script::grpc::AutoCompleteResponse
 template<> ::io::deephaven::proto::backplane::script::grpc::BindTableToVariableRequest* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::script::grpc::BindTableToVariableRequest>(Arena*);
 template<> ::io::deephaven::proto::backplane::script::grpc::BindTableToVariableResponse* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::script::grpc::BindTableToVariableResponse>(Arena*);
 template<> ::io::deephaven::proto::backplane::script::grpc::BrowserNextResponse* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::script::grpc::BrowserNextResponse>(Arena*);
+template<> ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteRequest* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteRequest>(Arena*);
+template<> ::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteResponse* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::script::grpc::CancelAutoCompleteResponse>(Arena*);
 template<> ::io::deephaven::proto::backplane::script::grpc::CancelCommandRequest* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::script::grpc::CancelCommandRequest>(Arena*);
 template<> ::io::deephaven::proto::backplane::script::grpc::CancelCommandResponse* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::script::grpc::CancelCommandResponse>(Arena*);
 template<> ::io::deephaven::proto::backplane::script::grpc::ChangeDocumentRequest* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::script::grpc::ChangeDocumentRequest>(Arena*);
@@ -208,6 +255,8 @@ template<> ::io::deephaven::proto::backplane::script::grpc::ChangeDocumentReques
 template<> ::io::deephaven::proto::backplane::script::grpc::CloseDocumentRequest* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::script::grpc::CloseDocumentRequest>(Arena*);
 template<> ::io::deephaven::proto::backplane::script::grpc::CompletionContext* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::script::grpc::CompletionContext>(Arena*);
 template<> ::io::deephaven::proto::backplane::script::grpc::CompletionItem* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::script::grpc::CompletionItem>(Arena*);
+template<> ::io::deephaven::proto::backplane::script::grpc::Diagnostic* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::script::grpc::Diagnostic>(Arena*);
+template<> ::io::deephaven::proto::backplane::script::grpc::Diagnostic_CodeDescription* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::script::grpc::Diagnostic_CodeDescription>(Arena*);
 template<> ::io::deephaven::proto::backplane::script::grpc::DocumentRange* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::script::grpc::DocumentRange>(Arena*);
 template<> ::io::deephaven::proto::backplane::script::grpc::ExecuteCommandRequest* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::script::grpc::ExecuteCommandRequest>(Arena*);
 template<> ::io::deephaven::proto::backplane::script::grpc::ExecuteCommandResponse* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::script::grpc::ExecuteCommandResponse>(Arena*);
@@ -230,12 +279,23 @@ template<> ::io::deephaven::proto::backplane::script::grpc::GetCompletionItemsRe
 template<> ::io::deephaven::proto::backplane::script::grpc::GetCompletionItemsResponse* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::script::grpc::GetCompletionItemsResponse>(Arena*);
 template<> ::io::deephaven::proto::backplane::script::grpc::GetConsoleTypesRequest* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::script::grpc::GetConsoleTypesRequest>(Arena*);
 template<> ::io::deephaven::proto::backplane::script::grpc::GetConsoleTypesResponse* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::script::grpc::GetConsoleTypesResponse>(Arena*);
+template<> ::io::deephaven::proto::backplane::script::grpc::GetDiagnosticRequest* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::script::grpc::GetDiagnosticRequest>(Arena*);
 template<> ::io::deephaven::proto::backplane::script::grpc::GetHeapInfoRequest* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::script::grpc::GetHeapInfoRequest>(Arena*);
 template<> ::io::deephaven::proto::backplane::script::grpc::GetHeapInfoResponse* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::script::grpc::GetHeapInfoResponse>(Arena*);
+template<> ::io::deephaven::proto::backplane::script::grpc::GetHoverRequest* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::script::grpc::GetHoverRequest>(Arena*);
+template<> ::io::deephaven::proto::backplane::script::grpc::GetHoverResponse* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::script::grpc::GetHoverResponse>(Arena*);
+template<> ::io::deephaven::proto::backplane::script::grpc::GetPublishDiagnosticResponse* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::script::grpc::GetPublishDiagnosticResponse>(Arena*);
+template<> ::io::deephaven::proto::backplane::script::grpc::GetPullDiagnosticResponse* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::script::grpc::GetPullDiagnosticResponse>(Arena*);
+template<> ::io::deephaven::proto::backplane::script::grpc::GetSignatureHelpRequest* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::script::grpc::GetSignatureHelpRequest>(Arena*);
+template<> ::io::deephaven::proto::backplane::script::grpc::GetSignatureHelpResponse* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::script::grpc::GetSignatureHelpResponse>(Arena*);
 template<> ::io::deephaven::proto::backplane::script::grpc::LogSubscriptionData* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::script::grpc::LogSubscriptionData>(Arena*);
 template<> ::io::deephaven::proto::backplane::script::grpc::LogSubscriptionRequest* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::script::grpc::LogSubscriptionRequest>(Arena*);
+template<> ::io::deephaven::proto::backplane::script::grpc::MarkupContent* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::script::grpc::MarkupContent>(Arena*);
 template<> ::io::deephaven::proto::backplane::script::grpc::OpenDocumentRequest* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::script::grpc::OpenDocumentRequest>(Arena*);
+template<> ::io::deephaven::proto::backplane::script::grpc::ParameterInformation* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::script::grpc::ParameterInformation>(Arena*);
 template<> ::io::deephaven::proto::backplane::script::grpc::Position* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::script::grpc::Position>(Arena*);
+template<> ::io::deephaven::proto::backplane::script::grpc::SignatureHelpContext* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::script::grpc::SignatureHelpContext>(Arena*);
+template<> ::io::deephaven::proto::backplane::script::grpc::SignatureInformation* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::script::grpc::SignatureInformation>(Arena*);
 template<> ::io::deephaven::proto::backplane::script::grpc::StartConsoleRequest* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::script::grpc::StartConsoleRequest>(Arena*);
 template<> ::io::deephaven::proto::backplane::script::grpc::StartConsoleResponse* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::script::grpc::StartConsoleResponse>(Arena*);
 template<> ::io::deephaven::proto::backplane::script::grpc::TextDocumentItem* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::script::grpc::TextDocumentItem>(Arena*);
@@ -249,6 +309,60 @@ namespace backplane {
 namespace script {
 namespace grpc {
 
+enum Diagnostic_DiagnosticSeverity : int {
+  Diagnostic_DiagnosticSeverity_NOT_SET_SEVERITY = 0,
+  Diagnostic_DiagnosticSeverity_ERROR = 1,
+  Diagnostic_DiagnosticSeverity_WARNING = 2,
+  Diagnostic_DiagnosticSeverity_INFORMATION = 3,
+  Diagnostic_DiagnosticSeverity_HINT = 4,
+  Diagnostic_DiagnosticSeverity_Diagnostic_DiagnosticSeverity_INT_MIN_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::min(),
+  Diagnostic_DiagnosticSeverity_Diagnostic_DiagnosticSeverity_INT_MAX_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::max()
+};
+bool Diagnostic_DiagnosticSeverity_IsValid(int value);
+constexpr Diagnostic_DiagnosticSeverity Diagnostic_DiagnosticSeverity_DiagnosticSeverity_MIN = Diagnostic_DiagnosticSeverity_NOT_SET_SEVERITY;
+constexpr Diagnostic_DiagnosticSeverity Diagnostic_DiagnosticSeverity_DiagnosticSeverity_MAX = Diagnostic_DiagnosticSeverity_HINT;
+constexpr int Diagnostic_DiagnosticSeverity_DiagnosticSeverity_ARRAYSIZE = Diagnostic_DiagnosticSeverity_DiagnosticSeverity_MAX + 1;
+
+const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* Diagnostic_DiagnosticSeverity_descriptor();
+template<typename T>
+inline const std::string& Diagnostic_DiagnosticSeverity_Name(T enum_t_value) {
+  static_assert(::std::is_same<T, Diagnostic_DiagnosticSeverity>::value ||
+    ::std::is_integral<T>::value,
+    "Incorrect type passed to function Diagnostic_DiagnosticSeverity_Name.");
+  return ::PROTOBUF_NAMESPACE_ID::internal::NameOfEnum(
+    Diagnostic_DiagnosticSeverity_descriptor(), enum_t_value);
+}
+inline bool Diagnostic_DiagnosticSeverity_Parse(
+    ::PROTOBUF_NAMESPACE_ID::ConstStringParam name, Diagnostic_DiagnosticSeverity* value) {
+  return ::PROTOBUF_NAMESPACE_ID::internal::ParseNamedEnum<Diagnostic_DiagnosticSeverity>(
+    Diagnostic_DiagnosticSeverity_descriptor(), name, value);
+}
+enum Diagnostic_DiagnosticTag : int {
+  Diagnostic_DiagnosticTag_NOT_SET_TAG = 0,
+  Diagnostic_DiagnosticTag_UNNECESSARY = 1,
+  Diagnostic_DiagnosticTag_DEPRECATED = 2,
+  Diagnostic_DiagnosticTag_Diagnostic_DiagnosticTag_INT_MIN_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::min(),
+  Diagnostic_DiagnosticTag_Diagnostic_DiagnosticTag_INT_MAX_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::max()
+};
+bool Diagnostic_DiagnosticTag_IsValid(int value);
+constexpr Diagnostic_DiagnosticTag Diagnostic_DiagnosticTag_DiagnosticTag_MIN = Diagnostic_DiagnosticTag_NOT_SET_TAG;
+constexpr Diagnostic_DiagnosticTag Diagnostic_DiagnosticTag_DiagnosticTag_MAX = Diagnostic_DiagnosticTag_DEPRECATED;
+constexpr int Diagnostic_DiagnosticTag_DiagnosticTag_ARRAYSIZE = Diagnostic_DiagnosticTag_DiagnosticTag_MAX + 1;
+
+const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* Diagnostic_DiagnosticTag_descriptor();
+template<typename T>
+inline const std::string& Diagnostic_DiagnosticTag_Name(T enum_t_value) {
+  static_assert(::std::is_same<T, Diagnostic_DiagnosticTag>::value ||
+    ::std::is_integral<T>::value,
+    "Incorrect type passed to function Diagnostic_DiagnosticTag_Name.");
+  return ::PROTOBUF_NAMESPACE_ID::internal::NameOfEnum(
+    Diagnostic_DiagnosticTag_descriptor(), enum_t_value);
+}
+inline bool Diagnostic_DiagnosticTag_Parse(
+    ::PROTOBUF_NAMESPACE_ID::ConstStringParam name, Diagnostic_DiagnosticTag* value) {
+  return ::PROTOBUF_NAMESPACE_ID::internal::ParseNamedEnum<Diagnostic_DiagnosticTag>(
+    Diagnostic_DiagnosticTag_descriptor(), name, value);
+}
 enum FigureDescriptor_ChartDescriptor_ChartType : int {
   FigureDescriptor_ChartDescriptor_ChartType_XY = 0,
   FigureDescriptor_ChartDescriptor_ChartType_PIE = 1,
@@ -2617,6 +2731,285 @@ class CancelCommandResponse final :
 };
 // -------------------------------------------------------------------
 
+class CancelAutoCompleteRequest final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:io.deephaven.proto.backplane.script.grpc.CancelAutoCompleteRequest) */ {
+ public:
+  inline CancelAutoCompleteRequest() : CancelAutoCompleteRequest(nullptr) {}
+  ~CancelAutoCompleteRequest() override;
+  explicit PROTOBUF_CONSTEXPR CancelAutoCompleteRequest(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  CancelAutoCompleteRequest(const CancelAutoCompleteRequest& from);
+  CancelAutoCompleteRequest(CancelAutoCompleteRequest&& from) noexcept
+    : CancelAutoCompleteRequest() {
+    *this = ::std::move(from);
+  }
+
+  inline CancelAutoCompleteRequest& operator=(const CancelAutoCompleteRequest& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline CancelAutoCompleteRequest& operator=(CancelAutoCompleteRequest&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const CancelAutoCompleteRequest& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const CancelAutoCompleteRequest* internal_default_instance() {
+    return reinterpret_cast<const CancelAutoCompleteRequest*>(
+               &_CancelAutoCompleteRequest_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    14;
+
+  friend void swap(CancelAutoCompleteRequest& a, CancelAutoCompleteRequest& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(CancelAutoCompleteRequest* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(CancelAutoCompleteRequest* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  CancelAutoCompleteRequest* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<CancelAutoCompleteRequest>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const CancelAutoCompleteRequest& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom(const CancelAutoCompleteRequest& from);
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to, const ::PROTOBUF_NAMESPACE_ID::Message& from);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _cached_size_.Get(); }
+
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(CancelAutoCompleteRequest* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "io.deephaven.proto.backplane.script.grpc.CancelAutoCompleteRequest";
+  }
+  protected:
+  explicit CancelAutoCompleteRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kConsoleIdFieldNumber = 1,
+    kRequestIdFieldNumber = 2,
+  };
+  // .io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
+  bool has_console_id() const;
+  private:
+  bool _internal_has_console_id() const;
+  public:
+  void clear_console_id();
+  const ::io::deephaven::proto::backplane::grpc::Ticket& console_id() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::Ticket* release_console_id();
+  ::io::deephaven::proto::backplane::grpc::Ticket* mutable_console_id();
+  void set_allocated_console_id(::io::deephaven::proto::backplane::grpc::Ticket* console_id);
+  private:
+  const ::io::deephaven::proto::backplane::grpc::Ticket& _internal_console_id() const;
+  ::io::deephaven::proto::backplane::grpc::Ticket* _internal_mutable_console_id();
+  public:
+  void unsafe_arena_set_allocated_console_id(
+      ::io::deephaven::proto::backplane::grpc::Ticket* console_id);
+  ::io::deephaven::proto::backplane::grpc::Ticket* unsafe_arena_release_console_id();
+
+  // int32 request_id = 2;
+  void clear_request_id();
+  int32_t request_id() const;
+  void set_request_id(int32_t value);
+  private:
+  int32_t _internal_request_id() const;
+  void _internal_set_request_id(int32_t value);
+  public:
+
+  // @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.script.grpc.CancelAutoCompleteRequest)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  ::io::deephaven::proto::backplane::grpc::Ticket* console_id_;
+  int32_t request_id_;
+  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  friend struct ::TableStruct_deephaven_2fproto_2fconsole_2eproto;
+};
+// -------------------------------------------------------------------
+
+class CancelAutoCompleteResponse final :
+    public ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase /* @@protoc_insertion_point(class_definition:io.deephaven.proto.backplane.script.grpc.CancelAutoCompleteResponse) */ {
+ public:
+  inline CancelAutoCompleteResponse() : CancelAutoCompleteResponse(nullptr) {}
+  explicit PROTOBUF_CONSTEXPR CancelAutoCompleteResponse(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  CancelAutoCompleteResponse(const CancelAutoCompleteResponse& from);
+  CancelAutoCompleteResponse(CancelAutoCompleteResponse&& from) noexcept
+    : CancelAutoCompleteResponse() {
+    *this = ::std::move(from);
+  }
+
+  inline CancelAutoCompleteResponse& operator=(const CancelAutoCompleteResponse& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline CancelAutoCompleteResponse& operator=(CancelAutoCompleteResponse&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const CancelAutoCompleteResponse& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const CancelAutoCompleteResponse* internal_default_instance() {
+    return reinterpret_cast<const CancelAutoCompleteResponse*>(
+               &_CancelAutoCompleteResponse_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    15;
+
+  friend void swap(CancelAutoCompleteResponse& a, CancelAutoCompleteResponse& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(CancelAutoCompleteResponse* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(CancelAutoCompleteResponse* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  CancelAutoCompleteResponse* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<CancelAutoCompleteResponse>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase::CopyFrom;
+  inline void CopyFrom(const CancelAutoCompleteResponse& from) {
+    ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase::CopyImpl(this, from);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase::MergeFrom;
+  void MergeFrom(const CancelAutoCompleteResponse& from) {
+    ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase::MergeImpl(this, from);
+  }
+  public:
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "io.deephaven.proto.backplane.script.grpc.CancelAutoCompleteResponse";
+  }
+  protected:
+  explicit CancelAutoCompleteResponse(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  // @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.script.grpc.CancelAutoCompleteResponse)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  friend struct ::TableStruct_deephaven_2fproto_2fconsole_2eproto;
+};
+// -------------------------------------------------------------------
+
 class AutoCompleteRequest final :
     public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:io.deephaven.proto.backplane.script.grpc.AutoCompleteRequest) */ {
  public:
@@ -2664,6 +3057,9 @@ class AutoCompleteRequest final :
     kOpenDocument = 1,
     kChangeDocument = 2,
     kGetCompletionItems = 3,
+    kGetSignatureHelp = 7,
+    kGetHover = 8,
+    kGetDiagnostic = 9,
     kCloseDocument = 4,
     REQUEST_NOT_SET = 0,
   };
@@ -2673,7 +3069,7 @@ class AutoCompleteRequest final :
                &_AutoCompleteRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    14;
+    16;
 
   friend void swap(AutoCompleteRequest& a, AutoCompleteRequest& b) {
     a.Swap(&b);
@@ -2744,11 +3140,43 @@ class AutoCompleteRequest final :
   // accessors -------------------------------------------------------
 
   enum : int {
+    kConsoleIdFieldNumber = 5,
+    kRequestIdFieldNumber = 6,
     kOpenDocumentFieldNumber = 1,
     kChangeDocumentFieldNumber = 2,
     kGetCompletionItemsFieldNumber = 3,
+    kGetSignatureHelpFieldNumber = 7,
+    kGetHoverFieldNumber = 8,
+    kGetDiagnosticFieldNumber = 9,
     kCloseDocumentFieldNumber = 4,
   };
+  // .io.deephaven.proto.backplane.grpc.Ticket console_id = 5;
+  bool has_console_id() const;
+  private:
+  bool _internal_has_console_id() const;
+  public:
+  void clear_console_id();
+  const ::io::deephaven::proto::backplane::grpc::Ticket& console_id() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::Ticket* release_console_id();
+  ::io::deephaven::proto::backplane::grpc::Ticket* mutable_console_id();
+  void set_allocated_console_id(::io::deephaven::proto::backplane::grpc::Ticket* console_id);
+  private:
+  const ::io::deephaven::proto::backplane::grpc::Ticket& _internal_console_id() const;
+  ::io::deephaven::proto::backplane::grpc::Ticket* _internal_mutable_console_id();
+  public:
+  void unsafe_arena_set_allocated_console_id(
+      ::io::deephaven::proto::backplane::grpc::Ticket* console_id);
+  ::io::deephaven::proto::backplane::grpc::Ticket* unsafe_arena_release_console_id();
+
+  // int32 request_id = 6;
+  void clear_request_id();
+  int32_t request_id() const;
+  void set_request_id(int32_t value);
+  private:
+  int32_t _internal_request_id() const;
+  void _internal_set_request_id(int32_t value);
+  public:
+
   // .io.deephaven.proto.backplane.script.grpc.OpenDocumentRequest open_document = 1;
   bool has_open_document() const;
   private:
@@ -2803,6 +3231,60 @@ class AutoCompleteRequest final :
       ::io::deephaven::proto::backplane::script::grpc::GetCompletionItemsRequest* get_completion_items);
   ::io::deephaven::proto::backplane::script::grpc::GetCompletionItemsRequest* unsafe_arena_release_get_completion_items();
 
+  // .io.deephaven.proto.backplane.script.grpc.GetSignatureHelpRequest get_signature_help = 7;
+  bool has_get_signature_help() const;
+  private:
+  bool _internal_has_get_signature_help() const;
+  public:
+  void clear_get_signature_help();
+  const ::io::deephaven::proto::backplane::script::grpc::GetSignatureHelpRequest& get_signature_help() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::script::grpc::GetSignatureHelpRequest* release_get_signature_help();
+  ::io::deephaven::proto::backplane::script::grpc::GetSignatureHelpRequest* mutable_get_signature_help();
+  void set_allocated_get_signature_help(::io::deephaven::proto::backplane::script::grpc::GetSignatureHelpRequest* get_signature_help);
+  private:
+  const ::io::deephaven::proto::backplane::script::grpc::GetSignatureHelpRequest& _internal_get_signature_help() const;
+  ::io::deephaven::proto::backplane::script::grpc::GetSignatureHelpRequest* _internal_mutable_get_signature_help();
+  public:
+  void unsafe_arena_set_allocated_get_signature_help(
+      ::io::deephaven::proto::backplane::script::grpc::GetSignatureHelpRequest* get_signature_help);
+  ::io::deephaven::proto::backplane::script::grpc::GetSignatureHelpRequest* unsafe_arena_release_get_signature_help();
+
+  // .io.deephaven.proto.backplane.script.grpc.GetHoverRequest get_hover = 8;
+  bool has_get_hover() const;
+  private:
+  bool _internal_has_get_hover() const;
+  public:
+  void clear_get_hover();
+  const ::io::deephaven::proto::backplane::script::grpc::GetHoverRequest& get_hover() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::script::grpc::GetHoverRequest* release_get_hover();
+  ::io::deephaven::proto::backplane::script::grpc::GetHoverRequest* mutable_get_hover();
+  void set_allocated_get_hover(::io::deephaven::proto::backplane::script::grpc::GetHoverRequest* get_hover);
+  private:
+  const ::io::deephaven::proto::backplane::script::grpc::GetHoverRequest& _internal_get_hover() const;
+  ::io::deephaven::proto::backplane::script::grpc::GetHoverRequest* _internal_mutable_get_hover();
+  public:
+  void unsafe_arena_set_allocated_get_hover(
+      ::io::deephaven::proto::backplane::script::grpc::GetHoverRequest* get_hover);
+  ::io::deephaven::proto::backplane::script::grpc::GetHoverRequest* unsafe_arena_release_get_hover();
+
+  // .io.deephaven.proto.backplane.script.grpc.GetDiagnosticRequest get_diagnostic = 9;
+  bool has_get_diagnostic() const;
+  private:
+  bool _internal_has_get_diagnostic() const;
+  public:
+  void clear_get_diagnostic();
+  const ::io::deephaven::proto::backplane::script::grpc::GetDiagnosticRequest& get_diagnostic() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::script::grpc::GetDiagnosticRequest* release_get_diagnostic();
+  ::io::deephaven::proto::backplane::script::grpc::GetDiagnosticRequest* mutable_get_diagnostic();
+  void set_allocated_get_diagnostic(::io::deephaven::proto::backplane::script::grpc::GetDiagnosticRequest* get_diagnostic);
+  private:
+  const ::io::deephaven::proto::backplane::script::grpc::GetDiagnosticRequest& _internal_get_diagnostic() const;
+  ::io::deephaven::proto::backplane::script::grpc::GetDiagnosticRequest* _internal_mutable_get_diagnostic();
+  public:
+  void unsafe_arena_set_allocated_get_diagnostic(
+      ::io::deephaven::proto::backplane::script::grpc::GetDiagnosticRequest* get_diagnostic);
+  ::io::deephaven::proto::backplane::script::grpc::GetDiagnosticRequest* unsafe_arena_release_get_diagnostic();
+
   // .io.deephaven.proto.backplane.script.grpc.CloseDocumentRequest close_document = 4;
   bool has_close_document() const;
   private:
@@ -2829,6 +3311,9 @@ class AutoCompleteRequest final :
   void set_has_open_document();
   void set_has_change_document();
   void set_has_get_completion_items();
+  void set_has_get_signature_help();
+  void set_has_get_hover();
+  void set_has_get_diagnostic();
   void set_has_close_document();
 
   inline bool has_request() const;
@@ -2837,12 +3322,17 @@ class AutoCompleteRequest final :
   template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
+  ::io::deephaven::proto::backplane::grpc::Ticket* console_id_;
+  int32_t request_id_;
   union RequestUnion {
     constexpr RequestUnion() : _constinit_{} {}
       ::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized _constinit_;
     ::io::deephaven::proto::backplane::script::grpc::OpenDocumentRequest* open_document_;
     ::io::deephaven::proto::backplane::script::grpc::ChangeDocumentRequest* change_document_;
     ::io::deephaven::proto::backplane::script::grpc::GetCompletionItemsRequest* get_completion_items_;
+    ::io::deephaven::proto::backplane::script::grpc::GetSignatureHelpRequest* get_signature_help_;
+    ::io::deephaven::proto::backplane::script::grpc::GetHoverRequest* get_hover_;
+    ::io::deephaven::proto::backplane::script::grpc::GetDiagnosticRequest* get_diagnostic_;
     ::io::deephaven::proto::backplane::script::grpc::CloseDocumentRequest* close_document_;
   } request_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
@@ -2897,6 +3387,10 @@ class AutoCompleteResponse final :
   }
   enum ResponseCase {
     kCompletionItems = 1,
+    kSignatures = 4,
+    kHover = 5,
+    kDiagnostic = 6,
+    kDiagnosticPublish = 7,
     RESPONSE_NOT_SET = 0,
   };
 
@@ -2905,7 +3399,7 @@ class AutoCompleteResponse final :
                &_AutoCompleteResponse_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    15;
+    17;
 
   friend void swap(AutoCompleteResponse& a, AutoCompleteResponse& b) {
     a.Swap(&b);
@@ -2976,8 +3470,32 @@ class AutoCompleteResponse final :
   // accessors -------------------------------------------------------
 
   enum : int {
+    kRequestIdFieldNumber = 2,
+    kSuccessFieldNumber = 3,
     kCompletionItemsFieldNumber = 1,
+    kSignaturesFieldNumber = 4,
+    kHoverFieldNumber = 5,
+    kDiagnosticFieldNumber = 6,
+    kDiagnosticPublishFieldNumber = 7,
   };
+  // int32 request_id = 2;
+  void clear_request_id();
+  int32_t request_id() const;
+  void set_request_id(int32_t value);
+  private:
+  int32_t _internal_request_id() const;
+  void _internal_set_request_id(int32_t value);
+  public:
+
+  // bool success = 3;
+  void clear_success();
+  bool success() const;
+  void set_success(bool value);
+  private:
+  bool _internal_success() const;
+  void _internal_set_success(bool value);
+  public:
+
   // .io.deephaven.proto.backplane.script.grpc.GetCompletionItemsResponse completion_items = 1;
   bool has_completion_items() const;
   private:
@@ -2996,12 +3514,88 @@ class AutoCompleteResponse final :
       ::io::deephaven::proto::backplane::script::grpc::GetCompletionItemsResponse* completion_items);
   ::io::deephaven::proto::backplane::script::grpc::GetCompletionItemsResponse* unsafe_arena_release_completion_items();
 
+  // .io.deephaven.proto.backplane.script.grpc.GetSignatureHelpResponse signatures = 4;
+  bool has_signatures() const;
+  private:
+  bool _internal_has_signatures() const;
+  public:
+  void clear_signatures();
+  const ::io::deephaven::proto::backplane::script::grpc::GetSignatureHelpResponse& signatures() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::script::grpc::GetSignatureHelpResponse* release_signatures();
+  ::io::deephaven::proto::backplane::script::grpc::GetSignatureHelpResponse* mutable_signatures();
+  void set_allocated_signatures(::io::deephaven::proto::backplane::script::grpc::GetSignatureHelpResponse* signatures);
+  private:
+  const ::io::deephaven::proto::backplane::script::grpc::GetSignatureHelpResponse& _internal_signatures() const;
+  ::io::deephaven::proto::backplane::script::grpc::GetSignatureHelpResponse* _internal_mutable_signatures();
+  public:
+  void unsafe_arena_set_allocated_signatures(
+      ::io::deephaven::proto::backplane::script::grpc::GetSignatureHelpResponse* signatures);
+  ::io::deephaven::proto::backplane::script::grpc::GetSignatureHelpResponse* unsafe_arena_release_signatures();
+
+  // .io.deephaven.proto.backplane.script.grpc.GetHoverResponse hover = 5;
+  bool has_hover() const;
+  private:
+  bool _internal_has_hover() const;
+  public:
+  void clear_hover();
+  const ::io::deephaven::proto::backplane::script::grpc::GetHoverResponse& hover() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::script::grpc::GetHoverResponse* release_hover();
+  ::io::deephaven::proto::backplane::script::grpc::GetHoverResponse* mutable_hover();
+  void set_allocated_hover(::io::deephaven::proto::backplane::script::grpc::GetHoverResponse* hover);
+  private:
+  const ::io::deephaven::proto::backplane::script::grpc::GetHoverResponse& _internal_hover() const;
+  ::io::deephaven::proto::backplane::script::grpc::GetHoverResponse* _internal_mutable_hover();
+  public:
+  void unsafe_arena_set_allocated_hover(
+      ::io::deephaven::proto::backplane::script::grpc::GetHoverResponse* hover);
+  ::io::deephaven::proto::backplane::script::grpc::GetHoverResponse* unsafe_arena_release_hover();
+
+  // .io.deephaven.proto.backplane.script.grpc.GetPullDiagnosticResponse diagnostic = 6;
+  bool has_diagnostic() const;
+  private:
+  bool _internal_has_diagnostic() const;
+  public:
+  void clear_diagnostic();
+  const ::io::deephaven::proto::backplane::script::grpc::GetPullDiagnosticResponse& diagnostic() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::script::grpc::GetPullDiagnosticResponse* release_diagnostic();
+  ::io::deephaven::proto::backplane::script::grpc::GetPullDiagnosticResponse* mutable_diagnostic();
+  void set_allocated_diagnostic(::io::deephaven::proto::backplane::script::grpc::GetPullDiagnosticResponse* diagnostic);
+  private:
+  const ::io::deephaven::proto::backplane::script::grpc::GetPullDiagnosticResponse& _internal_diagnostic() const;
+  ::io::deephaven::proto::backplane::script::grpc::GetPullDiagnosticResponse* _internal_mutable_diagnostic();
+  public:
+  void unsafe_arena_set_allocated_diagnostic(
+      ::io::deephaven::proto::backplane::script::grpc::GetPullDiagnosticResponse* diagnostic);
+  ::io::deephaven::proto::backplane::script::grpc::GetPullDiagnosticResponse* unsafe_arena_release_diagnostic();
+
+  // .io.deephaven.proto.backplane.script.grpc.GetPublishDiagnosticResponse diagnostic_publish = 7;
+  bool has_diagnostic_publish() const;
+  private:
+  bool _internal_has_diagnostic_publish() const;
+  public:
+  void clear_diagnostic_publish();
+  const ::io::deephaven::proto::backplane::script::grpc::GetPublishDiagnosticResponse& diagnostic_publish() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::script::grpc::GetPublishDiagnosticResponse* release_diagnostic_publish();
+  ::io::deephaven::proto::backplane::script::grpc::GetPublishDiagnosticResponse* mutable_diagnostic_publish();
+  void set_allocated_diagnostic_publish(::io::deephaven::proto::backplane::script::grpc::GetPublishDiagnosticResponse* diagnostic_publish);
+  private:
+  const ::io::deephaven::proto::backplane::script::grpc::GetPublishDiagnosticResponse& _internal_diagnostic_publish() const;
+  ::io::deephaven::proto::backplane::script::grpc::GetPublishDiagnosticResponse* _internal_mutable_diagnostic_publish();
+  public:
+  void unsafe_arena_set_allocated_diagnostic_publish(
+      ::io::deephaven::proto::backplane::script::grpc::GetPublishDiagnosticResponse* diagnostic_publish);
+  ::io::deephaven::proto::backplane::script::grpc::GetPublishDiagnosticResponse* unsafe_arena_release_diagnostic_publish();
+
   void clear_response();
   ResponseCase response_case() const;
   // @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.script.grpc.AutoCompleteResponse)
  private:
   class _Internal;
   void set_has_completion_items();
+  void set_has_signatures();
+  void set_has_hover();
+  void set_has_diagnostic();
+  void set_has_diagnostic_publish();
 
   inline bool has_response() const;
   inline void clear_has_response();
@@ -3009,10 +3603,16 @@ class AutoCompleteResponse final :
   template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
+  int32_t request_id_;
+  bool success_;
   union ResponseUnion {
     constexpr ResponseUnion() : _constinit_{} {}
       ::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized _constinit_;
     ::io::deephaven::proto::backplane::script::grpc::GetCompletionItemsResponse* completion_items_;
+    ::io::deephaven::proto::backplane::script::grpc::GetSignatureHelpResponse* signatures_;
+    ::io::deephaven::proto::backplane::script::grpc::GetHoverResponse* hover_;
+    ::io::deephaven::proto::backplane::script::grpc::GetPullDiagnosticResponse* diagnostic_;
+    ::io::deephaven::proto::backplane::script::grpc::GetPublishDiagnosticResponse* diagnostic_publish_;
   } response_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   uint32_t _oneof_case_[1];
@@ -3068,7 +3668,7 @@ class BrowserNextResponse final :
                &_BrowserNextResponse_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    16;
+    18;
 
   friend void swap(BrowserNextResponse& a, BrowserNextResponse& b) {
     a.Swap(&b);
@@ -3185,7 +3785,7 @@ class OpenDocumentRequest final :
                &_OpenDocumentRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    17;
+    19;
 
   friend void swap(OpenDocumentRequest& a, OpenDocumentRequest& b) {
     a.Swap(&b);
@@ -3259,23 +3859,23 @@ class OpenDocumentRequest final :
     kConsoleIdFieldNumber = 1,
     kTextDocumentFieldNumber = 2,
   };
-  // .io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
-  bool has_console_id() const;
+  // .io.deephaven.proto.backplane.grpc.Ticket console_id = 1 [deprecated = true];
+  PROTOBUF_DEPRECATED bool has_console_id() const;
   private:
   bool _internal_has_console_id() const;
   public:
-  void clear_console_id();
-  const ::io::deephaven::proto::backplane::grpc::Ticket& console_id() const;
-  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::Ticket* release_console_id();
-  ::io::deephaven::proto::backplane::grpc::Ticket* mutable_console_id();
-  void set_allocated_console_id(::io::deephaven::proto::backplane::grpc::Ticket* console_id);
+  PROTOBUF_DEPRECATED void clear_console_id();
+  PROTOBUF_DEPRECATED const ::io::deephaven::proto::backplane::grpc::Ticket& console_id() const;
+  PROTOBUF_NODISCARD PROTOBUF_DEPRECATED ::io::deephaven::proto::backplane::grpc::Ticket* release_console_id();
+  PROTOBUF_DEPRECATED ::io::deephaven::proto::backplane::grpc::Ticket* mutable_console_id();
+  PROTOBUF_DEPRECATED void set_allocated_console_id(::io::deephaven::proto::backplane::grpc::Ticket* console_id);
   private:
   const ::io::deephaven::proto::backplane::grpc::Ticket& _internal_console_id() const;
   ::io::deephaven::proto::backplane::grpc::Ticket* _internal_mutable_console_id();
   public:
-  void unsafe_arena_set_allocated_console_id(
+  PROTOBUF_DEPRECATED void unsafe_arena_set_allocated_console_id(
       ::io::deephaven::proto::backplane::grpc::Ticket* console_id);
-  ::io::deephaven::proto::backplane::grpc::Ticket* unsafe_arena_release_console_id();
+  PROTOBUF_DEPRECATED ::io::deephaven::proto::backplane::grpc::Ticket* unsafe_arena_release_console_id();
 
   // .io.deephaven.proto.backplane.script.grpc.TextDocumentItem text_document = 2;
   bool has_text_document() const;
@@ -3357,7 +3957,7 @@ class TextDocumentItem final :
                &_TextDocumentItem_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    18;
+    20;
 
   friend void swap(TextDocumentItem& a, TextDocumentItem& b) {
     a.Swap(&b);
@@ -3548,7 +4148,7 @@ class CloseDocumentRequest final :
                &_CloseDocumentRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    19;
+    21;
 
   friend void swap(CloseDocumentRequest& a, CloseDocumentRequest& b) {
     a.Swap(&b);
@@ -3622,23 +4222,23 @@ class CloseDocumentRequest final :
     kConsoleIdFieldNumber = 1,
     kTextDocumentFieldNumber = 2,
   };
-  // .io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
-  bool has_console_id() const;
+  // .io.deephaven.proto.backplane.grpc.Ticket console_id = 1 [deprecated = true];
+  PROTOBUF_DEPRECATED bool has_console_id() const;
   private:
   bool _internal_has_console_id() const;
   public:
-  void clear_console_id();
-  const ::io::deephaven::proto::backplane::grpc::Ticket& console_id() const;
-  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::Ticket* release_console_id();
-  ::io::deephaven::proto::backplane::grpc::Ticket* mutable_console_id();
-  void set_allocated_console_id(::io::deephaven::proto::backplane::grpc::Ticket* console_id);
+  PROTOBUF_DEPRECATED void clear_console_id();
+  PROTOBUF_DEPRECATED const ::io::deephaven::proto::backplane::grpc::Ticket& console_id() const;
+  PROTOBUF_NODISCARD PROTOBUF_DEPRECATED ::io::deephaven::proto::backplane::grpc::Ticket* release_console_id();
+  PROTOBUF_DEPRECATED ::io::deephaven::proto::backplane::grpc::Ticket* mutable_console_id();
+  PROTOBUF_DEPRECATED void set_allocated_console_id(::io::deephaven::proto::backplane::grpc::Ticket* console_id);
   private:
   const ::io::deephaven::proto::backplane::grpc::Ticket& _internal_console_id() const;
   ::io::deephaven::proto::backplane::grpc::Ticket* _internal_mutable_console_id();
   public:
-  void unsafe_arena_set_allocated_console_id(
+  PROTOBUF_DEPRECATED void unsafe_arena_set_allocated_console_id(
       ::io::deephaven::proto::backplane::grpc::Ticket* console_id);
-  ::io::deephaven::proto::backplane::grpc::Ticket* unsafe_arena_release_console_id();
+  PROTOBUF_DEPRECATED ::io::deephaven::proto::backplane::grpc::Ticket* unsafe_arena_release_console_id();
 
   // .io.deephaven.proto.backplane.script.grpc.VersionedTextDocumentIdentifier text_document = 2;
   bool has_text_document() const;
@@ -3720,7 +4320,7 @@ class ChangeDocumentRequest_TextDocumentContentChangeEvent final :
                &_ChangeDocumentRequest_TextDocumentContentChangeEvent_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    20;
+    22;
 
   friend void swap(ChangeDocumentRequest_TextDocumentContentChangeEvent& a, ChangeDocumentRequest_TextDocumentContentChangeEvent& b) {
     a.Swap(&b);
@@ -3899,7 +4499,7 @@ class ChangeDocumentRequest final :
                &_ChangeDocumentRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    21;
+    23;
 
   friend void swap(ChangeDocumentRequest& a, ChangeDocumentRequest& b) {
     a.Swap(&b);
@@ -3994,23 +4594,23 @@ class ChangeDocumentRequest final :
   const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::io::deephaven::proto::backplane::script::grpc::ChangeDocumentRequest_TextDocumentContentChangeEvent >&
       content_changes() const;
 
-  // .io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
-  bool has_console_id() const;
+  // .io.deephaven.proto.backplane.grpc.Ticket console_id = 1 [deprecated = true];
+  PROTOBUF_DEPRECATED bool has_console_id() const;
   private:
   bool _internal_has_console_id() const;
   public:
-  void clear_console_id();
-  const ::io::deephaven::proto::backplane::grpc::Ticket& console_id() const;
-  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::Ticket* release_console_id();
-  ::io::deephaven::proto::backplane::grpc::Ticket* mutable_console_id();
-  void set_allocated_console_id(::io::deephaven::proto::backplane::grpc::Ticket* console_id);
+  PROTOBUF_DEPRECATED void clear_console_id();
+  PROTOBUF_DEPRECATED const ::io::deephaven::proto::backplane::grpc::Ticket& console_id() const;
+  PROTOBUF_NODISCARD PROTOBUF_DEPRECATED ::io::deephaven::proto::backplane::grpc::Ticket* release_console_id();
+  PROTOBUF_DEPRECATED ::io::deephaven::proto::backplane::grpc::Ticket* mutable_console_id();
+  PROTOBUF_DEPRECATED void set_allocated_console_id(::io::deephaven::proto::backplane::grpc::Ticket* console_id);
   private:
   const ::io::deephaven::proto::backplane::grpc::Ticket& _internal_console_id() const;
   ::io::deephaven::proto::backplane::grpc::Ticket* _internal_mutable_console_id();
   public:
-  void unsafe_arena_set_allocated_console_id(
+  PROTOBUF_DEPRECATED void unsafe_arena_set_allocated_console_id(
       ::io::deephaven::proto::backplane::grpc::Ticket* console_id);
-  ::io::deephaven::proto::backplane::grpc::Ticket* unsafe_arena_release_console_id();
+  PROTOBUF_DEPRECATED ::io::deephaven::proto::backplane::grpc::Ticket* unsafe_arena_release_console_id();
 
   // .io.deephaven.proto.backplane.script.grpc.VersionedTextDocumentIdentifier text_document = 2;
   bool has_text_document() const;
@@ -4093,7 +4693,7 @@ class DocumentRange final :
                &_DocumentRange_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    22;
+    24;
 
   friend void swap(DocumentRange& a, DocumentRange& b) {
     a.Swap(&b);
@@ -4265,7 +4865,7 @@ class VersionedTextDocumentIdentifier final :
                &_VersionedTextDocumentIdentifier_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    23;
+    25;
 
   friend void swap(VersionedTextDocumentIdentifier& a, VersionedTextDocumentIdentifier& b) {
     a.Swap(&b);
@@ -4424,7 +5024,7 @@ class Position final :
                &_Position_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    24;
+    26;
 
   friend void swap(Position& a, Position& b) {
     a.Swap(&b);
@@ -4530,6 +5130,170 @@ class Position final :
 };
 // -------------------------------------------------------------------
 
+class MarkupContent final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:io.deephaven.proto.backplane.script.grpc.MarkupContent) */ {
+ public:
+  inline MarkupContent() : MarkupContent(nullptr) {}
+  ~MarkupContent() override;
+  explicit PROTOBUF_CONSTEXPR MarkupContent(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  MarkupContent(const MarkupContent& from);
+  MarkupContent(MarkupContent&& from) noexcept
+    : MarkupContent() {
+    *this = ::std::move(from);
+  }
+
+  inline MarkupContent& operator=(const MarkupContent& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline MarkupContent& operator=(MarkupContent&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const MarkupContent& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const MarkupContent* internal_default_instance() {
+    return reinterpret_cast<const MarkupContent*>(
+               &_MarkupContent_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    27;
+
+  friend void swap(MarkupContent& a, MarkupContent& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(MarkupContent* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(MarkupContent* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  MarkupContent* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<MarkupContent>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const MarkupContent& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom(const MarkupContent& from);
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to, const ::PROTOBUF_NAMESPACE_ID::Message& from);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _cached_size_.Get(); }
+
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(MarkupContent* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "io.deephaven.proto.backplane.script.grpc.MarkupContent";
+  }
+  protected:
+  explicit MarkupContent(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kKindFieldNumber = 1,
+    kValueFieldNumber = 2,
+  };
+  // string kind = 1;
+  void clear_kind();
+  const std::string& kind() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_kind(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_kind();
+  PROTOBUF_NODISCARD std::string* release_kind();
+  void set_allocated_kind(std::string* kind);
+  private:
+  const std::string& _internal_kind() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_kind(const std::string& value);
+  std::string* _internal_mutable_kind();
+  public:
+
+  // string value = 2;
+  void clear_value();
+  const std::string& value() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_value(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_value();
+  PROTOBUF_NODISCARD std::string* release_value();
+  void set_allocated_value(std::string* value);
+  private:
+  const std::string& _internal_value() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_value(const std::string& value);
+  std::string* _internal_mutable_value();
+  public:
+
+  // @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.script.grpc.MarkupContent)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr kind_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr value_;
+  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  friend struct ::TableStruct_deephaven_2fproto_2fconsole_2eproto;
+};
+// -------------------------------------------------------------------
+
 class GetCompletionItemsRequest final :
     public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:io.deephaven.proto.backplane.script.grpc.GetCompletionItemsRequest) */ {
  public:
@@ -4578,7 +5342,7 @@ class GetCompletionItemsRequest final :
                &_GetCompletionItemsRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    25;
+    28;
 
   friend void swap(GetCompletionItemsRequest& a, GetCompletionItemsRequest& b) {
     a.Swap(&b);
@@ -4655,23 +5419,23 @@ class GetCompletionItemsRequest final :
     kPositionFieldNumber = 4,
     kRequestIdFieldNumber = 5,
   };
-  // .io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
-  bool has_console_id() const;
+  // .io.deephaven.proto.backplane.grpc.Ticket console_id = 1 [deprecated = true];
+  PROTOBUF_DEPRECATED bool has_console_id() const;
   private:
   bool _internal_has_console_id() const;
   public:
-  void clear_console_id();
-  const ::io::deephaven::proto::backplane::grpc::Ticket& console_id() const;
-  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::Ticket* release_console_id();
-  ::io::deephaven::proto::backplane::grpc::Ticket* mutable_console_id();
-  void set_allocated_console_id(::io::deephaven::proto::backplane::grpc::Ticket* console_id);
+  PROTOBUF_DEPRECATED void clear_console_id();
+  PROTOBUF_DEPRECATED const ::io::deephaven::proto::backplane::grpc::Ticket& console_id() const;
+  PROTOBUF_NODISCARD PROTOBUF_DEPRECATED ::io::deephaven::proto::backplane::grpc::Ticket* release_console_id();
+  PROTOBUF_DEPRECATED ::io::deephaven::proto::backplane::grpc::Ticket* mutable_console_id();
+  PROTOBUF_DEPRECATED void set_allocated_console_id(::io::deephaven::proto::backplane::grpc::Ticket* console_id);
   private:
   const ::io::deephaven::proto::backplane::grpc::Ticket& _internal_console_id() const;
   ::io::deephaven::proto::backplane::grpc::Ticket* _internal_mutable_console_id();
   public:
-  void unsafe_arena_set_allocated_console_id(
+  PROTOBUF_DEPRECATED void unsafe_arena_set_allocated_console_id(
       ::io::deephaven::proto::backplane::grpc::Ticket* console_id);
-  ::io::deephaven::proto::backplane::grpc::Ticket* unsafe_arena_release_console_id();
+  PROTOBUF_DEPRECATED ::io::deephaven::proto::backplane::grpc::Ticket* unsafe_arena_release_console_id();
 
   // .io.deephaven.proto.backplane.script.grpc.CompletionContext context = 2;
   bool has_context() const;
@@ -4727,10 +5491,10 @@ class GetCompletionItemsRequest final :
       ::io::deephaven::proto::backplane::script::grpc::Position* position);
   ::io::deephaven::proto::backplane::script::grpc::Position* unsafe_arena_release_position();
 
-  // int32 request_id = 5;
-  void clear_request_id();
-  int32_t request_id() const;
-  void set_request_id(int32_t value);
+  // int32 request_id = 5 [deprecated = true];
+  PROTOBUF_DEPRECATED void clear_request_id();
+  PROTOBUF_DEPRECATED int32_t request_id() const;
+  PROTOBUF_DEPRECATED void set_request_id(int32_t value);
   private:
   int32_t _internal_request_id() const;
   void _internal_set_request_id(int32_t value);
@@ -4801,7 +5565,7 @@ class CompletionContext final :
                &_CompletionContext_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    26;
+    29;
 
   friend void swap(CompletionContext& a, CompletionContext& b) {
     a.Swap(&b);
@@ -4960,7 +5724,7 @@ class GetCompletionItemsResponse final :
                &_GetCompletionItemsResponse_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    27;
+    30;
 
   friend void swap(GetCompletionItemsResponse& a, GetCompletionItemsResponse& b) {
     a.Swap(&b);
@@ -5053,19 +5817,19 @@ class GetCompletionItemsResponse final :
   const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::io::deephaven::proto::backplane::script::grpc::CompletionItem >&
       items() const;
 
-  // int32 request_id = 2;
-  void clear_request_id();
-  int32_t request_id() const;
-  void set_request_id(int32_t value);
+  // int32 request_id = 2 [deprecated = true];
+  PROTOBUF_DEPRECATED void clear_request_id();
+  PROTOBUF_DEPRECATED int32_t request_id() const;
+  PROTOBUF_DEPRECATED void set_request_id(int32_t value);
   private:
   int32_t _internal_request_id() const;
   void _internal_set_request_id(int32_t value);
   public:
 
-  // bool success = 3;
-  void clear_success();
-  bool success() const;
-  void set_success(bool value);
+  // bool success = 3 [deprecated = true];
+  PROTOBUF_DEPRECATED void clear_success();
+  PROTOBUF_DEPRECATED bool success() const;
+  PROTOBUF_DEPRECATED void set_success(bool value);
   private:
   bool _internal_success() const;
   void _internal_set_success(bool value);
@@ -5134,7 +5898,7 @@ class CompletionItem final :
                &_CompletionItem_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    28;
+    31;
 
   friend void swap(CompletionItem& a, CompletionItem& b) {
     a.Swap(&b);
@@ -5209,10 +5973,10 @@ class CompletionItem final :
     kCommitCharactersFieldNumber = 14,
     kLabelFieldNumber = 3,
     kDetailFieldNumber = 5,
-    kDocumentationFieldNumber = 6,
     kSortTextFieldNumber = 10,
     kFilterTextFieldNumber = 11,
     kTextEditFieldNumber = 9,
+    kDocumentationFieldNumber = 15,
     kStartFieldNumber = 1,
     kLengthFieldNumber = 2,
     kKindFieldNumber = 4,
@@ -5290,20 +6054,6 @@ class CompletionItem final :
   std::string* _internal_mutable_detail();
   public:
 
-  // string documentation = 6;
-  void clear_documentation();
-  const std::string& documentation() const;
-  template <typename ArgT0 = const std::string&, typename... ArgT>
-  void set_documentation(ArgT0&& arg0, ArgT... args);
-  std::string* mutable_documentation();
-  PROTOBUF_NODISCARD std::string* release_documentation();
-  void set_allocated_documentation(std::string* documentation);
-  private:
-  const std::string& _internal_documentation() const;
-  inline PROTOBUF_ALWAYS_INLINE void _internal_set_documentation(const std::string& value);
-  std::string* _internal_mutable_documentation();
-  public:
-
   // string sort_text = 10;
   void clear_sort_text();
   const std::string& sort_text() const;
@@ -5349,6 +6099,24 @@ class CompletionItem final :
   void unsafe_arena_set_allocated_text_edit(
       ::io::deephaven::proto::backplane::script::grpc::TextEdit* text_edit);
   ::io::deephaven::proto::backplane::script::grpc::TextEdit* unsafe_arena_release_text_edit();
+
+  // .io.deephaven.proto.backplane.script.grpc.MarkupContent documentation = 15;
+  bool has_documentation() const;
+  private:
+  bool _internal_has_documentation() const;
+  public:
+  void clear_documentation();
+  const ::io::deephaven::proto::backplane::script::grpc::MarkupContent& documentation() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::script::grpc::MarkupContent* release_documentation();
+  ::io::deephaven::proto::backplane::script::grpc::MarkupContent* mutable_documentation();
+  void set_allocated_documentation(::io::deephaven::proto::backplane::script::grpc::MarkupContent* documentation);
+  private:
+  const ::io::deephaven::proto::backplane::script::grpc::MarkupContent& _internal_documentation() const;
+  ::io::deephaven::proto::backplane::script::grpc::MarkupContent* _internal_mutable_documentation();
+  public:
+  void unsafe_arena_set_allocated_documentation(
+      ::io::deephaven::proto::backplane::script::grpc::MarkupContent* documentation);
+  ::io::deephaven::proto::backplane::script::grpc::MarkupContent* unsafe_arena_release_documentation();
 
   // int32 start = 1;
   void clear_start();
@@ -5415,10 +6183,10 @@ class CompletionItem final :
   ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string> commit_characters_;
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr label_;
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr detail_;
-  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr documentation_;
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr sort_text_;
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr filter_text_;
   ::io::deephaven::proto::backplane::script::grpc::TextEdit* text_edit_;
+  ::io::deephaven::proto::backplane::script::grpc::MarkupContent* documentation_;
   int32_t start_;
   int32_t length_;
   int32_t kind_;
@@ -5478,7 +6246,7 @@ class TextEdit final :
                &_TextEdit_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    29;
+    32;
 
   friend void swap(TextEdit& a, TextEdit& b) {
     a.Swap(&b);
@@ -5598,6 +6366,2356 @@ class TextEdit final :
 };
 // -------------------------------------------------------------------
 
+class GetSignatureHelpRequest final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:io.deephaven.proto.backplane.script.grpc.GetSignatureHelpRequest) */ {
+ public:
+  inline GetSignatureHelpRequest() : GetSignatureHelpRequest(nullptr) {}
+  ~GetSignatureHelpRequest() override;
+  explicit PROTOBUF_CONSTEXPR GetSignatureHelpRequest(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  GetSignatureHelpRequest(const GetSignatureHelpRequest& from);
+  GetSignatureHelpRequest(GetSignatureHelpRequest&& from) noexcept
+    : GetSignatureHelpRequest() {
+    *this = ::std::move(from);
+  }
+
+  inline GetSignatureHelpRequest& operator=(const GetSignatureHelpRequest& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline GetSignatureHelpRequest& operator=(GetSignatureHelpRequest&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const GetSignatureHelpRequest& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const GetSignatureHelpRequest* internal_default_instance() {
+    return reinterpret_cast<const GetSignatureHelpRequest*>(
+               &_GetSignatureHelpRequest_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    33;
+
+  friend void swap(GetSignatureHelpRequest& a, GetSignatureHelpRequest& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(GetSignatureHelpRequest* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(GetSignatureHelpRequest* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  GetSignatureHelpRequest* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<GetSignatureHelpRequest>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const GetSignatureHelpRequest& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom(const GetSignatureHelpRequest& from);
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to, const ::PROTOBUF_NAMESPACE_ID::Message& from);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _cached_size_.Get(); }
+
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(GetSignatureHelpRequest* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "io.deephaven.proto.backplane.script.grpc.GetSignatureHelpRequest";
+  }
+  protected:
+  explicit GetSignatureHelpRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kContextFieldNumber = 1,
+    kTextDocumentFieldNumber = 2,
+    kPositionFieldNumber = 3,
+  };
+  // .io.deephaven.proto.backplane.script.grpc.SignatureHelpContext context = 1;
+  bool has_context() const;
+  private:
+  bool _internal_has_context() const;
+  public:
+  void clear_context();
+  const ::io::deephaven::proto::backplane::script::grpc::SignatureHelpContext& context() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::script::grpc::SignatureHelpContext* release_context();
+  ::io::deephaven::proto::backplane::script::grpc::SignatureHelpContext* mutable_context();
+  void set_allocated_context(::io::deephaven::proto::backplane::script::grpc::SignatureHelpContext* context);
+  private:
+  const ::io::deephaven::proto::backplane::script::grpc::SignatureHelpContext& _internal_context() const;
+  ::io::deephaven::proto::backplane::script::grpc::SignatureHelpContext* _internal_mutable_context();
+  public:
+  void unsafe_arena_set_allocated_context(
+      ::io::deephaven::proto::backplane::script::grpc::SignatureHelpContext* context);
+  ::io::deephaven::proto::backplane::script::grpc::SignatureHelpContext* unsafe_arena_release_context();
+
+  // .io.deephaven.proto.backplane.script.grpc.VersionedTextDocumentIdentifier text_document = 2;
+  bool has_text_document() const;
+  private:
+  bool _internal_has_text_document() const;
+  public:
+  void clear_text_document();
+  const ::io::deephaven::proto::backplane::script::grpc::VersionedTextDocumentIdentifier& text_document() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::script::grpc::VersionedTextDocumentIdentifier* release_text_document();
+  ::io::deephaven::proto::backplane::script::grpc::VersionedTextDocumentIdentifier* mutable_text_document();
+  void set_allocated_text_document(::io::deephaven::proto::backplane::script::grpc::VersionedTextDocumentIdentifier* text_document);
+  private:
+  const ::io::deephaven::proto::backplane::script::grpc::VersionedTextDocumentIdentifier& _internal_text_document() const;
+  ::io::deephaven::proto::backplane::script::grpc::VersionedTextDocumentIdentifier* _internal_mutable_text_document();
+  public:
+  void unsafe_arena_set_allocated_text_document(
+      ::io::deephaven::proto::backplane::script::grpc::VersionedTextDocumentIdentifier* text_document);
+  ::io::deephaven::proto::backplane::script::grpc::VersionedTextDocumentIdentifier* unsafe_arena_release_text_document();
+
+  // .io.deephaven.proto.backplane.script.grpc.Position position = 3;
+  bool has_position() const;
+  private:
+  bool _internal_has_position() const;
+  public:
+  void clear_position();
+  const ::io::deephaven::proto::backplane::script::grpc::Position& position() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::script::grpc::Position* release_position();
+  ::io::deephaven::proto::backplane::script::grpc::Position* mutable_position();
+  void set_allocated_position(::io::deephaven::proto::backplane::script::grpc::Position* position);
+  private:
+  const ::io::deephaven::proto::backplane::script::grpc::Position& _internal_position() const;
+  ::io::deephaven::proto::backplane::script::grpc::Position* _internal_mutable_position();
+  public:
+  void unsafe_arena_set_allocated_position(
+      ::io::deephaven::proto::backplane::script::grpc::Position* position);
+  ::io::deephaven::proto::backplane::script::grpc::Position* unsafe_arena_release_position();
+
+  // @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.script.grpc.GetSignatureHelpRequest)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  ::io::deephaven::proto::backplane::script::grpc::SignatureHelpContext* context_;
+  ::io::deephaven::proto::backplane::script::grpc::VersionedTextDocumentIdentifier* text_document_;
+  ::io::deephaven::proto::backplane::script::grpc::Position* position_;
+  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  friend struct ::TableStruct_deephaven_2fproto_2fconsole_2eproto;
+};
+// -------------------------------------------------------------------
+
+class SignatureHelpContext final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:io.deephaven.proto.backplane.script.grpc.SignatureHelpContext) */ {
+ public:
+  inline SignatureHelpContext() : SignatureHelpContext(nullptr) {}
+  ~SignatureHelpContext() override;
+  explicit PROTOBUF_CONSTEXPR SignatureHelpContext(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  SignatureHelpContext(const SignatureHelpContext& from);
+  SignatureHelpContext(SignatureHelpContext&& from) noexcept
+    : SignatureHelpContext() {
+    *this = ::std::move(from);
+  }
+
+  inline SignatureHelpContext& operator=(const SignatureHelpContext& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline SignatureHelpContext& operator=(SignatureHelpContext&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const SignatureHelpContext& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const SignatureHelpContext* internal_default_instance() {
+    return reinterpret_cast<const SignatureHelpContext*>(
+               &_SignatureHelpContext_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    34;
+
+  friend void swap(SignatureHelpContext& a, SignatureHelpContext& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(SignatureHelpContext* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(SignatureHelpContext* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  SignatureHelpContext* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<SignatureHelpContext>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const SignatureHelpContext& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom(const SignatureHelpContext& from);
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to, const ::PROTOBUF_NAMESPACE_ID::Message& from);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _cached_size_.Get(); }
+
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(SignatureHelpContext* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "io.deephaven.proto.backplane.script.grpc.SignatureHelpContext";
+  }
+  protected:
+  explicit SignatureHelpContext(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kTriggerCharacterFieldNumber = 2,
+    kActiveSignatureHelpFieldNumber = 4,
+    kTriggerKindFieldNumber = 1,
+    kIsRetriggerFieldNumber = 3,
+  };
+  // optional string trigger_character = 2;
+  bool has_trigger_character() const;
+  private:
+  bool _internal_has_trigger_character() const;
+  public:
+  void clear_trigger_character();
+  const std::string& trigger_character() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_trigger_character(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_trigger_character();
+  PROTOBUF_NODISCARD std::string* release_trigger_character();
+  void set_allocated_trigger_character(std::string* trigger_character);
+  private:
+  const std::string& _internal_trigger_character() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_trigger_character(const std::string& value);
+  std::string* _internal_mutable_trigger_character();
+  public:
+
+  // .io.deephaven.proto.backplane.script.grpc.GetSignatureHelpResponse active_signature_help = 4;
+  bool has_active_signature_help() const;
+  private:
+  bool _internal_has_active_signature_help() const;
+  public:
+  void clear_active_signature_help();
+  const ::io::deephaven::proto::backplane::script::grpc::GetSignatureHelpResponse& active_signature_help() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::script::grpc::GetSignatureHelpResponse* release_active_signature_help();
+  ::io::deephaven::proto::backplane::script::grpc::GetSignatureHelpResponse* mutable_active_signature_help();
+  void set_allocated_active_signature_help(::io::deephaven::proto::backplane::script::grpc::GetSignatureHelpResponse* active_signature_help);
+  private:
+  const ::io::deephaven::proto::backplane::script::grpc::GetSignatureHelpResponse& _internal_active_signature_help() const;
+  ::io::deephaven::proto::backplane::script::grpc::GetSignatureHelpResponse* _internal_mutable_active_signature_help();
+  public:
+  void unsafe_arena_set_allocated_active_signature_help(
+      ::io::deephaven::proto::backplane::script::grpc::GetSignatureHelpResponse* active_signature_help);
+  ::io::deephaven::proto::backplane::script::grpc::GetSignatureHelpResponse* unsafe_arena_release_active_signature_help();
+
+  // int32 trigger_kind = 1;
+  void clear_trigger_kind();
+  int32_t trigger_kind() const;
+  void set_trigger_kind(int32_t value);
+  private:
+  int32_t _internal_trigger_kind() const;
+  void _internal_set_trigger_kind(int32_t value);
+  public:
+
+  // bool is_retrigger = 3;
+  void clear_is_retrigger();
+  bool is_retrigger() const;
+  void set_is_retrigger(bool value);
+  private:
+  bool _internal_is_retrigger() const;
+  void _internal_set_is_retrigger(bool value);
+  public:
+
+  // @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.script.grpc.SignatureHelpContext)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  ::PROTOBUF_NAMESPACE_ID::internal::HasBits<1> _has_bits_;
+  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr trigger_character_;
+  ::io::deephaven::proto::backplane::script::grpc::GetSignatureHelpResponse* active_signature_help_;
+  int32_t trigger_kind_;
+  bool is_retrigger_;
+  friend struct ::TableStruct_deephaven_2fproto_2fconsole_2eproto;
+};
+// -------------------------------------------------------------------
+
+class GetSignatureHelpResponse final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:io.deephaven.proto.backplane.script.grpc.GetSignatureHelpResponse) */ {
+ public:
+  inline GetSignatureHelpResponse() : GetSignatureHelpResponse(nullptr) {}
+  ~GetSignatureHelpResponse() override;
+  explicit PROTOBUF_CONSTEXPR GetSignatureHelpResponse(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  GetSignatureHelpResponse(const GetSignatureHelpResponse& from);
+  GetSignatureHelpResponse(GetSignatureHelpResponse&& from) noexcept
+    : GetSignatureHelpResponse() {
+    *this = ::std::move(from);
+  }
+
+  inline GetSignatureHelpResponse& operator=(const GetSignatureHelpResponse& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline GetSignatureHelpResponse& operator=(GetSignatureHelpResponse&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const GetSignatureHelpResponse& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const GetSignatureHelpResponse* internal_default_instance() {
+    return reinterpret_cast<const GetSignatureHelpResponse*>(
+               &_GetSignatureHelpResponse_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    35;
+
+  friend void swap(GetSignatureHelpResponse& a, GetSignatureHelpResponse& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(GetSignatureHelpResponse* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(GetSignatureHelpResponse* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  GetSignatureHelpResponse* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<GetSignatureHelpResponse>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const GetSignatureHelpResponse& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom(const GetSignatureHelpResponse& from);
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to, const ::PROTOBUF_NAMESPACE_ID::Message& from);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _cached_size_.Get(); }
+
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(GetSignatureHelpResponse* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "io.deephaven.proto.backplane.script.grpc.GetSignatureHelpResponse";
+  }
+  protected:
+  explicit GetSignatureHelpResponse(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kSignaturesFieldNumber = 1,
+    kActiveSignatureFieldNumber = 2,
+    kActiveParameterFieldNumber = 3,
+  };
+  // repeated .io.deephaven.proto.backplane.script.grpc.SignatureInformation signatures = 1;
+  int signatures_size() const;
+  private:
+  int _internal_signatures_size() const;
+  public:
+  void clear_signatures();
+  ::io::deephaven::proto::backplane::script::grpc::SignatureInformation* mutable_signatures(int index);
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::io::deephaven::proto::backplane::script::grpc::SignatureInformation >*
+      mutable_signatures();
+  private:
+  const ::io::deephaven::proto::backplane::script::grpc::SignatureInformation& _internal_signatures(int index) const;
+  ::io::deephaven::proto::backplane::script::grpc::SignatureInformation* _internal_add_signatures();
+  public:
+  const ::io::deephaven::proto::backplane::script::grpc::SignatureInformation& signatures(int index) const;
+  ::io::deephaven::proto::backplane::script::grpc::SignatureInformation* add_signatures();
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::io::deephaven::proto::backplane::script::grpc::SignatureInformation >&
+      signatures() const;
+
+  // optional int32 active_signature = 2;
+  bool has_active_signature() const;
+  private:
+  bool _internal_has_active_signature() const;
+  public:
+  void clear_active_signature();
+  int32_t active_signature() const;
+  void set_active_signature(int32_t value);
+  private:
+  int32_t _internal_active_signature() const;
+  void _internal_set_active_signature(int32_t value);
+  public:
+
+  // optional int32 active_parameter = 3;
+  bool has_active_parameter() const;
+  private:
+  bool _internal_has_active_parameter() const;
+  public:
+  void clear_active_parameter();
+  int32_t active_parameter() const;
+  void set_active_parameter(int32_t value);
+  private:
+  int32_t _internal_active_parameter() const;
+  void _internal_set_active_parameter(int32_t value);
+  public:
+
+  // @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.script.grpc.GetSignatureHelpResponse)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  ::PROTOBUF_NAMESPACE_ID::internal::HasBits<1> _has_bits_;
+  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::io::deephaven::proto::backplane::script::grpc::SignatureInformation > signatures_;
+  int32_t active_signature_;
+  int32_t active_parameter_;
+  friend struct ::TableStruct_deephaven_2fproto_2fconsole_2eproto;
+};
+// -------------------------------------------------------------------
+
+class SignatureInformation final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:io.deephaven.proto.backplane.script.grpc.SignatureInformation) */ {
+ public:
+  inline SignatureInformation() : SignatureInformation(nullptr) {}
+  ~SignatureInformation() override;
+  explicit PROTOBUF_CONSTEXPR SignatureInformation(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  SignatureInformation(const SignatureInformation& from);
+  SignatureInformation(SignatureInformation&& from) noexcept
+    : SignatureInformation() {
+    *this = ::std::move(from);
+  }
+
+  inline SignatureInformation& operator=(const SignatureInformation& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline SignatureInformation& operator=(SignatureInformation&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const SignatureInformation& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const SignatureInformation* internal_default_instance() {
+    return reinterpret_cast<const SignatureInformation*>(
+               &_SignatureInformation_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    36;
+
+  friend void swap(SignatureInformation& a, SignatureInformation& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(SignatureInformation* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(SignatureInformation* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  SignatureInformation* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<SignatureInformation>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const SignatureInformation& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom(const SignatureInformation& from);
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to, const ::PROTOBUF_NAMESPACE_ID::Message& from);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _cached_size_.Get(); }
+
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(SignatureInformation* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "io.deephaven.proto.backplane.script.grpc.SignatureInformation";
+  }
+  protected:
+  explicit SignatureInformation(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kParametersFieldNumber = 3,
+    kLabelFieldNumber = 1,
+    kDocumentationFieldNumber = 2,
+    kActiveParameterFieldNumber = 4,
+  };
+  // repeated .io.deephaven.proto.backplane.script.grpc.ParameterInformation parameters = 3;
+  int parameters_size() const;
+  private:
+  int _internal_parameters_size() const;
+  public:
+  void clear_parameters();
+  ::io::deephaven::proto::backplane::script::grpc::ParameterInformation* mutable_parameters(int index);
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::io::deephaven::proto::backplane::script::grpc::ParameterInformation >*
+      mutable_parameters();
+  private:
+  const ::io::deephaven::proto::backplane::script::grpc::ParameterInformation& _internal_parameters(int index) const;
+  ::io::deephaven::proto::backplane::script::grpc::ParameterInformation* _internal_add_parameters();
+  public:
+  const ::io::deephaven::proto::backplane::script::grpc::ParameterInformation& parameters(int index) const;
+  ::io::deephaven::proto::backplane::script::grpc::ParameterInformation* add_parameters();
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::io::deephaven::proto::backplane::script::grpc::ParameterInformation >&
+      parameters() const;
+
+  // string label = 1;
+  void clear_label();
+  const std::string& label() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_label(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_label();
+  PROTOBUF_NODISCARD std::string* release_label();
+  void set_allocated_label(std::string* label);
+  private:
+  const std::string& _internal_label() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_label(const std::string& value);
+  std::string* _internal_mutable_label();
+  public:
+
+  // .io.deephaven.proto.backplane.script.grpc.MarkupContent documentation = 2;
+  bool has_documentation() const;
+  private:
+  bool _internal_has_documentation() const;
+  public:
+  void clear_documentation();
+  const ::io::deephaven::proto::backplane::script::grpc::MarkupContent& documentation() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::script::grpc::MarkupContent* release_documentation();
+  ::io::deephaven::proto::backplane::script::grpc::MarkupContent* mutable_documentation();
+  void set_allocated_documentation(::io::deephaven::proto::backplane::script::grpc::MarkupContent* documentation);
+  private:
+  const ::io::deephaven::proto::backplane::script::grpc::MarkupContent& _internal_documentation() const;
+  ::io::deephaven::proto::backplane::script::grpc::MarkupContent* _internal_mutable_documentation();
+  public:
+  void unsafe_arena_set_allocated_documentation(
+      ::io::deephaven::proto::backplane::script::grpc::MarkupContent* documentation);
+  ::io::deephaven::proto::backplane::script::grpc::MarkupContent* unsafe_arena_release_documentation();
+
+  // optional int32 active_parameter = 4;
+  bool has_active_parameter() const;
+  private:
+  bool _internal_has_active_parameter() const;
+  public:
+  void clear_active_parameter();
+  int32_t active_parameter() const;
+  void set_active_parameter(int32_t value);
+  private:
+  int32_t _internal_active_parameter() const;
+  void _internal_set_active_parameter(int32_t value);
+  public:
+
+  // @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.script.grpc.SignatureInformation)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  ::PROTOBUF_NAMESPACE_ID::internal::HasBits<1> _has_bits_;
+  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::io::deephaven::proto::backplane::script::grpc::ParameterInformation > parameters_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr label_;
+  ::io::deephaven::proto::backplane::script::grpc::MarkupContent* documentation_;
+  int32_t active_parameter_;
+  friend struct ::TableStruct_deephaven_2fproto_2fconsole_2eproto;
+};
+// -------------------------------------------------------------------
+
+class ParameterInformation final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:io.deephaven.proto.backplane.script.grpc.ParameterInformation) */ {
+ public:
+  inline ParameterInformation() : ParameterInformation(nullptr) {}
+  ~ParameterInformation() override;
+  explicit PROTOBUF_CONSTEXPR ParameterInformation(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  ParameterInformation(const ParameterInformation& from);
+  ParameterInformation(ParameterInformation&& from) noexcept
+    : ParameterInformation() {
+    *this = ::std::move(from);
+  }
+
+  inline ParameterInformation& operator=(const ParameterInformation& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline ParameterInformation& operator=(ParameterInformation&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const ParameterInformation& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const ParameterInformation* internal_default_instance() {
+    return reinterpret_cast<const ParameterInformation*>(
+               &_ParameterInformation_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    37;
+
+  friend void swap(ParameterInformation& a, ParameterInformation& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(ParameterInformation* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(ParameterInformation* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  ParameterInformation* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<ParameterInformation>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const ParameterInformation& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom(const ParameterInformation& from);
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to, const ::PROTOBUF_NAMESPACE_ID::Message& from);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _cached_size_.Get(); }
+
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(ParameterInformation* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "io.deephaven.proto.backplane.script.grpc.ParameterInformation";
+  }
+  protected:
+  explicit ParameterInformation(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kLabelFieldNumber = 1,
+    kDocumentationFieldNumber = 2,
+  };
+  // string label = 1;
+  void clear_label();
+  const std::string& label() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_label(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_label();
+  PROTOBUF_NODISCARD std::string* release_label();
+  void set_allocated_label(std::string* label);
+  private:
+  const std::string& _internal_label() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_label(const std::string& value);
+  std::string* _internal_mutable_label();
+  public:
+
+  // .io.deephaven.proto.backplane.script.grpc.MarkupContent documentation = 2;
+  bool has_documentation() const;
+  private:
+  bool _internal_has_documentation() const;
+  public:
+  void clear_documentation();
+  const ::io::deephaven::proto::backplane::script::grpc::MarkupContent& documentation() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::script::grpc::MarkupContent* release_documentation();
+  ::io::deephaven::proto::backplane::script::grpc::MarkupContent* mutable_documentation();
+  void set_allocated_documentation(::io::deephaven::proto::backplane::script::grpc::MarkupContent* documentation);
+  private:
+  const ::io::deephaven::proto::backplane::script::grpc::MarkupContent& _internal_documentation() const;
+  ::io::deephaven::proto::backplane::script::grpc::MarkupContent* _internal_mutable_documentation();
+  public:
+  void unsafe_arena_set_allocated_documentation(
+      ::io::deephaven::proto::backplane::script::grpc::MarkupContent* documentation);
+  ::io::deephaven::proto::backplane::script::grpc::MarkupContent* unsafe_arena_release_documentation();
+
+  // @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.script.grpc.ParameterInformation)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr label_;
+  ::io::deephaven::proto::backplane::script::grpc::MarkupContent* documentation_;
+  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  friend struct ::TableStruct_deephaven_2fproto_2fconsole_2eproto;
+};
+// -------------------------------------------------------------------
+
+class GetHoverRequest final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:io.deephaven.proto.backplane.script.grpc.GetHoverRequest) */ {
+ public:
+  inline GetHoverRequest() : GetHoverRequest(nullptr) {}
+  ~GetHoverRequest() override;
+  explicit PROTOBUF_CONSTEXPR GetHoverRequest(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  GetHoverRequest(const GetHoverRequest& from);
+  GetHoverRequest(GetHoverRequest&& from) noexcept
+    : GetHoverRequest() {
+    *this = ::std::move(from);
+  }
+
+  inline GetHoverRequest& operator=(const GetHoverRequest& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline GetHoverRequest& operator=(GetHoverRequest&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const GetHoverRequest& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const GetHoverRequest* internal_default_instance() {
+    return reinterpret_cast<const GetHoverRequest*>(
+               &_GetHoverRequest_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    38;
+
+  friend void swap(GetHoverRequest& a, GetHoverRequest& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(GetHoverRequest* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(GetHoverRequest* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  GetHoverRequest* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<GetHoverRequest>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const GetHoverRequest& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom(const GetHoverRequest& from);
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to, const ::PROTOBUF_NAMESPACE_ID::Message& from);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _cached_size_.Get(); }
+
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(GetHoverRequest* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "io.deephaven.proto.backplane.script.grpc.GetHoverRequest";
+  }
+  protected:
+  explicit GetHoverRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kTextDocumentFieldNumber = 1,
+    kPositionFieldNumber = 2,
+  };
+  // .io.deephaven.proto.backplane.script.grpc.VersionedTextDocumentIdentifier text_document = 1;
+  bool has_text_document() const;
+  private:
+  bool _internal_has_text_document() const;
+  public:
+  void clear_text_document();
+  const ::io::deephaven::proto::backplane::script::grpc::VersionedTextDocumentIdentifier& text_document() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::script::grpc::VersionedTextDocumentIdentifier* release_text_document();
+  ::io::deephaven::proto::backplane::script::grpc::VersionedTextDocumentIdentifier* mutable_text_document();
+  void set_allocated_text_document(::io::deephaven::proto::backplane::script::grpc::VersionedTextDocumentIdentifier* text_document);
+  private:
+  const ::io::deephaven::proto::backplane::script::grpc::VersionedTextDocumentIdentifier& _internal_text_document() const;
+  ::io::deephaven::proto::backplane::script::grpc::VersionedTextDocumentIdentifier* _internal_mutable_text_document();
+  public:
+  void unsafe_arena_set_allocated_text_document(
+      ::io::deephaven::proto::backplane::script::grpc::VersionedTextDocumentIdentifier* text_document);
+  ::io::deephaven::proto::backplane::script::grpc::VersionedTextDocumentIdentifier* unsafe_arena_release_text_document();
+
+  // .io.deephaven.proto.backplane.script.grpc.Position position = 2;
+  bool has_position() const;
+  private:
+  bool _internal_has_position() const;
+  public:
+  void clear_position();
+  const ::io::deephaven::proto::backplane::script::grpc::Position& position() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::script::grpc::Position* release_position();
+  ::io::deephaven::proto::backplane::script::grpc::Position* mutable_position();
+  void set_allocated_position(::io::deephaven::proto::backplane::script::grpc::Position* position);
+  private:
+  const ::io::deephaven::proto::backplane::script::grpc::Position& _internal_position() const;
+  ::io::deephaven::proto::backplane::script::grpc::Position* _internal_mutable_position();
+  public:
+  void unsafe_arena_set_allocated_position(
+      ::io::deephaven::proto::backplane::script::grpc::Position* position);
+  ::io::deephaven::proto::backplane::script::grpc::Position* unsafe_arena_release_position();
+
+  // @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.script.grpc.GetHoverRequest)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  ::io::deephaven::proto::backplane::script::grpc::VersionedTextDocumentIdentifier* text_document_;
+  ::io::deephaven::proto::backplane::script::grpc::Position* position_;
+  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  friend struct ::TableStruct_deephaven_2fproto_2fconsole_2eproto;
+};
+// -------------------------------------------------------------------
+
+class GetHoverResponse final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:io.deephaven.proto.backplane.script.grpc.GetHoverResponse) */ {
+ public:
+  inline GetHoverResponse() : GetHoverResponse(nullptr) {}
+  ~GetHoverResponse() override;
+  explicit PROTOBUF_CONSTEXPR GetHoverResponse(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  GetHoverResponse(const GetHoverResponse& from);
+  GetHoverResponse(GetHoverResponse&& from) noexcept
+    : GetHoverResponse() {
+    *this = ::std::move(from);
+  }
+
+  inline GetHoverResponse& operator=(const GetHoverResponse& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline GetHoverResponse& operator=(GetHoverResponse&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const GetHoverResponse& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const GetHoverResponse* internal_default_instance() {
+    return reinterpret_cast<const GetHoverResponse*>(
+               &_GetHoverResponse_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    39;
+
+  friend void swap(GetHoverResponse& a, GetHoverResponse& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(GetHoverResponse* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(GetHoverResponse* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  GetHoverResponse* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<GetHoverResponse>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const GetHoverResponse& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom(const GetHoverResponse& from);
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to, const ::PROTOBUF_NAMESPACE_ID::Message& from);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _cached_size_.Get(); }
+
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(GetHoverResponse* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "io.deephaven.proto.backplane.script.grpc.GetHoverResponse";
+  }
+  protected:
+  explicit GetHoverResponse(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kContentsFieldNumber = 1,
+    kRangeFieldNumber = 2,
+  };
+  // .io.deephaven.proto.backplane.script.grpc.MarkupContent contents = 1;
+  bool has_contents() const;
+  private:
+  bool _internal_has_contents() const;
+  public:
+  void clear_contents();
+  const ::io::deephaven::proto::backplane::script::grpc::MarkupContent& contents() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::script::grpc::MarkupContent* release_contents();
+  ::io::deephaven::proto::backplane::script::grpc::MarkupContent* mutable_contents();
+  void set_allocated_contents(::io::deephaven::proto::backplane::script::grpc::MarkupContent* contents);
+  private:
+  const ::io::deephaven::proto::backplane::script::grpc::MarkupContent& _internal_contents() const;
+  ::io::deephaven::proto::backplane::script::grpc::MarkupContent* _internal_mutable_contents();
+  public:
+  void unsafe_arena_set_allocated_contents(
+      ::io::deephaven::proto::backplane::script::grpc::MarkupContent* contents);
+  ::io::deephaven::proto::backplane::script::grpc::MarkupContent* unsafe_arena_release_contents();
+
+  // .io.deephaven.proto.backplane.script.grpc.DocumentRange range = 2;
+  bool has_range() const;
+  private:
+  bool _internal_has_range() const;
+  public:
+  void clear_range();
+  const ::io::deephaven::proto::backplane::script::grpc::DocumentRange& range() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::script::grpc::DocumentRange* release_range();
+  ::io::deephaven::proto::backplane::script::grpc::DocumentRange* mutable_range();
+  void set_allocated_range(::io::deephaven::proto::backplane::script::grpc::DocumentRange* range);
+  private:
+  const ::io::deephaven::proto::backplane::script::grpc::DocumentRange& _internal_range() const;
+  ::io::deephaven::proto::backplane::script::grpc::DocumentRange* _internal_mutable_range();
+  public:
+  void unsafe_arena_set_allocated_range(
+      ::io::deephaven::proto::backplane::script::grpc::DocumentRange* range);
+  ::io::deephaven::proto::backplane::script::grpc::DocumentRange* unsafe_arena_release_range();
+
+  // @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.script.grpc.GetHoverResponse)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  ::io::deephaven::proto::backplane::script::grpc::MarkupContent* contents_;
+  ::io::deephaven::proto::backplane::script::grpc::DocumentRange* range_;
+  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  friend struct ::TableStruct_deephaven_2fproto_2fconsole_2eproto;
+};
+// -------------------------------------------------------------------
+
+class GetDiagnosticRequest final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:io.deephaven.proto.backplane.script.grpc.GetDiagnosticRequest) */ {
+ public:
+  inline GetDiagnosticRequest() : GetDiagnosticRequest(nullptr) {}
+  ~GetDiagnosticRequest() override;
+  explicit PROTOBUF_CONSTEXPR GetDiagnosticRequest(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  GetDiagnosticRequest(const GetDiagnosticRequest& from);
+  GetDiagnosticRequest(GetDiagnosticRequest&& from) noexcept
+    : GetDiagnosticRequest() {
+    *this = ::std::move(from);
+  }
+
+  inline GetDiagnosticRequest& operator=(const GetDiagnosticRequest& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline GetDiagnosticRequest& operator=(GetDiagnosticRequest&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const GetDiagnosticRequest& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const GetDiagnosticRequest* internal_default_instance() {
+    return reinterpret_cast<const GetDiagnosticRequest*>(
+               &_GetDiagnosticRequest_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    40;
+
+  friend void swap(GetDiagnosticRequest& a, GetDiagnosticRequest& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(GetDiagnosticRequest* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(GetDiagnosticRequest* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  GetDiagnosticRequest* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<GetDiagnosticRequest>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const GetDiagnosticRequest& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom(const GetDiagnosticRequest& from);
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to, const ::PROTOBUF_NAMESPACE_ID::Message& from);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _cached_size_.Get(); }
+
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(GetDiagnosticRequest* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "io.deephaven.proto.backplane.script.grpc.GetDiagnosticRequest";
+  }
+  protected:
+  explicit GetDiagnosticRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kIdentifierFieldNumber = 2,
+    kPreviousResultIdFieldNumber = 3,
+    kTextDocumentFieldNumber = 1,
+  };
+  // optional string identifier = 2;
+  bool has_identifier() const;
+  private:
+  bool _internal_has_identifier() const;
+  public:
+  void clear_identifier();
+  const std::string& identifier() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_identifier(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_identifier();
+  PROTOBUF_NODISCARD std::string* release_identifier();
+  void set_allocated_identifier(std::string* identifier);
+  private:
+  const std::string& _internal_identifier() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_identifier(const std::string& value);
+  std::string* _internal_mutable_identifier();
+  public:
+
+  // optional string previous_result_id = 3;
+  bool has_previous_result_id() const;
+  private:
+  bool _internal_has_previous_result_id() const;
+  public:
+  void clear_previous_result_id();
+  const std::string& previous_result_id() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_previous_result_id(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_previous_result_id();
+  PROTOBUF_NODISCARD std::string* release_previous_result_id();
+  void set_allocated_previous_result_id(std::string* previous_result_id);
+  private:
+  const std::string& _internal_previous_result_id() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_previous_result_id(const std::string& value);
+  std::string* _internal_mutable_previous_result_id();
+  public:
+
+  // .io.deephaven.proto.backplane.script.grpc.VersionedTextDocumentIdentifier text_document = 1;
+  bool has_text_document() const;
+  private:
+  bool _internal_has_text_document() const;
+  public:
+  void clear_text_document();
+  const ::io::deephaven::proto::backplane::script::grpc::VersionedTextDocumentIdentifier& text_document() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::script::grpc::VersionedTextDocumentIdentifier* release_text_document();
+  ::io::deephaven::proto::backplane::script::grpc::VersionedTextDocumentIdentifier* mutable_text_document();
+  void set_allocated_text_document(::io::deephaven::proto::backplane::script::grpc::VersionedTextDocumentIdentifier* text_document);
+  private:
+  const ::io::deephaven::proto::backplane::script::grpc::VersionedTextDocumentIdentifier& _internal_text_document() const;
+  ::io::deephaven::proto::backplane::script::grpc::VersionedTextDocumentIdentifier* _internal_mutable_text_document();
+  public:
+  void unsafe_arena_set_allocated_text_document(
+      ::io::deephaven::proto::backplane::script::grpc::VersionedTextDocumentIdentifier* text_document);
+  ::io::deephaven::proto::backplane::script::grpc::VersionedTextDocumentIdentifier* unsafe_arena_release_text_document();
+
+  // @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.script.grpc.GetDiagnosticRequest)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  ::PROTOBUF_NAMESPACE_ID::internal::HasBits<1> _has_bits_;
+  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr identifier_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr previous_result_id_;
+  ::io::deephaven::proto::backplane::script::grpc::VersionedTextDocumentIdentifier* text_document_;
+  friend struct ::TableStruct_deephaven_2fproto_2fconsole_2eproto;
+};
+// -------------------------------------------------------------------
+
+class GetPullDiagnosticResponse final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:io.deephaven.proto.backplane.script.grpc.GetPullDiagnosticResponse) */ {
+ public:
+  inline GetPullDiagnosticResponse() : GetPullDiagnosticResponse(nullptr) {}
+  ~GetPullDiagnosticResponse() override;
+  explicit PROTOBUF_CONSTEXPR GetPullDiagnosticResponse(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  GetPullDiagnosticResponse(const GetPullDiagnosticResponse& from);
+  GetPullDiagnosticResponse(GetPullDiagnosticResponse&& from) noexcept
+    : GetPullDiagnosticResponse() {
+    *this = ::std::move(from);
+  }
+
+  inline GetPullDiagnosticResponse& operator=(const GetPullDiagnosticResponse& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline GetPullDiagnosticResponse& operator=(GetPullDiagnosticResponse&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const GetPullDiagnosticResponse& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const GetPullDiagnosticResponse* internal_default_instance() {
+    return reinterpret_cast<const GetPullDiagnosticResponse*>(
+               &_GetPullDiagnosticResponse_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    41;
+
+  friend void swap(GetPullDiagnosticResponse& a, GetPullDiagnosticResponse& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(GetPullDiagnosticResponse* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(GetPullDiagnosticResponse* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  GetPullDiagnosticResponse* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<GetPullDiagnosticResponse>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const GetPullDiagnosticResponse& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom(const GetPullDiagnosticResponse& from);
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to, const ::PROTOBUF_NAMESPACE_ID::Message& from);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _cached_size_.Get(); }
+
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(GetPullDiagnosticResponse* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "io.deephaven.proto.backplane.script.grpc.GetPullDiagnosticResponse";
+  }
+  protected:
+  explicit GetPullDiagnosticResponse(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kItemsFieldNumber = 3,
+    kKindFieldNumber = 1,
+    kResultIdFieldNumber = 2,
+  };
+  // repeated .io.deephaven.proto.backplane.script.grpc.Diagnostic items = 3;
+  int items_size() const;
+  private:
+  int _internal_items_size() const;
+  public:
+  void clear_items();
+  ::io::deephaven::proto::backplane::script::grpc::Diagnostic* mutable_items(int index);
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::io::deephaven::proto::backplane::script::grpc::Diagnostic >*
+      mutable_items();
+  private:
+  const ::io::deephaven::proto::backplane::script::grpc::Diagnostic& _internal_items(int index) const;
+  ::io::deephaven::proto::backplane::script::grpc::Diagnostic* _internal_add_items();
+  public:
+  const ::io::deephaven::proto::backplane::script::grpc::Diagnostic& items(int index) const;
+  ::io::deephaven::proto::backplane::script::grpc::Diagnostic* add_items();
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::io::deephaven::proto::backplane::script::grpc::Diagnostic >&
+      items() const;
+
+  // string kind = 1;
+  void clear_kind();
+  const std::string& kind() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_kind(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_kind();
+  PROTOBUF_NODISCARD std::string* release_kind();
+  void set_allocated_kind(std::string* kind);
+  private:
+  const std::string& _internal_kind() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_kind(const std::string& value);
+  std::string* _internal_mutable_kind();
+  public:
+
+  // optional string result_id = 2;
+  bool has_result_id() const;
+  private:
+  bool _internal_has_result_id() const;
+  public:
+  void clear_result_id();
+  const std::string& result_id() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_result_id(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_result_id();
+  PROTOBUF_NODISCARD std::string* release_result_id();
+  void set_allocated_result_id(std::string* result_id);
+  private:
+  const std::string& _internal_result_id() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_result_id(const std::string& value);
+  std::string* _internal_mutable_result_id();
+  public:
+
+  // @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.script.grpc.GetPullDiagnosticResponse)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  ::PROTOBUF_NAMESPACE_ID::internal::HasBits<1> _has_bits_;
+  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::io::deephaven::proto::backplane::script::grpc::Diagnostic > items_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr kind_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr result_id_;
+  friend struct ::TableStruct_deephaven_2fproto_2fconsole_2eproto;
+};
+// -------------------------------------------------------------------
+
+class GetPublishDiagnosticResponse final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:io.deephaven.proto.backplane.script.grpc.GetPublishDiagnosticResponse) */ {
+ public:
+  inline GetPublishDiagnosticResponse() : GetPublishDiagnosticResponse(nullptr) {}
+  ~GetPublishDiagnosticResponse() override;
+  explicit PROTOBUF_CONSTEXPR GetPublishDiagnosticResponse(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  GetPublishDiagnosticResponse(const GetPublishDiagnosticResponse& from);
+  GetPublishDiagnosticResponse(GetPublishDiagnosticResponse&& from) noexcept
+    : GetPublishDiagnosticResponse() {
+    *this = ::std::move(from);
+  }
+
+  inline GetPublishDiagnosticResponse& operator=(const GetPublishDiagnosticResponse& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline GetPublishDiagnosticResponse& operator=(GetPublishDiagnosticResponse&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const GetPublishDiagnosticResponse& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const GetPublishDiagnosticResponse* internal_default_instance() {
+    return reinterpret_cast<const GetPublishDiagnosticResponse*>(
+               &_GetPublishDiagnosticResponse_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    42;
+
+  friend void swap(GetPublishDiagnosticResponse& a, GetPublishDiagnosticResponse& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(GetPublishDiagnosticResponse* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(GetPublishDiagnosticResponse* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  GetPublishDiagnosticResponse* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<GetPublishDiagnosticResponse>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const GetPublishDiagnosticResponse& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom(const GetPublishDiagnosticResponse& from);
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to, const ::PROTOBUF_NAMESPACE_ID::Message& from);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _cached_size_.Get(); }
+
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(GetPublishDiagnosticResponse* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "io.deephaven.proto.backplane.script.grpc.GetPublishDiagnosticResponse";
+  }
+  protected:
+  explicit GetPublishDiagnosticResponse(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kDiagnosticsFieldNumber = 3,
+    kUriFieldNumber = 1,
+    kVersionFieldNumber = 2,
+  };
+  // repeated .io.deephaven.proto.backplane.script.grpc.Diagnostic diagnostics = 3;
+  int diagnostics_size() const;
+  private:
+  int _internal_diagnostics_size() const;
+  public:
+  void clear_diagnostics();
+  ::io::deephaven::proto::backplane::script::grpc::Diagnostic* mutable_diagnostics(int index);
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::io::deephaven::proto::backplane::script::grpc::Diagnostic >*
+      mutable_diagnostics();
+  private:
+  const ::io::deephaven::proto::backplane::script::grpc::Diagnostic& _internal_diagnostics(int index) const;
+  ::io::deephaven::proto::backplane::script::grpc::Diagnostic* _internal_add_diagnostics();
+  public:
+  const ::io::deephaven::proto::backplane::script::grpc::Diagnostic& diagnostics(int index) const;
+  ::io::deephaven::proto::backplane::script::grpc::Diagnostic* add_diagnostics();
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::io::deephaven::proto::backplane::script::grpc::Diagnostic >&
+      diagnostics() const;
+
+  // string uri = 1;
+  void clear_uri();
+  const std::string& uri() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_uri(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_uri();
+  PROTOBUF_NODISCARD std::string* release_uri();
+  void set_allocated_uri(std::string* uri);
+  private:
+  const std::string& _internal_uri() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_uri(const std::string& value);
+  std::string* _internal_mutable_uri();
+  public:
+
+  // optional int32 version = 2;
+  bool has_version() const;
+  private:
+  bool _internal_has_version() const;
+  public:
+  void clear_version();
+  int32_t version() const;
+  void set_version(int32_t value);
+  private:
+  int32_t _internal_version() const;
+  void _internal_set_version(int32_t value);
+  public:
+
+  // @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.script.grpc.GetPublishDiagnosticResponse)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  ::PROTOBUF_NAMESPACE_ID::internal::HasBits<1> _has_bits_;
+  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::io::deephaven::proto::backplane::script::grpc::Diagnostic > diagnostics_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr uri_;
+  int32_t version_;
+  friend struct ::TableStruct_deephaven_2fproto_2fconsole_2eproto;
+};
+// -------------------------------------------------------------------
+
+class Diagnostic_CodeDescription final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:io.deephaven.proto.backplane.script.grpc.Diagnostic.CodeDescription) */ {
+ public:
+  inline Diagnostic_CodeDescription() : Diagnostic_CodeDescription(nullptr) {}
+  ~Diagnostic_CodeDescription() override;
+  explicit PROTOBUF_CONSTEXPR Diagnostic_CodeDescription(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  Diagnostic_CodeDescription(const Diagnostic_CodeDescription& from);
+  Diagnostic_CodeDescription(Diagnostic_CodeDescription&& from) noexcept
+    : Diagnostic_CodeDescription() {
+    *this = ::std::move(from);
+  }
+
+  inline Diagnostic_CodeDescription& operator=(const Diagnostic_CodeDescription& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline Diagnostic_CodeDescription& operator=(Diagnostic_CodeDescription&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const Diagnostic_CodeDescription& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const Diagnostic_CodeDescription* internal_default_instance() {
+    return reinterpret_cast<const Diagnostic_CodeDescription*>(
+               &_Diagnostic_CodeDescription_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    43;
+
+  friend void swap(Diagnostic_CodeDescription& a, Diagnostic_CodeDescription& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(Diagnostic_CodeDescription* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(Diagnostic_CodeDescription* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  Diagnostic_CodeDescription* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<Diagnostic_CodeDescription>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const Diagnostic_CodeDescription& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom(const Diagnostic_CodeDescription& from);
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to, const ::PROTOBUF_NAMESPACE_ID::Message& from);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _cached_size_.Get(); }
+
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(Diagnostic_CodeDescription* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "io.deephaven.proto.backplane.script.grpc.Diagnostic.CodeDescription";
+  }
+  protected:
+  explicit Diagnostic_CodeDescription(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kHrefFieldNumber = 1,
+  };
+  // string href = 1;
+  void clear_href();
+  const std::string& href() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_href(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_href();
+  PROTOBUF_NODISCARD std::string* release_href();
+  void set_allocated_href(std::string* href);
+  private:
+  const std::string& _internal_href() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_href(const std::string& value);
+  std::string* _internal_mutable_href();
+  public:
+
+  // @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.script.grpc.Diagnostic.CodeDescription)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr href_;
+  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  friend struct ::TableStruct_deephaven_2fproto_2fconsole_2eproto;
+};
+// -------------------------------------------------------------------
+
+class Diagnostic final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:io.deephaven.proto.backplane.script.grpc.Diagnostic) */ {
+ public:
+  inline Diagnostic() : Diagnostic(nullptr) {}
+  ~Diagnostic() override;
+  explicit PROTOBUF_CONSTEXPR Diagnostic(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  Diagnostic(const Diagnostic& from);
+  Diagnostic(Diagnostic&& from) noexcept
+    : Diagnostic() {
+    *this = ::std::move(from);
+  }
+
+  inline Diagnostic& operator=(const Diagnostic& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline Diagnostic& operator=(Diagnostic&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const Diagnostic& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const Diagnostic* internal_default_instance() {
+    return reinterpret_cast<const Diagnostic*>(
+               &_Diagnostic_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    44;
+
+  friend void swap(Diagnostic& a, Diagnostic& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(Diagnostic* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(Diagnostic* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  Diagnostic* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<Diagnostic>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const Diagnostic& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom(const Diagnostic& from);
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to, const ::PROTOBUF_NAMESPACE_ID::Message& from);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _cached_size_.Get(); }
+
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(Diagnostic* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "io.deephaven.proto.backplane.script.grpc.Diagnostic";
+  }
+  protected:
+  explicit Diagnostic(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  typedef Diagnostic_CodeDescription CodeDescription;
+
+  typedef Diagnostic_DiagnosticSeverity DiagnosticSeverity;
+  static constexpr DiagnosticSeverity NOT_SET_SEVERITY =
+    Diagnostic_DiagnosticSeverity_NOT_SET_SEVERITY;
+  static constexpr DiagnosticSeverity ERROR =
+    Diagnostic_DiagnosticSeverity_ERROR;
+  static constexpr DiagnosticSeverity WARNING =
+    Diagnostic_DiagnosticSeverity_WARNING;
+  static constexpr DiagnosticSeverity INFORMATION =
+    Diagnostic_DiagnosticSeverity_INFORMATION;
+  static constexpr DiagnosticSeverity HINT =
+    Diagnostic_DiagnosticSeverity_HINT;
+  static inline bool DiagnosticSeverity_IsValid(int value) {
+    return Diagnostic_DiagnosticSeverity_IsValid(value);
+  }
+  static constexpr DiagnosticSeverity DiagnosticSeverity_MIN =
+    Diagnostic_DiagnosticSeverity_DiagnosticSeverity_MIN;
+  static constexpr DiagnosticSeverity DiagnosticSeverity_MAX =
+    Diagnostic_DiagnosticSeverity_DiagnosticSeverity_MAX;
+  static constexpr int DiagnosticSeverity_ARRAYSIZE =
+    Diagnostic_DiagnosticSeverity_DiagnosticSeverity_ARRAYSIZE;
+  static inline const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor*
+  DiagnosticSeverity_descriptor() {
+    return Diagnostic_DiagnosticSeverity_descriptor();
+  }
+  template<typename T>
+  static inline const std::string& DiagnosticSeverity_Name(T enum_t_value) {
+    static_assert(::std::is_same<T, DiagnosticSeverity>::value ||
+      ::std::is_integral<T>::value,
+      "Incorrect type passed to function DiagnosticSeverity_Name.");
+    return Diagnostic_DiagnosticSeverity_Name(enum_t_value);
+  }
+  static inline bool DiagnosticSeverity_Parse(::PROTOBUF_NAMESPACE_ID::ConstStringParam name,
+      DiagnosticSeverity* value) {
+    return Diagnostic_DiagnosticSeverity_Parse(name, value);
+  }
+
+  typedef Diagnostic_DiagnosticTag DiagnosticTag;
+  static constexpr DiagnosticTag NOT_SET_TAG =
+    Diagnostic_DiagnosticTag_NOT_SET_TAG;
+  static constexpr DiagnosticTag UNNECESSARY =
+    Diagnostic_DiagnosticTag_UNNECESSARY;
+  static constexpr DiagnosticTag DEPRECATED =
+    Diagnostic_DiagnosticTag_DEPRECATED;
+  static inline bool DiagnosticTag_IsValid(int value) {
+    return Diagnostic_DiagnosticTag_IsValid(value);
+  }
+  static constexpr DiagnosticTag DiagnosticTag_MIN =
+    Diagnostic_DiagnosticTag_DiagnosticTag_MIN;
+  static constexpr DiagnosticTag DiagnosticTag_MAX =
+    Diagnostic_DiagnosticTag_DiagnosticTag_MAX;
+  static constexpr int DiagnosticTag_ARRAYSIZE =
+    Diagnostic_DiagnosticTag_DiagnosticTag_ARRAYSIZE;
+  static inline const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor*
+  DiagnosticTag_descriptor() {
+    return Diagnostic_DiagnosticTag_descriptor();
+  }
+  template<typename T>
+  static inline const std::string& DiagnosticTag_Name(T enum_t_value) {
+    static_assert(::std::is_same<T, DiagnosticTag>::value ||
+      ::std::is_integral<T>::value,
+      "Incorrect type passed to function DiagnosticTag_Name.");
+    return Diagnostic_DiagnosticTag_Name(enum_t_value);
+  }
+  static inline bool DiagnosticTag_Parse(::PROTOBUF_NAMESPACE_ID::ConstStringParam name,
+      DiagnosticTag* value) {
+    return Diagnostic_DiagnosticTag_Parse(name, value);
+  }
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kTagsFieldNumber = 7,
+    kCodeFieldNumber = 3,
+    kSourceFieldNumber = 5,
+    kMessageFieldNumber = 6,
+    kDataFieldNumber = 9,
+    kRangeFieldNumber = 1,
+    kCodeDescriptionFieldNumber = 4,
+    kSeverityFieldNumber = 2,
+  };
+  // repeated .io.deephaven.proto.backplane.script.grpc.Diagnostic.DiagnosticTag tags = 7;
+  int tags_size() const;
+  private:
+  int _internal_tags_size() const;
+  public:
+  void clear_tags();
+  private:
+  ::io::deephaven::proto::backplane::script::grpc::Diagnostic_DiagnosticTag _internal_tags(int index) const;
+  void _internal_add_tags(::io::deephaven::proto::backplane::script::grpc::Diagnostic_DiagnosticTag value);
+  ::PROTOBUF_NAMESPACE_ID::RepeatedField<int>* _internal_mutable_tags();
+  public:
+  ::io::deephaven::proto::backplane::script::grpc::Diagnostic_DiagnosticTag tags(int index) const;
+  void set_tags(int index, ::io::deephaven::proto::backplane::script::grpc::Diagnostic_DiagnosticTag value);
+  void add_tags(::io::deephaven::proto::backplane::script::grpc::Diagnostic_DiagnosticTag value);
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedField<int>& tags() const;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedField<int>* mutable_tags();
+
+  // optional string code = 3;
+  bool has_code() const;
+  private:
+  bool _internal_has_code() const;
+  public:
+  void clear_code();
+  const std::string& code() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_code(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_code();
+  PROTOBUF_NODISCARD std::string* release_code();
+  void set_allocated_code(std::string* code);
+  private:
+  const std::string& _internal_code() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_code(const std::string& value);
+  std::string* _internal_mutable_code();
+  public:
+
+  // optional string source = 5;
+  bool has_source() const;
+  private:
+  bool _internal_has_source() const;
+  public:
+  void clear_source();
+  const std::string& source() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_source(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_source();
+  PROTOBUF_NODISCARD std::string* release_source();
+  void set_allocated_source(std::string* source);
+  private:
+  const std::string& _internal_source() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_source(const std::string& value);
+  std::string* _internal_mutable_source();
+  public:
+
+  // string message = 6;
+  void clear_message();
+  const std::string& message() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_message(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_message();
+  PROTOBUF_NODISCARD std::string* release_message();
+  void set_allocated_message(std::string* message);
+  private:
+  const std::string& _internal_message() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_message(const std::string& value);
+  std::string* _internal_mutable_message();
+  public:
+
+  // optional bytes data = 9;
+  bool has_data() const;
+  private:
+  bool _internal_has_data() const;
+  public:
+  void clear_data();
+  const std::string& data() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_data(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_data();
+  PROTOBUF_NODISCARD std::string* release_data();
+  void set_allocated_data(std::string* data);
+  private:
+  const std::string& _internal_data() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_data(const std::string& value);
+  std::string* _internal_mutable_data();
+  public:
+
+  // .io.deephaven.proto.backplane.script.grpc.DocumentRange range = 1;
+  bool has_range() const;
+  private:
+  bool _internal_has_range() const;
+  public:
+  void clear_range();
+  const ::io::deephaven::proto::backplane::script::grpc::DocumentRange& range() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::script::grpc::DocumentRange* release_range();
+  ::io::deephaven::proto::backplane::script::grpc::DocumentRange* mutable_range();
+  void set_allocated_range(::io::deephaven::proto::backplane::script::grpc::DocumentRange* range);
+  private:
+  const ::io::deephaven::proto::backplane::script::grpc::DocumentRange& _internal_range() const;
+  ::io::deephaven::proto::backplane::script::grpc::DocumentRange* _internal_mutable_range();
+  public:
+  void unsafe_arena_set_allocated_range(
+      ::io::deephaven::proto::backplane::script::grpc::DocumentRange* range);
+  ::io::deephaven::proto::backplane::script::grpc::DocumentRange* unsafe_arena_release_range();
+
+  // optional .io.deephaven.proto.backplane.script.grpc.Diagnostic.CodeDescription code_description = 4;
+  bool has_code_description() const;
+  private:
+  bool _internal_has_code_description() const;
+  public:
+  void clear_code_description();
+  const ::io::deephaven::proto::backplane::script::grpc::Diagnostic_CodeDescription& code_description() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::script::grpc::Diagnostic_CodeDescription* release_code_description();
+  ::io::deephaven::proto::backplane::script::grpc::Diagnostic_CodeDescription* mutable_code_description();
+  void set_allocated_code_description(::io::deephaven::proto::backplane::script::grpc::Diagnostic_CodeDescription* code_description);
+  private:
+  const ::io::deephaven::proto::backplane::script::grpc::Diagnostic_CodeDescription& _internal_code_description() const;
+  ::io::deephaven::proto::backplane::script::grpc::Diagnostic_CodeDescription* _internal_mutable_code_description();
+  public:
+  void unsafe_arena_set_allocated_code_description(
+      ::io::deephaven::proto::backplane::script::grpc::Diagnostic_CodeDescription* code_description);
+  ::io::deephaven::proto::backplane::script::grpc::Diagnostic_CodeDescription* unsafe_arena_release_code_description();
+
+  // .io.deephaven.proto.backplane.script.grpc.Diagnostic.DiagnosticSeverity severity = 2;
+  void clear_severity();
+  ::io::deephaven::proto::backplane::script::grpc::Diagnostic_DiagnosticSeverity severity() const;
+  void set_severity(::io::deephaven::proto::backplane::script::grpc::Diagnostic_DiagnosticSeverity value);
+  private:
+  ::io::deephaven::proto::backplane::script::grpc::Diagnostic_DiagnosticSeverity _internal_severity() const;
+  void _internal_set_severity(::io::deephaven::proto::backplane::script::grpc::Diagnostic_DiagnosticSeverity value);
+  public:
+
+  // @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.script.grpc.Diagnostic)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  ::PROTOBUF_NAMESPACE_ID::internal::HasBits<1> _has_bits_;
+  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedField<int> tags_;
+  mutable std::atomic<int> _tags_cached_byte_size_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr code_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr source_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr message_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr data_;
+  ::io::deephaven::proto::backplane::script::grpc::DocumentRange* range_;
+  ::io::deephaven::proto::backplane::script::grpc::Diagnostic_CodeDescription* code_description_;
+  int severity_;
+  friend struct ::TableStruct_deephaven_2fproto_2fconsole_2eproto;
+};
+// -------------------------------------------------------------------
+
 class FigureDescriptor_ChartDescriptor final :
     public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:io.deephaven.proto.backplane.script.grpc.FigureDescriptor.ChartDescriptor) */ {
  public:
@@ -5646,7 +8764,7 @@ class FigureDescriptor_ChartDescriptor final :
                &_FigureDescriptor_ChartDescriptor_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    30;
+    45;
 
   friend void swap(FigureDescriptor_ChartDescriptor& a, FigureDescriptor_ChartDescriptor& b) {
     a.Swap(&b);
@@ -6040,7 +9158,7 @@ class FigureDescriptor_SeriesDescriptor final :
                &_FigureDescriptor_SeriesDescriptor_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    31;
+    46;
 
   friend void swap(FigureDescriptor_SeriesDescriptor& a, FigureDescriptor_SeriesDescriptor& b) {
     a.Swap(&b);
@@ -6400,7 +9518,7 @@ class FigureDescriptor_MultiSeriesDescriptor final :
                &_FigureDescriptor_MultiSeriesDescriptor_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    32;
+    47;
 
   friend void swap(FigureDescriptor_MultiSeriesDescriptor& a, FigureDescriptor_MultiSeriesDescriptor& b) {
     a.Swap(&b);
@@ -6799,7 +9917,7 @@ class FigureDescriptor_StringMapWithDefault final :
                &_FigureDescriptor_StringMapWithDefault_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    33;
+    48;
 
   friend void swap(FigureDescriptor_StringMapWithDefault& a, FigureDescriptor_StringMapWithDefault& b) {
     a.Swap(&b);
@@ -7004,7 +10122,7 @@ class FigureDescriptor_DoubleMapWithDefault final :
                &_FigureDescriptor_DoubleMapWithDefault_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    34;
+    49;
 
   friend void swap(FigureDescriptor_DoubleMapWithDefault& a, FigureDescriptor_DoubleMapWithDefault& b) {
     a.Swap(&b);
@@ -7202,7 +10320,7 @@ class FigureDescriptor_BoolMapWithDefault final :
                &_FigureDescriptor_BoolMapWithDefault_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    35;
+    50;
 
   friend void swap(FigureDescriptor_BoolMapWithDefault& a, FigureDescriptor_BoolMapWithDefault& b) {
     a.Swap(&b);
@@ -7400,7 +10518,7 @@ class FigureDescriptor_AxisDescriptor final :
                &_FigureDescriptor_AxisDescriptor_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    36;
+    51;
 
   friend void swap(FigureDescriptor_AxisDescriptor& a, FigureDescriptor_AxisDescriptor& b) {
     a.Swap(&b);
@@ -7928,7 +11046,7 @@ class FigureDescriptor_BusinessCalendarDescriptor_BusinessPeriod final :
                &_FigureDescriptor_BusinessCalendarDescriptor_BusinessPeriod_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    37;
+    52;
 
   friend void swap(FigureDescriptor_BusinessCalendarDescriptor_BusinessPeriod& a, FigureDescriptor_BusinessCalendarDescriptor_BusinessPeriod& b) {
     a.Swap(&b);
@@ -8092,7 +11210,7 @@ class FigureDescriptor_BusinessCalendarDescriptor_Holiday final :
                &_FigureDescriptor_BusinessCalendarDescriptor_Holiday_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    38;
+    53;
 
   friend void swap(FigureDescriptor_BusinessCalendarDescriptor_Holiday& a, FigureDescriptor_BusinessCalendarDescriptor_Holiday& b) {
     a.Swap(&b);
@@ -8264,7 +11382,7 @@ class FigureDescriptor_BusinessCalendarDescriptor_LocalDate final :
                &_FigureDescriptor_BusinessCalendarDescriptor_LocalDate_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    39;
+    54;
 
   friend void swap(FigureDescriptor_BusinessCalendarDescriptor_LocalDate& a, FigureDescriptor_BusinessCalendarDescriptor_LocalDate& b) {
     a.Swap(&b);
@@ -8429,7 +11547,7 @@ class FigureDescriptor_BusinessCalendarDescriptor final :
                &_FigureDescriptor_BusinessCalendarDescriptor_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    40;
+    55;
 
   friend void swap(FigureDescriptor_BusinessCalendarDescriptor& a, FigureDescriptor_BusinessCalendarDescriptor& b) {
     a.Swap(&b);
@@ -8697,7 +11815,7 @@ class FigureDescriptor_MultiSeriesSourceDescriptor final :
                &_FigureDescriptor_MultiSeriesSourceDescriptor_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    41;
+    56;
 
   friend void swap(FigureDescriptor_MultiSeriesSourceDescriptor& a, FigureDescriptor_MultiSeriesSourceDescriptor& b) {
     a.Swap(&b);
@@ -8883,7 +12001,7 @@ class FigureDescriptor_SourceDescriptor final :
                &_FigureDescriptor_SourceDescriptor_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    42;
+    57;
 
   friend void swap(FigureDescriptor_SourceDescriptor& a, FigureDescriptor_SourceDescriptor& b) {
     a.Swap(&b);
@@ -9116,7 +12234,7 @@ class FigureDescriptor_OneClickDescriptor final :
                &_FigureDescriptor_OneClickDescriptor_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    43;
+    58;
 
   friend void swap(FigureDescriptor_OneClickDescriptor& a, FigureDescriptor_OneClickDescriptor& b) {
     a.Swap(&b);
@@ -9311,7 +12429,7 @@ class FigureDescriptor final :
                &_FigureDescriptor_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    44;
+    59;
 
   friend void swap(FigureDescriptor& a, FigureDescriptor& b) {
     a.Swap(&b);
@@ -10946,7 +14064,225 @@ inline void CancelCommandRequest::set_allocated_command_id(::io::deephaven::prot
 
 // -------------------------------------------------------------------
 
+// CancelAutoCompleteRequest
+
+// .io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
+inline bool CancelAutoCompleteRequest::_internal_has_console_id() const {
+  return this != internal_default_instance() && console_id_ != nullptr;
+}
+inline bool CancelAutoCompleteRequest::has_console_id() const {
+  return _internal_has_console_id();
+}
+inline const ::io::deephaven::proto::backplane::grpc::Ticket& CancelAutoCompleteRequest::_internal_console_id() const {
+  const ::io::deephaven::proto::backplane::grpc::Ticket* p = console_id_;
+  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::grpc::Ticket&>(
+      ::io::deephaven::proto::backplane::grpc::_Ticket_default_instance_);
+}
+inline const ::io::deephaven::proto::backplane::grpc::Ticket& CancelAutoCompleteRequest::console_id() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.script.grpc.CancelAutoCompleteRequest.console_id)
+  return _internal_console_id();
+}
+inline void CancelAutoCompleteRequest::unsafe_arena_set_allocated_console_id(
+    ::io::deephaven::proto::backplane::grpc::Ticket* console_id) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(console_id_);
+  }
+  console_id_ = console_id;
+  if (console_id) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.script.grpc.CancelAutoCompleteRequest.console_id)
+}
+inline ::io::deephaven::proto::backplane::grpc::Ticket* CancelAutoCompleteRequest::release_console_id() {
+  
+  ::io::deephaven::proto::backplane::grpc::Ticket* temp = console_id_;
+  console_id_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::grpc::Ticket* CancelAutoCompleteRequest::unsafe_arena_release_console_id() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.script.grpc.CancelAutoCompleteRequest.console_id)
+  
+  ::io::deephaven::proto::backplane::grpc::Ticket* temp = console_id_;
+  console_id_ = nullptr;
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::grpc::Ticket* CancelAutoCompleteRequest::_internal_mutable_console_id() {
+  
+  if (console_id_ == nullptr) {
+    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::Ticket>(GetArenaForAllocation());
+    console_id_ = p;
+  }
+  return console_id_;
+}
+inline ::io::deephaven::proto::backplane::grpc::Ticket* CancelAutoCompleteRequest::mutable_console_id() {
+  ::io::deephaven::proto::backplane::grpc::Ticket* _msg = _internal_mutable_console_id();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.script.grpc.CancelAutoCompleteRequest.console_id)
+  return _msg;
+}
+inline void CancelAutoCompleteRequest::set_allocated_console_id(::io::deephaven::proto::backplane::grpc::Ticket* console_id) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(console_id_);
+  }
+  if (console_id) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(
+                reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(console_id));
+    if (message_arena != submessage_arena) {
+      console_id = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, console_id, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  console_id_ = console_id;
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.script.grpc.CancelAutoCompleteRequest.console_id)
+}
+
+// int32 request_id = 2;
+inline void CancelAutoCompleteRequest::clear_request_id() {
+  request_id_ = 0;
+}
+inline int32_t CancelAutoCompleteRequest::_internal_request_id() const {
+  return request_id_;
+}
+inline int32_t CancelAutoCompleteRequest::request_id() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.script.grpc.CancelAutoCompleteRequest.request_id)
+  return _internal_request_id();
+}
+inline void CancelAutoCompleteRequest::_internal_set_request_id(int32_t value) {
+  
+  request_id_ = value;
+}
+inline void CancelAutoCompleteRequest::set_request_id(int32_t value) {
+  _internal_set_request_id(value);
+  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.script.grpc.CancelAutoCompleteRequest.request_id)
+}
+
+// -------------------------------------------------------------------
+
+// CancelAutoCompleteResponse
+
+// -------------------------------------------------------------------
+
 // AutoCompleteRequest
+
+// .io.deephaven.proto.backplane.grpc.Ticket console_id = 5;
+inline bool AutoCompleteRequest::_internal_has_console_id() const {
+  return this != internal_default_instance() && console_id_ != nullptr;
+}
+inline bool AutoCompleteRequest::has_console_id() const {
+  return _internal_has_console_id();
+}
+inline const ::io::deephaven::proto::backplane::grpc::Ticket& AutoCompleteRequest::_internal_console_id() const {
+  const ::io::deephaven::proto::backplane::grpc::Ticket* p = console_id_;
+  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::grpc::Ticket&>(
+      ::io::deephaven::proto::backplane::grpc::_Ticket_default_instance_);
+}
+inline const ::io::deephaven::proto::backplane::grpc::Ticket& AutoCompleteRequest::console_id() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.script.grpc.AutoCompleteRequest.console_id)
+  return _internal_console_id();
+}
+inline void AutoCompleteRequest::unsafe_arena_set_allocated_console_id(
+    ::io::deephaven::proto::backplane::grpc::Ticket* console_id) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(console_id_);
+  }
+  console_id_ = console_id;
+  if (console_id) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.script.grpc.AutoCompleteRequest.console_id)
+}
+inline ::io::deephaven::proto::backplane::grpc::Ticket* AutoCompleteRequest::release_console_id() {
+  
+  ::io::deephaven::proto::backplane::grpc::Ticket* temp = console_id_;
+  console_id_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::grpc::Ticket* AutoCompleteRequest::unsafe_arena_release_console_id() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.script.grpc.AutoCompleteRequest.console_id)
+  
+  ::io::deephaven::proto::backplane::grpc::Ticket* temp = console_id_;
+  console_id_ = nullptr;
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::grpc::Ticket* AutoCompleteRequest::_internal_mutable_console_id() {
+  
+  if (console_id_ == nullptr) {
+    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::Ticket>(GetArenaForAllocation());
+    console_id_ = p;
+  }
+  return console_id_;
+}
+inline ::io::deephaven::proto::backplane::grpc::Ticket* AutoCompleteRequest::mutable_console_id() {
+  ::io::deephaven::proto::backplane::grpc::Ticket* _msg = _internal_mutable_console_id();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.script.grpc.AutoCompleteRequest.console_id)
+  return _msg;
+}
+inline void AutoCompleteRequest::set_allocated_console_id(::io::deephaven::proto::backplane::grpc::Ticket* console_id) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(console_id_);
+  }
+  if (console_id) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(
+                reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(console_id));
+    if (message_arena != submessage_arena) {
+      console_id = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, console_id, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  console_id_ = console_id;
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.script.grpc.AutoCompleteRequest.console_id)
+}
+
+// int32 request_id = 6;
+inline void AutoCompleteRequest::clear_request_id() {
+  request_id_ = 0;
+}
+inline int32_t AutoCompleteRequest::_internal_request_id() const {
+  return request_id_;
+}
+inline int32_t AutoCompleteRequest::request_id() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.script.grpc.AutoCompleteRequest.request_id)
+  return _internal_request_id();
+}
+inline void AutoCompleteRequest::_internal_set_request_id(int32_t value) {
+  
+  request_id_ = value;
+}
+inline void AutoCompleteRequest::set_request_id(int32_t value) {
+  _internal_set_request_id(value);
+  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.script.grpc.AutoCompleteRequest.request_id)
+}
 
 // .io.deephaven.proto.backplane.script.grpc.OpenDocumentRequest open_document = 1;
 inline bool AutoCompleteRequest::_internal_has_open_document() const {
@@ -11170,6 +14506,228 @@ inline ::io::deephaven::proto::backplane::script::grpc::GetCompletionItemsReques
   return _msg;
 }
 
+// .io.deephaven.proto.backplane.script.grpc.GetSignatureHelpRequest get_signature_help = 7;
+inline bool AutoCompleteRequest::_internal_has_get_signature_help() const {
+  return request_case() == kGetSignatureHelp;
+}
+inline bool AutoCompleteRequest::has_get_signature_help() const {
+  return _internal_has_get_signature_help();
+}
+inline void AutoCompleteRequest::set_has_get_signature_help() {
+  _oneof_case_[0] = kGetSignatureHelp;
+}
+inline void AutoCompleteRequest::clear_get_signature_help() {
+  if (_internal_has_get_signature_help()) {
+    if (GetArenaForAllocation() == nullptr) {
+      delete request_.get_signature_help_;
+    }
+    clear_has_request();
+  }
+}
+inline ::io::deephaven::proto::backplane::script::grpc::GetSignatureHelpRequest* AutoCompleteRequest::release_get_signature_help() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.script.grpc.AutoCompleteRequest.get_signature_help)
+  if (_internal_has_get_signature_help()) {
+    clear_has_request();
+    ::io::deephaven::proto::backplane::script::grpc::GetSignatureHelpRequest* temp = request_.get_signature_help_;
+    if (GetArenaForAllocation() != nullptr) {
+      temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+    }
+    request_.get_signature_help_ = nullptr;
+    return temp;
+  } else {
+    return nullptr;
+  }
+}
+inline const ::io::deephaven::proto::backplane::script::grpc::GetSignatureHelpRequest& AutoCompleteRequest::_internal_get_signature_help() const {
+  return _internal_has_get_signature_help()
+      ? *request_.get_signature_help_
+      : reinterpret_cast< ::io::deephaven::proto::backplane::script::grpc::GetSignatureHelpRequest&>(::io::deephaven::proto::backplane::script::grpc::_GetSignatureHelpRequest_default_instance_);
+}
+inline const ::io::deephaven::proto::backplane::script::grpc::GetSignatureHelpRequest& AutoCompleteRequest::get_signature_help() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.script.grpc.AutoCompleteRequest.get_signature_help)
+  return _internal_get_signature_help();
+}
+inline ::io::deephaven::proto::backplane::script::grpc::GetSignatureHelpRequest* AutoCompleteRequest::unsafe_arena_release_get_signature_help() {
+  // @@protoc_insertion_point(field_unsafe_arena_release:io.deephaven.proto.backplane.script.grpc.AutoCompleteRequest.get_signature_help)
+  if (_internal_has_get_signature_help()) {
+    clear_has_request();
+    ::io::deephaven::proto::backplane::script::grpc::GetSignatureHelpRequest* temp = request_.get_signature_help_;
+    request_.get_signature_help_ = nullptr;
+    return temp;
+  } else {
+    return nullptr;
+  }
+}
+inline void AutoCompleteRequest::unsafe_arena_set_allocated_get_signature_help(::io::deephaven::proto::backplane::script::grpc::GetSignatureHelpRequest* get_signature_help) {
+  clear_request();
+  if (get_signature_help) {
+    set_has_get_signature_help();
+    request_.get_signature_help_ = get_signature_help;
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.script.grpc.AutoCompleteRequest.get_signature_help)
+}
+inline ::io::deephaven::proto::backplane::script::grpc::GetSignatureHelpRequest* AutoCompleteRequest::_internal_mutable_get_signature_help() {
+  if (!_internal_has_get_signature_help()) {
+    clear_request();
+    set_has_get_signature_help();
+    request_.get_signature_help_ = CreateMaybeMessage< ::io::deephaven::proto::backplane::script::grpc::GetSignatureHelpRequest >(GetArenaForAllocation());
+  }
+  return request_.get_signature_help_;
+}
+inline ::io::deephaven::proto::backplane::script::grpc::GetSignatureHelpRequest* AutoCompleteRequest::mutable_get_signature_help() {
+  ::io::deephaven::proto::backplane::script::grpc::GetSignatureHelpRequest* _msg = _internal_mutable_get_signature_help();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.script.grpc.AutoCompleteRequest.get_signature_help)
+  return _msg;
+}
+
+// .io.deephaven.proto.backplane.script.grpc.GetHoverRequest get_hover = 8;
+inline bool AutoCompleteRequest::_internal_has_get_hover() const {
+  return request_case() == kGetHover;
+}
+inline bool AutoCompleteRequest::has_get_hover() const {
+  return _internal_has_get_hover();
+}
+inline void AutoCompleteRequest::set_has_get_hover() {
+  _oneof_case_[0] = kGetHover;
+}
+inline void AutoCompleteRequest::clear_get_hover() {
+  if (_internal_has_get_hover()) {
+    if (GetArenaForAllocation() == nullptr) {
+      delete request_.get_hover_;
+    }
+    clear_has_request();
+  }
+}
+inline ::io::deephaven::proto::backplane::script::grpc::GetHoverRequest* AutoCompleteRequest::release_get_hover() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.script.grpc.AutoCompleteRequest.get_hover)
+  if (_internal_has_get_hover()) {
+    clear_has_request();
+    ::io::deephaven::proto::backplane::script::grpc::GetHoverRequest* temp = request_.get_hover_;
+    if (GetArenaForAllocation() != nullptr) {
+      temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+    }
+    request_.get_hover_ = nullptr;
+    return temp;
+  } else {
+    return nullptr;
+  }
+}
+inline const ::io::deephaven::proto::backplane::script::grpc::GetHoverRequest& AutoCompleteRequest::_internal_get_hover() const {
+  return _internal_has_get_hover()
+      ? *request_.get_hover_
+      : reinterpret_cast< ::io::deephaven::proto::backplane::script::grpc::GetHoverRequest&>(::io::deephaven::proto::backplane::script::grpc::_GetHoverRequest_default_instance_);
+}
+inline const ::io::deephaven::proto::backplane::script::grpc::GetHoverRequest& AutoCompleteRequest::get_hover() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.script.grpc.AutoCompleteRequest.get_hover)
+  return _internal_get_hover();
+}
+inline ::io::deephaven::proto::backplane::script::grpc::GetHoverRequest* AutoCompleteRequest::unsafe_arena_release_get_hover() {
+  // @@protoc_insertion_point(field_unsafe_arena_release:io.deephaven.proto.backplane.script.grpc.AutoCompleteRequest.get_hover)
+  if (_internal_has_get_hover()) {
+    clear_has_request();
+    ::io::deephaven::proto::backplane::script::grpc::GetHoverRequest* temp = request_.get_hover_;
+    request_.get_hover_ = nullptr;
+    return temp;
+  } else {
+    return nullptr;
+  }
+}
+inline void AutoCompleteRequest::unsafe_arena_set_allocated_get_hover(::io::deephaven::proto::backplane::script::grpc::GetHoverRequest* get_hover) {
+  clear_request();
+  if (get_hover) {
+    set_has_get_hover();
+    request_.get_hover_ = get_hover;
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.script.grpc.AutoCompleteRequest.get_hover)
+}
+inline ::io::deephaven::proto::backplane::script::grpc::GetHoverRequest* AutoCompleteRequest::_internal_mutable_get_hover() {
+  if (!_internal_has_get_hover()) {
+    clear_request();
+    set_has_get_hover();
+    request_.get_hover_ = CreateMaybeMessage< ::io::deephaven::proto::backplane::script::grpc::GetHoverRequest >(GetArenaForAllocation());
+  }
+  return request_.get_hover_;
+}
+inline ::io::deephaven::proto::backplane::script::grpc::GetHoverRequest* AutoCompleteRequest::mutable_get_hover() {
+  ::io::deephaven::proto::backplane::script::grpc::GetHoverRequest* _msg = _internal_mutable_get_hover();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.script.grpc.AutoCompleteRequest.get_hover)
+  return _msg;
+}
+
+// .io.deephaven.proto.backplane.script.grpc.GetDiagnosticRequest get_diagnostic = 9;
+inline bool AutoCompleteRequest::_internal_has_get_diagnostic() const {
+  return request_case() == kGetDiagnostic;
+}
+inline bool AutoCompleteRequest::has_get_diagnostic() const {
+  return _internal_has_get_diagnostic();
+}
+inline void AutoCompleteRequest::set_has_get_diagnostic() {
+  _oneof_case_[0] = kGetDiagnostic;
+}
+inline void AutoCompleteRequest::clear_get_diagnostic() {
+  if (_internal_has_get_diagnostic()) {
+    if (GetArenaForAllocation() == nullptr) {
+      delete request_.get_diagnostic_;
+    }
+    clear_has_request();
+  }
+}
+inline ::io::deephaven::proto::backplane::script::grpc::GetDiagnosticRequest* AutoCompleteRequest::release_get_diagnostic() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.script.grpc.AutoCompleteRequest.get_diagnostic)
+  if (_internal_has_get_diagnostic()) {
+    clear_has_request();
+    ::io::deephaven::proto::backplane::script::grpc::GetDiagnosticRequest* temp = request_.get_diagnostic_;
+    if (GetArenaForAllocation() != nullptr) {
+      temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+    }
+    request_.get_diagnostic_ = nullptr;
+    return temp;
+  } else {
+    return nullptr;
+  }
+}
+inline const ::io::deephaven::proto::backplane::script::grpc::GetDiagnosticRequest& AutoCompleteRequest::_internal_get_diagnostic() const {
+  return _internal_has_get_diagnostic()
+      ? *request_.get_diagnostic_
+      : reinterpret_cast< ::io::deephaven::proto::backplane::script::grpc::GetDiagnosticRequest&>(::io::deephaven::proto::backplane::script::grpc::_GetDiagnosticRequest_default_instance_);
+}
+inline const ::io::deephaven::proto::backplane::script::grpc::GetDiagnosticRequest& AutoCompleteRequest::get_diagnostic() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.script.grpc.AutoCompleteRequest.get_diagnostic)
+  return _internal_get_diagnostic();
+}
+inline ::io::deephaven::proto::backplane::script::grpc::GetDiagnosticRequest* AutoCompleteRequest::unsafe_arena_release_get_diagnostic() {
+  // @@protoc_insertion_point(field_unsafe_arena_release:io.deephaven.proto.backplane.script.grpc.AutoCompleteRequest.get_diagnostic)
+  if (_internal_has_get_diagnostic()) {
+    clear_has_request();
+    ::io::deephaven::proto::backplane::script::grpc::GetDiagnosticRequest* temp = request_.get_diagnostic_;
+    request_.get_diagnostic_ = nullptr;
+    return temp;
+  } else {
+    return nullptr;
+  }
+}
+inline void AutoCompleteRequest::unsafe_arena_set_allocated_get_diagnostic(::io::deephaven::proto::backplane::script::grpc::GetDiagnosticRequest* get_diagnostic) {
+  clear_request();
+  if (get_diagnostic) {
+    set_has_get_diagnostic();
+    request_.get_diagnostic_ = get_diagnostic;
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.script.grpc.AutoCompleteRequest.get_diagnostic)
+}
+inline ::io::deephaven::proto::backplane::script::grpc::GetDiagnosticRequest* AutoCompleteRequest::_internal_mutable_get_diagnostic() {
+  if (!_internal_has_get_diagnostic()) {
+    clear_request();
+    set_has_get_diagnostic();
+    request_.get_diagnostic_ = CreateMaybeMessage< ::io::deephaven::proto::backplane::script::grpc::GetDiagnosticRequest >(GetArenaForAllocation());
+  }
+  return request_.get_diagnostic_;
+}
+inline ::io::deephaven::proto::backplane::script::grpc::GetDiagnosticRequest* AutoCompleteRequest::mutable_get_diagnostic() {
+  ::io::deephaven::proto::backplane::script::grpc::GetDiagnosticRequest* _msg = _internal_mutable_get_diagnostic();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.script.grpc.AutoCompleteRequest.get_diagnostic)
+  return _msg;
+}
+
 // .io.deephaven.proto.backplane.script.grpc.CloseDocumentRequest close_document = 4;
 inline bool AutoCompleteRequest::_internal_has_close_document() const {
   return request_case() == kCloseDocument;
@@ -11257,6 +14815,46 @@ inline AutoCompleteRequest::RequestCase AutoCompleteRequest::request_case() cons
 
 // AutoCompleteResponse
 
+// int32 request_id = 2;
+inline void AutoCompleteResponse::clear_request_id() {
+  request_id_ = 0;
+}
+inline int32_t AutoCompleteResponse::_internal_request_id() const {
+  return request_id_;
+}
+inline int32_t AutoCompleteResponse::request_id() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.script.grpc.AutoCompleteResponse.request_id)
+  return _internal_request_id();
+}
+inline void AutoCompleteResponse::_internal_set_request_id(int32_t value) {
+  
+  request_id_ = value;
+}
+inline void AutoCompleteResponse::set_request_id(int32_t value) {
+  _internal_set_request_id(value);
+  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.script.grpc.AutoCompleteResponse.request_id)
+}
+
+// bool success = 3;
+inline void AutoCompleteResponse::clear_success() {
+  success_ = false;
+}
+inline bool AutoCompleteResponse::_internal_success() const {
+  return success_;
+}
+inline bool AutoCompleteResponse::success() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.script.grpc.AutoCompleteResponse.success)
+  return _internal_success();
+}
+inline void AutoCompleteResponse::_internal_set_success(bool value) {
+  
+  success_ = value;
+}
+inline void AutoCompleteResponse::set_success(bool value) {
+  _internal_set_success(value);
+  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.script.grpc.AutoCompleteResponse.success)
+}
+
 // .io.deephaven.proto.backplane.script.grpc.GetCompletionItemsResponse completion_items = 1;
 inline bool AutoCompleteResponse::_internal_has_completion_items() const {
   return response_case() == kCompletionItems;
@@ -11331,6 +14929,302 @@ inline ::io::deephaven::proto::backplane::script::grpc::GetCompletionItemsRespon
   return _msg;
 }
 
+// .io.deephaven.proto.backplane.script.grpc.GetSignatureHelpResponse signatures = 4;
+inline bool AutoCompleteResponse::_internal_has_signatures() const {
+  return response_case() == kSignatures;
+}
+inline bool AutoCompleteResponse::has_signatures() const {
+  return _internal_has_signatures();
+}
+inline void AutoCompleteResponse::set_has_signatures() {
+  _oneof_case_[0] = kSignatures;
+}
+inline void AutoCompleteResponse::clear_signatures() {
+  if (_internal_has_signatures()) {
+    if (GetArenaForAllocation() == nullptr) {
+      delete response_.signatures_;
+    }
+    clear_has_response();
+  }
+}
+inline ::io::deephaven::proto::backplane::script::grpc::GetSignatureHelpResponse* AutoCompleteResponse::release_signatures() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.script.grpc.AutoCompleteResponse.signatures)
+  if (_internal_has_signatures()) {
+    clear_has_response();
+    ::io::deephaven::proto::backplane::script::grpc::GetSignatureHelpResponse* temp = response_.signatures_;
+    if (GetArenaForAllocation() != nullptr) {
+      temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+    }
+    response_.signatures_ = nullptr;
+    return temp;
+  } else {
+    return nullptr;
+  }
+}
+inline const ::io::deephaven::proto::backplane::script::grpc::GetSignatureHelpResponse& AutoCompleteResponse::_internal_signatures() const {
+  return _internal_has_signatures()
+      ? *response_.signatures_
+      : reinterpret_cast< ::io::deephaven::proto::backplane::script::grpc::GetSignatureHelpResponse&>(::io::deephaven::proto::backplane::script::grpc::_GetSignatureHelpResponse_default_instance_);
+}
+inline const ::io::deephaven::proto::backplane::script::grpc::GetSignatureHelpResponse& AutoCompleteResponse::signatures() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.script.grpc.AutoCompleteResponse.signatures)
+  return _internal_signatures();
+}
+inline ::io::deephaven::proto::backplane::script::grpc::GetSignatureHelpResponse* AutoCompleteResponse::unsafe_arena_release_signatures() {
+  // @@protoc_insertion_point(field_unsafe_arena_release:io.deephaven.proto.backplane.script.grpc.AutoCompleteResponse.signatures)
+  if (_internal_has_signatures()) {
+    clear_has_response();
+    ::io::deephaven::proto::backplane::script::grpc::GetSignatureHelpResponse* temp = response_.signatures_;
+    response_.signatures_ = nullptr;
+    return temp;
+  } else {
+    return nullptr;
+  }
+}
+inline void AutoCompleteResponse::unsafe_arena_set_allocated_signatures(::io::deephaven::proto::backplane::script::grpc::GetSignatureHelpResponse* signatures) {
+  clear_response();
+  if (signatures) {
+    set_has_signatures();
+    response_.signatures_ = signatures;
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.script.grpc.AutoCompleteResponse.signatures)
+}
+inline ::io::deephaven::proto::backplane::script::grpc::GetSignatureHelpResponse* AutoCompleteResponse::_internal_mutable_signatures() {
+  if (!_internal_has_signatures()) {
+    clear_response();
+    set_has_signatures();
+    response_.signatures_ = CreateMaybeMessage< ::io::deephaven::proto::backplane::script::grpc::GetSignatureHelpResponse >(GetArenaForAllocation());
+  }
+  return response_.signatures_;
+}
+inline ::io::deephaven::proto::backplane::script::grpc::GetSignatureHelpResponse* AutoCompleteResponse::mutable_signatures() {
+  ::io::deephaven::proto::backplane::script::grpc::GetSignatureHelpResponse* _msg = _internal_mutable_signatures();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.script.grpc.AutoCompleteResponse.signatures)
+  return _msg;
+}
+
+// .io.deephaven.proto.backplane.script.grpc.GetHoverResponse hover = 5;
+inline bool AutoCompleteResponse::_internal_has_hover() const {
+  return response_case() == kHover;
+}
+inline bool AutoCompleteResponse::has_hover() const {
+  return _internal_has_hover();
+}
+inline void AutoCompleteResponse::set_has_hover() {
+  _oneof_case_[0] = kHover;
+}
+inline void AutoCompleteResponse::clear_hover() {
+  if (_internal_has_hover()) {
+    if (GetArenaForAllocation() == nullptr) {
+      delete response_.hover_;
+    }
+    clear_has_response();
+  }
+}
+inline ::io::deephaven::proto::backplane::script::grpc::GetHoverResponse* AutoCompleteResponse::release_hover() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.script.grpc.AutoCompleteResponse.hover)
+  if (_internal_has_hover()) {
+    clear_has_response();
+    ::io::deephaven::proto::backplane::script::grpc::GetHoverResponse* temp = response_.hover_;
+    if (GetArenaForAllocation() != nullptr) {
+      temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+    }
+    response_.hover_ = nullptr;
+    return temp;
+  } else {
+    return nullptr;
+  }
+}
+inline const ::io::deephaven::proto::backplane::script::grpc::GetHoverResponse& AutoCompleteResponse::_internal_hover() const {
+  return _internal_has_hover()
+      ? *response_.hover_
+      : reinterpret_cast< ::io::deephaven::proto::backplane::script::grpc::GetHoverResponse&>(::io::deephaven::proto::backplane::script::grpc::_GetHoverResponse_default_instance_);
+}
+inline const ::io::deephaven::proto::backplane::script::grpc::GetHoverResponse& AutoCompleteResponse::hover() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.script.grpc.AutoCompleteResponse.hover)
+  return _internal_hover();
+}
+inline ::io::deephaven::proto::backplane::script::grpc::GetHoverResponse* AutoCompleteResponse::unsafe_arena_release_hover() {
+  // @@protoc_insertion_point(field_unsafe_arena_release:io.deephaven.proto.backplane.script.grpc.AutoCompleteResponse.hover)
+  if (_internal_has_hover()) {
+    clear_has_response();
+    ::io::deephaven::proto::backplane::script::grpc::GetHoverResponse* temp = response_.hover_;
+    response_.hover_ = nullptr;
+    return temp;
+  } else {
+    return nullptr;
+  }
+}
+inline void AutoCompleteResponse::unsafe_arena_set_allocated_hover(::io::deephaven::proto::backplane::script::grpc::GetHoverResponse* hover) {
+  clear_response();
+  if (hover) {
+    set_has_hover();
+    response_.hover_ = hover;
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.script.grpc.AutoCompleteResponse.hover)
+}
+inline ::io::deephaven::proto::backplane::script::grpc::GetHoverResponse* AutoCompleteResponse::_internal_mutable_hover() {
+  if (!_internal_has_hover()) {
+    clear_response();
+    set_has_hover();
+    response_.hover_ = CreateMaybeMessage< ::io::deephaven::proto::backplane::script::grpc::GetHoverResponse >(GetArenaForAllocation());
+  }
+  return response_.hover_;
+}
+inline ::io::deephaven::proto::backplane::script::grpc::GetHoverResponse* AutoCompleteResponse::mutable_hover() {
+  ::io::deephaven::proto::backplane::script::grpc::GetHoverResponse* _msg = _internal_mutable_hover();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.script.grpc.AutoCompleteResponse.hover)
+  return _msg;
+}
+
+// .io.deephaven.proto.backplane.script.grpc.GetPullDiagnosticResponse diagnostic = 6;
+inline bool AutoCompleteResponse::_internal_has_diagnostic() const {
+  return response_case() == kDiagnostic;
+}
+inline bool AutoCompleteResponse::has_diagnostic() const {
+  return _internal_has_diagnostic();
+}
+inline void AutoCompleteResponse::set_has_diagnostic() {
+  _oneof_case_[0] = kDiagnostic;
+}
+inline void AutoCompleteResponse::clear_diagnostic() {
+  if (_internal_has_diagnostic()) {
+    if (GetArenaForAllocation() == nullptr) {
+      delete response_.diagnostic_;
+    }
+    clear_has_response();
+  }
+}
+inline ::io::deephaven::proto::backplane::script::grpc::GetPullDiagnosticResponse* AutoCompleteResponse::release_diagnostic() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.script.grpc.AutoCompleteResponse.diagnostic)
+  if (_internal_has_diagnostic()) {
+    clear_has_response();
+    ::io::deephaven::proto::backplane::script::grpc::GetPullDiagnosticResponse* temp = response_.diagnostic_;
+    if (GetArenaForAllocation() != nullptr) {
+      temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+    }
+    response_.diagnostic_ = nullptr;
+    return temp;
+  } else {
+    return nullptr;
+  }
+}
+inline const ::io::deephaven::proto::backplane::script::grpc::GetPullDiagnosticResponse& AutoCompleteResponse::_internal_diagnostic() const {
+  return _internal_has_diagnostic()
+      ? *response_.diagnostic_
+      : reinterpret_cast< ::io::deephaven::proto::backplane::script::grpc::GetPullDiagnosticResponse&>(::io::deephaven::proto::backplane::script::grpc::_GetPullDiagnosticResponse_default_instance_);
+}
+inline const ::io::deephaven::proto::backplane::script::grpc::GetPullDiagnosticResponse& AutoCompleteResponse::diagnostic() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.script.grpc.AutoCompleteResponse.diagnostic)
+  return _internal_diagnostic();
+}
+inline ::io::deephaven::proto::backplane::script::grpc::GetPullDiagnosticResponse* AutoCompleteResponse::unsafe_arena_release_diagnostic() {
+  // @@protoc_insertion_point(field_unsafe_arena_release:io.deephaven.proto.backplane.script.grpc.AutoCompleteResponse.diagnostic)
+  if (_internal_has_diagnostic()) {
+    clear_has_response();
+    ::io::deephaven::proto::backplane::script::grpc::GetPullDiagnosticResponse* temp = response_.diagnostic_;
+    response_.diagnostic_ = nullptr;
+    return temp;
+  } else {
+    return nullptr;
+  }
+}
+inline void AutoCompleteResponse::unsafe_arena_set_allocated_diagnostic(::io::deephaven::proto::backplane::script::grpc::GetPullDiagnosticResponse* diagnostic) {
+  clear_response();
+  if (diagnostic) {
+    set_has_diagnostic();
+    response_.diagnostic_ = diagnostic;
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.script.grpc.AutoCompleteResponse.diagnostic)
+}
+inline ::io::deephaven::proto::backplane::script::grpc::GetPullDiagnosticResponse* AutoCompleteResponse::_internal_mutable_diagnostic() {
+  if (!_internal_has_diagnostic()) {
+    clear_response();
+    set_has_diagnostic();
+    response_.diagnostic_ = CreateMaybeMessage< ::io::deephaven::proto::backplane::script::grpc::GetPullDiagnosticResponse >(GetArenaForAllocation());
+  }
+  return response_.diagnostic_;
+}
+inline ::io::deephaven::proto::backplane::script::grpc::GetPullDiagnosticResponse* AutoCompleteResponse::mutable_diagnostic() {
+  ::io::deephaven::proto::backplane::script::grpc::GetPullDiagnosticResponse* _msg = _internal_mutable_diagnostic();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.script.grpc.AutoCompleteResponse.diagnostic)
+  return _msg;
+}
+
+// .io.deephaven.proto.backplane.script.grpc.GetPublishDiagnosticResponse diagnostic_publish = 7;
+inline bool AutoCompleteResponse::_internal_has_diagnostic_publish() const {
+  return response_case() == kDiagnosticPublish;
+}
+inline bool AutoCompleteResponse::has_diagnostic_publish() const {
+  return _internal_has_diagnostic_publish();
+}
+inline void AutoCompleteResponse::set_has_diagnostic_publish() {
+  _oneof_case_[0] = kDiagnosticPublish;
+}
+inline void AutoCompleteResponse::clear_diagnostic_publish() {
+  if (_internal_has_diagnostic_publish()) {
+    if (GetArenaForAllocation() == nullptr) {
+      delete response_.diagnostic_publish_;
+    }
+    clear_has_response();
+  }
+}
+inline ::io::deephaven::proto::backplane::script::grpc::GetPublishDiagnosticResponse* AutoCompleteResponse::release_diagnostic_publish() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.script.grpc.AutoCompleteResponse.diagnostic_publish)
+  if (_internal_has_diagnostic_publish()) {
+    clear_has_response();
+    ::io::deephaven::proto::backplane::script::grpc::GetPublishDiagnosticResponse* temp = response_.diagnostic_publish_;
+    if (GetArenaForAllocation() != nullptr) {
+      temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+    }
+    response_.diagnostic_publish_ = nullptr;
+    return temp;
+  } else {
+    return nullptr;
+  }
+}
+inline const ::io::deephaven::proto::backplane::script::grpc::GetPublishDiagnosticResponse& AutoCompleteResponse::_internal_diagnostic_publish() const {
+  return _internal_has_diagnostic_publish()
+      ? *response_.diagnostic_publish_
+      : reinterpret_cast< ::io::deephaven::proto::backplane::script::grpc::GetPublishDiagnosticResponse&>(::io::deephaven::proto::backplane::script::grpc::_GetPublishDiagnosticResponse_default_instance_);
+}
+inline const ::io::deephaven::proto::backplane::script::grpc::GetPublishDiagnosticResponse& AutoCompleteResponse::diagnostic_publish() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.script.grpc.AutoCompleteResponse.diagnostic_publish)
+  return _internal_diagnostic_publish();
+}
+inline ::io::deephaven::proto::backplane::script::grpc::GetPublishDiagnosticResponse* AutoCompleteResponse::unsafe_arena_release_diagnostic_publish() {
+  // @@protoc_insertion_point(field_unsafe_arena_release:io.deephaven.proto.backplane.script.grpc.AutoCompleteResponse.diagnostic_publish)
+  if (_internal_has_diagnostic_publish()) {
+    clear_has_response();
+    ::io::deephaven::proto::backplane::script::grpc::GetPublishDiagnosticResponse* temp = response_.diagnostic_publish_;
+    response_.diagnostic_publish_ = nullptr;
+    return temp;
+  } else {
+    return nullptr;
+  }
+}
+inline void AutoCompleteResponse::unsafe_arena_set_allocated_diagnostic_publish(::io::deephaven::proto::backplane::script::grpc::GetPublishDiagnosticResponse* diagnostic_publish) {
+  clear_response();
+  if (diagnostic_publish) {
+    set_has_diagnostic_publish();
+    response_.diagnostic_publish_ = diagnostic_publish;
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.script.grpc.AutoCompleteResponse.diagnostic_publish)
+}
+inline ::io::deephaven::proto::backplane::script::grpc::GetPublishDiagnosticResponse* AutoCompleteResponse::_internal_mutable_diagnostic_publish() {
+  if (!_internal_has_diagnostic_publish()) {
+    clear_response();
+    set_has_diagnostic_publish();
+    response_.diagnostic_publish_ = CreateMaybeMessage< ::io::deephaven::proto::backplane::script::grpc::GetPublishDiagnosticResponse >(GetArenaForAllocation());
+  }
+  return response_.diagnostic_publish_;
+}
+inline ::io::deephaven::proto::backplane::script::grpc::GetPublishDiagnosticResponse* AutoCompleteResponse::mutable_diagnostic_publish() {
+  ::io::deephaven::proto::backplane::script::grpc::GetPublishDiagnosticResponse* _msg = _internal_mutable_diagnostic_publish();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.script.grpc.AutoCompleteResponse.diagnostic_publish)
+  return _msg;
+}
+
 inline bool AutoCompleteResponse::has_response() const {
   return response_case() != RESPONSE_NOT_SET;
 }
@@ -11348,7 +15242,7 @@ inline AutoCompleteResponse::ResponseCase AutoCompleteResponse::response_case() 
 
 // OpenDocumentRequest
 
-// .io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
+// .io.deephaven.proto.backplane.grpc.Ticket console_id = 1 [deprecated = true];
 inline bool OpenDocumentRequest::_internal_has_console_id() const {
   return this != internal_default_instance() && console_id_ != nullptr;
 }
@@ -11701,7 +15595,7 @@ inline void TextDocumentItem::set_allocated_text(std::string* text) {
 
 // CloseDocumentRequest
 
-// .io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
+// .io.deephaven.proto.backplane.grpc.Ticket console_id = 1 [deprecated = true];
 inline bool CloseDocumentRequest::_internal_has_console_id() const {
   return this != internal_default_instance() && console_id_ != nullptr;
 }
@@ -12044,7 +15938,7 @@ inline void ChangeDocumentRequest_TextDocumentContentChangeEvent::set_allocated_
 
 // ChangeDocumentRequest
 
-// .io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
+// .io.deephaven.proto.backplane.grpc.Ticket console_id = 1 [deprecated = true];
 inline bool ChangeDocumentRequest::_internal_has_console_id() const {
   return this != internal_default_instance() && console_id_ != nullptr;
 }
@@ -12563,9 +16457,113 @@ inline void Position::set_character(int32_t value) {
 
 // -------------------------------------------------------------------
 
+// MarkupContent
+
+// string kind = 1;
+inline void MarkupContent::clear_kind() {
+  kind_.ClearToEmpty();
+}
+inline const std::string& MarkupContent::kind() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.script.grpc.MarkupContent.kind)
+  return _internal_kind();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void MarkupContent::set_kind(ArgT0&& arg0, ArgT... args) {
+ 
+ kind_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.script.grpc.MarkupContent.kind)
+}
+inline std::string* MarkupContent::mutable_kind() {
+  std::string* _s = _internal_mutable_kind();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.script.grpc.MarkupContent.kind)
+  return _s;
+}
+inline const std::string& MarkupContent::_internal_kind() const {
+  return kind_.Get();
+}
+inline void MarkupContent::_internal_set_kind(const std::string& value) {
+  
+  kind_.Set(value, GetArenaForAllocation());
+}
+inline std::string* MarkupContent::_internal_mutable_kind() {
+  
+  return kind_.Mutable(GetArenaForAllocation());
+}
+inline std::string* MarkupContent::release_kind() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.script.grpc.MarkupContent.kind)
+  return kind_.Release();
+}
+inline void MarkupContent::set_allocated_kind(std::string* kind) {
+  if (kind != nullptr) {
+    
+  } else {
+    
+  }
+  kind_.SetAllocated(kind, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (kind_.IsDefault()) {
+    kind_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.script.grpc.MarkupContent.kind)
+}
+
+// string value = 2;
+inline void MarkupContent::clear_value() {
+  value_.ClearToEmpty();
+}
+inline const std::string& MarkupContent::value() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.script.grpc.MarkupContent.value)
+  return _internal_value();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void MarkupContent::set_value(ArgT0&& arg0, ArgT... args) {
+ 
+ value_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.script.grpc.MarkupContent.value)
+}
+inline std::string* MarkupContent::mutable_value() {
+  std::string* _s = _internal_mutable_value();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.script.grpc.MarkupContent.value)
+  return _s;
+}
+inline const std::string& MarkupContent::_internal_value() const {
+  return value_.Get();
+}
+inline void MarkupContent::_internal_set_value(const std::string& value) {
+  
+  value_.Set(value, GetArenaForAllocation());
+}
+inline std::string* MarkupContent::_internal_mutable_value() {
+  
+  return value_.Mutable(GetArenaForAllocation());
+}
+inline std::string* MarkupContent::release_value() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.script.grpc.MarkupContent.value)
+  return value_.Release();
+}
+inline void MarkupContent::set_allocated_value(std::string* value) {
+  if (value != nullptr) {
+    
+  } else {
+    
+  }
+  value_.SetAllocated(value, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (value_.IsDefault()) {
+    value_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.script.grpc.MarkupContent.value)
+}
+
+// -------------------------------------------------------------------
+
 // GetCompletionItemsRequest
 
-// .io.deephaven.proto.backplane.grpc.Ticket console_id = 1;
+// .io.deephaven.proto.backplane.grpc.Ticket console_id = 1 [deprecated = true];
 inline bool GetCompletionItemsRequest::_internal_has_console_id() const {
   return this != internal_default_instance() && console_id_ != nullptr;
 }
@@ -12920,7 +16918,7 @@ inline void GetCompletionItemsRequest::set_allocated_position(::io::deephaven::p
   // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.script.grpc.GetCompletionItemsRequest.position)
 }
 
-// int32 request_id = 5;
+// int32 request_id = 5 [deprecated = true];
 inline void GetCompletionItemsRequest::clear_request_id() {
   request_id_ = 0;
 }
@@ -13058,7 +17056,7 @@ GetCompletionItemsResponse::items() const {
   return items_;
 }
 
-// int32 request_id = 2;
+// int32 request_id = 2 [deprecated = true];
 inline void GetCompletionItemsResponse::clear_request_id() {
   request_id_ = 0;
 }
@@ -13078,7 +17076,7 @@ inline void GetCompletionItemsResponse::set_request_id(int32_t value) {
   // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.script.grpc.GetCompletionItemsResponse.request_id)
 }
 
-// bool success = 3;
+// bool success = 3 [deprecated = true];
 inline void GetCompletionItemsResponse::clear_success() {
   success_ = false;
 }
@@ -13260,56 +17258,6 @@ inline void CompletionItem::set_allocated_detail(std::string* detail) {
   }
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
   // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.script.grpc.CompletionItem.detail)
-}
-
-// string documentation = 6;
-inline void CompletionItem::clear_documentation() {
-  documentation_.ClearToEmpty();
-}
-inline const std::string& CompletionItem::documentation() const {
-  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.script.grpc.CompletionItem.documentation)
-  return _internal_documentation();
-}
-template <typename ArgT0, typename... ArgT>
-inline PROTOBUF_ALWAYS_INLINE
-void CompletionItem::set_documentation(ArgT0&& arg0, ArgT... args) {
- 
- documentation_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
-  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.script.grpc.CompletionItem.documentation)
-}
-inline std::string* CompletionItem::mutable_documentation() {
-  std::string* _s = _internal_mutable_documentation();
-  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.script.grpc.CompletionItem.documentation)
-  return _s;
-}
-inline const std::string& CompletionItem::_internal_documentation() const {
-  return documentation_.Get();
-}
-inline void CompletionItem::_internal_set_documentation(const std::string& value) {
-  
-  documentation_.Set(value, GetArenaForAllocation());
-}
-inline std::string* CompletionItem::_internal_mutable_documentation() {
-  
-  return documentation_.Mutable(GetArenaForAllocation());
-}
-inline std::string* CompletionItem::release_documentation() {
-  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.script.grpc.CompletionItem.documentation)
-  return documentation_.Release();
-}
-inline void CompletionItem::set_allocated_documentation(std::string* documentation) {
-  if (documentation != nullptr) {
-    
-  } else {
-    
-  }
-  documentation_.SetAllocated(documentation, GetArenaForAllocation());
-#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (documentation_.IsDefault()) {
-    documentation_.Set("", GetArenaForAllocation());
-  }
-#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.script.grpc.CompletionItem.documentation)
 }
 
 // bool deprecated = 7;
@@ -13677,6 +17625,96 @@ CompletionItem::mutable_commit_characters() {
   return &commit_characters_;
 }
 
+// .io.deephaven.proto.backplane.script.grpc.MarkupContent documentation = 15;
+inline bool CompletionItem::_internal_has_documentation() const {
+  return this != internal_default_instance() && documentation_ != nullptr;
+}
+inline bool CompletionItem::has_documentation() const {
+  return _internal_has_documentation();
+}
+inline void CompletionItem::clear_documentation() {
+  if (GetArenaForAllocation() == nullptr && documentation_ != nullptr) {
+    delete documentation_;
+  }
+  documentation_ = nullptr;
+}
+inline const ::io::deephaven::proto::backplane::script::grpc::MarkupContent& CompletionItem::_internal_documentation() const {
+  const ::io::deephaven::proto::backplane::script::grpc::MarkupContent* p = documentation_;
+  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::script::grpc::MarkupContent&>(
+      ::io::deephaven::proto::backplane::script::grpc::_MarkupContent_default_instance_);
+}
+inline const ::io::deephaven::proto::backplane::script::grpc::MarkupContent& CompletionItem::documentation() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.script.grpc.CompletionItem.documentation)
+  return _internal_documentation();
+}
+inline void CompletionItem::unsafe_arena_set_allocated_documentation(
+    ::io::deephaven::proto::backplane::script::grpc::MarkupContent* documentation) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(documentation_);
+  }
+  documentation_ = documentation;
+  if (documentation) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.script.grpc.CompletionItem.documentation)
+}
+inline ::io::deephaven::proto::backplane::script::grpc::MarkupContent* CompletionItem::release_documentation() {
+  
+  ::io::deephaven::proto::backplane::script::grpc::MarkupContent* temp = documentation_;
+  documentation_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::script::grpc::MarkupContent* CompletionItem::unsafe_arena_release_documentation() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.script.grpc.CompletionItem.documentation)
+  
+  ::io::deephaven::proto::backplane::script::grpc::MarkupContent* temp = documentation_;
+  documentation_ = nullptr;
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::script::grpc::MarkupContent* CompletionItem::_internal_mutable_documentation() {
+  
+  if (documentation_ == nullptr) {
+    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::script::grpc::MarkupContent>(GetArenaForAllocation());
+    documentation_ = p;
+  }
+  return documentation_;
+}
+inline ::io::deephaven::proto::backplane::script::grpc::MarkupContent* CompletionItem::mutable_documentation() {
+  ::io::deephaven::proto::backplane::script::grpc::MarkupContent* _msg = _internal_mutable_documentation();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.script.grpc.CompletionItem.documentation)
+  return _msg;
+}
+inline void CompletionItem::set_allocated_documentation(::io::deephaven::proto::backplane::script::grpc::MarkupContent* documentation) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete documentation_;
+  }
+  if (documentation) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(documentation);
+    if (message_arena != submessage_arena) {
+      documentation = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, documentation, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  documentation_ = documentation;
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.script.grpc.CompletionItem.documentation)
+}
+
 // -------------------------------------------------------------------
 
 // TextEdit
@@ -13819,6 +17857,2375 @@ inline void TextEdit::set_allocated_text(std::string* text) {
   }
 #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
   // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.script.grpc.TextEdit.text)
+}
+
+// -------------------------------------------------------------------
+
+// GetSignatureHelpRequest
+
+// .io.deephaven.proto.backplane.script.grpc.SignatureHelpContext context = 1;
+inline bool GetSignatureHelpRequest::_internal_has_context() const {
+  return this != internal_default_instance() && context_ != nullptr;
+}
+inline bool GetSignatureHelpRequest::has_context() const {
+  return _internal_has_context();
+}
+inline void GetSignatureHelpRequest::clear_context() {
+  if (GetArenaForAllocation() == nullptr && context_ != nullptr) {
+    delete context_;
+  }
+  context_ = nullptr;
+}
+inline const ::io::deephaven::proto::backplane::script::grpc::SignatureHelpContext& GetSignatureHelpRequest::_internal_context() const {
+  const ::io::deephaven::proto::backplane::script::grpc::SignatureHelpContext* p = context_;
+  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::script::grpc::SignatureHelpContext&>(
+      ::io::deephaven::proto::backplane::script::grpc::_SignatureHelpContext_default_instance_);
+}
+inline const ::io::deephaven::proto::backplane::script::grpc::SignatureHelpContext& GetSignatureHelpRequest::context() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.script.grpc.GetSignatureHelpRequest.context)
+  return _internal_context();
+}
+inline void GetSignatureHelpRequest::unsafe_arena_set_allocated_context(
+    ::io::deephaven::proto::backplane::script::grpc::SignatureHelpContext* context) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(context_);
+  }
+  context_ = context;
+  if (context) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.script.grpc.GetSignatureHelpRequest.context)
+}
+inline ::io::deephaven::proto::backplane::script::grpc::SignatureHelpContext* GetSignatureHelpRequest::release_context() {
+  
+  ::io::deephaven::proto::backplane::script::grpc::SignatureHelpContext* temp = context_;
+  context_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::script::grpc::SignatureHelpContext* GetSignatureHelpRequest::unsafe_arena_release_context() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.script.grpc.GetSignatureHelpRequest.context)
+  
+  ::io::deephaven::proto::backplane::script::grpc::SignatureHelpContext* temp = context_;
+  context_ = nullptr;
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::script::grpc::SignatureHelpContext* GetSignatureHelpRequest::_internal_mutable_context() {
+  
+  if (context_ == nullptr) {
+    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::script::grpc::SignatureHelpContext>(GetArenaForAllocation());
+    context_ = p;
+  }
+  return context_;
+}
+inline ::io::deephaven::proto::backplane::script::grpc::SignatureHelpContext* GetSignatureHelpRequest::mutable_context() {
+  ::io::deephaven::proto::backplane::script::grpc::SignatureHelpContext* _msg = _internal_mutable_context();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.script.grpc.GetSignatureHelpRequest.context)
+  return _msg;
+}
+inline void GetSignatureHelpRequest::set_allocated_context(::io::deephaven::proto::backplane::script::grpc::SignatureHelpContext* context) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete context_;
+  }
+  if (context) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(context);
+    if (message_arena != submessage_arena) {
+      context = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, context, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  context_ = context;
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.script.grpc.GetSignatureHelpRequest.context)
+}
+
+// .io.deephaven.proto.backplane.script.grpc.VersionedTextDocumentIdentifier text_document = 2;
+inline bool GetSignatureHelpRequest::_internal_has_text_document() const {
+  return this != internal_default_instance() && text_document_ != nullptr;
+}
+inline bool GetSignatureHelpRequest::has_text_document() const {
+  return _internal_has_text_document();
+}
+inline void GetSignatureHelpRequest::clear_text_document() {
+  if (GetArenaForAllocation() == nullptr && text_document_ != nullptr) {
+    delete text_document_;
+  }
+  text_document_ = nullptr;
+}
+inline const ::io::deephaven::proto::backplane::script::grpc::VersionedTextDocumentIdentifier& GetSignatureHelpRequest::_internal_text_document() const {
+  const ::io::deephaven::proto::backplane::script::grpc::VersionedTextDocumentIdentifier* p = text_document_;
+  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::script::grpc::VersionedTextDocumentIdentifier&>(
+      ::io::deephaven::proto::backplane::script::grpc::_VersionedTextDocumentIdentifier_default_instance_);
+}
+inline const ::io::deephaven::proto::backplane::script::grpc::VersionedTextDocumentIdentifier& GetSignatureHelpRequest::text_document() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.script.grpc.GetSignatureHelpRequest.text_document)
+  return _internal_text_document();
+}
+inline void GetSignatureHelpRequest::unsafe_arena_set_allocated_text_document(
+    ::io::deephaven::proto::backplane::script::grpc::VersionedTextDocumentIdentifier* text_document) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(text_document_);
+  }
+  text_document_ = text_document;
+  if (text_document) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.script.grpc.GetSignatureHelpRequest.text_document)
+}
+inline ::io::deephaven::proto::backplane::script::grpc::VersionedTextDocumentIdentifier* GetSignatureHelpRequest::release_text_document() {
+  
+  ::io::deephaven::proto::backplane::script::grpc::VersionedTextDocumentIdentifier* temp = text_document_;
+  text_document_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::script::grpc::VersionedTextDocumentIdentifier* GetSignatureHelpRequest::unsafe_arena_release_text_document() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.script.grpc.GetSignatureHelpRequest.text_document)
+  
+  ::io::deephaven::proto::backplane::script::grpc::VersionedTextDocumentIdentifier* temp = text_document_;
+  text_document_ = nullptr;
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::script::grpc::VersionedTextDocumentIdentifier* GetSignatureHelpRequest::_internal_mutable_text_document() {
+  
+  if (text_document_ == nullptr) {
+    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::script::grpc::VersionedTextDocumentIdentifier>(GetArenaForAllocation());
+    text_document_ = p;
+  }
+  return text_document_;
+}
+inline ::io::deephaven::proto::backplane::script::grpc::VersionedTextDocumentIdentifier* GetSignatureHelpRequest::mutable_text_document() {
+  ::io::deephaven::proto::backplane::script::grpc::VersionedTextDocumentIdentifier* _msg = _internal_mutable_text_document();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.script.grpc.GetSignatureHelpRequest.text_document)
+  return _msg;
+}
+inline void GetSignatureHelpRequest::set_allocated_text_document(::io::deephaven::proto::backplane::script::grpc::VersionedTextDocumentIdentifier* text_document) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete text_document_;
+  }
+  if (text_document) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(text_document);
+    if (message_arena != submessage_arena) {
+      text_document = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, text_document, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  text_document_ = text_document;
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.script.grpc.GetSignatureHelpRequest.text_document)
+}
+
+// .io.deephaven.proto.backplane.script.grpc.Position position = 3;
+inline bool GetSignatureHelpRequest::_internal_has_position() const {
+  return this != internal_default_instance() && position_ != nullptr;
+}
+inline bool GetSignatureHelpRequest::has_position() const {
+  return _internal_has_position();
+}
+inline void GetSignatureHelpRequest::clear_position() {
+  if (GetArenaForAllocation() == nullptr && position_ != nullptr) {
+    delete position_;
+  }
+  position_ = nullptr;
+}
+inline const ::io::deephaven::proto::backplane::script::grpc::Position& GetSignatureHelpRequest::_internal_position() const {
+  const ::io::deephaven::proto::backplane::script::grpc::Position* p = position_;
+  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::script::grpc::Position&>(
+      ::io::deephaven::proto::backplane::script::grpc::_Position_default_instance_);
+}
+inline const ::io::deephaven::proto::backplane::script::grpc::Position& GetSignatureHelpRequest::position() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.script.grpc.GetSignatureHelpRequest.position)
+  return _internal_position();
+}
+inline void GetSignatureHelpRequest::unsafe_arena_set_allocated_position(
+    ::io::deephaven::proto::backplane::script::grpc::Position* position) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(position_);
+  }
+  position_ = position;
+  if (position) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.script.grpc.GetSignatureHelpRequest.position)
+}
+inline ::io::deephaven::proto::backplane::script::grpc::Position* GetSignatureHelpRequest::release_position() {
+  
+  ::io::deephaven::proto::backplane::script::grpc::Position* temp = position_;
+  position_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::script::grpc::Position* GetSignatureHelpRequest::unsafe_arena_release_position() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.script.grpc.GetSignatureHelpRequest.position)
+  
+  ::io::deephaven::proto::backplane::script::grpc::Position* temp = position_;
+  position_ = nullptr;
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::script::grpc::Position* GetSignatureHelpRequest::_internal_mutable_position() {
+  
+  if (position_ == nullptr) {
+    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::script::grpc::Position>(GetArenaForAllocation());
+    position_ = p;
+  }
+  return position_;
+}
+inline ::io::deephaven::proto::backplane::script::grpc::Position* GetSignatureHelpRequest::mutable_position() {
+  ::io::deephaven::proto::backplane::script::grpc::Position* _msg = _internal_mutable_position();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.script.grpc.GetSignatureHelpRequest.position)
+  return _msg;
+}
+inline void GetSignatureHelpRequest::set_allocated_position(::io::deephaven::proto::backplane::script::grpc::Position* position) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete position_;
+  }
+  if (position) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(position);
+    if (message_arena != submessage_arena) {
+      position = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, position, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  position_ = position;
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.script.grpc.GetSignatureHelpRequest.position)
+}
+
+// -------------------------------------------------------------------
+
+// SignatureHelpContext
+
+// int32 trigger_kind = 1;
+inline void SignatureHelpContext::clear_trigger_kind() {
+  trigger_kind_ = 0;
+}
+inline int32_t SignatureHelpContext::_internal_trigger_kind() const {
+  return trigger_kind_;
+}
+inline int32_t SignatureHelpContext::trigger_kind() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.script.grpc.SignatureHelpContext.trigger_kind)
+  return _internal_trigger_kind();
+}
+inline void SignatureHelpContext::_internal_set_trigger_kind(int32_t value) {
+  
+  trigger_kind_ = value;
+}
+inline void SignatureHelpContext::set_trigger_kind(int32_t value) {
+  _internal_set_trigger_kind(value);
+  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.script.grpc.SignatureHelpContext.trigger_kind)
+}
+
+// optional string trigger_character = 2;
+inline bool SignatureHelpContext::_internal_has_trigger_character() const {
+  bool value = (_has_bits_[0] & 0x00000001u) != 0;
+  return value;
+}
+inline bool SignatureHelpContext::has_trigger_character() const {
+  return _internal_has_trigger_character();
+}
+inline void SignatureHelpContext::clear_trigger_character() {
+  trigger_character_.ClearToEmpty();
+  _has_bits_[0] &= ~0x00000001u;
+}
+inline const std::string& SignatureHelpContext::trigger_character() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.script.grpc.SignatureHelpContext.trigger_character)
+  return _internal_trigger_character();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void SignatureHelpContext::set_trigger_character(ArgT0&& arg0, ArgT... args) {
+ _has_bits_[0] |= 0x00000001u;
+ trigger_character_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.script.grpc.SignatureHelpContext.trigger_character)
+}
+inline std::string* SignatureHelpContext::mutable_trigger_character() {
+  std::string* _s = _internal_mutable_trigger_character();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.script.grpc.SignatureHelpContext.trigger_character)
+  return _s;
+}
+inline const std::string& SignatureHelpContext::_internal_trigger_character() const {
+  return trigger_character_.Get();
+}
+inline void SignatureHelpContext::_internal_set_trigger_character(const std::string& value) {
+  _has_bits_[0] |= 0x00000001u;
+  trigger_character_.Set(value, GetArenaForAllocation());
+}
+inline std::string* SignatureHelpContext::_internal_mutable_trigger_character() {
+  _has_bits_[0] |= 0x00000001u;
+  return trigger_character_.Mutable(GetArenaForAllocation());
+}
+inline std::string* SignatureHelpContext::release_trigger_character() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.script.grpc.SignatureHelpContext.trigger_character)
+  if (!_internal_has_trigger_character()) {
+    return nullptr;
+  }
+  _has_bits_[0] &= ~0x00000001u;
+  auto* p = trigger_character_.Release();
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (trigger_character_.IsDefault()) {
+    trigger_character_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  return p;
+}
+inline void SignatureHelpContext::set_allocated_trigger_character(std::string* trigger_character) {
+  if (trigger_character != nullptr) {
+    _has_bits_[0] |= 0x00000001u;
+  } else {
+    _has_bits_[0] &= ~0x00000001u;
+  }
+  trigger_character_.SetAllocated(trigger_character, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (trigger_character_.IsDefault()) {
+    trigger_character_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.script.grpc.SignatureHelpContext.trigger_character)
+}
+
+// bool is_retrigger = 3;
+inline void SignatureHelpContext::clear_is_retrigger() {
+  is_retrigger_ = false;
+}
+inline bool SignatureHelpContext::_internal_is_retrigger() const {
+  return is_retrigger_;
+}
+inline bool SignatureHelpContext::is_retrigger() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.script.grpc.SignatureHelpContext.is_retrigger)
+  return _internal_is_retrigger();
+}
+inline void SignatureHelpContext::_internal_set_is_retrigger(bool value) {
+  
+  is_retrigger_ = value;
+}
+inline void SignatureHelpContext::set_is_retrigger(bool value) {
+  _internal_set_is_retrigger(value);
+  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.script.grpc.SignatureHelpContext.is_retrigger)
+}
+
+// .io.deephaven.proto.backplane.script.grpc.GetSignatureHelpResponse active_signature_help = 4;
+inline bool SignatureHelpContext::_internal_has_active_signature_help() const {
+  return this != internal_default_instance() && active_signature_help_ != nullptr;
+}
+inline bool SignatureHelpContext::has_active_signature_help() const {
+  return _internal_has_active_signature_help();
+}
+inline void SignatureHelpContext::clear_active_signature_help() {
+  if (GetArenaForAllocation() == nullptr && active_signature_help_ != nullptr) {
+    delete active_signature_help_;
+  }
+  active_signature_help_ = nullptr;
+}
+inline const ::io::deephaven::proto::backplane::script::grpc::GetSignatureHelpResponse& SignatureHelpContext::_internal_active_signature_help() const {
+  const ::io::deephaven::proto::backplane::script::grpc::GetSignatureHelpResponse* p = active_signature_help_;
+  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::script::grpc::GetSignatureHelpResponse&>(
+      ::io::deephaven::proto::backplane::script::grpc::_GetSignatureHelpResponse_default_instance_);
+}
+inline const ::io::deephaven::proto::backplane::script::grpc::GetSignatureHelpResponse& SignatureHelpContext::active_signature_help() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.script.grpc.SignatureHelpContext.active_signature_help)
+  return _internal_active_signature_help();
+}
+inline void SignatureHelpContext::unsafe_arena_set_allocated_active_signature_help(
+    ::io::deephaven::proto::backplane::script::grpc::GetSignatureHelpResponse* active_signature_help) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(active_signature_help_);
+  }
+  active_signature_help_ = active_signature_help;
+  if (active_signature_help) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.script.grpc.SignatureHelpContext.active_signature_help)
+}
+inline ::io::deephaven::proto::backplane::script::grpc::GetSignatureHelpResponse* SignatureHelpContext::release_active_signature_help() {
+  
+  ::io::deephaven::proto::backplane::script::grpc::GetSignatureHelpResponse* temp = active_signature_help_;
+  active_signature_help_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::script::grpc::GetSignatureHelpResponse* SignatureHelpContext::unsafe_arena_release_active_signature_help() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.script.grpc.SignatureHelpContext.active_signature_help)
+  
+  ::io::deephaven::proto::backplane::script::grpc::GetSignatureHelpResponse* temp = active_signature_help_;
+  active_signature_help_ = nullptr;
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::script::grpc::GetSignatureHelpResponse* SignatureHelpContext::_internal_mutable_active_signature_help() {
+  
+  if (active_signature_help_ == nullptr) {
+    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::script::grpc::GetSignatureHelpResponse>(GetArenaForAllocation());
+    active_signature_help_ = p;
+  }
+  return active_signature_help_;
+}
+inline ::io::deephaven::proto::backplane::script::grpc::GetSignatureHelpResponse* SignatureHelpContext::mutable_active_signature_help() {
+  ::io::deephaven::proto::backplane::script::grpc::GetSignatureHelpResponse* _msg = _internal_mutable_active_signature_help();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.script.grpc.SignatureHelpContext.active_signature_help)
+  return _msg;
+}
+inline void SignatureHelpContext::set_allocated_active_signature_help(::io::deephaven::proto::backplane::script::grpc::GetSignatureHelpResponse* active_signature_help) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete active_signature_help_;
+  }
+  if (active_signature_help) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(active_signature_help);
+    if (message_arena != submessage_arena) {
+      active_signature_help = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, active_signature_help, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  active_signature_help_ = active_signature_help;
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.script.grpc.SignatureHelpContext.active_signature_help)
+}
+
+// -------------------------------------------------------------------
+
+// GetSignatureHelpResponse
+
+// repeated .io.deephaven.proto.backplane.script.grpc.SignatureInformation signatures = 1;
+inline int GetSignatureHelpResponse::_internal_signatures_size() const {
+  return signatures_.size();
+}
+inline int GetSignatureHelpResponse::signatures_size() const {
+  return _internal_signatures_size();
+}
+inline void GetSignatureHelpResponse::clear_signatures() {
+  signatures_.Clear();
+}
+inline ::io::deephaven::proto::backplane::script::grpc::SignatureInformation* GetSignatureHelpResponse::mutable_signatures(int index) {
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.script.grpc.GetSignatureHelpResponse.signatures)
+  return signatures_.Mutable(index);
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::io::deephaven::proto::backplane::script::grpc::SignatureInformation >*
+GetSignatureHelpResponse::mutable_signatures() {
+  // @@protoc_insertion_point(field_mutable_list:io.deephaven.proto.backplane.script.grpc.GetSignatureHelpResponse.signatures)
+  return &signatures_;
+}
+inline const ::io::deephaven::proto::backplane::script::grpc::SignatureInformation& GetSignatureHelpResponse::_internal_signatures(int index) const {
+  return signatures_.Get(index);
+}
+inline const ::io::deephaven::proto::backplane::script::grpc::SignatureInformation& GetSignatureHelpResponse::signatures(int index) const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.script.grpc.GetSignatureHelpResponse.signatures)
+  return _internal_signatures(index);
+}
+inline ::io::deephaven::proto::backplane::script::grpc::SignatureInformation* GetSignatureHelpResponse::_internal_add_signatures() {
+  return signatures_.Add();
+}
+inline ::io::deephaven::proto::backplane::script::grpc::SignatureInformation* GetSignatureHelpResponse::add_signatures() {
+  ::io::deephaven::proto::backplane::script::grpc::SignatureInformation* _add = _internal_add_signatures();
+  // @@protoc_insertion_point(field_add:io.deephaven.proto.backplane.script.grpc.GetSignatureHelpResponse.signatures)
+  return _add;
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::io::deephaven::proto::backplane::script::grpc::SignatureInformation >&
+GetSignatureHelpResponse::signatures() const {
+  // @@protoc_insertion_point(field_list:io.deephaven.proto.backplane.script.grpc.GetSignatureHelpResponse.signatures)
+  return signatures_;
+}
+
+// optional int32 active_signature = 2;
+inline bool GetSignatureHelpResponse::_internal_has_active_signature() const {
+  bool value = (_has_bits_[0] & 0x00000001u) != 0;
+  return value;
+}
+inline bool GetSignatureHelpResponse::has_active_signature() const {
+  return _internal_has_active_signature();
+}
+inline void GetSignatureHelpResponse::clear_active_signature() {
+  active_signature_ = 0;
+  _has_bits_[0] &= ~0x00000001u;
+}
+inline int32_t GetSignatureHelpResponse::_internal_active_signature() const {
+  return active_signature_;
+}
+inline int32_t GetSignatureHelpResponse::active_signature() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.script.grpc.GetSignatureHelpResponse.active_signature)
+  return _internal_active_signature();
+}
+inline void GetSignatureHelpResponse::_internal_set_active_signature(int32_t value) {
+  _has_bits_[0] |= 0x00000001u;
+  active_signature_ = value;
+}
+inline void GetSignatureHelpResponse::set_active_signature(int32_t value) {
+  _internal_set_active_signature(value);
+  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.script.grpc.GetSignatureHelpResponse.active_signature)
+}
+
+// optional int32 active_parameter = 3;
+inline bool GetSignatureHelpResponse::_internal_has_active_parameter() const {
+  bool value = (_has_bits_[0] & 0x00000002u) != 0;
+  return value;
+}
+inline bool GetSignatureHelpResponse::has_active_parameter() const {
+  return _internal_has_active_parameter();
+}
+inline void GetSignatureHelpResponse::clear_active_parameter() {
+  active_parameter_ = 0;
+  _has_bits_[0] &= ~0x00000002u;
+}
+inline int32_t GetSignatureHelpResponse::_internal_active_parameter() const {
+  return active_parameter_;
+}
+inline int32_t GetSignatureHelpResponse::active_parameter() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.script.grpc.GetSignatureHelpResponse.active_parameter)
+  return _internal_active_parameter();
+}
+inline void GetSignatureHelpResponse::_internal_set_active_parameter(int32_t value) {
+  _has_bits_[0] |= 0x00000002u;
+  active_parameter_ = value;
+}
+inline void GetSignatureHelpResponse::set_active_parameter(int32_t value) {
+  _internal_set_active_parameter(value);
+  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.script.grpc.GetSignatureHelpResponse.active_parameter)
+}
+
+// -------------------------------------------------------------------
+
+// SignatureInformation
+
+// string label = 1;
+inline void SignatureInformation::clear_label() {
+  label_.ClearToEmpty();
+}
+inline const std::string& SignatureInformation::label() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.script.grpc.SignatureInformation.label)
+  return _internal_label();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void SignatureInformation::set_label(ArgT0&& arg0, ArgT... args) {
+ 
+ label_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.script.grpc.SignatureInformation.label)
+}
+inline std::string* SignatureInformation::mutable_label() {
+  std::string* _s = _internal_mutable_label();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.script.grpc.SignatureInformation.label)
+  return _s;
+}
+inline const std::string& SignatureInformation::_internal_label() const {
+  return label_.Get();
+}
+inline void SignatureInformation::_internal_set_label(const std::string& value) {
+  
+  label_.Set(value, GetArenaForAllocation());
+}
+inline std::string* SignatureInformation::_internal_mutable_label() {
+  
+  return label_.Mutable(GetArenaForAllocation());
+}
+inline std::string* SignatureInformation::release_label() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.script.grpc.SignatureInformation.label)
+  return label_.Release();
+}
+inline void SignatureInformation::set_allocated_label(std::string* label) {
+  if (label != nullptr) {
+    
+  } else {
+    
+  }
+  label_.SetAllocated(label, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (label_.IsDefault()) {
+    label_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.script.grpc.SignatureInformation.label)
+}
+
+// .io.deephaven.proto.backplane.script.grpc.MarkupContent documentation = 2;
+inline bool SignatureInformation::_internal_has_documentation() const {
+  return this != internal_default_instance() && documentation_ != nullptr;
+}
+inline bool SignatureInformation::has_documentation() const {
+  return _internal_has_documentation();
+}
+inline void SignatureInformation::clear_documentation() {
+  if (GetArenaForAllocation() == nullptr && documentation_ != nullptr) {
+    delete documentation_;
+  }
+  documentation_ = nullptr;
+}
+inline const ::io::deephaven::proto::backplane::script::grpc::MarkupContent& SignatureInformation::_internal_documentation() const {
+  const ::io::deephaven::proto::backplane::script::grpc::MarkupContent* p = documentation_;
+  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::script::grpc::MarkupContent&>(
+      ::io::deephaven::proto::backplane::script::grpc::_MarkupContent_default_instance_);
+}
+inline const ::io::deephaven::proto::backplane::script::grpc::MarkupContent& SignatureInformation::documentation() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.script.grpc.SignatureInformation.documentation)
+  return _internal_documentation();
+}
+inline void SignatureInformation::unsafe_arena_set_allocated_documentation(
+    ::io::deephaven::proto::backplane::script::grpc::MarkupContent* documentation) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(documentation_);
+  }
+  documentation_ = documentation;
+  if (documentation) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.script.grpc.SignatureInformation.documentation)
+}
+inline ::io::deephaven::proto::backplane::script::grpc::MarkupContent* SignatureInformation::release_documentation() {
+  
+  ::io::deephaven::proto::backplane::script::grpc::MarkupContent* temp = documentation_;
+  documentation_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::script::grpc::MarkupContent* SignatureInformation::unsafe_arena_release_documentation() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.script.grpc.SignatureInformation.documentation)
+  
+  ::io::deephaven::proto::backplane::script::grpc::MarkupContent* temp = documentation_;
+  documentation_ = nullptr;
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::script::grpc::MarkupContent* SignatureInformation::_internal_mutable_documentation() {
+  
+  if (documentation_ == nullptr) {
+    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::script::grpc::MarkupContent>(GetArenaForAllocation());
+    documentation_ = p;
+  }
+  return documentation_;
+}
+inline ::io::deephaven::proto::backplane::script::grpc::MarkupContent* SignatureInformation::mutable_documentation() {
+  ::io::deephaven::proto::backplane::script::grpc::MarkupContent* _msg = _internal_mutable_documentation();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.script.grpc.SignatureInformation.documentation)
+  return _msg;
+}
+inline void SignatureInformation::set_allocated_documentation(::io::deephaven::proto::backplane::script::grpc::MarkupContent* documentation) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete documentation_;
+  }
+  if (documentation) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(documentation);
+    if (message_arena != submessage_arena) {
+      documentation = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, documentation, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  documentation_ = documentation;
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.script.grpc.SignatureInformation.documentation)
+}
+
+// repeated .io.deephaven.proto.backplane.script.grpc.ParameterInformation parameters = 3;
+inline int SignatureInformation::_internal_parameters_size() const {
+  return parameters_.size();
+}
+inline int SignatureInformation::parameters_size() const {
+  return _internal_parameters_size();
+}
+inline void SignatureInformation::clear_parameters() {
+  parameters_.Clear();
+}
+inline ::io::deephaven::proto::backplane::script::grpc::ParameterInformation* SignatureInformation::mutable_parameters(int index) {
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.script.grpc.SignatureInformation.parameters)
+  return parameters_.Mutable(index);
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::io::deephaven::proto::backplane::script::grpc::ParameterInformation >*
+SignatureInformation::mutable_parameters() {
+  // @@protoc_insertion_point(field_mutable_list:io.deephaven.proto.backplane.script.grpc.SignatureInformation.parameters)
+  return &parameters_;
+}
+inline const ::io::deephaven::proto::backplane::script::grpc::ParameterInformation& SignatureInformation::_internal_parameters(int index) const {
+  return parameters_.Get(index);
+}
+inline const ::io::deephaven::proto::backplane::script::grpc::ParameterInformation& SignatureInformation::parameters(int index) const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.script.grpc.SignatureInformation.parameters)
+  return _internal_parameters(index);
+}
+inline ::io::deephaven::proto::backplane::script::grpc::ParameterInformation* SignatureInformation::_internal_add_parameters() {
+  return parameters_.Add();
+}
+inline ::io::deephaven::proto::backplane::script::grpc::ParameterInformation* SignatureInformation::add_parameters() {
+  ::io::deephaven::proto::backplane::script::grpc::ParameterInformation* _add = _internal_add_parameters();
+  // @@protoc_insertion_point(field_add:io.deephaven.proto.backplane.script.grpc.SignatureInformation.parameters)
+  return _add;
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::io::deephaven::proto::backplane::script::grpc::ParameterInformation >&
+SignatureInformation::parameters() const {
+  // @@protoc_insertion_point(field_list:io.deephaven.proto.backplane.script.grpc.SignatureInformation.parameters)
+  return parameters_;
+}
+
+// optional int32 active_parameter = 4;
+inline bool SignatureInformation::_internal_has_active_parameter() const {
+  bool value = (_has_bits_[0] & 0x00000001u) != 0;
+  return value;
+}
+inline bool SignatureInformation::has_active_parameter() const {
+  return _internal_has_active_parameter();
+}
+inline void SignatureInformation::clear_active_parameter() {
+  active_parameter_ = 0;
+  _has_bits_[0] &= ~0x00000001u;
+}
+inline int32_t SignatureInformation::_internal_active_parameter() const {
+  return active_parameter_;
+}
+inline int32_t SignatureInformation::active_parameter() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.script.grpc.SignatureInformation.active_parameter)
+  return _internal_active_parameter();
+}
+inline void SignatureInformation::_internal_set_active_parameter(int32_t value) {
+  _has_bits_[0] |= 0x00000001u;
+  active_parameter_ = value;
+}
+inline void SignatureInformation::set_active_parameter(int32_t value) {
+  _internal_set_active_parameter(value);
+  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.script.grpc.SignatureInformation.active_parameter)
+}
+
+// -------------------------------------------------------------------
+
+// ParameterInformation
+
+// string label = 1;
+inline void ParameterInformation::clear_label() {
+  label_.ClearToEmpty();
+}
+inline const std::string& ParameterInformation::label() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.script.grpc.ParameterInformation.label)
+  return _internal_label();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void ParameterInformation::set_label(ArgT0&& arg0, ArgT... args) {
+ 
+ label_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.script.grpc.ParameterInformation.label)
+}
+inline std::string* ParameterInformation::mutable_label() {
+  std::string* _s = _internal_mutable_label();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.script.grpc.ParameterInformation.label)
+  return _s;
+}
+inline const std::string& ParameterInformation::_internal_label() const {
+  return label_.Get();
+}
+inline void ParameterInformation::_internal_set_label(const std::string& value) {
+  
+  label_.Set(value, GetArenaForAllocation());
+}
+inline std::string* ParameterInformation::_internal_mutable_label() {
+  
+  return label_.Mutable(GetArenaForAllocation());
+}
+inline std::string* ParameterInformation::release_label() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.script.grpc.ParameterInformation.label)
+  return label_.Release();
+}
+inline void ParameterInformation::set_allocated_label(std::string* label) {
+  if (label != nullptr) {
+    
+  } else {
+    
+  }
+  label_.SetAllocated(label, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (label_.IsDefault()) {
+    label_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.script.grpc.ParameterInformation.label)
+}
+
+// .io.deephaven.proto.backplane.script.grpc.MarkupContent documentation = 2;
+inline bool ParameterInformation::_internal_has_documentation() const {
+  return this != internal_default_instance() && documentation_ != nullptr;
+}
+inline bool ParameterInformation::has_documentation() const {
+  return _internal_has_documentation();
+}
+inline void ParameterInformation::clear_documentation() {
+  if (GetArenaForAllocation() == nullptr && documentation_ != nullptr) {
+    delete documentation_;
+  }
+  documentation_ = nullptr;
+}
+inline const ::io::deephaven::proto::backplane::script::grpc::MarkupContent& ParameterInformation::_internal_documentation() const {
+  const ::io::deephaven::proto::backplane::script::grpc::MarkupContent* p = documentation_;
+  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::script::grpc::MarkupContent&>(
+      ::io::deephaven::proto::backplane::script::grpc::_MarkupContent_default_instance_);
+}
+inline const ::io::deephaven::proto::backplane::script::grpc::MarkupContent& ParameterInformation::documentation() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.script.grpc.ParameterInformation.documentation)
+  return _internal_documentation();
+}
+inline void ParameterInformation::unsafe_arena_set_allocated_documentation(
+    ::io::deephaven::proto::backplane::script::grpc::MarkupContent* documentation) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(documentation_);
+  }
+  documentation_ = documentation;
+  if (documentation) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.script.grpc.ParameterInformation.documentation)
+}
+inline ::io::deephaven::proto::backplane::script::grpc::MarkupContent* ParameterInformation::release_documentation() {
+  
+  ::io::deephaven::proto::backplane::script::grpc::MarkupContent* temp = documentation_;
+  documentation_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::script::grpc::MarkupContent* ParameterInformation::unsafe_arena_release_documentation() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.script.grpc.ParameterInformation.documentation)
+  
+  ::io::deephaven::proto::backplane::script::grpc::MarkupContent* temp = documentation_;
+  documentation_ = nullptr;
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::script::grpc::MarkupContent* ParameterInformation::_internal_mutable_documentation() {
+  
+  if (documentation_ == nullptr) {
+    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::script::grpc::MarkupContent>(GetArenaForAllocation());
+    documentation_ = p;
+  }
+  return documentation_;
+}
+inline ::io::deephaven::proto::backplane::script::grpc::MarkupContent* ParameterInformation::mutable_documentation() {
+  ::io::deephaven::proto::backplane::script::grpc::MarkupContent* _msg = _internal_mutable_documentation();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.script.grpc.ParameterInformation.documentation)
+  return _msg;
+}
+inline void ParameterInformation::set_allocated_documentation(::io::deephaven::proto::backplane::script::grpc::MarkupContent* documentation) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete documentation_;
+  }
+  if (documentation) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(documentation);
+    if (message_arena != submessage_arena) {
+      documentation = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, documentation, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  documentation_ = documentation;
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.script.grpc.ParameterInformation.documentation)
+}
+
+// -------------------------------------------------------------------
+
+// GetHoverRequest
+
+// .io.deephaven.proto.backplane.script.grpc.VersionedTextDocumentIdentifier text_document = 1;
+inline bool GetHoverRequest::_internal_has_text_document() const {
+  return this != internal_default_instance() && text_document_ != nullptr;
+}
+inline bool GetHoverRequest::has_text_document() const {
+  return _internal_has_text_document();
+}
+inline void GetHoverRequest::clear_text_document() {
+  if (GetArenaForAllocation() == nullptr && text_document_ != nullptr) {
+    delete text_document_;
+  }
+  text_document_ = nullptr;
+}
+inline const ::io::deephaven::proto::backplane::script::grpc::VersionedTextDocumentIdentifier& GetHoverRequest::_internal_text_document() const {
+  const ::io::deephaven::proto::backplane::script::grpc::VersionedTextDocumentIdentifier* p = text_document_;
+  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::script::grpc::VersionedTextDocumentIdentifier&>(
+      ::io::deephaven::proto::backplane::script::grpc::_VersionedTextDocumentIdentifier_default_instance_);
+}
+inline const ::io::deephaven::proto::backplane::script::grpc::VersionedTextDocumentIdentifier& GetHoverRequest::text_document() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.script.grpc.GetHoverRequest.text_document)
+  return _internal_text_document();
+}
+inline void GetHoverRequest::unsafe_arena_set_allocated_text_document(
+    ::io::deephaven::proto::backplane::script::grpc::VersionedTextDocumentIdentifier* text_document) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(text_document_);
+  }
+  text_document_ = text_document;
+  if (text_document) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.script.grpc.GetHoverRequest.text_document)
+}
+inline ::io::deephaven::proto::backplane::script::grpc::VersionedTextDocumentIdentifier* GetHoverRequest::release_text_document() {
+  
+  ::io::deephaven::proto::backplane::script::grpc::VersionedTextDocumentIdentifier* temp = text_document_;
+  text_document_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::script::grpc::VersionedTextDocumentIdentifier* GetHoverRequest::unsafe_arena_release_text_document() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.script.grpc.GetHoverRequest.text_document)
+  
+  ::io::deephaven::proto::backplane::script::grpc::VersionedTextDocumentIdentifier* temp = text_document_;
+  text_document_ = nullptr;
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::script::grpc::VersionedTextDocumentIdentifier* GetHoverRequest::_internal_mutable_text_document() {
+  
+  if (text_document_ == nullptr) {
+    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::script::grpc::VersionedTextDocumentIdentifier>(GetArenaForAllocation());
+    text_document_ = p;
+  }
+  return text_document_;
+}
+inline ::io::deephaven::proto::backplane::script::grpc::VersionedTextDocumentIdentifier* GetHoverRequest::mutable_text_document() {
+  ::io::deephaven::proto::backplane::script::grpc::VersionedTextDocumentIdentifier* _msg = _internal_mutable_text_document();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.script.grpc.GetHoverRequest.text_document)
+  return _msg;
+}
+inline void GetHoverRequest::set_allocated_text_document(::io::deephaven::proto::backplane::script::grpc::VersionedTextDocumentIdentifier* text_document) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete text_document_;
+  }
+  if (text_document) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(text_document);
+    if (message_arena != submessage_arena) {
+      text_document = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, text_document, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  text_document_ = text_document;
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.script.grpc.GetHoverRequest.text_document)
+}
+
+// .io.deephaven.proto.backplane.script.grpc.Position position = 2;
+inline bool GetHoverRequest::_internal_has_position() const {
+  return this != internal_default_instance() && position_ != nullptr;
+}
+inline bool GetHoverRequest::has_position() const {
+  return _internal_has_position();
+}
+inline void GetHoverRequest::clear_position() {
+  if (GetArenaForAllocation() == nullptr && position_ != nullptr) {
+    delete position_;
+  }
+  position_ = nullptr;
+}
+inline const ::io::deephaven::proto::backplane::script::grpc::Position& GetHoverRequest::_internal_position() const {
+  const ::io::deephaven::proto::backplane::script::grpc::Position* p = position_;
+  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::script::grpc::Position&>(
+      ::io::deephaven::proto::backplane::script::grpc::_Position_default_instance_);
+}
+inline const ::io::deephaven::proto::backplane::script::grpc::Position& GetHoverRequest::position() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.script.grpc.GetHoverRequest.position)
+  return _internal_position();
+}
+inline void GetHoverRequest::unsafe_arena_set_allocated_position(
+    ::io::deephaven::proto::backplane::script::grpc::Position* position) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(position_);
+  }
+  position_ = position;
+  if (position) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.script.grpc.GetHoverRequest.position)
+}
+inline ::io::deephaven::proto::backplane::script::grpc::Position* GetHoverRequest::release_position() {
+  
+  ::io::deephaven::proto::backplane::script::grpc::Position* temp = position_;
+  position_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::script::grpc::Position* GetHoverRequest::unsafe_arena_release_position() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.script.grpc.GetHoverRequest.position)
+  
+  ::io::deephaven::proto::backplane::script::grpc::Position* temp = position_;
+  position_ = nullptr;
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::script::grpc::Position* GetHoverRequest::_internal_mutable_position() {
+  
+  if (position_ == nullptr) {
+    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::script::grpc::Position>(GetArenaForAllocation());
+    position_ = p;
+  }
+  return position_;
+}
+inline ::io::deephaven::proto::backplane::script::grpc::Position* GetHoverRequest::mutable_position() {
+  ::io::deephaven::proto::backplane::script::grpc::Position* _msg = _internal_mutable_position();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.script.grpc.GetHoverRequest.position)
+  return _msg;
+}
+inline void GetHoverRequest::set_allocated_position(::io::deephaven::proto::backplane::script::grpc::Position* position) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete position_;
+  }
+  if (position) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(position);
+    if (message_arena != submessage_arena) {
+      position = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, position, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  position_ = position;
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.script.grpc.GetHoverRequest.position)
+}
+
+// -------------------------------------------------------------------
+
+// GetHoverResponse
+
+// .io.deephaven.proto.backplane.script.grpc.MarkupContent contents = 1;
+inline bool GetHoverResponse::_internal_has_contents() const {
+  return this != internal_default_instance() && contents_ != nullptr;
+}
+inline bool GetHoverResponse::has_contents() const {
+  return _internal_has_contents();
+}
+inline void GetHoverResponse::clear_contents() {
+  if (GetArenaForAllocation() == nullptr && contents_ != nullptr) {
+    delete contents_;
+  }
+  contents_ = nullptr;
+}
+inline const ::io::deephaven::proto::backplane::script::grpc::MarkupContent& GetHoverResponse::_internal_contents() const {
+  const ::io::deephaven::proto::backplane::script::grpc::MarkupContent* p = contents_;
+  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::script::grpc::MarkupContent&>(
+      ::io::deephaven::proto::backplane::script::grpc::_MarkupContent_default_instance_);
+}
+inline const ::io::deephaven::proto::backplane::script::grpc::MarkupContent& GetHoverResponse::contents() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.script.grpc.GetHoverResponse.contents)
+  return _internal_contents();
+}
+inline void GetHoverResponse::unsafe_arena_set_allocated_contents(
+    ::io::deephaven::proto::backplane::script::grpc::MarkupContent* contents) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(contents_);
+  }
+  contents_ = contents;
+  if (contents) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.script.grpc.GetHoverResponse.contents)
+}
+inline ::io::deephaven::proto::backplane::script::grpc::MarkupContent* GetHoverResponse::release_contents() {
+  
+  ::io::deephaven::proto::backplane::script::grpc::MarkupContent* temp = contents_;
+  contents_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::script::grpc::MarkupContent* GetHoverResponse::unsafe_arena_release_contents() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.script.grpc.GetHoverResponse.contents)
+  
+  ::io::deephaven::proto::backplane::script::grpc::MarkupContent* temp = contents_;
+  contents_ = nullptr;
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::script::grpc::MarkupContent* GetHoverResponse::_internal_mutable_contents() {
+  
+  if (contents_ == nullptr) {
+    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::script::grpc::MarkupContent>(GetArenaForAllocation());
+    contents_ = p;
+  }
+  return contents_;
+}
+inline ::io::deephaven::proto::backplane::script::grpc::MarkupContent* GetHoverResponse::mutable_contents() {
+  ::io::deephaven::proto::backplane::script::grpc::MarkupContent* _msg = _internal_mutable_contents();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.script.grpc.GetHoverResponse.contents)
+  return _msg;
+}
+inline void GetHoverResponse::set_allocated_contents(::io::deephaven::proto::backplane::script::grpc::MarkupContent* contents) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete contents_;
+  }
+  if (contents) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(contents);
+    if (message_arena != submessage_arena) {
+      contents = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, contents, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  contents_ = contents;
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.script.grpc.GetHoverResponse.contents)
+}
+
+// .io.deephaven.proto.backplane.script.grpc.DocumentRange range = 2;
+inline bool GetHoverResponse::_internal_has_range() const {
+  return this != internal_default_instance() && range_ != nullptr;
+}
+inline bool GetHoverResponse::has_range() const {
+  return _internal_has_range();
+}
+inline void GetHoverResponse::clear_range() {
+  if (GetArenaForAllocation() == nullptr && range_ != nullptr) {
+    delete range_;
+  }
+  range_ = nullptr;
+}
+inline const ::io::deephaven::proto::backplane::script::grpc::DocumentRange& GetHoverResponse::_internal_range() const {
+  const ::io::deephaven::proto::backplane::script::grpc::DocumentRange* p = range_;
+  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::script::grpc::DocumentRange&>(
+      ::io::deephaven::proto::backplane::script::grpc::_DocumentRange_default_instance_);
+}
+inline const ::io::deephaven::proto::backplane::script::grpc::DocumentRange& GetHoverResponse::range() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.script.grpc.GetHoverResponse.range)
+  return _internal_range();
+}
+inline void GetHoverResponse::unsafe_arena_set_allocated_range(
+    ::io::deephaven::proto::backplane::script::grpc::DocumentRange* range) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(range_);
+  }
+  range_ = range;
+  if (range) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.script.grpc.GetHoverResponse.range)
+}
+inline ::io::deephaven::proto::backplane::script::grpc::DocumentRange* GetHoverResponse::release_range() {
+  
+  ::io::deephaven::proto::backplane::script::grpc::DocumentRange* temp = range_;
+  range_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::script::grpc::DocumentRange* GetHoverResponse::unsafe_arena_release_range() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.script.grpc.GetHoverResponse.range)
+  
+  ::io::deephaven::proto::backplane::script::grpc::DocumentRange* temp = range_;
+  range_ = nullptr;
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::script::grpc::DocumentRange* GetHoverResponse::_internal_mutable_range() {
+  
+  if (range_ == nullptr) {
+    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::script::grpc::DocumentRange>(GetArenaForAllocation());
+    range_ = p;
+  }
+  return range_;
+}
+inline ::io::deephaven::proto::backplane::script::grpc::DocumentRange* GetHoverResponse::mutable_range() {
+  ::io::deephaven::proto::backplane::script::grpc::DocumentRange* _msg = _internal_mutable_range();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.script.grpc.GetHoverResponse.range)
+  return _msg;
+}
+inline void GetHoverResponse::set_allocated_range(::io::deephaven::proto::backplane::script::grpc::DocumentRange* range) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete range_;
+  }
+  if (range) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(range);
+    if (message_arena != submessage_arena) {
+      range = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, range, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  range_ = range;
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.script.grpc.GetHoverResponse.range)
+}
+
+// -------------------------------------------------------------------
+
+// GetDiagnosticRequest
+
+// .io.deephaven.proto.backplane.script.grpc.VersionedTextDocumentIdentifier text_document = 1;
+inline bool GetDiagnosticRequest::_internal_has_text_document() const {
+  return this != internal_default_instance() && text_document_ != nullptr;
+}
+inline bool GetDiagnosticRequest::has_text_document() const {
+  return _internal_has_text_document();
+}
+inline void GetDiagnosticRequest::clear_text_document() {
+  if (GetArenaForAllocation() == nullptr && text_document_ != nullptr) {
+    delete text_document_;
+  }
+  text_document_ = nullptr;
+}
+inline const ::io::deephaven::proto::backplane::script::grpc::VersionedTextDocumentIdentifier& GetDiagnosticRequest::_internal_text_document() const {
+  const ::io::deephaven::proto::backplane::script::grpc::VersionedTextDocumentIdentifier* p = text_document_;
+  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::script::grpc::VersionedTextDocumentIdentifier&>(
+      ::io::deephaven::proto::backplane::script::grpc::_VersionedTextDocumentIdentifier_default_instance_);
+}
+inline const ::io::deephaven::proto::backplane::script::grpc::VersionedTextDocumentIdentifier& GetDiagnosticRequest::text_document() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.script.grpc.GetDiagnosticRequest.text_document)
+  return _internal_text_document();
+}
+inline void GetDiagnosticRequest::unsafe_arena_set_allocated_text_document(
+    ::io::deephaven::proto::backplane::script::grpc::VersionedTextDocumentIdentifier* text_document) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(text_document_);
+  }
+  text_document_ = text_document;
+  if (text_document) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.script.grpc.GetDiagnosticRequest.text_document)
+}
+inline ::io::deephaven::proto::backplane::script::grpc::VersionedTextDocumentIdentifier* GetDiagnosticRequest::release_text_document() {
+  
+  ::io::deephaven::proto::backplane::script::grpc::VersionedTextDocumentIdentifier* temp = text_document_;
+  text_document_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::script::grpc::VersionedTextDocumentIdentifier* GetDiagnosticRequest::unsafe_arena_release_text_document() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.script.grpc.GetDiagnosticRequest.text_document)
+  
+  ::io::deephaven::proto::backplane::script::grpc::VersionedTextDocumentIdentifier* temp = text_document_;
+  text_document_ = nullptr;
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::script::grpc::VersionedTextDocumentIdentifier* GetDiagnosticRequest::_internal_mutable_text_document() {
+  
+  if (text_document_ == nullptr) {
+    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::script::grpc::VersionedTextDocumentIdentifier>(GetArenaForAllocation());
+    text_document_ = p;
+  }
+  return text_document_;
+}
+inline ::io::deephaven::proto::backplane::script::grpc::VersionedTextDocumentIdentifier* GetDiagnosticRequest::mutable_text_document() {
+  ::io::deephaven::proto::backplane::script::grpc::VersionedTextDocumentIdentifier* _msg = _internal_mutable_text_document();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.script.grpc.GetDiagnosticRequest.text_document)
+  return _msg;
+}
+inline void GetDiagnosticRequest::set_allocated_text_document(::io::deephaven::proto::backplane::script::grpc::VersionedTextDocumentIdentifier* text_document) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete text_document_;
+  }
+  if (text_document) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(text_document);
+    if (message_arena != submessage_arena) {
+      text_document = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, text_document, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  text_document_ = text_document;
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.script.grpc.GetDiagnosticRequest.text_document)
+}
+
+// optional string identifier = 2;
+inline bool GetDiagnosticRequest::_internal_has_identifier() const {
+  bool value = (_has_bits_[0] & 0x00000001u) != 0;
+  return value;
+}
+inline bool GetDiagnosticRequest::has_identifier() const {
+  return _internal_has_identifier();
+}
+inline void GetDiagnosticRequest::clear_identifier() {
+  identifier_.ClearToEmpty();
+  _has_bits_[0] &= ~0x00000001u;
+}
+inline const std::string& GetDiagnosticRequest::identifier() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.script.grpc.GetDiagnosticRequest.identifier)
+  return _internal_identifier();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void GetDiagnosticRequest::set_identifier(ArgT0&& arg0, ArgT... args) {
+ _has_bits_[0] |= 0x00000001u;
+ identifier_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.script.grpc.GetDiagnosticRequest.identifier)
+}
+inline std::string* GetDiagnosticRequest::mutable_identifier() {
+  std::string* _s = _internal_mutable_identifier();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.script.grpc.GetDiagnosticRequest.identifier)
+  return _s;
+}
+inline const std::string& GetDiagnosticRequest::_internal_identifier() const {
+  return identifier_.Get();
+}
+inline void GetDiagnosticRequest::_internal_set_identifier(const std::string& value) {
+  _has_bits_[0] |= 0x00000001u;
+  identifier_.Set(value, GetArenaForAllocation());
+}
+inline std::string* GetDiagnosticRequest::_internal_mutable_identifier() {
+  _has_bits_[0] |= 0x00000001u;
+  return identifier_.Mutable(GetArenaForAllocation());
+}
+inline std::string* GetDiagnosticRequest::release_identifier() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.script.grpc.GetDiagnosticRequest.identifier)
+  if (!_internal_has_identifier()) {
+    return nullptr;
+  }
+  _has_bits_[0] &= ~0x00000001u;
+  auto* p = identifier_.Release();
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (identifier_.IsDefault()) {
+    identifier_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  return p;
+}
+inline void GetDiagnosticRequest::set_allocated_identifier(std::string* identifier) {
+  if (identifier != nullptr) {
+    _has_bits_[0] |= 0x00000001u;
+  } else {
+    _has_bits_[0] &= ~0x00000001u;
+  }
+  identifier_.SetAllocated(identifier, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (identifier_.IsDefault()) {
+    identifier_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.script.grpc.GetDiagnosticRequest.identifier)
+}
+
+// optional string previous_result_id = 3;
+inline bool GetDiagnosticRequest::_internal_has_previous_result_id() const {
+  bool value = (_has_bits_[0] & 0x00000002u) != 0;
+  return value;
+}
+inline bool GetDiagnosticRequest::has_previous_result_id() const {
+  return _internal_has_previous_result_id();
+}
+inline void GetDiagnosticRequest::clear_previous_result_id() {
+  previous_result_id_.ClearToEmpty();
+  _has_bits_[0] &= ~0x00000002u;
+}
+inline const std::string& GetDiagnosticRequest::previous_result_id() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.script.grpc.GetDiagnosticRequest.previous_result_id)
+  return _internal_previous_result_id();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void GetDiagnosticRequest::set_previous_result_id(ArgT0&& arg0, ArgT... args) {
+ _has_bits_[0] |= 0x00000002u;
+ previous_result_id_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.script.grpc.GetDiagnosticRequest.previous_result_id)
+}
+inline std::string* GetDiagnosticRequest::mutable_previous_result_id() {
+  std::string* _s = _internal_mutable_previous_result_id();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.script.grpc.GetDiagnosticRequest.previous_result_id)
+  return _s;
+}
+inline const std::string& GetDiagnosticRequest::_internal_previous_result_id() const {
+  return previous_result_id_.Get();
+}
+inline void GetDiagnosticRequest::_internal_set_previous_result_id(const std::string& value) {
+  _has_bits_[0] |= 0x00000002u;
+  previous_result_id_.Set(value, GetArenaForAllocation());
+}
+inline std::string* GetDiagnosticRequest::_internal_mutable_previous_result_id() {
+  _has_bits_[0] |= 0x00000002u;
+  return previous_result_id_.Mutable(GetArenaForAllocation());
+}
+inline std::string* GetDiagnosticRequest::release_previous_result_id() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.script.grpc.GetDiagnosticRequest.previous_result_id)
+  if (!_internal_has_previous_result_id()) {
+    return nullptr;
+  }
+  _has_bits_[0] &= ~0x00000002u;
+  auto* p = previous_result_id_.Release();
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (previous_result_id_.IsDefault()) {
+    previous_result_id_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  return p;
+}
+inline void GetDiagnosticRequest::set_allocated_previous_result_id(std::string* previous_result_id) {
+  if (previous_result_id != nullptr) {
+    _has_bits_[0] |= 0x00000002u;
+  } else {
+    _has_bits_[0] &= ~0x00000002u;
+  }
+  previous_result_id_.SetAllocated(previous_result_id, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (previous_result_id_.IsDefault()) {
+    previous_result_id_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.script.grpc.GetDiagnosticRequest.previous_result_id)
+}
+
+// -------------------------------------------------------------------
+
+// GetPullDiagnosticResponse
+
+// string kind = 1;
+inline void GetPullDiagnosticResponse::clear_kind() {
+  kind_.ClearToEmpty();
+}
+inline const std::string& GetPullDiagnosticResponse::kind() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.script.grpc.GetPullDiagnosticResponse.kind)
+  return _internal_kind();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void GetPullDiagnosticResponse::set_kind(ArgT0&& arg0, ArgT... args) {
+ 
+ kind_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.script.grpc.GetPullDiagnosticResponse.kind)
+}
+inline std::string* GetPullDiagnosticResponse::mutable_kind() {
+  std::string* _s = _internal_mutable_kind();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.script.grpc.GetPullDiagnosticResponse.kind)
+  return _s;
+}
+inline const std::string& GetPullDiagnosticResponse::_internal_kind() const {
+  return kind_.Get();
+}
+inline void GetPullDiagnosticResponse::_internal_set_kind(const std::string& value) {
+  
+  kind_.Set(value, GetArenaForAllocation());
+}
+inline std::string* GetPullDiagnosticResponse::_internal_mutable_kind() {
+  
+  return kind_.Mutable(GetArenaForAllocation());
+}
+inline std::string* GetPullDiagnosticResponse::release_kind() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.script.grpc.GetPullDiagnosticResponse.kind)
+  return kind_.Release();
+}
+inline void GetPullDiagnosticResponse::set_allocated_kind(std::string* kind) {
+  if (kind != nullptr) {
+    
+  } else {
+    
+  }
+  kind_.SetAllocated(kind, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (kind_.IsDefault()) {
+    kind_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.script.grpc.GetPullDiagnosticResponse.kind)
+}
+
+// optional string result_id = 2;
+inline bool GetPullDiagnosticResponse::_internal_has_result_id() const {
+  bool value = (_has_bits_[0] & 0x00000001u) != 0;
+  return value;
+}
+inline bool GetPullDiagnosticResponse::has_result_id() const {
+  return _internal_has_result_id();
+}
+inline void GetPullDiagnosticResponse::clear_result_id() {
+  result_id_.ClearToEmpty();
+  _has_bits_[0] &= ~0x00000001u;
+}
+inline const std::string& GetPullDiagnosticResponse::result_id() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.script.grpc.GetPullDiagnosticResponse.result_id)
+  return _internal_result_id();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void GetPullDiagnosticResponse::set_result_id(ArgT0&& arg0, ArgT... args) {
+ _has_bits_[0] |= 0x00000001u;
+ result_id_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.script.grpc.GetPullDiagnosticResponse.result_id)
+}
+inline std::string* GetPullDiagnosticResponse::mutable_result_id() {
+  std::string* _s = _internal_mutable_result_id();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.script.grpc.GetPullDiagnosticResponse.result_id)
+  return _s;
+}
+inline const std::string& GetPullDiagnosticResponse::_internal_result_id() const {
+  return result_id_.Get();
+}
+inline void GetPullDiagnosticResponse::_internal_set_result_id(const std::string& value) {
+  _has_bits_[0] |= 0x00000001u;
+  result_id_.Set(value, GetArenaForAllocation());
+}
+inline std::string* GetPullDiagnosticResponse::_internal_mutable_result_id() {
+  _has_bits_[0] |= 0x00000001u;
+  return result_id_.Mutable(GetArenaForAllocation());
+}
+inline std::string* GetPullDiagnosticResponse::release_result_id() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.script.grpc.GetPullDiagnosticResponse.result_id)
+  if (!_internal_has_result_id()) {
+    return nullptr;
+  }
+  _has_bits_[0] &= ~0x00000001u;
+  auto* p = result_id_.Release();
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (result_id_.IsDefault()) {
+    result_id_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  return p;
+}
+inline void GetPullDiagnosticResponse::set_allocated_result_id(std::string* result_id) {
+  if (result_id != nullptr) {
+    _has_bits_[0] |= 0x00000001u;
+  } else {
+    _has_bits_[0] &= ~0x00000001u;
+  }
+  result_id_.SetAllocated(result_id, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (result_id_.IsDefault()) {
+    result_id_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.script.grpc.GetPullDiagnosticResponse.result_id)
+}
+
+// repeated .io.deephaven.proto.backplane.script.grpc.Diagnostic items = 3;
+inline int GetPullDiagnosticResponse::_internal_items_size() const {
+  return items_.size();
+}
+inline int GetPullDiagnosticResponse::items_size() const {
+  return _internal_items_size();
+}
+inline void GetPullDiagnosticResponse::clear_items() {
+  items_.Clear();
+}
+inline ::io::deephaven::proto::backplane::script::grpc::Diagnostic* GetPullDiagnosticResponse::mutable_items(int index) {
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.script.grpc.GetPullDiagnosticResponse.items)
+  return items_.Mutable(index);
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::io::deephaven::proto::backplane::script::grpc::Diagnostic >*
+GetPullDiagnosticResponse::mutable_items() {
+  // @@protoc_insertion_point(field_mutable_list:io.deephaven.proto.backplane.script.grpc.GetPullDiagnosticResponse.items)
+  return &items_;
+}
+inline const ::io::deephaven::proto::backplane::script::grpc::Diagnostic& GetPullDiagnosticResponse::_internal_items(int index) const {
+  return items_.Get(index);
+}
+inline const ::io::deephaven::proto::backplane::script::grpc::Diagnostic& GetPullDiagnosticResponse::items(int index) const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.script.grpc.GetPullDiagnosticResponse.items)
+  return _internal_items(index);
+}
+inline ::io::deephaven::proto::backplane::script::grpc::Diagnostic* GetPullDiagnosticResponse::_internal_add_items() {
+  return items_.Add();
+}
+inline ::io::deephaven::proto::backplane::script::grpc::Diagnostic* GetPullDiagnosticResponse::add_items() {
+  ::io::deephaven::proto::backplane::script::grpc::Diagnostic* _add = _internal_add_items();
+  // @@protoc_insertion_point(field_add:io.deephaven.proto.backplane.script.grpc.GetPullDiagnosticResponse.items)
+  return _add;
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::io::deephaven::proto::backplane::script::grpc::Diagnostic >&
+GetPullDiagnosticResponse::items() const {
+  // @@protoc_insertion_point(field_list:io.deephaven.proto.backplane.script.grpc.GetPullDiagnosticResponse.items)
+  return items_;
+}
+
+// -------------------------------------------------------------------
+
+// GetPublishDiagnosticResponse
+
+// string uri = 1;
+inline void GetPublishDiagnosticResponse::clear_uri() {
+  uri_.ClearToEmpty();
+}
+inline const std::string& GetPublishDiagnosticResponse::uri() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.script.grpc.GetPublishDiagnosticResponse.uri)
+  return _internal_uri();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void GetPublishDiagnosticResponse::set_uri(ArgT0&& arg0, ArgT... args) {
+ 
+ uri_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.script.grpc.GetPublishDiagnosticResponse.uri)
+}
+inline std::string* GetPublishDiagnosticResponse::mutable_uri() {
+  std::string* _s = _internal_mutable_uri();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.script.grpc.GetPublishDiagnosticResponse.uri)
+  return _s;
+}
+inline const std::string& GetPublishDiagnosticResponse::_internal_uri() const {
+  return uri_.Get();
+}
+inline void GetPublishDiagnosticResponse::_internal_set_uri(const std::string& value) {
+  
+  uri_.Set(value, GetArenaForAllocation());
+}
+inline std::string* GetPublishDiagnosticResponse::_internal_mutable_uri() {
+  
+  return uri_.Mutable(GetArenaForAllocation());
+}
+inline std::string* GetPublishDiagnosticResponse::release_uri() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.script.grpc.GetPublishDiagnosticResponse.uri)
+  return uri_.Release();
+}
+inline void GetPublishDiagnosticResponse::set_allocated_uri(std::string* uri) {
+  if (uri != nullptr) {
+    
+  } else {
+    
+  }
+  uri_.SetAllocated(uri, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (uri_.IsDefault()) {
+    uri_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.script.grpc.GetPublishDiagnosticResponse.uri)
+}
+
+// optional int32 version = 2;
+inline bool GetPublishDiagnosticResponse::_internal_has_version() const {
+  bool value = (_has_bits_[0] & 0x00000001u) != 0;
+  return value;
+}
+inline bool GetPublishDiagnosticResponse::has_version() const {
+  return _internal_has_version();
+}
+inline void GetPublishDiagnosticResponse::clear_version() {
+  version_ = 0;
+  _has_bits_[0] &= ~0x00000001u;
+}
+inline int32_t GetPublishDiagnosticResponse::_internal_version() const {
+  return version_;
+}
+inline int32_t GetPublishDiagnosticResponse::version() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.script.grpc.GetPublishDiagnosticResponse.version)
+  return _internal_version();
+}
+inline void GetPublishDiagnosticResponse::_internal_set_version(int32_t value) {
+  _has_bits_[0] |= 0x00000001u;
+  version_ = value;
+}
+inline void GetPublishDiagnosticResponse::set_version(int32_t value) {
+  _internal_set_version(value);
+  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.script.grpc.GetPublishDiagnosticResponse.version)
+}
+
+// repeated .io.deephaven.proto.backplane.script.grpc.Diagnostic diagnostics = 3;
+inline int GetPublishDiagnosticResponse::_internal_diagnostics_size() const {
+  return diagnostics_.size();
+}
+inline int GetPublishDiagnosticResponse::diagnostics_size() const {
+  return _internal_diagnostics_size();
+}
+inline void GetPublishDiagnosticResponse::clear_diagnostics() {
+  diagnostics_.Clear();
+}
+inline ::io::deephaven::proto::backplane::script::grpc::Diagnostic* GetPublishDiagnosticResponse::mutable_diagnostics(int index) {
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.script.grpc.GetPublishDiagnosticResponse.diagnostics)
+  return diagnostics_.Mutable(index);
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::io::deephaven::proto::backplane::script::grpc::Diagnostic >*
+GetPublishDiagnosticResponse::mutable_diagnostics() {
+  // @@protoc_insertion_point(field_mutable_list:io.deephaven.proto.backplane.script.grpc.GetPublishDiagnosticResponse.diagnostics)
+  return &diagnostics_;
+}
+inline const ::io::deephaven::proto::backplane::script::grpc::Diagnostic& GetPublishDiagnosticResponse::_internal_diagnostics(int index) const {
+  return diagnostics_.Get(index);
+}
+inline const ::io::deephaven::proto::backplane::script::grpc::Diagnostic& GetPublishDiagnosticResponse::diagnostics(int index) const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.script.grpc.GetPublishDiagnosticResponse.diagnostics)
+  return _internal_diagnostics(index);
+}
+inline ::io::deephaven::proto::backplane::script::grpc::Diagnostic* GetPublishDiagnosticResponse::_internal_add_diagnostics() {
+  return diagnostics_.Add();
+}
+inline ::io::deephaven::proto::backplane::script::grpc::Diagnostic* GetPublishDiagnosticResponse::add_diagnostics() {
+  ::io::deephaven::proto::backplane::script::grpc::Diagnostic* _add = _internal_add_diagnostics();
+  // @@protoc_insertion_point(field_add:io.deephaven.proto.backplane.script.grpc.GetPublishDiagnosticResponse.diagnostics)
+  return _add;
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::io::deephaven::proto::backplane::script::grpc::Diagnostic >&
+GetPublishDiagnosticResponse::diagnostics() const {
+  // @@protoc_insertion_point(field_list:io.deephaven.proto.backplane.script.grpc.GetPublishDiagnosticResponse.diagnostics)
+  return diagnostics_;
+}
+
+// -------------------------------------------------------------------
+
+// Diagnostic_CodeDescription
+
+// string href = 1;
+inline void Diagnostic_CodeDescription::clear_href() {
+  href_.ClearToEmpty();
+}
+inline const std::string& Diagnostic_CodeDescription::href() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.script.grpc.Diagnostic.CodeDescription.href)
+  return _internal_href();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void Diagnostic_CodeDescription::set_href(ArgT0&& arg0, ArgT... args) {
+ 
+ href_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.script.grpc.Diagnostic.CodeDescription.href)
+}
+inline std::string* Diagnostic_CodeDescription::mutable_href() {
+  std::string* _s = _internal_mutable_href();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.script.grpc.Diagnostic.CodeDescription.href)
+  return _s;
+}
+inline const std::string& Diagnostic_CodeDescription::_internal_href() const {
+  return href_.Get();
+}
+inline void Diagnostic_CodeDescription::_internal_set_href(const std::string& value) {
+  
+  href_.Set(value, GetArenaForAllocation());
+}
+inline std::string* Diagnostic_CodeDescription::_internal_mutable_href() {
+  
+  return href_.Mutable(GetArenaForAllocation());
+}
+inline std::string* Diagnostic_CodeDescription::release_href() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.script.grpc.Diagnostic.CodeDescription.href)
+  return href_.Release();
+}
+inline void Diagnostic_CodeDescription::set_allocated_href(std::string* href) {
+  if (href != nullptr) {
+    
+  } else {
+    
+  }
+  href_.SetAllocated(href, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (href_.IsDefault()) {
+    href_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.script.grpc.Diagnostic.CodeDescription.href)
+}
+
+// -------------------------------------------------------------------
+
+// Diagnostic
+
+// .io.deephaven.proto.backplane.script.grpc.DocumentRange range = 1;
+inline bool Diagnostic::_internal_has_range() const {
+  return this != internal_default_instance() && range_ != nullptr;
+}
+inline bool Diagnostic::has_range() const {
+  return _internal_has_range();
+}
+inline void Diagnostic::clear_range() {
+  if (GetArenaForAllocation() == nullptr && range_ != nullptr) {
+    delete range_;
+  }
+  range_ = nullptr;
+}
+inline const ::io::deephaven::proto::backplane::script::grpc::DocumentRange& Diagnostic::_internal_range() const {
+  const ::io::deephaven::proto::backplane::script::grpc::DocumentRange* p = range_;
+  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::script::grpc::DocumentRange&>(
+      ::io::deephaven::proto::backplane::script::grpc::_DocumentRange_default_instance_);
+}
+inline const ::io::deephaven::proto::backplane::script::grpc::DocumentRange& Diagnostic::range() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.script.grpc.Diagnostic.range)
+  return _internal_range();
+}
+inline void Diagnostic::unsafe_arena_set_allocated_range(
+    ::io::deephaven::proto::backplane::script::grpc::DocumentRange* range) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(range_);
+  }
+  range_ = range;
+  if (range) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.script.grpc.Diagnostic.range)
+}
+inline ::io::deephaven::proto::backplane::script::grpc::DocumentRange* Diagnostic::release_range() {
+  
+  ::io::deephaven::proto::backplane::script::grpc::DocumentRange* temp = range_;
+  range_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::script::grpc::DocumentRange* Diagnostic::unsafe_arena_release_range() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.script.grpc.Diagnostic.range)
+  
+  ::io::deephaven::proto::backplane::script::grpc::DocumentRange* temp = range_;
+  range_ = nullptr;
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::script::grpc::DocumentRange* Diagnostic::_internal_mutable_range() {
+  
+  if (range_ == nullptr) {
+    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::script::grpc::DocumentRange>(GetArenaForAllocation());
+    range_ = p;
+  }
+  return range_;
+}
+inline ::io::deephaven::proto::backplane::script::grpc::DocumentRange* Diagnostic::mutable_range() {
+  ::io::deephaven::proto::backplane::script::grpc::DocumentRange* _msg = _internal_mutable_range();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.script.grpc.Diagnostic.range)
+  return _msg;
+}
+inline void Diagnostic::set_allocated_range(::io::deephaven::proto::backplane::script::grpc::DocumentRange* range) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete range_;
+  }
+  if (range) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(range);
+    if (message_arena != submessage_arena) {
+      range = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, range, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  range_ = range;
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.script.grpc.Diagnostic.range)
+}
+
+// .io.deephaven.proto.backplane.script.grpc.Diagnostic.DiagnosticSeverity severity = 2;
+inline void Diagnostic::clear_severity() {
+  severity_ = 0;
+}
+inline ::io::deephaven::proto::backplane::script::grpc::Diagnostic_DiagnosticSeverity Diagnostic::_internal_severity() const {
+  return static_cast< ::io::deephaven::proto::backplane::script::grpc::Diagnostic_DiagnosticSeverity >(severity_);
+}
+inline ::io::deephaven::proto::backplane::script::grpc::Diagnostic_DiagnosticSeverity Diagnostic::severity() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.script.grpc.Diagnostic.severity)
+  return _internal_severity();
+}
+inline void Diagnostic::_internal_set_severity(::io::deephaven::proto::backplane::script::grpc::Diagnostic_DiagnosticSeverity value) {
+  
+  severity_ = value;
+}
+inline void Diagnostic::set_severity(::io::deephaven::proto::backplane::script::grpc::Diagnostic_DiagnosticSeverity value) {
+  _internal_set_severity(value);
+  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.script.grpc.Diagnostic.severity)
+}
+
+// optional string code = 3;
+inline bool Diagnostic::_internal_has_code() const {
+  bool value = (_has_bits_[0] & 0x00000001u) != 0;
+  return value;
+}
+inline bool Diagnostic::has_code() const {
+  return _internal_has_code();
+}
+inline void Diagnostic::clear_code() {
+  code_.ClearToEmpty();
+  _has_bits_[0] &= ~0x00000001u;
+}
+inline const std::string& Diagnostic::code() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.script.grpc.Diagnostic.code)
+  return _internal_code();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void Diagnostic::set_code(ArgT0&& arg0, ArgT... args) {
+ _has_bits_[0] |= 0x00000001u;
+ code_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.script.grpc.Diagnostic.code)
+}
+inline std::string* Diagnostic::mutable_code() {
+  std::string* _s = _internal_mutable_code();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.script.grpc.Diagnostic.code)
+  return _s;
+}
+inline const std::string& Diagnostic::_internal_code() const {
+  return code_.Get();
+}
+inline void Diagnostic::_internal_set_code(const std::string& value) {
+  _has_bits_[0] |= 0x00000001u;
+  code_.Set(value, GetArenaForAllocation());
+}
+inline std::string* Diagnostic::_internal_mutable_code() {
+  _has_bits_[0] |= 0x00000001u;
+  return code_.Mutable(GetArenaForAllocation());
+}
+inline std::string* Diagnostic::release_code() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.script.grpc.Diagnostic.code)
+  if (!_internal_has_code()) {
+    return nullptr;
+  }
+  _has_bits_[0] &= ~0x00000001u;
+  auto* p = code_.Release();
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (code_.IsDefault()) {
+    code_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  return p;
+}
+inline void Diagnostic::set_allocated_code(std::string* code) {
+  if (code != nullptr) {
+    _has_bits_[0] |= 0x00000001u;
+  } else {
+    _has_bits_[0] &= ~0x00000001u;
+  }
+  code_.SetAllocated(code, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (code_.IsDefault()) {
+    code_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.script.grpc.Diagnostic.code)
+}
+
+// optional .io.deephaven.proto.backplane.script.grpc.Diagnostic.CodeDescription code_description = 4;
+inline bool Diagnostic::_internal_has_code_description() const {
+  bool value = (_has_bits_[0] & 0x00000008u) != 0;
+  PROTOBUF_ASSUME(!value || code_description_ != nullptr);
+  return value;
+}
+inline bool Diagnostic::has_code_description() const {
+  return _internal_has_code_description();
+}
+inline void Diagnostic::clear_code_description() {
+  if (code_description_ != nullptr) code_description_->Clear();
+  _has_bits_[0] &= ~0x00000008u;
+}
+inline const ::io::deephaven::proto::backplane::script::grpc::Diagnostic_CodeDescription& Diagnostic::_internal_code_description() const {
+  const ::io::deephaven::proto::backplane::script::grpc::Diagnostic_CodeDescription* p = code_description_;
+  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::script::grpc::Diagnostic_CodeDescription&>(
+      ::io::deephaven::proto::backplane::script::grpc::_Diagnostic_CodeDescription_default_instance_);
+}
+inline const ::io::deephaven::proto::backplane::script::grpc::Diagnostic_CodeDescription& Diagnostic::code_description() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.script.grpc.Diagnostic.code_description)
+  return _internal_code_description();
+}
+inline void Diagnostic::unsafe_arena_set_allocated_code_description(
+    ::io::deephaven::proto::backplane::script::grpc::Diagnostic_CodeDescription* code_description) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(code_description_);
+  }
+  code_description_ = code_description;
+  if (code_description) {
+    _has_bits_[0] |= 0x00000008u;
+  } else {
+    _has_bits_[0] &= ~0x00000008u;
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.script.grpc.Diagnostic.code_description)
+}
+inline ::io::deephaven::proto::backplane::script::grpc::Diagnostic_CodeDescription* Diagnostic::release_code_description() {
+  _has_bits_[0] &= ~0x00000008u;
+  ::io::deephaven::proto::backplane::script::grpc::Diagnostic_CodeDescription* temp = code_description_;
+  code_description_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::script::grpc::Diagnostic_CodeDescription* Diagnostic::unsafe_arena_release_code_description() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.script.grpc.Diagnostic.code_description)
+  _has_bits_[0] &= ~0x00000008u;
+  ::io::deephaven::proto::backplane::script::grpc::Diagnostic_CodeDescription* temp = code_description_;
+  code_description_ = nullptr;
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::script::grpc::Diagnostic_CodeDescription* Diagnostic::_internal_mutable_code_description() {
+  _has_bits_[0] |= 0x00000008u;
+  if (code_description_ == nullptr) {
+    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::script::grpc::Diagnostic_CodeDescription>(GetArenaForAllocation());
+    code_description_ = p;
+  }
+  return code_description_;
+}
+inline ::io::deephaven::proto::backplane::script::grpc::Diagnostic_CodeDescription* Diagnostic::mutable_code_description() {
+  ::io::deephaven::proto::backplane::script::grpc::Diagnostic_CodeDescription* _msg = _internal_mutable_code_description();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.script.grpc.Diagnostic.code_description)
+  return _msg;
+}
+inline void Diagnostic::set_allocated_code_description(::io::deephaven::proto::backplane::script::grpc::Diagnostic_CodeDescription* code_description) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete code_description_;
+  }
+  if (code_description) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(code_description);
+    if (message_arena != submessage_arena) {
+      code_description = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, code_description, submessage_arena);
+    }
+    _has_bits_[0] |= 0x00000008u;
+  } else {
+    _has_bits_[0] &= ~0x00000008u;
+  }
+  code_description_ = code_description;
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.script.grpc.Diagnostic.code_description)
+}
+
+// optional string source = 5;
+inline bool Diagnostic::_internal_has_source() const {
+  bool value = (_has_bits_[0] & 0x00000002u) != 0;
+  return value;
+}
+inline bool Diagnostic::has_source() const {
+  return _internal_has_source();
+}
+inline void Diagnostic::clear_source() {
+  source_.ClearToEmpty();
+  _has_bits_[0] &= ~0x00000002u;
+}
+inline const std::string& Diagnostic::source() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.script.grpc.Diagnostic.source)
+  return _internal_source();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void Diagnostic::set_source(ArgT0&& arg0, ArgT... args) {
+ _has_bits_[0] |= 0x00000002u;
+ source_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.script.grpc.Diagnostic.source)
+}
+inline std::string* Diagnostic::mutable_source() {
+  std::string* _s = _internal_mutable_source();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.script.grpc.Diagnostic.source)
+  return _s;
+}
+inline const std::string& Diagnostic::_internal_source() const {
+  return source_.Get();
+}
+inline void Diagnostic::_internal_set_source(const std::string& value) {
+  _has_bits_[0] |= 0x00000002u;
+  source_.Set(value, GetArenaForAllocation());
+}
+inline std::string* Diagnostic::_internal_mutable_source() {
+  _has_bits_[0] |= 0x00000002u;
+  return source_.Mutable(GetArenaForAllocation());
+}
+inline std::string* Diagnostic::release_source() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.script.grpc.Diagnostic.source)
+  if (!_internal_has_source()) {
+    return nullptr;
+  }
+  _has_bits_[0] &= ~0x00000002u;
+  auto* p = source_.Release();
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (source_.IsDefault()) {
+    source_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  return p;
+}
+inline void Diagnostic::set_allocated_source(std::string* source) {
+  if (source != nullptr) {
+    _has_bits_[0] |= 0x00000002u;
+  } else {
+    _has_bits_[0] &= ~0x00000002u;
+  }
+  source_.SetAllocated(source, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (source_.IsDefault()) {
+    source_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.script.grpc.Diagnostic.source)
+}
+
+// string message = 6;
+inline void Diagnostic::clear_message() {
+  message_.ClearToEmpty();
+}
+inline const std::string& Diagnostic::message() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.script.grpc.Diagnostic.message)
+  return _internal_message();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void Diagnostic::set_message(ArgT0&& arg0, ArgT... args) {
+ 
+ message_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.script.grpc.Diagnostic.message)
+}
+inline std::string* Diagnostic::mutable_message() {
+  std::string* _s = _internal_mutable_message();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.script.grpc.Diagnostic.message)
+  return _s;
+}
+inline const std::string& Diagnostic::_internal_message() const {
+  return message_.Get();
+}
+inline void Diagnostic::_internal_set_message(const std::string& value) {
+  
+  message_.Set(value, GetArenaForAllocation());
+}
+inline std::string* Diagnostic::_internal_mutable_message() {
+  
+  return message_.Mutable(GetArenaForAllocation());
+}
+inline std::string* Diagnostic::release_message() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.script.grpc.Diagnostic.message)
+  return message_.Release();
+}
+inline void Diagnostic::set_allocated_message(std::string* message) {
+  if (message != nullptr) {
+    
+  } else {
+    
+  }
+  message_.SetAllocated(message, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (message_.IsDefault()) {
+    message_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.script.grpc.Diagnostic.message)
+}
+
+// repeated .io.deephaven.proto.backplane.script.grpc.Diagnostic.DiagnosticTag tags = 7;
+inline int Diagnostic::_internal_tags_size() const {
+  return tags_.size();
+}
+inline int Diagnostic::tags_size() const {
+  return _internal_tags_size();
+}
+inline void Diagnostic::clear_tags() {
+  tags_.Clear();
+}
+inline ::io::deephaven::proto::backplane::script::grpc::Diagnostic_DiagnosticTag Diagnostic::_internal_tags(int index) const {
+  return static_cast< ::io::deephaven::proto::backplane::script::grpc::Diagnostic_DiagnosticTag >(tags_.Get(index));
+}
+inline ::io::deephaven::proto::backplane::script::grpc::Diagnostic_DiagnosticTag Diagnostic::tags(int index) const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.script.grpc.Diagnostic.tags)
+  return _internal_tags(index);
+}
+inline void Diagnostic::set_tags(int index, ::io::deephaven::proto::backplane::script::grpc::Diagnostic_DiagnosticTag value) {
+  tags_.Set(index, value);
+  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.script.grpc.Diagnostic.tags)
+}
+inline void Diagnostic::_internal_add_tags(::io::deephaven::proto::backplane::script::grpc::Diagnostic_DiagnosticTag value) {
+  tags_.Add(value);
+}
+inline void Diagnostic::add_tags(::io::deephaven::proto::backplane::script::grpc::Diagnostic_DiagnosticTag value) {
+  _internal_add_tags(value);
+  // @@protoc_insertion_point(field_add:io.deephaven.proto.backplane.script.grpc.Diagnostic.tags)
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedField<int>&
+Diagnostic::tags() const {
+  // @@protoc_insertion_point(field_list:io.deephaven.proto.backplane.script.grpc.Diagnostic.tags)
+  return tags_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedField<int>*
+Diagnostic::_internal_mutable_tags() {
+  return &tags_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedField<int>*
+Diagnostic::mutable_tags() {
+  // @@protoc_insertion_point(field_mutable_list:io.deephaven.proto.backplane.script.grpc.Diagnostic.tags)
+  return _internal_mutable_tags();
+}
+
+// optional bytes data = 9;
+inline bool Diagnostic::_internal_has_data() const {
+  bool value = (_has_bits_[0] & 0x00000004u) != 0;
+  return value;
+}
+inline bool Diagnostic::has_data() const {
+  return _internal_has_data();
+}
+inline void Diagnostic::clear_data() {
+  data_.ClearToEmpty();
+  _has_bits_[0] &= ~0x00000004u;
+}
+inline const std::string& Diagnostic::data() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.script.grpc.Diagnostic.data)
+  return _internal_data();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void Diagnostic::set_data(ArgT0&& arg0, ArgT... args) {
+ _has_bits_[0] |= 0x00000004u;
+ data_.SetBytes(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.script.grpc.Diagnostic.data)
+}
+inline std::string* Diagnostic::mutable_data() {
+  std::string* _s = _internal_mutable_data();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.script.grpc.Diagnostic.data)
+  return _s;
+}
+inline const std::string& Diagnostic::_internal_data() const {
+  return data_.Get();
+}
+inline void Diagnostic::_internal_set_data(const std::string& value) {
+  _has_bits_[0] |= 0x00000004u;
+  data_.Set(value, GetArenaForAllocation());
+}
+inline std::string* Diagnostic::_internal_mutable_data() {
+  _has_bits_[0] |= 0x00000004u;
+  return data_.Mutable(GetArenaForAllocation());
+}
+inline std::string* Diagnostic::release_data() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.script.grpc.Diagnostic.data)
+  if (!_internal_has_data()) {
+    return nullptr;
+  }
+  _has_bits_[0] &= ~0x00000004u;
+  auto* p = data_.Release();
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (data_.IsDefault()) {
+    data_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  return p;
+}
+inline void Diagnostic::set_allocated_data(std::string* data) {
+  if (data != nullptr) {
+    _has_bits_[0] |= 0x00000004u;
+  } else {
+    _has_bits_[0] &= ~0x00000004u;
+  }
+  data_.SetAllocated(data, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (data_.IsDefault()) {
+    data_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.script.grpc.Diagnostic.data)
 }
 
 // -------------------------------------------------------------------
@@ -18925,6 +25332,36 @@ FigureDescriptor::mutable_errors() {
 
 // -------------------------------------------------------------------
 
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
 
 // @@protoc_insertion_point(namespace_scope)
 
@@ -18937,6 +25374,16 @@ FigureDescriptor::mutable_errors() {
 
 PROTOBUF_NAMESPACE_OPEN
 
+template <> struct is_proto_enum< ::io::deephaven::proto::backplane::script::grpc::Diagnostic_DiagnosticSeverity> : ::std::true_type {};
+template <>
+inline const EnumDescriptor* GetEnumDescriptor< ::io::deephaven::proto::backplane::script::grpc::Diagnostic_DiagnosticSeverity>() {
+  return ::io::deephaven::proto::backplane::script::grpc::Diagnostic_DiagnosticSeverity_descriptor();
+}
+template <> struct is_proto_enum< ::io::deephaven::proto::backplane::script::grpc::Diagnostic_DiagnosticTag> : ::std::true_type {};
+template <>
+inline const EnumDescriptor* GetEnumDescriptor< ::io::deephaven::proto::backplane::script::grpc::Diagnostic_DiagnosticTag>() {
+  return ::io::deephaven::proto::backplane::script::grpc::Diagnostic_DiagnosticTag_descriptor();
+}
 template <> struct is_proto_enum< ::io::deephaven::proto::backplane::script::grpc::FigureDescriptor_ChartDescriptor_ChartType> : ::std::true_type {};
 template <>
 inline const EnumDescriptor* GetEnumDescriptor< ::io::deephaven::proto::backplane::script::grpc::FigureDescriptor_ChartDescriptor_ChartType>() {

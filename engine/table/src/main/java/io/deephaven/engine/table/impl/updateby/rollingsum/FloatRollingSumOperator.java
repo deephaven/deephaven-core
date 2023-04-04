@@ -13,6 +13,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static io.deephaven.util.QueryConstants.NULL_FLOAT;
+import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 public class FloatRollingSumOperator extends BaseFloatUpdateByOperator {
     private static final int BUFFER_INITIAL_SIZE = 64;
@@ -25,14 +26,20 @@ public class FloatRollingSumOperator extends BaseFloatUpdateByOperator {
 
         protected Context(final int chunkSize) {
             super(chunkSize);
-            aggSum = new AggregatingFloatRingBuffer(BUFFER_INITIAL_SIZE, 0.0f, (a, b) -> {
-                if (a == NULL_FLOAT) {
-                    return b;
-                } else if (b == NULL_FLOAT) {
-                    return  a;
-                }
-                return a + b;
-            });
+            aggSum = new AggregatingFloatRingBuffer(BUFFER_INITIAL_SIZE,
+                    0,
+                    Float::sum, // tree function
+                    (a, b) -> { // value function
+                        if (a == NULL_FLOAT && b == NULL_FLOAT) {
+                            return 0; // identity val
+                        } else if (a == NULL_FLOAT) {
+                            return b;
+                        } else if (b == NULL_FLOAT) {
+                            return a;
+                        }
+                        return a + b;
+                    },
+                    true);
         }
 
         @Override

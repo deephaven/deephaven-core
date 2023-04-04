@@ -1,0 +1,37 @@
+plugins {
+    id 'java-library'
+    id 'io.deephaven.project.register'
+}
+
+description = 'An extension integrating Arrow sources with Deephaven\'s Table Model'
+
+dependencies {
+    api project(':engine-table')
+
+    implementation project(':Configuration')
+    implementation depCommonsLang3
+
+    Classpaths.inheritArrow(project, 'arrow-format', 'implementation')
+    Classpaths.inheritArrow(project, 'arrow-vector', 'implementation')
+
+    testImplementation TestTools.projectDependency(project, 'engine-table'),
+            TestTools.projectDependency(project, 'Util')
+
+    Classpaths.inheritSlf4j(project, 'slf4j-api', 'implementation')
+    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+    testRuntimeOnly project(':log-to-slf4j')
+
+    Classpaths.inheritJUnitPlatform(project)
+    Classpaths.inheritAssertJ(project)
+}
+
+spotless {
+    java {
+        targetExclude(
+                '**/Arrow*ColumnSource.java',
+                '**/Arrow*VectorTest.java',
+        )
+    }
+}
+
+apply plugin: 'io.deephaven.java-open-nio'

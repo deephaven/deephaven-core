@@ -17,6 +17,7 @@ tasks.withType(License) {
 }
 
 dependencies {
+    // TODO(deephaven-core#3148): LZ4_RAW parquet support
     api('org.apache.parquet:parquet-hadoop:1.12.3')
 
     api('org.apache.hadoop:hadoop-common:3.3.3') {

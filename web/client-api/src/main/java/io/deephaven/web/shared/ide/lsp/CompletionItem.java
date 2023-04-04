@@ -24,7 +24,7 @@ public class CompletionItem implements Serializable {
     public String label;
     public int kind;
     public String detail;
-    public String documentation;
+    public MarkupContent documentation;
     public boolean deprecated;
     public boolean preselect;
     public TextEdit textEdit;

@@ -35,7 +35,7 @@ class TableService:
         except Exception as e:
             raise DHError("failed to finish the table batch operation.") from e
 
-    def grpc_table_op(self, table: Table, op: TableOp):
+    def grpc_table_op(self, table: Table, op: TableOp, table_class: type = Table):
         try:
             result_id = self.session.make_ticket()
             if table:
@@ -47,7 +47,7 @@ class TableService:
                                  metadata=self.session.grpc_metadata)
 
             if response.success:
-                return Table(self.session, ticket=response.result_id.ticket,
+                return table_class(self.session, ticket=response.result_id.ticket,
                              schema_header=response.schema_header,
                              size=response.size,
                              is_static=response.is_static)

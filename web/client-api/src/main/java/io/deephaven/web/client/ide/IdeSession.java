@@ -55,7 +55,7 @@ public class IdeSession extends HasEventHandling {
     private final WorkerConnection connection;
     private final JsRunnable closer;
     private int nextAutocompleteRequestId = 0;
-    private Map<Integer, LazyPromise<JsArray<io.deephaven.web.shared.ide.lsp.CompletionItem>>> pendingAutocompleteCalls =
+    private Map<Integer, LazyPromise<AutoCompleteResponse>> pendingAutocompleteCalls =
             new HashMap<>();
 
     private final Supplier<BiDiStream<AutoCompleteRequest, AutoCompleteResponse>> streamFactory;
@@ -207,15 +207,10 @@ public class IdeSession extends HasEventHandling {
         }
         currentStream = streamFactory.get();
         currentStream.onData(res -> {
-            LazyPromise<JsArray<io.deephaven.web.shared.ide.lsp.CompletionItem>> pendingPromise =
-                    pendingAutocompleteCalls.remove(res.getCompletionItems().getRequestId());
-            if (pendingPromise == null) {
-                return;
-            }
-            if (res.getCompletionItems().getSuccess()) {
-                pendingPromise.succeed(cleanupItems(res.getCompletionItems().getItemsList()));
+            if (res.getSuccess()) {
+                pendingAutocompleteCalls.remove(res.getRequestId()).succeed(res);
             } else {
-                pendingPromise
+                pendingAutocompleteCalls.remove(res.getRequestId())
                         .fail("Error occurred handling autocomplete on the server, probably request is out of date");
             }
         });
@@ -253,6 +248,7 @@ public class IdeSession extends HasEventHandling {
 
         JsLog.debug("Opening document for autocomplete ", request);
         AutoCompleteRequest wrapper = new AutoCompleteRequest();
+        wrapper.setConsoleId(result);
         wrapper.setOpenDocument(request);
         ensureStream().send(wrapper);
     }
@@ -286,6 +282,7 @@ public class IdeSession extends HasEventHandling {
 
         JsLog.debug("Sending content changes", request);
         AutoCompleteRequest wrapper = new AutoCompleteRequest();
+        wrapper.setConsoleId(result);
         wrapper.setChangeDocument(request);
         ensureStream().send(wrapper);
     }
@@ -306,45 +303,98 @@ public class IdeSession extends HasEventHandling {
         return result;
     }
 
+    private AutoCompleteRequest getAutoCompleteRequest() {
+        AutoCompleteRequest request = new AutoCompleteRequest();
+        request.setConsoleId(this.result);
+        request.setRequestId(nextAutocompleteRequestId);
+        nextAutocompleteRequestId++;
+        return request;
+    }
+
     public Promise<JsArray<io.deephaven.web.shared.ide.lsp.CompletionItem>> getCompletionItems(Object params) {
         final JsPropertyMap<Object> jsMap = Js.uncheckedCast(params);
-        final GetCompletionItemsRequest request = new GetCompletionItemsRequest();
+        final GetCompletionItemsRequest completionRequest = new GetCompletionItemsRequest();
 
         final VersionedTextDocumentIdentifier textDocument = toVersionedTextDoc(jsMap.getAsAny("textDocument"));
-        request.setTextDocument(textDocument);
-        request.setPosition(toPosition(jsMap.getAsAny("position")));
-        request.setContext(toContext(jsMap.getAsAny("context")));
-        request.setConsoleId(this.result);
-        request.setRequestId(nextAutocompleteRequestId++);
+        completionRequest.setTextDocument(textDocument);
+        completionRequest.setPosition(toPosition(jsMap.getAsAny("position")));
+        completionRequest.setContext(toContext(jsMap.getAsAny("context")));
 
-        LazyPromise<JsArray<io.deephaven.web.shared.ide.lsp.CompletionItem>> promise = new LazyPromise<>();
-        AutoCompleteRequest wrapper = new AutoCompleteRequest();
-        wrapper.setGetCompletionItems(request);
-        ensureStream().send(wrapper);
+        final AutoCompleteRequest request = getAutoCompleteRequest();
+        request.setGetCompletionItems(completionRequest);
+
+        // Set these in case running against an old server implementation
+        completionRequest.setConsoleId(request.getConsoleId());
+        completionRequest.setRequestId(request.getRequestId());
+
+        LazyPromise<AutoCompleteResponse> promise = new LazyPromise<>();
         pendingAutocompleteCalls.put(request.getRequestId(), promise);
+        ensureStream().send(request);
 
         return promise
                 .timeout(JsTable.MAX_BATCH_TIME)
                 .asPromise()
-                .then(Promise::resolve, fail -> {
-                    pendingAutocompleteCalls.remove(request.getRequestId());
-                    // noinspection unchecked, rawtypes
-                    return (Promise<JsArray<io.deephaven.web.shared.ide.lsp.CompletionItem>>) (Promise) Promise
-                            .reject(fail);
-                });
+                .then(res -> Promise.resolve(
+                        res.getCompletionItems().getItemsList().map((item, index, arr) -> LspTranslate.toJs(item))),
+                        fail -> {
+                            // noinspection unchecked, rawtypes
+                            return (Promise<JsArray<io.deephaven.web.shared.ide.lsp.CompletionItem>>) (Promise) Promise
+                                    .reject(fail);
+                        });
     }
 
-    private JsArray<io.deephaven.web.shared.ide.lsp.CompletionItem> cleanupItems(
-            final JsArray<CompletionItem> itemsList) {
-        JsArray<io.deephaven.web.shared.ide.lsp.CompletionItem> cleaned = new JsArray<>();
-        if (itemsList != null) {
-            for (int i = 0; i < itemsList.getLength(); i++) {
-                final CompletionItem item = itemsList.getAt(i);
-                final io.deephaven.web.shared.ide.lsp.CompletionItem copy = LspTranslate.toJs(item);
-                cleaned.push(copy);
-            }
-        }
-        return cleaned;
+
+    public Promise<JsArray<io.deephaven.web.shared.ide.lsp.SignatureInformation>> getSignatureHelp(Object params) {
+        final JsPropertyMap<Object> jsMap = Js.uncheckedCast(params);
+        final GetSignatureHelpRequest signatureHelpRequest = new GetSignatureHelpRequest();
+
+        final VersionedTextDocumentIdentifier textDocument = toVersionedTextDoc(jsMap.getAsAny("textDocument"));
+        signatureHelpRequest.setTextDocument(textDocument);
+        signatureHelpRequest.setPosition(toPosition(jsMap.getAsAny("position")));
+
+        final AutoCompleteRequest request = getAutoCompleteRequest();
+        request.setGetSignatureHelp(signatureHelpRequest);
+
+        LazyPromise<AutoCompleteResponse> promise = new LazyPromise<>();
+        pendingAutocompleteCalls.put(request.getRequestId(), promise);
+        ensureStream().send(request);
+
+        return promise
+                .timeout(JsTable.MAX_BATCH_TIME)
+                .asPromise()
+                .then(res -> Promise.resolve(
+                        res.getSignatures().getSignaturesList().map((item, index, arr) -> LspTranslate.toJs(item))),
+                        fail -> {
+                            // noinspection unchecked, rawtypes
+                            return (Promise<JsArray<io.deephaven.web.shared.ide.lsp.SignatureInformation>>) (Promise) Promise
+                                    .reject(fail);
+                        });
+    }
+
+    public Promise<io.deephaven.web.shared.ide.lsp.Hover> getHover(Object params) {
+        final JsPropertyMap<Object> jsMap = Js.uncheckedCast(params);
+        final GetHoverRequest hoverRequest = new GetHoverRequest();
+
+        final VersionedTextDocumentIdentifier textDocument = toVersionedTextDoc(jsMap.getAsAny("textDocument"));
+        hoverRequest.setTextDocument(textDocument);
+        hoverRequest.setPosition(toPosition(jsMap.getAsAny("position")));
+
+        final AutoCompleteRequest request = getAutoCompleteRequest();
+        request.setGetHover(hoverRequest);
+
+        LazyPromise<AutoCompleteResponse> promise = new LazyPromise<>();
+        pendingAutocompleteCalls.put(request.getRequestId(), promise);
+        ensureStream().send(request);
+
+        return promise
+                .timeout(JsTable.MAX_BATCH_TIME)
+                .asPromise()
+                .then(res -> Promise.resolve(LspTranslate.toJs(res.getHover())),
+                        fail -> {
+                            // noinspection unchecked, rawtypes
+                            return (Promise<io.deephaven.web.shared.ide.lsp.Hover>) (Promise) Promise
+                                    .reject(fail);
+                        });
     }
 
     private CompletionContext toContext(final Any context) {
@@ -367,6 +417,7 @@ public class IdeSession extends HasEventHandling {
 
         JsLog.debug("Closing document for autocomplete ", request);
         AutoCompleteRequest wrapper = new AutoCompleteRequest();
+        wrapper.setConsoleId(result);
         wrapper.setCloseDocument(request);
         ensureStream().send(wrapper);
     }

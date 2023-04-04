@@ -22,6 +22,9 @@ import static io.deephaven.util.QueryConstants.*;
 
 public class ByteEMAOperator extends BasePrimitiveEMAOperator {
     public final ColumnSource<?> valueSource;
+    // region extra-fields
+    final byte nullValue;
+    // endregion extra-fields
 
     protected class Context extends BasePrimitiveEMAOperator.Context {
 
@@ -45,7 +48,7 @@ public class ByteEMAOperator extends BasePrimitiveEMAOperator {
                     // read the value from the values chunk
                     final byte input = byteValueChunk.get(ii);
 
-                    if (input == NULL_BYTE) {
+                    if (input == nullValue) {
                         handleBadData(this, true, false);
                     } else {
                         if (curVal == NULL_DOUBLE) {
@@ -63,7 +66,7 @@ public class ByteEMAOperator extends BasePrimitiveEMAOperator {
                     final byte input = byteValueChunk.get(ii);
                     final long timestamp = tsChunk.get(ii);
                     //noinspection ConstantConditions
-                    final boolean isNull = input == NULL_BYTE;
+                    final boolean isNull = input == nullValue;
                     final boolean isNullTime = timestamp == NULL_LONG;
                     if (isNull) {
                         handleBadData(this, true, false);
@@ -96,7 +99,7 @@ public class ByteEMAOperator extends BasePrimitiveEMAOperator {
 
         @Override
         public boolean isValueValid(long atKey) {
-            return valueSource.getByte(atKey) != NULL_BYTE;
+            return valueSource.getByte(atKey) != nullValue;
         }
 
         @Override
@@ -124,11 +127,13 @@ public class ByteEMAOperator extends BasePrimitiveEMAOperator {
                             final long windowScaleUnits,
                             final ColumnSource<?> valueSource
                             // region extra-constructor-args
+                               ,final byte nullValue
                             // endregion extra-constructor-args
     ) {
         super(pair, affectingColumns, rowRedirection, control, timestampColumnName, windowScaleUnits);
         this.valueSource = valueSource;
         // region constructor
+        this.nullValue = nullValue;
         // endregion constructor
     }
 

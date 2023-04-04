@@ -203,7 +203,7 @@ public class WorkerConnection {
     private final Map<ClientTableState, BiDiStream<FlightData, FlightData>> subscriptionStreams = new HashMap<>();
     private ResponseStreamWrapper<ExportedTableUpdateMessage> exportNotifications;
 
-    private JsSet<JsFigure> figures = new JsSet<>();
+    private JsSet<HasLifecycle> simpleReconnectableInstances = new JsSet<>();
 
     private List<LogItem> pastLogs = new ArrayList<>();
     private JsConsumer<LogItem> recordLog = pastLogs::add;
@@ -327,15 +327,20 @@ public class WorkerConnection {
 
                         reviver.revive(metadata, hasActiveSubs);
 
-                        figures.forEach((p0, p1, p2) -> p0.refetch());
+                        simpleReconnectableInstances.forEach((item, index, arr) -> item.refetch());
                     } else {
+                        // wire up figures to attempt to reconnect when ready
+                        simpleReconnectableInstances.forEach((item, index, arr) -> {
+                            item.reconnect();
+                            return null;
+                        });
+
                         // only notify that we're back, no need to re-create or re-fetch anything
                         ClientTableState[] hasActiveSubs = cache.getAllStates().stream()
                                 .filter(cts -> !cts.isEmpty())
                                 .toArray(ClientTableState[]::new);
 
                         reviver.revive(metadata, hasActiveSubs);
-
                     }
 
                     info.connected();
@@ -592,11 +597,11 @@ public class WorkerConnection {
     // @Override
 
     public void connectionLost() {
-        // notify all active tables and figures that the connection is closed
-        figures.forEach((p0, p1, p2) -> {
+        // notify all active tables and widgets that the connection is closed
+        // TODO(deephaven-core#3604) when a new session is created, refetch all widgets and use that to drive reconnect
+        simpleReconnectableInstances.forEach((item, index, array) -> {
             try {
-                p0.fireEvent(JsFigure.EVENT_DISCONNECT);
-                p0.suppressEvents();
+                item.disconnected();
             } catch (Exception e) {
                 JsLog.warn("Error in firing Figure.EVENT_DISCONNECT event", e);
             }
@@ -606,6 +611,7 @@ public class WorkerConnection {
         for (ClientTableState cts : cache.getAllStates()) {
             cts.forActiveLifecycles(HasLifecycle::disconnected);
         }
+
 
         if (state == State.Disconnected) {
             // deliberately closed, don't try to reopen at this time
@@ -893,12 +899,12 @@ public class WorkerConnection {
                 .then(response -> new JsWidget(this, c -> fetchObject(varDef, c)).refetch());
     }
 
-    public void registerFigure(JsFigure figure) {
-        this.figures.add(figure);
+    public void registerSimpleReconnectable(HasLifecycle figure) {
+        this.simpleReconnectableInstances.add(figure);
     }
 
-    public void releaseFigure(JsFigure figure) {
-        this.figures.delete(figure);
+    public void unregisterSimpleReconnectable(HasLifecycle figure) {
+        this.simpleReconnectableInstances.delete(figure);
     }
 
 

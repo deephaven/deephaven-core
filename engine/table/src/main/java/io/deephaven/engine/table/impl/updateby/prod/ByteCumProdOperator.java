@@ -21,6 +21,7 @@ import static io.deephaven.util.QueryConstants.NULL_BYTE;
 
 public class ByteCumProdOperator extends BaseLongUpdateByOperator {
     // region extra-fields
+    final byte nullValue;
     // endregion extra-fields
 
     protected class Context extends BaseLongUpdateByOperator.Context {
@@ -41,7 +42,7 @@ public class ByteCumProdOperator extends BaseLongUpdateByOperator {
 
             final byte val = byteValueChunk.get(pos);
 
-            if (val != NULL_BYTE) {
+            if (val != nullValue) {
                 curVal = curVal == NULL_LONG ? val : curVal * val;
             }
         }
@@ -50,10 +51,12 @@ public class ByteCumProdOperator extends BaseLongUpdateByOperator {
     public ByteCumProdOperator(@NotNull final MatchPair pair,
                                @Nullable final RowRedirection rowRedirection
                                // region extra-constructor-args
+                               ,final byte nullValue
                                // endregion extra-constructor-args
     ) {
         super(pair, new String[] { pair.rightColumn }, rowRedirection);
         // region constructor
+        this.nullValue = nullValue;
         // endregion constructor
     }
 

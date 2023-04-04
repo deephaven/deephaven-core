@@ -4,8 +4,10 @@
 package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.tablelogger.ServerStateLog;
+import io.deephaven.engine.tablelogger.EngineTableLoggers;
+import io.deephaven.engine.tablelogger.ServerStateLogLogger;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.tablelogger.impl.memory.MemoryTableLogger;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.internal.log.LoggerFactory;
@@ -35,13 +37,12 @@ public class ServerStateTracker {
 
     private final Logger logger;
 
-    private final MemoryTableLogger<ServerStateLog> processMemLogger;
+    private final ServerStateLogLogger processMemLogger;
     private final UpdateGraphProcessor.AccumulatedCycleStats ugpAccumCycleStats;
 
     private ServerStateTracker() {
         logger = LoggerFactory.getLogger(ServerStateTracker.class);
-        processMemLogger = new MemoryTableLogger<>(
-                logger, new ServerStateLog(), ServerStateLog.getTableDefinition());
+        processMemLogger = EngineTableLoggers.get().serverStateLogLogger();
         ugpAccumCycleStats = new UpdateGraphProcessor.AccumulatedCycleStats();
     }
 
@@ -163,7 +164,7 @@ public class ServerStateTracker {
             final int ugpSafePoints,
             final long ugpSafePointTimeMillis) {
         try {
-            processMemLogger.getTableLogger().log(
+            processMemLogger.log(
                     startMillis,
                     deltaMillisToMicros(endMillis - startMillis),
                     bytesToMiB(sample.totalMemory),
@@ -181,6 +182,6 @@ public class ServerStateTracker {
     }
 
     public QueryTable getQueryTable() {
-        return processMemLogger.getQueryTable();
+        return MemoryTableLogger.maybeGetQueryTable(processMemLogger);
     }
 }

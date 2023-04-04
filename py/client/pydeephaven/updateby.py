@@ -21,7 +21,7 @@ _GrpcMathContext = table_pb2.MathContext
 
 class _UpdateByBase(ABC):
     @abstractmethod
-    def make_grpc_request(self):
+    def make_grpc_message(self):
         ...
 
 
@@ -76,7 +76,7 @@ class OperationControl(_UpdateByBase):
         self.on_nan = on_nan
         self.big_value_context = big_value_context
 
-    def make_grpc_request(self):
+    def make_grpc_message(self):
         return _GrpcUpdateByEmaOptions(on_null_value=self.on_null.value, on_nan_value=self.on_nan.value,
                                       big_value_context=_GrpcMathContext(precision=self.big_value_context.value[0],
                                                                          rounding_mode=self.big_value_context.value[1]))
@@ -88,7 +88,7 @@ class UpdateByOperation(_UpdateByBase):
     def __init__(self, ub_column):
         self.ub_column = ub_column
 
-    def make_grpc_request(self):
+    def make_grpc_message(self):
         return _GrpcUpdateByOperation(column=self.ub_column)
 
 
@@ -197,7 +197,7 @@ def ema_tick_decay(time_scale_ticks: int, cols: List[str],
     """
     try:
         timescale = _GrpcUpdateByEmaTimescale(ticks=_GrpcUpdateByEmaTicks(ticks=time_scale_ticks))
-        ub_ema = _GrpcUpdateByEma(options=op_control.make_grpc_request() if op_control else None, timescale=timescale)
+        ub_ema = _GrpcUpdateByEma(options=op_control.make_grpc_message() if op_control else None, timescale=timescale)
         ub_spec = _GrpcUpdateBySpec(ema=ub_ema)
         ub_column = _GrpcUpdateByColumn(spec=ub_spec, match_pairs=cols)
         return UpdateByOperation(ub_column=ub_column)
@@ -231,7 +231,7 @@ def ema_time_decay(ts_col: str, time_scale: int, cols: List[str],
     """
     try:
         timescale = _GrpcUpdateByEmaTimescale(time=_GrpcUpdateByEmaTime(column=ts_col, period_nanos=time_scale))
-        ub_ema = _GrpcUpdateByEma(options=op_control.make_grpc_request() if op_control else None, timescale=timescale)
+        ub_ema = _GrpcUpdateByEma(options=op_control.make_grpc_message() if op_control else None, timescale=timescale)
 
         ub_spec = _GrpcUpdateBySpec(ema=ub_ema)
         ub_column = _GrpcUpdateByColumn(spec=ub_spec, match_pairs=cols)

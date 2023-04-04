@@ -170,7 +170,8 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
             } catch (Exception e) {
                 log.warn().append("Failed to read expected grouping file ").append(groupingFileName)
                         .append(" for table location ").append(tl()).append(", column ")
-                        .append(getName());
+                        .append(getName())
+                        .endl();
                 return null;
             }
             final Map<String, ColumnTypeInfo> columnTypes = ParquetSchemaReader.parseMetadata(

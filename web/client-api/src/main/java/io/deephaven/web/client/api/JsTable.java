@@ -3,7 +3,6 @@
  */
 package io.deephaven.web.client.api;
 
-import com.vertispan.tsdefs.annotations.TsIgnore;
 import com.vertispan.tsdefs.annotations.TsName;
 import com.vertispan.tsdefs.annotations.TsTypeRef;
 import elemental2.core.JsArray;
@@ -61,6 +60,7 @@ import io.deephaven.web.shared.fu.JsConsumer;
 import io.deephaven.web.shared.fu.JsProvider;
 import io.deephaven.web.shared.fu.JsRunnable;
 import io.deephaven.web.shared.fu.RemoverFn;
+import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsOptional;
@@ -80,7 +80,7 @@ import static io.deephaven.web.client.fu.LazyPromise.logError;
  * handle/viewport.
  */
 @TsName(namespace = "dh", name = "Table")
-public class JsTable extends HasEventHandling implements HasTableBinding, HasLifecycle {
+public class JsTable extends HasLifecycle implements HasTableBinding {
     @JsProperty(namespace = "dh.Table")
     public static final String EVENT_SIZECHANGED = "sizechanged",
             EVENT_UPDATED = "updated",
@@ -170,6 +170,13 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
         return Sort.reverse();
     }
 
+    @Override
+    public Promise<JsTable> refetch() {
+        // TODO(deephaven-core#3604) consider supporting this method when new session reconnects are supported
+        return Promise.reject("Cannot reconnect a Table with refetch(), see deephaven-core#3604");
+    }
+
+    @JsMethod
     public Promise<JsTable> batch(JsConsumer<RequestBatcher> userCode) {
         boolean rootBatch = batchDepth++ == 0;
         RequestBatcher batcher = workerConnection.getBatcher(this);
@@ -1122,7 +1129,6 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
         }
     }
 
-    @Override
     public void revive(ClientTableState state) {
         JsLog.debug("Revive!", (state == state()), this);
         if (state == state()) {
@@ -1132,10 +1138,6 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
                 getBinding().maybeReviveSubscription();
             });
         }
-    }
-
-    public void die(Object error) {
-        notifyDeath(this, error);
     }
 
     public Promise<JsTable> downsample(LongWrapper[] zoomRange, int pixelCount, String xCol, String[] yCols) {
@@ -1672,11 +1674,6 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
     @Override
     public void rollback() {
         getBinding().rollback();
-    }
-
-    @Override
-    public void disconnected() {
-        notifyDisconnect(this);
     }
 
     public void setSize(double s) {

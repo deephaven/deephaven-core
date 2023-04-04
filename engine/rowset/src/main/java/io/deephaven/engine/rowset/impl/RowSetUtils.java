@@ -218,4 +218,211 @@ public class RowSetUtils {
             lrc.accept(pendingStart.longValue(), pendingEnd.longValue());
         }
     }
+
+    public static class CombinedRangeIterator implements RowSet.RangeIterator {
+        public enum RangeMembership {
+            FIRST_ONLY(1), SECOND_ONLY(2), BOTH(3);
+
+            private final int membershipBits;
+
+            RangeMembership(final int membershipBits) {
+                this.membershipBits = membershipBits;
+            }
+
+            public int membershipBits() {
+                return membershipBits;
+            }
+
+            public boolean hasFirst() {
+                return (membershipBits & 1) != 0;
+            }
+
+            public boolean hasSecond() {
+                return (membershipBits & 2) != 0;
+            }
+        }
+
+        private final RowSet.RangeIterator it1;
+        private final RowSet.RangeIterator it2;
+
+        // -1 we have used up all the current range for it1; this means we need to try to fetch
+        // another range from it1 if we haven't tried that already.
+        private long it1CurrStart;
+
+        // -2 means we have checked it1.hasNext() already and
+        // realized there are no more ranges available.
+        private long it1CurrEnd;
+
+        // -1 we have used up all the current range for it2; this means we need to try to fetch
+        // another range from it2 if we haven't tried that already.
+        private long it2CurrStart;
+
+        // -2 means we have checked it1.hasNext() already and
+        // realized there are no more ranges available.
+        private long it2CurrEnd;
+
+        private long currStart = -1, currEnd = -1;
+        private RangeMembership currMembership = null;
+
+        /***
+         *
+         * Provide the means to iterate over the combined ranges of two provided iterators. The resulting ranges in this
+         * object are tagged with first, second, or both, to indicate if the current range was from the first iterator,
+         * second iterator, or both respectively.
+         *
+         * @param it1 First iterator
+         * @param it2 Second iterator
+         */
+        public CombinedRangeIterator(final RowSet.RangeIterator it1, final RowSet.RangeIterator it2) {
+            this.it1 = it1;
+            this.it2 = it2;
+            it1CurrStart = -1;
+            it1CurrEnd = -1;
+            it2CurrStart = -1;
+            it2CurrEnd = -1;
+        }
+
+        @Override
+        public boolean hasNext() {
+            if (it1CurrStart == -1 && it1CurrEnd != -2) {
+                primeIter1();
+            }
+            if (it2CurrStart == -1 && it2CurrEnd != -2) {
+                primeIter2();
+            }
+            return it1CurrEnd != -2 || it2CurrEnd != -2;
+        }
+
+        private void primeIter1() {
+            if (it1.hasNext()) {
+                it1.next();
+                it1CurrStart = it1.currentRangeStart();
+                it1CurrEnd = it1.currentRangeEnd();
+            } else {
+                it1CurrEnd = -2;
+            }
+        }
+
+        private void primeIter2() {
+            if (it2.hasNext()) {
+                it2.next();
+                it2CurrStart = it2.currentRangeStart();
+                it2CurrEnd = it2.currentRangeEnd();
+            } else {
+                it2CurrEnd = -2;
+            }
+        }
+
+        @Override
+        public long next() {
+            if (it1CurrStart != -1) {
+                if (it2CurrStart != -1) {
+                    if (it1CurrEnd < it2CurrStart) { // it1's range is completely to the left of it2's range.
+                        currMembership = RangeMembership.FIRST_ONLY;
+                        currStart = it1CurrStart;
+                        currEnd = it1CurrEnd;
+                        it1CurrStart = -1; // we consumed the it1 range completely.
+                    } else if (it2CurrEnd < it1CurrStart) { // it1's range is completely to the right of it2's range.
+                        currMembership = RangeMembership.SECOND_ONLY;
+                        currStart = it2CurrStart;
+                        currEnd = it2CurrEnd;
+                        it2CurrStart = -1; // we consumed the it2 range completely.
+                    } else { // it1's range has a non-empty overlap with it2's range.
+                        final boolean it1WasStart, it2WasStart, it1WasEnd, it2WasEnd;
+                        if (it1CurrStart < it2CurrStart) {
+                            currMembership = RangeMembership.FIRST_ONLY;
+                            currStart = it1CurrStart;
+                            currEnd = it2CurrStart - 1;
+                            it1WasStart = true;
+                            it2WasStart = false;
+                            it1WasEnd = it2WasEnd = false;
+                        } else if (it2CurrStart < it1CurrStart) {
+                            currMembership = RangeMembership.SECOND_ONLY;
+                            currStart = it2CurrStart;
+                            currEnd = it1CurrStart - 1;
+                            it1WasStart = false;
+                            it2WasStart = true;
+                            it1WasEnd = it2WasEnd = false;
+                        } else { // it1CurrStart == it2CurrStart
+                            currMembership = RangeMembership.BOTH;
+                            currStart = it1CurrStart;
+                            it1WasStart = it2WasStart = true;
+                            if (it1CurrEnd < it2CurrEnd) {
+                                currEnd = it1CurrEnd;
+                                it1WasEnd = true;
+                                it2WasEnd = false;
+                            } else if (it2CurrEnd < it1CurrEnd) {
+                                currEnd = it2CurrEnd;
+                                it1WasEnd = false;
+                                it2WasEnd = true;
+                            } else { // it1CurrEnd == it2CurrEnd
+                                currEnd = it2CurrEnd;
+                                it1WasEnd = true;
+                                it2WasEnd = true;
+                            }
+                        }
+                        // Consume from each iterator range appropriately.
+                        if (it1WasStart) {
+                            if (it1WasEnd) {
+                                it1CurrStart = -1;
+                            } else {
+                                it1CurrStart = currEnd + 1;
+                            }
+                        }
+                        if (it2WasStart) {
+                            if (it2WasEnd) {
+                                it2CurrStart = -1;
+                            } else {
+                                it2CurrStart = currEnd + 1;
+                            }
+                        }
+                    }
+                } else { // it2currStart == -1, which at this point means no more it2 ranges.
+                    currMembership = RangeMembership.FIRST_ONLY;
+                    currStart = it1CurrStart;
+                    currEnd = it1CurrEnd;
+                    it1CurrStart = -1; // we consumed the it1 range completely.
+                }
+            } else { // it1CurrStart == -1, which at this point means no more it1 ranges.
+                if (it2CurrStart == -1) {
+                    throw new IllegalStateException("Internal invariant violated");
+                }
+                currMembership = RangeMembership.SECOND_ONLY;
+                currStart = it2CurrStart;
+                currEnd = it2CurrEnd;
+                it2CurrStart = -1; // we consumed the it2 range completely.
+            }
+            return currStart;
+        }
+
+        @Override
+        public void close() {
+            it1.close();
+            it2.close();
+        }
+
+        @Override
+        public long currentRangeStart() {
+            return currStart;
+        }
+
+        @Override
+        public long currentRangeEnd() {
+            return currEnd;
+        }
+
+        public RangeMembership currentRangeMembership() {
+            return currMembership;
+        }
+
+        @Override
+        public boolean advance(long notUsed) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void postpone(long notUsed) {
+            throw new UnsupportedOperationException();
+        }
+    }
 }

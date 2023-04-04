@@ -56,7 +56,7 @@ public class ByteRollingSumOperator extends BaseLongUpdateByOperator {
                 byteWindowValues.addUnsafe(val);
 
                 // increase the running sum
-                if (val != NULL_BYTE) {
+                if (val != nullValue) {
                     if (curVal == NULL_LONG) {
                         curVal = val;
                     } else {
@@ -76,7 +76,7 @@ public class ByteRollingSumOperator extends BaseLongUpdateByOperator {
                 byte val = byteWindowValues.removeUnsafe();
 
                 // reduce the running sum
-                if (val != NULL_BYTE) {
+                if (val != nullValue) {
                     curVal -= val;
                 } else {
                     nullCount--;

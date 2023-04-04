@@ -13,6 +13,19 @@ public interface TableUpdateListener extends TableListener {
     /**
      * Process notification of table changes.
      *
+     * <p>
+     * The TableUpdateListener onUpdate call executes within the
+     * {@link io.deephaven.engine.updategraph.UpdateGraphProcessor} refresh loop. Any tables used within the listener's
+     * onUpdate call must have already been refreshed. Using the typical pattern of a Listener that is listening to a
+     * single table, with {@link Table#addUpdateListener(TableUpdateListener)}, this is trivially true.
+     * </p>
+     *
+     * <p>
+     * When the listener must reference more than just one parent, the tables (or other objects) it references, must be
+     * made a {@link NotificationQueue.Dependency} of the listener. For listeners that reference multiple ticking
+     * tables, a common pattern is to use a MergedListener and collection of ListenerRecorders.
+     * </p>
+     *
      * @param upstream The set of upstream table updates.
      */
     void onUpdate(TableUpdate upstream);

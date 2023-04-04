@@ -14,10 +14,11 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb.Fet
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExportedTableCreationResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.TypedTicket;
 import io.deephaven.web.client.api.Callbacks;
-import io.deephaven.web.client.api.HasEventHandling;
 import io.deephaven.web.client.api.JsPartitionedTable;
 import io.deephaven.web.client.api.JsTable;
 import io.deephaven.web.client.api.WorkerConnection;
+import io.deephaven.web.client.api.console.JsVariableType;
+import io.deephaven.web.client.api.lifecycle.HasLifecycle;
 import io.deephaven.web.client.api.widget.JsWidget;
 import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.client.fu.LazyPromise;
@@ -41,7 +42,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @JsType(name = "Figure", namespace = "dh.plot")
-public class JsFigure extends HasEventHandling {
+public class JsFigure extends HasLifecycle {
 
     @JsProperty(namespace = "dh.plot.Figure")
     public static final String EVENT_UPDATED = "updated",
@@ -182,6 +183,38 @@ public class JsFigure extends HasEventHandling {
             return (Promise<JsFigure>) (Promise) Promise.reject(fetchError);
         });
     }
+
+    /**
+     * Asks the figure to fire a reconnect event after its tables are ready.
+     */
+    @JsIgnore
+    public void reconnect() {
+        // For each table and partitioned table, listen for reconnect events - when all have reconnected,
+        // signal that the figure itself has disconnected. If any one table disconnects, this will be canceled.
+        Promise.all(
+                Stream.concat(
+                        Arrays.stream(tables),
+                        Arrays.stream(partitionedTables))
+                        .map(HasLifecycle::nextReconnect)
+                        .toArray(Promise[]::new))
+                .then(ignore -> {
+                    verifyTables();
+                    return null;
+                }).then(ignore -> {
+                    unsuppressEvents();
+                    fireEvent(EVENT_RECONNECT);
+                    enqueueSubscriptionCheck();
+                    return null;
+                }, failure -> {
+                    CustomEventInit<Object> init = CustomEventInit.create();
+                    init.setDetail(failure);
+                    unsuppressEvents();
+                    fireEvent(EVENT_RECONNECTFAILED, init);
+                    suppressEvents();
+                    return null;
+                });
+    }
+
 
     @JsProperty
     @JsNullable
@@ -657,7 +690,7 @@ public class JsFigure extends HasEventHandling {
             int nextPartitionedTableIndex = 0;
             for (int i = 0; i < response.getTypedExportIdList().length; i++) {
                 TypedTicket ticket = response.getTypedExportIdList().getAt(i);
-                if (ticket.getType().equals("Table")) {
+                if (ticket.getType().equals(JsVariableType.TABLE)) {
                     // Note that creating a CTS like this means we can't actually refetch it, but that's okay, we can't
                     // reconnect in this way without refetching the entire figure anyway.
                     int tableIndex = nextTableIndex++;
@@ -668,13 +701,13 @@ public class JsFigure extends HasEventHandling {
                     }).then(etcr -> {
                         ClientTableState cts = connection.newStateFromUnsolicitedTable(etcr, "table for figure");
                         JsTable table = new JsTable(connection, cts);
-                        // never attempt a reconnect, since we might have a different figure schema entirely
-                        table.addEventListener(JsTable.EVENT_DISCONNECT, ignore -> table.close());
+                        // TODO(deephaven-core#3604) if using a new session don't attempt a reconnect, since we might
+                        // have a different figure schema entirely
+                        // table.addEventListener(JsTable.EVENT_DISCONNECT, ignore -> table.close());
                         tables[tableIndex] = table;
                         return Promise.resolve(table);
                     });
-                } else if (ticket.getType().equals("PartitionedTable")) {
-
+                } else if (ticket.getType().equals(JsVariableType.PARTITIONEDTABLE)) {
                     int partitionedTableIndex = nextPartitionedTableIndex++;
                     promises[i] = Callbacks.<FetchObjectResponse, Object>grpcUnaryPromise(c -> {
                         FetchObjectRequest partitionedTableRequest = new FetchObjectRequest();
@@ -685,6 +718,10 @@ public class JsFigure extends HasEventHandling {
                         JsPartitionedTable partitionedTable =
                                 new JsPartitionedTable(connection, new JsWidget(connection,
                                         callback -> callback.handleResponse(null, object, ticket.getTicket())));
+                        // TODO(deephaven-core#3604) if using a new session don't attempt a reconnect, since we might
+                        // have a different figure schema entirely
+                        // partitionedTable.addEventListener(JsPartitionedTable.EVENT_DISCONNECT, ignore ->
+                        // partitionedTable.close());
                         partitionedTables[partitionedTableIndex] = partitionedTable;
                         return partitionedTable.refetch();
                     });
@@ -695,11 +732,11 @@ public class JsFigure extends HasEventHandling {
 
             return Promise.all(promises)
                     .then(ignore -> {
-                        connection.registerFigure(figure);
+                        connection.registerSimpleReconnectable(figure);
 
                         return Promise.resolve(
                                 new FigureTableFetchData(tables, partitionedTables,
-                                        f -> this.connection.releaseFigure(f)));
+                                        f -> this.connection.unregisterSimpleReconnectable(f)));
                     });
         }
     }
