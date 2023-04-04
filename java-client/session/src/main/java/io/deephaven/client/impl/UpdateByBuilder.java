@@ -154,6 +154,12 @@ class UpdateByBuilder {
 
         // TODO: add this correctly to `table.proto` (DHC #3392)
         @Override
+        public UpdateByColumn.UpdateBySpec visit(DeltaSpec spec) {
+            return null;
+        }
+
+        // TODO: add this correctly to `table.proto` (DHC #3392)
+        @Override
         public UpdateByColumn.UpdateBySpec visit(RollingSumSpec rs) {
             return null;
         }
