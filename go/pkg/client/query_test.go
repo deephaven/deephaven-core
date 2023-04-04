@@ -869,15 +869,20 @@ func crossJoinQuery(t *testing.T, exec execBatchOrSerial) {
 	defer results[2].Release()
 	defer results[3].Release()
 
-	left, _, result1, result2 := results[0], results[1], results[2], results[3]
+	left, right, result1, result2 := results[0], results[1], results[2], results[3]
 
-	if result1.NumRows() >= left.NumRows() {
-		t.Error("result1 was too large")
+	if result1.NumRows() == 0 {
+		t.Error("result1 is empty")
 		return
 	}
 
-	if result2.NumRows() <= left.NumRows() {
-		t.Error("result2 was too small")
+	if result1.NumRows() >= left.NumRows()*right.NumRows() {
+		t.Errorf("result1 is the wrong size: %v >= %v", result1.NumRows(), left.NumRows()*right.NumRows())
+		return
+	}
+
+	if result2.NumRows() != left.NumRows()*right.NumRows() {
+		t.Errorf("result2 is the wrong size: %v != %v", result2.NumRows(), left.NumRows()*right.NumRows())
 		return
 	}
 }
