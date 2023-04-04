@@ -358,7 +358,7 @@ func TestCrossJoin(t *testing.T) {
 		return
 	}
 
-	if resultRec1.NumRows() > 0 && resultRec1.NumRows() >= leftRec.NumRows()*rightRec.NumRows() {
+	if resultRec1.NumRows() >= leftRec.NumRows()*rightRec.NumRows() {
 		t.Errorf("resultRec1 is the wrong size: %v >= %v", resultRec1.NumRows(), leftRec.NumRows()*rightRec.NumRows())
 		return
 	}
