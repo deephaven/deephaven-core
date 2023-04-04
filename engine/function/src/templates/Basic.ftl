@@ -991,9 +991,11 @@ public class Basic {
     static public ${pt.primitive}[] replaceIfNull(${pt.vector} values, ${pt.primitive} replacement) {
         final int n = values.intSize("replaceIfNull");
         ${pt.primitive}[] result = new ${pt.primitive}[n];
+        int i = 0;
 
-        for (int i = 0; i < n; i++) {
-            result[i] = replaceIfNull(values.get(i), replacement);
+        for (final ${pt.primitive} v : values) {
+            result[i] = replaceIfNull(v, replacement);
+            i++;
         }
 
         return result;
@@ -1038,11 +1040,10 @@ public class Basic {
             return NULL_LONG;
         }
 
-        final long n = values.size();
         long count = 0;
 
-        for (long i = 0; i < n; i++) {
-            if (!isNull(values.get(i))) {
+        for (final ${pt.primitive} v : values) {
+            if (!isNull(v)) {
                 count++;
             }
         }
@@ -1265,8 +1266,8 @@ public class Basic {
 
         final T${pt.primitive?capitalize}Set keys = new T${pt.primitive?capitalize}HashSet();
 
-        for (long ii = 0; ii < n; ii++) {
-            keys.add(values.get(ii));
+        for (final ${pt.primitive} v : values) {
+            keys.add(v);
         }
 
         if (!countNull) {
@@ -1302,8 +1303,8 @@ public class Basic {
 
         final Set<${pt.boxed}> keys = new HashSet<${pt.boxed}>();
 
-        for (long ii = 0; ii < n; ii++) {
-            keys.add(values.get(ii));
+        for (final ${pt.primitive} v : values) {
+            keys.add(v);
         }
 
         if (!countNull) {
@@ -1398,8 +1399,7 @@ public class Basic {
         final T${pt.primitive?capitalize}ArrayList orderedList = new T${pt.primitive?capitalize}ArrayList();
         final T${pt.primitive?capitalize}Set counts = new T${pt.primitive?capitalize}HashSet();
 
-        for (long ii = 0; ii < n; ii++) {
-            ${pt.primitive} val = values.get(ii);
+        for (final ${pt.primitive} val : values) {
             if ((includeNull || val != QueryConstants.${pt.null}) && counts.add(val)) {
                 orderedList.add(val);
             }
@@ -1467,8 +1467,7 @@ public class Basic {
         final ArrayList<${pt.boxed}> orderedList = new ArrayList<>();
         final Set<${pt.boxed}> counts = new HashSet<>();
 
-        for (long ii = 0; ii < n; ii++) {
-            ${pt.primitive} val = values.get(ii);
+        for (final ${pt.primitive} val : values) {
             if ((includeNull || val != QueryConstants.${pt.null}) && counts.add(val)) {
                 orderedList.add(val);
             }
@@ -1553,8 +1552,8 @@ public class Basic {
         for (${pt.vector} v : values) {
             if (v != null) {
                 final long nn = v.size();
-                for (int i = 0; i < nn; i++) {
-                    result[idx] = v.get(i);
+                for (final ${pt.primitive} vv : v) {
+                    result[idx] = vv;
                     idx++;
                 }
             }
@@ -1590,9 +1589,11 @@ public class Basic {
 
         final int n = values.intSize("reverse");
         final ${pt.primitive}[] result = new ${pt.primitive}[n];
+        int i = n-1;
 
-        for (int i=0; i<n; i++) {
-            result[i] = values.get(n-1-i);
+        for (final ${pt.primitive} v : values) {
+            result[i] = v;
+            i--;
         }
 
         return result;
@@ -1625,13 +1626,14 @@ public class Basic {
             return NULL_LONG;
         }
 
-        final long L = values.size();
+        long i = 0;
 
-        for (long i = 0; i < L; ++i) {
-            ${pt.primitive} c = values.get(i);
+        for (final ${pt.primitive} c : values) {
             if (c == val) {
                 return i;
             }
+
+            i++;
         }
 
         return NULL_LONG;
@@ -1795,14 +1797,16 @@ public class Basic {
 
         final int n = values.intSize("forwardFill");
         final ${pt.primitive}[] result = new ${pt.primitive}[n];
+        int ii = 0;
 
         ${pt.primitive} lastGood = QueryConstants.${pt.null};
-        for (int ii = 0; ii < n; ii++) {
-            if (!isNull(values.get(ii))) {
-                lastGood = values.get(ii);
+        for (final ${pt.primitive} v : values) {
+            if (!isNull(v)) {
+                lastGood = v;
             }
 
             result[ii] = lastGood;
+            ii++;
         }
         return result;
     }

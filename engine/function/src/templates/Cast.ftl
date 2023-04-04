@@ -270,9 +270,11 @@ public class Cast {
 
         final int s = values.intSize("castInt");
         int[] result = new int[s];
+        int i = 0;
 
-        for (int i = 0; i < result.length; i++) {
-            result[i] = castInt(values.get(i), checkFidelity);
+        for (final ${pt.primitive} v : values) {
+            result[i] = castInt(v, checkFidelity);
+            i++;
         }
 
         return result;
@@ -333,9 +335,11 @@ public class Cast {
 
         final int s = values.intSize("castLong");
         long[] result = new long[s];
+        int i = 0;
 
-        for (int i = 0; i < result.length; i++) {
-            result[i] = castLong(values.get(i), checkFidelity);
+        for (final ${pt.primitive} v : values) {
+            result[i] = castLong(v, checkFidelity);
+            i++;
         }
 
         return result;
@@ -398,9 +402,11 @@ public class Cast {
 
         final int s = values.intSize("castDouble");
         double[] result = new double[s];
+        int i = 0;
 
-        for (int i = 0; i < result.length; i++) {
-            result[i] = castDouble(values.get(i), checkFidelity);
+        for (final ${pt.primitive} v : values) {
+            result[i] = castDouble(v, checkFidelity);
+            i++;
         }
 
         return result;
