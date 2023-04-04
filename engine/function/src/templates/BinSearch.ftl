@@ -114,7 +114,7 @@ public class BinSearch {
     }
 
     static private <T extends Comparable<? super T>> int binarySearch0Modified(ObjectVector<T> array, int fromIndex, int toIndex, T key, boolean highestOrLowest) {
-        if(array.size() == 0){
+        if(array.isEmpty()){
             return -1;
         }
 
@@ -279,7 +279,7 @@ public class BinSearch {
     }
 
     static private int binarySearch0Modified(${pt.vector} array, int fromIndex, int toIndex, ${pt.primitive} key, boolean highestOrLowest) {
-        if(array.size() == 0){
+        if(array.isEmpty()){
             return -1;
         }
 

@@ -30,7 +30,7 @@ public class Sort {
         if (values == null) {
             return null;
         }
-        if (values.size() == 0) {
+        if (values.isEmpty()) {
             return values.toArray();
         }
 
@@ -93,7 +93,7 @@ public class Sort {
             return null;
         }
 
-        if (values.size() == 0) {
+        if (values.isEmpty()) {
             return values.toArray();
         }
 
@@ -155,7 +155,7 @@ public class Sort {
             return null;
         }
 
-        if (values.size() == 0) {
+        if (values.isEmpty()) {
             return new ${pt.primitive}[0];
         }
 
@@ -213,7 +213,7 @@ public class Sort {
             return null;
         }
 
-        if (values.size() == 0) {
+        if (values.isEmpty()) {
             return new ${pt.primitive}[0];
         }
 

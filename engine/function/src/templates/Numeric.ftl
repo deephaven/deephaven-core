@@ -1538,7 +1538,7 @@ public class Numeric {
             return null;
         }
 
-        if (values.size() == 0) {
+        if (values.isEmpty()) {
             return new ${pt.primitive}[0];
         }
 
@@ -1609,7 +1609,7 @@ public class Numeric {
             return null;
         }
 
-        if (values.size() == 0) {
+        if (values.isEmpty()) {
             return new ${pt.primitive}[0];
         }
 
@@ -1688,7 +1688,7 @@ public class Numeric {
             return null;
         }
 
-        if (values.size() == 0) {
+        if (values.isEmpty()) {
             return new ${pt.primitive}[0];
         }
 

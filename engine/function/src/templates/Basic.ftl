@@ -1092,7 +1092,7 @@ public class Basic {
      * @return first value from the array.
      */
     static public ${pt.primitive} first(${pt.vector} values) {
-        if (values == null || values.size() == 0) {
+        if (values == null || values.isEmpty()) {
             return QueryConstants.${pt.null};
         }
 
