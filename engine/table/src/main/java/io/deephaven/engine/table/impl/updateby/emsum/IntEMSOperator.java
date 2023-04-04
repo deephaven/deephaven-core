@@ -1,9 +1,9 @@
 /*
  * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharEMAOperator and regenerate
+ * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharEMSOperator and regenerate
  * ---------------------------------------------------------------------------------------------------------------------
  */
-package io.deephaven.engine.table.impl.updateby.ema;
+package io.deephaven.engine.table.impl.updateby.emsum;
 
 import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.chunk.Chunk;
@@ -20,12 +20,12 @@ import org.jetbrains.annotations.Nullable;
 
 import static io.deephaven.util.QueryConstants.*;
 
-public class IntEMAOperator extends BasePrimitiveEMAOperator {
+public class IntEMSOperator extends BasePrimitiveEMSOperator {
     public final ColumnSource<?> valueSource;
     // region extra-fields
     // endregion extra-fields
 
-    protected class Context extends BasePrimitiveEMAOperator.Context {
+    protected class Context extends BasePrimitiveEMSOperator.Context {
 
         public IntChunk<? extends Values> intValueChunk;
 
@@ -34,7 +34,7 @@ public class IntEMAOperator extends BasePrimitiveEMAOperator {
         }
 
         @Override
-        public void accumulateCumulative(RowSequence inputKeys,
+        public void accumulateCumulative(@NotNull RowSequence inputKeys,
                                          Chunk<? extends Values>[] valueChunkArr,
                                          LongChunk<? extends Values> tsChunk,
                                          int len) {
@@ -54,8 +54,8 @@ public class IntEMAOperator extends BasePrimitiveEMAOperator {
                             curVal = input;
                         } else {
                             final double decayedVal = alpha * curVal;
-                            // Create EMA by adding decayed value to the 1-minus-alpha-weighted input.
-                            curVal = decayedVal + (oneMinusAlpha * input);
+                            // Compute EM Sum by adding the current value to the decayed previous value.
+                            curVal = decayedVal + input;
                         }
                     }
                     outputValues.set(ii, curVal);
@@ -79,11 +79,11 @@ public class IntEMAOperator extends BasePrimitiveEMAOperator {
                     } else {
                         final long dt = timestamp - lastStamp;
                         if (dt != 0) {
-                            // Alpha is dynamic, based on time
+                            // alpha is dynamic, based on time
                             final double alpha = Math.exp(-dt / (double) reverseWindowScaleUnits);
                             final double decayedVal = alpha * curVal;
-                            // Create EMAvg by adding decayed value to the 1-minus-alpha-weighted input.
-                            curVal = decayedVal + (1 - alpha) * input;
+                            // Compute EMSum by adding the current value to the decayed previous value.
+                            curVal = decayedVal + input;
                             lastStamp = timestamp;
                         }
                     }
@@ -122,7 +122,7 @@ public class IntEMAOperator extends BasePrimitiveEMAOperator {
      * @param windowScaleUnits      the smoothing window for the EMA. If no {@code timestampColumnName} is provided, this is measured in ticks, otherwise it is measured in nanoseconds
      * @param valueSource         a reference to the input column source for this operation
      */
-    public IntEMAOperator(@NotNull final MatchPair pair,
+    public IntEMSOperator(@NotNull final MatchPair pair,
                            @NotNull final String[] affectingColumns,
                            @Nullable final RowRedirection rowRedirection,
                            @NotNull final OperationControl control,
