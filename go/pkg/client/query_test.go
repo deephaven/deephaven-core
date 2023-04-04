@@ -871,23 +871,18 @@ func crossJoinQuery(t *testing.T, exec execBatchOrSerial) {
 
 	left, right, result1, result2 := results[0], results[1], results[2], results[3]
 
-	if left.NumRows() == 0 {
-		t.Error("left is empty")
-		return
-	}
-
-	if right.NumRows() == 0 {
-		t.Error("right is empty")
-		return
-	}
-
 	if result1.NumRows() == 0 {
 		t.Error("result1 is empty")
 		return
 	}
 
-	if result2.NumRows() == 0 {
-		t.Error("result2 is empty")
+	if result1.NumRows() >= left.NumRows()*right.NumRows() {
+		t.Errorf("result1 is the wrong size: %v >= %v", result1.NumRows(), left.NumRows()*right.NumRows())
+		return
+	}
+
+	if result2.NumRows() != left.NumRows()*right.NumRows() {
+		t.Errorf("result2 is the wrong size: %v != %v", result2.NumRows(), left.NumRows()*right.NumRows())
 		return
 	}
 }

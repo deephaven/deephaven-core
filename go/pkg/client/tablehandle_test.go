@@ -341,6 +341,10 @@ func TestCrossJoin(t *testing.T) {
 	test_tools.CheckError(t, "Snapshot", err)
 	defer leftRec.Release()
 
+	rightRec, err := rightTbl.Snapshot(ctx)
+	test_tools.CheckError(t, "Snapshot", err)
+	defer rightRec.Release()
+
 	resultRec1, err := resultTbl1.Snapshot(ctx)
 	test_tools.CheckError(t, "Snapshot", err)
 	defer resultRec1.Release()
@@ -349,18 +353,18 @@ func TestCrossJoin(t *testing.T) {
 	test_tools.CheckError(t, "Snapshot", err)
 	defer resultRec2.Release()
 
-	if leftRec.NumRows() == 0 {
-		t.Error("left is empty")
-		return
-	}
-
 	if resultRec1.NumRows() == 0 {
 		t.Error("resultRec1 is empty")
 		return
 	}
 
-	if resultRec2.NumRows() == 0 {
-		t.Error("resultRec2 is empty")
+	if resultRec1.NumRows() > 0 && resultRec1.NumRows() >= leftRec.NumRows()*rightRec.NumRows() {
+		t.Errorf("resultRec1 is the wrong size: %v >= %v", resultRec1.NumRows(), leftRec.NumRows()*rightRec.NumRows())
+		return
+	}
+
+	if resultRec2.NumRows() != leftRec.NumRows()*rightRec.NumRows() {
+		t.Errorf("resultRec2 is the wrong size: %v != %v", resultRec2.NumRows(), leftRec.NumRows()*rightRec.NumRows())
 		return
 	}
 }
