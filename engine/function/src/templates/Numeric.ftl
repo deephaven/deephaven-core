@@ -528,8 +528,9 @@ public class Numeric {
         final ${pt2.vectorIterator} wi = weights.iterator();
 
         while (vi.hasNext() && wi.hasNext()) {
-            ${pt.primitive} c = vi.next();
-            ${pt2.primitive} w = wi.next();
+            final ${pt.primitive} c = vi.next();
+            final ${pt2.primitive} w = wi.next();
+
             if (!isNull(c) && !isNull(w)) {
                 sum += w * c;
                 sum2 += w * c * c;
@@ -2180,8 +2181,8 @@ public class Numeric {
         final ${pt2.vectorIterator} wi = weights.iterator();
 
         while (vi.hasNext() && wi.hasNext()) {
-            ${pt.primitive} c = vi.next();
-            ${pt2.primitive} w = wi.next();
+            final ${pt.primitive} c = vi.next();
+            final ${pt2.primitive} w = wi.next();
 
             if (!isNull(c) && !isNull(w)) {
                 vsum += c * w;
@@ -2260,8 +2261,8 @@ public class Numeric {
         final ${pt2.vectorIterator} wi = weights.iterator();
 
         while (vi.hasNext() && wi.hasNext()) {
-            ${pt.primitive} c = vi.next();
-            ${pt2.primitive} w = wi.next();
+            final ${pt.primitive} c = vi.next();
+            final ${pt2.primitive} w = wi.next();
 
             if (!isNull(c) && !isNull(w)) {
                 vsum += c * w;
