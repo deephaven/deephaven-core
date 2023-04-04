@@ -1551,7 +1551,6 @@ public class Basic {
 
         for (${pt.vector} v : values) {
             if (v != null) {
-                final long nn = v.size();
                 for (final ${pt.primitive} vv : v) {
                     result[idx] = vv;
                     idx++;

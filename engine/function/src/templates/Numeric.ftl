@@ -3,6 +3,7 @@ package io.deephaven.function;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.vector.*;
+import io.deephaven.engine.primitive.iterator.*;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 
 import java.util.Arrays;
@@ -103,15 +104,16 @@ public class Numeric {
         T val = null;
         long index = NULL_LONG;
         long count = 0;
-        final long n = values.size();
+        long i = 0;
 
-        for (long i = 0; i < n; i++) {
-            T c = values.get(i);
+        for (final T c : values) {
             if (!isNull(c) && ( val == null || c.compareTo(val) > 0)) {
                 val = c;
                 index = i;
                 count++;
             }
+
+            i++;
         }
 
         return count == 0 ? NULL_LONG : index;
@@ -146,15 +148,16 @@ public class Numeric {
         T val = null;
         long index = NULL_LONG;
         long count = 0;
-        final long n = values.size();
+        long i = 0;
 
-        for (long i = 0; i < n; i++) {
-            T c = values.get(i);
+        for (final T c : values) {
             if (!isNull(c) && ( val == null || c.compareTo(val) < 0)) {
                 val = c;
                 index = i;
                 count++;
             }
+
+            i++;
         }
 
         return count == 0 ? NULL_LONG : index;
@@ -203,10 +206,8 @@ public class Numeric {
         }
 
         long count = 0;
-        final long n = values.size();
 
-        for (long i = 0; i < n; i++) {
-            ${pt.primitive} c = values.get(i);
+        for (final ${pt.primitive} c : values) {
             if (!isNull(c) && c > 0) {
                 count++;
             }
@@ -253,8 +254,7 @@ public class Numeric {
         long count = 0;
         final long n = values.size();
 
-        for (long i = 0; i < n; i++) {
-            ${pt.primitive} c = values.get(i);
+        for (final ${pt.primitive} c : values) {
             if (!isNull(c) && c < 0) {
                 count++;
             }
@@ -299,10 +299,8 @@ public class Numeric {
         }
 
         long count = 0;
-        final long n = values.size();
 
-        for (long i = 0; i < n; i++) {
-            ${pt.primitive} c = values.get(i);
+        for (final ${pt.primitive} c : values) {
             if (!isNull(c) && c == 0) {
                 count++;
             }
@@ -348,10 +346,8 @@ public class Numeric {
 
         double sum = 0;
         double count = 0;
-        final long n = values.size();
 
-        for (long i = 0; i < n; i++) {
-            ${pt.primitive} c = values.get(i);
+        for (final ${pt.primitive} c : values) {
             if (!isNull(c)) {
                 sum += c;
                 count++;
@@ -398,10 +394,8 @@ public class Numeric {
 
         double sum = 0;
         double count = 0;
-        final long n = values.size();
 
-        for (long i = 0; i < n; i++) {
-            ${pt.primitive} c = values.get(i);
+        for (final ${pt.primitive} c : values) {
             if (!isNull(c)) {
                 sum += Math.abs(c);
                 count++;
@@ -449,10 +443,8 @@ public class Numeric {
         double sum = 0;
         double sum2 = 0;
         double count = 0;
-        final long n = values.size();
 
-        for (long i = 0; i < n; i++) {
-            ${pt.primitive} c = values.get(i);
+        for (final ${pt.primitive} c : values) {
             if (!isNull(c)) {
                 sum += (double)c;
                 sum2 += (double)c * (double)c;
@@ -532,10 +524,12 @@ public class Numeric {
         double sum = 0;
         double sum2 = 0;
         double count = 0;
+        final ${pt.vectorIterator} vi = values.iterator();
+        final ${pt2.vectorIterator} wi = weights.iterator();
 
-        for (long i = 0; i < n; i++) {
-            ${pt.primitive} c = values.get(i);
-            ${pt2.primitive} w = weights.get(i);
+        while (vi.hasNext() && wi.hasNext()) {
+            ${pt.primitive} c = vi.next();
+            ${pt2.primitive} w = wi.next();
             if (!isNull(c) && !isNull(w)) {
                 sum += w * c;
                 sum2 += w * c * c;
@@ -764,11 +758,12 @@ public class Numeric {
         // see https://stats.stackexchange.com/questions/25895/computing-standard-error-in-weighted-mean-estimation
         double sumw = 0;
         double sumw2 = 0;
-        final long n = values.size();
+        final ${pt.vectorIterator} vi = values.iterator();
+        final ${pt2.vectorIterator} wi = weights.iterator();
 
-        for(long i=0; i<n; i++) {
-            final ${pt.primitive} v = values.get(i);
-            final ${pt2.primitive} w = weights.get(i);
+        while (vi.hasNext() && wi.hasNext()) {
+            final ${pt.primitive} v = vi.next();
+            final ${pt2.primitive} w = wi.next();
 
             if (!isNull(v) && !isNull(w)) {
                 sumw += w;
@@ -1003,15 +998,16 @@ public class Numeric {
         ${pt.primitive} val = ${pt.minValue};
         long index = NULL_LONG;
         long count = 0;
-        final long n = values.size();
+        long i = 0;
 
-        for (long i = 0; i < n; i++) {
-            ${pt.primitive} c = values.get(i);
+        for (final ${pt.primitive} c : values) {
             if (!isNull(c) && (c > val || (c == val && count == 0))) {
                 val = c;
                 index = i;
                 count++;
             }
+
+            i++;
         }
 
         return count == 0 ? NULL_LONG : index;
@@ -1055,15 +1051,16 @@ public class Numeric {
         ${pt.primitive} val = ${pt.maxValue};
         long index = NULL_LONG;
         long count = 0;
-        final long n = values.size();
+        long i = 0;
 
-        for (int i = 0; i < n; i++) {
-            ${pt.primitive} c = values.get(i);
+        for (final ${pt.primitive} c : values) {
             if (!isNull(c) && (c < val || (c == val && count == 0) )) {
                 val = c;
                 index = i;
                 count++;
             }
+
+            i++;
         }
 
         return count == 0 ? NULL_LONG : index;
@@ -1225,13 +1222,17 @@ public class Numeric {
         double sum1 = 0;
         double sum01 = 0;
         double count = 0;
-        final long n = values0.size();
+        final ${pt.vectorIterator} v0i = values0.iterator();
+        final ${pt2.vectorIterator} v1i = values1.iterator();
 
-        for (long i = 0; i < n; i++) {
-            if (!isNull(values0.get(i)) && !isNull(values1.get(i))) {
-                sum0 += values0.get(i);
-                sum1 += values1.get(i);
-                sum01 += values0.get(i) * values1.get(i);
+        while (v0i.hasNext() && v1i.hasNext()) {
+            final ${pt.primitive} v0 = v0i.next();
+            final ${pt2.primitive} v1 = v1i.next();
+
+            if (!isNull(v0) && !isNull(v1)) {
+                sum0 += v0;
+                sum1 += v1;
+                sum01 += v0 * v1;
                 count++;
             }
         }
@@ -1306,15 +1307,19 @@ public class Numeric {
         double sum1Sq = 0;
         double sum01 = 0;
         double count = 0;
-        final long n = values0.size();
+        final ${pt.vectorIterator} v0i = values0.iterator();
+        final ${pt2.vectorIterator} v1i = values1.iterator();
 
-        for (long i = 0; i < n; i++) {
-            if (!isNull(values0.get(i)) && !isNull(values1.get(i))) {
-                sum0 += values0.get(i);
-                sum0Sq += values0.get(i) * values0.get(i);
-                sum1 += values1.get(i);
-                sum1Sq += values1.get(i) * values1.get(i);
-                sum01 += values0.get(i) * values1.get(i);
+        while (v0i.hasNext() && v1i.hasNext()) {
+            final ${pt.primitive} v0 = v0i.next();
+            final ${pt2.primitive} v1 = v1i.next();
+
+            if (!isNull(v0) && !isNull(v1)) {
+                sum0 += v0;
+                sum0Sq += v0 * v0;
+                sum1 += v1;
+                sum1Sq += v1 * v1;
+                sum01 += v0 * v1;
                 count++;
             }
         }
@@ -1342,10 +1347,8 @@ public class Numeric {
         }
 
         double sum = 0;
-        final long n = values.size();
 
-        for (long i = 0; i < n; i++) {
-            ${pt.primitive} c = values.get(i);
+        for (final ${pt.primitive} c : values) {
             if (!isNull(c)) {
                 sum += c;
             }
@@ -1380,10 +1383,8 @@ public class Numeric {
 
         ${pt.primitive} prod = 1;
         int count = 0;
-        final long n = values.size();
 
-        for (long i = 0; i < n; i++) {
-            ${pt.primitive} c = values.get(i);
+        for (final ${pt.primitive} c : values) {
             if (!isNull(c)) {
                 count++;
                 prod *= c;
@@ -1463,22 +1464,28 @@ public class Numeric {
             return null;
         }
 
-        if (values.size() == 0) {
+        if (values.isEmpty()) {
             return new ${pt.primitive}[0];
         }
 
         final int n = values.intSize("cummin");
         ${pt.primitive}[] result = new ${pt.primitive}[n];
-        result[0] = values.get(0);
+        final ${pt.vectorIterator} vi = values.iterator();
+        result[0] = vi.next();
+        int i = 1;
 
-        for (int i = 1; i < n; i++) {
+        while (vi.hasNext()) {
+            final ${pt.primitive} v = vi.next();
+
             if (isNull(result[i - 1])) {
-                result[i] = values.get(i);
-            } else if (isNull(values.get(i))) {
+                result[i] = v;
+            } else if (isNull(v)) {
                 result[i] = result[i - 1];
             } else {
-                result[i] = (${pt.primitive})Math.min(result[i - 1],  values.get(i));
+                result[i] = (${pt.primitive})Math.min(result[i - 1],  v);
             }
+
+            i++;
         }
 
         return result;
@@ -1536,11 +1543,14 @@ public class Numeric {
 
         final int n = values.intSize("cummax");
         ${pt.primitive}[] result = new ${pt.primitive}[n];
+        final ${pt.vectorIterator} vi = values.iterator();
+        result[0] = vi.next();
+        int i = 1;
 
-        result[0] = values.get(0);
-
-        for (int i = 1; i < n; i++) {
-            result[i] = compare(result[i-1], values.get(i)) > 0 ? result[i-1] : values.get(i);
+        while (vi.hasNext()) {
+            final ${pt.primitive} v = vi.next();
+            result[i] = compare(result[i-1], v) > 0 ? result[i-1] : v;
+            i++;
         }
 
         return result;
@@ -1604,16 +1614,22 @@ public class Numeric {
 
         final int n = values.intSize("cumsum");
         ${pt.primitive}[] result = new ${pt.primitive}[n];
-        result[0] = values.get(0);
+        final ${pt.vectorIterator} vi = values.iterator();
+        result[0] = vi.next();
+        int i = 1;
 
-        for (int i = 1; i < n; i++) {
+        while (vi.hasNext()) {
+            final ${pt.primitive} v = vi.next();
+
             if (isNull(result[i - 1])) {
-                result[i] = values.get(i);
-            } else if (isNull(values.get(i))) {
+                result[i] = v;
+            } else if (isNull(v)) {
                 result[i] = result[i - 1];
             } else {
-                result[i] = (${pt.primitive}) (result[i - 1] + values.get(i));
+                result[i] = (${pt.primitive}) (result[i - 1] + v);
             }
+
+            i++;
         }
 
         return result;
@@ -1677,16 +1693,22 @@ public class Numeric {
 
         final int n = values.intSize("cumprod");
         ${pt.primitive}[] result = new ${pt.primitive}[n];
-        result[0] = values.get(0);
+        final ${pt.vectorIterator} vi = values.iterator();
+        result[0] = vi.next();
+        int i = 1;
 
-        for (int i = 1; i < n; i++) {
+        while (vi.hasNext()) {
+            final ${pt.primitive} v = vi.next();
+
             if (isNull(result[i - 1])) {
-                result[i] = values.get(i);
-            } else if (isNull(values.get(i))) {
+                result[i] = v;
+            } else if (isNull(v)) {
                 result[i] = result[i - 1];
             } else {
-                result[i] = (${pt.primitive}) (result[i - 1] * values.get(i));
+                result[i] = (${pt.primitive}) (result[i - 1] * v);
             }
+
+            i++;
         }
 
         return result;
@@ -2154,10 +2176,13 @@ public class Numeric {
         }
 
         double vsum = 0;
+        final ${pt.vectorIterator} vi = values.iterator();
+        final ${pt2.vectorIterator} wi = weights.iterator();
 
-        for (int i = 0; i < n; i++) {
-            ${pt.primitive} c = values.get(i);
-            ${pt2.primitive} w = weights.get(i);
+        while (vi.hasNext() && wi.hasNext()) {
+            ${pt.primitive} c = vi.next();
+            ${pt2.primitive} w = wi.next();
+
             if (!isNull(c) && !isNull(w)) {
                 vsum += c * w;
             }
@@ -2231,10 +2256,13 @@ public class Numeric {
 
         double vsum = 0;
         double wsum = 0;
+        final ${pt.vectorIterator} vi = values.iterator();
+        final ${pt2.vectorIterator} wi = weights.iterator();
 
-        for (int i = 0; i < n; i++) {
-            ${pt.primitive} c = values.get(i);
-            ${pt2.primitive} w = weights.get(i);
+        while (vi.hasNext() && wi.hasNext()) {
+            ${pt.primitive} c = vi.next();
+            ${pt2.primitive} w = wi.next();
+
             if (!isNull(c) && !isNull(w)) {
                 vsum += c * w;
                 wsum += w;
@@ -2404,9 +2432,11 @@ public class Numeric {
     static public ${pt.primitive}[] replaceIfNaN(${pt.vector} values, ${pt.primitive} replacement) {
         final int n = values.intSize("replaceIfNaN");
         ${pt.primitive}[] result = new ${pt.primitive}[n];
+        int i = 0;
 
-        for (int i = 0; i < n; i++) {
-            result[i] = replaceIfNaN(values.get(i), replacement);
+        for (final ${pt.primitive} v : values) {
+            result[i] = replaceIfNaN(v, replacement);
+            i++;
         }
 
         return result;
@@ -2448,9 +2478,11 @@ public class Numeric {
     static public ${pt.primitive}[] replaceIfNullNaN(${pt.vector} values, ${pt.primitive} replacement) {
         final int n = values.intSize("replaceIfNullNaN");
         ${pt.primitive}[] result = new ${pt.primitive}[n];
+        int i = 0;
 
-        for (int i = 0; i < n; i++) {
-            result[i] = replaceIfNullNaN(values.get(i), replacement);
+        for (final ${pt.primitive} v : values) {
+            result[i] = replaceIfNullNaN(v, replacement);
+            i++;
         }
 
         return result;
@@ -2488,9 +2520,11 @@ public class Numeric {
     static public ${pt.primitive}[] replaceIfNonFinite(${pt.vector} values, ${pt.primitive} replacement) {
         final int n = values.intSize("replaceIfNonFinite");
         ${pt.primitive}[] result = new ${pt.primitive}[n];
+        int i = 0;
 
-        for (int i = 0; i < n; i++) {
-            result[i] = replaceIfNonFinite(values.get(i), replacement);
+        for (final ${pt.primitive} v : values) {
+            result[i] = replaceIfNonFinite(v, replacement);
+            i++;
         }
 
         return result;
