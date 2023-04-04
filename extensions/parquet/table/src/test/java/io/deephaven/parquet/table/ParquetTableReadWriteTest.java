@@ -6,6 +6,7 @@ package io.deephaven.parquet.table;
 import io.deephaven.api.Selectable;
 import io.deephaven.base.FileUtils;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.testutil.TstUtils;
@@ -336,7 +337,7 @@ public class ParquetTableReadWriteTest {
     @Test
     public void testBigDecimalPrecisionScale() {
         // https://github.com/deephaven/deephaven-core/issues/3650
-        final BigDecimal myBigDecimal = new BigDecimal("0.0005");
+        final BigDecimal myBigDecimal = new BigDecimal(".0005");
         assertEquals(1, myBigDecimal.precision());
         assertEquals(4, myBigDecimal.scale());
         final Table table = TableTools
@@ -344,7 +345,12 @@ public class ParquetTableReadWriteTest {
         final File dest = new File(rootFile, "ParquetTest_testBigDecimalPrecisionScale.parquet");
         ParquetTools.writeTable(table, dest);
         final Table fromDisk = ParquetTools.readTable(dest);
-        TstUtils.assertTableEquals(fromDisk, table);
+        try (final CloseableIterator<BigDecimal> it = fromDisk.objectColumnIterator("MyBigDecimal")) {
+            assertTrue(it.hasNext());
+            final BigDecimal item = it.next();
+            assertFalse(it.hasNext());
+            assertEquals(myBigDecimal, item);
+        }
     }
 
     /**

@@ -80,12 +80,12 @@ public class BigDecimalParquetBytesCodec implements ObjectCodec<BigDecimal> {
         if (input == null) {
             return nullBytes;
         }
-
-        final BigDecimal value = (input.scale() == scale) ? input : input.setScale(scale, roundingMode);
+        final BigDecimal value = input.setScale(scale, roundingMode);
+        if (value.precision() > precision) {
+            throw new ArithmeticException(String.format("Unable to encode '%s' with %s", value, decimalTypeToString()));
+        }
         final BigInteger unscaledValue = value.unscaledValue();
-
-        final byte[] bytes = unscaledValue.toByteArray();
-        return bytes;
+        return unscaledValue.toByteArray();
     }
 
     @Nullable
@@ -110,11 +110,20 @@ public class BigDecimalParquetBytesCodec implements ObjectCodec<BigDecimal> {
         final byte[] unscaledValueBytes = new byte[length];
         buffer.get(unscaledValueBytes);
         final BigInteger unscaledValue = new BigInteger(unscaledValueBytes);
-        return new BigDecimal(unscaledValue, scale);
+        final BigDecimal value = new BigDecimal(unscaledValue, scale);
+        if (value.precision() > precision) {
+            throw new ArithmeticException(String.format("Unable to decode '%s' with %s", value, decimalTypeToString()));
+        }
+        return value;
     }
 
     @Override
     public int expectedObjectWidth() {
         return encodedSizeInBytes <= 0 ? VARIABLE_WIDTH_SENTINEL : encodedSizeInBytes;
+    }
+
+    private String decimalTypeToString() {
+        // Matches the output of org.apache.parquet.format.DecimalType#toString
+        return String.format("DecimalType(scale=%d, precision=%d)", scale, precision);
     }
 }
