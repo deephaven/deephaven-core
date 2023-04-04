@@ -7,6 +7,7 @@ import elemental2.core.JsArray;
 import io.deephaven.web.client.fu.JsData;
 import jsinterop.annotations.JsConstructor;
 import jsinterop.annotations.JsIgnore;
+import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsType;
 import jsinterop.base.JsPropertyMap;
 
@@ -19,21 +20,36 @@ public class JsAxisDescriptor {
     // TODO (deephaven-core#3442) change to some kind of String+int union type
     public String position;
 
+    @JsNullable
     public boolean log = false;
+    @JsNullable
     public String label;
+    @JsNullable
     public String labelFont;
+    @JsNullable
     public String ticksFont;
+    @JsNullable
     public String formatPattern;
+    @JsNullable
     public String color;
+    @JsNullable
     public double minRange = Double.NaN;
+    @JsNullable
     public double maxRange = Double.NaN;
+    @JsNullable
     public boolean minorTicksVisible = false;
+    @JsNullable
     public boolean majorTicksVisible = true;
+    @JsNullable
     public int minorTickCount = 0;
+    @JsNullable
     public double gapBetweenMajorTicks = -1.0;
     public JsArray<Double> majorTickLocations = new JsArray<>();
+    @JsNullable
     public double tickLabelAngle = 0.0;
+    @JsNullable
     public boolean invert = false;
+    @JsNullable
     public boolean isTimeAxis = false;
 
     @JsConstructor
@@ -55,7 +71,7 @@ public class JsAxisDescriptor {
         minRange = JsData.getDoubleProperty(source, "minRange", Double.NaN);
         maxRange = JsData.getDoubleProperty(source, "maxRange", Double.NaN);
         minorTicksVisible = JsData.getBooleanProperty(source, "minorTicksVisible");
-        majorTicksVisible = JsData.getBooleanProperty(source, "majorTicksVisible");
+        majorTicksVisible = JsData.getBooleanProperty(source, "majorTicksVisible", true);
         minorTickCount = JsData.getIntProperty(source, "minorTickCount");
         gapBetweenMajorTicks = JsData.getDoubleProperty(source, "gapBetweenMajorTicks", -1);
         tickLabelAngle = JsData.getDoubleProperty(source, "tickLabelAngle");

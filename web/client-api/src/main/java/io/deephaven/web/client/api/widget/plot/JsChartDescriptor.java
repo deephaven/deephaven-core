@@ -28,7 +28,6 @@ public class JsChartDescriptor {
     public JsArray<JsAxisDescriptor> axes = new JsArray<>();
 
     // TODO (deephaven-core#3442) change to some kind of String+int union type
-    @JsNullable
     public String chartType;
 
     @JsNullable
