@@ -254,7 +254,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
                         if (isSnapshot) {
                             resultTable.sealTable(() -> {
                                 // signal that we are closing the connection
-                                GrpcUtil.safelyComplete(observer);
+                                observer.onCompleted();
                                 signalCompletion();
                             }, () -> {
                                 exceptionWhileCompleting = new Exception();
