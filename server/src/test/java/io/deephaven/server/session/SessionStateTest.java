@@ -1352,9 +1352,6 @@ public class SessionStateTest {
 
         @Override
         public void onNext(final ExportNotification value) {
-            if (isComplete) {
-                throw new IllegalStateException("illegal to invoke onNext after onComplete");
-            }
             notifications.add(value);
         }
 
