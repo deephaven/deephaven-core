@@ -590,6 +590,10 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
     }
 
     @JsMethod
+    public Promise<JsTable> copy() {
+        return Promise.resolve(new JsTable(this));
+    }
+
     public Promise<JsTable> copy(boolean resolved) {
         if (resolved) {
             LazyPromise<ClientTableState> promise = new LazyPromise<>();
@@ -599,7 +603,7 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
             return promise.asPromise(MAX_BATCH_TIME)
                     .then(s -> Promise.resolve(new JsTable(this)));
         }
-        return Promise.resolve(new JsTable(this));
+        return copy();
     }
 
     // TODO: #37: Need SmartKey support for this functionality
