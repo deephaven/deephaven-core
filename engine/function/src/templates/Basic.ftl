@@ -122,12 +122,11 @@ public class Basic {
      * @return array containing value, if value is not null according to Deephaven convention, replacement otherwise.
      */
     static public <T> T[] replaceIfNull(ObjectVector<T> values, T replacement) {
-        final int n = values.intSize("replaceIfNull");
         T[] result = values.toArray();
         int i = 0;
 
         for (final T v : values) {
-            result[i] = replaceIfNull(values.get(i), replacement);
+            result[i] = replaceIfNull(v, replacement);
             i++;
         }
 
@@ -154,7 +153,6 @@ public class Basic {
      * @param values values.
      * @return length of the input or the Deephaven null constant for null inputs.
      */
-    @SuppressWarnings("rawtypes")
     static public long len(LongSizedDataStructure values) {
         if (values == null) {
             return NULL_LONG;
@@ -189,7 +187,6 @@ public class Basic {
             return NULL_LONG;
         }
 
-        final long n = values.size();
         long count = 0;
 
         for(final T c : values) {
@@ -698,7 +695,6 @@ public class Basic {
         }
 
         final boolean isNullVal = isNull(val);
-        final long L = values.size();
         long i = 0;
 
         for (final T c : values) {
@@ -783,7 +779,7 @@ public class Basic {
             return null;
         }
 
-        return ifelseObj(new ObjectVectorDirect<>(condition), new ObjectVectorDirect<T>(trueCase), new ObjectVectorDirect<T>(falseCase));
+        return ifelseObj(new ObjectVectorDirect<>(condition), new ObjectVectorDirect<>(trueCase), new ObjectVectorDirect<>(falseCase));
     }
 
     /**
@@ -885,7 +881,6 @@ public class Basic {
             return null;
         }
 
-        final int n = values.intSize("forwardFill");
         final T[] result = values.toArray();
 
         T lastGood = null;
