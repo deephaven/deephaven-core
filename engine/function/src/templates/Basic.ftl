@@ -5,6 +5,7 @@
 package io.deephaven.function;
 
 import io.deephaven.vector.*;
+import io.deephaven.engine.primitive.iterator.*;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.util.QueryConstants;
 import gnu.trove.list.array.*;
@@ -756,9 +757,18 @@ public class Basic {
 
         @SuppressWarnings("unchecked") final T[] result = (T[])Array.newInstance(trueCase.getComponentType(), n_c);
 
-        for (int i=0; i < n_c; i++) {
-            result[i] = condition.get(i) == null ? null : (condition.get(i) ? trueCase.get(i) : falseCase.get(i));
-        }
+        final Iterator<Boolean> ci = condition.iterator();
+        final Iterator<T> ti = trueCase.iterator();
+        final Iterator<T> fi = falseCase.iterator();
+        int i = 0;
+
+        while(ci.hasNext() && ti.hasNext() && fi.hasNext()) {
+            final Boolean c = ci.next();
+            final T t = ti.next();
+            final T f = fi.next();
+            result[i] = c == null ? null : (c ? t : f);
+            i++;
+         }
 
         return result;
     }
@@ -1669,9 +1679,18 @@ public class Basic {
 
         final ${pt.primitive}[] result = new ${pt.primitive}[n_c];
 
-        for (int i=0; i < n_c; i++) {
-            result[i] = condition.get(i) == null ? ${pt.null} : (condition.get(i) ? trueCase.get(i) : falseCase.get(i));
-        }
+        final Iterator<Boolean> ci = condition.iterator();
+        final ${pt.vectorIterator} ti = trueCase.iterator();
+        final ${pt.vectorIterator} fi = falseCase.iterator();
+        int i = 0;
+
+        while(ci.hasNext() && ti.hasNext() && fi.hasNext()) {
+            final Boolean c = ci.next();
+            final ${pt.primitive} t = ti.next();
+            final ${pt.primitive} f = fi.next();
+            result[i] = c == null ? ${pt.null} : (c ? t : f);
+            i++;
+         }
 
         return result;
     }

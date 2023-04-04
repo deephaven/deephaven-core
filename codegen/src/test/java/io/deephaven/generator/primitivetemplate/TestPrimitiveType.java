@@ -11,7 +11,7 @@ public class TestPrimitiveType extends TestCase {
 
         final PrimitiveType pt = new PrimitiveType(
                 "primitive", "boxed",
-                "VectorDEBUG", "DirectDEBUG",
+                "VectorDEBUG", "DirectDEBUG", "IteratorDEBUG",
                 "NULLDEBUG", "POSINFDEBUG", "NEGINFDEBUG",
                 ValueType.CHARACTER);
 
@@ -19,6 +19,7 @@ public class TestPrimitiveType extends TestCase {
         assertEquals("boxed", pt.getBoxed());
         assertEquals("VectorDEBUG", pt.getVector());
         assertEquals("DirectDEBUG", pt.getVectorDirect());
+        assertEquals("IteratorDEBUG", pt.getVectorIterator());
         assertEquals("NULLDEBUG", pt.getNull());
         assertEquals("POSINFDEBUG", pt.getMaxValue());
         assertEquals("NEGINFDEBUG", pt.getMinValue());

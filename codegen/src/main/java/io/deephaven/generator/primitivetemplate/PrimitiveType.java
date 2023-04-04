@@ -14,6 +14,7 @@ public class PrimitiveType {
     private final String boxed;
     private final String vector;
     private final String vectorDirect;
+    private final String vectorIterator;
     private final String nullValue;
     private final String maxValue;
     private final String minValue;
@@ -32,11 +33,13 @@ public class PrimitiveType {
      * @param valueType type of value
      */
     public PrimitiveType(final String primitive, final String boxed, final String vector, final String vectorDirect,
+            final String vectorIterator,
             final String nullValue, final String maxValue, final String minValue, final ValueType valueType) {
         this.primitive = primitive;
         this.boxed = boxed;
         this.vector = vector;
         this.vectorDirect = vectorDirect;
+        this.vectorIterator = vectorIterator;
         this.nullValue = nullValue;
         this.maxValue = maxValue;
         this.minValue = minValue;
@@ -77,6 +80,15 @@ public class PrimitiveType {
      */
     public String getVectorDirect() {
         return vectorDirect;
+    }
+
+    /**
+     * Gets the Vector iterator of the primitive.
+     *
+     * @return Vector iterator of the primitive.
+     */
+    public String getVectorIterator() {
+        return vectorIterator;
     }
 
     /**
@@ -133,35 +145,35 @@ public class PrimitiveType {
     public static PrimitiveType[] primitiveTypes() {
         return new PrimitiveType[] {
                 new PrimitiveType("Boolean", "Boolean",
-                        "ObjectVector", "ObjectVectorDirect",
+                        "ObjectVector", "ObjectVectorDirect", "CloseableIterator",
                         "NULL_BOOLEAN", null, null,
                         ValueType.BOOLEAN),
                 new PrimitiveType("char", "Character",
-                        "CharVector", "CharVectorDirect",
+                        "CharVector", "CharVectorDirect", "CloseablePrimitiveIteratorOfChar",
                         "NULL_CHAR", null, null,
                         ValueType.CHARACTER),
                 new PrimitiveType("byte", "Byte",
-                        "ByteVector", "ByteVectorDirect",
+                        "ByteVector", "ByteVectorDirect", "CloseablePrimitiveIteratorOfByte",
                         "NULL_BYTE", "MAX_BYTE", "MIN_BYTE",
                         ValueType.INTEGER),
                 new PrimitiveType("short", "Short",
-                        "ShortVector", "ShortVectorDirect",
+                        "ShortVector", "ShortVectorDirect", "CloseablePrimitiveIteratorOfShort",
                         "NULL_SHORT", "MAX_SHORT", "MIN_SHORT",
                         ValueType.INTEGER),
                 new PrimitiveType("int", "Integer",
-                        "IntVector", "IntVectorDirect",
+                        "IntVector", "IntVectorDirect", "CloseablePrimitiveIteratorOfInt",
                         "NULL_INT", "MAX_INT", "MIN_INT",
                         ValueType.INTEGER),
                 new PrimitiveType("long", "Long",
-                        "LongVector", "LongVectorDirect",
+                        "LongVector", "LongVectorDirect", "CloseablePrimitiveIteratorOfLong",
                         "NULL_LONG", "MAX_LONG", "MIN_LONG",
                         ValueType.INTEGER),
                 new PrimitiveType("float", "Float",
-                        "FloatVector", "FloatVectorDirect",
+                        "FloatVector", "FloatVectorDirect", "CloseablePrimitiveIteratorOfFloat",
                         "NULL_FLOAT", "MAX_FLOAT", "MIN_FLOAT",
                         ValueType.FLOATING_POINT),
                 new PrimitiveType("double", "Double",
-                        "DoubleVector", "DoubleVectorDirect",
+                        "DoubleVector", "DoubleVectorDirect", "CloseablePrimitiveIteratorOfDouble",
                         "NULL_DOUBLE", "MAX_DOUBLE", "MIN_DOUBLE",
                         ValueType.FLOATING_POINT),
         };
