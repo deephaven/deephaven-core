@@ -72,6 +72,8 @@ public interface UpdateBySpec {
 
         T visit(CumProdSpec spec);
 
+        T visit(DeltaSpec spec);
+
         T visit(RollingSumSpec spec);
 
         T visit(RollingGroupSpec spec);

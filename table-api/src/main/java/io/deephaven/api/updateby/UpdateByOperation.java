@@ -215,6 +215,26 @@ public interface UpdateByOperation {
     }
 
     /**
+     * Create a {@link DeltaSpec delta} for the supplied column name pairs.
+     *
+     * @param pairs The input/output column name pairs
+     * @return The aggregation
+     */
+    static UpdateByOperation Delta(String... pairs) {
+        return DeltaSpec.of().clause(pairs);
+    }
+
+    /**
+     * Create a {@link DeltaSpec delta} for the supplied column name pairs.
+     *
+     * @param pairs The input/output column name pairs
+     * @return The aggregation
+     */
+    static UpdateByOperation Delta(DeltaControl control, String... pairs) {
+        return DeltaSpec.of().clause(pairs);
+    }
+
+    /**
      * Create a {@link RollingSumSpec rolling sum} for the supplied column name pairs, using ticks as the windowing
      * unit. Ticks are row counts and you may specify the previous window in number of rows to include. The current row
      * is considered to belong to the reverse window, so calling this with {@code revTicks = 1} will simply return the
