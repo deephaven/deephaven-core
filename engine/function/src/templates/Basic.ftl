@@ -787,7 +787,7 @@ public class Basic {
         try(
             final CloseableIterator<Boolean> ci = condition.iterator();
             final CloseableIterator<T> ti = trueCase.iterator();
-            final CloseableIterator<T> fi = falseCase.iterator();
+            final CloseableIterator<T> fi = falseCase.iterator()
         ) {
             while(ci.hasNext()) {
                 final Boolean c = ci.next();
@@ -1747,7 +1747,7 @@ public class Basic {
         try(
             final CloseableIterator<Boolean> ci = condition.iterator();
             final ${pt.vectorIterator} ti = trueCase.iterator();
-            final ${pt.vectorIterator} fi = falseCase.iterator();
+            final ${pt.vectorIterator} fi = falseCase.iterator()
         ) {
             while(ci.hasNext()) {
                 final Boolean c = ci.next();
