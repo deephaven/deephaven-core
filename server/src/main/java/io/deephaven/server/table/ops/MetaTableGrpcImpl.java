@@ -17,7 +17,7 @@ public class MetaTableGrpcImpl extends GrpcTableOperation<MetaTableRequest> {
 
     @Inject
     public MetaTableGrpcImpl(final TableServiceContextualAuthWiring authWiring) {
-        super(authWiring::checkPermissionMeta, BatchTableRequest.Operation::getMetaTable,
+        super(authWiring::checkPermissionMetaTable, BatchTableRequest.Operation::getMetaTable,
                 MetaTableRequest::getResultId, MetaTableRequest::getSourceId);
     }
 
