@@ -80,7 +80,7 @@ import static io.deephaven.web.client.fu.LazyPromise.logError;
  * handle/viewport.
  */
 @TsName(namespace = "dh", name = "Table")
-public class JsTable extends HasLifecycle implements HasTableBinding {
+public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTable {
     @JsProperty(namespace = "dh.Table")
     public static final String EVENT_SIZECHANGED = "sizechanged",
             EVENT_UPDATED = "updated",
@@ -877,7 +877,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding {
 
     @JsMethod
     @Deprecated
-    public Promise<JsTable> join(Object joinType, JsTable rightTable, JsArray<String> columnsToMatch,
+    public Promise<JsTable> join(Object joinType, JoinableTable rightTable, JsArray<String> columnsToMatch,
             @JsOptional @JsNullable JsArray<String> columnsToAdd, @JsOptional @JsNullable Object asOfMatchRule) {
         if (joinType.equals("AJ") || joinType.equals("RAJ")) {
             return asOfJoin(rightTable, columnsToMatch, columnsToAdd, (String) asOfMatchRule);
@@ -893,9 +893,9 @@ public class JsTable extends HasLifecycle implements HasTableBinding {
     }
 
     @JsMethod
-    public Promise<JsTable> asOfJoin(JsTable rightTable, JsArray<String> columnsToMatch,
+    public Promise<JsTable> asOfJoin(JoinableTable rightTable, JsArray<String> columnsToMatch,
             @JsOptional @JsNullable JsArray<String> columnsToAdd, @JsOptional @JsNullable String asOfMatchRule) {
-        if (rightTable.workerConnection != workerConnection) {
+        if (rightTable.state().getConnection() != workerConnection) {
             throw new IllegalStateException(
                     "Table argument passed to join is not from the same worker as current table");
         }
@@ -917,9 +917,9 @@ public class JsTable extends HasLifecycle implements HasTableBinding {
     }
 
     @JsMethod
-    public Promise<JsTable> crossJoin(JsTable rightTable, JsArray<String> columnsToMatch,
+    public Promise<JsTable> crossJoin(JoinableTable rightTable, JsArray<String> columnsToMatch,
             @JsOptional JsArray<String> columnsToAdd, @JsOptional Double reserve_bits) {
-        if (rightTable.workerConnection != workerConnection) {
+        if (rightTable.state().getConnection() != workerConnection) {
             throw new IllegalStateException(
                     "Table argument passed to join is not from the same worker as current table");
         }
@@ -940,9 +940,9 @@ public class JsTable extends HasLifecycle implements HasTableBinding {
     }
 
     @JsMethod
-    public Promise<JsTable> exactJoin(JsTable rightTable, JsArray<String> columnsToMatch,
+    public Promise<JsTable> exactJoin(JoinableTable rightTable, JsArray<String> columnsToMatch,
             @JsOptional JsArray<String> columnsToAdd) {
-        if (rightTable.workerConnection != workerConnection) {
+        if (rightTable.state().getConnection() != workerConnection) {
             throw new IllegalStateException(
                     "Table argument passed to join is not from the same worker as current table");
         }
@@ -960,9 +960,9 @@ public class JsTable extends HasLifecycle implements HasTableBinding {
     }
 
     @JsMethod
-    public Promise<JsTable> naturalJoin(JsTable rightTable, JsArray<String> columnsToMatch,
+    public Promise<JsTable> naturalJoin(JoinableTable rightTable, JsArray<String> columnsToMatch,
             @JsOptional JsArray<String> columnsToAdd) {
-        if (rightTable.workerConnection != workerConnection) {
+        if (rightTable.state().getConnection() != workerConnection) {
             throw new IllegalStateException(
                     "Table argument passed to join is not from the same worker as current table");
         }

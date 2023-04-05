@@ -11,7 +11,9 @@ import elemental2.dom.CustomEvent;
 import elemental2.dom.Event;
 import elemental2.promise.Promise;
 import io.deephaven.web.client.api.filter.FilterCondition;
+import io.deephaven.web.client.state.ClientTableState;
 import io.deephaven.web.shared.fu.RemoverFn;
+import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsProperty;
@@ -28,7 +30,7 @@ import jsinterop.base.Js;
  */
 @TsInterface
 @TsName(namespace = "dh", name = "TotalsTable")
-public class JsTotalsTable {
+public class JsTotalsTable implements JoinableTable {
     private final JsTable wrappedTable;
     private final String directive;
     private final JsArray<JsString> groupBy;
@@ -55,6 +57,12 @@ public class JsTotalsTable {
         if (firstRow != null && lastRow != null) {
             setViewport(firstRow, lastRow, Js.uncheckedCast(columns), updateIntervalMs);
         }
+    }
+
+    @JsIgnore
+    @Override
+    public ClientTableState state() {
+        return wrappedTable.state();
     }
 
     @JsProperty
