@@ -106,10 +106,10 @@ public class Basic {
      * @return array containing value, if value is not null according to Deephaven convention, replacement otherwise.
      */
     static public <T> T[] replaceIfNull(T[] values, T replacement) {
-        T[] result = values.clone();
+        final T[] result = Arrays.copyOf(values, values.length);
 
-        for (int i = 0; i < values.length; i++) {
-            result[i] = replaceIfNull(values[i], replacement);
+        for (int i = 0; i < result.length; i++) {
+            result[i] = replaceIfNull(result[i], replacement);
         }
 
         return result;
@@ -123,7 +123,7 @@ public class Basic {
      * @return array containing value, if value is not null according to Deephaven convention, replacement otherwise.
      */
     static public <T> T[] replaceIfNull(ObjectVector<T> values, T replacement) {
-        T[] result = values.toArray();
+        final T[] result = values.copyToArray();
 
         for (int i = 0; i < result.length; i++) {
             result[i] = replaceIfNull(result[i], replacement);
@@ -291,17 +291,17 @@ public class Basic {
     }
 
     /**
-     * Converts a Deephaven vector to an array.
+     * Converts a Deephaven vector to an array that may be freely mutated by the caller.
      *
-     * @param values Deephaven vector
-     * @return primitive array.
+     * @param values A Deephaven vector
+     * @return The result array, which may be freely mutated by the caller
      */
     public static <T> T[] arrayObj(ObjectVector<T> values) {
         if (values == null) {
             return null;
         }
 
-        return values.toArray();
+        return values.copyToArray();
     }
 
     /**
@@ -527,7 +527,7 @@ public class Basic {
         }
 
         if (n == 1) {
-            return !includeNull && isNull(values.get(0)) ? empty : values.toArray();
+            return !includeNull && isNull(values.get(0)) ? empty : values.copyToArray();
         }
 
         final List<T> orderedList = new ArrayList<>();
@@ -629,7 +629,6 @@ public class Basic {
 
         for (ObjectVector<T> v : values) {
             if (v != null) {
-
                 try (final CloseableIterator<T> vi = v.iterator()) {
                     while ( vi.hasNext() ) {
                         final T vv = vi.next();
@@ -671,18 +670,7 @@ public class Basic {
             return null;
         }
 
-        final int n = values.intSize("reverseObj");
-        @SuppressWarnings("unchecked") final T[] result = (T[])Array.newInstance(values.getComponentType(), n);
-        int i = 0;
-
-        try (final CloseableIterator<T> vi = values.iterator()) {
-            while ( vi.hasNext() ) {
-                final T v = vi.next();
-                result[i] = v;
-                i++;
-            }
-        }
-
+        final T[] result = values.copyToArray();
         ArrayUtils.reverse(result);
         return result;
     }
@@ -895,9 +883,9 @@ public class Basic {
         final T[] result = Arrays.copyOf(values, values.length);
 
         T lastGood = null;
-        for (int ii = 0; ii < values.length; ii++) {
-            if (!isNull(values[ii])) {
-                lastGood = values[ii];
+        for (int ii = 0; ii < result.length; ii++) {
+            if (!isNull(result[ii])) {
+                lastGood = result[ii];
             }
 
             result[ii] = lastGood;
@@ -919,23 +907,16 @@ public class Basic {
             return null;
         }
 
-        final T[] result = values.toArray();
+        final T[] result = values.copyToArray();
 
         T lastGood = null;
-        int ii = 0;
-
-        try (final CloseableIterator<T> vi = values.iterator()) {
-            while ( vi.hasNext() ) {
-                final T v = vi.next();
-                if (!isNull(v)) {
-                    lastGood = v;
-                }
-
-                result[ii] = lastGood;
-                ii++;
+        for (int ii = 0; ii < result.length; ii++) {
+            if (!isNull(result[ii])) {
+                lastGood = result[ii];
             }
-        }
 
+            result[ii] = lastGood;
+        }
         return result;
     }
 
@@ -1179,17 +1160,17 @@ public class Basic {
     }
 
     /**
-     * Converts a Deephaven vector to a primitive array.
+     * Converts a Deephaven vector to a primitive array that may be freely mutated by the caller.
      *
      * @param values Deephaven vector
-     * @return primitive array.
+     * @return primitive array, which may be freely mutated by the caller
      */
     public static ${pt.primitive}[] array(${pt.vector} values) {
         if (values == null) {
             return null;
         }
 
-        return values.toArray();
+        return values.copyToArray();
     }
 
     /**
@@ -1364,7 +1345,7 @@ public class Basic {
         }
 
         if (values.length == 1) {
-            return !includeNull && values[0] == QueryConstants.${pt.null} ? new ${pt.primitive}[0] : values;
+            return !includeNull && values[0] == QueryConstants.${pt.null} ? new ${pt.primitive}[0] : new ${pt.primitive}[] { values[0] };
         }
 
         final T${pt.primitive?capitalize}ArrayList orderedList = new T${pt.primitive?capitalize}ArrayList();
@@ -1398,7 +1379,7 @@ public class Basic {
         }
 
         if (n == 1) {
-            return !includeNull && values.get(0) == QueryConstants.${pt.null} ? new ${pt.primitive}[0] : values.toArray();
+            return !includeNull && values.get(0) == QueryConstants.${pt.null} ? new ${pt.primitive}[0] : values.copyToArray();
         }
 
         final T${pt.primitive?capitalize}ArrayList orderedList = new T${pt.primitive?capitalize}ArrayList();
@@ -1435,7 +1416,7 @@ public class Basic {
         }
 
         if (values.length == 1) {
-            return !includeNull && values[0] == QueryConstants.${pt.null} ? new ${pt.primitive}[0] : values;
+            return !includeNull && values[0] == QueryConstants.${pt.null} ? new ${pt.primitive}[0] : new ${pt.primitive}[] { values[0] };
         }
 
         final ArrayList<${pt.boxed}> orderedList = new ArrayList<>();
@@ -1469,7 +1450,7 @@ public class Basic {
         }
 
         if (n == 1) {
-            return !includeNull && values.get(0) == QueryConstants.${pt.null} ? new ${pt.primitive}[0] : values.toArray();
+            return !includeNull && values.get(0) == QueryConstants.${pt.null} ? new ${pt.primitive}[0] : values.copToArray();
         }
 
         final ArrayList<${pt.boxed}> orderedList = new ArrayList<>();
