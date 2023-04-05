@@ -16,7 +16,6 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
 public abstract class BasePrimitiveEMSOperator extends BaseDoubleUpdateByOperator {
     protected final OperationControl control;
     protected final double alpha;
-    protected double oneMinusAlpha;
 
     public abstract class Context extends BaseDoubleUpdateByOperator.Context {
         long lastStamp = NULL_LONG;
@@ -54,8 +53,6 @@ public abstract class BasePrimitiveEMSOperator extends BaseDoubleUpdateByOperato
         this.control = control;
 
         alpha = Math.exp(-1.0 / (double) windowScaleUnits);
-        oneMinusAlpha = 1 - alpha;
-
     }
 
     @Override

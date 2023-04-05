@@ -1,8 +1,3 @@
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharEMSOperator and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
 package io.deephaven.engine.table.impl.updateby.emsum;
 
 import io.deephaven.api.updateby.OperationControl;
@@ -82,14 +77,12 @@ public class FloatEMSOperator extends BasePrimitiveEMSOperator {
                         lastStamp = timestamp;
                     } else {
                         final long dt = timestamp - lastStamp;
-                        if (dt != 0) {
-                            // alpha is dynamic, based on time
-                            final double alpha = Math.exp(-dt / (double) reverseWindowScaleUnits);
-                            final double decayedVal = alpha * curVal;
-                            // Compute EMSum by adding the current value to the decayed previous value.
-                            curVal = decayedVal + input;
-                            lastStamp = timestamp;
-                        }
+                        // alpha is dynamic, based on time
+                        final double alpha = Math.exp(-dt / (double) reverseWindowScaleUnits);
+                        final double decayedVal = alpha * curVal;
+                        // Compute EMSum by adding the current value to the decayed previous value.
+                        curVal = decayedVal + input;
+                        lastStamp = timestamp;
                     }
                     outputValues.set(ii, curVal);
                 }

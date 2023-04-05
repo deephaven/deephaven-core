@@ -214,8 +214,6 @@ public interface UpdateByOperation {
         return EmaSpec.ofTime(control, timestampColumn, durationDecay).clause(pairs);
     }
 
-
-
     /**
      * Create an {@link EmsSpec exponential moving sum} for the supplied column name pairs, using ticks as the decay
      * unit. Uses the default OperationControl settings.
@@ -225,7 +223,7 @@ public interface UpdateByOperation {
      *
      * <pre>
      *     a = e^(-1 / tickDecay)
-     *     ema_next = a * ema_last + (1 - a) * value
+     *     ems_next = a * ems_last + value
      * </pre>
      *
      * @param tickDecay the decay rate in ticks
@@ -245,7 +243,7 @@ public interface UpdateByOperation {
      *
      * <pre>
      *     a = e^(-1 / tickDecay)
-     *     ema_next = a * ema_last + (1 - a) * value
+     *     ems_next = a * ems_last + value
      * </pre>
      *
      * @param control a {@link OperationControl control} object that defines how special cases should behave. See
@@ -267,7 +265,7 @@ public interface UpdateByOperation {
      *
      * <pre>
      *     a = e^(-dt / timeDecay)
-     *     ema_next = a * ema_last + (1 - a) * value
+     *     ems_next = a * ems_last + value
      * </pre>
      *
      * @param timestampColumn the column in the source table to use for timestamps
@@ -288,7 +286,7 @@ public interface UpdateByOperation {
      *
      * <pre>
      *     a = e^(-dt / timeDecay)
-     *     ema_next = a * ema_last + (1 - a) * value
+     *     ems_next = a * ems_last + value
      * </pre>
      *
      * @param control a {@link OperationControl control} object that defines how special cases should behave. See
@@ -311,7 +309,7 @@ public interface UpdateByOperation {
      *
      * <pre>
      *     a = e^(-dt / durationDecay)
-     *     ema_next = a * ema_last + (1 - a) * value
+     *     ems_next = a * ems_last + value
      * </pre>
      *
      * @param timestampColumn the column in the source table to use for timestamps
@@ -332,7 +330,7 @@ public interface UpdateByOperation {
      *
      * <pre>
      *     a = e^(-dt / durationDecay)
-     *     ema_next = a * ema_last + (1 - a) * value
+     *     ems_next = a * ems_last + value
      * </pre>
      *
      * @param control a {@link OperationControl control} object that defines how special cases should behave. See
@@ -346,8 +344,6 @@ public interface UpdateByOperation {
             String... pairs) {
         return EmsSpec.ofTime(control, timestampColumn, durationDecay).clause(pairs);
     }
-
-
 
     /**
      * Create a {@link RollingSumSpec rolling sum} for the supplied column name pairs, using ticks as the windowing

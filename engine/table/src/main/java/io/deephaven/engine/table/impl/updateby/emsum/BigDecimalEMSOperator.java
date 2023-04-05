@@ -66,17 +66,15 @@ public class BigDecimalEMSOperator extends BaseBigNumberEMSOperator<BigDecimal> 
                             lastStamp = timestamp;
                         } else {
                             final long dt = timestamp - lastStamp;
-                            if (dt != 0) {
-                                // alpha is dynamic based on time, but only recalculated when needed
-                                if (dt != lastDt) {
-                                    alpha = computeAlpha(-dt, reverseWindowScaleUnits);
-                                    lastDt = dt;
-                                }
-                                // Compute EM Sum by adding the current value to the decayed previous value.
-                                curVal = curVal.multiply(alpha, control.bigValueContextOrDefault())
-                                        .add(input, control.bigValueContextOrDefault());
-                                lastStamp = timestamp;
+                            // alpha is dynamic based on time, but only recalculated when needed
+                            if (dt != lastDt) {
+                                alpha = computeAlpha(-dt, reverseWindowScaleUnits);
+                                lastDt = dt;
                             }
+                            // Compute EM Sum by adding the current value to the decayed previous value.
+                            curVal = curVal.multiply(alpha, control.bigValueContextOrDefault())
+                                    .add(input, control.bigValueContextOrDefault());
+                            lastStamp = timestamp;
                         }
                     }
                     outputValues.set(ii, curVal);
