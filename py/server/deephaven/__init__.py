@@ -16,7 +16,7 @@ finally:
     del jvm
 
 from .dherror import DHError
-from .table import SortDirection, AsOfMatchRule
+from .table import SortDirection
 from .csv import read as read_csv
 from .csv import write as write_csv
 from .stream.kafka import consumer as kafka_consumer
