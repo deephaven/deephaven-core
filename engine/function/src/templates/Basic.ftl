@@ -921,8 +921,6 @@ public class Basic {
     }
 
     <#list primitiveTypes as pt>
-    <#if !pt.valueType.isBoolean >
-
 
     //////////////////////////// ${pt.primitive} ////////////////////////////
 
@@ -937,9 +935,6 @@ public class Basic {
     static public boolean isNull(${pt.primitive} value) {
         return value == QueryConstants.${pt.null};
     }
-
-
-    <#if !pt.valueType.isBoolean >
 
     /**
      * Unboxes an array of values.
@@ -966,8 +961,6 @@ public class Basic {
 
         return result;
     }
-
-    </#if>
 
     /**
      * Replaces values that are null according to Deephaven convention with a specified value.
@@ -1183,8 +1176,6 @@ public class Basic {
         return new ${pt.vectorDirect}(values);
     }
 
-    <#if pt.valueType.isBoolean == false >
-
     /**
      * Checks if a value is within a range.
      *
@@ -1200,8 +1191,6 @@ public class Basic {
 
         return testedValue >= lowInclusiveValue && testedValue <= highInclusiveValue;
     }
-
-    </#if>
 
     /**
      * Checks if a value is within a discrete set of possible values.
@@ -1260,8 +1249,6 @@ public class Basic {
         return countDistinct(new ${pt.vectorDirect}(values), countNull);
     }
 
-    <#if pt.valueType.isBoolean == false >
-
     /**
      * Counts the number of distinct elements in the array.
      *
@@ -1300,8 +1287,6 @@ public class Basic {
         return keys.size();
     }
 
-    </#if>
-
     /**
      * Returns an array containing only the distinct values from the input.
      *
@@ -1325,8 +1310,6 @@ public class Basic {
     public static ${pt.primitive}[] distinct(final ${pt.vector} values) {
         return distinct(values, false);
     }
-
-    <#if pt.valueType.isBoolean == false >
 
     /**
      * Returns an array containing only the distinct values from the input.
@@ -1360,7 +1343,7 @@ public class Basic {
         return orderedList.toArray();
     }
 
-        /**
+    /**
      * Returns an array containing only the distinct values from the input.
      *
      * @param values values.
@@ -1396,79 +1379,6 @@ public class Basic {
 
         return orderedList.toArray();
     }
-
-    <#else>
-
-    /**
-     * Returns an array containing only the distinct values from the input.
-     *
-     * @param values values.
-     * @param includeNull true to include null values, and false to exclude null values.
-     * @return array containing only distinct items from arr.
-     */
-    public static ${pt.primitive}[] distinct(final ${pt.primitive}[] values, boolean includeNull) {
-        if (values == null) {
-            return null;
-        }
-
-        if (values.length == 0) {
-            return new ${pt.primitive}[0];
-        }
-
-        if (values.length == 1) {
-            return !includeNull && values[0] == QueryConstants.${pt.null} ? new ${pt.primitive}[0] : new ${pt.primitive}[] { values[0] };
-        }
-
-        final ArrayList<${pt.boxed}> orderedList = new ArrayList<>();
-        final Set<${pt.boxed}> counts = new HashSet<>();
-
-        for (${pt.primitive} val : values) {
-            if ((includeNull || val != QueryConstants.${pt.null}) && counts.add(val)) {
-                orderedList.add(val);
-            }
-        }
-
-        return orderedList.toArray(new ${pt.boxed}[0]);
-    }
-
-        /**
-     * Returns an array containing only the distinct values from the input.
-     *
-     * @param values values.
-     * @param includeNull true to include null values, and false to exclude null values.
-     * @return array containing only distinct items from arr.
-     */
-    public static ${pt.primitive}[] distinct(final ${pt.vector} values, boolean includeNull) {
-        if (values == null) {
-            return null;
-        }
-
-        final long n = values.size();
-
-        if (n == 0) {
-            return new ${pt.primitive}[0];
-        }
-
-        if (n == 1) {
-            return !includeNull && values.get(0) == QueryConstants.${pt.null} ? new ${pt.primitive}[0] : values.copToArray();
-        }
-
-        final ArrayList<${pt.boxed}> orderedList = new ArrayList<>();
-        final Set<${pt.boxed}> counts = new HashSet<>();
-
-        try (final ${pt.vectorIterator} vi = values.iterator()) {
-            while ( vi.hasNext() ) {
-                final ${pt.primitive} val = vi.${pt.iteratorNext}();
-                if ((includeNull || val != QueryConstants.${pt.null}) && counts.add(val)) {
-                    orderedList.add(val);
-                }
-            }
-        }
-
-        return orderedList.toArray(new ${pt.boxed}[0]);
-    }
-
-    </#if>
 
     /**
      * Returns an array with a value repeated.
@@ -1820,6 +1730,5 @@ public class Basic {
         return result;
     }
 
-    </#if>
     </#list>
 }

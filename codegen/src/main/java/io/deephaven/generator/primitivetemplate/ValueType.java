@@ -7,33 +7,21 @@ package io.deephaven.generator.primitivetemplate;
  * Type of a value.
  */
 public enum ValueType {
-    BOOLEAN(true, false, false, false),
 
-    CHARACTER(false, true, false, false),
+    CHARACTER(true, false, false),
 
-    INTEGER(false, false, true, false),
+    INTEGER(false, true, false),
 
-    FLOATING_POINT(false, false, false, true);
+    FLOATING_POINT(false, false, true);
 
-    private final boolean isBoolean;
     private final boolean isChar;
     private final boolean isInteger;
     private final boolean isFloat;
 
-    ValueType(boolean isBoolean, boolean isChar, boolean isInteger, boolean isFloat) {
-        this.isBoolean = isBoolean;
+    ValueType(boolean isChar, boolean isInteger, boolean isFloat) {
         this.isChar = isChar;
         this.isInteger = isInteger;
         this.isFloat = isFloat;
-    }
-
-    /**
-     * Is the value a boolean.
-     *
-     * @return true for booleans, and false otherwise.
-     */
-    public boolean getIsBoolean() {
-        return isBoolean;
     }
 
     /**

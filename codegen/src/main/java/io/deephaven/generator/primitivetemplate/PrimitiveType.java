@@ -157,11 +157,6 @@ public class PrimitiveType {
 
     public static PrimitiveType[] primitiveTypes() {
         return new PrimitiveType[] {
-                new PrimitiveType("Boolean", "Boolean",
-                        "ObjectVector", "ObjectVectorDirect",
-                        "CloseableIterator", "next",
-                        "NULL_BOOLEAN", null, null,
-                        ValueType.BOOLEAN),
                 new PrimitiveType("char", "Character",
                         "CharVector", "CharVectorDirect",
                         "CloseablePrimitiveIteratorOfChar", "nextChar",
