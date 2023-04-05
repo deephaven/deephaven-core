@@ -124,14 +124,9 @@ public class Basic {
      */
     static public <T> T[] replaceIfNull(ObjectVector<T> values, T replacement) {
         T[] result = values.toArray();
-        int i = 0;
 
-        try(final CloseableIterator<T> vi = values.iterator()) {
-            while( vi.hasNext() ) {
-                final T v = vi.next();
-                result[i] = replaceIfNull(v, replacement);
-                i++;
-            }
+        for (int i = 0; i < result.length; i++) {
+            result[i] = replaceIfNull(result[i], replacement);
         }
 
         return result;
