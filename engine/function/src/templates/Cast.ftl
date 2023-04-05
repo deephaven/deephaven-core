@@ -273,8 +273,8 @@ public class Cast {
         int[] result = new int[s];
         int i = 0;
 
-        try(final ${pt.vectorIterator} vi = values.iterator()) {
-            while( vi.hasNext() ) {
+        try (final ${pt.vectorIterator} vi = values.iterator()) {
+            while ( vi.hasNext() ) {
                 final ${pt.primitive} v = vi.${pt.iteratorNext}();
                 result[i] = castInt(v, checkFidelity);
                 i++;
@@ -341,8 +341,8 @@ public class Cast {
         long[] result = new long[s];
         int i = 0;
 
-        try(final ${pt.vectorIterator} vi = values.iterator()) {
-            while( vi.hasNext() ) {
+        try (final ${pt.vectorIterator} vi = values.iterator()) {
+            while ( vi.hasNext() ) {
                 final ${pt.primitive} v = vi.${pt.iteratorNext}();
                 result[i] = castLong(v, checkFidelity);
                 i++;
@@ -411,8 +411,8 @@ public class Cast {
         double[] result = new double[s];
         int i = 0;
 
-        try(final ${pt.vectorIterator} vi = values.iterator()) {
-            while( vi.hasNext() ) {
+        try (final ${pt.vectorIterator} vi = values.iterator()) {
+            while ( vi.hasNext() ) {
                 final ${pt.primitive} v = vi.${pt.iteratorNext}();
                 result[i] = castDouble(v, checkFidelity);
                 i++;

@@ -50,8 +50,8 @@ public class Logic {
      * @return logical and of all the values in the array. By convention, returns true if the array is empty.
      */
     static public Boolean and(ObjectVector<Boolean> values) {
-        try(final CloseableIterator<Boolean> vi = values.iterator()) {
-            while( vi.hasNext() ) {
+        try (final CloseableIterator<Boolean> vi = values.iterator()) {
+            while (vi.hasNext()) {
                 final Boolean b = vi.next();
                 if (!b) {
                     return false;
@@ -89,8 +89,8 @@ public class Logic {
      * @return logical and of all the values in the array. By convention, returns true if the array is empty.
      */
     static public Boolean and(ObjectVector<Boolean> values, Boolean nullValue) {
-        try(final CloseableIterator<Boolean> vi = values.iterator()) {
-            while( vi.hasNext() ) {
+        try (final CloseableIterator<Boolean> vi = values.iterator()) {
+            while (vi.hasNext()) {
                 final Boolean b = vi.next();
                 final Boolean b2 = b == null ? nullValue : b;
 

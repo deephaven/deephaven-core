@@ -188,8 +188,8 @@ public class Basic {
 
         long count = 0;
 
-        try(final CloseableIterator<T> vi = values.iterator()) {
-            while( vi.hasNext() ) {
+        try (final CloseableIterator<T> vi = values.iterator()) {
+            while ( vi.hasNext() ) {
                 final T c = vi.next();
 
                 if (!isNull(c)) {
@@ -357,8 +357,8 @@ public class Basic {
     static public <T> boolean inObj(T testedValue, ObjectVector<T> possibleValues) {
         final boolean testedIsNull = isNull(testedValue);
 
-        try(final CloseableIterator<T> vi = possibleValues.iterator()) {
-            while( vi.hasNext() ) {
+        try (final CloseableIterator<T> vi = possibleValues.iterator()) {
+            while ( vi.hasNext() ) {
                 final T possibleValue = vi.next();
                 final boolean possibleIsNull = isNull(possibleValue);
 
@@ -440,8 +440,8 @@ public class Basic {
 
         final THashSet<T> keys = new THashSet<>();
 
-        try(final CloseableIterator<T> vi = values.iterator()) {
-            while( vi.hasNext() ) {
+        try (final CloseableIterator<T> vi = values.iterator()) {
+            while ( vi.hasNext() ) {
                 final T v = vi.next();
                 keys.add(v);
             }
@@ -533,8 +533,8 @@ public class Basic {
         final List<T> orderedList = new ArrayList<>();
         final THashSet<T> counts = new THashSet<>();
 
-        try(final CloseableIterator<T> vi = values.iterator()) {
-            while( vi.hasNext() ) {
+        try (final CloseableIterator<T> vi = values.iterator()) {
+            while ( vi.hasNext() ) {
                 final T val = vi.next();
                 if ((includeNull || !isNull(val)) && counts.add(val)) {
                     orderedList.add(val);
@@ -630,8 +630,8 @@ public class Basic {
         for (ObjectVector<T> v : values) {
             if (v != null) {
 
-                try(final CloseableIterator<T> vi = v.iterator()) {
-                    while( vi.hasNext() ) {
+                try (final CloseableIterator<T> vi = v.iterator()) {
+                    while ( vi.hasNext() ) {
                         final T vv = vi.next();
                         result[idx] = vv;
                         idx++;
@@ -673,8 +673,8 @@ public class Basic {
         @SuppressWarnings("unchecked") final T[] result = (T[])Array.newInstance(values.getComponentType(), n);
         int i = 0;
 
-        try(final CloseableIterator<T> vi = values.iterator()) {
-            while( vi.hasNext() ) {
+        try (final CloseableIterator<T> vi = values.iterator()) {
+            while ( vi.hasNext() ) {
                 final T v = vi.next();
                 result[i] = v;
                 i++;
@@ -716,8 +716,8 @@ public class Basic {
         final boolean isNullVal = isNull(val);
         long i = 0;
 
-        try(final CloseableIterator<T> vi = values.iterator()) {
-            while( vi.hasNext() ) {
+        try (final CloseableIterator<T> vi = values.iterator()) {
+            while ( vi.hasNext() ) {
                 final T c = vi.next();
                 final boolean isnullc = isNull(c);
 
@@ -779,12 +779,12 @@ public class Basic {
         @SuppressWarnings("unchecked") final T[] result = (T[])Array.newInstance(trueCase.getComponentType(), n_c);
         int i = 0;
 
-        try(
+        try (
             final CloseableIterator<Boolean> ci = condition.iterator();
             final CloseableIterator<T> ti = trueCase.iterator();
             final CloseableIterator<T> fi = falseCase.iterator()
         ) {
-            while(ci.hasNext()) {
+            while ( ci.hasNext() ) {
                 final Boolean c = ci.next();
                 final T t = ti.next();
                 final T f = fi.next();
@@ -845,8 +845,8 @@ public class Basic {
         @SuppressWarnings("unchecked") final T[] result = (T[])Array.newInstance(typeToUse.getClass(), n_c);
         int i = 0;
 
-        try(final CloseableIterator<Boolean> vi = condition.iterator()) {
-            while( vi.hasNext() ) {
+        try (final CloseableIterator<Boolean> vi = condition.iterator()) {
+            while ( vi.hasNext() ) {
                 final Boolean c = vi.next();
                 result[i] = c == null ? null : (c ? trueCase : falseCase);
                 i++;
@@ -922,8 +922,8 @@ public class Basic {
         T lastGood = null;
         int ii = 0;
 
-        try(final CloseableIterator<T> vi = values.iterator()) {
-            while( vi.hasNext() ) {
+        try (final CloseableIterator<T> vi = values.iterator()) {
+            while ( vi.hasNext() ) {
                 final T v = vi.next();
                 if (!isNull(v)) {
                     lastGood = v;
@@ -1024,8 +1024,8 @@ public class Basic {
         ${pt.primitive}[] result = new ${pt.primitive}[n];
         int i = 0;
 
-        try(final ${pt.vectorIterator} vi = values.iterator()) {
-            while( vi.hasNext() ) {
+        try (final ${pt.vectorIterator} vi = values.iterator()) {
+            while ( vi.hasNext() ) {
                 final ${pt.primitive} v = vi.${pt.iteratorNext}();
                 result[i] = replaceIfNull(v, replacement);
                 i++;
@@ -1076,8 +1076,8 @@ public class Basic {
 
         long count = 0;
 
-        try(final ${pt.vectorIterator} vi = values.iterator()) {
-            while( vi.hasNext() ) {
+        try (final ${pt.vectorIterator} vi = values.iterator()) {
+            while ( vi.hasNext() ) {
                 final ${pt.primitive} v = vi.${pt.iteratorNext}();
                 if (!isNull(v)) {
                     count++;
@@ -1303,8 +1303,8 @@ public class Basic {
 
         final T${pt.primitive?capitalize}Set keys = new T${pt.primitive?capitalize}HashSet();
 
-        try(final ${pt.vectorIterator} vi = values.iterator()) {
-            while( vi.hasNext() ) {
+        try (final ${pt.vectorIterator} vi = values.iterator()) {
+            while ( vi.hasNext() ) {
                 final ${pt.primitive} v = vi.${pt.iteratorNext}();
                 keys.add(v);
             }
@@ -1343,8 +1343,8 @@ public class Basic {
 
         final Set<${pt.boxed}> keys = new HashSet<${pt.boxed}>();
 
-        try(final ${pt.vectorIterator} vi = values.iterator()) {
-            while( vi.hasNext() ) {
+        try (final ${pt.vectorIterator} vi = values.iterator()) {
+            while ( vi.hasNext() ) {
                 final ${pt.primitive} v = vi.${pt.iteratorNext}();
                 keys.add(v);
             }
@@ -1442,8 +1442,8 @@ public class Basic {
         final T${pt.primitive?capitalize}ArrayList orderedList = new T${pt.primitive?capitalize}ArrayList();
         final T${pt.primitive?capitalize}Set counts = new T${pt.primitive?capitalize}HashSet();
 
-        try(final ${pt.vectorIterator} vi = values.iterator()) {
-            while( vi.hasNext() ) {
+        try (final ${pt.vectorIterator} vi = values.iterator()) {
+            while ( vi.hasNext() ) {
                 final ${pt.primitive} val = vi.${pt.iteratorNext}();
                 if ((includeNull || val != QueryConstants.${pt.null}) && counts.add(val)) {
                     orderedList.add(val);
@@ -1513,8 +1513,8 @@ public class Basic {
         final ArrayList<${pt.boxed}> orderedList = new ArrayList<>();
         final Set<${pt.boxed}> counts = new HashSet<>();
 
-        try(final ${pt.vectorIterator} vi = values.iterator()) {
-            while( vi.hasNext() ) {
+        try (final ${pt.vectorIterator} vi = values.iterator()) {
+            while ( vi.hasNext() ) {
                 final ${pt.primitive} val = vi.${pt.iteratorNext}();
                 if ((includeNull || val != QueryConstants.${pt.null}) && counts.add(val)) {
                     orderedList.add(val);
@@ -1600,8 +1600,8 @@ public class Basic {
 
         for (${pt.vector} v : values) {
             if (v != null) {
-                try(final ${pt.vectorIterator} vi = v.iterator()) {
-                    while( vi.hasNext() ) {
+                try (final ${pt.vectorIterator} vi = v.iterator()) {
+                    while ( vi.hasNext() ) {
                         final ${pt.primitive} vv = vi.${pt.iteratorNext}();
                         result[idx] = vv;
                         idx++;
@@ -1642,8 +1642,8 @@ public class Basic {
         final ${pt.primitive}[] result = new ${pt.primitive}[n];
         int i = n-1;
 
-        try(final ${pt.vectorIterator} vi = values.iterator()) {
-            while( vi.hasNext() ) {
+        try (final ${pt.vectorIterator} vi = values.iterator()) {
+            while ( vi.hasNext() ) {
                 final ${pt.primitive} v = vi.${pt.iteratorNext}();
                 result[i] = v;
                 i--;
@@ -1682,8 +1682,8 @@ public class Basic {
 
         long i = 0;
 
-        try(final ${pt.vectorIterator} vi = values.iterator()) {
-            while( vi.hasNext() ) {
+        try (final ${pt.vectorIterator} vi = values.iterator()) {
+            while ( vi.hasNext() ) {
                 final ${pt.primitive} c = vi.${pt.iteratorNext}();
                 if (c == val) {
                     return i;
@@ -1739,12 +1739,12 @@ public class Basic {
         final ${pt.primitive}[] result = new ${pt.primitive}[n_c];
         int i = 0;
 
-        try(
+        try (
             final CloseableIterator<Boolean> ci = condition.iterator();
             final ${pt.vectorIterator} ti = trueCase.iterator();
             final ${pt.vectorIterator} fi = falseCase.iterator()
         ) {
-            while(ci.hasNext()) {
+            while (ci.hasNext()) {
                 final Boolean c = ci.next();
                 final ${pt.primitive} t = ti.${pt.iteratorNext}();
                 final ${pt.primitive} f = fi.${pt.iteratorNext}();
@@ -1796,8 +1796,8 @@ public class Basic {
         final ${pt.primitive}[] result = new ${pt.primitive}[n_c];
         int i = 0;
 
-        try(final CloseableIterator<Boolean> vi = condition.iterator()) {
-            while( vi.hasNext() ) {
+        try (final CloseableIterator<Boolean> vi = condition.iterator()) {
+            while ( vi.hasNext() ) {
                 final Boolean c = vi.next();
                 result[i] = c == null ? ${pt.null} : (c ? trueCase : falseCase);
                 i++;
@@ -1862,8 +1862,8 @@ public class Basic {
         int ii = 0;
         ${pt.primitive} lastGood = QueryConstants.${pt.null};
 
-        try(final ${pt.vectorIterator} vi = values.iterator()) {
-            while( vi.hasNext() ) {
+        try (final ${pt.vectorIterator} vi = values.iterator()) {
+            while ( vi.hasNext() ) {
                 final ${pt.primitive} v = vi.${pt.iteratorNext}();
                 if (!isNull(v)) {
                     lastGood = v;

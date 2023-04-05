@@ -106,8 +106,8 @@ public class Numeric {
         long count = 0;
         long i = 0;
 
-        try(final CloseableIterator<T> vi = values.iterator()) {
-            while( vi.hasNext() ) {
+        try (final CloseableIterator<T> vi = values.iterator()) {
+            while ( vi.hasNext() ) {
                 final T c = vi.next();
                 if (!isNull(c) && ( val == null || c.compareTo(val) > 0)) {
                     val = c;
@@ -153,8 +153,8 @@ public class Numeric {
         long count = 0;
         long i = 0;
 
-        try(final CloseableIterator<T> vi = values.iterator()) {
-            while( vi.hasNext() ) {
+        try (final CloseableIterator<T> vi = values.iterator()) {
+            while ( vi.hasNext() ) {
                 final T c = vi.next();
                 if (!isNull(c) && ( val == null || c.compareTo(val) < 0)) {
                     val = c;
@@ -213,8 +213,8 @@ public class Numeric {
 
         long count = 0;
 
-        try(final ${pt.vectorIterator} vi = values.iterator()) {
-            while( vi.hasNext() ) {
+        try (final ${pt.vectorIterator} vi = values.iterator()) {
+            while ( vi.hasNext() ) {
                 final ${pt.primitive} c = vi.${pt.iteratorNext}();
                 if (!isNull(c) && c > 0) {
                     count++;
@@ -263,8 +263,8 @@ public class Numeric {
         long count = 0;
         final long n = values.size();
 
-        try(final ${pt.vectorIterator} vi = values.iterator()) {
-            while( vi.hasNext() ) {
+        try (final ${pt.vectorIterator} vi = values.iterator()) {
+            while ( vi.hasNext() ) {
                 final ${pt.primitive} c = vi.${pt.iteratorNext}();
                 if (!isNull(c) && c < 0) {
                     count++;
@@ -312,8 +312,8 @@ public class Numeric {
 
         long count = 0;
 
-        try(final ${pt.vectorIterator} vi = values.iterator()) {
-            while( vi.hasNext() ) {
+        try (final ${pt.vectorIterator} vi = values.iterator()) {
+            while ( vi.hasNext() ) {
                 final ${pt.primitive} c = vi.${pt.iteratorNext}();
                 if (!isNull(c) && c == 0) {
                     count++;
@@ -362,8 +362,8 @@ public class Numeric {
         double sum = 0;
         double count = 0;
 
-        try(final ${pt.vectorIterator} vi = values.iterator()) {
-            while( vi.hasNext() ) {
+        try (final ${pt.vectorIterator} vi = values.iterator()) {
+            while ( vi.hasNext() ) {
                 final ${pt.primitive} c = vi.${pt.iteratorNext}();
                 if (!isNull(c)) {
                     sum += c;
@@ -413,8 +413,8 @@ public class Numeric {
         double sum = 0;
         double count = 0;
 
-        try(final ${pt.vectorIterator} vi = values.iterator()) {
-            while( vi.hasNext() ) {
+        try (final ${pt.vectorIterator} vi = values.iterator()) {
+            while ( vi.hasNext() ) {
                 final ${pt.primitive} c = vi.${pt.iteratorNext}();
                 if (!isNull(c)) {
                     sum += Math.abs(c);
@@ -465,8 +465,8 @@ public class Numeric {
         double sum2 = 0;
         double count = 0;
 
-        try(final ${pt.vectorIterator} vi = values.iterator()) {
-            while( vi.hasNext() ) {
+        try (final ${pt.vectorIterator} vi = values.iterator()) {
+            while ( vi.hasNext() ) {
                 final ${pt.primitive} c = vi.${pt.iteratorNext}();
                 if (!isNull(c)) {
                     sum += (double)c;
@@ -1025,8 +1025,8 @@ public class Numeric {
         long count = 0;
         long i = 0;
 
-        try(final ${pt.vectorIterator} vi = values.iterator()) {
-            while( vi.hasNext() ) {
+        try (final ${pt.vectorIterator} vi = values.iterator()) {
+            while ( vi.hasNext() ) {
                 final ${pt.primitive} c = vi.${pt.iteratorNext}();
                 if (!isNull(c) && (c > val || (c == val && count == 0))) {
                     val = c;
@@ -1081,8 +1081,8 @@ public class Numeric {
         long count = 0;
         long i = 0;
 
-        try(final ${pt.vectorIterator} vi = values.iterator()) {
-            while( vi.hasNext() ) {
+        try (final ${pt.vectorIterator} vi = values.iterator()) {
+            while ( vi.hasNext() ) {
                 final ${pt.primitive} c = vi.${pt.iteratorNext}();
                 if (!isNull(c) && (c < val || (c == val && count == 0) )) {
                     val = c;
@@ -1379,8 +1379,8 @@ public class Numeric {
 
         double sum = 0;
 
-        try(final ${pt.vectorIterator} vi = values.iterator()) {
-            while( vi.hasNext() ) {
+        try (final ${pt.vectorIterator} vi = values.iterator()) {
+            while ( vi.hasNext() ) {
                 final ${pt.primitive} c = vi.${pt.iteratorNext}();
                 if (!isNull(c)) {
                     sum += c;
@@ -1419,8 +1419,8 @@ public class Numeric {
         ${pt.primitive} prod = 1;
         int count = 0;
 
-        try(final ${pt.vectorIterator} vi = values.iterator()) {
-            while( vi.hasNext() ) {
+        try (final ${pt.vectorIterator} vi = values.iterator()) {
+            while ( vi.hasNext() ) {
                 final ${pt.primitive} c = vi.${pt.iteratorNext}();
                 if (!isNull(c)) {
                     count++;
@@ -2472,8 +2472,8 @@ public class Numeric {
         ${pt.primitive}[] result = new ${pt.primitive}[n];
         int i = 0;
 
-        try(final ${pt.vectorIterator} vi = values.iterator()) {
-            while( vi.hasNext() ) {
+        try (final ${pt.vectorIterator} vi = values.iterator()) {
+            while ( vi.hasNext() ) {
                 final ${pt.primitive} v = vi.${pt.iteratorNext}();
                 result[i] = replaceIfNaN(v, replacement);
                 i++;
@@ -2521,8 +2521,8 @@ public class Numeric {
         ${pt.primitive}[] result = new ${pt.primitive}[n];
         int i = 0;
 
-        try(final ${pt.vectorIterator} vi = values.iterator()) {
-            while( vi.hasNext() ) {
+        try (final ${pt.vectorIterator} vi = values.iterator()) {
+            while ( vi.hasNext() ) {
                 final ${pt.primitive} v = vi.${pt.iteratorNext}();
                 result[i] = replaceIfNullNaN(v, replacement);
                 i++;
@@ -2566,8 +2566,8 @@ public class Numeric {
         ${pt.primitive}[] result = new ${pt.primitive}[n];
         int i = 0;
 
-        try(final ${pt.vectorIterator} vi = values.iterator()) {
-            while( vi.hasNext() ) {
+        try (final ${pt.vectorIterator} vi = values.iterator()) {
+            while ( vi.hasNext() ) {
                 final ${pt.primitive} v = vi.${pt.iteratorNext}();
                 result[i] = replaceIfNonFinite(v, replacement);
                 i++;
