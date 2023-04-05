@@ -106,10 +106,10 @@ public class Basic {
      * @return array containing value, if value is not null according to Deephaven convention, replacement otherwise.
      */
     static public <T> T[] replaceIfNull(T[] values, T replacement) {
-        T[] result = values.clone();
+        final T[] result = Arrays.copyOf(values, values.length);
 
-        for (int i = 0; i < values.length; i++) {
-            result[i] = replaceIfNull(values[i], replacement);
+        for (int i = 0; i < result.length; i++) {
+            result[i] = replaceIfNull(result[i], replacement);
         }
 
         return result;
@@ -123,7 +123,7 @@ public class Basic {
      * @return array containing value, if value is not null according to Deephaven convention, replacement otherwise.
      */
     static public <T> T[] replaceIfNull(ObjectVector<T> values, T replacement) {
-        T[] result = values.toArray();
+        final T[] result = values.copyToArray();
 
         for (int i = 0; i < result.length; i++) {
             result[i] = replaceIfNull(result[i], replacement);
@@ -291,17 +291,17 @@ public class Basic {
     }
 
     /**
-     * Converts a Deephaven vector to an array.
+     * Converts a Deephaven vector to an array that may be freely mutated by the caller.
      *
-     * @param values Deephaven vector
-     * @return primitive array.
+     * @param values A Deephaven vector
+     * @return The result array, which may be freely mutated by the caller
      */
     public static <T> T[] arrayObj(ObjectVector<T> values) {
         if (values == null) {
             return null;
         }
 
-        return values.toArray();
+        return values.copyToArray();
     }
 
     /**
@@ -527,7 +527,7 @@ public class Basic {
         }
 
         if (n == 1) {
-            return !includeNull && isNull(values.get(0)) ? empty : values.toArray();
+            return !includeNull && isNull(values.get(0)) ? empty : values.copyToArray();
         }
 
         final List<T> orderedList = new ArrayList<>();
@@ -629,7 +629,6 @@ public class Basic {
 
         for (ObjectVector<T> v : values) {
             if (v != null) {
-
                 try (final CloseableIterator<T> vi = v.iterator()) {
                     while ( vi.hasNext() ) {
                         final T vv = vi.next();
@@ -671,18 +670,7 @@ public class Basic {
             return null;
         }
 
-        final int n = values.intSize("reverseObj");
-        @SuppressWarnings("unchecked") final T[] result = (T[])Array.newInstance(values.getComponentType(), n);
-        int i = 0;
-
-        try (final CloseableIterator<T> vi = values.iterator()) {
-            while ( vi.hasNext() ) {
-                final T v = vi.next();
-                result[i] = v;
-                i++;
-            }
-        }
-
+        final T[] result = values.copyToArray();
         ArrayUtils.reverse(result);
         return result;
     }
@@ -895,9 +883,9 @@ public class Basic {
         final T[] result = Arrays.copyOf(values, values.length);
 
         T lastGood = null;
-        for (int ii = 0; ii < values.length; ii++) {
-            if (!isNull(values[ii])) {
-                lastGood = values[ii];
+        for (int ii = 0; ii < result.length; ii++) {
+            if (!isNull(result[ii])) {
+                lastGood = result[ii];
             }
 
             result[ii] = lastGood;
@@ -919,29 +907,20 @@ public class Basic {
             return null;
         }
 
-        final T[] result = values.toArray();
+        final T[] result = values.copyToArray();
 
         T lastGood = null;
-        int ii = 0;
-
-        try (final CloseableIterator<T> vi = values.iterator()) {
-            while ( vi.hasNext() ) {
-                final T v = vi.next();
-                if (!isNull(v)) {
-                    lastGood = v;
-                }
-
-                result[ii] = lastGood;
-                ii++;
+        for (int ii = 0; ii < result.length; ii++) {
+            if (!isNull(result[ii])) {
+                lastGood = result[ii];
             }
-        }
 
+            result[ii] = lastGood;
+        }
         return result;
     }
 
     <#list primitiveTypes as pt>
-    <#if !pt.valueType.isBoolean >
-
 
     //////////////////////////// ${pt.primitive} ////////////////////////////
 
@@ -956,9 +935,6 @@ public class Basic {
     static public boolean isNull(${pt.primitive} value) {
         return value == QueryConstants.${pt.null};
     }
-
-
-    <#if !pt.valueType.isBoolean >
 
     /**
      * Unboxes an array of values.
@@ -985,8 +961,6 @@ public class Basic {
 
         return result;
     }
-
-    </#if>
 
     /**
      * Replaces values that are null according to Deephaven convention with a specified value.
@@ -1179,17 +1153,17 @@ public class Basic {
     }
 
     /**
-     * Converts a Deephaven vector to a primitive array.
+     * Converts a Deephaven vector to a primitive array that may be freely mutated by the caller.
      *
      * @param values Deephaven vector
-     * @return primitive array.
+     * @return primitive array, which may be freely mutated by the caller
      */
     public static ${pt.primitive}[] array(${pt.vector} values) {
         if (values == null) {
             return null;
         }
 
-        return values.toArray();
+        return values.copyToArray();
     }
 
     /**
@@ -1201,8 +1175,6 @@ public class Basic {
     public static ${pt.vector} vec(${pt.primitive}... values) {
         return new ${pt.vectorDirect}(values);
     }
-
-    <#if pt.valueType.isBoolean == false >
 
     /**
      * Checks if a value is within a range.
@@ -1219,8 +1191,6 @@ public class Basic {
 
         return testedValue >= lowInclusiveValue && testedValue <= highInclusiveValue;
     }
-
-    </#if>
 
     /**
      * Checks if a value is within a discrete set of possible values.
@@ -1279,8 +1249,6 @@ public class Basic {
         return countDistinct(new ${pt.vectorDirect}(values), countNull);
     }
 
-    <#if pt.valueType.isBoolean == false >
-
     /**
      * Counts the number of distinct elements in the array.
      *
@@ -1319,8 +1287,6 @@ public class Basic {
         return keys.size();
     }
 
-    </#if>
-
     /**
      * Returns an array containing only the distinct values from the input.
      *
@@ -1345,8 +1311,6 @@ public class Basic {
         return distinct(values, false);
     }
 
-    <#if pt.valueType.isBoolean == false >
-
     /**
      * Returns an array containing only the distinct values from the input.
      *
@@ -1364,7 +1328,7 @@ public class Basic {
         }
 
         if (values.length == 1) {
-            return !includeNull && values[0] == QueryConstants.${pt.null} ? new ${pt.primitive}[0] : values;
+            return !includeNull && values[0] == QueryConstants.${pt.null} ? new ${pt.primitive}[0] : new ${pt.primitive}[] { values[0] };
         }
 
         final T${pt.primitive?capitalize}ArrayList orderedList = new T${pt.primitive?capitalize}ArrayList();
@@ -1379,7 +1343,7 @@ public class Basic {
         return orderedList.toArray();
     }
 
-        /**
+    /**
      * Returns an array containing only the distinct values from the input.
      *
      * @param values values.
@@ -1398,7 +1362,7 @@ public class Basic {
         }
 
         if (n == 1) {
-            return !includeNull && values.get(0) == QueryConstants.${pt.null} ? new ${pt.primitive}[0] : values.toArray();
+            return !includeNull && values.get(0) == QueryConstants.${pt.null} ? new ${pt.primitive}[0] : values.copyToArray();
         }
 
         final T${pt.primitive?capitalize}ArrayList orderedList = new T${pt.primitive?capitalize}ArrayList();
@@ -1415,79 +1379,6 @@ public class Basic {
 
         return orderedList.toArray();
     }
-
-    <#else>
-
-    /**
-     * Returns an array containing only the distinct values from the input.
-     *
-     * @param values values.
-     * @param includeNull true to include null values, and false to exclude null values.
-     * @return array containing only distinct items from arr.
-     */
-    public static ${pt.primitive}[] distinct(final ${pt.primitive}[] values, boolean includeNull) {
-        if (values == null) {
-            return null;
-        }
-
-        if (values.length == 0) {
-            return new ${pt.primitive}[0];
-        }
-
-        if (values.length == 1) {
-            return !includeNull && values[0] == QueryConstants.${pt.null} ? new ${pt.primitive}[0] : values;
-        }
-
-        final ArrayList<${pt.boxed}> orderedList = new ArrayList<>();
-        final Set<${pt.boxed}> counts = new HashSet<>();
-
-        for (${pt.primitive} val : values) {
-            if ((includeNull || val != QueryConstants.${pt.null}) && counts.add(val)) {
-                orderedList.add(val);
-            }
-        }
-
-        return orderedList.toArray(new ${pt.boxed}[0]);
-    }
-
-        /**
-     * Returns an array containing only the distinct values from the input.
-     *
-     * @param values values.
-     * @param includeNull true to include null values, and false to exclude null values.
-     * @return array containing only distinct items from arr.
-     */
-    public static ${pt.primitive}[] distinct(final ${pt.vector} values, boolean includeNull) {
-        if (values == null) {
-            return null;
-        }
-
-        final long n = values.size();
-
-        if (n == 0) {
-            return new ${pt.primitive}[0];
-        }
-
-        if (n == 1) {
-            return !includeNull && values.get(0) == QueryConstants.${pt.null} ? new ${pt.primitive}[0] : values.toArray();
-        }
-
-        final ArrayList<${pt.boxed}> orderedList = new ArrayList<>();
-        final Set<${pt.boxed}> counts = new HashSet<>();
-
-        try (final ${pt.vectorIterator} vi = values.iterator()) {
-            while ( vi.hasNext() ) {
-                final ${pt.primitive} val = vi.${pt.iteratorNext}();
-                if ((includeNull || val != QueryConstants.${pt.null}) && counts.add(val)) {
-                    orderedList.add(val);
-                }
-            }
-        }
-
-        return orderedList.toArray(new ${pt.boxed}[0]);
-    }
-
-    </#if>
 
     /**
      * Returns an array with a value repeated.
@@ -1839,6 +1730,5 @@ public class Basic {
         return result;
     }
 
-    </#if>
     </#list>
 }

@@ -1143,7 +1143,7 @@ public class Numeric {
         if (n == 0) {
             return Double.NaN;
         } else {
-            ${pt.primitive}[] copy = values.toArray();
+            ${pt.primitive}[] copy = values.copyToArray();
             Arrays.sort(copy);
             if (n % 2 == 0)
                 return 0.5 * (copy[n / 2 - 1] + copy[n / 2]);
@@ -1183,7 +1183,7 @@ public class Numeric {
         }
 
         int n = values.intSize("percentile");
-        ${pt.primitive}[] copy = values.toArray();
+        ${pt.primitive}[] copy = values.copyToArray();
         Arrays.sort(copy);
 
         int idx = (int) Math.round(percentile * (n - 1));

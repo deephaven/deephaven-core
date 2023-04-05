@@ -339,7 +339,6 @@ public class BinSearch {
         return -(low + 1);  // key not found.
     }
 
-
     </#if>
     </#list>
 }

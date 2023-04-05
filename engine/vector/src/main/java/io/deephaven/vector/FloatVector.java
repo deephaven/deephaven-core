@@ -49,6 +49,9 @@ public interface FloatVector extends Vector<FloatVector>, Iterable<Float> {
     float[] toArray();
 
     @Override
+    float[] copyToArray();
+
+    @Override
     FloatVector getDirect();
 
     @Override
@@ -200,6 +203,11 @@ public interface FloatVector extends Vector<FloatVector>, Iterable<Float> {
                 }
             }
             return result;
+        }
+
+        @Override
+        public float[] copyToArray() {
+            return toArray();
         }
 
         @Override

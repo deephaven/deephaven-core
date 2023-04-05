@@ -42,9 +42,20 @@ public interface Vector<VECTOR_TYPE extends Vector<VECTOR_TYPE>> extends Seriali
     VECTOR_TYPE subVectorByPositions(long[] positions);
 
     /**
-     * @return An array representation of the elements of this Vector
+     * Get an array representation of the elements of this Vector. Callers <em>must not</em> mutate the result, as
+     * implementations may choose to return their backing array in some cases.
+     *
+     * @return An array representation of the elements of this Vector that must not be mutated
      */
     Object toArray();
+
+    /**
+     * Get an array representation of the elements of this Vector. Callers <em>may freely</em> mutate the result, as it
+     * is guaranteed to be freshly-allocated and belongs to the caller upon return.
+     *
+     * @return An array representation of the elements of this Vector that may be freely mutated
+     */
+    Object copyToArray();
 
     /**
      * @return A version of this Vector that is flattened out to only reference memory

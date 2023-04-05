@@ -49,6 +49,9 @@ public interface IntVector extends Vector<IntVector>, Iterable<Integer> {
     int[] toArray();
 
     @Override
+    int[] copyToArray();
+
+    @Override
     IntVector getDirect();
 
     @Override
@@ -200,6 +203,11 @@ public interface IntVector extends Vector<IntVector>, Iterable<Integer> {
                 }
             }
             return result;
+        }
+
+        @Override
+        public int[] copyToArray() {
+            return toArray();
         }
 
         @Override
