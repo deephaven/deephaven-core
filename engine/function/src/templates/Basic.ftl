@@ -1319,46 +1319,6 @@ public class Basic {
         return keys.size();
     }
 
-    <#else>
-
-    /**
-     * Counts the number of distinct elements in the array.
-     *
-     * @param values values.
-     * @param countNull true to count null values, and false to exclude null values.
-     * @return number of distinct values.
-     */
-    public static long countDistinct(final ${pt.vector} values, boolean countNull) {
-        if (values == null) {
-            return QueryConstants.NULL_LONG;
-        }
-
-        final long n = values.size();
-
-        if (n == 0) {
-            return 0;
-        }
-
-        if (n == 1) {
-            return !countNull && values.get(0) == QueryConstants.${pt.null} ? 0 : 1;
-        }
-
-        final Set<${pt.boxed}> keys = new HashSet<${pt.boxed}>();
-
-        try (final ${pt.vectorIterator} vi = values.iterator()) {
-            while ( vi.hasNext() ) {
-                final ${pt.primitive} v = vi.${pt.iteratorNext}();
-                keys.add(v);
-            }
-        }
-
-        if (!countNull) {
-            keys.remove(QueryConstants.${pt.null});
-        }
-
-        return keys.size();
-    }
-
     </#if>
 
     /**
