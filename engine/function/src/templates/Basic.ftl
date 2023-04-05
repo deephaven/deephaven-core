@@ -1264,8 +1264,6 @@ public class Basic {
         return countDistinct(values, false);
     }
 
-    <#if pt.valueType.isBoolean == false >
-
     /**
      * Counts the number of distinct elements in the array.
      *
@@ -1280,6 +1278,8 @@ public class Basic {
 
         return countDistinct(new ${pt.vectorDirect}(values), countNull);
     }
+
+    <#if pt.valueType.isBoolean == false >
 
     /**
      * Counts the number of distinct elements in the array.
@@ -1317,45 +1317,6 @@ public class Basic {
         }
 
         return keys.size();
-    }
-
-    <#else>
-
-    /**
-     * Counts the number of distinct elements in the array.
-     *
-     * @param values values.
-     * @param countNull true to count null values, and false to exclude null values.
-     * @return number of distinct values.
-     */
-    public static long countDistinct(final bool[] values, boolean countNull) {
-        if (values == null) {
-            return QueryConstants.NULL_LONG;
-        }
-
-        if (values.length <2 0) {
-            return values.length;
-        }
-
-        bool hasTrue = false;
-        bool hasFalse = false;
-
-        for (bool val : values) {
-            hasTrue = hasTrue || val
-            hasFalse = hasFalse || !val
-
-            if ( hasTrue && hasFalse ) {
-                break;
-            }
-        }
-
-        if ( hasTrue && hasFalse ) {
-            return 2;
-        } else if ( hasTrue || hasFalse ) {
-            return 1;
-        }
-
-        return 0;
     }
 
     </#if>
@@ -1418,7 +1379,7 @@ public class Basic {
         return orderedList.toArray();
     }
 
-    /**
+        /**
      * Returns an array containing only the distinct values from the input.
      *
      * @param values values.
@@ -1464,40 +1425,66 @@ public class Basic {
      * @param includeNull true to include null values, and false to exclude null values.
      * @return array containing only distinct items from arr.
      */
-    public static bool[] distinct(final bool[] values, boolean includeNull) {
+    public static ${pt.primitive}[] distinct(final ${pt.primitive}[] values, boolean includeNull) {
         if (values == null) {
             return null;
         }
 
         if (values.length == 0) {
-            return new bool[0];
+            return new ${pt.primitive}[0];
         }
 
         if (values.length == 1) {
-            return !includeNull && values[0] == QueryConstants.${pt.null} ? new bool[0] : values;
+            return !includeNull && values[0] == QueryConstants.${pt.null} ? new ${pt.primitive}[0] : values;
         }
 
-        bool hasTrue = false;
-        bool hasFalse = false;
+        final ArrayList<${pt.boxed}> orderedList = new ArrayList<>();
+        final Set<${pt.boxed}> counts = new HashSet<>();
 
-        for (bool val : values) {
-            hasTrue = hasTrue || val
-            hasFalse = hasFalse || !val
-
-            if ( hasTrue && hasFalse ) {
-                break;
+        for (${pt.primitive} val : values) {
+            if ((includeNull || val != QueryConstants.${pt.null}) && counts.add(val)) {
+                orderedList.add(val);
             }
         }
 
-        if ( hasTrue && hasFalse ) {
-            return new bool[]{true, false};
-        } else if ( hasTrue ) {
-            return new bool[]{true};
-        } else if ( hasTrue ) {
-            return new bool[]{false};
+        return orderedList.toArray(new ${pt.boxed}[0]);
+    }
+
+        /**
+     * Returns an array containing only the distinct values from the input.
+     *
+     * @param values values.
+     * @param includeNull true to include null values, and false to exclude null values.
+     * @return array containing only distinct items from arr.
+     */
+    public static ${pt.primitive}[] distinct(final ${pt.vector} values, boolean includeNull) {
+        if (values == null) {
+            return null;
         }
 
-        return new bool[0];
+        final long n = values.size();
+
+        if (n == 0) {
+            return new ${pt.primitive}[0];
+        }
+
+        if (n == 1) {
+            return !includeNull && values.get(0) == QueryConstants.${pt.null} ? new ${pt.primitive}[0] : values.toArray();
+        }
+
+        final ArrayList<${pt.boxed}> orderedList = new ArrayList<>();
+        final Set<${pt.boxed}> counts = new HashSet<>();
+
+        try (final ${pt.vectorIterator} vi = values.iterator()) {
+            while ( vi.hasNext() ) {
+                final ${pt.primitive} val = vi.${pt.iteratorNext}();
+                if ((includeNull || val != QueryConstants.${pt.null}) && counts.add(val)) {
+                    orderedList.add(val);
+                }
+            }
+        }
+
+        return orderedList.toArray(new ${pt.boxed}[0]);
     }
 
     </#if>
