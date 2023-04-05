@@ -46,9 +46,11 @@ public class FloatEMSOperator extends BasePrimitiveEMSOperator {
                 for (int ii = 0; ii < len; ii++) {
                     // read the value from the values chunk
                     final float input = floatValueChunk.get(ii);
+                    final boolean isNull = input == NULL_FLOAT;
+                    final boolean isNan = Float.isNaN(input);
 
-                    if (input == NULL_FLOAT) {
-                        handleBadData(this, true, false);
+                    if (isNull || isNan) {
+                        handleBadData(this, isNull, isNan);
                     } else {
                         if (curVal == NULL_DOUBLE) {
                             curVal = input;
@@ -68,9 +70,11 @@ public class FloatEMSOperator extends BasePrimitiveEMSOperator {
                     final long timestamp = tsChunk.get(ii);
                     //noinspection ConstantConditions
                     final boolean isNull = input == NULL_FLOAT;
+                    final boolean isNan = Float.isNaN(input);
                     final boolean isNullTime = timestamp == NULL_LONG;
-                    if (isNull) {
-                        handleBadData(this, true, false);
+                    // Handle bad data first
+                    if (isNull || isNan) {
+                        handleBadData(this, isNull, isNan);
                     } else if (isNullTime) {
                         // no change to curVal and lastStamp
                     } else if (curVal == NULL_DOUBLE) {

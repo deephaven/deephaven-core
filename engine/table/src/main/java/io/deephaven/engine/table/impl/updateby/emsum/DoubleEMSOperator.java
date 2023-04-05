@@ -3,6 +3,11 @@
  * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharEMSOperator and regenerate
  * ---------------------------------------------------------------------------------------------------------------------
  */
+/*
+ * ---------------------------------------------------------------------------------------------------------------------
+ * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit FloatEMSOperator and regenerate
+ * ---------------------------------------------------------------------------------------------------------------------
+ */
 package io.deephaven.engine.table.impl.updateby.emsum;
 
 import io.deephaven.api.updateby.OperationControl;
@@ -46,9 +51,11 @@ public class DoubleEMSOperator extends BasePrimitiveEMSOperator {
                 for (int ii = 0; ii < len; ii++) {
                     // read the value from the values chunk
                     final double input = doubleValueChunk.get(ii);
+                    final boolean isNull = input == NULL_DOUBLE;
+                    final boolean isNan = Double.isNaN(input);
 
-                    if (input == NULL_DOUBLE) {
-                        handleBadData(this, true, false);
+                    if (isNull || isNan) {
+                        handleBadData(this, isNull, isNan);
                     } else {
                         if (curVal == NULL_DOUBLE) {
                             curVal = input;
@@ -68,9 +75,11 @@ public class DoubleEMSOperator extends BasePrimitiveEMSOperator {
                     final long timestamp = tsChunk.get(ii);
                     //noinspection ConstantConditions
                     final boolean isNull = input == NULL_DOUBLE;
+                    final boolean isNan = Double.isNaN(input);
                     final boolean isNullTime = timestamp == NULL_LONG;
-                    if (isNull) {
-                        handleBadData(this, true, false);
+                    // Handle bad data first
+                    if (isNull || isNan) {
+                        handleBadData(this, isNull, isNan);
                     } else if (isNullTime) {
                         // no change to curVal and lastStamp
                     } else if (curVal == NULL_DOUBLE) {
