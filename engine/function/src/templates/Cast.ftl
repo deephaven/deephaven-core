@@ -5,6 +5,7 @@
 package io.deephaven.function;
 
 import io.deephaven.vector.*;
+import io.deephaven.engine.primitive.iterator.*;
 
 import static io.deephaven.util.QueryConstants.*;
 
@@ -272,9 +273,12 @@ public class Cast {
         int[] result = new int[s];
         int i = 0;
 
-        for (final ${pt.primitive} v : values) {
-            result[i] = castInt(v, checkFidelity);
-            i++;
+        try(final ${pt.vectorIterator} vi = values.iterator()) {
+            while( vi.hasNext() ) {
+                final ${pt.primitive} v = vi.next();
+                result[i] = castInt(v, checkFidelity);
+                i++;
+            }
         }
 
         return result;
@@ -337,9 +341,12 @@ public class Cast {
         long[] result = new long[s];
         int i = 0;
 
-        for (final ${pt.primitive} v : values) {
-            result[i] = castLong(v, checkFidelity);
-            i++;
+        try(final ${pt.vectorIterator} vi = values.iterator()) {
+            while( vi.hasNext() ) {
+                final ${pt.primitive} v = vi.next();
+                result[i] = castLong(v, checkFidelity);
+                i++;
+            }
         }
 
         return result;
@@ -404,9 +411,12 @@ public class Cast {
         double[] result = new double[s];
         int i = 0;
 
-        for (final ${pt.primitive} v : values) {
-            result[i] = castDouble(v, checkFidelity);
-            i++;
+        try(final ${pt.vectorIterator} vi = values.iterator()) {
+            while( vi.hasNext() ) {
+                final ${pt.primitive} v = vi.next();
+                result[i] = castDouble(v, checkFidelity);
+                i++;
+            }
         }
 
         return result;

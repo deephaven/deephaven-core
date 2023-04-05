@@ -106,14 +106,17 @@ public class Numeric {
         long count = 0;
         long i = 0;
 
-        for (final T c : values) {
-            if (!isNull(c) && ( val == null || c.compareTo(val) > 0)) {
-                val = c;
-                index = i;
-                count++;
-            }
+        try(final CloseableIterator<T> vi = values.iterator()) {
+            while( vi.hasNext() ) {
+                final T c = vi.next();
+                if (!isNull(c) && ( val == null || c.compareTo(val) > 0)) {
+                    val = c;
+                    index = i;
+                    count++;
+                }
 
-            i++;
+                i++;
+            }
         }
 
         return count == 0 ? NULL_LONG : index;
@@ -150,14 +153,17 @@ public class Numeric {
         long count = 0;
         long i = 0;
 
-        for (final T c : values) {
-            if (!isNull(c) && ( val == null || c.compareTo(val) < 0)) {
-                val = c;
-                index = i;
-                count++;
-            }
+        try(final CloseableIterator<T> vi = values.iterator()) {
+            while( vi.hasNext() ) {
+                final T c = vi.next();
+                if (!isNull(c) && ( val == null || c.compareTo(val) < 0)) {
+                    val = c;
+                    index = i;
+                    count++;
+                }
 
-            i++;
+                i++;
+            }
         }
 
         return count == 0 ? NULL_LONG : index;
@@ -207,9 +213,12 @@ public class Numeric {
 
         long count = 0;
 
-        for (final ${pt.primitive} c : values) {
-            if (!isNull(c) && c > 0) {
-                count++;
+        try(final ${pt.vectorIterator} vi = values.iterator()) {
+            while( vi.hasNext() ) {
+                final ${pt.primitive} c = vi.next();
+                if (!isNull(c) && c > 0) {
+                    count++;
+                }
             }
         }
 
@@ -254,9 +263,12 @@ public class Numeric {
         long count = 0;
         final long n = values.size();
 
-        for (final ${pt.primitive} c : values) {
-            if (!isNull(c) && c < 0) {
-                count++;
+        try(final ${pt.vectorIterator} vi = values.iterator()) {
+            while( vi.hasNext() ) {
+                final ${pt.primitive} c = vi.next();
+                if (!isNull(c) && c < 0) {
+                    count++;
+                }
             }
         }
 
@@ -300,9 +312,12 @@ public class Numeric {
 
         long count = 0;
 
-        for (final ${pt.primitive} c : values) {
-            if (!isNull(c) && c == 0) {
-                count++;
+        try(final ${pt.vectorIterator} vi = values.iterator()) {
+            while( vi.hasNext() ) {
+                final ${pt.primitive} c = vi.next();
+                if (!isNull(c) && c == 0) {
+                    count++;
+                }
             }
         }
 
@@ -347,10 +362,13 @@ public class Numeric {
         double sum = 0;
         double count = 0;
 
-        for (final ${pt.primitive} c : values) {
-            if (!isNull(c)) {
-                sum += c;
-                count++;
+        try(final ${pt.vectorIterator} vi = values.iterator()) {
+            while( vi.hasNext() ) {
+                final ${pt.primitive} c = vi.next();
+                if (!isNull(c)) {
+                    sum += c;
+                    count++;
+                }
             }
         }
 
@@ -395,10 +413,13 @@ public class Numeric {
         double sum = 0;
         double count = 0;
 
-        for (final ${pt.primitive} c : values) {
-            if (!isNull(c)) {
-                sum += Math.abs(c);
-                count++;
+        try(final ${pt.vectorIterator} vi = values.iterator()) {
+            while( vi.hasNext() ) {
+                final ${pt.primitive} c = vi.next();
+                if (!isNull(c)) {
+                    sum += Math.abs(c);
+                    count++;
+                }
             }
         }
 
@@ -444,11 +465,14 @@ public class Numeric {
         double sum2 = 0;
         double count = 0;
 
-        for (final ${pt.primitive} c : values) {
-            if (!isNull(c)) {
-                sum += (double)c;
-                sum2 += (double)c * (double)c;
-                count++;
+        try(final ${pt.vectorIterator} vi = values.iterator()) {
+            while( vi.hasNext() ) {
+                final ${pt.primitive} c = vi.next();
+                if (!isNull(c)) {
+                    sum += (double)c;
+                    sum2 += (double)c * (double)c;
+                    count++;
+                }
             }
         }
 
@@ -1001,14 +1025,17 @@ public class Numeric {
         long count = 0;
         long i = 0;
 
-        for (final ${pt.primitive} c : values) {
-            if (!isNull(c) && (c > val || (c == val && count == 0))) {
-                val = c;
-                index = i;
-                count++;
-            }
+        try(final ${pt.vectorIterator} vi = values.iterator()) {
+            while( vi.hasNext() ) {
+                final ${pt.primitive} c = vi.next();
+                if (!isNull(c) && (c > val || (c == val && count == 0))) {
+                    val = c;
+                    index = i;
+                    count++;
+                }
 
-            i++;
+                i++;
+            }
         }
 
         return count == 0 ? NULL_LONG : index;
@@ -1054,14 +1081,17 @@ public class Numeric {
         long count = 0;
         long i = 0;
 
-        for (final ${pt.primitive} c : values) {
-            if (!isNull(c) && (c < val || (c == val && count == 0) )) {
-                val = c;
-                index = i;
-                count++;
-            }
+        try(final ${pt.vectorIterator} vi = values.iterator()) {
+            while( vi.hasNext() ) {
+                final ${pt.primitive} c = vi.next();
+                if (!isNull(c) && (c < val || (c == val && count == 0) )) {
+                    val = c;
+                    index = i;
+                    count++;
+                }
 
-            i++;
+                i++;
+            }
         }
 
         return count == 0 ? NULL_LONG : index;
@@ -1349,11 +1379,15 @@ public class Numeric {
 
         double sum = 0;
 
-        for (final ${pt.primitive} c : values) {
-            if (!isNull(c)) {
-                sum += c;
+        try(final ${pt.vectorIterator} vi = values.iterator()) {
+            while( vi.hasNext() ) {
+                final ${pt.primitive} c = vi.next();
+                if (!isNull(c)) {
+                    sum += c;
+                }
             }
         }
+
         return (${pt.primitive}) (sum);
     }
 
@@ -1385,10 +1419,13 @@ public class Numeric {
         ${pt.primitive} prod = 1;
         int count = 0;
 
-        for (final ${pt.primitive} c : values) {
-            if (!isNull(c)) {
-                count++;
-                prod *= c;
+        try(final ${pt.vectorIterator} vi = values.iterator()) {
+            while( vi.hasNext() ) {
+                final ${pt.primitive} c = vi.next();
+                if (!isNull(c)) {
+                    count++;
+                    prod *= c;
+                }
             }
         }
 
@@ -2435,9 +2472,12 @@ public class Numeric {
         ${pt.primitive}[] result = new ${pt.primitive}[n];
         int i = 0;
 
-        for (final ${pt.primitive} v : values) {
-            result[i] = replaceIfNaN(v, replacement);
-            i++;
+        try(final ${pt.vectorIterator} vi = values.iterator()) {
+            while( vi.hasNext() ) {
+                final ${pt.primitive} v = vi.next();
+                result[i] = replaceIfNaN(v, replacement);
+                i++;
+            }
         }
 
         return result;
@@ -2481,9 +2521,12 @@ public class Numeric {
         ${pt.primitive}[] result = new ${pt.primitive}[n];
         int i = 0;
 
-        for (final ${pt.primitive} v : values) {
-            result[i] = replaceIfNullNaN(v, replacement);
-            i++;
+        try(final ${pt.vectorIterator} vi = values.iterator()) {
+            while( vi.hasNext() ) {
+                final ${pt.primitive} v = vi.next();
+                result[i] = replaceIfNullNaN(v, replacement);
+                i++;
+            }
         }
 
         return result;
@@ -2523,9 +2566,12 @@ public class Numeric {
         ${pt.primitive}[] result = new ${pt.primitive}[n];
         int i = 0;
 
-        for (final ${pt.primitive} v : values) {
-            result[i] = replaceIfNonFinite(v, replacement);
-            i++;
+        try(final ${pt.vectorIterator} vi = values.iterator()) {
+            while( vi.hasNext() ) {
+                final ${pt.primitive} v = vi.next();
+                result[i] = replaceIfNonFinite(v, replacement);
+                i++;
+            }
         }
 
         return result;
