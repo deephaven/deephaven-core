@@ -49,6 +49,9 @@ public interface ByteVector extends Vector<ByteVector>, Iterable<Byte> {
     byte[] toArray();
 
     @Override
+    byte[] copyToArray();
+
+    @Override
     ByteVector getDirect();
 
     @Override
@@ -200,6 +203,11 @@ public interface ByteVector extends Vector<ByteVector>, Iterable<Byte> {
                 }
             }
             return result;
+        }
+
+        @Override
+        public byte[] copyToArray() {
+            return toArray();
         }
 
         @Override

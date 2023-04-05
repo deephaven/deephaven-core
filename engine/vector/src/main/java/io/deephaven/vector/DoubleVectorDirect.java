@@ -58,6 +58,11 @@ public final class DoubleVectorDirect implements DoubleVector {
     }
 
     @Override
+    public double[] copyToArray() {
+        return Arrays.copyOf(data, data.length);
+    }
+
+    @Override
     public CloseablePrimitiveIteratorOfDouble iterator(final long fromIndexInclusive, final long toIndexExclusive) {
         if (fromIndexInclusive == 0 && toIndexExclusive == data.length) {
             return CloseablePrimitiveIteratorOfDouble.of(data);

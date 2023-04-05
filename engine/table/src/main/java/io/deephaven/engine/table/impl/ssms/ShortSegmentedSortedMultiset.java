@@ -2318,6 +2318,11 @@ public final class ShortSegmentedSortedMultiset implements SegmentedSortedMultiS
     }
 
     @Override
+    public short[] copyToArray() {
+        return toArray();
+    }
+
+    @Override
     public long size() {
         return size;
     }

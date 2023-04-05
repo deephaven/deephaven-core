@@ -2329,6 +2329,11 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
     }
 
     @Override
+    public Object[] copyToArray() {
+        return toArray();
+    }
+
+    @Override
     public long size() {
         return size;
     }
