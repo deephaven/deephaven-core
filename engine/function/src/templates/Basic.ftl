@@ -655,7 +655,9 @@ public class Basic {
             return null;
         }
 
-        return reverseObj(new ObjectVectorDirect<>(values));
+        final T[] result = Arrays.copyOf(values, values.length);
+        ArrayUtils.reverse(result);
+        return result;
     }
 
     /**
