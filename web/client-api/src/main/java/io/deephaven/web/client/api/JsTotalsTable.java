@@ -162,7 +162,4 @@ public class JsTotalsTable {
     public JsArray<CustomColumn> getCustomColumns() {
         return wrappedTable.getCustomColumns();
     }
-
-
-
 }

@@ -8,15 +8,40 @@ import elemental2.core.Global;
 import elemental2.core.JsArray;
 import elemental2.core.JsObject;
 import elemental2.core.JsString;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.AggSpec;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.AggregateRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.Aggregation;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggregation.AggregationColumns;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggregation.AggregationCount;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggspec.AggSpecAbsSum;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggspec.AggSpecAvg;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggspec.AggSpecCountDistinct;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggspec.AggSpecDistinct;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggspec.AggSpecFirst;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggspec.AggSpecLast;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggspec.AggSpecMax;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggspec.AggSpecMin;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggspec.AggSpecStd;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggspec.AggSpecSum;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggspec.AggSpecUnique;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.aggspec.AggSpecVar;
 import io.deephaven.web.client.api.tree.enums.JsAggregationOperation;
+import io.deephaven.web.client.fu.JsLog;
 import jsinterop.annotations.JsConstructor;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsType;
 import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collector;
 
 @JsType(name = "TotalsTableConfig", namespace = "dh")
 public class JsTotalsTableConfig {
@@ -174,5 +199,216 @@ public class JsTotalsTableConfig {
         String[] strings = new String[groupBy.length];
         groupBy.forEach((str, index, array) -> strings[index] = Js.cast(str));
         return strings;
+    }
+
+
+    @JsIgnore
+    public AggregateRequest buildRequest() {
+        AggregateRequest request = new AggregateRequest();
+
+        request.setGroupByColumnsList(Js.<JsArray<String>>uncheckedCast(groupBy));
+        JsArray<Aggregation> aggregations = new JsArray<>();
+        request.setAggregationsList(aggregations);
+        Map<String, LinkedHashSet<String>> aggs = new HashMap<>();
+        List<String> colsNeedingCompoundNames = new ArrayList<>();
+        Set<String> seenColNames = new HashSet<>();
+        groupBy.forEach((col, p1, p2) -> seenColNames.add(Js.cast(col)));
+        this.operationMap.forEach(col -> {
+            this.operationMap.get(col).forEach((agg, index, arr) -> {
+                String colName = Js.cast(col);
+                aggs.computeIfAbsent(Js.cast(agg), ignore -> new LinkedHashSet<>()).add(colName);
+                if (seenColNames.contains(colName)) {
+                    colsNeedingCompoundNames.add(colName);
+                } else {
+                    seenColNames.add(colName);
+                }
+                return null;
+            });
+        });
+
+        aggs.forEach((aggregationType, cols) -> {
+            Aggregation agg = new Aggregation();
+
+            JsArray<String> aggColumns = dedup(cols, colsNeedingCompoundNames, aggregationType);
+            AggregationColumns columns = null;
+
+            switch (aggregationType) {
+                case JsAggregationOperation.COUNT: {
+                    AggregationCount count = new AggregationCount();
+                    count.setColumnName("Count");// TODO likely need to dedup
+                    agg.setCount(count);
+                    break;
+                }
+                case JsAggregationOperation.COUNT_DISTINCT: {
+                    AggSpec spec = new AggSpec();
+                    spec.setCountDistinct(new AggSpecCountDistinct());
+                    columns = new AggregationColumns();
+                    columns.setSpec(spec);
+                    agg.setColumns(columns);
+                    columns.setMatchPairsList(aggColumns);
+                    break;
+                }
+                case JsAggregationOperation.DISTINCT: {
+                    AggSpec spec = new AggSpec();
+                    spec.setDistinct(new AggSpecDistinct());
+                    columns = new AggregationColumns();
+                    columns.setSpec(spec);
+                    agg.setColumns(columns);
+                    columns.setMatchPairsList(aggColumns);
+                    break;
+                }
+                case JsAggregationOperation.MIN: {
+                    AggSpec spec = new AggSpec();
+                    spec.setMin(new AggSpecMin());
+                    columns = new AggregationColumns();
+                    columns.setSpec(spec);
+                    agg.setColumns(columns);
+                    columns.setMatchPairsList(aggColumns);
+                    break;
+                }
+                case JsAggregationOperation.MAX: {
+                    AggSpec spec = new AggSpec();
+                    spec.setMax(new AggSpecMax());
+                    columns = new AggregationColumns();
+                    columns.setSpec(spec);
+                    agg.setColumns(columns);
+                    columns.setMatchPairsList(aggColumns);
+                    break;
+                }
+                case JsAggregationOperation.SUM: {
+                    AggSpec spec = new AggSpec();
+                    spec.setSum(new AggSpecSum());
+                    columns = new AggregationColumns();
+                    columns.setSpec(spec);
+                    agg.setColumns(columns);
+                    columns.setMatchPairsList(aggColumns);
+                    break;
+                }
+                case JsAggregationOperation.ABS_SUM: {
+                    AggSpec spec = new AggSpec();
+                    spec.setAbsSum(new AggSpecAbsSum());
+                    columns = new AggregationColumns();
+                    columns.setSpec(spec);
+                    agg.setColumns(columns);
+                    columns.setMatchPairsList(aggColumns);
+                    break;
+                }
+                case JsAggregationOperation.VAR: {
+                    AggSpec spec = new AggSpec();
+                    spec.setVar(new AggSpecVar());
+                    columns = new AggregationColumns();
+                    columns.setSpec(spec);
+                    agg.setColumns(columns);
+                    columns.setMatchPairsList(aggColumns);
+                    break;
+                }
+                case JsAggregationOperation.AVG: {
+                    AggSpec spec = new AggSpec();
+                    spec.setAvg(new AggSpecAvg());
+                    columns = new AggregationColumns();
+                    columns.setSpec(spec);
+                    agg.setColumns(columns);
+                    columns.setMatchPairsList(aggColumns);
+                    break;
+                }
+                case JsAggregationOperation.STD: {
+                    AggSpec spec = new AggSpec();
+                    spec.setStd(new AggSpecStd());
+                    columns = new AggregationColumns();
+                    columns.setSpec(spec);
+                    agg.setColumns(columns);
+                    columns.setMatchPairsList(aggColumns);
+                    break;
+                }
+                case JsAggregationOperation.FIRST: {
+                    AggSpec spec = new AggSpec();
+                    spec.setFirst(new AggSpecFirst());
+                    columns = new AggregationColumns();
+                    columns.setSpec(spec);
+                    agg.setColumns(columns);
+                    columns.setMatchPairsList(aggColumns);
+                    break;
+                }
+                case JsAggregationOperation.LAST: {
+                    AggSpec spec = new AggSpec();
+                    spec.setLast(new AggSpecLast());
+                    columns = new AggregationColumns();
+                    columns.setSpec(spec);
+                    agg.setColumns(columns);
+                    columns.setMatchPairsList(aggColumns);
+                    break;
+                }
+                case JsAggregationOperation.UNIQUE: {
+                    AggSpec spec = new AggSpec();
+                    spec.setUnique(new AggSpecUnique());
+                    columns = new AggregationColumns();
+                    columns.setSpec(spec);
+                    agg.setColumns(columns);
+                    columns.setMatchPairsList(aggColumns);
+                    break;
+                }
+                // case JsAggregationOperation.SORTED_FIRST: {
+                // // TODO #3302 support this
+                // }
+                // case JsAggregationOperation.SORTED_LAST: {
+                // // TODO #3302 support this
+                // }
+                // case JsAggregationOperation.WSUM: {
+                // // TODO #3302 support this
+                // }
+                default:
+                    JsLog.warn("Aggregation " + aggregationType + " not supported, ignoring");
+            }
+
+            if (columns == null || columns.getMatchPairsList().length > 0) {
+                aggregations.push(agg);
+            }
+        });
+
+        if (aggregations.length != 0) {
+            request.setAggregationsList(aggregations);
+        }
+
+        return request;
+    }
+
+    private JsArray<String> dedup(LinkedHashSet<String> cols, List<String> colsNeedingCompoundNames,
+            String aggregationType) {
+        return cols.stream().map(col -> {
+            if (colsNeedingCompoundNames.contains(col)) {
+                return col + "__" + aggregationType + " = " + col;
+            }
+            return col;
+        }).collect(Collector.of(
+                JsArray<String>::new,
+                JsArray::push,
+                (arr1, arr2) -> arr1.concat(arr2.asArray(new String[0]))));
+    }
+
+    private String unusedColumnName(JsArray<Column> existingColumns, String... suggestedNames) {
+        // Try to use the default column names
+        for (String suggestedName : suggestedNames) {
+            if (!existingColumns.some((p0, p1, p2) -> p0.getName().equals(suggestedName))) {
+                return suggestedName;
+            }
+        }
+
+        // Next add a suffix and use that if possible
+        for (String suggestedName : suggestedNames) {
+            if (!existingColumns.some((p0, p1, p2) -> p0.getName().equals(suggestedName + "_"))) {
+                return suggestedName + "_";
+            }
+        }
+
+        // Give up and add a timestamp suffix
+        for (String suggestedName : suggestedNames) {
+            if (!existingColumns
+                    .some((p0, p1, p2) -> p0.getName().equals(suggestedName + "_" + System.currentTimeMillis()))) {
+                return suggestedName + "_" + System.currentTimeMillis();
+            }
+        }
+
+        // Really give up so Java is happy
+        throw new IllegalStateException("Failed to generate a name");
     }
 }

@@ -15,6 +15,7 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.hierarchicalt
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb.FetchObjectRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.partitionedtable_pb.PartitionByRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.partitionedtable_pb.PartitionByResponse;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.AggregateRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.AsOfJoinTablesRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.CrossJoinTablesRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExactJoinTablesRequest;
@@ -612,18 +613,15 @@ public class JsTable extends HasLifecycle implements HasTableBinding {
         return copy();
     }
 
-    // TODO: #37: Need SmartKey support for this functionality
-    // @JsMethod
-    public Promise<JsTotalsTable> getTotalsTable(
-            /* @JsOptional @JsNullable */ @TsTypeRef(JsTotalsTableConfig.class) Object config) {
+    @JsMethod
+    public Promise<JsTotalsTable> getTotalsTable(@JsOptional @JsNullable @TsTypeRef(JsTotalsTableConfig.class) Object config) {
         // fetch the handle and wrap it in a new jstable. listen for changes
         // on the parent table, and re-fetch each time.
 
         return fetchTotals(config, this::lastVisibleState);
     }
 
-    // TODO: #37: Need SmartKey support for this functionality
-    // @JsMethod
+    @JsMethod
     public JsTotalsTableConfig getTotalsTableConfig() {
         // we want to communicate to the JS dev that there is no default config, so we allow
         // returning null here, rather than a default config. They can then easily build a
@@ -655,14 +653,12 @@ public class JsTable extends HasLifecycle implements HasTableBinding {
             JsLog.debug("Sending totals table fetch ", directive, " for ", target,
                     "(", LazyString.of(target::getHandle), "), into ", LazyString.of(newState::getHandle), "(",
                     newState, ")");
-            // workerConnection.getServer().fetchTotalsTable(
-            // target.getHandle(),
-            // newState.getHandle(),
-            // directive.serialize(),
-            // directive.groupByArray(),
-            // callback
-            // );
-            throw new UnsupportedOperationException("totalsTables");
+
+            AggregateRequest requestMessage = directive.buildRequest();
+            requestMessage.setSourceId(target.getHandle().makeTableReference());
+            requestMessage.setResultId(newState.getHandle().makeTicket());
+            workerConnection.tableServiceClient().aggregate(requestMessage, workerConnection.metadata(),
+                    callback::apply);
         };
         String summary = "totals table " + directive + ", " + directive.groupBy.join(",");
         final ClientTableState totals = workerConnection.newState(totalsFactory, summary);
@@ -748,10 +744,8 @@ public class JsTable extends HasLifecycle implements HasTableBinding {
         }
     }
 
-    // TODO: #37: Need SmartKey support for this functionality
-    // @JsMethod
-    public Promise<JsTotalsTable> getGrandTotalsTable(
-            /* @JsNullable @JsOptional */ @TsTypeRef(JsTotalsTableConfig.class) Object config) {
+    @JsMethod
+    public Promise<JsTotalsTable> getGrandTotalsTable(@JsOptional @JsNullable @TsTypeRef(JsTotalsTableConfig.class) Object config) {
         // As in getTotalsTable, but this time we want to skip any filters - this could mean use the
         // most-derived table which has no filter, or the least-derived table which has all custom columns.
         // Currently, these two mean the same thing.
