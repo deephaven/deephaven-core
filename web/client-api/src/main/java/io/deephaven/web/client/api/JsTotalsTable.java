@@ -170,4 +170,53 @@ public class JsTotalsTable implements JoinableTable {
     public JsArray<CustomColumn> getCustomColumns() {
         return wrappedTable.getCustomColumns();
     }
+
+    @Override
+    @JsMethod
+    public Promise<JsTable> freeze() {
+        return wrappedTable.freeze();
+    }
+
+    @Override
+    @JsMethod
+    public Promise<JsTable> snapshot(JsTable baseTable, @JsOptional Boolean doInitialSnapshot,
+            @JsOptional String[] stampColumns) {
+        return wrappedTable.snapshot(baseTable, doInitialSnapshot, stampColumns);
+    }
+
+    @Override
+    @Deprecated
+    @JsMethod
+    public Promise<JsTable> join(Object joinType, JoinableTable rightTable, JsArray<String> columnsToMatch,
+            @JsOptional JsArray<String> columnsToAdd, @JsOptional Object asOfMatchRule) {
+        return wrappedTable.join(joinType, rightTable, columnsToMatch, columnsToAdd, asOfMatchRule);
+    }
+
+    @Override
+    @JsMethod
+    public Promise<JsTable> asOfJoin(JoinableTable rightTable, JsArray<String> columnsToMatch,
+            @JsOptional JsArray<String> columnsToAdd, @JsOptional String asOfMatchRule) {
+        return wrappedTable.asOfJoin(rightTable, columnsToMatch, columnsToAdd, asOfMatchRule);
+    }
+
+    @Override
+    @JsMethod
+    public Promise<JsTable> crossJoin(JoinableTable rightTable, JsArray<String> columnsToMatch,
+            @JsOptional JsArray<String> columnsToAdd, @JsOptional Double reserve_bits) {
+        return wrappedTable.crossJoin(rightTable, columnsToMatch, columnsToAdd, reserve_bits);
+    }
+
+    @Override
+    @JsMethod
+    public Promise<JsTable> exactJoin(JoinableTable rightTable, JsArray<String> columnsToMatch,
+            @JsOptional JsArray<String> columnsToAdd) {
+        return wrappedTable.exactJoin(rightTable, columnsToMatch, columnsToAdd);
+    }
+
+    @Override
+    @JsMethod
+    public Promise<JsTable> naturalJoin(JoinableTable rightTable, JsArray<String> columnsToMatch,
+            @JsOptional JsArray<String> columnsToAdd) {
+        return wrappedTable.naturalJoin(rightTable, columnsToMatch, columnsToAdd);
+    }
 }

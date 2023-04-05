@@ -843,6 +843,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                 .then(state -> Promise.resolve(new JsTable(workerConnection, state)));
     }
 
+    @Override
     @JsMethod
     public Promise<JsTable> snapshot(JsTable baseTable, @JsOptional Boolean doInitialSnapshot,
             @JsOptional String[] stampColumns) {
@@ -853,12 +854,12 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
         } else {
             realDoInitialSnapshot = true;
         }
-        final String[] realStampColums;
+        final String[] realStampColumns;
         if (stampColumns == null) {
-            realStampColums = new String[0]; // server doesn't like null
+            realStampColumns = new String[0]; // server doesn't like null
         } else {
             // make sure we pass an actual string array
-            realStampColums = Arrays.stream(stampColumns).toArray(String[]::new);
+            realStampColumns = Arrays.stream(stampColumns).toArray(String[]::new);
         }
         final String fetchSummary =
                 "snapshot(" + baseTable + ", " + doInitialSnapshot + ", " + Arrays.toString(stampColumns) + ")";
@@ -868,13 +869,14 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
             request.setTriggerId(state().getHandle().makeTableReference());
             request.setResultId(state.getHandle().makeTicket());
             request.setInitial(realDoInitialSnapshot);
-            request.setStampColumnsList(realStampColums);
+            request.setStampColumnsList(realStampColumns);
 
             workerConnection.tableServiceClient().snapshotWhen(request, metadata, c::apply);
         }, fetchSummary).refetch(this, workerConnection.metadata())
                 .then(state -> Promise.resolve(new JsTable(workerConnection, state)));
     }
 
+    @Override
     @JsMethod
     @Deprecated
     public Promise<JsTable> join(Object joinType, JoinableTable rightTable, JsArray<String> columnsToMatch,
@@ -892,6 +894,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
         }
     }
 
+    @Override
     @JsMethod
     public Promise<JsTable> asOfJoin(JoinableTable rightTable, JsArray<String> columnsToMatch,
             @JsOptional @JsNullable JsArray<String> columnsToAdd, @JsOptional @JsNullable String asOfMatchRule) {
@@ -916,6 +919,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                 .then(state -> Promise.resolve(new JsTable(workerConnection, state)));
     }
 
+    @Override
     @JsMethod
     public Promise<JsTable> crossJoin(JoinableTable rightTable, JsArray<String> columnsToMatch,
             @JsOptional JsArray<String> columnsToAdd, @JsOptional Double reserve_bits) {
@@ -939,6 +943,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                 .then(state -> Promise.resolve(new JsTable(workerConnection, state)));
     }
 
+    @Override
     @JsMethod
     public Promise<JsTable> exactJoin(JoinableTable rightTable, JsArray<String> columnsToMatch,
             @JsOptional JsArray<String> columnsToAdd) {
@@ -959,6 +964,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                 .then(state -> Promise.resolve(new JsTable(workerConnection, state)));
     }
 
+    @Override
     @JsMethod
     public Promise<JsTable> naturalJoin(JoinableTable rightTable, JsArray<String> columnsToMatch,
             @JsOptional JsArray<String> columnsToAdd) {
