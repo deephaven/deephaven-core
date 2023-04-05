@@ -119,6 +119,11 @@ class UpdateByBuilder {
         }
 
         @Override
+        public UpdateByColumn.UpdateBySpec visit(EmsSpec spec) {
+            return null;
+        }
+
+        @Override
         public UpdateByColumn.UpdateBySpec visit(FillBySpec f) {
             return UpdateByColumn.UpdateBySpec.newBuilder()
                     .setFill(UpdateByFill.getDefaultInstance())
