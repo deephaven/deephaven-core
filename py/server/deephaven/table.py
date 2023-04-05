@@ -38,7 +38,6 @@ _JColumnName = jpy.get_type("io.deephaven.api.ColumnName")
 _JSortColumn = jpy.get_type("io.deephaven.api.SortColumn")
 _JFilter = jpy.get_type("io.deephaven.api.filter.Filter")
 _JFilterOr = jpy.get_type("io.deephaven.api.filter.FilterOr")
-_JAsOfMatchRule = jpy.get_type("io.deephaven.engine.table.Table$AsOfMatchRule")
 _JPair = jpy.get_type("io.deephaven.api.agg.Pair")
 _JMatchPair = jpy.get_type("io.deephaven.engine.table.MatchPair")
 _JLayoutHintBuilder = jpy.get_type("io.deephaven.engine.util.LayoutHintBuilder")
@@ -472,15 +471,6 @@ class SortDirection(Enum):
     """"""
     ASCENDING = auto()
     """"""
-
-
-# class AsOfMatchRule(Enum):
-#     """An enum defining matching rules on the final column to match by in as-of join and reverse as-of join
-#     operation. """
-#     LESS_THAN_EQUAL = _JAsOfMatchRule.LESS_THAN_EQUAL
-#     LESS_THAN = _JAsOfMatchRule.LESS_THAN
-#     GREATER_THAN_EQUAL = _JAsOfMatchRule.GREATER_THAN_EQUAL
-#     GREATER_THAN = _JAsOfMatchRule.GREATER_THAN
 
 
 def _sort_column(col, dir_):
@@ -1270,8 +1260,10 @@ class Table(JObjectWrapper):
 
         Args:
             table (Table): the right-table of the join
-            on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or a match condition of
-                two columns, e.g. 'col_a = col_b'. The first 'N-1' matches are exact matches.  The final match is an inexact match.  The inexact match can use either '<' or '<='.  If a common name is used for the inexact match, '<=' is used for the comparison.
+            on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or a match condition of two
+                columns, e.g. 'col_a = col_b'. The first 'N-1' matches are exact matches.  The final match is an inexact
+                match.  The inexact match can use either '<' or '<='.  If a common name is used for the inexact match,
+                '<=' is used for the comparison.
             joins (Union[str, Sequence[str]], optional): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
         Returns:
@@ -1298,8 +1290,10 @@ class Table(JObjectWrapper):
 
         Args:
             table (Table): the right-table of the join
-            on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or a match condition of
-                two columns, e.g. 'col_a = col_b'. The first 'N-1' matches are exact matches.  The final match is an inexact match.  The inexact match can use either '>' or '>='.  If a common name is used for the inexact match, '>=' is used for the comparison.
+            on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or a match condition of two
+                columns, e.g. 'col_a = col_b'. The first 'N-1' matches are exact matches.  The final match is an inexact
+                match.  The inexact match can use either '>' or '>='.  If a common name is used for the inexact match,
+                '>=' is used for the comparison.
             joins (Union[str, Sequence[str]], optional): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
 
@@ -2886,8 +2880,10 @@ class PartitionedTableProxy(JObjectWrapper):
 
         Args:
             table (Union[Table, PartitionedTableProxy]): the right table or PartitionedTableProxy of the join
-            on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or a match condition of
-                two columns, e.g. 'col_a < col_b'. The other valid comparison operator is '<='.
+            on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or a match condition of two
+                columns, e.g. 'col_a = col_b'. The first 'N-1' matches are exact matches.  The final match is an inexact
+                match.  The inexact match can use either '<' or '<='.  If a common name is used for the inexact match,
+                '<=' is used for the comparison.
             joins (Union[str, Sequence[str]], optional): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
         Returns:
@@ -2918,8 +2914,10 @@ class PartitionedTableProxy(JObjectWrapper):
 
         Args:
             table (Union[Table, PartitionedTableProxy]): the right table or PartitionedTableProxy of the join
-            on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or a match condition of
-                two columns, e.g. 'col_a > col_b'. The other valid comparison operator is '>='.
+            on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or a match condition of two
+                columns, e.g. 'col_a = col_b'. The first 'N-1' matches are exact matches.  The final match is an inexact
+                match.  The inexact match can use either '>' or '>='.  If a common name is used for the inexact match,
+                '>=' is used for the comparison.
             joins (Union[str, Sequence[str]], optional): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
         Returns:

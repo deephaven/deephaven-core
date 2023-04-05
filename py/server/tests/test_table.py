@@ -327,6 +327,7 @@ class TableTestCase(BaseTestCase):
         right_table = self.test_table.where(["a % 2 > 0"]).drop_columns(
             cols=["b", "c", "d"]
         )
+
         with self.subTest("as-of join"):
             result_table = left_table.aj(right_table, on=["a"])
             self.assertGreater(result_table.size, 0)
@@ -342,6 +343,10 @@ class TableTestCase(BaseTestCase):
             result_table = left_table.raj(right_table, on="a > a", joins="e")
             self.assertGreater(result_table.size, 0)
             self.assertLessEqual(result_table.size, left_table.size)
+
+        with self.assertRaises(DHError) as cm:
+            left_table.aj(right_table, on=["a", "b", "c <= c", "d", "e"])
+        self.assertRegex(str(cm.exception), r"Invalid column name")
 
     #
     # Table operation category: Aggregation
