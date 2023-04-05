@@ -551,7 +551,7 @@ public class Numeric {
         final ${pt.vectorIterator} vi = values.iterator();
         final ${pt2.vectorIterator} wi = weights.iterator();
 
-        while (vi.hasNext() && wi.hasNext()) {
+        while (vi.hasNext()) {
             final ${pt.primitive} c = vi.next();
             final ${pt2.primitive} w = wi.next();
 
@@ -786,7 +786,7 @@ public class Numeric {
         final ${pt.vectorIterator} vi = values.iterator();
         final ${pt2.vectorIterator} wi = weights.iterator();
 
-        while (vi.hasNext() && wi.hasNext()) {
+        while (vi.hasNext()) {
             final ${pt.primitive} v = vi.next();
             final ${pt2.primitive} w = wi.next();
 
@@ -1256,7 +1256,7 @@ public class Numeric {
         final ${pt.vectorIterator} v0i = values0.iterator();
         final ${pt2.vectorIterator} v1i = values1.iterator();
 
-        while (v0i.hasNext() && v1i.hasNext()) {
+        while (v0i.hasNext()) {
             final ${pt.primitive} v0 = v0i.next();
             final ${pt2.primitive} v1 = v1i.next();
 
@@ -1341,7 +1341,7 @@ public class Numeric {
         final ${pt.vectorIterator} v0i = values0.iterator();
         final ${pt2.vectorIterator} v1i = values1.iterator();
 
-        while (v0i.hasNext() && v1i.hasNext()) {
+        while (v0i.hasNext()) {
             final ${pt.primitive} v0 = v0i.next();
             final ${pt2.primitive} v1 = v1i.next();
 
@@ -2217,7 +2217,7 @@ public class Numeric {
         final ${pt.vectorIterator} vi = values.iterator();
         final ${pt2.vectorIterator} wi = weights.iterator();
 
-        while (vi.hasNext() && wi.hasNext()) {
+        while (vi.hasNext()) {
             final ${pt.primitive} c = vi.next();
             final ${pt2.primitive} w = wi.next();
 
@@ -2297,7 +2297,7 @@ public class Numeric {
         final ${pt.vectorIterator} vi = values.iterator();
         final ${pt2.vectorIterator} wi = weights.iterator();
 
-        while (vi.hasNext() && wi.hasNext()) {
+        while (vi.hasNext()) {
             final ${pt.primitive} c = vi.next();
             final ${pt2.primitive} w = wi.next();
 
