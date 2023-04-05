@@ -1031,7 +1031,7 @@ public class Basic {
 
         try(final ${pt.vectorIterator} vi = values.iterator()) {
             while( vi.hasNext() ) {
-                final ${pt.primitive} v = vi.next();
+                final ${pt.primitive} v = vi.${pt.iteratorNext}();
                 result[i] = replaceIfNull(v, replacement);
                 i++;
             }
@@ -1083,7 +1083,7 @@ public class Basic {
 
         try(final ${pt.vectorIterator} vi = values.iterator()) {
             while( vi.hasNext() ) {
-                final ${pt.primitive} v = vi.next();
+                final ${pt.primitive} v = vi.${pt.iteratorNext}();
                 if (!isNull(v)) {
                     count++;
                 }
@@ -1310,7 +1310,7 @@ public class Basic {
 
         try(final ${pt.vectorIterator} vi = values.iterator()) {
             while( vi.hasNext() ) {
-                final ${pt.primitive} v = vi.next();
+                final ${pt.primitive} v = vi.${pt.iteratorNext}();
                 keys.add(v);
             }
         }
@@ -1350,7 +1350,7 @@ public class Basic {
 
         try(final ${pt.vectorIterator} vi = values.iterator()) {
             while( vi.hasNext() ) {
-                final ${pt.primitive} v = vi.next();
+                final ${pt.primitive} v = vi.${pt.iteratorNext}();
                 keys.add(v);
             }
         }
@@ -1449,7 +1449,7 @@ public class Basic {
 
         try(final ${pt.vectorIterator} vi = values.iterator()) {
             while( vi.hasNext() ) {
-                final ${pt.primitive} val = vi.next();
+                final ${pt.primitive} val = vi.${pt.iteratorNext}();
                 if ((includeNull || val != QueryConstants.${pt.null}) && counts.add(val)) {
                     orderedList.add(val);
                 }
@@ -1520,7 +1520,7 @@ public class Basic {
 
         try(final ${pt.vectorIterator} vi = values.iterator()) {
             while( vi.hasNext() ) {
-                final ${pt.primitive} val = vi.next();
+                final ${pt.primitive} val = vi.${pt.iteratorNext}();
                 if ((includeNull || val != QueryConstants.${pt.null}) && counts.add(val)) {
                     orderedList.add(val);
                 }
@@ -1607,7 +1607,7 @@ public class Basic {
             if (v != null) {
                 try(final ${pt.vectorIterator} vi = v.iterator()) {
                     while( vi.hasNext() ) {
-                        final ${pt.primitive} vv = vi.next();
+                        final ${pt.primitive} vv = vi.${pt.iteratorNext}();
                         result[idx] = vv;
                         idx++;
                     }
@@ -1649,7 +1649,7 @@ public class Basic {
 
         try(final ${pt.vectorIterator} vi = values.iterator()) {
             while( vi.hasNext() ) {
-                final ${pt.primitive} v = vi.next();
+                final ${pt.primitive} v = vi.${pt.iteratorNext}();
                 result[i] = v;
                 i--;
             }
@@ -1689,7 +1689,7 @@ public class Basic {
 
         try(final ${pt.vectorIterator} vi = values.iterator()) {
             while( vi.hasNext() ) {
-                final ${pt.primitive} c = vi.next();
+                final ${pt.primitive} c = vi.${pt.iteratorNext}();
                 if (c == val) {
                     return i;
                 }
@@ -1751,8 +1751,8 @@ public class Basic {
         ) {
             while(ci.hasNext()) {
                 final Boolean c = ci.next();
-                final ${pt.primitive} t = ti.next();
-                final ${pt.primitive} f = fi.next();
+                final ${pt.primitive} t = ti.${pt.iteratorNext}();
+                final ${pt.primitive} f = fi.${pt.iteratorNext}();
                 result[i] = c == null ? ${pt.null} : (c ? t : f);
                 i++;
              }
@@ -1869,7 +1869,7 @@ public class Basic {
 
         try(final ${pt.vectorIterator} vi = values.iterator()) {
             while( vi.hasNext() ) {
-                final ${pt.primitive} v = vi.next();
+                final ${pt.primitive} v = vi.${pt.iteratorNext}();
                 if (!isNull(v)) {
                     lastGood = v;
                 }
