@@ -4,6 +4,7 @@
 package io.deephaven.web.client.ide;
 
 import com.google.gwt.user.client.Timer;
+import com.vertispan.tsdefs.annotations.TsTypeRef;
 import elemental2.core.JsArray;
 import elemental2.core.JsSet;
 import elemental2.dom.CustomEventInit;
@@ -15,12 +16,13 @@ import io.deephaven.web.client.api.*;
 import io.deephaven.web.client.api.barrage.stream.BiDiStream;
 import io.deephaven.web.client.api.console.JsCommandResult;
 import io.deephaven.web.client.api.console.JsVariableChanges;
+import io.deephaven.web.client.api.console.JsVariableDescriptor;
+import io.deephaven.web.client.api.console.JsVariableType;
 import io.deephaven.web.client.api.tree.JsTreeTable;
 import io.deephaven.web.client.api.widget.plot.JsFigure;
 import io.deephaven.web.client.fu.CancellablePromise;
 import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.client.fu.LazyPromise;
-import io.deephaven.web.shared.data.LogItem;
 import io.deephaven.web.shared.fu.JsConsumer;
 import io.deephaven.web.shared.fu.JsRunnable;
 import io.deephaven.web.shared.ide.ExecutionHandle;
@@ -36,7 +38,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
 
-import static io.deephaven.web.client.api.QueryConnectable.EVENT_TABLE_OPENED;
+import static io.deephaven.web.client.api.QueryInfoConstants.EVENT_TABLE_OPENED;
 
 /**
  */
@@ -44,7 +46,8 @@ import static io.deephaven.web.client.api.QueryConnectable.EVENT_TABLE_OPENED;
 public class IdeSession extends HasEventHandling {
     private static final int AUTOCOMPLETE_STREAM_TIMEOUT = 30_000;
 
-    public static final String EVENT_COMMANDSTARTED = "commandstarted";
+    public static final String EVENT_COMMANDSTARTED = "commandstarted",
+            EVENT_REQUEST_FAILED = "requestfailed";
 
     private final Ticket result;
 
@@ -92,7 +95,7 @@ public class IdeSession extends HasEventHandling {
 
     // TODO (deephaven-core#188): improve usage of subscriptions (w.r.t. this optional param)
     public Promise<JsTable> getTable(String name, @JsOptional Boolean applyPreviewColumns) {
-        return connection.getVariableDefinition(name, JsVariableChanges.TABLE).then(varDef -> {
+        return connection.getVariableDefinition(name, JsVariableType.TABLE).then(varDef -> {
             final Promise<JsTable> table = connection.getTable(varDef, applyPreviewColumns);
             final CustomEventInit event = CustomEventInit.create();
             event.setDetail(table);
@@ -102,20 +105,20 @@ public class IdeSession extends HasEventHandling {
     }
 
     public Promise<JsFigure> getFigure(String name) {
-        return connection.getVariableDefinition(name, JsVariableChanges.FIGURE).then(connection::getFigure);
+        return connection.getVariableDefinition(name, JsVariableType.FIGURE).then(connection::getFigure);
     }
 
     public Promise<JsTreeTable> getTreeTable(String name) {
-        return connection.getVariableDefinition(name, JsVariableChanges.HIERARCHICALTABLE)
+        return connection.getVariableDefinition(name, JsVariableType.HIERARCHICALTABLE)
                 .then(connection::getTreeTable);
     }
 
     public Promise<JsTreeTable> getHierarchicalTable(String name) {
-        return connection.getVariableDefinition(name, JsVariableChanges.HIERARCHICALTABLE)
+        return connection.getVariableDefinition(name, JsVariableType.HIERARCHICALTABLE)
                 .then(connection::getTreeTable);
     }
 
-    public Promise<?> getObject(JsPropertyMap<Object> definitionObject) {
+    public Promise<?> getObject(@TsTypeRef(JsVariableDescriptor.class) JsPropertyMap<Object> definitionObject) {
         return connection.getJsObject(definitionObject);
     }
 

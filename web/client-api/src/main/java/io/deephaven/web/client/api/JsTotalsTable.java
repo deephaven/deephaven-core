@@ -3,8 +3,12 @@
  */
 package io.deephaven.web.client.api;
 
+import com.vertispan.tsdefs.annotations.TsInterface;
+import com.vertispan.tsdefs.annotations.TsName;
 import elemental2.core.JsArray;
 import elemental2.core.JsString;
+import elemental2.dom.CustomEvent;
+import elemental2.dom.Event;
 import elemental2.promise.Promise;
 import io.deephaven.web.client.api.filter.FilterCondition;
 import io.deephaven.web.shared.fu.RemoverFn;
@@ -22,6 +26,8 @@ import jsinterop.base.Js;
  * A new config is returned any time it is accessed, to prevent accidental mutation, and to allow it to be used as a
  * template when fetching a new totals table, or changing the totals table in use.
  */
+@TsInterface
+@TsName(namespace = "dh", name = "TotalsTable")
 public class JsTotalsTable {
     private final JsTable wrappedTable;
     private final String directive;
@@ -39,7 +45,7 @@ public class JsTotalsTable {
      * Table is wrapped to let us delegate calls to it, the directive is a serialized string, and the groupBy is copied
      * when passed in, as well as when it is accessed, to prevent accidental mutation of the array.
      */
-    public JsTotalsTable(JsTable wrappedTable, String directive, JsArray<JsString> groupBy) {
+    public JsTotalsTable(JsTable wrappedTable, String directive, JsArray<String> groupBy) {
         this.wrappedTable = wrappedTable;
         this.directive = directive;
         this.groupBy = Js.uncheckedCast(groupBy.slice());
@@ -104,13 +110,23 @@ public class JsTotalsTable {
     }
 
     @JsMethod
-    public RemoverFn addEventListener(String name, EventFn callback) {
+    public <T> RemoverFn addEventListener(String name, EventFn<T> callback) {
         return wrappedTable.addEventListener(name, callback);
     }
 
     @JsMethod
-    public boolean removeEventListener(String name, EventFn callback) {
+    public <T> boolean removeEventListener(String name, EventFn<T> callback) {
         return wrappedTable.removeEventListener(name, callback);
+    }
+
+    @JsMethod
+    public <T> Promise<CustomEvent<T>> nextEvent(String eventName, Double timeoutInMillis) {
+        return wrappedTable.nextEvent(eventName, timeoutInMillis);
+    }
+
+    @JsMethod
+    public boolean hasListeners(String name) {
+        return wrappedTable.hasListeners(name);
     }
 
     @JsMethod

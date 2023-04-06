@@ -3,11 +3,12 @@
  */
 package io.deephaven.web.client.api.widget.plot.enums;
 
+import com.vertispan.tsdefs.annotations.TsTypeDef;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.AxisDescriptor;
 import jsinterop.annotations.JsType;
 
-@JsType(name = "AxisPosition")
-@SuppressWarnings("unusable-by-js")
+@JsType(name = "AxisPosition", namespace = "dh.plot")
+@TsTypeDef(tsType = "number")
 public class JsAxisPosition {
     public static final int TOP = AxisDescriptor.AxisPosition.getTOP();
     public static final int BOTTOM = AxisDescriptor.AxisPosition.getBOTTOM();

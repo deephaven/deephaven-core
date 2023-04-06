@@ -4,6 +4,8 @@
 package io.deephaven.web.client.api;
 
 
+import com.vertispan.tsdefs.annotations.TsInterface;
+import com.vertispan.tsdefs.annotations.TsName;
 import elemental2.core.JsMap;
 import io.deephaven.web.shared.data.ColumnStatistics;
 import jsinterop.annotations.JsIgnore;
@@ -17,6 +19,8 @@ import java.util.Map;
 /**
  * Javascript wrapper for {@link ColumnStatistics}
  */
+@TsInterface
+@TsName(name = "ColumnStatistics", namespace = "dh")
 public class JsColumnStatistics {
 
     public enum StatType {

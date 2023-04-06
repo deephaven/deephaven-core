@@ -3,7 +3,8 @@
  */
 package io.deephaven.web.client.api;
 
-import jsinterop.annotations.JsMethod;
+import jsinterop.annotations.JsIgnore;
+import jsinterop.annotations.JsType;
 
 import javax.annotation.Nonnull;
 import java.math.BigInteger;
@@ -11,28 +12,32 @@ import java.math.BigInteger;
 /**
  * Wrap BigInteger values for use in JS. Provides text formatting for display and access to the underlying value.
  */
+@JsType(namespace = "dh")
 public class BigIntegerWrapper {
+    public static BigIntegerWrapper ofString(String str) {
+        return new BigIntegerWrapper(new BigInteger(str));
+    }
+
     private final BigInteger value;
 
+    @JsIgnore
     public BigIntegerWrapper(@Nonnull BigInteger value) {
         this.value = value;
     }
 
+    @JsIgnore
     public BigInteger getWrapped() {
         return value;
     }
 
-    @JsMethod
     public double asNumber() {
         return getWrapped().doubleValue();
     }
 
-    @JsMethod
     public String valueOf() {
         return toString();
     }
 
-    @JsMethod
     @Override
     public String toString() {
         return value.toString();

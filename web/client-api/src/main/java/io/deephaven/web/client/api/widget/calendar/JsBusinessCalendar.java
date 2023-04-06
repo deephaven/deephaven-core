@@ -3,6 +3,8 @@
  */
 package io.deephaven.web.client.api.widget.calendar;
 
+import com.vertispan.tsdefs.annotations.TsInterface;
+import com.vertispan.tsdefs.annotations.TsName;
 import elemental2.core.JsArray;
 import elemental2.core.JsObject;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.BusinessCalendarDescriptor;
@@ -10,6 +12,8 @@ import io.deephaven.web.client.api.i18n.JsTimeZone;
 import io.deephaven.web.client.api.widget.calendar.enums.JsDayOfWeek;
 import jsinterop.annotations.JsProperty;
 
+@TsInterface
+@TsName(namespace = "dh.calendar", name = "BusinessCalendar")
 public class JsBusinessCalendar {
     private final BusinessCalendarDescriptor businessCalendarDescriptor;
     private final JsTimeZone timeZone;

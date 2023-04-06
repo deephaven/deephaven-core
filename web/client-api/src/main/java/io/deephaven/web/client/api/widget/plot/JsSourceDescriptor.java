@@ -18,6 +18,7 @@ public class JsSourceDescriptor {
     public JsTable table;
 
     public String columnName;
+    // TODO (deephaven-core#3442) change to some kind of String+int union type
     public String type;
 
     @JsConstructor

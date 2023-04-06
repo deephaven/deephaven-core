@@ -177,7 +177,7 @@ public class TableReviver implements HasTableBinding {
     @Override
     public void fireEvent(String name, CustomEventInit e) {
         switch (name) {
-            case HasEventHandling.EVENT_REQUEST_FAILED:
+            case JsTable.EVENT_REQUEST_FAILED:
                 // log this failure
                 JsLog.debug("Revivification failed", e.getDetail());
                 //
