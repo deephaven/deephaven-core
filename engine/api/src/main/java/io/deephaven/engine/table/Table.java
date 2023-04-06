@@ -844,6 +844,9 @@ public interface Table extends
      * @param aggregations The {@link Aggregation aggregations} to perform over the responsive ranges from
      *        {@code rightTable} for each row from {@code this} Table
      * @return The result Table
+     * @implNote At this time, implementations only support <em>static</em> (i.e. {@code !isRefreshing()}) Tables and
+     *           {@link io.deephaven.api.agg.spec.AggSpecGroup group} aggregations. This operation remains under active
+     *           development.
      */
     Table rangeJoin(
             @NotNull Table rightTable,
@@ -915,6 +918,9 @@ public interface Table extends
      * @param aggregations The {@link Aggregation aggregations} to perform over the responsive ranges from
      *        {@code rightTable} for each row from {@code this} Table
      * @return The result Table
+     * @implNote At this time, implementations only support <em>static</em> (i.e. {@code !isRefreshing()}) Tables and
+     *           {@link io.deephaven.api.agg.spec.AggSpecGroup group} aggregations. This operation remains under active
+     *           development.
      */
     Table rangeJoin(
             Table rightTable,

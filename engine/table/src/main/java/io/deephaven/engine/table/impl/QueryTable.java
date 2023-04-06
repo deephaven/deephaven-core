@@ -40,6 +40,7 @@ import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
 import io.deephaven.engine.table.impl.partitioned.PartitionedTableImpl;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
+import io.deephaven.engine.table.impl.rangejoin.SupportedRangeJoinAggregations;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.table.impl.select.SelectColumnFactory;
 import io.deephaven.engine.table.impl.updateby.UpdateBy;
@@ -2019,8 +2020,15 @@ public class QueryTable extends BaseTable<QueryTable> {
             @NotNull final RangeStartRule rangeStartRule,
             @NotNull final RangeEndRule rangeEndRule,
             @NotNull final Collection<? extends Aggregation> aggregations) {
+        if (isRefreshing() || rightTable.isRefreshing()) {
+            throw new UnsupportedOperationException(String.format(
+                    "rangeJoin only supports static (not refreshing) inputs at this time: left table is %s, right table is %s",
+                    isRefreshing() ? "refreshing" : "static",
+                    rightTable.isRefreshing() ? "refreshing" : "static"));
+        }
+        SupportedRangeJoinAggregations.validate(aggregations);
         // TODO-RWC: Implement rangeJoin
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("rangeJoin is not yet implemented");
     }
 
     /**
