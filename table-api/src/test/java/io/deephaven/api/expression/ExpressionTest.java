@@ -53,6 +53,11 @@ public class ExpressionTest {
     }
 
     @Test
+    void expressionMethod() {
+        toString(Method.of(FOO, "myMethod", BAR), "Foo.myMethod(Bar)");
+    }
+
+    @Test
     void expressionIfThenElse() {
         toString(IfThenElse.of(FOO, BAR, BAZ), "Foo ? Bar : Baz");
     }
@@ -97,6 +102,12 @@ public class ExpressionTest {
         public String visit(Function function) {
             return of(function);
         }
+
+        @Override
+        public String visit(Method method) {
+            return of(method);
+        }
+
 
         @Override
         public String visit(IfThenElse ifThenElse) {

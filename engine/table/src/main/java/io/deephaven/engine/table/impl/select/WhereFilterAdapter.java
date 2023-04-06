@@ -6,6 +6,7 @@ import io.deephaven.api.Strings;
 import io.deephaven.api.expression.Expression;
 import io.deephaven.api.expression.Function;
 import io.deephaven.api.expression.IfThenElse;
+import io.deephaven.api.expression.Method;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.filter.FilterAnd;
 import io.deephaven.api.filter.FilterComparison;
@@ -59,6 +60,12 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
         return inverted
                 ? WhereFilterFactory.getExpression(String.format("!%s", Strings.of(function)))
                 : WhereFilterFactory.getExpression(Strings.of(function));
+    }
+
+    public static WhereFilter of(Method method, boolean inverted) {
+        return inverted
+                ? WhereFilterFactory.getExpression(String.format("!%s", Strings.of(method)))
+                : WhereFilterFactory.getExpression(Strings.of(method));
     }
 
     public static WhereFilter of(IfThenElse ifThenElse, boolean inverted) {
@@ -128,6 +135,11 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
     }
 
     @Override
+    public WhereFilter visit(Method method) {
+        return of(method, inverted);
+    }
+
+    @Override
     public WhereFilter visit(IfThenElse ifThenElse) {
         return of(ifThenElse, inverted);
     }
@@ -157,6 +169,10 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
             this.preferred = Objects.requireNonNull(preferred);
         }
 
+        private WhereFilter original() {
+            return WhereFilterFactory.getExpression(Strings.of(original));
+        }
+
         @Override
         public WhereFilter visit(ColumnName lhs) {
             return preferred.rhs().walk(new FilterComparisonAdapter.PreferredLhsColumnRhsVisitor(lhs));
@@ -173,7 +189,7 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
             @Override
             public WhereFilter visit(ColumnName rhs) {
                 // LHS column = RHS column
-                return WhereFilterFactory.getExpression(Strings.of(original));
+                return original();
             }
 
             @Override
@@ -234,7 +250,7 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
                     case LESS_THAN_OR_EQUAL:
                     case GREATER_THAN:
                     case GREATER_THAN_OR_EQUAL:
-                        return WhereFilterFactory.getExpression(Strings.of(original));
+                        return original();
                     default:
                         throw new IllegalStateException("Unexpected operator " + original.operator());
                 }
@@ -242,17 +258,22 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
 
             @Override
             public WhereFilter visit(Filter rhs) {
-                return WhereFilterFactory.getExpression(Strings.of(original));
+                return original();
             }
 
             @Override
             public WhereFilter visit(Function function) {
-                return WhereFilterFactory.getExpression(Strings.of(original));
+                return original();
+            }
+
+            @Override
+            public WhereFilter visit(Method method) {
+                return original();
             }
 
             @Override
             public WhereFilter visit(IfThenElse ifThenElse) {
-                return WhereFilterFactory.getExpression(Strings.of(original));
+                return original();
             }
 
             @Override
@@ -262,7 +283,7 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
 
             @Override
             public WhereFilter visit(RawString rawString) {
-                return WhereFilterFactory.getExpression(Strings.of(original));
+                return original();
             }
         }
 
@@ -271,27 +292,32 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
 
         @Override
         public WhereFilter visit(Literal lhs) {
-            return WhereFilterFactory.getExpression(Strings.of(original));
+            return original();
         }
 
         @Override
         public WhereFilter visit(Filter lhs) {
-            return WhereFilterFactory.getExpression(Strings.of(original));
+            return original();
         }
 
         @Override
         public WhereFilter visit(Function lhs) {
-            return WhereFilterFactory.getExpression(Strings.of(original));
+            return original();
         }
 
         @Override
-        public WhereFilter visit(IfThenElse ifThenElse) {
-            return WhereFilterFactory.getExpression(Strings.of(ifThenElse));
+        public WhereFilter visit(Method lhs) {
+            return original();
+        }
+
+        @Override
+        public WhereFilter visit(IfThenElse lhs) {
+            return original();
         }
 
         @Override
         public WhereFilter visit(RawString lhs) {
-            return WhereFilterFactory.getExpression(Strings.of(original));
+            return original();
         }
     }
 
@@ -325,6 +351,11 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
         public static WhereFilter of(Function function, boolean inverted) {
             return WhereFilterFactory
                     .getExpression(String.format(inverted ? "!isNull(%s)" : "isNull(%s)", Strings.of(function)));
+        }
+
+        public static WhereFilter of(Method method, boolean inverted) {
+            return WhereFilterFactory
+                    .getExpression(String.format(inverted ? "!isNull(%s)" : "isNull(%s)", Strings.of(method)));
         }
 
         public static WhereFilter of(IfThenElse ifThenElse, boolean inverted) {
@@ -361,6 +392,11 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
         @Override
         public WhereFilter visit(Function function) {
             return of(function, inverted);
+        }
+
+        @Override
+        public WhereFilter visit(Method method) {
+            return of(method, inverted);
         }
 
         @Override

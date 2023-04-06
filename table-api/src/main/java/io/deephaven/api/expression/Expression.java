@@ -33,6 +33,8 @@ public interface Expression extends Serializable {
 
         T visit(Function function);
 
+        T visit(Method method);
+
         T visit(IfThenElse ifThenElse);
 
         T visit(RawString rawString);

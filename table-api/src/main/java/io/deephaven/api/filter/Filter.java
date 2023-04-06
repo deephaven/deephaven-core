@@ -8,6 +8,7 @@ import io.deephaven.api.RawString;
 import io.deephaven.api.expression.Expression;
 import io.deephaven.api.expression.Function;
 import io.deephaven.api.expression.IfThenElse;
+import io.deephaven.api.expression.Method;
 import io.deephaven.api.literal.Literal;
 import io.deephaven.api.literal.LiteralFilter;
 
@@ -216,6 +217,8 @@ public interface Filter extends Expression, Serializable {
         T visit(ColumnName columnName);
 
         T visit(Function function);
+
+        T visit(Method method);
 
         T visit(IfThenElse ifThenElse);
 

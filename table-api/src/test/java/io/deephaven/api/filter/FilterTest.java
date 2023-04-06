@@ -7,6 +7,7 @@ import io.deephaven.api.ColumnName;
 import io.deephaven.api.RawString;
 import io.deephaven.api.expression.Function;
 import io.deephaven.api.expression.IfThenElse;
+import io.deephaven.api.expression.Method;
 import org.junit.jupiter.api.Test;
 
 import static io.deephaven.api.Strings.of;
@@ -104,6 +105,13 @@ public class FilterTest {
     }
 
     @Test
+    void filterMethod() {
+        toString(Method.of(FOO, "MyFunction1"), "Foo.MyFunction1()");
+        toString(Method.of(FOO, "MyFunction2", BAR), "Foo.MyFunction2(Bar)");
+        toString(Method.of(FOO, "MyFunction3", BAR, BAZ), "Foo.MyFunction3(Bar, Baz)");
+    }
+
+    @Test
     void filterIfThenElse() {
         toString(IfThenElse.of(FOO, BAR, BAZ), "Foo ? Bar : Baz");
     }
@@ -155,6 +163,12 @@ public class FilterTest {
         public String visit(Function function) {
             return of(function);
         }
+
+        @Override
+        public String visit(Method method) {
+            return of(method);
+        }
+
 
         @Override
         public String visit(IfThenElse ifThenElse) {

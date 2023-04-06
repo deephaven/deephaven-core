@@ -8,40 +8,47 @@ import org.immutables.value.Value.Immutable;
 import java.util.List;
 
 /**
- * Represents a function call.
+ * Represents a method call.
  */
 @Immutable
 @BuildableStyle
-public abstract class Function implements Expression, Filter {
+public abstract class Method implements Expression, Filter {
 
     public static Builder builder() {
-        return ImmutableFunction.builder();
+        return ImmutableMethod.builder();
     }
 
-    public static Function of(String name, Expression... arguments) {
-        return builder().name(name).addArguments(arguments).build();
+    public static Method of(Expression object, String name, Expression... arguments) {
+        return builder().object(object).name(name).addArguments(arguments).build();
     }
 
-    public static Function of(String name, List<? extends Expression> arguments) {
-        return builder().name(name).addAllArguments(arguments).build();
+    public static Method of(Expression object, String name, List<? extends Expression> arguments) {
+        return builder().object(object).name(name).addAllArguments(arguments).build();
     }
 
     /**
-     * The function name.
+     * The method object.
      *
-     * @return the name
+     * @return the method object
+     */
+    public abstract Expression object();
+
+    /**
+     * The method name.
+     *
+     * @return the method name
      */
     public abstract String name();
 
     /**
-     * The function arguments.
+     * The method arguments.
      *
-     * @return the arguments
+     * @return the method arguments
      */
     public abstract List<Expression> arguments();
 
     @Override
-    public final FilterNot<Function> invert() {
+    public final FilterNot<Method> invert() {
         return Filter.not(this);
     }
 
@@ -56,6 +63,8 @@ public abstract class Function implements Expression, Filter {
     }
 
     public interface Builder {
+        Builder object(Expression object);
+
         Builder name(String name);
 
         Builder addArguments(Expression element);
@@ -64,6 +73,6 @@ public abstract class Function implements Expression, Filter {
 
         Builder addAllArguments(Iterable<? extends Expression> elements);
 
-        Function build();
+        Method build();
     }
 }

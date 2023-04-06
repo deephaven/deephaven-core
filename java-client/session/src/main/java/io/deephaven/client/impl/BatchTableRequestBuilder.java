@@ -18,6 +18,7 @@ import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.expression.Expression;
 import io.deephaven.api.expression.Function;
 import io.deephaven.api.expression.IfThenElse;
+import io.deephaven.api.expression.Method;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.filter.FilterAnd;
 import io.deephaven.api.filter.FilterComparison;
@@ -608,7 +609,14 @@ class BatchTableRequestBuilder {
         public Value visit(Function function) {
             // TODO(deephaven-core#3609): Update gRPC expression / filter / literal structures
             throw new UnsupportedOperationException(
-                    "Unable to create a io.deephaven.proto.backplane.grpc.Value from an Function");
+                    "Unable to create a io.deephaven.proto.backplane.grpc.Value from a Function");
+        }
+
+        @Override
+        public Value visit(Method method) {
+            // TODO(deephaven-core#3609): Update gRPC expression / filter / literal structures
+            throw new UnsupportedOperationException(
+                    "Unable to create a io.deephaven.proto.backplane.grpc.Value from a Method");
         }
 
         @Override
@@ -720,6 +728,12 @@ class BatchTableRequestBuilder {
         public Condition visit(Function function) {
             // TODO(deephaven-core#3609): Update gRPC expression / filter / literal structures
             throw new UnsupportedOperationException("Can't build Condition with Function");
+        }
+
+        @Override
+        public Condition visit(Method method) {
+            // TODO(deephaven-core#3609): Update gRPC expression / filter / literal structures
+            throw new UnsupportedOperationException("Can't build Condition with Method");
         }
 
         @Override
