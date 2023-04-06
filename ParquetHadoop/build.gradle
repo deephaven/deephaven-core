@@ -18,8 +18,9 @@ tasks.withType(License) {
 
 dependencies {
     // TODO(deephaven-core#3148): LZ4_RAW parquet support
-    api('org.apache.parquet:parquet-hadoop:1.12.3')
+    api('org.apache.parquet:parquet-hadoop:1.13.0')
 
+    // TODO(deephaven-core#806): Remove dependency on hadoop-common
     api('org.apache.hadoop:hadoop-common:3.3.3') {
         // do not take any dependencies of this project,
         // we just want a few classes (Configuration, Path) for
