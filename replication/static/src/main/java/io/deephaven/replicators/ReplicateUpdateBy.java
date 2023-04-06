@@ -94,6 +94,19 @@ public class ReplicateUpdateBy {
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/prod/FloatCumProdOperator.java");
 
         files = ReplicatePrimitiveCode.charToAllButBooleanAndFloats(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/em/CharEMOperator.java");
+        for (final String f : files) {
+            if (f.contains("Integer")) {
+                fixupInteger(f);
+            }
+            if (f.contains("Byte")) {
+                fixupByte(f);
+            }
+        }
+        ReplicatePrimitiveCode.floatToAllFloatingPoints(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/em/FloatEMOperator.java");
+
+        files = ReplicatePrimitiveCode.charToAllButBooleanAndFloats(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/ema/CharEMAOperator.java");
         for (final String f : files) {
             if (f.contains("Integer")) {
