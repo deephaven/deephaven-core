@@ -41,16 +41,16 @@ public abstract class BasePrimitiveEMOperator extends BaseDoubleUpdateByOperator
     }
 
     /**
-     * An operator that computes an EMA from an input column using an exponential decay function.
+     * An operator that computes an EM output from an input column using an exponential decay function.
      *
      * @param pair the {@link MatchPair} that defines the input/output for this operation
      * @param affectingColumns the names of the columns that affect this ema
-     * @param rowRedirection the row redirection to use for the EMA output columns
-     * @param control the control parameters for EMA
+     * @param rowRedirection the row redirection to use for the EM operator output columns
+     * @param control the control parameters for EM operator
      * @param timestampColumnName an optional timestamp column. If this is null, it will be assumed time is measured in
      *        integer ticks.
-     * @param windowScaleUnits the smoothing window for the EMA. If no {@code timestampColumnName} is provided, this is
-     *        measured in ticks, otherwise it is measured in nanoseconds.
+     * @param windowScaleUnits the smoothing window for the EM operator. If no {@code timestampColumnName} is provided,
+     *        this is measured in ticks, otherwise it is measured in nanoseconds.
      */
     public BasePrimitiveEMOperator(@NotNull final MatchPair pair,
             @NotNull final String[] affectingColumns,
@@ -86,12 +86,12 @@ public abstract class BasePrimitiveEMOperator extends BaseDoubleUpdateByOperator
         boolean doReset = false;
         if (isNull) {
             if (control.onNullValueOrDefault() == BadDataBehavior.THROW) {
-                throw new TableDataException("Encountered null value during EMA processing");
+                throw new TableDataException("Encountered null value during Exponential Moving output processing");
             }
             doReset = control.onNullValueOrDefault() == BadDataBehavior.RESET;
         } else if (isNan) {
             if (control.onNanValueOrDefault() == BadDataBehavior.THROW) {
-                throw new TableDataException("Encountered NaN value during EMA processing");
+                throw new TableDataException("Encountered NaN value during Exponential Moving output processing");
             } else if (control.onNanValueOrDefault() == BadDataBehavior.POISON) {
                 ctx.curVal = Double.NaN;
             } else {

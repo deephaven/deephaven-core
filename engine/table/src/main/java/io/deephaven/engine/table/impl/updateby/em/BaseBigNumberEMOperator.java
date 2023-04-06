@@ -65,7 +65,7 @@ public abstract class BaseBigNumberEMOperator<T> extends BaseObjectUpdateByOpera
     }
 
     /**
-     * An operator that computes an EMA from a big number column using an exponential decay function.
+     * An operator that computes an EM output from a big number column using an exponential decay function.
      *
      * @param pair the {@link MatchPair} that defines the input/output for this operation
      * @param affectingColumns the names of the columns that affect this ema
@@ -118,7 +118,7 @@ public abstract class BaseBigNumberEMOperator<T> extends BaseObjectUpdateByOpera
         boolean doReset = false;
         if (isNull) {
             if (control.onNullValueOrDefault() == BadDataBehavior.THROW) {
-                throw new TableDataException("Encountered invalid data during EMA processing");
+                throw new TableDataException("Encountered invalid data during EM processing");
             }
             doReset = control.onNullValueOrDefault() == BadDataBehavior.RESET;
         }

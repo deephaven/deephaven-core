@@ -345,8 +345,6 @@ public interface UpdateByOperation {
         return EmsSpec.ofTime(control, timestampColumn, durationDecay).clause(pairs);
     }
 
-
-
     /**
      * Create an {@link EmMinMaxSpec exponential moving minimum} for the supplied column name pairs, using ticks as the
      * decay unit. Uses the default OperationControl settings.
@@ -478,8 +476,6 @@ public interface UpdateByOperation {
         return EmMinMaxSpec.ofTime(control, false, timestampColumn, durationDecay).clause(pairs);
     }
 
-
-
     /**
      * Create an {@link EmMinMaxSpec exponential moving maximum} for the supplied column name pairs, using ticks as the
      * decay unit. Uses the default OperationControl settings.
@@ -610,8 +606,6 @@ public interface UpdateByOperation {
             String... pairs) {
         return EmMinMaxSpec.ofTime(control, true, timestampColumn, durationDecay).clause(pairs);
     }
-
-
 
     /**
      * Create a {@link RollingSumSpec rolling sum} for the supplied column name pairs, using ticks as the windowing
