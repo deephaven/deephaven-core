@@ -11,6 +11,7 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.partitionedta
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.partitionedtable_pb.PartitionedTableDescriptor;
 import io.deephaven.web.client.api.barrage.WebBarrageUtils;
 import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
+import io.deephaven.web.client.api.lifecycle.HasLifecycle;
 import io.deephaven.web.client.api.subscription.SubscriptionTableData;
 import io.deephaven.web.client.api.subscription.TableSubscription;
 import io.deephaven.web.client.api.widget.JsWidget;
@@ -29,7 +30,7 @@ import java.util.List;
 import java.util.Map;
 
 @JsType(namespace = "dh", name = "PartitionedTable")
-public class JsPartitionedTable extends HasEventHandling {
+public class JsPartitionedTable extends HasLifecycle {
     public static final String EVENT_KEYADDED = "keyadded",
             EVENT_DISCONNECT = JsTable.EVENT_DISCONNECT,
             EVENT_RECONNECT = JsTable.EVENT_RECONNECT,
@@ -82,15 +83,35 @@ public class JsPartitionedTable extends HasEventHandling {
             return w.getExportedObjects()[0].fetch();
         }).then(result -> {
             keys = (JsTable) result;
-            subscription = keys.subscribe(
-                    JsArray.asJsArray(keys.findColumns(descriptor.getKeyColumnNamesList().asArray(new String[0]))));
-            subscription.addEventListener(TableSubscription.EVENT_UPDATED, this::handleKeys);
-
-            LazyPromise<JsPartitionedTable> promise = new LazyPromise<>();
-            subscription.addEventListenerOneShot(TableSubscription.EVENT_UPDATED, data -> promise.succeed(this));
-            keys.addEventListener(JsTable.EVENT_DISCONNECT, e -> promise.fail("Underlying table disconnected"));
-            return promise.asPromise();
+            // TODO(deephaven-core#3604) in case of a new session, we should do a full refetch
+            keys.addEventListener(JsTable.EVENT_DISCONNECT, event -> fireEvent(EVENT_DISCONNECT));
+            keys.addEventListener(JsTable.EVENT_RECONNECT, event -> {
+                subscribeToKeys().then(ignore -> {
+                    unsuppressEvents();
+                    fireEvent(EVENT_RECONNECT);
+                    return null;
+                }, failure -> {
+                    CustomEventInit<Object> init = CustomEventInit.create();
+                    init.setDetail(failure);
+                    unsuppressEvents();
+                    fireEvent(EVENT_RECONNECTFAILED, init);
+                    suppressEvents();
+                    return null;
+                });
+            });
+            return subscribeToKeys();
         });
+    }
+
+    private Promise<JsPartitionedTable> subscribeToKeys() {
+        subscription = keys.subscribe(
+                JsArray.asJsArray(keys.findColumns(descriptor.getKeyColumnNamesList().asArray(new String[0]))));
+        subscription.addEventListener(TableSubscription.EVENT_UPDATED, this::handleKeys);
+
+        LazyPromise<JsPartitionedTable> promise = new LazyPromise<>();
+        subscription.addEventListenerOneShot(TableSubscription.EVENT_UPDATED, data -> promise.succeed(this));
+        keys.addEventListener(JsTable.EVENT_DISCONNECT, e -> promise.fail("Underlying table disconnected"));
+        return promise.asPromise();
     }
 
     private void handleKeys(Event update) {

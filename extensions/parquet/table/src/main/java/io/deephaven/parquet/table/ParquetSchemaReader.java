@@ -96,7 +96,7 @@ public class ParquetSchemaReader {
             @NotNull final ParquetInstructions readInstructions,
             @NotNull final ColumnDefinitionConsumer consumer,
             @NotNull final BiFunction<String, Set<String>, String> legalizeColumnNameFunc) throws IOException {
-        final ParquetFileReader parquetFileReader = ParquetTools.getParquetFileReader(new File(filePath));
+        final ParquetFileReader parquetFileReader = ParquetTools.getParquetFileReaderChecked(new File(filePath));
         final ParquetMetadata parquetMetadata =
                 new ParquetMetadataConverter().fromParquetMetadata(parquetFileReader.fileMetaData);
         return readParquetSchema(parquetFileReader.getSchema(), parquetMetadata.getFileMetaData().getKeyValueMetaData(),
@@ -352,6 +352,8 @@ public class ParquetSchemaReader {
             @Override
             public Optional<Class<?>> visit(
                     final LogicalTypeAnnotation.TimestampLogicalTypeAnnotation timestampLogicalType) {
+                // TODO(deephaven-core#3588): Unable to read parquet TimestampLogicalTypeAnnotation that is not adjusted
+                // to UTC
                 if (timestampLogicalType.isAdjustedToUTC()) {
                     switch (timestampLogicalType.getUnit()) {
                         case MILLIS:

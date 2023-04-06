@@ -2318,6 +2318,11 @@ public final class ByteSegmentedSortedMultiset implements SegmentedSortedMultiSe
     }
 
     @Override
+    public byte[] copyToArray() {
+        return toArray();
+    }
+
+    @Override
     public long size() {
         return size;
     }

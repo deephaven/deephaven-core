@@ -88,6 +88,11 @@ public class DateTimeSsmSourceWrapper extends AbstractColumnSource<ObjectVector>
         }
 
         @Override
+        public DateTime[] copyToArray() {
+            return toArray();
+        }
+
+        @Override
         public Class<DateTime> getComponentType() {
             return DateTime.class;
         }

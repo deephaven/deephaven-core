@@ -20,6 +20,26 @@ public class CompletionItem {
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType {
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface DocumentationFieldType {
+            @JsOverlay
+            static CompletionItem.ToObjectReturnType.DocumentationFieldType create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            String getKind();
+
+            @JsProperty
+            String getValue();
+
+            @JsProperty
+            void setKind(String kind);
+
+            @JsProperty
+            void setValue(String value);
+        }
+
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface TextEditFieldType {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface RangeFieldType {
@@ -95,7 +115,7 @@ public class CompletionItem {
         String getDetail();
 
         @JsProperty
-        String getDocumentation();
+        CompletionItem.ToObjectReturnType.DocumentationFieldType getDocumentation();
 
         @JsProperty
         String getFilterText();
@@ -150,7 +170,7 @@ public class CompletionItem {
         void setDetail(String detail);
 
         @JsProperty
-        void setDocumentation(String documentation);
+        void setDocumentation(CompletionItem.ToObjectReturnType.DocumentationFieldType documentation);
 
         @JsProperty
         void setFilterText(String filterText);
@@ -182,6 +202,26 @@ public class CompletionItem {
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface ToObjectReturnType0 {
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface DocumentationFieldType {
+            @JsOverlay
+            static CompletionItem.ToObjectReturnType0.DocumentationFieldType create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            String getKind();
+
+            @JsProperty
+            String getValue();
+
+            @JsProperty
+            void setKind(String kind);
+
+            @JsProperty
+            void setValue(String value);
+        }
+
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface TextEditFieldType {
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -258,7 +298,7 @@ public class CompletionItem {
         String getDetail();
 
         @JsProperty
-        String getDocumentation();
+        CompletionItem.ToObjectReturnType0.DocumentationFieldType getDocumentation();
 
         @JsProperty
         String getFilterText();
@@ -313,7 +353,7 @@ public class CompletionItem {
         void setDetail(String detail);
 
         @JsProperty
-        void setDocumentation(String documentation);
+        void setDocumentation(CompletionItem.ToObjectReturnType0.DocumentationFieldType documentation);
 
         @JsProperty
         void setFilterText(String filterText);
@@ -367,6 +407,8 @@ public class CompletionItem {
 
     public native void clearCommitCharactersList();
 
+    public native void clearDocumentation();
+
     public native void clearTextEdit();
 
     public native JsArray<TextEdit> getAdditionalTextEditsList();
@@ -377,7 +419,7 @@ public class CompletionItem {
 
     public native String getDetail();
 
-    public native String getDocumentation();
+    public native MarkupContent getDocumentation();
 
     public native String getFilterText();
 
@@ -396,6 +438,8 @@ public class CompletionItem {
     public native double getStart();
 
     public native TextEdit getTextEdit();
+
+    public native boolean hasDocumentation();
 
     public native boolean hasTextEdit();
 
@@ -419,7 +463,9 @@ public class CompletionItem {
 
     public native void setDetail(String value);
 
-    public native void setDocumentation(String value);
+    public native void setDocumentation();
+
+    public native void setDocumentation(MarkupContent value);
 
     public native void setFilterText(String value);
 

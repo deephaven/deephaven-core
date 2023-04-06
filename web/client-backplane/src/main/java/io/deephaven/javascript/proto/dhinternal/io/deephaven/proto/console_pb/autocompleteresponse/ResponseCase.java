@@ -12,5 +12,9 @@ import jsinterop.annotations.JsType;
         namespace = JsPackage.GLOBAL)
 public class ResponseCase {
     public static int COMPLETION_ITEMS,
-            RESPONSE_NOT_SET;
+            DIAGNOSTIC,
+            DIAGNOSTIC_PUBLISH,
+            HOVER,
+            RESPONSE_NOT_SET,
+            SIGNATURES;
 }

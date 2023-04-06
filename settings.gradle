@@ -231,6 +231,9 @@ project(':extensions-parquet-table').projectDir = file('extensions/parquet/table
 include(':extensions-parquet-benchmark')
 project(':extensions-parquet-benchmark').projectDir = file('extensions/parquet/benchmark')
 
+include(':extensions-arrow')
+project(':extensions-arrow').projectDir = file('extensions/arrow')
+
 include(':extensions-barrage')
 project(':extensions-barrage').projectDir = file('extensions/barrage')
 

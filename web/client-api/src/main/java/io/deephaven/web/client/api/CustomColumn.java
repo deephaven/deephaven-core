@@ -4,22 +4,24 @@
 package io.deephaven.web.client.api;
 
 import io.deephaven.web.shared.data.CustomColumnDescriptor;
+import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsProperty;
+import jsinterop.annotations.JsType;
 import jsinterop.base.JsPropertyMap;
 
+@JsType(namespace = "dh")
 public class CustomColumn {
-    @JsProperty(namespace = "dh.CustomColumn")
     public static final String TYPE_FORMAT_COLOR = "FORMAT_COLOR",
             TYPE_FORMAT_NUMBER = "FORMAT_NUMBER",
             TYPE_FORMAT_DATE = "FORMAT_DATE",
             TYPE_NEW = "NEW";
 
     // Copied from ColumnFormattingValues
-    public static final String ROW_FORMAT_NAME = "__ROW";
-    public static final String TABLE_STYLE_FORMAT_SUFFIX = "__TABLE_STYLE_FORMAT";
-    public static final String TABLE_NUMBER_FORMAT_SUFFIX = "__TABLE_NUMBER_FORMAT";
-    public static final String TABLE_DATE_FORMAT_SUFFIX = "__TABLE_DATE_FORMAT";
+    protected static final String ROW_FORMAT_NAME = "__ROW";
+    private static final String TABLE_STYLE_FORMAT_SUFFIX = "__TABLE_STYLE_FORMAT";
+    private static final String TABLE_NUMBER_FORMAT_SUFFIX = "__TABLE_NUMBER_FORMAT";
+    private static final String TABLE_DATE_FORMAT_SUFFIX = "__TABLE_DATE_FORMAT";
 
     /**
      * Get the suffix to append to the name for the provided type
@@ -48,12 +50,14 @@ public class CustomColumn {
     private final String type;
     private final String expression;
 
+    @JsIgnore
     public CustomColumn(String name, String type, String expression) {
         this.name = name;
         this.type = type;
         this.expression = expression;
     }
 
+    @JsIgnore
     public CustomColumn(CustomColumnDescriptor descriptor) {
         String descriptorExpression = descriptor.getExpression();
         String descriptorName = descriptor.getName();
@@ -74,6 +78,7 @@ public class CustomColumn {
         expression = descriptorExpression.substring(descriptorName.length() + 1);
     }
 
+    @JsIgnore
     public CustomColumn(JsPropertyMap<Object> source) {
         if (!source.has("name") || !source.has("type") || !source.has("expression")) {
             throw new IllegalArgumentException("Unrecognized CustomColumn format: " + source);

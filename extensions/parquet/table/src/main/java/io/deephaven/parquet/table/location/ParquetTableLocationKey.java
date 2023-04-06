@@ -58,6 +58,35 @@ public class ParquetTableLocationKey extends FileTableLocationKey {
         return IMPLEMENTATION_NAME;
     }
 
+    /**
+     * Returns {@code true} if a previous {@link ParquetFileReader} has been created, or if one was successfully created
+     * on-demand.
+     *
+     * <p>
+     * When {@code false}, this may mean that the file:
+     * <ol>
+     * <li>does not exist, or is otherwise inaccessible</li>
+     * <li>is in the process of being written, and is not yet a valid parquet file</li>
+     * <li>is _not_ a parquet file</li>
+     * <li>is a corrupt parquet file</li>
+     * </ol>
+     *
+     * Callers wishing to handle these cases more explicit may call
+     * {@link ParquetTools#getParquetFileReaderChecked(File)}.
+     *
+     * @return true if the file reader exists or was successfully created
+     */
+    public synchronized boolean verifyFileReader() {
+        if (fileReader != null) {
+            return true;
+        }
+        try {
+            fileReader = ParquetTools.getParquetFileReaderChecked(file);
+        } catch (IOException e) {
+            return false;
+        }
+        return true;
+    }
 
     /**
      * Get a previously-{@link #setFileReader(ParquetFileReader) set} or on-demand created {@link ParquetFileReader} for

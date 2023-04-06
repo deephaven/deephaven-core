@@ -35,10 +35,7 @@ public class ChartData {
         this.table = table;
     }
 
-    public void update(Object eventDetail) {
-        assert eventDetail instanceof UpdateEventData : "update() can only take table subscription event instances";
-
-        UpdateEventData tableData = (UpdateEventData) eventDetail;
+    public void update(UpdateEventData tableData) {
         Iterator<Range> addedIterator = tableData.getAdded().getRange().rangeIterator();
         Iterator<Range> removedIterator = tableData.getRemoved().getRange().rangeIterator();
         Iterator<Range> modifiedIterator = tableData.getModified().getRange().rangeIterator();
@@ -127,7 +124,7 @@ public class ChartData {
         }
 
         if (JsSettings.isDevMode()) {
-            assert ((UpdateEventData) eventDetail).getRows().length == indexes.length;
+            assert tableData.getRows().length == indexes.length;
             assert cachedData.values().stream().flatMap(m -> m.values().stream())
                     .allMatch(arr -> arr.length == indexes.length);
             assert cachedData.values().stream().flatMap(m -> m.values().stream()).allMatch(arr -> arr

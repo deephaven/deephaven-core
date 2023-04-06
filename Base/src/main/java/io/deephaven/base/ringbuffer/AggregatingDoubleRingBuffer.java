@@ -696,8 +696,7 @@ public class AggregatingDoubleRingBuffer {
      * <p>
      * The provided ranges ore closed-interval. The head and tail are both included in the range.
      */
-    private void evaluateThreeRanges(int r1h, int r1t, int r2h, int r2t, int r3h, int r3t,
-            DoubleFunction evalFunction) {
+    private void evaluateThreeRanges(int r1h, int r1t, int r2h, int r2t, int r3h, int r3t, DoubleFunction evalFunction) {
         while (true) {
             if (r1t >= r2h) {
                 // r1 and r2 overlap. Collapse them together and call the two range version.

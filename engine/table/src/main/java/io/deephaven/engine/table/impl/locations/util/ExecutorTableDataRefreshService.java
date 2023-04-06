@@ -87,6 +87,8 @@ public class ExecutorTableDataRefreshService implements TableDataRefreshService 
                 refresh();
             } catch (TableDataException e) {
                 subscriptionAggregator.activationFailed(this, e);
+            } catch (Throwable t) {
+                subscriptionAggregator.activationFailed(this, new TableDataException("Unexpected error", t));
             }
             if (firstInvocation) {
                 firstInvocation = false;

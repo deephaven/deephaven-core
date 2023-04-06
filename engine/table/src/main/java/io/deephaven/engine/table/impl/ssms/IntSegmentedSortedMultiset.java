@@ -2318,6 +2318,11 @@ public final class IntSegmentedSortedMultiset implements SegmentedSortedMultiSet
     }
 
     @Override
+    public int[] copyToArray() {
+        return toArray();
+    }
+
+    @Override
     public long size() {
         return size;
     }

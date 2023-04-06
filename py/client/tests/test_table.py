@@ -7,15 +7,14 @@ import unittest
 
 from pyarrow import csv
 
-from pydeephaven import ComboAggregation, SortDirection
 from pydeephaven import DHError
+from pydeephaven import SortDirection
+from pydeephaven.agg import sum_, avg, pct, weighted_avg, count_, partition
 from pydeephaven.table import Table
-from pydeephaven.updateby import cum_sum, cum_prod, cum_min, cum_max, forward_fill
 from tests.testbase import BaseTestCase
 
 
 class TableTestCase(BaseTestCase):
-
     def test_close(self):
         pa_table = csv.read_csv(self.csv_file)
         table = self.session.import_table(pa_table)
@@ -188,26 +187,6 @@ class TableTestCase(BaseTestCase):
         result_table = test_table.count_by(col="b", by=["a"])
         self.assertEqual(result_table.size, num_distinct_a)
 
-    def test_count(self):
-        pa_table = csv.read_csv(self.csv_file)
-        test_table = self.session.import_table(pa_table)
-        df = test_table.count(col="a").to_arrow().to_pandas()
-        self.assertEqual(df.iloc[0]["a"], test_table.size)
-
-    def test_combo_agg(self):
-        pa_table = csv.read_csv(self.csv_file)
-        test_table = self.session.import_table(pa_table)
-        num_distinct_a = test_table.select_distinct(cols=["a"]).size
-
-        combo_agg = (ComboAggregation()
-                     .sum(cols=["SumC=c"])
-                     .avg(cols=["AvgB = b", "AvgD = d"])
-                     .pct(percentile=0.5, cols=["PctC = c"])
-                     .weighted_avg(wcol="d", cols=["WavGD = d"]))
-
-        result_table = test_table.agg_by(agg=combo_agg, by=["a"])
-        self.assertEqual(result_table.size, num_distinct_a)
-
     def test_snapshot(self):
         pa_table = csv.read_csv(self.csv_file)
         test_table = self.session.import_table(pa_table)
@@ -235,6 +214,85 @@ class TableTestCase(BaseTestCase):
         with self.assertRaises(DHError):
             result_table = source_table.snapshot_when(trigger_table=trigger_table, stamp_cols=["Timestamp"],
                                                       initial=True, incremental=False, history=True)
+
+    def test_agg_by(self):
+        pa_table = csv.read_csv(self.csv_file)
+        test_table = self.session.import_table(pa_table)
+        num_distinct_a = test_table.select_distinct(cols=["a"]).size
+
+        aggs = [sum_(cols=["SumC=c"]),
+                avg(cols=["AvgB = b", "AvgD = d"]),
+                pct(percentile=0.5, cols=["PctC = c"]),
+                weighted_avg(wcol="d", cols=["WavGD = d"]),
+                count_(col="ca"),
+                partition(col="aggPartition"),
+                ]
+
+        result_table = test_table.agg_by(aggs=aggs, by=["a"])
+        self.assertEqual(result_table.size, num_distinct_a)
+
+        aggs = [sum_(),
+                avg(),
+                pct(percentile=0.5),
+                weighted_avg(wcol="d"),
+                ]
+
+        with self.assertRaises(DHError) as cm:
+            test_table.agg_by(aggs=aggs, by=["a"])
+
+    def test_agg_all_by(self):
+        pa_table = csv.read_csv(self.csv_file)
+        test_table = self.session.import_table(pa_table)
+        num_distinct_a = test_table.select_distinct(cols=["a"]).size
+
+        aggs = [sum_(),
+                avg(),
+                pct(percentile=0.5),
+                weighted_avg(wcol="d"),
+                ]
+        for agg in aggs:
+            with self.subTest(agg):
+                result_table = test_table.agg_all_by(agg=agg, by=["a"])
+                self.assertEqual(result_table.size, num_distinct_a)
+
+        # cols will be ignored
+        aggs = [sum_(cols=["SumC=c"]),
+                avg(cols=["AvgB = b", "AvgD = d"]),
+                pct(percentile=0.5, cols=["PctC = c"]),
+                weighted_avg(wcol="d", cols=["WavGD = d"]),
+                ]
+
+        for agg in aggs:
+            with self.subTest(agg):
+                result_table = test_table.agg_all_by(agg=agg, by=["a"])
+                self.assertEqual(result_table.size, num_distinct_a)
+
+        with self.subTest("unsupported aggregations"):
+            with self.assertRaises(DHError) as cm:
+                test_table.agg_all_by(agg=partition(col="aggPartition"), by=["a"])
+            with self.assertRaises(DHError) as cm:
+                test_table.agg_all_by(agg=count_(col="ca"), by=["a"])
+
+    def test_where_in(self):
+        pa_table = csv.read_csv(self.csv_file)
+        test_table = self.session.import_table(pa_table)
+
+        unique_table = test_table.head(num_rows=50).select_distinct(
+            cols=["a", "c"]
+        )
+
+        with self.subTest("where-in filter"):
+            result_table = test_table.where_in(unique_table, cols=["c"])
+            self.assertLessEqual(unique_table.size, result_table.size)
+
+        with self.subTest("where-not-in filter"):
+            result_table2 = test_table.where_not_in(unique_table, cols=["c"])
+            self.assertEqual(result_table.size, test_table.size - result_table2.size)
+
+    def test_meta_table(self):
+        pa_table = csv.read_csv(self.csv_file)
+        test_table = self.session.import_table(pa_table).drop_columns(["e"])
+        self.assertEqual(len(test_table.schema), len(test_table.meta_table.to_arrow()))
 
 
 if __name__ == '__main__':

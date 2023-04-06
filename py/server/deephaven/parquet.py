@@ -30,10 +30,25 @@ class ColumnInstruction:
     use_dictionary: bool = False
 
 
-def _build_parquet_instructions(col_instructions: List[ColumnInstruction] = None, compression_codec_name: str = None,
-                                max_dictionary_keys: int = None, is_legacy_parquet: bool = False,
-                                for_read: bool = True):
-    if not any([col_instructions, compression_codec_name, max_dictionary_keys, is_legacy_parquet]):
+def _build_parquet_instructions(
+    col_instructions: List[ColumnInstruction] = None,
+    compression_codec_name: str = None,
+    max_dictionary_keys: int = None,
+    is_legacy_parquet: bool = False,
+    target_page_size: int = None,
+    is_refreshing: bool = False,
+    for_read: bool = True,
+):
+    if not any(
+        [
+            col_instructions,
+            compression_codec_name,
+            max_dictionary_keys is not None,
+            is_legacy_parquet,
+            target_page_size is not None,
+            is_refreshing,
+        ]
+    ):
         return None
 
     builder = _JParquetInstructions.builder()
@@ -56,19 +71,29 @@ def _build_parquet_instructions(col_instructions: List[ColumnInstruction] = None
     if max_dictionary_keys is not None:
         builder.setMaximumDictionaryKeys(max_dictionary_keys)
 
-    if is_legacy_parquet:
-        builder.setIsLegacyParquet(True)
+    builder.setIsLegacyParquet(is_legacy_parquet)
+
+    if target_page_size is not None:
+        builder.setTargetPageSize(target_page_size)
+
+    builder.setIsRefreshing(is_refreshing)
 
     return builder.build()
 
 
-def read(path: str, col_instructions: List[ColumnInstruction] = None, is_legacy_parquet: bool = False) -> Table:
+def read(
+    path: str,
+    col_instructions: List[ColumnInstruction] = None,
+    is_legacy_parquet: bool = False,
+    is_refreshing: bool = False,
+) -> Table:
     """ Reads in a table from a single parquet, metadata file, or directory with recognized layout.
 
     Args:
         path (str): the file or directory to examine
         col_instructions (List[ColumnInstruction]): instructions for customizations while reading
         is_legacy_parquet (bool): if the parquet data is legacy
+        is_refreshing (bool): if the parquet data represents a refreshing source
 
     Returns:
         a table
@@ -78,9 +103,12 @@ def read(path: str, col_instructions: List[ColumnInstruction] = None, is_legacy_
     """
 
     try:
-        read_instructions = _build_parquet_instructions(col_instructions=col_instructions,
-                                                        is_legacy_parquet=is_legacy_parquet,
-                                                        for_read=True)
+        read_instructions = _build_parquet_instructions(
+            col_instructions=col_instructions,
+            is_legacy_parquet=is_legacy_parquet,
+            is_refreshing=is_refreshing,
+            for_read=True,
+        )
 
         if read_instructions:
             return Table(j_table=_JParquetTools.readTable(path, read_instructions))
@@ -109,9 +137,15 @@ def delete(path: str) -> None:
         raise DHError(e, f"failed to delete a parquet table: {path} on disk.") from e
 
 
-def write(table: Table, path: str, col_definitions: List[Column] = None,
-          col_instructions: List[ColumnInstruction] = None, compression_codec_name: str = None,
-          max_dictionary_keys: int = None) -> None:
+def write(
+    table: Table,
+    path: str,
+    col_definitions: List[Column] = None,
+    col_instructions: List[ColumnInstruction] = None,
+    compression_codec_name: str = None,
+    max_dictionary_keys: int = None,
+    target_page_size: int = None,
+) -> None:
     """ Write a table to a Parquet file.
 
     Args:
@@ -123,15 +157,19 @@ def write(table: Table, path: str, col_definitions: List[Column] = None,
         col_instructions (List[ColumnInstruction]): instructions for customizations while writing, default is None
         compression_codec_name (str): the default compression codec to use, if not specified, defaults to SNAPPY
         max_dictionary_keys (int): the maximum dictionary keys allowed, if not specified, defaults to 2^20 (1,048,576)
+        target_page_size (int): the target page size in bytes, if not specified, defaults to 2^20 bytes (1 MiB)
 
     Raises:
         DHError
     """
     try:
-        write_instructions = _build_parquet_instructions(col_instructions=col_instructions,
-                                                         compression_codec_name=compression_codec_name,
-                                                         max_dictionary_keys=max_dictionary_keys,
-                                                         for_read=False)
+        write_instructions = _build_parquet_instructions(
+            col_instructions=col_instructions,
+            compression_codec_name=compression_codec_name,
+            max_dictionary_keys=max_dictionary_keys,
+            target_page_size=target_page_size,
+            for_read=False,
+        )
 
         table_definition = None
         if col_definitions is not None:
@@ -151,9 +189,16 @@ def write(table: Table, path: str, col_definitions: List[Column] = None,
         raise DHError(e, "failed to write to parquet data.") from e
 
 
-def batch_write(tables: List[Table], paths: List[str], col_definitions: List[Column],
-                col_instructions: List[ColumnInstruction] = None, compression_codec_name: str = None,
-                max_dictionary_keys: int = None, grouping_cols: List[str] = None):
+def batch_write(
+    tables: List[Table],
+    paths: List[str],
+    col_definitions: List[Column],
+    col_instructions: List[ColumnInstruction] = None,
+    compression_codec_name: str = None,
+    max_dictionary_keys: int = None,
+    target_page_size: int = None,
+    grouping_cols: List[str] = None,
+):
     """ Writes tables to disk in parquet format to a supplied set of paths.
 
     If you specify grouping columns, there must already be grouping information for those columns in the sources.
@@ -170,16 +215,20 @@ def batch_write(tables: List[Table], paths: List[str], col_definitions: List[Col
         col_instructions (List[ColumnInstruction]): instructions for customizations while writing
         compression_codec_name (str): the compression codec to use, if not specified, defaults to SNAPPY
         max_dictionary_keys (int): the maximum dictionary keys allowed, if not specified, defaults to 2^20 (1,048,576)
+        target_page_size (int): the target page size in bytes, if not specified, defaults to 2^20 bytes (1 MiB)
         grouping_cols (List[str]): the group column names
 
     Raises:
         DHError
     """
     try:
-        write_instructions = _build_parquet_instructions(col_instructions=col_instructions,
-                                                         compression_codec_name=compression_codec_name,
-                                                         max_dictionary_keys=max_dictionary_keys,
-                                                         for_read=False)
+        write_instructions = _build_parquet_instructions(
+            col_instructions=col_instructions,
+            compression_codec_name=compression_codec_name,
+            max_dictionary_keys=max_dictionary_keys,
+            target_page_size=target_page_size,
+            for_read=False,
+        )
 
         table_definition = _JTableDefinition.of([col.j_column_definition for col in col_definitions])
 

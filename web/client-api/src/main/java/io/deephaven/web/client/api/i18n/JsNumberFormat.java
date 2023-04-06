@@ -4,11 +4,13 @@
 package io.deephaven.web.client.api.i18n;
 
 import com.google.gwt.i18n.client.NumberFormat;
+import com.vertispan.tsdefs.annotations.TsTypeRef;
 import io.deephaven.web.client.api.BigDecimalWrapper;
 import io.deephaven.web.client.api.BigIntegerWrapper;
 import io.deephaven.web.client.api.LongWrapper;
 import jsinterop.annotations.JsConstructor;
 import jsinterop.annotations.JsType;
+import jsinterop.base.Any;
 import jsinterop.base.Js;
 
 import java.math.BigDecimal;
@@ -32,7 +34,7 @@ public class JsNumberFormat {
         return getFormat(pattern).parse(text);
     }
 
-    public static String format(String pattern, Object number) {
+    public static String format(String pattern, Any number) {
         return getFormat(pattern).format(number);
     }
 
@@ -49,7 +51,7 @@ public class JsNumberFormat {
         return wrapped.parse(text);
     }
 
-    public String format(Object number) {
+    public String format(@TsTypeRef(Any.class) Object number) {
         Objects.requireNonNull(number);
         if (number instanceof Double) {// aka typeof number, and non-null
             return wrapped.format((double) (Double) number);
