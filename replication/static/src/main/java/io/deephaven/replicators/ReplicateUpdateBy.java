@@ -140,9 +140,6 @@ public class ReplicateUpdateBy {
             if (f.contains("Int")) {
                 fixupInteger(f);
             }
-            // if (f.contains("Long")) {
-            // augmentLongWithReinterps(f);
-            // }
         }
     }
 
