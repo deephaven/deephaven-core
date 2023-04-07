@@ -536,9 +536,7 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
         final SessionState session = sessionService.getCurrentSession();
         authWiring.checkPermissionExportedTableUpdates(session.getAuthContext(), request, Collections.emptyList());
         final ExportedTableUpdateListener listener = new ExportedTableUpdateListener(session, responseObserver);
-        session.addExportListener(listener);
-        ((ServerCallStreamObserver<ExportedTableUpdateMessage>) responseObserver).setOnCancelHandler(
-                () -> session.removeExportListener(listener));
+        session.addExportListener(listener, responseObserver);
     }
 
     @Override

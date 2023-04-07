@@ -10,6 +10,7 @@ import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.InstrumentedTableUpdateListener;
 import io.deephaven.engine.table.impl.NotificationStepReceiver;
 import io.deephaven.engine.table.impl.SwapListener;
+import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.hash.KeyedLongObjectHashMap;
 import io.deephaven.hash.KeyedLongObjectKey;
 import io.deephaven.internal.log.LoggerFactory;
@@ -34,7 +35,7 @@ import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyComplete;
  * existing table sizes for both static tables and tables that won't tick frequently. When the run is complete we are
  * sent a notification for exportId == 0 (which is otherwise an invalid export id).
  */
-public class ExportedTableUpdateListener implements StreamObserver<ExportNotification> {
+public class ExportedTableUpdateListener implements SessionState.ExportNotificationObserver {
 
     private static final Logger log = LoggerFactory.getLogger(ExportedTableUpdateListener.class);
 
@@ -90,11 +91,6 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
         } catch (final StatusRuntimeException ignored) {
             // we ignore race conditions related to liveness of an export/session
         }
-    }
-
-    @Override
-    public void onError(final Throwable t) {
-        onCompleted();
     }
 
     @Override
@@ -166,12 +162,7 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
             update.setUpdateFailureMessage(error.getMessage());
         }
 
-        try {
-            responseObserver.onNext(update.build());
-        } catch (final RuntimeException err) {
-            log.debug().append(logPrefix).append("failed to notify listener of state change: ").append(err).endl();
-            session.removeExportListener(this);
-        }
+        GrpcUtil.safelyOnNext(responseObserver, update.build());
     }
 
     /**

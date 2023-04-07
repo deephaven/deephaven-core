@@ -226,7 +226,7 @@ public class ExportTableUpdateListenerTest {
     }
 
     @Test
-    public void testListenerClosed() {
+    public void testListenerRemoval() {
         // create and export the table
         final QueryTable src = TstUtils.testRefreshingTable(RowSetFactory.flat(42).toTracking());
         final SessionState.ExportObject<QueryTable> t1;
@@ -236,8 +236,9 @@ public class ExportTableUpdateListenerTest {
 
         // now add the listener
         final ExportedTableUpdateListener listener = new ExportedTableUpdateListener(session, observer);
+        SafeCloseable cancelHandler;
         try (final SafeCloseable scope = LivenessScopeStack.open()) {
-            session.addExportListener(listener);
+            cancelHandler = session.addExportListener(listener);
         }
 
         // validate we receive an initial table size update
@@ -245,15 +246,13 @@ public class ExportTableUpdateListenerTest {
 
         // verify count state before the closing
         Assert.eq(session.numExportListeners(), "session.numExportListeners()", 1);
-        Assert.eq(observer.countPostComplete, "observer.countPostComplete", 0);
         Assert.eqTrue(src.hasListeners(), "src.hasListeners()");
 
         // close the observer and tickle close detection logic
-        observer.onCompleted();
+        cancelHandler.close();
         addRowsToSource(src, 42);
         expectNoMessage();
         Assert.eq(session.numExportListeners(), "session.numExportListeners()", 0);
-        Assert.eq(observer.countPostComplete, "observer.countPostComplete", 1);
         Assert.eqFalse(src.hasListeners(), "src.hasListeners()");
 
         // the actual ExportedTableUpdateListener should be "live", and should no longer be listening
@@ -347,16 +346,10 @@ public class ExportTableUpdateListenerTest {
     }
 
     public static class QueuingResponseObserver implements StreamObserver<ExportedTableUpdateMessage> {
-        boolean complete = false;
-        long countPostComplete = 0;
         Queue<ExportedTableUpdateMessage> msgQueue = new ArrayDeque<>();
 
         @Override
         public void onNext(final ExportedTableUpdateMessage msg) {
-            if (complete) {
-                countPostComplete++;
-                throw new UncheckedDeephavenException("already closed");
-            }
             msgQueue.add(msg);
         }
 
@@ -367,7 +360,6 @@ public class ExportTableUpdateListenerTest {
 
         @Override
         public void onCompleted() {
-            complete = true;
         }
     }
 }
