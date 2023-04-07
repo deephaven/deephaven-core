@@ -810,21 +810,25 @@ public class JsTreeTable extends HasLifecycle {
         default boolean isTreeRow() {
             return this instanceof TreeRow;
         }
+
         @JsOverlay
         default boolean isNumber() {
             return (Object) this instanceof Double;
         }
+
         @JsOverlay
         @TsUnionMember
         default TreeRow asTreeRow() {
             return Js.cast(this);
         }
+
         @JsOverlay
         @TsUnionMember
         default double asNumber() {
             return Js.asDouble(this);
         }
     }
+
     public void setExpanded(RowReferenceUnion row, boolean isExpanded, @JsOptional Boolean expandDescendants) {
         // TODO check row number is within bounds
         final double action;

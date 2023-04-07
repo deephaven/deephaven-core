@@ -35,39 +35,47 @@ public class JsNumberFormat {
         default boolean isNumber() {
             return (Object) this instanceof Double;
         }
+
         @JsOverlay
         default boolean isBigInteger() {
             return this instanceof BigIntegerWrapper;
         }
+
         @JsOverlay
         default boolean isBigDecimal() {
             return this instanceof BigDecimalWrapper;
         }
+
         @JsOverlay
         default boolean isLongWrapper() {
             return this instanceof LongWrapper;
         }
+
         @TsUnionMember
         @JsOverlay
         default double asNumber() {
             return Js.asDouble(this);
         }
+
         @TsUnionMember
         @JsOverlay
         default BigIntegerWrapper asBigInteger() {
             return Js.cast(this);
         }
+
         @TsUnionMember
         @JsOverlay
         default BigDecimalWrapper asBigDecimal() {
             return Js.cast(this);
         }
+
         @TsUnionMember
         @JsOverlay
         default LongWrapper asLongWrapper() {
             return Js.cast(this);
         }
     }
+
     private static final Map<String, JsNumberFormat> cache = new HashMap<>();
 
     public static JsNumberFormat getFormat(String pattern) {

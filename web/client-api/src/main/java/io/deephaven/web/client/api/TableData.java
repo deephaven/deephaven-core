@@ -30,21 +30,25 @@ public interface TableData {
         default boolean isLongWrapper() {
             return this instanceof LongWrapper;
         }
+
         @JsOverlay
         default boolean isInt() {
             return (Object) this instanceof Double;
         }
+
         @JsOverlay
         @TsUnionMember
         default LongWrapper asLongWrapper() {
             return Js.cast(this);
         }
+
         @JsOverlay
         @TsUnionMember
         default int asInt() {
             return Js.asInt(this);
         }
     }
+
     @JsProperty
     JsArray<Column> getColumns();
 

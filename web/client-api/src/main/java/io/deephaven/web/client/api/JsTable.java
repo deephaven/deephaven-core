@@ -449,15 +449,18 @@ public class JsTable extends HasLifecycle implements HasTableBinding {
         default boolean isString() {
             return (Object) this instanceof String;
         }
+
         @JsOverlay
         default boolean isCustomColumn() {
             return (Object) this instanceof CustomColumn;
         }
+
         @JsOverlay
         @TsUnionMember
         default String asString() {
             return Js.asString(this);
         }
+
         @JsOverlay
         @TsUnionMember
         default CustomColumn asCustomColumn() {
