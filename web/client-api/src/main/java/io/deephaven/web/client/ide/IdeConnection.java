@@ -28,6 +28,8 @@ import jsinterop.annotations.JsType;
 import jsinterop.base.JsPropertyMap;
 
 /**
+ * Presently, this is the entrypoint into the Deephaven JS API. By creating an instance of this with the server URL and
+ * some options, JS applications can run code on the server, and interact with available exportable objects.
  */
 @JsType(namespace = "dh")
 public class IdeConnection extends QueryConnectable<IdeConnection> {
@@ -44,6 +46,13 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
     private final ConnectToken token = new ConnectToken();
     private final ConnectOptions options;
 
+    /**
+     * creates a new instance, from which console sessions can be made. `options` are optional.
+     * 
+     * @param serverUrl The url used when connecting to the server. Read-only.
+     * @param connectOptions Optional Object
+     * @param fromJava Optional boolean
+     */
     @Deprecated
     @JsConstructor
     public IdeConnection(String serverUrl, @JsOptional Object connectOptions, @JsOptional Boolean fromJava) {
@@ -90,12 +99,18 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
         return Promise.resolve(options);
     }
 
+    /**
+     * closes the current connection, releasing any resources on the server or client.
+     */
     public void close() {
         super.close();
 
         deathListenerCleanup.run();
     }
 
+    /**
+     * @return The url used when connecting to the server. Read-only.
+     */
     @Override
     @JsIgnore
     public String getServerUrl() {

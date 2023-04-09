@@ -9,6 +9,12 @@ import com.vertispan.tsdefs.annotations.TsTypeRef;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_pb.FieldInfo;
 import jsinterop.annotations.JsProperty;
 
+/**
+ * A format to describe a variable available to be read from the server. Application fields are optional, and only
+ * populated when a variable is provided by application mode.
+ *
+ * APIs which take a `VariableDefinition` must at least be provided an object with a `type` and `id` field.
+ */
 @TsInterface
 @TsName(namespace = "dh.ide", name = "VariableDefinition")
 public class JsVariableDefinition {
@@ -39,6 +45,9 @@ public class JsVariableDefinition {
         this.applicationName = field.getApplicationName();
     }
 
+    /**
+     * @return The type of the variable, one of `dh.VariableType`.
+     */
     @JsProperty
     @TsTypeRef(JsVariableType.class)
     public String getType() {
@@ -51,26 +60,43 @@ public class JsVariableDefinition {
         return title;
     }
 
+    /**
+     * @return The name of the variable, to be used when rendering it to a user.
+     */
     @JsProperty
     public String getTitle() {
         return title;
     }
 
+    /**
+     * @return An opaque identifier for this variable.
+     */
     @JsProperty
     public String getId() {
         return id;
     }
 
+    /**
+     * @return Optional description for the variable's contents, typically used to provide more detail that wouldn't be
+     *         reasonable to put in the title.
+     */
     @JsProperty
     public String getDescription() {
         return description;
     }
 
+    /**
+     * @return Optional description for the variable's contents, typically used to provide more detail that wouldn't be
+     *         reasonable to put in the title.
+     */
     @JsProperty
     public String getApplicationId() {
         return applicationId;
     }
 
+    /**
+     * @return The name of the application which provided this variable.
+     */
     @JsProperty
     public String getApplicationName() {
         return applicationName;

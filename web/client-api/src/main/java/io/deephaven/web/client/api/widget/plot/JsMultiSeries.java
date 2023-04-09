@@ -17,6 +17,9 @@ import jsinterop.annotations.JsProperty;
 import java.util.Collections;
 import java.util.Map;
 
+/**
+ * Describes a template that will be used to make new series instances when a new table added to a plotBy.
+ */
 @TsInterface
 @TsName(name = "MultiSeries", namespace = "dh.plot")
 public class JsMultiSeries {
@@ -131,12 +134,19 @@ public class JsMultiSeries {
         return map.getValuesList().getAt(index);
     }
 
+    /**
+     * @return Read-only. The plotting style to use for the series that will be created. See `SeriesPlotStyle` enum for
+     *         more details.
+     */
     @JsProperty
     @TsTypeRef(JsSeriesPlotStyle.class)
     public int getPlotStyle() {
         return descriptor.getPlotStyle();
     }
 
+    /**
+     * @return Read-only. The name for this multi-series.
+     */
     @JsProperty
     public String getName() {
         return descriptor.getName();

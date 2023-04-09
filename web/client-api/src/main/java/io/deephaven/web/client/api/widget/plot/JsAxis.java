@@ -17,6 +17,10 @@ import io.deephaven.web.client.fu.JsLog;
 import jsinterop.annotations.*;
 import jsinterop.base.Js;
 
+/**
+ * Defines one axis used with by series. These instances will be found both on the Chart and the Series instances, and
+ * may be shared between Series instances.
+ */
 @TsInterface
 @TsName(namespace = "dh.plot", name = "Axis")
 public class JsAxis {
@@ -40,28 +44,44 @@ public class JsAxis {
         }
     }
 
+    /**
+     * @return The calendar with the business hours and holidays to transform plot data against. Defaults to null, or no
+     *         transform.
+     */
     @JsProperty
     public JsBusinessCalendar getBusinessCalendar() {
         return businessCalendar;
     }
 
+    /**
+     * @return Read-only. The unique id for this axis.
+     */
     @JsProperty
     public String getId() {
         return axis.getId();
     }
 
+    /**
+     * @return Read-only. The type for this axis. See `AxisFormatType` enum for more details.
+     */
     @JsProperty
     @TsTypeRef(JsAxisFormatType.class)
     public int getFormatType() {
         return axis.getFormatType();
     }
 
+    /**
+     * @return Read-only. The type for this axis, indicating how it will be drawn. See `AxisType` enum for more details.
+     */
     @JsProperty
     @TsTypeRef(JsAxisType.class)
     public int getType() {
         return axis.getType();
     }
 
+    /**
+     * @return Read-only. The position for this axis. See `AxisPosition` enum for more details.
+     */
     @JsProperty
     @TsTypeRef(JsAxisPosition.class)
     public int getPosition() {
@@ -73,6 +93,9 @@ public class JsAxis {
         return axis.getLog();
     }
 
+    /**
+     * @return Read-only. The label for this axis.
+     */
     @JsProperty
     public String getLabel() {
         return axis.getLabel();
@@ -94,6 +117,10 @@ public class JsAxis {
     // return axis.getFormat();
     // }
 
+    /**
+     * @return Read-only. The format pattern to use with this axis. Use the type to determine which type of formatter to
+     *         use.
+     */
     @JsProperty
     @JsNullable
     public String getFormatPattern() {
@@ -168,6 +195,17 @@ public class JsAxis {
         return axis.getIsTimeAxis();
     }
 
+    /**
+     * Indicates that this axis is only `widthInPixels` wide, so any extra data can be downsampled out, if this can be
+     * done losslessly. The second two arguments represent the current zoom range of this axis, and if provided, most of
+     * the data outside of this range will be filtered out automatically and the visible width mapped to that range.
+     * When the UI zooms, pans, or resizes, this method should be called again to update these three values to ensure
+     * that data is correct and current.
+     *
+     * @param pixelCount
+     * @param min
+     * @param max
+     */
     @JsMethod
     public void range(@JsOptional @JsNullable Double pixelCount, @JsOptional @JsNullable Object min,
             @JsOptional @JsNullable Object max) {

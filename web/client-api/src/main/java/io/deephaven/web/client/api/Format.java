@@ -10,6 +10,9 @@ import elemental2.core.JsString;
 import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsProperty;
 
+/**
+ * This object may be pooled internally or discarded and not updated. Do not retain references to it.
+ */
 @TsInterface
 @TsName(namespace = "dh")
 public class Format {
@@ -38,6 +41,9 @@ public class Format {
         return (color & 0x01000000) != 0;
     }
 
+    /**
+     * @return Color to apply to the text, in `#rrggbb` format.
+     */
     @JsNullable
     @JsProperty
     public String getColor() {
@@ -51,6 +57,9 @@ public class Format {
         return color(color);
     }
 
+    /**
+     * @return Color to apply to the cell's background, in `#rrggbb` format.
+     */
     @JsNullable
     @JsProperty
     public String getBackgroundColor() {
@@ -70,7 +79,7 @@ public class Format {
 
 
     /**
-     * @deprecated Prefer formatString.
+     * @deprecated Prefer formatString. Number format string to apply to the value in this cell.
      */
     @Deprecated
     @JsNullable
@@ -79,6 +88,9 @@ public class Format {
         return numberFormat;
     }
 
+    /**
+     * @return The format string to apply to the value of this cell.
+     */
     @JsNullable
     @JsProperty
     public String getFormatString() {

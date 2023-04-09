@@ -8,6 +8,11 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.Sort
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsProperty;
 
+/**
+ * Describes a Sort present on the table. No visible constructor, created through the use of Column.sort(), will be tied
+ * to that particular column data. Sort instances are immutable, and use a builder pattern to make modifications. All
+ * methods return a new Sort instance.
+ */
 @TsName(namespace = "dh")
 public class Sort {
     @JsProperty(namespace = "dh.Sort")
@@ -32,21 +37,35 @@ public class Sort {
         return reverse;
     }
 
+    /**
+     * @return The column which is sorted.
+     */
     @JsProperty
     public Column getColumn() {
         return column;
     }
 
+    /**
+     * @return The direction of this sort, either `ASC`, `DESC`, or `REVERSE`.
+     */
     @JsProperty
     public String getDirection() {
         return direction;
     }
 
+    /**
+     * @return True if the absolute value of the column should be used when sorting; defaults to false.
+     */
     @JsProperty(name = "isAbs")
     public boolean isAbs() {
         return abs;
     }
 
+    /**
+     * Builds a Sort instance to sort values in ascending order.
+     * 
+     * @return
+     */
     @JsMethod
     public Sort asc() {
         Sort sort = new Sort(column);
@@ -55,6 +74,11 @@ public class Sort {
         return sort;
     }
 
+    /**
+     * Builds a Sort instance to sort values in descending order.
+     * 
+     * @return
+     */
     @JsMethod
     public Sort desc() {
         Sort sort = new Sort(column);
@@ -63,6 +87,11 @@ public class Sort {
         return sort;
     }
 
+    /**
+     * Builds a Sort instance which takes the absolute value before applying order.
+     * 
+     * @return
+     */
     @JsMethod
     public Sort abs() {
         Sort sort = new Sort(column);

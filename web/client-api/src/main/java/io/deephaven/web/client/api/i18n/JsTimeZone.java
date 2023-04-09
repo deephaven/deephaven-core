@@ -12,6 +12,28 @@ import jsinterop.annotations.JsType;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Represents the timezones supported by Deephaven. Can be used to format dates, taking into account the offset changing
+ * throughout the year (potentially changing each year). These instances mostly are useful at this time to pass to the
+ * `DateTimeFormat.format()` methods, though also support a few properties at this time to see details about each
+ * instance.
+ *
+ *
+ * The following timezone codes are supported when getting a timezone object - instances appearing in the same line will
+ * return the same details:
+ *
+ *
+ * - `GMT`/`UTC` - `Asia/Tokyo` - `Asia/Seoul` - `Asia/Hong_Kong` - `Asia/Singapore` - `Asia/Calcutta`/`Asia/Kolkata` -
+ * `Europe/Berlin` - `Europe/London` - `America/Sao_Paulo` - `America/St_Johns` - `America/Halifax` - `America/New_York`
+ * - `America/Chicago` - `America/Denver` - `America/Los_Angeles` - `America/Anchorage` - `Pacific/Honolulu`
+ *
+ * A Timezone object can also be created from an abbreviation. The following abbreviations are supported:
+ *
+ * - `UTC` - `GMT` - `Z` - `NY` - `ET` - `EST` - `EDT` - `MN` - `CT` - `CST` - `CDT` - `MT` - `MST` - `MDT` - `PT` -
+ * `PST` - `PDT` - `HI` - `HST` - `HDT` - `BT` - `BRST` - `BRT` - `KR` - `KST` - `HK` - `HKT` - `JP` - `JST` - `AT` -
+ * `AST` - `ADT` - `NF` - `NST` - `NDT` - `AL` - `AKST` - `AKDT` - `IN` - `IST` - `CE` - `CET` - `CEST` - `SG` - `SGT` -
+ * `LON` - `BST` - `MOS` - `SHG` - `CH` - `NL` - `TW` - `SYD` - `AEST` - `AEDT`
+ */
 @JsType(name = "TimeZone", namespace = "dh.i18n")
 public class JsTimeZone {
     // Map of all time IDs to their JsTimeZone
@@ -21,6 +43,12 @@ public class JsTimeZone {
         initTimeZones();
     }
 
+    /**
+     * Factory method which creates timezone instances from one of the supported keys.
+     * 
+     * @param tzCode
+     * @return
+     */
     public static JsTimeZone getTimeZone(String tzCode) {
         if (!timeZones.containsKey(tzCode)) {
             throw new IllegalArgumentException("Unsupported time zone " + tzCode);
@@ -592,11 +620,18 @@ public class JsTimeZone {
         return tz;
     }
 
+    /**
+     * @return the timezone code that represents this `TimeZone`, usually the same key as was use to create this
+     *         instance.
+     */
     @JsProperty(name = "id")
     public String getID() {
         return tz.getID();
     }
 
+    /**
+     * @return the standard offset of this timezone, in minutes.
+     */
     @JsProperty
     public int getStandardOffset() {
         return tz.getStandardOffset();

@@ -14,6 +14,13 @@ import jsinterop.base.JsPropertyMap;
 
 import java.util.Iterator;
 
+/**
+ * This is part of EcmaScript 2015, documented here for completeness. It supports a single method, `next()`, which
+ * returns an object with a `boolean` named `done` (true if there are no more items to return; false otherwise), and
+ * optionally some `T` instance, `value`, if there was at least one remaining item.
+ * 
+ * @param <T>
+ */
 @TsName(namespace = JsPackage.GLOBAL, name = "Iterator")
 @TsInterface
 public class JsIterator<T> {

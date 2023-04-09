@@ -17,7 +17,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Javascript wrapper for {@link ColumnStatistics}
+ * Javascript wrapper for {@link ColumnStatistics} This class holds the results of a call to generate statistics on a
+ * table column.
  */
 @TsInterface
 @TsName(name = "ColumnStatistics", namespace = "dh")
@@ -104,7 +105,7 @@ public class JsColumnStatistics {
      * Gets the type of formatting that should be used for given statistic.
      *
      * @param name the display name of the statistic
-     * @return the format type, null to use column formatting
+     * @return the format type for a statistic. A null return value means that the column formatting should be used.
      */
     @JsMethod
     public String getType(String name) {
@@ -114,7 +115,7 @@ public class JsColumnStatistics {
     /**
      * Gets a map with the display name of statistics as keys and the numeric stat as a value.
      *
-     * @return the statistics map
+     * @return A map of each statistic's name to its value.
      */
     @JsProperty
     public JsMap<String, Object> getStatisticsMap() {
@@ -125,7 +126,8 @@ public class JsColumnStatistics {
     /**
      * Gets a map with the name of each unique value as key and the count a the value.
      *
-     * @return the unique values map
+     * @return A map of each unique value's name to the count of how many times it occurred in the column. This map will
+     *         be empty for tables containing more than 19 unique values.
      */
     @JsProperty
     public JsMap<String, Double> getUniqueValues() {

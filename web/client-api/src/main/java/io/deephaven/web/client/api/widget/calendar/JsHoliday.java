@@ -25,11 +25,17 @@ public class JsHoliday {
         JsObject.freeze(businessPeriods);
     }
 
+    /**
+     * @return Read-only. The date of the Holiday.
+     */
     @JsProperty
     public LocalDateWrapper getDate() {
         return date;
     }
 
+    /**
+     * @return Read-only. The business periods that are open on the holiday.
+     */
     @JsProperty
     public JsArray<JsBusinessPeriod> getBusinessPeriods() {
         return businessPeriods;

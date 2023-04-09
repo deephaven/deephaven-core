@@ -14,6 +14,9 @@ import jsinterop.annotations.JsProperty;
 
 import java.util.Map;
 
+/**
+ * Describes how to access and display data required within a series.
+ */
 @TsInterface
 @TsName(namespace = "dh.plot")
 public class SeriesDataSource {
@@ -37,17 +40,26 @@ public class SeriesDataSource {
         }
     }
 
+    /**
+     * @return the axis that this source should be drawn on.
+     */
     @JsProperty
     public JsAxis getAxis() {
         return axis;
     }
 
+    /**
+     * @return the feature of this series represented by this source. See the `SourceType` enum for more details.
+     */
     @JsProperty
     @TsTypeRef(JsSourceType.class)
     public int getType() {
         return sourceDescriptor.getType();
     }
 
+    /**
+     * @return the type of data stored in the underlying table's Column.
+     */
     @JsProperty
     public String getColumnType() {
         return columnType;

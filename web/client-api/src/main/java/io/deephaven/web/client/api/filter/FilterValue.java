@@ -27,10 +27,23 @@ import jsinterop.base.Js;
 import java.util.Arrays;
 import java.util.Objects;
 
+/**
+ * Describes data that can be filtered, either a column reference or a literal value. Used this way, the type of a value
+ * can be specified so that values which are ambiguous or not well supported in JS will not be confused with Strings or
+ * imprecise numbers (e.g., nanosecond-precision date values). Additionally, once wrapped in this way, methods can be
+ * called on these value literal instances. These instances are immutable - any method called on them returns a new
+ * instance.
+ */
 @JsType(namespace = "dh")
 public class FilterValue {
     protected final Value descriptor;
 
+    /**
+     * Constructs a string for the filter API from the given parameter.
+     * 
+     * @param input
+     * @return
+     */
     @JsMethod(namespace = "dh.FilterValue")
     public static FilterValue ofString(@TsTypeRef(Any.class) Object input) {
         Objects.requireNonNull(input);
@@ -45,6 +58,14 @@ public class FilterValue {
         return new FilterValue(lit);
     }
 
+    /**
+     * Constructs a number for the filter API from the given parameter. Can also be used on the values returned from
+     * `Row.get` for DateTime values. To create a filter with a date, use `dh.DateWrapper.ofJsDate` or
+     * `dh.i18n.DateTimeFormat.parse`. To create a filter with a 64-bit long integer, use `dh.LongWrapper.ofString`.
+     * 
+     * @param input
+     * @return
+     */
     @JsMethod(namespace = "dh.FilterValue")
     public static FilterValue ofNumber(@TsTypeRef(Any.class) Object input) {
         Objects.requireNonNull(input);
@@ -68,6 +89,12 @@ public class FilterValue {
         }
     }
 
+    /**
+     * Constructs a boolean for the filter API from the given parameter.
+     * 
+     * @param b
+     * @return
+     */
     @JsMethod(namespace = "dh.FilterValue")
     public static FilterValue ofBoolean(Boolean b) {
         Objects.requireNonNull(b);
@@ -97,6 +124,10 @@ public class FilterValue {
         return this;
     }
 
+    /**
+     * @param term
+     * @return a filter condition checking if the current value is equal to the given parameter.
+     */
     public FilterCondition eq(FilterValue term) {
         return makeCompare(term, CompareCondition.CompareOperation.getEQUALS());
     }
@@ -114,34 +145,68 @@ public class FilterValue {
         return FilterCondition.createAndValidate(c);
     }
 
+    /**
+     * @param term
+     * @return a filter condition checking if the current value is equal to the given parameter, ignoring differences of
+     *         upper vs lower case.
+     */
     public FilterCondition eqIgnoreCase(FilterValue term) {
         return inIgnoreCase(new FilterValue[] {term});
     }
 
+    /**
+     * @param term
+     * @return a filter condition checking if the current value is not equal to the given parameter.
+     */
     public FilterCondition notEq(FilterValue term) {
         return makeCompare(term, CompareCondition.CompareOperation.getNOT_EQUALS());
     }
 
+    /**
+     * @param term
+     * @return a filter condition checking if the current value is not equal to the given parameter, ignoring
+     *         differences of upper vs lower case.
+     */
     public FilterCondition notEqIgnoreCase(FilterValue term) {
         return notInIgnoreCase(new FilterValue[] {term});
     }
 
+    /**
+     * @param term
+     * @return a filter condition checking if the current value is greater than the given parameter.
+     */
     public FilterCondition greaterThan(FilterValue term) {
         return makeCompare(term, CompareCondition.CompareOperation.getGREATER_THAN());
     }
 
+    /**
+     * @param term
+     * @return a filter condition checking if the current value is less than the given parameter.
+     */
     public FilterCondition lessThan(FilterValue term) {
         return makeCompare(term, CompareCondition.CompareOperation.getLESS_THAN());
     }
 
+    /**
+     * @param term
+     * @return a filter condition checking if the current value is greater than or equal to the given parameter.
+     */
     public FilterCondition greaterThanOrEqualTo(FilterValue term) {
         return makeCompare(term, CompareCondition.CompareOperation.getGREATER_THAN_OR_EQUAL());
     }
 
+    /**
+     * @param term
+     * @return a filter condition checking if the current value is less than or equal to the given parameter.
+     */
     public FilterCondition lessThanOrEqualTo(FilterValue term) {
         return makeCompare(term, CompareCondition.CompareOperation.getLESS_THAN_OR_EQUAL());
     }
 
+    /**
+     * @param terms
+     * @return a filter condition checking if the current value is in the given set of values.
+     */
     public FilterCondition in(FilterValue[] terms) {
         return makeIn(terms, Table_pb.MatchType.getREGULAR(), Table_pb.CaseSensitivity.getMATCH_CASE());
     }
@@ -158,22 +223,45 @@ public class FilterValue {
         return FilterCondition.createAndValidate(c);
     }
 
+    /**
+     * @param terms
+     * @return a filter condition checking if the current value is in the given set of values, ignoring differences of
+     *         upper vs lower case.
+     */
     public FilterCondition inIgnoreCase(FilterValue[] terms) {
         return makeIn(terms, Table_pb.MatchType.getREGULAR(), Table_pb.CaseSensitivity.getIGNORE_CASE());
     }
 
+    /**
+     * @param terms
+     * @return a filter condition checking that the current value is not in the given set of values.
+     */
     public FilterCondition notIn(FilterValue[] terms) {
         return makeIn(terms, Table_pb.MatchType.getINVERTED(), Table_pb.CaseSensitivity.getMATCH_CASE());
     }
 
+    /**
+     * @param terms
+     * @return a filter condition checking that the current value is not in the given set of values, ignoring
+     *         differences of upper vs lower case.
+     */
     public FilterCondition notInIgnoreCase(FilterValue[] terms) {
         return makeIn(terms, Table_pb.MatchType.getINVERTED(), Table_pb.CaseSensitivity.getIGNORE_CASE());
     }
 
+    /**
+     * @param term
+     * @return a filter condition checking if the given value contains the given string value.
+     */
     public FilterCondition contains(FilterValue term) {
         return makeContains(term, Table_pb.CaseSensitivity.getMATCH_CASE());
     }
 
+    /**
+     * @param term
+     * @return a filter condition checking if the given value contains the given string value, ignoring differences of
+     *         upper vs lower case.
+     */
     public FilterCondition containsIgnoreCase(FilterValue term) {
         return makeContains(term, Table_pb.CaseSensitivity.getIGNORE_CASE());
     }
@@ -189,10 +277,20 @@ public class FilterValue {
         return FilterCondition.createAndValidate(c);
     }
 
+    /**
+     * @param pattern
+     * @return a filter condition checking if the given value matches the provided regular expressions string. Regex
+     *         patterns use Java regex syntax.
+     */
     public FilterCondition matches(FilterValue pattern) {
         return makeMatches(pattern, Table_pb.CaseSensitivity.getMATCH_CASE());
     }
 
+    /**
+     * @param pattern
+     * @return a filter condition checking if the given value matches the provided regular expressions string, ignoring
+     *         differences of upper vs lower case. Regex patterns use Java regex syntax.
+     */
     public FilterCondition matchesIgnoreCase(FilterValue pattern) {
         return makeMatches(pattern, Table_pb.CaseSensitivity.getIGNORE_CASE());
     }
@@ -209,14 +307,23 @@ public class FilterValue {
         return FilterCondition.createAndValidate(c);
     }
 
+    /**
+     * @return a filter condition checking if the current value is a true boolean.
+     */
     public FilterCondition isTrue() {
         return eq(FilterValue.ofBoolean(true));
     }
 
+    /**
+     * @return a filter condition checking if the current value is a false boolean.
+     */
     public FilterCondition isFalse() {
         return eq(FilterValue.ofBoolean(false));
     }
 
+    /**
+     * @return a filter condition checking if the current value is a null value.
+     */
     public FilterCondition isNull() {
         IsNullCondition isNull = new IsNullCondition();
         isNull.setReference(this.descriptor.getReference());
@@ -226,6 +333,18 @@ public class FilterValue {
         return FilterCondition.createAndValidate(c);
     }
 
+    /**
+     * a filter condition invoking the given method on the current value, with the given parameters. Currently supported
+     * functions that can be invoked on a String: _ `startsWith` - Returns true if the current string value starts with
+     * the supplied string argument. _ `endsWith` - Returns true if the current string value ends with the supplied
+     * string argument. _ `matches` - Returns true if the current string value matches the supplied string argument used
+     * as a Java regular expression. _ `contains` - Returns true if the current string value contains the supplied
+     * string argument. When invoking against a constant, this should be avoided in favor of FilterValue.contains.
+     * 
+     * @param method
+     * @param args
+     * @return
+     */
     public FilterCondition invoke(String method, FilterValue... args) {
         InvokeCondition invoke = new InvokeCondition();
         invoke.setMethod(method);
