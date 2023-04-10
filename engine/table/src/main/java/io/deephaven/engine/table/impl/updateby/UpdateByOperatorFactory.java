@@ -495,7 +495,7 @@ public class UpdateByOperatorFactory {
                 affectingColumns = new String[] {spec.timeScale().timestampCol(), pair.rightColumn};
             }
 
-            // use the correct units from the EmaSpec (depending on if Time or Tick based)
+            // use the correct units from the EmsSpec (depending on if Time or Tick based)
             final long timeScaleUnits = spec.timeScale().timescaleUnits();
             final OperationControl control = spec.controlOrDefault();
 
@@ -528,7 +528,7 @@ public class UpdateByOperatorFactory {
                         spec.timeScale().timestampCol(), timeScaleUnits, columnSource);
             }
 
-            throw new IllegalArgumentException("Can not perform EMA on type " + csType);
+            throw new IllegalArgumentException("Can not perform EMS on type " + csType);
         }
 
         private UpdateByOperator makeCumProdOperator(MatchPair fc, Table source) {

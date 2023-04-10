@@ -2,6 +2,7 @@ package io.deephaven.engine.table.impl.updateby.emsum;
 
 import io.deephaven.api.updateby.BadDataBehavior;
 import io.deephaven.api.updateby.OperationControl;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.locations.TableDataException;
@@ -25,6 +26,11 @@ public abstract class BasePrimitiveEMSOperator extends BaseDoubleUpdateByOperato
         }
 
         @Override
+        public void push(int pos, int count) {
+            throw Assert.statementNeverExecuted("EMSOperator#push() is not used");
+        }
+
+        @Override
         public void reset() {
             super.reset();
             lastStamp = NULL_LONG;
@@ -32,15 +38,15 @@ public abstract class BasePrimitiveEMSOperator extends BaseDoubleUpdateByOperato
     }
 
     /**
-     * An operator that computes an EMA from an input column using an exponential decay function.
+     * An operator that computes an EM Sum from an input column using an exponential decay function.
      *
      * @param pair the {@link MatchPair} that defines the input/output for this operation
      * @param affectingColumns the names of the columns that affect this ema
-     * @param rowRedirection the row redirection to use for the EMA output columns
-     * @param control the control parameters for EMA
+     * @param rowRedirection the row redirection to use for the EMS output columns
+     * @param control the control parameters for EMS
      * @param timestampColumnName an optional timestamp column. If this is null, it will be assumed time is measured in
      *        integer ticks.
-     * @param windowScaleUnits the smoothing window for the EMA. If no {@code timestampColumnName} is provided, this is
+     * @param windowScaleUnits the smoothing window for the EMS. If no {@code timestampColumnName} is provided, this is
      *        measured in ticks, otherwise it is measured in nanoseconds.
      */
     public BasePrimitiveEMSOperator(@NotNull final MatchPair pair,

@@ -2,6 +2,7 @@ package io.deephaven.engine.table.impl.updateby.emsum;
 
 import io.deephaven.api.updateby.BadDataBehavior;
 import io.deephaven.api.updateby.OperationControl;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.attributes.Values;
@@ -47,6 +48,11 @@ public abstract class BaseBigNumberEMSOperator<T> extends BaseObjectUpdateByOper
         }
 
         @Override
+        public void push(int pos, int count) {
+            throw Assert.statementNeverExecuted("EMSOperator#push() is not used");
+        }
+
+        @Override
         public void reset() {
             curVal = null;
             lastStamp = NULL_LONG;
@@ -56,14 +62,14 @@ public abstract class BaseBigNumberEMSOperator<T> extends BaseObjectUpdateByOper
     }
 
     /**
-     * An operator that computes an EMA from a big number column using an exponential decay function.
+     * An operator that computes an EM Sum from a big number column using an exponential decay function.
      *
      * @param pair the {@link MatchPair} that defines the input/output for this operation
      * @param affectingColumns the names of the columns that affect this ema
      * @param rowRedirection the {@link RowRedirection} to use for dense output sources
      * @param control defines how to handle {@code null} input values.
      * @param timestampColumnName the name of the column containing timestamps for time-based calcuations
-     * @param windowScaleUnits the smoothing window for the EMA. If no {@code timestampColumnName} is provided, this is
+     * @param windowScaleUnits the smoothing window for the EMS. If no {@code timestampColumnName} is provided, this is
      *        measured in ticks, otherwise it is measured in nanoseconds
      * @param valueSource a reference to the input column source for this operation
      */
@@ -105,7 +111,7 @@ public abstract class BaseBigNumberEMSOperator<T> extends BaseObjectUpdateByOper
         boolean doReset = false;
         if (isNull) {
             if (control.onNullValueOrDefault() == BadDataBehavior.THROW) {
-                throw new TableDataException("Encountered invalid data during EMA processing");
+                throw new TableDataException("Encountered invalid data during EMS processing");
             }
             doReset = control.onNullValueOrDefault() == BadDataBehavior.RESET;
         }

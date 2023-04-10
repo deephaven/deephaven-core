@@ -30,8 +30,8 @@ public class FloatEMSOperator extends BasePrimitiveEMSOperator {
 
         @Override
         public void accumulateCumulative(@NotNull RowSequence inputKeys,
-                                         Chunk<? extends Values>[] valueChunkArr,
-                                         LongChunk<? extends Values> tsChunk,
+                                         @NotNull Chunk<? extends Values>[] valueChunkArr,
+                                         @Nullable LongChunk<? extends Values> tsChunk,
                                          int len) {
             setValuesChunk(valueChunkArr[0]);
 
@@ -101,22 +101,18 @@ public class FloatEMSOperator extends BasePrimitiveEMSOperator {
         public boolean isValueValid(long atKey) {
             return valueSource.getFloat(atKey) != NULL_FLOAT;
         }
-
-        @Override
-        public void push(int pos, int count) {
-            throw new IllegalStateException("EMAOperator#push() is not used");
-        }
     }
 
     /**
-     * An operator that computes an EMA from a float column using an exponential decay function.
+     * An operator that computes an EM Sum from a float column using an exponential decay function.
      *
      * @param pair                the {@link MatchPair} that defines the input/output for this operation
      * @param affectingColumns    the names of the columns that affect this ema
      * @param rowRedirection      the {@link RowRedirection} to use for dense output sources
      * @param control             defines how to handle {@code null} input values.
      * @param timestampColumnName the name of the column containing timestamps for time-based calcuations
-     * @param windowScaleUnits      the smoothing window for the EMA. If no {@code timestampColumnName} is provided, this is measured in ticks, otherwise it is measured in nanoseconds
+     * @param windowScaleUnits      the smoothing window for the EMS. If no {@code timestampColumnName} is provided,
+     *                              this is measured in ticks, otherwise it is measured in nanoseconds
      * @param valueSource         a reference to the input column source for this operation
      */
     public FloatEMSOperator(@NotNull final MatchPair pair,

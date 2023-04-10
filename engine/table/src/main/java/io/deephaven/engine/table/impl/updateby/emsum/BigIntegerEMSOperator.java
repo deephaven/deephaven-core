@@ -24,9 +24,9 @@ public class BigIntegerEMSOperator extends BaseBigNumberEMSOperator<BigInteger> 
         }
 
         @Override
-        public void accumulateCumulative(RowSequence inputKeys,
-                                         Chunk<? extends Values>[] valueChunkArr,
-                                         LongChunk<? extends Values> tsChunk,
+        public void accumulateCumulative(@NotNull RowSequence inputKeys,
+                                         @NotNull Chunk<? extends Values>[] valueChunkArr,
+                                         @Nullable LongChunk<? extends Values> tsChunk,
                                          int len) {
             setValuesChunk(valueChunkArr[0]);
 
@@ -66,20 +66,17 @@ public class BigIntegerEMSOperator extends BaseBigNumberEMSOperator<BigInteger> 
                         final BigDecimal decimalInput = new BigDecimal(input, control.bigValueContextOrDefault());
                         if (curVal == null) {
                             curVal = decimalInput;
-                            lastStamp = timestamp;
                         } else {
                             final long dt = timestamp - lastStamp;
-                            if (dt != 0) {
-                                // alpha is dynamic based on time, but only recalculated when needed
-                                if (dt != lastDt) {
-                                    alpha = computeAlpha(-dt, reverseWindowScaleUnits);
-                                    lastDt = dt;
-                                }
-                                curVal = curVal.multiply(alpha, control.bigValueContextOrDefault())
-                                        .add(decimalInput, control.bigValueContextOrDefault());
-                                lastStamp = timestamp;
+                            // alpha is dynamic based on time, but only recalculated when needed
+                            if (dt != lastDt) {
+                                alpha = computeAlpha(-dt, reverseWindowScaleUnits);
+                                lastDt = dt;
                             }
+                            curVal = curVal.multiply(alpha, control.bigValueContextOrDefault())
+                                    .add(decimalInput, control.bigValueContextOrDefault());
                         }
+                        lastStamp = timestamp;
                     }
                     outputValues.set(ii, curVal);
                 }
@@ -88,22 +85,17 @@ public class BigIntegerEMSOperator extends BaseBigNumberEMSOperator<BigInteger> 
             // chunk output to column
             writeToOutputColumn(inputKeys);
         }
-
-        @Override
-        public void push(int pos, int count) {
-            throw new IllegalStateException("EMAOperator#push() is not used");
-        }
     }
     
     /**
-     * An operator that computes an EMA from a BigInteger column using an exponential decay function.
+     * An operator that computes an EM Sum from a BigInteger column using an exponential decay function.
      *
      * @param pair                the {@link MatchPair} that defines the input/output for this operation
      * @param affectingColumns    the names of the columns that affect this ema
      * @param rowRedirection      the {@link RowRedirection} to use for dense output sources
      * @param control             defines how to handle {@code null} input values.
      * @param timestampColumnName the name of the column containing timestamps for time-based calcuations
-     * @param windowScaleUnits      the smoothing window for the EMA. If no {@code timestampColumnName} is provided, this is measured in ticks, otherwise it is measured in nanoseconds
+     * @param windowScaleUnits      the smoothing window for the EMS. If no {@code timestampColumnName} is provided, this is measured in ticks, otherwise it is measured in nanoseconds
      * @param valueSource         a reference to the input column source for this operation
      */
     public BigIntegerEMSOperator(@NotNull final MatchPair pair,
