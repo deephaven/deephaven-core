@@ -10,6 +10,4 @@ public interface ServerConfigValues {
     String GRADLE_VERSION = "gradleVersion";
     String VCS_VERSION = "vcsVersion";
     String JAVA_VERSION = "javaVersion";
-
-    String WORKER_KINDS = "workerKinds";
 }
