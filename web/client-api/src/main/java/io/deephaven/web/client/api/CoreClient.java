@@ -41,6 +41,8 @@ public class CoreClient extends HasEventHandling {
 
     private final IdeConnection ideConnection;
 
+    private final JsLazy<Promise<JsServerConfigValues>> serverConfigValues;
+
     public CoreClient(String serverUrl, Object connectOptions) {
         ideConnection = new IdeConnection(serverUrl, connectOptions, true);
 
@@ -49,6 +51,16 @@ public class CoreClient extends HasEventHandling {
         ideConnection.addEventListener(EVENT_REFRESH_TOKEN_UPDATED, event -> {
             fireEvent(EVENT_REFRESH_TOKEN_UPDATED, event);
         });
+
+
+        serverConfigValues = JsLazy.of(() -> getConfigs(
+                c -> ideConnection.connection.get().configServiceClient().getConfigurationConstants(
+                        new ConfigurationConstantsRequest(),
+                        ideConnection.connection.get().metadata(),
+                        c::apply),
+                ConfigurationConstantsResponse::getConfigValuesMap).then(
+                        configValues ->
+                            Promise.resolve(new JsServerConfigValues(configValues))));
     }
 
     private <R> Promise<String[][]> getConfigs(Consumer<JsBiConsumer<Object, R>> rpcCall,
@@ -113,10 +125,9 @@ public class CoreClient extends HasEventHandling {
 
         // fetch configs and check session timeout
         login.then(ignore -> getServerConfigValues()).then(configs -> {
-            for (String[] config : configs) {
-                if (config[0].equals("http.session.durationMs")) {
-                    ideConnection.connection.get().setSessionTimeoutMs(Double.parseDouble(config[1]));
-                }
+            if (configs.hasValue("http.session.durationMs")){
+                    ideConnection.connection.get().setSessionTimeoutMs(
+                            Double.parseDouble(configs.getValue("http.session.durationMs")));
             }
             return null;
         }).catch_(ignore -> {
@@ -134,13 +145,8 @@ public class CoreClient extends HasEventHandling {
         return ideConnection.onConnected();
     }
 
-    public Promise<String[][]> getServerConfigValues() {
-        return getConfigs(
-                c -> ideConnection.connection.get().configServiceClient().getConfigurationConstants(
-                        new ConfigurationConstantsRequest(),
-                        ideConnection.connection.get().metadata(),
-                        c::apply),
-                ConfigurationConstantsResponse::getConfigValuesMap);
+    public Promise<JsServerConfigValues> getServerConfigValues() {
+        return serverConfigValues.get();
     }
 
     public Promise<UserInfo> getUserInfo() {
