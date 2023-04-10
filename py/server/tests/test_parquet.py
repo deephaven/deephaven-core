@@ -195,7 +195,11 @@ class ParquetTestCase(BaseTestCase):
     def round_trip_with_compression(self, compression_codec_name, dh_table):
         # dh->parquet->dataframe (via pyarrow)->dh
         write(dh_table, "data_from_dh.parquet", compression_codec_name=compression_codec_name)
-        dataframe = pandas.read_parquet('data_from_dh.parquet', use_nullable_dtypes=True)
+        if pandas.__version__.split('.')[0] == "1":
+            dataframe = pandas.read_parquet("data_from_dh.parquet", use_nullable_dtypes=True)
+        else:
+            dataframe = pandas.read_parquet("data_from_dh.parquet", dtype_backend="numpy_nullable")
+
         result_table = to_table(dataframe)
         self.assert_table_equals(dh_table, result_table)
 
