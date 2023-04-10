@@ -54,6 +54,7 @@ public class JpyInit {
         jpyConfig.startPython();
         log.info().append("Started Python interpreter").endl();
         markJvmReady();
+        checkPythonEnv();
     }
 
     private static void markJvmReady() {
@@ -63,5 +64,10 @@ public class JpyInit {
                 final PyObject obj = deephavenJpyModule.callMethod("ready")) {
             // empty
         }
+    }
+
+    private static void checkPythonEnv() {
+        final PyModule deephavenJpyModule = PyModule.importModule("deephaven_internal.jvm");
+        final PyObject obj = deephavenJpyModule.callMethod("check_py_env");
     }
 }
