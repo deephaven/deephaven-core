@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 public class JsServerConfigValues {
     private final Map<String, String> valueMap;
 
-    private static final String[] EMPTY_STRING_ARRAY = JsObject.freeze(new String[]{});
+    private static final String[] EMPTY_STRING_ARRAY = JsObject.freeze(new String[] {});
 
     public JsServerConfigValues(String[][] serverConfigValues) {
         valueMap = Arrays.stream(serverConfigValues).collect(Collectors.toMap(pair -> pair[0], pair -> pair[1]));

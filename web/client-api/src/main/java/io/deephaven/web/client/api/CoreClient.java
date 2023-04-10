@@ -59,8 +59,7 @@ public class CoreClient extends HasEventHandling {
                         ideConnection.connection.get().metadata(),
                         c::apply),
                 ConfigurationConstantsResponse::getConfigValuesMap).then(
-                        configValues ->
-                            Promise.resolve(new JsServerConfigValues(configValues))));
+                        configValues -> Promise.resolve(new JsServerConfigValues(configValues))));
     }
 
     private <R> Promise<String[][]> getConfigs(Consumer<JsBiConsumer<Object, R>> rpcCall,
@@ -125,9 +124,9 @@ public class CoreClient extends HasEventHandling {
 
         // fetch configs and check session timeout
         login.then(ignore -> getServerConfigValues()).then(configs -> {
-            if (configs.hasValue("http.session.durationMs")){
-                    ideConnection.connection.get().setSessionTimeoutMs(
-                            Double.parseDouble(configs.getValue("http.session.durationMs")));
+            if (configs.hasValue("http.session.durationMs")) {
+                ideConnection.connection.get().setSessionTimeoutMs(
+                        Double.parseDouble(configs.getValue("http.session.durationMs")));
             }
             return null;
         }).catch_(ignore -> {
