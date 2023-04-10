@@ -296,13 +296,18 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
         @Override
         public void onNext(AutoCompleteRequest value) {
             // This implementation only responds to autocomplete requests with "success, nothing found"
+            AutoCompleteResponse.Builder responseBuilder = AutoCompleteResponse.newBuilder()
+                    .setSuccess(true)
+                    .setRequestId(value.getRequestId());
+
             if (value.getRequestCase() == AutoCompleteRequest.RequestCase.GET_COMPLETION_ITEMS) {
-                safelyOnNext(responseObserver, AutoCompleteResponse.newBuilder()
-                        .setCompletionItems(
-                                GetCompletionItemsResponse.newBuilder().setSuccess(true)
-                                        .setRequestId(value.getGetCompletionItems().getRequestId()))
-                        .build());
+                // For maintaining backwards compatibility
+                responseBuilder.setCompletionItems(
+                        GetCompletionItemsResponse.newBuilder()
+                                .setSuccess(true)
+                                .setRequestId(value.getRequestId()));
             }
+            safelyOnNext(responseObserver, responseBuilder.build());
         }
 
         @Override
@@ -315,6 +320,14 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
             // just hang up too, browser will reconnect if interested
             safelyComplete(responseObserver);
         }
+    }
+
+    @Override
+    public void cancelAutoComplete(
+            @NotNull final CancelAutoCompleteRequest request,
+            @NotNull final StreamObserver<CancelAutoCompleteResponse> responseObserver) {
+        // TODO: Consider autocomplete cancellation
+        super.cancelAutoComplete(request, responseObserver);
     }
 
     private final class LogsClient implements LogBufferRecordListener, Runnable {

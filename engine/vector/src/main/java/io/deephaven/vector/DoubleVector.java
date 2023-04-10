@@ -49,6 +49,9 @@ public interface DoubleVector extends Vector<DoubleVector>, Iterable<Double> {
     double[] toArray();
 
     @Override
+    double[] copyToArray();
+
+    @Override
     DoubleVector getDirect();
 
     @Override
@@ -200,6 +203,11 @@ public interface DoubleVector extends Vector<DoubleVector>, Iterable<Double> {
                 }
             }
             return result;
+        }
+
+        @Override
+        public double[] copyToArray() {
+            return toArray();
         }
 
         @Override

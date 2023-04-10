@@ -5,11 +5,11 @@ package io.deephaven.engine.table.impl.perf;
 
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.tablelogger.EngineTableLoggers;
 import io.deephaven.engine.tablelogger.UpdatePerformanceLogLogger;
+import io.deephaven.engine.tablelogger.impl.memory.MemoryTableLogger;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.impl.*;
-import io.deephaven.engine.table.impl.util.MemoryTableLogger;
-import io.deephaven.engine.table.impl.util.MemoryTableLoggers;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.QueryConstants;
@@ -57,10 +57,7 @@ public class UpdatePerformanceTracker {
         if (INSTANCE == null) {
             synchronized (UpdatePerformanceTracker.class) {
                 if (INSTANCE == null) {
-                    final TableDefinition tableDefinition = UpdatePerformanceLogLogger.getTableDefinition();
-                    final String processInfoId = MemoryTableLoggers.getInstance().getProcessInfo().getId().value();
-                    INSTANCE = new UpdatePerformanceTracker(processInfoId,
-                            LoggerFactory.getLogger(UpdatePerformanceTracker.class), tableDefinition);
+                    INSTANCE = new UpdatePerformanceTracker(LoggerFactory.getLogger(UpdatePerformanceTracker.class));
                 }
             }
         }
@@ -68,18 +65,14 @@ public class UpdatePerformanceTracker {
     }
 
     private final Logger logger;
-    private final MemoryTableLogger<UpdatePerformanceLogLogger> tableLogger;
+    private final UpdatePerformanceLogLogger tableLogger;
 
     private final AtomicInteger entryIdCounter = new AtomicInteger(1);
     private final Queue<WeakReference<PerformanceEntry>> entries = new LinkedBlockingDeque<>();
 
-    private UpdatePerformanceTracker(
-            @NotNull final String processInfoId,
-            @NotNull final Logger logger,
-            @NotNull final TableDefinition logTableDefinition) {
+    private UpdatePerformanceTracker(@NotNull final Logger logger) {
         this.logger = logger;
-        tableLogger = new MemoryTableLogger<>(
-                logger, new UpdatePerformanceLogLogger(processInfoId), logTableDefinition);
+        tableLogger = EngineTableLoggers.get().updatePerformanceLogLogger();
     }
 
     private void startThread() {
@@ -202,7 +195,7 @@ public class UpdatePerformanceTracker {
             final boolean encounteredErrorLoggingToMemory) {
         if (!encounteredErrorLoggingToMemory) {
             try {
-                tableLogger.getTableLogger().log(intervalLevelDetails, entry);
+                tableLogger.log(intervalLevelDetails, entry);
             } catch (IOException e) {
                 // Don't want to log this more than once in a report
                 logger.error().append("Error sending UpdatePerformanceLog data to memory").append(e).endl();
@@ -241,6 +234,6 @@ public class UpdatePerformanceTracker {
     }
 
     public QueryTable getQueryTable() {
-        return tableLogger.getQueryTable();
+        return MemoryTableLogger.maybeGetQueryTable(tableLogger);
     }
 }

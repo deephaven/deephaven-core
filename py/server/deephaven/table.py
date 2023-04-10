@@ -38,7 +38,6 @@ _JColumnName = jpy.get_type("io.deephaven.api.ColumnName")
 _JSortColumn = jpy.get_type("io.deephaven.api.SortColumn")
 _JFilter = jpy.get_type("io.deephaven.api.filter.Filter")
 _JFilterOr = jpy.get_type("io.deephaven.api.filter.FilterOr")
-_JAsOfMatchRule = jpy.get_type("io.deephaven.engine.table.Table$AsOfMatchRule")
 _JPair = jpy.get_type("io.deephaven.api.agg.Pair")
 _JMatchPair = jpy.get_type("io.deephaven.engine.table.MatchPair")
 _JLayoutHintBuilder = jpy.get_type("io.deephaven.engine.util.LayoutHintBuilder")
@@ -474,15 +473,6 @@ class SortDirection(Enum):
     """"""
 
 
-class AsOfMatchRule(Enum):
-    """An enum defining matching rules on the final column to match by in as-of join and reverse as-of join
-    operation. """
-    LESS_THAN_EQUAL = _JAsOfMatchRule.LESS_THAN_EQUAL
-    LESS_THAN = _JAsOfMatchRule.LESS_THAN
-    GREATER_THAN_EQUAL = _JAsOfMatchRule.GREATER_THAN_EQUAL
-    GREATER_THAN = _JAsOfMatchRule.GREATER_THAN
-
-
 def _sort_column(col, dir_):
     return (_JSortColumn.desc(_JColumnName.of(col)) if dir_ == SortDirection.DESCENDING else _JSortColumn.asc(
         _JColumnName.of(col)))
@@ -519,6 +509,7 @@ class Table(JObjectWrapper):
         self._definition = self.j_table.getDefinition()
         self._schema = None
         self._is_refreshing = None
+        self._is_flat = None
 
     def __repr__(self):
         default_repr = super().__repr__()
@@ -547,6 +538,13 @@ class Table(JObjectWrapper):
         if self._is_refreshing is None:
             self._is_refreshing = self.j_table.isRefreshing()
         return self._is_refreshing
+
+    @property
+    def is_flat(self) -> bool:
+        """Whether this table is guaranteed to be flat, i.e. its row set will be from 0 to number of rows - 1."""
+        if self._is_flat is None:
+            self._is_flat = self.j_table.isFlat()
+        return self._is_flat
 
     @property
     def columns(self) -> List[Column]:
@@ -616,6 +614,10 @@ class Table(JObjectWrapper):
     def coalesce(self) -> Table:
         """Returns a coalesced child table."""
         return Table(j_table=self.j_table.coalesce())
+
+    def flatten(self) -> Table:
+        """Returns a new version of this table with a flat row set, i.e. from 0 to number of rows - 1."""
+        return Table(j_table=self.j_table.flatten())
 
     def snapshot(self) -> Table:
         """Returns a static snapshot table.
@@ -1249,8 +1251,7 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table join operation failed.") from e
 
-    def aj(self, table: Table, on: Union[str, Sequence[str]], joins: Union[str, Sequence[str]] = None,
-           match_rule: AsOfMatchRule = AsOfMatchRule.LESS_THAN_EQUAL) -> Table:
+    def aj(self, table: Table, on: Union[str, Sequence[str]], joins: Union[str, Sequence[str]] = None) -> Table:
         """The aj (as-of join) method creates a new table containing all the rows and columns of the left table,
         plus additional columns containing data from the right table. For columns appended to the left table (joins),
         row values equal the row values from the right table where the keys from the left table most closely match
@@ -1259,12 +1260,12 @@ class Table(JObjectWrapper):
 
         Args:
             table (Table): the right-table of the join
-            on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or an equal expression,
-                i.e. "col_a = col_b" for different column names
+            on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or a match condition of two
+                columns, e.g. 'col_a = col_b'. The first 'N-1' matches are exact matches.  The final match is an inexact
+                match.  The inexact match can use either '<' or '<='.  If a common name is used for the inexact match,
+                '<=' is used for the comparison.
             joins (Union[str, Sequence[str]], optional): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
-            match_rule (AsOfMatchRule): the inexact matching rule on the last column to match specified in 'on',
-                default is AsOfMatchRule.LESS_THAN_EQUAL. The other valid value is AsOfMatchRule.LESS_THAN.
         Returns:
             a new table
 
@@ -1272,20 +1273,16 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            on = to_sequence(on)
-            joins = to_sequence(joins)
-            if on:
-                on = [_JMatchPair.of(_JPair.parse(p)) for p in on]
-            if joins:
-                joins = [_JMatchPair.of(_JPair.parse(p)) for p in joins]
+            on = ",".join(to_sequence(on))
+            joins = ",".join(to_sequence(joins))
+            table_op = jpy.cast(self.j_object, _JTableOperations)
             with auto_locking_ctx(self, table):
-                return Table(j_table=self.j_table.aj(table.j_table, on, joins, match_rule.value))
+                return Table(j_table=table_op.aj(table.j_table, on, joins))
         except Exception as e:
             raise DHError(e, "table as-of join operation failed.") from e
 
-    def raj(self, table: Table, on: Union[str, Sequence[str]], joins: Union[str, Sequence[str]] = None,
-            match_rule: AsOfMatchRule = AsOfMatchRule.GREATER_THAN_EQUAL) -> Table:
-        """The reverse-as-of join method creates a new table containing all of the rows and columns of the left table,
+    def raj(self, table: Table, on: Union[str, Sequence[str]], joins: Union[str, Sequence[str]] = None) -> Table:
+        """The reverse-as-of join method creates a new table containing all the rows and columns of the left table,
         plus additional columns containing data from the right table. For columns appended to the left table (joins),
         row values equal the row values from the right table where the keys from the left table most closely match
         the keys from the right table without going under. If there is no matching key in the right table, appended row
@@ -1293,12 +1290,12 @@ class Table(JObjectWrapper):
 
         Args:
             table (Table): the right-table of the join
-            on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or an equal expression,
-                i.e. "col_a = col_b" for different column names
+            on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or a match condition of two
+                columns, e.g. 'col_a = col_b'. The first 'N-1' matches are exact matches.  The final match is an inexact
+                match.  The inexact match can use either '>' or '>='.  If a common name is used for the inexact match,
+                '>=' is used for the comparison.
             joins (Union[str, Sequence[str]], optional): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
-            match_rule (AsOfMatchRule): the inexact matching rule on the last column to match specified in 'on',
-                default is AsOfMatchRule.GREATER_THAN_EQUAL. The other valid value is AsOfMatchRule.GREATER_THAN.
 
         Returns:
             a new table
@@ -1307,16 +1304,11 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
-            on = to_sequence(on)
-            joins = to_sequence(joins)
-            on = to_sequence(on)
-            joins = to_sequence(joins)
-            if on:
-                on = [_JMatchPair.of(_JPair.parse(p)) for p in on]
-            if joins:
-                joins = [_JMatchPair.of(_JPair.parse(p)) for p in joins]
+            on = ",".join(to_sequence(on))
+            joins = ",".join(to_sequence(joins))
+            table_op = jpy.cast(self.j_object, _JTableOperations)
             with auto_locking_ctx(self, table):
-                return Table(j_table=self.j_table.raj(table.j_table, on, joins, match_rule.value))
+                return Table(j_table=table_op.raj(table.j_table, on, joins))
         except Exception as e:
             raise DHError(e, "table reverse-as-of join operation failed.") from e
 
@@ -2878,8 +2870,7 @@ class PartitionedTableProxy(JObjectWrapper):
             raise DHError(e, "join operation on the PartitionedTableProxy failed.") from e
 
     def aj(self, table: Union[Table, PartitionedTableProxy], on: Union[str, Sequence[str]],
-           joins: Union[str, Sequence[str]] = None,
-           match_rule: AsOfMatchRule = AsOfMatchRule.LESS_THAN_EQUAL) -> PartitionedTableProxy:
+           joins: Union[str, Sequence[str]] = None) -> PartitionedTableProxy:
         """Applies the :meth:`~Table.aj` table operation to all constituent tables of the underlying partitioned
         table with the provided right table or PartitionedTableProxy, and produces a new PartitionedTableProxy with
         the result tables as the constituents of its underlying partitioned table.
@@ -2889,12 +2880,12 @@ class PartitionedTableProxy(JObjectWrapper):
 
         Args:
             table (Union[Table, PartitionedTableProxy]): the right table or PartitionedTableProxy of the join
-            on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or an equal expression,
-                i.e. "col_a = col_b" for different column names
+            on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or a match condition of two
+                columns, e.g. 'col_a = col_b'. The first 'N-1' matches are exact matches.  The final match is an inexact
+                match.  The inexact match can use either '<' or '<='.  If a common name is used for the inexact match,
+                '<=' is used for the comparison.
             joins (Union[str, Sequence[str]], optional): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
-            match_rule (AsOfMatchRule): the inexact matching rule on the last column to match specified in 'on',
-                default is AsOfMatchRule.LESS_THAN_EQUAL. The other valid value is AsOfMatchRule.LESS_THAN.
         Returns:
             a new PartitionedTableProxy
 
@@ -2902,31 +2893,18 @@ class PartitionedTableProxy(JObjectWrapper):
             DHError
         """
         try:
-            on = to_sequence(on)
-            joins = to_sequence(joins)
-            if on:
-                on = [_JJoinMatch.parse(p) for p in on]
-            if joins:
-                joins = [_JJoinAddition.parse(p) for p in joins]
-
-            on = j_array_list(on)
-            joins = j_array_list(joins)
-            table_op = jpy.cast(table.j_object, _JTableOperations)
-            if match_rule is AsOfMatchRule.LESS_THAN_EQUAL:
-                match_rule = _JAsOfJoinRule.LESS_THAN_EQUAL
-            elif match_rule is AsOfMatchRule.LESS_THAN:
-                match_rule = _JAsOfJoinRule.LESS_THAN
-            else:
-                raise ValueError("invalid match_rule value")
+            on = ",".join(to_sequence(on))
+            joins = ",".join(to_sequence(joins))
+            table_op = jpy.cast(self.j_object, _JTableOperations)
+            r_table_op = jpy.cast(table.j_object, _JTableOperations)
 
             with auto_locking_ctx(self, table):
-                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.aj(table_op, on, joins, match_rule))
+                return PartitionedTableProxy(j_pt_proxy=table_op.aj(r_table_op, on, joins))
         except Exception as e:
             raise DHError(e, "as-of join operation on the PartitionedTableProxy failed.") from e
 
     def raj(self, table: Union[Table, PartitionedTableProxy], on: Union[str, Sequence[str]],
-            joins: Union[str, Sequence[str]] = None,
-            match_rule: AsOfMatchRule = AsOfMatchRule.GREATER_THAN_EQUAL) -> PartitionedTableProxy:
+            joins: Union[str, Sequence[str]] = None) -> PartitionedTableProxy:
         """Applies the :meth:`~Table.raj` table operation to all constituent tables of the underlying partitioned
         table with the provided right table or PartitionedTableProxy, and produces a new PartitionedTableProxy with
         the result tables as the constituents of its underlying partitioned table.
@@ -2936,12 +2914,12 @@ class PartitionedTableProxy(JObjectWrapper):
 
         Args:
             table (Union[Table, PartitionedTableProxy]): the right table or PartitionedTableProxy of the join
-            on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or an equal expression,
-                i.e. "col_a = col_b" for different column names
+            on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or a match condition of two
+                columns, e.g. 'col_a = col_b'. The first 'N-1' matches are exact matches.  The final match is an inexact
+                match.  The inexact match can use either '>' or '>='.  If a common name is used for the inexact match,
+                '>=' is used for the comparison.
             joins (Union[str, Sequence[str]], optional): the column(s) to be added from the right table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
-            match_rule (AsOfMatchRule): the inexact matching rule on the last column to match specified in 'on',
-                default is AsOfMatchRule.GREATER_THAN_EQUAL. The other valid value is AsOfMatchRule.GREATER_THAN.
         Returns:
             a new PartitionedTableProxy
 
@@ -2949,25 +2927,13 @@ class PartitionedTableProxy(JObjectWrapper):
             DHError
         """
         try:
-            on = to_sequence(on)
-            joins = to_sequence(joins)
-            if on:
-                on = [_JJoinMatch.parse(p) for p in on]
-            if joins:
-                joins = [_JJoinAddition.parse(p) for p in joins]
-
-            on = j_array_list(on)
-            joins = j_array_list(joins)
-            table_op = jpy.cast(table.j_object, _JTableOperations)
-            if match_rule is AsOfMatchRule.GREATER_THAN_EQUAL:
-                match_rule = _JReverseAsOfJoinRule.GREATER_THAN_EQUAL
-            elif match_rule is AsOfMatchRule.GREATER_THAN:
-                match_rule = _JReverseAsOfJoinRule.GREATER_THAN
-            else:
-                raise ValueError("invalid match_rule value")
+            on = ",".join(to_sequence(on))
+            joins = ",".join(to_sequence(joins))
+            table_op = jpy.cast(self.j_object, _JTableOperations)
+            r_table_op = jpy.cast(table.j_object, _JTableOperations)
 
             with auto_locking_ctx(self, table):
-                return PartitionedTableProxy(j_pt_proxy=self.j_pt_proxy.raj(table_op, on, joins, match_rule))
+                return PartitionedTableProxy(j_pt_proxy=table_op.raj(r_table_op, on, joins))
         except Exception as e:
             raise DHError(e, "reverse as-of join operation on the PartitionedTableProxy failed.") from e
 

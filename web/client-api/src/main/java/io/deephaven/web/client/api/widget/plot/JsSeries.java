@@ -3,12 +3,16 @@
  */
 package io.deephaven.web.client.api.widget.plot;
 
+import com.vertispan.tsdefs.annotations.TsInterface;
+import com.vertispan.tsdefs.annotations.TsTypeRef;
 import elemental2.core.JsObject;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.SeriesDescriptor;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.SourceDescriptor;
 import io.deephaven.web.client.api.JsPartitionedTable;
 import io.deephaven.web.client.api.JsTable;
+import io.deephaven.web.client.api.widget.plot.enums.JsSeriesPlotStyle;
 import jsinterop.annotations.JsIgnore;
+import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
@@ -16,7 +20,8 @@ import jsinterop.annotations.JsType;
 import java.util.Arrays;
 import java.util.Map;
 
-@JsType
+@TsInterface
+@JsType(namespace = "dh.plot", name = "Series")
 public class JsSeries {
 
     private final SeriesDescriptor descriptor;
@@ -103,7 +108,7 @@ public class JsSeries {
     }
 
     @JsProperty
-    @SuppressWarnings("unusable-by-js")
+    @TsTypeRef(JsSeriesPlotStyle.class)
     public int getPlotStyle() {
         return descriptor.getPlotStyle();
     }
@@ -114,6 +119,7 @@ public class JsSeries {
     }
 
     @JsProperty(name = "isLinesVisible")
+    @JsNullable
     public Boolean getLinesVisible() {
         if (descriptor.hasLinesVisible()) {
             return descriptor.getLinesVisible();
@@ -122,6 +128,7 @@ public class JsSeries {
     }
 
     @JsProperty(name = "isShapesVisible")
+    @JsNullable
     public Boolean getShapesVisible() {
         if (descriptor.hasShapesVisible()) {
             return descriptor.getShapesVisible();
@@ -146,6 +153,7 @@ public class JsSeries {
     // }
 
     @JsProperty
+    @JsNullable
     public String getPointLabelFormat() {
         if (descriptor.hasPointLabelFormat()) {
             return descriptor.getPointLabelFormat();
@@ -154,6 +162,7 @@ public class JsSeries {
     }
 
     @JsProperty
+    @JsNullable
     public String getXToolTipPattern() {
         if (descriptor.hasXToolTipPattern()) {
             return descriptor.getXToolTipPattern();
@@ -162,6 +171,7 @@ public class JsSeries {
     }
 
     @JsProperty
+    @JsNullable
     public String getYToolTipPattern() {
         if (descriptor.hasYToolTipPattern()) {
             return descriptor.getYToolTipPattern();
@@ -175,6 +185,7 @@ public class JsSeries {
     }
 
     @JsProperty
+    @JsNullable
     public Double getShapeSize() {
         if (descriptor.hasShapeSize()) {
             return descriptor.getShapeSize();

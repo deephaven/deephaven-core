@@ -76,6 +76,8 @@ public class OperationHelper {
                 return Stream.of(op.getSnapshotWhen().getBaseId(), op.getSnapshotWhen().getTriggerId());
             case FLATTEN:
                 return Stream.of(op.getFlatten().getSourceId());
+            case META_TABLE:
+                return Stream.of(op.getMetaTable().getSourceId());
             case RUN_CHART_DOWNSAMPLE:
                 return Stream.of(op.getRunChartDownsample().getSourceId());
             case FETCH_TABLE:

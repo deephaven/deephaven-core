@@ -18,7 +18,7 @@ dependencies {
         because 'hadoop-common required dependency for LZ4Codec'
     }
     // Pick up default jvm-compatible compression codecs
-    implementation('io.airlift:aircompressor:0.21') {
+    implementation('io.airlift:aircompressor:0.24') {
         because 'Provides Lz4, LZO, Zstd compression support for parquet'
     }
 

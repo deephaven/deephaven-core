@@ -3,6 +3,7 @@
  */
 package io.deephaven.web.client.api.tree;
 
+import com.vertispan.tsdefs.annotations.TsTypeRef;
 import elemental2.core.JsArray;
 import elemental2.core.JsObject;
 import elemental2.core.JsString;
@@ -28,6 +29,7 @@ import io.deephaven.web.client.api.tree.enums.JsAggregationOperation;
 import io.deephaven.web.client.fu.JsLog;
 import jsinterop.annotations.JsConstructor;
 import jsinterop.annotations.JsIgnore;
+import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsType;
 import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
@@ -39,16 +41,17 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collector;
-import java.util.stream.Collectors;
 
 @JsType(name = "RollupConfig", namespace = "dh")
 public class JsRollupConfig {
 
     public JsArray<JsString> groupingColumns = null;
-    public JsPropertyMap<JsArray<JsString>> aggregations = Js.cast(JsObject.create(null));
+    public JsPropertyMap<JsArray<@TsTypeRef(JsAggregationOperation.class) String>> aggregations =
+            Js.cast(JsObject.create(null));
     public boolean includeConstituents = false;
+    // TODO optional
+    @JsNullable
     public boolean includeOriginalColumns = false;
     public boolean includeDescriptions = true;
 

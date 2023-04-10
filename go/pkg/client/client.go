@@ -62,16 +62,18 @@ type Client struct {
 // so that the connection remains open. The provided context is saved and used to send keepalive messages.
 //
 // host, port, and auth are used to connect to the Deephaven server.  host and port are the Deephaven server host and port.
-// auth is the authorization string used to get the first token.  Examples:
-//   - "Anonymous" is used for anonymous authentication.
-//   - "io.deephaven.authentication.psk.PskAuthenticationHandler <password>" is used for PSK authentication
 //
-// If auth is set to an empty string, DefaultAuth authentication is used.
+// authType is the type of authentication to use.  This can be 'Anonymous', 'Basic', or any custom-built
+// authenticator in the server, such as "io.deephaven.authentication.psk.PskAuthenticationHandler",  The default is 'Anonymous'.
 // To see what authentication methods are available on the Deephaven server, navigate to: http://<host>:<port>/jsapi/authentication/.
+//
+// authToken is the authentication token string. When authType is 'Basic', it must be
+// "user:password"; when auth_type is DefaultAuth, it will be ignored; when auth_type is a custom-built
+// authenticator, it must conform to the specific requirement of the authenticator.
 //
 // The option arguments can be used to specify other settings for the client.
 // See the With<XYZ> methods (e.g. WithConsole) for details on what options are available.
-func NewClient(ctx context.Context, host string, port string, auth string, options ...ClientOption) (client *Client, err error) {
+func NewClient(ctx context.Context, host string, port string, authType string, authToken string, options ...ClientOption) (client *Client, err error) {
 	defer func() {
 		if err != nil && client != nil {
 			e := client.Close()
@@ -101,11 +103,11 @@ func NewClient(ctx context.Context, host string, port string, auth string, optio
 
 	cfgClient := configpb2.NewConfigServiceClient(grpcChannel)
 
-	if auth == "" {
-		auth = DefaultAuth
+	if authType == "" {
+		authType = DefaultAuth
 	}
 
-	client.tokenMgr, err = newTokenManager(ctx, client.flightStub, cfgClient, auth)
+	client.tokenMgr, err = newTokenManager(ctx, client.flightStub, cfgClient, authType, authToken)
 	if err != nil {
 		return nil, err
 	}

@@ -3,15 +3,22 @@
  */
 package io.deephaven.web.client.api.widget.plot;
 
+import com.vertispan.tsdefs.annotations.TsInterface;
+import com.vertispan.tsdefs.annotations.TsName;
+import com.vertispan.tsdefs.annotations.TsTypeRef;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.AxisDescriptor;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.BusinessCalendarDescriptor;
 import io.deephaven.web.client.api.i18n.JsDateTimeFormat;
 import io.deephaven.web.client.api.widget.calendar.JsBusinessCalendar;
+import io.deephaven.web.client.api.widget.plot.enums.JsAxisFormatType;
+import io.deephaven.web.client.api.widget.plot.enums.JsAxisPosition;
+import io.deephaven.web.client.api.widget.plot.enums.JsAxisType;
 import io.deephaven.web.client.fu.JsLog;
 import jsinterop.annotations.*;
 import jsinterop.base.Js;
 
-@JsType
+@TsInterface
+@TsName(namespace = "dh.plot", name = "Axis")
 public class JsAxis {
     private final AxisDescriptor axis;
     private final JsFigure jsFigure;
@@ -21,7 +28,6 @@ public class JsAxis {
     private Long min;
     private Long max;
 
-    @JsIgnore
     public JsAxis(AxisDescriptor descriptor, JsFigure jsFigure) {
         this.axis = descriptor;
         this.jsFigure = jsFigure;
@@ -45,19 +51,19 @@ public class JsAxis {
     }
 
     @JsProperty
-    @SuppressWarnings("unusable-by-js")
+    @TsTypeRef(JsAxisFormatType.class)
     public int getFormatType() {
         return axis.getFormatType();
     }
 
     @JsProperty
-    @SuppressWarnings("unusable-by-js")
+    @TsTypeRef(JsAxisType.class)
     public int getType() {
         return axis.getType();
     }
 
     @JsProperty
-    @SuppressWarnings("unusable-by-js")
+    @TsTypeRef(JsAxisPosition.class)
     public int getPosition() {
         return axis.getPosition();
     }
@@ -89,6 +95,7 @@ public class JsAxis {
     // }
 
     @JsProperty
+    @JsNullable
     public String getFormatPattern() {
         if (axis.hasFormatPattern()) {
             return axis.getFormatPattern();
@@ -127,8 +134,12 @@ public class JsAxis {
     }
 
     @JsProperty
-    public double getGapBetweenMajorTicks() {
-        return axis.getGapBetweenMajorTicks();
+    @JsNullable
+    public Double getGapBetweenMajorTicks() {
+        if (axis.hasGapBetweenMajorTicks()) {
+            return axis.getGapBetweenMajorTicks();
+        }
+        return null;
     }
 
     @JsProperty
@@ -158,7 +169,8 @@ public class JsAxis {
     }
 
     @JsMethod
-    public void range(@JsOptional Double pixelCount, @JsOptional Object min, @JsOptional Object max) {
+    public void range(@JsOptional @JsNullable Double pixelCount, @JsOptional @JsNullable Object min,
+            @JsOptional @JsNullable Object max) {
         if (pixelCount == null || !Js.typeof(Js.asAny(pixelCount)).equals("number")) {
             if (this.pixels != null) {
                 JsLog.warn("Turning off downsampling on a chart where it is running is not currently supported");
@@ -193,7 +205,6 @@ public class JsAxis {
         jsFigure.updateDownsampleRange(axis, this.pixels, this.min, this.max);
     }
 
-    @JsIgnore
     public AxisDescriptor getDescriptor() {
         return this.axis;
     }

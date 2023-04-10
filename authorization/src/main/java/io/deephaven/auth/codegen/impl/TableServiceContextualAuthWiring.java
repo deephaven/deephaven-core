@@ -28,6 +28,7 @@ import io.deephaven.proto.backplane.grpc.HeadOrTailByRequest;
 import io.deephaven.proto.backplane.grpc.HeadOrTailRequest;
 import io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.MergeTablesRequest;
+import io.deephaven.proto.backplane.grpc.MetaTableRequest;
 import io.deephaven.proto.backplane.grpc.NaturalJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.RunChartDownsampleRequest;
 import io.deephaven.proto.backplane.grpc.SeekRowRequest;
@@ -466,6 +467,17 @@ public interface TableServiceContextualAuthWiring {
     void checkPermissionSeekRow(AuthContext authContext, SeekRowRequest request,
             List<Table> sourceTables);
 
+    /**
+     * Authorize a request to MetaTable.
+     *
+     * @param authContext the authentication context of the request
+     * @param request the request to authorize
+     * @param sourceTables the operation's source tables
+     * @throws io.grpc.StatusRuntimeException if the user is not authorized to invoke MetaTable
+     */
+    void checkPermissionMetaTable(AuthContext authContext, MetaTableRequest request,
+            List<Table> sourceTables);
+
     class AllowAll implements TableServiceContextualAuthWiring {
         public void checkPermissionGetExportedTableCreationResponse(AuthContext authContext,
                 Ticket request, List<Table> sourceTables) {}
@@ -579,6 +591,9 @@ public interface TableServiceContextualAuthWiring {
                 ExportedTableUpdatesRequest request, List<Table> sourceTables) {}
 
         public void checkPermissionSeekRow(AuthContext authContext, SeekRowRequest request,
+                List<Table> sourceTables) {}
+
+        public void checkPermissionMetaTable(AuthContext authContext, MetaTableRequest request,
                 List<Table> sourceTables) {}
     }
 
@@ -769,6 +784,11 @@ public interface TableServiceContextualAuthWiring {
         }
 
         public void checkPermissionSeekRow(AuthContext authContext, SeekRowRequest request,
+                List<Table> sourceTables) {
+            ServiceAuthWiring.operationNotAllowed();
+        }
+
+        public void checkPermissionMetaTable(AuthContext authContext, MetaTableRequest request,
                 List<Table> sourceTables) {
             ServiceAuthWiring.operationNotAllowed();
         }
@@ -1040,6 +1060,13 @@ public interface TableServiceContextualAuthWiring {
                 List<Table> sourceTables) {
             if (delegate != null) {
                 delegate.checkPermissionSeekRow(authContext, request, sourceTables);
+            }
+        }
+
+        public void checkPermissionMetaTable(AuthContext authContext, MetaTableRequest request,
+                List<Table> sourceTables) {
+            if (delegate != null) {
+                delegate.checkPermissionMetaTable(authContext, request, sourceTables);
             }
         }
     }

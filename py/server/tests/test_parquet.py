@@ -187,7 +187,7 @@ class ParquetTestCase(BaseTestCase):
         self.round_trip_with_compression("SNAPPY", dh_table)
         # LZO is not fully supported in python/c++
         # self.round_trip_with_compression("LZO", dh_table)
-        # TODO(deephaven-core#3148) This test seems to write parquet output with LZ4_RAW as the compression type, Java can't read it
+        # TODO(deephaven-core#3148): LZ4_RAW parquet support
         # self.round_trip_with_compression("LZ4", dh_table)
         self.round_trip_with_compression("GZIP", dh_table)
         self.round_trip_with_compression("ZSTD", dh_table)

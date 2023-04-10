@@ -17,7 +17,7 @@ import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.perf.QueryProcessingResults;
-import io.deephaven.engine.table.impl.util.MemoryTableLoggers;
+import io.deephaven.engine.table.impl.util.EngineMetrics;
 import io.deephaven.engine.tablelogger.QueryOperationPerformanceLogLogger;
 import io.deephaven.engine.tablelogger.QueryPerformanceLogLogger;
 import io.deephaven.engine.updategraph.DynamicNode;
@@ -915,7 +915,7 @@ public class SessionState {
                 QueryPerformanceRecorder.resetInstance();
             }
             if ((shouldLog || caughtException != null) && queryProcessingResults != null) {
-                final MemoryTableLoggers memLoggers = MemoryTableLoggers.getInstance();
+                final EngineMetrics memLoggers = EngineMetrics.getInstance();
                 final QueryPerformanceLogLogger qplLogger = memLoggers.getQplLogger();
                 final QueryOperationPerformanceLogLogger qoplLogger = memLoggers.getQoplLogger();
                 try {

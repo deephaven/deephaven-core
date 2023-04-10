@@ -9,6 +9,8 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.Au
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.BindTableToVariableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.BindTableToVariableResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.BrowserNextResponse;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.CancelAutoCompleteRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.CancelAutoCompleteResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.CancelCommandRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.CancelCommandResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.ExecuteCommandRequest;
@@ -125,6 +127,99 @@ public class ConsoleServiceClient {
         @JsOverlay
         default boolean isBrowserHeaders() {
             return (Object) this instanceof BrowserHeaders;
+        }
+    }
+
+    @JsFunction
+    public interface CancelAutoCompleteCallbackFn {
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface P0Type {
+            @JsOverlay
+            static ConsoleServiceClient.CancelAutoCompleteCallbackFn.P0Type create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            double getCode();
+
+            @JsProperty
+            String getMessage();
+
+            @JsProperty
+            BrowserHeaders getMetadata();
+
+            @JsProperty
+            void setCode(double code);
+
+            @JsProperty
+            void setMessage(String message);
+
+            @JsProperty
+            void setMetadata(BrowserHeaders metadata);
+        }
+
+        void onInvoke(
+                ConsoleServiceClient.CancelAutoCompleteCallbackFn.P0Type p0, CancelAutoCompleteResponse p1);
+    }
+
+    @JsFunction
+    public interface CancelAutoCompleteMetadata_or_callbackFn {
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface P0Type {
+            @JsOverlay
+            static ConsoleServiceClient.CancelAutoCompleteMetadata_or_callbackFn.P0Type create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            double getCode();
+
+            @JsProperty
+            String getMessage();
+
+            @JsProperty
+            BrowserHeaders getMetadata();
+
+            @JsProperty
+            void setCode(double code);
+
+            @JsProperty
+            void setMessage(String message);
+
+            @JsProperty
+            void setMetadata(BrowserHeaders metadata);
+        }
+
+        void onInvoke(
+                ConsoleServiceClient.CancelAutoCompleteMetadata_or_callbackFn.P0Type p0,
+                CancelAutoCompleteResponse p1);
+    }
+
+    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+    public interface CancelAutoCompleteMetadata_or_callbackUnionType {
+        @JsOverlay
+        static ConsoleServiceClient.CancelAutoCompleteMetadata_or_callbackUnionType of(Object o) {
+            return Js.cast(o);
+        }
+
+        @JsOverlay
+        default BrowserHeaders asBrowserHeaders() {
+            return Js.cast(this);
+        }
+
+        @JsOverlay
+        default ConsoleServiceClient.CancelAutoCompleteMetadata_or_callbackFn asCancelAutoCompleteMetadata_or_callbackFn() {
+            return Js.cast(this);
+        }
+
+        @JsOverlay
+        default boolean isBrowserHeaders() {
+            return (Object) this instanceof BrowserHeaders;
+        }
+
+        @JsOverlay
+        default boolean isCancelAutoCompleteMetadata_or_callbackFn() {
+            return (Object) this instanceof ConsoleServiceClient.CancelAutoCompleteMetadata_or_callbackFn;
         }
     }
 
@@ -743,6 +838,58 @@ public class ConsoleServiceClient {
                 Js.<ConsoleServiceClient.BindTableToVariableMetadata_or_callbackUnionType>uncheckedCast(
                         metadata_or_callback));
     }
+
+    @JsOverlay
+    public final UnaryResponse cancelAutoComplete(
+            CancelAutoCompleteRequest requestMessage,
+            BrowserHeaders metadata_or_callback,
+            ConsoleServiceClient.CancelAutoCompleteCallbackFn callback) {
+        return cancelAutoComplete(
+                requestMessage,
+                Js.<ConsoleServiceClient.CancelAutoCompleteMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
+    }
+
+    @JsOverlay
+    public final UnaryResponse cancelAutoComplete(
+            CancelAutoCompleteRequest requestMessage, BrowserHeaders metadata_or_callback) {
+        return cancelAutoComplete(
+                requestMessage,
+                Js.<ConsoleServiceClient.CancelAutoCompleteMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
+    }
+
+    @JsOverlay
+    public final UnaryResponse cancelAutoComplete(
+            CancelAutoCompleteRequest requestMessage,
+            ConsoleServiceClient.CancelAutoCompleteMetadata_or_callbackFn metadata_or_callback,
+            ConsoleServiceClient.CancelAutoCompleteCallbackFn callback) {
+        return cancelAutoComplete(
+                requestMessage,
+                Js.<ConsoleServiceClient.CancelAutoCompleteMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback),
+                callback);
+    }
+
+    @JsOverlay
+    public final UnaryResponse cancelAutoComplete(
+            CancelAutoCompleteRequest requestMessage,
+            ConsoleServiceClient.CancelAutoCompleteMetadata_or_callbackFn metadata_or_callback) {
+        return cancelAutoComplete(
+                requestMessage,
+                Js.<ConsoleServiceClient.CancelAutoCompleteMetadata_or_callbackUnionType>uncheckedCast(
+                        metadata_or_callback));
+    }
+
+    public native UnaryResponse cancelAutoComplete(
+            CancelAutoCompleteRequest requestMessage,
+            ConsoleServiceClient.CancelAutoCompleteMetadata_or_callbackUnionType metadata_or_callback,
+            ConsoleServiceClient.CancelAutoCompleteCallbackFn callback);
+
+    public native UnaryResponse cancelAutoComplete(
+            CancelAutoCompleteRequest requestMessage,
+            ConsoleServiceClient.CancelAutoCompleteMetadata_or_callbackUnionType metadata_or_callback);
 
     @JsOverlay
     public final UnaryResponse cancelCommand(

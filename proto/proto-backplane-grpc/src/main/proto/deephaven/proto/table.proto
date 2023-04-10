@@ -229,6 +229,12 @@ service TableService {
    * Seek a row number within a table.
    */
   rpc SeekRow(SeekRowRequest) returns (SeekRowResponse) {}
+
+  /*
+   * Returns the meta table of a table.
+   */
+  rpc MetaTable(MetaTableRequest) returns (ExportedTableCreationResponse) {}
+
 }
 
 message TableReference {
@@ -1031,6 +1037,11 @@ message FlattenRequest {
   TableReference source_id = 2;
 }
 
+message MetaTableRequest {
+  Ticket result_id = 1;
+  TableReference source_id = 2;
+}
+
 message RunChartDownsampleRequest {
   message ZoomRange {
     optional int64 min_date_nanos = 1 [jstype=JS_STRING];
@@ -1125,6 +1136,7 @@ message BatchTableRequest {
       AggregateRequest aggregate = 35;
       SnapshotTableRequest snapshot = 36;
       SnapshotWhenTableRequest snapshot_when = 37;
+      MetaTableRequest meta_table = 38;
     }
   }
 }

@@ -46,8 +46,7 @@ class Classpaths {
     static final String COMMONS_GROUP = 'org.apache.commons'
 
     static final String ARROW_GROUP = 'org.apache.arrow'
-    // Note, when updated to 9.0.0+, fix deephaven-core#2923.
-    static final String ARROW_VERSION = '7.0.0'
+    static final String ARROW_VERSION = '11.0.0'
 
     static final String SLF4J_GROUP = 'org.slf4j'
     static final String SLF4J_VERSION = '2.0.6'

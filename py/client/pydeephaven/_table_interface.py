@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
 #
 
 from __future__ import annotations
@@ -7,12 +7,14 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import List, Any
 
-from pydeephaven._constants import AggType
+from pydeephaven import agg
 from pydeephaven._table_ops import UpdateOp, LazyUpdateOp, ViewOp, UpdateViewOp, SelectOp, DropColumnsOp, \
     SelectDistinctOp, SortOp, UnstructuredFilterOp, HeadOp, TailOp, HeadByOp, TailByOp, UngroupOp, NaturalJoinOp, \
-    ExactJoinOp, CrossJoinOp, AsOfJoinOp, DedicatedAggOp, ComboAggOp, UpdateByOp, SnapshotTableOp, SnapshotWhenTableOp
-from pydeephaven.combo_agg import ComboAggregation
+    ExactJoinOp, CrossJoinOp, AsOfJoinOp, UpdateByOp, SnapshotTableOp, SnapshotWhenTableOp, WhereInTableOp, \
+    AggregateAllOp, AggregateOp
+from pydeephaven.agg import Aggregation, _AggregationColumns
 from pydeephaven.constants import MatchRule, SortDirection
+from pydeephaven.dherror import DHError
 from pydeephaven.updateby import UpdateByOperation
 
 
@@ -347,7 +349,7 @@ class TableInterface(ABC):
         Raises:
             DHError
         """
-        table_op = DedicatedAggOp(AggType.GROUP, column_names=by)
+        table_op = AggregateAllOp(agg=agg.group(), by=by)
         return self.table_op_handler(table_op)
 
     def ungroup(self, cols: List[str] = [], null_fill: bool = True):
@@ -381,7 +383,7 @@ class TableInterface(ABC):
         Raises:
             DHError
         """
-        table_op = DedicatedAggOp(AggType.FIRST, column_names=by)
+        table_op = AggregateAllOp(agg=agg.first(), by=by)
         return self.table_op_handler(table_op)
 
     def last_by(self, by: List[str] = []):
@@ -397,7 +399,7 @@ class TableInterface(ABC):
         Raises:
             DHError
         """
-        table_op = DedicatedAggOp(AggType.LAST, column_names=by)
+        table_op = AggregateAllOp(agg=agg.last(), by=by)
         return self.table_op_handler(table_op)
 
     def sum_by(self, by: List[str] = []):
@@ -413,7 +415,7 @@ class TableInterface(ABC):
         Raises:
             DHError
         """
-        table_op = DedicatedAggOp(AggType.SUM, column_names=by)
+        table_op = AggregateAllOp(agg=agg.sum_(), by=by)
         return self.table_op_handler(table_op)
 
     def avg_by(self, by: List[str] = []):
@@ -429,7 +431,7 @@ class TableInterface(ABC):
         Raises:
             DHError
         """
-        table_op = DedicatedAggOp(AggType.AVG, column_names=by)
+        table_op = AggregateAllOp(agg=agg.avg(), by=by)
         return self.table_op_handler(table_op)
 
     def std_by(self, by: List[str] = []):
@@ -445,7 +447,7 @@ class TableInterface(ABC):
         Raises:
             DHError
         """
-        table_op = DedicatedAggOp(AggType.STD, column_names=by)
+        table_op = AggregateAllOp(agg=agg.std(), by=by)
         return self.table_op_handler(table_op)
 
     def var_by(self, by: List[str] = []):
@@ -461,7 +463,7 @@ class TableInterface(ABC):
         Raises:
             DHError
         """
-        table_op = DedicatedAggOp(AggType.VAR, column_names=by)
+        table_op = AggregateAllOp(agg=agg.var(), by=by)
         return self.table_op_handler(table_op)
 
     def median_by(self, by: List[str] = []):
@@ -477,7 +479,7 @@ class TableInterface(ABC):
         Raises:
             DHError
         """
-        table_op = DedicatedAggOp(AggType.MEDIAN, column_names=by)
+        table_op = AggregateAllOp(agg=agg.median(), by=by)
         return self.table_op_handler(table_op)
 
     def min_by(self, by: List[str] = []):
@@ -493,7 +495,7 @@ class TableInterface(ABC):
         Raises:
             DHError
         """
-        table_op = DedicatedAggOp(AggType.MIN, column_names=by)
+        table_op = AggregateAllOp(agg=agg.min_(), by=by)
         return self.table_op_handler(table_op)
 
     def max_by(self, by: List[str] = []):
@@ -509,7 +511,7 @@ class TableInterface(ABC):
         Raises:
             DHError
         """
-        table_op = DedicatedAggOp(AggType.MAX, column_names=by)
+        table_op = AggregateAllOp(agg=agg.max_(), by=by)
         return self.table_op_handler(table_op)
 
     def count_by(self, col: str, by: List[str] = []):
@@ -526,30 +528,15 @@ class TableInterface(ABC):
         Raises:
             DHError
         """
-        table_op = DedicatedAggOp(AggType.COUNT, column_names=by, count_column=col)
+        table_op = AggregateOp(aggs=[agg.count_(col=col)], by=by)
         return self.table_op_handler(table_op)
 
-    def count(self, col: str):
-        """ Count the number of values in the specified column on the table and return the result in a table with one row
-        and one column.
+    def agg_by(self, aggs: List[Aggregation], by: List[str]):
+        """ Create a new table containing grouping columns and grouped data. The resulting grouped data is defined by
+        the aggregations specified.
 
         Args:
-            col (str): the name of the column whose values to be counted
-
-        Returns:
-            a Table object
-
-        Raises:
-            DHError
-        """
-        table_op = DedicatedAggOp(AggType.COUNT, count_column=col)
-        return self.table_op_handler(table_op)
-
-    def agg_by(self, agg: ComboAggregation, by: List[str]):
-        """ Perform a Combined Aggregation operation on the table and return the result table.
-
-        Args:
-            agg (ComboAggregation): the combined aggregation definition
+            aggs (List[Aggregation]): the aggregations to be applied
             by (List[str]): the group-by column names
 
         Returns:
@@ -558,7 +545,34 @@ class TableInterface(ABC):
         Raises:
             DHError
         """
-        table_op = ComboAggOp(column_names=by, combo_aggregation=agg)
+        for agg in aggs:
+            if hasattr(agg, 'cols') and not agg.cols:
+                raise DHError(message="No columns specified for the aggregation operation {agg}.")
+
+        table_op = AggregateOp(aggs=aggs, by=by)
+        return self.table_op_handler(table_op)
+
+    def agg_all_by(self, agg: Aggregation, by: List[str]):
+        """ Create a new table containing grouping columns and grouped data. The resulting grouped data is defined by
+        the aggregation specified.
+
+        Note, because agg_all_by applies the aggregation to all the columns of the table, it will ignore
+        any column names specified for the aggregation.
+
+        Args:
+            agg (Aggregation): the aggregation to be applied
+            by (List[str]): the group-by column names
+
+        Returns:
+            a Table object
+
+        Raises:
+            DHError
+        """
+        if not isinstance(agg, _AggregationColumns):
+            raise DHError(f"unsupported aggregation {agg}.")
+
+        table_op = AggregateAllOp(agg=agg, by=by)
         return self.table_op_handler(table_op)
 
     def update_by(self, ops: List[UpdateByOperation], by: List[str]):
@@ -619,4 +633,38 @@ class TableInterface(ABC):
         """
         table_op = SnapshotWhenTableOp(trigger_table=trigger_table, stamp_cols=stamp_cols, initial=initial,
                                        incremental=incremental, history=history)
+        return self.table_op_handler(table_op)
+
+    def where_in(self, filter_table: Any, cols: List[str]):
+        """The where_in method creates a new table containing rows from the source table, where the rows match
+        values in the filter table.
+
+        Args:
+            filter_table (Table): the table containing the set of values to filter on
+            cols (List[str]]): the column name(s)
+
+        Returns:
+            a new table
+
+        Raises:
+            DHError
+        """
+        table_op = WhereInTableOp(filter_table=filter_table, cols=cols, inverted=False)
+        return self.table_op_handler(table_op)
+
+    def where_not_in(self, filter_table: Any, cols: List[str]):
+        """The where_not_in method creates a new table containing rows from the source table, where the rows do not
+        match values in the filter table.
+
+        Args:
+            filter_table (Table): the table containing the set of values to filter on
+            cols (List[str]]): the column name(s)
+
+        Returns:
+            a new table
+
+        Raises:
+            DHError
+        """
+        table_op = WhereInTableOp(filter_table=filter_table, cols=cols, inverted=True)
         return self.table_op_handler(table_op)

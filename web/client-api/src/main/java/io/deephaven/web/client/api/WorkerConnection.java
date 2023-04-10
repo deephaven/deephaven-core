@@ -3,6 +3,7 @@
  */
 package io.deephaven.web.client.api;
 
+import com.vertispan.tsdefs.annotations.TsIgnore;
 import elemental2.core.JsArray;
 import elemental2.core.JsObject;
 import elemental2.core.JsSet;
@@ -75,6 +76,7 @@ import io.deephaven.web.client.api.batch.RequestBatcher;
 import io.deephaven.web.client.api.batch.TableConfig;
 import io.deephaven.web.client.api.console.JsVariableChanges;
 import io.deephaven.web.client.api.console.JsVariableDefinition;
+import io.deephaven.web.client.api.console.JsVariableType;
 import io.deephaven.web.client.api.i18n.JsTimeZone;
 import io.deephaven.web.client.api.lifecycle.HasLifecycle;
 import io.deephaven.web.client.api.parse.JsDataHandler;
@@ -89,7 +91,6 @@ import io.deephaven.web.client.state.ClientTableState;
 import io.deephaven.web.client.state.HasTableBinding;
 import io.deephaven.web.client.state.TableReviver;
 import io.deephaven.web.shared.data.DeltaUpdates;
-import io.deephaven.web.shared.data.LogItem;
 import io.deephaven.web.shared.data.RangeSet;
 import io.deephaven.web.shared.data.TableSnapshot;
 import io.deephaven.web.shared.data.TableSubscriptionRequest;
@@ -139,6 +140,7 @@ import static io.deephaven.web.client.api.barrage.WebGrpcUtils.CLIENT_OPTIONS;
  * Responsible for reconnecting to the query server when required - when that server disappears, and at least one table
  * is left un-closed.
  */
+@TsIgnore
 public class WorkerConnection {
     private static final String FLIGHT_AUTH_HEADER_NAME = "authorization";
 
@@ -201,7 +203,7 @@ public class WorkerConnection {
     private final Map<ClientTableState, BiDiStream<FlightData, FlightData>> subscriptionStreams = new HashMap<>();
     private ResponseStreamWrapper<ExportedTableUpdateMessage> exportNotifications;
 
-    private JsSet<JsFigure> figures = new JsSet<>();
+    private JsSet<HasLifecycle> simpleReconnectableInstances = new JsSet<>();
 
     private List<LogItem> pastLogs = new ArrayList<>();
     private JsConsumer<LogItem> recordLog = pastLogs::add;
@@ -325,15 +327,20 @@ public class WorkerConnection {
 
                         reviver.revive(metadata, hasActiveSubs);
 
-                        figures.forEach((p0, p1, p2) -> p0.refetch());
+                        simpleReconnectableInstances.forEach((item, index, arr) -> item.refetch());
                     } else {
+                        // wire up figures to attempt to reconnect when ready
+                        simpleReconnectableInstances.forEach((item, index, arr) -> {
+                            item.reconnect();
+                            return null;
+                        });
+
                         // only notify that we're back, no need to re-create or re-fetch anything
                         ClientTableState[] hasActiveSubs = cache.getAllStates().stream()
                                 .filter(cts -> !cts.isEmpty())
                                 .toArray(ClientTableState[]::new);
 
                         reviver.revive(metadata, hasActiveSubs);
-
                     }
 
                     info.connected();
@@ -590,11 +597,11 @@ public class WorkerConnection {
     // @Override
 
     public void connectionLost() {
-        // notify all active tables and figures that the connection is closed
-        figures.forEach((p0, p1, p2) -> {
+        // notify all active tables and widgets that the connection is closed
+        // TODO(deephaven-core#3604) when a new session is created, refetch all widgets and use that to drive reconnect
+        simpleReconnectableInstances.forEach((item, index, array) -> {
             try {
-                p0.fireEvent(JsFigure.EVENT_DISCONNECT);
-                p0.suppressEvents();
+                item.disconnected();
             } catch (Exception e) {
                 JsLog.warn("Error in firing Figure.EVENT_DISCONNECT event", e);
             }
@@ -604,6 +611,7 @@ public class WorkerConnection {
         for (ClientTableState cts : cache.getAllStates()) {
             cts.forActiveLifecycles(HasLifecycle::disconnected);
         }
+
 
         if (state == State.Disconnected) {
             // deliberately closed, don't try to reopen at this time
@@ -718,23 +726,23 @@ public class WorkerConnection {
     }
 
     public Promise<?> getObject(JsVariableDefinition definition) {
-        if (JsVariableChanges.TABLE.equals(definition.getType())) {
+        if (JsVariableType.TABLE.equals(definition.getType())) {
             return getTable(definition, null);
-        } else if (JsVariableChanges.FIGURE.equals(definition.getType())) {
+        } else if (JsVariableType.FIGURE.equals(definition.getType())) {
             return getFigure(definition);
-        } else if (JsVariableChanges.PANDAS.equals(definition.getType())) {
+        } else if (JsVariableType.PANDAS.equals(definition.getType())) {
             return getWidget(definition)
                     .then(widget -> widget.getExportedObjects()[0].fetch());
-        } else if (JsVariableChanges.PARTITIONEDTABLE.equals(definition.getType())) {
+        } else if (JsVariableType.PARTITIONEDTABLE.equals(definition.getType())) {
             return getPartitionedTable(definition);
-        } else if (JsVariableChanges.HIERARCHICALTABLE.equals(definition.getType())) {
+        } else if (JsVariableType.HIERARCHICALTABLE.equals(definition.getType())) {
             return getHierarchicalTable(definition);
         } else {
-            if (JsVariableChanges.TABLEMAP.equals(definition.getType())) {
+            if (JsVariableType.TABLEMAP.equals(definition.getType())) {
                 JsLog.warn(
                         "TableMap is now known as PartitionedTable, fetching as a plain widget. To fetch as a PartitionedTable use that as the type.");
             }
-            if (JsVariableChanges.TREETABLE.equals(definition.getType())) {
+            if (JsVariableType.TREETABLE.equals(definition.getType())) {
                 JsLog.warn(
                         "TreeTable is now HierarchicalTable, fetching as a plain widget. To fetch as a HierarchicalTable use that as this type.");
             }
@@ -891,12 +899,12 @@ public class WorkerConnection {
                 .then(response -> new JsWidget(this, c -> fetchObject(varDef, c)).refetch());
     }
 
-    public void registerFigure(JsFigure figure) {
-        this.figures.add(figure);
+    public void registerSimpleReconnectable(HasLifecycle figure) {
+        this.simpleReconnectableInstances.add(figure);
     }
 
-    public void releaseFigure(JsFigure figure) {
-        this.figures.delete(figure);
+    public void unregisterSimpleReconnectable(HasLifecycle figure) {
+        this.simpleReconnectableInstances.delete(figure);
     }
 
 

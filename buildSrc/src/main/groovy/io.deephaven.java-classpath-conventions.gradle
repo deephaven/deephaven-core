@@ -5,7 +5,7 @@ plugins {
 
 // TODO(deephaven-core#1162): Adopt java-platform to manage versions
 ext {
-    depAnnotations = 'com.intellij:annotations:5.1'
+    depAnnotations = 'org.jetbrains:annotations:24.0.0'
     depCommonsCompress = 'org.apache.commons:commons-compress:1.22'
     depCommonsLang3 = 'org.apache.commons:commons-lang3:3.12.0'
     depCommonsIo = 'commons-io:commons-io:2.11.0'
@@ -62,7 +62,7 @@ dependencies {
     // having to maintain this...
     fishBase project(':Base'),
             'net.sf.trove4j:trove4j:3.0.3',
-            'com.intellij:annotations:5.1',
+            'org.jetbrains:annotations:24.0.0',
             depCommonsCompress
 
     fishIo project(':IO')

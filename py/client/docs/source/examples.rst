@@ -135,12 +135,13 @@ Join 2 tables
 
     session.bind_table(name="my_table", table=table)
 
-Use a combo aggregation on a table
+Perform aggregations on a table
 ##################################
 
-Combined aggregations can be executed on tables in the Python client. This example creates a combo aggregation that averages the `Count` column of a table, and aggregates it by the `Group` column:
+Aggregations can be applied on tables in the Python client. This example creates a aggregation that
+averages the `Count` column of a table, and aggregates it by the `Group` column:
 
-    from pydeephaven import Session, ComboAggregation
+    from pydeephaven import Session, agg
 
     session = Session()
 
@@ -148,11 +149,9 @@ Combined aggregations can be executed on tables in the Python client. This examp
 
     table = table.update(["Count = i", "Group = i % 2"])
 
-    my_agg = ComboAggregation()
+    my_agg = agg.avg(["Count"])
 
-    my_agg = my_agg.avg(["Count"])
-
-    table = table.agg_by(my_agg, ["Group"])
+    table = table.agg_by(aggs=[my_agg], by=["Group"])
 
     session.bind_table(name="my_table", table=table)
 
@@ -161,23 +160,23 @@ Convert a PyArrow table to a Deephaven table
 
 Deephaven natively supports PyArrow tables. This example converts between a PyArrow table and a Deephaven table:
 
-    import pyarrow
+    import pyarrow as pa
 
     from pydeephaven import Session
 
     session = Session()
 
-    arr = pyarrow.array([4,5,6], type=pyarrow.int32())
+    arr = pa.array([4,5,6], type=pa.int32())
 
-    pyarrow_table = pyarrow.Table.from_arrays([arr], names=["Integers"])
+    pa_table = pa.Table.from_arrays([arr], names=["Integers"])
 
-    table = session.import_table(pyarrow_table)
+    table = session.import_table(pa_table)
 
     session.bind_table(name="my_table", table=table)
 
     #Convert the Deephaven table back to a pyarrow table
 
-    pyarrow_table = table.to_arrow()
+    pa_table = table.to_arrow()
 
 Execute a script server side
 ############################

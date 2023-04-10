@@ -58,6 +58,11 @@ public final class ShortVectorDirect implements ShortVector {
     }
 
     @Override
+    public short[] copyToArray() {
+        return Arrays.copyOf(data, data.length);
+    }
+
+    @Override
     public CloseablePrimitiveIteratorOfShort iterator(final long fromIndexInclusive, final long toIndexExclusive) {
         if (fromIndexInclusive == 0 && toIndexExclusive == data.length) {
             return CloseablePrimitiveIteratorOfShort.of(data);
