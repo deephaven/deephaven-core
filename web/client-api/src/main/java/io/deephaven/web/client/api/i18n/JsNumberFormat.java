@@ -11,6 +11,7 @@ import io.deephaven.web.client.api.BigDecimalWrapper;
 import io.deephaven.web.client.api.BigIntegerWrapper;
 import io.deephaven.web.client.api.LongWrapper;
 import jsinterop.annotations.JsConstructor;
+import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsOverlay;
 import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsType;
@@ -93,7 +94,6 @@ public class JsNumberFormat {
     private final String pattern;
     private final NumberFormat wrapped;
 
-    @JsConstructor
     public JsNumberFormat(String pattern) {
         this.pattern = pattern;
         wrapped = NumberFormat.getFormat(pattern);
@@ -101,6 +101,16 @@ public class JsNumberFormat {
 
     public double parse(String text) {
         return wrapped.parse(text);
+    }
+
+    @JsIgnore
+    public String format(Number number) {
+        return wrapped.format(number);
+    }
+
+    @JsIgnore
+    public String format(LongWrapper number) {
+        return wrapped.format(number.getWrapped());
     }
 
     public String format(NumberUnion number) {

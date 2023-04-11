@@ -36,7 +36,6 @@ import java.util.Objects;
 public class FilterValue {
     protected final Value descriptor;
 
-    @JsMethod(namespace = "dh.FilterValue")
     public static FilterValue ofString(@TsTypeRef(Any.class) Object input) {
         Objects.requireNonNull(input);
         final String string;
@@ -81,7 +80,6 @@ public class FilterValue {
         }
     }
 
-    @JsMethod(namespace = "dh.FilterValue")
     public static FilterValue ofNumber(OfNumberUnionParam input) {
         Objects.requireNonNull(input);
         if (input.isLongWrapper()) {
