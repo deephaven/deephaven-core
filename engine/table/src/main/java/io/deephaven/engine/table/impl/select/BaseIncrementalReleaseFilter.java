@@ -9,7 +9,6 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.ScriptApi;
 
@@ -236,5 +235,10 @@ public abstract class BaseIncrementalReleaseFilter extends WhereFilterLivenessAr
     protected void destroy() {
         super.destroy();
         UpdateGraphProcessor.DEFAULT.removeSource(this);
+    }
+
+    @Override
+    public boolean permitParallelization() {
+        return false;
     }
 }

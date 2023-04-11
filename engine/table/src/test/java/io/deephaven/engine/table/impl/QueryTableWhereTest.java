@@ -8,8 +8,10 @@ import io.deephaven.api.filter.Filter;
 import io.deephaven.api.filter.FilterAnd;
 import io.deephaven.api.filter.FilterOr;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.table.ShiftObliviousListener;
+import io.deephaven.engine.table.impl.sources.RowIdSource;
 import io.deephaven.engine.testutil.QueryTableTestBase.TableComparator;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.engine.table.Table;
@@ -34,8 +36,8 @@ import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
-import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ReflexiveUse;
 
 import junit.framework.TestCase;
@@ -45,11 +47,12 @@ import org.junit.Test;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.Collections;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.IntUnaryOperator;
-import org.junit.experimental.categories.Category;
 
 import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.printTableUpdates;
 import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.simulateShiftAwareStep;
@@ -61,15 +64,14 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-@Category(OutOfBandTest.class)
-public class QueryTableWhereTest {
+public abstract class QueryTableWhereTest {
     @Rule
     public final EngineCleanup base = new EngineCleanup();
 
     @Test
     public void testWhere() {
-
         java.util.function.Function<String, WhereFilter> filter = ConditionFilter::createConditionFilter;
+
         final QueryTable table = testRefreshingTable(i(2, 4, 6).toTracking(),
                 col("x", 1, 2, 3), col("y", 'a', 'b', 'c'));
 
@@ -269,22 +271,54 @@ public class QueryTableWhereTest {
             boolean flushed = UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
             TestCase.assertTrue(flushed);
 
+            // to get table 1 satisfied we need to still fire a notification for the filter execution, then the combined
+            // execution
+            if (QueryTable.FORCE_PARALLEL_WHERE) {
+                // the merged notification for table 2 goes first
+                flushed = UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
+                TestCase.assertTrue(flushed);
+
+                System.out.println("Flushing parallel notifications for setTable1");
+                TestCase.assertFalse(((QueryTable) setTable1).satisfied(LogicalClock.DEFAULT.currentStep()));
+                // we need to flush our intermediate notification
+                flushed = UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
+                TestCase.assertTrue(flushed);
+                // and our final notification
+                flushed = UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
+                TestCase.assertTrue(flushed);
+            }
+
             TestCase.assertTrue(setTable1.satisfied(LogicalClock.DEFAULT.currentStep()));
             TestCase.assertFalse(setTable2.satisfied(LogicalClock.DEFAULT.currentStep()));
             TestCase.assertFalse(dynamicFilter1.satisfied(LogicalClock.DEFAULT.currentStep()));
             TestCase.assertFalse(dynamicFilter2.satisfied(LogicalClock.DEFAULT.currentStep()));
             TestCase.assertFalse(composed.satisfied(LogicalClock.DEFAULT.currentStep()));
 
+            if (!QueryTable.FORCE_PARALLEL_WHERE) {
+                // the next notification should be the merged listener for setTable2
+                flushed = UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
+                TestCase.assertTrue(flushed);
+            } else {
+                System.out.println("Flushing parallel notifications for setTable2");
+                // we need to flush our intermediate notification
+                flushed = UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
+                TestCase.assertTrue(flushed);
+                // and our final notification
+                flushed = UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
+                TestCase.assertTrue(flushed);
+            }
 
-            // the next notification should be the merged listener for setTable2
-            flushed = UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
-            TestCase.assertTrue(flushed);
+            System.out.println("Set Tables should be satisfied.");
+
+            // now we have the two set table's filtered we are ready to make sure nothing else is satisfied
 
             TestCase.assertTrue(setTable1.satisfied(LogicalClock.DEFAULT.currentStep()));
             TestCase.assertTrue(setTable2.satisfied(LogicalClock.DEFAULT.currentStep()));
             TestCase.assertFalse(dynamicFilter1.satisfied(LogicalClock.DEFAULT.currentStep()));
             TestCase.assertFalse(dynamicFilter2.satisfied(LogicalClock.DEFAULT.currentStep()));
             TestCase.assertFalse(composed.satisfied(LogicalClock.DEFAULT.currentStep()));
+
+            System.out.println("Flushing DynamicFilter Notifications.");
 
             // the dynamicFilter1 updates
             flushed = UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
@@ -300,15 +334,32 @@ public class QueryTableWhereTest {
             flushed = UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
             TestCase.assertTrue(flushed);
 
+            System.out.println("Flushed DynamicFilter Notifications.");
+
             TestCase.assertTrue(setTable1.satisfied(LogicalClock.DEFAULT.currentStep()));
             TestCase.assertTrue(setTable2.satisfied(LogicalClock.DEFAULT.currentStep()));
             TestCase.assertTrue(dynamicFilter1.satisfied(LogicalClock.DEFAULT.currentStep()));
             TestCase.assertTrue(dynamicFilter2.satisfied(LogicalClock.DEFAULT.currentStep()));
+
+            System.out.println("Checking Composed.");
+
             TestCase.assertFalse(composed.satisfied(LogicalClock.DEFAULT.currentStep()));
 
-            // now that both filters are complete, we can run the composed listener
+            // now that both filters are complete, we can run the merged listener
             flushed = UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
             TestCase.assertTrue(flushed);
+            if (QueryTable.FORCE_PARALLEL_WHERE) {
+                TestCase.assertFalse(composed.satisfied(LogicalClock.DEFAULT.currentStep()));
+
+                // and the filter execution
+                flushed = UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
+                TestCase.assertTrue(flushed);
+                // and the combination
+                flushed = UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
+                TestCase.assertTrue(flushed);
+            }
+
+            System.out.println("Composed flushed.");
 
             TestCase.assertTrue(setTable1.satisfied(LogicalClock.DEFAULT.currentStep()));
             TestCase.assertTrue(setTable2.satisfied(LogicalClock.DEFAULT.currentStep()));
@@ -483,7 +534,7 @@ public class QueryTableWhereTest {
         };
 
         try {
-            for (int i = 0; i < 100; i++) {
+            for (int step = 0; step < 1000; step++) {
                 UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(
                         () -> GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE,
                                 size, random, table, filteredInfo));
@@ -652,25 +703,32 @@ public class QueryTableWhereTest {
         }
     }
 
-    private static class InterruptingCounter implements IntUnaryOperator {
-        long invokes = 0;
-        boolean interrupt;
+    private static class SleepCounter implements IntUnaryOperator {
+        final int sleepDurationNanos;
+        AtomicLong invokes = new AtomicLong();
+        CountDownLatch latch = new CountDownLatch(1);
 
-        private InterruptingCounter(boolean interrupt) {
-            this.interrupt = interrupt;
+        private SleepCounter(int sleepDurationNanos) {
+            this.sleepDurationNanos = sleepDurationNanos;
         }
 
         @Override
         public int applyAsInt(int value) {
-            if (++invokes == 1 && interrupt) {
-                Thread.currentThread().interrupt();
+            if (sleepDurationNanos > 0) {
+                final long start = System.nanoTime();
+                final long end = start + sleepDurationNanos;
+                // noinspection StatementWithEmptyBody
+                while (System.nanoTime() < end);
+            }
+            if (invokes.incrementAndGet() == 1) {
+                latch.countDown();
             }
             return value;
         }
 
-        void reset(boolean interrupt) {
-            invokes = 0;
-            this.interrupt = interrupt;
+        void reset() {
+            invokes = new AtomicLong();
+            latch = new CountDownLatch(1);
         }
     }
 
@@ -712,43 +770,75 @@ public class QueryTableWhereTest {
     public void testInterFilterInterruption() {
         final Table tableToFilter = TableTools.emptyTable(2_000_000).update("X=i");
 
-        final InterruptingCounter firstCounter = new InterruptingCounter(false);
-        final InterruptingCounter secondCounter = new InterruptingCounter(false);
+        final SleepCounter slowCounter = new SleepCounter(2);
+        final SleepCounter fastCounter = new SleepCounter(0);
 
-        QueryScope.addParam("firstCounter", firstCounter);
-        QueryScope.addParam("secondCounter", secondCounter);
+        QueryScope.addParam("slowCounter", slowCounter);
+        QueryScope.addParam("fastCounter", fastCounter);
 
-        long start = System.currentTimeMillis();
+        final long start = System.currentTimeMillis();
         final Table filtered = tableToFilter.where(
-                "firstCounter.applyAsInt(X) % 2 == 0", "secondCounter.applyAsInt(X) % 3 == 0");
-        long end = System.currentTimeMillis();
+                "slowCounter.applyAsInt(X) % 2 == 0", "fastCounter.applyAsInt(X) % 3 == 0");
+        final long end = System.currentTimeMillis();
         System.out.println("Duration: " + (end - start));
 
         assertTableEquals(tableToFilter.where("X%6==0"), filtered);
 
-        assertEquals(2_000_000, firstCounter.invokes);
-        assertEquals(1_000_000, secondCounter.invokes);
+        assertEquals(2_000_000, slowCounter.invokes.get());
+        assertEquals(1_000_000, fastCounter.invokes.get());
 
-        firstCounter.reset(true);
-        secondCounter.reset(false);
+        fastCounter.reset();
+        slowCounter.reset();
 
-        start = System.currentTimeMillis();
-        Exception caught = null;
+        final MutableObject<Exception> caught = new MutableObject<>();
+        final ExecutionContext executionContext = ExecutionContext.getContext();
+        final Thread t = new Thread(() -> {
+            final long start1 = System.currentTimeMillis();
+            try (final SafeCloseable ignored = executionContext.open()) {
+                tableToFilter.where("slowCounter.applyAsInt(X) % 2 == 0", "fastCounter.applyAsInt(X) % 3 == 0");
+            } catch (Exception e) {
+                caught.setValue(e);
+            }
+            final long end1 = System.currentTimeMillis();
+            System.out.println("Duration: " + (end1 - start1));
+        });
+        t.start();
+
+        waitForLatch(slowCounter.latch);
+
+        t.interrupt();
+
         try {
-            tableToFilter.where("firstCounter.applyAsInt(X) % 2 == 0", "secondCounter.applyAsInt(X) % 3 == 0");
-        } catch (Exception e) {
-            caught = e;
+            t.join();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
-        end = System.currentTimeMillis();
-        System.out.println("Duration: " + (end - start));
+        if (QueryTable.FORCE_PARALLEL_WHERE) {
+            assertTrue(slowCounter.invokes.get() > 0);
+        } else {
+            assertEquals(2_000_000, slowCounter.invokes.get());
+        }
 
-        assertEquals(2_000_000, firstCounter.invokes);
-        assertEquals(0, secondCounter.invokes);
-        assertNotNull(caught);
-        assertEquals(CancellationException.class, caught.getClass());
+        // we want to make sure we can push something through the thread pool and are not hogging it
+        final CountDownLatch latch = new CountDownLatch(1);
+        OperationInitializationThreadPool.executorService.submit(latch::countDown);
+        waitForLatch(latch);
 
-        QueryScope.addParam("firstCounter", null);
-        QueryScope.addParam("secondCounter", null);
+        assertEquals(0, fastCounter.invokes.get());
+        assertNotNull(caught.getValue());
+        assertEquals(CancellationException.class, caught.getValue().getClass());
+
+        QueryScope.addParam("slowCounter", null);
+        QueryScope.addParam("fastCounter", null);
+    }
+
+    private void waitForLatch(CountDownLatch latch) {
+        try {
+            if (!latch.await(50000, TimeUnit.MILLISECONDS)) {
+                throw new IllegalStateException("Latch never reached zero!");
+            }
+        } catch (InterruptedException ignored) {
+        }
     }
 
     @Test
@@ -773,9 +863,10 @@ public class QueryTableWhereTest {
         slowCounter.reset();
 
         final MutableObject<Exception> caught = new MutableObject<>();
+        final ExecutionContext executionContext = ExecutionContext.getContext();
         final Thread t = new Thread(() -> {
             final long start1 = System.currentTimeMillis();
-            try {
+            try (final SafeCloseable ignored = executionContext.open()) {
                 ChunkFilter.applyChunkFilter(tableToFilter.getRowSet(), tableToFilter.getColumnSource("X"), false,
                         slowCounter);
             } catch (Exception e) {
@@ -786,12 +877,7 @@ public class QueryTableWhereTest {
         });
         t.start();
 
-        try {
-            if (!slowCounter.latch.await(5000, TimeUnit.MILLISECONDS)) {
-                throw new IllegalStateException("Latch never reached zero!");
-            }
-        } catch (InterruptedException ignored) {
-        }
+        waitForLatch(slowCounter.latch);
 
         t.interrupt();
 
@@ -1042,5 +1128,35 @@ public class QueryTableWhereTest {
         for (int i = 0; i < 500; i++) {
             simulateShiftAwareStep(size, random, table, columnInfo, en);
         }
+    }
+
+    @Test
+    public void testBigTable() {
+        final Table source = new QueryTable(
+                RowSetFactory.flat(10_000_000L).toTracking(),
+                Collections.singletonMap("A", new RowIdSource()));
+        final IncrementalReleaseFilter incrementalReleaseFilter = new IncrementalReleaseFilter(0, 1000000L);
+        final Table filtered = source.where(incrementalReleaseFilter);
+        final Table result = filtered.where("A >= 6_000_000L", "A < 7_000_000L");
+
+        while (filtered.size() < source.size()) {
+            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(incrementalReleaseFilter::run);
+        }
+
+        assertEquals(1_000_000, result.size());
+        assertEquals(6_000_000L, result.getColumn("A").getLong(0));
+        assertEquals(6_999_999L, result.getColumn("A").getLong(result.size() - 1));
+    }
+
+    @Test
+    public void testBigTableInitial() {
+        final Table source = new QueryTable(
+                RowSetFactory.flat(10_000_000L).toTracking(),
+                Collections.singletonMap("A", new RowIdSource()));
+        final Table result = source.where("A >= 6_000_000L", "A < 7_000_000L");
+
+        assertEquals(1_000_000, result.size());
+        assertEquals(6_000_000L, result.getColumn("A").getLong(0));
+        assertEquals(6_999_999L, result.getColumn("A").getLong(result.size() - 1));
     }
 }

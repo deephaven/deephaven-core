@@ -7,6 +7,7 @@ import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.updategraph.AbstractNotification;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.process.ProcessEnvironment;
 
 import java.util.function.Consumer;
@@ -30,7 +31,7 @@ public class UpdateGraphProcessorJobScheduler implements JobScheduler {
             public void run() {
                 final BasePerformanceEntry baseEntry = new BasePerformanceEntry();
                 baseEntry.onBaseEntryStart();
-                try {
+                try (final SafeCloseable ignored = executionContext == null ? null : executionContext.open()) {
                     runnable.run();
                 } catch (Exception e) {
                     onError.accept(e);
@@ -50,11 +51,6 @@ public class UpdateGraphProcessorJobScheduler implements JobScheduler {
             public LogOutput append(LogOutput output) {
                 return output.append("{Notification(").append(System.identityHashCode(this)).append(" for ")
                         .append(description).append("}");
-            }
-
-            @Override
-            public ExecutionContext getExecutionContext() {
-                return executionContext;
             }
         });
     }
