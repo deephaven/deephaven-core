@@ -97,6 +97,12 @@ public class UpdateBySpecBuilderTest {
         public UpdateByColumn.UpdateBySpec visit(RollingProductSpec rps) {
             return null;
         }
+
+        // TODO: add this correctly (DHC #3392)
+        @Override
+        public UpdateByColumn.UpdateBySpec visit(RollingCountSpec spec) {
+            return null;
+        }
     }
 
     @Test
