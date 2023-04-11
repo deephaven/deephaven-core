@@ -11,17 +11,25 @@ def ready():
 
 def check_ready():
     """Checks if the JVM is ready (ie, if ready() has been called). Should be called by Deephaven implementation code.
-    Raises an exception if the JVM is not ready."""
+    Raises a RuntimeError if the JVM is not ready.
+
+    Raises:
+        RuntimeError
+    """
     # Note: we might be tempted to store the source of truth for this in Java, but we aren't able to do that.
     # `import jpy` has potential side effects, and may improperly start the JVM.
     global _is_ready
     if not _is_ready:
-        raise Exception("The Deephaven Server has not been initialized. "
+        raise RuntimeError("The Deephaven Server has not been initialized. "
                         "Please ensure that deephaven_server.Server has been constructed before importing deephaven.")
 
 
 def check_py_env():
-    """Checks if the current Python environment is in good order."""
+    """Checks if the current Python environment is in good order and if not, raises a RuntimeError.
+
+    Raises:
+        RuntimeError
+    """
     import importlib.metadata
     try:
         importlib.metadata.version("deephaven")
@@ -31,8 +39,8 @@ def check_py_env():
         # DH Enterprise deephaven package is installed by mistake
         raise RuntimeError("The Deephaven Enterprise Python Package (name 'deephaven' on pypi) is installed in "
                            "the current Python environment. It conflicts with the Deephaven Community Python "
-                           "Package (name 'deephaven-core' on pypi). Please uninstall it and reinstall the "
-                           "deephaven-core package.")
+                           "Package (name 'deephaven-core' on pypi). Please uninstall the 'deephaven' package and "
+                           "reinstall the 'deephaven-core' package.")
 
 
 def preload_jvm_dll(*args, **kwargs):
@@ -44,7 +52,11 @@ def preload_jvm_dll(*args, **kwargs):
 
 def init_jvm(*args, **kwargs):
     """A wrapper around jpyutil.init_jvm(...). Should be called by Deephaven implementation code.
-    Calls ready() after jpyutil.init_jvm(...)."""
+    Calls ready() after jpyutil.init_jvm(...).
+
+    Raises:
+        ImportError
+    """
     # Note: we might be able to use our own logic instead of jpyutil here in the future
     import jpyutil
     try:
