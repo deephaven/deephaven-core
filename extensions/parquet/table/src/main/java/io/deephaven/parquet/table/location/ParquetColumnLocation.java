@@ -212,7 +212,8 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
                             localPageCache.castAttr(), endPosReader,
                             ROW_KEY_TO_SUB_REGION_ROW_INDEX_MASK,
                             makeToPage(columnTypes.get(END_POS), ParquetInstructions.EMPTY, END_POS,
-                                    endPosReader, LAST_KEY_COL_DEF)).pageStore).get();
+                                    endPosReader, LAST_KEY_COL_DEF)).pageStore)
+                    .get();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
