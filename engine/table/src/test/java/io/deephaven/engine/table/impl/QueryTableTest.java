@@ -60,6 +60,7 @@ import java.util.function.*;
 import java.util.stream.LongStream;
 
 import static io.deephaven.api.agg.Aggregation.*;
+import static io.deephaven.engine.table.impl.select.PatternFindFilter.stringContainsFilter;
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
 import static org.junit.Assert.assertArrayEquals;
@@ -681,17 +682,22 @@ public class QueryTableTest extends QueryTableTestBase {
                 new StringGenerator()));
 
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
-                new TableComparator(table.where(filter.apply("S1.contains(`aab`)")),
-                        table.where(new StringContainsFilter("S1", "aab"))),
-                new TableComparator(table.where(filter.apply("S2.contains(`m`)")),
-                        table.where(new StringContainsFilter("S2", "m"))),
-                new TableComparator(table.where(filter.apply("!S2.contains(`ma`)")),
-                        table.where(new StringContainsFilter(MatchFilter.MatchType.Inverted, "S2", "ma"))),
-                new TableComparator(table.where(filter.apply("S2.toLowerCase().contains(`ma`)")),
-                        table.where(new StringContainsFilter(MatchFilter.CaseSensitivity.IgnoreCase,
+                new TableComparator(
+                        table.where(filter.apply("S1.contains(`aab`)")),
+                        table.where(stringContainsFilter("S1", "aab"))),
+                new TableComparator(
+                        table.where(filter.apply("S2.contains(`m`)")),
+                        table.where(stringContainsFilter("S2", "m"))),
+                new TableComparator(
+                        table.where(filter.apply("!S2.contains(`ma`)")),
+                        table.where(stringContainsFilter(MatchFilter.MatchType.Inverted, "S2", "ma"))),
+                new TableComparator(
+                        table.where(filter.apply("S2.toLowerCase().contains(`ma`)")),
+                        table.where(stringContainsFilter(MatchFilter.CaseSensitivity.IgnoreCase,
                                 MatchFilter.MatchType.Regular, "S2", "mA"))),
-                new TableComparator(table.where(filter.apply("S2.contains(`mA`)")),
-                        table.where(new StringContainsFilter("S2", "mA"))),
+                new TableComparator(
+                        table.where(filter.apply("S2.contains(`mA`)")),
+                        table.where(stringContainsFilter("S2", "mA"))),
         };
 
         for (int i = 0; i < 500; i++) {

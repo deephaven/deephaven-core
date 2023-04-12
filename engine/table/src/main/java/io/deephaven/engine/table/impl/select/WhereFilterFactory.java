@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl.select;
 
+import io.deephaven.api.ColumnName;
 import io.deephaven.base.Pair;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.api.expression.AbstractExpressionFactory;
@@ -25,6 +26,7 @@ import java.time.temporal.ChronoField;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -164,10 +166,11 @@ public class WhereFilterFactory {
                 final boolean internalDisjunctive = values.length == 1
                         || StringUtils.isNullOrEmpty(anyAllPart)
                         || "any".equalsIgnoreCase(anyAllPart);
-
-                log.debug().append("WhereFilterFactory creating StringContainsFilter for expression: ")
-                        .append(expression).endl();
-                return new StringContainsFilter(
+                log.debug()
+                        .append("WhereFilterFactory creating PatternFindFilter.stringContainsFilter for expression: ")
+                        .append(expression)
+                        .endl();
+                return PatternFindFilter.stringContainsFilter(
                         icase ? MatchFilter.CaseSensitivity.IgnoreCase : MatchFilter.CaseSensitivity.MatchCase,
                         inverted ? MatchFilter.MatchType.Inverted : MatchFilter.MatchType.Regular,
                         columnName,
@@ -244,8 +247,11 @@ public class WhereFilterFactory {
                         final String colName = cd.getName();
                         if (filterMode == QuickFilterMode.REGEX) {
                             if (colClass.isAssignableFrom(String.class)) {
-                                return new RegexFilter(MatchFilter.CaseSensitivity.IgnoreCase,
-                                        MatchFilter.MatchType.Regular, colName, quickFilter);
+                                return new PatternMatchesFilter(
+                                        ColumnName.of(colName),
+                                        Pattern.compile(quickFilter, Pattern.CASE_INSENSITIVE | Pattern.DOTALL),
+                                        false,
+                                        false);
                             }
                             return null;
                         } else if (filterMode == QuickFilterMode.AND) {
@@ -327,8 +333,11 @@ public class WhereFilterFactory {
             return ComparableRangeFilter.makeBigDecimalRange(colName, quickFilter);
         } else if (filterMode != QuickFilterMode.NUMERIC) {
             if (colClass == String.class) {
-                return new StringContainsFilter(MatchFilter.CaseSensitivity.IgnoreCase, MatchFilter.MatchType.Regular,
-                        colName, quickFilter);
+                return new PatternFindFilter(
+                        ColumnName.of(colName),
+                        Pattern.compile(Pattern.quote(quickFilter), Pattern.CASE_INSENSITIVE),
+                        false,
+                        false);
             } else if ((colClass == boolean.class || colClass == Boolean.class) && typeData.isBool) {
                 return new MatchFilter(colName, Boolean.parseBoolean(quickFilter));
             } else if (colClass == DateTime.class && typeData.dateLower != null && typeData.dateUpper != null) {
@@ -343,8 +352,11 @@ public class WhereFilterFactory {
     private static WhereFilter getSelectFilterForAnd(String colName, String quickFilter, Class<?> colClass) {
         // AND mode only supports String types
         if (colClass.isAssignableFrom(String.class)) {
-            return new StringContainsFilter(MatchFilter.CaseSensitivity.IgnoreCase, MatchFilter.MatchType.Regular,
-                    colName, quickFilter);
+            return new PatternFindFilter(
+                    ColumnName.of(colName),
+                    Pattern.compile(Pattern.quote(quickFilter), Pattern.CASE_INSENSITIVE),
+                    false,
+                    false);
         }
         return null;
     }

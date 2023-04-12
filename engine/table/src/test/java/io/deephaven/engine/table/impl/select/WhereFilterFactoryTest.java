@@ -388,51 +388,51 @@ public class WhereFilterFactoryTest extends RefreshingTableTestCase {
                 /* 14 */ null));
 
         WhereFilter f = WhereFilterFactory.getExpression("Phrase icase includes any `T1`, `T2`, `T3`");
-        assertTrue("f instanceof StringContainsFilter", f instanceof StringContainsFilter);
+        assertTrue("f instanceof PatternFindFilter", f instanceof PatternFindFilter);
         f.init(t.getDefinition());
         RowSet result = f.filter(t.getRowSet().copy(), t.getRowSet(), t, false);
         assertEquals(12, result.size());
         assertEquals(RowSetFactory.fromKeys(0, 1, 2, 3, 4, 6, 7, 8, 9, 10, 11, 13), result);
 
         f = WhereFilterFactory.getExpression("Phrase icase includes all `T1`, `T2`, `T3`");
-        assertTrue("f instanceof StringContainsFilter", f instanceof StringContainsFilter);
+        assertTrue("f instanceof PatternFindFilter", f instanceof PatternFindFilter);
         f.init(t.getDefinition());
         result = f.filter(t.getRowSet().copy(), t.getRowSet(), t, false);
         assertEquals(4, result.size());
         assertEquals(RowSetFactory.fromKeys(7, 9, 10, 11), result);
 
         f = WhereFilterFactory.getExpression("Phrase includes any `T1`, `T2`, `T3`");
-        assertTrue("f instanceof StringContainsFilter", f instanceof StringContainsFilter);
+        assertTrue("f instanceof PatternFindFilter", f instanceof PatternFindFilter);
         f.init(t.getDefinition());
         result = f.filter(t.getRowSet().copy(), t.getRowSet(), t, false);
         assertEquals(RowSetFactory.fromKeys(0, 1, 2, 6, 7, 9, 10, 11), result);
 
         f = WhereFilterFactory.getExpression("Phrase includes all `T1`, `t2`, `T3`");
-        assertTrue("f instanceof StringContainsFilter", f instanceof StringContainsFilter);
+        assertTrue("f instanceof PatternFindFilter", f instanceof PatternFindFilter);
         f.init(t.getDefinition());
         result = f.filter(t.getRowSet().copy(), t.getRowSet(), t, false);
         assertEquals(RowSetFactory.fromKeys(7, 11), result);
 
         f = WhereFilterFactory.getExpression("Phrase icase not includes any `T1`, `T2`, `T3`");
-        assertTrue("f instanceof StringContainsFilter", f instanceof StringContainsFilter);
+        assertTrue("f instanceof PatternFindFilter", f instanceof PatternFindFilter);
         f.init(t.getDefinition());
         result = f.filter(t.getRowSet().copy(), t.getRowSet(), t, false);
         assertEquals(RowSetFactory.fromKeys(0, 1, 2, 3, 4, 5, 6, 8, 12, 13), result);
 
         f = WhereFilterFactory.getExpression("Phrase icase not includes all `T1`, `T2`, `T3`");
-        assertTrue("f instanceof StringContainsFilter", f instanceof StringContainsFilter);
+        assertTrue("f instanceof PatternFindFilter", f instanceof PatternFindFilter);
         f.init(t.getDefinition());
         result = f.filter(t.getRowSet().copy(), t.getRowSet(), t, false);
         assertEquals(RowSetFactory.fromKeys(5, 12), result);
 
         f = WhereFilterFactory.getExpression("Phrase not includes any `T1`, `T2`, `T3`");
-        assertTrue("f instanceof StringContainsFilter", f instanceof StringContainsFilter);
+        assertTrue("f instanceof PatternFindFilter", f instanceof PatternFindFilter);
         f.init(t.getDefinition());
         result = f.filter(t.getRowSet().copy(), t.getRowSet(), t, false);
         assertEquals(RowSetFactory.fromKeys(0, 1, 2, 3, 4, 5, 6, 7, 8, 11, 12, 13), result);
 
         f = WhereFilterFactory.getExpression("Phrase not includes all `T1`, `t2`, `T3`");
-        assertTrue("f instanceof StringContainsFilter", f instanceof StringContainsFilter);
+        assertTrue("f instanceof PatternFindFilter", f instanceof PatternFindFilter);
         f.init(t.getDefinition());
         result = f.filter(t.getRowSet().copy(), t.getRowSet(), t, false);
         assertEquals(RowSetFactory.fromKeys(1, 3, 5, 12), result);
