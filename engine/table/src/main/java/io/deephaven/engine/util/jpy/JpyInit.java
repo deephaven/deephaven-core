@@ -53,10 +53,10 @@ public class JpyInit {
         jpyConfig.initPython();
         jpyConfig.startPython();
         log.info().append("Started Python interpreter").endl();
-        mark_ready_and_check_env();
+        markReadyAndCheckEnv();
     }
 
-    private static void mark_ready_and_check_env() {
+    private static void markReadyAndCheckEnv() {
         // noinspection EmptyTryBlock,unused
         try (
                 final PyModule deephavenJpyModule = PyModule.importModule("deephaven_internal.jvm");
