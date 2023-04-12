@@ -837,8 +837,8 @@ public class UpdateByOperatorFactory {
         }
 
         private UpdateByOperator makeRollingStdOperator(@NotNull final MatchPair pair,
-                                                        @NotNull final Table source,
-                                                        @NotNull final RollingStdSpec rs) {
+                @NotNull final Table source,
+                @NotNull final RollingStdSpec rs) {
             // noinspection rawtypes
             final ColumnSource columnSource = source.getColumnSource(pair.rightColumn);
             final Class<?> csType = columnSource.getType();

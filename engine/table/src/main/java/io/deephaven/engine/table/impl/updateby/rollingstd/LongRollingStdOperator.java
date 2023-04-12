@@ -6,7 +6,6 @@
 package io.deephaven.engine.table.impl.updateby.rollingstd;
 
 import io.deephaven.base.ringbuffer.AggregatingDoubleRingBuffer;
-import io.deephaven.base.ringbuffer.LongRingBuffer;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.Chunk;
@@ -108,7 +107,7 @@ public class LongRollingStdOperator extends BaseDoubleUpdateByOperator {
 
         @Override
         public void writeToOutputChunk(int outIdx) {
-            if (valueBuffer.size() == nullCount) {
+            if (valueBuffer.size() == 0) {
                 outputValues.set(outIdx, NULL_DOUBLE);
             } else {
                 final int count = valueBuffer.size() - nullCount;

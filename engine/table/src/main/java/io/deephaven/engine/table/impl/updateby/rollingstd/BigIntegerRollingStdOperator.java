@@ -1,15 +1,12 @@
 package io.deephaven.engine.table.impl.updateby.rollingstd;
 
-import io.deephaven.base.ringbuffer.AggregatingDoubleRingBuffer;
 import io.deephaven.base.ringbuffer.AggregatingObjectRingBuffer;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.chunk.CharChunk;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
-import io.deephaven.engine.table.impl.updateby.internal.BaseDoubleUpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseObjectUpdateByOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
@@ -18,9 +15,6 @@ import org.jetbrains.annotations.Nullable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
-
-import static io.deephaven.util.QueryConstants.NULL_CHAR;
-import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 
 public class BigIntegerRollingStdOperator extends BaseObjectUpdateByOperator<BigDecimal> {
     private static final int BUFFER_INITIAL_CAPACITY = 128;
@@ -35,7 +29,7 @@ public class BigIntegerRollingStdOperator extends BaseObjectUpdateByOperator<Big
 
         protected Context(final int chunkSize) {
             super(chunkSize);
-            valueBuffer = new AggregatingObjectRingBuffer<BigDecimal>(BUFFER_INITIAL_CAPACITY, BigDecimal.ZERO,
+            valueBuffer = new AggregatingObjectRingBuffer<>(BUFFER_INITIAL_CAPACITY, BigDecimal.ZERO,
                     BigDecimal::add,
                     ((a, b) -> {
                         if (a == null && b == null) {
@@ -47,7 +41,7 @@ public class BigIntegerRollingStdOperator extends BaseObjectUpdateByOperator<Big
                         }
                         return a.add(b);
                     }));
-            valueSquareBuffer = new AggregatingObjectRingBuffer<BigDecimal>(BUFFER_INITIAL_CAPACITY, BigDecimal.ZERO,
+            valueSquareBuffer = new AggregatingObjectRingBuffer<>(BUFFER_INITIAL_CAPACITY, BigDecimal.ZERO,
                     BigDecimal::add,
                     ((a, b) -> {
                         if (a == null && b == null) {
@@ -128,7 +122,7 @@ public class BigIntegerRollingStdOperator extends BaseObjectUpdateByOperator<Big
                 final BigDecimal biCount = BigDecimal.valueOf(count);
                 final BigDecimal biCountMinusOne = BigDecimal.valueOf(count - 1);
 
-                final BigDecimal variance = valueSquareSum.divide(biCount, mathContext)
+                final BigDecimal variance = valueSquareSum.divide(biCountMinusOne, mathContext)
                         .subtract(valueSum.multiply(valueSum, mathContext)
                                 .divide(biCount, mathContext)
                                 .divide(biCountMinusOne, mathContext)

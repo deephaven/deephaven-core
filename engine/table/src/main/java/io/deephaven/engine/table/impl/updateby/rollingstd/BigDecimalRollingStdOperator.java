@@ -13,7 +13,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.math.MathContext;
 
 public class BigDecimalRollingStdOperator extends BaseObjectUpdateByOperator<BigDecimal> {
@@ -29,7 +28,7 @@ public class BigDecimalRollingStdOperator extends BaseObjectUpdateByOperator<Big
 
         protected Context(final int chunkSize) {
             super(chunkSize);
-            valueBuffer = new AggregatingObjectRingBuffer<BigDecimal>(BUFFER_INITIAL_CAPACITY, BigDecimal.ZERO,
+            valueBuffer = new AggregatingObjectRingBuffer<>(BUFFER_INITIAL_CAPACITY, BigDecimal.ZERO,
                     BigDecimal::add,
                     ((a, b) -> {
                         if (a == null && b == null) {
@@ -41,7 +40,7 @@ public class BigDecimalRollingStdOperator extends BaseObjectUpdateByOperator<Big
                         }
                         return a.add(b);
                     }));
-            valueSquareBuffer = new AggregatingObjectRingBuffer<BigDecimal>(BUFFER_INITIAL_CAPACITY, BigDecimal.ZERO,
+            valueSquareBuffer = new AggregatingObjectRingBuffer<>(BUFFER_INITIAL_CAPACITY, BigDecimal.ZERO,
                     BigDecimal::add,
                     ((a, b) -> {
                         if (a == null && b == null) {
@@ -121,11 +120,10 @@ public class BigDecimalRollingStdOperator extends BaseObjectUpdateByOperator<Big
                 final BigDecimal biCount = BigDecimal.valueOf(count);
                 final BigDecimal biCountMinusOne = BigDecimal.valueOf(count - 1);
 
-                final BigDecimal variance = valueSquareSum.divide(biCount, mathContext)
+                final BigDecimal variance = valueSquareSum.divide(biCountMinusOne, mathContext)
                         .subtract(valueSum.multiply(valueSum, mathContext)
                                 .divide(biCount, mathContext)
-                                .divide(biCountMinusOne, mathContext)
-                        );
+                                .divide(biCountMinusOne, mathContext));
                 final BigDecimal std = variance.sqrt(mathContext);
 
                 outputValues.set(outIdx, std);
@@ -147,16 +145,17 @@ public class BigDecimalRollingStdOperator extends BaseObjectUpdateByOperator<Big
     }
 
     public BigDecimalRollingStdOperator(@NotNull final MatchPair pair,
-                                        @NotNull final String[] affectingColumns,
-                                        @Nullable final RowRedirection rowRedirection,
-                                        @Nullable final String timestampColumnName,
-                                        final long reverseWindowScaleUnits,
-                                        final long forwardWindowScaleUnits,
-                                        final MathContext mathContext
-                                        // region extra-constructor-args
-                                        // endregion extra-constructor-args
+            @NotNull final String[] affectingColumns,
+            @Nullable final RowRedirection rowRedirection,
+            @Nullable final String timestampColumnName,
+            final long reverseWindowScaleUnits,
+            final long forwardWindowScaleUnits,
+            final MathContext mathContext
+    // region extra-constructor-args
+    // endregion extra-constructor-args
     ) {
-        super(pair, affectingColumns, rowRedirection, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true, BigDecimal.class);
+        super(pair, affectingColumns, rowRedirection, timestampColumnName, reverseWindowScaleUnits,
+                forwardWindowScaleUnits, true, BigDecimal.class);
         this.mathContext = mathContext;
         // region constructor
         // endregion constructor

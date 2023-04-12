@@ -62,8 +62,8 @@ public class TestRollingStd extends BaseUpdateByTest {
             "longCol",
             "floatCol",
             "doubleCol",
-//            "bigIntCol",
-//            "bigDecimalCol",
+            "bigIntCol",
+            "bigDecimalCol",
     };
 
     final int STATIC_TABLE_SIZE = 10_000;
@@ -110,11 +110,11 @@ public class TestRollingStd extends BaseUpdateByTest {
                 final BigDecimal decValSquare = decVal.multiply(decVal, mathContextDefault);
 
                 sum = sum.add(decVal, mathContextDefault);
-                sumSquares = sum.add(decValSquare, mathContextDefault);
+                sumSquares = sumSquares.add(decValSquare, mathContextDefault);
                 count++;
             }
         }
-        if (count == 0) {
+        if (count <= 1) {
             return null;
         }
 
@@ -122,7 +122,7 @@ public class TestRollingStd extends BaseUpdateByTest {
         final BigDecimal biCount = BigDecimal.valueOf(count);
         final BigDecimal biCountMinusOne = BigDecimal.valueOf(count - 1);
 
-        final BigDecimal variance =  sumSquares.divide(biCountMinusOne, mathContextDefault)
+        final BigDecimal variance = sumSquares.divide(biCountMinusOne, mathContextDefault)
                 .subtract(sum.multiply(sum, mathContextDefault).divide(biCount, mathContextDefault)
                         .divide(biCountMinusOne, mathContextDefault));
 
@@ -148,11 +148,11 @@ public class TestRollingStd extends BaseUpdateByTest {
                 final BigDecimal decValSquare = decVal.multiply(decVal, mathContextDefault);
 
                 sum = sum.add(decVal, mathContextDefault);
-                sumSquares = sum.add(decValSquare, mathContextDefault);
+                sumSquares = sumSquares.add(decValSquare, mathContextDefault);
                 count++;
             }
         }
-        if (count == 0) {
+        if (count <= 1) {
             return null;
         }
 
@@ -160,7 +160,7 @@ public class TestRollingStd extends BaseUpdateByTest {
         final BigDecimal biCount = BigDecimal.valueOf(count);
         final BigDecimal biCountMinusOne = BigDecimal.valueOf(count - 1);
 
-        final BigDecimal variance =  sumSquares.divide(biCountMinusOne, mathContextDefault)
+        final BigDecimal variance = sumSquares.divide(biCountMinusOne, mathContextDefault)
                 .subtract(sum.multiply(sum, mathContextDefault).divide(biCount, mathContextDefault)
                         .divide(biCountMinusOne, mathContextDefault));
 
@@ -173,7 +173,7 @@ public class TestRollingStd extends BaseUpdateByTest {
 
         Table actual = t.updateBy(UpdateByOperation.RollingStd(prevTicks, postTicks, "bigIntCol", "bigDecimalCol"));
         Table expected = t.updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, "bigIntCol", "bigDecimalCol"))
-                .update("bigIntCol=avgBigInt.apply(bigIntCol)", "bigDecimalCol=avgBigDec.apply(bigDecimalCol)");
+                .update("bigIntCol=stdBigInt.apply(bigIntCol)", "bigDecimalCol=stdBigDec.apply(bigDecimalCol)");
 
         BigDecimal[] biActual = (BigDecimal[]) actual.getColumn("bigIntCol").getDirect();
         Object[] biExpected = (Object[]) expected.getColumn("bigIntCol").getDirect();
@@ -208,7 +208,7 @@ public class TestRollingStd extends BaseUpdateByTest {
         Table actual = t.updateBy(UpdateByOperation.RollingStd("ts", prevTime, postTime, "bigIntCol", "bigDecimalCol"));
         Table expected =
                 t.updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, "bigIntCol", "bigDecimalCol"))
-                        .update("bigIntCol=avgBigInt.apply(bigIntCol)", "bigDecimalCol=avgBigDec.apply(bigDecimalCol)");
+                        .update("bigIntCol=stdBigInt.apply(bigIntCol)", "bigDecimalCol=stdBigDec.apply(bigDecimalCol)");
 
         BigDecimal[] biActual = (BigDecimal[]) actual.getColumn("bigIntCol").getDirect();
         Object[] biExpected = (Object[]) expected.getColumn("bigIntCol").getDirect();
@@ -243,7 +243,7 @@ public class TestRollingStd extends BaseUpdateByTest {
                 t.updateBy(UpdateByOperation.RollingStd(prevTicks, postTicks, "bigIntCol", "bigDecimalCol"), "Sym");
         Table expected =
                 t.updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, "bigIntCol", "bigDecimalCol"), "Sym")
-                        .update("bigIntCol=avgBigInt.apply(bigIntCol)", "bigDecimalCol=avgBigDec.apply(bigDecimalCol)");
+                        .update("bigIntCol=stdBigInt.apply(bigIntCol)", "bigDecimalCol=stdBigDec.apply(bigDecimalCol)");
 
         BigDecimal[] biActual = (BigDecimal[]) actual.getColumn("bigIntCol").getDirect();
         Object[] biExpected = (Object[]) expected.getColumn("bigIntCol").getDirect();
@@ -279,7 +279,7 @@ public class TestRollingStd extends BaseUpdateByTest {
                 t.updateBy(UpdateByOperation.RollingStd("ts", prevTime, postTime, "bigIntCol", "bigDecimalCol"), "Sym");
         Table expected = t
                 .updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, "bigIntCol", "bigDecimalCol"), "Sym")
-                .update("bigIntCol=avgBigInt.apply(bigIntCol)", "bigDecimalCol=avgBigDec.apply(bigDecimalCol)");
+                .update("bigIntCol=stdBigInt.apply(bigIntCol)", "bigDecimalCol=stdBigDec.apply(bigDecimalCol)");
 
         BigDecimal[] biActual = (BigDecimal[]) actual.getColumn("bigIntCol").getDirect();
         Object[] biExpected = (Object[]) expected.getColumn("bigIntCol").getDirect();
