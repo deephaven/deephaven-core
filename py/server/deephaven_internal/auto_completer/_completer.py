@@ -143,14 +143,25 @@ class Completer:
         # Might just be a client issue, but either way not useful right now
         completions = [c for c in completer.complete(line, col) if c.type != "path"]
 
+        # for now, a simple sorting based on number of preceding _
+        # we may want to apply additional sorting to each list before combining
         results: list = []
+        results_: list = []
+        results__: list = []
         for completion in completions:
             # keep checking the latest version as we run, so updated doc can cancel us
             if not self._versions[uri] == version:
                 return []
-            results.append(self.to_completion_result(completion, col))
+            result: list = self.to_completion_result(completion, col)
+            if result[0].startswith("__"):
+                results__.append(result)
+            elif result[0].startswith("_"):
+                results_.append(result)
+            else:
+                results.append(result)
 
-        return results
+        # put the results together in a better-than-nothing sorting
+        return results + results_ + results__
 
     @staticmethod
     def to_completion_result(completion: Completion, col: int) -> list[Any]:
