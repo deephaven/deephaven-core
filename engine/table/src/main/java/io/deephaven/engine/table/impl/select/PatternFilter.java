@@ -17,19 +17,12 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter.ObjectChunkFilter;
-import io.deephaven.engine.table.impl.select.MatchFilter.CaseSensitivity;
-import io.deephaven.engine.table.impl.select.MatchFilter.MatchType;
-import io.deephaven.engine.util.string.StringUtils;
-import org.jetbrains.annotations.NotNull;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * A filter based on a regular-expression {@link Pattern}.
@@ -72,44 +65,6 @@ public final class PatternFilter extends WhereFilterImpl implements ObjectChunkF
         };
 
         abstract boolean test(Pattern pattern, String input);
-    }
-
-    public static PatternFilter stringContainsFilter(
-            MatchType matchType,
-            String columnName,
-            String... values) {
-        return stringContainsFilter(CaseSensitivity.MatchCase, matchType, columnName, values);
-    }
-
-    public static PatternFilter stringContainsFilter(
-            String columnName,
-            String... values) {
-        return stringContainsFilter(MatchType.Regular, columnName, values);
-    }
-
-    public static PatternFilter stringContainsFilter(
-            CaseSensitivity sensitivity,
-            MatchType matchType,
-            @NotNull String columnName,
-            String... values) {
-        return stringContainsFilter(sensitivity, matchType, columnName, true, false, values);
-    }
-
-    public static PatternFilter stringContainsFilter(
-            CaseSensitivity sensitivity,
-            MatchType matchType,
-            @NotNull String columnName,
-            boolean internalDisjunctive,
-            boolean removeQuotes,
-            String... values) {
-        final String value =
-                constructStringContainsRegex(values, matchType, internalDisjunctive, removeQuotes, columnName);
-        // note: this is persisting old behavior w/ matchNulls = false
-        return new PatternFilter(
-                ColumnName.of(columnName),
-                Pattern.compile(value, sensitivity == CaseSensitivity.IgnoreCase ? Pattern.CASE_INSENSITIVE : 0),
-                Mode.FIND,
-                matchType == MatchType.Inverted);
     }
 
     private final ColumnName columnName;
@@ -235,40 +190,4 @@ public final class PatternFilter extends WhereFilterImpl implements ObjectChunkF
         return 31 * x.pattern().hashCode() + x.flags();
     }
 
-    private static String constructStringContainsRegex(
-            String[] values,
-            MatchType matchType,
-            boolean internalDisjunctive,
-            boolean removeQuotes,
-            String columnName) {
-        if (values == null || values.length == 0) {
-            throw new IllegalArgumentException(
-                    "constructStringContainsRegex must be created with at least one value parameter");
-        }
-        final MatchFilter.ColumnTypeConvertor converter = removeQuotes
-                ? MatchFilter.ColumnTypeConvertorFactory.getConvertor(String.class, columnName)
-                : null;
-        final String regex;
-        final Stream<String> valueStream = Arrays.stream(values)
-                .map(val -> {
-                    if (StringUtils.isNullOrEmpty(val)) {
-                        throw new IllegalArgumentException(
-                                "Parameters to constructStringContainsRegex must not be null or empty");
-                    }
-                    return Pattern.quote(converter == null ? val : converter.convertStringLiteral(val).toString());
-                });
-
-        // If the match is simple, includes -any- or includes -none- we can just use a simple
-        // regex of or'd values
-        if ((matchType == MatchType.Regular && internalDisjunctive) ||
-                (matchType == MatchType.Inverted && !internalDisjunctive)) {
-            regex = valueStream.collect(Collectors.joining("|"));
-        } else {
-            // Note that internalDisjunctive is -always- false here.
-            // If we need to match -all of- or -not one of- then we must use forward matching
-            regex = valueStream.map(item -> "(?=.*" + item + ")")
-                    .collect(Collectors.joining()) + ".*";
-        }
-        return regex;
-    }
 }

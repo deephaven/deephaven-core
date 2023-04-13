@@ -8,6 +8,8 @@ import io.deephaven.base.Pair;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.api.expression.AbstractExpressionFactory;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.select.MatchFilter.CaseSensitivity;
+import io.deephaven.engine.table.impl.select.MatchFilter.MatchType;
 import io.deephaven.engine.table.impl.select.PatternFilter.Mode;
 import io.deephaven.engine.util.ColumnFormatting;
 import io.deephaven.api.expression.ExpressionParser;
@@ -17,6 +19,7 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
+import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.text.SplitIgnoreQuotes;
 import org.jetbrains.annotations.NotNull;
 
@@ -171,7 +174,7 @@ public class WhereFilterFactory {
                         .append("WhereFilterFactory creating PatternFilter.stringContainsFilter for expression: ")
                         .append(expression)
                         .endl();
-                return PatternFilter.stringContainsFilter(
+                return stringContainsFilter(
                         icase ? MatchFilter.CaseSensitivity.IgnoreCase : MatchFilter.CaseSensitivity.MatchCase,
                         inverted ? MatchFilter.MatchType.Inverted : MatchFilter.MatchType.Regular,
                         columnName,
@@ -378,6 +381,60 @@ public class WhereFilterFactory {
                     .toArray(WhereFilter[]::new);
         }
         return getExpressions(expressions);
+    }
+
+    @VisibleForTesting
+    public static PatternFilter stringContainsFilter(
+            CaseSensitivity sensitivity,
+            MatchType matchType,
+            @NotNull String columnName,
+            boolean internalDisjunctive,
+            boolean removeQuotes,
+            String... values) {
+        final String value =
+                constructStringContainsRegex(values, matchType, internalDisjunctive, removeQuotes, columnName);
+        return new PatternFilter(
+                ColumnName.of(columnName),
+                Pattern.compile(value, sensitivity == CaseSensitivity.IgnoreCase ? Pattern.CASE_INSENSITIVE : 0),
+                Mode.FIND,
+                matchType == MatchType.Inverted);
+    }
+
+    private static String constructStringContainsRegex(
+            String[] values,
+            MatchType matchType,
+            boolean internalDisjunctive,
+            boolean removeQuotes,
+            String columnName) {
+        if (values == null || values.length == 0) {
+            throw new IllegalArgumentException(
+                    "constructStringContainsRegex must be created with at least one value parameter");
+        }
+        final MatchFilter.ColumnTypeConvertor converter = removeQuotes
+                ? MatchFilter.ColumnTypeConvertorFactory.getConvertor(String.class, columnName)
+                : null;
+        final String regex;
+        final Stream<String> valueStream = Arrays.stream(values)
+                .map(val -> {
+                    if (StringUtils.isNullOrEmpty(val)) {
+                        throw new IllegalArgumentException(
+                                "Parameters to constructStringContainsRegex must not be null or empty");
+                    }
+                    return Pattern.quote(converter == null ? val : converter.convertStringLiteral(val).toString());
+                });
+
+        // If the match is simple, includes -any- or includes -none- we can just use a simple
+        // regex of or'd values
+        if ((matchType == MatchType.Regular && internalDisjunctive) ||
+                (matchType == MatchType.Inverted && !internalDisjunctive)) {
+            regex = valueStream.collect(Collectors.joining("|"));
+        } else {
+            // Note that internalDisjunctive is -always- false here.
+            // If we need to match -all of- or -not one of- then we must use forward matching
+            regex = valueStream.map(item -> "(?=.*" + item + ")")
+                    .collect(Collectors.joining()) + ".*";
+        }
+        return regex;
     }
 
     static class InferenceResult {

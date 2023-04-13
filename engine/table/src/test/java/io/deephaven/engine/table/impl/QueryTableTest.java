@@ -24,6 +24,8 @@ import io.deephaven.engine.table.impl.locations.GroupingProvider;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.remote.InitialSnapshotTable;
 import io.deephaven.engine.table.impl.select.*;
+import io.deephaven.engine.table.impl.select.MatchFilter.CaseSensitivity;
+import io.deephaven.engine.table.impl.select.MatchFilter.MatchType;
 import io.deephaven.engine.table.impl.sources.DeferredGroupingColumnSource;
 import io.deephaven.engine.table.impl.sources.LongAsDateTimeColumnSource;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
@@ -44,6 +46,7 @@ import io.deephaven.vector.*;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.groovy.util.Maps;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
 import org.junit.experimental.categories.Category;
@@ -60,7 +63,6 @@ import java.util.function.*;
 import java.util.stream.LongStream;
 
 import static io.deephaven.api.agg.Aggregation.*;
-import static io.deephaven.engine.table.impl.select.PatternFilter.stringContainsFilter;
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
 import static org.junit.Assert.assertArrayEquals;
@@ -668,6 +670,27 @@ public class QueryTableTest extends QueryTableTestBase {
             }
             simulateShiftAwareStep("step == " + i, size, random, queryTable, columnInfo, en);
         }
+    }
+
+    public static PatternFilter stringContainsFilter(
+            String columnName,
+            String... values) {
+        return stringContainsFilter(MatchType.Regular, columnName, values);
+    }
+
+    public static PatternFilter stringContainsFilter(
+            MatchType matchType,
+            String columnName,
+            String... values) {
+        return stringContainsFilter(CaseSensitivity.MatchCase, matchType, columnName, values);
+    }
+
+    public static PatternFilter stringContainsFilter(
+            CaseSensitivity sensitivity,
+            MatchType matchType,
+            @NotNull String columnName,
+            String... values) {
+        return WhereFilterFactory.stringContainsFilter(sensitivity, matchType, columnName, true, false, values);
     }
 
     public void testStringContainsFilter() {
