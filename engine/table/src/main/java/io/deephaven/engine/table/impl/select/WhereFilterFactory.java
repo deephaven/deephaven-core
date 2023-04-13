@@ -171,7 +171,7 @@ public class WhereFilterFactory {
                         || StringUtils.isNullOrEmpty(anyAllPart)
                         || "any".equalsIgnoreCase(anyAllPart);
                 log.debug()
-                        .append("WhereFilterFactory creating PatternFilter.stringContainsFilter for expression: ")
+                        .append("WhereFilterFactory creating stringContainsFilter for expression: ")
                         .append(expression)
                         .endl();
                 return stringContainsFilter(
