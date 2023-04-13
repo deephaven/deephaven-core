@@ -5,6 +5,7 @@ package io.deephaven.web.client.api;
 
 import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
+import com.vertispan.tsdefs.annotations.TsTypeRef;
 import elemental2.core.JsObject;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsNullable;
@@ -133,6 +134,7 @@ public class JsLayoutHints {
 
     @JsNullable
     @JsProperty
+    @TsTypeRef(SearchDisplayMode.class)
     public String getSearchDisplayMode() {
         return searchDisplayMode;
     }
