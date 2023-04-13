@@ -15,8 +15,7 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-@TsInterface
-@JsType(name = "LayoutHints", namespace = "dh")
+@TsName(namespace = "dh", name = "LayoutHints")
 public class JsLayoutHints {
     @TsInterface
     @JsType(namespace = "dh")
@@ -126,7 +125,7 @@ public class JsLayoutHints {
         return this;
     }
 
-    @JsProperty(namespace = "dh.SearchDisplayMode")
+    @JsProperty(namespace = "dh", name = "SearchDisplayMode")
     public static final String SEARCH_DISPLAY_DEFAULT = "Default",
             SEARCH_DISPLAY_HIDE = "Hide",
             SEARCH_DISPLAY_SHOW = "Show";
