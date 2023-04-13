@@ -422,14 +422,12 @@ public class WhereFilterFactory {
                     }
                     return Pattern.quote(converter == null ? val : converter.convertStringLiteral(val).toString());
                 });
-
         // If the match is simple, includes -any- or includes -none- we can just use a simple
         // regex of or'd values
         if ((matchType == MatchType.Regular && internalDisjunctive) ||
                 (matchType == MatchType.Inverted && !internalDisjunctive)) {
             regex = valueStream.collect(Collectors.joining("|"));
         } else {
-            // Note that internalDisjunctive is -always- false here.
             // If we need to match -all of- or -not one of- then we must use forward matching
             regex = valueStream.map(item -> "(?=.*" + item + ")")
                     .collect(Collectors.joining()) + ".*";
