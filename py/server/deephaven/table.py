@@ -1842,6 +1842,16 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "failed to color format rows conditionally.") from e
 
+    def format_databar(self, columnName: str, valueColumn: str, min: float, max: float, axis: str = "proportional",
+                      positiveColor: str = '#6c757d', negativeColor: str = '#9cdb6c', valuePlacement: str = 'beside',
+                      direction: str = 'LTR', opacity: float = 1) -> Table:
+        try:
+            return Table(j_table=self.j_table.formatDatabar(columnName, valueColumn, axis, min, max, positiveColor,
+            negativeColor, valuePlacement, direction, opacity))
+        except Exception as e:
+            raise DHError(e, "failed to format databar.") from e
+
+
     def layout_hints(self, front: Union[str, List[str]] = None, back: Union[str, List[str]] = None,
                      freeze: Union[str, List[str]] = None, hide: Union[str, List[str]] = None,
                      column_groups: List[dict] = None) -> Table:

@@ -288,6 +288,14 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
 
     @Override
     @ConcurrentMethod
+    default Table formatDatabar(String columnName, String valueColumn, String axis, Double min, Double max,
+            String positiveColor, String negativeColor, String valuePlacement, String direction, Double opacity) {
+        return this;
+    }
+
+
+    @Override
+    @ConcurrentMethod
     @FinalDefault
     default Table moveColumnsUp(String... columnsToMove) {
         return moveColumns(0, columnsToMove);
