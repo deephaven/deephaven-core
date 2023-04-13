@@ -15,7 +15,8 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-@TsName(namespace = "dh", name = "LayoutHints")
+@TsInterface
+@JsType(namespace = "dh", name = "LayoutHints")
 public class JsLayoutHints {
     @TsInterface
     @JsType(namespace = "dh")
@@ -65,7 +66,7 @@ public class JsLayoutHints {
 
     private boolean savedLayoutsAllowed = true;
 
-    private String searchDisplayMode = JsLayoutHints.SEARCH_DISPLAY_DEFAULT;
+    private String searchDisplayMode = SearchDisplayMode.SEARCH_DISPLAY_DEFAULT;
     private String[] frontColumns;
     private String[] backColumns;
     private String[] hiddenColumns;
@@ -124,11 +125,6 @@ public class JsLayoutHints {
 
         return this;
     }
-
-    @JsProperty(namespace = "dh.SearchDisplayMode")
-    public static final String SEARCH_DISPLAY_DEFAULT = "Default",
-            SEARCH_DISPLAY_HIDE = "Hide",
-            SEARCH_DISPLAY_SHOW = "Show";
 
     @JsProperty
     public boolean getAreSavedLayoutsAllowed() {
