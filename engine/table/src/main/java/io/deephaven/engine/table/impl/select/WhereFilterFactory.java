@@ -408,7 +408,7 @@ public class WhereFilterFactory {
             String columnName) {
         if (values == null || values.length == 0) {
             throw new IllegalArgumentException(
-                    "constructStringContainsRegex must be created with at least one value parameter");
+                    "constructStringContainsRegex must be called with at least one value parameter");
         }
         final MatchFilter.ColumnTypeConvertor converter = removeQuotes
                 ? MatchFilter.ColumnTypeConvertorFactory.getConvertor(String.class, columnName)
