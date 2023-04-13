@@ -5,6 +5,7 @@ package io.deephaven.web.client.api;
 
 import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
+import com.vertispan.tsdefs.annotations.TsTypeRef;
 import elemental2.core.JsObject;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsNullable;
@@ -16,7 +17,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @TsInterface
-@JsType(name = "LayoutHints", namespace = "dh")
+@JsType(namespace = "dh", name = "LayoutHints")
 public class JsLayoutHints {
     @TsInterface
     @JsType(namespace = "dh")
@@ -66,7 +67,7 @@ public class JsLayoutHints {
 
     private boolean savedLayoutsAllowed = true;
 
-    private String searchDisplayMode = JsLayoutHints.SEARCH_DISPLAY_DEFAULT;
+    private String searchDisplayMode = SearchDisplayMode.SEARCH_DISPLAY_DEFAULT;
     private String[] frontColumns;
     private String[] backColumns;
     private String[] hiddenColumns;
@@ -126,11 +127,6 @@ public class JsLayoutHints {
         return this;
     }
 
-    @JsProperty(namespace = "dh.SearchDisplayMode")
-    public static final String SEARCH_DISPLAY_DEFAULT = "Default",
-            SEARCH_DISPLAY_HIDE = "Hide",
-            SEARCH_DISPLAY_SHOW = "Show";
-
     @JsProperty
     public boolean getAreSavedLayoutsAllowed() {
         return savedLayoutsAllowed;
@@ -138,6 +134,7 @@ public class JsLayoutHints {
 
     @JsNullable
     @JsProperty
+    @TsTypeRef(SearchDisplayMode.class)
     public String getSearchDisplayMode() {
         return searchDisplayMode;
     }
