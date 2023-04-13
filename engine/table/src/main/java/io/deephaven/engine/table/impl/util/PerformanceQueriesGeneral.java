@@ -17,16 +17,20 @@ import static io.deephaven.api.agg.Aggregation.AggPct;
 import static io.deephaven.api.agg.Aggregation.AggSum;
 
 /**
- * Generalizes {@link PerformanceQueries} to accept table parameters.
+ * Generalizes {@link PerformanceQueries} to accept table parameters and make evaluation number parameter optional.
  */
 public class PerformanceQueriesGeneral {
-    private static final boolean formatPctColumns = true;
+    // TODO: improve robustness
+    private static boolean formatPctColumns = true;
 
     public static Table queryPerformance(Table queryPerformanceLog, final long evaluationNumber) {
 
+        if (evaluationNumber != QueryConstants.NULL_LONG) {
+            queryPerformanceLog = queryPerformanceLog.where(whereConditionForEvaluationNumber(evaluationNumber));
+        }
+
         final long workerHeapSizeBytes = getWorkerHeapSizeBytes();
         queryPerformanceLog = queryPerformanceLog
-                .where(whereConditionForEvaluationNumber(evaluationNumber))
                 .updateView(
                         "WorkerHeapSize = " + workerHeapSizeBytes + "L",
                         "TimeSecs = nanosToMillis(EndTime - StartTime) / 1000d", // How long this query ran for, in
@@ -49,9 +53,16 @@ public class PerformanceQueriesGeneral {
         return queryPerformanceLog;
     }
 
-    public static Table queryOperationPerformance(final Table queryOps, final long evaluationNumber) {
+    public static Table queryPerformance(Table queryPerformanceLog) {
+        return queryPerformance(queryPerformanceLog, QueryConstants.NULL_LONG);
+    }
+
+    public static Table queryOperationPerformance(Table queryOps, final long evaluationNumber) {
+        if (evaluationNumber != QueryConstants.NULL_LONG) {
+            queryOps = queryOps.where(whereConditionForEvaluationNumber(evaluationNumber));
+        }
+
         return queryOps
-                .where(whereConditionForEvaluationNumber(evaluationNumber))
                 .updateView(
                         "TimeSecs = nanosToMillis(EndTime - StartTime) / 1000d",
                         "NetMemoryChange = FreeMemoryChange - TotalMemoryChange" // Change in memory usage delta while
@@ -60,6 +71,10 @@ public class PerformanceQueriesGeneral {
                 .moveColumnsUp(
                         "ProcessUniqueId", "EvaluationNumber", "OperationNumber",
                         "EndTime", "TimeSecs", "NetMemoryChange");
+    }
+
+    public static Table queryOperationPerformance(final Table queryOps) {
+        return queryOperationPerformance(queryOps, QueryConstants.NULL_LONG);
     }
 
     public static String processInfo(Table processInfo, final String processInfoId, final String type, final String key) {
@@ -74,10 +89,12 @@ public class PerformanceQueriesGeneral {
     }
 
     public static Table queryUpdatePerformance(Table queryUpdatePerformance, final long evaluationNumber) {
-        final String whereCondition = whereConditionForEvaluationNumber(evaluationNumber);
+        if (evaluationNumber != QueryConstants.NULL_LONG) {
+            queryUpdatePerformance = queryUpdatePerformance.where(whereConditionForEvaluationNumber(evaluationNumber));
+        }
+
         final long workerHeapSizeBytes = getWorkerHeapSizeBytes();
         queryUpdatePerformance = queryUpdatePerformance
-                .where(whereCondition)
                 .updateView(
                         "WorkerHeapSize = " + workerHeapSizeBytes + "L",
                         "Ratio = EntryIntervalUsage / IntervalDurationNanos", // % of time during this interval that the
@@ -104,9 +121,16 @@ public class PerformanceQueriesGeneral {
         return queryUpdatePerformance;
     }
 
+    public static Table queryUpdatePerformance(Table queryUpdatePerformance) {
+        return queryUpdatePerformance(queryUpdatePerformance, QueryConstants.NULL_LONG);
+    }
+
     public static Map<String, Table> queryUpdatePerformanceMap(final Table queryUpdatePerformance, final long evaluationNumber) {
         final Map<String, Table> resultMap = new HashMap<>();
+        // TODO: improve robustness
+        formatPctColumns = false;
         final Table qup = queryUpdatePerformance(queryUpdatePerformance, evaluationNumber);
+        formatPctColumns = true;
         resultMap.put("QueryUpdatePerformance", qup);
 
         final Table worstInterval = qup
@@ -164,6 +188,10 @@ public class PerformanceQueriesGeneral {
         return resultMap;
     }
 
+    public static Map<String, Table> queryUpdatePerformanceMap(final Table queryUpdatePerformance) {
+        return queryUpdatePerformanceMap(queryUpdatePerformance, QueryConstants.NULL_LONG);
+    }
+
     public static float approxRatio(final long v0, final long v1) {
         if (v1 == 0 || v0 == QueryConstants.NULL_LONG || v1 == QueryConstants.NULL_LONG) {
             return QueryConstants.NULL_FLOAT;
@@ -173,15 +201,16 @@ public class PerformanceQueriesGeneral {
         return Math.min(pct, 1.0F);
     }
 
-    public static Table serverState(final Table pml) {
+    public static Table serverState(Table pml) {
         final long maxMemoryBytes = RuntimeMemory.getInstance().maxMemory();
         final int maxMemoryMiB = (int) Math.ceil(maxMemoryBytes / (1024 * 1024.0));
+        pml = pml.updateView("MaxMemMiB = " + maxMemoryMiB);
         Table pm = pml.view(
                 "IntervalStart = IntervalStartTime",
                 "IntervalSecs = IntervalDurationMicros / (1000 * 1000.0)",
                 "UsedMemMiB = TotalMemoryMiB - FreeMemoryMiB",
                 "AvailMemMiB = MaxMemMiB - TotalMemoryMiB + FreeMemoryMiB",
-                "MaxMemMiB = " + maxMemoryMiB,
+                "MaxMemMiB",
                 "AvailMemRatio = AvailMemMiB/MaxMemMiB",
                 "GcTimeRatio = io.deephaven.engine.table.impl.util.PerformanceQueriesGeneral.approxRatio(IntervalCollectionTimeMicros, IntervalDurationMicros)",
                 "UGPCycles = count(IntervalUGPCyclesTimeMicros)",
