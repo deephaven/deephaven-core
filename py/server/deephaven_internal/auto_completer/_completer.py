@@ -143,25 +143,14 @@ class Completer:
         # Might just be a client issue, but either way not useful right now
         completions = [c for c in completer.complete(line, col) if c.type != "path"]
 
-        # for now, a simple sorting based on number of preceding _
-        # we may want to apply additional sorting to each list before combining
         results: list = []
-        results_: list = []
-        results__: list = []
         for completion in completions:
             # keep checking the latest version as we run, so updated doc can cancel us
             if not self._versions[uri] == version:
                 return []
-            result: list = self.to_completion_result(completion, col)
-            if result[0].startswith("__"):
-                results__.append(result)
-            elif result[0].startswith("_"):
-                results_.append(result)
-            else:
-                results.append(result)
+            results.append(self.to_completion_result(completion, col))
 
-        # put the results together in a better-than-nothing sorting
-        return results + results_ + results__
+        return results
 
     @staticmethod
     def to_completion_result(completion: Completion, col: int) -> list[Any]:
@@ -188,7 +177,7 @@ class Completer:
         https://github.com/pappasam/jedi-language-server/blob/main/jedi_language_server/server.py#L255
         """
         if not self._versions[uri] == version:
-            # if you aren't the newest completion, you get nothing, quickly
+            # if you aren't the newest, you get nothing, quickly
             return []
 
         completer = self.get_completer(uri)
@@ -212,20 +201,20 @@ class Completer:
 
     def do_hover(
         self, uri: str, version: int, line: int, col: int
-    ) -> list[str]:
+    ) -> str:
         """ Gets hover help at the position
 
         Modeled after Jedi language server
         https://github.com/pappasam/jedi-language-server/blob/main/jedi_language_server/server.py#L366
         """
         if not self._versions[uri] == version:
-            # if you aren't the newest completion, you get nothing, quickly
-            return []
+            # if you aren't the newest, you get nothing, quickly
+            return ''
 
         completer = self.get_completer(uri)
         hovers = completer.help(line, col)
         if not hovers or hovers[0].type == "keyword":
-            return ['']
+            return ''
 
         # LSP doesn't support multiple hovers really. Not sure if/when Jedi would return multiple either
         hover = hovers[0]
@@ -250,4 +239,4 @@ class Completer:
         if raw_docstring:
             hoverstring += '\n---\n' + wrap_plaintext(raw_docstring)
 
-        return [hoverstring.strip()]
+        return hoverstring.strip()
