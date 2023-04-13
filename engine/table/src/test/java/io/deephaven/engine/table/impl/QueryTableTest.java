@@ -60,7 +60,7 @@ import java.util.function.*;
 import java.util.stream.LongStream;
 
 import static io.deephaven.api.agg.Aggregation.*;
-import static io.deephaven.engine.table.impl.select.PatternFindFilter.stringContainsFilter;
+import static io.deephaven.engine.table.impl.select.PatternFilter.stringContainsFilter;
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
 import static org.junit.Assert.assertArrayEquals;

@@ -20,9 +20,8 @@ _JFilterOr = jpy.get_type("io.deephaven.api.filter.FilterOr")
 _JFilterAnd = jpy.get_type("io.deephaven.api.filter.FilterAnd")
 _JFilterNot = jpy.get_type("io.deephaven.api.filter.FilterNot")
 _JColumnName = jpy.get_type("io.deephaven.api.ColumnName")
-_JPatternMatchesFilter = jpy.get_type(
-    "io.deephaven.engine.table.impl.select.PatternMatchesFilter"
-)
+_JPatternFilter = jpy.get_type("io.deephaven.engine.table.impl.select.PatternFilter")
+_JPatternMode = jpy.get_type("io.deephaven.engine.table.impl.select.PatternFilter$Mode")
 _JPattern = jpy.get_type("java.util.regex.Pattern")
 
 
@@ -96,6 +95,17 @@ def not_(filter_: Filter) -> Filter:
         a new Filter
     """
     return Filter(j_filter=_JFilterNot.of(filter_.j_filter))
+
+
+class PatternMode(Enum):
+    MATCHES = _JPatternMode.MATCHES
+    """
+    Matches the entire input against the pattern
+    """
+    FIND = _JPatternMode.FIND
+    """
+    Matches any subsequence of the input against the pattern
+    """
 
 
 class PatternFlag(Enum):
@@ -215,26 +225,35 @@ class PatternFlag(Enum):
         return self.name
 
 
-# Update to table-api structs in https://github.com/deephaven/deephaven-core/pull/3441
-class PatternMatchesFilter(Filter):
-    """The PatternMatchesFilter is a filter that matches using a regular expression."""
+def pattern(
+    mode: PatternMode,
+    col: str,
+    regex: str,
+    flags: Union[PatternFlag, List[PatternFlag]] = [],
+    invert_pattern: bool = False,
+) -> Filter:
+    """
+    Creates a regular-expression pattern filter.
 
-    j_object_type = _JPatternMatchesFilter
+    Args:
+        mode (PatternMode): the mode
+        col (str): the column name
+        regex (str): the regex pattern
+        flags (Union[PatternFlag, List[PatternFlag]]): the regex flags
+        invert_pattern (bool): if the pattern match should be inverted
 
-    def __init__(
-        self,
-        col: str,
-        regex: str,
-        flags: Union[PatternFlag, List[PatternFlag]] = [],
-        invert_pattern: bool = False,
-        match_nulls: bool = False,
-    ):
-        try:
-            self.j_filter = _JPatternMatchesFilter(
+    Returns:
+        a new Filter
+    """
+    # Update to table-api structs in https://github.com/deephaven/deephaven-core/pull/3441
+    try:
+        return Filter(
+            j_filter=_JPatternFilter(
                 _JColumnName.of(col),
                 _JPattern.compile(regex, PatternFlag.bitwise_or(flags)),
+                mode.value,
                 invert_pattern,
-                match_nulls,
             )
-        except Exception as e:
-            raise DHError(e, "failed to create a PatternMatchesFilter filter.") from e
+        )
+    except Exception as e:
+        raise DHError(e, "failed to create a pattern filter.") from e

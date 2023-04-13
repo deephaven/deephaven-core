@@ -8,6 +8,7 @@ import io.deephaven.base.Pair;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.api.expression.AbstractExpressionFactory;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.select.PatternFilter.Mode;
 import io.deephaven.engine.util.ColumnFormatting;
 import io.deephaven.api.expression.ExpressionParser;
 import io.deephaven.engine.util.string.StringUtils;
@@ -167,10 +168,10 @@ public class WhereFilterFactory {
                         || StringUtils.isNullOrEmpty(anyAllPart)
                         || "any".equalsIgnoreCase(anyAllPart);
                 log.debug()
-                        .append("WhereFilterFactory creating PatternFindFilter.stringContainsFilter for expression: ")
+                        .append("WhereFilterFactory creating PatternFilter.stringContainsFilter for expression: ")
                         .append(expression)
                         .endl();
-                return PatternFindFilter.stringContainsFilter(
+                return PatternFilter.stringContainsFilter(
                         icase ? MatchFilter.CaseSensitivity.IgnoreCase : MatchFilter.CaseSensitivity.MatchCase,
                         inverted ? MatchFilter.MatchType.Inverted : MatchFilter.MatchType.Regular,
                         columnName,
@@ -247,10 +248,10 @@ public class WhereFilterFactory {
                         final String colName = cd.getName();
                         if (filterMode == QuickFilterMode.REGEX) {
                             if (colClass.isAssignableFrom(String.class)) {
-                                return new PatternMatchesFilter(
+                                return new PatternFilter(
                                         ColumnName.of(colName),
                                         Pattern.compile(quickFilter, Pattern.CASE_INSENSITIVE | Pattern.DOTALL),
-                                        false,
+                                        Mode.MATCHES,
                                         false);
                             }
                             return null;
@@ -333,10 +334,10 @@ public class WhereFilterFactory {
             return ComparableRangeFilter.makeBigDecimalRange(colName, quickFilter);
         } else if (filterMode != QuickFilterMode.NUMERIC) {
             if (colClass == String.class) {
-                return new PatternFindFilter(
+                return new PatternFilter(
                         ColumnName.of(colName),
                         Pattern.compile(Pattern.quote(quickFilter), Pattern.CASE_INSENSITIVE),
-                        false,
+                        Mode.FIND,
                         false);
             } else if ((colClass == boolean.class || colClass == Boolean.class) && typeData.isBool) {
                 return new MatchFilter(colName, Boolean.parseBoolean(quickFilter));
@@ -352,10 +353,10 @@ public class WhereFilterFactory {
     private static WhereFilter getSelectFilterForAnd(String colName, String quickFilter, Class<?> colClass) {
         // AND mode only supports String types
         if (colClass.isAssignableFrom(String.class)) {
-            return new PatternFindFilter(
+            return new PatternFilter(
                     ColumnName.of(colName),
                     Pattern.compile(Pattern.quote(quickFilter), Pattern.CASE_INSENSITIVE),
-                    false,
+                    Mode.FIND,
                     false);
         }
         return null;

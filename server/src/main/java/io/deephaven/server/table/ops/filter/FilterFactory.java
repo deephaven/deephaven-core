@@ -9,8 +9,8 @@ import io.deephaven.engine.table.impl.select.ConjunctiveFilter;
 import io.deephaven.engine.table.impl.select.DisjunctiveFilter;
 import io.deephaven.engine.table.impl.select.FormulaParserConfiguration;
 import io.deephaven.engine.table.impl.select.MatchFilter;
-import io.deephaven.engine.table.impl.select.PatternFindFilter;
-import io.deephaven.engine.table.impl.select.PatternMatchesFilter;
+import io.deephaven.engine.table.impl.select.PatternFilter.Mode;
+import io.deephaven.engine.table.impl.select.PatternFilter;
 import io.deephaven.engine.table.impl.select.RangeConditionFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.select.WhereFilterFactory;
@@ -239,24 +239,23 @@ public class FilterFactory implements FilterVisitor<WhereFilter> {
             MatchType matchType) {
         // Note: this implementation only inverts the pattern and not the nullness-matching
         final int flags = caseSensitivity == CaseSensitivity.IGNORE_CASE ? Pattern.CASE_INSENSITIVE : 0;
-        return new PatternFindFilter(
+        return new PatternFilter(
                 ColumnName.of(reference.getColumnName()),
                 Pattern.compile(Pattern.quote(searchString), flags),
-                matchType == MatchType.INVERTED,
-                false);
+                Mode.FIND,
+                matchType == MatchType.INVERTED);
     }
 
     @Override
     public WhereFilter onMatches(Reference reference, String regex, CaseSensitivity caseSensitivity,
             MatchType matchType) {
-        // Note: this implementation only inverts the pattern and not the nullness-matching
         final int flags =
                 (caseSensitivity == CaseSensitivity.IGNORE_CASE ? Pattern.CASE_INSENSITIVE : 0) | Pattern.DOTALL;
-        return new PatternMatchesFilter(
+        return new PatternFilter(
                 ColumnName.of(reference.getColumnName()),
                 Pattern.compile(regex, flags),
-                matchType == MatchType.INVERTED,
-                false);
+                Mode.MATCHES,
+                matchType == MatchType.INVERTED);
     }
 
     @Override

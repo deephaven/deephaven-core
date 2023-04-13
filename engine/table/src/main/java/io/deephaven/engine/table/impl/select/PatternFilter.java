@@ -32,31 +32,62 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * A filter based on {@link Matcher#find()}.
+ * A filter based on a regular-expression {@link Pattern}.
  *
  * <p>
- * {@code (matchNulls && value == null) || (value != null && (invertPattern ^ pattern.matcher(value).find()))}
+ * In the {@link Mode#MATCHES MATCHES} case, the logic is equivalent to
+ * {@code value != null && (invertPattern ^ pattern.matcher(value).matches())}.
  *
- * @see PatternMatchesFilter
+ * <p>
+ * In the {@link Mode#FIND FIND} case, the logic is equivalent to
+ * {@code value != null && (invertPattern ^ pattern.matcher(value).find())}.
+ *
+ * <p>
+ * Note: this filter never matches against a {@code null} value.
  */
-public final class PatternFindFilter extends WhereFilterImpl implements ObjectChunkFilter<String> {
+public final class PatternFilter extends WhereFilterImpl implements ObjectChunkFilter<String> {
 
     private static final long serialVersionUID = 1L;
 
-    public static PatternFindFilter stringContainsFilter(
+    // Update to table-api structs in https://github.com/deephaven/deephaven-core/pull/3441
+    public enum Mode {
+        /**
+         * Matches the entire {@code input} against the {@code pattern}, uses {@link Matcher#matches()}.
+         */
+        MATCHES {
+            @Override
+            boolean test(Pattern pattern, String input) {
+                return pattern.matcher(input).matches();
+            }
+        },
+
+        /**
+         * Matches any subsequence of the {@code input} against the {@code pattern}, uses {@link Matcher#find()}.
+         */
+        FIND {
+            @Override
+            boolean test(Pattern pattern, String input) {
+                return pattern.matcher(input).find();
+            }
+        };
+
+        abstract boolean test(Pattern pattern, String input);
+    }
+
+    public static PatternFilter stringContainsFilter(
             MatchType matchType,
             String columnName,
             String... values) {
         return stringContainsFilter(CaseSensitivity.MatchCase, matchType, columnName, values);
     }
 
-    public static PatternFindFilter stringContainsFilter(
+    public static PatternFilter stringContainsFilter(
             String columnName,
             String... values) {
         return stringContainsFilter(MatchType.Regular, columnName, values);
     }
 
-    public static PatternFindFilter stringContainsFilter(
+    public static PatternFilter stringContainsFilter(
             CaseSensitivity sensitivity,
             MatchType matchType,
             @NotNull String columnName,
@@ -64,32 +95,41 @@ public final class PatternFindFilter extends WhereFilterImpl implements ObjectCh
         return stringContainsFilter(sensitivity, matchType, columnName, true, false, values);
     }
 
-    public static PatternFindFilter stringContainsFilter(
+    public static PatternFilter stringContainsFilter(
             CaseSensitivity sensitivity,
             MatchType matchType,
             @NotNull String columnName,
-            boolean internalDisjuntive,
+            boolean internalDisjunctive,
             boolean removeQuotes,
             String... values) {
-        final String value = constructRegex(values, matchType, internalDisjuntive, removeQuotes, columnName);
+        final String value =
+                constructStringContainsRegex(values, matchType, internalDisjunctive, removeQuotes, columnName);
         // note: this is persisting old behavior w/ matchNulls = false
-        return new PatternFindFilter(
+        return new PatternFilter(
                 ColumnName.of(columnName),
                 Pattern.compile(value, sensitivity == CaseSensitivity.IgnoreCase ? Pattern.CASE_INSENSITIVE : 0),
-                matchType == MatchType.Inverted,
-                false);
+                Mode.FIND,
+                matchType == MatchType.Inverted);
     }
 
     private final ColumnName columnName;
     private final Pattern pattern;
+    private final Mode mode;
     private final boolean invertPattern;
-    private final boolean matchNulls;
 
-    public PatternFindFilter(ColumnName columnName, Pattern pattern, boolean invertPattern, boolean matchNulls) {
-        this.pattern = Objects.requireNonNull(pattern);
+    /**
+     * Creates a new pattern filter.
+     *
+     * @param columnName the column name
+     * @param pattern the pattern
+     * @param mode the mode
+     * @param invertPattern if the pattern result should be inverted
+     */
+    public PatternFilter(ColumnName columnName, Pattern pattern, Mode mode, boolean invertPattern) {
         this.columnName = Objects.requireNonNull(columnName);
+        this.pattern = Objects.requireNonNull(pattern);
+        this.mode = Objects.requireNonNull(mode);
         this.invertPattern = invertPattern;
-        this.matchNulls = matchNulls;
     }
 
     @Override
@@ -134,19 +174,42 @@ public final class PatternFindFilter extends WhereFilterImpl implements ObjectCh
 
     @Override
     public WhereFilter copy() {
-        return new PatternFindFilter(columnName, pattern, invertPattern, matchNulls);
+        return new PatternFilter(columnName, pattern, mode, invertPattern);
     }
 
-    /**
-     * Creates a new filter that is the logical inversion of {@code this}.
-     *
-     * <p>
-     * Equivalent to {@code new PatternFindFilter(columnName, pattern, !invertPattern, !matchNulls)}.
-     *
-     * @return the inverted filter
-     */
-    public PatternFindFilter invert() {
-        return new PatternFindFilter(columnName, pattern, !invertPattern, !matchNulls);
+    @Override
+    public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+        PatternFilter that = (PatternFilter) o;
+        if (invertPattern != that.invertPattern)
+            return false;
+        if (!columnName.equals(that.columnName))
+            return false;
+        if (!patternEquals(pattern, that.pattern))
+            return false;
+        return mode == that.mode;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = columnName.hashCode();
+        result = 31 * result + patternHashcode(pattern);
+        result = 31 * result + mode.hashCode();
+        result = 31 * result + (invertPattern ? 1 : 0);
+        return result;
+    }
+
+    @Override
+    public String toString() {
+        return "PatternFilter{" +
+                "columnName=" + columnName +
+                ", pattern=" + pattern.pattern() + " " + pattern.flags() +
+                ", mode=" + mode +
+                ", invertPattern=" + invertPattern +
+                '}';
     }
 
     @Override
@@ -154,31 +217,33 @@ public final class PatternFindFilter extends WhereFilterImpl implements ObjectCh
             WritableLongChunk<OrderedRowKeys> results) {
         results.setSize(0);
         for (int ix = 0; ix < values.size(); ++ix) {
-            if (matches(values.get(ix))) {
+            if (matcher(values.get(ix))) {
                 results.add(keys.get(ix));
             }
         }
     }
 
-    private boolean matches(String value) {
-        return (matchNulls && value == null) || (value != null && (invertPattern ^ pattern.matcher(value).find()));
+    private boolean matcher(String value) {
+        return value != null && (invertPattern ^ mode.test(pattern, value));
     }
 
-    @Override
-    public String toString() {
-        return "PatternFindFilter{" +
-                "columnName=" + columnName +
-                ", pattern=" + pattern + " " + pattern.flags() +
-                ", invertPattern=" + invertPattern +
-                ", matchNulls=" + matchNulls +
-                '}';
+    private static boolean patternEquals(Pattern x, Pattern y) {
+        return x.flags() == y.flags() && x.pattern().equals(y.pattern());
     }
 
-    private static String constructRegex(String[] values, MatchType matchType, boolean internalDisjunctive,
-            boolean removeQuotes, String columnName) {
+    private static int patternHashcode(Pattern x) {
+        return 31 * x.pattern().hashCode() + x.flags();
+    }
+
+    private static String constructStringContainsRegex(
+            String[] values,
+            MatchType matchType,
+            boolean internalDisjunctive,
+            boolean removeQuotes,
+            String columnName) {
         if (values == null || values.length == 0) {
             throw new IllegalArgumentException(
-                    "StringContainsFilter must be created with at least one value parameter");
+                    "constructStringContainsRegex must be created with at least one value parameter");
         }
         final MatchFilter.ColumnTypeConvertor converter = removeQuotes
                 ? MatchFilter.ColumnTypeConvertorFactory.getConvertor(String.class, columnName)
@@ -188,7 +253,7 @@ public final class PatternFindFilter extends WhereFilterImpl implements ObjectCh
                 .map(val -> {
                     if (StringUtils.isNullOrEmpty(val)) {
                         throw new IllegalArgumentException(
-                                "Parameters to StringContainsFilter must not be null or empty");
+                                "Parameters to constructStringContainsRegex must not be null or empty");
                     }
                     return Pattern.quote(converter == null ? val : converter.convertStringLiteral(val).toString());
                 });
