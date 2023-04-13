@@ -6,6 +6,7 @@ apply from: "$rootDir/gradle/web-client.gradle"
 
 configurations {
     js
+    dts
 }
 
 dependencies {
@@ -36,9 +37,19 @@ def gwtOutput = tasks.register('gwtOutput', Sync) {
     into jsOutput
 }
 
+def dtsOutput = layout.buildDirectory.dir('ts-types');
+def tsDefs = tasks.register('typescriptDefinitions', Sync) {
+    from tasks.getByName(JavaPlugin.COMPILE_JAVA_TASK_NAME).outputs.files
+    into dtsOutput
+    include '*.d.ts'
+}
+
 artifacts {
     js(jsOutput) {
         builtBy gwtOutput
+    }
+    dts(dtsOutput) {
+        builtBy tsDefs
     }
 }
 

@@ -1,0 +1,43 @@
+import com.bmuschko.gradle.docker.tasks.image.Dockerfile
+
+plugins {
+    id 'com.bmuschko.docker-remote-api'
+    id 'io.deephaven.project.register'
+}
+
+configurations {
+    dts
+}
+dependencies {
+    dts project(path: ':web-client-api', configuration: 'dts')
+}
+
+Docker.registerDockerTask(project, 'typedoc') {
+    copyIn {
+        from(configurations.dts) {
+            into 'src'
+        }
+        from 'tsconfig.json'
+
+    }
+    dockerfile {
+        // share the common base image to keep it simple
+        from 'deephaven/node:local-build'
+
+        runCommand('''set -eux; \\
+                      npm install typedoc typescript --save-dev;
+                      ''')
+
+        copyFile('.', '/project')
+
+        runCommand('''set -eux; \\
+                      cd /project/; \\
+                      ../node_modules/.bin/typedoc src/types.d.ts src/types.d.ts --out /documentation
+                      ''')
+    }
+    parentContainers = [ Docker.registryTask(project, 'node') ] // deephaven/node
+    containerOutPath = '/documentation'
+    copyOut {
+        into "$buildDir/documentation"
+    }
+}
