@@ -65,6 +65,8 @@ public class JsLayoutHints {
     }
 
     private boolean savedLayoutsAllowed = true;
+
+    private String searchDisplayMode = JsLayoutHints.SEARCH_DISPLAY_DEFAULT;
     private String[] frontColumns;
     private String[] backColumns;
     private String[] hiddenColumns;
@@ -107,6 +109,11 @@ public class JsLayoutHints {
             frozenColumns = JsObject.freeze(freezeStr.split(","));
         }
 
+        final String searchableStr = options.get("searchable");
+        if (searchableStr != null && !searchableStr.isEmpty()) {
+            searchDisplayMode = searchableStr;
+        }
+
         final String groupsStr = options.get("columnGroups");
         if (groupsStr != null && !groupsStr.isEmpty()) {
             ColumnGroup[] groups =
@@ -119,12 +126,22 @@ public class JsLayoutHints {
         return this;
     }
 
+    @JsProperty(namespace = "dh.SearchDisplayMode")
+    public static final String SEARCH_DISPLAY_DEFAULT = "Default",
+            SEARCH_DISPLAY_HIDE = "Hide",
+            SEARCH_DISPLAY_SHOW = "Show";
+
     @JsProperty
     public boolean getAreSavedLayoutsAllowed() {
         return savedLayoutsAllowed;
     }
 
     @JsNullable
+    @JsProperty
+    public String getSearchDisplayMode() {
+        return searchDisplayMode;
+    }
+
     @JsProperty
     public String[] getFrontColumns() {
         return frontColumns;
