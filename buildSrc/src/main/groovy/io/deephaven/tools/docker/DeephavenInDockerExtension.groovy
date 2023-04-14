@@ -1,14 +1,17 @@
 package io.deephaven.tools.docker
 
 import com.bmuschko.gradle.docker.tasks.container.DockerCreateContainer
+import com.bmuschko.gradle.docker.tasks.container.DockerInspectContainer
 import com.bmuschko.gradle.docker.tasks.container.DockerRemoveContainer
 import com.bmuschko.gradle.docker.tasks.container.DockerStartContainer
 import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
 import com.bmuschko.gradle.docker.tasks.network.DockerCreateNetwork
 import com.bmuschko.gradle.docker.tasks.network.DockerRemoveNetwork
+import com.github.dockerjava.api.command.InspectContainerResponse
 import groovy.transform.CompileStatic
 import org.gradle.api.Project
 import org.gradle.api.Task
+import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.MapProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.TaskProvider
@@ -26,6 +29,7 @@ import javax.inject.Inject
 public abstract class DeephavenInDockerExtension {
     final TaskProvider<? extends Task> startTask
     final TaskProvider<? extends Task> healthyTask
+    final TaskProvider<DockerInspectContainer> portTask
     final TaskProvider<? extends Task> endTask
 
     final String deephavenServerProject
@@ -40,6 +44,8 @@ public abstract class DeephavenInDockerExtension {
 
     abstract MapProperty<String, String> getEnvVars();
 
+    abstract Property<Integer> getPort();
+
     @Inject
     DeephavenInDockerExtension(Project project) {
         awaitStatusTimeout.set 20
@@ -47,8 +53,8 @@ public abstract class DeephavenInDockerExtension {
 
         // irritating configuration order of operations to work out here, so just leaving
         // these as constants until we decide they aren't any more
-        deephavenServerProject = ':docker-server'
-        serverTask = 'buildDocker-server-netty'
+        deephavenServerProject = ':docker-server-jetty'
+        serverTask = 'buildDocker-server-jetty'
         def serverProject = project.evaluationDependsOn(deephavenServerProject)
 
         def createDeephavenGrpcApiNetwork = project.tasks.register('createDeephavenGrpcApiNetwork', DockerCreateNetwork) { task ->
@@ -66,6 +72,8 @@ public abstract class DeephavenInDockerExtension {
             task.containerName.set containerName.get()
             task.hostConfig.network.set networkName.get()
             task.envVars.set(this.getEnvVars())
+            task.exposePorts("tcp", [10000])
+            task.hostConfig.portBindings.set(["10000"])
         }
 
         startTask = project.tasks.register('startDeephaven', DockerStartContainer) { task ->
@@ -80,6 +88,14 @@ public abstract class DeephavenInDockerExtension {
             task.checkInterval.set this.checkInterval.get()
 
             task.containerId.set containerName.get()
+        }
+
+        portTask = project.tasks.register('waitForPort', DockerInspectContainer) {task ->
+            task.dependsOn healthyTask
+            task.containerId.set containerName.get()
+            task.onNext { InspectContainerResponse inspect ->
+                getPort().set(Integer.parseInt(((InspectContainerResponse) inspect).getNetworkSettings().ports.bindings.values().first()[0].hostPortSpec))
+            }
         }
 
         endTask = project.tasks.register('stopDeephaven', DockerRemoveContainer) { task ->
