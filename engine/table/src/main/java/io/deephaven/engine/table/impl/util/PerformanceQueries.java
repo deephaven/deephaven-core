@@ -93,7 +93,7 @@ public class PerformanceQueries {
      */
     @ScriptApi
     public static Table queryUpdatePerformance(final long evaluationNumber) {
-        return PerformanceQueriesGeneral.queryUpdatePerformance(TableLoggers.updatePerformanceLog(), evaluationNumber);
+        return PerformanceQueriesGeneral.queryUpdatePerformance(TableLoggers.updatePerformanceLog(), evaluationNumber, true);
     }
 
     /**

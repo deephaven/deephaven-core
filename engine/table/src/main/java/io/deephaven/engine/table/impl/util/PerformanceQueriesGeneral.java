@@ -20,7 +20,6 @@ import static io.deephaven.api.agg.Aggregation.AggSum;
  * Generalizes {@link PerformanceQueries} to accept table parameters and make evaluation number parameter optional.
  */
 public class PerformanceQueriesGeneral {
-    // TODO: improve robustness
     private static boolean formatPctColumns = true;
 
     public static Table queryPerformance(Table queryPerformanceLog, final long evaluationNumber) {
@@ -88,7 +87,7 @@ public class PerformanceQueriesGeneral {
         }
     }
 
-    public static Table queryUpdatePerformance(Table queryUpdatePerformance, final long evaluationNumber) {
+    public static Table queryUpdatePerformance(Table queryUpdatePerformance, final long evaluationNumber, boolean formatPctColumnsLocal) {
         if (evaluationNumber != QueryConstants.NULL_LONG) {
             queryUpdatePerformance = queryUpdatePerformance.where(whereConditionForEvaluationNumber(evaluationNumber));
         }
@@ -115,22 +114,19 @@ public class PerformanceQueriesGeneral {
                         "ProcessUniqueId", "EvaluationNumber", "OperationNumber",
                         "Ratio", "QueryMemUsed", "QueryMemUsedPct", "IntervalEndTime",
                         "RowsPerSec", "RowsPerCPUSec", "EntryDescription");
-        if (formatPctColumns) {
+        if (formatPctColumnsLocal && formatPctColumns) {
             queryUpdatePerformance = formatColumnsAsPct(queryUpdatePerformance, "Ratio", "QueryMemUsedPct");
         }
         return queryUpdatePerformance;
     }
 
     public static Table queryUpdatePerformance(Table queryUpdatePerformance) {
-        return queryUpdatePerformance(queryUpdatePerformance, QueryConstants.NULL_LONG);
+        return queryUpdatePerformance(queryUpdatePerformance, QueryConstants.NULL_LONG, true);
     }
 
     public static Map<String, Table> queryUpdatePerformanceMap(final Table queryUpdatePerformance, final long evaluationNumber) {
         final Map<String, Table> resultMap = new HashMap<>();
-        // TODO: improve robustness
-        formatPctColumns = false;
-        final Table qup = queryUpdatePerformance(queryUpdatePerformance, evaluationNumber);
-        formatPctColumns = true;
+        final Table qup = queryUpdatePerformance(queryUpdatePerformance, evaluationNumber, false);
         resultMap.put("QueryUpdatePerformance", qup);
 
         final Table worstInterval = qup
