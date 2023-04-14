@@ -1,0 +1,351 @@
+package io.deephaven.web.client.api;
+
+import com.google.gwt.core.client.JavaScriptException;
+import com.google.gwt.junit.client.GWTTestCase;
+import elemental2.core.JsArray;
+import elemental2.core.JsError;
+import elemental2.core.JsString;
+import elemental2.dom.CustomEvent;
+import elemental2.dom.CustomEventInit;
+import elemental2.dom.DomGlobal;
+import elemental2.promise.IThenable;
+import elemental2.promise.Promise;
+import io.deephaven.web.client.api.subscription.ViewportData;
+import io.deephaven.web.shared.data.Viewport;
+import io.deephaven.web.shared.fu.JsRunnable;
+import io.deephaven.web.shared.fu.RemoverFn;
+import jsinterop.annotations.JsProperty;
+import jsinterop.base.Js;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
+
+public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
+
+    public static class TableSourceBuilder {
+        public TableSourceBuilder script(String tableName, String python, String groovy) {
+
+
+            return this;
+        }
+
+        public TableSource build() {
+            return null;
+        }
+    }
+    public interface TableSource {
+        Promise<JsTable> table(String name);
+    }
+
+
+    /**
+     * Set this to a value higher than 1 to get more time to run debugger without timeouts failing.
+     */
+    protected static final int TIMEOUT_SCALE = 1;
+    public static final double DELTA = 0.0001;
+
+    public JsString toJsString(String k) {
+        return Js.cast(k);
+    }
+
+    public JsArray<JsString> toJsString(String ... k) {
+        return Js.cast(k);
+    }
+
+    @JsProperty(name = "log", namespace = "console")
+    private static native elemental2.core.Function getLog();
+
+    static <T> IThenable.ThenOnFulfilledCallbackFn<T, T> logOnSuccess(Object ... rest) {
+        return value-> {
+            // GWT will puke if we have varargs being sent to varargs;
+            // so we go JS on it and just grab the function to apply
+            getLog().apply(null, rest);
+            return Promise.resolve(value);
+        };
+    }
+
+    static Promise<Object> log(Object ... rest) {
+        getLog().apply(null, rest);
+        return Promise.resolve(rest);
+    }
+
+    JsRunnable assertEventNotCalled(
+            HasEventHandling handling,
+            String... events
+    ) {
+        RemoverFn[] undos = new RemoverFn[events.length];
+        for (int i = 0; i < events.length; i++) {
+            final String ev = events[i];
+            undos[i] = handling.addEventListener(ev, e -> {
+                log("Did not expect", ev, "but fired event", e);
+                report("Expected " + ev + " to not be called; detail: " + (e.detail));
+            });
+        }
+        return ()->{
+            for (RemoverFn undo : undos) {
+                undo.remove();
+            }
+
+        };
+    }
+
+    static <T> IThenable.ThenOnFulfilledCallbackFn<T, T> run(JsRunnable allow) {
+        return t->{
+            allow.run();
+            return Promise.resolve(t);
+        };
+    }
+
+    static <T> Promise<T> expectFailure(Promise<?> state, T value) {
+        return state.then(val-> Promise.reject("Failed"),
+                error->Promise.resolve(value)
+        );
+    }
+
+    /**
+     * Connects and authenticates to the specified server, and resolves once the specified query config has
+     * become available.
+     */
+    protected Promise<QueryInfo> connect(String queryConfigName) {
+        //start by delaying test finish by .5s so we fail fast in cases where we aren't set up right
+        delayTestFinish(2000);
+        //for example, if the server doesn't have the query config that we're expecting to get, we'll fail nearly right away
+        return new Promise<>((resolve, reject) -> {
+            IrisClient irisClient = new IrisClient(localServer);
+            irisClient.addEventListener(IrisClient.EVENT_CONNECT, e -> {
+                irisClient.login(LoginCredentials.of(username, password, "password", username)).then(success -> {
+                    //success, but we don't need to do anything, events are wired up to get specifics, grant another timeout
+
+                    delayTestFinish(2001 * TIMEOUT_SCALE);//if this (uniquely value'd) timeout fails, likely the config doesn't exist.
+
+                    return null;
+                }, failure -> {
+                    reject.onInvoke("login failed " + failure);
+                    return null;
+                });
+            });
+            EventFn[] eventFn = {};
+            eventFn[0] = e -> {
+                QueryInfo query = (QueryInfo) ((CustomEvent) e).detail;
+                console.log("config event: " + query.getName() + " [" + query.getStatus() + "]");
+                if (!queryConfigName.equals(query.getName())) {
+                    //unimportant, wait a  bit longer
+                    return;
+                }
+                if ("Running".equalsIgnoreCase(query.getStatus())) {
+                    // provide more detail in the console
+                    query.addEventListener(QueryInfo.EVENT_TABLE_METRICS, metricsEvent -> {
+                        JsPropertyMap<String> detail = (JsPropertyMap<String>) ((CustomEvent) metricsEvent).detail;
+                        console.log(detail.get("type") + ": " + detail.get("formatted"));
+                    });
+
+                    resolve.onInvoke(query);
+                    irisClient.removeEventListener(IrisClient.EVENT_CONFIG_ADDED, eventFn[0]);
+                    irisClient.removeEventListener(IrisClient.EVENT_CONFIG_UPDATED, eventFn[0]);
+                } else if (errorStates.contains(query.getStatus())) {
+                    //failed to connect,
+                    reject.onInvoke("Query config in unusable state '" + query.getStatus() + "'");
+                    irisClient.removeEventListener(IrisClient.EVENT_CONFIG_ADDED, eventFn[0]);
+                    irisClient.removeEventListener(IrisClient.EVENT_CONFIG_UPDATED, eventFn[0]);
+                } else {
+                    console.log("Not ready, will wait another 10s before giving up");
+                    //give it 10s to move to one of the expected terminal states, might take a while to start up
+                    delayTestFinish(1000 * 10);
+                }
+            };
+            irisClient.addEventListener(IrisClient.EVENT_CONFIG_ADDED, eventFn[0]);
+            irisClient.addEventListener(IrisClient.EVENT_CONFIG_UPDATED, eventFn[0]);
+        });
+    }
+
+    public IThenable.ThenOnFulfilledCallbackFn<TableSource, JsTable> table(String tableName) {
+        delayFinish(2000);
+        TODO continue here
+    }
+
+    /**
+     * Utility method to report Promise errors to the unit test framework
+     */
+    protected <T> Promise<T> report(Object error) {
+        if (error instanceof String) {
+            reportUncaughtException(new RuntimeException((String)error));
+        } else if (error instanceof Throwable) {
+            reportUncaughtException((Throwable) error);
+        } if (error instanceof JsError) {
+            reportUncaughtException(new JavaScriptException(error));
+        } else {
+            reportUncaughtException(new RuntimeException(error.toString()));
+        }
+        //keep failing down the chain in case someone else cares
+        return Promise.reject(error);
+    }
+
+    protected Promise<?> finish(Object input) {
+        finishTest();
+        return Promise.resolve(input);
+    }
+
+    /**
+     * Helper method to add a listener to the promise of a table, and ensure that an update is recieved with the
+     * expected number of items, within the specified timeout.
+     *
+     * Prereq: have already requested a viewport on that table
+     */
+    protected Promise<JsTable> assertUpdateReceived(Promise<JsTable> tablePromise, int count, int timeoutInMillis) {
+        return tablePromise.then(table -> assertUpdateReceived(table, count, timeoutInMillis));
+    }
+
+    /**
+     * Helper method to add a listener to a table, and ensure that an update is recieved with the expected number of
+     * items, within the specified timeout.
+     *
+     * Prereq: have already requested a viewport on that table. Remember to request that within the same event loop,
+     * so that there isn't a data race and the update gets missed.
+     */
+    protected Promise<JsTable> assertUpdateReceived(JsTable table, int count, int timeoutInMillis) {
+        return assertUpdateReceived(table, viewportData -> assertEquals(count, viewportData.getRows().length), timeoutInMillis);
+    }
+    protected Promise<JsTable> assertUpdateReceived(JsTable table, Consumer<ViewportData> check, int timeoutInMillis) {
+        return this.<JsTable, ViewportData>waitForEvent(table, JsTable.EVENT_UPDATED, e -> {
+            ViewportData viewportData = e.detail;
+            check.accept(viewportData);
+        }, timeoutInMillis);
+    }
+
+    protected <T> IThenable.ThenOnFulfilledCallbackFn<T, T> delayFinish(int timeout) {
+        return table -> {
+            delayTestFinish(timeout);
+            return Promise.resolve(table);
+        };
+    }
+    protected IThenable.ThenOnFulfilledCallbackFn<JsTable, JsTable> waitForTick(int timeout) {
+        return table -> waitForEvent(table, JsTable.EVENT_SIZECHANGED, ignored->{}, timeout);
+    }
+    protected IThenable.ThenOnFulfilledCallbackFn<JsTable, JsTable> waitForTickTwice(int timeout) {
+        return table -> {
+            // wait for two ticks... one from setting the viewport, and then another for whenever the table actually ticks.
+            // (if these happen out of order, they will still be very close)
+            return waitForEvent(table, JsTable.EVENT_SIZECHANGED, ignored->{}, timeout)
+                    .then(t-> waitForEvent(table, JsTable.EVENT_SIZECHANGED, ignored->{}, timeout));
+        };
+    }
+    protected <V extends HasEventHandling, T> Promise<V> waitForEventWhere(V evented, String eventName, Predicate<CustomEvent<T>> check, int timeout) {
+        //note that this roughly reimplements the 'kill timer' so this can be run in parallel with itself or other similar steps
+        return new Promise<>((resolve, reject) -> {
+            boolean[] complete = {false};
+            console.log("adding " + eventName + " listener ", evented);
+            //apparent compiler bug, review in gwt 2.9
+            RemoverFn unsub = Js.<HasEventHandling>uncheckedCast(evented)
+                    .<T>addEventListener(eventName, e -> {
+                        if (complete[0]) {
+                            return;//already done, but timeout hasn't cleared us yet
+                        }
+                        console.log("event ", e, " observed ", eventName, " for ", evented);
+                        try {
+                            if (check.test(e)) {
+                                complete[0] = true;
+                                resolve.onInvoke(evented);
+                            }
+                        } catch (Throwable ex) {
+                            reject.onInvoke(ex);
+                        }
+                    });
+            DomGlobal.setTimeout(p0 -> {
+                unsub.remove();
+                if (!complete[0]) {
+                    reject.onInvoke("Failed to complete in " + timeout + "ms " + evented);
+                }
+                complete[0] = true;
+                //complete already handled
+            }, timeout * TIMEOUT_SCALE);
+
+        });
+    }
+
+    protected <V extends HasEventHandling, T> Promise<V> waitForEvent(V evented, String eventName, Consumer<CustomEvent<T>> check, int timeout) {
+        return this.<V, T>waitForEventWhere(evented, eventName, e -> {
+            check.accept(e);
+            return true;
+        }, timeout);
+    }
+
+
+    protected static <T> Promise<T> promiseAllThen(T then, IThenable<?> ... promises) {
+        return Promise.all(promises).then(items->Promise.resolve(then));
+    }
+
+    protected <T> IThenable<T> waitFor(BooleanSupplier predicate, int checkInterval, int timeout, T result) {
+        return new Promise<>((resolve, reject) -> {
+            schedule(predicate, checkInterval, () -> resolve.onInvoke(result), () -> reject.onInvoke("timeout of " + timeout + " exceeded"), timeout);
+        });
+    }
+    protected <T> IThenable.ThenOnFulfilledCallbackFn<T, T> waitFor(int millis) {
+        return result -> new Promise<>((resolve, reject) -> {
+            DomGlobal.setTimeout(p -> resolve.onInvoke(result), millis);
+        });
+    }
+    protected <T extends HasEventHandling> IThenable.ThenOnFulfilledCallbackFn<T, T> waitForEvent(T table, String eventName, int millis) {
+        return result -> new Promise<>((resolve, reject) -> {
+            boolean[] success = {false};
+            table.addEventListenerOneShot(eventName, e-> {
+                success[0] = true;
+                resolve.onInvoke(table);
+            });
+            DomGlobal.setTimeout(p -> {
+                if (!success[0]) {
+                    reject.onInvoke("Waited " + millis + "ms");
+                }
+            }, millis);
+        });
+    }
+
+    private void schedule(BooleanSupplier predicate, int checkInterval, Runnable complete, Runnable fail, int timeout) {
+        if (timeout <= 0) {
+            fail.run();
+        }
+        if (predicate.getAsBoolean()) {
+            complete.run();
+        }
+        DomGlobal.setTimeout(ignore -> {
+            if (predicate.getAsBoolean()) {
+                complete.run();
+            } else {
+                schedule(predicate, checkInterval, complete, fail, (timeout * TIMEOUT_SCALE) - checkInterval);
+            }
+        }, checkInterval);
+    }
+
+    protected Promise<JsTable> assertNextViewportIs(JsTable table, Function<JsTable, Column> column, String[] expected) {
+        return assertUpdateReceived(table, viewportData -> {
+            String[] actual = Js.uncheckedCast(getColumnData(viewportData, column.apply(table)));
+            assertTrue("Expected " + Arrays.toString(expected) + ", found " + Arrays.toString(actual) + " in table " + table + " at state " + table.state(), Arrays.equals(expected, actual));
+        }, 2000);
+    }
+
+    protected Object getColumnData(ViewportData viewportData, Column a) {
+        return viewportData.getRows().map((r, index, all) -> r.get(a));
+    }
+
+    protected Promise<JsTable> assertNextViewportIs(JsTable table, double... expected) {
+        return assertUpdateReceived(table, viewportData -> {
+            double[] actual = Js.uncheckedCast(getColumnData(viewportData, table.findColumn("I")));
+            assertTrue("Expected " + Arrays.toString(expected) + ", found " + Arrays.toString(actual) + " in table " + table, Arrays.equals(expected, actual));
+        }, 2000);
+    }
+
+    public static List<Column> filterColumns(JsTable table, JsPredicate<Column> filter) {
+        List<Column> matches = new ArrayList<>();
+        table.getColumns().forEach((c, i, arr)->{
+            if (filter.test(c)) {
+                matches.add(c);
+            }
+            return null;
+        });
+        return matches;
+    }
+}

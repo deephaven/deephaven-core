@@ -14,7 +14,7 @@ public class FilterConditionTestGwt extends GWTTestCase {
 
     @Override
     public String getModuleName() {
-        return "io.deephaven.web.DhApiDev";
+        return "io.deephaven.web.DeephavenApiDev";
     }
 
     private Column getColumn() {

@@ -15,8 +15,13 @@ String testDir = "$buildDir/testGwt"
 task 'gwtTest', type: Test, {
     Test t ->
         t.inputs.files(sourceSets.test.output.files)
+
+        gradle.projectsEvaluated {
+            t.classpath += project(":web-client-api").tasks.getByName('gwtCompile').src
+        }
+
 //        t.classpath = configurations.testRuntime
-        t.systemProperties = [ 'gwt.args': "${manualGwt ? '-runStyle Manual:1' : ''} ${testPort ? /-port $testPort/ : ''} -war $testDir/war -setProperty dhTestServer=$testServer -ea -style PRETTY -generateJsInteropExports",
+        t.systemProperties = [ 'gwt.args': "${manualGwt ? '-runStyle Manual:1' : ''} ${testPort ? /-port $testPort/ : ''} -war $testDir/war -ea -style PRETTY",
                                'gwt.persistentunitcachedir': "$testDir/unitCache",
                                'dhTestServer': testServer
         ]

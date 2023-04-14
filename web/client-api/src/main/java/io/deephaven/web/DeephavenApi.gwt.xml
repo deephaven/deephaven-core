@@ -13,8 +13,8 @@
 
   <inherits name="org.gwtproject.nio.GwtNioSupport" />
 
-  <define-linker name="dh_linker" class="io.deephaven.web.DeephavenJsApiLinker" />
-  <add-linker name="dh_linker" />
+<!--  <define-linker name="dh_linker" class="io.deephaven.web.DeephavenJsApiLinker" />-->
+<!--  <add-linker name="dh_linker" />-->
 
   <set-configuration-property name="user.agent.runtimeWarning" value="false"/>
 

@@ -90,6 +90,6 @@ public class JsDateTimeFormatTestGwt extends GWTTestCase {
 
     @Override
     public String getModuleName() {
-        return "io.deephaven.web.DhApiDev";
+        return "io.deephaven.web.DeephavenApiDev";
     }
 }
