@@ -4,6 +4,8 @@
 package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.engine.table.Table;
+import io.deephaven.plot.Figure;
+import io.deephaven.plot.PlottingConvenience;
 import io.deephaven.util.QueryConstants;
 
 import java.util.Arrays;
@@ -204,10 +206,12 @@ public class PerformanceQueriesGeneral {
         Table pm = pml.view(
                 "IntervalStart = IntervalStartTime",
                 "IntervalSecs = IntervalDurationMicros / (1000 * 1000.0)",
+                "IntervalEnd = IntervalStart + IntervalSecs * SECOND",
                 "UsedMemMiB = TotalMemoryMiB - FreeMemoryMiB",
                 "AvailMemMiB = MaxMemMiB - TotalMemoryMiB + FreeMemoryMiB",
                 "MaxMemMiB",
                 "AvailMemRatio = AvailMemMiB/MaxMemMiB",
+                "UsedMemRatio = UsedMemMiB/MaxMemMiB",
                 "GcTimeRatio = io.deephaven.engine.table.impl.util.PerformanceQueriesGeneral.approxRatio(IntervalCollectionTimeMicros, IntervalDurationMicros)",
                 "UGPCycles = count(IntervalUGPCyclesTimeMicros)",
                 "UGPOnBudgetRatio = io.deephaven.engine.table.impl.util.PerformanceQueriesGeneral.approxRatio(IntervalUGPCyclesOnBudget, IntervalUGPCyclesTimeMicros.length)",
@@ -240,6 +244,54 @@ public class PerformanceQueriesGeneral {
                         "((UGPSafePointTimeRatio > 0.05) ? PALE_PURPLE : NO_FORMATTING))",
                 "IntervalSecs=Decimal(`#0.000`)");
         return pm;
+    }
+
+    public static Map<String, Object> serverStateWithPlots(final Table pml) {
+        final Map<String, Object> resultMap = new HashMap<>();
+
+        final Table pm = serverState(pml);
+        resultMap.put("ServerState", pm);
+
+        int maxMemMiB = pm.getColumn("MaxMemMiB").getInt(0);
+        if (maxMemMiB == QueryConstants.NULL_INT) {
+            maxMemMiB = 4096;
+        }
+        final Figure serverStateTimeline = PlottingConvenience
+                .newChart()
+                .chartTitle("Performance")
+                .plot("Ratio", pm, "IntervalEnd", "UGPTimeRatio")
+                .yMin(0)
+                .yMax(1)
+                .yLabel("Ratio")
+                .twinX()
+                .plot("Memory Usage MiB", pm, "IntervalEnd", "UsedMemMiB")
+                .yMin(0)
+                .yMax(maxMemMiB)
+                .yLabel("Mem Usage MiB")
+                .twinX()
+                .plot("Memory Usage %", pm, "IntervalEnd", "UsedMemRatio")
+                .yMin(0)
+                .yMax(1)
+                .yLabel("Mem Usage %")
+                .show();
+        resultMap.put("ServerStateTimeLine", serverStateTimeline);
+
+        final Figure ugpCycleTimeline = PlottingConvenience
+                .newChart()
+                .chartTitle("Update Graph Processor Cycles")
+                .newAxes()
+                .yLabel("Cycle Time (s)")
+                .xLabel("Timestamp")
+                .plot("Median", pm, "IntervalEnd", "UGPCycleMedianSecs")
+                .plot("90th Percentile", pm, "IntervalEnd", "UGPCycleP90Secs")
+                .plot("Max", pm, "IntervalEnd", "UGPCycleMaxSecs")
+                .plot("Average", pm, "IntervalEnd", "UGPCycleMeanSecs")
+                .lineStyle(PlottingConvenience.lineStyle(5, 5))
+                .show();
+
+        resultMap.put("UGPCycleTimeline", ugpCycleTimeline);
+
+        return resultMap;
     }
 
     private static Table formatColumnsAsPct(final Table t, final String... cols) {
