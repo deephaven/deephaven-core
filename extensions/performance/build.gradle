@@ -1,0 +1,21 @@
+plugins {
+    id 'io.deephaven.project.register'
+    id 'java-library'
+}
+
+sourceSets {
+    main {
+        resources {
+            srcDir 'groovy'
+            include 'groovy/*.groovy'
+        }
+    }
+}
+
+dependencies {
+    implementation project(':DHProcess')
+    implementation project(':engine-table')
+    implementation project(':Plot')
+
+    Classpaths.inheritGroovy(project, 'groovy', 'implementation')
+}

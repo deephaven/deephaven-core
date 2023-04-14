@@ -62,7 +62,8 @@ public class PerformanceQueries {
      */
     @ScriptApi
     public static Table queryOperationPerformance(final long evaluationNumber) {
-        return PerformanceQueriesGeneral.queryOperationPerformance(TableLoggers.queryOperationPerformanceLog(), evaluationNumber);
+        return PerformanceQueriesGeneral.queryOperationPerformance(TableLoggers.queryOperationPerformanceLog(),
+                evaluationNumber);
     }
 
     /**
@@ -93,7 +94,8 @@ public class PerformanceQueries {
      */
     @ScriptApi
     public static Table queryUpdatePerformance(final long evaluationNumber) {
-        return PerformanceQueriesGeneral.queryUpdatePerformance(TableLoggers.updatePerformanceLog(), evaluationNumber, true);
+        return PerformanceQueriesGeneral.queryUpdatePerformance(TableLoggers.updatePerformanceLog(), evaluationNumber,
+                true);
     }
 
     /**
@@ -124,7 +126,8 @@ public class PerformanceQueries {
      */
     @ScriptApi
     public static Map<String, Table> queryUpdatePerformanceMap(final long evaluationNumber) {
-        return PerformanceQueriesGeneral.queryUpdatePerformanceMap(TableLoggers.updatePerformanceLog(), evaluationNumber);
+        return PerformanceQueriesGeneral.queryUpdatePerformanceMap(TableLoggers.updatePerformanceLog(),
+                evaluationNumber);
     }
 
     public static float approxRatio(final long v0, final long v1) {

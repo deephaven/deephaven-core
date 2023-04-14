@@ -78,7 +78,8 @@ public class PerformanceQueriesGeneral {
         return queryOperationPerformance(queryOps, QueryConstants.NULL_LONG);
     }
 
-    public static String processInfo(Table processInfo, final String processInfoId, final String type, final String key) {
+    public static String processInfo(Table processInfo, final String processInfoId, final String type,
+            final String key) {
         processInfo = processInfo
                 .where("Id = `" + processInfoId + "`", "Type = `" + type + "`", "Key = `" + key + "`")
                 .select("Value");
@@ -89,7 +90,8 @@ public class PerformanceQueriesGeneral {
         }
     }
 
-    public static Table queryUpdatePerformance(Table queryUpdatePerformance, final long evaluationNumber, boolean formatPctColumnsLocal) {
+    public static Table queryUpdatePerformance(Table queryUpdatePerformance, final long evaluationNumber,
+            boolean formatPctColumnsLocal) {
         if (evaluationNumber != QueryConstants.NULL_LONG) {
             queryUpdatePerformance = queryUpdatePerformance.where(whereConditionForEvaluationNumber(evaluationNumber));
         }
@@ -126,7 +128,8 @@ public class PerformanceQueriesGeneral {
         return queryUpdatePerformance(queryUpdatePerformance, QueryConstants.NULL_LONG, true);
     }
 
-    public static Map<String, Table> queryUpdatePerformanceMap(final Table queryUpdatePerformance, final long evaluationNumber) {
+    public static Map<String, Table> queryUpdatePerformanceMap(final Table queryUpdatePerformance,
+            final long evaluationNumber) {
         final Map<String, Table> resultMap = new HashMap<>();
         final Table qup = queryUpdatePerformance(queryUpdatePerformance, evaluationNumber, false);
         resultMap.put("QueryUpdatePerformance", qup);
@@ -206,7 +209,7 @@ public class PerformanceQueriesGeneral {
         Table pm = pml.view(
                 "IntervalStart = IntervalStartTime",
                 "IntervalSecs = IntervalDurationMicros / (1000 * 1000.0)",
-                "IntervalEnd = IntervalStart + IntervalSecs * SECOND",
+                "IntervalEnd = IntervalStart + IntervalDurationMicros * 1000",
                 "UsedMemMiB = TotalMemoryMiB - FreeMemoryMiB",
                 "AvailMemMiB = MaxMemMiB - TotalMemoryMiB + FreeMemoryMiB",
                 "MaxMemMiB",
@@ -259,10 +262,10 @@ public class PerformanceQueriesGeneral {
         final Figure serverStateTimeline = PlottingConvenience
                 .newChart()
                 .chartTitle("Performance")
-                .plot("Ratio", pm, "IntervalEnd", "UGPTimeRatio")
+                .plot("UGPRatio", pm, "IntervalEnd", "UGPTimeRatio")
                 .yMin(0)
                 .yMax(1)
-                .yLabel("Ratio")
+                .yLabel("UGPRatio")
                 .twinX()
                 .plot("Memory Usage MiB", pm, "IntervalEnd", "UsedMemMiB")
                 .yMin(0)
@@ -282,13 +285,11 @@ public class PerformanceQueriesGeneral {
                 .newAxes()
                 .yLabel("Cycle Time (s)")
                 .xLabel("Timestamp")
-                .plot("Median", pm, "IntervalEnd", "UGPCycleMedianSecs")
-                .plot("90th Percentile", pm, "IntervalEnd", "UGPCycleP90Secs")
                 .plot("Max", pm, "IntervalEnd", "UGPCycleMaxSecs")
+                .plot("90th Percentile", pm, "IntervalEnd", "UGPCycleP90Secs")
+                .plot("Median", pm, "IntervalEnd", "UGPCycleMedianSecs")
                 .plot("Average", pm, "IntervalEnd", "UGPCycleMeanSecs")
-                .lineStyle(PlottingConvenience.lineStyle(5, 5))
                 .show();
-
         resultMap.put("UGPCycleTimeline", ugpCycleTimeline);
 
         return resultMap;
