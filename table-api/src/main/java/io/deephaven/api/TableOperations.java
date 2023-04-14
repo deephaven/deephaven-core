@@ -538,6 +538,156 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
 
     // -------------------------------------------------------------------------------------------
 
+    /**
+     * Perform a range join with {@code rightTable}. For each row in {@code this} Table, this operation joins
+     * {@link Aggregation aggregations} over a <em>range</em> of responsive rows from {@code rightTable} according to
+     * zero-or-more <em>exact join matches</em> and one <em>range join match</em>.
+     *
+     * <h4>Matching Rules</h4>
+     * <p>
+     * The <em>exact join matches</em> identify possibly-responsive rows according to exactly matching values between
+     * the <em>left exact match columns</em> and the <em>right exact match columns</em>, similar to other join
+     * operations. The <em>range join match</em> bounds the beginning of the responsive range for a given output row by
+     * the relationship between a <em>left start column</em> and a <em>right range column</em>, governed by the
+     * <em>rangeStartRule</em>, and bounds the end of the responsive range for a given output row by the relationship
+     * between a <em>left end column</em> and the <em><u>same</u> right range column</em>, governed by the
+     * <em>rangeEndRule</em>.
+     *
+     * <h4>Right Table Row-Inclusion Criteria and Relative Ordering Requirements</h4>
+     * <p>
+     * Rows from {@code rightTable} with {@code null} or {@code NaN} values for the <em>right range column</em> are
+     * discarded; that is, they are never included in the responsive range for any output row. Within a group sharing
+     * the same values for the <em>right exact match columns</em>, {@code rightTable} <em><u>must</u></em> be relatively
+     * ordered (as if {@link #sort sorted}) according to the <em>right range column</em> for all rows that are not
+     * discarded.
+     *
+     * <h4>Special Cases</h4>
+     * <p>
+     * In order to produce aggregated output, it is required that the two relative match expressions define a range of
+     * values to determine the responsive rows to aggregate. There are a few noteworthy special cases of ranges.
+     * <dl>
+     * <dt>single-value ranges</dt>
+     * <dd>A <em>single-value</em> range is a range where the left row’s values for the left start column and left end
+     * column are equal and both relative matches are inclusive ({@code <=} and {@code >=}, respectively). For a
+     * single-value range, only rows within the bucket where the right range column matches the single value are
+     * included in the output aggregations.</dt>
+     * <dt>invalid ranges</dt>
+     * <dd>An <em>invalid</em> range occurs in two scenarios: When the range is inverted, i.e. when the value of the
+     * left start column is greater than the value of the left end column. When either relative-match is exclusive
+     * ({@code <} or {@code >}) and the value in the left start column is equal to the value in the left end column. For
+     * invalid ranges, the result row will be {@code null} for all aggregation output columns.</dd>
+     * <dt>undefined ranges</dt>
+     * <dd>An <em>undefined</em> range occurs when either the left start column or the left end column is {@code NaN}.
+     * For rows with an undefined range, the corresponding output values will be {@code null} (as with invalid
+     * ranges).</dd>
+     * <dt>Unbounded Ranges</dt>
+     * <dd>A partially or fully <em>unbounded</em> range occurs when either the left start column or the left end column
+     * is {@code null}. If the left start column value is {@code null} the range is unbounded at the beginning, and all
+     * matched right rows will be included if they respect the match rule for the left end column. If the left end
+     * column value is {@code null} the range is unbounded at the end, and all matched right rows will be included if
+     * they respect the match rule for the left start column. If both the left start column and left end column values
+     * are {@code null} the range is unbounded in both directions, and all matched right rows will be included.</dd>
+     * </dl>
+     *
+     * @param rightTable The Table to join with
+     * @param exactMatches Possibly-empty collection of {@link JoinMatch join matches} that dictate exact-match
+     *        criteria. That is, rows from {@code rightTable} that might be responsive to rows from {@code this} Table
+     *        will have identical values for the column pairs expressed by these matches.
+     * @param rangeMatch Specifies the range match criteria for determining the responsive rows from {@code rightTable}
+     *        for each row from {@code this} Table, within the buckets created by matching on the {@code exactMatches}
+     * @param aggregations The {@link Aggregation aggregations} to perform over the responsive ranges from
+     *        {@code rightTable} for each row from {@code this} Table
+     * @return The result Table
+     * @implNote At this time, implementations only support <em>static</em> (i.e. {@code !isRefreshing()}) Tables and
+     *           {@link io.deephaven.api.agg.spec.AggSpecGroup group} aggregations. This operation remains under active
+     *           development.
+     */
+    TOPS rangeJoin(
+            TABLE rightTable,
+            Collection<? extends JoinMatch> exactMatches,
+            RangeJoinMatch rangeMatch,
+            Collection<? extends Aggregation> aggregations);
+
+    /**
+     * Perform a range join with {@code rightTable}. For each row in {@code this} Table, this operation joins
+     * {@link Aggregation aggregations} over a <em>range</em> of responsive rows from {@code rightTable} according to
+     * zero-or-more <em>exact join matches</em> and one <em>range join match</em>. The operation is performed
+     * identically to {@link #rangeJoin(TABLE, Collection, RangeJoinMatch, Collection)}, after parsing is applied to the
+     * elements of {@code columnsToMatch} to produce the {@link JoinMatch exact join matches} and {@link RangeJoinMatch
+     * range join match}.
+     *
+     * <h4>{@code columnsToMatch} Parsing</h4>
+     * <p>
+     * The {@code columnsToMatch} argument is parsed as zero-or-more exact match expressions followed by a single range
+     * match expression.
+     * <p>
+     * The exact match expressions are parsed as in other join operations. That is, the pattern expects an
+     * equals-separated pairing of a left column name with a right column name.
+     * <p>
+     * For example:
+     *
+     * <pre>
+     * "LeftColumn = RightColumn"
+     * </pre>
+     * 
+     * or
+     *
+     * <pre>
+     * "LeftColumn == RightColumn"
+     * </pre>
+     * <p>
+     * The range match expression is expressed as a ternary logical expression, expressing the relationship between the
+     * <em>left start column</em>, the <em>right range column</em>, and the <em>left end column</em>. Each column name
+     * pair is separated by a logical operator, either {@code <} or {@code <=}. The entire expression may be preceded by
+     * a left arrow {@code <-} and/or followed by a right arrow {@code ->}, which when paired with the {@code <=}
+     * operator signify {@link RangeStartRule#LESS_THAN_OR_EQUAL_ALLOW_PRECEDING less than or equal (allow preceding)}
+     * or {@link RangeEndRule#GREATER_THAN_OR_EQUAL_ALLOW_FOLLOWING greater than or equal (allow following)},
+     * respectively.
+     * <p>
+     * Examples:
+     * <ul>
+     * <li>For {@link RangeStartRule#LESS_THAN less than} paired with {@link RangeEndRule#GREATER_THAN greater than}:
+     *
+     * <pre>
+     * "leftStartColumn < rightRangeColumn < leftEndColumn"
+     * </pre>
+     *
+     * </li>
+     * <li>For {@link RangeStartRule#LESS_THAN_OR_EQUAL less than or equal} paired with
+     * {@link RangeEndRule#GREATER_THAN_OR_EQUAL greater than or equal}:
+     *
+     * <pre>
+     * "leftStartColumn <= rightRangeColumn <= leftEndColumn"
+     * </pre>
+     *
+     * </li>
+     * <li>For {@link RangeStartRule#LESS_THAN_OR_EQUAL_ALLOW_PRECEDING less than or equal (allow preceding)} paired
+     * with {@link RangeEndRule#GREATER_THAN_OR_EQUAL_ALLOW_FOLLOWING greater than or equal (allow following)}:
+     *
+     * <pre>
+     * "<- leftStartColumn <= rightRangeColumn <= leftEndColumn ->"
+     * </pre>
+     *
+     * </li>
+     * </ul>
+     *
+     * @param rightTable The Table to join with
+     * @param columnsToMatch {@link String} expressions that will be parsed into {@link JoinMatch join matches}, a
+     *        {@link RangeStartRule} and a {@link RangeEndRule}
+     * @param aggregations The {@link Aggregation aggregations} to perform over the responsive ranges from
+     *        {@code rightTable} for each row from {@code this} Table
+     * @return The result Table
+     * @implNote At this time, implementations only support <em>static</em> (i.e. {@code !isRefreshing()}) Tables and
+     *           {@link io.deephaven.api.agg.spec.AggSpecGroup group} aggregations. This operation remains under active
+     *           development.
+     */
+    TOPS rangeJoin(
+            TABLE rightTable,
+            Collection<String> columnsToMatch,
+            Collection<? extends Aggregation> aggregations);
+
+    // -------------------------------------------------------------------------------------------
+
     @ConcurrentMethod
     TOPS groupBy();
 

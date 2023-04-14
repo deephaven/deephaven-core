@@ -29,7 +29,7 @@ public class SupportedRangeJoinAggregations implements Aggregation.Visitor {
             throw new UnsupportedOperationException(String.format(
                     "rangeJoin only supports the \"group\" aggregation at this time - unsupported aggregations were requested:\n%s",
                     unsupportedAggregationDescriptions.entrySet().stream()
-                            .map((final Map.Entry<String, String> uad) -> uad.getValue() + " as " + uad.getKey())
+                            .map((final Map.Entry<String, String> uad) -> uad.getKey() + " = " + uad.getValue())
                             .collect(Collectors.joining("\t\n"))));
         }
     }

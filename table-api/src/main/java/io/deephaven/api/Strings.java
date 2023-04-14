@@ -100,6 +100,17 @@ public class Strings {
         return additions.stream().map(Strings::of).collect(Collectors.joining(",", "[", "]"));
     }
 
+    public static String of(final RangeJoinMatch rangeMatch) {
+        return String.format("%s%s %s %s %s %s%s",
+                rangeMatch.rangeStartRule() == RangeStartRule.LESS_THAN_OR_EQUAL_ALLOW_PRECEDING ? "<- " : "",
+                rangeMatch.leftStartColumn().name(),
+                rangeMatch.rangeStartRule() == RangeStartRule.LESS_THAN ? "<" : "<=",
+                rangeMatch.rightRangeColumn().name(),
+                rangeMatch.rangeEndRule() == RangeEndRule.GREATER_THAN ? "<" : "<=",
+                rangeMatch.leftEndColumn().name(),
+                rangeMatch.rangeEndRule() == RangeEndRule.GREATER_THAN_OR_EQUAL_ALLOW_FOLLOWING ? " ->" : "");
+    }
+
     public static String of(Selectable selectable) {
         String lhs = of(selectable.newColumn());
         if (selectable.newColumn().equals(selectable.expression())) {

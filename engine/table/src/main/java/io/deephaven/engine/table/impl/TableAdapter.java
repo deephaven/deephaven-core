@@ -2,6 +2,7 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.JoinMatch;
+import io.deephaven.api.RangeJoinMatch;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.Aggregation;
@@ -272,9 +273,8 @@ public interface TableAdapter extends TableDefaults {
     }
 
     @Override
-    default Table rangeJoin(@NotNull Table rightTable, @NotNull Collection<? extends JoinMatch> columnsToMatch,
-            @NotNull RangeStartRule rangeStartRule, @NotNull RangeEndRule rangeEndRule,
-            @NotNull Collection<? extends Aggregation> aggregations) {
+    default Table rangeJoin(@NotNull Table rightTable, @NotNull Collection<? extends JoinMatch> exactMatches,
+            @NotNull RangeJoinMatch rangeMatch, @NotNull Collection<? extends Aggregation> aggregations) {
         return throwUnsupported();
     }
 

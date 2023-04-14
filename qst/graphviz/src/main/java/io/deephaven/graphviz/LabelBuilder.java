@@ -4,6 +4,8 @@
 package io.deephaven.graphviz;
 
 import io.deephaven.api.Strings;
+import io.deephaven.api.agg.Aggregation;
+import io.deephaven.api.agg.AggregationDescriptions;
 import io.deephaven.qst.table.AggregateAllTable;
 import io.deephaven.qst.table.AggregateTable;
 import io.deephaven.qst.table.AsOfJoinTable;
@@ -18,6 +20,7 @@ import io.deephaven.qst.table.Join;
 import io.deephaven.qst.table.JoinTable;
 import io.deephaven.qst.table.LazyUpdateTable;
 import io.deephaven.qst.table.NaturalJoinTable;
+import io.deephaven.qst.table.RangeJoinTable;
 import io.deephaven.qst.table.ReverseAsOfJoinTable;
 import io.deephaven.qst.table.SelectDistinctTable;
 import io.deephaven.qst.table.SelectTable;
@@ -34,9 +37,7 @@ import io.deephaven.qst.table.UpdateViewTable;
 import io.deephaven.qst.table.ViewTable;
 import io.deephaven.qst.table.WhereTable;
 
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Function;
 
 public class LabelBuilder extends TableVisitorGeneric {
@@ -110,6 +111,17 @@ public class LabelBuilder extends TableVisitorGeneric {
     }
 
     @Override
+    public void visit(RangeJoinTable rangeJoinTable) {
+        sb.append("rangeJoin([");
+        append(Strings::of, rangeJoinTable.exactMatches(), sb);
+        sb.append("],");
+        sb.append(Strings.of(rangeJoinTable.rangeMatch()));
+        sb.append(",[");
+        append(rangeJoinTable.aggregations(), sb);
+        sb.append("])");
+    }
+
+    @Override
     public void visit(ViewTable viewTable) {
         selectable("view", viewTable);
     }
@@ -144,17 +156,18 @@ public class LabelBuilder extends TableVisitorGeneric {
     @Override
     public void visit(AggregateAllTable aggregateAllTable) {
         sb.append("aggAllBy(");
-        sb.append(aggregateAllTable.spec()).append(',');
+        sb.append(aggregateAllTable.spec().description()).append(',');
         append(Strings::of, aggregateAllTable.groupByColumns(), sb);
         sb.append(')');
     }
 
     @Override
     public void visit(AggregateTable aggregateTable) {
-        // TODO(deephaven-core#1116): Add labeling, or structuring, for qst graphviz aggregations
         sb.append("aggBy([");
         append(Strings::of, aggregateTable.groupByColumns(), sb);
-        sb.append("],[ todo ])");
+        sb.append("],[");
+        append(aggregateTable.aggregations(), sb);
+        sb.append("])");
     }
 
     @Override
@@ -228,5 +241,22 @@ public class LabelBuilder extends TableVisitorGeneric {
         while (it.hasNext()) {
             sb.append(',').append(f.apply(it.next()));
         }
+    }
+
+    private static void append(Collection<? extends Aggregation> aggregations, StringBuilder sb) {
+        final Iterator<Map.Entry<String, String>> outputNamesAndAggDescriptions =
+                AggregationDescriptions.of(aggregations).entrySet().iterator();
+        if (outputNamesAndAggDescriptions.hasNext()) {
+            append(outputNamesAndAggDescriptions.next(), sb);
+        }
+        while (outputNamesAndAggDescriptions.hasNext()) {
+            append(outputNamesAndAggDescriptions.next(), sb.append(','));
+        }
+    }
+
+    private static void append(Map.Entry<String, String> outputNameToAggDescription, StringBuilder sb) {
+        sb.append(outputNameToAggDescription.getKey())
+                .append(" = ")
+                .append(outputNameToAggDescription.getValue());
     }
 }

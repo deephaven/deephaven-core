@@ -7,6 +7,7 @@ import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.JoinAddition;
 import io.deephaven.api.JoinMatch;
+import io.deephaven.api.RangeJoinMatch;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.Strings;
@@ -2016,9 +2017,8 @@ public class QueryTable extends BaseTable<QueryTable> {
     @Override
     public Table rangeJoin(
             @NotNull final Table rightTable,
-            @NotNull final Collection<? extends JoinMatch> columnsToMatch,
-            @NotNull final RangeStartRule rangeStartRule,
-            @NotNull final RangeEndRule rangeEndRule,
+            @NotNull final Collection<? extends JoinMatch> exactMatches,
+            @NotNull final RangeJoinMatch rangeMatch,
             @NotNull final Collection<? extends Aggregation> aggregations) {
         if (isRefreshing() || rightTable.isRefreshing()) {
             throw new UnsupportedOperationException(String.format(
