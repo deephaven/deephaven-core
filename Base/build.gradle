@@ -48,7 +48,7 @@ artifacts {
 spotless {
     java {
         targetExclude(
-                'src/test/java/io/deephaven/base/ringbuffer/AggregatingDoubleRingBufferTest.java'
+                '**/ringbuffer/Aggregating*RingBuffer*.java'
         )
     }
 }

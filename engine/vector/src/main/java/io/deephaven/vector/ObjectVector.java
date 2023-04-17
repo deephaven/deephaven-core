@@ -48,6 +48,9 @@ public interface ObjectVector<COMPONENT_TYPE> extends Vector<ObjectVector<COMPON
     COMPONENT_TYPE[] toArray();
 
     @Override
+    COMPONENT_TYPE[] copyToArray();
+
+    @Override
     ObjectVector<COMPONENT_TYPE> getDirect();
 
     @Override
@@ -192,6 +195,11 @@ public interface ObjectVector<COMPONENT_TYPE> extends Vector<ObjectVector<COMPON
                 }
             }
             return result;
+        }
+
+        @Override
+        public COMPONENT_TYPE[] copyToArray() {
+            return toArray();
         }
 
         @Override

@@ -17,7 +17,7 @@ import io.deephaven.web.client.api.Callbacks;
 import io.deephaven.web.client.api.JsPartitionedTable;
 import io.deephaven.web.client.api.JsTable;
 import io.deephaven.web.client.api.WorkerConnection;
-import io.deephaven.web.client.api.console.JsVariableChanges;
+import io.deephaven.web.client.api.console.JsVariableType;
 import io.deephaven.web.client.api.lifecycle.HasLifecycle;
 import io.deephaven.web.client.api.widget.JsWidget;
 import io.deephaven.web.client.fu.JsLog;
@@ -25,6 +25,7 @@ import io.deephaven.web.client.fu.LazyPromise;
 import io.deephaven.web.client.state.ClientTableState;
 import io.deephaven.web.shared.fu.JsBiConsumer;
 import jsinterop.annotations.JsIgnore;
+import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
@@ -86,9 +87,9 @@ public class JsFigure extends HasLifecycle {
         Object error;
 
         @JsProperty
-        JsArray<? extends Object> errors;
+        JsArray<String> errors;
 
-        FigureFetchError(Object error, JsArray<? extends Object> errors) {
+        FigureFetchError(Object error, JsArray<String> errors) {
             this.error = error;
             this.errors = errors;
         }
@@ -216,6 +217,7 @@ public class JsFigure extends HasLifecycle {
 
 
     @JsProperty
+    @JsNullable
     public String getTitle() {
         if (descriptor.hasTitle()) {
             return descriptor.getTitle();
@@ -688,7 +690,7 @@ public class JsFigure extends HasLifecycle {
             int nextPartitionedTableIndex = 0;
             for (int i = 0; i < response.getTypedExportIdList().length; i++) {
                 TypedTicket ticket = response.getTypedExportIdList().getAt(i);
-                if (ticket.getType().equals(JsVariableChanges.TABLE)) {
+                if (ticket.getType().equals(JsVariableType.TABLE)) {
                     // Note that creating a CTS like this means we can't actually refetch it, but that's okay, we can't
                     // reconnect in this way without refetching the entire figure anyway.
                     int tableIndex = nextTableIndex++;
@@ -705,7 +707,7 @@ public class JsFigure extends HasLifecycle {
                         tables[tableIndex] = table;
                         return Promise.resolve(table);
                     });
-                } else if (ticket.getType().equals(JsVariableChanges.PARTITIONEDTABLE)) {
+                } else if (ticket.getType().equals(JsVariableType.PARTITIONEDTABLE)) {
                     int partitionedTableIndex = nextPartitionedTableIndex++;
                     promises[i] = Callbacks.<FetchObjectResponse, Object>grpcUnaryPromise(c -> {
                         FetchObjectRequest partitionedTableRequest = new FetchObjectRequest();

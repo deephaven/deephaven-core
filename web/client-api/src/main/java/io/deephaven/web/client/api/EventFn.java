@@ -3,12 +3,13 @@
  */
 package io.deephaven.web.client.api;
 
+import elemental2.dom.CustomEvent;
 import elemental2.dom.Event;
 import jsinterop.annotations.JsFunction;
 
 /**
  */
 @JsFunction
-public interface EventFn {
-    void onEvent(Event e);
+public interface EventFn<T> {
+    void onEvent(CustomEvent<T> e);
 }

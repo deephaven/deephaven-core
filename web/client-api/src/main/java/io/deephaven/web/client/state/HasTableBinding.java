@@ -26,7 +26,7 @@ public interface HasTableBinding {
 
     void fireEvent(String name);
 
-    void fireEvent(String name, CustomEventInit eventInit);
+    <T> void fireEvent(String name, CustomEventInit<T> eventInit);
 
     void setState(ClientTableState appendTo);
 

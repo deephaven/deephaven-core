@@ -3,10 +3,12 @@
  */
 package io.deephaven.web.client.api;
 
+import com.vertispan.tsdefs.annotations.TsName;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SortDescriptor;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsProperty;
 
+@TsName(namespace = "dh")
 public class Sort {
     @JsProperty(namespace = "dh.Sort")
     public static final String ASCENDING = "ASC",

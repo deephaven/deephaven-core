@@ -118,6 +118,12 @@ class UpdateByBuilder {
                     .build();
         }
 
+        // TODO: complete properly (DHC ticket #3666)
+        @Override
+        public UpdateByColumn.UpdateBySpec visit(EmsSpec spec) {
+            throw new UnsupportedOperationException("EmsSpec not added to table.proto");
+        }
+
         @Override
         public UpdateByColumn.UpdateBySpec visit(FillBySpec f) {
             return UpdateByColumn.UpdateBySpec.newBuilder()

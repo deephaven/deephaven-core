@@ -48,7 +48,9 @@ public class FloatEMAOperator extends BasePrimitiveEMAOperator {
                         if (curVal == NULL_DOUBLE) {
                             curVal = input;
                         } else {
-                            curVal = alpha * curVal + (oneMinusAlpha * input);
+                            final double decayedVal = alpha * curVal;
+                            // Create EMAvg by adding decayed value to the 1-minus-alpha-weighted input.
+                            curVal = decayedVal + (oneMinusAlpha * input);
                         }
                     }
                     outputValues.set(ii, curVal);
@@ -75,7 +77,9 @@ public class FloatEMAOperator extends BasePrimitiveEMAOperator {
                         final long dt = timestamp - lastStamp;
                         if (dt != 0) {
                             final double alpha = Math.exp(-dt / (double) reverseWindowScaleUnits);
-                            curVal = alpha * curVal + ((1 - alpha) * input);
+                            final double decayedVal = alpha * curVal;
+                            // Create EMAvg by adding decayed value to the 1-minus-alpha-weighted input.
+                            curVal = decayedVal + ((1 - alpha) * input);
                             lastStamp = timestamp;
                         }
                     }

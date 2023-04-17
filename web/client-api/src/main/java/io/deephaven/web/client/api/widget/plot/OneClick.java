@@ -3,21 +3,28 @@
  */
 package io.deephaven.web.client.api.widget.plot;
 
+import com.vertispan.tsdefs.annotations.TsInterface;
+import com.vertispan.tsdefs.annotations.TsName;
+import com.vertispan.tsdefs.annotations.TsTypeRef;
 import elemental2.core.JsArray;
 import elemental2.core.JsMap;
 import elemental2.dom.CustomEventInit;
 import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.OneClickDescriptor;
+import io.deephaven.web.client.api.Column;
 import io.deephaven.web.client.api.JsPartitionedTable;
 import io.deephaven.web.client.api.JsTable;
 import io.deephaven.web.shared.fu.RemoverFn;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsProperty;
 import jsinterop.base.Any;
+import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 import java.util.Arrays;
 
+@TsInterface
+@TsName(namespace = "dh.plot")
 public class OneClick {
     private final JsFigure jsFigure;
     private final OneClickDescriptor oneClick;
@@ -55,13 +62,13 @@ public class OneClick {
     }
 
     @JsProperty
-    public Object getColumns() {
+    public Column[] getColumns() {
         JsPropertyMap<Object>[] fakeColumns = new JsPropertyMap[oneClick.getColumnsList().length];
         for (int i = 0; i < fakeColumns.length; i++) {
             fakeColumns[i] = JsPropertyMap.of("name", oneClick.getColumnsList().getAt(i), "type",
                     oneClick.getColumnTypesList().getAt(i));
         }
-        return fakeColumns;
+        return Js.uncheckedCast(fakeColumns);
     }
 
     // @JsMethod

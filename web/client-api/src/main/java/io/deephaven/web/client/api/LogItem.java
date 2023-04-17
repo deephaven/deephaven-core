@@ -1,8 +1,10 @@
 /**
  * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
  */
-package io.deephaven.web.shared.data;
+package io.deephaven.web.client.api;
 
+import com.vertispan.tsdefs.annotations.TsInterface;
+import com.vertispan.tsdefs.annotations.TsName;
 import jsinterop.annotations.JsProperty;
 
 import java.io.Serializable;
@@ -10,6 +12,8 @@ import java.io.Serializable;
 /**
  * Represents a serialized fishlib LogRecord, suitable for display on javascript clients.
  */
+@TsInterface
+@TsName(namespace = "dh.ide")
 public class LogItem implements Serializable {
 
     private double micros; // not using long, as js numbers are all floating point anyway

@@ -3,6 +3,8 @@
  */
 package io.deephaven.web.client.api;
 
+import com.vertispan.tsdefs.annotations.TsName;
+import com.vertispan.tsdefs.annotations.TsTypeRef;
 import elemental2.core.JsArray;
 import elemental2.dom.CustomEventInit;
 import elemental2.dom.DomGlobal;
@@ -30,7 +32,7 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Typ
 import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
 import io.deephaven.web.client.api.barrage.def.TableAttributesDefinition;
 import io.deephaven.web.client.api.batch.RequestBatcher;
-import io.deephaven.web.client.api.console.JsVariableChanges;
+import io.deephaven.web.client.api.console.JsVariableType;
 import io.deephaven.web.client.api.filter.FilterCondition;
 import io.deephaven.web.client.api.input.JsInputTable;
 import io.deephaven.web.client.api.lifecycle.HasLifecycle;
@@ -58,10 +60,11 @@ import io.deephaven.web.shared.fu.JsConsumer;
 import io.deephaven.web.shared.fu.JsProvider;
 import io.deephaven.web.shared.fu.JsRunnable;
 import io.deephaven.web.shared.fu.RemoverFn;
-import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
+import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsProperty;
+import jsinterop.base.Any;
 import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
@@ -75,6 +78,7 @@ import static io.deephaven.web.client.fu.LazyPromise.logError;
  * TODO provide hooks into the event handlers so we can see if no one is listening any more and release the table
  * handle/viewport.
  */
+@TsName(namespace = "dh", name = "Table")
 public class JsTable extends HasLifecycle implements HasTableBinding {
     @JsProperty(namespace = "dh.Table")
     public static final String EVENT_SIZECHANGED = "sizechanged",
@@ -87,18 +91,12 @@ public class JsTable extends HasLifecycle implements HasTableBinding {
             EVENT_CUSTOMCOLUMNSCHANGED = "customcolumnschanged",
             EVENT_DISCONNECT = "disconnect",
             EVENT_RECONNECT = "reconnect",
-            EVENT_RECONNECTFAILED = "reconnectfailed";
+            EVENT_RECONNECTFAILED = "reconnectfailed",
+            EVENT_REQUEST_FAILED = "requestfailed",
+            EVENT_REQUEST_SUCCEEDED = "requestsucceeded";
 
     @JsProperty(namespace = "dh.Table")
     public static final double SIZE_UNCOALESCED = -2;
-
-    @JsProperty(namespace = "dh.ValueType")
-    public static final String STRING = "String",
-            NUMBER = "Number",
-            DOUBLE = "Double",
-            LONG = "Long",
-            DATETIME = "Datetime",
-            BOOLEAN = "Boolean";
 
     // indicates that the CTS has changed, "downstream" tables should take note
     public static final String INTERNAL_EVENT_STATECHANGED = "statechanged-internal",
@@ -171,7 +169,6 @@ public class JsTable extends HasLifecycle implements HasTableBinding {
         return Sort.reverse();
     }
 
-    @JsIgnore
     @Override
     public Promise<JsTable> refetch() {
         // TODO(deephaven-core#3604) consider supporting this method when new session reconnects are supported
@@ -299,6 +296,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding {
     }
 
     @JsMethod
+    @JsNullable
     public Object getAttribute(String attributeName) {
         TableAttributesDefinition attrs = lastVisibleState().getTableDef().getAttributes();
         // If the value was present as something easy to serialize, return it.
@@ -338,6 +336,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding {
     }
 
     @JsProperty
+    @JsNullable
     public JsLayoutHints getLayoutHints() {
         return lastVisibleState().getLayoutHints();
     }
@@ -356,6 +355,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding {
     }
 
     @JsProperty
+    @JsNullable
     public String getDescription() {
         return lastVisibleState().getTableDef().getAttributes().getDescription();
     }
@@ -438,6 +438,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding {
 
     @JsMethod
     @SuppressWarnings("unusable-by-js")
+    // TODO union this
     public JsArray<CustomColumn> applyCustomColumns(Object[] customColumns) {
         String[] customColumnStrings = Arrays.stream(customColumns).map(obj -> {
             if (obj instanceof String || obj instanceof CustomColumn) {
@@ -491,8 +492,9 @@ public class JsTable extends HasLifecycle implements HasTableBinding {
     }
 
     @JsMethod
-    public TableViewportSubscription setViewport(double firstRow, double lastRow, @JsOptional JsArray<Column> columns,
-            @JsOptional Double updateIntervalMs) {
+    public TableViewportSubscription setViewport(double firstRow, double lastRow,
+            @JsOptional @JsNullable JsArray<Column> columns,
+            @JsOptional @JsNullable Double updateIntervalMs) {
         Column[] columnsCopy = columns != null ? Js.uncheckedCast(columns.slice()) : null;
         ClientTableState currentState = state();
         TableViewportSubscription activeSubscription = subscriptions.get(getHandle());
@@ -533,7 +535,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding {
     public Promise<TableData> getViewportData() {
         TableViewportSubscription subscription = subscriptions.get(getHandle());
         if (subscription == null) {
-            return (Promise) Promise.reject("No viewport currently set");
+            return Promise.reject("No viewport currently set");
         }
         return subscription.getViewportData();
     }
@@ -594,6 +596,10 @@ public class JsTable extends HasLifecycle implements HasTableBinding {
     }
 
     @JsMethod
+    public Promise<JsTable> copy() {
+        return Promise.resolve(new JsTable(this));
+    }
+
     public Promise<JsTable> copy(boolean resolved) {
         if (resolved) {
             LazyPromise<ClientTableState> promise = new LazyPromise<>();
@@ -603,12 +609,13 @@ public class JsTable extends HasLifecycle implements HasTableBinding {
             return promise.asPromise(MAX_BATCH_TIME)
                     .then(s -> Promise.resolve(new JsTable(this)));
         }
-        return Promise.resolve(new JsTable(this));
+        return copy();
     }
 
     // TODO: #37: Need SmartKey support for this functionality
     // @JsMethod
-    public Promise<JsTotalsTable> getTotalsTable(/* @JsOptional */Object config) {
+    public Promise<JsTotalsTable> getTotalsTable(
+            /* @JsOptional @JsNullable */ @TsTypeRef(JsTotalsTableConfig.class) Object config) {
         // fetch the handle and wrap it in a new jstable. listen for changes
         // on the parent table, and re-fetch each time.
 
@@ -743,7 +750,8 @@ public class JsTable extends HasLifecycle implements HasTableBinding {
 
     // TODO: #37: Need SmartKey support for this functionality
     // @JsMethod
-    public Promise<JsTotalsTable> getGrandTotalsTable(/* @JsOptional */Object config) {
+    public Promise<JsTotalsTable> getGrandTotalsTable(
+            /* @JsNullable @JsOptional */ @TsTypeRef(JsTotalsTableConfig.class) Object config) {
         // As in getTotalsTable, but this time we want to skip any filters - this could mean use the
         // most-derived table which has no filter, or the least-derived table which has all custom columns.
         // Currently, these two mean the same thing.
@@ -758,7 +766,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding {
     }
 
     @JsMethod
-    public Promise<JsTreeTable> rollup(Object configObject) {
+    public Promise<JsTreeTable> rollup(@TsTypeRef(JsRollupConfig.class) Object configObject) {
         Objects.requireNonNull(configObject, "Table.rollup configuration");
         final JsRollupConfig config;
         if (configObject instanceof JsRollupConfig) {
@@ -779,7 +787,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding {
         JsWidget widget = new JsWidget(workerConnection, c -> {
             FetchObjectRequest partitionedTableRequest = new FetchObjectRequest();
             partitionedTableRequest.setSourceId(new TypedTicket());
-            partitionedTableRequest.getSourceId().setType(JsVariableChanges.HIERARCHICALTABLE);
+            partitionedTableRequest.getSourceId().setType(JsVariableType.HIERARCHICALTABLE);
             partitionedTableRequest.getSourceId().setTicket(rollupTicket);
             workerConnection.objectServiceClient().fetchObject(partitionedTableRequest,
                     workerConnection.metadata(), (fail, success) -> {
@@ -792,7 +800,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding {
     }
 
     @JsMethod
-    public Promise<JsTreeTable> treeTable(Object configObject) {
+    public Promise<JsTreeTable> treeTable(@TsTypeRef(JsTreeTableConfig.class) Object configObject) {
         Objects.requireNonNull(configObject, "Table.treeTable configuration");
         final JsTreeTableConfig config;
         if (configObject instanceof JsTreeTableConfig) {
@@ -818,7 +826,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding {
         JsWidget widget = new JsWidget(workerConnection, c -> {
             FetchObjectRequest partitionedTableRequest = new FetchObjectRequest();
             partitionedTableRequest.setSourceId(new TypedTicket());
-            partitionedTableRequest.getSourceId().setType(JsVariableChanges.HIERARCHICALTABLE);
+            partitionedTableRequest.getSourceId().setType(JsVariableType.HIERARCHICALTABLE);
             partitionedTableRequest.getSourceId().setTicket(treeTicket);
             workerConnection.objectServiceClient().fetchObject(partitionedTableRequest,
                     workerConnection.metadata(), (fail, success) -> {
@@ -876,7 +884,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding {
     @JsMethod
     @Deprecated
     public Promise<JsTable> join(Object joinType, JsTable rightTable, JsArray<String> columnsToMatch,
-            @JsOptional JsArray<String> columnsToAdd, @JsOptional Object asOfMatchRule) {
+            @JsOptional @JsNullable JsArray<String> columnsToAdd, @JsOptional @JsNullable Object asOfMatchRule) {
         if (joinType.equals("AJ") || joinType.equals("RAJ")) {
             return asOfJoin(rightTable, columnsToMatch, columnsToAdd, (String) asOfMatchRule);
         } else if (joinType.equals("CROSS_JOIN")) {
@@ -892,7 +900,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding {
 
     @JsMethod
     public Promise<JsTable> asOfJoin(JsTable rightTable, JsArray<String> columnsToMatch,
-            @JsOptional JsArray<String> columnsToAdd, @JsOptional String asOfMatchRule) {
+            @JsOptional @JsNullable JsArray<String> columnsToAdd, @JsOptional @JsNullable String asOfMatchRule) {
         if (rightTable.workerConnection != workerConnection) {
             throw new IllegalStateException(
                     "Table argument passed to join is not from the same worker as current table");
@@ -1014,7 +1022,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding {
                 new JsPartitionedTable(workerConnection, new JsWidget(workerConnection, c -> {
                     FetchObjectRequest partitionedTableRequest = new FetchObjectRequest();
                     partitionedTableRequest.setSourceId(new TypedTicket());
-                    partitionedTableRequest.getSourceId().setType(JsVariableChanges.PARTITIONEDTABLE);
+                    partitionedTableRequest.getSourceId().setType(JsVariableType.PARTITIONEDTABLE);
                     partitionedTableRequest.getSourceId().setTicket(partitionedTableTicket);
                     workerConnection.objectServiceClient().fetchObject(partitionedTableRequest,
                             workerConnection.metadata(), (fail, success) -> {
@@ -1049,19 +1057,19 @@ public class JsTable extends HasLifecycle implements HasTableBinding {
             literal.setBoolValue((Boolean) value);
         } else {
             switch (valueType) {
-                case STRING:
+                case ValueType.STRING:
                     literal.setStringValue(value.toString());
                     break;
-                case NUMBER:
+                case ValueType.NUMBER:
                     literal.setDoubleValue(Double.parseDouble(value.toString()));
                     break;
-                case LONG:
+                case ValueType.LONG:
                     literal.setLongValue(value.toString());
                     break;
-                case DATETIME:
+                case ValueType.DATETIME:
                     literal.setNanoTimeValue(value.toString());
                     break;
-                case BOOLEAN:
+                case ValueType.BOOLEAN:
                     literal.setBoolValue(Boolean.parseBoolean(value.toString()));
                     break;
                 default:
@@ -1088,11 +1096,11 @@ public class JsTable extends HasLifecycle implements HasTableBinding {
     public Promise<Double> seekRow(
             double startingRow,
             Column column,
-            String valueType,
-            Object seekValue,
-            @JsOptional Boolean insensitive,
-            @JsOptional Boolean contains,
-            @JsOptional Boolean isBackwards) {
+            @TsTypeRef(ValueType.class) String valueType,
+            Any seekValue,
+            @JsOptional @JsNullable Boolean insensitive,
+            @JsOptional @JsNullable Boolean contains,
+            @JsOptional @JsNullable Boolean isBackwards) {
         SeekRowRequest seekRowRequest = new SeekRowRequest();
         seekRowRequest.setSourceId(state().getHandle().makeTicket());
         seekRowRequest.setStartingRow(String.valueOf(startingRow));
@@ -1364,6 +1372,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding {
     }
 
     @JsProperty
+    @JsNullable
     public String getPluginName() {
         return lastVisibleState().getTableDef().getAttributes().getPluginName();
     }

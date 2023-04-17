@@ -4,7 +4,7 @@
 
 import unittest
 
-from deephaven import read_csv, empty_table, SortDirection, AsOfMatchRule, DHError, time_table, ugp
+from deephaven import read_csv, empty_table, SortDirection, DHError, time_table, ugp
 from deephaven.agg import sum_, avg, pct, weighted_avg, formula, group, first, last, max_, median, min_, std, abs_sum, \
     var
 from deephaven.table import PartitionedTableProxy
@@ -209,14 +209,14 @@ class PartitionedTableProxyTestCase(BaseTestCase):
                 joined_pt_proxy = pt_proxy.aj(right_table, on=["a"])
                 self.assertTrue([ct for ct in joined_pt_proxy.target.constituent_tables if ct.size > 0])
 
-                joined_pt_proxy = pt_proxy.aj(right_table, on=["a"], joins="e", match_rule=AsOfMatchRule.LESS_THAN)
+                joined_pt_proxy = pt_proxy.aj(right_table, on=["a < a"], joins="e")
                 self.assertTrue([ct for ct in joined_pt_proxy.target.constituent_tables if ct.size > 0])
 
             with self.subTest("reverse as-of join"):
                 joined_pt_proxy = pt_proxy.raj(right_table, on=["a"])
                 self.assertTrue([ct for ct in joined_pt_proxy.target.constituent_tables if ct.size > 0])
 
-                joined_pt_proxy = pt_proxy.raj(right_table, on=["a"], joins="e", match_rule=AsOfMatchRule.GREATER_THAN)
+                joined_pt_proxy = pt_proxy.raj(right_table, on=["a > a"], joins="e")
                 self.assertTrue([ct for ct in joined_pt_proxy.target.constituent_tables if ct.size > 0])
 
         with self.subTest("Join with another Proxy"):

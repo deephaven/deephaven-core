@@ -3,11 +3,12 @@
  */
 package io.deephaven.web.client.api.widget.plot.enums;
 
+import com.vertispan.tsdefs.annotations.TsTypeDef;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.FigureDescriptor;
 import jsinterop.annotations.JsType;
 
-@JsType(name = "SeriesPlotStyle")
-@SuppressWarnings("unusable-by-js")
+@JsType(name = "SeriesPlotStyle", namespace = "dh.plot")
+@TsTypeDef(tsType = "number")
 public class JsSeriesPlotStyle {
     public static final int BAR = FigureDescriptor.SeriesPlotStyle.getBAR();
     public static final int STACKED_BAR = FigureDescriptor.SeriesPlotStyle.getSTACKED_BAR();

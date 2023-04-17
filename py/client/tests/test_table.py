@@ -289,6 +289,11 @@ class TableTestCase(BaseTestCase):
             result_table2 = test_table.where_not_in(unique_table, cols=["c"])
             self.assertEqual(result_table.size, test_table.size - result_table2.size)
 
+    def test_meta_table(self):
+        pa_table = csv.read_csv(self.csv_file)
+        test_table = self.session.import_table(pa_table).drop_columns(["e"])
+        self.assertEqual(len(test_table.schema), len(test_table.meta_table.to_arrow()))
+
 
 if __name__ == '__main__':
     unittest.main()

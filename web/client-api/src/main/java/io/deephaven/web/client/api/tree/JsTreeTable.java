@@ -3,6 +3,8 @@
  */
 package io.deephaven.web.client.api.tree;
 
+import com.vertispan.tsdefs.annotations.TsInterface;
+import com.vertispan.tsdefs.annotations.TsName;
 import elemental2.core.JsArray;
 import elemental2.core.JsObject;
 import elemental2.core.Uint8Array;
@@ -46,9 +48,12 @@ import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.client.fu.LazyPromise;
 import io.deephaven.web.shared.data.*;
 import io.deephaven.web.shared.data.columns.ColumnData;
+import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
+import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsProperty;
+import jsinterop.annotations.JsType;
 import jsinterop.base.Any;
 import jsinterop.base.Js;
 
@@ -71,12 +76,13 @@ import static io.deephaven.web.client.api.subscription.ViewportData.NO_ROW_FORMA
  *
  * The table size will be -1 until a viewport has been fetched.
  */
+@JsType(namespace = "dh", name = "TreeTable")
 public class JsTreeTable extends HasLifecycle {
-    @JsProperty(namespace = "dh.TreeTable")
     public static final String EVENT_UPDATED = "updated",
             EVENT_DISCONNECT = "disconnect",
             EVENT_RECONNECT = "reconnect",
-            EVENT_RECONNECTFAILED = "reconnectfailed";
+            EVENT_RECONNECTFAILED = "reconnectfailed",
+            EVENT_REQUEST_FAILED = "requestfailed";
 
     private static final double ACTION_EXPAND = 0b001;
     private static final double ACTION_EXPAND_WITH_DESCENDENTS = 0b011;
@@ -109,7 +115,9 @@ public class JsTreeTable extends HasLifecycle {
         }
     }
 
-    class TreeViewportData {
+    @TsInterface
+    @TsName(namespace = "dh")
+    public class TreeViewportData implements TableData {
         private final Boolean[] expandedColumn;
         private final int[] depthColumn;
         private final double offset;
@@ -207,6 +215,36 @@ public class JsTreeTable extends HasLifecycle {
             }
         }
 
+        @Override
+        public Row get(long index) {
+            return getRows().getAt((int) index);
+        }
+
+        @Override
+        public Row get(int index) {
+            return getRows().getAt((int) index);
+        }
+
+        @Override
+        public Any getData(int index, Column column) {
+            return getRows().getAt(index).get(column);
+        }
+
+        @Override
+        public Any getData(long index, Column column) {
+            return getRows().getAt((int) index).get(column);
+        }
+
+        @Override
+        public Format getFormat(int index, Column column) {
+            return getRows().getAt(index).getFormat(column);
+        }
+
+        @Override
+        public Format getFormat(long index, Column column) {
+            return getRows().getAt((int) index).getFormat(column);
+        }
+
         @JsProperty
         public double getOffset() {
             return offset;
@@ -229,7 +267,9 @@ public class JsTreeTable extends HasLifecycle {
         /**
          * Row implementation that also provides additional read-only properties.
          */
-        class TreeRow extends ViewportRow {
+        @TsInterface
+        @TsName(namespace = "dh")
+        public class TreeRow extends ViewportRow {
             public TreeRow(int offsetInSnapshot, Object[] dataColumns, Object rowStyleColumn) {
                 super(offsetInSnapshot, dataColumns, rowStyleColumn);
             }
@@ -317,6 +357,7 @@ public class JsTreeTable extends HasLifecycle {
 
     private boolean closed = false;
 
+    @JsIgnore
     public JsTreeTable(WorkerConnection workerConnection, JsWidget widget) {
         this.connection = workerConnection;
         this.widget = widget;
@@ -750,20 +791,15 @@ public class JsTreeTable extends HasLifecycle {
         replaceKeyTable();
     }
 
-
-
-    @JsMethod
-    public void expand(Object row, @JsOptional Boolean expandDescendants) {
+    public void expand(Any row, @JsOptional Boolean expandDescendants) {
         setExpanded(row, true, expandDescendants);
     }
 
-    @JsMethod
-    public void collapse(Object row) {
+    public void collapse(Any row) {
         setExpanded(row, false, false);
     }
 
-    @JsMethod
-    public void setExpanded(Object row, boolean isExpanded, @JsOptional Boolean expandDescendants) {
+    public void setExpanded(Any row, boolean isExpanded, @JsOptional Boolean expandDescendants) {
         // TODO check row number is within bounds
         final double action;
         if (!isExpanded) {
@@ -775,8 +811,8 @@ public class JsTreeTable extends HasLifecycle {
         }
 
         final TreeRow r;
-        if (row instanceof Double) {
-            r = currentViewportData.rows.getAt((int) ((double) row - currentViewportData.offset));
+        if ("number".equals(Js.typeof(row))) {
+            r = currentViewportData.rows.getAt((int) (row.asDouble() - currentViewportData.offset));
         } else if (row instanceof TreeRow) {
             r = (TreeRow) row;
         } else {
@@ -787,17 +823,14 @@ public class JsTreeTable extends HasLifecycle {
         replaceKeyTable();
     }
 
-    @JsMethod
     public void expandAll() {
         replaceKeyTableData(ACTION_EXPAND_WITH_DESCENDENTS);
     }
 
-    @JsMethod
     public void collapseAll() {
         replaceKeyTableData(ACTION_EXPAND);
     }
 
-    @JsMethod
     public boolean isExpanded(Object row) {
         if (row instanceof Double) {
             row = currentViewportData.rows.getAt((int) ((double) row - currentViewportData.offset));
@@ -810,9 +843,8 @@ public class JsTreeTable extends HasLifecycle {
     }
 
     // JsTable-like methods
-    @JsMethod
-    public void setViewport(double firstRow, double lastRow, @JsOptional JsArray<Column> columns,
-            @JsOptional Double updateInterval) {
+    public void setViewport(double firstRow, double lastRow, @JsOptional @JsNullable JsArray<Column> columns,
+            @JsNullable @JsOptional Double updateInterval) {
         this.firstRow = firstRow;
         this.lastRow = lastRow;
         this.columns = columns != null ? Js.uncheckedCast(columns.slice()) : visibleColumns;
@@ -821,7 +853,6 @@ public class JsTreeTable extends HasLifecycle {
         replaceSubscription(RebuildStep.SUBSCRIPTION);
     }
 
-    @JsMethod
     public Promise<TreeViewportData> getViewportData() {
         LazyPromise<TreeViewportData> promise = new LazyPromise<>();
 
@@ -836,7 +867,6 @@ public class JsTreeTable extends HasLifecycle {
         return promise.asPromise();
     }
 
-    @JsMethod
     public void close() {
         JsLog.debug("Closing tree table", this);
 
@@ -874,7 +904,6 @@ public class JsTreeTable extends HasLifecycle {
         }
     }
 
-    @JsMethod
     @SuppressWarnings("unusable-by-js")
     public JsArray<Sort> applySort(Sort[] sort) {
         for (int i = 0; i < sort.length; i++) {
@@ -889,7 +918,6 @@ public class JsTreeTable extends HasLifecycle {
         return getSort();
     }
 
-    @JsMethod
     @SuppressWarnings("unusable-by-js")
     public JsArray<FilterCondition> applyFilter(FilterCondition[] filter) {
         nextFilters = Arrays.asList(filter);
@@ -900,6 +928,7 @@ public class JsTreeTable extends HasLifecycle {
     }
 
     @JsProperty
+    @JsNullable
     public String getDescription() {
         return tableDefinition.getAttributes().getDescription();
     }
@@ -928,7 +957,6 @@ public class JsTreeTable extends HasLifecycle {
         return Js.uncheckedCast(visibleColumns);
     }
 
-    @JsMethod
     public Column findColumn(String key) {
         Column c = columnsByName.get(key);
         if (c == null) {
@@ -947,7 +975,6 @@ public class JsTreeTable extends HasLifecycle {
         return groupedColumns;
     }
 
-    @JsMethod
     public Column[] findColumns(String[] keys) {
         Column[] result = new Column[keys.length];
         for (int i = 0; i < keys.length; i++) {
@@ -967,7 +994,6 @@ public class JsTreeTable extends HasLifecycle {
      * in the resulting table.</li>
      * </ul>
      */
-    @JsMethod
     public Promise<JsTable> selectDistinct(Column[] columns) {
         return sourceTable.get().then(t -> {
             // if this is the first time it is used, it might not be filtered correctly, so check that the filters match
@@ -1085,7 +1111,6 @@ public class JsTreeTable extends HasLifecycle {
     // }
     // }
 
-    @JsMethod
     public Promise<JsTreeTable> copy() {
         return connection.newState((c, state, metadata) -> {
             // connection.getServer().reexport(this.baseTable.getHandle(), state.getHandle(), c);

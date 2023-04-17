@@ -19,6 +19,7 @@
 package io.deephaven.parquet.base.tempfix;
 
 /*
+TODO(deephaven-core#901): Remove the hacked ParquetMetadataConverter.java and the need for the ParquetHadoop module.
 NOTE this only exists for this line, inside addRowGroup
 Without it the page offset is not being saved properly
             if (columnMetaData.getDictionaryPageOffset() >= 0) {
