@@ -688,7 +688,7 @@ public class WorkerConnection {
         Listener listener = new Listener();
 
         return promise
-                .timeout(10_000)
+                .timeout((int)sessionTimeoutMs)
                 .asPromise()
                 .then(Promise::resolve, fail -> {
                     listener.subscription.run();
