@@ -5,7 +5,7 @@
  */
 package io.deephaven.engine.table.impl.updateby.rollingcount;
 
-import io.deephaven.base.ringbuffer.DoubleRingBuffer;
+import io.deephaven.base.ringbuffer.ByteRingBuffer;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.DoubleChunk;
 import io.deephaven.chunk.Chunk;
@@ -26,13 +26,11 @@ public class DoubleRollingCountOperator extends BaseLongUpdateByOperator {
 
     protected class Context extends BaseLongUpdateByOperator.Context {
         protected DoubleChunk<? extends Values> influencerValuesChunk;
-        protected DoubleRingBuffer buffer;
-        protected boolean evaluationNeeded;
+        protected ByteRingBuffer buffer;
 
         protected Context(final int chunkSize) {
             super(chunkSize);
-            buffer = new DoubleRingBuffer(BUFFER_INITIAL_CAPACITY, true);
-            evaluationNeeded = false;
+            buffer = new ByteRingBuffer(BUFFER_INITIAL_CAPACITY, true);
         }
 
         @Override
@@ -52,10 +50,12 @@ public class DoubleRollingCountOperator extends BaseLongUpdateByOperator {
 
             for (int ii = 0; ii < count; ii++) {
                 final double val = influencerValuesChunk.get(pos + ii);
-                buffer.addUnsafe(val);
 
                 if (val == NULL_DOUBLE) {
+                    buffer.addUnsafe((byte) 0); // 0 signifies null
                     nullCount++;
+                } else {
+                    buffer.addUnsafe((byte) 1); // 1 signifies non-null
                 }
             }
         }
@@ -65,9 +65,9 @@ public class DoubleRollingCountOperator extends BaseLongUpdateByOperator {
             Assert.geq(buffer.size(), "doubleWindowValues.size()", count);
 
             for (int ii = 0; ii < count; ii++) {
-                final double val = buffer.removeUnsafe();
+                final byte val = buffer.removeUnsafe();
 
-                if (val == NULL_DOUBLE) {
+                if (val == 0) {
                     nullCount--;
                 }
             }
@@ -77,14 +77,12 @@ public class DoubleRollingCountOperator extends BaseLongUpdateByOperator {
         public void writeToOutputChunk(int outIdx) {
             curVal = buffer.size() - nullCount;
             outputValues.set(outIdx, curVal);
-            evaluationNeeded = false;
         }
 
         @Override
         public void reset() {
             super.reset();
             buffer.clear();
-            evaluationNeeded = false;
         }
     }
 

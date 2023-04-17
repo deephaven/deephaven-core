@@ -1,6 +1,6 @@
 package io.deephaven.engine.table.impl.updateby.rollingcount;
 
-import io.deephaven.base.ringbuffer.ObjectRingBuffer;
+import io.deephaven.base.ringbuffer.ByteRingBuffer;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ObjectChunk;
@@ -12,22 +12,18 @@ import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.math.BigInteger;
-
-public class BigIntegerRollingCountOperator extends BaseLongUpdateByOperator {
+public class ObjectRollingCountOperator extends BaseLongUpdateByOperator {
     private static final int BUFFER_INITIAL_CAPACITY = 128;
     // region extra-fields
     // endregion extra-fields
 
     protected class Context extends BaseLongUpdateByOperator.Context {
-        protected ObjectChunk<BigInteger, ? extends Values> influencerValuesChunk;
-        protected ObjectRingBuffer<BigInteger> buffer;
-        protected boolean evaluationNeeded;
+        protected ObjectChunk<Object, ? extends Values> influencerValuesChunk;
+        protected ByteRingBuffer buffer;
 
         protected Context(final int chunkSize) {
             super(chunkSize);
-            buffer = new ObjectRingBuffer<>(BUFFER_INITIAL_CAPACITY, true);
-            evaluationNeeded = false;
+            buffer = new ByteRingBuffer(BUFFER_INITIAL_CAPACITY, true);
         }
 
         @Override
@@ -46,11 +42,13 @@ public class BigIntegerRollingCountOperator extends BaseLongUpdateByOperator {
             buffer.ensureRemaining(count);
 
             for (int ii = 0; ii < count; ii++) {
-                final BigInteger val = influencerValuesChunk.get(pos + ii);
-                buffer.addUnsafe(val);
+                final Object val = influencerValuesChunk.get(pos + ii);
 
                 if (val == null) {
+                    buffer.addUnsafe((byte) 0); // 0 signifies null
                     nullCount++;
+                } else {
+                    buffer.addUnsafe((byte) 1); // 1 signifies non-null
                 }
             }
         }
@@ -60,9 +58,9 @@ public class BigIntegerRollingCountOperator extends BaseLongUpdateByOperator {
             Assert.geq(buffer.size(), "charWindowValues.size()", count);
 
             for (int ii = 0; ii < count; ii++) {
-                final BigInteger val = buffer.removeUnsafe();
+                final byte val = buffer.removeUnsafe();
 
-                if (val == null) {
+                if (val == 0) {
                     nullCount--;
                 }
             }
@@ -72,14 +70,12 @@ public class BigIntegerRollingCountOperator extends BaseLongUpdateByOperator {
         public void writeToOutputChunk(int outIdx) {
             curVal = buffer.size() - nullCount;
             outputValues.set(outIdx, curVal);
-            evaluationNeeded = false;
         }
 
         @Override
         public void reset() {
             super.reset();
             buffer.clear();
-            evaluationNeeded = false;
         }
     }
 
@@ -89,14 +85,14 @@ public class BigIntegerRollingCountOperator extends BaseLongUpdateByOperator {
         return new Context(chunkSize);
     }
 
-    public BigIntegerRollingCountOperator(@NotNull final MatchPair pair,
-                                          @NotNull final String[] affectingColumns,
-                                          @Nullable final RowRedirection rowRedirection,
-                                          @Nullable final String timestampColumnName,
-                                          final long reverseWindowScaleUnits,
-                                          final long forwardWindowScaleUnits
-                                          // region extra-constructor-args
-                                          // endregion extra-constructor-args
+    public ObjectRollingCountOperator(@NotNull final MatchPair pair,
+                                      @NotNull final String[] affectingColumns,
+                                      @Nullable final RowRedirection rowRedirection,
+                                      @Nullable final String timestampColumnName,
+                                      final long reverseWindowScaleUnits,
+                                      final long forwardWindowScaleUnits
+                                      // region extra-constructor-args
+                                      // endregion extra-constructor-args
     ) {
         super(pair, affectingColumns, rowRedirection, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true);
         // region constructor

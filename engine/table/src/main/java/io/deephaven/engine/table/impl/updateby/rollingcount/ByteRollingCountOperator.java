@@ -28,12 +28,10 @@ public class ByteRollingCountOperator extends BaseLongUpdateByOperator {
     protected class Context extends BaseLongUpdateByOperator.Context {
         protected ByteChunk<? extends Values> influencerValuesChunk;
         protected ByteRingBuffer buffer;
-        protected boolean evaluationNeeded;
 
         protected Context(final int chunkSize) {
             super(chunkSize);
             buffer = new ByteRingBuffer(BUFFER_INITIAL_CAPACITY, true);
-            evaluationNeeded = false;
         }
 
         @Override
@@ -53,10 +51,12 @@ public class ByteRollingCountOperator extends BaseLongUpdateByOperator {
 
             for (int ii = 0; ii < count; ii++) {
                 final byte val = influencerValuesChunk.get(pos + ii);
-                buffer.addUnsafe(val);
 
                 if (val == nullValue) {
+                    buffer.addUnsafe((byte) 0); // 0 signifies null
                     nullCount++;
+                } else {
+                    buffer.addUnsafe((byte) 1); // 1 signifies non-null
                 }
             }
         }
@@ -68,7 +68,7 @@ public class ByteRollingCountOperator extends BaseLongUpdateByOperator {
             for (int ii = 0; ii < count; ii++) {
                 final byte val = buffer.removeUnsafe();
 
-                if (val == nullValue) {
+                if (val == 0) {
                     nullCount--;
                 }
             }
@@ -78,14 +78,12 @@ public class ByteRollingCountOperator extends BaseLongUpdateByOperator {
         public void writeToOutputChunk(int outIdx) {
             curVal = buffer.size() - nullCount;
             outputValues.set(outIdx, curVal);
-            evaluationNeeded = false;
         }
 
         @Override
         public void reset() {
             super.reset();
             buffer.clear();
-            evaluationNeeded = false;
         }
     }
 

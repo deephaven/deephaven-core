@@ -885,17 +885,11 @@ public class UpdateByOperatorFactory {
                 return new DoubleRollingCountOperator(pair, affectingColumns, rowRedirection,
                         rs.revWindowScale().timestampCol(),
                         prevWindowScaleUnits, fwdWindowScaleUnits);
-            } else if (csType == BigDecimal.class) {
-                return new BigDecimalRollingCountOperator(pair, affectingColumns, rowRedirection,
-                        rs.revWindowScale().timestampCol(),
-                        prevWindowScaleUnits, fwdWindowScaleUnits);
-            } else if (csType == BigInteger.class) {
-                return new BigIntegerRollingCountOperator(pair, affectingColumns, rowRedirection,
+            } else {
+                return new ObjectRollingCountOperator(pair, affectingColumns, rowRedirection,
                         rs.revWindowScale().timestampCol(),
                         prevWindowScaleUnits, fwdWindowScaleUnits);
             }
-
-            throw new IllegalArgumentException("Can not perform RollingCount on type " + csType);
         }
     }
 }

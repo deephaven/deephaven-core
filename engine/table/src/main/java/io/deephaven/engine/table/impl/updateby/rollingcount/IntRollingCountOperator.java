@@ -5,7 +5,7 @@
  */
 package io.deephaven.engine.table.impl.updateby.rollingcount;
 
-import io.deephaven.base.ringbuffer.IntRingBuffer;
+import io.deephaven.base.ringbuffer.ByteRingBuffer;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.Chunk;
@@ -26,13 +26,11 @@ public class IntRollingCountOperator extends BaseLongUpdateByOperator {
 
     protected class Context extends BaseLongUpdateByOperator.Context {
         protected IntChunk<? extends Values> influencerValuesChunk;
-        protected IntRingBuffer buffer;
-        protected boolean evaluationNeeded;
+        protected ByteRingBuffer buffer;
 
         protected Context(final int chunkSize) {
             super(chunkSize);
-            buffer = new IntRingBuffer(BUFFER_INITIAL_CAPACITY, true);
-            evaluationNeeded = false;
+            buffer = new ByteRingBuffer(BUFFER_INITIAL_CAPACITY, true);
         }
 
         @Override
@@ -52,10 +50,12 @@ public class IntRollingCountOperator extends BaseLongUpdateByOperator {
 
             for (int ii = 0; ii < count; ii++) {
                 final int val = influencerValuesChunk.get(pos + ii);
-                buffer.addUnsafe(val);
 
                 if (val == NULL_INT) {
+                    buffer.addUnsafe((byte) 0); // 0 signifies null
                     nullCount++;
+                } else {
+                    buffer.addUnsafe((byte) 1); // 1 signifies non-null
                 }
             }
         }
@@ -65,9 +65,9 @@ public class IntRollingCountOperator extends BaseLongUpdateByOperator {
             Assert.geq(buffer.size(), "intWindowValues.size()", count);
 
             for (int ii = 0; ii < count; ii++) {
-                final int val = buffer.removeUnsafe();
+                final byte val = buffer.removeUnsafe();
 
-                if (val == NULL_INT) {
+                if (val == 0) {
                     nullCount--;
                 }
             }
@@ -77,14 +77,12 @@ public class IntRollingCountOperator extends BaseLongUpdateByOperator {
         public void writeToOutputChunk(int outIdx) {
             curVal = buffer.size() - nullCount;
             outputValues.set(outIdx, curVal);
-            evaluationNeeded = false;
         }
 
         @Override
         public void reset() {
             super.reset();
             buffer.clear();
-            evaluationNeeded = false;
         }
     }
 
