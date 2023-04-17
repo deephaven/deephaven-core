@@ -144,4 +144,15 @@ public class PerformanceQueries {
     public static Table serverState() {
         return PerformanceQueriesGeneral.serverState(TableLoggers.serverStateLog());
     }
+
+    /**
+     * User friendly table and widgets with basic memory, UGP and GC stats samples for the current engine process, collected on a
+     * periodic basis.
+     *
+     * @return map of table and plots derived from the server state log
+     */
+    @ScriptApi
+    public static Map<String, Object> serverStateWithPlots() {
+        return PerformanceQueriesGeneral.serverStateWithPlots(TableLoggers.serverStateLog());
+    }
 }
