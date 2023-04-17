@@ -10,6 +10,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.updateby.ema.*;
+import io.deephaven.engine.table.impl.updateby.emsum.*;
 import io.deephaven.engine.table.impl.updateby.fill.*;
 import io.deephaven.engine.table.impl.updateby.minmax.*;
 import io.deephaven.engine.table.impl.updateby.prod.*;
@@ -312,6 +313,20 @@ public class UpdateByOperatorFactory {
         }
 
         @Override
+        public Void visit(@NotNull final EmsSpec spec) {
+            final boolean isTimeBased = spec.timeScale().isTimeBased();
+            final String timestampCol = spec.timeScale().timestampCol();
+
+            Arrays.stream(pairs)
+                    .filter(p -> !isTimeBased || !p.rightColumn().equals(timestampCol))
+                    .map(fc -> makeEmsOperator(fc,
+                            source,
+                            spec))
+                    .forEach(ops::add);
+            return null;
+        }
+
+        @Override
         public Void visit(@NotNull final FillBySpec fbs) {
             Arrays.stream(pairs)
                     .map(fc -> makeForwardFillOperator(fc, source))
@@ -437,6 +452,9 @@ public class UpdateByOperatorFactory {
             if (csType == byte.class || csType == Byte.class) {
                 return new ByteEMAOperator(pair, affectingColumns, rowRedirection, control,
                         ema.timeScale().timestampCol(), timeScaleUnits, columnSource, NULL_BYTE);
+            } else if (csType == char.class || csType == Character.class) {
+                return new CharEMAOperator(pair, affectingColumns, rowRedirection, control,
+                        ema.timeScale().timestampCol(), timeScaleUnits, columnSource);
             } else if (csType == short.class || csType == Short.class) {
                 return new ShortEMAOperator(pair, affectingColumns, rowRedirection, control,
                         ema.timeScale().timestampCol(), timeScaleUnits, columnSource);
@@ -461,6 +479,56 @@ public class UpdateByOperatorFactory {
             }
 
             throw new IllegalArgumentException("Can not perform EMA on type " + csType);
+        }
+
+        private UpdateByOperator makeEmsOperator(@NotNull final MatchPair pair,
+                @NotNull final Table source,
+                @NotNull final EmsSpec spec) {
+            // noinspection rawtypes
+            final ColumnSource columnSource = source.getColumnSource(pair.rightColumn);
+            final Class<?> csType = columnSource.getType();
+
+            final String[] affectingColumns;
+            if (spec.timeScale().timestampCol() == null) {
+                affectingColumns = new String[] {pair.rightColumn};
+            } else {
+                affectingColumns = new String[] {spec.timeScale().timestampCol(), pair.rightColumn};
+            }
+
+            // use the correct units from the EmsSpec (depending on if Time or Tick based)
+            final long timeScaleUnits = spec.timeScale().timescaleUnits();
+            final OperationControl control = spec.controlOrDefault();
+
+            if (csType == byte.class || csType == Byte.class) {
+                return new ByteEMSOperator(pair, affectingColumns, rowRedirection, control,
+                        spec.timeScale().timestampCol(), timeScaleUnits, columnSource, NULL_BYTE);
+            } else if (csType == char.class || csType == Character.class) {
+                return new CharEMSOperator(pair, affectingColumns, rowRedirection, control,
+                        spec.timeScale().timestampCol(), timeScaleUnits, columnSource);
+            } else if (csType == short.class || csType == Short.class) {
+                return new ShortEMSOperator(pair, affectingColumns, rowRedirection, control,
+                        spec.timeScale().timestampCol(), timeScaleUnits, columnSource);
+            } else if (csType == int.class || csType == Integer.class) {
+                return new IntEMSOperator(pair, affectingColumns, rowRedirection, control,
+                        spec.timeScale().timestampCol(), timeScaleUnits, columnSource);
+            } else if (csType == long.class || csType == Long.class) {
+                return new LongEMSOperator(pair, affectingColumns, rowRedirection, control,
+                        spec.timeScale().timestampCol(), timeScaleUnits, columnSource);
+            } else if (csType == float.class || csType == Float.class) {
+                return new FloatEMSOperator(pair, affectingColumns, rowRedirection, control,
+                        spec.timeScale().timestampCol(), timeScaleUnits, columnSource);
+            } else if (csType == double.class || csType == Double.class) {
+                return new DoubleEMSOperator(pair, affectingColumns, rowRedirection, control,
+                        spec.timeScale().timestampCol(), timeScaleUnits, columnSource);
+            } else if (csType == BigDecimal.class) {
+                return new BigDecimalEMSOperator(pair, affectingColumns, rowRedirection, control,
+                        spec.timeScale().timestampCol(), timeScaleUnits, columnSource);
+            } else if (csType == BigInteger.class) {
+                return new BigIntegerEMSOperator(pair, affectingColumns, rowRedirection, control,
+                        spec.timeScale().timestampCol(), timeScaleUnits, columnSource);
+            }
+
+            throw new IllegalArgumentException("Can not perform EMS on type " + csType);
         }
 
         private UpdateByOperator makeCumProdOperator(MatchPair fc, Table source) {

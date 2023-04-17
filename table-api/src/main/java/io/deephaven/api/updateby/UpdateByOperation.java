@@ -215,6 +215,137 @@ public interface UpdateByOperation {
     }
 
     /**
+     * Create an {@link EmsSpec exponential moving sum} for the supplied column name pairs, using ticks as the decay
+     * unit. Uses the default OperationControl settings.
+     * <p>
+     * The formula used is
+     * </p>
+     *
+     * <pre>
+     *     a = e^(-1 / tickDecay)
+     *     ems_next = a * ems_last + value
+     * </pre>
+     *
+     * @param tickDecay the decay rate in ticks
+     * @param pairs The input/output column name pairs
+     * @return The aggregation
+     */
+    static UpdateByOperation Ems(long tickDecay, String... pairs) {
+        return EmsSpec.ofTicks(tickDecay).clause(pairs);
+    }
+
+    /**
+     * Create an {@link EmsSpec exponential moving sum} for the supplied column name pairs, using ticks as the decay
+     * unit.
+     * <p>
+     * The formula used is
+     * </p>
+     *
+     * <pre>
+     *     a = e^(-1 / tickDecay)
+     *     ems_next = a * ems_last + value
+     * </pre>
+     *
+     * @param control a {@link OperationControl control} object that defines how special cases should behave. See
+     *        {@link OperationControl} for further details.
+     * @param tickDecay the decay rate in ticks
+     * @param pairs The input/output column name pairs
+     * @return The aggregation
+     */
+    static UpdateByOperation Ems(final OperationControl control, long tickDecay, String... pairs) {
+        return EmsSpec.ofTicks(control, tickDecay).clause(pairs);
+    }
+
+    /**
+     * Create an {@link EmsSpec exponential moving sum} for the supplied column name pairs, using time as the decay
+     * unit. Uses the default OperationControl settings.
+     * <p>
+     * The formula used is
+     * </p>
+     *
+     * <pre>
+     *     a = e^(-dt / timeDecay)
+     *     ems_next = a * ems_last + value
+     * </pre>
+     *
+     * @param timestampColumn the column in the source table to use for timestamps
+     * @param timeDecay the decay rate in nanoseconds
+     * @param pairs The input/output column name pairs
+     * @return The aggregation
+     */
+    static UpdateByOperation Ems(String timestampColumn, long timeDecay, String... pairs) {
+        return EmsSpec.ofTime(timestampColumn, timeDecay).clause(pairs);
+    }
+
+    /**
+     * Create an {@link EmsSpec exponential moving sum} for the supplied column name pairs, using time as the decay
+     * unit.
+     * <p>
+     * The formula used is
+     * </p>
+     *
+     * <pre>
+     *     a = e^(-dt / timeDecay)
+     *     ems_next = a * ems_last + value
+     * </pre>
+     *
+     * @param control a {@link OperationControl control} object that defines how special cases should behave. See
+     *        {@link OperationControl} for further details.
+     * @param timestampColumn the column in the source table to use for timestamps
+     * @param timeDecay the decay rate in nanoseconds
+     * @param pairs The input/output column name pairs
+     * @return The aggregation
+     */
+    static UpdateByOperation Ems(OperationControl control, String timestampColumn, long timeDecay, String... pairs) {
+        return EmsSpec.ofTime(control, timestampColumn, timeDecay).clause(pairs);
+    }
+
+    /**
+     * Create an {@link EmsSpec exponential moving sum} for the supplied column name pairs, using time as the decay
+     * unit. Uses the default OperationControl settings.
+     * <p>
+     * The formula used is
+     * </p>
+     *
+     * <pre>
+     *     a = e^(-dt / durationDecay)
+     *     ems_next = a * ems_last + value
+     * </pre>
+     *
+     * @param timestampColumn the column in the source table to use for timestamps
+     * @param durationDecay the decay rate as {@link Duration duration}
+     * @param pairs The input/output column name pairs
+     * @return The aggregation
+     */
+    static UpdateByOperation Ems(String timestampColumn, Duration durationDecay, String... pairs) {
+        return EmsSpec.ofTime(timestampColumn, durationDecay).clause(pairs);
+    }
+
+    /**
+     * Create an {@link EmsSpec exponential moving sum} for the supplied column name pairs, using time as the decay
+     * unit.
+     * <p>
+     * The formula used is
+     * </p>
+     *
+     * <pre>
+     *     a = e^(-dt / durationDecay)
+     *     ems_next = a * ems_last + value
+     * </pre>
+     *
+     * @param control a {@link OperationControl control} object that defines how special cases should behave. See
+     *        {@link OperationControl} for further details.
+     * @param timestampColumn the column in the source table to use for timestamps
+     * @param durationDecay the decay rate as {@link Duration duration}
+     * @param pairs The input/output column name pairs
+     * @return The aggregation
+     */
+    static UpdateByOperation Ems(OperationControl control, String timestampColumn, Duration durationDecay,
+            String... pairs) {
+        return EmsSpec.ofTime(control, timestampColumn, durationDecay).clause(pairs);
+    }
+
+    /**
      * Create a {@link RollingSumSpec rolling sum} for the supplied column name pairs, using ticks as the windowing
      * unit. Ticks are row counts and you may specify the previous window in number of rows to include. The current row
      * is considered to belong to the reverse window, so calling this with {@code revTicks = 1} will simply return the
