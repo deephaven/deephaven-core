@@ -37,6 +37,8 @@ public class ReplicateOperators {
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/by/CharChunkedAddOnlyMinMaxOperator.java");
         charToAllButBoolean(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/util/cast/CharToDoubleCast.java");
+        charToAllButBoolean(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/util/cast/CharToBigDecimalCast.java");
         replicateObjectAddOnlyMinMax();
         fixupLongAddOnlyMinMax();
         charToAllButBoolean(

@@ -6,7 +6,6 @@ import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.api.updateby.spec.*;
-import io.deephaven.chunk.ChunkType;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.Table;
@@ -14,11 +13,11 @@ import io.deephaven.engine.table.impl.updateby.ema.*;
 import io.deephaven.engine.table.impl.updateby.fill.*;
 import io.deephaven.engine.table.impl.updateby.minmax.*;
 import io.deephaven.engine.table.impl.updateby.prod.*;
-import io.deephaven.engine.table.impl.updateby.rollinggroup.*;
 import io.deephaven.engine.table.impl.updateby.rollingavg.*;
+import io.deephaven.engine.table.impl.updateby.rollinggroup.RollingGroupOperator;
 import io.deephaven.engine.table.impl.updateby.rollingminmax.*;
-import io.deephaven.engine.table.impl.updateby.rollingsum.*;
 import io.deephaven.engine.table.impl.updateby.rollingproduct.*;
+import io.deephaven.engine.table.impl.updateby.rollingsum.*;
 import io.deephaven.engine.table.impl.updateby.rollingwavg.*;
 import io.deephaven.engine.table.impl.updateby.sum.*;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
@@ -845,7 +844,6 @@ public class UpdateByOperatorFactory {
             final Class<?> csType = columnSource.getType();
 
             final ColumnSource weightColumnSource = source.getColumnSource(rs.weightCol());
-            final ChunkType weightChunkType = weightColumnSource.getChunkType();
             final Class<?> weightCsType = weightColumnSource.getType();
 
             if (!rs.weightColumnApplicableTo(weightCsType)) {
@@ -862,51 +860,44 @@ public class UpdateByOperatorFactory {
             final long prevWindowScaleUnits = rs.revWindowScale().timescaleUnits();
             final long fwdWindowScaleUnits = rs.fwdWindowScale().timescaleUnits();
 
+            if (csType == BigDecimal.class || csType == BigInteger.class ||
+                    weightCsType == BigDecimal.class || weightCsType == BigInteger.class) {
+                // We need to produce a BigDecimal result output. All input columns will be cast to BigDecimal so
+                // there is no distinction between input types.
+                return new BigDecimalRollingWAvgOperator(pair, affectingColumns, rowRedirection,
+                        rs.revWindowScale().timestampCol(),
+                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.weightCol(), weightColumnSource,
+                        columnSource, control.mathContextOrDefault());
+            }
+
             if (csType == byte.class || csType == Byte.class) {
                 return new ByteRollingWAvgOperator(pair, affectingColumns, rowRedirection,
                         rs.revWindowScale().timestampCol(),
-                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.weightCol(), weightChunkType,
-                        weightCsType);
+                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.weightCol(), weightColumnSource);
             } else if (csType == char.class || csType == Character.class) {
                 return new CharRollingWAvgOperator(pair, affectingColumns, rowRedirection,
                         rs.revWindowScale().timestampCol(),
-                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.weightCol(), weightChunkType,
-                        weightCsType);
+                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.weightCol(), weightColumnSource);
             } else if (csType == short.class || csType == Short.class) {
                 return new ShortRollingWAvgOperator(pair, affectingColumns, rowRedirection,
                         rs.revWindowScale().timestampCol(),
-                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.weightCol(), weightChunkType,
-                        weightCsType);
+                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.weightCol(), weightColumnSource);
             } else if (csType == int.class || csType == Integer.class) {
                 return new IntRollingWAvgOperator(pair, affectingColumns, rowRedirection,
                         rs.revWindowScale().timestampCol(),
-                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.weightCol(), weightChunkType,
-                        weightCsType);
+                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.weightCol(), weightColumnSource);
             } else if (csType == long.class || csType == Long.class) {
                 return new LongRollingWAvgOperator(pair, affectingColumns, rowRedirection,
                         rs.revWindowScale().timestampCol(),
-                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.weightCol(), weightChunkType,
-                        weightCsType);
+                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.weightCol(), weightColumnSource);
             } else if (csType == float.class || csType == Float.class) {
                 return new FloatRollingWAvgOperator(pair, affectingColumns, rowRedirection,
                         rs.revWindowScale().timestampCol(),
-                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.weightCol(), weightChunkType,
-                        weightCsType);
+                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.weightCol(), weightColumnSource);
             } else if (csType == double.class || csType == Double.class) {
                 return new DoubleRollingWAvgOperator(pair, affectingColumns, rowRedirection,
                         rs.revWindowScale().timestampCol(),
-                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.weightCol(), weightChunkType,
-                        weightCsType);
-            } else if (csType == BigDecimal.class) {
-                return new BigDecimalRollingWAvgOperator(pair, affectingColumns, rowRedirection,
-                        rs.revWindowScale().timestampCol(),
-                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.weightCol(), weightChunkType,
-                        weightCsType, control.mathContextOrDefault());
-            } else if (csType == BigInteger.class) {
-                return new BigIntegerRollingWAvgOperator(pair, affectingColumns, rowRedirection,
-                        rs.revWindowScale().timestampCol(),
-                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.weightCol(), weightChunkType,
-                        weightCsType, control.mathContextOrDefault());
+                        prevWindowScaleUnits, fwdWindowScaleUnits, rs.weightCol(), weightColumnSource);
             }
 
             throw new IllegalArgumentException("Can not perform RollingWAvg on type " + csType);

@@ -4,31 +4,30 @@ import io.deephaven.base.ringbuffer.AggregatingDoubleRingBuffer;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.updateby.internal.BaseDoubleUpdateByOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
-import io.deephaven.function.Basic;
+import io.deephaven.engine.table.impl.util.cast.ToDoubleCast;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.math.BigDecimal;
-import java.math.BigInteger;
 
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 
 abstract class BasePrimitiveRollingWAvgOperator extends BaseDoubleUpdateByOperator {
     private static final int BUFFER_INITIAL_CAPACITY = 128;
     final String weightColumnName;
-    final ChunkType weightChunkType;
-    final Class<?> weightColumnSourceType;
+    final ColumnSource weightColumnSource;
 
     // region extra-fields
     // endregion extra-fields
 
     abstract class Context extends BaseDoubleUpdateByOperator.Context {
-        WritableDoubleChunk<? extends Values> influencerWeightValuesChunk;
+        DoubleChunk<? extends Values> influencerWeightValuesChunk;
         AggregatingDoubleRingBuffer windowValues;
         AggregatingDoubleRingBuffer windowWeightValues;
+
+        ToDoubleCast weightCast;
 
         protected Context(final int affectedChunkSize, final int influencerChunkSize) {
             super(affectedChunkSize);
@@ -48,83 +47,21 @@ abstract class BasePrimitiveRollingWAvgOperator extends BaseDoubleUpdateByOperat
                 }
                 return a + b;
             });
-            influencerWeightValuesChunk = WritableDoubleChunk.makeWritableChunk(influencerChunkSize);
+            // Create a casting helper for the weight values.
+            weightCast = ToDoubleCast.makeToDoubleCast(weightColumnSource.getChunkType(), influencerChunkSize);
         }
 
         @Override
         public void close() {
             super.close();
+            weightCast.close();
             windowValues = null;
             windowWeightValues = null;
-            influencerWeightValuesChunk.close();
-            influencerWeightValuesChunk = null;
         }
 
         @Override
         public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
-            // Cast the weight values to double
-            switch (weightChunkType) {
-                case Char:
-                    final CharChunk<?> charChunk = valueChunks[1].asCharChunk();
-                    for (int ii = 0; ii < valueChunks[1].size(); ii++) {
-                        final char val = charChunk.get(ii);
-                        influencerWeightValuesChunk.set(ii, Basic.isNull(val) ? NULL_DOUBLE : (double) val);
-                    }
-                    break;
-                case Byte:
-                    final ByteChunk<?> byteChunk = valueChunks[1].asByteChunk();
-                    for (int ii = 0; ii < valueChunks[1].size(); ii++) {
-                        final byte val = byteChunk.get(ii);
-                        influencerWeightValuesChunk.set(ii, Basic.isNull(val) ? NULL_DOUBLE : (double) val);
-                    }
-                    break;
-                case Short:
-                    final ShortChunk<?> shortChunk = valueChunks[1].asShortChunk();
-                    for (int ii = 0; ii < valueChunks[1].size(); ii++) {
-                        final short val = shortChunk.get(ii);
-                        influencerWeightValuesChunk.set(ii, Basic.isNull(val) ? NULL_DOUBLE : (double) val);
-                    }
-                    break;
-                case Long:
-                    final LongChunk<?> longChunk = valueChunks[1].asLongChunk();
-                    for (int ii = 0; ii < valueChunks[1].size(); ii++) {
-                        final long val = longChunk.get(ii);
-                        influencerWeightValuesChunk.set(ii, Basic.isNull(val) ? NULL_DOUBLE : (double) val);
-                    }
-                    break;
-                case Float:
-                    final FloatChunk<?> floatChunk = valueChunks[1].asFloatChunk();
-                    for (int ii = 0; ii < valueChunks[1].size(); ii++) {
-                        final float val = floatChunk.get(ii);
-                        influencerWeightValuesChunk.set(ii, Basic.isNull(val) ? NULL_DOUBLE : (double) val);
-                    }
-                    break;
-                case Double:
-                    final DoubleChunk<?> doubleChunk = valueChunks[1].asDoubleChunk();
-                    for (int ii = 0; ii < valueChunks[1].size(); ii++) {
-                        final double val = doubleChunk.get(ii);
-                        influencerWeightValuesChunk.set(ii, val);
-                    }
-                    break;
-                case Object:
-                    if (weightColumnSourceType == BigInteger.class) {
-                        final ObjectChunk<BigInteger, ?> objectChunk = valueChunks[1].asObjectChunk();
-                        for (int ii = 0; ii < valueChunks[1].size(); ii++) {
-                            final BigInteger val = objectChunk.get(ii);
-                            influencerWeightValuesChunk.set(ii, Basic.isNull(val) ? NULL_DOUBLE : val.doubleValue());
-                        }
-                    } else if (weightColumnSourceType == BigDecimal.class) {
-                        final ObjectChunk<BigDecimal, ?> objectChunk = valueChunks[1].asObjectChunk();
-                        for (int ii = 0; ii < valueChunks[1].size(); ii++) {
-                            final BigDecimal val = objectChunk.get(ii);
-                            influencerWeightValuesChunk.set(ii, Basic.isNull(val) ? NULL_DOUBLE : val.doubleValue());
-                        }
-                    } else {
-                        throw new UnsupportedOperationException(
-                                "RollingWAvgOperator weight column type not supported: " + weightColumnSourceType);
-                    }
-                    break;
-            }
+            influencerWeightValuesChunk = weightCast.cast(valueChunks[1]);
         }
 
         @Override
@@ -171,16 +108,14 @@ abstract class BasePrimitiveRollingWAvgOperator extends BaseDoubleUpdateByOperat
             final long reverseWindowScaleUnits,
             final long forwardWindowScaleUnits,
             @NotNull final String weightColumnName,
-            @NotNull final ChunkType weightChunkType,
-            @NotNull final Class<?> weightColumnSourceType
+            @NotNull final ColumnSource weightColumnSource
     // region extra-constructor-args
     // endregion extra-constructor-args
     ) {
         super(pair, affectingColumns, rowRedirection, timestampColumnName, reverseWindowScaleUnits,
                 forwardWindowScaleUnits, true);
         this.weightColumnName = weightColumnName;
-        this.weightChunkType = weightChunkType;
-        this.weightColumnSourceType = weightColumnSourceType;
+        this.weightColumnSource = weightColumnSource;
         // region constructor
         // endregion constructor
     }

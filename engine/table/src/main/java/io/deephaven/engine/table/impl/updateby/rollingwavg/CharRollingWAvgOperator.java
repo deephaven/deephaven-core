@@ -2,15 +2,16 @@ package io.deephaven.engine.table.impl.updateby.rollingwavg;
 
 import io.deephaven.chunk.CharChunk;
 import io.deephaven.chunk.Chunk;
-import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static io.deephaven.util.QueryConstants.*;
+import static io.deephaven.util.QueryConstants.NULL_CHAR;
+import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 
 public class CharRollingWAvgOperator extends BasePrimitiveRollingWAvgOperator {
     // region extra-fields
@@ -65,12 +66,11 @@ public class CharRollingWAvgOperator extends BasePrimitiveRollingWAvgOperator {
                                    final long reverseWindowScaleUnits,
                                    final long forwardWindowScaleUnits,
                                    @NotNull final String weightColumnName,
-                                   @NotNull final ChunkType weightChunkType,
-                                   @NotNull final Class<?> weightColumnSourceType
+                                   @NotNull final ColumnSource weightColumnSource
                                    // region extra-constructor-args
                                    // endregion extra-constructor-args
     ) {
-        super(pair, affectingColumns, rowRedirection, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, weightColumnName, weightChunkType, weightColumnSourceType);
+        super(pair, affectingColumns, rowRedirection, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, weightColumnName, weightColumnSource);
         // region constructor
         // endregion constructor
     }
