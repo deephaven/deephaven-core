@@ -9,6 +9,7 @@ import io.deephaven.api.updateby.spec.*;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.updateby.delta.*;
 import io.deephaven.engine.table.impl.updateby.ema.*;
 import io.deephaven.engine.table.impl.updateby.emsum.*;
 import io.deephaven.engine.table.impl.updateby.fill.*;
@@ -359,6 +360,14 @@ public class UpdateByOperatorFactory {
         }
 
         @Override
+        public Void visit(@NotNull final DeltaSpec spec) {
+            Arrays.stream(pairs)
+                    .map(fc -> makeDeltaOperator(fc, source, spec))
+                    .forEach(ops::add);
+            return null;
+        }
+
+        @Override
         public Void visit(@NotNull final RollingSumSpec rss) {
             final boolean isTimeBased = rss.revWindowScale().isTimeBased();
             final String timestampCol = rss.revWindowScale().timestampCol();
@@ -624,6 +633,35 @@ public class UpdateByOperatorFactory {
             } else {
                 return new ObjectFillByOperator<>(fc, rowRedirection, csType);
             }
+        }
+
+        private UpdateByOperator makeDeltaOperator(@NotNull final MatchPair pair,
+                @NotNull final Table source,
+                @NotNull final DeltaSpec ds) {
+            final ColumnSource columnSource = source.getColumnSource(pair.rightColumn);
+            final Class<?> csType = columnSource.getType();
+
+            if (csType == Character.class || csType == char.class) {
+                return new CharDeltaOperator(pair, rowRedirection, ds.deltaControl(), columnSource);
+            } else if (csType == byte.class || csType == Byte.class) {
+                return new ByteDeltaOperator(pair, rowRedirection, ds.deltaControl(), columnSource);
+            } else if (csType == short.class || csType == Short.class) {
+                return new ShortDeltaOperator(pair, rowRedirection, ds.deltaControl(), columnSource);
+            } else if (csType == int.class || csType == Integer.class) {
+                return new IntDeltaOperator(pair, rowRedirection, ds.deltaControl(), columnSource);
+            } else if (csType == long.class || csType == Long.class || isTimeType(csType)) {
+                return new LongDeltaOperator(pair, rowRedirection, ds.deltaControl(), columnSource);
+            } else if (csType == float.class || csType == Float.class) {
+                return new FloatDeltaOperator(pair, rowRedirection, ds.deltaControl(), columnSource);
+            } else if (csType == double.class || csType == Double.class) {
+                return new DoubleDeltaOperator(pair, rowRedirection, ds.deltaControl(), columnSource);
+            } else if (csType == BigDecimal.class) {
+                return new BigDecimalDeltaOperator(pair, rowRedirection, ds.deltaControl(), columnSource);
+            } else if (csType == BigInteger.class) {
+                return new BigIntegerDeltaOperator(pair, rowRedirection, ds.deltaControl(), columnSource);
+            }
+
+            throw new IllegalArgumentException("Can not perform Delta on type " + csType);
         }
 
         private UpdateByOperator makeRollingSumOperator(@NotNull final MatchPair pair,

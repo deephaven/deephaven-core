@@ -76,6 +76,12 @@ public class UpdateBySpecBuilderTest {
 
         // TODO: add this correctly (DHC #3392)
         @Override
+        public UpdateByColumn.UpdateBySpec visit(DeltaSpec spec) {
+            return null;
+        }
+
+        // TODO: add this correctly (DHC #3392)
+        @Override
         public UpdateByColumn.UpdateBySpec visit(RollingSumSpec p) {
             return null;
         }

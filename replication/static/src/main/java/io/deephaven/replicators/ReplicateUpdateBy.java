@@ -84,7 +84,7 @@ public class ReplicateUpdateBy {
                 fixupByte(f);
             }
 
-            if (f.contains("Long") && f.contains("MinMax")) {
+            if (f.contains("Long")) {
                 augmentLongWithReinterps(f);
             }
         }
@@ -151,6 +151,15 @@ public class ReplicateUpdateBy {
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingproduct/CharRollingProductOperator.java");
         for (final String f : files) {
             if (f.contains("Integer")) {
+                fixupInteger(f);
+            }
+        }
+
+        files = ReplicatePrimitiveCode.charToAllButBoolean(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/delta/CharDeltaOperator.java",
+                exemptions);
+        for (final String f : files) {
+            if (f.contains("Int")) {
                 fixupInteger(f);
             }
         }
