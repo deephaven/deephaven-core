@@ -9,6 +9,8 @@ import io.deephaven.api.filter.FilterNot;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
 
+import java.util.function.Function;
+
 @Immutable
 @SimpleStyle
 public abstract class IfThenElse implements Expression, Filter {
@@ -29,6 +31,20 @@ public abstract class IfThenElse implements Expression, Filter {
     @Override
     public final FilterNot<IfThenElse> invert() {
         return Filter.not(this);
+    }
+
+    /**
+     * Creates a new if-then-else expression / filter with the function {@code f} applied to both {@link #ifTrue()} and
+     * {@link #ifFalse()}.
+     * 
+     * <p>
+     * Equivalent to {@code of(condition(), f.apply(ifTrue()), f.apply(ifFalse()))}.
+     * 
+     * @param f the function
+     * @return the new if-then-else expression / filter
+     */
+    public final IfThenElse pushdown(Function<Expression, Expression> f) {
+        return of(condition(), f.apply(ifTrue()), f.apply(ifFalse()));
     }
 
     @Override

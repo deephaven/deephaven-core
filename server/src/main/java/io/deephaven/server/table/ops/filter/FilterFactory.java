@@ -4,12 +4,12 @@
 package io.deephaven.server.table.ops.filter;
 
 import io.deephaven.api.ColumnName;
+import io.deephaven.api.filter.FilterPattern.Mode;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.select.ConjunctiveFilter;
 import io.deephaven.engine.table.impl.select.DisjunctiveFilter;
 import io.deephaven.engine.table.impl.select.FormulaParserConfiguration;
 import io.deephaven.engine.table.impl.select.MatchFilter;
-import io.deephaven.engine.table.impl.select.PatternFilter.Mode;
 import io.deephaven.engine.table.impl.select.PatternFilter;
 import io.deephaven.engine.table.impl.select.RangeConditionFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;

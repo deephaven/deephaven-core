@@ -151,7 +151,7 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
             return noopResult();
         }
 
-        final WhereFilter[] whereFilters = WhereFilter.from(filters);
+        final WhereFilter[] whereFilters = WhereFilter.from(filters, getNodeDefinition());
         final Map<Boolean, List<WhereFilter>> nodeSuitabilityToFilters = Stream.of(whereFilters)
                 .peek(wf -> wf.init(source.getDefinition()))
                 .collect(Collectors.partitioningBy(wf -> {

@@ -27,14 +27,9 @@ public abstract class FilterIsNull extends FilterBase {
     @Parameter
     public abstract Expression expression();
 
-    /**
-     * Equivalent to {@code Filter.isNotNull(expression())}.
-     *
-     * @return the inverse filter
-     */
     @Override
-    public final FilterIsNotNull invert() {
-        return Filter.isNotNull(expression());
+    public final FilterNot<FilterIsNull> invert() {
+        return FilterNot.of(this);
     }
 
     @Override

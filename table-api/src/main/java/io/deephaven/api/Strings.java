@@ -11,10 +11,12 @@ import io.deephaven.api.expression.Method;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.filter.FilterAnd;
 import io.deephaven.api.filter.FilterComparison;
-import io.deephaven.api.filter.FilterIsNotNull;
 import io.deephaven.api.filter.FilterIsNull;
+import io.deephaven.api.filter.FilterMatches;
 import io.deephaven.api.filter.FilterNot;
 import io.deephaven.api.filter.FilterOr;
+import io.deephaven.api.filter.FilterPattern;
+import io.deephaven.api.filter.FilterQuick;
 import io.deephaven.api.literal.Literal;
 
 import java.util.Collection;
@@ -29,8 +31,23 @@ public class Strings {
         return columnName.name();
     }
 
+    public static String of(ColumnName columnName, boolean inverted) {
+        return (inverted ? "!" : "") + of(columnName);
+    }
+
     public static String of(RawString rawString) {
         return rawString.value();
+    }
+
+    public static String of(RawString rawString, boolean encapsulate, boolean invert) {
+        final String inner = of(rawString);
+        if (invert) {
+            return "!" + encapsulate(inner);
+        }
+        if (encapsulate) {
+            return encapsulate(inner);
+        }
+        return inner;
     }
 
     public static String of(FilterComparison comparison) {
@@ -39,24 +56,60 @@ public class Strings {
         return String.format("%s %s %s", lhs, comparison.operator().javaOperator(), rhs);
     }
 
-    public static String of(FilterNot<?> not) {
-        return String.format("!%s", ofEncapsulated(not.filter()));
+    public static String of(FilterComparison comparison, boolean encapsulate) {
+        final String inner = of(comparison);
+        return encapsulate ? encapsulate(inner) : inner;
     }
 
     public static String of(FilterIsNull isNull) {
         return String.format("isNull(%s)", of(isNull.expression()));
     }
 
-    public static String of(FilterIsNotNull isNotNull) {
-        return String.format("!isNull(%s)", of(isNotNull.expression()));
+    public static String of(FilterIsNull isNull, boolean inverted) {
+        return (inverted ? "!" : "") + of(isNull);
     }
 
     public static String of(FilterOr filterOr) {
         return filterOr.filters().stream().map(Strings::ofEncapsulated).collect(Collectors.joining(" || "));
     }
 
+    public static String of(FilterOr filterOr, boolean encapsulate) {
+        final String inner = of(filterOr);
+        return encapsulate ? encapsulate(inner) : inner;
+    }
+
     public static String of(FilterAnd filterAnd) {
         return filterAnd.filters().stream().map(Strings::ofEncapsulated).collect(Collectors.joining(" && "));
+    }
+
+    public static String of(FilterAnd filterAnd, boolean encapsulate) {
+        final String inner = of(filterAnd);
+        return encapsulate ? encapsulate(inner) : inner;
+    }
+
+    public static String of(FilterPattern pattern) {
+        throw new UnsupportedOperationException();
+    }
+
+    public static String of(FilterPattern pattern, boolean encapsulate) {
+        throw new UnsupportedOperationException();
+    }
+
+    public static String of(FilterQuick quick) {
+        throw new UnsupportedOperationException();
+    }
+
+    public static String of(FilterQuick quick, boolean encapsulate, boolean inverted) {
+        throw new UnsupportedOperationException();
+    }
+
+    public static String of(FilterMatches matches) {
+        throw new UnsupportedOperationException();
+    }
+
+    public static String of(FilterMatches matches, boolean encapsulate, boolean inverted) {
+        // <ColumnName> [icase] [not] in <value 1>, <value 2>, ... , <value n>
+        throw new UnsupportedOperationException();
     }
 
     public static String of(Pair pair) {
@@ -93,35 +146,56 @@ public class Strings {
     }
 
     public static String of(Expression expression) {
-        return expression.walk(new UniversalAdapter(false));
+        return expression.walk(new ExpressionAdapter(false, false));
     }
 
     public static String of(Filter filter) {
-        return filter.walk((Filter.Visitor<String>) new UniversalAdapter(false));
+        return of(filter, false);
+    }
+
+    public static String of(FilterNot<?> not) {
+        return of(not.filter(), true);
+    }
+
+    public static String of(Filter filter, boolean invert) {
+        return filter.walk(new FilterAdapter(false, invert));
     }
 
     public static String of(Literal value) {
-        return value.walk((Literal.Visitor<String>) new UniversalAdapter(false));
+        return value.walk(new LiteralAdapter(false));
     }
 
     public static String of(Function function) {
+        return of(function, false);
+    }
+
+    public static String of(Function function, boolean invert) {
         // <name>(<exp-1>, <exp-2>, ..., <exp-N>)
-        return function.name()
+        return (invert ? "!" : "") + function.name()
                 + function.arguments().stream().map(Strings::of).collect(Collectors.joining(", ", "(", ")"));
     }
 
     public static String of(Method method) {
+        return of(method, false);
+    }
+
+    public static String of(Method method, boolean invert) {
         // <object>.<name>(<exp-1>, <exp-2>, ..., <exp-N>)
-        return of(method.object()) + "." + method.name()
+        return (invert ? "!" : "") + of(method.object()) + "." + method.name()
                 + method.arguments().stream().map(Strings::of).collect(Collectors.joining(", ", "(", ")"));
     }
 
     public static String of(IfThenElse ifThenElse) {
+        return of(ifThenElse, false, false);
+    }
+
+    public static String of(IfThenElse ifThenElse, boolean encapsulate, boolean invert) {
         // <condition> ? <if-true> : <if-false>
-        return String.format("%s ? %s : %s",
+        final String inner = String.format("%s ? %s : %s",
                 ofEncapsulated(ifThenElse.condition()),
-                ofEncapsulated(ifThenElse.ifTrue()),
-                ofEncapsulated(ifThenElse.ifFalse()));
+                ofEncapsulated(ifThenElse.ifTrue(), invert),
+                ofEncapsulated(ifThenElse.ifFalse(), invert));
+        return encapsulate ? encapsulate(inner) : inner;
     }
 
     public static String of(boolean literal) {
@@ -129,107 +203,175 @@ public class Strings {
     }
 
     private static String ofEncapsulated(Expression expression) {
-        return expression.walk(new UniversalAdapter(true));
+        return ofEncapsulated(expression, false);
+    }
+
+    private static String ofEncapsulated(Expression expression, boolean inverted) {
+        return expression.walk(new ExpressionAdapter(true, inverted));
     }
 
     private static String ofEncapsulated(Filter filter) {
-        return filter.walk((Filter.Visitor<String>) new UniversalAdapter(true));
+        return filter.walk(new FilterAdapter(true, false));
     }
 
-    /**
-     * If we ever need to provide more specificity for a type, we can create a non-universal impl.
-     */
-    private static class UniversalAdapter
-            implements Expression.Visitor<String>, Filter.Visitor<String>, Literal.Visitor<String> {
+    private static String encapsulate(String x) {
+        return "(" + x + ")";
+    }
+
+    private static class ExpressionAdapter implements Expression.Visitor<String> {
 
         private final boolean encapsulate;
+        private final boolean invert;
 
-        UniversalAdapter(boolean encapsulate) {
+        ExpressionAdapter(boolean encapsulate, boolean invert) {
             this.encapsulate = encapsulate;
-        }
-
-        private String encapsulate(String x) {
-            return encapsulate ? "(" + x + ")" : x;
+            this.invert = invert;
         }
 
         @Override
         public String visit(Filter filter) {
-            return filter.walk((Filter.Visitor<String>) this);
+            return filter.walk(new FilterAdapter(encapsulate, invert));
         }
 
         @Override
         public String visit(Literal literal) {
-            return literal.walk((Literal.Visitor<String>) this);
+            return literal.walk(new LiteralAdapter(invert));
         }
 
         @Override
         public String visit(ColumnName name) {
-            return of(name);
+            return of(name, invert);
         }
 
         @Override
         public String visit(RawString rawString) {
-            return encapsulate(of(rawString));
+            return of(rawString, encapsulate, invert);
         }
 
         @Override
         public String visit(Function function) {
-            return of(function);
+            return of(function, invert);
         }
 
         @Override
         public String visit(Method method) {
-            return of(method);
+            return of(method, invert);
         }
 
         @Override
         public String visit(IfThenElse ifThenElse) {
-            return encapsulate(of(ifThenElse));
+            return of(ifThenElse, encapsulate, invert);
         }
+    }
 
-        @Override
-        public String visit(FilterComparison comparison) {
-            return encapsulate(of(comparison));
+    private static class FilterAdapter implements Filter.Visitor<String> {
+
+        private final boolean encapsulate;
+        private final boolean invert;
+
+        public FilterAdapter(boolean encapsulate, boolean invert) {
+            this.encapsulate = encapsulate;
+            this.invert = invert;
         }
 
         @Override
         public String visit(FilterIsNull isNull) {
-            return of(isNull);
+            return of(isNull, invert);
         }
 
         @Override
-        public String visit(FilterIsNotNull isNotNull) {
-            return of(isNotNull);
+        public String visit(FilterComparison comparison) {
+            return invert ? of(comparison.invert(), encapsulate) : of(comparison, encapsulate);
         }
 
         @Override
         public String visit(FilterNot<?> not) {
-            return of(not);
+            return not.filter().walk(new FilterAdapter(encapsulate, !invert));
         }
 
         @Override
         public String visit(FilterOr ors) {
-            return encapsulate(of(ors));
+            return invert ? of(ors.invert(), encapsulate) : of(ors, encapsulate);
         }
 
         @Override
         public String visit(FilterAnd ands) {
-            return encapsulate(of(ands));
+            return invert ? of(ands.invert(), encapsulate) : of(ands, encapsulate);
+        }
+
+        @Override
+        public String visit(FilterPattern pattern) {
+            return of(invert ? pattern.invert() : pattern, encapsulate);
+        }
+
+        @Override
+        public String visit(FilterQuick quick) {
+            return of(quick, encapsulate, invert);
+        }
+
+        @Override
+        public String visit(FilterMatches matches) {
+            return of(matches, encapsulate, invert);
+        }
+
+        @Override
+        public String visit(ColumnName columnName) {
+            return of(columnName, invert);
+        }
+
+        @Override
+        public String visit(Function function) {
+            return of(function, invert);
+        }
+
+        @Override
+        public String visit(Method method) {
+            return of(method, invert);
+        }
+
+        @Override
+        public String visit(IfThenElse ifThenElse) {
+            return of(ifThenElse, encapsulate, invert);
+        }
+
+        @Override
+        public String visit(boolean literal) {
+            return of(literal ^ invert);
+        }
+
+        @Override
+        public String visit(RawString rawString) {
+            return of(rawString, encapsulate, invert);
+        }
+    }
+
+    private static class LiteralAdapter implements Literal.Visitor<String> {
+
+        private final boolean inverted;
+
+        public LiteralAdapter(boolean inverted) {
+            this.inverted = inverted;
+        }
+
+        @Override
+        public String visit(boolean literal) {
+            return of(inverted ^ literal);
         }
 
         @Override
         public String visit(int literal) {
+            if (inverted) {
+                throw new IllegalArgumentException();
+            }
             return String.format("(int)%s", literal);
         }
 
         @Override
         public String visit(long literal) {
+            if (inverted) {
+                throw new IllegalArgumentException();
+            }
             return String.format("%sL", literal);
-        }
-
-        @Override
-        public String visit(boolean literal) {
-            return of(literal);
         }
     }
 }

@@ -38,7 +38,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
     /**
      * Just a little helper to keep column stuff together.
      */
-    private static class ColumnHolder {
+    private class ColumnHolder {
         final WouldMatchPair wouldMatchPair;
         IndexWrapperColumnSource column;
 
@@ -51,7 +51,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
         }
 
         WhereFilter getFilter() {
-            return WhereFilter.of(wouldMatchPair.getFilter());
+            return WhereFilter.of(wouldMatchPair.getFilter(), parent.getDefinition());
         }
     }
 

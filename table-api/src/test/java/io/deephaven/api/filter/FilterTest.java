@@ -8,6 +8,7 @@ import io.deephaven.api.RawString;
 import io.deephaven.api.expression.Function;
 import io.deephaven.api.expression.IfThenElse;
 import io.deephaven.api.expression.Method;
+import io.deephaven.api.literal.Literal;
 import org.junit.jupiter.api.Test;
 
 import static io.deephaven.api.Strings.of;
@@ -31,15 +32,18 @@ public class FilterTest {
     private static final ColumnName BAR = ColumnName.of("Bar");
     private static final ColumnName BAZ = ColumnName.of("Baz");
 
+    private static final Literal L42 = Literal.of(42L);
 
     @Test
     void filterIsNull() {
         toString(isNull(FOO), "isNull(Foo)");
+        toString(not(isNull(FOO)), "!isNull(Foo)");
     }
 
     @Test
     void filterIsNotNull() {
         toString(isNotNull(FOO), "!isNull(Foo)");
+        toString(not(isNotNull(FOO)), "isNull(Foo)");
     }
 
     @Test
@@ -50,51 +54,51 @@ public class FilterTest {
     @Test
     void filterAnd() {
         toString(and(isNotNull(FOO), isNotNull(BAR)), "!isNull(Foo) && !isNull(Bar)");
+        toString(not(and(isNotNull(FOO), isNotNull(BAR))), "isNull(Foo) || isNull(Bar)");
     }
 
     @Test
     void filterOr() {
         toString(or(isNull(FOO), gt(FOO, BAR)), "isNull(Foo) || (Foo > Bar)");
+        toString(not(or(isNull(FOO), gt(FOO, BAR))), "!isNull(Foo) && (Foo <= Bar)");
     }
 
     @Test
     void filterOfTrue() {
         toString(ofTrue(), "true");
+        toString(not(ofTrue()), "false");
     }
 
     @Test
     void filterOfFalse() {
         toString(ofFalse(), "false");
+        toString(not(ofFalse()), "true");
     }
 
     @Test
     void filterIsTrue() {
         toString(isTrue(FOO), "Foo == true");
+        toString(not(isTrue(FOO)), "Foo != true");
     }
 
     @Test
     void filterIsFalse() {
         toString(isFalse(FOO), "Foo == false");
+        toString(not(isFalse(FOO)), "Foo != false");
     }
 
     @Test
     void filterColumnName() {
         toString(FOO, "Foo");
-    }
-
-    @Test
-    void filterNotColumnName() {
         toString(not(FOO), "!Foo");
-    }
-
-    @Test
-    void filterNotNotColumnName() {
-        toString(not(not(FOO)), "!!Foo");
+        toString(not(not(FOO)), "Foo");
     }
 
     @Test
     void filterEqPrecedence() {
         toString(eq(or(FOO, eq(BAR, BAZ)), and(FOO, neq(BAR, BAZ))), "(Foo || (Bar == Baz)) == (Foo && (Bar != Baz))");
+        toString(not(eq(or(FOO, eq(BAR, BAZ)), and(FOO, neq(BAR, BAZ)))),
+                "(Foo || (Bar == Baz)) != (Foo && (Bar != Baz))");
     }
 
     @Test
@@ -102,6 +106,10 @@ public class FilterTest {
         toString(Function.of("MyFunction1"), "MyFunction1()");
         toString(Function.of("MyFunction2", FOO), "MyFunction2(Foo)");
         toString(Function.of("MyFunction3", FOO, BAR), "MyFunction3(Foo, Bar)");
+
+        toString(not(Function.of("MyFunction1")), "!MyFunction1()");
+        toString(not(Function.of("MyFunction2", FOO)), "!MyFunction2(Foo)");
+        toString(not(Function.of("MyFunction3", FOO, BAR)), "!MyFunction3(Foo, Bar)");
     }
 
     @Test
@@ -109,11 +117,22 @@ public class FilterTest {
         toString(Method.of(FOO, "MyFunction1"), "Foo.MyFunction1()");
         toString(Method.of(FOO, "MyFunction2", BAR), "Foo.MyFunction2(Bar)");
         toString(Method.of(FOO, "MyFunction3", BAR, BAZ), "Foo.MyFunction3(Bar, Baz)");
+
+        toString(not(Method.of(FOO, "MyFunction1")), "!Foo.MyFunction1()");
+        toString(not(Method.of(FOO, "MyFunction2", BAR)), "!Foo.MyFunction2(Bar)");
+        toString(not(Method.of(FOO, "MyFunction3", BAR, BAZ)), "!Foo.MyFunction3(Bar, Baz)");
     }
 
     @Test
     void filterIfThenElse() {
-        toString(IfThenElse.of(FOO, BAR, BAZ), "Foo ? Bar : Baz");
+        toString(IfThenElse.of(FOO, BAR, FilterComparison.gt(BAZ, L42)), "Foo ? Bar : (Baz > 42L)");
+        toString(not(IfThenElse.of(FOO, BAR, FilterComparison.gt(BAZ, L42))), "Foo ? !Bar : (Baz <= 42L)");
+    }
+
+    @Test
+    void filterRawString() {
+        toString(RawString.of("this is a raw string"), "this is a raw string");
+        toString(Filter.not(RawString.of("this is a raw string")), "!(this is a raw string)");
     }
 
     private static void toString(Filter filter, String expected) {
@@ -127,11 +146,6 @@ public class FilterTest {
         @Override
         public String visit(FilterIsNull isNull) {
             return of(isNull);
-        }
-
-        @Override
-        public String visit(FilterIsNotNull isNotNull) {
-            return of(isNotNull);
         }
 
         @Override
@@ -152,6 +166,21 @@ public class FilterTest {
         @Override
         public String visit(FilterAnd ands) {
             return of(ands);
+        }
+
+        @Override
+        public String visit(FilterPattern pattern) {
+            return of(pattern);
+        }
+
+        @Override
+        public String visit(FilterQuick quick) {
+            return of(quick);
+        }
+
+        @Override
+        public String visit(FilterMatches matches) {
+            return of(matches);
         }
 
         @Override

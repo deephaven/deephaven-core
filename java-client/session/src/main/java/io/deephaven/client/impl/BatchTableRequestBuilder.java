@@ -23,10 +23,12 @@ import io.deephaven.api.filter.Filter;
 import io.deephaven.api.filter.FilterAnd;
 import io.deephaven.api.filter.FilterComparison;
 import io.deephaven.api.filter.FilterComparison.Operator;
-import io.deephaven.api.filter.FilterIsNotNull;
 import io.deephaven.api.filter.FilterIsNull;
+import io.deephaven.api.filter.FilterMatches;
 import io.deephaven.api.filter.FilterNot;
 import io.deephaven.api.filter.FilterOr;
+import io.deephaven.api.filter.FilterPattern;
+import io.deephaven.api.filter.FilterQuick;
 import io.deephaven.api.snapshot.SnapshotWhenOptions;
 import io.deephaven.api.snapshot.SnapshotWhenOptions.Flag;
 import io.deephaven.api.literal.Literal;
@@ -51,12 +53,14 @@ import io.deephaven.proto.backplane.grpc.ExactJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.FetchTableRequest;
 import io.deephaven.proto.backplane.grpc.FilterTableRequest;
 import io.deephaven.proto.backplane.grpc.HeadOrTailRequest;
+import io.deephaven.proto.backplane.grpc.InCondition;
 import io.deephaven.proto.backplane.grpc.IsNullCondition;
 import io.deephaven.proto.backplane.grpc.MergeTablesRequest;
 import io.deephaven.proto.backplane.grpc.NaturalJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.NotCondition;
 import io.deephaven.proto.backplane.grpc.OrCondition;
 import io.deephaven.proto.backplane.grpc.Reference;
+import io.deephaven.proto.backplane.grpc.SearchCondition;
 import io.deephaven.proto.backplane.grpc.SelectDistinctRequest;
 import io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest;
 import io.deephaven.proto.backplane.grpc.SnapshotTableRequest;
@@ -572,6 +576,10 @@ class BatchTableRequestBuilder {
             return expression.walk(new ExpressionAdapter());
         }
 
+        static Value adapt(Literal literal) {
+            return literal.walk((Literal.Visitor<Value>) new ExpressionAdapter());
+        }
+
         @Override
         public Value visit(ColumnName x) {
             return Value.newBuilder().setReference(reference(x)).build();
@@ -634,6 +642,29 @@ class BatchTableRequestBuilder {
         }
     }
 
+    enum LiteralAdapter implements Literal.Visitor<io.deephaven.proto.backplane.grpc.Literal> {
+        INSTANCE;
+
+        public static io.deephaven.proto.backplane.grpc.Literal of(Literal literal) {
+            return literal.walk(INSTANCE);
+        }
+
+        @Override
+        public io.deephaven.proto.backplane.grpc.Literal visit(boolean literal) {
+            return literal(literal);
+        }
+
+        @Override
+        public io.deephaven.proto.backplane.grpc.Literal visit(int literal) {
+            throw new UnsupportedOperationException("Doesn't support int literal");
+        }
+
+        @Override
+        public io.deephaven.proto.backplane.grpc.Literal visit(long literal) {
+            return literal(literal);
+        }
+    }
+
     static class FilterAdapter implements Filter.Visitor<Condition> {
 
         static Condition of(Filter filter) {
@@ -669,11 +700,6 @@ class BatchTableRequestBuilder {
                     .setIsNull(IsNullCondition.newBuilder().setReference(reference((ColumnName) isNull.expression()))
                             .build())
                     .build();
-        }
-
-        @Override
-        public Condition visit(FilterIsNotNull isNotNull) {
-            return visit(Filter.not(isNotNull.invert()));
         }
 
         @Override
@@ -716,6 +742,31 @@ class BatchTableRequestBuilder {
                 builder.addFilters(of(filter));
             }
             return Condition.newBuilder().setAnd(builder.build()).build();
+        }
+
+        @Override
+        public Condition visit(FilterPattern pattern) {
+            // TODO(deephaven-core#3609): Update gRPC expression / filter / literal structures
+            throw new UnsupportedOperationException("Can't build Condition with FilterPattern");
+        }
+
+        @Override
+        public Condition visit(FilterQuick quick) {
+            return Condition.newBuilder().setSearch(SearchCondition.newBuilder()
+                    .setSearchString(quick.quickSearch())
+                    .addOptionalReferences(reference(quick.column()))
+                    .build())
+                    .build();
+        }
+
+        @Override
+        public Condition visit(FilterMatches matches) {
+            final InCondition.Builder builder = InCondition.newBuilder()
+                    .setTarget(Value.newBuilder().setReference(reference(matches.column())).build());
+            for (Literal value : matches.values()) {
+                builder.addCandidates(Value.newBuilder().setLiteral(LiteralAdapter.of(value)));
+            }
+            return Condition.newBuilder().setIn(builder.build()).build();
         }
 
         @Override

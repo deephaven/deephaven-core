@@ -22,13 +22,16 @@ import java.util.stream.Collectors;
  *
  * @see io.deephaven.api.TableOperations#where(Collection)
  * @see FilterIsNull
- * @see FilterIsNotNull
  * @see FilterComparison
  * @see FilterNot
  * @see FilterOr
  * @see FilterAnd
+ * @see FilterQuick
+ * @see FilterMatches
  * @see ColumnName
  * @see Function
+ * @see Method
+ * @see IfThenElse
  * @see LiteralFilter
  * @see RawString
  */
@@ -84,11 +87,14 @@ public interface Filter extends Expression, Serializable {
     /**
      * Creates an is-not-null-filter.
      *
+     * <p>
+     * Equivalent to {@code not(isNull(expression))}.
+     *
      * @param expression the expression
      * @return the is-not-null-filter
      */
-    static FilterIsNotNull isNotNull(Expression expression) {
-        return FilterIsNotNull.of(expression);
+    static FilterNot<FilterIsNull> isNotNull(Expression expression) {
+        return not(isNull(expression));
     }
 
     /**
@@ -204,8 +210,6 @@ public interface Filter extends Expression, Serializable {
 
         T visit(FilterIsNull isNull);
 
-        T visit(FilterIsNotNull isNotNull);
-
         T visit(FilterComparison comparison);
 
         T visit(FilterNot<?> not);
@@ -213,6 +217,12 @@ public interface Filter extends Expression, Serializable {
         T visit(FilterOr ors);
 
         T visit(FilterAnd ands);
+
+        T visit(FilterPattern pattern);
+
+        T visit(FilterQuick quick);
+
+        T visit(FilterMatches matches);
 
         T visit(ColumnName columnName);
 

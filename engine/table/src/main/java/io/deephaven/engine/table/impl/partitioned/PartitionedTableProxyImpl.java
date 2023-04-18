@@ -15,7 +15,6 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.PartitionedTable;
-import io.deephaven.engine.table.PartitionedTable.Proxy;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.TableUpdate;
@@ -435,7 +434,7 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
 
     @Override
     public PartitionedTable.Proxy where(Collection<? extends Filter> filters) {
-        final WhereFilter[] whereFilters = WhereFilter.from(filters);
+        final WhereFilter[] whereFilters = WhereFilter.from(filters, target.constituentDefinition());
         final TableDefinition definition = target.constituentDefinition();
         for (WhereFilter filter : whereFilters) {
             filter.init(definition);

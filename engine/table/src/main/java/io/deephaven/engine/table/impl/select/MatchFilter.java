@@ -3,6 +3,8 @@
  */
 package io.deephaven.engine.table.impl.select;
 
+import io.deephaven.api.filter.FilterMatches;
+import io.deephaven.api.literal.Literal;
 import io.deephaven.base.string.cache.CompressedString;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.WritableRowSet;
@@ -24,6 +26,14 @@ import java.util.*;
 public class MatchFilter extends WhereFilterImpl {
 
     private static final long serialVersionUID = 1L;
+
+    public static MatchFilter ofStringValues(FilterMatches matches, boolean inverted) {
+        return new MatchFilter(
+                matches.caseInsensitive() ? CaseSensitivity.IgnoreCase : CaseSensitivity.MatchCase,
+                inverted ? MatchType.Inverted : MatchType.Regular,
+                matches.column().name(),
+                matches.values().stream().map(ColumnTypeConvertorCompatibleString::of).toArray(String[]::new));
+    }
 
     @NotNull
     private final String columnName;
@@ -425,5 +435,31 @@ public class MatchFilter extends WhereFilterImpl {
             copy.values = values;
         }
         return copy;
+    }
+
+    private enum ColumnTypeConvertorCompatibleString implements Literal.Visitor<String> {
+        INSTANCE;
+
+        public static String of(Literal literal) {
+            return literal.walk(INSTANCE);
+        }
+
+        // io.deephaven.engine.table.impl.select.MatchFilter.ColumnTypeConvertor.convertStringLiteral
+        // todo: can't search for the string literal "null" :s
+
+        @Override
+        public String visit(boolean literal) {
+            return literal ? "true" : "false";
+        }
+
+        @Override
+        public String visit(int literal) {
+            return Integer.toString(literal);
+        }
+
+        @Override
+        public String visit(long literal) {
+            return Long.toString(literal);
+        }
     }
 }

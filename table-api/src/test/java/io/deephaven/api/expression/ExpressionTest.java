@@ -108,7 +108,6 @@ public class ExpressionTest {
             return of(method);
         }
 
-
         @Override
         public String visit(IfThenElse ifThenElse) {
             return of(ifThenElse);

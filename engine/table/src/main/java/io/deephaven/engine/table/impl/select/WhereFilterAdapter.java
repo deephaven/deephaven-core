@@ -10,11 +10,14 @@ import io.deephaven.api.expression.Method;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.filter.FilterAnd;
 import io.deephaven.api.filter.FilterComparison;
-import io.deephaven.api.filter.FilterIsNotNull;
 import io.deephaven.api.filter.FilterIsNull;
+import io.deephaven.api.filter.FilterMatches;
 import io.deephaven.api.filter.FilterNot;
 import io.deephaven.api.filter.FilterOr;
+import io.deephaven.api.filter.FilterPattern;
+import io.deephaven.api.filter.FilterQuick;
 import io.deephaven.api.literal.Literal;
+import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.select.MatchFilter.MatchType;
 import io.deephaven.gui.table.filters.Condition;
 
@@ -22,56 +25,56 @@ import java.util.Objects;
 
 class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
 
-    public static WhereFilter of(Filter filter) {
-        return filter.walk(new WhereFilterAdapter(false));
+    public static WhereFilter of(Filter filter, TableDefinition parentDefinition) {
+        return filter.walk(new WhereFilterAdapter(parentDefinition, false));
     }
 
-    public static WhereFilter of(FilterNot<?> not) {
-        return not.filter().walk(new WhereFilterAdapter(true));
+    public static WhereFilter of(FilterNot<?> not, TableDefinition parentDefinition) {
+        return not.filter().walk(new WhereFilterAdapter(parentDefinition, true));
     }
 
-    public static WhereFilter of(FilterOr ors) {
-        return DisjunctiveFilter.makeDisjunctiveFilter(WhereFilter.from(ors.filters()));
+    public static WhereFilter of(FilterOr ors, TableDefinition parentDefinition) {
+        return DisjunctiveFilter.of(ors, parentDefinition);
     }
 
-    public static WhereFilter of(FilterAnd ands) {
-        return ConjunctiveFilter.makeConjunctiveFilter(WhereFilter.from(ands.filters()));
+    public static WhereFilter of(FilterAnd ands, TableDefinition parentDefinition) {
+        return ConjunctiveFilter.of(ands, parentDefinition);
     }
 
     public static WhereFilter of(FilterComparison comparison) {
         return FilterComparisonAdapter.of(comparison);
     }
 
-    public static WhereFilter of(FilterIsNull isNull) {
-        return isNull.expression().walk(new ExpressionIsNullAdapter(false));
+    public static WhereFilter of(FilterIsNull isNull, boolean inverted) {
+        return isNull.expression().walk(new ExpressionIsNullAdapter(inverted));
     }
 
-    public static WhereFilter of(FilterIsNotNull isNotNull) {
-        return isNotNull.expression().walk(new ExpressionIsNullAdapter(true));
+    public static WhereFilter of(FilterPattern pattern) {
+        return new PatternFilter(pattern);
+    }
+
+    public static WhereFilter of(FilterQuick quick, TableDefinition parentDefinition) {
+        return WhereFilterFactory.quickFilter(quick, parentDefinition);
+    }
+
+    public static WhereFilter of(FilterMatches matches, boolean inverted) {
+        return MatchFilter.ofStringValues(matches, inverted);
     }
 
     public static WhereFilter of(ColumnName columnName, boolean inverted) {
-        return inverted
-                ? WhereFilterFactory.getExpression(String.format("!%s", columnName.name()))
-                : WhereFilterFactory.getExpression(columnName.name());
+        return WhereFilterFactory.getExpression(Strings.of(columnName, inverted));
     }
 
     public static WhereFilter of(Function function, boolean inverted) {
-        return inverted
-                ? WhereFilterFactory.getExpression(String.format("!%s", Strings.of(function)))
-                : WhereFilterFactory.getExpression(Strings.of(function));
+        return WhereFilterFactory.getExpression(Strings.of(function, inverted));
     }
 
     public static WhereFilter of(Method method, boolean inverted) {
-        return inverted
-                ? WhereFilterFactory.getExpression(String.format("!%s", Strings.of(method)))
-                : WhereFilterFactory.getExpression(Strings.of(method));
+        return WhereFilterFactory.getExpression(Strings.of(method, inverted));
     }
 
     public static WhereFilter of(IfThenElse ifThenElse, boolean inverted) {
-        return inverted
-                ? WhereFilterFactory.getExpression(String.format("!(%s)", Strings.of(ifThenElse)))
-                : WhereFilterFactory.getExpression(Strings.of(ifThenElse));
+        return WhereFilterFactory.getExpression(Strings.of(ifThenElse, false, inverted));
     }
 
     public static WhereFilter of(boolean literal) {
@@ -79,14 +82,14 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
     }
 
     public static WhereFilter of(RawString rawString, boolean inverted) {
-        return inverted
-                ? WhereFilterFactory.getExpression(String.format("!(%s)", rawString.value()))
-                : WhereFilterFactory.getExpression(rawString.value());
+        return WhereFilterFactory.getExpression(Strings.of(rawString, false, inverted));
     }
 
+    private final TableDefinition parentDefinition;
     private final boolean inverted;
 
-    WhereFilterAdapter(boolean inverted) {
+    WhereFilterAdapter(TableDefinition parentDefinition, boolean inverted) {
+        this.parentDefinition = Objects.requireNonNull(parentDefinition);
         this.inverted = inverted;
     }
 
@@ -97,36 +100,46 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
 
     @Override
     public WhereFilter visit(FilterNot<?> not) {
-        return inverted ? of(not.invert()) : of(not);
+        return inverted ? of(not.invert(), parentDefinition) : of(not, parentDefinition);
     }
 
     @Override
     public WhereFilter visit(FilterIsNull isNull) {
-        return inverted ? of(isNull.invert()) : of(isNull);
-    }
-
-    @Override
-    public WhereFilter visit(FilterIsNotNull isNotNull) {
-        return inverted ? of(isNotNull.invert()) : of(isNotNull);
+        return of(isNull, inverted);
     }
 
     @Override
     public WhereFilter visit(FilterOr ors) {
         // !A && !B && ... && !Z
         // A || B || ... || Z
-        return inverted ? of(ors.invert()) : of(ors);
+        return inverted ? of(ors.invert(), parentDefinition) : of(ors, parentDefinition);
     }
 
     @Override
     public WhereFilter visit(FilterAnd ands) {
         // !A || !B || ... || !Z
         // A && B && ... && Z
-        return inverted ? of(ands.invert()) : of(ands);
+        return inverted ? of(ands.invert(), parentDefinition) : of(ands, parentDefinition);
     }
 
     @Override
     public WhereFilter visit(ColumnName columnName) {
         return of(columnName, inverted);
+    }
+
+    @Override
+    public WhereFilter visit(FilterPattern pattern) {
+        return inverted ? of(pattern.invert(), parentDefinition) : of(pattern);
+    }
+
+    @Override
+    public WhereFilter visit(FilterQuick quick) {
+        return inverted ? of(quick.invert(), parentDefinition) : of(quick, parentDefinition);
+    }
+
+    @Override
+    public WhereFilter visit(FilterMatches matches) {
+        return of(matches, inverted);
     }
 
     @Override
@@ -146,7 +159,7 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
 
     @Override
     public WhereFilter visit(boolean literal) {
-        return of(inverted ^ literal);
+        return of(literal ^ inverted);
     }
 
     @Override
@@ -327,86 +340,61 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
             return expression.walk(new ExpressionIsNullAdapter(false));
         }
 
-        public static MatchFilter of(ColumnName columnName, boolean inverted) {
-            return new MatchFilter(inverted ? MatchType.Inverted : MatchType.Regular, columnName.name(),
-                    new Object[] {null});
-        }
-
-        public static WhereFilter of(Literal literal, boolean inverted) {
-            // Note: we _could_ try and optimize here, since a literal is never null.
-            // That said, this filter will be compiled and potentially JITted, so it might not matter.
-            // return inverted ? WhereAllFilter.INSTANCE : WhereNoneFilter.INSTANCE;
-            return WhereFilterFactory
-                    .getExpression(String.format(inverted ? "!isNull(%s)" : "isNull(%s)", Strings.of(literal)));
-        }
-
-        public static WhereFilter of(Filter filter, boolean inverted) {
-            // Note: we _could_ try and optimize here, since a filter never returns null (always true or false).
-            // That said, this filter will be compiled and potentially JITted, so it might not matter.
-            // return inverted ? WhereAllFilter.INSTANCE : WhereNoneFilter.INSTANCE;
-            return WhereFilterFactory
-                    .getExpression(String.format(inverted ? "!isNull(%s)" : "isNull(%s)", Strings.of(filter)));
-        }
-
-        public static WhereFilter of(Function function, boolean inverted) {
-            return WhereFilterFactory
-                    .getExpression(String.format(inverted ? "!isNull(%s)" : "isNull(%s)", Strings.of(function)));
-        }
-
-        public static WhereFilter of(Method method, boolean inverted) {
-            return WhereFilterFactory
-                    .getExpression(String.format(inverted ? "!isNull(%s)" : "isNull(%s)", Strings.of(method)));
-        }
-
-        public static WhereFilter of(IfThenElse ifThenElse, boolean inverted) {
-            return WhereFilterFactory
-                    .getExpression(String.format(inverted ? "!isNull(%s)" : "isNull(%s)", Strings.of(ifThenElse)));
-        }
-
-        public static WhereFilter of(RawString rawString, boolean inverted) {
-            return WhereFilterFactory
-                    .getExpression(String.format(inverted ? "!isNull(%s)" : "isNull(%s)", Strings.of(rawString)));
-        }
-
         private final boolean inverted;
 
         ExpressionIsNullAdapter(boolean inverted) {
             this.inverted = inverted;
         }
 
-        @Override
-        public WhereFilter visit(Literal literal) {
-            return of(literal, inverted);
+        private WhereFilter getExpression(String x) {
+            return WhereFilterFactory.getExpression((inverted ? "!isNull(" : "isNull(") + x + ")");
         }
 
         @Override
         public WhereFilter visit(ColumnName columnName) {
-            return of(columnName, inverted);
+            return new MatchFilter(
+                    inverted ? MatchType.Inverted : MatchType.Regular,
+                    columnName.name(),
+                    new Object[] {null});
+        }
+
+        @Override
+        public WhereFilter visit(Literal literal) {
+            // Note: we _could_ try and optimize here, since a literal is never null.
+            // That said, this filter will be compiled and potentially JITted, so it might not matter.
+            // return inverted ? WhereAllFilter.INSTANCE : WhereNoneFilter.INSTANCE;
+            return getExpression(Strings.of(literal));
         }
 
         @Override
         public WhereFilter visit(Filter filter) {
-            return of(filter, inverted);
+            // Note: we _could_ try and optimize here, since a filter never returns null (always true or false).
+            // That said, this filter will be compiled and potentially JITted, so it might not matter.
+            // return inverted ? WhereAllFilter.INSTANCE : WhereNoneFilter.INSTANCE;
+            return getExpression(Strings.of(filter));
         }
 
         @Override
         public WhereFilter visit(Function function) {
-            return of(function, inverted);
+            return getExpression(Strings.of(function));
         }
 
         @Override
         public WhereFilter visit(Method method) {
-            return of(method, inverted);
+            return getExpression(Strings.of(method));
         }
 
         @Override
         public WhereFilter visit(IfThenElse ifThenElse) {
-            return of(ifThenElse, inverted);
+            final IfThenElse pushdown = inverted
+                    ? ifThenElse.pushdown(Filter::isNotNull)
+                    : ifThenElse.pushdown(Filter::isNull);
+            return WhereFilterAdapter.of(pushdown, false);
         }
 
         @Override
         public WhereFilter visit(RawString rawString) {
-            return of(rawString, inverted);
+            return getExpression(Strings.of(rawString));
         }
     }
 }

@@ -73,7 +73,7 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
 
     @Override
     public Table where(Collection<? extends Filter> filters) {
-        WhereFilter[] whereFilters = WhereFilter.from(filters);
+        WhereFilter[] whereFilters = WhereFilter.from(filters, definition);
         for (WhereFilter filter : whereFilters) {
             filter.init(definition);
         }

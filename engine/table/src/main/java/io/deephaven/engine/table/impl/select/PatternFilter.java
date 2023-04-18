@@ -4,6 +4,8 @@
 package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.api.ColumnName;
+import io.deephaven.api.filter.FilterPattern;
+import io.deephaven.api.filter.FilterPattern.Mode;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableLongChunk;
@@ -21,7 +23,6 @@ import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter.ObjectChunkFilter;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -42,23 +43,14 @@ public final class PatternFilter extends WhereFilterImpl {
 
     private static final long serialVersionUID = 1L;
 
-    // Update to table-api structs in https://github.com/deephaven/deephaven-core/pull/3441
-    public enum Mode {
-        /**
-         * Matches the entire {@code input} against the {@code pattern}, uses {@link Matcher#matches()}.
-         */
-        MATCHES,
+    private final FilterPattern filterPattern;
 
-        /**
-         * Matches any subsequence of the {@code input} against the {@code pattern}, uses {@link Matcher#find()}.
-         */
-        FIND
+    public PatternFilter(FilterPattern filterPattern) {
+        if (!(filterPattern.expression() instanceof ColumnName)) {
+            throw new IllegalArgumentException("PatternFilter only supports filtering against a column name");
+        }
+        this.filterPattern = Objects.requireNonNull(filterPattern);
     }
-
-    private final ColumnName columnName;
-    private final Pattern pattern;
-    private final Mode mode;
-    private final boolean invertPattern;
 
     /**
      * Creates a new pattern filter.
@@ -69,24 +61,27 @@ public final class PatternFilter extends WhereFilterImpl {
      * @param invertPattern if the pattern result should be inverted
      */
     public PatternFilter(ColumnName columnName, Pattern pattern, Mode mode, boolean invertPattern) {
-        this.columnName = Objects.requireNonNull(columnName);
-        this.pattern = Objects.requireNonNull(pattern);
-        this.mode = Objects.requireNonNull(mode);
-        this.invertPattern = invertPattern;
+        this(FilterPattern.builder()
+                .expression(columnName)
+                .pattern(pattern)
+                .mode(mode)
+                .invertPattern(invertPattern)
+                .build());
     }
 
     @Override
     public void init(TableDefinition tableDefinition) {
-        final ColumnDefinition<?> column = tableDefinition.getColumn(columnName.name());
+        final String columnName = columnName();
+        final ColumnDefinition<?> column = tableDefinition.getColumn(columnName);
         if (column == null) {
             throw new RuntimeException(String.format("Column '%s' doesn't exist in this table, available columns: %s",
-                    columnName.name(), tableDefinition.getColumnNames()));
+                    columnName, tableDefinition.getColumnNames()));
         }
     }
 
     @Override
     public WritableRowSet filter(RowSet selection, RowSet fullSet, Table table, boolean usePrev) {
-        final ColumnSource<String> columnSource = table.getColumnSource(columnName.name());
+        final ColumnSource<String> columnSource = table.getColumnSource(columnName());
         return ChunkFilter.applyChunkFilter(selection, columnSource, usePrev, chunkFilter());
     }
 
@@ -107,7 +102,7 @@ public final class PatternFilter extends WhereFilterImpl {
 
     @Override
     public List<String> getColumns() {
-        return Collections.singletonList(columnName.name());
+        return Collections.singletonList(columnName());
     }
 
     @Override
@@ -117,7 +112,7 @@ public final class PatternFilter extends WhereFilterImpl {
 
     @Override
     public WhereFilter copy() {
-        return new PatternFilter(columnName, pattern, mode, invertPattern);
+        return new PatternFilter(filterPattern);
     }
 
     @Override
@@ -127,42 +122,31 @@ public final class PatternFilter extends WhereFilterImpl {
         if (o == null || getClass() != o.getClass())
             return false;
         PatternFilter that = (PatternFilter) o;
-        if (invertPattern != that.invertPattern)
-            return false;
-        if (!columnName.equals(that.columnName))
-            return false;
-        if (!patternEquals(pattern, that.pattern))
-            return false;
-        return mode == that.mode;
+        return filterPattern.equals(that.filterPattern);
     }
 
     @Override
     public int hashCode() {
-        int result = columnName.hashCode();
-        result = 31 * result + patternHashcode(pattern);
-        result = 31 * result + mode.hashCode();
-        result = 31 * result + (invertPattern ? 1 : 0);
-        return result;
+        return filterPattern.hashCode();
     }
 
     @Override
     public String toString() {
-        return "PatternFilter{" +
-                "columnName=" + columnName +
-                ", pattern=" + pattern.pattern() + " " + pattern.flags() +
-                ", mode=" + mode +
-                ", invertPattern=" + invertPattern +
-                '}';
+        return filterPattern.toString();
     }
 
     private ObjectChunkFilter<String> chunkFilter() {
-        return mode == Mode.MATCHES
-                ? (invertPattern
+        return filterPattern.mode() == Mode.MATCHES
+                ? (filterPattern.invertPattern()
                         ? new MatchesInvertedPattern()
                         : new Matches())
-                : (invertPattern
+                : (filterPattern.invertPattern()
                         ? new FindInvertedPattern()
                         : new Find());
+    }
+
+    private String columnName() {
+        return ((ColumnName) filterPattern.expression()).name();
     }
 
     class Matches implements ObjectChunkFilter<String> {
@@ -218,26 +202,18 @@ public final class PatternFilter extends WhereFilterImpl {
     }
 
     private boolean matches(String value) {
-        return value != null && pattern.matcher(value).matches();
+        return value != null && filterPattern.pattern().matcher(value).matches();
     }
 
     private boolean matchesInvertedPattern(String value) {
-        return value != null && !pattern.matcher(value).matches();
+        return value != null && !filterPattern.pattern().matcher(value).matches();
     }
 
     private boolean find(String value) {
-        return value != null && pattern.matcher(value).find();
+        return value != null && filterPattern.pattern().matcher(value).find();
     }
 
     private boolean findInvertedPattern(String value) {
-        return value != null && !pattern.matcher(value).find();
-    }
-
-    private static boolean patternEquals(Pattern x, Pattern y) {
-        return x.flags() == y.flags() && x.pattern().equals(y.pattern());
-    }
-
-    private static int patternHashcode(Pattern x) {
-        return 31 * x.pattern().hashCode() + x.flags();
+        return value != null && !filterPattern.pattern().matcher(value).find();
     }
 }

@@ -4,13 +4,15 @@
 package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.api.ColumnName;
+import io.deephaven.api.filter.FilterPattern.Mode;
+import io.deephaven.api.filter.FilterQuick;
 import io.deephaven.base.Pair;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.api.expression.AbstractExpressionFactory;
+import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.select.MatchFilter.CaseSensitivity;
 import io.deephaven.engine.table.impl.select.MatchFilter.MatchType;
-import io.deephaven.engine.table.impl.select.PatternFilter.Mode;
 import io.deephaven.engine.util.ColumnFormatting;
 import io.deephaven.api.expression.ExpressionParser;
 import io.deephaven.engine.util.string.StringUtils;
@@ -218,6 +220,16 @@ public class WhereFilterFactory {
         return expressions.stream().map(WhereFilterFactory::getExpression).toArray(WhereFilter[]::new);
     }
 
+    public static WhereFilter quickFilter(FilterQuick quick, TableDefinition parentDefinition) {
+        final String columnName = quick.column().name();
+        final ColumnDefinition<?> cd = parentDefinition.getColumn(columnName);
+        final WhereFilter filter = createQuickFilter(cd, quick.quickSearch(), QuickFilterMode.NORMAL);
+        if (filter == null) {
+            throw new UnsupportedOperationException("Unable to create quick filter for " + cd);
+        }
+        return filter;
+    }
+
     public static WhereFilter[] expandQuickFilter(
             @NotNull final TableDefinition tableDefinition,
             final String quickFilter,
@@ -260,9 +272,10 @@ public class WhereFilterFactory {
                             return null;
                         } else if (filterMode == QuickFilterMode.AND) {
                             final String[] parts = quickFilter.split("\\s+");
-                            final List<WhereFilter> filters =
-                                    Arrays.stream(parts).map(part -> getSelectFilterForAnd(colName, part, colClass))
-                                            .filter(Objects::nonNull).collect(Collectors.toList());
+                            final List<WhereFilter> filters = Arrays.stream(parts)
+                                    .map(part -> getSelectFilterForAnd(colName, part, colClass))
+                                    .filter(Objects::nonNull)
+                                    .collect(Collectors.toList());
                             if (filters.isEmpty()) {
                                 return null;
                             }
@@ -271,15 +284,16 @@ public class WhereFilterFactory {
                         } else if (filterMode == QuickFilterMode.OR) {
                             final String[] parts = quickFilter.split("\\s+");
                             final List<WhereFilter> filters = Arrays.stream(parts)
-                                    .map(part -> getSelectFilter(colName, part, filterMode, colClass))
-                                    .filter(Objects::nonNull).collect(Collectors.toList());
+                                    .map(part -> createQuickFilter(cd, part, filterMode))
+                                    .filter(Objects::nonNull)
+                                    .collect(Collectors.toList());
                             if (filters.isEmpty()) {
                                 return null;
                             }
                             return DisjunctiveFilter.makeDisjunctiveFilter(
                                     filters.toArray(WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY));
                         } else {
-                            return getSelectFilter(colName, quickFilter, filterMode, colClass);
+                            return createQuickFilter(cd, quickFilter, filterMode);
                         }
 
                     }).filter(Objects::nonNull).toArray(WhereFilter[]::new);
@@ -295,11 +309,9 @@ public class WhereFilterFactory {
         for (String part : parts) {
             final WhereFilter[] filterArray = tableDefinition.getColumnStream()
                     .filter(cd -> !ColumnFormatting.isFormattingColumn(cd.getName()))
-                    .map(cd -> {
-                        final Class<?> colClass = cd.getDataType();
-                        final String colName = cd.getName();
-                        return getSelectFilter(colName, part, QuickFilterMode.MULTI, colClass);
-                    }).filter(Objects::nonNull).toArray(WhereFilter[]::new);
+                    .map(cd -> createQuickFilter(cd, part, QuickFilterMode.MULTI))
+                    .filter(Objects::nonNull)
+                    .toArray(WhereFilter[]::new);
             if (filterArray.length > 0) {
                 filters.add(DisjunctiveFilter.makeDisjunctiveFilter(filterArray));
             }
@@ -308,8 +320,10 @@ public class WhereFilterFactory {
         return filters.toArray(WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY);
     }
 
-    private static WhereFilter getSelectFilter(String colName, String quickFilter, QuickFilterMode filterMode,
-            Class<?> colClass) {
+    private static WhereFilter createQuickFilter(ColumnDefinition<?> colDef, String quickFilter,
+            QuickFilterMode filterMode) {
+        final String colName = colDef.getName();
+        final Class<?> colClass = colDef.getDataType();
         final InferenceResult typeData = new InferenceResult(quickFilter);
         if ((colClass == Double.class || colClass == double.class) && (!Double.isNaN(typeData.doubleVal))) {
             try {

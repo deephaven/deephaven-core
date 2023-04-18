@@ -3,10 +3,12 @@
  */
 package io.deephaven.engine.table.impl.select;
 
+import io.deephaven.api.filter.FilterOr;
 import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.util.SafeCloseable;
 
 import java.util.*;
@@ -14,6 +16,10 @@ import java.util.*;
 public class DisjunctiveFilter extends ComposedFilter {
     private DisjunctiveFilter(WhereFilter[] componentFilters) {
         super(componentFilters);
+    }
+
+    public static WhereFilter of(FilterOr ors, TableDefinition parentDefinition) {
+        return DisjunctiveFilter.makeDisjunctiveFilter(WhereFilter.from(ors.filters(), parentDefinition));
     }
 
     public static WhereFilter makeDisjunctiveFilter(WhereFilter... componentFilters) {
