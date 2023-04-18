@@ -9,10 +9,12 @@ import jpy
 import numpy as np
 import pandas
 import pandas as pd
+import pyarrow as pa
 
-from deephaven import DHError, new_table, dtypes
+from deephaven import DHError, new_table, dtypes, arrow
+from deephaven.arrow import SUPPORTED_ARROW_TYPES
 from deephaven.column import Column
-from deephaven.constants import NULL_BYTE, NULL_SHORT, NULL_INT, NULL_LONG, NULL_FLOAT, NULL_DOUBLE, NULL_BOOLEAN
+from deephaven.constants import NULL_BYTE, NULL_SHORT, NULL_INT, NULL_LONG, NULL_FLOAT, NULL_DOUBLE
 from deephaven.numpy import column_to_numpy_array, _make_input_column
 from deephaven.table import Table
 
@@ -43,7 +45,25 @@ def _column_to_series(table: Table, col_def: Column) -> pandas.Series:
         raise DHError(e, message="failed to create apandas Series for {col}") from e
 
 
-def to_pandas(table: Table, cols: List[str] = None) -> pandas.DataFrame:
+_PA_PD_DTYPE_MAPPING = {
+    pa.int8(): pd.ArrowDtype(pa.int8()),
+    pa.int16(): pd.ArrowDtype(pa.int16()),
+    pa.int32(): pd.ArrowDtype(pa.int32()),
+    pa.int64(): pd.ArrowDtype(pa.int64()),
+    pa.uint8(): pd.ArrowDtype(pa.uint16()),
+    pa.uint16(): pd.ArrowDtype(pa.uint64()),
+    pa.uint32(): pd.ArrowDtype(pa.uint32()),
+    pa.uint64(): pd.ArrowDtype(pa.uint64()),
+    pa.bool_(): pd.ArrowDtype(pa.bool_()),
+    pa.float32(): pd.ArrowDtype(pa.float32()),
+    pa.float64(): pd.ArrowDtype(pa.float64()),
+    pa.string(): pd.ArrowDtype(pa.string()),
+    pa.timestamp('ns'): pd.ArrowDtype(pa.timestamp('ns')),
+    pa.timestamp('ns', tz='UTC'): pd.ArrowDtype(pa.timestamp('ns', tz='UTC')),
+}
+
+
+def to_pandas(table: Table, cols: List[str] = None, pyarrow_backed: bool = False) -> pandas.DataFrame:
     """Produces a pandas.DataFrame from a table.
 
     Note that the **entire table** is going to be cloned into memory, so the total number of entries in the table
@@ -54,6 +74,10 @@ def to_pandas(table: Table, cols: List[str] = None) -> pandas.DataFrame:
         table (Table): the source table
         cols (List[str]): the source column names, default is None which means include all columns
 
+        pyarrow_backed (bool): whether to return a pyarrow-backed DataFrame, when True, an intermediate pyarrow table
+            is created from the source table, which is then used to create a DataFrame with each of its series
+            directly backed by a pyarrow.ChunkedArray; default is False.
+
     Returns:
         pandas.DataFrame
 
@@ -61,6 +85,12 @@ def to_pandas(table: Table, cols: List[str] = None) -> pandas.DataFrame:
         DHError
     """
     try:
+        if pyarrow_backed:
+            pa_table = arrow.to_arrow(table=table, cols=cols)
+            df = pa_table.to_pandas(types_mapper=_PA_PD_DTYPE_MAPPING.get, split_blocks=True, self_destruct=True)
+            del pa_table
+            return df
+
         if table.is_refreshing:
             table = table.snapshot()
 
@@ -90,7 +120,7 @@ def to_pandas(table: Table, cols: List[str] = None) -> pandas.DataFrame:
         raise DHError(e, "failed to create a Pandas DataFrame from table.") from e
 
 
-EX_DTYPE_NULL_MAP = {
+_EX_DTYPE_NULL_MAP = {
     # This reflects the fact that in the server we use NULL_BOOLEAN_AS_BYTE - the byte encoding of null boolean to
     # translate boxed Boolean to/from primitive bytes
     pd.BooleanDtype: NULL_BYTE,
@@ -110,13 +140,24 @@ def _map_na(np_array: np.ndarray):
     if not isinstance(pd_dtype, pandas.api.extensions.ExtensionDtype):
         return np_array
 
-    dh_null = EX_DTYPE_NULL_MAP.get(type(pd_dtype), None)
+    dh_null = _EX_DTYPE_NULL_MAP.get(type(pd_dtype), None)
     if isinstance(pd_dtype, pd.StringDtype) or isinstance(pd_dtype, pd.BooleanDtype):
         np_array = np.array(list(map(lambda v: dh_null if v is pd.NA else v, np_array)))
     elif dh_null is not None:
         np_array = np_array.fillna(dh_null)
 
     return np_array
+
+
+def _is_pyarrow_backed(dtype) -> bool:
+    """Checks if a Pandas dtype is a pyarrow type."""
+    if isinstance(dtype, pd.ArrowDtype) and dtype.pyarrow_dtype in SUPPORTED_ARROW_TYPES:
+        return True
+    if isinstance(dtype, pandas.api.extensions.ExtensionDtype) and hasattr(dtype, "storage") \
+            and dtype.storage == "pyarrow":
+        return True
+
+    return False
 
 
 def to_table(df: pandas.DataFrame, cols: List[str] = None) -> Table:
@@ -140,6 +181,20 @@ def to_table(df: pandas.DataFrame, cols: List[str] = None) -> Table:
             diff_set = set(cols) - set(list(df))
             if diff_set:
                 raise DHError(message=f"columns - {list(diff_set)} not found")
+
+        # check if all the cols are pyarrow-backed and if so create an intermediate pyarrow table to upload to DH
+        df_dtypes = [df[col].dtype for col in cols]
+        if all(_is_pyarrow_backed(dt) for dt in df_dtypes):
+            pa_arrays = []
+            for col in cols:
+                pa_arrays.append(df[col].array)
+            pa_table = pa.Table.from_arrays(arrays=pa_arrays, names=cols)
+            dh_table = arrow.to_table(pa_table)
+            del pa_table
+            return dh_table
+
+        if any(_is_pyarrow_backed(dt) for dt in df_dtypes):
+            raise DHError(message="to_table doesn't support a mixture of pyarrow-backed arrays and numpy arrays")
 
         input_cols = []
         for col in cols:

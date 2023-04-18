@@ -8,7 +8,7 @@ from typing import List, Dict
 import jpy
 import pyarrow as pa
 
-from deephaven import DHError
+from deephaven import DHError, dtypes
 from deephaven.table import Table
 
 _JArrowToTableConverter = jpy.get_type("io.deephaven.extensions.barrage.util.ArrowToTableConverter")
@@ -100,12 +100,12 @@ def to_table(pa_table: pa.Table, cols: List[str] = None) -> Table:
 
     try:
         pa_buffer = dh_schema.serialize()
-        j_barrage_table_builder.setSchema(pa_buffer.to_pybytes())
+        j_barrage_table_builder.setSchema(dtypes.array(dtypes.byte, pa_buffer))
 
         record_batches = pa_table.to_batches()
         for rb in record_batches:
             pa_buffer = rb.serialize()
-            j_barrage_table_builder.addRecordBatch(pa_buffer.to_pybytes())
+            j_barrage_table_builder.addRecordBatch(dtypes.array(dtypes.byte, pa_buffer))
         j_barrage_table_builder.onCompleted()
 
         return Table(j_table=j_barrage_table_builder.getResultTable())
