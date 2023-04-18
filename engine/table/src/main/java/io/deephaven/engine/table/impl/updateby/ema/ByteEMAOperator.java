@@ -1,6 +1,6 @@
 /*
  * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit ShortEMAOperator and regenerate
+ * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharEMAOperator and regenerate
  * ---------------------------------------------------------------------------------------------------------------------
  */
 package io.deephaven.engine.table.impl.updateby.ema;
@@ -54,7 +54,9 @@ public class ByteEMAOperator extends BasePrimitiveEMAOperator {
                         if (curVal == NULL_DOUBLE) {
                             curVal = input;
                         } else {
-                            curVal = alpha * curVal + (oneMinusAlpha * input);
+                            final double decayedVal = alpha * curVal;
+                            // Create EMA by adding decayed value to the 1-minus-alpha-weighted input.
+                            curVal = decayedVal + (oneMinusAlpha * input);
                         }
                     }
                     outputValues.set(ii, curVal);
@@ -78,9 +80,11 @@ public class ByteEMAOperator extends BasePrimitiveEMAOperator {
                     } else {
                         final long dt = timestamp - lastStamp;
                         if (dt != 0) {
-                            // alpha is dynamic, based on time
+                            // Alpha is dynamic, based on time
                             final double alpha = Math.exp(-dt / (double) reverseWindowScaleUnits);
-                            curVal = alpha * curVal + (1 - alpha) * input;
+                            final double decayedVal = alpha * curVal;
+                            // Create EMAvg by adding decayed value to the 1-minus-alpha-weighted input.
+                            curVal = decayedVal + (1 - alpha) * input;
                             lastStamp = timestamp;
                         }
                     }
@@ -120,15 +124,15 @@ public class ByteEMAOperator extends BasePrimitiveEMAOperator {
      * @param valueSource         a reference to the input column source for this operation
      */
     public ByteEMAOperator(@NotNull final MatchPair pair,
-                            @NotNull final String[] affectingColumns,
-                            @Nullable final RowRedirection rowRedirection,
-                            @NotNull final OperationControl control,
-                            @Nullable final String timestampColumnName,
-                            final long windowScaleUnits,
-                            final ColumnSource<?> valueSource
-                            // region extra-constructor-args
+                           @NotNull final String[] affectingColumns,
+                           @Nullable final RowRedirection rowRedirection,
+                           @NotNull final OperationControl control,
+                           @Nullable final String timestampColumnName,
+                           final long windowScaleUnits,
+                           final ColumnSource<?> valueSource
+                           // region extra-constructor-args
                                ,final byte nullValue
-                            // endregion extra-constructor-args
+                           // endregion extra-constructor-args
     ) {
         super(pair, affectingColumns, rowRedirection, control, timestampColumnName, windowScaleUnits);
         this.valueSource = valueSource;

@@ -64,6 +64,8 @@ public interface UpdateBySpec {
     interface Visitor<T> {
         T visit(EmaSpec spec);
 
+        T visit(EmsSpec spec);
+
         T visit(FillBySpec spec);
 
         T visit(CumSumSpec spec);
@@ -71,6 +73,8 @@ public interface UpdateBySpec {
         T visit(CumMinMaxSpec spec);
 
         T visit(CumProdSpec spec);
+
+        T visit(DeltaSpec spec);
 
         T visit(RollingSumSpec spec);
 

@@ -8,45 +8,45 @@ import java.time.Duration;
 import java.util.Optional;
 
 /**
- * A {@link UpdateBySpec} for performing an Exponential Moving Average across the specified columns
+ * A {@link UpdateBySpec} for performing an Exponential Moving Sum across the specified columns
  */
 @Immutable
 @BuildableStyle
-public abstract class EmaSpec extends UpdateBySpecBase {
+public abstract class EmsSpec extends UpdateBySpecBase {
 
-    public static EmaSpec of(OperationControl control, WindowScale windowScale) {
-        return ImmutableEmaSpec.builder().control(control).timeScale(windowScale).build();
+    public static EmsSpec of(OperationControl control, WindowScale windowScale) {
+        return ImmutableEmsSpec.builder().control(control).timeScale(windowScale).build();
     }
 
-    public static EmaSpec of(WindowScale windowScale) {
-        return ImmutableEmaSpec.builder().timeScale(windowScale).build();
+    public static EmsSpec of(WindowScale windowScale) {
+        return ImmutableEmsSpec.builder().timeScale(windowScale).build();
     }
 
-    public static EmaSpec ofTime(final OperationControl control,
+    public static EmsSpec ofTime(final OperationControl control,
             final String timestampCol,
             long timeScaleNanos) {
         return of(control, WindowScale.ofTime(timestampCol, timeScaleNanos));
     }
 
-    public static EmaSpec ofTime(final String timestampCol, long timeScaleNanos) {
+    public static EmsSpec ofTime(final String timestampCol, long timeScaleNanos) {
         return of(WindowScale.ofTime(timestampCol, timeScaleNanos));
     }
 
-    public static EmaSpec ofTime(final OperationControl control,
+    public static EmsSpec ofTime(final OperationControl control,
             final String timestampCol,
             Duration emaDuration) {
         return of(control, WindowScale.ofTime(timestampCol, emaDuration));
     }
 
-    public static EmaSpec ofTime(final String timestampCol, Duration emaDuration) {
+    public static EmsSpec ofTime(final String timestampCol, Duration emaDuration) {
         return of(WindowScale.ofTime(timestampCol, emaDuration));
     }
 
-    public static EmaSpec ofTicks(OperationControl control, long tickWindow) {
+    public static EmsSpec ofTicks(OperationControl control, long tickWindow) {
         return of(control, WindowScale.ofTicks(tickWindow));
     }
 
-    public static EmaSpec ofTicks(long tickWindow) {
+    public static EmsSpec ofTicks(long tickWindow) {
         return of(WindowScale.ofTicks(tickWindow));
     }
 

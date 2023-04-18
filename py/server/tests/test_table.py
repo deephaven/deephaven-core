@@ -13,7 +13,7 @@ from deephaven.execution_context import make_user_exec_ctx
 from deephaven.html import to_html
 from deephaven.jcompat import j_hashmap
 from deephaven.pandas import to_pandas
-from deephaven.table import Table
+from deephaven.table import Table, SearchDisplayMode
 from tests.testbase import BaseTestCase
 
 
@@ -619,6 +619,12 @@ class TableTestCase(BaseTestCase):
         self.assertIsNotNone(t)
 
     def test_layout_hints(self):
+        def verify_layout_hint(t: Table, layout_hint_str: str):
+            attrs = self.test_table.attributes()
+            attrs["LayoutHints"] = layout_hint_str
+            self.assertIsNotNone(t)
+            self.assertEquals(attrs, t.attributes())
+
         t = self.test_table.layout_hints(front="d", back="b", freeze="c", hide="d", column_groups=[
             {
                 "name": "Group1",
@@ -635,19 +641,28 @@ class TableTestCase(BaseTestCase):
                 "color": "RED"
             }
         ])
-        self.assertIsNotNone(t)
+        verify_layout_hint(t, "front=d;back=b;hide=d;freeze=c;columnGroups=name:Group1::children:a,b|name:Group2::children:c,d::color:#123456|name:Group3::children:e,f::color:#ff0000;")
 
         t = self.test_table.layout_hints(front=["d", "e"], back=["a", "b"], freeze=["c"], hide=["d"])
-        self.assertIsNotNone(t)
+        verify_layout_hint(t, "front=d,e;back=a,b;hide=d;freeze=c;")
 
         t = self.test_table.layout_hints(front="e")
-        self.assertIsNotNone(t)
+        verify_layout_hint(t, "front=e;")
 
         t = self.test_table.layout_hints(front=["e"])
-        self.assertIsNotNone(t)
+        verify_layout_hint(t, "front=e;")
+
+        t = self.test_table.layout_hints(search_display_mode=SearchDisplayMode.SHOW)
+        verify_layout_hint(t, "searchable=Show;")
+
+        t = self.test_table.layout_hints(search_display_mode=SearchDisplayMode.HIDE)
+        verify_layout_hint(t, "searchable=Hide;")
+
+        t = self.test_table.layout_hints(search_display_mode=SearchDisplayMode.DEFAULT)
+        verify_layout_hint(t, "")
 
         t = self.test_table.layout_hints()
-        self.assertIsNotNone(t)
+        verify_layout_hint(t, "")
 
         with self.assertRaises(DHError) as cm:
             t = self.test_table.layout_hints(front=["e"], back=True)
