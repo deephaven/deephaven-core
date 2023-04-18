@@ -99,19 +99,15 @@ def not_(filter_: Filter) -> Filter:
 
 class PatternMode(Enum):
     MATCHES = _JPatternMode.MATCHES
-    """
-    Matches the entire input against the pattern
-    """
+    """Matches the entire input against the pattern"""
+
     FIND = _JPatternMode.FIND
-    """
-    Matches any subsequence of the input against the pattern
-    """
+    """Matches any subsequence of the input against the pattern"""
 
 
 class PatternFlag(Enum):
     CASE_INSENSITIVE = _JPattern.CASE_INSENSITIVE
-    """
-    Enables case-insensitive matching.
+    """Enables case-insensitive matching.
 
     By default, case-insensitive matching assumes that only characters in the US-ASCII charset are being matched.
     Unicode-aware case-insensitive matching can be enabled by specifying the UNICODE_CASE flag in conjunction with this
@@ -123,8 +119,7 @@ class PatternFlag(Enum):
     """
 
     MULTILINE = _JPattern.MULTILINE
-    """
-    Enables multiline mode.
+    """Enables multiline mode.
 
     In multiline mode the expressions ^ and $ match just after or just before, respectively, a line terminator or the
     end of the input sequence. By default these expressions only match at the beginning and the end of the entire input
@@ -134,8 +129,7 @@ class PatternFlag(Enum):
     """
 
     DOTALL = _JPattern.DOTALL
-    """
-    Enables dotall mode.
+    """Enables dotall mode.
 
     In dotall mode, the expression . matches any character, including a line terminator. By default this expression does
     not match line terminators.
@@ -158,8 +152,7 @@ class PatternFlag(Enum):
     """
 
     CANON_EQ = _JPattern.CANON_EQ
-    """
-    Enables canonical equivalence.
+    """Enables canonical equivalence.
 
     When this flag is specified then two characters will be considered to match if, and only if, their full canonical
     decompositions match. The expression "a\u030A", for example, will match the string "\u00E5" when this flag is
@@ -171,8 +164,7 @@ class PatternFlag(Enum):
     """
 
     UNIX_LINES = _JPattern.UNIX_LINES
-    """
-    Enables Unix lines mode.
+    """Enables Unix lines mode.
 
     In this mode, only the '\n' line terminator is recognized in the behavior of ., ^, and $.
 
@@ -180,8 +172,7 @@ class PatternFlag(Enum):
     """
 
     LITERAL = _JPattern.LITERAL
-    """
-    Enables literal parsing of the pattern.
+    """Enables literal parsing of the pattern.
 
     When this flag is specified then the input string that specifies the pattern is treated as a sequence of literal
     characters. Metacharacters or escape sequences in the input sequence will be given no special meaning.
@@ -193,8 +184,7 @@ class PatternFlag(Enum):
     """
 
     UNICODE_CHARACTER_CLASS = _JPattern.UNICODE_CHARACTER_CLASS
-    """
-    Enables the Unicode version of Predefined character classes and POSIX character classes.
+    """Enables the Unicode version of Predefined character classes and POSIX character classes.
 
     When this flag is specified then the (US-ASCII only) Predefined character classes and POSIX character classes are in
     conformance with Unicode Technical Standard #18: Unicode Regular Expression Annex C: Compatibility Properties.
@@ -207,8 +197,7 @@ class PatternFlag(Enum):
     """
 
     COMMENTS = _JPattern.COMMENTS
-    """
-    Permits whitespace and comments in pattern.
+    """Permits whitespace and comments in pattern.
 
     In this mode, whitespace is ignored, and embedded comments starting with # are ignored until the end of a line.
 
@@ -216,7 +205,7 @@ class PatternFlag(Enum):
     """
 
     @staticmethod
-    def bitwise_or(flags: Union[PatternFlag, List[PatternFlag]]) -> int:
+    def _bitwise_or(flags: Union[PatternFlag, List[PatternFlag]]) -> int:
         return functools.reduce(
             lambda x, y: x | y, [flag.value for flag in to_sequence(flags)]
         )
@@ -229,11 +218,10 @@ def pattern(
     mode: PatternMode,
     col: str,
     regex: str,
-    flags: Union[PatternFlag, List[PatternFlag]] = [],
+    flags: Union[PatternFlag, List[PatternFlag]] = None,
     invert_pattern: bool = False,
 ) -> Filter:
-    """
-    Creates a regular-expression pattern filter.
+    """Creates a regular-expression pattern filter.
 
     Args:
         mode (PatternMode): the mode
@@ -243,14 +231,17 @@ def pattern(
         invert_pattern (bool): if the pattern match should be inverted
 
     Returns:
-        a new Filter
+        a new pattern filter
+
+    Raises:
+        DHError
     """
     # Update to table-api structs in https://github.com/deephaven/deephaven-core/pull/3441
     try:
         return Filter(
             j_filter=_JPatternFilter(
                 _JColumnName.of(col),
-                _JPattern.compile(regex, PatternFlag.bitwise_or(flags)),
+                _JPattern.compile(regex, PatternFlag._bitwise_or(flags)),
                 mode.value,
                 invert_pattern,
             )
