@@ -13,6 +13,7 @@ import jsinterop.annotations.JsConstructor;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsType;
+import jsinterop.base.Any;
 
 import javax.annotation.Nonnull;
 import java.util.*;
@@ -36,7 +37,7 @@ public class JsDateTimeFormat {
         return cache.computeIfAbsent(pattern, JsDateTimeFormat::new);
     }
 
-    public static String format(String pattern, Object date, @JsOptional JsTimeZone timeZone) {
+    public static String format(String pattern, Any date, @JsOptional JsTimeZone timeZone) {
         return getFormat(pattern).format(date, timeZone);
     }
 
@@ -112,7 +113,12 @@ public class JsDateTimeFormat {
     // It may be possible to compute the offset of a given date/time from DateTimeFormat and
     // synthesize a gwt TimeZone with the correct offset data to get nice output in some tz
     // other than the browser's current or UTC+/-OFFSET
-    public String format(Object date, @JsOptional JsTimeZone timeZone) {
+    public String format(Any date, @JsOptional JsTimeZone timeZone) {
+        return format((Object) date, timeZone);
+    }
+
+    @JsIgnore
+    public String format(Object date, JsTimeZone timeZone) {
         long nanos = longFromDate(date)
                 .orElseThrow(() -> new IllegalStateException("Can't format non-number, non-date value " + date));
         return formatAsLongNanos(nanos, timeZone);

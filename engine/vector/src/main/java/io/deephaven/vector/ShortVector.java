@@ -49,6 +49,9 @@ public interface ShortVector extends Vector<ShortVector>, Iterable<Short> {
     short[] toArray();
 
     @Override
+    short[] copyToArray();
+
+    @Override
     ShortVector getDirect();
 
     @Override
@@ -200,6 +203,11 @@ public interface ShortVector extends Vector<ShortVector>, Iterable<Short> {
                 }
             }
             return result;
+        }
+
+        @Override
+        public short[] copyToArray() {
+            return toArray();
         }
 
         @Override

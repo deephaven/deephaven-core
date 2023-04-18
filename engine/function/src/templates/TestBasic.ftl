@@ -567,8 +567,6 @@ public class TestBasic extends BaseArrayTestCase {
 
 
     <#list primitiveTypes as pt>
-    <#if !pt.valueType.isBoolean >
-
 
     //////////////////////////// ${pt.primitive} ////////////////////////////
 
@@ -843,7 +841,6 @@ public class TestBasic extends BaseArrayTestCase {
         assertEquals(null, forwardFill((${pt.primitive}[])null));
         assertEquals(new ${pt.primitive}[]{0, 0, 1, 2, 2, 3}, forwardFill(new ${pt.primitive}[]{0, ${pt.null}, 1, 2, ${pt.null}, 3}));
     }
-    </#if>
+
     </#list>
 }
-

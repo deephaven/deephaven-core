@@ -6,7 +6,9 @@ package io.deephaven.parquet.table;
 import io.deephaven.api.Selectable;
 import io.deephaven.base.FileUtils;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.BigDecimalUtils;
@@ -26,6 +28,7 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -329,6 +332,25 @@ public class ParquetTableReadWriteTest {
         // while Snappy is covered by other tests, this is a very fast test to quickly confirm that it works in the same
         // way as the other similar codec tests.
         compressionCodecTestHelper("SNAPPY");
+    }
+
+    @Test
+    public void testBigDecimalPrecisionScale() {
+        // https://github.com/deephaven/deephaven-core/issues/3650
+        final BigDecimal myBigDecimal = new BigDecimal(".0005");
+        assertEquals(1, myBigDecimal.precision());
+        assertEquals(4, myBigDecimal.scale());
+        final Table table = TableTools
+                .newTable(new ColumnHolder<>("MyBigDecimal", BigDecimal.class, null, false, myBigDecimal));
+        final File dest = new File(rootFile, "ParquetTest_testBigDecimalPrecisionScale.parquet");
+        ParquetTools.writeTable(table, dest);
+        final Table fromDisk = ParquetTools.readTable(dest);
+        try (final CloseableIterator<BigDecimal> it = fromDisk.objectColumnIterator("MyBigDecimal")) {
+            assertTrue(it.hasNext());
+            final BigDecimal item = it.next();
+            assertFalse(it.hasNext());
+            assertEquals(myBigDecimal, item);
+        }
     }
 
     /**

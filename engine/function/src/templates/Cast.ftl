@@ -5,6 +5,7 @@
 package io.deephaven.function;
 
 import io.deephaven.vector.*;
+import io.deephaven.engine.primitive.iterator.*;
 
 import static io.deephaven.util.QueryConstants.*;
 
@@ -270,9 +271,14 @@ public class Cast {
 
         final int s = values.intSize("castInt");
         int[] result = new int[s];
+        int i = 0;
 
-        for (int i = 0; i < result.length; i++) {
-            result[i] = castInt(values.get(i), checkFidelity);
+        try (final ${pt.vectorIterator} vi = values.iterator()) {
+            while ( vi.hasNext() ) {
+                final ${pt.primitive} v = vi.${pt.iteratorNext}();
+                result[i] = castInt(v, checkFidelity);
+                i++;
+            }
         }
 
         return result;
@@ -333,9 +339,14 @@ public class Cast {
 
         final int s = values.intSize("castLong");
         long[] result = new long[s];
+        int i = 0;
 
-        for (int i = 0; i < result.length; i++) {
-            result[i] = castLong(values.get(i), checkFidelity);
+        try (final ${pt.vectorIterator} vi = values.iterator()) {
+            while ( vi.hasNext() ) {
+                final ${pt.primitive} v = vi.${pt.iteratorNext}();
+                result[i] = castLong(v, checkFidelity);
+                i++;
+            }
         }
 
         return result;
@@ -398,9 +409,14 @@ public class Cast {
 
         final int s = values.intSize("castDouble");
         double[] result = new double[s];
+        int i = 0;
 
-        for (int i = 0; i < result.length; i++) {
-            result[i] = castDouble(values.get(i), checkFidelity);
+        try (final ${pt.vectorIterator} vi = values.iterator()) {
+            while ( vi.hasNext() ) {
+                final ${pt.primitive} v = vi.${pt.iteratorNext}();
+                result[i] = castDouble(v, checkFidelity);
+                i++;
+            }
         }
 
         return result;

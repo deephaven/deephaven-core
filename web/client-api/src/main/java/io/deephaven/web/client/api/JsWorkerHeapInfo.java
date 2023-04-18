@@ -1,8 +1,12 @@
 package io.deephaven.web.client.api;
 
+import com.vertispan.tsdefs.annotations.TsInterface;
+import com.vertispan.tsdefs.annotations.TsName;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.GetHeapInfoResponse;
 import jsinterop.annotations.JsProperty;
 
+@TsInterface
+@TsName(name = "WorkerHeapInfo", namespace = "dh")
 public class JsWorkerHeapInfo {
     private long maximumHeapSize;
     private long freeMemory;
@@ -24,6 +28,9 @@ public class JsWorkerHeapInfo {
         return freeMemory;
     }
 
+    /**
+     * Total heap size available for this worker.
+     */
     @JsProperty
     public double getTotalHeapSize() {
         return totalHeapSize;

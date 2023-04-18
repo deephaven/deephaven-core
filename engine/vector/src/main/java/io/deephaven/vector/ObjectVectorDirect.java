@@ -51,6 +51,11 @@ public final class ObjectVectorDirect<COMPONENT_TYPE> implements ObjectVector<CO
     }
 
     @Override
+    public COMPONENT_TYPE[] copyToArray() {
+        return Arrays.copyOf(data, data.length);
+    }
+
+    @Override
     public CloseableIterator<COMPONENT_TYPE> iterator(final long fromIndexInclusive, final long toIndexExclusive) {
         if (fromIndexInclusive == 0 && toIndexExclusive == data.length) {
             return CloseableIterator.of(data);

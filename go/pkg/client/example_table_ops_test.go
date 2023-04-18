@@ -34,6 +34,7 @@ func Example_tableOps() {
 
 	fmt.Println(queryResult)
 
+	// Output:
 	// Data Before:
 	// record:
 	//   schema:
@@ -51,12 +52,12 @@ func Example_tableOps() {
 	//   schema:
 	//   fields: 3
 	//     - Ticker: type=utf8, nullable
-	//         metadata: ["deephaven:isRowStyle": "false", "deephaven:isNumberFormat": "false", "deephaven:isStyle": "false", "deephaven:type": "java.lang.String", "deephaven:isDateFormat": "false"]
+	//         metadata: ["deephaven:isDateFormat": "false", "deephaven:isNumberFormat": "false", "deephaven:isRowStyle": "false", "deephaven:isStyle": "false", "deephaven:type": "java.lang.String"]
 	//     - Close: type=float32, nullable
-	//        metadata: ["deephaven:isRowStyle": "false", "deephaven:isNumberFormat": "false", "deephaven:isStyle": "false", "deephaven:type": "float", "deephaven:isDateFormat": "false"]
+	//        metadata: ["deephaven:isDateFormat": "false", "deephaven:isNumberFormat": "false", "deephaven:isRowStyle": "false", "deephaven:isStyle": "false", "deephaven:type": "float"]
 	//     - Volume: type=int32, nullable
-	//         metadata: ["deephaven:isRowStyle": "false", "deephaven:isNumberFormat": "false", "deephaven:isStyle": "false", "deephaven:type": "int", "deephaven:isDateFormat": "false"]
-	//   metadata: ["deephaven:attribute_type.AppendOnly": "java.lang.Boolean", "deephaven:attribute.AppendOnly": "true", "deephaven:attribute_type.AddOnly": "java.lang.Boolean", "deephaven:attribute.AddOnly": "true"]
+	//         metadata: ["deephaven:isDateFormat": "false", "deephaven:isNumberFormat": "false", "deephaven:isRowStyle": "false", "deephaven:isStyle": "false", "deephaven:type": "int"]
+	//   metadata: ["deephaven:attribute.AddOnly": "true", "deephaven:attribute.AppendOnly": "true", "deephaven:attribute_type.AddOnly": "java.lang.Boolean", "deephaven:attribute_type.AppendOnly": "java.lang.Boolean"]
 	//   rows: 5
 	//   col[0][Ticker]: ["XRX" "IBM" "GME" "AAPL" "ZNGA"]
 	//   col[1][Close]: [53.8 38.7 453 26.7 544.9]
@@ -66,13 +67,13 @@ func Example_tableOps() {
 	//   schema:
 	//   fields: 4
 	//     - Ticker: type=utf8, nullable
-	//         metadata: ["deephaven:isRowStyle": "false", "deephaven:isNumberFormat": "false", "deephaven:isStyle": "false", "deephaven:type": "java.lang.String", "deephaven:isDateFormat": "false"]
+	//         metadata: ["deephaven:isDateFormat": "false", "deephaven:isNumberFormat": "false", "deephaven:isRowStyle": "false", "deephaven:isStyle": "false", "deephaven:type": "java.lang.String"]
 	//     - Close: type=float32, nullable
-	//        metadata: ["deephaven:isRowStyle": "false", "deephaven:isNumberFormat": "false", "deephaven:isStyle": "false", "deephaven:type": "float", "deephaven:isDateFormat": "false"]
+	//        metadata: ["deephaven:isDateFormat": "false", "deephaven:isNumberFormat": "false", "deephaven:isRowStyle": "false", "deephaven:isStyle": "false", "deephaven:type": "float"]
 	//     - Volume: type=int32, nullable
-	//         metadata: ["deephaven:isRowStyle": "false", "deephaven:isNumberFormat": "false", "deephaven:isStyle": "false", "deephaven:type": "int", "deephaven:isDateFormat": "false"]
+	//         metadata: ["deephaven:isDateFormat": "false", "deephaven:isNumberFormat": "false", "deephaven:isRowStyle": "false", "deephaven:isStyle": "false", "deephaven:type": "int"]
 	//     - Magnitude: type=int32, nullable
-	//            metadata: ["deephaven:isRowStyle": "false", "deephaven:isNumberFormat": "false", "deephaven:isStyle": "false", "deephaven:type": "int", "deephaven:isDateFormat": "false"]
+	//            metadata: ["deephaven:isDateFormat": "false", "deephaven:isNumberFormat": "false", "deephaven:isRowStyle": "false", "deephaven:isStyle": "false", "deephaven:type": "int"]
 	//   rows: 5
 	//   col[0][Ticker]: ["XRX" "IBM" "GME" "AAPL" "ZNGA"]
 	//   col[1][Close]: [53.8 38.7 453 26.7 544.9]
@@ -159,7 +160,7 @@ func doImmediateOps() (string, error) {
 	}
 	defer magRecord.Release()
 
-	return fmt.Sprintf("Data Before:\n%s\nNew data:\n%s\n%s", sampleRecord, midRecord, magRecord), nil
+	return fmt.Sprintf("Data Before:\n%s\nNew data:\n%s\n%s", test_tools.RecordString(sampleRecord), test_tools.RecordString(midRecord), test_tools.RecordString(magRecord)), nil
 }
 
 // This function demonstrates how to use query-graph table operations.
@@ -239,5 +240,5 @@ func doQueryOps() (string, error) {
 	}
 	defer magRecord.Release()
 
-	return fmt.Sprintf("Data Before:\n%s\nNew data:\n%s\n%s", sampleRecord, midRecord, magRecord), nil
+	return fmt.Sprintf("Data Before:\n%s\nNew data:\n%s\n%s", test_tools.RecordString(sampleRecord), test_tools.RecordString(midRecord), test_tools.RecordString(magRecord)), nil
 }

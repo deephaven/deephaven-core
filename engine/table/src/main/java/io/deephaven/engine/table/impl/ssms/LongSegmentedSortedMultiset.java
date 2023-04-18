@@ -2322,6 +2322,11 @@ public final class LongSegmentedSortedMultiset implements SegmentedSortedMultiSe
     }
 
     @Override
+    public long[] copyToArray() {
+        return toArray();
+    }
+
+    @Override
     public long size() {
         return size;
     }

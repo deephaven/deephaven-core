@@ -3,6 +3,7 @@
  */
 package io.deephaven.web.client.ide;
 
+import com.vertispan.tsdefs.annotations.TsTypeRef;
 import elemental2.core.JsArray;
 import elemental2.dom.CustomEventInit;
 import elemental2.promise.Promise;
@@ -15,6 +16,7 @@ import io.deephaven.web.client.api.QueryConnectable;
 import io.deephaven.web.client.api.WorkerConnection;
 import io.deephaven.web.client.api.barrage.stream.ResponseStreamWrapper;
 import io.deephaven.web.client.api.console.JsVariableChanges;
+import io.deephaven.web.client.api.console.JsVariableDescriptor;
 import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.shared.data.ConnectToken;
 import io.deephaven.web.shared.fu.JsConsumer;
@@ -29,6 +31,8 @@ import jsinterop.base.JsPropertyMap;
  */
 @JsType(namespace = "dh")
 public class IdeConnection extends QueryConnectable<IdeConnection> {
+    @Deprecated
+    public static final String HACK_CONNECTION_FAILURE = "hack-connection-failure";
     public static final String EVENT_DISCONNECT = "disconnect";
     public static final String EVENT_RECONNECT = "reconnect";
 
@@ -108,7 +112,7 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
         }
     }
 
-    public Promise<?> getObject(JsPropertyMap<Object> definitionObject) {
+    public Promise<?> getObject(@TsTypeRef(JsVariableDescriptor.class) JsPropertyMap<Object> definitionObject) {
         WorkerConnection conn = connection.get();
         return onConnected().then(e -> conn.getJsObject(definitionObject));
     }

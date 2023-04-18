@@ -2318,6 +2318,11 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
     }
 
     @Override
+    public float[] copyToArray() {
+        return toArray();
+    }
+
+    @Override
     public long size() {
         return size;
     }

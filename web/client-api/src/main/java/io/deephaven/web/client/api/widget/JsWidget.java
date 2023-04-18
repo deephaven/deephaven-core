@@ -3,16 +3,19 @@
  */
 package io.deephaven.web.client.api.widget;
 
+import com.vertispan.tsdefs.annotations.TsInterface;
+import com.vertispan.tsdefs.annotations.TsName;
 import elemental2.core.Uint8Array;
 import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.object_pb.FetchObjectResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
 import io.deephaven.web.client.api.WorkerConnection;
 import jsinterop.annotations.JsFunction;
-import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsProperty;
 
+@TsInterface
+@TsName(namespace = "dh", name = "Widget")
 public class JsWidget {
     private final WorkerConnection connection;
     private final WidgetFetch fetch;
@@ -36,7 +39,6 @@ public class JsWidget {
         this.fetch = fetch;
     }
 
-    @JsIgnore
     public Promise<JsWidget> refetch() {
         return new Promise<>((resolve, reject) -> {
             fetch.fetch((err, response, ticket) -> {
@@ -51,7 +53,6 @@ public class JsWidget {
         });
     }
 
-    @JsIgnore
     public Ticket getTicket() {
         return ticket;
     }

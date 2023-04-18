@@ -3,16 +3,22 @@
  */
 package io.deephaven.web.client.api.widget.plot;
 
+import com.vertispan.tsdefs.annotations.TsInterface;
+import com.vertispan.tsdefs.annotations.TsName;
+import com.vertispan.tsdefs.annotations.TsTypeRef;
 import elemental2.dom.CustomEvent;
 import elemental2.dom.CustomEventInit;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.*;
 import io.deephaven.web.client.api.JsPartitionedTable;
+import io.deephaven.web.client.api.widget.plot.enums.JsSeriesPlotStyle;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsProperty;
 
 import java.util.Collections;
 import java.util.Map;
 
+@TsInterface
+@TsName(name = "MultiSeries", namespace = "dh.plot")
 public class JsMultiSeries {
     private final MultiSeriesDescriptor descriptor;
     private final JsFigure figure;
@@ -27,7 +33,6 @@ public class JsMultiSeries {
         this.parent = parent;
     }
 
-    @JsIgnore
     public void initSources(Map<Integer, JsPartitionedTable> plotHandlesToPartitionedTables) {
         descriptor.getDataSourcesList().asList().stream().mapToInt(MultiSeriesSourceDescriptor::getPartitionedTableId)
                 .distinct()
@@ -127,6 +132,7 @@ public class JsMultiSeries {
     }
 
     @JsProperty
+    @TsTypeRef(JsSeriesPlotStyle.class)
     public int getPlotStyle() {
         return descriptor.getPlotStyle();
     }

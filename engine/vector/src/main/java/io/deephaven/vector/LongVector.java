@@ -49,6 +49,9 @@ public interface LongVector extends Vector<LongVector>, Iterable<Long> {
     long[] toArray();
 
     @Override
+    long[] copyToArray();
+
+    @Override
     LongVector getDirect();
 
     @Override
@@ -200,6 +203,11 @@ public interface LongVector extends Vector<LongVector>, Iterable<Long> {
                 }
             }
             return result;
+        }
+
+        @Override
+        public long[] copyToArray() {
+            return toArray();
         }
 
         @Override

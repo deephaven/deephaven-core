@@ -44,6 +44,9 @@ public interface CharVector extends Vector<CharVector>, Iterable<Character> {
     char[] toArray();
 
     @Override
+    char[] copyToArray();
+
+    @Override
     CharVector getDirect();
 
     @Override
@@ -195,6 +198,11 @@ public interface CharVector extends Vector<CharVector>, Iterable<Character> {
                 }
             }
             return result;
+        }
+
+        @Override
+        public char[] copyToArray() {
+            return toArray();
         }
 
         @Override

@@ -53,6 +53,11 @@ public final class CharVectorDirect implements CharVector {
     }
 
     @Override
+    public char[] copyToArray() {
+        return Arrays.copyOf(data, data.length);
+    }
+
+    @Override
     public CloseablePrimitiveIteratorOfChar iterator(final long fromIndexInclusive, final long toIndexExclusive) {
         if (fromIndexInclusive == 0 && toIndexExclusive == data.length) {
             return CloseablePrimitiveIteratorOfChar.of(data);

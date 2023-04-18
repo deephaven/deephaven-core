@@ -76,6 +76,8 @@ public interface UpdateBySpec {
 
         T visit(CumProdSpec spec);
 
+        T visit(DeltaSpec spec);
+
         T visit(RollingSumSpec spec);
 
         T visit(RollingGroupSpec spec);
@@ -85,6 +87,8 @@ public interface UpdateBySpec {
         T visit(RollingMinMaxSpec spec);
 
         T visit(RollingProductSpec spec);
+
+        T visit(RollingCountSpec spec);
     }
     // endregion
 }

@@ -113,7 +113,20 @@ class TypeInfos {
         return (PrecisionAndScale) computedCache
                 .computeIfAbsent(columnName, unusedColumnName -> new HashMap<>())
                 .computeIfAbsent(ParquetTableWriter.CacheTags.DECIMAL_ARGS,
-                        unusedCacheTag -> computePrecisionAndScale(rowSet, columnSourceSupplier.get()));
+                        uct -> parquetCompatible(computePrecisionAndScale(rowSet, columnSourceSupplier.get())));
+    }
+
+    private static PrecisionAndScale parquetCompatible(PrecisionAndScale pas) {
+        // Parquet / SQL has a more limited range for DECIMAL(precision, scale).
+        // https://github.com/apache/parquet-format/blob/master/LogicalTypes.md#decimal
+        // Scale must be zero or a positive integer less than the precision.
+        // Precision is required and must be a non-zero positive integer.
+        // Ultimately, this just means that the on-disk format is not as small and tight as it otherwise could be.
+        // https://github.com/deephaven/deephaven-core/issues/3650
+        if (pas.scale > pas.precision) {
+            return new PrecisionAndScale(pas.scale, pas.scale);
+        }
+        return pas;
     }
 
     static TypeInfo bigDecimalTypeInfo(
