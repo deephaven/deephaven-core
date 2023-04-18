@@ -262,7 +262,7 @@ public class ParquetTableReadWriteTest {
         final Table testTable =
                 ((QueryTable) TableTools.emptyTable(10).select("someInt = i", "someString  = `foo`")
                         .where("i % 2 == 0").groupBy("someString").ungroup("someInt"))
-                                .withDefinitionUnsafe(definition);
+                        .withDefinitionUnsafe(definition);
         final File dest = new File(rootFile, "ParquetTest_groupByString_test.parquet");
         ParquetTools.writeTable(testTable, dest);
         final Table fromDisk = ParquetTools.readTable(dest);
