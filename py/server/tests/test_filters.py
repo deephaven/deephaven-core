@@ -5,7 +5,7 @@
 import unittest
 
 from deephaven import read_csv, DHError
-from deephaven.filters import RegexFilter, Filter, and_, or_, not_
+from deephaven.filters import Filter, PatternMode, PatternFlag, and_, or_, not_, pattern
 from tests.testbase import BaseTestCase
 
 
@@ -18,9 +18,9 @@ class FilterTestCase(BaseTestCase):
         self.test_table = None
         super().tearDown()
 
-    def test_regex_filter(self):
+    def test_pattern_filter(self):
         new_test_table = self.test_table.update("X = String.valueOf(d)")
-        regex_filter = RegexFilter("X", "...")
+        regex_filter = pattern(PatternMode.MATCHES, "X", "...", flags=[PatternFlag.DOTALL])
         with self.assertRaises(DHError):
             filtered_table = self.test_table.where(filters=regex_filter)
 
@@ -31,7 +31,7 @@ class FilterTestCase(BaseTestCase):
             filtered_table = new_test_table.where(filters=[regex_filter, "b < 100"])
 
         new_test_table = new_test_table.update("Y = String.valueOf(e)")
-        regex_filter1 = RegexFilter("Y", ".0.")
+        regex_filter1 = pattern(PatternMode.MATCHES, "Y", ".0.", flags=[PatternFlag.DOTALL])
         filtered_table = new_test_table.where(filters=[regex_filter, regex_filter1])
         self.assertLessEqual(filtered_table.size, new_test_table.size)
 
