@@ -139,8 +139,7 @@ class PatternFlag(Enum):
     """
 
     UNICODE_CASE = _JPattern.UNICODE_CASE
-    """
-    Enables Unicode-aware case folding.
+    """Enables Unicode-aware case folding.
 
     When this flag is specified then case-insensitive matching, when enabled by the CASE_INSENSITIVE flag, is done in a
     manner consistent with the Unicode Standard. By default, case-insensitive matching assumes that only characters in
