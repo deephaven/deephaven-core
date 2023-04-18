@@ -206,7 +206,8 @@ class TableInterface(ABC):
             on (Union[str, List[str]]): the column(s) to match, can be a common name or an equal expression,
                 i.e. "col_a = col_b" for different column names
             joins (Union[str, List[str]], optional): the column(s) to be added from the right table to the result
-                table, can be renaming expressions, i.e. "new_col = col"; default is None
+                table, can be renaming expressions, i.e. "new_col = col"; default is None, which means all the columns
+                from the right table, excluding those specified in 'on'
 
         Returns:
             a Table object
@@ -226,7 +227,8 @@ class TableInterface(ABC):
             on (Union[str, List[str]]): the column(s) to match, can be a common name or an equal expression,
                 i.e. "col_a = col_b" for different column names              
             joins (Union[str, List[str]], optional): the column(s) to be added from the right table to the result
-                table, can be renaming expressions, i.e. "new_col = col"; default is None
+                table, can be renaming expressions, i.e. "new_col = col"; default is None, which means all the columns
+                from the right table, excluding those specified in 'on'
 
         Returns:
             a Table object
@@ -240,14 +242,18 @@ class TableInterface(ABC):
     def join(self, table: Any, on: Union[str, List[str]] = None, joins: Union[str, List[str]] = None,
              reserve_bits: int = 10):
         """ Perform a cross-join between this table as the left table and another table as the right table) and
-        returns the result table.
+        returns the result table. Rows that do not have matching criteria will not be included in the result. If
+        there are multiple matches between a row from the left table and rows from the right table, all matching
+        combinations will be included. If no columns to match (on) are specified, every combination of left and right
+        table rows is included.
 
         Args:
             table (Table): the right-table of the join
             on (Union[str, List[str]]): the column(s) to match, can be a common name or an equal expression,
                 i.e. "col_a = col_b" for different column names, default is None
             joins (Union[str, List[str]], optional): the column(s) to be added from the right table to the result
-                table, can be renaming expressions, i.e. "new_col = col"; default is None
+                table, can be renaming expressions, i.e. "new_col = col"; default is None, which means all the columns
+                from the right table, excluding those specified in 'on'
             reserve_bits(int, optional): the number of bits of key-space to initially reserve per group; default is 10
 
         Returns:
@@ -269,7 +275,8 @@ class TableInterface(ABC):
             on (Union[str, List[str]]): the column(s) to match, can be a common name or an equal expression,
                 i.e. "col_a = col_b" for different column names
             joins (Union[str, List[str]], optional): the column(s) to be added from the right table to the result
-                table, can be renaming expressions, i.e. "new_col = col"; default is None
+                table, can be renaming expressions, i.e. "new_col = col"; default is None,, which means all the columns
+                from the right table, excluding those specified in 'on'
             match_rule (MatchRule, optional): the match rule for the as-of join, default is LESS_THAN_EQUAL
 
         Returns:
@@ -292,7 +299,8 @@ class TableInterface(ABC):
             on (Union[str, List[str]]): the column(s) to match, can be a common name or an equal expression,
                 i.e. "col_a = col_b" for different column names
             joins (Union[str, List[str]], optional): the column(s) to be added from the right table to the result
-                table, can be renaming expressions, i.e. "new_col = col"; default is None
+                table, can be renaming expressions, i.e. "new_col = col"; default is None, which means all the columns
+                from the right table, excluding those specified in 'on'
             match_rule (MatchRule, optional): the match rule for the as-of join, default is GREATER_THAN_EQUAL
 
         Returns:
@@ -345,7 +353,8 @@ class TableInterface(ABC):
         If no group-by column is given, the content of each column is grouped into its own array.
 
         Args:
-            by (Union[str, List[str]], optional): the group-by column name(s), default is None
+            by (Union[str, List[str]], optional): the group-by column name(s), default is None, meaning grouping
+                all the rows into one group
 
         Returns:
             a Table object
@@ -379,7 +388,8 @@ class TableInterface(ABC):
         distinct group.
 
         Args:
-            by (Union[str, List[str]], optional): the group-by column name(s), default is None
+            by (Union[str, List[str]], optional): the group-by column name(s), default is None, meaning grouping
+                all the rows into one group
 
         Returns:
             a Table object
@@ -395,7 +405,8 @@ class TableInterface(ABC):
         distinct group.
 
         Args:
-            by (Union[str, List[str]], optional): the group-by column name(s), default is None
+            by (Union[str, List[str]], optional): the group-by column name(s), default is None, meaning grouping
+                all the rows into one group
 
         Returns:
             a Table object
@@ -411,7 +422,8 @@ class TableInterface(ABC):
         must be of numeric types.
 
         Args:
-            by (Union[str, List[str]]): the group-by column name(s), default is None
+            by (Union[str, List[str]]): the group-by column name(s), default is None, meaning grouping
+                all the rows into one group
 
         Returns:
             a Table object
@@ -427,7 +439,8 @@ class TableInterface(ABC):
         be of numeric types.
 
         Args:
-            by (Union[str, List[str]], optional): the group-by column name(s), default is None
+            by (Union[str, List[str]], optional): the group-by column name(s), default is None, meaning grouping
+                all the rows into one group
 
         Returns:
             a Table object
@@ -443,7 +456,8 @@ class TableInterface(ABC):
         must be of numeric types.
 
         Args:
-            by (Union[str, List[str]]): the group-by column names(s), default is None
+            by (Union[str, List[str]]): the group-by column names(s), default is None, meaning grouping
+                all the rows into one group
 
         Returns:
             a Table object
@@ -459,7 +473,8 @@ class TableInterface(ABC):
         must be of numeric types.
 
         Args:
-            by (Union[str, List[str]], optional): the group-by column name(s), default is None
+            by (Union[str, List[str]], optional): the group-by column name(s), default is None, meaning grouping
+                all the rows into one group
 
         Returns:
             a Table object
@@ -475,7 +490,8 @@ class TableInterface(ABC):
         must be of numeric types.
 
         Args:
-            by (Union[str, List[str]], optional): the group-by column name(s), default is None
+            by (Union[str, List[str]], optional): the group-by column name(s), default is None, meaning grouping
+                all the rows into one group
 
         Returns:
             a Table object
@@ -491,7 +507,8 @@ class TableInterface(ABC):
         must be of numeric types.
 
         Args:
-            by (Union[str, List[str]], optional): the group-by column name(s), default is None
+            by (Union[str, List[str]], optional): the group-by column name(s), default is None, meaning grouping
+                all the rows into one group
 
         Returns:
             a Table object
@@ -507,7 +524,8 @@ class TableInterface(ABC):
         must be of numeric types.
 
         Args:
-            by (Union[str, List[str]], optional): the group-by column name(s), default is None
+            by (Union[str, List[str]], optional): the group-by column name(s), default is None, meaning grouping
+                all the rows into one group
 
         Returns:
             a Table object
@@ -524,7 +542,8 @@ class TableInterface(ABC):
 
         Args:
             col (str): the name of the column to store the counts
-            by (Union[str, List[str]], optional): the group-by column name(s), default is None
+            by (Union[str, List[str]], optional): the group-by column name(s), default is None, meaning grouping
+                all the rows into one group
 
         Returns:
             a Table object
