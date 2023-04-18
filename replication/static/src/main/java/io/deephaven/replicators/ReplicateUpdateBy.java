@@ -94,7 +94,7 @@ public class ReplicateUpdateBy {
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/prod/FloatCumProdOperator.java");
 
         files = ReplicatePrimitiveCode.charToAllButBooleanAndFloats(
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/ema/CharEMAOperator.java");
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/em/CharEMOperator.java");
         for (final String f : files) {
             if (f.contains("Integer")) {
                 fixupInteger(f);
@@ -104,24 +104,7 @@ public class ReplicateUpdateBy {
             }
         }
         ReplicatePrimitiveCode.floatToAllFloatingPoints(
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/ema/FloatEMAOperator.java");
-
-        files = ReplicatePrimitiveCode.charToAllButBooleanAndFloats(
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/emsum/CharEMSOperator.java");
-        for (final String f : files) {
-            if (f.contains("Integer")) {
-                fixupInteger(f);
-            }
-            if (f.contains("Byte")) {
-                fixupByte(f);
-            }
-        }
-        ReplicatePrimitiveCode.floatToAllFloatingPoints(
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/emsum/FloatEMSOperator.java");
-
-        replicateNumericOperator(
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingsum/ShortRollingSumOperator.java",
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingsum/FloatRollingSumOperator.java");
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/em/FloatEMOperator.java");
 
         files = ReplicatePrimitiveCode.charToIntegers(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/updateby/rollingavg/CharRollingAvgOperator.java",

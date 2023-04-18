@@ -1,4 +1,4 @@
-package io.deephaven.engine.table.impl.updateby.ema;
+package io.deephaven.engine.table.impl.updateby.em;
 
 import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.chunk.Chunk;
@@ -16,8 +16,8 @@ import java.math.BigDecimal;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
-public class BigDecimalEMAOperator extends BigNumberEMAOperator<BigDecimal> {
-    public class Context extends BigNumberEMAOperator<BigDecimal>.Context {
+public class BigDecimalEMOperator extends BaseBigNumberEMOperator<BigDecimal> {
+    public class Context extends BaseBigNumberEMOperator<BigDecimal>.Context {
         protected Context(final int chunkSize) {
             super(chunkSize);
         }
@@ -41,9 +41,7 @@ public class BigDecimalEMAOperator extends BigNumberEMAOperator<BigDecimal> {
                         if (curVal == null) {
                             curVal = input;
                         } else {
-                            curVal = curVal.multiply(opAlpha, control.bigValueContextOrDefault())
-                                    .add(input.multiply(opOneMinusAlpha, control.bigValueContextOrDefault()),
-                                            control.bigValueContextOrDefault());
+                            curVal = aggFunction.apply(curVal, input, opAlpha, opOneMinusAlpha);
                         }
                     }
                     outputValues.set(ii, curVal);
@@ -73,9 +71,7 @@ public class BigDecimalEMAOperator extends BigNumberEMAOperator<BigDecimal> {
                                     oneMinusAlpha = computeOneMinusAlpha(alpha);
                                     lastDt = dt;
                                 }
-                                curVal = curVal.multiply(alpha, control.bigValueContextOrDefault())
-                                        .add(input.multiply(oneMinusAlpha, control.bigValueContextOrDefault()),
-                                                control.bigValueContextOrDefault());
+                                curVal = aggFunction.apply(curVal, input, alpha, oneMinusAlpha);
                                 lastStamp = timestamp;
                             }
                         }
@@ -106,14 +102,16 @@ public class BigDecimalEMAOperator extends BigNumberEMAOperator<BigDecimal> {
      *        measured in ticks, otherwise it is measured in nanoseconds
      * @param valueSource a reference to the input column source for this operation
      */
-    public BigDecimalEMAOperator(@NotNull final MatchPair pair,
+    public BigDecimalEMOperator(@NotNull final MatchPair pair,
             @NotNull final String[] affectingColumns,
             @Nullable final RowRedirection rowRedirection,
             @NotNull final OperationControl control,
             @Nullable final String timestampColumnName,
             final long windowScaleUnits,
-            final ColumnSource<?> valueSource) {
-        super(pair, affectingColumns, rowRedirection, control, timestampColumnName, windowScaleUnits, valueSource);
+            final ColumnSource<?> valueSource,
+            @NotNull final EmFunction aggFunction) {
+        super(pair, affectingColumns, rowRedirection, control, timestampColumnName, windowScaleUnits, valueSource,
+                aggFunction);
     }
 
     @NotNull

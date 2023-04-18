@@ -1,9 +1,14 @@
-package io.deephaven.engine.table.impl.updateby.ema;
+/*
+ * ---------------------------------------------------------------------------------------------------------------------
+ * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharEMOperator and regenerate
+ * ---------------------------------------------------------------------------------------------------------------------
+ */
+package io.deephaven.engine.table.impl.updateby.em;
 
 import io.deephaven.api.updateby.OperationControl;
+import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
-import io.deephaven.chunk.CharChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
@@ -15,21 +20,20 @@ import org.jetbrains.annotations.Nullable;
 
 import static io.deephaven.util.QueryConstants.*;
 
-public class CharEMAOperator extends BasePrimitiveEMAOperator {
+public class LongEMOperator extends BasePrimitiveEMOperator {
     public final ColumnSource<?> valueSource;
     // region extra-fields
     // endregion extra-fields
 
-    protected class Context extends BasePrimitiveEMAOperator.Context {
-
-        public CharChunk<? extends Values> charValueChunk;
+    protected class Context extends BasePrimitiveEMOperator.Context {
+        public LongChunk<? extends Values> longValueChunk;
 
         protected Context(final int chunkSize) {
             super(chunkSize);
         }
 
         @Override
-        public void accumulateCumulative(RowSequence inputKeys,
+        public void accumulateCumulative(@NotNull RowSequence inputKeys,
                                          Chunk<? extends Values>[] valueChunkArr,
                                          LongChunk<? extends Values> tsChunk,
                                          int len) {
@@ -40,17 +44,15 @@ public class CharEMAOperator extends BasePrimitiveEMAOperator {
                 // compute with ticks
                 for (int ii = 0; ii < len; ii++) {
                     // read the value from the values chunk
-                    final char input = charValueChunk.get(ii);
+                    final long input = longValueChunk.get(ii);
 
-                    if (input == NULL_CHAR) {
+                    if (input == NULL_LONG) {
                         handleBadData(this, true, false);
                     } else {
                         if (curVal == NULL_DOUBLE) {
                             curVal = input;
                         } else {
-                            final double decayedVal = alpha * curVal;
-                            // Create EMA by adding decayed value to the 1-minus-alpha-weighted input.
-                            curVal = decayedVal + (oneMinusAlpha * input);
+                            curVal = aggFunction.apply(curVal, input, opAlpha, opOneMinusAlpha);
                         }
                     }
                     outputValues.set(ii, curVal);
@@ -59,10 +61,10 @@ public class CharEMAOperator extends BasePrimitiveEMAOperator {
                 // compute with time
                 for (int ii = 0; ii < len; ii++) {
                     // read the value from the values chunk
-                    final char input = charValueChunk.get(ii);
+                    final long input = longValueChunk.get(ii);
                     final long timestamp = tsChunk.get(ii);
                     //noinspection ConstantConditions
-                    final boolean isNull = input == NULL_CHAR;
+                    final boolean isNull = input == NULL_LONG;
                     final boolean isNullTime = timestamp == NULL_LONG;
                     if (isNull) {
                         handleBadData(this, true, false);
@@ -73,14 +75,14 @@ public class CharEMAOperator extends BasePrimitiveEMAOperator {
                         lastStamp = timestamp;
                     } else {
                         final long dt = timestamp - lastStamp;
-                        if (dt != 0) {
-                            // Alpha is dynamic, based on time
-                            final double alpha = Math.exp(-dt / (double) reverseWindowScaleUnits);
-                            final double decayedVal = alpha * curVal;
-                            // Create EMAvg by adding decayed value to the 1-minus-alpha-weighted input.
-                            curVal = decayedVal + (1 - alpha) * input;
-                            lastStamp = timestamp;
+                        if (dt != lastDt) {
+                            // Alpha is dynamic based on time, but only recalculated when needed
+                            alpha = Math.exp(-dt / (double) reverseWindowScaleUnits);
+                            oneMinusAlpha = 1.0 - alpha;
+                            lastDt = dt;
                         }
+                        curVal = aggFunction.apply(curVal, input, alpha, oneMinusAlpha);
+                        lastStamp = timestamp;
                     }
                     outputValues.set(ii, curVal);
                 }
@@ -92,12 +94,12 @@ public class CharEMAOperator extends BasePrimitiveEMAOperator {
 
         @Override
         public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            charValueChunk = valuesChunk.asCharChunk();
+            longValueChunk = valuesChunk.asLongChunk();
         }
 
         @Override
         public boolean isValueValid(long atKey) {
-            return valueSource.getChar(atKey) != NULL_CHAR;
+            return valueSource.getLong(atKey) != NULL_LONG;
         }
 
         @Override
@@ -107,7 +109,7 @@ public class CharEMAOperator extends BasePrimitiveEMAOperator {
     }
 
     /**
-     * An operator that computes an EMA from a char column using an exponential decay function.
+     * An operator that computes an EMA from a long column using an exponential decay function.
      *
      * @param pair                the {@link MatchPair} that defines the input/output for this operation
      * @param affectingColumns    the names of the columns that affect this ema
@@ -117,17 +119,18 @@ public class CharEMAOperator extends BasePrimitiveEMAOperator {
      * @param windowScaleUnits      the smoothing window for the EMA. If no {@code timestampColumnName} is provided, this is measured in ticks, otherwise it is measured in nanoseconds
      * @param valueSource         a reference to the input column source for this operation
      */
-    public CharEMAOperator(@NotNull final MatchPair pair,
-                           @NotNull final String[] affectingColumns,
-                           @Nullable final RowRedirection rowRedirection,
-                           @NotNull final OperationControl control,
-                           @Nullable final String timestampColumnName,
-                           final long windowScaleUnits,
-                           final ColumnSource<?> valueSource
-                           // region extra-constructor-args
-                           // endregion extra-constructor-args
+    public LongEMOperator(@NotNull final MatchPair pair,
+                          @NotNull final String[] affectingColumns,
+                          @Nullable final RowRedirection rowRedirection,
+                          @NotNull final OperationControl control,
+                          @Nullable final String timestampColumnName,
+                          final long windowScaleUnits,
+                          final ColumnSource<?> valueSource,
+                          @NotNull final EmFunction aggFunction
+                          // region extra-constructor-args
+                          // endregion extra-constructor-args
     ) {
-        super(pair, affectingColumns, rowRedirection, control, timestampColumnName, windowScaleUnits);
+        super(pair, affectingColumns, rowRedirection, control, timestampColumnName, windowScaleUnits, aggFunction);
         this.valueSource = valueSource;
         // region constructor
         // endregion constructor
