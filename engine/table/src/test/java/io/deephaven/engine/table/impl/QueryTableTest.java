@@ -23,6 +23,8 @@ import io.deephaven.engine.table.impl.locations.GroupingProvider;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.remote.InitialSnapshotTable;
 import io.deephaven.engine.table.impl.select.*;
+import io.deephaven.engine.table.impl.select.MatchFilter.CaseSensitivity;
+import io.deephaven.engine.table.impl.select.MatchFilter.MatchType;
 import io.deephaven.engine.table.impl.sources.DeferredGroupingColumnSource;
 import io.deephaven.engine.table.impl.sources.LongAsDateTimeColumnSource;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
@@ -43,6 +45,7 @@ import io.deephaven.vector.*;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.groovy.util.Maps;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
 import org.junit.experimental.categories.Category;
@@ -668,6 +671,27 @@ public class QueryTableTest extends QueryTableTestBase {
         }
     }
 
+    public static PatternFilter stringContainsFilter(
+            String columnName,
+            String... values) {
+        return stringContainsFilter(MatchType.Regular, columnName, values);
+    }
+
+    public static PatternFilter stringContainsFilter(
+            MatchType matchType,
+            String columnName,
+            String... values) {
+        return stringContainsFilter(CaseSensitivity.MatchCase, matchType, columnName, values);
+    }
+
+    public static PatternFilter stringContainsFilter(
+            CaseSensitivity sensitivity,
+            MatchType matchType,
+            @NotNull String columnName,
+            String... values) {
+        return WhereFilterFactory.stringContainsFilter(sensitivity, matchType, columnName, true, false, values);
+    }
+
     public void testStringContainsFilter() {
         Function<String, WhereFilter> filter = ConditionFilter::createConditionFilter;
         final Random random = new Random(0);
@@ -680,17 +704,22 @@ public class QueryTableTest extends QueryTableTestBase {
                 new StringGenerator()));
 
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
-                new TableComparator(table.where(filter.apply("S1.contains(`aab`)")),
-                        table.where(new StringContainsFilter("S1", "aab"))),
-                new TableComparator(table.where(filter.apply("S2.contains(`m`)")),
-                        table.where(new StringContainsFilter("S2", "m"))),
-                new TableComparator(table.where(filter.apply("!S2.contains(`ma`)")),
-                        table.where(new StringContainsFilter(MatchFilter.MatchType.Inverted, "S2", "ma"))),
-                new TableComparator(table.where(filter.apply("S2.toLowerCase().contains(`ma`)")),
-                        table.where(new StringContainsFilter(MatchFilter.CaseSensitivity.IgnoreCase,
+                new TableComparator(
+                        table.where(filter.apply("S1.contains(`aab`)")),
+                        table.where(stringContainsFilter("S1", "aab"))),
+                new TableComparator(
+                        table.where(filter.apply("S2.contains(`m`)")),
+                        table.where(stringContainsFilter("S2", "m"))),
+                new TableComparator(
+                        table.where(filter.apply("!S2.contains(`ma`)")),
+                        table.where(stringContainsFilter(MatchFilter.MatchType.Inverted, "S2", "ma"))),
+                new TableComparator(
+                        table.where(filter.apply("S2.toLowerCase().contains(`ma`)")),
+                        table.where(stringContainsFilter(MatchFilter.CaseSensitivity.IgnoreCase,
                                 MatchFilter.MatchType.Regular, "S2", "mA"))),
-                new TableComparator(table.where(filter.apply("S2.contains(`mA`)")),
-                        table.where(new StringContainsFilter("S2", "mA"))),
+                new TableComparator(
+                        table.where(filter.apply("S2.contains(`mA`)")),
+                        table.where(stringContainsFilter("S2", "mA"))),
         };
 
         for (int i = 0; i < 500; i++) {

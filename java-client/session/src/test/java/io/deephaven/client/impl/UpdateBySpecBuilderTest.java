@@ -41,6 +41,12 @@ public class UpdateBySpecBuilderTest {
                     .build();
         }
 
+        // TODO: complete properly (DHC ticket #3666)
+        @Override
+        public UpdateByColumn.UpdateBySpec visit(EmsSpec spec) {
+            return null;
+        }
+
         @Override
         public UpdateByColumn.UpdateBySpec visit(FillBySpec f) {
             return UpdateByColumn.UpdateBySpec.newBuilder().setFill(UpdateByFill.getDefaultInstance()).build();
@@ -66,6 +72,12 @@ public class UpdateBySpecBuilderTest {
         public UpdateByColumn.UpdateBySpec visit(CumProdSpec p) {
             return UpdateByColumn.UpdateBySpec.newBuilder().setProduct(UpdateByCumulativeProduct.getDefaultInstance())
                     .build();
+        }
+
+        // TODO: add this correctly (DHC #3392)
+        @Override
+        public UpdateByColumn.UpdateBySpec visit(DeltaSpec spec) {
+            return null;
         }
 
         // TODO: add this correctly (DHC #3392)
