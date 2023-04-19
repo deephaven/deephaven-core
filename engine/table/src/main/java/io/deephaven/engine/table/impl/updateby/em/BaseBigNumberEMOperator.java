@@ -1,4 +1,4 @@
-package io.deephaven.engine.table.impl.updateby.ema;
+package io.deephaven.engine.table.impl.updateby.em;
 
 import io.deephaven.api.updateby.BadDataBehavior;
 import io.deephaven.api.updateby.OperationControl;
@@ -19,12 +19,18 @@ import java.math.BigDecimal;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
-public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator<BigDecimal> {
+public abstract class BaseBigNumberEMOperator<T> extends BaseObjectUpdateByOperator<BigDecimal> {
     protected final ColumnSource<?> valueSource;
     protected final OperationControl control;
 
     protected final BigDecimal opAlpha;
     protected final BigDecimal opOneMinusAlpha;
+
+    final EmFunction aggFunction;
+
+    public interface EmFunction {
+        BigDecimal apply(BigDecimal prevVal, BigDecimal curVal, BigDecimal alpha, BigDecimal oneMinusAlpha);
+    }
 
     public abstract class Context extends BaseObjectUpdateByOperator<BigDecimal>.Context {
         public ObjectChunk<T, ? extends Values> objectValueChunk;
@@ -59,7 +65,7 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
     }
 
     /**
-     * An operator that computes an EMA from a big number column using an exponential decay function.
+     * An operator that computes an EM output from a big number column using an exponential decay function.
      *
      * @param pair the {@link MatchPair} that defines the input/output for this operation
      * @param affectingColumns the names of the columns that affect this ema
@@ -70,18 +76,20 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
      *        measured in ticks, otherwise it is measured in nanoseconds
      * @param valueSource a reference to the input column source for this operation
      */
-    public BigNumberEMAOperator(@NotNull final MatchPair pair,
+    public BaseBigNumberEMOperator(@NotNull final MatchPair pair,
             @NotNull final String[] affectingColumns,
             @Nullable final RowRedirection rowRedirection,
             @NotNull final OperationControl control,
             @Nullable final String timestampColumnName,
             final long windowScaleUnits,
-            @NotNull final ColumnSource<?> valueSource) {
+            @NotNull final ColumnSource<?> valueSource,
+            @NotNull final EmFunction aggFunction) {
         super(pair, affectingColumns, rowRedirection, timestampColumnName, windowScaleUnits, 0, false,
                 BigDecimal.class);
 
         this.control = control;
         this.valueSource = valueSource;
+        this.aggFunction = aggFunction;
 
         if (timestampColumnName == null) {
             // tick-based, pre-compute alpha and oneMinusAlpha
@@ -110,7 +118,7 @@ public abstract class BigNumberEMAOperator<T> extends BaseObjectUpdateByOperator
         boolean doReset = false;
         if (isNull) {
             if (control.onNullValueOrDefault() == BadDataBehavior.THROW) {
-                throw new TableDataException("Encountered invalid data during EMA processing");
+                throw new TableDataException("Encountered invalid data during EM processing");
             }
             doReset = control.onNullValueOrDefault() == BadDataBehavior.RESET;
         }

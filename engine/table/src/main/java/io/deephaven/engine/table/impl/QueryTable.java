@@ -2473,7 +2473,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                                 final WritableRowSet newRowSet = getUngroupIndex(
                                         computeSize(getRowSet(), arrayColumns, vectorColumns, nullFill),
                                         RowSetFactory.builderRandom(), newBase, getRowSet())
-                                                .build();
+                                        .build();
                                 final TrackingWritableRowSet rowSet = result.getRowSet().writableCast();
                                 final RowSet added = newRowSet.minus(rowSet);
                                 final RowSet removed = rowSet.minus(newRowSet);

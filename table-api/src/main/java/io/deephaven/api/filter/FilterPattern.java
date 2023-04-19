@@ -16,6 +16,15 @@ public abstract class FilterPattern extends FilterBase {
         return ImmutableFilterPattern.builder();
     }
 
+    public static FilterPattern of(Expression expression, Pattern pattern, Mode mode, boolean invertPattern) {
+        return builder()
+                .expression(expression)
+                .pattern(pattern)
+                .mode(mode)
+                .invertPattern(invertPattern)
+                .build();
+    }
+
     public abstract Expression expression();
 
     public abstract Pattern pattern();
