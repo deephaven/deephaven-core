@@ -119,7 +119,7 @@ public class PerformanceQueriesGeneral {
                         "Ratio", "QueryMemUsed", "QueryMemUsedPct", "IntervalEndTime",
                         "RowsPerSec", "RowsPerCPUSec", "EntryDescription");
         if (formatPctColumnsLocal && formatPctColumns) {
-            queryUpdatePerformance = formatColumnsAsPct(queryUpdatePerformance, "Ratio", "QueryMemUsedPct");
+            queryUpdatePerformance = formatColumnsAsPctUpdatePerformance(queryUpdatePerformance);
         }
         return queryUpdatePerformance;
     }
@@ -131,10 +131,9 @@ public class PerformanceQueriesGeneral {
     public static Map<String, Table> queryUpdatePerformanceMap(final Table queryUpdatePerformance,
             final long evaluationNumber) {
         final Map<String, Table> resultMap = new HashMap<>();
-        final Table qup = queryUpdatePerformance(queryUpdatePerformance, evaluationNumber, false);
-        resultMap.put("QueryUpdatePerformance", qup);
+        Table qup = queryUpdatePerformance(queryUpdatePerformance, evaluationNumber, false);
 
-        final Table worstInterval = qup
+        Table worstInterval = qup
                 .groupBy("IntervalStartTime", "IntervalDurationNanos")
                 .sort("IntervalDurationNanos")
                 .tail(1)
@@ -151,18 +150,12 @@ public class PerformanceQueriesGeneral {
                         "EntryIntervalModified",
                         "NRows");
 
-        resultMap.put("WorstInterval", worstInterval);
-
         // Create a table showing the 'worst' updates, i.e. the operations with the greatest 'Ratio'
-        final Table updateWorst = qup.sortDescending("Ratio");
-        resultMap.put("UpdateWorst", updateWorst);
+        Table updateWorst = qup.sortDescending("Ratio");
 
         // Create a table with updates from the most recent performance recording. interval at the top. (Within each
         // interval, operations are still sorted with the greatest Ratio at the top.)
-
-        final Table updateMostRecent = updateWorst.sortDescending("IntervalEndTime").moveColumnsUp("IntervalEndTime");
-        resultMap.put("UpdateMostRecent", updateMostRecent);
-
+        Table updateMostRecent = updateWorst.sortDescending("IntervalEndTime").moveColumnsUp("IntervalEndTime");
 
         // Create a table that summarizes the update performance data within each interval
         Table updateAggregate = qup.aggBy(
@@ -172,20 +165,42 @@ public class PerformanceQueriesGeneral {
                 "IntervalStartTime", "IntervalEndTime", "ProcessUniqueId")
                 .updateView("Ratio = EntryIntervalUsage / IntervalDurationNanos")
                 .moveColumnsUp("IntervalStartTime", "IntervalEndTime", "Ratio");
-        if (formatPctColumns) {
-            updateAggregate = formatColumnsAsPct(updateAggregate, "Ratio", "QueryMemUsedPct");
-        }
-        resultMap.put("UpdateAggregate", updateAggregate);
 
-
-        final Table updateSummaryStats = updateAggregate.aggBy(Arrays.asList(
+        Table updateSummaryStats = updateAggregate.aggBy(Arrays.asList(
                 AggPct(0.99, "Ratio_99_Percentile = Ratio", "QueryMemUsedPct_99_Percentile = QueryMemUsedPct"),
                 AggPct(0.90, "Ratio_90_Percentile = Ratio", "QueryMemUsedPct_90_Percentile = QueryMemUsedPct"),
                 AggPct(0.75, "Ratio_75_Percentile = Ratio", "QueryMemUsedPct_75_Percentile = QueryMemUsedPct"),
                 AggPct(0.50, "Ratio_50_Percentile = Ratio", "QueryMemUsedPct_50_Percentile = QueryMemUsedPct"),
                 AggMax("Ratio_Max = Ratio", "QueryMemUsedPct_Max = QueryMemUsedPct")));
 
+        if (formatPctColumns) {
+            qup = formatColumnsAsPctUpdatePerformance(qup);
+            worstInterval = formatColumnsAsPct(worstInterval, "Ratio");
+            updateWorst = formatColumnsAsPctUpdatePerformance(updateWorst);
+            updateMostRecent = formatColumnsAsPctUpdatePerformance(updateMostRecent);
+            updateAggregate = formatColumnsAsPctUpdatePerformance(updateAggregate);
+            updateSummaryStats = formatColumnsAsPct(
+                    updateSummaryStats,
+                    "Ratio_99_Percentile",
+                    "QueryMemUsedPct_99_Percentile",
+                    "Ratio_90_Percentile",
+                    "QueryMemUsedPct_90_Percentile",
+                    "Ratio_75_Percentile",
+                    "QueryMemUsedPct_75_Percentile",
+                    "Ratio_50_Percentile",
+                    "QueryMemUsedPct_50_Percentile",
+                    "Ratio_Max",
+                    "QueryMemUsedPct_Max"
+            );
+        }
+
+        resultMap.put("QueryUpdatePerformance", qup);
+        resultMap.put("WorstInterval", worstInterval);
+        resultMap.put("UpdateWorst", updateWorst);
+        resultMap.put("UpdateMostRecent", updateMostRecent);
+        resultMap.put("UpdateAggregate", updateAggregate);
         resultMap.put("UpdateSummaryStats", updateSummaryStats);
+
         return resultMap;
     }
 
@@ -298,9 +313,13 @@ public class PerformanceQueriesGeneral {
     private static Table formatColumnsAsPct(final Table t, final String... cols) {
         final String[] formats = new String[cols.length];
         for (int i = 0; i < cols.length; ++i) {
-            formats[i] = cols[i] + "=Decimal(`#0.0%`)";
+            formats[i] = cols[i] + "=Decimal(`#0.00%`)";
         }
         return t.formatColumns(formats);
+    }
+
+    private static Table formatColumnsAsPctUpdatePerformance(final Table updatePerformanceTable) {
+        return formatColumnsAsPct(updatePerformanceTable, "Ratio", "QueryMemUsedPct");
     }
 
     private static long getWorkerHeapSizeBytes() {
