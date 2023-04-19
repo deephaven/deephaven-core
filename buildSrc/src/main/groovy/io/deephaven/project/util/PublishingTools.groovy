@@ -10,7 +10,6 @@ import org.gradle.api.artifacts.repositories.PasswordCredentials
 import org.gradle.api.plugins.BasePluginConvention
 import org.gradle.api.publish.Publication
 import org.gradle.api.publish.PublishingExtension
-import org.gradle.api.publish.internal.DefaultPublishingExtension
 import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.plugins.signing.SigningExtension
@@ -122,13 +121,14 @@ class PublishingTools {
     }
 
     static void setupSigning(Project project, Publication publication) {
-        SigningExtension publishingExtension = project.extensions.getByType(SigningExtension)
-        publishingExtension.sign(publication)
+        SigningExtension signingExtension = project.extensions.getByType(SigningExtension)
+        signingExtension.required = "true" == project.findProperty('signingRequired')
+        signingExtension.sign(publication)
         String signingKey = project.findProperty('signingKey')
         String signingPassword = project.findProperty('signingPassword')
         if (signingKey != null && signingPassword != null) {
             // In CI, it's harder to pass a file; so if specified, we use the in-memory version.
-            publishingExtension.useInMemoryPgpKeys(signingKey, signingPassword)
+            signingExtension.useInMemoryPgpKeys(signingKey, signingPassword)
         }
     }
 
