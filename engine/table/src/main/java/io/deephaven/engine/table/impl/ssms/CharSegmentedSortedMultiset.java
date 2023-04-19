@@ -2313,6 +2313,11 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
     }
 
     @Override
+    public char[] copyToArray() {
+        return toArray();
+    }
+
+    @Override
     public long size() {
         return size;
     }

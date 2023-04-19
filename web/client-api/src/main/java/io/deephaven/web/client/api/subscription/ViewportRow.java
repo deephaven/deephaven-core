@@ -3,6 +3,8 @@
  */
 package io.deephaven.web.client.api.subscription;
 
+import com.vertispan.tsdefs.annotations.TsInterface;
+import com.vertispan.tsdefs.annotations.TsName;
 import elemental2.core.JsArray;
 import io.deephaven.web.client.api.Column;
 import io.deephaven.web.client.api.Format;
@@ -12,6 +14,8 @@ import jsinterop.annotations.JsMethod;
 import jsinterop.base.Any;
 import jsinterop.base.Js;
 
+@TsInterface
+@TsName(namespace = "dh")
 public class ViewportRow implements TableData.Row {
     protected final int offsetInSnapshot;
     private final Object[] dataColumns;

@@ -7,7 +7,7 @@ unlocks the unique power of Deephaven to the Python community.
 
 """
 
-__version__ = "0.23.0"
+__version__ = "0.24.0"
 
 from deephaven_internal import jvm
 try:
@@ -16,7 +16,7 @@ finally:
     del jvm
 
 from .dherror import DHError
-from .table import SortDirection, AsOfMatchRule
+from .table import SortDirection
 from .csv import read as read_csv
 from .csv import write as write_csv
 from .stream.kafka import consumer as kafka_consumer

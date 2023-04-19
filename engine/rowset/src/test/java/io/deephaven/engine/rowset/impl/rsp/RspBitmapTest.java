@@ -14,6 +14,7 @@ import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.impl.*;
 import io.deephaven.engine.rowset.impl.rsp.container.ArrayContainer;
 import io.deephaven.engine.rowset.impl.rsp.container.Container;
+import io.deephaven.engine.rowset.impl.sortedranges.SortedRanges;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.datastructures.LongAbortableConsumer;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -4490,5 +4491,16 @@ public class RspBitmapTest {
         final RspBitmap r2 = new RspBitmap(r1, 0, 0);
         assertEquals(r2.ixCardinality(), r1.ixCardinality());
         assertTrue(r2.ixMinusOnNew(r1).ixIsEmpty());
+    }
+
+    @Test
+    public void testRegressionGitHubIssue2517() {
+        final SortedRanges sr = SortedRanges.makeSingleRange(10, 20);
+        final RspBitmap other = RspBitmap.makeSingleRange(65536 + 10, 65536 + 11);
+        OrderedLongSet olset = sr.ixInsertWithShift(0, other);
+        olset = olset.ixAppendRange(65536 + 200, 65536 + 300);
+        assertEquals(2, other.getCardinality());
+        assertEquals(65536 + 10, other.first());
+        assertEquals(65536 + 11, other.last());
     }
 }

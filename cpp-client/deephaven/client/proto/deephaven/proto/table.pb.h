@@ -247,6 +247,9 @@ extern MathContextDefaultTypeInternal _MathContext_default_instance_;
 class MergeTablesRequest;
 struct MergeTablesRequestDefaultTypeInternal;
 extern MergeTablesRequestDefaultTypeInternal _MergeTablesRequest_default_instance_;
+class MetaTableRequest;
+struct MetaTableRequestDefaultTypeInternal;
+extern MetaTableRequestDefaultTypeInternal _MetaTableRequest_default_instance_;
 class NaturalJoinTablesRequest;
 struct NaturalJoinTablesRequestDefaultTypeInternal;
 extern NaturalJoinTablesRequestDefaultTypeInternal _NaturalJoinTablesRequest_default_instance_;
@@ -426,6 +429,7 @@ template<> ::io::deephaven::proto::backplane::grpc::Literal* Arena::CreateMaybeM
 template<> ::io::deephaven::proto::backplane::grpc::MatchesCondition* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::MatchesCondition>(Arena*);
 template<> ::io::deephaven::proto::backplane::grpc::MathContext* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::MathContext>(Arena*);
 template<> ::io::deephaven::proto::backplane::grpc::MergeTablesRequest* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::MergeTablesRequest>(Arena*);
+template<> ::io::deephaven::proto::backplane::grpc::MetaTableRequest* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::MetaTableRequest>(Arena*);
 template<> ::io::deephaven::proto::backplane::grpc::NaturalJoinTablesRequest* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::NaturalJoinTablesRequest>(Arena*);
 template<> ::io::deephaven::proto::backplane::grpc::NotCondition* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::NotCondition>(Arena*);
 template<> ::io::deephaven::proto::backplane::grpc::OrCondition* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::OrCondition>(Arena*);
@@ -17820,6 +17824,178 @@ class FlattenRequest final :
 };
 // -------------------------------------------------------------------
 
+class MetaTableRequest final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:io.deephaven.proto.backplane.grpc.MetaTableRequest) */ {
+ public:
+  inline MetaTableRequest() : MetaTableRequest(nullptr) {}
+  ~MetaTableRequest() override;
+  explicit PROTOBUF_CONSTEXPR MetaTableRequest(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  MetaTableRequest(const MetaTableRequest& from);
+  MetaTableRequest(MetaTableRequest&& from) noexcept
+    : MetaTableRequest() {
+    *this = ::std::move(from);
+  }
+
+  inline MetaTableRequest& operator=(const MetaTableRequest& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline MetaTableRequest& operator=(MetaTableRequest&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const MetaTableRequest& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const MetaTableRequest* internal_default_instance() {
+    return reinterpret_cast<const MetaTableRequest*>(
+               &_MetaTableRequest_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    92;
+
+  friend void swap(MetaTableRequest& a, MetaTableRequest& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(MetaTableRequest* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(MetaTableRequest* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  MetaTableRequest* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<MetaTableRequest>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const MetaTableRequest& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom(const MetaTableRequest& from);
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to, const ::PROTOBUF_NAMESPACE_ID::Message& from);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _cached_size_.Get(); }
+
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(MetaTableRequest* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "io.deephaven.proto.backplane.grpc.MetaTableRequest";
+  }
+  protected:
+  explicit MetaTableRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kResultIdFieldNumber = 1,
+    kSourceIdFieldNumber = 2,
+  };
+  // .io.deephaven.proto.backplane.grpc.Ticket result_id = 1;
+  bool has_result_id() const;
+  private:
+  bool _internal_has_result_id() const;
+  public:
+  void clear_result_id();
+  const ::io::deephaven::proto::backplane::grpc::Ticket& result_id() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::Ticket* release_result_id();
+  ::io::deephaven::proto::backplane::grpc::Ticket* mutable_result_id();
+  void set_allocated_result_id(::io::deephaven::proto::backplane::grpc::Ticket* result_id);
+  private:
+  const ::io::deephaven::proto::backplane::grpc::Ticket& _internal_result_id() const;
+  ::io::deephaven::proto::backplane::grpc::Ticket* _internal_mutable_result_id();
+  public:
+  void unsafe_arena_set_allocated_result_id(
+      ::io::deephaven::proto::backplane::grpc::Ticket* result_id);
+  ::io::deephaven::proto::backplane::grpc::Ticket* unsafe_arena_release_result_id();
+
+  // .io.deephaven.proto.backplane.grpc.TableReference source_id = 2;
+  bool has_source_id() const;
+  private:
+  bool _internal_has_source_id() const;
+  public:
+  void clear_source_id();
+  const ::io::deephaven::proto::backplane::grpc::TableReference& source_id() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::TableReference* release_source_id();
+  ::io::deephaven::proto::backplane::grpc::TableReference* mutable_source_id();
+  void set_allocated_source_id(::io::deephaven::proto::backplane::grpc::TableReference* source_id);
+  private:
+  const ::io::deephaven::proto::backplane::grpc::TableReference& _internal_source_id() const;
+  ::io::deephaven::proto::backplane::grpc::TableReference* _internal_mutable_source_id();
+  public:
+  void unsafe_arena_set_allocated_source_id(
+      ::io::deephaven::proto::backplane::grpc::TableReference* source_id);
+  ::io::deephaven::proto::backplane::grpc::TableReference* unsafe_arena_release_source_id();
+
+  // @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.MetaTableRequest)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  ::io::deephaven::proto::backplane::grpc::Ticket* result_id_;
+  ::io::deephaven::proto::backplane::grpc::TableReference* source_id_;
+  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  friend struct ::TableStruct_deephaven_2fproto_2ftable_2eproto;
+};
+// -------------------------------------------------------------------
+
 class RunChartDownsampleRequest_ZoomRange final :
     public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:io.deephaven.proto.backplane.grpc.RunChartDownsampleRequest.ZoomRange) */ {
  public:
@@ -17868,7 +18044,7 @@ class RunChartDownsampleRequest_ZoomRange final :
                &_RunChartDownsampleRequest_ZoomRange_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    92;
+    93;
 
   friend void swap(RunChartDownsampleRequest_ZoomRange& a, RunChartDownsampleRequest_ZoomRange& b) {
     a.Swap(&b);
@@ -18031,7 +18207,7 @@ class RunChartDownsampleRequest final :
                &_RunChartDownsampleRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    93;
+    94;
 
   friend void swap(RunChartDownsampleRequest& a, RunChartDownsampleRequest& b) {
     a.Swap(&b);
@@ -18277,7 +18453,7 @@ class CreateInputTableRequest_InputTableKind_InMemoryAppendOnly final :
                &_CreateInputTableRequest_InputTableKind_InMemoryAppendOnly_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    94;
+    95;
 
   friend void swap(CreateInputTableRequest_InputTableKind_InMemoryAppendOnly& a, CreateInputTableRequest_InputTableKind_InMemoryAppendOnly& b) {
     a.Swap(&b);
@@ -18394,7 +18570,7 @@ class CreateInputTableRequest_InputTableKind_InMemoryKeyBacked final :
                &_CreateInputTableRequest_InputTableKind_InMemoryKeyBacked_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    95;
+    96;
 
   friend void swap(CreateInputTableRequest_InputTableKind_InMemoryKeyBacked& a, CreateInputTableRequest_InputTableKind_InMemoryKeyBacked& b) {
     a.Swap(&b);
@@ -18558,7 +18734,7 @@ class CreateInputTableRequest_InputTableKind final :
                &_CreateInputTableRequest_InputTableKind_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    96;
+    97;
 
   friend void swap(CreateInputTableRequest_InputTableKind& a, CreateInputTableRequest_InputTableKind& b) {
     a.Swap(&b);
@@ -18752,7 +18928,7 @@ class CreateInputTableRequest final :
                &_CreateInputTableRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    97;
+    98;
 
   friend void swap(CreateInputTableRequest& a, CreateInputTableRequest& b) {
     a.Swap(&b);
@@ -18979,7 +19155,7 @@ class WhereInRequest final :
                &_WhereInRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    98;
+    99;
 
   friend void swap(WhereInRequest& a, WhereInRequest& b) {
     a.Swap(&b);
@@ -19239,6 +19415,7 @@ class BatchTableRequest_Operation final :
     kAggregate = 35,
     kSnapshot = 36,
     kSnapshotWhen = 37,
+    kMetaTable = 38,
     OP_NOT_SET = 0,
   };
 
@@ -19247,7 +19424,7 @@ class BatchTableRequest_Operation final :
                &_BatchTableRequest_Operation_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    99;
+    100;
 
   friend void swap(BatchTableRequest_Operation& a, BatchTableRequest_Operation& b) {
     a.Swap(&b);
@@ -19353,6 +19530,7 @@ class BatchTableRequest_Operation final :
     kAggregateFieldNumber = 35,
     kSnapshotFieldNumber = 36,
     kSnapshotWhenFieldNumber = 37,
+    kMetaTableFieldNumber = 38,
   };
   // .io.deephaven.proto.backplane.grpc.EmptyTableRequest empty_table = 1;
   bool has_empty_table() const;
@@ -19984,6 +20162,24 @@ class BatchTableRequest_Operation final :
       ::io::deephaven::proto::backplane::grpc::SnapshotWhenTableRequest* snapshot_when);
   ::io::deephaven::proto::backplane::grpc::SnapshotWhenTableRequest* unsafe_arena_release_snapshot_when();
 
+  // .io.deephaven.proto.backplane.grpc.MetaTableRequest meta_table = 38;
+  bool has_meta_table() const;
+  private:
+  bool _internal_has_meta_table() const;
+  public:
+  void clear_meta_table();
+  const ::io::deephaven::proto::backplane::grpc::MetaTableRequest& meta_table() const;
+  PROTOBUF_NODISCARD ::io::deephaven::proto::backplane::grpc::MetaTableRequest* release_meta_table();
+  ::io::deephaven::proto::backplane::grpc::MetaTableRequest* mutable_meta_table();
+  void set_allocated_meta_table(::io::deephaven::proto::backplane::grpc::MetaTableRequest* meta_table);
+  private:
+  const ::io::deephaven::proto::backplane::grpc::MetaTableRequest& _internal_meta_table() const;
+  ::io::deephaven::proto::backplane::grpc::MetaTableRequest* _internal_mutable_meta_table();
+  public:
+  void unsafe_arena_set_allocated_meta_table(
+      ::io::deephaven::proto::backplane::grpc::MetaTableRequest* meta_table);
+  ::io::deephaven::proto::backplane::grpc::MetaTableRequest* unsafe_arena_release_meta_table();
+
   void clear_op();
   OpCase op_case() const;
   // @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation)
@@ -20024,6 +20220,7 @@ class BatchTableRequest_Operation final :
   void set_has_aggregate();
   void set_has_snapshot();
   void set_has_snapshot_when();
+  void set_has_meta_table();
 
   inline bool has_op() const;
   inline void clear_has_op();
@@ -20069,6 +20266,7 @@ class BatchTableRequest_Operation final :
     ::io::deephaven::proto::backplane::grpc::AggregateRequest* aggregate_;
     ::io::deephaven::proto::backplane::grpc::SnapshotTableRequest* snapshot_;
     ::io::deephaven::proto::backplane::grpc::SnapshotWhenTableRequest* snapshot_when_;
+    ::io::deephaven::proto::backplane::grpc::MetaTableRequest* meta_table_;
   } op_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   uint32_t _oneof_case_[1];
@@ -20125,7 +20323,7 @@ class BatchTableRequest final :
                &_BatchTableRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    100;
+    101;
 
   friend void swap(BatchTableRequest& a, BatchTableRequest& b) {
     a.Swap(&b);
@@ -36448,6 +36646,185 @@ inline void FlattenRequest::set_allocated_source_id(::io::deephaven::proto::back
 
 // -------------------------------------------------------------------
 
+// MetaTableRequest
+
+// .io.deephaven.proto.backplane.grpc.Ticket result_id = 1;
+inline bool MetaTableRequest::_internal_has_result_id() const {
+  return this != internal_default_instance() && result_id_ != nullptr;
+}
+inline bool MetaTableRequest::has_result_id() const {
+  return _internal_has_result_id();
+}
+inline const ::io::deephaven::proto::backplane::grpc::Ticket& MetaTableRequest::_internal_result_id() const {
+  const ::io::deephaven::proto::backplane::grpc::Ticket* p = result_id_;
+  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::grpc::Ticket&>(
+      ::io::deephaven::proto::backplane::grpc::_Ticket_default_instance_);
+}
+inline const ::io::deephaven::proto::backplane::grpc::Ticket& MetaTableRequest::result_id() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.MetaTableRequest.result_id)
+  return _internal_result_id();
+}
+inline void MetaTableRequest::unsafe_arena_set_allocated_result_id(
+    ::io::deephaven::proto::backplane::grpc::Ticket* result_id) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(result_id_);
+  }
+  result_id_ = result_id;
+  if (result_id) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.MetaTableRequest.result_id)
+}
+inline ::io::deephaven::proto::backplane::grpc::Ticket* MetaTableRequest::release_result_id() {
+  
+  ::io::deephaven::proto::backplane::grpc::Ticket* temp = result_id_;
+  result_id_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::grpc::Ticket* MetaTableRequest::unsafe_arena_release_result_id() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.MetaTableRequest.result_id)
+  
+  ::io::deephaven::proto::backplane::grpc::Ticket* temp = result_id_;
+  result_id_ = nullptr;
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::grpc::Ticket* MetaTableRequest::_internal_mutable_result_id() {
+  
+  if (result_id_ == nullptr) {
+    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::Ticket>(GetArenaForAllocation());
+    result_id_ = p;
+  }
+  return result_id_;
+}
+inline ::io::deephaven::proto::backplane::grpc::Ticket* MetaTableRequest::mutable_result_id() {
+  ::io::deephaven::proto::backplane::grpc::Ticket* _msg = _internal_mutable_result_id();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.MetaTableRequest.result_id)
+  return _msg;
+}
+inline void MetaTableRequest::set_allocated_result_id(::io::deephaven::proto::backplane::grpc::Ticket* result_id) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(result_id_);
+  }
+  if (result_id) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(
+                reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(result_id));
+    if (message_arena != submessage_arena) {
+      result_id = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, result_id, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  result_id_ = result_id;
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.MetaTableRequest.result_id)
+}
+
+// .io.deephaven.proto.backplane.grpc.TableReference source_id = 2;
+inline bool MetaTableRequest::_internal_has_source_id() const {
+  return this != internal_default_instance() && source_id_ != nullptr;
+}
+inline bool MetaTableRequest::has_source_id() const {
+  return _internal_has_source_id();
+}
+inline void MetaTableRequest::clear_source_id() {
+  if (GetArenaForAllocation() == nullptr && source_id_ != nullptr) {
+    delete source_id_;
+  }
+  source_id_ = nullptr;
+}
+inline const ::io::deephaven::proto::backplane::grpc::TableReference& MetaTableRequest::_internal_source_id() const {
+  const ::io::deephaven::proto::backplane::grpc::TableReference* p = source_id_;
+  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::grpc::TableReference&>(
+      ::io::deephaven::proto::backplane::grpc::_TableReference_default_instance_);
+}
+inline const ::io::deephaven::proto::backplane::grpc::TableReference& MetaTableRequest::source_id() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.MetaTableRequest.source_id)
+  return _internal_source_id();
+}
+inline void MetaTableRequest::unsafe_arena_set_allocated_source_id(
+    ::io::deephaven::proto::backplane::grpc::TableReference* source_id) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(source_id_);
+  }
+  source_id_ = source_id;
+  if (source_id) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.MetaTableRequest.source_id)
+}
+inline ::io::deephaven::proto::backplane::grpc::TableReference* MetaTableRequest::release_source_id() {
+  
+  ::io::deephaven::proto::backplane::grpc::TableReference* temp = source_id_;
+  source_id_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::grpc::TableReference* MetaTableRequest::unsafe_arena_release_source_id() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.MetaTableRequest.source_id)
+  
+  ::io::deephaven::proto::backplane::grpc::TableReference* temp = source_id_;
+  source_id_ = nullptr;
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::grpc::TableReference* MetaTableRequest::_internal_mutable_source_id() {
+  
+  if (source_id_ == nullptr) {
+    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::TableReference>(GetArenaForAllocation());
+    source_id_ = p;
+  }
+  return source_id_;
+}
+inline ::io::deephaven::proto::backplane::grpc::TableReference* MetaTableRequest::mutable_source_id() {
+  ::io::deephaven::proto::backplane::grpc::TableReference* _msg = _internal_mutable_source_id();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.MetaTableRequest.source_id)
+  return _msg;
+}
+inline void MetaTableRequest::set_allocated_source_id(::io::deephaven::proto::backplane::grpc::TableReference* source_id) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete source_id_;
+  }
+  if (source_id) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(source_id);
+    if (message_arena != submessage_arena) {
+      source_id = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, source_id, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  source_id_ = source_id;
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.MetaTableRequest.source_id)
+}
+
+// -------------------------------------------------------------------
+
 // RunChartDownsampleRequest_ZoomRange
 
 // optional int64 min_date_nanos = 1 [jstype = JS_STRING];
@@ -40461,6 +40838,80 @@ inline ::io::deephaven::proto::backplane::grpc::SnapshotWhenTableRequest* BatchT
   return _msg;
 }
 
+// .io.deephaven.proto.backplane.grpc.MetaTableRequest meta_table = 38;
+inline bool BatchTableRequest_Operation::_internal_has_meta_table() const {
+  return op_case() == kMetaTable;
+}
+inline bool BatchTableRequest_Operation::has_meta_table() const {
+  return _internal_has_meta_table();
+}
+inline void BatchTableRequest_Operation::set_has_meta_table() {
+  _oneof_case_[0] = kMetaTable;
+}
+inline void BatchTableRequest_Operation::clear_meta_table() {
+  if (_internal_has_meta_table()) {
+    if (GetArenaForAllocation() == nullptr) {
+      delete op_.meta_table_;
+    }
+    clear_has_op();
+  }
+}
+inline ::io::deephaven::proto::backplane::grpc::MetaTableRequest* BatchTableRequest_Operation::release_meta_table() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.meta_table)
+  if (_internal_has_meta_table()) {
+    clear_has_op();
+    ::io::deephaven::proto::backplane::grpc::MetaTableRequest* temp = op_.meta_table_;
+    if (GetArenaForAllocation() != nullptr) {
+      temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+    }
+    op_.meta_table_ = nullptr;
+    return temp;
+  } else {
+    return nullptr;
+  }
+}
+inline const ::io::deephaven::proto::backplane::grpc::MetaTableRequest& BatchTableRequest_Operation::_internal_meta_table() const {
+  return _internal_has_meta_table()
+      ? *op_.meta_table_
+      : reinterpret_cast< ::io::deephaven::proto::backplane::grpc::MetaTableRequest&>(::io::deephaven::proto::backplane::grpc::_MetaTableRequest_default_instance_);
+}
+inline const ::io::deephaven::proto::backplane::grpc::MetaTableRequest& BatchTableRequest_Operation::meta_table() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.meta_table)
+  return _internal_meta_table();
+}
+inline ::io::deephaven::proto::backplane::grpc::MetaTableRequest* BatchTableRequest_Operation::unsafe_arena_release_meta_table() {
+  // @@protoc_insertion_point(field_unsafe_arena_release:io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.meta_table)
+  if (_internal_has_meta_table()) {
+    clear_has_op();
+    ::io::deephaven::proto::backplane::grpc::MetaTableRequest* temp = op_.meta_table_;
+    op_.meta_table_ = nullptr;
+    return temp;
+  } else {
+    return nullptr;
+  }
+}
+inline void BatchTableRequest_Operation::unsafe_arena_set_allocated_meta_table(::io::deephaven::proto::backplane::grpc::MetaTableRequest* meta_table) {
+  clear_op();
+  if (meta_table) {
+    set_has_meta_table();
+    op_.meta_table_ = meta_table;
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.meta_table)
+}
+inline ::io::deephaven::proto::backplane::grpc::MetaTableRequest* BatchTableRequest_Operation::_internal_mutable_meta_table() {
+  if (!_internal_has_meta_table()) {
+    clear_op();
+    set_has_meta_table();
+    op_.meta_table_ = CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::MetaTableRequest >(GetArenaForAllocation());
+  }
+  return op_.meta_table_;
+}
+inline ::io::deephaven::proto::backplane::grpc::MetaTableRequest* BatchTableRequest_Operation::mutable_meta_table() {
+  ::io::deephaven::proto::backplane::grpc::MetaTableRequest* _msg = _internal_mutable_meta_table();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.meta_table)
+  return _msg;
+}
+
 inline bool BatchTableRequest_Operation::has_op() const {
   return op_case() != OP_NOT_SET;
 }
@@ -40517,6 +40968,8 @@ BatchTableRequest::ops() const {
 #ifdef __GNUC__
   #pragma GCC diagnostic pop
 #endif  // __GNUC__
+// -------------------------------------------------------------------
+
 // -------------------------------------------------------------------
 
 // -------------------------------------------------------------------

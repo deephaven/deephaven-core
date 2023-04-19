@@ -152,8 +152,8 @@ public class TestDynamicTableWriter {
                 longCol("LC", 4),
                 floatCol("FC", 5.5f),
                 doubleCol("DC", QueryConstants.NULL_DOUBLE))
-                        .updateView("StrC=(String)null", "BLC=(Boolean)null", "DTC=(DateTime)null",
-                                "BIC=(java.math.BigInteger)null");
+                .updateView("StrC=(String)null", "BLC=(Boolean)null", "DTC=(DateTime)null",
+                        "BIC=(java.math.BigInteger)null");
         TstUtils.assertTableEquals(expected1, result);
 
         final Row row = writer.getRowWriter();

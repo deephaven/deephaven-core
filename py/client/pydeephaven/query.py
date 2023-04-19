@@ -3,9 +3,9 @@
 #
 
 from pydeephaven import Table
+from pydeephaven._table_interface import TableInterface
 from pydeephaven._table_ops import *
 from pydeephaven.dherror import DHError
-from pydeephaven._table_interface import TableInterface
 
 
 class Query(TableInterface):
@@ -412,17 +412,29 @@ class Query(TableInterface):
         """
         return super().count(col)
 
-    def agg_by(self, agg: ComboAggregation, by: List[str]):
-        """ Add a Combined Aggregation operation to the query.
+    def agg_by(self, aggs: List[Aggregation], by: List[str]):
+        """ Add an Aggregate operation to the query.
 
         Args:
             by (List[str]): the group-by column names
-            agg (ComboAggregation): the combined aggregation definition
+            aggs (List[Aggregation]): the aggregations to be applied
 
         Returns:
             self
         """
-        return super().agg_by(agg, by)
+        return super().agg_by(aggs=aggs, by=by)
+
+    def agg_all_by(self, agg: Aggregation, by: List[str]):
+        """ Add an AggregateAll operation to the query.
+
+        Args:
+            agg (Aggregation): the aggregation to be applied
+            by (List[str]): the group-by column names
+
+        Returns:
+            self
+        """
+        return super().agg_all_by(agg=agg, by=by)
 
     def update_by(self, ops: List[UpdateByOperation], by: List[str]):
         """ Add an update-by operation to the query.
@@ -452,3 +464,19 @@ class Query(TableInterface):
             self
         """
         return super().snapshot_when(trigger_table, stamp_cols, initial, incremental, history)
+
+    def where_in(self, filter_table: Any, cols: List[str]):
+        """ Add a where_in operation to the query.
+
+        Returns:
+            self
+        """
+        return super().where_in(filter_table, cols)
+
+    def where_not_in(self, filter_table: Any, cols: List[str]):
+        """ Add a where_not_in operation to the query.
+
+        Returns:
+            self
+        """
+        return super().where_not_in(filter_table, cols)

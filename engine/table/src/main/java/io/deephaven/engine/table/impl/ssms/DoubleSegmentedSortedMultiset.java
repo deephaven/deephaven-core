@@ -2318,6 +2318,11 @@ public final class DoubleSegmentedSortedMultiset implements SegmentedSortedMulti
     }
 
     @Override
+    public double[] copyToArray() {
+        return toArray();
+    }
+
+    @Override
     public long size() {
         return size;
     }

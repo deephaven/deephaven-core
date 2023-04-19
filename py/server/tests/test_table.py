@@ -5,7 +5,7 @@ import unittest
 from types import SimpleNamespace
 from typing import List, Any
 
-from deephaven import DHError, read_csv, empty_table, SortDirection, AsOfMatchRule, time_table, ugp, new_table, dtypes
+from deephaven import DHError, read_csv, empty_table, SortDirection, time_table, ugp, new_table, dtypes
 from deephaven.agg import sum_, weighted_avg, avg, pct, group, count_, first, last, max_, median, min_, std, abs_sum, \
     var, formula, partition
 from deephaven.column import datetime_col
@@ -13,7 +13,7 @@ from deephaven.execution_context import make_user_exec_ctx
 from deephaven.html import to_html
 from deephaven.jcompat import j_hashmap
 from deephaven.pandas import to_pandas
-from deephaven.table import Table
+from deephaven.table import Table, SearchDisplayMode
 from tests.testbase import BaseTestCase
 
 
@@ -90,6 +90,12 @@ class TableTestCase(BaseTestCase):
         t = self.test_table.update_view(["A = a * b"])
         ct = t.coalesce()
         self.assertEqual(self.test_table.size, ct.size)
+
+    def test_flatten(self):
+        t = self.test_table.update_view(["A = a * b"])
+        self.assertFalse(t.is_flat)
+        ct = t.flatten()
+        self.assertTrue(ct.is_flat)
 
     def test_drop_columns(self):
         column_names = [f.name for f in self.test_table.columns]
@@ -321,11 +327,12 @@ class TableTestCase(BaseTestCase):
         right_table = self.test_table.where(["a % 2 > 0"]).drop_columns(
             cols=["b", "c", "d"]
         )
+
         with self.subTest("as-of join"):
             result_table = left_table.aj(right_table, on=["a"])
             self.assertGreater(result_table.size, 0)
             self.assertLessEqual(result_table.size, left_table.size)
-            result_table = left_table.aj(right_table, on="a", joins="e", match_rule=AsOfMatchRule.LESS_THAN)
+            result_table = left_table.aj(right_table, on="a < a", joins="e")
             self.assertGreater(result_table.size, 0)
             self.assertLessEqual(result_table.size, left_table.size)
 
@@ -333,9 +340,13 @@ class TableTestCase(BaseTestCase):
             result_table = left_table.raj(right_table, on=["a"])
             self.assertGreater(result_table.size, 0)
             self.assertLessEqual(result_table.size, left_table.size)
-            result_table = left_table.raj(right_table, on="a", joins="e", match_rule=AsOfMatchRule.GREATER_THAN)
+            result_table = left_table.raj(right_table, on="a > a", joins="e")
             self.assertGreater(result_table.size, 0)
             self.assertLessEqual(result_table.size, left_table.size)
+
+        with self.assertRaises(DHError) as cm:
+            left_table.aj(right_table, on=["a", "b", "c <= c", "d", "e"])
+        self.assertRegex(str(cm.exception), r"Invalid column name")
 
     #
     # Table operation category: Aggregation
@@ -608,6 +619,12 @@ class TableTestCase(BaseTestCase):
         self.assertIsNotNone(t)
 
     def test_layout_hints(self):
+        def verify_layout_hint(t: Table, layout_hint_str: str):
+            attrs = self.test_table.attributes()
+            attrs["LayoutHints"] = layout_hint_str
+            self.assertIsNotNone(t)
+            self.assertEquals(attrs, t.attributes())
+
         t = self.test_table.layout_hints(front="d", back="b", freeze="c", hide="d", column_groups=[
             {
                 "name": "Group1",
@@ -624,19 +641,28 @@ class TableTestCase(BaseTestCase):
                 "color": "RED"
             }
         ])
-        self.assertIsNotNone(t)
+        verify_layout_hint(t, "front=d;back=b;hide=d;freeze=c;columnGroups=name:Group1::children:a,b|name:Group2::children:c,d::color:#123456|name:Group3::children:e,f::color:#ff0000;")
 
         t = self.test_table.layout_hints(front=["d", "e"], back=["a", "b"], freeze=["c"], hide=["d"])
-        self.assertIsNotNone(t)
+        verify_layout_hint(t, "front=d,e;back=a,b;hide=d;freeze=c;")
 
         t = self.test_table.layout_hints(front="e")
-        self.assertIsNotNone(t)
+        verify_layout_hint(t, "front=e;")
 
         t = self.test_table.layout_hints(front=["e"])
-        self.assertIsNotNone(t)
+        verify_layout_hint(t, "front=e;")
+
+        t = self.test_table.layout_hints(search_display_mode=SearchDisplayMode.SHOW)
+        verify_layout_hint(t, "searchable=Show;")
+
+        t = self.test_table.layout_hints(search_display_mode=SearchDisplayMode.HIDE)
+        verify_layout_hint(t, "searchable=Hide;")
+
+        t = self.test_table.layout_hints(search_display_mode=SearchDisplayMode.DEFAULT)
+        verify_layout_hint(t, "")
 
         t = self.test_table.layout_hints()
-        self.assertIsNotNone(t)
+        verify_layout_hint(t, "")
 
         with self.assertRaises(DHError) as cm:
             t = self.test_table.layout_hints(front=["e"], back=True)

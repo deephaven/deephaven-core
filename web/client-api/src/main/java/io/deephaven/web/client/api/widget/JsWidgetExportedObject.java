@@ -3,6 +3,8 @@
  */
 package io.deephaven.web.client.api.widget;
 
+import com.vertispan.tsdefs.annotations.TsInterface;
+import com.vertispan.tsdefs.annotations.TsName;
 import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExportedTableCreationResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.TypedTicket;
@@ -11,10 +13,13 @@ import io.deephaven.web.client.api.JsTable;
 import io.deephaven.web.client.api.WorkerConnection;
 import io.deephaven.web.client.api.console.JsVariableChanges;
 import io.deephaven.web.client.api.console.JsVariableDefinition;
+import io.deephaven.web.client.api.console.JsVariableType;
 import io.deephaven.web.client.state.ClientTableState;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsProperty;
 
+@TsInterface
+@TsName(namespace = "dh", name = "WidgetExportedObject")
 public class JsWidgetExportedObject {
     private final WorkerConnection connection;
 
@@ -32,7 +37,7 @@ public class JsWidgetExportedObject {
 
     @JsMethod
     public Promise<?> fetch() {
-        if (getType().equals(JsVariableChanges.TABLE)) {
+        if (getType().equals(JsVariableType.TABLE)) {
             return Callbacks.<ExportedTableCreationResponse, Object>grpcUnaryPromise(c -> {
                 connection.tableServiceClient().getExportedTableCreationResponse(ticket.getTicket(),
                         connection.metadata(),

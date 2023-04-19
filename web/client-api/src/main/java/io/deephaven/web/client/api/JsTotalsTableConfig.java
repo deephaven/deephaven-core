@@ -3,6 +3,7 @@
  */
 package io.deephaven.web.client.api;
 
+import com.vertispan.tsdefs.annotations.TsTypeRef;
 import elemental2.core.Global;
 import elemental2.core.JsArray;
 import elemental2.core.JsObject;
@@ -49,12 +50,13 @@ public class JsTotalsTableConfig {
 
     public boolean showTotalsByDefault = false;
     public boolean showGrandTotalsByDefault = false;
-    public String defaultOperation = SUM;
-    public JsPropertyMap<JsArray<JsString>> operationMap = Js.cast(JsObject.create(null));
+    @TsTypeRef(JsAggregationOperation.class)
+    public String defaultOperation = JsAggregationOperation.SUM;
+    public JsPropertyMap<JsArray<@TsTypeRef(JsAggregationOperation.class) String>> operationMap =
+            Js.cast(JsObject.create(null));
 
-    public JsArray<JsString> groupBy = new JsArray<>();
+    public JsArray<String> groupBy = new JsArray<>();
 
-    @JsConstructor
     public JsTotalsTableConfig() {}
 
     @JsIgnore
@@ -123,7 +125,7 @@ public class JsTotalsTableConfig {
                 builder.operationMap.set(kv[0], new JsArray<>());
                 for (String op : operations) {
                     checkOperation(op);
-                    builder.operationMap.get(kv[0]).push(Js.<JsString>cast(op));
+                    builder.operationMap.get(kv[0]).push(op);
                 }
             }
         }

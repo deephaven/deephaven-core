@@ -18,6 +18,7 @@ import org.jpy.PyObject;
 import javax.inject.Provider;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyComplete;
 import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyOnNext;
@@ -47,8 +48,7 @@ public class PythonAutoCompleteObserver extends SessionCloseableObserver<AutoCom
     public void onNext(AutoCompleteRequest value) {
         switch (value.getRequestCase()) {
             case OPEN_DOCUMENT: {
-                final OpenDocumentRequest openDoc = value.getOpenDocument();
-                final TextDocumentItem doc = openDoc.getTextDocument();
+                final TextDocumentItem doc = value.getOpenDocument().getTextDocument();
                 PyObject completer = (PyObject) scriptSession.get().getVariable("jedi_settings");
                 completer.callMethod("open_doc", doc.getText(), doc.getUri(), doc.getVersion());
                 break;
@@ -70,37 +70,46 @@ public class PythonAutoCompleteObserver extends SessionCloseableObserver<AutoCom
                 }
 
                 completer.callMethod("update_doc", document, uri, version);
-                break;
-            }
-            case GET_COMPLETION_ITEMS: {
-                GetCompletionItemsRequest request = value.getGetCompletionItems();
-                SessionState.ExportObject<ScriptSession> exportedConsole =
-                        session.getExport(request.getConsoleId(), "consoleId");
-                session.nonExport()
-                        .require(exportedConsole)
-                        .onError(responseObserver)
-                        .submit(() -> {
-                            getCompletionItems(request, exportedConsole, responseObserver);
-                        });
+                // TODO (https://github.com/deephaven/deephaven-core/issues/3614): Add publish diagnostics
+                // responseObserver.onNext(AutoCompleteResponse.newBuilder().setDiagnosticPublish());
                 break;
             }
             case CLOSE_DOCUMENT: {
-                CloseDocumentRequest request = value.getCloseDocument();
                 PyObject completer = (PyObject) scriptSession.get().getVariable("jedi_settings");
+                CloseDocumentRequest request = value.getCloseDocument();
                 completer.callMethod("close_doc", request.getTextDocument().getUri());
                 break;
             }
             case REQUEST_NOT_SET: {
                 throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "Autocomplete command missing request");
             }
+            default: {
+                // Maintain compatibility with older clients
+                // The only autocomplete type supported before the consoleId was moved to the parent request was
+                // GetCompletionItems
+                final io.deephaven.proto.backplane.grpc.Ticket consoleId =
+                        value.hasConsoleId() ? value.getConsoleId() : value.getGetCompletionItems().getConsoleId();
+                SessionState.ExportObject<ScriptSession> exportedConsole = session.getExport(consoleId, "consoleId");
+                session.nonExport()
+                        .require(exportedConsole)
+                        .onError(responseObserver)
+                        .submit(() -> {
+                            handleAutocompleteRequest(value, exportedConsole, responseObserver);
+                        });
+            }
         }
     }
 
-    private void getCompletionItems(GetCompletionItemsRequest request,
+    private void handleAutocompleteRequest(AutoCompleteRequest request,
             SessionState.ExportObject<ScriptSession> exportedConsole,
             StreamObserver<AutoCompleteResponse> responseObserver) {
-        final ScriptSession scriptSession = exportedConsole.get();
+        // Maintain compatibility with older clients
+        // The only autocomplete type supported before the consoleId was moved to the parent request was
+        // GetCompletionItems
+        final int requestId =
+                request.getRequestId() > 0 ? request.getRequestId() : request.getGetCompletionItems().getRequestId();
         try {
+            final ScriptSession scriptSession = exportedConsole.get();
             PyObject completer = (PyObject) scriptSession.getVariable("jedi_settings");
             boolean canJedi = completer.callMethod("is_enabled").getBooleanValue();
             if (!canJedi) {
@@ -108,90 +117,40 @@ public class PythonAutoCompleteObserver extends SessionCloseableObserver<AutoCom
                 // send back an empty, failed response...
                 safelyOnNext(responseObserver,
                         AutoCompleteResponse.newBuilder()
-                                .setCompletionItems(GetCompletionItemsResponse.newBuilder()
-                                        .setSuccess(false)
-                                        .setRequestId(request.getRequestId()))
+                                .setSuccess(false)
+                                .setRequestId(requestId)
                                 .build());
                 return;
             }
-            final VersionedTextDocumentIdentifier doc = request.getTextDocument();
-            final Position pos = request.getPosition();
-            final long startNano = System.nanoTime();
 
-            if (log.isTraceEnabled()) {
-                String text = completer.call("get_doc", doc.getUri()).getStringValue();
-                log.trace().append("Completion version ").append(doc.getVersion())
-                        .append(" has source code:").append(text).endl();
-            }
-            final PyObject results = completer.callMethod("do_completion", doc.getUri(), doc.getVersion(),
-                    // our java is 0-indexed lines, 1-indexed chars. jedi is 1-indexed-both.
-                    // we'll keep that translation ugliness to the in-java result-processing.
-                    pos.getLine() + 1, pos.getCharacter());
-            if (!results.isList()) {
-                throw new UnsupportedOperationException(
-                        "Expected list from jedi_settings.do_completion, got " + results.call("repr"));
-            }
-            final long nanosJedi = System.nanoTime();
-            // translate from-python list of completion results. For now, each item in the outer list is a [str, int]
-            // which contains the text of the replacement, and the column where is should be inserted.
-            List<CompletionItem> finalItems = new ArrayList<>();
+            AutoCompleteResponse.Builder response = AutoCompleteResponse.newBuilder();
 
-            for (PyObject result : results.asList()) {
-                if (!result.isList()) {
-                    throw new UnsupportedOperationException("Expected list-of-lists from jedi_settings.do_completion, "
-                            +
-                            "got bad result " + result.call("repr") + " from full results: " + results.call("repr"));
+            switch (request.getRequestCase()) {
+                case GET_COMPLETION_ITEMS: {
+                    response.setCompletionItems(getCompletionItems(request.getGetCompletionItems(), completer));
+                    break;
                 }
-                // we expect [ "completion text", start_column ] as our result.
-                // in the future we may want to get more interesting info from jedi to pass back to client
-                final List<PyObject> items = result.asList();
-                String completionName = items.get(0).getStringValue();
-                int start = items.get(1).getIntValue();
-                final CompletionItem.Builder item = CompletionItem.newBuilder();
-                final TextEdit.Builder textEdit = item.getTextEditBuilder();
-                textEdit.setText(completionName);
-                final DocumentRange.Builder range = textEdit.getRangeBuilder();
-                item.setStart(start);
-                item.setLabel(completionName);
-                item.setLength(completionName.length());
-                range.getStartBuilder().setLine(pos.getLine()).setCharacter(start);
-                range.getEndBuilder().setLine(pos.getLine()).setCharacter(pos.getCharacter());
-                item.setInsertTextFormat(2);
-                item.setSortText(ChunkerCompleter.sortable(finalItems.size()));
-                finalItems.add(item.build());
-            }
-
-            final long nanosBuiltResponse = System.nanoTime();
-
-            final GetCompletionItemsResponse builtItems = GetCompletionItemsResponse.newBuilder()
-                    .setSuccess(true)
-                    .setRequestId(request.getRequestId())
-                    .addAllItems(finalItems)
-                    .build();
-
-            try {
-                safelyOnNext(responseObserver,
-                        AutoCompleteResponse.newBuilder()
-                                .setCompletionItems(builtItems)
-                                .build());
-            } finally {
-                // let's track how long completions take, as it's known that some
-                // modules like numpy can cause slow completion, and we'll want to know what was causing them
-                final long totalCompletionNanos = nanosBuiltResponse - startNano;
-                final long totalJediNanos = nanosJedi - startNano;
-                final long totalResponseBuildNanos = nanosBuiltResponse - nanosJedi;
-                // only log completions taking more than 100ms
-                if (totalCompletionNanos > HUNDRED_MS_IN_NS && log.isTraceEnabled()) {
-                    log.trace().append("Found ")
-                            .append(finalItems.size())
-                            .append(" jedi completions from doc ")
-                            .append(doc.getVersion())
-                            .append("\tjedi_time=").append(toMillis(totalJediNanos))
-                            .append("\tbuild_response_time=").append(toMillis(totalResponseBuildNanos))
-                            .append("\ttotal_complete_time=").append(toMillis(totalCompletionNanos))
-                            .endl();
+                case GET_SIGNATURE_HELP: {
+                    response.setSignatures(getSignatureHelp(request.getGetSignatureHelp(), completer));
+                    break;
+                }
+                case GET_HOVER: {
+                    response.setHover(getHover(request.getGetHover(), completer));
+                    break;
+                }
+                case GET_DIAGNOSTIC: {
+                    // TODO (https://github.com/deephaven/deephaven-core/issues/3614): Add user requested diagnostics
+                    response.setDiagnostic(GetPullDiagnosticResponse.getDefaultInstance());
+                    break;
                 }
             }
+
+            safelyOnNext(responseObserver,
+                    response
+                            .setSuccess(true)
+                            .setRequestId(requestId)
+                            .build());
+
         } catch (Throwable exception) {
             if (ConsoleServiceGrpcImpl.QUIET_AUTOCOMPLETE_ERRORS) {
                 exception.printStackTrace();
@@ -203,14 +162,137 @@ public class PythonAutoCompleteObserver extends SessionCloseableObserver<AutoCom
             }
             safelyOnNext(responseObserver,
                     AutoCompleteResponse.newBuilder()
-                            .setCompletionItems(GetCompletionItemsResponse.newBuilder()
-                                    .setSuccess(false)
-                                    .setRequestId(request.getRequestId()))
+                            .setSuccess(false)
+                            .setRequestId(requestId)
                             .build());
             if (exception instanceof Error) {
                 throw exception;
             }
         }
+    }
+
+    private GetCompletionItemsResponse getCompletionItems(GetCompletionItemsRequest request, PyObject completer) {
+        final VersionedTextDocumentIdentifier doc = request.getTextDocument();
+        final Position pos = request.getPosition();
+
+        final PyObject results = completer.callMethod("do_completion", doc.getUri(), doc.getVersion(),
+                // our java is 0-indexed lines and chars. jedi is 1-indexed lines and 0-indexed chars
+                // we'll keep that translation ugliness to the in-java result-processing.
+                pos.getLine() + 1, pos.getCharacter());
+        if (!results.isList()) {
+            throw new UnsupportedOperationException(
+                    "Expected list from jedi_settings.do_completion, got " + results.call("repr"));
+        }
+        // translate from-python list of completion results. For now, each item in the outer list is a [str, int]
+        // which contains the text of the replacement, and the column where it should be inserted.
+        List<CompletionItem> finalItems = new ArrayList<>();
+
+        for (PyObject result : results.asList()) {
+            if (!result.isList()) {
+                throw new UnsupportedOperationException("Expected list-of-lists from jedi_settings.do_completion, "
+                        +
+                        "got bad result " + result.call("repr") + " from full results: " + results.call("repr"));
+            }
+            // we expect [ "completion text", start_column, description, docstring, kind ] as our result.
+            // in the future we may want to get more interesting info from jedi to pass back to client
+            final List<PyObject> items = result.asList();
+            String completionName = items.get(0).getStringValue();
+            int start = items.get(1).getIntValue();
+            final CompletionItem.Builder item = CompletionItem.newBuilder();
+            final TextEdit.Builder textEdit = item.getTextEditBuilder();
+            textEdit.setText(completionName);
+            final DocumentRange.Builder range = textEdit.getRangeBuilder();
+            item.setStart(start);
+            item.setLabel(completionName);
+            item.setLength(completionName.length());
+            item.setDetail(items.get(2).getStringValue());
+            item.setDocumentation(
+                    MarkupContent.newBuilder().setValue(items.get(3).getStringValue()).setKind("plaintext").build());
+            item.setKind(items.get(4).getIntValue());
+            range.getStartBuilder().setLine(pos.getLine()).setCharacter(start);
+            range.getEndBuilder().setLine(pos.getLine()).setCharacter(pos.getCharacter());
+            item.setInsertTextFormat(2);
+            item.setSortText(ChunkerCompleter.sortable(finalItems.size()));
+            finalItems.add(item.build());
+        }
+
+        return GetCompletionItemsResponse.newBuilder()
+                .setSuccess(true)
+                .setRequestId(request.getRequestId())
+                .addAllItems(finalItems)
+                .build();
+    }
+
+    private GetSignatureHelpResponse getSignatureHelp(GetSignatureHelpRequest request, PyObject completer) {
+        final VersionedTextDocumentIdentifier doc = request.getTextDocument();
+        final Position pos = request.getPosition();
+
+        final PyObject results = completer.callMethod("do_signature_help", doc.getUri(), doc.getVersion(),
+                // our java is 0-indexed lines and chars. jedi is 1-indexed lines and 0-indexed chars
+                // we'll keep that translation ugliness to the in-java result-processing.
+                pos.getLine() + 1, pos.getCharacter());
+        if (!results.isList()) {
+            throw new UnsupportedOperationException(
+                    "Expected list from jedi_settings.do_signature_help, got " + results.call("repr"));
+        }
+
+        // translate from-python list of completion results. For now, each item in the outer list is a [str, int]
+        // which contains the text of the replacement, and the column where is should be inserted.
+        List<SignatureInformation> finalItems = new ArrayList<>();
+
+        for (PyObject result : results.asList()) {
+            if (!result.isList()) {
+                throw new UnsupportedOperationException("Expected list-of-lists from jedi_settings.do_signature_help, "
+                        +
+                        "got bad result " + result.call("repr") + " from full results: " + results.call("repr"));
+            }
+            // we expect [ label, documentation, [params], active_parameter ] as our result
+            final List<PyObject> signature = result.asList();
+            String label = signature.get(0).getStringValue();
+            String docstring = signature.get(1).getStringValue();
+            int activeParam = signature.get(3).getIntValue();
+
+            final SignatureInformation.Builder item = SignatureInformation.newBuilder();
+            item.setLabel(label);
+            item.setDocumentation(MarkupContent.newBuilder().setValue(docstring).setKind("plaintext").build());
+            item.setActiveParameter(activeParam);
+
+            signature.get(2).asList().forEach(obj -> {
+                final List<PyObject> param = obj.asList();
+                item.addParameters(ParameterInformation.newBuilder().setLabel(param.get(0).getStringValue())
+                        .setDocumentation(MarkupContent.newBuilder().setValue(param.get(1).getStringValue())
+                                .setKind("plaintext").build()));
+            });
+
+            finalItems.add(item.build());
+        }
+
+        return GetSignatureHelpResponse.newBuilder()
+                .addAllSignatures(finalItems)
+                .build();
+    }
+
+    private GetHoverResponse getHover(GetHoverRequest request, PyObject completer) {
+        final VersionedTextDocumentIdentifier doc = request.getTextDocument();
+        final Position pos = request.getPosition();
+
+        final PyObject result = completer.callMethod("do_hover", doc.getUri(), doc.getVersion(),
+                // our java is 0-indexed lines and chars. jedi is 1-indexed lines and 0-indexed chars
+                // we'll keep that translation ugliness to the in-java result-processing.
+                pos.getLine() + 1, pos.getCharacter());
+        if (!result.isList()) {
+            throw new UnsupportedOperationException(
+                    "Expected list from jedi_settings.do_hover, got " + result.call("repr"));
+        }
+
+        // We expect [ contents ] as our result
+        // We don't set the range b/c Jedi doesn't seem to give the word range under the cursor easily
+        // Monaco in the web auto-detects the word range for the hover if not set
+        final List<PyObject> hover = result.asList();
+
+        return GetHoverResponse.newBuilder()
+                .setContents(MarkupContent.newBuilder().setValue(hover.get(0).getStringValue()).setKind("markdown"))
+                .build();
     }
 
     private String toMillis(final long totalNanos) {

@@ -192,7 +192,7 @@ public class TestChunkedRegionedOperations {
                         "Ext  = II % 1024  == 0  ? null        : new SimpleExternalizable(II)",
                         "Fix  = Sym == null      ? null        : new BigInteger(Sym, 10)",
                         "Var  = Str == null      ? null        : new BigInteger(Str, 10)"))
-                                .withDefinitionUnsafe(definition);
+                .withDefinitionUnsafe(definition);
         // TODO: Add (Fixed|Variable)WidthObjectCodec columns
 
         final Table inputMissingData = ((QueryTable) TableTools.emptyTable(TABLE_SIZE)
@@ -215,7 +215,8 @@ public class TestChunkedRegionedOperations {
                         "Ser  = (SimpleSerializable) null",
                         "Ext  = (SimpleExternalizable) null",
                         "Fix  = (BigInteger) null",
-                        "Var  = (BigInteger) null")).withDefinitionUnsafe(definition);
+                        "Var  = (BigInteger) null"))
+                .withDefinitionUnsafe(definition);
 
         dataDirectory = Files.createTempDirectory(Paths.get(""), "TestChunkedRegionedOperations-").toFile();
         dataDirectory.deleteOnExit();

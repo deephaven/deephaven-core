@@ -3,11 +3,12 @@
  */
 package io.deephaven.web.client.api.widget.plot.enums;
 
+import com.vertispan.tsdefs.annotations.TsTypeDef;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.FigureDescriptor;
 import jsinterop.annotations.JsType;
 
-@JsType(name = "SourceType")
-@SuppressWarnings("unusable-by-js")
+@JsType(name = "SourceType", namespace = "dh.plot")
+@TsTypeDef(tsType = "number")
 public class JsSourceType {
     public static final int X = FigureDescriptor.SourceType.getX();
     public static final int Y = FigureDescriptor.SourceType.getY();
@@ -26,5 +27,6 @@ public class JsSourceType {
     public static final int LABEL = FigureDescriptor.SourceType.getLABEL();
     public static final int COLOR = FigureDescriptor.SourceType.getCOLOR();
     public static final int PARENT = FigureDescriptor.SourceType.getPARENT();
+    public static final int TEXT = FigureDescriptor.SourceType.getTEXT();
     public static final int HOVER_TEXT = FigureDescriptor.SourceType.getHOVER_TEXT();
 }

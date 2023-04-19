@@ -57,6 +57,8 @@ import org.apache.avro.generic.GenericContainer;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableObject;
+import org.apache.kafka.clients.admin.Admin;
+import org.apache.kafka.clients.admin.ListTopicsResult;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.ProducerConfig;
@@ -71,6 +73,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
 import java.util.function.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -2171,11 +2174,12 @@ public class KafkaTools {
         }
 
         @Override
-        public void accept(List<? extends ConsumerRecord<?, ?>> consumerRecords) {
+        public long consume(List<? extends ConsumerRecord<?, ?>> consumerRecords) {
             try {
-                adapter.consumeRecords(consumerRecords);
+                return adapter.consumeRecords(consumerRecords);
             } catch (Exception e) {
                 acceptFailure(e);
+                return 0;
             }
         }
 
@@ -2183,5 +2187,20 @@ public class KafkaTools {
         public void acceptFailure(@NotNull Throwable cause) {
             streamToTableAdapter.acceptFailure(cause);
         }
+    }
+
+    public static Set<String> topics(@NotNull final Properties kafkaProperties) {
+        try (final Admin admin = Admin.create(kafkaProperties)) {
+            final ListTopicsResult result = admin.listTopics();
+            return result.names().get();
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException("Failed to list Kafka Topics for " + kafkaProperties, e);
+        }
+    }
+
+    public static String[] listTopics(@NotNull final Properties kafkaProperties) {
+        final Set<String> topics = topics(kafkaProperties);
+        final String[] r = new String[topics.size()];
+        return topics.toArray(r);
     }
 }

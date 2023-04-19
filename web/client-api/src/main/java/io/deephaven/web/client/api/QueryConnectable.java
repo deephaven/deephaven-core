@@ -3,6 +3,7 @@
  */
 package io.deephaven.web.client.api;
 
+import com.vertispan.tsdefs.annotations.TsIgnore;
 import elemental2.core.JsArray;
 import elemental2.core.JsSet;
 import elemental2.dom.CustomEventInit;
@@ -17,42 +18,24 @@ import io.deephaven.web.client.fu.CancellablePromise;
 import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.client.fu.LazyPromise;
 import io.deephaven.web.shared.data.ConnectToken;
-import io.deephaven.web.shared.data.LogItem;
 import io.deephaven.web.shared.fu.JsConsumer;
 import io.deephaven.web.shared.fu.JsRunnable;
-import io.deephaven.web.shared.fu.RemoverFn;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
-import jsinterop.annotations.JsProperty;
 import jsinterop.base.JsPropertyMap;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import static io.deephaven.web.client.ide.IdeConnection.HACK_CONNECTION_FAILURE;
 import static io.deephaven.web.shared.fu.PromiseLike.CANCELLATION_MESSAGE;
 
 /**
  * JS-exposed supertype handling details about connecting to a deephaven query worker. Wraps the WorkerConnection
  * instance, which manages the connection to the API server.
  */
+@TsIgnore
 public abstract class QueryConnectable<Self extends QueryConnectable<Self>> extends HasEventHandling {
-
-    @JsProperty(namespace = "dh.QueryInfo") // "legacy" location
-    public static final String EVENT_TABLE_OPENED = "tableopened";
-    @JsProperty(namespace = "dh.QueryInfo")
-    public static final String EVENT_DISCONNECT = "disconnect";
-    @JsProperty(namespace = "dh.QueryInfo")
-    public static final String EVENT_RECONNECT = "reconnect";
-    @JsProperty(namespace = "dh.QueryInfo")
-    public static final String EVENT_CONNECT = "connect";
-
-    /**
-     * Removed in favor of a proper disconnect/reconnect. Event listeners should switch to the "disconnect" and
-     * "reconnect" events instead.
-     */
-    @JsProperty(namespace = "dh.IdeConnection")
-    @Deprecated
-    public static final String HACK_CONNECTION_FAILURE = "hack-connection-failure";
 
     private final List<IdeSession> sessions = new ArrayList<>();
     private final JsSet<Ticket> cancelled = new JsSet<>();
@@ -89,12 +72,6 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>> exte
                 "The event dh.IdeConnection.HACK_CONNECTION_FAILURE is deprecated and will be removed in a later release");
     }
 
-    @Override
-    @JsMethod
-    public RemoverFn addEventListener(String name, EventFn callback) {
-        return super.addEventListener(name, callback);
-    }
-
     protected Promise<Void> onConnected() {
         if (connected) {
             return Promise.resolve((Void) null);
@@ -104,8 +81,8 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>> exte
         }
 
         return new Promise<>((resolve, reject) -> addEventListenerOneShot(
-                EventPair.of(EVENT_CONNECT, e -> resolve.onInvoke((Void) null)),
-                EventPair.of(EVENT_DISCONNECT, e -> reject.onInvoke("Connection disconnected"))));
+                EventPair.of(QueryInfoConstants.EVENT_CONNECT, e -> resolve.onInvoke((Void) null)),
+                EventPair.of(QueryInfoConstants.EVENT_DISCONNECT, e -> reject.onInvoke("Connection disconnected"))));
     }
 
     @JsIgnore
@@ -228,11 +205,11 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>> exte
         connected = true;
         notifiedConnectionError = false;
 
-        fireEvent(EVENT_CONNECT);
+        fireEvent(QueryInfoConstants.EVENT_CONNECT);
 
         if (hasDisconnected) {
-            if (hasListeners(EVENT_RECONNECT)) {
-                fireEvent(EVENT_RECONNECT);
+            if (hasListeners(QueryInfoConstants.EVENT_RECONNECT)) {
+                fireEvent(QueryInfoConstants.EVENT_RECONNECT);
             } else {
                 DomGlobal.console.log(logPrefix()
                         + "Query reconnected (to prevent this log message, handle the EVENT_RECONNECT event)");
@@ -260,8 +237,8 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>> exte
 
         hasDisconnected = true;
 
-        if (hasListeners(EVENT_DISCONNECT)) {
-            this.fireEvent(QueryConnectable.EVENT_DISCONNECT);
+        if (hasListeners(QueryInfoConstants.EVENT_DISCONNECT)) {
+            this.fireEvent(QueryInfoConstants.EVENT_DISCONNECT);
         } else {
             DomGlobal.console.log(logPrefix()
                     + "Query disconnected (to prevent this log message, handle the EVENT_DISCONNECT event)");

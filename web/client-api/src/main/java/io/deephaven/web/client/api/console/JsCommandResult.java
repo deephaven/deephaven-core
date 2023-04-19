@@ -3,8 +3,12 @@
  */
 package io.deephaven.web.client.api.console;
 
+import com.vertispan.tsdefs.annotations.TsInterface;
+import com.vertispan.tsdefs.annotations.TsName;
 import jsinterop.annotations.JsProperty;
 
+@TsInterface
+@TsName(namespace = "dh.ide", name = "CommandResult")
 public class JsCommandResult {
     private JsVariableChanges changes;
     private String error;

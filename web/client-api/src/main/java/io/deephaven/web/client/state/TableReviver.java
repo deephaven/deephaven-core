@@ -79,7 +79,7 @@ public class TableReviver implements HasTableBinding {
             JsLog.debug("Attempting revive on ", state);
             state.maybeRevive(metadata).then(
                     success -> {
-                        state.forActiveLifecycles(t -> t.revive(state));
+                        state.forActiveLifecycles(t -> ((JsTable) t).revive(state));
                         return null;
                     }, failure -> {
                         state.forActiveLifecycles(t -> t.die(failure));
@@ -137,8 +137,7 @@ public class TableReviver implements HasTableBinding {
             } else {
                 ClientTableState succeeded = all.remove(new TableTicket(ticket.getTicket_asU8()));
                 succeeded.setResolution(ClientTableState.ResolutionState.RUNNING);
-                succeeded.forActiveLifecycles(t -> t.revive(succeeded));
-
+                succeeded.forActiveLifecycles(t -> ((JsTable) t).revive(succeeded));
             }
         });
         stream.onEnd(status -> {
@@ -178,7 +177,7 @@ public class TableReviver implements HasTableBinding {
     @Override
     public void fireEvent(String name, CustomEventInit e) {
         switch (name) {
-            case HasEventHandling.EVENT_REQUEST_FAILED:
+            case JsTable.EVENT_REQUEST_FAILED:
                 // log this failure
                 JsLog.debug("Revivification failed", e.getDetail());
                 //

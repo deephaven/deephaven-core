@@ -58,6 +58,11 @@ public final class LongVectorDirect implements LongVector {
     }
 
     @Override
+    public long[] copyToArray() {
+        return Arrays.copyOf(data, data.length);
+    }
+
+    @Override
     public CloseablePrimitiveIteratorOfLong iterator(final long fromIndexInclusive, final long toIndexExclusive) {
         if (fromIndexInclusive == 0 && toIndexExclusive == data.length) {
             return CloseablePrimitiveIteratorOfLong.of(data);

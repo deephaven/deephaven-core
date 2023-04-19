@@ -30,11 +30,11 @@ public class Sort {
         if (values == null) {
             return null;
         }
-        if (values.size() == 0) {
+        if (values.isEmpty()) {
             return values.toArray();
         }
 
-        final T[] vs = values.toArray();
+        final T[] vs = values.copyToArray();
         Arrays.sort(vs, comparator);
         return vs;
     }
@@ -93,11 +93,11 @@ public class Sort {
             return null;
         }
 
-        if (values.size() == 0) {
+        if (values.isEmpty()) {
             return values.toArray();
         }
 
-        final T[] vs = values.toArray();
+        final T[] vs = values.copyToArray();
         Arrays.sort(vs, comparator.reversed());
         return vs;
     }
@@ -155,11 +155,11 @@ public class Sort {
             return null;
         }
 
-        if (values.size() == 0) {
-            return new ${pt.primitive}[0];
+        if (values.isEmpty()) {
+            return values.toArray();
         }
 
-        final ${pt.primitive}[] vs = Arrays.copyOf(values.toArray(), values.intSize("sort"));
+        final ${pt.primitive}[] vs = values.copyToArray();
         Arrays.sort(vs);
         return vs;
     }
@@ -213,11 +213,11 @@ public class Sort {
             return null;
         }
 
-        if (values.size() == 0) {
-            return new ${pt.primitive}[0];
+        if (values.isEmpty()) {
+            return values.toArray();
         }
 
-        final ${pt.primitive}[] vs = Arrays.copyOf(values.toArray(), values.intSize("sortDescending"));
+        final ${pt.primitive}[] vs = values.copyToArray();
         Arrays.sort(vs);
         ArrayUtils.reverse(vs);
 

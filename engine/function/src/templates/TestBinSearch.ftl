@@ -152,8 +152,6 @@ public class TestBinSearch extends BaseArrayTestCase {
 
 
     <#list primitiveTypes as pt>
-    <#if !pt.valueType.isBoolean >
-
 
     public void test${pt.boxed}BinSearchIndex() {
         assertEquals(NULL_INT, binSearchIndex((${pt.primitive}[]) null, (${pt.primitive}) 0, BinSearchAlgo.BS_ANY));
@@ -309,7 +307,5 @@ public class TestBinSearch extends BaseArrayTestCase {
         assertEquals(28, rawBinSearchIndex(v, (${pt.primitive}) 25, BinSearchAlgo.BS_LOWEST));
     }
 
-
-    </#if>
     </#list>
 }

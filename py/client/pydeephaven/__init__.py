@@ -26,8 +26,7 @@ Examples:
 from .table import Table
 from .session import Session
 from .dherror import DHError
-from .combo_agg import ComboAggregation
 from .constants import SortDirection, MatchRule
 from .query import Query
 
-__version__ = "0.23.0"
+__version__ = "0.24.0"
