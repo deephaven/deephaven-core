@@ -1,9 +1,8 @@
-package io.deephaven.engine.table.impl.updateby.ema;
+package io.deephaven.engine.table.impl.updateby.em;
 
-import io.deephaven.api.updateby.BadDataBehavior;
 import io.deephaven.api.updateby.OperationControl;
+import io.deephaven.chunk.CharChunk;
 import io.deephaven.chunk.Chunk;
-import io.deephaven.chunk.FloatChunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
@@ -16,18 +15,20 @@ import org.jetbrains.annotations.Nullable;
 
 import static io.deephaven.util.QueryConstants.*;
 
-public class FloatEMAOperator extends BasePrimitiveEMAOperator {
-    private final ColumnSource<?> valueSource;
+public class CharEMOperator extends BasePrimitiveEMOperator {
+    public final ColumnSource<?> valueSource;
+    // region extra-fields
+    // endregion extra-fields
 
-    protected class Context extends BasePrimitiveEMAOperator.Context {
-        public FloatChunk<? extends Values> floatValueChunk;
+    protected class Context extends BasePrimitiveEMOperator.Context {
+        public CharChunk<? extends Values> charValueChunk;
 
         protected Context(final int chunkSize) {
             super(chunkSize);
         }
 
         @Override
-        public void accumulateCumulative(RowSequence inputKeys,
+        public void accumulateCumulative(@NotNull RowSequence inputKeys,
                                          Chunk<? extends Values>[] valueChunkArr,
                                          LongChunk<? extends Values> tsChunk,
                                          int len) {
@@ -38,19 +39,15 @@ public class FloatEMAOperator extends BasePrimitiveEMAOperator {
                 // compute with ticks
                 for (int ii = 0; ii < len; ii++) {
                     // read the value from the values chunk
-                    final float input = floatValueChunk.get(ii);
-                    final boolean isNull = input == NULL_FLOAT;
-                    final boolean isNan = Float.isNaN(input);
+                    final char input = charValueChunk.get(ii);
 
-                    if (isNull || isNan) {
-                        handleBadData(this, isNull, isNan);
+                    if (input == NULL_CHAR) {
+                        handleBadData(this, true, false);
                     } else {
                         if (curVal == NULL_DOUBLE) {
                             curVal = input;
                         } else {
-                            final double decayedVal = alpha * curVal;
-                            // Create EMAvg by adding decayed value to the 1-minus-alpha-weighted input.
-                            curVal = decayedVal + (oneMinusAlpha * input);
+                            curVal = aggFunction.apply(curVal, input, opAlpha, opOneMinusAlpha);
                         }
                     }
                     outputValues.set(ii, curVal);
@@ -59,29 +56,28 @@ public class FloatEMAOperator extends BasePrimitiveEMAOperator {
                 // compute with time
                 for (int ii = 0; ii < len; ii++) {
                     // read the value from the values chunk
-                    final float input = floatValueChunk.get(ii);
+                    final char input = charValueChunk.get(ii);
                     final long timestamp = tsChunk.get(ii);
-                    final boolean isNull = input == NULL_FLOAT;
-                    final boolean isNan = Float.isNaN(input);
+                    //noinspection ConstantConditions
+                    final boolean isNull = input == NULL_CHAR;
                     final boolean isNullTime = timestamp == NULL_LONG;
-                    // Handle bad data first
-                    if (isNull || isNan) {
-                        handleBadData(this, isNull, isNan);
+                    if (isNull) {
+                        handleBadData(this, true, false);
                     } else if (isNullTime) {
                         // no change to curVal and lastStamp
                     } else if (curVal == NULL_DOUBLE) {
-                        // If the data looks good, and we have a null ema,  just accept the current value
                         curVal = input;
                         lastStamp = timestamp;
                     } else {
                         final long dt = timestamp - lastStamp;
-                        if (dt != 0) {
-                            final double alpha = Math.exp(-dt / (double) reverseWindowScaleUnits);
-                            final double decayedVal = alpha * curVal;
-                            // Create EMAvg by adding decayed value to the 1-minus-alpha-weighted input.
-                            curVal = decayedVal + ((1 - alpha) * input);
-                            lastStamp = timestamp;
+                        if (dt != lastDt) {
+                            // Alpha is dynamic based on time, but only recalculated when needed
+                            alpha = Math.exp(-dt / (double) reverseWindowScaleUnits);
+                            oneMinusAlpha = 1.0 - alpha;
+                            lastDt = dt;
                         }
+                        curVal = aggFunction.apply(curVal, input, alpha, oneMinusAlpha);
+                        lastStamp = timestamp;
                     }
                     outputValues.set(ii, curVal);
                 }
@@ -93,18 +89,13 @@ public class FloatEMAOperator extends BasePrimitiveEMAOperator {
 
         @Override
         public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            floatValueChunk = valuesChunk.asFloatChunk();
+            charValueChunk = valuesChunk.asCharChunk();
         }
 
         @Override
         public boolean isValueValid(long atKey) {
-            final float value = valueSource.getFloat(atKey);
-            if (value == NULL_FLOAT) {
-                return false;
-            }
-            return !Float.isNaN(value) || control.onNanValueOrDefault() != BadDataBehavior.SKIP;
+            return valueSource.getChar(atKey) != NULL_CHAR;
         }
-
 
         @Override
         public void push(int pos, int count) {
@@ -113,7 +104,7 @@ public class FloatEMAOperator extends BasePrimitiveEMAOperator {
     }
 
     /**
-     * An operator that computes an EMA from a float column using an exponential decay function.
+     * An operator that computes an EMA from a char column using an exponential decay function.
      *
      * @param pair                the {@link MatchPair} that defines the input/output for this operation
      * @param affectingColumns    the names of the columns that affect this ema
@@ -123,17 +114,18 @@ public class FloatEMAOperator extends BasePrimitiveEMAOperator {
      * @param windowScaleUnits      the smoothing window for the EMA. If no {@code timestampColumnName} is provided, this is measured in ticks, otherwise it is measured in nanoseconds
      * @param valueSource         a reference to the input column source for this operation
      */
-    public FloatEMAOperator(@NotNull final MatchPair pair,
-                            @NotNull final String[] affectingColumns,
-                            @Nullable final RowRedirection rowRedirection,
-                            @NotNull final OperationControl control,
-                            @Nullable final String timestampColumnName,
-                            final long windowScaleUnits,
-                            final ColumnSource<?> valueSource
-                            // region extra-constructor-args
-                            // endregion extra-constructor-args
+    public CharEMOperator(@NotNull final MatchPair pair,
+                          @NotNull final String[] affectingColumns,
+                          @Nullable final RowRedirection rowRedirection,
+                          @NotNull final OperationControl control,
+                          @Nullable final String timestampColumnName,
+                          final long windowScaleUnits,
+                          final ColumnSource<?> valueSource,
+                          @NotNull final EmFunction aggFunction
+                          // region extra-constructor-args
+                          // endregion extra-constructor-args
     ) {
-        super(pair, affectingColumns, rowRedirection, control, timestampColumnName, windowScaleUnits);
+        super(pair, affectingColumns, rowRedirection, control, timestampColumnName, windowScaleUnits, aggFunction);
         this.valueSource = valueSource;
         // region constructor
         // endregion constructor

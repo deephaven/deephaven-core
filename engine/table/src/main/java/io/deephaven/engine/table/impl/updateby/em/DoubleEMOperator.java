@@ -1,14 +1,15 @@
 /*
  * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharEMAOperator and regenerate
+ * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit FloatEMOperator and regenerate
  * ---------------------------------------------------------------------------------------------------------------------
  */
-package io.deephaven.engine.table.impl.updateby.ema;
+package io.deephaven.engine.table.impl.updateby.em;
 
+import io.deephaven.api.updateby.BadDataBehavior;
 import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.DoubleChunk;
 import io.deephaven.chunk.LongChunk;
-import io.deephaven.chunk.ByteChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
@@ -20,15 +21,11 @@ import org.jetbrains.annotations.Nullable;
 
 import static io.deephaven.util.QueryConstants.*;
 
-public class ByteEMAOperator extends BasePrimitiveEMAOperator {
-    public final ColumnSource<?> valueSource;
-    // region extra-fields
-    final byte nullValue;
-    // endregion extra-fields
+public class DoubleEMOperator extends BasePrimitiveEMOperator {
+    private final ColumnSource<?> valueSource;
 
-    protected class Context extends BasePrimitiveEMAOperator.Context {
-
-        public ByteChunk<? extends Values> byteValueChunk;
+    protected class Context extends BasePrimitiveEMOperator.Context {
+        public DoubleChunk<? extends Values> doubleValueChunk;
 
         protected Context(final int chunkSize) {
             super(chunkSize);
@@ -46,17 +43,17 @@ public class ByteEMAOperator extends BasePrimitiveEMAOperator {
                 // compute with ticks
                 for (int ii = 0; ii < len; ii++) {
                     // read the value from the values chunk
-                    final byte input = byteValueChunk.get(ii);
+                    final double input = doubleValueChunk.get(ii);
+                    final boolean isNull = input == NULL_DOUBLE;
+                    final boolean isNan = Double.isNaN(input);
 
-                    if (input == nullValue) {
-                        handleBadData(this, true, false);
+                    if (isNull || isNan) {
+                        handleBadData(this, isNull, isNan);
                     } else {
                         if (curVal == NULL_DOUBLE) {
                             curVal = input;
                         } else {
-                            final double decayedVal = alpha * curVal;
-                            // Create EMA by adding decayed value to the 1-minus-alpha-weighted input.
-                            curVal = decayedVal + (oneMinusAlpha * input);
+                            curVal = aggFunction.apply(curVal, input, opAlpha, opOneMinusAlpha);
                         }
                     }
                     outputValues.set(ii, curVal);
@@ -65,26 +62,26 @@ public class ByteEMAOperator extends BasePrimitiveEMAOperator {
                 // compute with time
                 for (int ii = 0; ii < len; ii++) {
                     // read the value from the values chunk
-                    final byte input = byteValueChunk.get(ii);
+                    final double input = doubleValueChunk.get(ii);
                     final long timestamp = tsChunk.get(ii);
-                    //noinspection ConstantConditions
-                    final boolean isNull = input == nullValue;
+                    final boolean isNull = input == NULL_DOUBLE;
+                    final boolean isNan = Double.isNaN(input);
                     final boolean isNullTime = timestamp == NULL_LONG;
-                    if (isNull) {
-                        handleBadData(this, true, false);
+                    // Handle bad data first
+                    if (isNull || isNan) {
+                        handleBadData(this, isNull, isNan);
                     } else if (isNullTime) {
                         // no change to curVal and lastStamp
                     } else if (curVal == NULL_DOUBLE) {
+                        // If the data looks good, and we have a null ema,  just accept the current value
                         curVal = input;
                         lastStamp = timestamp;
                     } else {
                         final long dt = timestamp - lastStamp;
                         if (dt != 0) {
-                            // Alpha is dynamic, based on time
                             final double alpha = Math.exp(-dt / (double) reverseWindowScaleUnits);
-                            final double decayedVal = alpha * curVal;
-                            // Create EMAvg by adding decayed value to the 1-minus-alpha-weighted input.
-                            curVal = decayedVal + (1 - alpha) * input;
+                            final double oneMinusAlpha = 1.0 - alpha;
+                            curVal = aggFunction.apply(curVal, input, alpha, oneMinusAlpha);
                             lastStamp = timestamp;
                         }
                     }
@@ -98,13 +95,18 @@ public class ByteEMAOperator extends BasePrimitiveEMAOperator {
 
         @Override
         public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            byteValueChunk = valuesChunk.asByteChunk();
+            doubleValueChunk = valuesChunk.asDoubleChunk();
         }
 
         @Override
         public boolean isValueValid(long atKey) {
-            return valueSource.getByte(atKey) != nullValue;
+            final double value = valueSource.getDouble(atKey);
+            if (value == NULL_DOUBLE) {
+                return false;
+            }
+            return !Double.isNaN(value) || control.onNanValueOrDefault() != BadDataBehavior.SKIP;
         }
+
 
         @Override
         public void push(int pos, int count) {
@@ -113,7 +115,7 @@ public class ByteEMAOperator extends BasePrimitiveEMAOperator {
     }
 
     /**
-     * An operator that computes an EMA from a byte column using an exponential decay function.
+     * An operator that computes an EMA from a double column using an exponential decay function.
      *
      * @param pair                the {@link MatchPair} that defines the input/output for this operation
      * @param affectingColumns    the names of the columns that affect this ema
@@ -123,21 +125,20 @@ public class ByteEMAOperator extends BasePrimitiveEMAOperator {
      * @param windowScaleUnits      the smoothing window for the EMA. If no {@code timestampColumnName} is provided, this is measured in ticks, otherwise it is measured in nanoseconds
      * @param valueSource         a reference to the input column source for this operation
      */
-    public ByteEMAOperator(@NotNull final MatchPair pair,
+    public DoubleEMOperator(@NotNull final MatchPair pair,
                            @NotNull final String[] affectingColumns,
                            @Nullable final RowRedirection rowRedirection,
                            @NotNull final OperationControl control,
                            @Nullable final String timestampColumnName,
                            final long windowScaleUnits,
-                           final ColumnSource<?> valueSource
+                           final ColumnSource<?> valueSource,
+                           @NotNull final EmFunction aggFunction
                            // region extra-constructor-args
-                               ,final byte nullValue
                            // endregion extra-constructor-args
     ) {
-        super(pair, affectingColumns, rowRedirection, control, timestampColumnName, windowScaleUnits);
+        super(pair, affectingColumns, rowRedirection, control, timestampColumnName, windowScaleUnits, aggFunction);
         this.valueSource = valueSource;
         // region constructor
-        this.nullValue = nullValue;
         // endregion constructor
     }
 

@@ -124,6 +124,12 @@ class UpdateByBuilder {
             throw new UnsupportedOperationException("EmsSpec not added to table.proto");
         }
 
+        // TODO: complete properly (DHC ticket #3666)
+        @Override
+        public UpdateByColumn.UpdateBySpec visit(EmMinMaxSpec spec) {
+            return null;
+        }
+
         @Override
         public UpdateByColumn.UpdateBySpec visit(FillBySpec f) {
             return UpdateByColumn.UpdateBySpec.newBuilder()
@@ -191,6 +197,12 @@ class UpdateByBuilder {
         // TODO: add this correctly to `table.proto` (DHC #3392)
         @Override
         public UpdateByColumn.UpdateBySpec visit(RollingProductSpec rps) {
+            return null;
+        }
+
+        // TODO: add this correctly to `table.proto` (DHC #3392)
+        @Override
+        public UpdateByColumn.UpdateBySpec visit(RollingCountSpec spec) {
             return null;
         }
     }

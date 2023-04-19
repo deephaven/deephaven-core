@@ -47,6 +47,12 @@ public class UpdateBySpecBuilderTest {
             return null;
         }
 
+        // TODO: complete properly (DHC ticket #3666)
+        @Override
+        public UpdateByColumn.UpdateBySpec visit(EmMinMaxSpec spec) {
+            return null;
+        }
+
         @Override
         public UpdateByColumn.UpdateBySpec visit(FillBySpec f) {
             return UpdateByColumn.UpdateBySpec.newBuilder().setFill(UpdateByFill.getDefaultInstance()).build();
@@ -74,7 +80,7 @@ public class UpdateBySpecBuilderTest {
                     .build();
         }
 
-        // TODO: add this correctly (DHC #3392)
+        // TODO: add this correctly (DHC #3666)
         @Override
         public UpdateByColumn.UpdateBySpec visit(DeltaSpec spec) {
             return null;
@@ -107,6 +113,12 @@ public class UpdateBySpecBuilderTest {
         // TODO: add this correctly (DHC #3392)
         @Override
         public UpdateByColumn.UpdateBySpec visit(RollingProductSpec rps) {
+            return null;
+        }
+
+        // TODO: add this correctly (DHC #3666)
+        @Override
+        public UpdateByColumn.UpdateBySpec visit(RollingCountSpec spec) {
             return null;
         }
     }

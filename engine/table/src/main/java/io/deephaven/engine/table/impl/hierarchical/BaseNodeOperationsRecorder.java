@@ -78,7 +78,7 @@ abstract class BaseNodeOperationsRecorder<TYPE> {
             return (nodeOperations.getRecordedAbsoluteViews().isEmpty()
                     ? input
                     : input.updateView(nodeOperations.getRecordedAbsoluteViews()))
-                            .sort(nodeOperations.getRecordedSorts());
+                    .sort(nodeOperations.getRecordedSorts());
         }
         // NB: We don't bother to drop the absolute columns; nothing gets to consume the output node tables directly.
         return input;

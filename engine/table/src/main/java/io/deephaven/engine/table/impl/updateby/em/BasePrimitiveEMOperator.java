@@ -1,4 +1,4 @@
-package io.deephaven.engine.table.impl.updateby.ema;
+package io.deephaven.engine.table.impl.updateby.em;
 
 import io.deephaven.api.updateby.BadDataBehavior;
 import io.deephaven.api.updateby.OperationControl;
@@ -13,12 +13,20 @@ import org.jetbrains.annotations.Nullable;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
-public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperator {
+public abstract class BasePrimitiveEMOperator extends BaseDoubleUpdateByOperator {
     protected final OperationControl control;
-    protected final double alpha;
-    protected double oneMinusAlpha;
+    protected final double opAlpha;
+    protected double opOneMinusAlpha;
+    final EmFunction aggFunction;
+
+    public interface EmFunction {
+        double apply(double prevVal, double curVal, double alpha, double oneMinusAlpha);
+    }
 
     public abstract class Context extends BaseDoubleUpdateByOperator.Context {
+        double alpha;
+        double oneMinusAlpha;
+        long lastDt = NULL_LONG;
         long lastStamp = NULL_LONG;
 
         Context(final int chunkSize) {
@@ -33,28 +41,30 @@ public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperato
     }
 
     /**
-     * An operator that computes an EMA from an input column using an exponential decay function.
+     * An operator that computes an EM output from an input column using an exponential decay function.
      *
      * @param pair the {@link MatchPair} that defines the input/output for this operation
      * @param affectingColumns the names of the columns that affect this ema
-     * @param rowRedirection the row redirection to use for the EMA output columns
-     * @param control the control parameters for EMA
+     * @param rowRedirection the row redirection to use for the EM operator output columns
+     * @param control the control parameters for EM operator
      * @param timestampColumnName an optional timestamp column. If this is null, it will be assumed time is measured in
      *        integer ticks.
-     * @param windowScaleUnits the smoothing window for the EMA. If no {@code timestampColumnName} is provided, this is
-     *        measured in ticks, otherwise it is measured in nanoseconds.
+     * @param windowScaleUnits the smoothing window for the EM operator. If no {@code timestampColumnName} is provided,
+     *        this is measured in ticks, otherwise it is measured in nanoseconds.
      */
-    public BasePrimitiveEMAOperator(@NotNull final MatchPair pair,
+    public BasePrimitiveEMOperator(@NotNull final MatchPair pair,
             @NotNull final String[] affectingColumns,
             @Nullable final RowRedirection rowRedirection,
             @NotNull final OperationControl control,
             @Nullable final String timestampColumnName,
-            final long windowScaleUnits) {
+            final long windowScaleUnits,
+            @NotNull final EmFunction aggFunction) {
         super(pair, affectingColumns, rowRedirection, timestampColumnName, windowScaleUnits, 0, false);
         this.control = control;
+        this.aggFunction = aggFunction;
 
-        alpha = Math.exp(-1.0 / (double) windowScaleUnits);
-        oneMinusAlpha = 1 - alpha;
+        opAlpha = Math.exp(-1.0 / (double) windowScaleUnits);
+        opOneMinusAlpha = 1 - opAlpha;
 
     }
 
@@ -76,12 +86,12 @@ public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperato
         boolean doReset = false;
         if (isNull) {
             if (control.onNullValueOrDefault() == BadDataBehavior.THROW) {
-                throw new TableDataException("Encountered null value during EMA processing");
+                throw new TableDataException("Encountered null value during Exponential Moving output processing");
             }
             doReset = control.onNullValueOrDefault() == BadDataBehavior.RESET;
         } else if (isNan) {
             if (control.onNanValueOrDefault() == BadDataBehavior.THROW) {
-                throw new TableDataException("Encountered NaN value during EMA processing");
+                throw new TableDataException("Encountered NaN value during Exponential Moving output processing");
             } else if (control.onNanValueOrDefault() == BadDataBehavior.POISON) {
                 ctx.curVal = Double.NaN;
             } else {
