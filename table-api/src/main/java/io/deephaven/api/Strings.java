@@ -18,6 +18,7 @@ import io.deephaven.api.filter.FilterOr;
 import io.deephaven.api.filter.FilterPattern;
 import io.deephaven.api.filter.FilterQuick;
 import io.deephaven.api.literal.Literal;
+import org.apache.commons.text.StringEscapeUtils;
 
 import java.util.Collection;
 import java.util.stream.Collectors;
@@ -372,6 +373,14 @@ public class Strings {
                 throw new IllegalArgumentException();
             }
             return String.format("%sL", literal);
+        }
+
+        @Override
+        public String visit(String literal) {
+            if (inverted) {
+                throw new IllegalArgumentException();
+            }
+            return '"' + StringEscapeUtils.escapeJava(literal) + '"';
         }
     }
 }

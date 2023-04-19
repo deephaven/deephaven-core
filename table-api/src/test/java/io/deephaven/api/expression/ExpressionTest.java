@@ -68,6 +68,8 @@ public class ExpressionTest {
         toString(Literal.of(false), "false");
         toString(Literal.of(42), "(int)42");
         toString(Literal.of(42L), "42L");
+        toString(Literal.of("foo bar"), "\"foo bar\"");
+        toString(Literal.of("\"foo bar\""), "\"\\\"foo bar\\\"\"");
     }
 
     @Test

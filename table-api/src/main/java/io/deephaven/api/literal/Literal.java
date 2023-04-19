@@ -40,6 +40,16 @@ public interface Literal extends Expression {
         return LiteralLong.of(value);
     }
 
+    /**
+     * Creates a literal String from {@code value}.
+     *
+     * @param value the value
+     * @return the literal
+     */
+    static Literal of(String value) {
+        return LiteralString.of(value);
+    }
+
     <T> T walk(Visitor<T> visitor);
 
     interface Visitor<T> {
@@ -49,5 +59,7 @@ public interface Literal extends Expression {
         T visit(int literal);
 
         T visit(long literal);
+
+        T visit(String literal);
     }
 }

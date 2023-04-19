@@ -28,6 +28,8 @@ public class MatchFilter extends WhereFilterImpl {
     private static final long serialVersionUID = 1L;
 
     public static MatchFilter ofStringValues(FilterMatches matches, boolean inverted) {
+        // Note: due to impl io.deephaven.engine.table.impl.select.MatchFilter.ColumnTypeConvertor.convertStringLiteral
+        // for cls == String.class, we are unable to match against the literal string "null"
         return new MatchFilter(
                 matches.caseInsensitive() ? CaseSensitivity.IgnoreCase : CaseSensitivity.MatchCase,
                 inverted ? MatchType.Inverted : MatchType.Regular,
@@ -444,12 +446,9 @@ public class MatchFilter extends WhereFilterImpl {
             return literal.walk(INSTANCE);
         }
 
-        // io.deephaven.engine.table.impl.select.MatchFilter.ColumnTypeConvertor.convertStringLiteral
-        // todo: can't search for the string literal "null" :s
-
         @Override
         public String visit(boolean literal) {
-            return literal ? "true" : "false";
+            return Boolean.toString(literal);
         }
 
         @Override
@@ -460,6 +459,11 @@ public class MatchFilter extends WhereFilterImpl {
         @Override
         public String visit(long literal) {
             return Long.toString(literal);
+        }
+
+        @Override
+        public String visit(String literal) {
+            return literal;
         }
     }
 }

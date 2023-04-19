@@ -571,6 +571,10 @@ class BatchTableRequestBuilder {
         return io.deephaven.proto.backplane.grpc.Literal.newBuilder().setBoolValue(x).build();
     }
 
+    private static io.deephaven.proto.backplane.grpc.Literal literal(String x) {
+        return io.deephaven.proto.backplane.grpc.Literal.newBuilder().setStringValue(x).build();
+    }
+
     static class ExpressionAdapter implements Expression.Visitor<Value>, Literal.Visitor<Value> {
         static Value adapt(Expression expression) {
             return expression.walk(new ExpressionAdapter());
@@ -598,6 +602,11 @@ class BatchTableRequestBuilder {
 
         @Override
         public Value visit(boolean literal) {
+            return Value.newBuilder().setLiteral(literal(literal)).build();
+        }
+
+        @Override
+        public Value visit(String literal) {
             return Value.newBuilder().setLiteral(literal(literal)).build();
         }
 
@@ -661,6 +670,11 @@ class BatchTableRequestBuilder {
 
         @Override
         public io.deephaven.proto.backplane.grpc.Literal visit(long literal) {
+            return literal(literal);
+        }
+
+        @Override
+        public io.deephaven.proto.backplane.grpc.Literal visit(String literal) {
             return literal(literal);
         }
     }

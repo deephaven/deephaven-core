@@ -26,6 +26,12 @@ public class LiteralTest {
         toString(Literal.of(42L), "42L");
     }
 
+    @Test
+    void stringValue() {
+        toString(Literal.of("my string"), "\"my string\"");
+        toString(Literal.of("\"my string\""), "\"\\\"my string\\\"\"");
+    }
+
     private static void toString(Literal value, String expected) {
         assertThat(toString(value)).isEqualTo(expected);
     }

@@ -270,6 +270,26 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
             }
 
             @Override
+            public WhereFilter visit(String rhs) {
+                switch (preferred.operator()) {
+                    case EQUALS:
+                        return new MatchFilter(lhs.name(), rhs);
+                    case NOT_EQUALS:
+                        return new MatchFilter(MatchType.Inverted, lhs.name(), rhs);
+                    case LESS_THAN:
+                        return new RangeConditionFilter(lhs.name(), Condition.LESS_THAN, rhs);
+                    case LESS_THAN_OR_EQUAL:
+                        return new RangeConditionFilter(lhs.name(), Condition.LESS_THAN_OR_EQUAL, rhs);
+                    case GREATER_THAN:
+                        return new RangeConditionFilter(lhs.name(), Condition.GREATER_THAN, rhs);
+                    case GREATER_THAN_OR_EQUAL:
+                        return new RangeConditionFilter(lhs.name(), Condition.GREATER_THAN_OR_EQUAL, rhs);
+                    default:
+                        throw new IllegalStateException("Unexpected operator " + original.operator());
+                }
+            }
+
+            @Override
             public WhereFilter visit(Filter rhs) {
                 return original();
             }
