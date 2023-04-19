@@ -44,11 +44,16 @@ artifacts {
 }
 
 tasks.register('gwtUnitTest', Test) { t ->
-
+//    gradle.projectsEvaluated {
+//        t.classpath += project(":web-client-api").tasks.getByName('gwtCompile').src
+//    }
     t.systemProperties = [
             'gwt.args':'-runStyle HtmlUnit -ea -style PRETTY',
-            'gwt.persistentunitcachedir':layout.buildDirectory.dir('unitTest-unitCache')
+            'gwt.persistentunitcachedir':layout.buildDirectory.dir('integrationTest-unitCache').get().asFile.absolutePath,
     ]
+    t.include '**/ClientUnitTestSuite.class'
+    t.useJUnit()
+    t.scanForTestClasses = false
 }
 
 // start a grpc-api server
@@ -65,17 +70,20 @@ tasks.register('gwtIntegrationTest', Test) { t ->
     t.dependsOn(deephavenDocker.portTask)
     doFirst {
         t.systemProperty('dh.server', 'http://localhost:' + deephavenDocker.port.get())
+        t.classpath += tasks.getByName('gwtCompile').src
+        t.classpath.files.each {
+            println it
+        }
     }
     t.finalizedBy(deephavenDocker.endTask)
     t.systemProperties = [
             'gwt.args':'-runStyle HtmlUnit -ea -style PRETTY',
-            'gwt.persistentunitcachedir':layout.buildDirectory.dir('integrationTest-unitCache').toString(),
+            'gwt.persistentunitcachedir':layout.buildDirectory.dir('integrationTest-unitCache').get().asFile.absolutePath,
 //            'dh.server':'http://localhost:' + deephavenDocker.port.get()
     ]
-    t.include '**/*TestSuite.class'
+    t.include '**/ClientIntegrationTestSuite.class'
     t.useJUnit()
     t.scanForTestClasses = false
-
 }
 
 project.tasks.getByName('quick').dependsOn project.tasks.withType(de.esoco.gwt.gradle.task.GwtCompileTask)

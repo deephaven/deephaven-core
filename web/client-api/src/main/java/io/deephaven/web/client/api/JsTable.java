@@ -71,6 +71,7 @@ import io.deephaven.web.shared.fu.JsConsumer;
 import io.deephaven.web.shared.fu.JsProvider;
 import io.deephaven.web.shared.fu.JsRunnable;
 import io.deephaven.web.shared.fu.RemoverFn;
+import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsOptional;
@@ -1722,8 +1723,8 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                 viewportRows.size());
     }
 
-
-    protected void processSnapshot() {
+    @JsIgnore
+    public void processSnapshot() {
         try {
             if (debounce == null) {
                 JsLog.debug("Skipping snapshot b/c debounce is null");

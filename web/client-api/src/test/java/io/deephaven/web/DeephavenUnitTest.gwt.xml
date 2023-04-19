@@ -1,0 +1,3 @@
+<module>
+    <inherits name="io.deephaven.web.DeephavenApi" />
+</module>

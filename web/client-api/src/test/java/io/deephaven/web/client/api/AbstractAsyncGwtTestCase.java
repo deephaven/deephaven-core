@@ -11,11 +11,17 @@ import elemental2.dom.DomGlobal;
 import elemental2.promise.IThenable;
 import elemental2.promise.Promise;
 import io.deephaven.web.client.api.subscription.ViewportData;
+import io.deephaven.web.client.fu.CancellablePromise;
+import io.deephaven.web.client.ide.IdeSession;
 import io.deephaven.web.shared.data.Viewport;
 import io.deephaven.web.shared.fu.JsRunnable;
 import io.deephaven.web.shared.fu.RemoverFn;
+import jsinterop.annotations.JsMethod;
+import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsProperty;
 import jsinterop.base.Js;
+import jsinterop.base.JsPropertyMap;
+import org.apache.tapestry.INamespace;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -25,7 +31,19 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import static elemental2.dom.DomGlobal.console;
+
 public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
+    @JsMethod(namespace = JsPackage.GLOBAL, name = "import")
+    private static native Promise<JsPropertyMap<Object>> importScript(String moduleName);
+    private static Promise<Void> importDhInternal() {
+        return importScript("dhinternal.js")
+                .then(module -> {
+                    Js.asPropertyMap(DomGlobal.window).set("dhinternal", module.get("dhinternal"));
+                    return Promise.resolve((Void) null);
+                });
+    }
+    public static final String localServer = System.getProperty("dhTestServer", "http://localhost:10000");
 
     public static class TableSourceBuilder {
         public TableSourceBuilder script(String tableName, String python, String groovy) {
@@ -35,11 +53,20 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
         }
 
         public TableSource build() {
-            return null;
+            return new TableSourceImpl();
         }
     }
     public interface TableSource {
         Promise<JsTable> table(String name);
+    }
+    private static class TableSourceImpl implements TableSource {
+        private JsArray<String> groovyScripts;
+        private JsArray<String> pythonScripts;
+
+        @Override
+        public Promise<JsTable> table(String name) {
+            return null;
+        }
     }
 
 
@@ -111,61 +138,47 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
      * Connects and authenticates to the specified server, and resolves once the specified query config has
      * become available.
      */
-    protected Promise<QueryInfo> connect(String queryConfigName) {
+    protected Promise<IdeSession> connect(TableSource tables) {
+        TableSourceImpl impl = (TableSourceImpl) tables;
         //start by delaying test finish by .5s so we fail fast in cases where we aren't set up right
-        delayTestFinish(2000);
-        //for example, if the server doesn't have the query config that we're expecting to get, we'll fail nearly right away
-        return new Promise<>((resolve, reject) -> {
-            IrisClient irisClient = new IrisClient(localServer);
-            irisClient.addEventListener(IrisClient.EVENT_CONNECT, e -> {
-                irisClient.login(LoginCredentials.of(username, password, "password", username)).then(success -> {
-                    //success, but we don't need to do anything, events are wired up to get specifics, grant another timeout
-
-                    delayTestFinish(2001 * TIMEOUT_SCALE);//if this (uniquely value'd) timeout fails, likely the config doesn't exist.
-
-                    return null;
-                }, failure -> {
-                    reject.onInvoke("login failed " + failure);
-                    return null;
-                });
-            });
-            EventFn[] eventFn = {};
-            eventFn[0] = e -> {
-                QueryInfo query = (QueryInfo) ((CustomEvent) e).detail;
-                console.log("config event: " + query.getName() + " [" + query.getStatus() + "]");
-                if (!queryConfigName.equals(query.getName())) {
-                    //unimportant, wait a  bit longer
-                    return;
-                }
-                if ("Running".equalsIgnoreCase(query.getStatus())) {
-                    // provide more detail in the console
-                    query.addEventListener(QueryInfo.EVENT_TABLE_METRICS, metricsEvent -> {
-                        JsPropertyMap<String> detail = (JsPropertyMap<String>) ((CustomEvent) metricsEvent).detail;
-                        console.log(detail.get("type") + ": " + detail.get("formatted"));
+        delayTestFinish(500);
+        return importDhInternal().then(module -> {
+            CoreClient coreClient = new CoreClient(localServer, null);
+            return coreClient.login(JsPropertyMap.of("type", CoreClient.LOGIN_TYPE_ANONYMOUS))
+                    .then(ignore -> coreClient.getAsIdeConnection())
+                    .then(ide -> {
+                        delayTestFinish(500);
+                        return ide.getConsoleTypes().then(consoleTypes -> {
+                            CancellablePromise<IdeSession> ideSession = ide.startSession(consoleTypes.getAt(0));
+                            return ideSession.then(session -> {
+                                if (consoleTypes.includes("groovy")) {
+                                    // scripts must run in order, to be sure let block on each one
+                                    return runAllScriptsInOrder(ideSession, session, impl.groovyScripts);
+                                } else if (consoleTypes.includes("python")) {
+                                    return runAllScriptsInOrder(ideSession, session, impl.pythonScripts);
+                                }
+                                throw new IllegalStateException("Unknown script type " + consoleTypes);
+                            });
+                        });
                     });
-
-                    resolve.onInvoke(query);
-                    irisClient.removeEventListener(IrisClient.EVENT_CONFIG_ADDED, eventFn[0]);
-                    irisClient.removeEventListener(IrisClient.EVENT_CONFIG_UPDATED, eventFn[0]);
-                } else if (errorStates.contains(query.getStatus())) {
-                    //failed to connect,
-                    reject.onInvoke("Query config in unusable state '" + query.getStatus() + "'");
-                    irisClient.removeEventListener(IrisClient.EVENT_CONFIG_ADDED, eventFn[0]);
-                    irisClient.removeEventListener(IrisClient.EVENT_CONFIG_UPDATED, eventFn[0]);
-                } else {
-                    console.log("Not ready, will wait another 10s before giving up");
-                    //give it 10s to move to one of the expected terminal states, might take a while to start up
-                    delayTestFinish(1000 * 10);
-                }
-            };
-            irisClient.addEventListener(IrisClient.EVENT_CONFIG_ADDED, eventFn[0]);
-            irisClient.addEventListener(IrisClient.EVENT_CONFIG_UPDATED, eventFn[0]);
         });
     }
 
-    public IThenable.ThenOnFulfilledCallbackFn<TableSource, JsTable> table(String tableName) {
-        delayFinish(2000);
-        TODO continue here
+    private Promise<IdeSession> runAllScriptsInOrder(CancellablePromise<IdeSession> ideSession, IdeSession session, JsArray<String> code) {
+        Promise<IdeSession> result = ideSession;
+        for (int i = 0; i < code.length; i++) {
+            final int index = i;
+            result = result.then(ignore -> {
+                delayFinish(2000);
+                session.runCode(code.getAt(index));
+                return ideSession;
+            });
+        }
+        return result;
+    }
+
+    public IThenable.ThenOnFulfilledCallbackFn<IdeSession, JsTable> table(String tableName) {
+        return session -> session.getTable(tableName, null);
     }
 
     /**

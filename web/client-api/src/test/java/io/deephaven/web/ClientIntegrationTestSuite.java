@@ -2,6 +2,7 @@ package io.deephaven.web;
 
 import com.google.gwt.junit.tools.GWTTestSuite;
 import io.deephaven.web.client.api.filter.FilterConditionTestGwt;
+import io.deephaven.web.client.api.subscription.ViewportTestGwt;
 import junit.framework.Test;
 import junit.framework.TestSuite;
 
@@ -12,6 +13,8 @@ public class ClientIntegrationTestSuite extends GWTTestSuite {
         // This test doesn't actually talk to the server, but it requires the dh-internal library be available
         suite.addTestSuite(FilterConditionTestGwt.class);
 
+        // Actual integration tests
+        suite.addTestSuite(ViewportTestGwt.class);
 
 
         return suite;

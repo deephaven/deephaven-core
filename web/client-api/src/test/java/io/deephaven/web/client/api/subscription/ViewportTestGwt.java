@@ -1,6 +1,7 @@
 package io.deephaven.web.client.api.subscription;
 
-import com.google.gwt.junit.client.GWTTestCase;
+import elemental2.core.JsArray;
+import elemental2.dom.CustomEvent;
 import elemental2.dom.DomGlobal;
 import elemental2.promise.IThenable;
 import elemental2.promise.Promise;
@@ -8,10 +9,14 @@ import io.deephaven.web.client.api.AbstractAsyncGwtTestCase;
 import io.deephaven.web.client.api.Column;
 import io.deephaven.web.client.api.HasEventHandling;
 import io.deephaven.web.client.api.JsTable;
+import io.deephaven.web.client.api.filter.FilterCondition;
+import io.deephaven.web.client.api.filter.FilterValue;
 import io.deephaven.web.shared.fu.RemoverFn;
 import jsinterop.base.Js;
 
 import java.util.Objects;
+
+import static elemental2.dom.DomGlobal.console;
 
 /**
  * Assumes two tables, ticking every 2 seconds:
@@ -78,7 +83,7 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
 
     // TODO: https://deephaven.atlassian.net/browse/DH-11196
     public void ignore_testViewportOnGrowingTable() {
-        connect("sample")
+        connect(tables)
                 .then(table("growingForward"))
                 .then(waitForTick(2200))
                 .then(delayFinish(25_000))
@@ -125,7 +130,7 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
     }
 
     public void testViewportOnUpdatingTable() {
-        connect("sample")
+        connect(tables)
                 .then(table("growingBackward"))
                 .then(table -> {
                     delayTestFinish(4000);
@@ -154,7 +159,7 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
     }
 
     public void testViewportSubsetOfColumns() {
-        connect("sample")
+        connect(tables)
                 .then(table("growingBackward"))
                 .then(table -> {
                     delayTestFinish(8000);
@@ -277,17 +282,17 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
     // TODO: https://deephaven.atlassian.net/browse/DH-11196
     public void ignore_testEmptyTableWithViewport() {
         //confirm that when the viewport is set on an empty table that we get exactly one update event
-        connect("sample")
+        connect(tables)
                 .then(table("staticTable"))
                 .then(table -> {
                     delayTestFinish(10000);
-                    DomGlobal.console.log("size", table.getSize());
+                    console.log("size", table.getSize());
                     // change the filter, set a viewport, assert that sizechanged and update both happen once
                     table.applyFilter(new FilterCondition[] {
                             FilterValue.ofBoolean(false).isTrue()
                     });
                     table.setViewport(0, 100, null);
-                    return JsPromise.all(new IThenable<?>[] {
+                    return Promise.all(new IThenable<?>[] {
                             // when IDS-2113 is fixed, restore this stronger assertion
 //                            assertEventFiresOnce(table, JsTable.EVENT_UPDATED, 1000)
                             waitForEvent(table, JsTable.EVENT_UPDATED, ignore -> {}, 1000),
@@ -319,12 +324,12 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
 
     public void testViewportOutOfRangeOfTable() {
         //confirm that when the viewport is set beyond the range of the table that we get exactly one update event
-        connect("sample")
+        connect(tables)
                 .then(table("staticTable"))
                 .then(table -> {
                     table.setViewport(100, 104, null);
 
-                    return JsPromise.all(new IThenable<?>[]{
+                    return Promise.all(new IThenable<?>[]{
                             // when IDS-2113 is fixed, restore this stronger assertion
 //                            assertEventFiresOnce(table, JsTable.EVENT_UPDATED, 1000)
                             waitForEvent(table, JsTable.EVENT_UPDATED, ignore -> {}, 1000)
@@ -335,7 +340,7 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
     }
 
     public void testRapidChangingViewport() {
-        connect("sample")
+        connect(tables)
                 .then(table("staticTable"))
                 .then(table -> {
                     delayTestFinish(5000);
@@ -387,7 +392,7 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
         // The bug exposed by this case is that a snapshot might start initially empty, but then get
         // a delta to make it non-empty. This test goes further, and waits until it is empty again,
         // and then cycles back to non-empty once more to make sure all the transitions are tested
-        connect("sample")
+        connect(tables)
                 .then(table("blinkOne"))
                 .then(table -> {
                     delayTestFinish(20_000);
@@ -418,7 +423,7 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                 .then(table -> {
                     // wait for the next tick, where we get the "first" row added, confirm that the viewport
                     // data is sane
-                    return waitForEventWhere(table, "updated", (CustomEvent e) -> {
+                    return waitForEventWhere(table, "updated", (CustomEvent<ViewportData> e) -> {
                         ViewportData viewport = (ViewportData) e.detail;
                         if (viewport.getRows().length != 1) {
                             return false; //wrong data, wait for another event
@@ -433,7 +438,7 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                 })
                 .then(table -> {
                     // again wait for the table to go back to zero items, make sure it makes sense
-                    return waitForEventWhere(table, "updated", (CustomEvent e) -> {
+                    return waitForEventWhere(table, "updated", (CustomEvent<ViewportData> e) -> {
                         ViewportData emptyViewport = (ViewportData) e.detail;
                         if (emptyViewport.getRows().length != 0) {
                             return false; //wrong data, wait for another event
@@ -444,7 +449,7 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                 })
                 .then(table -> {
                     // one more tick later, we'll see the item back again
-                    return waitForEventWhere(table, "updated", (CustomEvent e) -> {
+                    return waitForEventWhere(table, "updated", (CustomEvent<ViewportData> e) -> {
                         ViewportData viewport = (ViewportData) e.detail;
                         if (viewport.getRows().length != 1) {
                             return false; //wrong data, wait for another event
