@@ -45,14 +45,14 @@ public abstract class AbstractSwappableTableBasedCategoryDataSeries extends Abst
         chart().figure().registerFigureFunction(new FigureImplFunction(figImpl -> {
             ((AbstractSwappableTableBasedCategoryDataSeries) figImpl.getFigure().getCharts()
                     .getChart(chart().row(), chart().column()).axes(axes().id()).series(id()))
-                            .shapesSetSpecific(
-                                    new AssociativeDataSwappableTable<Comparable, Shape, String>(getSwappableTable(),
-                                            getCategoryCol(), colName, Comparable.class, String.class, getPlotInfo()) {
-                                        @Override
-                                        public Shape convert(String v) {
-                                            return NamedShape.getShape(v);
-                                        }
-                                    });
+                    .shapesSetSpecific(
+                            new AssociativeDataSwappableTable<Comparable, Shape, String>(getSwappableTable(),
+                                    getCategoryCol(), colName, Comparable.class, String.class, getPlotInfo()) {
+                                @Override
+                                public Shape convert(String v) {
+                                    return NamedShape.getShape(v);
+                                }
+                            });
             return figImpl;
         }, this));
         return this;
@@ -67,8 +67,8 @@ public abstract class AbstractSwappableTableBasedCategoryDataSeries extends Abst
         chart().figure().registerFigureFunction(new FigureImplFunction(figImpl -> {
             ((AbstractSwappableTableBasedCategoryDataSeries) figImpl.getFigure().getCharts()
                     .getChart(chart().row(), chart().column()).axes(axes().id()).series(id()))
-                            .sizesSetSpecific(new AssociativeDataSwappableTable<>(getSwappableTable(), getCategoryCol(),
-                                    colName, Comparable.class, Number.class, getPlotInfo()));
+                    .sizesSetSpecific(new AssociativeDataSwappableTable<>(getSwappableTable(), getCategoryCol(),
+                            colName, Comparable.class, Number.class, getPlotInfo()));
             return figImpl;
         }, this));
         return this;
@@ -83,8 +83,8 @@ public abstract class AbstractSwappableTableBasedCategoryDataSeries extends Abst
         chart().figure().registerFigureFunction(new FigureImplFunction(figImpl -> {
             ((AbstractSwappableTableBasedCategoryDataSeries) figImpl.getFigure().getCharts()
                     .getChart(chart().row(), chart().column()).axes(axes().id()).series(id()))
-                            .colorsSetSpecific(new AssociativeDataSwappableTable<>(getSwappableTable(),
-                                    getCategoryCol(), colName, Comparable.class, Paint.class, getPlotInfo()));
+                    .colorsSetSpecific(new AssociativeDataSwappableTable<>(getSwappableTable(),
+                            getCategoryCol(), colName, Comparable.class, Paint.class, getPlotInfo()));
             return figImpl;
         }, this));
         return this;
@@ -99,14 +99,14 @@ public abstract class AbstractSwappableTableBasedCategoryDataSeries extends Abst
         chart().figure().registerFigureFunction(new FigureImplFunction(figImpl -> {
             ((AbstractSwappableTableBasedCategoryDataSeries) figImpl.getFigure().getCharts()
                     .getChart(chart().row(), chart().column()).axes(axes().id()).series(id()))
-                            .colorsSetSpecific(
-                                    new AssociativeDataSwappableTable<Comparable, Paint, Integer>(getSwappableTable(),
-                                            getCategoryCol(), colName, Comparable.class, Integer.class, getPlotInfo()) {
-                                        @Override
-                                        public Paint convert(Integer v) {
-                                            return intToColor(chart(), v);
-                                        }
-                                    });
+                    .colorsSetSpecific(
+                            new AssociativeDataSwappableTable<Comparable, Paint, Integer>(getSwappableTable(),
+                                    getCategoryCol(), colName, Comparable.class, Integer.class, getPlotInfo()) {
+                                @Override
+                                public Paint convert(Integer v) {
+                                    return intToColor(chart(), v);
+                                }
+                            });
             return figImpl;
         }, this));
         return this;
@@ -121,14 +121,14 @@ public abstract class AbstractSwappableTableBasedCategoryDataSeries extends Abst
         chart().figure().registerFigureFunction(new FigureImplFunction(figImpl -> {
             ((AbstractSwappableTableBasedCategoryDataSeries) figImpl.getFigure().getCharts()
                     .getChart(chart().row(), chart().column()).axes(axes().id()).series(id()))
-                            .labelsSetSpecific(
-                                    new AssociativeDataSwappableTable<Comparable, String, Object>(getSwappableTable(),
-                                            getCategoryCol(), colName, Comparable.class, Object.class, getPlotInfo()) {
-                                        @Override
-                                        public String convert(final Object o) {
-                                            return Objects.toString(o);
-                                        }
-                                    });
+                    .labelsSetSpecific(
+                            new AssociativeDataSwappableTable<Comparable, String, Object>(getSwappableTable(),
+                                    getCategoryCol(), colName, Comparable.class, Object.class, getPlotInfo()) {
+                                @Override
+                                public String convert(final Object o) {
+                                    return Objects.toString(o);
+                                }
+                            });
             return figImpl;
         }, this));
         return this;

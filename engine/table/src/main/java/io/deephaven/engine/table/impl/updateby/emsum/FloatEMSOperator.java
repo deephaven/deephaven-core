@@ -1,9 +1,9 @@
-package io.deephaven.engine.table.impl.updateby.ema;
+package io.deephaven.engine.table.impl.updateby.emsum;
 
 import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
-import io.deephaven.chunk.ShortChunk;
+import io.deephaven.chunk.FloatChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
@@ -15,23 +15,23 @@ import org.jetbrains.annotations.Nullable;
 
 import static io.deephaven.util.QueryConstants.*;
 
-public class ShortEMAOperator extends BasePrimitiveEMAOperator {
+public class FloatEMSOperator extends BasePrimitiveEMSOperator {
     public final ColumnSource<?> valueSource;
     // region extra-fields
     // endregion extra-fields
 
-    protected class Context extends BasePrimitiveEMAOperator.Context {
+    protected class Context extends BasePrimitiveEMSOperator.Context {
 
-        public ShortChunk<? extends Values> shortValueChunk;
+        public FloatChunk<? extends Values> floatValueChunk;
 
         protected Context(final int chunkSize) {
             super(chunkSize);
         }
 
         @Override
-        public void accumulateCumulative(RowSequence inputKeys,
-                                         Chunk<? extends Values>[] valueChunkArr,
-                                         LongChunk<? extends Values> tsChunk,
+        public void accumulateCumulative(@NotNull RowSequence inputKeys,
+                                         @NotNull Chunk<? extends Values>[] valueChunkArr,
+                                         @Nullable LongChunk<? extends Values> tsChunk,
                                          int len) {
             setValuesChunk(valueChunkArr[0]);
 
@@ -40,15 +40,19 @@ public class ShortEMAOperator extends BasePrimitiveEMAOperator {
                 // compute with ticks
                 for (int ii = 0; ii < len; ii++) {
                     // read the value from the values chunk
-                    final short input = shortValueChunk.get(ii);
+                    final float input = floatValueChunk.get(ii);
+                    final boolean isNull = input == NULL_FLOAT;
+                    final boolean isNan = Float.isNaN(input);
 
-                    if (input == NULL_SHORT) {
-                        handleBadData(this, true, false);
+                    if (isNull || isNan) {
+                        handleBadData(this, isNull, isNan);
                     } else {
                         if (curVal == NULL_DOUBLE) {
                             curVal = input;
                         } else {
-                            curVal = alpha * curVal + (oneMinusAlpha * input);
+                            final double decayedVal = alpha * curVal;
+                            // Compute EM Sum by adding the current value to the decayed previous value.
+                            curVal = decayedVal + input;
                         }
                     }
                     outputValues.set(ii, curVal);
@@ -57,13 +61,15 @@ public class ShortEMAOperator extends BasePrimitiveEMAOperator {
                 // compute with time
                 for (int ii = 0; ii < len; ii++) {
                     // read the value from the values chunk
-                    final short input = shortValueChunk.get(ii);
+                    final float input = floatValueChunk.get(ii);
                     final long timestamp = tsChunk.get(ii);
                     //noinspection ConstantConditions
-                    final boolean isNull = input == NULL_SHORT;
+                    final boolean isNull = input == NULL_FLOAT;
+                    final boolean isNan = Float.isNaN(input);
                     final boolean isNullTime = timestamp == NULL_LONG;
-                    if (isNull) {
-                        handleBadData(this, true, false);
+                    // Handle bad data first
+                    if (isNull || isNan) {
+                        handleBadData(this, isNull, isNan);
                     } else if (isNullTime) {
                         // no change to curVal and lastStamp
                     } else if (curVal == NULL_DOUBLE) {
@@ -71,12 +77,12 @@ public class ShortEMAOperator extends BasePrimitiveEMAOperator {
                         lastStamp = timestamp;
                     } else {
                         final long dt = timestamp - lastStamp;
-                        if (dt != 0) {
-                            // alpha is dynamic, based on time
-                            final double alpha = Math.exp(-dt / (double) reverseWindowScaleUnits);
-                            curVal = alpha * curVal + (1 - alpha) * input;
-                            lastStamp = timestamp;
-                        }
+                        // alpha is dynamic, based on time
+                        final double alpha = Math.exp(-dt / (double) reverseWindowScaleUnits);
+                        final double decayedVal = alpha * curVal;
+                        // Compute EMSum by adding the current value to the decayed previous value.
+                        curVal = decayedVal + input;
+                        lastStamp = timestamp;
                     }
                     outputValues.set(ii, curVal);
                 }
@@ -88,40 +94,36 @@ public class ShortEMAOperator extends BasePrimitiveEMAOperator {
 
         @Override
         public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            shortValueChunk = valuesChunk.asShortChunk();
+            floatValueChunk = valuesChunk.asFloatChunk();
         }
 
         @Override
         public boolean isValueValid(long atKey) {
-            return valueSource.getShort(atKey) != NULL_SHORT;
-        }
-
-        @Override
-        public void push(int pos, int count) {
-            throw new IllegalStateException("EMAOperator#push() is not used");
+            return valueSource.getFloat(atKey) != NULL_FLOAT;
         }
     }
 
     /**
-     * An operator that computes an EMA from a short column using an exponential decay function.
+     * An operator that computes an EM Sum from a float column using an exponential decay function.
      *
      * @param pair                the {@link MatchPair} that defines the input/output for this operation
      * @param affectingColumns    the names of the columns that affect this ema
      * @param rowRedirection      the {@link RowRedirection} to use for dense output sources
      * @param control             defines how to handle {@code null} input values.
      * @param timestampColumnName the name of the column containing timestamps for time-based calcuations
-     * @param windowScaleUnits      the smoothing window for the EMA. If no {@code timestampColumnName} is provided, this is measured in ticks, otherwise it is measured in nanoseconds
+     * @param windowScaleUnits      the smoothing window for the EMS. If no {@code timestampColumnName} is provided,
+     *                              this is measured in ticks, otherwise it is measured in nanoseconds
      * @param valueSource         a reference to the input column source for this operation
      */
-    public ShortEMAOperator(@NotNull final MatchPair pair,
-                            @NotNull final String[] affectingColumns,
-                            @Nullable final RowRedirection rowRedirection,
-                            @NotNull final OperationControl control,
-                            @Nullable final String timestampColumnName,
-                            final long windowScaleUnits,
-                            final ColumnSource<?> valueSource
-                            // region extra-constructor-args
-                            // endregion extra-constructor-args
+    public FloatEMSOperator(@NotNull final MatchPair pair,
+                           @NotNull final String[] affectingColumns,
+                           @Nullable final RowRedirection rowRedirection,
+                           @NotNull final OperationControl control,
+                           @Nullable final String timestampColumnName,
+                           final long windowScaleUnits,
+                           final ColumnSource<?> valueSource
+                           // region extra-constructor-args
+                           // endregion extra-constructor-args
     ) {
         super(pair, affectingColumns, rowRedirection, control, timestampColumnName, windowScaleUnits);
         this.valueSource = valueSource;

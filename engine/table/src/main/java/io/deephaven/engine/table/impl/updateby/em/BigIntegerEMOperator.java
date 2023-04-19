@@ -1,4 +1,4 @@
-package io.deephaven.engine.table.impl.updateby.ema;
+package io.deephaven.engine.table.impl.updateby.em;
 
 import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.chunk.Chunk;
@@ -17,8 +17,8 @@ import java.math.BigInteger;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
-public class BigIntegerEMAOperator extends BigNumberEMAOperator<BigInteger> {
-    public class Context extends BigNumberEMAOperator<BigInteger>.Context {
+public class BigIntegerEMOperator extends BaseBigNumberEMOperator<BigInteger> {
+    public class Context extends BaseBigNumberEMOperator<BigInteger>.Context {
         protected Context(final int chunkSize) {
             super(chunkSize);
         }
@@ -43,10 +43,8 @@ public class BigIntegerEMAOperator extends BigNumberEMAOperator<BigInteger> {
                         if (curVal == null) {
                             curVal = decimalInput;
                         } else {
-                            curVal = curVal.multiply(opAlpha, control.bigValueContextOrDefault())
-                                    .add(decimalInput.multiply(opOneMinusAlpha, control.bigValueContextOrDefault()),
-                                            control.bigValueContextOrDefault());
-                        }
+                            curVal = aggFunction.apply(curVal, decimalInput, opAlpha, opOneMinusAlpha);
+                         }
                     }
                     outputValues.set(ii, curVal);
                 }
@@ -69,18 +67,14 @@ public class BigIntegerEMAOperator extends BigNumberEMAOperator<BigInteger> {
                             lastStamp = timestamp;
                         } else {
                             final long dt = timestamp - lastStamp;
-                            if (dt != 0) {
-                                // alpha is dynamic based on time, but only recalculated when needed
-                                if (dt != lastDt) {
-                                    alpha = computeAlpha(-dt, reverseWindowScaleUnits);
-                                    oneMinusAlpha = computeOneMinusAlpha(alpha);
-                                    lastDt = dt;
-                                }
-                                curVal = curVal.multiply(alpha, control.bigValueContextOrDefault())
-                                        .add(decimalInput.multiply(oneMinusAlpha, control.bigValueContextOrDefault()),
-                                                control.bigValueContextOrDefault());
-                                lastStamp = timestamp;
+                            // Alpha is dynamic based on time, but only recalculated when needed
+                            if (dt != lastDt) {
+                                alpha = computeAlpha(-dt, reverseWindowScaleUnits);
+                                oneMinusAlpha = computeOneMinusAlpha(alpha);
+                                lastDt = dt;
                             }
+                            curVal = aggFunction.apply(curVal, decimalInput, alpha, oneMinusAlpha);
+                            lastStamp = timestamp;
                         }
                     }
                     outputValues.set(ii, curVal);
@@ -108,14 +102,15 @@ public class BigIntegerEMAOperator extends BigNumberEMAOperator<BigInteger> {
      * @param windowScaleUnits      the smoothing window for the EMA. If no {@code timestampColumnName} is provided, this is measured in ticks, otherwise it is measured in nanoseconds
      * @param valueSource         a reference to the input column source for this operation
      */
-    public BigIntegerEMAOperator(@NotNull final MatchPair pair,
-                                 @NotNull final String[] affectingColumns,
-                                 @Nullable final RowRedirection rowRedirection,
-                                 @NotNull final OperationControl control,
-                                 @Nullable final String timestampColumnName,
-                                 final long windowScaleUnits,
-                                 final ColumnSource<?> valueSource) {
-        super(pair, affectingColumns, rowRedirection, control, timestampColumnName, windowScaleUnits, valueSource);
+    public BigIntegerEMOperator(@NotNull final MatchPair pair,
+                                @NotNull final String[] affectingColumns,
+                                @Nullable final RowRedirection rowRedirection,
+                                @NotNull final OperationControl control,
+                                @Nullable final String timestampColumnName,
+                                final long windowScaleUnits,
+                                final ColumnSource<?> valueSource,
+                                @NotNull final EmFunction aggFunction) {
+        super(pair, affectingColumns, rowRedirection, control, timestampColumnName, windowScaleUnits, valueSource, aggFunction);
     }
 
     @NotNull

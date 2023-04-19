@@ -5,23 +5,29 @@
 """ This module implement various filters that can be used in deephaven table's filter operations."""
 from __future__ import annotations
 
+from enum import Enum
 from typing import List, Union
 
 import jpy
+import functools
 
 from deephaven import DHError
 from deephaven._wrapper import JObjectWrapper
 from deephaven.jcompat import to_sequence
 
 _JFilter = jpy.get_type("io.deephaven.api.filter.Filter")
-_JRegexFilter = jpy.get_type("io.deephaven.engine.table.impl.select.RegexFilter")
 _JFilterOr = jpy.get_type("io.deephaven.api.filter.FilterOr")
 _JFilterAnd = jpy.get_type("io.deephaven.api.filter.FilterAnd")
 _JFilterNot = jpy.get_type("io.deephaven.api.filter.FilterNot")
+_JColumnName = jpy.get_type("io.deephaven.api.ColumnName")
+_JPatternFilter = jpy.get_type("io.deephaven.engine.table.impl.select.PatternFilter")
+_JPatternMode = jpy.get_type("io.deephaven.engine.table.impl.select.PatternFilter$Mode")
+_JPattern = jpy.get_type("java.util.regex.Pattern")
 
 
 class Filter(JObjectWrapper):
     """A Filter object represents a filter that can be used in Table's filtering(where) operations."""
+
     j_object_type = _JFilter
 
     @property
@@ -46,7 +52,10 @@ class Filter(JObjectWrapper):
         """
         conditions = to_sequence(conditions)
         try:
-            filters = [cls(j_filter=j_filter) for j_filter in _JFilter.from_(conditions).toArray()]
+            filters = [
+                cls(j_filter=j_filter)
+                for j_filter in _JFilter.from_(conditions).toArray()
+            ]
             return filters if len(filters) != 1 else filters[0]
         except Exception as e:
             raise DHError(e, "failed to create filters.") from e
@@ -88,21 +97,46 @@ def not_(filter_: Filter) -> Filter:
     return Filter(j_filter=_JFilterNot.of(filter_.j_filter))
 
 
-class RegexFilter(Filter):
-    """ The RegexFilter is a filter that matches using a regular expression. """
+class PatternMode(Enum):
+    MATCHES = _JPatternMode.MATCHES
+    """Matches the entire input against the pattern"""
 
-    j_object_type = _JRegexFilter
+    FIND = _JPatternMode.FIND
+    """Matches any subsequence of the input against the pattern"""
 
-    def __init__(self, col: str, pattern: str):
-        """
-        Args:
-             col (str): the name of the column to apply the filter
-             pattern (str): the regular expression pattern
 
-        Raises:
-            DHError
-        """
-        try:
-            self.j_filter = _JRegexFilter(col, pattern)
-        except Exception as e:
-            raise DHError(e, "failed to create a Regex filter.") from e
+def pattern(
+    mode: PatternMode,
+    col: str,
+    regex: str,
+    invert_pattern: bool = False,
+) -> Filter:
+    """Creates a regular-expression pattern filter.
+
+    See https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/regex/Pattern.html for documentation on
+    the regex pattern.
+
+    Args:
+        mode (PatternMode): the mode
+        col (str): the column name
+        regex (str): the regex pattern
+        invert_pattern (bool): if the pattern match should be inverted
+
+    Returns:
+        a new pattern filter
+
+    Raises:
+        DHError
+    """
+    # Update to table-api structs in https://github.com/deephaven/deephaven-core/pull/3441
+    try:
+        return Filter(
+            j_filter=_JPatternFilter(
+                _JColumnName.of(col),
+                _JPattern.compile(regex),
+                mode.value,
+                invert_pattern,
+            )
+        )
+    except Exception as e:
+        raise DHError(e, "failed to create a pattern filter.") from e

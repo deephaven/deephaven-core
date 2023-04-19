@@ -1,7 +1,8 @@
-package io.deephaven.engine.table.impl.updateby.ema;
+package io.deephaven.engine.table.impl.updateby.emsum;
 
 import io.deephaven.api.updateby.BadDataBehavior;
 import io.deephaven.api.updateby.OperationControl;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.locations.TableDataException;
@@ -13,16 +14,20 @@ import org.jetbrains.annotations.Nullable;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
-public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperator {
+public abstract class BasePrimitiveEMSOperator extends BaseDoubleUpdateByOperator {
     protected final OperationControl control;
     protected final double alpha;
-    protected double oneMinusAlpha;
 
     public abstract class Context extends BaseDoubleUpdateByOperator.Context {
         long lastStamp = NULL_LONG;
 
         Context(final int chunkSize) {
             super(chunkSize);
+        }
+
+        @Override
+        public void push(int pos, int count) {
+            throw Assert.statementNeverExecuted("EMSOperator#push() is not used");
         }
 
         @Override
@@ -33,18 +38,18 @@ public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperato
     }
 
     /**
-     * An operator that computes an EMA from an input column using an exponential decay function.
+     * An operator that computes an EM Sum from an input column using an exponential decay function.
      *
      * @param pair the {@link MatchPair} that defines the input/output for this operation
      * @param affectingColumns the names of the columns that affect this ema
-     * @param rowRedirection the row redirection to use for the EMA output columns
-     * @param control the control parameters for EMA
+     * @param rowRedirection the row redirection to use for the EMS output columns
+     * @param control the control parameters for EMS
      * @param timestampColumnName an optional timestamp column. If this is null, it will be assumed time is measured in
      *        integer ticks.
-     * @param windowScaleUnits the smoothing window for the EMA. If no {@code timestampColumnName} is provided, this is
+     * @param windowScaleUnits the smoothing window for the EMS. If no {@code timestampColumnName} is provided, this is
      *        measured in ticks, otherwise it is measured in nanoseconds.
      */
-    public BasePrimitiveEMAOperator(@NotNull final MatchPair pair,
+    public BasePrimitiveEMSOperator(@NotNull final MatchPair pair,
             @NotNull final String[] affectingColumns,
             @Nullable final RowRedirection rowRedirection,
             @NotNull final OperationControl control,
@@ -54,8 +59,6 @@ public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperato
         this.control = control;
 
         alpha = Math.exp(-1.0 / (double) windowScaleUnits);
-        oneMinusAlpha = 1 - alpha;
-
     }
 
     @Override
@@ -76,12 +79,12 @@ public abstract class BasePrimitiveEMAOperator extends BaseDoubleUpdateByOperato
         boolean doReset = false;
         if (isNull) {
             if (control.onNullValueOrDefault() == BadDataBehavior.THROW) {
-                throw new TableDataException("Encountered null value during EMA processing");
+                throw new TableDataException("Encountered null value during EMS processing");
             }
             doReset = control.onNullValueOrDefault() == BadDataBehavior.RESET;
         } else if (isNan) {
             if (control.onNanValueOrDefault() == BadDataBehavior.THROW) {
-                throw new TableDataException("Encountered NaN value during EMA processing");
+                throw new TableDataException("Encountered NaN value during EMS processing");
             } else if (control.onNanValueOrDefault() == BadDataBehavior.POISON) {
                 ctx.curVal = Double.NaN;
             } else {
