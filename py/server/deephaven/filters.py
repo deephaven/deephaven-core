@@ -113,6 +113,9 @@ def pattern(
 ) -> Filter:
     """Creates a regular-expression pattern filter.
 
+    See https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/regex/Pattern.html for documentation on
+    the regex pattern.
+
     Args:
         mode (PatternMode): the mode
         col (str): the column name
