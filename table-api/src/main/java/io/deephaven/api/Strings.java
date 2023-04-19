@@ -3,6 +3,8 @@
  */
 package io.deephaven.api;
 
+import io.deephaven.api.agg.Aggregation;
+import io.deephaven.api.agg.AggregationDescriptions;
 import io.deephaven.api.agg.Pair;
 import io.deephaven.api.expression.Expression;
 import io.deephaven.api.filter.Filter;
@@ -15,7 +17,10 @@ import io.deephaven.api.filter.FilterOr;
 import io.deephaven.api.value.Value;
 
 import java.util.Collection;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.Objects;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 /**
@@ -89,6 +94,10 @@ public class Strings {
         return String.format("%s==%s", of(match.left()), of(match.right()));
     }
 
+    public static String ofJoinMatches(Collection<? extends JoinMatch> matches) {
+        return matches.stream().map(Strings::of).collect(Collectors.joining(",", "[", "]"));
+    }
+
     public static String of(JoinAddition addition) {
         if (addition.newColumn().equals(addition.existingColumn())) {
             return of(addition.newColumn());
@@ -96,7 +105,7 @@ public class Strings {
         return String.format("%s=%s", of(addition.newColumn()), of(addition.existingColumn()));
     }
 
-    public static String of(Collection<? extends JoinAddition> additions) {
+    public static String ofJoinAdditions(Collection<? extends JoinAddition> additions) {
         return additions.stream().map(Strings::of).collect(Collectors.joining(",", "[", "]"));
     }
 
@@ -109,6 +118,29 @@ public class Strings {
                 rangeMatch.rangeEndRule() == RangeEndRule.GREATER_THAN ? "<" : "<=",
                 rangeMatch.leftEndColumn().name(),
                 rangeMatch.rangeEndRule() == RangeEndRule.GREATER_THAN_OR_EQUAL_ALLOW_FOLLOWING ? " ->" : "");
+    }
+
+    public static String of(final Aggregation aggregation) {
+        return ofMap(AggregationDescriptions.of(aggregation));
+    }
+
+    public static String ofAggregations(final Collection<? extends Aggregation> aggregations) {
+        return ofMap(AggregationDescriptions.of(aggregations));
+    }
+
+    public static String ofMap(final Map<String, String> map) {
+        final Iterator<Map.Entry<String, String>> entries = map.entrySet().iterator();
+        if (!entries.hasNext()) {
+            return "[]";
+        }
+        final BiConsumer<StringBuilder, Map.Entry<String, String>> appender = (sb, e) ->
+                sb.append(e.getKey()).append(" = ").append(e.getValue());
+        final StringBuilder sb = new StringBuilder();
+        appender.accept(sb.append('['), entries.next());
+        while (entries.hasNext()) {
+            appender.accept(sb.append(", "), entries.next());
+        }
+        return sb.append(']').toString();
     }
 
     public static String of(Selectable selectable) {

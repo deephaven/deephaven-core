@@ -4,8 +4,6 @@
 package io.deephaven.graphviz;
 
 import io.deephaven.api.Strings;
-import io.deephaven.api.agg.Aggregation;
-import io.deephaven.api.agg.AggregationDescriptions;
 import io.deephaven.qst.table.AggregateAllTable;
 import io.deephaven.qst.table.AggregateTable;
 import io.deephaven.qst.table.AsOfJoinTable;
@@ -116,9 +114,9 @@ public class LabelBuilder extends TableVisitorGeneric {
         append(Strings::of, rangeJoinTable.exactMatches(), sb);
         sb.append("],");
         sb.append(Strings.of(rangeJoinTable.rangeMatch()));
-        sb.append(",[");
-        append(rangeJoinTable.aggregations(), sb);
-        sb.append("])");
+        sb.append(",");
+        sb.append(Strings.ofAggregations(rangeJoinTable.aggregations()));
+        sb.append(")");
     }
 
     @Override
@@ -165,9 +163,9 @@ public class LabelBuilder extends TableVisitorGeneric {
     public void visit(AggregateTable aggregateTable) {
         sb.append("aggBy([");
         append(Strings::of, aggregateTable.groupByColumns(), sb);
-        sb.append("],[");
-        append(aggregateTable.aggregations(), sb);
-        sb.append("])");
+        sb.append("],");
+        sb.append(Strings.ofAggregations(aggregateTable.aggregations()));
+        sb.append(")");
     }
 
     @Override
@@ -241,22 +239,5 @@ public class LabelBuilder extends TableVisitorGeneric {
         while (it.hasNext()) {
             sb.append(',').append(f.apply(it.next()));
         }
-    }
-
-    private static void append(Collection<? extends Aggregation> aggregations, StringBuilder sb) {
-        final Iterator<Map.Entry<String, String>> outputNamesAndAggDescriptions =
-                AggregationDescriptions.of(aggregations).entrySet().iterator();
-        if (outputNamesAndAggDescriptions.hasNext()) {
-            append(outputNamesAndAggDescriptions.next(), sb);
-        }
-        while (outputNamesAndAggDescriptions.hasNext()) {
-            append(outputNamesAndAggDescriptions.next(), sb.append(','));
-        }
-    }
-
-    private static void append(Map.Entry<String, String> outputNameToAggDescription, StringBuilder sb) {
-        sb.append(outputNameToAggDescription.getKey())
-                .append(" = ")
-                .append(outputNameToAggDescription.getValue());
     }
 }
