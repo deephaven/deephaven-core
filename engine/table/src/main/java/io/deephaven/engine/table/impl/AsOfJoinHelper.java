@@ -55,6 +55,8 @@ public class AsOfJoinHelper {
 
     static Table asOfJoin(JoinControl control, QueryTable leftTable, QueryTable rightTable, MatchPair[] columnsToMatch,
             MatchPair[] columnsToAdd, SortingOrder order, boolean disallowExactMatch) {
+        QueryTable.checkInitiateBinaryOperation(leftTable, rightTable);
+
         if (columnsToMatch.length == 0) {
             throw new IllegalArgumentException("aj() requires at least one column to match!");
         }

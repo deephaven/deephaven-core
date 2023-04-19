@@ -1122,6 +1122,8 @@ public abstract class UpdateBy {
             @NotNull final Collection<? extends ColumnName> byColumns,
             @NotNull final UpdateByControl control) {
 
+        QueryTable.checkInitiateOperation(source);
+
         // create the rowRedirection if instructed
         final WritableRowRedirection rowRedirection;
         if (control.useRedirectionOrDefault()) {
