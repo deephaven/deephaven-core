@@ -33,13 +33,13 @@ public class ShortDeltaOperator extends BaseShortUpdateByOperator {
         public ShortChunk<? extends Values> shortValueChunk;
         private short lastVal = NULL_SHORT;
 
-        protected Context(final int chunkSize) {
-            super(chunkSize);
+        protected Context(final int affectedChunkSize, final int influencerChunkSize) {
+            super(affectedChunkSize);
         }
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            shortValueChunk = valuesChunk.asShortChunk();
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
+            shortValueChunk = valueChunks[0].asShortChunk();
         }
 
         @Override
@@ -98,7 +98,7 @@ public class ShortDeltaOperator extends BaseShortUpdateByOperator {
 
     @NotNull
     @Override
-    public UpdateByOperator.Context makeUpdateContext(final int chunkSize) {
-        return new Context(chunkSize);
+    public UpdateByOperator.Context makeUpdateContext(final int affectedChunkSize, final int influencerChunkSize) {
+        return new Context(affectedChunkSize, influencerChunkSize);
     }
 }

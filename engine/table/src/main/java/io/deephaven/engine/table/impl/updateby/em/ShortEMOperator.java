@@ -28,8 +28,13 @@ public class ShortEMOperator extends BasePrimitiveEMOperator {
     protected class Context extends BasePrimitiveEMOperator.Context {
         public ShortChunk<? extends Values> shortValueChunk;
 
-        protected Context(final int chunkSize) {
-            super(chunkSize);
+        protected Context(final int affectedChunkSize, final int influencerChunkSize) {
+            super(affectedChunkSize);
+        }
+
+        @Override
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
+            shortValueChunk = valueChunks[0].asShortChunk();
         }
 
         @Override
@@ -93,11 +98,6 @@ public class ShortEMOperator extends BasePrimitiveEMOperator {
         }
 
         @Override
-        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
-            shortValueChunk = valueChunks[0].asShortChunk();
-        }
-
-        @Override
         public boolean isValueValid(long atKey) {
             return valueSource.getShort(atKey) != NULL_SHORT;
         }
@@ -139,6 +139,6 @@ public class ShortEMOperator extends BasePrimitiveEMOperator {
     @NotNull
     @Override
     public UpdateByOperator.Context makeUpdateContext(final int affectedChunkSize, final int influencerChunkSize) {
-        return new Context(affectedChunkSize);
+        return new Context(affectedChunkSize, influencerChunkSize);
     }
 }

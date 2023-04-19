@@ -28,8 +28,13 @@ public class LongEMOperator extends BasePrimitiveEMOperator {
     protected class Context extends BasePrimitiveEMOperator.Context {
         public LongChunk<? extends Values> longValueChunk;
 
-        protected Context(final int chunkSize) {
-            super(chunkSize);
+        protected Context(final int affectedChunkSize, final int influencerChunkSize) {
+            super(affectedChunkSize);
+        }
+
+        @Override
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
+            longValueChunk = valueChunks[0].asLongChunk();
         }
 
         @Override
@@ -93,11 +98,6 @@ public class LongEMOperator extends BasePrimitiveEMOperator {
         }
 
         @Override
-        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
-            longValueChunk = valueChunks[0].asLongChunk();
-        }
-
-        @Override
         public boolean isValueValid(long atKey) {
             return valueSource.getLong(atKey) != NULL_LONG;
         }
@@ -139,6 +139,6 @@ public class LongEMOperator extends BasePrimitiveEMOperator {
     @NotNull
     @Override
     public UpdateByOperator.Context makeUpdateContext(final int affectedChunkSize, final int influencerChunkSize) {
-        return new Context(affectedChunkSize);
+        return new Context(affectedChunkSize, influencerChunkSize);
     }
 }
