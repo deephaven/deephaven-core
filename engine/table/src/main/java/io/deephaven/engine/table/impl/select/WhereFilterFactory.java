@@ -553,5 +553,4 @@ public class WhereFilterFactory {
                     dateLower == null ? null : DateTimeUtils.millisToTime(dateLower.toInstant().toEpochMilli());
         }
     }
-
 }
