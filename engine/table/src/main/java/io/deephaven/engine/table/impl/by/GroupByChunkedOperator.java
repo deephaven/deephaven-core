@@ -34,19 +34,20 @@ import static io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource.BLO
  * An {@link IterativeChunkedAggregationOperator} used in the implementation of {@link Table#groupBy},
  * {@link io.deephaven.api.agg.spec.AggSpecGroup}, and {@link io.deephaven.api.agg.Aggregation#AggGroup(String...)}.
  */
-public final class GroupByChunkedOperator
-        implements IterativeChunkedAggregationOperator {
+public final class GroupByChunkedOperator implements IterativeChunkedAggregationOperator {
 
     private final QueryTable inputTable;
     private final boolean registeredWithHelper;
+    private final String exposeRowSetsAs;
+
     private final boolean live;
     private final ObjectArraySource<WritableRowSet> rowSets;
     private final ObjectArraySource<Object> addedBuilders;
     private final ObjectArraySource<Object> removedBuilders;
 
     private final String[] inputColumnNames;
-    private final Map<String, AggregateColumnSource<?, ?>> resultColumns;
-    private final ModifiedColumnSet resultInputsModifiedColumnSet;
+    private final Map<String, AggregateColumnSource<?, ?>> resultAggregatedColumns;
+    private final ModifiedColumnSet aggregationInputsModifiedColumnSet;
 
     private RowSetBuilderRandom stepDestinationsModified;
 
@@ -55,23 +56,28 @@ public final class GroupByChunkedOperator
     private boolean someKeyHasModifies;
     private boolean initialized;
 
-    GroupByChunkedOperator(@NotNull final QueryTable inputTable, final boolean registeredWithHelper,
-            @NotNull final MatchPair... resultColumnPairs) {
+    public GroupByChunkedOperator(
+            @NotNull final QueryTable inputTable,
+            final boolean registeredWithHelper,
+            @Nullable final String exposeRowSetsAs,
+            @NotNull final MatchPair... aggregatedColumnPairs) {
         this.inputTable = inputTable;
         this.registeredWithHelper = registeredWithHelper;
+        this.exposeRowSetsAs = exposeRowSetsAs;
+
         live = inputTable.isRefreshing();
         rowSets = new ObjectArraySource<>(WritableRowSet.class);
         addedBuilders = new ObjectArraySource<>(Object.class);
-        resultColumns = Arrays.stream(resultColumnPairs).collect(Collectors.toMap(MatchPair::leftColumn,
+        resultAggregatedColumns = Arrays.stream(aggregatedColumnPairs).collect(Collectors.toMap(MatchPair::leftColumn,
                 matchPair -> AggregateColumnSource
                         .make(inputTable.getColumnSource(matchPair.rightColumn()), rowSets),
                 Assert::neverInvoked, LinkedHashMap::new));
-        inputColumnNames = MatchPair.getRightColumns(resultColumnPairs);
+        inputColumnNames = MatchPair.getRightColumns(aggregatedColumnPairs);
         if (live) {
-            resultInputsModifiedColumnSet = inputTable.newModifiedColumnSet(inputColumnNames);
+            aggregationInputsModifiedColumnSet = inputTable.newModifiedColumnSet(inputColumnNames);
             removedBuilders = new ObjectArraySource<>(Object.class);
         } else {
-            resultInputsModifiedColumnSet = null;
+            aggregationInputsModifiedColumnSet = null;
             removedBuilders = null;
         }
         initialized = false;
@@ -133,16 +139,16 @@ public final class GroupByChunkedOperator
         Assert.eqNull(previousValues, "previousValues");
         Assert.eqNull(newValues, "newValues");
         // noinspection unchecked
-        final LongChunk<OrderedRowKeys> preShiftIndicesAsOrdered = (LongChunk<OrderedRowKeys>) preShiftRowKeys;
+        final LongChunk<OrderedRowKeys> preShiftRowKeysAsOrdered = (LongChunk<OrderedRowKeys>) preShiftRowKeys;
         // noinspection unchecked
-        final LongChunk<OrderedRowKeys> postShiftIndicesAsOrdered = (LongChunk<OrderedRowKeys>) postShiftRowKeys;
+        final LongChunk<OrderedRowKeys> postShiftRowKeysAsOrdered = (LongChunk<OrderedRowKeys>) postShiftRowKeys;
 
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
             final int runLength = length.get(ii);
             final long destination = destinations.get(startPosition);
 
-            doShift(preShiftIndicesAsOrdered, postShiftIndicesAsOrdered, startPosition, runLength, destination);
+            doShift(preShiftRowKeysAsOrdered, postShiftRowKeysAsOrdered, startPosition, runLength, destination);
         }
     }
 
@@ -220,16 +226,16 @@ public final class GroupByChunkedOperator
         return rowKeys.size() != 0;
     }
 
-    private void addChunk(@NotNull final LongChunk<OrderedRowKeys> indices, final int start, final int length,
+    private void addChunk(@NotNull final LongChunk<OrderedRowKeys> rowKeys, final int start, final int length,
             final long destination) {
         if (length == 0) {
             return;
         }
         if (!initialized) {
             // during initialization, all rows are guaranteed to be in-order
-            accumulateToBuilderSequential(addedBuilders, indices, start, length, destination);
+            accumulateToBuilderSequential(addedBuilders, rowKeys, start, length, destination);
         } else {
-            accumulateToBuilderRandom(addedBuilders, indices, start, length, destination);
+            accumulateToBuilderRandom(addedBuilders, rowKeys, start, length, destination);
         }
         if (stepDestinationsModified != null) {
             stepDestinationsModified.addKey(destination);
@@ -248,12 +254,12 @@ public final class GroupByChunkedOperator
         }
     }
 
-    private void removeChunk(@NotNull final LongChunk<OrderedRowKeys> indices, final int start, final int length,
+    private void removeChunk(@NotNull final LongChunk<OrderedRowKeys> rowKeys, final int start, final int length,
             final long destination) {
         if (length == 0) {
             return;
         }
-        accumulateToBuilderRandom(removedBuilders, indices, start, length, destination);
+        accumulateToBuilderRandom(removedBuilders, rowKeys, start, length, destination);
         stepDestinationsModified.addKey(destination);
     }
 
@@ -365,26 +371,34 @@ public final class GroupByChunkedOperator
 
     @Override
     public Map<String, ? extends ColumnSource<?>> getResultColumns() {
-        return resultColumns;
+        if (exposeRowSetsAs != null) {
+            final Map<String, ColumnSource<?>> allResultColumns =
+                    new LinkedHashMap<>(resultAggregatedColumns.size() + 1);
+            allResultColumns.put(exposeRowSetsAs, rowSets);
+            allResultColumns.putAll(resultAggregatedColumns);
+            return allResultColumns;
+        }
+        return resultAggregatedColumns;
     }
 
     @Override
     public void startTrackingPrevValues() {
-        // NB: We don't need previous tracking on the indices ColumnSource. It's in destination space, and we never move
-        // anything. Nothing should be asking for previous values if they didn't exist previously.
-        // indices.startTrackingPrevValues();
+        // NB: We don't need previous tracking on the rowSets ColumnSource, even if it's exposed. It's in destination
+        // space, and we never move anything. Nothing should be asking for previous values if they didn't exist
+        // previously.
         // NB: These are usually (always, as of now) instances of AggregateColumnSource, meaning
         // startTrackingPrevValues() is a no-op.
-        resultColumns.values().forEach(ColumnSource::startTrackingPrevValues);
+        resultAggregatedColumns.values().forEach(ColumnSource::startTrackingPrevValues);
     }
 
     @Override
-    public UnaryOperator<ModifiedColumnSet> initializeRefreshing(@NotNull final QueryTable resultTable,
+    public UnaryOperator<ModifiedColumnSet> initializeRefreshing(
+            @NotNull final QueryTable resultTable,
             @NotNull final LivenessReferent aggregationUpdateListener) {
-        initializeNewIndexPreviousValues(resultTable.getRowSet());
+        initializeNewRowSetPreviousValues(resultTable.getRowSet());
         return registeredWithHelper
                 ? new InputToResultModifiedColumnSetFactory(resultTable,
-                        resultColumns.keySet().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY))
+                        resultAggregatedColumns.keySet().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY))
                 : null;
     }
 
@@ -395,7 +409,8 @@ public final class GroupByChunkedOperator
      * @param resultColumnNames The result column names, which must be parallel to this operator's input column names
      * @return The factory
      */
-    UnaryOperator<ModifiedColumnSet> makeInputToResultModifiedColumnSetFactory(@NotNull final QueryTable resultTable,
+    UnaryOperator<ModifiedColumnSet> makeInputToResultModifiedColumnSetFactory(
+            @NotNull final QueryTable resultTable,
             @NotNull final String[] resultColumnNames) {
         return new InputToResultModifiedColumnSetFactory(resultTable, resultColumnNames);
     }
@@ -403,23 +418,27 @@ public final class GroupByChunkedOperator
     private class InputToResultModifiedColumnSetFactory implements UnaryOperator<ModifiedColumnSet> {
 
         private final ModifiedColumnSet updateModifiedColumnSet;
-        private final ModifiedColumnSet allAggregatedColumns;
+        private final ModifiedColumnSet allResultColumns;
         private final ModifiedColumnSet.Transformer aggregatedColumnsTransformer;
 
-        private InputToResultModifiedColumnSetFactory(@NotNull final QueryTable resultTable,
-                @NotNull final String[] resultColumnNames) {
+        private InputToResultModifiedColumnSetFactory(
+                @NotNull final QueryTable resultTable,
+                @NotNull final String[] resultAggregatedColumnNames) {
             updateModifiedColumnSet = new ModifiedColumnSet(resultTable.getModifiedColumnSetForUpdates());
-            allAggregatedColumns = resultTable.newModifiedColumnSet(resultColumnNames);
+            allResultColumns = resultTable.newModifiedColumnSet(resultAggregatedColumnNames);
+            if (exposeRowSetsAs != null) {
+                allResultColumns.setAll(exposeRowSetsAs);
+            }
             aggregatedColumnsTransformer = inputTable.newModifiedColumnSetTransformer(
                     inputColumnNames,
-                    Arrays.stream(resultColumnNames).map(resultTable::newModifiedColumnSet)
+                    Arrays.stream(resultAggregatedColumnNames).map(resultTable::newModifiedColumnSet)
                             .toArray(ModifiedColumnSet[]::new));
         }
 
         @Override
         public ModifiedColumnSet apply(@NotNull final ModifiedColumnSet upstreamModifiedColumnSet) {
             if (someKeyHasAddsOrRemoves) {
-                return allAggregatedColumns;
+                return allResultColumns;
             }
             if (someKeyHasModifies) {
                 aggregatedColumnsTransformer.clearAndTransform(upstreamModifiedColumnSet, updateModifiedColumnSet);
@@ -432,7 +451,7 @@ public final class GroupByChunkedOperator
     @Override
     public void resetForStep(@NotNull final TableUpdate upstream, final int startingDestinationsCount) {
         stepValuesModified = upstream.modified().isNonempty() && upstream.modifiedColumnSet().nonempty()
-                && upstream.modifiedColumnSet().containsAny(resultInputsModifiedColumnSet);
+                && upstream.modifiedColumnSet().containsAny(aggregationInputsModifiedColumnSet);
         someKeyHasAddsOrRemoves = false;
         someKeyHasModifies = false;
         stepDestinationsModified = new BitmapRandomBuilder(startingDestinationsCount);
@@ -551,27 +570,27 @@ public final class GroupByChunkedOperator
             }
             stepDestinationsModified = null;
         }
-        initializeNewIndexPreviousValues(newDestinations);
+        initializeNewRowSetPreviousValues(newDestinations);
     }
 
-    private void initializeNewIndexPreviousValues(@NotNull final RowSequence newDestinations) {
+    private void initializeNewRowSetPreviousValues(@NotNull final RowSequence newDestinations) {
         if (newDestinations.isEmpty()) {
             return;
         }
-        try (final ChunkSource.GetContext indicesGetContext = rowSets.makeGetContext(BLOCK_SIZE);
+        try (final ChunkSource.GetContext rowSetsGetContext = rowSets.makeGetContext(BLOCK_SIZE);
                 final RowSequence.Iterator newDestinationsIterator = newDestinations.getRowSequenceIterator()) {
             while (newDestinationsIterator.hasMore()) {
                 final long nextDestination = newDestinationsIterator.peekNextKey();
                 final long nextBlockEnd = (nextDestination / BLOCK_SIZE) * BLOCK_SIZE + BLOCK_SIZE - 1;
-                // This RowSequence slice should be exactly aligned to a slice of a single data block in indices (since
+                // This RowSequence slice should be exactly aligned to a slice of a single data block in rowsets (since
                 // it is an ArrayBackedColumnSource), allowing getChunk to skip a copy.
                 final RowSequence newDestinationsSlice =
                         newDestinationsIterator.getNextRowSequenceThrough(nextBlockEnd);
-                final ObjectChunk<TrackingWritableRowSet, Values> indicesChunk =
-                        rowSets.getChunk(indicesGetContext, newDestinationsSlice).asObjectChunk();
-                final int indicesChunkSize = indicesChunk.size();
-                for (int ii = 0; ii < indicesChunkSize; ++ii) {
-                    indicesChunk.get(ii).initializePreviousValue();
+                final ObjectChunk<TrackingWritableRowSet, Values> rowSetsChunk =
+                        rowSets.getChunk(rowSetsGetContext, newDestinationsSlice).asObjectChunk();
+                final int rowSetsChunkSize = rowSetsChunk.size();
+                for (int ii = 0; ii < rowSetsChunkSize; ++ii) {
+                    rowSetsChunk.get(ii).initializePreviousValue();
                 }
             }
         }

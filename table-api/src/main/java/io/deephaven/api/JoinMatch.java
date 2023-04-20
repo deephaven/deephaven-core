@@ -24,6 +24,14 @@ import java.util.stream.Collectors;
  */
 public interface JoinMatch extends Serializable {
 
+    static Collection<ColumnName> lefts(Collection<? extends JoinMatch> matches) {
+        return matches.stream().map(JoinMatch::left).collect(Collectors.toList());
+    }
+
+    static Collection<ColumnName> rights(Collection<? extends JoinMatch> matches) {
+        return matches.stream().map(JoinMatch::right).collect(Collectors.toList());
+    }
+
     static JoinMatch of(ColumnName left, ColumnName right) {
         if (left.equals(right)) {
             return left;
