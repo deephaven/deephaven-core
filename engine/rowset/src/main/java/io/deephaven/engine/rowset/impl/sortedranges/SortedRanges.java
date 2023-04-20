@@ -4927,7 +4927,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             return ixInsertImpl(sr);
         }
         RspBitmap rsp = (RspBitmap) other;
-        rsp = rsp.applyOffsetOnNew(shiftAmount);
+        rsp = rsp.applyOffsetOnNew(shiftAmount).getWriteRef();
         rsp.insertOrderedLongSetUnsafeNoWriteCheck(this);
         rsp.finishMutations();
         return rsp;
