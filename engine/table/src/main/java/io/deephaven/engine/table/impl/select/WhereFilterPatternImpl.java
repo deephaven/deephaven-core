@@ -128,7 +128,6 @@ final class WhereFilterPatternImpl extends WhereFilterImpl {
         return "WhereFilterPatternImpl{" +
                 "filterPattern=" + filterPattern +
                 ", inverted=" + inverted +
-                ", chunkFilterImpl=" + chunkFilterImpl +
                 '}';
     }
 

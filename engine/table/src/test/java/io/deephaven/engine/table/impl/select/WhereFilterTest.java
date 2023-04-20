@@ -181,7 +181,7 @@ public class WhereFilterTest extends TestCase {
 
     public void testIfThenElse() {
         expect(IfThenElse.of(FOO, BAR, BAZ), ConditionFilter.class, "Foo ? Bar : Baz");
-        opposite(IfThenElse.of(FOO, BAR, BAZ), ConditionFilter.class, "!(Foo ? Bar : Baz)");
+        opposite(IfThenElse.of(FOO, BAR, BAZ), ConditionFilter.class, "Foo ? !Bar : !Baz");
     }
 
     public void testLiteralIsTrue() {
