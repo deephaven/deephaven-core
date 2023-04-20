@@ -4,14 +4,13 @@ import io.deephaven.api.updateby.BadDataBehavior;
 import io.deephaven.api.updateby.OperationControl;
 import io.deephaven.api.updateby.spec.*;
 import io.deephaven.api.updateby.spec.UpdateBySpec.Visitor;
+import io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale;
 import io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn;
 import io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByCumulativeMax;
 import io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByCumulativeMin;
 import io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByCumulativeProduct;
 import io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByCumulativeSum;
 import io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma;
-import io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaTimescale;
-import io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaTimescale.UpdateByEmaTime;
 import io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByFill;
 import org.junit.jupiter.api.Test;
 
@@ -35,8 +34,10 @@ public class UpdateBySpecBuilderTest {
             return UpdateByColumn.UpdateBySpec
                     .newBuilder().setEma(
                             UpdateByEma.newBuilder()
-                                    .setTimescale(UpdateByEmaTimescale.newBuilder().setTime(UpdateByEmaTime.newBuilder()
-                                            .setColumn("Timestamp").setPeriodNanos(1).build()).build())
+                                    .setTimescale(UpdateByEmaTimescale.newBuilder()
+                                            .setTime(UpdateByEmaTimescale.UpdateByEmaTime.newBuilder()
+                                                    .setColumn("Timestamp").setPeriodNanos(1).build())
+                                            .build())
                                     .build())
                     .build();
         }
@@ -86,34 +87,105 @@ public class UpdateBySpecBuilderTest {
             return null;
         }
 
-        // TODO: add this correctly (DHC #3392)
         @Override
-        public UpdateByColumn.UpdateBySpec visit(RollingSumSpec p) {
-            return null;
+        public UpdateByColumn.UpdateBySpec visit(RollingSumSpec spec) {
+            return UpdateByColumn.UpdateBySpec
+                    .newBuilder().setRollingSum(
+                            UpdateByColumn.UpdateBySpec.UpdateByRollingSum.newBuilder()
+                                    .setReverseTimescale(UpdateByEmaTimescale.newBuilder()
+                                            .setTime(UpdateByEmaTimescale.UpdateByEmaTime.newBuilder()
+                                                    .setColumn("Timestamp").setPeriodNanos(1).build())
+                                            .build())
+                                    .setForwardTimescale(UpdateByEmaTimescale.newBuilder()
+                                            .setTime(UpdateByEmaTimescale.UpdateByEmaTime.newBuilder()
+                                                    .setColumn("Timestamp").setPeriodNanos(1).build())
+                                            .build())
+                                    .build())
+                    .build();
         }
 
-        // TODO: add this correctly (DHC #3392)
         @Override
-        public UpdateByColumn.UpdateBySpec visit(RollingGroupSpec p) {
-            return null;
+        public UpdateByColumn.UpdateBySpec visit(RollingGroupSpec spec) {
+            return UpdateByColumn.UpdateBySpec
+                    .newBuilder().setRollingGroup(
+                            UpdateByColumn.UpdateBySpec.UpdateByRollingGroup.newBuilder()
+                                    .setReverseTimescale(UpdateByEmaTimescale.newBuilder()
+                                            .setTime(UpdateByEmaTimescale.UpdateByEmaTime.newBuilder()
+                                                    .setColumn("Timestamp").setPeriodNanos(1).build())
+                                            .build())
+                                    .setForwardTimescale(UpdateByEmaTimescale.newBuilder()
+                                            .setTime(UpdateByEmaTimescale.UpdateByEmaTime.newBuilder()
+                                                    .setColumn("Timestamp").setPeriodNanos(1).build())
+                                            .build())
+                                    .build())
+                    .build();
         }
 
-        // TODO: add this correctly (DHC #3392)
         @Override
-        public UpdateByColumn.UpdateBySpec visit(RollingAvgSpec p) {
-            return null;
+        public UpdateByColumn.UpdateBySpec visit(RollingAvgSpec spec) {
+            return UpdateByColumn.UpdateBySpec
+                    .newBuilder().setRollingAvg(
+                            UpdateByColumn.UpdateBySpec.UpdateByRollingAvg.newBuilder()
+                                    .setReverseTimescale(UpdateByEmaTimescale.newBuilder()
+                                            .setTime(UpdateByEmaTimescale.UpdateByEmaTime.newBuilder()
+                                                    .setColumn("Timestamp").setPeriodNanos(1).build())
+                                            .build())
+                                    .setForwardTimescale(UpdateByEmaTimescale.newBuilder()
+                                            .setTime(UpdateByEmaTimescale.UpdateByEmaTime.newBuilder()
+                                                    .setColumn("Timestamp").setPeriodNanos(1).build())
+                                            .build())
+                                    .build())
+                    .build();
         }
 
-        // TODO: add this correctly (DHC #3392)
         @Override
-        public UpdateByColumn.UpdateBySpec visit(RollingMinMaxSpec p) {
-            return null;
+        public UpdateByColumn.UpdateBySpec visit(RollingMinMaxSpec spec) {
+            if (spec.isMax()) {
+                return UpdateByColumn.UpdateBySpec
+                        .newBuilder().setRollingMax(
+                                UpdateByColumn.UpdateBySpec.UpdateByRollingMax.newBuilder()
+                                        .setReverseTimescale(UpdateByEmaTimescale.newBuilder()
+                                                .setTime(UpdateByEmaTimescale.UpdateByEmaTime.newBuilder()
+                                                        .setColumn("Timestamp").setPeriodNanos(1).build())
+                                                .build())
+                                        .setForwardTimescale(UpdateByEmaTimescale.newBuilder()
+                                                .setTime(UpdateByEmaTimescale.UpdateByEmaTime.newBuilder()
+                                                        .setColumn("Timestamp").setPeriodNanos(1).build())
+                                                .build())
+                                        .build())
+                        .build();
+            } else {
+                return UpdateByColumn.UpdateBySpec
+                        .newBuilder().setRollingMin(
+                                UpdateByColumn.UpdateBySpec.UpdateByRollingMin.newBuilder()
+                                        .setReverseTimescale(UpdateByEmaTimescale.newBuilder()
+                                                .setTime(UpdateByEmaTimescale.UpdateByEmaTime.newBuilder()
+                                                        .setColumn("Timestamp").setPeriodNanos(1).build())
+                                                .build())
+                                        .setForwardTimescale(UpdateByEmaTimescale.newBuilder()
+                                                .setTime(UpdateByEmaTimescale.UpdateByEmaTime.newBuilder()
+                                                        .setColumn("Timestamp").setPeriodNanos(1).build())
+                                                .build())
+                                        .build())
+                        .build();
+            }
         }
 
-        // TODO: add this correctly (DHC #3392)
         @Override
-        public UpdateByColumn.UpdateBySpec visit(RollingProductSpec rps) {
-            return null;
+        public UpdateByColumn.UpdateBySpec visit(RollingProductSpec spec) {
+            return UpdateByColumn.UpdateBySpec
+                    .newBuilder().setRollingProduct(
+                            UpdateByColumn.UpdateBySpec.UpdateByRollingProduct.newBuilder()
+                                    .setReverseTimescale(UpdateByEmaTimescale.newBuilder()
+                                            .setTime(UpdateByEmaTimescale.UpdateByEmaTime.newBuilder()
+                                                    .setColumn("Timestamp").setPeriodNanos(1).build())
+                                            .build())
+                                    .setForwardTimescale(UpdateByEmaTimescale.newBuilder()
+                                            .setTime(UpdateByEmaTimescale.UpdateByEmaTime.newBuilder()
+                                                    .setColumn("Timestamp").setPeriodNanos(1).build())
+                                            .build())
+                                    .build())
+                    .build();
         }
 
         // TODO: add this correctly (DHC #3666)
@@ -161,11 +233,139 @@ public class UpdateBySpecBuilderTest {
         check(FillBySpec.of());
     }
 
+    @Test
+    void rollingSum() {
+        check(RollingSumSpec.ofTime("Timestamp", Duration.ofNanos(1), Duration.ofNanos(2)),
+                UpdateByColumn.UpdateBySpec.newBuilder().setRollingSum(
+                        UpdateByColumn.UpdateBySpec.UpdateByRollingSum.newBuilder()
+                                .setReverseTimescale(time("Timestamp", 1))
+                                .setForwardTimescale(time("Timestamp", 2))
+                                .build())
+                        .build());
+
+        check(RollingSumSpec.ofTicks(42L, 43L),
+                UpdateByColumn.UpdateBySpec.newBuilder().setRollingSum(
+                        UpdateByColumn.UpdateBySpec.UpdateByRollingSum.newBuilder()
+                                .setReverseTimescale(ticks(42L))
+                                .setForwardTimescale(ticks(43L))
+                                .build())
+                        .build());
+    }
+
+    @Test
+    void rollingGroup() {
+        check(RollingGroupSpec.ofTime("Timestamp", Duration.ofNanos(1), Duration.ofNanos(2)),
+                UpdateByColumn.UpdateBySpec.newBuilder().setRollingGroup(
+                        UpdateByColumn.UpdateBySpec.UpdateByRollingGroup.newBuilder()
+                                .setReverseTimescale(time("Timestamp", 1))
+                                .setForwardTimescale(time("Timestamp", 2))
+                                .build())
+                        .build());
+
+        check(RollingGroupSpec.ofTicks(42L, 43L),
+                UpdateByColumn.UpdateBySpec.newBuilder().setRollingGroup(
+                        UpdateByColumn.UpdateBySpec.UpdateByRollingGroup.newBuilder()
+                                .setReverseTimescale(ticks(42L))
+                                .setForwardTimescale(ticks(43L))
+                                .build())
+                        .build());
+    }
+
+    @Test
+    void rollingAvg() {
+        check(RollingAvgSpec.ofTime("Timestamp", Duration.ofNanos(1), Duration.ofNanos(2)),
+                UpdateByColumn.UpdateBySpec.newBuilder().setRollingAvg(
+                        UpdateByColumn.UpdateBySpec.UpdateByRollingAvg.newBuilder()
+                                .setReverseTimescale(time("Timestamp", 1))
+                                .setForwardTimescale(time("Timestamp", 2))
+                                .build())
+                        .build());
+
+        check(RollingAvgSpec.ofTicks(42L, 43L),
+                UpdateByColumn.UpdateBySpec.newBuilder().setRollingAvg(
+                        UpdateByColumn.UpdateBySpec.UpdateByRollingAvg.newBuilder()
+                                .setReverseTimescale(ticks(42L))
+                                .setForwardTimescale(ticks(43L))
+                                .build())
+                        .build());
+    }
+
+    @Test
+    void rollingMin() {
+        check(RollingMinMaxSpec.ofTime(false, "Timestamp", Duration.ofNanos(1), Duration.ofNanos(2)),
+                UpdateByColumn.UpdateBySpec.newBuilder().setRollingMin(
+                        UpdateByColumn.UpdateBySpec.UpdateByRollingMin.newBuilder()
+                                .setReverseTimescale(time("Timestamp", 1))
+                                .setForwardTimescale(time("Timestamp", 2))
+                                .build())
+                        .build());
+
+        check(RollingMinMaxSpec.ofTicks(false, 42L, 43L),
+                UpdateByColumn.UpdateBySpec.newBuilder().setRollingMin(
+                        UpdateByColumn.UpdateBySpec.UpdateByRollingMin.newBuilder()
+                                .setReverseTimescale(ticks(42L))
+                                .setForwardTimescale(ticks(43L))
+                                .build())
+                        .build());
+    }
+
+    @Test
+    void rollingMax() {
+        check(RollingMinMaxSpec.ofTime(true, "Timestamp", Duration.ofNanos(1), Duration.ofNanos(2)),
+                UpdateByColumn.UpdateBySpec.newBuilder().setRollingMax(
+                        UpdateByColumn.UpdateBySpec.UpdateByRollingMax.newBuilder()
+                                .setReverseTimescale(time("Timestamp", 1))
+                                .setForwardTimescale(time("Timestamp", 2))
+                                .build())
+                        .build());
+
+        check(RollingMinMaxSpec.ofTicks(true, 42L, 43L),
+                UpdateByColumn.UpdateBySpec.newBuilder().setRollingMax(
+                        UpdateByColumn.UpdateBySpec.UpdateByRollingMax.newBuilder()
+                                .setReverseTimescale(ticks(42L))
+                                .setForwardTimescale(ticks(43L))
+                                .build())
+                        .build());
+    }
+
+    @Test
+    void rollingProduct() {
+        check(RollingProductSpec.ofTime("Timestamp", Duration.ofNanos(1), Duration.ofNanos(2)),
+                UpdateByColumn.UpdateBySpec.newBuilder().setRollingProduct(
+                        UpdateByColumn.UpdateBySpec.UpdateByRollingProduct.newBuilder()
+                                .setReverseTimescale(time("Timestamp", 1))
+                                .setForwardTimescale(time("Timestamp", 2))
+                                .build())
+                        .build());
+
+        check(RollingProductSpec.ofTicks(42L, 43L),
+                UpdateByColumn.UpdateBySpec.newBuilder().setRollingProduct(
+                        UpdateByColumn.UpdateBySpec.UpdateByRollingProduct.newBuilder()
+                                .setReverseTimescale(ticks(42L))
+                                .setForwardTimescale(ticks(43L))
+                                .build())
+                        .build());
+    }
+
     private static void check(UpdateBySpec spec) {
         check(spec, spec.walk(ExpectedSpecVisitor.INSTANCE));
     }
 
     private static void check(UpdateBySpec spec, UpdateByColumn.UpdateBySpec expected) {
         assertThat(UpdateByBuilder.adapt(spec)).isEqualTo(expected);
+    }
+
+    private static UpdateByEmaTimescale time(final String column, long nanos) {
+        return UpdateByEmaTimescale.newBuilder()
+                .setTime(UpdateByEmaTimescale.UpdateByEmaTime.newBuilder()
+                        .setColumn(column).setPeriodNanos(nanos).build())
+                .build();
+    }
+
+    private static UpdateByEmaTimescale ticks(long ticks) {
+        return UpdateByEmaTimescale.newBuilder()
+                .setTicks(UpdateByEmaTimescale.UpdateByEmaTicks
+                        .newBuilder().setTicks(ticks).build())
+                .build();
     }
 }
