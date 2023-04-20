@@ -331,6 +331,29 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                 }
             }
 
+            // apply modifies!
+            if (modifiesAffectUs) {
+                assert !flattenedResult;
+                assert chunkSourceContext != null;
+                final boolean needToUnmanagePrevValues = resultTypeIsLivenessReferent && liveResultOwner != null;
+                try (final RowSequence.Iterator keyIter = upstream.modified().getRowSequenceIterator();
+                     final RowSequence.Iterator prevKeyIter = needToUnmanagePrevValues
+                             ? upstream.getModifiedPreShift().getRowSequenceIterator()
+                             : null;
+                     final ChunkSource.FillContext fillContext = needToUnmanagePrevValues
+                             ? columnSource.makeFillContext(PAGE_SIZE)
+                             : null) {
+                    while (keyIter.hasMore()) {
+                        final RowSequence keys = keyIter.getNextRowSequenceWithLength(PAGE_SIZE);
+                        final Chunk<? extends Values> modifiedResults = chunkSource.getChunk(chunkSourceContext, keys);
+                        writableSource.fillFromChunk(destContext, modifiedResults, keys);
+                        if (needToUnmanagePrevValues) {
+                            handleModifyManagement(liveResultOwner, fillContext, prevKeyIter, modifiedResults);
+                        }
+                    }
+                }
+            }
+
             // apply adds!
             if (upstream.added().isNonempty()) {
                 assert destContext != null;
@@ -416,29 +439,6 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                             writableSource.fillFromChunk(destContext,
                                     maybeManageAdds(chunkSource.getChunk(chunkSourceContext, keys), liveResultOwner),
                                     keys);
-                        }
-                    }
-                }
-            }
-
-            // apply modifies!
-            if (modifiesAffectUs) {
-                assert !flattenedResult;
-                assert chunkSourceContext != null;
-                final boolean needToUnmanagePrevValues = resultTypeIsLivenessReferent && liveResultOwner != null;
-                try (final RowSequence.Iterator keyIter = upstream.modified().getRowSequenceIterator();
-                        final RowSequence.Iterator prevKeyIter = needToUnmanagePrevValues
-                                ? upstream.getModifiedPreShift().getRowSequenceIterator()
-                                : null;
-                        final ChunkSource.FillContext fillContext = needToUnmanagePrevValues
-                                ? columnSource.makeFillContext(PAGE_SIZE)
-                                : null) {
-                    while (keyIter.hasMore()) {
-                        final RowSequence keys = keyIter.getNextRowSequenceWithLength(PAGE_SIZE);
-                        final Chunk<? extends Values> modifiedResults = chunkSource.getChunk(chunkSourceContext, keys);
-                        writableSource.fillFromChunk(destContext, modifiedResults, keys);
-                        if (needToUnmanagePrevValues) {
-                            handleModifyManagement(liveResultOwner, fillContext, prevKeyIter, modifiedResults);
                         }
                     }
                 }
