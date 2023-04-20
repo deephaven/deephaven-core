@@ -23,7 +23,7 @@ import io.deephaven.gui.table.filters.Condition;
 
 import java.util.Objects;
 
-class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
+public class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
 
     public static WhereFilter of(Filter filter, TableDefinition parentDefinition) {
         return filter.walk(new WhereFilterAdapter(parentDefinition, false));
@@ -49,8 +49,9 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
         return isNull.expression().walk(new ExpressionIsNullAdapter(inverted));
     }
 
+
     public static WhereFilter of(FilterPattern pattern) {
-        return new PatternFilter(pattern);
+        return WhereFilterPatternImpl.of(pattern);
     }
 
     public static WhereFilter of(FilterQuick quick, TableDefinition parentDefinition) {
@@ -88,7 +89,7 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
     private final TableDefinition parentDefinition;
     private final boolean inverted;
 
-    WhereFilterAdapter(TableDefinition parentDefinition, boolean inverted) {
+    private WhereFilterAdapter(TableDefinition parentDefinition, boolean inverted) {
         this.parentDefinition = Objects.requireNonNull(parentDefinition);
         this.inverted = inverted;
     }

@@ -263,7 +263,7 @@ public class WhereFilterFactory {
                         final String colName = cd.getName();
                         if (filterMode == QuickFilterMode.REGEX) {
                             if (colClass.isAssignableFrom(String.class)) {
-                                return new PatternFilter(
+                                return new WhereFilterPatternImpl(
                                         ColumnName.of(colName),
                                         Pattern.compile(quickFilter, Pattern.CASE_INSENSITIVE | Pattern.DOTALL),
                                         Mode.MATCHES,
@@ -351,7 +351,7 @@ public class WhereFilterFactory {
             return ComparableRangeFilter.makeBigDecimalRange(colName, quickFilter);
         } else if (filterMode != QuickFilterMode.NUMERIC) {
             if (colClass == String.class) {
-                return new PatternFilter(
+                return new WhereFilterPatternImpl(
                         ColumnName.of(colName),
                         Pattern.compile(Pattern.quote(quickFilter), Pattern.CASE_INSENSITIVE),
                         Mode.FIND,
@@ -370,7 +370,7 @@ public class WhereFilterFactory {
     private static WhereFilter getSelectFilterForAnd(String colName, String quickFilter, Class<?> colClass) {
         // AND mode only supports String types
         if (colClass.isAssignableFrom(String.class)) {
-            return new PatternFilter(
+            return new WhereFilterPatternImpl(
                     ColumnName.of(colName),
                     Pattern.compile(Pattern.quote(quickFilter), Pattern.CASE_INSENSITIVE),
                     Mode.FIND,
@@ -398,7 +398,7 @@ public class WhereFilterFactory {
     }
 
     @VisibleForTesting
-    public static PatternFilter stringContainsFilter(
+    public static WhereFilterPatternImpl stringContainsFilter(
             CaseSensitivity sensitivity,
             MatchType matchType,
             @NotNull String columnName,
@@ -407,7 +407,7 @@ public class WhereFilterFactory {
             String... values) {
         final String value =
                 constructStringContainsRegex(values, matchType, internalDisjunctive, removeQuotes, columnName);
-        return new PatternFilter(
+        return new WhereFilterPatternImpl(
                 ColumnName.of(columnName),
                 Pattern.compile(value, sensitivity == CaseSensitivity.IgnoreCase ? Pattern.CASE_INSENSITIVE : 0),
                 Mode.FIND,

@@ -37,20 +37,20 @@ import java.util.regex.Pattern;
  * {@code value != null && (invertPattern ^ pattern.matcher(value).find())}.
  *
  * <p>
- * Note: this filter never matches against a {@code null} value.
+ * This filter never matches against a {@code null} value.
  */
-public final class PatternFilter extends WhereFilterImpl {
+final class WhereFilterPatternImpl extends WhereFilterImpl {
 
     private static final long serialVersionUID = 1L;
 
-    private final FilterPattern filterPattern;
-
-    public PatternFilter(FilterPattern filterPattern) {
-        if (!(filterPattern.expression() instanceof ColumnName)) {
-            throw new IllegalArgumentException("PatternFilter only supports filtering against a column name");
+    public static WhereFilterPatternImpl of(FilterPattern pattern) {
+        if (!(pattern.expression() instanceof ColumnName)) {
+            throw new IllegalArgumentException("WhereFilterPatternImpl only supports filtering against a column name");
         }
-        this.filterPattern = Objects.requireNonNull(filterPattern);
+        return new WhereFilterPatternImpl(pattern);
     }
+
+    private final FilterPattern filterPattern;
 
     /**
      * Creates a new pattern filter.
@@ -60,13 +60,17 @@ public final class PatternFilter extends WhereFilterImpl {
      * @param mode the mode
      * @param invertPattern if the pattern result should be inverted
      */
-    public PatternFilter(ColumnName columnName, Pattern pattern, Mode mode, boolean invertPattern) {
+    public WhereFilterPatternImpl(ColumnName columnName, Pattern pattern, Mode mode, boolean invertPattern) {
         this(FilterPattern.builder()
                 .expression(columnName)
                 .pattern(pattern)
                 .mode(mode)
                 .invertPattern(invertPattern)
                 .build());
+    }
+
+    private WhereFilterPatternImpl(FilterPattern filterPattern) {
+        this.filterPattern = Objects.requireNonNull(filterPattern);
     }
 
     @Override
@@ -112,7 +116,7 @@ public final class PatternFilter extends WhereFilterImpl {
 
     @Override
     public WhereFilter copy() {
-        return new PatternFilter(filterPattern);
+        return new WhereFilterPatternImpl(filterPattern);
     }
 
     @Override
@@ -121,7 +125,7 @@ public final class PatternFilter extends WhereFilterImpl {
             return true;
         if (o == null || getClass() != o.getClass())
             return false;
-        PatternFilter that = (PatternFilter) o;
+        WhereFilterPatternImpl that = (WhereFilterPatternImpl) o;
         return filterPattern.equals(that.filterPattern);
     }
 

@@ -671,20 +671,20 @@ public class QueryTableTest extends QueryTableTestBase {
         }
     }
 
-    public static PatternFilter stringContainsFilter(
+    public static WhereFilter stringContainsFilter(
             String columnName,
             String... values) {
         return stringContainsFilter(MatchType.Regular, columnName, values);
     }
 
-    public static PatternFilter stringContainsFilter(
+    public static WhereFilter stringContainsFilter(
             MatchType matchType,
             String columnName,
             String... values) {
         return stringContainsFilter(CaseSensitivity.MatchCase, matchType, columnName, values);
     }
 
-    public static PatternFilter stringContainsFilter(
+    public static WhereFilter stringContainsFilter(
             CaseSensitivity sensitivity,
             MatchType matchType,
             @NotNull String columnName,
