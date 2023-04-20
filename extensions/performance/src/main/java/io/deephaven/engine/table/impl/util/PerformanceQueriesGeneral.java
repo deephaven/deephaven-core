@@ -190,8 +190,7 @@ public class PerformanceQueriesGeneral {
                     "Ratio_50_Percentile",
                     "QueryMemUsedPct_50_Percentile",
                     "Ratio_Max",
-                    "QueryMemUsedPct_Max"
-            );
+                    "QueryMemUsedPct_Max");
         }
 
         resultMap.put("QueryUpdatePerformance", qup);

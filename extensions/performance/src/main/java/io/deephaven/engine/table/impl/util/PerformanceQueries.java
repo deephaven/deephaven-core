@@ -146,8 +146,8 @@ public class PerformanceQueries {
     }
 
     /**
-     * User friendly table and widgets with basic memory, UGP and GC stats samples for the current engine process, collected on a
-     * periodic basis.
+     * User friendly table and widgets with basic memory, UGP and GC stats samples for the current engine process,
+     * collected on a periodic basis.
      *
      * @return map of table and plots derived from the server state log
      */
