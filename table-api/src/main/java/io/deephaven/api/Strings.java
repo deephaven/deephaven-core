@@ -302,7 +302,7 @@ public class Strings {
 
         @Override
         public String visit(FilterPattern pattern) {
-            return of(invert ? pattern.invert() : pattern, encapsulate);
+            return invert ? of(pattern.invert(), encapsulate) : of(pattern, encapsulate);
         }
 
         @Override
