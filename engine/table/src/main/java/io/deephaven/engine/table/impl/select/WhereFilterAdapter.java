@@ -15,6 +15,7 @@ import io.deephaven.api.filter.FilterMatches;
 import io.deephaven.api.filter.FilterNot;
 import io.deephaven.api.filter.FilterOr;
 import io.deephaven.api.filter.FilterPattern;
+import io.deephaven.api.filter.FilterPattern.Mode;
 import io.deephaven.api.filter.FilterQuick;
 import io.deephaven.api.literal.Literal;
 import io.deephaven.engine.table.TableDefinition;
@@ -22,6 +23,7 @@ import io.deephaven.engine.table.impl.select.MatchFilter.MatchType;
 import io.deephaven.gui.table.filters.Condition;
 
 import java.util.Objects;
+import java.util.regex.Pattern;
 
 public class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
 
@@ -49,9 +51,8 @@ public class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
         return isNull.expression().walk(new ExpressionIsNullAdapter(inverted));
     }
 
-
-    public static WhereFilter of(FilterPattern pattern) {
-        return WhereFilterPatternImpl.of(pattern);
+    public static WhereFilter of(FilterPattern pattern, boolean inverted) {
+        return WhereFilterPatternImpl.of(pattern, inverted);
     }
 
     public static WhereFilter of(FilterQuick quick, TableDefinition parentDefinition) {
@@ -84,6 +85,29 @@ public class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
 
     public static WhereFilter of(RawString rawString, boolean inverted) {
         return WhereFilterFactory.getExpression(Strings.of(rawString, false, inverted));
+    }
+
+    /**
+     * This creates a pattern filter that first filters out nulls. The {@code patternInverted} behavior is not
+     * equivalent to a "traditional invert" - it only inverts the inner pattern filter, and not the is-not-null filter.
+     *
+     * @param columnName the column name
+     * @param pattern the pattern
+     * @param mode the mode
+     * @param patternInverted if the pattern should be inverted
+     * @return the where filter
+     * @deprecated New callers are discouraged from calling this method, and instead encouraged to create {@link Filter
+     *             filters} directly and adapt via {@link WhereFilter#of(Filter, TableDefinition)}.
+     */
+    public static WhereFilter ofNotNullAndPattern(
+            String columnName,
+            Pattern pattern,
+            Mode mode,
+            boolean patternInverted) {
+        final ColumnName column = ColumnName.of(columnName);
+        return ConjunctiveFilter.makeConjunctiveFilter(
+                of(Filter.isNull(column), true),
+                of(FilterPattern.of(column, pattern, mode), patternInverted));
     }
 
     private final TableDefinition parentDefinition;
@@ -130,7 +154,7 @@ public class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
 
     @Override
     public WhereFilter visit(FilterPattern pattern) {
-        return inverted ? of(pattern.invert(), parentDefinition) : of(pattern);
+        return of(pattern, inverted);
     }
 
     @Override

@@ -110,21 +110,17 @@ class PatternMode(Enum):
 def pattern(
     mode: PatternMode,
     col: str,
-    regex: str,
-    invert_pattern: bool = False,
+    regex: str
 ) -> Filter:
     """Creates a regular-expression pattern filter.
 
     See https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/regex/Pattern.html for documentation on
     the regex pattern.
 
-    This filter will never match null-strings.
-
     Args:
         mode (PatternMode): the mode
         col (str): the column name
         regex (str): the regex pattern
-        invert_pattern (bool): if the pattern match should be inverted
 
     Returns:
         a new pattern filter
@@ -138,7 +134,6 @@ def pattern(
                 _JColumnName.of(col),
                 _JPattern.compile(regex),
                 mode.value,
-                invert_pattern,
             )
         )
     except Exception as e:

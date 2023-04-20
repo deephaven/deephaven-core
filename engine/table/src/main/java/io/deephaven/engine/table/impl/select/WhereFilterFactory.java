@@ -3,7 +3,6 @@
  */
 package io.deephaven.engine.table.impl.select;
 
-import io.deephaven.api.ColumnName;
 import io.deephaven.api.filter.FilterPattern.Mode;
 import io.deephaven.api.filter.FilterQuick;
 import io.deephaven.base.Pair;
@@ -263,8 +262,8 @@ public class WhereFilterFactory {
                         final String colName = cd.getName();
                         if (filterMode == QuickFilterMode.REGEX) {
                             if (colClass.isAssignableFrom(String.class)) {
-                                return new WhereFilterPatternImpl(
-                                        ColumnName.of(colName),
+                                return WhereFilterAdapter.ofNotNullAndPattern(
+                                        colName,
                                         Pattern.compile(quickFilter, Pattern.CASE_INSENSITIVE | Pattern.DOTALL),
                                         Mode.MATCHES,
                                         false);
@@ -351,8 +350,8 @@ public class WhereFilterFactory {
             return ComparableRangeFilter.makeBigDecimalRange(colName, quickFilter);
         } else if (filterMode != QuickFilterMode.NUMERIC) {
             if (colClass == String.class) {
-                return new WhereFilterPatternImpl(
-                        ColumnName.of(colName),
+                return WhereFilterAdapter.ofNotNullAndPattern(
+                        colName,
                         Pattern.compile(Pattern.quote(quickFilter), Pattern.CASE_INSENSITIVE),
                         Mode.FIND,
                         false);
@@ -370,8 +369,8 @@ public class WhereFilterFactory {
     private static WhereFilter getSelectFilterForAnd(String colName, String quickFilter, Class<?> colClass) {
         // AND mode only supports String types
         if (colClass.isAssignableFrom(String.class)) {
-            return new WhereFilterPatternImpl(
-                    ColumnName.of(colName),
+            return WhereFilterAdapter.ofNotNullAndPattern(
+                    colName,
                     Pattern.compile(Pattern.quote(quickFilter), Pattern.CASE_INSENSITIVE),
                     Mode.FIND,
                     false);
@@ -398,7 +397,7 @@ public class WhereFilterFactory {
     }
 
     @VisibleForTesting
-    public static WhereFilterPatternImpl stringContainsFilter(
+    public static WhereFilter stringContainsFilter(
             CaseSensitivity sensitivity,
             MatchType matchType,
             @NotNull String columnName,
@@ -407,8 +406,8 @@ public class WhereFilterFactory {
             String... values) {
         final String value =
                 constructStringContainsRegex(values, matchType, internalDisjunctive, removeQuotes, columnName);
-        return new WhereFilterPatternImpl(
-                ColumnName.of(columnName),
+        return WhereFilterAdapter.ofNotNullAndPattern(
+                columnName,
                 Pattern.compile(value, sensitivity == CaseSensitivity.IgnoreCase ? Pattern.CASE_INSENSITIVE : 0),
                 Mode.FIND,
                 matchType == MatchType.Inverted);
@@ -554,4 +553,5 @@ public class WhereFilterFactory {
                     dateLower == null ? null : DateTimeUtils.millisToTime(dateLower.toInstant().toEpochMilli());
         }
     }
+
 }

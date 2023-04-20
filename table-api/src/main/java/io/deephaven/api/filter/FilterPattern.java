@@ -16,12 +16,11 @@ public abstract class FilterPattern extends FilterBase {
         return ImmutableFilterPattern.builder();
     }
 
-    public static FilterPattern of(Expression expression, Pattern pattern, Mode mode, boolean invertPattern) {
+    public static FilterPattern of(Expression expression, Pattern pattern, Mode mode) {
         return builder()
                 .expression(expression)
                 .pattern(pattern)
                 .mode(mode)
-                .invertPattern(invertPattern)
                 .build();
     }
 
@@ -31,20 +30,9 @@ public abstract class FilterPattern extends FilterBase {
 
     public abstract Mode mode();
 
-    @Default
-    public boolean invertPattern() {
-        return false;
-    }
-
     @Override
-    public final FilterOr invert() {
-        final FilterPattern invertedPattern = builder()
-                .expression(expression())
-                .pattern(pattern())
-                .mode(mode())
-                .invertPattern(!invertPattern())
-                .build();
-        return FilterOr.of(Filter.isNull(expression()), invertedPattern);
+    public final FilterNot<FilterPattern> invert() {
+        return Filter.not(this);
     }
 
     @Override
@@ -61,7 +49,6 @@ public abstract class FilterPattern extends FilterBase {
                 + ", pattern=" + pattern().pattern()
                 + ", patternFlags=" + pattern().flags()
                 + ", mode=" + mode()
-                + ", invertPattern=" + invertPattern()
                 + "}";
     }
 
@@ -79,8 +66,7 @@ public abstract class FilterPattern extends FilterBase {
         return expression().equals(other.expression())
                 && pattern().pattern().equals(other.pattern().pattern())
                 && pattern().flags() == other.pattern().flags()
-                && mode() == other.mode()
-                && invertPattern() == other.invertPattern();
+                && mode() == other.mode();
     }
 
     @Override
@@ -90,7 +76,6 @@ public abstract class FilterPattern extends FilterBase {
         h += (h << 5) + pattern().pattern().hashCode();
         h += (h << 5) + Integer.hashCode(pattern().flags());
         h += (h << 5) + mode().hashCode();
-        h += (h << 5) + Boolean.hashCode(invertPattern());
         return h;
     }
 
@@ -112,8 +97,6 @@ public abstract class FilterPattern extends FilterBase {
         Builder pattern(Pattern pattern);
 
         Builder mode(Mode mode);
-
-        Builder invertPattern(boolean invertPattern);
 
         FilterPattern build();
     }

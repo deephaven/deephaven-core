@@ -3,8 +3,6 @@
  */
 package io.deephaven.server.table.ops.filter;
 
-import io.deephaven.api.ColumnName;
-import io.deephaven.api.filter.FilterPattern;
 import io.deephaven.api.filter.FilterPattern.Mode;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.select.ConjunctiveFilter;
@@ -240,11 +238,11 @@ public class FilterFactory implements FilterVisitor<WhereFilter> {
             MatchType matchType) {
         // Note: this implementation only inverts the pattern and not the nullness-matching
         final int flags = caseSensitivity == CaseSensitivity.IGNORE_CASE ? Pattern.CASE_INSENSITIVE : 0;
-        return WhereFilterAdapter.of(FilterPattern.of(
-                ColumnName.of(reference.getColumnName()),
+        return WhereFilterAdapter.ofNotNullAndPattern(
+                reference.getColumnName(),
                 Pattern.compile(Pattern.quote(searchString), flags),
                 Mode.FIND,
-                matchType == MatchType.INVERTED));
+                matchType == MatchType.INVERTED);
     }
 
     @Override
@@ -252,11 +250,11 @@ public class FilterFactory implements FilterVisitor<WhereFilter> {
             MatchType matchType) {
         final int flags =
                 (caseSensitivity == CaseSensitivity.IGNORE_CASE ? Pattern.CASE_INSENSITIVE : 0) | Pattern.DOTALL;
-        return WhereFilterAdapter.of(FilterPattern.of(
-                ColumnName.of(reference.getColumnName()),
+        return WhereFilterAdapter.ofNotNullAndPattern(
+                reference.getColumnName(),
                 Pattern.compile(regex, flags),
                 Mode.MATCHES,
-                matchType == MatchType.INVERTED));
+                matchType == MatchType.INVERTED);
     }
 
     @Override
