@@ -32,6 +32,10 @@ public class Strings {
         return columnName.name();
     }
 
+    public static String ofColumnNames(Collection<? extends ColumnName> columnNames) {
+        return columnNames.stream().map(Strings::of).collect(Collectors.joining(",", "[", "]"));
+    }
+
     public static String of(RawString rawString) {
         return rawString.value();
     }
