@@ -2,7 +2,6 @@ package io.deephaven.api.filter;
 
 import io.deephaven.annotations.BuildableStyle;
 import io.deephaven.api.expression.Expression;
-import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 
 import java.util.regex.Matcher;
