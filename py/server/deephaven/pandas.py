@@ -105,7 +105,8 @@ def to_pandas(table: Table, cols: List[str] = None, dtype_backend: str = None) -
     """
     try:
         if dtype_backend is not None and pandas.__version__.partition(".")[0] == "1":
-            raise DHError(message="the dtype_backend option is only available for Pandas 2.0.0 and above.")
+            raise DHError(message=f"the dtype_backend ({dtype_backend}) option is only available for Pandas 2.0.0 and "
+                                  f"above. {pandas.__version__} is being used.")
 
         type_mapper = _TO_PANDAS_TYPE_MAPPERS.get(dtype_backend)
         # if nullable dtypes (Pandas or pyarrow) is requested
@@ -115,8 +116,8 @@ def to_pandas(table: Table, cols: List[str] = None, dtype_backend: str = None) -
             del pa_table
             return df
 
-        # if regular numpy dtype is request, we will directly access the table column sources, to get a consistent
-        # view of a ticking table, we need to take a snapshot of it first
+        # if regular numpy dtype is requested, we will directly access the table column sources. To get a consistent
+        # view of a ticking table, we need to take a snapshot of it first.
         if table.is_refreshing:
             table = table.snapshot()
 
