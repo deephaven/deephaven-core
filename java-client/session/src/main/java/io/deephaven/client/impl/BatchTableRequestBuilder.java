@@ -758,17 +758,27 @@ class BatchTableRequestBuilder {
 
         @Override
         public Condition visit(FilterQuick quick) {
+            if (!(quick.expression() instanceof ColumnName)) {
+                // TODO(deephaven-core#3609): Update gRPC expression / filter / literal structures
+                throw new UnsupportedOperationException(
+                        "Can't build Condition with FilterMatches.expression not a ColumnName");
+            }
             return Condition.newBuilder().setSearch(SearchCondition.newBuilder()
                     .setSearchString(quick.quickSearch())
-                    .addOptionalReferences(reference(quick.column()))
+                    .addOptionalReferences(reference(((ColumnName) quick.expression())))
                     .build())
                     .build();
         }
 
         @Override
         public Condition visit(FilterMatches matches) {
+            if (!(matches.expression() instanceof ColumnName)) {
+                // TODO(deephaven-core#3609): Update gRPC expression / filter / literal structures
+                throw new UnsupportedOperationException(
+                        "Can't build Condition with FilterMatches.expression not a ColumnName");
+            }
             final InCondition.Builder builder = InCondition.newBuilder()
-                    .setTarget(Value.newBuilder().setReference(reference(matches.column())).build());
+                    .setTarget(Value.newBuilder().setReference(reference(((ColumnName) matches.expression()))).build());
             for (Literal value : matches.values()) {
                 builder.addCandidates(Value.newBuilder().setLiteral(LiteralAdapter.of(value)));
             }

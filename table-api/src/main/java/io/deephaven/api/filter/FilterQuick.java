@@ -1,7 +1,7 @@
 package io.deephaven.api.filter;
 
 import io.deephaven.annotations.SimpleStyle;
-import io.deephaven.api.ColumnName;
+import io.deephaven.api.expression.Expression;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
 
@@ -9,12 +9,12 @@ import org.immutables.value.Value.Parameter;
 @SimpleStyle
 public abstract class FilterQuick extends FilterBase {
 
-    public static FilterQuick of(ColumnName column, String quickSearch) {
-        return ImmutableFilterQuick.of(column, quickSearch);
+    public static FilterQuick of(Expression expression, String quickSearch) {
+        return ImmutableFilterQuick.of(expression, quickSearch);
     }
 
     @Parameter
-    public abstract ColumnName column();
+    public abstract Expression expression();
 
     @Parameter
     public abstract String quickSearch();

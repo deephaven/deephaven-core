@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl.select;
 
+import io.deephaven.api.ColumnName;
 import io.deephaven.api.filter.FilterMatches;
 import io.deephaven.api.literal.Literal;
 import io.deephaven.base.string.cache.CompressedString;
@@ -28,10 +29,13 @@ public class MatchFilter extends WhereFilterImpl {
     private static final long serialVersionUID = 1L;
 
     public static MatchFilter ofStringValues(FilterMatches matches, boolean inverted) {
+        if (!(matches.expression() instanceof ColumnName)) {
+            throw new IllegalArgumentException("MatchFilter only supports filtering against a column name");
+        }
         return new MatchFilter(
                 matches.caseInsensitive() ? CaseSensitivity.IgnoreCase : CaseSensitivity.MatchCase,
                 inverted ? MatchType.Inverted : MatchType.Regular,
-                matches.column().name(),
+                ((ColumnName) matches.expression()).name(),
                 matches.values().stream().map(ColumnTypeConvertorCompatibleString::of).toArray(String[]::new));
     }
 

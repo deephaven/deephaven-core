@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl.select;
 
+import io.deephaven.api.ColumnName;
 import io.deephaven.api.filter.FilterPattern.Mode;
 import io.deephaven.api.filter.FilterQuick;
 import io.deephaven.base.Pair;
@@ -220,7 +221,11 @@ public class WhereFilterFactory {
     }
 
     public static WhereFilter quickFilter(FilterQuick quick, TableDefinition parentDefinition) {
-        final String columnName = quick.column().name();
+        if (!(quick.expression() instanceof ColumnName)) {
+            throw new IllegalArgumentException(
+                    "WhereFilterFactory quickFilter only supports filtering against a column name");
+        }
+        final String columnName = ((ColumnName) quick.expression()).name();
         final ColumnDefinition<?> cd = parentDefinition.getColumn(columnName);
         final WhereFilter filter = createQuickFilter(cd, quick.quickSearch(), QuickFilterMode.NORMAL);
         if (filter == null) {

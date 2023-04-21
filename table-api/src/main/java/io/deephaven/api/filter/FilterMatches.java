@@ -2,6 +2,7 @@ package io.deephaven.api.filter;
 
 import io.deephaven.annotations.BuildableStyle;
 import io.deephaven.api.ColumnName;
+import io.deephaven.api.expression.Expression;
 import io.deephaven.api.literal.Literal;
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
@@ -16,7 +17,7 @@ public abstract class FilterMatches extends FilterBase {
         return ImmutableFilterMatches.builder();
     }
 
-    public abstract ColumnName column();
+    public abstract Expression expression();
 
     public abstract List<Literal> values();
 
@@ -36,7 +37,7 @@ public abstract class FilterMatches extends FilterBase {
     }
 
     public interface Builder {
-        Builder column(ColumnName column);
+        Builder expression(Expression expression);
 
         Builder caseInsensitive(boolean caseInsensitive);
 
