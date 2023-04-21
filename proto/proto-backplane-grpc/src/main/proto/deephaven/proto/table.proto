@@ -334,6 +334,21 @@ enum BadDataBehavior {
   POISON = 3;
 }
 
+// Reusable timescale message for the UpdateBy rolling operations.
+message UpdateByEmaTimescale {
+  message UpdateByEmaTicks {
+    sint64 ticks = 1 [jstype=JS_STRING];
+  }
+  message UpdateByEmaTime {
+    string column = 1;
+    sint64 period_nanos = 2 [jstype=JS_STRING];
+  }
+  oneof type {
+    UpdateByEmaTicks ticks = 1;
+    UpdateByEmaTime time = 2;
+  }
+}
+
 // Create a table with the same rowset as its parent that will perform the specified set of row
 // based operations to it. As opposed to {@link #update(String...)} these operations are more restricted but are
 // capable of processing state between rows. This operation will group the table by the specified set of keys if
@@ -415,22 +430,39 @@ message UpdateByRequest {
             // If unset, defaults to server-provided defaults.
             MathContext big_value_context = 6;
           }
-          message UpdateByEmaTimescale {
-            message UpdateByEmaTicks {
-              sint64 ticks = 1 [jstype=JS_STRING];
-            }
-            message UpdateByEmaTime {
-              string column = 1;
-              sint64 period_nanos = 2 [jstype=JS_STRING];
-            }
-            oneof type {
-              UpdateByEmaTicks ticks = 1;
-              UpdateByEmaTime time = 2;
-            }
-          }
           // If unset, defaults to server-provided defaults.
           UpdateByEmaOptions options = 1;
           UpdateByEmaTimescale timescale = 2;
+        }
+
+        message UpdateByRollingSum {
+          UpdateByEmaTimescale reverse_timescale = 1;
+          UpdateByEmaTimescale forward_timescale = 2;
+        }
+
+        message UpdateByRollingGroup {
+          UpdateByEmaTimescale reverse_timescale = 1;
+          UpdateByEmaTimescale forward_timescale = 2;
+        }
+
+        message UpdateByRollingAvg {
+          UpdateByEmaTimescale reverse_timescale = 1;
+          UpdateByEmaTimescale forward_timescale = 2;
+        }
+
+        message UpdateByRollingMin {
+          UpdateByEmaTimescale reverse_timescale = 1;
+          UpdateByEmaTimescale forward_timescale = 2;
+        }
+
+        message UpdateByRollingMax {
+          UpdateByEmaTimescale reverse_timescale = 1;
+          UpdateByEmaTimescale forward_timescale = 2;
+        }
+
+        message UpdateByRollingProduct {
+          UpdateByEmaTimescale reverse_timescale = 1;
+          UpdateByEmaTimescale forward_timescale = 2;
         }
 
         oneof type {
@@ -440,6 +472,12 @@ message UpdateByRequest {
           UpdateByCumulativeProduct product = 4;
           UpdateByFill fill = 5;
           UpdateByEma ema = 6;
+          UpdateByRollingSum rolling_sum = 7;
+          UpdateByRollingGroup rolling_group = 8;
+          UpdateByRollingAvg rolling_avg = 9;
+          UpdateByRollingMin rolling_min = 10;
+          UpdateByRollingMax rolling_max = 11;
+          UpdateByRollingProduct rolling_product = 12;
         }
       }
 

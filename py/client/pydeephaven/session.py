@@ -4,7 +4,7 @@
 import base64
 import os
 import threading
-from typing import List
+from typing import List, Union
 
 import grpc
 import pyarrow as pa
@@ -20,6 +20,7 @@ from pydeephaven._input_table_service import InputTableService
 from pydeephaven._session_service import SessionService
 from pydeephaven._table_ops import TimeTableOp, EmptyTableOp, MergeTablesOp, FetchTableOp, CreateInputTableOp
 from pydeephaven._table_service import TableService
+from pydeephaven._utils import to_list
 from pydeephaven.dherror import DHError
 from pydeephaven.proto import ticket_pb2
 from pydeephaven.query import Query
@@ -441,7 +442,7 @@ class Session:
         return Query(self, table)
 
     def input_table(self, schema: pa.Schema = None, init_table: Table = None,
-                    key_cols: List[str] = None) -> InputTable:
+                    key_cols: Union[str, List[str]] = None) -> InputTable:
         """ Create an InputTable from either Arrow schema or initial table. When key columns are
         provided, the InputTable will be keyed, otherwise it will be append-only.
 
@@ -461,7 +462,7 @@ class Session:
         elif schema and init_table:
             raise ValueError("both arrow schema and init table are provided.")
 
-        table_op = CreateInputTableOp(schema=schema, init_table=init_table, key_cols=key_cols)
+        table_op = CreateInputTableOp(schema=schema, init_table=init_table, key_cols=to_list(key_cols))
         input_table = self.table_service.grpc_table_op(None, table_op, table_class=InputTable)
         input_table.key_cols = key_cols
         return input_table
