@@ -3,7 +3,6 @@ package io.deephaven.engine.table.impl.rangejoin;
 import io.deephaven.api.*;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.filter.Filter;
-import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.exceptions.CancellationException;
@@ -150,12 +149,7 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
         }
     }
 
-    private class StaticRangeJoinPhase1 extends RangeJoinPhase implements IterateAction<JobThreadContext> {
-
-        private static final int LEFT_TASK_INDEX = 0;
-        private static final int RIGHT_TASK_INDEX = 1;
-        private static final int START_TASK_INDEX = LEFT_TASK_INDEX;
-        private static final int TASK_COUNT = RIGHT_TASK_INDEX + 1;
+    private class StaticRangeJoinPhase1 extends RangeJoinPhase {
 
         private Table outputLeftTableGrouped;
         private Table outputRightTableGrouped;
@@ -167,38 +161,43 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
         }
 
         private void start() {
-            jobScheduler.iterateParallel(
+            final CompletableFuture<?> groupLeftTableFuture = new CompletableFuture<>();
+            jobScheduler.submit(
                     ExecutionContext.getContextToRecord(),
-                    logOutput -> logOutput.append("range join input grouping"),
-                    JobScheduler.DEFAULT_CONTEXT_FACTORY,
-                    START_TASK_INDEX,
-                    TASK_COUNT,
-                    this,
-                    () -> new StaticRangeJoinPhase2(jobScheduler, resultFuture)
-                            .start(outputLeftTableGrouped, outputRightTableGrouped),
-                    resultFuture::completeExceptionally);
+                    this::groupLeftTable,
+                    logOutput -> logOutput.append("static range join group left table"),
+                    groupLeftTableFuture::completeExceptionally);
+            try {
+                filterAndGroupRightTable();
+            } catch (Throwable t) {
+                // Try to ensure that the group-left-table job is no longer running before re-throwing
+                groupLeftTableFuture.cancel(true);
+                try {
+                    groupLeftTableFuture.get();
+                } catch (Exception ignored) {
+                }
+                throw t;
+            }
+            try {
+                groupLeftTableFuture.get();
+            } catch (InterruptedException | ExecutionException e) {
+                resultFuture.completeExceptionally(e);
+                return;
+            }
+            new StaticRangeJoinPhase2(jobScheduler, resultFuture)
+                    .start(outputLeftTableGrouped, outputRightTableGrouped);
         }
 
-        @Override
-        public void run(
-                @NotNull final JobThreadContext taskThreadContext,
-                final int index,
-                @NotNull final Consumer<Exception> nestedErrorConsumer) {
-            switch (index) {
-                case LEFT_TASK_INDEX:
-                    outputLeftTableGrouped = exposeGroupRowSets(
-                            leftTable,
-                            JoinMatch.lefts(exactMatches));
-                    break;
-                case RIGHT_TASK_INDEX:
-                    outputRightTableGrouped = exposeGroupRowSets(
-                            ((QueryTable) rightTable.coalesce().where(Filter.isNotNull(rangeMatch.rightRangeColumn()))),
-                            JoinMatch.rights(exactMatches));
-                    break;
-                default:
-                    // noinspection ThrowableNotThrown
-                    Assert.statementNeverExecuted(String.format("Unexpected task index %d", index));
-            }
+        private void groupLeftTable() {
+            outputLeftTableGrouped = exposeGroupRowSets(
+                    leftTable,
+                    JoinMatch.lefts(exactMatches));
+        }
+
+        private void filterAndGroupRightTable() {
+            outputRightTableGrouped = exposeGroupRowSets(
+                    ((QueryTable) rightTable.coalesce().where(Filter.isNotNull(rangeMatch.rightRangeColumn()))),
+                    JoinMatch.rights(exactMatches));
         }
     }
 
@@ -236,7 +235,15 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
         private void start(@NotNull final Table leftTableGrouped, @NotNull final Table rightTableGrouped) {
             joinedInputTables = leftTableGrouped.naturalJoin(
                     rightTableGrouped, exactMatches, List.of(JoinAddition.of(RIGHT_ROW_SET, EXPOSED_GROUP_ROW_SETS)));
-
+            jobScheduler.iterateParallel(
+                    ExecutionContext.getContextToRecord(),
+                    logOutput -> logOutput.append("static range join find ranges"),
+                    JobScheduler.DEFAULT_CONTEXT_FACTORY,
+                    0,
+                    joinedInputTables.intSize(),
+                    this,
+                    () -> new StaticRangeJoinPhase3(jobScheduler, resultFuture).start(outputSlotsAndPositionRanges),
+                    resultFuture::completeExceptionally);
         }
 
         @Override
@@ -244,7 +251,20 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
                 @NotNull final JobThreadContext taskThreadContext,
                 final int index,
                 @NotNull final Consumer<Exception> nestedErrorConsumer) {
+            // TODO-RWC: Grab groups, do stamping, update outputSlotsAndPositionRanges
+        }
+    }
 
+    private class StaticRangeJoinPhase3 extends RangeJoinPhase {
+
+        private StaticRangeJoinPhase3(
+                @NotNull final JobScheduler jobScheduler,
+                @NotNull final CompletableFuture<QueryTable> resultFuture) {
+            super(jobScheduler, resultFuture);
+        }
+
+        public void start(@NotNull final WritableColumnSource<Integer> outputSlotsAndPositionRanges) {
+            // TODO-RWC: Build grouped sources, return result QueryTable
         }
     }
 }
