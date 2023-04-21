@@ -423,16 +423,29 @@ public class ColumnDefinition<TYPE> implements LogOutputAppendable {
      * derivation. Checks for equality of {@code name}, {@code dataType}, and {@code componentType}. As such, this
      * method has an equivalence relation, ie {@code A.isCompatible(B) == B.isCompatible(A)}.
      *
-     * @param other - The ColumnDefinition to compare to.
-     * @return True if the ColumnDefinition defines a column whose data is compatible with this ColumnDefinition.
+     * @param other The ColumnDefinition to compare to
+     * @return Whether the ColumnDefinition defines a column whose name and data are compatible with this
+     *         ColumnDefinition
      */
-    public boolean isCompatible(ColumnDefinition<?> other) {
+    public boolean isCompatible(@NotNull final ColumnDefinition<?> other) {
         if (this == other) {
             return true;
         }
         return this.name.equals(other.name)
                 && this.dataType == other.dataType
                 && this.componentType == other.componentType;
+    }
+
+    /**
+     * Compares two ColumnDefinitions somewhat more permissively than equals, disregarding matters of name, storage and
+     * derivation. Checks for equality of {@code dataType}, and {@code componentType}. As such, this method has an
+     * equivalence relation, ie {@code A.hasCompatibleDataType(B) == B.hasCompatibleDataType(A)}.
+     *
+     * @param other - The ColumnDefinition to compare to.
+     * @return True if the ColumnDefinition defines a column whose data is compatible with this ColumnDefinition.
+     */
+    public boolean hasCompatibleDataType(@NotNull final ColumnDefinition<?> other) {
+        return dataType == other.dataType && componentType == other.componentType;
     }
 
     /**
@@ -443,7 +456,7 @@ public class ColumnDefinition<TYPE> implements LogOutputAppendable {
      */
     public String describeForCompatibility() {
         if (componentType == null) {
-            return String.format("(%s, %s)", name, dataType);
+            return String.format("[%s, %s]", name, dataType);
         }
         return String.format("[%s, %s, %s]", name, dataType, componentType);
     }

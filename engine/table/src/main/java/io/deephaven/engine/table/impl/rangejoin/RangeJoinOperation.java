@@ -3,12 +3,14 @@ package io.deephaven.engine.table.impl.rangejoin;
 import io.deephaven.api.*;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.filter.Filter;
+import io.deephaven.chunk.sized.SizedLongChunk;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.exceptions.OperationException;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.WritableColumnSource;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.by.AggregationProcessor;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
@@ -20,10 +22,10 @@ import io.deephaven.engine.table.impl.util.JobScheduler.IterateAction;
 import io.deephaven.engine.table.impl.util.JobScheduler.JobThreadContext;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 
 import static io.deephaven.engine.table.impl.by.AggregationProcessor.EXPOSED_GROUP_ROW_SETS;
@@ -69,6 +71,100 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
                 Strings.of(rangeMatch),
                 Strings.ofAggregations(aggregations));
         memoizedOperationKey = MemoizedOperationKey.rangeJoin(rightTable, exactMatches, rangeMatch, aggregations);
+
+        if (leftTable.isRefreshing() || rightTable.isRefreshing()) {
+            throw new UnsupportedOperationException(String.format(
+                    "rangeJoin only supports static (not refreshing) inputs at this time: left table is %s, right table is %s",
+                    leftTable.isRefreshing() ? "refreshing" : "static",
+                    rightTable.isRefreshing() ? "refreshing" : "static"));
+        }
+        validateExactMatchColumns();
+        validateRangeMatchColumns();
+        SupportedRangeJoinAggregations.validate(aggregations);
+    }
+
+    private void validateExactMatchColumns() {
+        final TableDefinition leftTableDefinition = leftTable.getDefinition();
+        final TableDefinition rightTableDefinition = rightTable.getDefinition();
+        List<String> issues = null;
+        for (final JoinMatch exactMatch : exactMatches) {
+            final ColumnDefinition<?> leftColumnDefinition = leftTableDefinition.getColumn(exactMatch.left().name());
+            final ColumnDefinition<?> rightColumnDefinition = rightTableDefinition.getColumn(exactMatch.right().name());
+            if (leftColumnDefinition == null) {
+                if (rightColumnDefinition == null) {
+                    (issues == null ? issues = new ArrayList<>() : issues).add(
+                            String.format("both columns from %s are missing", Strings.of(exactMatch)));
+                } else {
+                    (issues == null ? issues = new ArrayList<>() : issues).add(
+                            String.format("left column from %s is missing", Strings.of(exactMatch)));
+                }
+            } else if (rightColumnDefinition == null) {
+                (issues == null ? issues = new ArrayList<>() : issues).add(
+                        String.format("right column from %s is missing", Strings.of(exactMatch)));
+            } else if (!leftColumnDefinition.hasCompatibleDataType(rightColumnDefinition)) {
+                (issues == null ? issues = new ArrayList<>() : issues).add(
+                        String.format("incompatible columns in %s: left has (%s, %s) and right has (%s, %s)",
+                                Strings.of(exactMatch),
+                                leftColumnDefinition.getDataType(),
+                                leftColumnDefinition.getComponentType(),
+                                rightColumnDefinition.getDataType(),
+                                rightColumnDefinition.getComponentType()));
+            }
+        }
+        if (issues != null) {
+            throw new IllegalArgumentException(
+                    String.format("Invalid exact matches: %s", String.join(", ", issues)));
+        }
+    }
+
+    private void validateRangeMatchColumns() {
+        final TableDefinition leftTableDefinition = leftTable.getDefinition();
+        final TableDefinition rightTableDefinition = rightTable.getDefinition();
+        final ColumnDefinition<?> leftStartColumnDefinition =
+                leftTableDefinition.getColumn(rangeMatch.leftStartColumn().name());
+        final ColumnDefinition<?> rightRangeColumnDefinition =
+                rightTableDefinition.getColumn(rangeMatch.rightRangeColumn().name());
+        final ColumnDefinition<?> leftEndColumnDefinition =
+                leftTableDefinition.getColumn(rangeMatch.leftEndColumn().name());
+
+        List<String> issues = null;
+
+        if (leftStartColumnDefinition == null) {
+            (issues = new ArrayList<>()).add(String.format(
+                    "left start column %s is missing", rangeMatch.leftStartColumn().name()));
+        }
+        if (rightRangeColumnDefinition == null) {
+            (issues == null ? issues = new ArrayList<>() : issues).add(String.format(
+                    "right range column %s is missing", rangeMatch.rightRangeColumn().name()));
+        }
+        if (leftEndColumnDefinition == null) {
+            (issues == null ? issues = new ArrayList<>() : issues).add(String.format(
+                    "left start column %s is missing", rangeMatch.leftEndColumn().name()));
+        }
+        if (leftStartColumnDefinition != null
+                && rightRangeColumnDefinition != null
+                && !leftStartColumnDefinition.hasCompatibleDataType(rightRangeColumnDefinition)) {
+            (issues == null ? issues = new ArrayList<>() : issues).add(String.format(
+                    "incompatible columns for range start: left has (%s, %s) and right has (%s, %s)",
+                    leftStartColumnDefinition.getDataType(),
+                    leftStartColumnDefinition.getComponentType(),
+                    rightRangeColumnDefinition.getDataType(),
+                    rightRangeColumnDefinition.getComponentType()));
+        }
+        if (leftEndColumnDefinition != null
+                && rightRangeColumnDefinition != null
+                && !leftEndColumnDefinition.hasCompatibleDataType(rightRangeColumnDefinition)) {
+            (issues == null ? issues = new ArrayList<>() : issues).add(String.format(
+                    "incompatible columns for range end: left has (%s, %s) and right has (%s, %s)",
+                    leftEndColumnDefinition.getDataType(),
+                    leftEndColumnDefinition.getComponentType(),
+                    rightRangeColumnDefinition.getDataType(),
+                    rightRangeColumnDefinition.getComponentType()));
+        }
+        if (issues != null) {
+            throw new IllegalArgumentException(String.format(
+                    "Invalid range match %s: %s", Strings.of(rangeMatch), String.join(", ", issues)));
+        }
     }
 
     @Override
@@ -96,26 +192,7 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
 
     @Override
     public Result<QueryTable> initialize(final boolean usePrev, final long beforeClock) {
-        if (leftTable.isRefreshing() || rightTable.isRefreshing()) {
-            throw new UnsupportedOperationException(String.format(
-                    "rangeJoin only supports static (not refreshing) inputs at this time: left table is %s, right table is %s",
-                    leftTable.isRefreshing() ? "refreshing" : "static",
-                    rightTable.isRefreshing() ? "refreshing" : "static"));
-        }
-
-        SupportedRangeJoinAggregations.validate(aggregations);
-
         QueryTable.checkInitiateBinaryOperation(leftTable, rightTable);
-
-        return new Result<>(staticRangeJoin());
-    }
-
-    @Override
-    public MemoizedOperationKey getMemoizedOperationKey() {
-        return memoizedOperationKey;
-    }
-
-    private QueryTable staticRangeJoin() {
 
         final JobScheduler jobScheduler;
         if (OperationInitializationThreadPool.NUM_THREADS > 1
@@ -125,13 +202,22 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
             jobScheduler = ImmediateJobScheduler.INSTANCE;
         }
 
+        return new Result<>(staticRangeJoin(jobScheduler));
+    }
+
+    @Override
+    public MemoizedOperationKey getMemoizedOperationKey() {
+        return memoizedOperationKey;
+    }
+
+    private QueryTable staticRangeJoin(@NotNull final JobScheduler jobScheduler) {
         final CompletableFuture<QueryTable> resultFuture = new CompletableFuture<>();
         new StaticRangeJoinPhase1(jobScheduler, resultFuture).start();
         try {
             return resultFuture.get();
         } catch (InterruptedException e) {
             throw new CancellationException(String.format("%s interrupted", description), e);
-        } catch (ExecutionException e) {
+        } catch (Exception e) {
             throw new OperationException(String.format("%s failed", description), e);
         }
     }
@@ -161,26 +247,30 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
         }
 
         private void start() {
+            // Perform the left table work via the job scheduler, possibly concurrently with the right table work.
             final CompletableFuture<?> groupLeftTableFuture = new CompletableFuture<>();
             jobScheduler.submit(
                     ExecutionContext.getContextToRecord(),
                     this::groupLeftTable,
                     logOutput -> logOutput.append("static range join group left table"),
                     groupLeftTableFuture::completeExceptionally);
+            // Perform the right table work on this thread. We don't need to involve the scheduler, and this way we may
+            // be able to exploit filter parallelism.
             try {
                 filterAndGroupRightTable();
-            } catch (Throwable t) {
+            } catch (Exception e) {
                 // Try to ensure that the group-left-table job is no longer running before re-throwing
                 groupLeftTableFuture.cancel(true);
                 try {
                     groupLeftTableFuture.get();
                 } catch (Exception ignored) {
                 }
-                throw t;
+                resultFuture.completeExceptionally(e);
+                return;
             }
             try {
                 groupLeftTableFuture.get();
-            } catch (InterruptedException | ExecutionException e) {
+            } catch (Exception e) {
                 resultFuture.completeExceptionally(e);
                 return;
             }
@@ -212,7 +302,8 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
         private final RowRedirection outputRedirection;
         private final WritableColumnSource<Integer> outputSlotsAndPositionRanges;
 
-        private Table joinedInputTables;
+        private ColumnSource<RowSet> leftGroupRowSets;
+        private ColumnSource<RowSet> rightGroupRowSets;
 
         private StaticRangeJoinPhase2(
                 @NotNull final JobScheduler jobScheduler,
@@ -233,8 +324,10 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
         }
 
         private void start(@NotNull final Table leftTableGrouped, @NotNull final Table rightTableGrouped) {
-            joinedInputTables = leftTableGrouped.naturalJoin(
+            final Table joinedInputTables = leftTableGrouped.naturalJoin(
                     rightTableGrouped, exactMatches, List.of(JoinAddition.of(RIGHT_ROW_SET, EXPOSED_GROUP_ROW_SETS)));
+            leftGroupRowSets = joinedInputTables.getColumnSource(LEFT_ROW_SET.name(), RowSet.class);
+            rightGroupRowSets = joinedInputTables.getColumnSource(RIGHT_ROW_SET.name(), RowSet.class);
             jobScheduler.iterateParallel(
                     ExecutionContext.getContextToRecord(),
                     logOutput -> logOutput.append("static range join find ranges"),
@@ -246,12 +339,20 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
                     resultFuture::completeExceptionally);
         }
 
+        private class TaskContext implements JobScheduler.JobThreadContext {
+
+//            private final SizedLongChunk<RowKeys>
+        }
+
         @Override
         public void run(
                 @NotNull final JobThreadContext taskThreadContext,
                 final int index,
                 @NotNull final Consumer<Exception> nestedErrorConsumer) {
             // TODO-RWC: Grab groups, do stamping, update outputSlotsAndPositionRanges
+            final RowSet leftRows = leftGroupRowSets.get(index);
+            final RowSet rightRows = rightGroupRowSets.get(index);
+
         }
     }
 
@@ -263,7 +364,7 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
             super(jobScheduler, resultFuture);
         }
 
-        public void start(@NotNull final WritableColumnSource<Integer> outputSlotsAndPositionRanges) {
+        public void start(@NotNull final ColumnSource<Integer> outputSlotsAndPositionRanges) {
             // TODO-RWC: Build grouped sources, return result QueryTable
         }
     }
