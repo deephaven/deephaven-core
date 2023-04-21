@@ -45,7 +45,7 @@ def _column_to_series(table: Table, col_def: Column) -> pandas.Series:
         raise DHError(e, message="failed to create apandas Series for {col}") from e
 
 
-_PA_PD_DTYPE_MAPPING = {
+_DTYPE_MAPPING_PYARROW = {
     pa.int8(): pd.ArrowDtype(pa.int8()),
     pa.int16(): pd.ArrowDtype(pa.int16()),
     pa.int32(): pd.ArrowDtype(pa.int32()),
@@ -62,8 +62,27 @@ _PA_PD_DTYPE_MAPPING = {
     pa.timestamp('ns', tz='UTC'): pd.ArrowDtype(pa.timestamp('ns', tz='UTC')),
 }
 
+_DTYPE_MAPPING_NUMPY_NULLABLE = {
+    pa.int8(): pd.Int8Dtype(),
+    pa.int16(): pd.Int16Dtype(),
+    pa.int32(): pd.Int32Dtype(),
+    pa.int64(): pd.Int64Dtype(),
+    pa.bool_(): pd.BooleanDtype(),
+    pa.float32(): pd.Float32Dtype(),
+    pa.float64(): pd.Float64Dtype(),
+    pa.string(): pd.StringDtype(),
+    # pa.Table.to_pandas() doesn't support mapping to pd.DatetimeTZDtype,
+    # pa.timestamp('ns'): pd.DatetimeTZDtype(unit='ns', tz='UTC'),
+    # pa.timestamp('ns', tz='UTC'): pd.DatetimeTZDtype(unit='ns', tz='UTC'),
+}
 
-def to_pandas(table: Table, cols: List[str] = None, pyarrow_backed: bool = False) -> pandas.DataFrame:
+_TO_PANDAS_TYPE_MAPPERS = {
+    "pyarrow": _DTYPE_MAPPING_PYARROW.get,
+    "numpy_nullable": _DTYPE_MAPPING_NUMPY_NULLABLE.get,
+}
+
+
+def to_pandas(table: Table, cols: List[str] = None, dtype_backend: str = None) -> pandas.DataFrame:
     """Produces a pandas.DataFrame from a table.
 
     Note that the **entire table** is going to be cloned into memory, so the total number of entries in the table
@@ -73,10 +92,10 @@ def to_pandas(table: Table, cols: List[str] = None, pyarrow_backed: bool = False
     Args:
         table (Table): the source table
         cols (List[str]): the source column names, default is None which means include all columns
-
-        pyarrow_backed (bool): whether to return a pyarrow-backed DataFrame, when True, an intermediate pyarrow table
-            is created from the source table, which is then used to create a DataFrame with each of its series
-            directly backed by a pyarrow.ChunkedArray; default is False.
+        dtype_backend (str): Which dtype_backend to use, e.g. whether a DataFrame should have NumPy arrays,
+            nullable dtypes are used for all dtypes that have a nullable implementation when “numpy_nullable” is set,
+            pyarrow is used for all dtypes if “pyarrow” is set. default is None, meaning Numpy backed DataFrames with
+            no nullable dtypes.
 
     Returns:
         pandas.DataFrame
@@ -85,12 +104,19 @@ def to_pandas(table: Table, cols: List[str] = None, pyarrow_backed: bool = False
         DHError
     """
     try:
-        if pyarrow_backed:
+        if dtype_backend is not None and pandas.__version__.partition(".")[0] == "1":
+            raise DHError(message="the dtype_backend option is only available for Pandas 2.0.0 and above.")
+
+        type_mapper = _TO_PANDAS_TYPE_MAPPERS.get(dtype_backend)
+        # if nullable dtypes (Pandas or pyarrow) is requested
+        if type_mapper:
             pa_table = arrow.to_arrow(table=table, cols=cols)
-            df = pa_table.to_pandas(types_mapper=_PA_PD_DTYPE_MAPPING.get, split_blocks=True, self_destruct=True)
+            df = pa_table.to_pandas(types_mapper=type_mapper)
             del pa_table
             return df
 
+        # if regular numpy dtype is request, we will directly access the table column sources, to get a consistent
+        # view of a ticking table, we need to take a snapshot of it first
         if table.is_refreshing:
             table = table.snapshot()
 
@@ -182,7 +208,7 @@ def to_table(df: pandas.DataFrame, cols: List[str] = None) -> Table:
             if diff_set:
                 raise DHError(message=f"columns - {list(diff_set)} not found")
 
-        # check if all the cols are pyarrow-backed and if so create an intermediate pyarrow table to upload to DH
+        # check if all the cols are pyarrow-backed, and if so, create an intermediate pyarrow table to upload to DH
         df_dtypes = [df[col].dtype for col in cols]
         if all(_is_pyarrow_backed(dt) for dt in df_dtypes):
             pa_arrays = []

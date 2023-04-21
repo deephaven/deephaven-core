@@ -211,10 +211,10 @@ class PandasTestCase(BaseTestCase):
         self.assertEqual(9, table_string.count("null"))
 
     def test_arrow_backend(self):
-        with self.subTest("all arrow-backed"):
+        with self.subTest("pyarrow-backend"):
             df = pd.read_csv("tests/data/test_table.csv", dtype_backend="pyarrow")
             dh_table = to_table(df)
-            df1 = to_pandas(dh_table, pyarrow_backed=True)
+            df1 = to_pandas(dh_table, dtype_backend="pyarrow")
             self.assertTrue(df.equals(df1))
 
         with self.subTest("mixed python, numpy, arrow"):
@@ -236,8 +236,9 @@ class PandasTestCase(BaseTestCase):
             with self.assertRaises(DHError):
                 to_table(df)
 
-    def test_arrow_backend_null(self):
+    def test_arrow_backend_nulls(self):
         input_cols = [
+            bool_col(name="Boolean", data=(True, False)),
             byte_col(name="Byte", data=(1, NULL_BYTE)),
             char_col(name="Char", data='-1'),
             short_col(name="Short", data=[1, NULL_SHORT]),
@@ -250,7 +251,26 @@ class PandasTestCase(BaseTestCase):
             # pyobj_col(name="PyObj", data=[CustomClass(1, "1"), None]), #DH arrow export it as strings
         ]
         test_table = new_table(cols=input_cols)
-        df = to_pandas(test_table, pyarrow_backed=True)
+        df = to_pandas(test_table, dtype_backend="pyarrow")
+        dh_table = to_table(df)
+        self.assert_table_equals(test_table, dh_table)
+
+    def test_np_nullable_backend_nulls(self):
+        input_cols = [
+            bool_col(name="Boolean", data=(True, False)),
+            byte_col(name="Byte", data=(1, NULL_BYTE)),
+            char_col(name="Char", data='-1'),
+            short_col(name="Short", data=[1, NULL_SHORT]),
+            int_col(name="Int_", data=[1, NULL_INT]),
+            long_col(name="Long_", data=[1, NULL_LONG]),
+            float_col(name="Float_", data=[1.01, np.nan]),
+            double_col(name="Double_", data=[1.01, np.nan]),
+            datetime_col(name="Datetime", data=[dtypes.DateTime(1), None]),
+            string_col(name="String", data=["text1", None]),
+            # pyobj_col(name="PyObj", data=[CustomClass(1, "1"), None]),  # DH arrow export it as strings
+        ]
+        test_table = new_table(cols=input_cols)
+        df = to_pandas(test_table, dtype_backend="numpy_nullable")
         dh_table = to_table(df)
         self.assert_table_equals(test_table, dh_table)
 
