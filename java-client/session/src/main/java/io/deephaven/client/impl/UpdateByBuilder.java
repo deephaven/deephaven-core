@@ -238,6 +238,12 @@ class UpdateByBuilder {
         public UpdateByColumn.UpdateBySpec visit(RollingCountSpec spec) {
             return null;
         }
+
+        // TODO: add this correctly to `table.proto` (DHC #3392)
+        @Override
+        public UpdateByColumn.UpdateBySpec visit(RollingStdSpec spec) {
+            return null;
+        }
     }
 
     static UpdateByColumn.UpdateBySpec adapt(UpdateBySpec spec) {
