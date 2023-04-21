@@ -6,3 +6,5 @@ __version__ = "0.24.0"
 from .start_jvm import DEFAULT_JVM_PROPERTIES, DEFAULT_JVM_ARGS, start_jvm
 from .server import Server
 
+from deephaven_internal.jvm import check_py_env
+check_py_env()

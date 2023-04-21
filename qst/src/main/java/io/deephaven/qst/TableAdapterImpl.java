@@ -241,7 +241,7 @@ class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> impleme
     public void visit(ReverseAsOfJoinTable raj) {
         final TOPS left = ops(raj.left());
         final TABLE right = table(raj.right());
-        addOp(raj, left.exactJoin(right, raj.matches(), raj.additions()));
+        addOp(raj, left.raj(right, raj.matches(), raj.additions(), raj.rule()));
     }
 
     @Override

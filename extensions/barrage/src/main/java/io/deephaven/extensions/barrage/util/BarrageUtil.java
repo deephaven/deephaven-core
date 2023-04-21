@@ -148,7 +148,7 @@ public class BarrageUtil {
         final MutableInputTable inputTable = (MutableInputTable) attributes.get(Table.INPUT_TABLE_ATTRIBUTE);
         final List<Field> fields = columnDefinitionsToFields(
                 descriptions, inputTable, tableDefinition.getColumns(), ignored -> new HashMap<>())
-                        .collect(Collectors.toList());
+                .collect(Collectors.toList());
 
         return new Schema(fields, schemaMetadata).getSchema(builder);
     }

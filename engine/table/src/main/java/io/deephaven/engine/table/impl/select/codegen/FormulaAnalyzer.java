@@ -132,7 +132,7 @@ public class FormulaAnalyzer {
                 context.getQueryLibrary().getPackageImports(),
                 classImports, context.getQueryLibrary().getStaticImports(), possibleVariables,
                 possibleVariableParameterizedTypes)
-                        .getResult();
+                .getResult();
     }
 
     public static class Result {

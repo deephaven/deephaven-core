@@ -1,6 +1,7 @@
 #
 # Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
+from typing import Union
 
 from pydeephaven import Table
 from pydeephaven._table_interface import TableInterface
@@ -40,101 +41,102 @@ class Query(TableInterface):
         """
         return self.session.table_service.batch(self._ops)
 
-    def drop_columns(self, cols: List[str]):
+    def drop_columns(self, cols: Union[str, List[str]]):
         """ Add a drop-columns operation to the query.
 
         Args:
-            cols (List[str]) : the list of column names
+            cols (Union[str, List[str]]) : the column name(s)
 
         Returns:
             self
         """
         return super().drop_columns(cols)
 
-    def update(self, formulas: List[str]):
+    def update(self, formulas: Union[str, List[str]]):
         """ Add an update operation to the query.
 
         Args:
-            formulas (List[str]): the column formulas
+            formulas (Union[str, List[str]]): the column formula(s)
 
         Returns:
             self
         """
         return super().update(formulas)
 
-    def lazy_update(self, formulas: List[str]):
+    def lazy_update(self, formulas: Union[str, List[str]]):
         """ Add an lazy-update operation to the query.
 
         Args:
-            formulas (List[str]): the column formulas
+            formulas (Union[str, List[str]]): the column formula(s)
 
         Returns:
             self
         """
         return super().lazy_update(formulas)
 
-    def view(self, formulas: List[str]):
+    def view(self, formulas: Union[str, List[str]]):
         """ Add a view operation to the query.
 
         Args:
-            formulas (List[str]): the column formulas
+            formulas (Union[str, List[str]]): the column formula(s)
 
         Returns:
             self
         """
         return super().view(formulas)
 
-    def update_view(self, formulas: List[str]):
+    def update_view(self, formulas: Union[str, List[str]]):
         """ Add an update-view operation to the query.
 
         Args:
-            formulas (List[str]): the column formulas
+            formulas (Union[str, List[str]]): the column formula(s)
 
         Returns:
             self
         """
         return super().update_view(formulas)
 
-    def select(self, formulas: List[str] = []):
+    def select(self, formulas: Union[str, List[str]] = None):
         """ Add a select operation to the query.
 
         Args:
-            formulas (List[str], optional): the column formulas, default is empty
+            formulas (Union[str, List[str]], optional): the column formula(s), default is None
 
         Returns:
             self
         """
         return super().select(formulas)
 
-    def select_distinct(self, cols: List[str] = []):
+    def select_distinct(self, cols: Union[str, List[str]] = None):
         """ Add a select-distinct operation to the query.
 
         Args:
-            cols (List[str], optional): the list of column names, default is empty
+            cols (Union[str, List[str]], optional): the column name(s), default is None
 
         Returns:
             self
         """
         return super().select_distinct(cols)
 
-    def sort(self, order_by: List[str], order: List[SortDirection] = []):
+    def sort(self, order_by: Union[str, List[str]], order: Union[SortDirection, List[SortDirection]] = None):
         """ Add sort operation to the query.
 
         Args:
-            order_by (List[str]): the names of the columns to be sorted on
-            order (List[SortDirection], optional): the corresponding sort directions for each sort column, default
-                is empty. In the absence of explicit sort directions, data will be sorted in the ascending order.
+            order_by (Union[str, List[str]]): the names of the columns to be sorted on
+            order (Union[SortDirection, List[SortDirection]], optional): the corresponding sort direction(s) for each
+                sort column, default is None. In the absence of explicit sort directions, data will be sorted in 
+                the ascending order.
 
         Returns:
             self
         """
         return super().sort(order_by, order)
 
-    def where(self, filters: List[str]):
+    def where(self, filters: Union[str, List[str]]):
         """ Add a filter operation to the query.
 
         Args:
-            filters (List[str]): a list of filter condition expressions
+            filters (Union[str, List[str]]): the filter condition expression(s)
 
         Returns:
             self
@@ -163,45 +165,46 @@ class Query(TableInterface):
         """
         return super().tail(num_rows)
 
-    def natural_join(self, table: Any, on: List[str], joins: List[str] = []):
+    def natural_join(self, table: Any, on: Union[str, List[str]], joins: Union[str, List[str]] = None):
         """ Add a natural-join operation to the query.
 
         Args:
             table (Table): the right-table of the join
-            on (List[str]): the columns to match, can be a common name or an equal expression,
+            on (Union[str, List[str]]): the column(s) to match, can be a common name or an equal expression,
                 i.e. "col_a = col_b" for different column names
-            joins (List[str], optional): a list of the columns to be added from the right table to the result
-                table, can be renaming expressions, i.e. "new_col = col"; default is empty
+            joins (Union[str, List[str]], optional): the column(s) to be added from the right table to the result
+                table, can be renaming expressions, i.e. "new_col = col"; default is None
 
         Returns:
             self
         """
         return super().natural_join(table, on, joins)
 
-    def exact_join(self, table: Any, on: List[str], joins: List[str] = []):
+    def exact_join(self, table: Any, on: Union[str, List[str]], joins: Union[str, List[str]] = None):
         """ Add an exact-join operation to the query.
 
         Args:
             table (Table): the right-table of the join
-            on (List[str]): the columns to match, can be a common name or an equal expression,
+            on (Union[str, List[str]]): the column(s) to match, can be a common name or an equal expression,
                 i.e. "col_a = col_b" for different column names
-            joins (List[str], optional): a list of the columns to be added from the right table to the result
-                table, can be renaming expressions, i.e. "new_col = col"; default is empty
+            joins (Union[str, List[str]], optional): the column(s) to be added from the right table to the result
+                table, can be renaming expressions, i.e. "new_col = col"; default is None
 
         Returns:
             self
         """
         return super().exact_join(table, on, joins)
 
-    def join(self, table: Any, on: List[str] = [], joins: List[str] = [], reserve_bits: int = 10):
+    def join(self, table: Any, on: Union[str, List[str]] = None, joins: Union[str, List[str]] = None,
+             reserve_bits: int = 10):
         """ Add a cross-join operation to the query.
 
         Args:
             table (Table): the right-table of the join
-            on (List[str]): the columns to match, can be a common name or an equal expression,
+            on (Union[str, List[str]]): the column(s) to match, can be a common name or an equal expression,
                 i.e. "col_a = col_b" for different column names
-            joins (List[str], optional): a list of the columns to be added from the right table to the result
-                table, can be renaming expressions, i.e. "new_col = col"; default is empty
+            joins (Union[str, List[str]], optional): the column(s) to be added from the right table to the result
+                table, can be renaming expressions, i.e. "new_col = col"; default is None
             reserve_bits(int, optional): the number of bits of key-space to initially reserve per group; default is 10
 
         Returns:
@@ -209,15 +212,16 @@ class Query(TableInterface):
         """
         return super().join(table, on, joins)
 
-    def aj(self, table: Any, on: List[str], joins: List[str] = [], match_rule: MatchRule = MatchRule.LESS_THAN_EQUAL):
+    def aj(self, table: Any, on: Union[str, List[str]], joins: Union[str, List[str]] = None,
+           match_rule: MatchRule = MatchRule.LESS_THAN_EQUAL):
         """ Add a as-of join operation to the query.
 
         Args:
             table (Table): the right-table of the join
-            on (List[str]): the columns to match, can be a common name or an equal expression,
+            on (Union[str, List[str]]): the column(s) to match, can be a common name or an equal expression,
                 i.e. "col_a = col_b" for different column names
-            joins (List[str], optional): a list of the columns to be added from the right table to the result
-                table, can be renaming expressions, i.e. "new_col = col"; default is empty
+            joins (Union[str, List[str]], optional): the column(s) to be added from the right table to the result
+                table, can be renaming expressions, i.e. "new_col = col"; default is None
             match_rule (MatchRule, optional): the match rule for the as-of join, default is LESS_THAN_EQUAL
 
         Returns:
@@ -225,16 +229,16 @@ class Query(TableInterface):
         """
         return super().aj(table, on, joins, match_rule)
 
-    def raj(self, table: Any, on: List[str], joins: List[str] = [],
+    def raj(self, table: Any, on: Union[str, List[str]], joins: Union[str, List[str]] = None,
             match_rule: MatchRule = MatchRule.GREATER_THAN_EQUAL):
         """ Add a reverse as-of join operation to the query.
 
         Args:
             table (Table): the right-table of the join
-            on (List[str]): the columns to match, can be a common name or an equal expression,
+            on (Union[str, List[str]]): the column(s) to match, can be a common name or an equal expression,
                 i.e. "col_a = col_b" for different column names
-            joins (List[str], optional): a list of the columns to be added from the right table to the result
-                table, can be renaming expressions, i.e. "new_col = col"; default is empty
+            joins (Union[str, List[str]], optional): the column(s) to be added from the right table to the result
+                table, can be renaming expressions, i.e. "new_col = col"; default is None
             match_rule (MatchRule, optional): the match rule for the as-of join, default is GREATER_THAN_EQUAL
 
         Returns:
@@ -242,47 +246,47 @@ class Query(TableInterface):
         """
         return super().raj(table, on, joins)
 
-    def head_by(self, num_rows: int, by: List[str]):
+    def head_by(self, num_rows: int, by: Union[str, List[str]]):
         """ Add a head-by operation to the query.
 
         Args:
             num_rows (int): the number of rows at the beginning of each group
-            by (List[str]): the group-by column names
+            by (Union[str, List[str]]): the group-by column name(s)
 
         Returns:
             self
         """
         return super().head_by(num_rows, by)
 
-    def tail_by(self, num_rows: int, by: List[str]):
+    def tail_by(self, num_rows: int, by: Union[str, List[str]]):
         """ Add a tail-by operation to the query.
 
         Args:
             num_rows (int): the number of rows at the end of each group
-            by (List[str]): the group-by column names
+            by (Union[str, List[str]]): the group-by column name(s)
 
         Returns:
             self
         """
         return super().tail_by(num_rows, by)
 
-    def group_by(self, by: List[str] = []):
+    def group_by(self, by: Union[str, List[str]] = None):
         """ Add a group-by aggregation to the query.
 
         Args:
-            by (List[str], optional): the group-by column names; default is empty
+            by (Union[str, List[str]], optional): the group-by column name(s); default is None
 
         Returns:
             self
         """
         return super().group_by(by)
 
-    def ungroup(self, cols: List[str] = [], null_fill: bool = True):
+    def ungroup(self, cols: Union[str, List[str]] = None, null_fill: bool = True):
         """ Add an ungroup operation to the query.
 
         Args:
-            cols (List[str], optional): the names of the array columns, if empty, all array columns will be
-                ungrouped, default is empty
+            cols (Union[str, List[str]], optional): the array column(s), default is None, meaning all array columns will
+                be ungrouped
             null_fill (bool, optional): indicates whether null should be used to fill missing cells, default is True
 
         Returns:
@@ -290,158 +294,147 @@ class Query(TableInterface):
         """
         return super().ungroup(cols, null_fill)
 
-    def first_by(self, by: List[str] = []):
+    def first_by(self, by: Union[str, List[str]] = None):
         """ Add a first-by aggregation to the query.
 
         Args:
-            by (List[str], optional): the group-by column names, default is empty
+            by (Union[str, List[str]], optional): the group-by column name(s), default is None
 
         Returns:
             self
         """
         return super().first_by(by)
 
-    def last_by(self, by: List[str] = []):
+    def last_by(self, by: Union[str, List[str]] = None):
         """ Add a last-by aggregation to the query.
 
         Args:
-            by (List[str], optional): the group-by column names, default is empty
+            by (Union[str, List[str]], optional): the group-by column name(s), default is None
 
         Returns:
             self
         """
         return super().last_by(by)
 
-    def sum_by(self, by: List[str] = []):
+    def sum_by(self, by: Union[str, List[str]] = None):
         """ Add a sum-by aggregation to the query.
 
         Args:
-            by (List[str]): the group-by column names
+            by (Union[str, List[str]]): the group-by column name(s)
 
         Returns:
             self
         """
         return super().sum_by(by)
 
-    def avg_by(self, by: List[str] = []):
+    def avg_by(self, by: Union[str, List[str]] = None):
         """ Add an avg-by aggregation to the query.
 
         Args:
-            by (List[str], optional): the group-by column names, default is empty
+            by (Union[str, List[str]], optional): the group-by column name(s), default is None
 
         Returns:
             self
         """
         return super().avg_by(by)
 
-    def std_by(self, by: List[str] = []):
+    def std_by(self, by: Union[str, List[str]] = None):
         """ Add a std-by aggregation to the query.
 
         Args:
-            by (List[str]): the group-by column names
+            by (Union[str, List[str]]): the group-by column name(s)
 
         Returns:
             self
         """
         return super().std_by(by)
 
-    def var_by(self, by: List[str] = []):
+    def var_by(self, by: Union[str, List[str]] = None):
         """ Add a var-by aggregation to the query.
 
         Args:
-            by (List[str], optional): the group-by column names, default is empty
+            by (Union[str, List[str]], optional): the group-by column name(s), default is None
 
         Returns:
             self
         """
         return super().var_by(by)
 
-    def median_by(self, by: List[str] = []):
+    def median_by(self, by: Union[str, List[str]] = None):
         """ Add a median-by aggregation to the query.
 
         Args:
-            by (List[str], optional): the group-by column names, default is empty
+            by (Union[str, List[str]], optional): the group-by column name(s), default is None
 
         Returns:
             self
         """
         return super().median_by(by)
 
-    def min_by(self, by: List[str] = []):
+    def min_by(self, by: Union[str, List[str]] = None):
         """ Add a min-by aggregation to the query.
 
         Args:
-            by (List[str], optional): the group-by column names, default is empty
+            by (Union[str, List[str]], optional): the group-by column name(s), default is None
 
         Returns:
             self
         """
         return super().min_by(by)
 
-    def max_by(self, by: List[str] = []):
+    def max_by(self, by: Union[str, List[str]] = None):
         """ Add a max-by aggregation to the query.
 
         Args:
-            by (List[str], optional): the group-by column names, default is empty
+            by (Union[str, List[str]], optional): the group-by column name(s), default is None
 
         Returns:
             self
         """
         return super().max_by(by)
 
-    def count_by(self, col: str, by: List[str] = []):
+    def count_by(self, col: str, by: Union[str, List[str]] = None):
         """ Add a count-by aggregation to the query.
 
         Args:
             col (str): the name of the column to store the counts
-            by (List[str], optional): the group-by column names, default is empty
+            by (Union[str, List[str]], optional): the group-by column name(s), default is None
 
         Returns:
             self
         """
         return super().count_by(col, by)
 
-    def count(self, col: str):
-        """ Add a count operation to the query.
-
-        Args:
-            col (str): the name of the column whose values to be counted
-
-        Returns:
-            self
-        """
-        return super().count(col)
-
-    def agg_by(self, aggs: List[Aggregation], by: List[str]):
+    def agg_by(self, aggs: Union[Aggregation, List[Aggregation]], by: Union[str, List[str]]):
         """ Add an Aggregate operation to the query.
 
         Args:
-            by (List[str]): the group-by column names
-            aggs (List[Aggregation]): the aggregations to be applied
+            by (Union[str, List[str]]): the group-by column name(s)
+            aggs (Union[Aggregation, List[Aggregation]]): the aggregation(s) to be applied
 
         Returns:
             self
         """
         return super().agg_by(aggs=aggs, by=by)
 
-    def agg_all_by(self, agg: Aggregation, by: List[str]):
+    def agg_all_by(self, agg: Aggregation, by: Union[str, List[str]]):
         """ Add an AggregateAll operation to the query.
 
         Args:
             agg (Aggregation): the aggregation to be applied
-            by (List[str]): the group-by column names
+            by (Union[str, List[str]]): the group-by column name(s)
 
         Returns:
             self
         """
         return super().agg_all_by(agg=agg, by=by)
 
-    def update_by(self, ops: List[UpdateByOperation], by: List[str]):
+    def update_by(self, ops: Union[UpdateByOperation, List[UpdateByOperation]], by: Union[str, List[str]]):
         """ Add an update-by operation to the query.
 
         Args:
-            ops (List[UpdateByOperation]): the UpdateByOperations to be applied
-            by (List[str]): the group-by column names
+            ops (Union[UpdateByOperation, List[UpdateByOperation]]): the UpdateByOperation(s) to be applied
+            by (Union[str, List[str]]): the group-by column name(s)
 
         Returns:
             self
@@ -456,25 +449,47 @@ class Query(TableInterface):
         """
         return super().snapshot()
 
-    def snapshot_when(self, trigger_table: Any, stamp_cols: List[str] = None, initial: bool = False,
+    def snapshot_when(self, trigger_table: Any, stamp_cols: Union[str, List[str]] = None, initial: bool = False,
                       incremental: bool = False, history: bool = False):
         """ Add a snapshot_when operation to the query.
+
+        Args:
+            trigger_table (Table): the trigger table
+            stamp_cols (Union[str, List[str]]): The column(s) from trigger_table that form the "stamp key", may be
+                renames, default is None, meaning that all columns from trigger_table form the "stamp key".
+            initial (bool): Whether to take an initial snapshot upon construction, default is False. When False, the
+                resulting table will remain empty until trigger_table first updates.
+            incremental (bool): Whether the resulting table should be incremental, default is False. When False, all
+                rows of this table will have the latest "stamp key". When True, only the rows of this table that have
+                been added or updated will have the latest "stamp key".
+            history (bool): Whether the resulting table should keep history, default is False. A history table appends a
+                full snapshot of this table and the "stamp key" as opposed to updating existing rows. The history flag
+                is currently incompatible with initial and incremental: when history is True, incremental and initial
+                must be False.
 
         Returns:
             self
         """
         return super().snapshot_when(trigger_table, stamp_cols, initial, incremental, history)
 
-    def where_in(self, filter_table: Any, cols: List[str]):
+    def where_in(self, filter_table: Any, cols: Union[str, List[str]]):
         """ Add a where_in operation to the query.
+
+        Args:
+            filter_table (Table): the table containing the set of values to filter on
+            cols (Union[str, List[str]]): the column name(s)
 
         Returns:
             self
         """
         return super().where_in(filter_table, cols)
 
-    def where_not_in(self, filter_table: Any, cols: List[str]):
+    def where_not_in(self, filter_table: Any, cols: Union[str, List[str]]):
         """ Add a where_not_in operation to the query.
+
+        Args:
+            filter_table (Table): the table containing the set of values to filter on
+            cols (Union[str, List[str]]): the column name(s)
 
         Returns:
             self
