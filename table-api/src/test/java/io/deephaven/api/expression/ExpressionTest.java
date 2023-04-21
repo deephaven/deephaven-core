@@ -5,6 +5,7 @@ package io.deephaven.api.expression;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.RawString;
+import io.deephaven.api.expression.Expression.Visitor;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.literal.Literal;
 import org.junit.jupiter.api.Test;
@@ -26,6 +27,24 @@ public class ExpressionTest {
     public static final ColumnName FOO = ColumnName.of("Foo");
     public static final ColumnName BAR = ColumnName.of("Bar");
     public static final ColumnName BAZ = ColumnName.of("Baz");
+
+    private static int expressionCount() {
+        int expected = 0;
+        for (java.lang.reflect.Method method : Visitor.class.getMethods()) {
+            if ("visit".equals(method.getName()) && method.getParameterCount() == 1
+                    && Expression.class.isAssignableFrom(method.getParameterTypes()[0])) {
+                ++expected;
+            }
+        }
+        return expected;
+    }
+
+    @Test
+    void visitAll() {
+        final CountingVisitor visitor = new CountingVisitor();
+        visitAll(visitor);
+        assertThat(visitor.count).isEqualTo(expressionCount());
+    }
 
     @Test
     void columnName() {
@@ -118,6 +137,67 @@ public class ExpressionTest {
         @Override
         public String visit(RawString rawString) {
             return of(rawString);
+        }
+    }
+
+    /**
+     * Calls every single visit method of {@code visitor} with a {@code null} object.
+     *
+     * @param visitor the visitor
+     */
+    public static void visitAll(Visitor<?> visitor) {
+        visitor.visit((Literal) null);
+        visitor.visit((ColumnName) null);
+        visitor.visit((Filter) null);
+        visitor.visit((Function) null);
+        visitor.visit((Method) null);
+        visitor.visit((IfThenElse) null);
+        visitor.visit((RawString) null);
+    }
+
+    private static class CountingVisitor implements Expression.Visitor<CountingVisitor> {
+        private int count = 0;
+
+        @Override
+        public CountingVisitor visit(Literal literal) {
+            ++count;
+            return this;
+        }
+
+        @Override
+        public CountingVisitor visit(ColumnName columnName) {
+            ++count;
+            return this;
+        }
+
+        @Override
+        public CountingVisitor visit(Filter filter) {
+            ++count;
+            return this;
+        }
+
+        @Override
+        public CountingVisitor visit(Function function) {
+            ++count;
+            return this;
+        }
+
+        @Override
+        public CountingVisitor visit(Method method) {
+            ++count;
+            return this;
+        }
+
+        @Override
+        public CountingVisitor visit(IfThenElse ifThenElse) {
+            ++count;
+            return this;
+        }
+
+        @Override
+        public CountingVisitor visit(RawString rawString) {
+            ++count;
+            return this;
         }
     }
 }

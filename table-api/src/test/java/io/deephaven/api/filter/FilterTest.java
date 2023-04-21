@@ -8,6 +8,7 @@ import io.deephaven.api.RawString;
 import io.deephaven.api.expression.Function;
 import io.deephaven.api.expression.IfThenElse;
 import io.deephaven.api.expression.Method;
+import io.deephaven.api.filter.Filter.Visitor;
 import io.deephaven.api.literal.Literal;
 import org.junit.jupiter.api.Test;
 
@@ -33,6 +34,23 @@ public class FilterTest {
     private static final ColumnName BAZ = ColumnName.of("Baz");
 
     private static final Literal L42 = Literal.of(42L);
+
+    private static int filterCount() {
+        int expected = 0;
+        for (java.lang.reflect.Method method : Visitor.class.getMethods()) {
+            if ("visit".equals(method.getName()) && method.getParameterCount() == 1) {
+                ++expected;
+            }
+        }
+        return expected;
+    }
+
+    @Test
+    void visitAll() {
+        final CountingVisitor visitor = new CountingVisitor();
+        visitAll(visitor);
+        assertThat(visitor.count).isEqualTo(filterCount());
+    }
 
     @Test
     void filterIsNull() {
@@ -140,6 +158,28 @@ public class FilterTest {
         assertThat(filter.walk(FilterSpecificString.INSTANCE)).isEqualTo(expected);
     }
 
+    /**
+     * Calls every single visit method of {@code visitor} with a sentinel value or {@code null} object.
+     *
+     * @param visitor the visitor
+     */
+    public static void visitAll(Visitor<?> visitor) {
+        visitor.visit((FilterIsNull) null);
+        visitor.visit((FilterComparison) null);
+        visitor.visit((FilterNot<?>) null);
+        visitor.visit((FilterOr) null);
+        visitor.visit((FilterAnd) null);
+        visitor.visit((FilterPattern) null);
+        visitor.visit((FilterQuick) null);
+        visitor.visit((FilterMatches) null);
+        visitor.visit((ColumnName) null);
+        visitor.visit((Function) null);
+        visitor.visit((Method) null);
+        visitor.visit((IfThenElse) null);
+        visitor.visit(false);
+        visitor.visit((RawString) null);
+    }
+
     private enum FilterSpecificString implements Filter.Visitor<String> {
         INSTANCE;
 
@@ -212,6 +252,94 @@ public class FilterTest {
         @Override
         public String visit(RawString rawString) {
             return of(rawString);
+        }
+    }
+
+    private static class CountingVisitor implements Visitor<CountingVisitor> {
+        private int count = 0;
+
+        @Override
+        public CountingVisitor visit(FilterIsNull isNull) {
+            ++count;
+            return this;
+        }
+
+        @Override
+        public CountingVisitor visit(FilterComparison comparison) {
+            ++count;
+            return this;
+        }
+
+        @Override
+        public CountingVisitor visit(FilterNot<?> not) {
+            ++count;
+            return this;
+        }
+
+        @Override
+        public CountingVisitor visit(FilterOr ors) {
+            ++count;
+            return this;
+        }
+
+        @Override
+        public CountingVisitor visit(FilterAnd ands) {
+            ++count;
+            return this;
+        }
+
+        @Override
+        public CountingVisitor visit(FilterPattern pattern) {
+            ++count;
+            return this;
+        }
+
+        @Override
+        public CountingVisitor visit(FilterQuick quick) {
+            ++count;
+            return this;
+        }
+
+        @Override
+        public CountingVisitor visit(FilterMatches matches) {
+            ++count;
+            return this;
+        }
+
+        @Override
+        public CountingVisitor visit(ColumnName columnName) {
+            ++count;
+            return this;
+        }
+
+        @Override
+        public CountingVisitor visit(Function function) {
+            ++count;
+            return this;
+        }
+
+        @Override
+        public CountingVisitor visit(Method method) {
+            ++count;
+            return this;
+        }
+
+        @Override
+        public CountingVisitor visit(IfThenElse ifThenElse) {
+            ++count;
+            return this;
+        }
+
+        @Override
+        public CountingVisitor visit(boolean literal) {
+            ++count;
+            return this;
+        }
+
+        @Override
+        public CountingVisitor visit(RawString rawString) {
+            ++count;
+            return this;
         }
     }
 }

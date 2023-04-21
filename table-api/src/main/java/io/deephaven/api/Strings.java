@@ -203,6 +203,18 @@ public class Strings {
         return Boolean.toString(literal);
     }
 
+    public static String of(int literal) {
+        return String.format("(int)%s", literal);
+    }
+
+    public static String of(long literal) {
+        return String.format("%sL", literal);
+    }
+
+    public static String of(String literal) {
+        return '"' + StringEscapeUtils.escapeJava(literal) + '"';
+    }
+
     private static String ofEncapsulated(Expression expression) {
         return ofEncapsulated(expression, false);
     }
@@ -364,7 +376,7 @@ public class Strings {
             if (inverted) {
                 throw new IllegalArgumentException();
             }
-            return String.format("(int)%s", literal);
+            return of(literal);
         }
 
         @Override
@@ -372,7 +384,7 @@ public class Strings {
             if (inverted) {
                 throw new IllegalArgumentException();
             }
-            return String.format("%sL", literal);
+            return of(literal);
         }
 
         @Override
@@ -380,7 +392,7 @@ public class Strings {
             if (inverted) {
                 throw new IllegalArgumentException();
             }
-            return '"' + StringEscapeUtils.escapeJava(literal) + '"';
+            return of(literal);
         }
     }
 }
