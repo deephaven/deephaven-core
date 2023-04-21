@@ -6,7 +6,6 @@ package io.deephaven.api;
 import io.deephaven.api.agg.Pair;
 import io.deephaven.api.expression.Expression;
 import io.deephaven.api.expression.Function;
-import io.deephaven.api.expression.IfThenElse;
 import io.deephaven.api.expression.Method;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.filter.FilterAnd;
@@ -186,19 +185,6 @@ public class Strings {
                 + method.arguments().stream().map(Strings::of).collect(Collectors.joining(", ", "(", ")"));
     }
 
-    public static String of(IfThenElse ifThenElse) {
-        return of(ifThenElse, false, false);
-    }
-
-    public static String of(IfThenElse ifThenElse, boolean encapsulate, boolean invert) {
-        // <condition> ? <if-true> : <if-false>
-        final String inner = String.format("%s ? %s : %s",
-                ofEncapsulated(ifThenElse.condition()),
-                ofEncapsulated(ifThenElse.ifTrue(), invert),
-                ofEncapsulated(ifThenElse.ifFalse(), invert));
-        return encapsulate ? encapsulate(inner) : inner;
-    }
-
     public static String of(boolean literal) {
         return Boolean.toString(literal);
     }
@@ -270,11 +256,6 @@ public class Strings {
         public String visit(Method method) {
             return of(method, invert);
         }
-
-        @Override
-        public String visit(IfThenElse ifThenElse) {
-            return of(ifThenElse, encapsulate, invert);
-        }
     }
 
     private static class FilterAdapter implements Filter.Visitor<String> {
@@ -340,11 +321,6 @@ public class Strings {
         @Override
         public String visit(Method method) {
             return of(method, invert);
-        }
-
-        @Override
-        public String visit(IfThenElse ifThenElse) {
-            return of(ifThenElse, encapsulate, invert);
         }
 
         @Override

@@ -17,7 +17,6 @@ import io.deephaven.api.Strings;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.expression.Expression;
 import io.deephaven.api.expression.Function;
-import io.deephaven.api.expression.IfThenElse;
 import io.deephaven.api.expression.Method;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.filter.FilterAnd;
@@ -637,13 +636,6 @@ class BatchTableRequestBuilder {
         }
 
         @Override
-        public Value visit(IfThenElse ifThenElse) {
-            // TODO(deephaven-core#3609): Update gRPC expression / filter / literal structures
-            throw new UnsupportedOperationException(
-                    "Unable to create a io.deephaven.proto.backplane.grpc.Value from an IfThenElse");
-        }
-
-        @Override
         public Value visit(RawString rawString) {
             // TODO(deephaven-core#3609): Update gRPC expression / filter / literal structures
             throw new UnsupportedOperationException(
@@ -799,12 +791,6 @@ class BatchTableRequestBuilder {
         public Condition visit(Method method) {
             // TODO(deephaven-core#3609): Update gRPC expression / filter / literal structures
             throw new UnsupportedOperationException("Can't build Condition with Method");
-        }
-
-        @Override
-        public Condition visit(IfThenElse ifThenElse) {
-            // TODO(deephaven-core#3609): Update gRPC expression / filter / literal structures
-            throw new UnsupportedOperationException("Can't build Condition with IfThenElse");
         }
 
         @Override

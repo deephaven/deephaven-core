@@ -3,7 +3,6 @@ package io.deephaven.api;
 import io.deephaven.api.expression.Expression;
 import io.deephaven.api.expression.ExpressionTest;
 import io.deephaven.api.expression.Function;
-import io.deephaven.api.expression.IfThenElse;
 import io.deephaven.api.expression.Method;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.filter.FilterAnd;
@@ -132,12 +131,6 @@ public class StringsTest {
         @Override
         public Void visit(Method method) {
             ensureExplicitStringOf(Method.class);
-            return null;
-        }
-
-        @Override
-        public Void visit(IfThenElse ifThenElse) {
-            ensureExplicitStringOf(IfThenElse.class);
             return null;
         }
 

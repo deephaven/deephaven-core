@@ -9,7 +9,6 @@ import io.deephaven.api.Selectable;
 import io.deephaven.api.Strings;
 import io.deephaven.api.expression.Expression;
 import io.deephaven.api.expression.Function;
-import io.deephaven.api.expression.IfThenElse;
 import io.deephaven.api.expression.Method;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.literal.Literal;
@@ -223,11 +222,6 @@ public interface SelectColumn extends Selectable {
 
         @Override
         public SelectColumn visit(Method rhs) {
-            return SelectColumnFactory.getExpression(String.format("%s=%s", lhs.name(), Strings.of(rhs)));
-        }
-
-        @Override
-        public SelectColumn visit(IfThenElse rhs) {
             return SelectColumnFactory.getExpression(String.format("%s=%s", lhs.name(), Strings.of(rhs)));
         }
 

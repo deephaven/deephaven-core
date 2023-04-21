@@ -6,7 +6,6 @@ package io.deephaven.api.filter;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.RawString;
 import io.deephaven.api.expression.Function;
-import io.deephaven.api.expression.IfThenElse;
 import io.deephaven.api.expression.Method;
 import io.deephaven.api.filter.Filter.Visitor;
 import io.deephaven.api.literal.Literal;
@@ -142,12 +141,6 @@ public class FilterTest {
     }
 
     @Test
-    void filterIfThenElse() {
-        toString(IfThenElse.of(FOO, BAR, FilterComparison.gt(BAZ, L42)), "Foo ? Bar : (Baz > 42L)");
-        toString(not(IfThenElse.of(FOO, BAR, FilterComparison.gt(BAZ, L42))), "Foo ? !Bar : (Baz <= 42L)");
-    }
-
-    @Test
     void filterRawString() {
         toString(RawString.of("this is a raw string"), "this is a raw string");
         toString(Filter.not(RawString.of("this is a raw string")), "!(this is a raw string)");
@@ -175,7 +168,6 @@ public class FilterTest {
         visitor.visit((ColumnName) null);
         visitor.visit((Function) null);
         visitor.visit((Method) null);
-        visitor.visit((IfThenElse) null);
         visitor.visit(false);
         visitor.visit((RawString) null);
     }
@@ -236,12 +228,6 @@ public class FilterTest {
         @Override
         public String visit(Method method) {
             return of(method);
-        }
-
-
-        @Override
-        public String visit(IfThenElse ifThenElse) {
-            return of(ifThenElse);
         }
 
         @Override
@@ -320,12 +306,6 @@ public class FilterTest {
 
         @Override
         public CountingVisitor visit(Method method) {
-            ++count;
-            return this;
-        }
-
-        @Override
-        public CountingVisitor visit(IfThenElse ifThenElse) {
             ++count;
             return this;
         }

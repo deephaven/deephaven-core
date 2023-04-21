@@ -77,11 +77,6 @@ public class ExpressionTest {
     }
 
     @Test
-    void expressionIfThenElse() {
-        toString(IfThenElse.of(FOO, BAR, BAZ), "Foo ? Bar : Baz");
-    }
-
-    @Test
     void literals() {
         toString(Literal.of(true), "true");
         toString(Literal.of(false), "false");
@@ -130,11 +125,6 @@ public class ExpressionTest {
         }
 
         @Override
-        public String visit(IfThenElse ifThenElse) {
-            return of(ifThenElse);
-        }
-
-        @Override
         public String visit(RawString rawString) {
             return of(rawString);
         }
@@ -151,7 +141,6 @@ public class ExpressionTest {
         visitor.visit((Filter) null);
         visitor.visit((Function) null);
         visitor.visit((Method) null);
-        visitor.visit((IfThenElse) null);
         visitor.visit((RawString) null);
     }
 
@@ -184,12 +173,6 @@ public class ExpressionTest {
 
         @Override
         public CountingVisitor visit(Method method) {
-            ++count;
-            return this;
-        }
-
-        @Override
-        public CountingVisitor visit(IfThenElse ifThenElse) {
             ++count;
             return this;
         }

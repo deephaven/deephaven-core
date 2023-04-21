@@ -5,7 +5,6 @@ import io.deephaven.api.RawString;
 import io.deephaven.api.Strings;
 import io.deephaven.api.expression.Expression;
 import io.deephaven.api.expression.Function;
-import io.deephaven.api.expression.IfThenElse;
 import io.deephaven.api.expression.Method;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.filter.FilterAnd;
@@ -73,10 +72,6 @@ public class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
 
     public static WhereFilter of(Method method, boolean inverted) {
         return WhereFilterFactory.getExpression(Strings.of(method, inverted));
-    }
-
-    public static WhereFilter of(IfThenElse ifThenElse, boolean inverted) {
-        return WhereFilterFactory.getExpression(Strings.of(ifThenElse, false, inverted));
     }
 
     public static WhereFilter of(boolean literal) {
@@ -175,11 +170,6 @@ public class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
     @Override
     public WhereFilter visit(Method method) {
         return of(method, inverted);
-    }
-
-    @Override
-    public WhereFilter visit(IfThenElse ifThenElse) {
-        return of(ifThenElse, inverted);
     }
 
     @Override
@@ -330,11 +320,6 @@ public class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
             }
 
             @Override
-            public WhereFilter visit(IfThenElse ifThenElse) {
-                return original();
-            }
-
-            @Override
             public WhereFilter visit(Literal value) {
                 return value.walk((Literal.Visitor<WhereFilter>) this);
             }
@@ -365,11 +350,6 @@ public class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
 
         @Override
         public WhereFilter visit(Method lhs) {
-            return original();
-        }
-
-        @Override
-        public WhereFilter visit(IfThenElse lhs) {
             return original();
         }
 
@@ -431,14 +411,6 @@ public class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
         @Override
         public WhereFilter visit(Method method) {
             return getExpression(Strings.of(method));
-        }
-
-        @Override
-        public WhereFilter visit(IfThenElse ifThenElse) {
-            final IfThenElse pushdown = inverted
-                    ? ifThenElse.pushdown(Filter::isNotNull)
-                    : ifThenElse.pushdown(Filter::isNull);
-            return WhereFilterAdapter.of(pushdown, false);
         }
 
         @Override

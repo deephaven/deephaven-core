@@ -7,7 +7,6 @@ import io.deephaven.api.ColumnName;
 import io.deephaven.api.RawString;
 import io.deephaven.api.expression.Expression;
 import io.deephaven.api.expression.Function;
-import io.deephaven.api.expression.IfThenElse;
 import io.deephaven.api.expression.Method;
 import io.deephaven.api.literal.Literal;
 import io.deephaven.api.literal.LiteralFilter;
@@ -28,10 +27,10 @@ import java.util.stream.Collectors;
  * @see FilterAnd
  * @see FilterQuick
  * @see FilterMatches
+ * @see FilterPattern
  * @see ColumnName
  * @see Function
  * @see Method
- * @see IfThenElse
  * @see LiteralFilter
  * @see RawString
  */
@@ -229,8 +228,6 @@ public interface Filter extends Expression, Serializable {
         T visit(Function function);
 
         T visit(Method method);
-
-        T visit(IfThenElse ifThenElse);
 
         T visit(boolean literal);
 
