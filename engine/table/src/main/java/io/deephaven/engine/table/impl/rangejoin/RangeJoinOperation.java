@@ -221,7 +221,7 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
             if (!leftTable.isFlat() && SparseConstants.sparseStructureExceedsOverhead(
                     leftTable.getRowSet(), MAXIMUM_STATIC_MEMORY_OVERHEAD)) {
                 outputRedirection = new MultiplierWritableRowRedirection(
-                        new InverseWrappedRowSetWritableRowRedirection(leftTable.getRowSet()), 3);
+                        new InverseWrappedRowSetRowRedirection(leftTable.getRowSet()), 3);
                 outputSlotsAndPositionRanges = WritableRedirectedColumnSource.maybeRedirect(
                         outputRedirection,
                         InMemoryColumnSource.getImmutableMemoryColumnSource(leftTable.size(), int.class, null),

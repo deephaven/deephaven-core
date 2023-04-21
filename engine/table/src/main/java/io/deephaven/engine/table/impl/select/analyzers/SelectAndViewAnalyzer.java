@@ -19,8 +19,9 @@ import io.deephaven.engine.table.impl.select.SwitchColumn;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.SingleValueColumnSource;
 import io.deephaven.engine.table.impl.sources.WritableRedirectedColumnSource;
-import io.deephaven.engine.table.impl.util.InverseWrappedRowSetWritableRowRedirection;
+import io.deephaven.engine.table.impl.util.InverseWrappedRowSetRowRedirection;
 import io.deephaven.engine.table.impl.util.JobScheduler;
+import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.util.SafeCloseable;
@@ -69,12 +70,13 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
             final SelectColumn... selectColumns) {
         SelectAndViewAnalyzer analyzer = createBaseLayer(columnSources, publishTheseSources);
         final Map<String, ColumnDefinition<?>> columnDefinitions = new LinkedHashMap<>();
-        final WritableRowRedirection rowRedirection;
+        final RowRedirection rowRedirection;
         if (mode == Mode.SELECT_REDIRECTED_STATIC) {
-            rowRedirection = new InverseWrappedRowSetWritableRowRedirection(rowSet);
+            rowRedirection = new InverseWrappedRowSetRowRedirection(rowSet);
         } else if (mode == Mode.SELECT_REDIRECTED_REFRESHING && rowSet.size() < Integer.MAX_VALUE) {
-            rowRedirection = WritableRowRedirection.FACTORY.createRowRedirection(rowSet.intSize());
-            analyzer = analyzer.createRedirectionLayer(rowSet, rowRedirection);
+            final WritableRowRedirection writableRowRedirection = WritableRowRedirection.FACTORY.createRowRedirection(rowSet.intSize());
+            analyzer = analyzer.createRedirectionLayer(rowSet, writableRowRedirection);
+            rowRedirection = writableRowRedirection;
         } else {
             rowRedirection = null;
         }
