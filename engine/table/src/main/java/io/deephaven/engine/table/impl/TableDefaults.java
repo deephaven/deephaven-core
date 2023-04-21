@@ -28,12 +28,18 @@ import java.util.*;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
+import static io.deephaven.api.agg.Aggregation.AggMax;
+import static io.deephaven.api.agg.Aggregation.AggMin;
+import static io.deephaven.engine.util.TableTools.col;
+
 /**
  * Sub-interface to capture default methods rom {@link Table}.
  */
 public interface TableDefaults extends Table, TableOperationsDefaults<Table, Table> {
 
     Table[] ZERO_LENGTH_TABLE_ARRAY = new Table[0];
+
+    final String DATA_BAR_SUFFIX = "__DATA_BAR";
 
     @Override
     default Table coalesce() {
@@ -290,7 +296,16 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
     @ConcurrentMethod
     default Table formatDatabar(String columnName, String valueColumn, String axis, Double min, Double max,
             String positiveColor, String negativeColor, String valuePlacement, String direction, Double opacity) {
-        return this;
+        String prefix = valueColumn + DATA_BAR_SUFFIX;
+        return this.naturalJoin(
+                this.aggBy(List.of(AggMin(prefix + "_MIN=" + valueColumn),
+                        AggMax(prefix + "_MAX=" + valueColumn)))
+                        .naturalJoin(TableTools.newTable(col(prefix + "_AXIS", axis),
+                                col(prefix + "_POSITIVE_COLOR", positiveColor),
+                                col(prefix + "_NEGATIVE_COLOR", negativeColor),
+                                col(prefix + "_VALUE_PLACEMENT", valuePlacement),
+                                col(prefix + "_DIRECTION", direction), col(prefix + "_OPACITY", opacity)), ""),
+                "");
     }
 
 
