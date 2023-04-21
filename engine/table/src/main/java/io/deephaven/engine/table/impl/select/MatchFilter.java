@@ -28,8 +28,6 @@ public class MatchFilter extends WhereFilterImpl {
     private static final long serialVersionUID = 1L;
 
     public static MatchFilter ofStringValues(FilterMatches matches, boolean inverted) {
-        // Note: due to impl io.deephaven.engine.table.impl.select.MatchFilter.ColumnTypeConvertor.convertStringLiteral
-        // for cls == String.class, we are unable to match against the literal string "null"
         return new MatchFilter(
                 matches.caseInsensitive() ? CaseSensitivity.IgnoreCase : CaseSensitivity.MatchCase,
                 inverted ? MatchType.Inverted : MatchType.Regular,
@@ -275,6 +273,7 @@ public class MatchFilter extends WhereFilterImpl {
                 return new ColumnTypeConvertor() {
                     @Override
                     Object convertStringLiteral(String str) {
+                        // TODO(web-client-ui#1243): Confusing quick filter behavior around string column "null"
                         if (str.equals("null")) {
                             return null;
                         }

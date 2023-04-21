@@ -43,11 +43,13 @@ public class WhereFilterTest extends TestCase {
 
     public void testFooIsNotTrue() {
         // This is *not* logically equivalent to "Foo in [false]"
+        // since we are really dealing with true, false, and null
         opposite(Filter.isTrue(FOO), MatchFilter.class, "Foo not in [true]");
     }
 
     public void testFooIsNotFalse() {
         // This is *not* logically equivalent to "Foo in [true]"
+        // since we are really dealing with true, false, and null
         opposite(Filter.isFalse(FOO), MatchFilter.class, "Foo not in [false]");
     }
 

@@ -4,8 +4,7 @@
 package io.deephaven.gui.table.filters;
 
 /**
- * The set of Conditions that can be used with various {@link FilterData} types. Note that not all {@link FilterData}
- * classes support all types.
+ * The set of Conditions that can be used with various filters.
  */
 public enum Condition {
     // @formatter:off

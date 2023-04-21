@@ -202,6 +202,10 @@ public interface SelectColumn extends Selectable {
             return new SourceColumn(rhs.name(), lhs.name());
         }
 
+        // Note: it might be tempting to consolidate all of the following getExpression calls to a common function, but
+        // then we'd be losing the type information that allows us to call the more explicitly typed Strings#of(<type>)
+        // methods.
+
         @Override
         public SelectColumn visit(Literal rhs) {
             return SelectColumnFactory.getExpression(String.format("%s=%s", lhs.name(), Strings.of(rhs)));
