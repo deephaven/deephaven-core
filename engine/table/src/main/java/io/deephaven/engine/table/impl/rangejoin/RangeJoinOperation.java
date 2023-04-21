@@ -13,6 +13,7 @@ import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.by.AggregationProcessor;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
+import io.deephaven.engine.table.impl.sources.IntegerSparseArraySource;
 import io.deephaven.engine.table.impl.sources.WritableRedirectedColumnSource;
 import io.deephaven.engine.table.impl.sources.sparse.SparseConstants;
 import io.deephaven.engine.table.impl.util.*;
@@ -210,9 +211,7 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
     private class StaticRangeJoinPhase2 extends RangeJoinPhase implements IterateAction<JobThreadContext> {
 
         private final RowRedirection outputRedirection;
-        private final WritableColumnSource<Integer> outputSlots;
-        private final WritableColumnSource<Integer> outputStartPositions;
-        private final WritableColumnSource<Integer> outputEndPositions;
+        private final WritableColumnSource<Integer> outputSlotsAndPositionRanges;
 
         private Table joinedInputTables;
 
@@ -222,14 +221,15 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
             super(jobScheduler, resultFuture);
             if (!leftTable.isFlat() && SparseConstants.sparseStructureExceedsOverhead(
                     leftTable.getRowSet(), MAXIMUM_STATIC_MEMORY_OVERHEAD)) {
-                outputRedirection = new InverseWrappedRowSetWritableRowRedirection(leftTable.getRowSet());
-                outputSlots = WritableRedirectedColumnSource.maybeRedirect(
+                outputRedirection = new MultiplierWritableRowRedirection(
+                        new InverseWrappedRowSetWritableRowRedirection(leftTable.getRowSet()), 3);
+                outputSlotsAndPositionRanges = WritableRedirectedColumnSource.maybeRedirect(
                         outputRedirection,
                         InMemoryColumnSource.getImmutableMemoryColumnSource(leftTable.size(), int.class, null),
-                        leftTable.size());
-                // TODO-RWC: Resume from here. Can we use a multiplier?
+                        leftTable.size() * 3);
             } else {
                 outputRedirection = null;
+                outputSlotsAndPositionRanges = new IntegerSparseArraySource();
             }
         }
 
