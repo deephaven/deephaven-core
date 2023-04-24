@@ -71,8 +71,8 @@ _DTYPE_MAPPING_NUMPY_NULLABLE = {
     pa.float32(): pd.Float32Dtype(),
     pa.float64(): pd.Float64Dtype(),
     pa.string(): pd.StringDtype(),
-    # pa.Table.to_pandas() doesn't support like explicit mapping to pd.DatetimeTZDtype, however it on its own
-    # can correctly map pyarrow timestamp to DatetimeTZDtype and convert null value to NaT
+    # pa.Table.to_pandas() doesn't like explicit mapping to pd.DatetimeTZDtype, however it, on its own,
+    # can correctly map pyarrow timestamp to DatetimeTZDtype and convert null values to NaT
     # pa.timestamp('ns'): pd.DatetimeTZDtype(unit='ns', tz='UTC'),
     # pa.timestamp('ns', tz='UTC'): pd.DatetimeTZDtype(unit='ns', tz='UTC'),
 }
