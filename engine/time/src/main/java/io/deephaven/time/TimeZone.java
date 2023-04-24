@@ -139,6 +139,7 @@ public enum TimeZone {
      *
      * @return the underlying Joda time zone.
      */
+    @Deprecated
     public DateTimeZone getTimeZone() {
         return timeZone;
     }

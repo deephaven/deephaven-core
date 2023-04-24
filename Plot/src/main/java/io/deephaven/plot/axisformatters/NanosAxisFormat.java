@@ -77,13 +77,13 @@ public class NanosAxisFormat implements AxisFormat, Serializable {
             NanosAxisFormat.this.tz = tz;
 
             if (formatter != null) {
-                formatter = formatter.withZone(tz.getTimeZone().toTimeZone().toZoneId());
+                formatter = formatter.withZone(tz.getZoneId());
             }
         }
 
         private void updateFormatter(String format) {
             format = format == null ? "yyyy-MM-dd" : format;
-            this.formatter = DateTimeFormatter.ofPattern(format).withZone(tz.getTimeZone().toTimeZone().toZoneId());
+            this.formatter = DateTimeFormatter.ofPattern(format).withZone(tz.getZoneId());
         }
 
         @Override

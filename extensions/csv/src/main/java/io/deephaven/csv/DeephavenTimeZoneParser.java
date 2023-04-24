@@ -105,7 +105,7 @@ public final class DeephavenTimeZoneParser implements Tokenizer.CustomTimeZonePa
             if (tzKey < 0) {
                 throw new RuntimeException("Logic error: can't parse DBTimeZone as key: " + zname);
             }
-            final ZoneId zoneId = zone.getTimeZone().toTimeZone().toZoneId();
+            final ZoneId zoneId = zone.getZoneId();
             zoneIdMap.put(tzKey, zoneId);
         }
         return zoneIdMap;
