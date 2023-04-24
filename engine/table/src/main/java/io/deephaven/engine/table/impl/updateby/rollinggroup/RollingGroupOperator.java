@@ -89,7 +89,7 @@ public class RollingGroupOperator extends UpdateByOperator {
 
         @Override
         public void close() {
-            SafeCloseable.closeArray(
+            SafeCloseable.closeAll(
                     groupRowSetSourceFillFromContext,
                     groupRowSetSourceOutputValues,
                     startSourceFillFromContext,

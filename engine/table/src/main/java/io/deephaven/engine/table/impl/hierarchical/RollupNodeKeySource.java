@@ -195,8 +195,8 @@ final class RollupNodeKeySource implements DefaultChunkSource.WithPrev<Values> {
         @Override
         public void close() {
             depthContext.close();
-            SafeCloseable.closeArray(groupByValueContexts);
-            SafeCloseable.closeArray(groupByValueBoxers);
+            SafeCloseable.closeAll(groupByValueContexts);
+            SafeCloseable.closeAll(groupByValueBoxers);
         }
     }
 

@@ -12,7 +12,6 @@ import io.deephaven.chunk.attributes.HashCodes;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.chunk.util.hashing.*;
@@ -28,7 +27,6 @@ import io.deephaven.engine.table.impl.util.*;
 import java.util.Arrays;
 import io.deephaven.engine.table.impl.sort.permute.IntPermuteKernel;
 // @StateChunkTypeEnum@ from \QInt\E
-import io.deephaven.engine.table.impl.sort.permute.IntPermuteKernel;
 import io.deephaven.engine.table.impl.util.compact.IntCompactKernel;
 import io.deephaven.engine.table.impl.util.compact.LongCompactKernel;
 // endmixin rehash
@@ -41,7 +39,7 @@ import io.deephaven.engine.table.impl.sources.regioned.SymbolTableSource;
 import org.apache.commons.lang3.mutable.MutableLong;
 // endregion extra imports
 
-import static io.deephaven.util.SafeCloseable.closeArray;
+import static io.deephaven.util.SafeCloseable.closeAll;
 
 // region class visibility
 // endregion class visibility
@@ -427,13 +425,13 @@ class SymbolTableCombiner
             // endmixin rehash
             overflowFillContext.close();
             overflowOverflowFillContext.close();
-            closeArray(workingFillContexts);
-            closeArray(overflowContexts);
-            closeArray(buildContexts);
+            closeAll(workingFillContexts);
+            closeAll(overflowContexts);
+            closeAll(buildContexts);
 
             hashChunk.close();
             tableLocationsChunk.close();
-            closeArray(writeThroughChunks);
+            closeAll(writeThroughChunks);
 
             sourcePositions.close();
             destinationLocationPositionInWriteThrough.close();
@@ -446,8 +444,8 @@ class SymbolTableCombiner
             chunkPositionsToCheckForEquality.close();
             overflowLocationForEqualityCheck.close();
             workingStateEntries.close();
-            closeArray(workingKeyChunks);
-            closeArray(overflowKeyChunks);
+            closeAll(workingKeyChunks);
+            closeAll(overflowKeyChunks);
             chunkPositionsForFetches.close();
             chunkPositionsToInsertInOverflow.close();
             tableLocationsToInsertInOverflow.close();
@@ -1342,9 +1340,9 @@ class SymbolTableCombiner
             stateSourceFillContext.close();
             overflowFillContext.close();
             overflowOverflowFillContext.close();
-            closeArray(workingFillContexts);
-            closeArray(overflowContexts);
-            closeArray(probeContexts);
+            closeAll(workingFillContexts);
+            closeAll(overflowContexts);
+            closeAll(probeContexts);
             hashChunk.close();
             tableLocationsChunk.close();
             workingStateEntries.close();
@@ -1353,7 +1351,7 @@ class SymbolTableCombiner
             overflowLocations.close();
             chunkPositionsForFetches.close();
             equalValues.close();
-            closeArray(workingKeyChunks);
+            closeAll(workingKeyChunks);
             closeSharedContexts();
             // region probe context close
             overflowOverflowFillContext.close();

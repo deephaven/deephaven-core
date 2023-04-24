@@ -251,7 +251,7 @@ final class UngroupedAggregateSlicedColumnSource<DATA_TYPE>
 
             @Override
             public void close() {
-                SafeCloseable.closeArray(
+                SafeCloseable.closeAll(
                         startGetContext,
                         endGetContext);
                 super.close();

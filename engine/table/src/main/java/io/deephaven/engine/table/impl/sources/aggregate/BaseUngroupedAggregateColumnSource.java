@@ -272,7 +272,7 @@ abstract class BaseUngroupedAggregateColumnSource<DATA_TYPE, SOURCE_TYPE extends
 
             @Override
             public void close() {
-                SafeCloseable.closeArray(
+                SafeCloseable.closeAll(
                         rowsetGetContext,
                         rowKeys,
                         sameIndexRunLengths,

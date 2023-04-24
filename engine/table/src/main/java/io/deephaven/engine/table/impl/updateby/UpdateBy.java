@@ -761,7 +761,7 @@ public abstract class UpdateBy {
 
                 @Override
                 public void close() {
-                    SafeCloseable.closeArray(rsIt, ffc, gc);
+                    SafeCloseable.closeAll(rsIt, ffc, gc);
                 }
             }
 
@@ -907,7 +907,7 @@ public abstract class UpdateBy {
             }
 
             // release remaining resources
-            SafeCloseable.closeArray(changedRows, toClear);
+            SafeCloseable.closeAll(changedRows, toClear);
             upstream.release();
 
             // accumulate performance data
@@ -1010,7 +1010,7 @@ public abstract class UpdateBy {
                 bucket.finalizeUpdate();
             }
 
-            SafeCloseable.closeArray(changedRows, toClear);
+            SafeCloseable.closeAll(changedRows, toClear);
 
             upstream.release();
         }

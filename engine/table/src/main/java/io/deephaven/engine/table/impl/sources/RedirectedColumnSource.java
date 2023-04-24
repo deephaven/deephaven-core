@@ -3,7 +3,6 @@
  */
 package io.deephaven.engine.table.impl.sources;
 
-import io.deephaven.base.text.Convert;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.SharedContext;
@@ -750,7 +749,7 @@ public class RedirectedColumnSource<T> extends AbstractDeferredGroupingColumnSou
                 if (sortedMappedKeys != null && sortedMappedKeys != mappedKeys) {
                     sortedMappedKeys.close();
                 }
-                SafeCloseable.closeArray(sortKernelContext, mappedKeysOrder, compactedMappedKeys,
+                SafeCloseable.closeAll(sortKernelContext, mappedKeysOrder, compactedMappedKeys,
                         nonNullCompactedMappedKeys, runLengths);
 
                 super.close();

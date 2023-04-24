@@ -92,7 +92,7 @@ public abstract class BaseAggregateSlicedColumnSource<VECTOR_TYPE extends Vector
 
         @Override
         public void close() {
-            SafeCloseable.closeArray(groupRowSetGetContext, startGetContext, endGetContext);
+            SafeCloseable.closeAll(groupRowSetGetContext, startGetContext, endGetContext);
         }
     }
 

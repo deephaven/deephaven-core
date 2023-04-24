@@ -536,7 +536,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                         new ObjectChunkIterator<>(pvc), pvc.size(), Spliterator.ORDERED), false))
                 .filter(Objects::nonNull)
                 .filter(DynamicNode::notDynamicOrIsRefreshing));
-        prevValueChunksToUnmanage.forEach(SafeCloseable::closeSingle);
+        prevValueChunksToUnmanage.forEach(SafeCloseable::closeIfNonNull);
         prevValueChunksToUnmanage.clear();
     }
 
