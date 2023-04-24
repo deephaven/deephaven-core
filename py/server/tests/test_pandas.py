@@ -219,22 +219,23 @@ class PandasTestCase(BaseTestCase):
 
         with self.subTest("mixed python, numpy, arrow"):
             df = pandas.DataFrame({
-                'pa_string': pandas.Series(['text1', 'text2'], dtype='string[pyarrow]'),
-                'pa_list': pandas.Series([['pandas', 'arrow', 'data'], ['scuba-diving', 'rock-climbing']],
+                'pa_bool': pandas.Series([True, None], dtype='bool[pyarrow]'),
+                'pa_string': pandas.Series(['text1', None], dtype='string[pyarrow]'),
+                'pa_list': pandas.Series([['pandas', 'arrow', 'data'], None],
                                          dtype=pandas.ArrowDtype(pa.list_(pa.string()))),
-                'pd_timestamp': pandas.Series(pa.array([pd.Timestamp('2017-01-01T12:01:01', tz='UTC'),
-                                                        pd.Timestamp('2017-01-01T11:01:01', tz='Europe/Paris')],
-                                                       type=pa.timestamp('ns')),
-                                              ),
+                'pd_timestamp': pandas.Series(pa.array([pd.Timestamp('2017-01-01T12:01:01', tz='UTC'), None],
+                                                       type=pa.timestamp('ns'))),
                 'pd_datetime': pandas.Series(
                     pd.date_range('2022-01-01T00:00:01', tz="Europe/London", periods=2, freq="3MS"),
                     dtype=pd.DatetimeTZDtype(unit='ns', tz='UTC')
                 ),
-                'pa_byte': pandas.Series([1, 2], dtype='int8[pyarrow]'),
-                'py_string': pandas.Series(['text1', 'text2'], dtype=pd.StringDtype()),
+                'pa_byte': pandas.Series([1, None], dtype='int8[pyarrow]'),
+                'py_string': pandas.Series(['text1', None], dtype=pd.StringDtype()),
+                'pa_byte1': pandas.Series(np.array([1, 255], dtype=np.int8)),
             })
-            with self.assertRaises(DHError):
-                to_table(df)
+            dh_table = to_table(df)
+            self.assertEqual(dh_table.to_string().count('null'), 5)
+            self.assertEqual(dh_table.to_string().count('NA'), 1)
 
     def test_arrow_backend_nulls(self):
         input_cols = [
