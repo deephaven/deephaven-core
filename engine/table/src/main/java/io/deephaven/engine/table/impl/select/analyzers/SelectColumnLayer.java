@@ -25,7 +25,7 @@ import io.deephaven.engine.table.impl.util.ChunkUtils;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.updategraph.UpdateCommitterEx;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.time.DateTime;
 import io.deephaven.util.SafeCloseable;
@@ -150,9 +150,9 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                         final boolean hasShifts = upstream.shifted().nonempty();
 
                         final boolean checkTableOperations =
-                                UpdateGraphProcessor.DEFAULT.getCheckTableOperations()
-                                        && !UpdateGraphProcessor.DEFAULT.sharedLock().isHeldByCurrentThread()
-                                        && !UpdateGraphProcessor.DEFAULT.exclusiveLock().isHeldByCurrentThread();
+                                UpdateContext.updateGraphProcessor().getCheckTableOperations()
+                                        && !UpdateContext.sharedLock().isHeldByCurrentThread()
+                                        && !UpdateContext.exclusiveLock().isHeldByCurrentThread();
 
                         if (canParallelizeThisColumn && jobScheduler.threadCount() > 1 && !hasShifts &&
                                 ((resultTypeIsTable && totalSize > 0)
@@ -193,14 +193,14 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                             }
 
                             jobScheduler.submit(
-                                    executionContext,
+                                    UpdateContext.get(), executionContext,
                                     () -> prepareParallelUpdate(jobScheduler, upstream, toClear, helper,
                                             liveResultOwner, onCompletion, this::onError, updates,
                                             checkTableOperations),
                                     SelectColumnLayer.this, this::onError);
                         } else {
                             jobScheduler.submit(
-                                    executionContext,
+                                    UpdateContext.get(), executionContext,
                                     () -> doSerialApplyUpdate(upstream, toClear, helper, liveResultOwner, onCompletion,
                                             checkTableOperations),
                                     SelectColumnLayer.this, this::onError);
@@ -233,10 +233,11 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                 destinationOffset += splitUpdate.added().size();
             }
         }
+        final UpdateContext updateContext = UpdateContext.get();
         jobScheduler.iterateParallel(
-                executionContext, SelectColumnLayer.this, JobScheduler.DEFAULT_CONTEXT_FACTORY, 0, numTasks,
-                (ctx, ti, nec) -> doParallelApplyUpdate(
-                        splitUpdates.get(ti), helper, liveResultOwner, checkTableOperations, destinationOffsets[ti]),
+                UpdateContext.get(), executionContext, SelectColumnLayer.this, JobScheduler.DEFAULT_CONTEXT_FACTORY, 0,
+                numTasks, (ctx, ti, nec) -> updateContext.apply(() -> doParallelApplyUpdate(
+                        splitUpdates.get(ti), helper, liveResultOwner, checkTableOperations, destinationOffsets[ti])),
                 () -> {
                     if (!isRedirected) {
                         clearObjectsAtThisLevel(toClear);
@@ -250,12 +251,12 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
             @Nullable final LivenessNode liveResultOwner, final SelectLayerCompletionHandler onCompletion,
             final boolean checkTableOperations) {
         doEnsureCapacity();
-        final boolean oldCheck = UpdateGraphProcessor.DEFAULT.setCheckTableOperations(checkTableOperations);
+        final boolean oldCheck = UpdateContext.updateGraphProcessor().setCheckTableOperations(checkTableOperations);
         try {
             SystemicObjectTracker.executeSystemically(isSystemic,
                     () -> doApplyUpdate(upstream, helper, liveResultOwner, 0));
         } finally {
-            UpdateGraphProcessor.DEFAULT.setCheckTableOperations(oldCheck);
+            UpdateContext.updateGraphProcessor().setCheckTableOperations(oldCheck);
         }
         if (!isRedirected) {
             clearObjectsAtThisLevel(toClear);
@@ -265,12 +266,12 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
 
     private void doParallelApplyUpdate(final TableUpdate upstream, final UpdateHelper helper,
             @Nullable final LivenessNode liveResultOwner, final boolean checkTableOperations, final long startOffset) {
-        final boolean oldCheck = UpdateGraphProcessor.DEFAULT.setCheckTableOperations(checkTableOperations);
+        final boolean oldCheck = UpdateContext.updateGraphProcessor().setCheckTableOperations(checkTableOperations);
         try {
             SystemicObjectTracker.executeSystemically(isSystemic,
                     () -> doApplyUpdate(upstream, helper, liveResultOwner, startOffset));
         } finally {
-            UpdateGraphProcessor.DEFAULT.setCheckTableOperations(oldCheck);
+            UpdateContext.updateGraphProcessor().setCheckTableOperations(oldCheck);
         }
         upstream.release();
     }

@@ -15,8 +15,8 @@ import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.testutil.EvalNuggetInterface;
+import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.time.DateTimeUtils;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.context.QueryScope;
@@ -438,7 +438,7 @@ public class QueryTableAjTest {
                     new io.deephaven.engine.table.impl.ErrorListener(result1);
             result1.addUpdateListener(listener);
 
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
                 addToTable(right, i(4, 5, 6),
                         stringCol("SingleKey", "Key", "Key", "Key"),
                         byteCol("ByteCol", (byte) 4, (byte) 6, (byte) 5),

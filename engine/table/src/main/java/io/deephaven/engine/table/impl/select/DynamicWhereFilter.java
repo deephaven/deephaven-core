@@ -10,7 +10,6 @@ import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.table.impl.*;
@@ -57,7 +56,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
     public DynamicWhereFilter(final QueryTable setTable, final boolean inclusion, final MatchPair... setColumnsNames) {
         setRefreshing = setTable.isRefreshing();
         if (setRefreshing) {
-            UpdateGraphProcessor.DEFAULT.checkInitiateTableOperation();
+            updateContext.checkInitiateTableOperation();
         }
 
         this.matchPairs = setColumnsNames;

@@ -590,25 +590,29 @@ public class ArrowFlightUtil {
 
                 final io.deephaven.barrage.flatbuf.BarrageSubscriptionOptions options =
                         subscriptionRequest.subscriptionOptions();
-                long minUpdateIntervalMs = options == null ? 0 : options.minUpdateIntervalMs();
-                if (minUpdateIntervalMs == 0) {
+                final long minUpdateIntervalMs;
+                if (options == null || options.minUpdateIntervalMs() == 0) {
                     minUpdateIntervalMs = DEFAULT_MIN_UPDATE_INTERVAL_MS;
+                } else {
+                    minUpdateIntervalMs = options.minUpdateIntervalMs();
                 }
 
                 final Object export = parent.get();
                 if (export instanceof QueryTable) {
                     final QueryTable table = (QueryTable) export;
-                    bmp = table.getResult(bmpOperationFactory.create(table, minUpdateIntervalMs));
-                    if (bmp.isRefreshing()) {
+                    table.getUpdateContext().apply(() -> {
+                        bmp = table.getResult(bmpOperationFactory.create(table, minUpdateIntervalMs));
+                        // always manage; we do not want the BMP to be destroyed prematurely
                         manage(bmp);
-                    }
+                    });
                 } else if (export instanceof HierarchicalTableView) {
                     final HierarchicalTableView hierarchicalTableView = (HierarchicalTableView) export;
-                    htvs = htvsFactory.create(hierarchicalTableView, listener,
-                            subscriptionOptAdapter.adapt(subscriptionRequest), minUpdateIntervalMs);
-                    if (hierarchicalTableView.getHierarchicalTable().getSource().isRefreshing()) {
+                    hierarchicalTableView.getHierarchicalTable().getSource().getUpdateContext().apply(() -> {
+                        htvs = htvsFactory.create(hierarchicalTableView, listener,
+                                subscriptionOptAdapter.adapt(subscriptionRequest), minUpdateIntervalMs);
+                        // always manage; we do not want the HTVS to be destroyed prematurely
                         manage(htvs);
-                    }
+                    });
                 } else {
                     GrpcUtil.safelyError(listener, Code.FAILED_PRECONDITION, "Ticket ("
                             + ExportTicketHelper.toReadableString(subscriptionRequest.ticketAsByteBuffer(), "ticket")

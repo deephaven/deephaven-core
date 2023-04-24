@@ -22,7 +22,7 @@ import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.test.types.OutOfBandTest;
@@ -94,7 +94,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
             fillRehashKeys(offset, leftJoinKey, leftSentinel, rightJoinKey, rightSentinel);
 
             final int foffset = offset;
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
                 final RowSet addRowSet = RowSetFactory.fromRange(foffset, foffset + leftJoinKey.length - 1);
                 addToTable(leftTable, addRowSet, stringCol("JoinKey", leftJoinKey),
                         intCol("LeftSentinel", leftSentinel));
@@ -373,7 +373,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                 System.out.println("Step = " + step);
             }
 
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
                 GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE, rightSize,
                         random, rightTable, rightColumnInfos);
             });
@@ -610,7 +610,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         cj2.addUpdateListener(listener);
 
         try (final ErrorExpectation ignored = new ErrorExpectation()) {
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
                 TstUtils.addToTable(right2, i(3), col("Symbol", a), intCol("RightSentinel", 10));
                 right2.notifyListeners(i(3), i(), i());
             });
@@ -653,7 +653,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         cj2.addUpdateListener(listener);
 
         try (final ErrorExpectation ignored = new ErrorExpectation()) {
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
                 TstUtils.addToTable(right2, i(3), col("Symbol", a), intCol("RightSentinel", 10));
                 right2.notifyListeners(i(3), i(), i());
             });
@@ -714,7 +714,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
         TableTools.showWithRowSet(cj);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             addToTable(c1, i(1), intCol("Right", 4));
             c1.notifyListeners(i(1), i(), i());
         });
@@ -724,7 +724,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         final Table fourRightResult = newTable(intCol("Left", 1, 2, 3), intCol("Right", 4, 4, 4));
         assertTableEquals(fourRightResult, cj);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             removeRows(c1, i(1));
             c1.notifyListeners(i(), i(1), i());
         });
@@ -733,7 +733,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
         assertTableEquals(emptyRightResult, cj);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             addToTable(c0, i(6), intCol("Left", 6));
             addToTable(c1, i(2), intCol("Right", 5));
             c0.notifyListeners(i(6), i(), i());
@@ -756,7 +756,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
         final Table cj1 = c0.naturalJoin(c1, "");
         assertTableEquals(newTable(intCol("Left", 1, 2, 3), intCol("Right", NULL_INT, NULL_INT, NULL_INT)), cj1);
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             addToTable(c0, i(6), intCol("Left", 6));
             c0.notifyListeners(i(6), i(), i());
         });
@@ -767,7 +767,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
         final Table cj2 = c0.naturalJoin(c2, "");
         assertTableEquals(newTable(intCol("Left", 1, 2, 3, 6), intCol("Right", 4, 4, 4, 4)), cj2);
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             addToTable(c0, i(7), intCol("Left", 7));
             c0.notifyListeners(i(7), i(), i());
         });
@@ -791,7 +791,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
         TableTools.showWithRowSet(cj);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             addToTable(c1, i(1), intCol("Right", 4));
             c1.notifyListeners(i(1), i(), i());
         });
@@ -801,7 +801,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         final Table fourRightResult = newTable(intCol("Left", 1, 2, 3), intCol("Right", 4, 4, 4));
         assertTableEquals(fourRightResult, cj);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             removeRows(c1, i(1));
             c1.notifyListeners(i(), i(1), i());
         });
@@ -973,7 +973,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertEquals(3, cj.getColumn("Y").get(0));
         assertNull(cj.getColumn("Y").get(1));
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             removeRows(c1, i(2));
             c1.notifyListeners(i(), i(2), i());
         });
@@ -985,7 +985,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertEquals(3, cj.getColumn("Y").get(0));
         assertNull(cj.getColumn("Y").get(1));
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             addToTable(c0, i(2), col("USym0", "B"), col("X", 6));
             c0.notifyListeners(i(2), i(), i());
         });
@@ -1021,7 +1021,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                     }
                 }
         };
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             addToTable(leftQueryTable, i(3, 9), col("Sym", "aa", "aa"), col("ByteCol", (byte) 20, (byte) 10),
                     col("DoubleCol", 2.1, 2.2));
             System.out.println("Left Table Updated:");
@@ -1030,7 +1030,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         });
         TstUtils.validate(en);
 
-        UpdateGraphProcessor.DEFAULT
+        UpdateContext.updateGraphProcessor()
                 .runWithinUnitTestCycle(() -> leftQueryTable.notifyListeners(i(), i(), i(1, 2, 4, 6)));
         TstUtils.validate(en);
     }
@@ -1123,7 +1123,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         System.out.println("Right Table 1:");
         TableTools.showWithRowSet(rightQueryTable1);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             addToTable(leftQueryTable, i(3, 9), col("Sym", "aa", "aa"), col("intCol", 20, 10),
                     col("doubleCol", 2.1, 2.2));
             System.out.println("Left Table Updated:");
@@ -1132,20 +1132,20 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         });
         TstUtils.validate(en);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             addToTable(leftQueryTable, i(1, 9), col("Sym", "bc", "aa"), col("intCol", 30, 11),
                     col("doubleCol", 2.1, 2.2));
             leftQueryTable.notifyListeners(i(), i(), i(1, 9));
         });
         TstUtils.validate(en);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             addToTable(rightQueryTable1, i(3, 4), col("Sym", "ab", "ac"), col("xCol", 55, 33), col("yCol", 6.6, 7.7));
             rightQueryTable1.notifyListeners(i(4), i(), i(3));
         });
         TstUtils.validate(en);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             show(rightQueryTable2);
             addToTable(rightQueryTable2, i(20, 40), col("Sym", "aa", "bc"),
                     col("xCol", 30, 50),
@@ -1156,25 +1156,25 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         TstUtils.validate(en);
 
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             addToTable(rightQueryTable1, i(4, 6), col("Sym", "bc", "aa"), col("xCol", 66, 44), col("yCol", 7.6, 6.7));
             rightQueryTable1.notifyListeners(i(), i(), i(4, 6));
         });
         TstUtils.validate(en);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             addToTable(rightQueryTable1, i(4, 6), col("Sym", "bc", "aa"), col("xCol", 66, 44), col("yCol", 7.7, 6.8));
             rightQueryTable1.notifyListeners(i(), i(), i(4, 6));
         });
         TstUtils.validate(en);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             addToTable(rightQueryTable1, i(4, 31), col("Sym", "aq", "bc"), col("xCol", 66, 44), col("yCol", 7.5, 6.9));
             rightQueryTable1.notifyListeners(i(31), i(), i(4));
         });
         TstUtils.validate(en);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             addToTable(rightQueryTable2, i(20, 30), col("Sym", "aa", "aa"),
                     col("xCol", 20, 30),
                     col("yCol", 3.1, 5.1));
@@ -1183,14 +1183,14 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         TstUtils.validate(en);
 
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             TstUtils.removeRows(rightQueryTable1, i(4));
             rightQueryTable1.notifyListeners(i(), i(4), i());
         });
         TstUtils.validate(en);
 
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             addToTable(rightQueryTable2, i(40), col("Sym", "bc"),
                     col("xCol", 20),
                     col("yCol", 3.2));
@@ -1199,7 +1199,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         });
         TstUtils.validate(en);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             TstUtils.removeRows(leftQueryTable, i(9));
             dumpComplete(leftQueryTable, "Sym", "intCol");
             leftQueryTable.notifyListeners(i(), i(9), i());
@@ -1268,21 +1268,21 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                     }
                 }
         };
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             addToTable(leftQueryTable, i(3, 9), col("Sym", "aa", "aa"), col("intCol", 20, 10),
                     col("doubleCol", 2.1, 2.2));
             leftQueryTable.notifyListeners(i(3, 9), i(), i());
         });
         TstUtils.validate(en);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             addToTable(leftQueryTable, i(1, 9), col("Sym", "bc", "aa"), col("intCol", 30, 11),
                     col("doubleCol", 2.1, 2.2));
             leftQueryTable.notifyListeners(i(), i(), i(1, 9));
         });
         TstUtils.validate(en);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             show(rightQueryTable2);
             addToTable(rightQueryTable2, i(20, 40), col("Sym", "aa", "bc"),
                     col("xCol", 30, 50),
@@ -1292,7 +1292,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         });
         TstUtils.validate(en);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             addToTable(rightQueryTable2, i(20, 30), col("Sym", "aa", "aa"),
                     col("xCol", 20, 30),
                     col("yCol", 3.1, 5.1));
@@ -1300,7 +1300,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         });
         TstUtils.validate(en);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             addToTable(rightQueryTable2, i(40), col("Sym", "bc"),
                     col("xCol", 20),
                     col("yCol", 3.2));
@@ -1309,7 +1309,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         });
         TstUtils.validate(en);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             TstUtils.removeRows(leftQueryTable, i(9));
             leftQueryTable.notifyListeners(i(), i(9), i());
         });
@@ -1376,42 +1376,42 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
         TstUtils.validate(en);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             addToTable(leftTable, i(0, 1, 2),
                     col("Sym", "c", "a", "b"), col("Size", 1, 2, 3));
             leftTable.notifyListeners(i(), i(), i(0, 1, 2));
         });
         TstUtils.validate(en);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             addToTable(rightTable, i(0, 1, 2),
                     col("Sym", "b", "c", "a"), col("Qty", 10, 20, 30));
             rightTable.notifyListeners(i(), i(), i(0, 1, 2));
         });
         TstUtils.validate(en);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             addToTable(leftTable, i(0, 1, 2),
                     col("Sym", "a", "b", "c"), col("Size", 3, 1, 2));
             leftTable.notifyListeners(i(), i(), i(0, 1, 2));
         });
         TstUtils.validate(en);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             addToTable(rightTable, i(0, 1, 2),
                     col("Sym", "a", "b", "c"), col("Qty", 30, 10, 20));
             rightTable.notifyListeners(i(), i(), i(0, 1, 2));
         });
         TstUtils.validate(en);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             addToTable(leftTable, i(3, 4),
                     col("Sym", "d", "e"), col("Size", -1, 100));
             leftTable.notifyListeners(i(3, 4), i(), i());
         });
         TstUtils.validate(en);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             addToTable(rightTable, i(3, 4),
                     col("Sym", "e", "d"), col("Qty", -10, 50));
             rightTable.notifyListeners(i(3, 4), i(), i());
@@ -1542,7 +1542,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         final Table joinTable = leftTable.naturalJoin(rightTable, "idx=idx", "RightValue");
 
         for (int ii = 0; ii < 10; ii++) {
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(
+            UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(
                     () -> {
                         generateAppends(10_000, random, leftTable, leftColumnInfo);
                         generateAppends(10_000, random, rightTable, rightColumnInfo);
@@ -1571,7 +1571,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         final Table joinTable = leftTable.naturalJoin(rightTable, "idx=idx", "RightValue");
 
         for (int ii = 0; ii < 10; ii++) {
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(
+            UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(
                     () -> {
                         generateAppends(100_000, random, leftTable, leftColumnInfo);
                         generateAppends(100_000, random, rightTable, rightColumnInfo);

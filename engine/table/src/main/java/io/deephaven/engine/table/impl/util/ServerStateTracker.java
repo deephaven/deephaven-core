@@ -126,7 +126,8 @@ public class ServerStateTracker {
                 final long prevTotalCollections = memSample.totalCollections;
                 final long prevTotalCollectionTimeMs = memSample.totalCollectionTimeMs;
                 RuntimeMemory.getInstance().read(memSample);
-                UpdateGraphProcessor.DEFAULT.accumulatedCycleStats.take(ugpAccumCycleStats);
+                getQueryTable().getUpdateContext().getUpdateGraphProcessor().accumulatedCycleStats
+                        .take(ugpAccumCycleStats);
                 final long endTimeMillis = System.currentTimeMillis();
                 logProcessMem(
                         intervalStartTimeMillis,

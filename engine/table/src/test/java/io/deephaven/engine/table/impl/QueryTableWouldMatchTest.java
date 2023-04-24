@@ -5,19 +5,19 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.table.ShiftObliviousListener;
-import io.deephaven.engine.testutil.*;
-import io.deephaven.engine.testutil.generator.*;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.WouldMatchPair;
 import io.deephaven.engine.table.impl.select.DynamicWhereFilter;
+import io.deephaven.engine.testutil.*;
+import io.deephaven.engine.testutil.generator.*;
+import io.deephaven.engine.updategraph.UpdateContext;
 import junit.framework.TestCase;
 
 import java.util.Arrays;
 import java.util.Random;
 
+import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.col;
 import static io.deephaven.engine.util.TableTools.show;
-import static io.deephaven.engine.testutil.TstUtils.*;
 
 public class QueryTableWouldMatchTest extends QueryTableTestBase {
 
@@ -41,7 +41,7 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
                 Arrays.asList(t1Matched.getColumn("Compound").get(0, 6)));
 
         // Add
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             addToTable(t1, i(7, 9), col("Text", "Cake", "Zips For Fun"),
                     col("Number", 6, 1),
                     col("Bool", false, false));
@@ -59,7 +59,7 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
                 Arrays.asList(t1Matched.getColumn("Compound").get(0, 8)));
 
         // Remove
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             removeRows(t1, i(1, 3));
             t1.notifyListeners(i(), i(1, 3), i());
         });
@@ -75,7 +75,7 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
                 Arrays.asList(t1Matched.getColumn("Compound").get(0, 8)));
 
         // Modify
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             addToTable(t1, i(4, 5),
                     col("Text", "Kittie", "Bacon"),
                     col("Number", 2, 1),
@@ -94,7 +94,7 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
                 Arrays.asList(t1Matched.getColumn("Compound").get(0, 8)));
 
         // All 3
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             addToTable(t1, i(0, 1, 4, 11),
                     col("Text", "Apple", "Bagel", "Boat", "YAY"),
                     col("Number", 100, -200, 300, 400),
@@ -143,7 +143,7 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
                 Arrays.asList(t1Matched.getColumn("InNum").get(0, 6)));
 
         // Tick one filter table
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             addToTable(textTable, i(0, 2), col("Text", "Cheese", "Yo"));
             textTable.notifyListeners(i(2), i(), i(0));
         });
@@ -154,7 +154,7 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
                 Arrays.asList(t1Matched.getColumn("InNum").get(0, 6)));
 
         // Tick both of them
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             addToTable(textTable, i(0, 2), col("Text", "Lets go", "Hey"));
             textTable.notifyListeners(i(), i(), i(0, 2));
 
@@ -170,7 +170,7 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
 
         if (isRefreshing) {
             // Tick both of them, and the table itself
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
                 addToTable(textTable, i(0, 2), col("Text", "Dog", "Yo"));
                 textTable.notifyListeners(i(), i(), i(0, 2));
 
@@ -269,10 +269,10 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
                 getTable(setSize, random, numSetInfo = initColumnInfos(new String[] {"intCol"},
                         new IntGenerator(0, 100)));
 
-        final QueryTable symSetTable = (QueryTable) UpdateGraphProcessor.DEFAULT.exclusiveLock()
-                .computeLocked(() -> symSetTableBase.selectDistinct("Sym"));
-        final QueryTable numSetTable = (QueryTable) UpdateGraphProcessor.DEFAULT.exclusiveLock()
-                .computeLocked(() -> numSetTableBase.selectDistinct("intCol"));
+        final QueryTable symSetTable = (QueryTable) UpdateContext.exclusiveLock().computeLocked(
+                () -> symSetTableBase.selectDistinct("Sym"));
+        final QueryTable numSetTable = (QueryTable) UpdateContext.exclusiveLock().computeLocked(
+                () -> numSetTableBase.selectDistinct("intCol"));
 
         final QueryTable matchTable = getTable(filteredSize, random,
                 filteredInfo = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol"},
@@ -296,7 +296,7 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
                 final boolean modFiltered = random.nextBoolean();
 
                 final int doit = i & 0x3;
-                UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+                UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
                     if (modSet) {
                         if (doit == 0 || doit == 2) {
                             GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE,
@@ -311,7 +311,7 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
                 });
                 validate(en);
 
-                UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+                UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
                     if (modFiltered) {
                         GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE,
                                 filteredSize, random, matchTable, filteredInfo);

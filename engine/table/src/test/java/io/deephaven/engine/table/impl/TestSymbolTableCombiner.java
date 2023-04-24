@@ -10,11 +10,11 @@ import io.deephaven.engine.testutil.GenerateTableUpdates;
 import io.deephaven.engine.testutil.generator.StringGenerator;
 import io.deephaven.engine.testutil.generator.UniqueLongGenerator;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.IntegerSparseArraySource;
 import io.deephaven.engine.table.impl.sources.regioned.SymbolTableSource;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.test.types.OutOfBandTest;
 import junit.framework.TestCase;
 
@@ -91,7 +91,7 @@ public class TestSymbolTableCombiner extends RefreshingTableTestCase {
             if (RefreshingTableTestCase.printTableUpdates) {
                 System.out.println("Step = " + step + ", size=" + symbolTable.size());
             }
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
                 final RowSet[] updates = GenerateTableUpdates.computeTableUpdates(size / 10, random, symbolTable,
                         columnInfo, true, false, false);
                 symbolTable.notifyListeners(updates[0], updates[1], updates[2]);

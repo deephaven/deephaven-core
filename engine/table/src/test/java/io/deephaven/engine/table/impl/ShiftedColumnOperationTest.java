@@ -31,7 +31,7 @@ import io.deephaven.engine.testutil.generator.IntGenerator;
 import io.deephaven.engine.testutil.generator.SetGenerator;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.util.PrintListener;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.test.types.OutOfBandTest;
@@ -96,7 +96,7 @@ public class ShiftedColumnOperationTest {
         final PrintListener plMinusConst = new PrintListener("Minus Const", shiftMinusConst);
         final PrintListener plPlusConst = new PrintListener("Plus Const", shiftPlusConst);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             addToTable(table, i(6, 8, 22, 24), intCol("Sentinel", 4, 5, 12, 13), intCol("Value", 16, 18, 32, 34),
                     intCol("Value2", 162, 182, 322, 342));
             table.notifyListeners(i(6, 8, 22, 24), i(), i());
@@ -106,15 +106,15 @@ public class ShiftedColumnOperationTest {
 
         String[] minusConstCols =
                 new String[] {"CV3=Value_[i-" + shiftConst + "]", "CV32=Value2_[i-" + shiftConst + "]"};
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> table.update(minusConstCols)),
+        assertTableEquals(UpdateContext.sharedLock().computeLocked(() -> table.update(minusConstCols)),
                 shiftMinusConst);
 
         String[] plusConstCols =
                 new String[] {"CV2=Value_[i+" + shiftConst + "]", "CV22=Value2_[i+" + shiftConst + "]"};
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> table.update(plusConstCols)),
+        assertTableEquals(UpdateContext.sharedLock().computeLocked(() -> table.update(plusConstCols)),
                 shiftPlusConst);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             addToTable(table, i(2, 4, 26, 28), intCol("Sentinel", 2, 3, 14, 15), intCol("Value", 12, 14, 36, 38),
                     intCol("Value2", 122, 142, 362, 382));
             removeRows(table, i(6, 24));
@@ -122,9 +122,9 @@ public class ShiftedColumnOperationTest {
         });
         printTableUpdates(table, shiftMinusConst, shiftPlusConst, "post-update", shiftConst);
 
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> table.update(minusConstCols)),
+        assertTableEquals(UpdateContext.sharedLock().computeLocked(() -> table.update(minusConstCols)),
                 shiftMinusConst);
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> table.update(plusConstCols)),
+        assertTableEquals(UpdateContext.sharedLock().computeLocked(() -> table.update(plusConstCols)),
                 shiftPlusConst);
 
         plTable.stop();
@@ -168,7 +168,7 @@ public class ShiftedColumnOperationTest {
         final PrintListener plMinusConst = new PrintListener("Minus Const", shiftMinusConst);
         final PrintListener plPlusConst = new PrintListener("Plus Const", shiftPlusConst);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             addToTable(table, i(0, 1, 12, 14), intCol("Sentinel", -1, 0, 6, 7), intCol("Value", 6, 8, 20, 22));
             addToTable(table, i(8), intCol("Sentinel", 18), intCol("Value", 25));
             table.notifyListeners(i(0, 1, 12, 14), i(), i(8));
@@ -176,9 +176,9 @@ public class ShiftedColumnOperationTest {
 
         printTableUpdates(table, shiftMinusConst, shiftPlusConst, "post-update", shiftConst);
 
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock()
+        assertTableEquals(UpdateContext.sharedLock()
                 .computeLocked(() -> table.update("CV3 = Value_[i - " + shiftConst + "]")), shiftMinusConst);
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock()
+        assertTableEquals(UpdateContext.sharedLock()
                 .computeLocked(() -> table.update("CV2 = Value_[i + " + shiftConst + "]")), shiftPlusConst);
 
         plTable.stop();
@@ -226,7 +226,7 @@ public class ShiftedColumnOperationTest {
         final PrintListener plMinusConst = new PrintListener("Minus Const", shiftMinusConst);
         final PrintListener plPlusConst = new PrintListener("Plus Const", shiftPlusConst);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             addToTable(table,
                     i(10, 12, 18),
                     intCol("Sentinel", 6, 7, 10),
@@ -245,15 +245,15 @@ public class ShiftedColumnOperationTest {
 
         String[] minusConstCols = new String[] {"CV3=Value_[i-" + shiftConst + "]",
                 "CV32=Value2_[i-" + shiftConst + "]", "CV33=Value3_[i-" + shiftConst + "]"};
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> table.update(minusConstCols)),
+        assertTableEquals(UpdateContext.sharedLock().computeLocked(() -> table.update(minusConstCols)),
                 shiftMinusConst);
 
         String[] plusConstCols = new String[] {"CV2=Value_[i+" + shiftConst + "]", "CV22=Value2_[i+" + shiftConst + "]",
                 "CV23=Value3_[i+" + shiftConst + "]"};
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> table.update(plusConstCols)),
+        assertTableEquals(UpdateContext.sharedLock().computeLocked(() -> table.update(plusConstCols)),
                 shiftPlusConst);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             addToTable(table, i(14, 16, 20),
                     intCol("Sentinel", 8, 9, 11),
                     intCol("Value", 24, 26, 30),
@@ -267,9 +267,9 @@ public class ShiftedColumnOperationTest {
         });
         printTableUpdates(table, shiftMinusConst, shiftPlusConst, "post-update", shiftConst);
 
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> table.update(minusConstCols)),
+        assertTableEquals(UpdateContext.sharedLock().computeLocked(() -> table.update(minusConstCols)),
                 shiftMinusConst);
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> table.update(plusConstCols)),
+        assertTableEquals(UpdateContext.sharedLock().computeLocked(() -> table.update(plusConstCols)),
                 shiftPlusConst);
 
         plTable.stop();
@@ -318,7 +318,7 @@ public class ShiftedColumnOperationTest {
         final PrintListener plMinusConst = new PrintListener("Minus Const", shiftMinusConst);
         final PrintListener plPlusConst = new PrintListener("Plus Const", shiftPlusConst);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             addToTable(table,
                     i(10, 12, 18),
                     intCol("Sentinel", 6, 7, 10),
@@ -339,17 +339,17 @@ public class ShiftedColumnOperationTest {
                 "CV3=Value_[i-" + shiftConst + "]", "C2V3=Value_[i-" + shiftConst + "]",
                 "CV32=Value2_[i-" + shiftConst + "]", "C2V32=Value2_[i-" + shiftConst + "]",
                 "CV33=Value3_[i-" + shiftConst + "]", "C2V33=Value3_[i-" + shiftConst + "]"};
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> table.update(minusConstCols)),
+        assertTableEquals(UpdateContext.sharedLock().computeLocked(() -> table.update(minusConstCols)),
                 shiftMinusConst);
 
         String[] plusConstCols = new String[] {
                 "CV2=Value_[i+" + shiftConst + "]", "C2V2=Value_[i+" + shiftConst + "]",
                 "CV22=Value2_[i+" + shiftConst + "]", "C2V22=Value2_[i+" + shiftConst + "]",
                 "CV23=Value3_[i+" + shiftConst + "]", "C2V23=Value3_[i+" + shiftConst + "]"};
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> table.update(plusConstCols)),
+        assertTableEquals(UpdateContext.sharedLock().computeLocked(() -> table.update(plusConstCols)),
                 shiftPlusConst);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             addToTable(table, i(14, 16, 20),
                     intCol("Sentinel", 8, 9, 11),
                     intCol("Value", 24, 26, 30),
@@ -363,9 +363,9 @@ public class ShiftedColumnOperationTest {
         });
         printTableUpdates(table, shiftMinusConst, shiftPlusConst, "post-update", shiftConst);
 
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> table.update(minusConstCols)),
+        assertTableEquals(UpdateContext.sharedLock().computeLocked(() -> table.update(minusConstCols)),
                 shiftMinusConst);
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> table.update(plusConstCols)),
+        assertTableEquals(UpdateContext.sharedLock().computeLocked(() -> table.update(plusConstCols)),
                 shiftPlusConst);
 
         plTable.stop();
@@ -409,7 +409,7 @@ public class ShiftedColumnOperationTest {
         final PrintListener plMinusConst = new PrintListener("Minus Const", shiftMinusConst);
         final PrintListener plPlusConst = new PrintListener("Plus Const", shiftPlusConst);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             addToTable(table, i(6, 8, 22, 24), intCol("Sentinel", 4, 5, 12, 13), intCol("Value", 16, 18, 32, 34));
             table.notifyListeners(i(6, 8, 22, 24), i(), i());
 
@@ -417,12 +417,12 @@ public class ShiftedColumnOperationTest {
 
         printTableUpdates(table, shiftMinusConst, shiftPlusConst, "post-update", shiftConst);
 
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock()
+        assertTableEquals(UpdateContext.sharedLock()
                 .computeLocked(() -> table.update("CV3 = Value_[i - " + shiftConst + "]")), shiftMinusConst);
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock()
+        assertTableEquals(UpdateContext.sharedLock()
                 .computeLocked(() -> table.update("CV2 = Value_[i + " + shiftConst + "]")), shiftPlusConst);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             addToTable(table, i(2, 4, 26, 28), intCol("Sentinel", 2, 3, 14, 15), intCol("Value", 12, 14, 36, 38));
             removeRows(table, i(6, 24));
             table.notifyListeners(i(2, 4, 26, 28), i(6, 24), i());
@@ -430,9 +430,9 @@ public class ShiftedColumnOperationTest {
 
         printTableUpdates(table, shiftMinusConst, shiftPlusConst, "post-update", shiftConst);
 
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock()
+        assertTableEquals(UpdateContext.sharedLock()
                 .computeLocked(() -> table.update("CV3 = Value_[i - " + shiftConst + "]")), shiftMinusConst);
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock()
+        assertTableEquals(UpdateContext.sharedLock()
                 .computeLocked(() -> table.update("CV2 = Value_[i + " + shiftConst + "]")), shiftPlusConst);
 
         plTable.stop();
@@ -476,7 +476,7 @@ public class ShiftedColumnOperationTest {
         final PrintListener plMinusConst = new PrintListener("Minus Const", shiftMinusConst);
         final PrintListener plPlusConst = new PrintListener("Plus Const", shiftPlusConst);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             addToTable(table, i(6, 8, 22, 24), intCol("Sentinel", 4, 5, 12, 13), intCol("Value", 16, 18, 32, 34));
             table.notifyListeners(i(6, 8, 22, 24), i(), i());
 
@@ -484,13 +484,13 @@ public class ShiftedColumnOperationTest {
 
         printTableUpdates(table, shiftMinusConst, shiftPlusConst, "post-update", shiftConst);
 
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock()
+        assertTableEquals(UpdateContext.sharedLock()
                 .computeLocked(() -> table.update("CV3 = Value_[i - " + shiftConst + "]")), shiftMinusConst);
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock()
+        assertTableEquals(UpdateContext.sharedLock()
                 .computeLocked(() -> table.update("CV2 = Value_[i + " + shiftConst + "]")), shiftPlusConst);
 
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             addToTable(table, i(2, 4, 26, 28), intCol("Sentinel", 2, 3, 14, 15), intCol("Value", 12, 14, 36, 38));
             removeRows(table, i(6, 24));
             table.notifyListeners(i(2, 4, 26, 28), i(6, 24), i());
@@ -498,9 +498,9 @@ public class ShiftedColumnOperationTest {
 
         printTableUpdates(table, shiftMinusConst, shiftPlusConst, "post-update", shiftConst);
 
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock()
+        assertTableEquals(UpdateContext.sharedLock()
                 .computeLocked(() -> table.update("CV3 = Value_[i - " + shiftConst + "]")), shiftMinusConst);
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock()
+        assertTableEquals(UpdateContext.sharedLock()
                 .computeLocked(() -> table.update("CV2 = Value_[i + " + shiftConst + "]")), shiftPlusConst);
 
         plTable.stop();
@@ -544,7 +544,7 @@ public class ShiftedColumnOperationTest {
         final PrintListener plMinusConst = new PrintListener("Minus Const", shiftMinusConst);
         final PrintListener plPlusConst = new PrintListener("Plus Const", shiftPlusConst);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             addToTable(table, i(6, 14, 18, 24), intCol("Sentinel", 4, 5, 12, 13), intCol("Value", 16, 18, 32, 34));
             removeRows(table, i(10, 14, 18, 20));
             table.notifyListeners(i(6, 24), i(10, 14, 18, 20), i());
@@ -553,9 +553,9 @@ public class ShiftedColumnOperationTest {
 
         printTableUpdates(table, shiftMinusConst, shiftPlusConst, "post-update", shiftConst);
 
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock()
+        assertTableEquals(UpdateContext.sharedLock()
                 .computeLocked(() -> table.update("CV3 = Value_[i - " + shiftConst + "]")), shiftMinusConst);
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock()
+        assertTableEquals(UpdateContext.sharedLock()
                 .computeLocked(() -> table.update("CV2 = Value_[i + " + shiftConst + "]")), shiftPlusConst);
 
         plTable.stop();
@@ -611,7 +611,7 @@ public class ShiftedColumnOperationTest {
         FailureListener tuvPlusConstFailureListener = new FailureListener();
         tuvMPlusConst.getResultTable().addUpdateListener(tuvPlusConstFailureListener);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             addToTable(table, i(6, 8, 22, 24), intCol("Sentinel", 4, 5, 12, 13), intCol("Value", 16, 18, 32, 34));
             table.notifyListeners(i(6, 8, 22, 24), i(), i());
 
@@ -628,17 +628,17 @@ public class ShiftedColumnOperationTest {
         TableTools.showWithRowSet(shiftPlusConst);
 
         assertTableEquals(
-                UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> table.update("V3 = Value_[i - 1]")),
+                UpdateContext.sharedLock().computeLocked(() -> table.update("V3 = Value_[i - 1]")),
                 shiftMinusOne);
         assertTableEquals(
-                UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> table.update("V2 = Value_[i + 1]")),
+                UpdateContext.sharedLock().computeLocked(() -> table.update("V2 = Value_[i + 1]")),
                 shiftPlusOne);
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock()
+        assertTableEquals(UpdateContext.sharedLock()
                 .computeLocked(() -> table.update("CV3 = Value_[i - " + shiftConst + "]")), shiftMinusConst);
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock()
+        assertTableEquals(UpdateContext.sharedLock()
                 .computeLocked(() -> table.update("CV2 = Value_[i + " + shiftConst + "]")), shiftPlusConst);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             addToTable(table, i(2, 4, 26, 28), intCol("Sentinel", 2, 3, 14, 15), intCol("Value", 12, 14, 36, 38));
             removeRows(table, i(6, 24));
             table.notifyListeners(i(2, 4, 26, 28), i(6, 24), i());
@@ -655,14 +655,14 @@ public class ShiftedColumnOperationTest {
         TableTools.showWithRowSet(shiftPlusConst);
 
         assertTableEquals(
-                UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> table.update("V3 = Value_[i - 1]")),
+                UpdateContext.sharedLock().computeLocked(() -> table.update("V3 = Value_[i - 1]")),
                 shiftMinusOne);
         assertTableEquals(
-                UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> table.update("V2 = Value_[i + 1]")),
+                UpdateContext.sharedLock().computeLocked(() -> table.update("V2 = Value_[i + 1]")),
                 shiftPlusOne);
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock()
+        assertTableEquals(UpdateContext.sharedLock()
                 .computeLocked(() -> table.update("CV3 = Value_[i - " + shiftConst + "]")), shiftMinusConst);
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock()
+        assertTableEquals(UpdateContext.sharedLock()
                 .computeLocked(() -> table.update("CV2 = Value_[i + " + shiftConst + "]")), shiftPlusConst);
     }
 
@@ -714,7 +714,7 @@ public class ShiftedColumnOperationTest {
         FailureListener tuvPlusConstFailureListener = new FailureListener();
         tuvMPlusConst.getResultTable().addUpdateListener(tuvPlusConstFailureListener);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             addToTable(table, i(4, 6, 8, 14, 16, 18, 22, 24, 26, 32, 34, 36),
                     intCol("Sentinel", 1, 2, 3, 6, 7, 8, 10, 11, 12, 15, 16, 17),
                     intCol("Value", 12, 14, 16, 22, 24, 26, 30, 32, 34, 40, 42, 44));
@@ -733,17 +733,17 @@ public class ShiftedColumnOperationTest {
         TableTools.showWithRowSet(shiftPlusConst);
 
         assertTableEquals(
-                UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> table.update("V3 = Value_[i - 1]")),
+                UpdateContext.sharedLock().computeLocked(() -> table.update("V3 = Value_[i - 1]")),
                 shiftMinusOne);
         assertTableEquals(
-                UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> table.update("V2 = Value_[i + 1]")),
+                UpdateContext.sharedLock().computeLocked(() -> table.update("V2 = Value_[i + 1]")),
                 shiftPlusOne);
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock()
+        assertTableEquals(UpdateContext.sharedLock()
                 .computeLocked(() -> table.update("CV3 = Value_[i - " + shiftConst + "]")), shiftMinusConst);
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock()
+        assertTableEquals(UpdateContext.sharedLock()
                 .computeLocked(() -> table.update("CV2 = Value_[i + " + shiftConst + "]")), shiftPlusConst);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             addToTable(table, i(4, 6, 8, 14, 16, 18, 22, 24, 26, 32, 34, 36),
                     intCol("Sentinel", 101, 102, 103, 106, 107, 108, 110, 111, 112, 115, 116, 117),
                     intCol("Value", 112, 114, 116, 122, 124, 126, 130, 132, 134, 140, 142, 144));
@@ -762,17 +762,17 @@ public class ShiftedColumnOperationTest {
         TableTools.showWithRowSet(shiftPlusConst);
 
         assertTableEquals(
-                UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> table.update("V3 = Value_[i - 1]")),
+                UpdateContext.sharedLock().computeLocked(() -> table.update("V3 = Value_[i - 1]")),
                 shiftMinusOne);
         assertTableEquals(
-                UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> table.update("V2 = Value_[i + 1]")),
+                UpdateContext.sharedLock().computeLocked(() -> table.update("V2 = Value_[i + 1]")),
                 shiftPlusOne);
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock()
+        assertTableEquals(UpdateContext.sharedLock()
                 .computeLocked(() -> table.update("CV3 = Value_[i - " + shiftConst + "]")), shiftMinusConst);
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock()
+        assertTableEquals(UpdateContext.sharedLock()
                 .computeLocked(() -> table.update("CV2 = Value_[i + " + shiftConst + "]")), shiftPlusConst);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             removeRows(table, i(4, 6, 8, 14, 16, 18, 22, 24, 26, 32, 34, 36));
             table.notifyListeners(i(), i(4, 6, 8, 14, 16, 18, 22, 24, 26, 32, 34, 36), i());
         });
@@ -788,14 +788,14 @@ public class ShiftedColumnOperationTest {
         TableTools.showWithRowSet(shiftPlusConst);
 
         assertTableEquals(
-                UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> table.update("V3 = Value_[i - 1]")),
+                UpdateContext.sharedLock().computeLocked(() -> table.update("V3 = Value_[i - 1]")),
                 shiftMinusOne);
         assertTableEquals(
-                UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> table.update("V2 = Value_[i + 1]")),
+                UpdateContext.sharedLock().computeLocked(() -> table.update("V2 = Value_[i + 1]")),
                 shiftPlusOne);
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock()
+        assertTableEquals(UpdateContext.sharedLock()
                 .computeLocked(() -> table.update("CV3 = Value_[i - " + shiftConst + "]")), shiftMinusConst);
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock()
+        assertTableEquals(UpdateContext.sharedLock()
                 .computeLocked(() -> table.update("CV2 = Value_[i + " + shiftConst + "]")), shiftPlusConst);
     }
 
@@ -836,15 +836,15 @@ public class ShiftedColumnOperationTest {
         final PrintListener plPlusConst = new PrintListener("Plus Const", shiftPlusConst);
 
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             removeRows(table, i(6, 10));
             table.notifyListeners(i(), i(6, 10), i());
         });
         printTableUpdates(table, shiftMinusConst, shiftPlusConst, "post-update", shiftConst);
 
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock()
+        assertTableEquals(UpdateContext.sharedLock()
                 .computeLocked(() -> table.update("CV3 = Value_[i - " + shiftConst + "]")), shiftMinusConst);
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock()
+        assertTableEquals(UpdateContext.sharedLock()
                 .computeLocked(() -> table.update("CV2 = Value_[i + " + shiftConst + "]")), shiftPlusConst);
 
         plTable.stop();
@@ -887,15 +887,15 @@ public class ShiftedColumnOperationTest {
         final PrintListener plMinusConst = new PrintListener("Minus Const", shiftMinusConst);
         final PrintListener plPlusConst = new PrintListener("Plus Const", shiftPlusConst);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             removeRows(table, i(6));
             table.notifyListeners(i(), i(6), i());
         });
         printTableUpdates(table, shiftMinusConst, shiftPlusConst, "post-update", shiftConst);
 
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock()
+        assertTableEquals(UpdateContext.sharedLock()
                 .computeLocked(() -> table.update("CV3 = Value_[i - " + shiftConst + "]")), shiftMinusConst);
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock()
+        assertTableEquals(UpdateContext.sharedLock()
                 .computeLocked(() -> table.update("CV2 = Value_[i + " + shiftConst + "]")), shiftPlusConst);
 
         plTable.stop();
@@ -939,7 +939,7 @@ public class ShiftedColumnOperationTest {
         final PrintListener plMinusConst = new PrintListener("Minus Const", shiftMinusConst);
         final PrintListener plPlusConst = new PrintListener("Plus Const", shiftPlusConst);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             addToTable(table, i(0, 2, 4, 8, 12, 14, 18), intCol("Sentinel", 11, 12, 13, 15, 17, 18, 20),
                     intCol("Value", 9, 11, 13, 17, 21, 23, 27));
             table.notifyListeners(i(), i(), i(0, 2, 4, 8, 12, 14, 18));
@@ -947,12 +947,12 @@ public class ShiftedColumnOperationTest {
 
         printTableUpdates(table, shiftMinusConst, shiftPlusConst, "post-update", shiftConst);
 
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock()
+        assertTableEquals(UpdateContext.sharedLock()
                 .computeLocked(() -> table.update("CV3 = Value_[i - " + shiftConst + "]")), shiftMinusConst);
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock()
+        assertTableEquals(UpdateContext.sharedLock()
                 .computeLocked(() -> table.update("CV2 = Value_[i + " + shiftConst + "]")), shiftPlusConst);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             addToTable(table, i(0, 2, 4, 8, 12, 14, 18), intCol("Sentinel", 21, 22, 23, 25, 27, 28, 30),
                     intCol("Value", 109, 111, 113, 117, 121, 123, 127));
             final RowSetShiftData.Builder shiftDataBuilder = new RowSetShiftData.Builder();
@@ -964,9 +964,9 @@ public class ShiftedColumnOperationTest {
 
         printTableUpdates(table, shiftMinusConst, shiftPlusConst, "post-update", shiftConst);
 
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock()
+        assertTableEquals(UpdateContext.sharedLock()
                 .computeLocked(() -> table.update("CV3 = Value_[i - " + shiftConst + "]")), shiftMinusConst);
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock()
+        assertTableEquals(UpdateContext.sharedLock()
                 .computeLocked(() -> table.update("CV2 = Value_[i + " + shiftConst + "]")), shiftPlusConst);
 
         plTable.stop();
@@ -1044,7 +1044,7 @@ public class ShiftedColumnOperationTest {
         final PrintListener printListener = new PrintListener("shiftMinus4", shiftMinusConst, 10);
         final PrintListener printListenerPlusConst = new PrintListener("shiftPlus4", shiftPlusConst, 10);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             addToTable(table, i(0, 1, 12, 14), intCol("Sentinel", -1, 0, 6, 7), intCol("Value", 98, 99, 105, 106));
             table.notifyListeners(i(0, 1, 12, 14), i(), i());
         });
@@ -1060,14 +1060,14 @@ public class ShiftedColumnOperationTest {
         TableTools.showWithRowSet(shiftPlusConst);
 
         assertTableEquals(
-                UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> table.update("V3 = Value_[i - 1]")),
+                UpdateContext.sharedLock().computeLocked(() -> table.update("V3 = Value_[i - 1]")),
                 shiftMinusOne);
         assertTableEquals(
-                UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> table.update("V2 = Value_[i + 1]")),
+                UpdateContext.sharedLock().computeLocked(() -> table.update("V2 = Value_[i + 1]")),
                 shiftPlusOne);
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock()
+        assertTableEquals(UpdateContext.sharedLock()
                 .computeLocked(() -> table.update("CV3 = Value_[i - " + shiftConst + "]")), shiftMinusConst);
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock()
+        assertTableEquals(UpdateContext.sharedLock()
                 .computeLocked(() -> table.update("CV2 = Value_[i + " + shiftConst + "]")), shiftPlusConst);
 
         printListenerOrig.stop();
@@ -1153,7 +1153,7 @@ public class ShiftedColumnOperationTest {
         final PrintListener printListener = new PrintListener("shiftMinus4", shiftMinusConst, 10);
         final PrintListener printListenerPlusConst = new PrintListener("shiftPlus4", shiftPlusConst, 10);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             addToTable(table, i(0, 1, 12, 14), intCol("Sentinel", -1, 0, 6, 7), intCol("Value", 98, 99, 105, 106),
                     intCol("Value2", 980, 990, 1050, 1060), intCol("Value3", 1980, 1990, 2050, 2060));
             table.notifyListeners(i(0, 1, 12, 14), i(), i());
@@ -1170,20 +1170,20 @@ public class ShiftedColumnOperationTest {
         TableTools.showWithRowSet(shiftPlusConst);
 
         assertTableEquals(
-                UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(
+                UpdateContext.sharedLock().computeLocked(
                         () -> table.update("V3 = Value_[i - 1]", "V32 = Value2_[i - 1]", "V33 = Value3_[i - 1]")),
                 shiftMinusOne);
         assertTableEquals(
-                UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(
+                UpdateContext.sharedLock().computeLocked(
                         () -> table.update("V2 = Value_[i + 1]", "V22 = Value2_[i + 1]", "V23 = Value3_[i + 1]")),
                 shiftPlusOne);
         assertTableEquals(
-                UpdateGraphProcessor.DEFAULT.sharedLock()
+                UpdateContext.sharedLock()
                         .computeLocked(() -> table.update("CV3 = Value_[i - " + shiftConst + "]",
                                 "CV32 = Value2_[i - " + shiftConst + "]", "CV33 = Value3_[i - " + shiftConst + "]")),
                 shiftMinusConst);
         assertTableEquals(
-                UpdateGraphProcessor.DEFAULT.sharedLock()
+                UpdateContext.sharedLock()
                         .computeLocked(() -> table.update("CV2 = Value_[i + " + shiftConst + "]",
                                 "CV22 = Value2_[i + " + shiftConst + "]", "CV23 = Value3_[i + " + shiftConst + "]")),
                 shiftPlusConst);
@@ -1231,15 +1231,15 @@ public class ShiftedColumnOperationTest {
         final PrintListener plMinusConst = new PrintListener("Minus Const", shiftMinusConst);
         final PrintListener plPlusConst = new PrintListener("Plus Const", shiftPlusConst);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             removeRows(table, i(8));
             table.notifyListeners(i(), i(8), i());
         });
         printTableUpdates(table, shiftMinusConst, shiftPlusConst, "post-update", shiftConst);
 
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock()
+        assertTableEquals(UpdateContext.sharedLock()
                 .computeLocked(() -> table.update("CV3 = Value_[i - " + shiftConst + "]")), shiftMinusConst);
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock()
+        assertTableEquals(UpdateContext.sharedLock()
                 .computeLocked(() -> table.update("CV2 = Value_[i + " + shiftConst + "]")), shiftPlusConst);
 
         plTable.stop();
@@ -1283,16 +1283,16 @@ public class ShiftedColumnOperationTest {
         final PrintListener plMinusConst = new PrintListener("Minus Const", shiftMinusConst);
         final PrintListener plPlusConst = new PrintListener("Plus Const", shiftPlusConst);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             addToTable(table, i(2), intCol("Sentinel", 1), intCol("Value", 10));
             table.notifyListeners(i(2), i(), i());
         });
 
         printTableUpdates(table, shiftMinusConst, shiftPlusConst, "post-update", shiftConst);
 
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock()
+        assertTableEquals(UpdateContext.sharedLock()
                 .computeLocked(() -> table.update("CV3 = Value_[i - " + shiftConst + "]")), shiftMinusConst);
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock()
+        assertTableEquals(UpdateContext.sharedLock()
                 .computeLocked(() -> table.update("CV2 = Value_[i + " + shiftConst + "]")), shiftPlusConst);
 
         plTable.stop();
@@ -1336,16 +1336,16 @@ public class ShiftedColumnOperationTest {
         final PrintListener plMinusConst = new PrintListener("Minus Const", shiftMinusConst);
         final PrintListener plPlusConst = new PrintListener("Plus Const", shiftPlusConst);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             addToTable(table, i(2, 4), intCol("Sentinel", 1, 2), intCol("Value", 10, 12));
             table.notifyListeners(i(2, 4), i(), i());
         });
 
         printTableUpdates(table, shiftMinusConst, shiftPlusConst, "post-update", shiftConst);
 
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock()
+        assertTableEquals(UpdateContext.sharedLock()
                 .computeLocked(() -> table.update("CV3 = Value_[i - " + shiftConst + "]")), shiftMinusConst);
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock()
+        assertTableEquals(UpdateContext.sharedLock()
                 .computeLocked(() -> table.update("CV2 = Value_[i + " + shiftConst + "]")), shiftPlusConst);
 
         plTable.stop();
@@ -1389,16 +1389,16 @@ public class ShiftedColumnOperationTest {
         final PrintListener plMinusConst = new PrintListener("Minus Const", shiftMinusConst);
         final PrintListener plPlusConst = new PrintListener("Plus Const", shiftPlusConst);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             addToTable(table, i(12), intCol("Sentinel", 6), intCol("Value", 20));
             table.notifyListeners(i(12), i(), i());
         });
 
         printTableUpdates(table, shiftMinusConst, shiftPlusConst, "post-update", shiftConst);
 
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock()
+        assertTableEquals(UpdateContext.sharedLock()
                 .computeLocked(() -> table.update("CV3 = Value_[i - " + shiftConst + "]")), shiftMinusConst);
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock()
+        assertTableEquals(UpdateContext.sharedLock()
                 .computeLocked(() -> table.update("CV2 = Value_[i + " + shiftConst + "]")), shiftPlusConst);
 
         plTable.stop();
@@ -1442,16 +1442,16 @@ public class ShiftedColumnOperationTest {
         final PrintListener plMinusConst = new PrintListener("Minus Const", shiftMinusConst);
         final PrintListener plPlusConst = new PrintListener("Plus Const", shiftPlusConst);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             addToTable(table, i(12, 14, 16), intCol("Sentinel", 6, 7, 8), intCol("Value", 20, 22, 24));
             table.notifyListeners(i(12, 14, 16), i(), i());
         });
 
         printTableUpdates(table, shiftMinusConst, shiftPlusConst, "post-update", shiftConst);
 
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock()
+        assertTableEquals(UpdateContext.sharedLock()
                 .computeLocked(() -> table.update("CV3 = Value_[i - " + shiftConst + "]")), shiftMinusConst);
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock()
+        assertTableEquals(UpdateContext.sharedLock()
                 .computeLocked(() -> table.update("CV2 = Value_[i + " + shiftConst + "]")), shiftPlusConst);
 
         plTable.stop();
@@ -1495,16 +1495,16 @@ public class ShiftedColumnOperationTest {
         final PrintListener plMinusConst = new PrintListener("Minus Const", shiftMinusConst);
         final PrintListener plPlusConst = new PrintListener("Plus Const", shiftPlusConst);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             addToTable(table, i(3, 5, 7), intCol("Sentinel", 2, 4, 6), intCol("Value", 11, 13, 15));
             table.notifyListeners(i(7, 5, 3), i(), i());
         });
 
         printTableUpdates(table, shiftMinusConst, shiftPlusConst, "post-update", shiftConst);
 
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock()
+        assertTableEquals(UpdateContext.sharedLock()
                 .computeLocked(() -> table.update("CV3 = Value_[i - " + shiftConst + "]")), shiftMinusConst);
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock()
+        assertTableEquals(UpdateContext.sharedLock()
                 .computeLocked(() -> table.update("CV2 = Value_[i + " + shiftConst + "]")), shiftPlusConst);
 
         plTable.stop();
@@ -1548,7 +1548,7 @@ public class ShiftedColumnOperationTest {
         final PrintListener plMinusConst = new PrintListener("Minus Const", shiftMinusConst);
         final PrintListener plPlusConst = new PrintListener("Plus Const", shiftPlusConst);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             addToTable(table, i(3, 5, 7, 9, 11, 13), intCol("Sentinel", 2, 4, 6, 8, 10, 12),
                     intCol("Value", 11, 13, 15, 17, 19, 21));
             table.notifyListeners(i(7, 5, 3, 9, 11, 13), i(), i());
@@ -1556,9 +1556,9 @@ public class ShiftedColumnOperationTest {
 
         printTableUpdates(table, shiftMinusConst, shiftPlusConst, "post-update", shiftConst);
 
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock()
+        assertTableEquals(UpdateContext.sharedLock()
                 .computeLocked(() -> table.update("CV3 = Value_[i - " + shiftConst + "]")), shiftMinusConst);
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock()
+        assertTableEquals(UpdateContext.sharedLock()
                 .computeLocked(() -> table.update("CV2 = Value_[i + " + shiftConst + "]")), shiftPlusConst);
 
         plTable.stop();
@@ -1602,16 +1602,16 @@ public class ShiftedColumnOperationTest {
         final PrintListener plMinusConst = new PrintListener("Minus Const", shiftMinusConst);
         final PrintListener plPlusConst = new PrintListener("Plus Const", shiftPlusConst);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             addToTable(table, i(2, 4, 8, 10), intCol("Sentinel", 1, 2, 4, 5), intCol("Value", 10, 12, 16, 18));
             table.notifyListeners(i(2, 4, 8, 10), i(), i());
         });
 
         printTableUpdates(table, shiftMinusConst, shiftPlusConst, "post-update", shiftConst);
 
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock()
+        assertTableEquals(UpdateContext.sharedLock()
                 .computeLocked(() -> table.update("CV3 = Value_[i - " + shiftConst + "]")), shiftMinusConst);
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock()
+        assertTableEquals(UpdateContext.sharedLock()
                 .computeLocked(() -> table.update("CV2 = Value_[i + " + shiftConst + "]")), shiftPlusConst);
 
         plTable.stop();
@@ -1654,16 +1654,16 @@ public class ShiftedColumnOperationTest {
         final PrintListener plMinusConst = new PrintListener("Minus Const", shiftMinusConst);
         final PrintListener plPlusConst = new PrintListener("Plus Const", shiftPlusConst);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             addToTable(table, i(2, 4, 8, 10, 16, 18), intCol("Sentinel", 1, 2, 4, 5, 8, 9),
                     intCol("Value", 10, 12, 16, 18, 24, 26));
             table.notifyListeners(i(2, 4, 8, 10, 16, 18), i(), i());
         });
         printTableUpdates(table, shiftMinusConst, shiftPlusConst, "post-update", shiftConst);
 
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock()
+        assertTableEquals(UpdateContext.sharedLock()
                 .computeLocked(() -> table.update("CV3 = Value_[i - " + shiftConst + "]")), shiftMinusConst);
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock()
+        assertTableEquals(UpdateContext.sharedLock()
                 .computeLocked(() -> table.update("CV2 = Value_[i + " + shiftConst + "]")), shiftPlusConst);
 
         plTable.stop();
@@ -1699,17 +1699,17 @@ public class ShiftedColumnOperationTest {
         final PrintListener plMinusOne = new PrintListener("Minus One", shiftMinusOne);
         final PrintListener plPlusOne = new PrintListener("Plus One", shiftPlusOne);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             addToTable(table, i(6), intCol("Sentinel", 6), intCol("Value", 20));
             table.notifyListeners(i(), i(), i(6));
         });
         printTableUpdates(table, shiftMinusOne, shiftPlusOne, "post-update", 1);
 
         assertTableEquals(
-                UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> table.update("V3 = Value_[i - 1]")),
+                UpdateContext.sharedLock().computeLocked(() -> table.update("V3 = Value_[i - 1]")),
                 shiftMinusOne);
         assertTableEquals(
-                UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> table.update("V2 = Value_[i + 1]")),
+                UpdateContext.sharedLock().computeLocked(() -> table.update("V2 = Value_[i + 1]")),
                 shiftPlusOne);
 
         plTable.stop();
@@ -1746,7 +1746,7 @@ public class ShiftedColumnOperationTest {
         final PrintListener plMinusOne = new PrintListener("Minus One", shiftMinusOne);
         final PrintListener plPlusOne = new PrintListener("Plus One", shiftPlusOne);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             removeRows(table, i(6));
             addToTable(table, i(7), intCol("Sentinel", 3), intCol("Value", 14));
             final RowSetShiftData.Builder shiftDataBuilder = new RowSetShiftData.Builder();
@@ -1759,10 +1759,10 @@ public class ShiftedColumnOperationTest {
         printTableUpdates(table, shiftMinusOne, shiftPlusOne, "post-update", 1);
 
         assertTableEquals(
-                UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> table.update("V3 = Value_[i - 1]")),
+                UpdateContext.sharedLock().computeLocked(() -> table.update("V3 = Value_[i - 1]")),
                 shiftMinusOne);
         assertTableEquals(
-                UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> table.update("V2 = Value_[i + 1]")),
+                UpdateContext.sharedLock().computeLocked(() -> table.update("V2 = Value_[i + 1]")),
                 shiftPlusOne);
 
         plTable.stop();
@@ -1799,7 +1799,7 @@ public class ShiftedColumnOperationTest {
         final PrintListener plMinusOne = new PrintListener("Minus One", shiftMinusOne);
         final PrintListener plPlusOne = new PrintListener("Plus One", shiftPlusOne);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             removeRows(table, i(6, 10));
             addToTable(table, i(7), intCol("Sentinel", 3), intCol("Value", 16));
             addToTable(table, i(9), intCol("Sentinel", 5), intCol("Value", 19));
@@ -1814,10 +1814,10 @@ public class ShiftedColumnOperationTest {
         printTableUpdates(table, shiftMinusOne, shiftPlusOne, "post-update", 1);
 
         assertTableEquals(
-                UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> table.update("V3 = Value_[i - 1]")),
+                UpdateContext.sharedLock().computeLocked(() -> table.update("V3 = Value_[i - 1]")),
                 shiftMinusOne);
         assertTableEquals(
-                UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> table.update("V2 = Value_[i + 1]")),
+                UpdateContext.sharedLock().computeLocked(() -> table.update("V2 = Value_[i + 1]")),
                 shiftPlusOne);
 
         plTable.stop();
@@ -1854,7 +1854,7 @@ public class ShiftedColumnOperationTest {
         final PrintListener plMinusOne = new PrintListener("Minus One", shiftMinusOne);
         final PrintListener plPlusOne = new PrintListener("Plus One", shiftPlusOne);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             removeRows(table, i(4));
             addToTable(table, i(3), intCol("Sentinel", 3), intCol("Value", 11));
             addToTable(table, i(5), intCol("Sentinel", 5), intCol("Value", 14));
@@ -1869,10 +1869,10 @@ public class ShiftedColumnOperationTest {
         printTableUpdates(table, shiftMinusOne, shiftPlusOne, "post-update", 1);
 
         assertTableEquals(
-                UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> table.update("V3 = Value_[i - 1]")),
+                UpdateContext.sharedLock().computeLocked(() -> table.update("V3 = Value_[i - 1]")),
                 shiftMinusOne);
         assertTableEquals(
-                UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> table.update("V2 = Value_[i + 1]")),
+                UpdateContext.sharedLock().computeLocked(() -> table.update("V2 = Value_[i + 1]")),
                 shiftPlusOne);
 
         plTable.stop();
@@ -1916,7 +1916,7 @@ public class ShiftedColumnOperationTest {
         final PrintListener plMinusConst = new PrintListener("Minus Const", shiftMinusConst);
         final PrintListener plPlusConst = new PrintListener("Plus Const", shiftPlusConst);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             removeRows(table, i(9, 18));
             addToTable(table, i(8), intCol("Sentinel", 4), intCol("Value", 17));
             addToTable(table, i(10), intCol("Sentinel", 5), intCol("Value", 18));
@@ -1933,9 +1933,9 @@ public class ShiftedColumnOperationTest {
 
         printTableUpdates(table, shiftMinusConst, shiftPlusConst, "post-update", shiftConst);
 
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock()
+        assertTableEquals(UpdateContext.sharedLock()
                 .computeLocked(() -> table.update("CV3 = Value_[i - " + shiftConst + "]")), shiftMinusConst);
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock()
+        assertTableEquals(UpdateContext.sharedLock()
                 .computeLocked(() -> table.update("CV2 = Value_[i + " + shiftConst + "]")), shiftPlusConst);
 
         plTable.stop();
@@ -1979,7 +1979,7 @@ public class ShiftedColumnOperationTest {
         final PrintListener plMinusConst = new PrintListener("Minus Const", shiftMinusConst);
         final PrintListener plPlusConst = new PrintListener("Plus Const", shiftPlusConst);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             addToTable(table, i(8), intCol("Sentinel", 4), intCol("Value", 17));
             addToTable(table, i(9), intCol("Sentinel", 6), intCol("Value", 19));
             addToTable(table, i(18), intCol("Sentinel", 10), intCol("Value", 29));
@@ -1989,9 +1989,9 @@ public class ShiftedColumnOperationTest {
 
         printTableUpdates(table, shiftMinusConst, shiftPlusConst, "post-update", shiftConst);
 
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock()
+        assertTableEquals(UpdateContext.sharedLock()
                 .computeLocked(() -> table.update("CV3 = Value_[i - " + shiftConst + "]")), shiftMinusConst);
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock()
+        assertTableEquals(UpdateContext.sharedLock()
                 .computeLocked(() -> table.update("CV2 = Value_[i + " + shiftConst + "]")), shiftPlusConst);
 
         plTable.stop();
@@ -2035,16 +2035,16 @@ public class ShiftedColumnOperationTest {
         final PrintListener plMinusConst = new PrintListener("Minus Const", shiftMinusConst);
         final PrintListener plPlusConst = new PrintListener("Plus Const", shiftPlusConst);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             removeRows(table, i(6));
             table.notifyListeners(i(), i(6), i());
         });
 
         printTableUpdates(table, shiftMinusConst, shiftPlusConst, "post-update", shiftConst);
 
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock()
+        assertTableEquals(UpdateContext.sharedLock()
                 .computeLocked(() -> table.update("CV3 = Value_[i - " + shiftConst + "]")), shiftMinusConst);
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock()
+        assertTableEquals(UpdateContext.sharedLock()
                 .computeLocked(() -> table.update("CV2 = Value_[i + " + shiftConst + "]")), shiftPlusConst);
 
         plTable.stop();
@@ -2088,15 +2088,15 @@ public class ShiftedColumnOperationTest {
         final PrintListener plMinusConst = new PrintListener("Minus Const", shiftMinusConst);
         final PrintListener plPlusConst = new PrintListener("Plus Const", shiftPlusConst);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             removeRows(table, i(2));
             table.notifyListeners(i(), i(2), i());
         });
         printTableUpdates(table, shiftMinusConst, shiftPlusConst, "post-update", shiftConst);
 
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock()
+        assertTableEquals(UpdateContext.sharedLock()
                 .computeLocked(() -> table.update("CV3 = Value_[i - " + shiftConst + "]")), shiftMinusConst);
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock()
+        assertTableEquals(UpdateContext.sharedLock()
                 .computeLocked(() -> table.update("CV2 = Value_[i + " + shiftConst + "]")), shiftPlusConst);
 
         plTable.stop();
@@ -2140,15 +2140,15 @@ public class ShiftedColumnOperationTest {
         final PrintListener plMinusConst = new PrintListener("Minus Const", shiftMinusConst);
         final PrintListener plPlusConst = new PrintListener("Plus Const", shiftPlusConst);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             removeRows(table, i(2, 4));
             table.notifyListeners(i(), i(2, 4), i());
         });
         printTableUpdates(table, shiftMinusConst, shiftPlusConst, "post-update", shiftConst);
 
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock()
+        assertTableEquals(UpdateContext.sharedLock()
                 .computeLocked(() -> table.update("CV3 = Value_[i - " + shiftConst + "]")), shiftMinusConst);
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock()
+        assertTableEquals(UpdateContext.sharedLock()
                 .computeLocked(() -> table.update("CV2 = Value_[i + " + shiftConst + "]")), shiftPlusConst);
 
         plTable.stop();
@@ -2192,16 +2192,16 @@ public class ShiftedColumnOperationTest {
         final PrintListener plMinusConst = new PrintListener("Minus Const", shiftMinusConst);
         final PrintListener plPlusConst = new PrintListener("Plus Const", shiftPlusConst);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             removeRows(table, i(14));
             table.notifyListeners(i(), i(14), i());
         });
 
         printTableUpdates(table, shiftMinusConst, shiftPlusConst, "post-update", shiftConst);
 
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock()
+        assertTableEquals(UpdateContext.sharedLock()
                 .computeLocked(() -> table.update("CV3 = Value_[i - " + shiftConst + "]")), shiftMinusConst);
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock()
+        assertTableEquals(UpdateContext.sharedLock()
                 .computeLocked(() -> table.update("CV2 = Value_[i + " + shiftConst + "]")), shiftPlusConst);
 
         plTable.stop();
@@ -2245,15 +2245,15 @@ public class ShiftedColumnOperationTest {
         final PrintListener plMinusConst = new PrintListener("Minus Const", shiftMinusConst);
         final PrintListener plPlusConst = new PrintListener("Plus Const", shiftPlusConst);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             removeRows(table, i(12, 14));
             table.notifyListeners(i(), i(12, 14), i());
         });
         printTableUpdates(table, shiftMinusConst, shiftPlusConst, "post-update", shiftConst);
 
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock()
+        assertTableEquals(UpdateContext.sharedLock()
                 .computeLocked(() -> table.update("CV3 = Value_[i - " + shiftConst + "]")), shiftMinusConst);
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock()
+        assertTableEquals(UpdateContext.sharedLock()
                 .computeLocked(() -> table.update("CV2 = Value_[i + " + shiftConst + "]")), shiftPlusConst);
 
         plTable.stop();
@@ -2297,16 +2297,16 @@ public class ShiftedColumnOperationTest {
         final PrintListener plMinusConst = new PrintListener("Minus Const", shiftMinusConst);
         final PrintListener plPlusConst = new PrintListener("Plus Const", shiftPlusConst);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             removeRows(table, i(4, 8, 12));
             table.notifyListeners(i(), i(4, 8, 12), i());
         });
 
         printTableUpdates(table, shiftMinusConst, shiftPlusConst, "post-update", shiftConst);
 
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock()
+        assertTableEquals(UpdateContext.sharedLock()
                 .computeLocked(() -> table.update("CV3 = Value_[i - " + shiftConst + "]")), shiftMinusConst);
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock()
+        assertTableEquals(UpdateContext.sharedLock()
                 .computeLocked(() -> table.update("CV2 = Value_[i + " + shiftConst + "]")), shiftPlusConst);
 
         plTable.stop();
@@ -2350,15 +2350,15 @@ public class ShiftedColumnOperationTest {
         final PrintListener plMinusConst = new PrintListener("Minus Const", shiftMinusConst);
         final PrintListener plPlusConst = new PrintListener("Plus Const", shiftPlusConst);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             removeRows(table, i(2, 4, 8, 12, 14));
             table.notifyListeners(i(), i(2, 4, 8, 12, 14), i());
         });
         printTableUpdates(table, shiftMinusConst, shiftPlusConst, "post-update", shiftConst);
 
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock()
+        assertTableEquals(UpdateContext.sharedLock()
                 .computeLocked(() -> table.update("CV3 = Value_[i - " + shiftConst + "]")), shiftMinusConst);
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock()
+        assertTableEquals(UpdateContext.sharedLock()
                 .computeLocked(() -> table.update("CV2 = Value_[i + " + shiftConst + "]")), shiftPlusConst);
 
         plTable.stop();
@@ -2402,16 +2402,16 @@ public class ShiftedColumnOperationTest {
         final PrintListener plMinusConst = new PrintListener("Minus Const", shiftMinusConst);
         final PrintListener plPlusConst = new PrintListener("Plus Const", shiftPlusConst);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             removeRows(table, i(2, 4, 8, 12, 14));
             table.notifyListeners(i(), i(2, 4, 8, 12, 14), i());
         });
 
         printTableUpdates(table, shiftMinusConst, shiftPlusConst, "post-update", shiftConst);
 
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock()
+        assertTableEquals(UpdateContext.sharedLock()
                 .computeLocked(() -> table.update("CV3 = Value_[i - " + shiftConst + "]")), shiftMinusConst);
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock()
+        assertTableEquals(UpdateContext.sharedLock()
                 .computeLocked(() -> table.update("CV2 = Value_[i + " + shiftConst + "]")), shiftPlusConst);
 
         plTable.stop();
@@ -2455,16 +2455,16 @@ public class ShiftedColumnOperationTest {
         final PrintListener plMinusConst = new PrintListener("Minus Const", shiftMinusConst);
         final PrintListener plPlusConst = new PrintListener("Plus Const", shiftPlusConst);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             removeRows(table, i(2, 4, 6, 8, 10, 12, 14));
             table.notifyListeners(i(), i(2, 4, 6, 8, 10, 12, 14), i());
         });
 
         printTableUpdates(table, shiftMinusConst, shiftPlusConst, "post-update", shiftConst);
 
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock()
+        assertTableEquals(UpdateContext.sharedLock()
                 .computeLocked(() -> table.update("CV3 = Value_[i - " + shiftConst + "]")), shiftMinusConst);
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock()
+        assertTableEquals(UpdateContext.sharedLock()
                 .computeLocked(() -> table.update("CV2 = Value_[i + " + shiftConst + "]")), shiftPlusConst);
 
         plTable.stop();
@@ -2506,16 +2506,16 @@ public class ShiftedColumnOperationTest {
                 i(2, 4, 6, 8).toTracking(),
                 intCol("Sentinel", 100, 101, 102, 103),
                 intCol("Value", 201, 202, 203, 204));
-        final Table shifted = UpdateGraphProcessor.DEFAULT.sharedLock()
+        final Table shifted = UpdateContext.sharedLock()
                 .computeLocked(() -> ShiftedColumnOperation.addShiftedColumns(table, -1, "VS=Value"));
         TableTools.showWithRowSet(shifted);
 
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> table.update("VS=Value_[i-1]")),
+        assertTableEquals(UpdateContext.sharedLock().computeLocked(() -> table.update("VS=Value_[i-1]")),
                 shifted);
 
         final PrintListener pl = new PrintListener("Shifted Result", shifted, 10);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             removeRows(table, i(2, 4, 6, 8));
             addToTable(table, i(1002, 1003, 1004, 1008), intCol("Sentinel", 100, 104, 101, 103),
                     intCol("Value", 201, 205, 202, 204));
@@ -2532,8 +2532,7 @@ public class ShiftedColumnOperationTest {
         });
         TableTools.showWithRowSet(shifted);
 
-        assertTableEquals(UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> table.update("VS=Value_[i-1]")),
-                shifted);
+        assertTableEquals(UpdateContext.sharedLock().computeLocked(() -> table.update("VS=Value_[i-1]")), shifted);
         pl.stop();
     }
 

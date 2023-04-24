@@ -14,7 +14,9 @@ import io.deephaven.engine.table.hierarchical.TreeTable;
 import io.deephaven.api.util.ConcurrentMethod;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.updategraph.NotificationQueue;
+import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.util.systemicmarking.SystemicObject;
+import io.deephaven.util.annotations.FinalDefault;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import org.jetbrains.annotations.NotNull;
 
@@ -88,6 +90,39 @@ public interface Table extends
     @Override
     @ConcurrentMethod
     boolean isRefreshing();
+
+    @ConcurrentMethod
+    UpdateContext getUpdateContext();
+
+    /**
+     * Ensure that the table is compatible with the currently active update context.
+     *
+     * @param others Other source tables to check for consistency
+     */
+    @FinalDefault
+    default void checkUpdateContextConsistency(final Table... others) {
+        UpdateContext foundUpdateContext = null;
+        if (isRefreshing()) {
+            foundUpdateContext = getUpdateContext();
+        }
+
+        for (final Table other : others) {
+            if (other == null || !other.isRefreshing()) {
+                continue;
+            }
+            if (foundUpdateContext == null) {
+                foundUpdateContext = other.getUpdateContext();
+            } else if (foundUpdateContext != other.getUpdateContext()) {
+                throw new IllegalStateException("Tables from different update contexts cannot be mixed. Found: "
+                        + foundUpdateContext + " and " + other.getUpdateContext());
+            }
+        }
+
+        if (foundUpdateContext != null && foundUpdateContext != UpdateContext.get()) {
+            throw new IllegalStateException("Cannot instantiate a table operation. Source table(s) use update context "
+                    + foundUpdateContext + " but " + UpdateContext.get() + " is currently active.");
+        }
+    }
 
     /**
      * @return The {@link TrackingRowSet} that exposes the row keys present in this Table

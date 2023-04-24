@@ -5,10 +5,11 @@ package io.deephaven.engine.table.impl.sources;
 
 import gnu.trove.list.array.TIntArrayList;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
-import io.deephaven.engine.updategraph.LogicalClock;
+import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.vector.Vector;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
@@ -65,7 +66,7 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]> implements M
      */
     @Override
     public void prepareForParallelPopulation(RowSequence changedIndices) {
-        final long currentStep = LogicalClock.DEFAULT.currentStep();
+        final long currentStep = UpdateContext.logicalClock().currentStep();
         if (ensurePreviousClockCycle == currentStep) {
             throw new IllegalStateException("May not call ensurePrevious twice on one clock cycle!");
         }
@@ -341,7 +342,7 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]> implements M
         final ObjectChunk<T, ? extends Values> chunk = src.asObjectChunk();
         final LongChunk<OrderedRowKeyRanges> ranges = rowSequence.asRowKeyRangesChunk();
 
-        final boolean trackPrevious = prevFlusher != null && ensurePreviousClockCycle != LogicalClock.DEFAULT.currentStep();
+        final boolean trackPrevious = prevFlusher != null && ensurePreviousClockCycle != UpdateContext.logicalClock().currentStep();
 
         if (trackPrevious) {
             prevFlusher.maybeActivate();
@@ -416,7 +417,7 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]> implements M
         final ObjectChunk<T, ? extends Values> chunk = src.asObjectChunk();
         final LongChunk<OrderedRowKeys> keys = rowSequence.asRowKeyChunk();
 
-        final boolean trackPrevious = prevFlusher != null && ensurePreviousClockCycle != LogicalClock.DEFAULT.currentStep();
+        final boolean trackPrevious = prevFlusher != null && ensurePreviousClockCycle != UpdateContext.logicalClock().currentStep();
 
         if (trackPrevious) {
             prevFlusher.maybeActivate();
@@ -456,7 +457,7 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]> implements M
     public void fillFromChunkUnordered(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src, @NotNull LongChunk<RowKeys> keys) {
         final ObjectChunk<T, ? extends Values> chunk = src.asObjectChunk();
 
-        final boolean trackPrevious = prevFlusher != null && ensurePreviousClockCycle != LogicalClock.DEFAULT.currentStep();
+        final boolean trackPrevious = prevFlusher != null && ensurePreviousClockCycle != UpdateContext.logicalClock().currentStep();
 
         if (trackPrevious) {
             prevFlusher.maybeActivate();

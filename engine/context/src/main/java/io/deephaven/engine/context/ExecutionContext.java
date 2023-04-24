@@ -4,6 +4,8 @@
 package io.deephaven.engine.context;
 
 import io.deephaven.auth.AuthContext;
+import io.deephaven.engine.updategraph.LogicalClock;
+import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ScriptApi;
 import io.deephaven.util.annotations.VisibleForTesting;
@@ -79,18 +81,21 @@ public class ExecutionContext {
     private final QueryLibrary queryLibrary;
     private final QueryScope queryScope;
     private final QueryCompiler queryCompiler;
+    private final UpdateContext updateContext;
 
     private ExecutionContext(
             final boolean isSystemic,
             final AuthContext authContext,
             final QueryLibrary queryLibrary,
             final QueryScope queryScope,
-            final QueryCompiler queryCompiler) {
+            final QueryCompiler queryCompiler,
+            final UpdateContext updateContext) {
         this.isSystemic = isSystemic;
         this.authContext = authContext;
         this.queryLibrary = Objects.requireNonNull(queryLibrary);
         this.queryScope = Objects.requireNonNull(queryScope);
         this.queryCompiler = Objects.requireNonNull(queryCompiler);
+        this.updateContext = updateContext;
     }
 
     /**
@@ -104,7 +109,7 @@ public class ExecutionContext {
         if (isSystemic == this.isSystemic) {
             return this;
         }
-        return new ExecutionContext(isSystemic, authContext, queryLibrary, queryScope, queryCompiler);
+        return new ExecutionContext(isSystemic, authContext, queryLibrary, queryScope, queryCompiler, updateContext);
     }
 
     /**
@@ -118,7 +123,21 @@ public class ExecutionContext {
         if (authContext == this.authContext) {
             return this;
         }
-        return new ExecutionContext(isSystemic, authContext, queryLibrary, queryScope, queryCompiler);
+        return new ExecutionContext(isSystemic, authContext, queryLibrary, queryScope, queryCompiler, updateContext);
+    }
+
+    /**
+     * Returns, or creates, an execution context with the given value for {@code updateContext} and existing values for
+     * the other members. This is not intended to be used by user code.
+     *
+     * @param updateContext the update context to use instead
+     * @return the execution context
+     */
+    public ExecutionContext withUpdateContext(final UpdateContext updateContext) {
+        if (updateContext == this.updateContext) {
+            return this;
+        }
+        return new ExecutionContext(isSystemic, authContext, queryLibrary, queryScope, queryCompiler, updateContext);
     }
 
     /**
@@ -148,11 +167,21 @@ public class ExecutionContext {
      */
     public SafeCloseable open() {
         // save the current context
+        final SafeCloseable oldUpdateContext;
         final ExecutionContext oldExecutionContext = currentContext.get();
 
         ExecutionContext.setContext(this);
+        if (updateContext != null) {
+            // noinspection resource
+            oldUpdateContext = updateContext.open();
+        } else {
+            oldUpdateContext = null;
+        }
 
         return () -> {
+            if (oldUpdateContext != null) {
+                oldUpdateContext.close();
+            }
             // restore the old context
             ExecutionContext.setContext(oldExecutionContext);
         };
@@ -183,6 +212,7 @@ public class ExecutionContext {
         private QueryLibrary queryLibrary = PoisonedQueryLibrary.INSTANCE;
         private QueryScope queryScope = PoisonedQueryScope.INSTANCE;
         private QueryCompiler queryCompiler = PoisonedQueryCompiler.INSTANCE;
+        private UpdateContext updateContext = null;
 
         private Builder() {
             // propagate the auth context from the current context
@@ -321,11 +351,30 @@ public class ExecutionContext {
         }
 
         /**
+         * Use the provided UpdateContext.
+         */
+        @ScriptApi
+        public Builder setUpdateContext(UpdateContext updateContext) {
+            this.updateContext = updateContext;
+            return this;
+        }
+
+        /**
+         * Use the current ExecutionContext's UpdateGraphProcessor instance.
+         */
+        @ScriptApi
+        public Builder captureUpdateGraphProcessor() {
+            this.updateContext = UpdateContext.get();
+            return this;
+        }
+
+        /**
          * @return the newly instantiated ExecutionContext
          */
         @ScriptApi
         public ExecutionContext build() {
-            return new ExecutionContext(isSystemic, authContext, queryLibrary, queryScope, queryCompiler);
+            return new ExecutionContext(isSystemic, authContext, queryLibrary, queryScope, queryCompiler,
+                    updateContext);
         }
     }
 }

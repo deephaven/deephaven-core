@@ -19,8 +19,7 @@ import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.generator.IntGenerator;
 import io.deephaven.engine.testutil.generator.UnsortedDateTimeGenerator;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
-import io.deephaven.engine.updategraph.LogicalClock;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTime;
@@ -89,13 +88,13 @@ public class TestWindowCheck {
         clock.now = startTime.getNanos();
 
         final WindowEvalNugget[] en;
-        UpdateGraphProcessor.DEFAULT.exclusiveLock().lock();
+        UpdateContext.exclusiveLock().lock();
         try {
             en = new WindowEvalNugget[] {
                     new WindowEvalNugget(clock, table)
             };
         } finally {
-            UpdateGraphProcessor.DEFAULT.exclusiveLock().unlock();
+            UpdateContext.exclusiveLock().unlock();
         }
 
         final int stepsPerTick = 1;
@@ -107,14 +106,14 @@ public class TestWindowCheck {
             final boolean combined = combinedRandom.nextBoolean();
 
             if (combined) {
-                UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+                UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
                     advanceTime(clock, en);
                     GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE, size,
                             random, table, columnInfo);
                 });
                 TstUtils.validate("Step " + step, en);
             } else {
-                UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> advanceTime(clock, en));
+                UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> advanceTime(clock, en));
                 if (RefreshingTableTestCase.printTableUpdates) {
                     TstUtils.validate("Step = " + step + " time = " + new DateTime(clock.now), en);
                 }
@@ -152,13 +151,13 @@ public class TestWindowCheck {
         final QueryTable tableToCheck = testRefreshingTable(i().toTracking(),
                 col("Timestamp", emptyDateTimeArray), intCol("Sentinel"));
 
-        final Pair<Table, WindowCheck.TimeWindowListener> windowed = UpdateGraphProcessor.DEFAULT.sharedLock()
-                .computeLocked(() -> WindowCheck.addTimeWindowInternal(clock, tableToCheck, "Timestamp",
+        final Pair<Table, WindowCheck.TimeWindowListener> windowed = UpdateContext.sharedLock().computeLocked(
+                () -> WindowCheck.addTimeWindowInternal(clock, tableToCheck, "Timestamp",
                         DateTimeUtils.SECOND * 60, "InWindow", false));
 
         TableTools.showWithRowSet(windowed.first);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(windowed.second::run);
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(windowed.second::run);
 
     }
 
@@ -175,13 +174,13 @@ public class TestWindowCheck {
                 col("Timestamp", initialValues),
                 intCol("Sentinel", 1, 2, 3, 4));
 
-        final Pair<Table, WindowCheck.TimeWindowListener> windowed =
-                UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> WindowCheck.addTimeWindowInternal(
+        final Pair<Table, WindowCheck.TimeWindowListener> windowed = UpdateContext.sharedLock().computeLocked(
+                () -> WindowCheck.addTimeWindowInternal(
                         timeProvider, tableToCheck, "Timestamp", DateTimeUtils.SECOND * 60, "InWindow", false));
 
         TableTools.showWithRowSet(windowed.first);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(windowed.second::run);
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(windowed.second::run);
 
         assertTableEquals(tableToCheck.updateView("InWindow = Sentinel == 4 ? null : Sentinel >= 2"), windowed.first);
 
@@ -195,13 +194,13 @@ public class TestWindowCheck {
         Assert.assertEquals(resultSource.getPrev(2), Boolean.TRUE);
         Assert.assertNull(resultSource.getPrev(3));
 
-        UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
+        UpdateContext.updateGraphProcessor().startCycleForUnitTests();
 
         timeProvider.now = DateTimeUtils.convertDateTime("2022-07-14T09:34:00 NY").getNanos();
         windowed.second.run();
 
-        while (((QueryTable) windowed.first).getLastNotificationStep() < LogicalClock.DEFAULT.currentStep()) {
-            UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
+        while (((QueryTable) windowed.first).getLastNotificationStep() < UpdateContext.logicalClock().currentStep()) {
+            UpdateContext.updateGraphProcessor().flushOneNotificationForUnitTests();
         }
 
         Assert.assertEquals(resultSource.get(0), Boolean.FALSE);
@@ -213,7 +212,7 @@ public class TestWindowCheck {
         Assert.assertEquals(resultSource.getPrev(2), Boolean.TRUE);
         Assert.assertNull(resultSource.getPrev(3));
 
-        UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
+        UpdateContext.updateGraphProcessor().completeCycleForUnitTests();
     }
 
     @Test
@@ -232,12 +231,12 @@ public class TestWindowCheck {
         Assert.assertFalse(tableToCheck.isRefreshing());
 
         final Pair<Table, WindowCheck.TimeWindowListener> windowed =
-                UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> WindowCheck.addTimeWindowInternal(
+                UpdateContext.sharedLock().computeLocked(() -> WindowCheck.addTimeWindowInternal(
                         timeProvider, tableToCheck, "Timestamp", DateTimeUtils.SECOND * 60, "InWindow", false));
 
         TableTools.showWithRowSet(windowed.first);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(windowed.second::run);
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(windowed.second::run);
 
         assertTableEquals(tableToCheck.updateView("InWindow = Sentinel == 4 ? null : Sentinel >= 2"), windowed.first);
 
@@ -251,13 +250,13 @@ public class TestWindowCheck {
         Assert.assertEquals(resultSource.getPrev(2), Boolean.TRUE);
         Assert.assertNull(resultSource.getPrev(3));
 
-        UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
+        UpdateContext.updateGraphProcessor().startCycleForUnitTests();
 
         timeProvider.now = DateTimeUtils.convertDateTime("2022-07-14T09:34:00 NY").getNanos();
         windowed.second.run();
 
-        while (((QueryTable) windowed.first).getLastNotificationStep() < LogicalClock.DEFAULT.currentStep()) {
-            UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
+        while (((QueryTable) windowed.first).getLastNotificationStep() < UpdateContext.logicalClock().currentStep()) {
+            UpdateContext.updateGraphProcessor().flushOneNotificationForUnitTests();
         }
 
         Assert.assertEquals(resultSource.get(0), Boolean.FALSE);
@@ -269,7 +268,7 @@ public class TestWindowCheck {
         Assert.assertEquals(resultSource.getPrev(2), Boolean.TRUE);
         Assert.assertNull(resultSource.getPrev(3));
 
-        UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
+        UpdateContext.updateGraphProcessor().completeCycleForUnitTests();
     }
 
     @Test

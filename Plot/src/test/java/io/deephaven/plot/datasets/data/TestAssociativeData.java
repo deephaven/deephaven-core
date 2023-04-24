@@ -4,10 +4,10 @@
 package io.deephaven.plot.datasets.data;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
+import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.plot.errors.PlotIllegalArgumentException;
 import io.deephaven.plot.util.tables.TableHandle;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
 import junit.framework.TestCase;
 
@@ -27,8 +27,8 @@ public class TestAssociativeData extends BaseArrayTestCase {
     @Override
     public void setUp() throws Exception {
         super.setUp();
-        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
-        UpdateGraphProcessor.DEFAULT.resetForUnitTests(false);
+        UpdateContext.updateGraphProcessor().enableUnitTestMode();
+        UpdateContext.updateGraphProcessor().resetForUnitTests(false);
 
         // prime the listeners
         associativeDataTable.get(null);
@@ -37,7 +37,7 @@ public class TestAssociativeData extends BaseArrayTestCase {
     @Override
     public void tearDown() throws Exception {
         super.tearDown();
-        UpdateGraphProcessor.DEFAULT.resetForUnitTests(true);
+        UpdateContext.updateGraphProcessor().resetForUnitTests(true);
     }
 
     public void testAssociativeDataHashMap() {

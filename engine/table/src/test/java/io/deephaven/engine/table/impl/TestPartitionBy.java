@@ -12,7 +12,7 @@ import io.deephaven.engine.table.hierarchical.RollupTable;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.IntGenerator;
 import io.deephaven.engine.testutil.generator.SetGenerator;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.util.TableDiff;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.liveness.LivenessScope;
@@ -143,7 +143,7 @@ public class TestPartitionBy extends QueryTableTestBase {
             assertTableEquals(tableA, table.where("Key=`A`"));
             assertTableEquals(tableB, table.where("Key=`B`"));
 
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
                 TstUtils.addToTable(table, i(8), col("Key", "B"), intCol("Int", 8));
                 table.notifyListeners(i(8), i(), i());
             });
@@ -151,7 +151,7 @@ public class TestPartitionBy extends QueryTableTestBase {
             assertTableEquals(tableA, table.where("Key=`A`"));
             assertTableEquals(tableB, table.where("Key=`B`"));
 
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
                 TstUtils.addToTable(table, i(8), col("Key", "C"), intCol("Int", 10));
             });
 
@@ -163,7 +163,7 @@ public class TestPartitionBy extends QueryTableTestBase {
             assertNull(listenerA.originalException());
             assertNull(listenerB.originalException());
 
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
                 TstUtils.removeRows(table, i(8));
                 table.notifyListeners(i(), i(8), i());
             });
@@ -199,7 +199,7 @@ public class TestPartitionBy extends QueryTableTestBase {
             assertTableEquals(tableA, table.where("Key=`A`"));
             assertTableEquals(tableB, table.where("Key=`B`"));
 
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
                 TstUtils.addToTable(table, i(8), col("Key", "B"), intCol("Int", 8));
                 table.notifyListeners(i(8), i(), i());
             });
@@ -207,7 +207,7 @@ public class TestPartitionBy extends QueryTableTestBase {
             assertTableEquals(tableA, table.where("Key=`A`"));
             assertTableEquals(tableB, table.where("Key=`B`"));
 
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
                 TstUtils.addToTable(table, i(9), col("Key", "C"), intCol("Int", 10)); // Added row, wants to make new
                                                                                       // state
                 table.notifyListeners(i(9), i(), i());
@@ -217,7 +217,7 @@ public class TestPartitionBy extends QueryTableTestBase {
             assertTableEquals(tableB, table.where("Key=`B`"));
             expectLivenessException(() -> byKey.constituentFor("C"));
 
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
                 // Modified row, wants to move from existent state to nonexistent state
                 TstUtils.addToTable(table, i(8), col("Key", "C"), intCol("Int", 11));
                 table.notifyListeners(i(), i(), i(8));
@@ -227,7 +227,7 @@ public class TestPartitionBy extends QueryTableTestBase {
             assertTableEquals(tableB, table.where("Key=`B`"));
             expectLivenessException(() -> byKey.constituentFor("C"));
 
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
                 // Modified row, staying in nonexistent state
                 TstUtils.addToTable(table, i(8), col("Key", "C"), intCol("Int", 12));
                 table.notifyListeners(i(), i(), i(8));
@@ -237,7 +237,7 @@ public class TestPartitionBy extends QueryTableTestBase {
             assertTableEquals(tableB, table.where("Key=`B`"));
             expectLivenessException(() -> byKey.constituentFor("C"));
 
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
                 // Modified row, wants to move from nonexistent state to existent state
                 TstUtils.addToTable(table, i(8), col("Key", "B"), intCol("Int", 13));
                 table.notifyListeners(i(), i(), i(8));
@@ -247,7 +247,7 @@ public class TestPartitionBy extends QueryTableTestBase {
             assertTableEquals(tableB, table.where("Key=`B`"));
             expectLivenessException(() -> byKey.constituentFor("C"));
 
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
                 // Modified row, staying in existent state
                 TstUtils.addToTable(table, i(8), col("Key", "B"), intCol("Int", 14));
                 table.notifyListeners(i(), i(), i(8));
@@ -257,7 +257,7 @@ public class TestPartitionBy extends QueryTableTestBase {
             assertTableEquals(tableB, table.where("Key=`B`"));
             expectLivenessException(() -> byKey.constituentFor("C"));
 
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
                 // Removed row from a nonexistent state
                 TstUtils.removeRows(table, i(9));
                 table.notifyListeners(i(), i(9), i());
@@ -267,7 +267,7 @@ public class TestPartitionBy extends QueryTableTestBase {
             assertTableEquals(tableB, table.where("Key=`B`"));
             expectLivenessException(() -> byKey.constituentFor("C"));
 
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
                 // Removed row from an existent state
                 TstUtils.removeRows(table, i(8));
                 table.notifyListeners(i(), i(8), i());
@@ -294,7 +294,7 @@ public class TestPartitionBy extends QueryTableTestBase {
             assertTableEquals(tableB, table.where("Key=`B`"));
             assertNull(byKey.constituentFor("C"));
 
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
                 TstUtils.addToTable(table, i(8), col("Key", "B"), intCol("Int", 8));
                 table.notifyListeners(i(8), i(), i());
             });
@@ -303,7 +303,7 @@ public class TestPartitionBy extends QueryTableTestBase {
             assertTableEquals(tableB, table.where("Key=`B`"));
             assertNull(byKey.constituentFor("C"));
 
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
                 TstUtils.addToTable(table, i(9), col("Key", "C"), intCol("Int", 10)); // Added row, makes new state
                 table.notifyListeners(i(9), i(), i());
             });
@@ -313,7 +313,7 @@ public class TestPartitionBy extends QueryTableTestBase {
             assertTableEquals(tableB, table.where("Key=`B`"));
             assertTableEquals(tableC, table.where("Key=`C`"));
 
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
                 TstUtils.addToTable(table, i(8), col("Key", "C"), intCol("Int", 11)); // Modified row, wants to move
                                                                                       // from original state to new
                                                                                       // state
@@ -324,7 +324,7 @@ public class TestPartitionBy extends QueryTableTestBase {
             assertTableEquals(tableB, table.where("Key=`B`"));
             assertTableEquals(tableC, table.where("Key=`C`"));
 
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
                 TstUtils.addToTable(table, i(8), col("Key", "C"), intCol("Int", 12)); // Modified row, staying in new
                                                                                       // state
                 table.notifyListeners(i(), i(), i(8));
@@ -334,7 +334,7 @@ public class TestPartitionBy extends QueryTableTestBase {
             assertTableEquals(tableB, table.where("Key=`B`"));
             assertTableEquals(tableC, table.where("Key=`C`"));
 
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
                 TstUtils.addToTable(table, i(8), col("Key", "B"), intCol("Int", 13)); // Modified row, wants to move
                                                                                       // from new state to original
                                                                                       // state
@@ -345,7 +345,7 @@ public class TestPartitionBy extends QueryTableTestBase {
             assertTableEquals(tableB, table.where("Key=`B`"));
             assertTableEquals(tableC, table.where("Key=`C`"));
 
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
                 TstUtils.addToTable(table, i(8), col("Key", "B"), intCol("Int", 14)); // Modified row, staying in
                                                                                       // original state
                 table.notifyListeners(i(), i(), i(8));
@@ -355,7 +355,7 @@ public class TestPartitionBy extends QueryTableTestBase {
             assertTableEquals(tableB, table.where("Key=`B`"));
             assertTableEquals(tableC, table.where("Key=`C`"));
 
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
                 TstUtils.removeRows(table, i(9)); // Removed row from a new state
                 table.notifyListeners(i(), i(9), i());
             });
@@ -364,7 +364,7 @@ public class TestPartitionBy extends QueryTableTestBase {
             assertTableEquals(tableB, table.where("Key=`B`"));
             assertTableEquals(tableC, table.where("Key=`C`"));
 
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
                 TstUtils.removeRows(table, i(8)); // Removed row from an original state
                 table.notifyListeners(i(), i(8), i());
             });
@@ -417,7 +417,7 @@ public class TestPartitionBy extends QueryTableTestBase {
         }
 
         final MutableLong start = new MutableLong();
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(rawTable,
                     i(8),
                     col("Key", "C"),
@@ -430,7 +430,7 @@ public class TestPartitionBy extends QueryTableTestBase {
 
         final MutableObject<Future<?>> mutableFuture = new MutableObject<>();
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(rawTable,
                     i(10, 11, 12),
                     col("Key", "C", "D", "E"),
@@ -505,10 +505,10 @@ public class TestPartitionBy extends QueryTableTestBase {
         final Table source = TableTools.merge(simpleTable, queryTable.updateView("K=k")).flatten();
 
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
-                EvalNugget.Sorted.from(() -> UpdateGraphProcessor.DEFAULT.sharedLock()
-                        .computeLocked(() -> source.partitionBy("Sym").merge()), "Sym"),
-                EvalNugget.Sorted.from(() -> UpdateGraphProcessor.DEFAULT.sharedLock()
-                        .computeLocked(() -> source.where("Sym=`a`").partitionBy("Sym").merge()), "Sym"),
+                EvalNugget.Sorted.from(() -> UpdateContext.sharedLock().computeLocked(
+                        () -> source.partitionBy("Sym").merge()), "Sym"),
+                EvalNugget.Sorted.from(() -> UpdateContext.sharedLock().computeLocked(
+                        () -> source.where("Sym=`a`").partitionBy("Sym").merge()), "Sym"),
         };
 
         final int steps = 50;

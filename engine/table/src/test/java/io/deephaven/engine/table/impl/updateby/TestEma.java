@@ -18,7 +18,7 @@ import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.testutil.generator.CharGenerator;
 import io.deephaven.engine.testutil.generator.SortedDateTimeGenerator;
 import io.deephaven.engine.testutil.generator.TestDataGenerator;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.util.TableDiff;
 import io.deephaven.engine.util.string.StringUtils;
 import io.deephaven.numerics.movingaverages.AbstractMa;
@@ -538,7 +538,7 @@ public class TestEma extends BaseUpdateByTest {
         for (int ii = 0; ii < 100; ii++) {
             try {
                 if (appendOnly) {
-                    UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+                    UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
                         generateAppends(100, billy, tickResult.t, tickResult.infos);
                         generateAppends(100, billy, timeResult.t, timeResult.infos);
                     });

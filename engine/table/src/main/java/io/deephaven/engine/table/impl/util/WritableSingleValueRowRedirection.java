@@ -5,8 +5,8 @@ package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.updategraph.UpdateContext;
 import org.jetbrains.annotations.NotNull;
 
 public class WritableSingleValueRowRedirection extends SingleValueRowRedirection {
@@ -25,14 +25,14 @@ public class WritableSingleValueRowRedirection extends SingleValueRowRedirection
 
     @Override
     public synchronized long getPrev(long outerRowKey) {
-        if (updatedClockTick > 0 && updatedClockTick == LogicalClock.DEFAULT.currentStep()) {
+        if (updatedClockTick > 0 && updatedClockTick == UpdateContext.logicalClock().currentStep()) {
             return prevValue;
         }
         return value;
     }
 
     public synchronized void setValue(long newValue) {
-        final long currentStep = LogicalClock.DEFAULT.currentStep();
+        final long currentStep = UpdateContext.logicalClock().currentStep();
         if (updatedClockTick > 0 && updatedClockTick != currentStep) {
             prevValue = value;
             updatedClockTick = currentStep;
@@ -47,7 +47,7 @@ public class WritableSingleValueRowRedirection extends SingleValueRowRedirection
 
     public void startTrackingPrevValues() {
         prevValue = value;
-        updatedClockTick = LogicalClock.DEFAULT.currentStep();
+        updatedClockTick = UpdateContext.logicalClock().currentStep();
     }
 
     @Override
@@ -60,8 +60,8 @@ public class WritableSingleValueRowRedirection extends SingleValueRowRedirection
             @NotNull FillContext fillContext,
             @NotNull WritableChunk<? super RowKeys> innerRowKeys,
             @NotNull RowSequence outerRowKeys) {
-        final long fillValue =
-                (updatedClockTick > 0 && updatedClockTick == LogicalClock.DEFAULT.currentStep()) ? prevValue : value;
+        final long fillValue = (updatedClockTick > 0 &&
+                updatedClockTick == UpdateContext.logicalClock().currentStep()) ? prevValue : value;
         final int sz = outerRowKeys.intSize();
         innerRowKeys.setSize(sz);
         innerRowKeys.asWritableLongChunk().fillWithValue(0, sz, fillValue);

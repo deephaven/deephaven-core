@@ -156,6 +156,8 @@ public class TreeTableFilter {
         parentIdSource = source.getColumnSource(tree.getParentIdentifierColumn().name());
 
         if (source.isRefreshing()) {
+            source.checkUpdateContextConsistency();
+
             final SwapListenerEx swapListener = new SwapListenerEx(source, sourceRowLookup);
             source.addUpdateListener(swapListener);
             ConstructSnapshot.callDataSnapshotFunction(System.identityHashCode(source) + ": ",

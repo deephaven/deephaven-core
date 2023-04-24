@@ -9,7 +9,6 @@ dependencies {
     api project(':qst')
 
     implementation project(':engine-chunk')
-    implementation project(':engine-context')
     implementation project(':hotspot')
     implementation project(':log-factory')
     implementation project(':Configuration')

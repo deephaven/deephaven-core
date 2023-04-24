@@ -7,7 +7,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
-import io.deephaven.engine.updategraph.LogicalClock;
+import io.deephaven.engine.updategraph.UpdateContext;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
@@ -39,11 +39,11 @@ public class TrackingWritableRowSetImpl extends WritableRowSetImpl implements Tr
     }
 
     private OrderedLongSet checkAndGetPrev() {
-        if (LogicalClock.DEFAULT.currentStep() == changeTimeStep) {
+        if (UpdateContext.logicalClock().currentStep() == changeTimeStep) {
             return prevInnerSet;
         }
         synchronized (this) {
-            final long currentClockStep = LogicalClock.DEFAULT.currentStep();
+            final long currentClockStep = UpdateContext.logicalClock().currentStep();
             if (currentClockStep == changeTimeStep) {
                 return prevInnerSet;
             }

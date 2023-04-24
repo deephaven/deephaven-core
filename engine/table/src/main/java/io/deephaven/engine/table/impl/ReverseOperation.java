@@ -11,10 +11,10 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.TableUpdateListener;
-import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.table.impl.sources.ReversedColumnSource;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.jetbrains.annotations.NotNull;
+import io.deephaven.engine.updategraph.UpdateContext;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -195,7 +195,7 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
             }
 
             // Update pivot logic.
-            lastPivotPointChange = LogicalClock.DEFAULT.currentStep();
+            lastPivotPointChange = UpdateContext.logicalClock().currentStep();
             prevPivotPoint = pivotPoint;
             pivotPoint += newShift;
         } else {
@@ -243,7 +243,7 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
     }
 
     private long getPrevPivotPoint() {
-        if ((prevPivotPoint != pivotPoint) && (LogicalClock.DEFAULT.currentStep() != lastPivotPointChange)) {
+        if ((prevPivotPoint != pivotPoint) && (UpdateContext.logicalClock().currentStep() != lastPivotPointChange)) {
             prevPivotPoint = pivotPoint;
         }
         return prevPivotPoint;

@@ -3,35 +3,36 @@
  */
 package io.deephaven.engine.table.impl;
 
+import com.google.common.collect.Maps;
 import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.api.JoinMatch;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.ResettableWritableIntChunk;
+import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.datastructures.util.CollectionUtil;
-import com.google.common.collect.Maps;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.RowSetShiftData;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.IntGenerator;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.table.impl.select.MatchPairFactory;
+import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.util.PrintListener;
 import io.deephaven.engine.util.TableTools;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.chunk.*;
-import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.test.types.OutOfBandTest;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.apache.commons.lang3.mutable.MutableObject;
-
-import java.util.*;
 import org.junit.experimental.categories.Category;
 
-import static io.deephaven.engine.util.TableTools.*;
+import java.util.*;
+
 import static io.deephaven.engine.testutil.TstUtils.*;
+import static io.deephaven.engine.util.TableTools.*;
 import static java.util.Collections.emptyList;
 
 @Category(OutOfBandTest.class)
@@ -69,7 +70,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
                 new io.deephaven.engine.table.impl.SimpleListener(jt);
         jt.addUpdateListener(listener);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             addToTable(rTable, i(1 << 16), longCol("Y", 3));
             final TableUpdateImpl update = new TableUpdateImpl();
             update.added = i(1 << 16);
@@ -105,7 +106,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
                 new io.deephaven.engine.table.impl.SimpleListener(jt);
         jt.addUpdateListener(listener);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             removeRows(rTable, i(origIndex));
             addToTable(rTable, i(newIndex), longCol("Y", 2));
             final TableUpdateImpl update = new TableUpdateImpl();
@@ -144,7 +145,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
                 new io.deephaven.engine.table.impl.SimpleListener(jt);
         jt.addUpdateListener(listener);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             removeRows(rTable, i(128));
             addToTable(rTable, i(129, 1 << 16), longCol("Y", 2, 4));
             final TableUpdateImpl update = new TableUpdateImpl();
@@ -176,7 +177,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         };
         TstUtils.validate(en);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             // left table
             removeRows(lTable, i(0, 1, 2, 3));
             addToTable(lTable, i(2, 4, 5, 7), col("X", "a", "b", "c", "d"));
@@ -229,7 +230,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         final SimpleListener listener = new SimpleListener(joined);
         joined.addUpdateListener(listener);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             addToTable(right, i(4, 5), intCol("RK", 2, 2), intCol("RS", 40, 50));
             right.notifyListeners(i(4, 5), i(), i());
         });
@@ -277,7 +278,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         };
 
         for (numSteps.setValue(0); numSteps.intValue() < maxSteps; numSteps.increment()) {
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
                 final int stepInstructions = random.nextInt();
                 if (stepInstructions % 4 != 1) {
                     GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE, leftSize,
@@ -473,14 +474,14 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
 
         assertTableEquals(z3, z);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             xqt.getRowSet().writableCast().insertRange(size, size * 2);
             xqt.notifyListeners(RowSetFactory.fromRange(size, size * 2), i(), i());
         });
 
         assertTableEquals(z3, z);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             yqt.getRowSet().writableCast().insertRange(size, size * 2);
             yqt.notifyListeners(RowSetFactory.fromRange(size, size * 2), i(), i());
         });
@@ -560,7 +561,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         };
 
         for (numSteps.setValue(0); numSteps.intValue() < maxSteps; numSteps.increment()) {
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
                 final int stepInstructions = random.nextInt();
                 if (stepInstructions % 4 != 1) {
                     GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE,
@@ -624,7 +625,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         }
 
         for (numSteps.setValue(0); numSteps.intValue() < maxSteps; numSteps.increment()) {
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
                 final int stepInstructions = random.nextInt();
                 if (stepInstructions % 4 != 1) {
                     GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE,
@@ -701,7 +702,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         for (numSteps.setValue(0); numSteps.intValue() < maxSteps; numSteps.increment()) {
             final long rightOffset = numSteps.getValue();
 
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
                 addToTable(leftTicking, i(numSteps.getValue()), longCol("intCol", numSteps.getValue()));
                 TableUpdateImpl up = new TableUpdateImpl();
                 up.shifted = RowSetShiftData.EMPTY;

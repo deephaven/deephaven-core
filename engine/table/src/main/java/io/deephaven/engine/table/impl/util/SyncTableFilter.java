@@ -14,10 +14,9 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.engine.table.impl.*;
-import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.WritableObjectChunk;
@@ -107,7 +106,7 @@ public class SyncTableFilter {
         }
 
         if (tables.stream().anyMatch(t -> t.table.isRefreshing())) {
-            UpdateGraphProcessor.DEFAULT.checkInitiateTableOperation();
+            UpdateContext.updateGraphProcessor().checkInitiateTableOperation();
         }
 
         // through the builder only
@@ -183,7 +182,7 @@ public class SyncTableFilter {
 
         @Override
         protected void process() {
-            final long currentStep = LogicalClock.DEFAULT.currentStep();
+            final long currentStep = UpdateContext.logicalClock().currentStep();
 
             for (int rr = 0; rr < recorders.size(); ++rr) {
                 final ListenerRecorder recorder = recorders.get(rr);
@@ -261,7 +260,7 @@ public class SyncTableFilter {
         protected void propagateErrorDownstream(
                 final boolean fromProcess, @NotNull final Throwable error, @Nullable final TableListener.Entry entry) {
             if (fromProcess) {
-                final long currentStep = LogicalClock.DEFAULT.currentStep();
+                final long currentStep = UpdateContext.logicalClock().currentStep();
                 final Collection<BaseTable> resultsNeedingDelayedNotification = new ArrayList<>();
                 for (final QueryTable result : results) {
                     if (result.getLastNotificationStep() == currentStep) {

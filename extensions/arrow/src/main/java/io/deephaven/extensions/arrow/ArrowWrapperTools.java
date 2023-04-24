@@ -4,7 +4,7 @@ import io.deephaven.base.ArrayUtil;
 import io.deephaven.base.reference.WeakCleanupReference;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.ResettableContext;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.util.file.FileHandle;
 import io.deephaven.engine.util.file.TrackedFileHandleFactory;
 import io.deephaven.engine.util.reference.CleanupReferenceProcessorInstance;
@@ -121,7 +121,7 @@ import static org.apache.arrow.vector.ipc.message.MessageSerializer.IPC_CONTINUA
  * suggested future improvements.
  */
 public class ArrowWrapperTools {
-    private static final int MAX_POOL_SIZE = Math.max(UpdateGraphProcessor.DEFAULT.getUpdateThreads(),
+    private static final int MAX_POOL_SIZE = Math.max(UpdateContext.updateGraphProcessor().getUpdateThreads(),
             Configuration.getInstance().getIntegerWithDefault("ArrowWrapperTools.defaultMaxPooledContext", 4));
 
     private static final BufferAllocator rootAllocator = new RootAllocator();

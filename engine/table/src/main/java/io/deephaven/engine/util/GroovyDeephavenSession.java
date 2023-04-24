@@ -14,7 +14,7 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryCompiler;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.exceptions.CancellationException;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.api.util.NameValidator;
 import io.deephaven.engine.util.GroovyDeephavenSession.GroovySnapshot;
@@ -225,7 +225,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
             updateClassloader(lastCommand);
 
             try {
-                UpdateGraphProcessor.DEFAULT.exclusiveLock().doLockedInterruptibly(() -> evaluateCommand(lastCommand));
+                UpdateContext.exclusiveLock().doLockedInterruptibly(() -> evaluateCommand(lastCommand));
             } catch (InterruptedException e) {
                 throw new CancellationException(e.getMessage() != null ? e.getMessage() : "Query interrupted",
                         maybeRewriteStackTrace(scriptName, currentScriptName, e, lastCommand, commandPrefix));

@@ -50,6 +50,6 @@ public class UpdateSourceQueryTable extends QueryTable implements Runnable {
     @Override
     public void destroy() {
         super.destroy();
-        UpdateGraphProcessor.DEFAULT.removeSource(this);
+        updateContext.getUpdateGraphProcessor().removeSource(this);
     }
 }

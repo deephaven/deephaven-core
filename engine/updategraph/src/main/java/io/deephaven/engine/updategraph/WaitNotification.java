@@ -77,7 +77,7 @@ public final class WaitNotification extends AbstractNotification {
     public static boolean waitForSatisfaction(final long step,
             @NotNull final NotificationQueue.Dependency... dependencies) {
         final WaitNotification waitNotification = new WaitNotification(dependencies);
-        if (UpdateGraphProcessor.DEFAULT.maybeAddNotification(waitNotification, step)) {
+        if (UpdateContext.updateGraphProcessor().maybeAddNotification(waitNotification, step)) {
             try {
                 waitNotification.await();
             } catch (InterruptedException e) {

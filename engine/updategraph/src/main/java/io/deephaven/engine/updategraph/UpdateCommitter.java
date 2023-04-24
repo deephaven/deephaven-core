@@ -38,6 +38,6 @@ public class UpdateCommitter<T> extends TerminalNotification {
             return;
         }
         active = true;
-        UpdateGraphProcessor.DEFAULT.addNotification(this);
+        UpdateContext.get().getUpdateGraphProcessor().addNotification(this);
     }
 }

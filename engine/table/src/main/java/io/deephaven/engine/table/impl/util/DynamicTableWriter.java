@@ -14,7 +14,6 @@ import io.deephaven.tablelogger.Row;
 import io.deephaven.tablelogger.RowSetter;
 import io.deephaven.tablelogger.TableWriter;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.table.impl.UpdateSourceQueryTable;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
@@ -413,7 +412,7 @@ public final class DynamicTableWriter implements TableWriter {
                     (currentRow) -> createRowSetter(source.getType(), (WritableColumnSource) source));
             ++ii;
         }
-        UpdateGraphProcessor.DEFAULT.addSource(table);
+        table.getUpdateContext().getUpdateGraphProcessor().addSource(table);
     }
 
     @SuppressWarnings("unchecked")

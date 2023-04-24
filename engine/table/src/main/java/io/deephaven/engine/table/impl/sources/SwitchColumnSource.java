@@ -12,8 +12,8 @@ import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
-import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.updategraph.UpdateCommitter;
+import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -55,7 +55,7 @@ public class SwitchColumnSource<T> extends AbstractColumnSource<T> {
         Assert.eq(newCurrent.getComponentType(), "newCurrent.getComponentType()", getComponentType(),
                 "getComponentType()");
         prevSource = currentSource;
-        prevValidityStep = LogicalClock.DEFAULT.currentStep();
+        prevValidityStep = UpdateContext.logicalClock().currentStep();
         currentSource = newCurrent;
         updateCommitter.maybeActivate();
     }
@@ -295,7 +295,7 @@ public class SwitchColumnSource<T> extends AbstractColumnSource<T> {
 
 
     private boolean prevInvalid() {
-        return prevValidityStep == -1 || prevValidityStep != LogicalClock.DEFAULT.currentStep();
+        return prevValidityStep == -1 || prevValidityStep != UpdateContext.logicalClock().currentStep();
     }
 
     @Override

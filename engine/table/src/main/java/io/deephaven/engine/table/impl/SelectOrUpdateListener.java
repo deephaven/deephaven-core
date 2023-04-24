@@ -10,7 +10,7 @@ import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer;
 import io.deephaven.engine.updategraph.TerminalNotification;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.table.impl.util.UpdateGraphProcessorJobScheduler;
@@ -59,7 +59,7 @@ class SelectOrUpdateListener extends BaseTable.ListenerImpl {
         this.enableParallelUpdate =
                 (QueryTable.FORCE_PARALLEL_SELECT_AND_UPDATE ||
                         (QueryTable.ENABLE_PARALLEL_SELECT_AND_UPDATE
-                                && UpdateGraphProcessor.DEFAULT.getUpdateThreads() > 1))
+                                && UpdateContext.updateGraphProcessor().getUpdateThreads() > 1))
                         && analyzer.allowCrossColumnParallelization();
         analyzer.setAllNewColumns(allNewColumns);
     }
@@ -131,7 +131,7 @@ class SelectOrUpdateListener extends BaseTable.ListenerImpl {
             // if the entry exists, then we install a terminal notification so that we don't lose the performance from
             // this execution
             if (accumulated != null) {
-                UpdateGraphProcessor.DEFAULT.addNotification(new TerminalNotification() {
+                UpdateContext.updateGraphProcessor().addNotification(new TerminalNotification() {
                     @Override
                     public void run() {
                         synchronized (accumulated) {

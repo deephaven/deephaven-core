@@ -7,8 +7,8 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.time.DateTimeUtils;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.time.DateTime;
 import io.deephaven.engine.util.TableTools;
 import junit.framework.TestCase;
@@ -23,13 +23,13 @@ import static io.deephaven.engine.testutil.TstUtils.i;
 public class TestBlinkTableTools {
     @Before
     public void setUp() throws Exception {
-        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
-        UpdateGraphProcessor.DEFAULT.resetForUnitTests(false);
+        UpdateContext.updateGraphProcessor().enableUnitTestMode();
+        UpdateContext.updateGraphProcessor().resetForUnitTests(false);
     }
 
     @After
     public void tearDown() throws Exception {
-        UpdateGraphProcessor.DEFAULT.resetForUnitTests(true);
+        UpdateContext.updateGraphProcessor().resetForUnitTests(true);
     }
 
     @Test
@@ -48,7 +48,7 @@ public class TestBlinkTableTools {
         TestCase.assertEquals(true, appendOnly.getAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE));
         TestCase.assertTrue(appendOnly.isFlat());
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             RowSet removed = blinkTable.getRowSet().copyPrev();
             ((WritableRowSet) blinkTable.getRowSet()).clear();
             TstUtils.addToTable(blinkTable, i(7), intCol("I", 1), doubleCol("D", Math.PI), dateTimeCol("DT", dt2),
@@ -59,7 +59,7 @@ public class TestBlinkTableTools {
         assertTableEquals(TableTools.newTable(intCol("I", 7, 1), doubleCol("D", Double.NEGATIVE_INFINITY, Math.PI),
                 dateTimeCol("DT", dt1, dt2), col("B", true, true)), appendOnly);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             RowSet removed = blinkTable.getRowSet().copyPrev();
             ((WritableRowSet) blinkTable.getRowSet()).clear();
             TstUtils.addToTable(blinkTable, i(7), intCol("I", 2), doubleCol("D", Math.E), dateTimeCol("DT", dt3),
@@ -70,7 +70,6 @@ public class TestBlinkTableTools {
                 TableTools.newTable(intCol("I", 7, 1, 2), doubleCol("D", Double.NEGATIVE_INFINITY, Math.PI, Math.E),
                         dateTimeCol("DT", dt1, dt2, dt3), col("B", true, true, false)),
                 appendOnly);
-
     }
 
 }

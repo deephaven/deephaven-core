@@ -12,12 +12,12 @@ import io.deephaven.chunk.WritableFloatChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
-import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.FloatChunk;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.updategraph.UpdateContext;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.util.QueryConstants.NULL_FLOAT;
@@ -47,7 +47,7 @@ public class FloatSingleValueSource extends SingleValueColumnSource<Float> imple
     @Override
     public final void set(Float value) {
         if (isTrackingPrevValues) {
-            final long currentStep = LogicalClock.DEFAULT.currentStep();
+            final long currentStep = UpdateContext.logicalClock().currentStep();
             if (changeTime < currentStep) {
                 prev = current;
                 changeTime = currentStep;
@@ -60,7 +60,7 @@ public class FloatSingleValueSource extends SingleValueColumnSource<Float> imple
     @Override
     public final void set(float value) {
         if (isTrackingPrevValues) {
-            final long currentStep = LogicalClock.DEFAULT.currentStep();
+            final long currentStep = UpdateContext.logicalClock().currentStep();
             if (changeTime < currentStep) {
                 prev = current;
                 changeTime = currentStep;
@@ -93,7 +93,7 @@ public class FloatSingleValueSource extends SingleValueColumnSource<Float> imple
         if (rowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_FLOAT;
         }
-        if (!isTrackingPrevValues || changeTime < LogicalClock.DEFAULT.currentStep()) {
+        if (!isTrackingPrevValues || changeTime < UpdateContext.logicalClock().currentStep()) {
             return current;
         }
         return prev;

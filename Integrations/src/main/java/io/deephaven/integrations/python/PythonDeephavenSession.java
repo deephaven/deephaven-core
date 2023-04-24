@@ -8,7 +8,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.context.QueryScope;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.util.AbstractScriptSession;
 import io.deephaven.engine.util.PythonEvaluator;
 import io.deephaven.engine.util.PythonEvaluatorJpy;
@@ -179,9 +179,7 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
     protected void evaluate(String command, String scriptName) {
         log.info().append("Evaluating command: " + command).endl();
         try {
-            UpdateGraphProcessor.DEFAULT.exclusiveLock().doLockedInterruptibly(() -> {
-                evaluator.evalScript(command);
-            });
+            UpdateContext.exclusiveLock().doLockedInterruptibly(() -> evaluator.evalScript(command));
         } catch (InterruptedException e) {
             throw new CancellationException(e.getMessage() != null ? e.getMessage() : "Query interrupted", e);
         }

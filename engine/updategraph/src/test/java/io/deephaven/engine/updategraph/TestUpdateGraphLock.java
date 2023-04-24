@@ -19,7 +19,7 @@ public class TestUpdateGraphLock {
 
     @Test
     public void testUpgradeFailures() throws InterruptedException {
-        final UpdateGraphLock lock = UpdateGraphLock.create(LogicalClock.DEFAULT, false);
+        final UpdateGraphLock lock = UpdateGraphLock.create(UpdateContext.logicalClock(), false);
 
         lock.sharedLock().doLocked(() -> {
             try {
@@ -56,7 +56,7 @@ public class TestUpdateGraphLock {
 
     @Test
     public void testDowngradeSuccess() throws InterruptedException {
-        final UpdateGraphLock lock = UpdateGraphLock.create(LogicalClock.DEFAULT, false);
+        final UpdateGraphLock lock = UpdateGraphLock.create(UpdateContext.logicalClock(), false);
 
         lock.exclusiveLock().doLocked(() -> {
             final MutableBoolean success = new MutableBoolean(false);
@@ -110,7 +110,7 @@ public class TestUpdateGraphLock {
 
     @Test
     public void testSharedLockHeld() {
-        final UpdateGraphLock lock = UpdateGraphLock.create(LogicalClock.DEFAULT, false);
+        final UpdateGraphLock lock = UpdateGraphLock.create(UpdateContext.logicalClock(), false);
         final Consumer<Runnable> checkHeld = (r) -> {
             TestCase.assertTrue(lock.sharedLock().isHeldByCurrentThread());
             lock.sharedLock().doLocked(r::run);
@@ -126,7 +126,7 @@ public class TestUpdateGraphLock {
 
     @Test
     public void testExclusiveLockHeld() {
-        final UpdateGraphLock lock = UpdateGraphLock.create(LogicalClock.DEFAULT, false);
+        final UpdateGraphLock lock = UpdateGraphLock.create(UpdateContext.logicalClock(), false);
         final Consumer<Runnable> checkHeld = (r) -> {
             TestCase.assertTrue(lock.exclusiveLock().isHeldByCurrentThread());
             lock.exclusiveLock().doLocked(r::run);
@@ -141,7 +141,7 @@ public class TestUpdateGraphLock {
 
     @Test
     public void testConditions() throws InterruptedException {
-        final UpdateGraphLock lock = UpdateGraphLock.create(LogicalClock.DEFAULT, false);
+        final UpdateGraphLock lock = UpdateGraphLock.create(UpdateContext.logicalClock(), false);
         try {
             lock.sharedLock().newCondition();
             TestCase.fail("Unexpectedly got shard lock condition successfully");
@@ -165,7 +165,7 @@ public class TestUpdateGraphLock {
 
     @Test
     public void testDebugImplementation() {
-        final UpdateGraphLock lock = UpdateGraphLock.create(LogicalClock.DEFAULT, true);
+        final UpdateGraphLock lock = UpdateGraphLock.create(UpdateContext.logicalClock(), true);
         lock.sharedLock().lock();
         lock.sharedLock().lock();
         try {

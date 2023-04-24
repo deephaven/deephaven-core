@@ -6,7 +6,7 @@ package io.deephaven.benchmark.engine;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.table.impl.select.IncrementalReleaseFilter;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
@@ -67,13 +67,13 @@ public abstract class RedirectionBenchBase {
         chunkCapacity = Integer.parseInt(params.getParam("chunkCapacity"));
         skipResultsProcessing = Boolean.parseBoolean(params.getParam("skipResultsProcessing"));
 
-        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
+        UpdateContext.updateGraphProcessor().enableUnitTestMode();
 
         state = new TableBenchmarkState(BenchmarkTools.stripName(params.getBenchmark()), params.getWarmup().getCount());
 
         final QueryData queryData = getQuery();
         for (int step = 0; step < queryData.steps; ++step) {
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(queryData.incrementalReleaseFilter::run);
+            UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(queryData.incrementalReleaseFilter::run);
         }
         inputTable = queryData.live;
         nFillCols = queryData.fillCols.length;

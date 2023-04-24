@@ -9,7 +9,6 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.TableLocation;
 import io.deephaven.engine.table.impl.locations.TableLocationProvider;
@@ -18,6 +17,7 @@ import io.deephaven.engine.table.impl.sources.DeferredGroupingColumnSource;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.updategraph.UpdateContext;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -199,7 +199,7 @@ public class TestSimpleSourceTable extends RefreshingTableTestCase {
 
     @Test
     public void testRedefinition() {
-        UpdateGraphProcessor.DEFAULT.exclusiveLock().doLocked(this::doTestRedefinition);
+        UpdateContext.exclusiveLock().doLocked(this::doTestRedefinition);
     }
 
     private void doTestRedefinition() {

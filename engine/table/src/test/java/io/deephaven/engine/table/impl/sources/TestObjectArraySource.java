@@ -15,7 +15,7 @@ import io.deephaven.engine.table.impl.DefaultGetContext;
 import io.deephaven.engine.table.impl.TestSourceSink;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.table.impl.select.FormulaColumn;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
@@ -58,20 +58,20 @@ public class TestObjectArraySource {
 
     private void testGetChunkGeneric(Object[] values, Object[] newValues, int chunkSize, RowSet rowSet) {
         final ObjectArraySource source;
-        UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
+        UpdateContext.updateGraphProcessor().startCycleForUnitTests();
         try {
             source = forArray(values);
             validateValues(chunkSize, values, rowSet, source);
         } finally {
-            UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
+            UpdateContext.updateGraphProcessor().completeCycleForUnitTests();
         }
-        UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
+        UpdateContext.updateGraphProcessor().startCycleForUnitTests();
         try {
             updateFromArray(source, newValues);
             validateValues(chunkSize, newValues, rowSet, source);
             validatePrevValues(chunkSize, values, rowSet, source);
         } finally {
-            UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
+            UpdateContext.updateGraphProcessor().completeCycleForUnitTests();
         }
     }
 
@@ -265,20 +265,20 @@ public class TestObjectArraySource {
 
     private void testFillChunkGeneric(Object[] values, Object[] newValues, int chunkSize, RowSet rowSet) {
         final ObjectArraySource source;
-        UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
+        UpdateContext.updateGraphProcessor().startCycleForUnitTests();
         try {
             source = forArray(values);
             validateValuesWithFill(chunkSize, values, rowSet, source);
         } finally {
-            UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
+            UpdateContext.updateGraphProcessor().completeCycleForUnitTests();
         }
-        UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
+        UpdateContext.updateGraphProcessor().startCycleForUnitTests();
         try {
             updateFromArray(source, newValues);
             validateValuesWithFill(chunkSize, newValues, rowSet, source);
             validatePrevValuesWithFill(chunkSize, values, rowSet, source);
         } finally {
-            UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
+            UpdateContext.updateGraphProcessor().completeCycleForUnitTests();
         }
     }
 
@@ -527,14 +527,14 @@ public class TestObjectArraySource {
     public void testFillEmptyChunkWithPrev() {
         final ObjectArraySource src = new ObjectArraySource<>(String.class);
         src.startTrackingPrevValues();
-        UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
+        UpdateContext.updateGraphProcessor().startCycleForUnitTests();
         try (final RowSet keys = RowSetFactory.empty();
              final WritableObjectChunk<?, ? extends Values> chunk = WritableObjectChunk.makeWritableChunk(0)) {
             // Fill from an empty chunk
             src.fillFromChunkByKeys(keys, chunk);
         }
         // NullPointerException in ObjectSparseArraySource.commitUpdates()
-        UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
+        UpdateContext.updateGraphProcessor().completeCycleForUnitTests();
     }
 
     @Test

@@ -117,14 +117,14 @@ public class ComboAggregateGrpcImpl extends GrpcTableOperation<ComboAggregateReq
                 .stream()
                 .map(ColumnName::of)
                 .toArray(ColumnName[]::new);
-        final Table result;
-        if (isSimpleAggregation(request)) {
-            // This is a special case with a special operator that can be invoked right off of the table api.
-            result = singleAggregateHelper(parent, groupByColumns, request.getAggregates(0));
-        } else {
-            result = comboAggregateHelper(parent, groupByColumns, request.getAggregatesList());
-        }
-        return result;
+        return parent.getUpdateContext().apply(() -> {
+            if (isSimpleAggregation(request)) {
+                // This is a special case with a special operator that can be invoked right off of the table api.
+                return singleAggregateHelper(parent, groupByColumns, request.getAggregates(0));
+            } else {
+                return comboAggregateHelper(parent, groupByColumns, request.getAggregatesList());
+            }
+        });
     }
 
     private static Table singleAggregateHelper(final Table parent, final ColumnName[] groupByColumns,

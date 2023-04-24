@@ -36,6 +36,8 @@ public class BlinkTableTools {
      * @return An append-only in-memory table representing all data encountered in the blink table across all cycles
      */
     public static Table blinkToAppendOnly(final Table blinkTable) {
+        blinkTable.checkUpdateContextConsistency();
+
         return QueryPerformanceRecorder.withNugget("blinkToAppendOnly", () -> {
             if (!isBlink(blinkTable)) {
                 throw new IllegalArgumentException("Input is not a blink table!");

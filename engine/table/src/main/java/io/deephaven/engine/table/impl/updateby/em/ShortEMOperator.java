@@ -39,8 +39,8 @@ public class ShortEMOperator extends BasePrimitiveEMOperator {
 
         @Override
         public void accumulateCumulative(@NotNull RowSequence inputKeys,
-                                         Chunk<? extends Values>[] valueChunkArr,
-                                         LongChunk<? extends Values> tsChunk,
+                                         @NotNull Chunk<? extends Values>[] valueChunkArr,
+                                         @Nullable LongChunk<? extends Values> tsChunk,
                                          int len) {
             setValueChunks(valueChunkArr);
 

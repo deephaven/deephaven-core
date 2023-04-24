@@ -12,7 +12,6 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.time.DateTime;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.table.impl.QueryTable;
@@ -100,7 +99,7 @@ public abstract class ClockFilter extends WhereFilterLivenessArtifactImpl implem
         if (!refreshing) {
             return;
         }
-        UpdateGraphProcessor.DEFAULT.addSource(this);
+        updateContext.getUpdateGraphProcessor().addSource(this);
         this.resultTable = listener.getTable();
         listener.setIsRefreshing(true);
     }
@@ -108,7 +107,7 @@ public abstract class ClockFilter extends WhereFilterLivenessArtifactImpl implem
     @Override
     protected void destroy() {
         super.destroy();
-        UpdateGraphProcessor.DEFAULT.removeSource(this);
+        updateContext.getUpdateGraphProcessor().removeSource(this);
     }
 
     @Override

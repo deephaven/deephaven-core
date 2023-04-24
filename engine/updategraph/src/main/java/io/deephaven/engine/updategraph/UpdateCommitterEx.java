@@ -48,6 +48,6 @@ public class UpdateCommitterEx<T, U> extends TerminalNotification {
         if (secondaryReference == null || secondaryReference.get() != secondary) {
             secondaryReference = new WeakReference<>(secondary);
         }
-        UpdateGraphProcessor.DEFAULT.addNotification(this);
+        UpdateContext.get().getUpdateGraphProcessor().addNotification(this);
     }
 }

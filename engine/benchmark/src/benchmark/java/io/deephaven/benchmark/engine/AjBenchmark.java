@@ -4,7 +4,7 @@
 package io.deephaven.benchmark.engine;
 
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.metrics.MetricsManager;
 import io.deephaven.benchmarking.*;
@@ -60,7 +60,7 @@ public class AjBenchmark {
     public void setupEnv(BenchmarkParams params) {
         System.out.println("Setup started: " + new Date());
 
-        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
+        UpdateContext.updateGraphProcessor().enableUnitTestMode();
 
         final BenchmarkTableBuilder rightBuilder;
         final BenchmarkTableBuilder leftBuilder;

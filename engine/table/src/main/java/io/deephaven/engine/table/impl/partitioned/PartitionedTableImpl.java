@@ -29,7 +29,6 @@ import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
 import io.deephaven.engine.table.impl.sources.UnionSourceManager;
 import io.deephaven.engine.table.iterators.ChunkedObjectColumnIterator;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -154,7 +153,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
                 return merged;
             }
             if (table.isRefreshing()) {
-                UpdateGraphProcessor.DEFAULT.checkInitiateTableOperation();
+                table.getUpdateContext().checkInitiateTableOperation();
             }
             final UnionSourceManager unionSourceManager = new UnionSourceManager(this);
             merged = unionSourceManager.getResult();
@@ -309,8 +308,16 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
             @NotNull final BinaryOperator<Table> transformer,
             final boolean expectRefreshingResults) {
         // Check safety before doing any extra work
-        if (table.isRefreshing() || other.table().isRefreshing()) {
-            UpdateGraphProcessor.DEFAULT.checkInitiateTableOperation();
+        if (table.isRefreshing()) {
+            table.getUpdateContext().checkInitiateTableOperation();
+        }
+        if (other.table().isRefreshing()) {
+            other.table().getUpdateContext().checkInitiateTableOperation();
+        }
+        if (table.isRefreshing() && other.table().isRefreshing()
+                && table.getUpdateContext() != other.table().getUpdateContext()) {
+            throw new IllegalStateException(
+                    "Cannot perform a partitioned transform on two tables with different update contexts");
         }
 
         // Validate join compatibility
@@ -428,6 +435,8 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
     private Table[] snapshotConstituents() {
         if (constituentChangesPermitted) {
             final MutableObject<Table[]> resultHolder = new MutableObject<>();
+            table.checkUpdateContextConsistency();
+
             ConstructSnapshot.callDataSnapshotFunction(
                     "PartitionedTable.constituents(): ",
                     ConstructSnapshot.makeSnapshotControl(false, true, (QueryTable) table.coalesce()),

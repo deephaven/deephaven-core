@@ -24,7 +24,6 @@ import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.SourceColumn;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -177,7 +176,17 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
             final Table otherTable = (Table) other;
             final boolean refreshingResults = target.table().isRefreshing() || otherTable.isRefreshing();
             if (refreshingResults && joinMatches != null) {
-                UpdateGraphProcessor.DEFAULT.checkInitiateTableOperation();
+                if (target.table().isRefreshing()) {
+                    target.table().getUpdateContext().checkInitiateTableOperation();
+                }
+                if (otherTable.isRefreshing()) {
+                    otherTable.getUpdateContext().checkInitiateTableOperation();
+                }
+            }
+            if (target.table().isRefreshing() && otherTable.isRefreshing()
+                    && target.table().getUpdateContext() != otherTable.getUpdateContext()) {
+                throw new IllegalStateException(
+                        "Cannot perform a complexTransform between two tables that have different update contexts.");
             }
             return new PartitionedTableProxyImpl(
                     target.transform(context, ct -> transformer.apply(ct, otherTable), refreshingResults),
@@ -189,8 +198,16 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
             final PartitionedTable otherTarget = otherProxy.target();
             final boolean refreshingResults = target.table().isRefreshing() || otherTarget.table().isRefreshing();
 
-            if (target.table().isRefreshing() || otherTarget.table().isRefreshing()) {
-                UpdateGraphProcessor.DEFAULT.checkInitiateTableOperation();
+            if (target.table().isRefreshing()) {
+                target.table().getUpdateContext().checkInitiateTableOperation();
+            }
+            if (otherTarget.table().isRefreshing()) {
+                otherTarget.table().getUpdateContext().checkInitiateTableOperation();
+            }
+            if (target.table().isRefreshing() && otherTarget.table().isRefreshing()
+                    && target.table().getUpdateContext() != otherTarget.table().getUpdateContext()) {
+                throw new IllegalStateException(
+                        "Cannot perform a complexTransform between two tables that have different update contexts.");
             }
 
             final MatchPair[] keyColumnNamePairs = PartitionedTableImpl.matchKeyColumns(target, otherTarget);
