@@ -102,9 +102,8 @@ public class UpdatePerformanceTracker {
                     // should log, but no logger handy
                     // ignore
                 }
-                UpdateGraphProcessor.DEFAULT.sharedLock().doLocked(
-                        () -> finishInterval(intervalStartTimeMillis,
-                                System.currentTimeMillis(),
+                getQueryTable().getUpdateContext().getSharedLock().doLocked(
+                        () -> finishInterval(intervalStartTimeMillis, System.currentTimeMillis(),
                                 System.nanoTime() - intervalStartTimeNanos));
             }
         }

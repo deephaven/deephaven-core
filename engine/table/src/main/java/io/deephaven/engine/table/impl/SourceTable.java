@@ -8,6 +8,7 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.locations.ImmutableTableLocationKey;
@@ -173,7 +174,7 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
                             return;
                         }
                         rowSet.initializePreviousValue();
-                        final long currentClockValue = LogicalClock.DEFAULT.currentValue();
+                        final long currentClockValue = UpdateContext.logicalClock().currentValue();
                         setLastNotificationStep(LogicalClock.getState(currentClockValue) == LogicalClock.State.Updating
                                 ? LogicalClock.getStep(currentClockValue) - 1
                                 : LogicalClock.getStep(currentClockValue));

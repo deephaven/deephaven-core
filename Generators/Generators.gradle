@@ -25,6 +25,8 @@ dependencies {
     runtimeOnly project(path: ':configs')
     runtimeOnly project(path: ':test-configs')
     runtimeOnly project(':extensions-kafka')
+    // dh-default.prop references io.deephaven.server.console.python.DebuggingInitializer
+    runtimeOnly project(':server')
 
     runtimeOnly project(':log-to-slf4j')
     Classpaths.inheritLogbackClassic(project)

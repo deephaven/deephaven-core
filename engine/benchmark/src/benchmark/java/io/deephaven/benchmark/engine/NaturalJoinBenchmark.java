@@ -4,7 +4,7 @@
 package io.deephaven.benchmark.engine;
 
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.util.metrics.MetricsManager;
 import io.deephaven.benchmarking.*;
 import io.deephaven.benchmarking.generator.ColumnGenerator;
@@ -50,7 +50,7 @@ public class NaturalJoinBenchmark {
 
     @Setup(Level.Trial)
     public void setupEnv(BenchmarkParams params) {
-        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
+        UpdateContext.updateGraphProcessor().enableUnitTestMode();
 
         final BenchmarkTableBuilder rightBuilder;
         final BenchmarkTableBuilder leftBuilder;
@@ -159,16 +159,15 @@ public class NaturalJoinBenchmark {
 
     @Benchmark
     public Table naturalJoinStatic() {
-        final Table result = UpdateGraphProcessor.DEFAULT.sharedLock()
-                .computeLocked(() -> leftTable.naturalJoin(rightTable, joinKeyName));
+        final Table result = UpdateContext.sharedLock().computeLocked(
+                () -> leftTable.naturalJoin(rightTable, joinKeyName));
         return state.setResult(result);
     }
 
     @Benchmark
     public Table naturalJoinIncremental() {
-        final Table result = IncrementalBenchmark.incrementalBenchmark(
-                (lt, rt) -> UpdateGraphProcessor.DEFAULT.sharedLock()
-                        .computeLocked(() -> lt.naturalJoin(rt, joinKeyName)),
+        final Table result = IncrementalBenchmark.incrementalBenchmark((lt, rt) -> UpdateContext.sharedLock()
+                .computeLocked(() -> lt.naturalJoin(rt, joinKeyName)),
                 leftTable, rightTable);
         return state.setResult(result);
     }

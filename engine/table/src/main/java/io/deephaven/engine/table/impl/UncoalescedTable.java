@@ -28,6 +28,7 @@ import io.deephaven.engine.table.hierarchical.TreeTable;
 import io.deephaven.engine.table.impl.updateby.UpdateBy;
 import io.deephaven.api.util.ConcurrentMethod;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -65,15 +66,17 @@ public abstract class UncoalescedTable<IMPL_TYPE extends UncoalescedTable<IMPL_T
     protected abstract Table doCoalesce();
 
     public final Table coalesce() {
-        Table localCoalesced;
-        if (Liveness.verifyCachedObjectForReuse(localCoalesced = coalesced)) {
-            return localCoalesced;
-        }
-        synchronized (coalescingLock) {
+        try (final SafeCloseable ignored = updateContext.open()) {
+            Table localCoalesced;
             if (Liveness.verifyCachedObjectForReuse(localCoalesced = coalesced)) {
                 return localCoalesced;
             }
-            return coalesced = doCoalesce();
+            synchronized (coalescingLock) {
+                if (Liveness.verifyCachedObjectForReuse(localCoalesced = coalesced)) {
+                    return localCoalesced;
+                }
+                return coalesced = doCoalesce();
+            }
         }
     }
 

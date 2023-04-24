@@ -6,7 +6,7 @@ package io.deephaven.engine.table.impl.util;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.testutil.generator.StringGenerator;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.testutil.EvalNuggetInterface;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.testutil.EvalNugget;
@@ -52,18 +52,14 @@ public class TestHashSetBackedTableFactory extends RefreshingTableTestCase {
         final Random random = new Random();
 
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
-                new EvalNugget() {
-                    public Table e() {
-                        return UpdateGraphProcessor.DEFAULT.exclusiveLock()
-                                .computeLocked(() -> result.update("Arg0=Arg.substring(0, 1)"));
-                    }
-                },
+                EvalNugget.from(() -> UpdateContext.exclusiveLock().computeLocked(
+                        () -> result.update("Arg0=Arg.substring(0, 1)"))),
                 new UpdateValidatorNugget(result),
         };
 
 
         for (int ii = 0; ii < 1000; ++ii) {
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+            UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
                 final int additions = random.nextInt(4);
                 final int removals = random.nextInt(4);
                 for (int jj = 0; jj < removals; ++jj) {

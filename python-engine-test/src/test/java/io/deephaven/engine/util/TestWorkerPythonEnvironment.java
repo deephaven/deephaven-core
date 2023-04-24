@@ -5,7 +5,7 @@ package io.deephaven.engine.util;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.io.log.LogLevel;
 import io.deephaven.io.logger.StreamLoggerImpl;
 import io.deephaven.util.process.ProcessEnvironment;
@@ -34,14 +34,14 @@ public class TestWorkerPythonEnvironment extends BaseArrayTestCase {
                     TestWorkerPythonEnvironment.class.getCanonicalName(),
                     new StreamLoggerImpl(System.out, LogLevel.INFO));
         }
-        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
-        UpdateGraphProcessor.DEFAULT.resetForUnitTests(false);
+        UpdateContext.updateGraphProcessor().enableUnitTestMode();
+        UpdateContext.updateGraphProcessor().resetForUnitTests(false);
     }
 
     @Override
     protected void tearDown() throws Exception {
         super.tearDown();
-        UpdateGraphProcessor.DEFAULT.resetForUnitTests(true);
+        UpdateContext.updateGraphProcessor().resetForUnitTests(true);
     }
 
     public void testNumpyImport() {

@@ -2,6 +2,7 @@ package io.deephaven.engine.bench;
 
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.select.IncrementalReleaseFilter;
+import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
@@ -41,7 +42,7 @@ public abstract class IncrementalSortCyclesBenchmarkBase {
             throws Exception {
         engine = new EngineCleanup();
         engine.setUp();
-        ugp = UpdateGraphProcessor.DEFAULT;
+        ugp = UpdateContext.updateGraphProcessor();
         ugp.startCycleForUnitTests();
         try {
             this.numCycles = numCycles;

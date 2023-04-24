@@ -19,9 +19,9 @@ import io.deephaven.engine.rowset.RowSetBuilderRandom;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
-import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.updategraph.TerminalNotification;
 import io.deephaven.engine.updategraph.UpdateCommitter;
+import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.util.type.TypeUtils;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -38,7 +38,7 @@ import java.util.function.LongConsumer;
  */
 public class ObjectTestSource<T> extends AbstractColumnSource<T>
         implements MutableColumnSourceGetDefaults.ForObject<T>, TestColumnSource<T> {
-    private long lastAdditionTime = LogicalClock.DEFAULT.currentStep();
+    private long lastAdditionTime = UpdateContext.logicalClock().currentStep();
     protected final Long2ObjectOpenHashMap<T> data = new Long2ObjectOpenHashMap<T>();
     protected Long2ObjectOpenHashMap<T> prevData;
 
@@ -98,7 +98,7 @@ public class ObjectTestSource<T> extends AbstractColumnSource<T>
     // endregion chunk add
 
     private void maybeInitializePrevForStep() {
-        long currentStep = LogicalClock.DEFAULT.currentStep();
+        long currentStep = UpdateContext.logicalClock().currentStep();
         if (currentStep == lastAdditionTime) {
             return;
         }

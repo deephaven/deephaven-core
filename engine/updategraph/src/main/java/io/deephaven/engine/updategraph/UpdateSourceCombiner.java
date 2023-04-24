@@ -11,11 +11,17 @@ import java.util.Collections;
 
 /**
  * Update source that combines multiple sources in order to force them to be refreshed as a unit within the
- * {@link UpdateGraphProcessor#DEFAULT update graph processor}.
+ * {@link UpdateGraphProcessor update graph processor} registered in the update context at the time of construction.
  */
 public class UpdateSourceCombiner extends LivenessArtifact implements Runnable, UpdateSourceRegistrar {
 
+    private final UpdateContext updateContext;
+
     private final WeakReferenceManager<Runnable> combinedTables = new WeakReferenceManager<>(true);
+
+    public UpdateSourceCombiner() {
+        updateContext = UpdateContext.get();
+    }
 
     @Override
     public void run() {
@@ -43,16 +49,17 @@ public class UpdateSourceCombiner extends LivenessArtifact implements Runnable, 
     }
 
     /**
-     * Passes through to the {@link UpdateGraphProcessor#DEFAULT update graph processor}.
+     * Passes through to the {@link UpdateGraphProcessor update graph processor} registered in the update context at
+     * construction.
      */
     @Override
     public void requestRefresh() {
-        UpdateGraphProcessor.DEFAULT.requestRefresh();
+        updateContext.getUpdateGraphProcessor().requestRefresh();
     }
 
     @Override
     public void destroy() {
         super.destroy();
-        UpdateGraphProcessor.DEFAULT.removeSource(this);
+        updateContext.getUpdateGraphProcessor().removeSource(this);
     }
 }

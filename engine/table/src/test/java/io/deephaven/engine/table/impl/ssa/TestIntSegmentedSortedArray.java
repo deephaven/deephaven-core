@@ -13,7 +13,7 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.testutil.ColumnInfo;
 import io.deephaven.engine.testutil.GenerateTableUpdates;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.impl.*;
@@ -176,7 +176,7 @@ public class TestIntSegmentedSortedArray extends RefreshingTableTestCase {
             asInteger.addUpdateListener(asIntegerListener);
 
             while (desc.advance(50)) {
-                UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() ->
+                UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() ->
                         GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE, desc.tableSize(), random, table, columnInfo));
 
                 try (final ColumnSource.GetContext getContext = valueSource.makeGetContext(asInteger.intSize());
@@ -219,7 +219,7 @@ public class TestIntSegmentedSortedArray extends RefreshingTableTestCase {
             asInteger.addUpdateListener(asIntegerListener);
 
             while (desc.advance(50)) {
-                UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+                UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
                     final RowSet[] notify = GenerateTableUpdates.computeTableUpdates(desc.tableSize(), random, table, columnInfo, allowAddition, allowRemoval, false);
                     assertTrue(notify[2].isEmpty());
                     table.notifyListeners(notify[0], notify[1], notify[2]);

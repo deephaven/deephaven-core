@@ -19,7 +19,7 @@ import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
-import io.deephaven.engine.updategraph.LogicalClock;
+import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.util.SoftRecycler;
 import io.deephaven.util.compare.FloatComparisons;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
@@ -73,7 +73,7 @@ public class FloatArraySource extends ArraySourceHelper<Float, float[]>
      */
     @Override
     public void prepareForParallelPopulation(RowSequence changedRows) {
-        final long currentStep = LogicalClock.DEFAULT.currentStep();
+        final long currentStep = UpdateContext.logicalClock().currentStep();
         if (ensurePreviousClockCycle == currentStep) {
             throw new IllegalStateException("May not call ensurePrevious twice on one clock cycle!");
         }
@@ -569,7 +569,8 @@ public class FloatArraySource extends ArraySourceHelper<Float, float[]>
         // endregion chunkDecl
         final LongChunk<OrderedRowKeyRanges> ranges = rowSequence.asRowKeyRangesChunk();
 
-        final boolean trackPrevious = prevFlusher != null && ensurePreviousClockCycle != LogicalClock.DEFAULT.currentStep();
+        final boolean trackPrevious = prevFlusher != null &&
+                ensurePreviousClockCycle != UpdateContext.logicalClock().currentStep();
 
         if (trackPrevious) {
             prevFlusher.maybeActivate();
@@ -653,7 +654,8 @@ public class FloatArraySource extends ArraySourceHelper<Float, float[]>
         // endregion chunkDecl
         final LongChunk<OrderedRowKeys> keys = rowSequence.asRowKeyChunk();
 
-        final boolean trackPrevious = prevFlusher != null && ensurePreviousClockCycle != LogicalClock.DEFAULT.currentStep();
+        final boolean trackPrevious = prevFlusher != null &&
+                ensurePreviousClockCycle != UpdateContext.logicalClock().currentStep();
 
         if (trackPrevious) {
             prevFlusher.maybeActivate();
@@ -706,7 +708,8 @@ public class FloatArraySource extends ArraySourceHelper<Float, float[]>
         final FloatChunk<? extends Values> chunk = src.asFloatChunk();
         // endregion chunkDecl
 
-        final boolean trackPrevious = prevFlusher != null && ensurePreviousClockCycle != LogicalClock.DEFAULT.currentStep();
+        final boolean trackPrevious = prevFlusher != null &&
+                ensurePreviousClockCycle != UpdateContext.logicalClock().currentStep();
 
         if (trackPrevious) {
             prevFlusher.maybeActivate();

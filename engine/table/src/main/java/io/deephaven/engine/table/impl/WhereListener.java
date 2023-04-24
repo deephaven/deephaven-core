@@ -10,9 +10,8 @@ import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.table.impl.select.DynamicWhereFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
-import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.updategraph.NotificationQueue;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.io.logger.Logger;
 
 import java.util.*;
@@ -68,18 +67,18 @@ class WhereListener extends MergedListener {
                 : sourceTable.newModifiedColumnSet(
                         filterColumnNames.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
 
-        if (UpdateGraphProcessor.DEFAULT.getUpdateThreads() > 1) {
+        if (UpdateContext.updateGraphProcessor().getUpdateThreads() > 1) {
             minimumThreadSize = QueryTable.PARALLEL_WHERE_ROWS_PER_SEGMENT;
         } else {
             minimumThreadSize = Long.MAX_VALUE;
         }
-        segmentCount = QueryTable.PARALLEL_WHERE_SEGMENTS <= 0 ? UpdateGraphProcessor.DEFAULT.getUpdateThreads()
+        segmentCount = QueryTable.PARALLEL_WHERE_SEGMENTS <= 0 ? UpdateContext.updateGraphProcessor().getUpdateThreads()
                 : QueryTable.PARALLEL_WHERE_SEGMENTS;
     }
 
     @Override
     public void process() {
-        initialNotificationStep = LogicalClock.DEFAULT.currentStep();
+        initialNotificationStep = UpdateContext.logicalClock().currentStep();
 
         if (result.refilterRequested()) {
             final TableUpdate update = recorder != null ? recorder.getUpdate() : null;
@@ -185,7 +184,7 @@ class WhereListener extends MergedListener {
     }
 
     void setFinalExecutionStep() {
-        finalNotificationStep = LogicalClock.DEFAULT.currentStep();
+        finalNotificationStep = UpdateContext.logicalClock().currentStep();
     }
 
     ListenerFilterExecution makeFilterExecution() {
@@ -241,8 +240,8 @@ class WhereListener extends MergedListener {
         @Override
         void enqueueSubFilters(List<AbstractFilterExecution> subFilters,
                 CombinationNotification combinationNotification) {
-            UpdateGraphProcessor.DEFAULT.addNotifications(subFilters);
-            UpdateGraphProcessor.DEFAULT.addNotification(combinationNotification);
+            UpdateContext.updateGraphProcessor().addNotifications(subFilters);
+            UpdateContext.updateGraphProcessor().addNotification(combinationNotification);
         }
 
         @Override

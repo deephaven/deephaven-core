@@ -5,7 +5,7 @@ import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.updategraph.AbstractNotification;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.process.ProcessEnvironment;
@@ -17,11 +17,12 @@ public class UpdateGraphProcessorJobScheduler implements JobScheduler {
 
     @Override
     public void submit(
+            final UpdateContext updateContext,
             final ExecutionContext executionContext,
             final Runnable runnable,
             final LogOutputAppendable description,
             final Consumer<Exception> onError) {
-        UpdateGraphProcessor.DEFAULT.addNotification(new AbstractNotification(false) {
+        UpdateContext.updateGraphProcessor().addNotification(new AbstractNotification(false) {
             @Override
             public boolean canExecute(long step) {
                 return true;
@@ -62,6 +63,6 @@ public class UpdateGraphProcessorJobScheduler implements JobScheduler {
 
     @Override
     public int threadCount() {
-        return UpdateGraphProcessor.DEFAULT.getUpdateThreads();
+        return UpdateContext.updateGraphProcessor().getUpdateThreads();
     }
 }

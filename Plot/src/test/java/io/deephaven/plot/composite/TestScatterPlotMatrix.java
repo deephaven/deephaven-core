@@ -8,7 +8,7 @@ import io.deephaven.base.verify.RequirementFailure;
 import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.plot.FigureImpl;
 import io.deephaven.plot.datasets.xy.XYDataSeriesInternal;
@@ -29,21 +29,21 @@ public class TestScatterPlotMatrix extends BaseArrayTestCase {
     @Override
     public void setUp() throws Exception {
         super.setUp();
-        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
-        UpdateGraphProcessor.DEFAULT.resetForUnitTests(false);
+        UpdateContext.updateGraphProcessor().enableUnitTestMode();
+        UpdateContext.updateGraphProcessor().resetForUnitTests(false);
         executionContext = TestExecutionContext.createForUnitTests().open();
     }
 
     @Override
     protected void tearDown() throws Exception {
         super.tearDown();
-        UpdateGraphProcessor.DEFAULT.resetForUnitTests(true);
+        UpdateContext.updateGraphProcessor().resetForUnitTests(true);
         executionContext.close();
     }
 
     public void testScatterPlotMatrix() {
-        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
-        UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
+        UpdateContext.updateGraphProcessor().enableUnitTestMode();
+        UpdateContext.updateGraphProcessor().startCycleForUnitTests();
         final int[][] ints = new int[length][length];
         final double[][] doubles = new double[length][length];
         final long[][] longs = new long[length][length];
@@ -119,7 +119,7 @@ public class TestScatterPlotMatrix extends BaseArrayTestCase {
         } catch (IllegalStateException e) {
             assertTrue(e.getMessage().contains("dimension"));
         }
-        UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
+        UpdateContext.updateGraphProcessor().completeCycleForUnitTests();
     }
 
     public void testPointSize() {

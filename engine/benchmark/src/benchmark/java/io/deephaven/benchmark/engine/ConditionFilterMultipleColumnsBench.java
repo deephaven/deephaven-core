@@ -4,7 +4,7 @@
 package io.deephaven.benchmark.engine;
 
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.table.impl.select.ConditionFilter;
 import io.deephaven.engine.table.impl.select.IncrementalReleaseFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
@@ -51,7 +51,7 @@ public class ConditionFilterMultipleColumnsBench {
         if (nFilterCols < 1 || nAdditionalCols < 0) {
             throw new IllegalArgumentException();
         }
-        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
+        UpdateContext.updateGraphProcessor().enableUnitTestMode();
 
         state = new TableBenchmarkState(BenchmarkTools.stripName(params.getBenchmark()), params.getWarmup().getCount());
         final BenchmarkTableBuilder builder;
@@ -85,7 +85,7 @@ public class ConditionFilterMultipleColumnsBench {
         final BenchmarkTable bmTable = builder.build();
         final Table t = bmTable.getTable();
         if (doSelect) {
-            inputTable = UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(
+            inputTable = UpdateContext.exclusiveLock().computeLocked(
                     () -> t.select(tCols).sort(sortCol).coalesce());
         } else {
             inputTable = t.sort(sortCol).coalesce();
@@ -115,11 +115,11 @@ public class ConditionFilterMultipleColumnsBench {
         final Table result = inputReleased.where(filter);
         // Compute the first pass of live iterations outside of the bench measurement,
         // to avoid including the time to setup the filter itself.
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(incrementalReleaseFilter::run);
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(incrementalReleaseFilter::run);
         final long fullyReleasedSize = inputTable.size();
         bench = () -> {
             while (inputReleased.size() < fullyReleasedSize) {
-                UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(incrementalReleaseFilter::run);
+                UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(incrementalReleaseFilter::run);
             }
             return result;
         };

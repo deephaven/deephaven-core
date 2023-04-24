@@ -4,7 +4,7 @@ import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.impl.OperationInitializationThreadPool;
 import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
-import io.deephaven.engine.table.impl.util.JobScheduler;
+import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.process.ProcessEnvironment;
@@ -16,6 +16,7 @@ public class OperationInitializationPoolJobScheduler implements JobScheduler {
 
     @Override
     public void submit(
+            final UpdateContext updateContext,
             final ExecutionContext executionContext,
             final Runnable runnable,
             final LogOutputAppendable description,
@@ -23,7 +24,8 @@ public class OperationInitializationPoolJobScheduler implements JobScheduler {
         OperationInitializationThreadPool.executorService.submit(() -> {
             final BasePerformanceEntry basePerformanceEntry = new BasePerformanceEntry();
             basePerformanceEntry.onBaseEntryStart();
-            try (final SafeCloseable ignored = executionContext == null ? null : executionContext.open()) {
+            try (final SafeCloseable ignored1 = updateContext.open();
+                    final SafeCloseable ignored2 = executionContext == null ? null : executionContext.open()) {
                 runnable.run();
             } catch (Exception e) {
                 onError.accept(e);

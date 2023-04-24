@@ -3,10 +3,9 @@
  */
 package io.deephaven.engine.table.impl.select;
 
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.TerminalNotification;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.engine.updategraph.TerminalNotification;
 import io.deephaven.util.annotations.ScriptApi;
 
 import java.text.DecimalFormat;
@@ -198,7 +197,8 @@ public class AutoTuningIncrementalReleaseFilter extends BaseIncrementalReleaseFi
             }
         } else {
             final long cycleDurationNanos = cycleEndNanos - lastRefreshNanos;
-            final long targetCycleNanos = UpdateGraphProcessor.DEFAULT.getTargetCycleDurationMillis() * 1000 * 1000;
+            final long targetCycleNanos =
+                    updateContext.getUpdateGraphProcessor().getTargetCycleDurationMillis() * 1000 * 1000;
             final double rowsPerNanoSecond = ((double) nextSize) / cycleDurationNanos;
             nextSize = Math.max((long) (rowsPerNanoSecond * targetCycleNanos * targetFactor), 1L);
             if (verbose) {
@@ -216,13 +216,13 @@ public class AutoTuningIncrementalReleaseFilter extends BaseIncrementalReleaseFi
                         .append(decimalFormat.format(eta)).append(" sec").endl();
             }
         }
-        UpdateGraphProcessor.DEFAULT.addNotification(new TerminalNotification() {
+        updateContext.getUpdateGraphProcessor().addNotification(new TerminalNotification() {
             final boolean captureReleasedAll = releasedAll;
 
             @Override
             public void run() {
                 cycleEndNanos = System.nanoTime();
-                UpdateGraphProcessor.DEFAULT.requestRefresh();
+                updateContext.getUpdateGraphProcessor().requestRefresh();
                 if (!captureReleasedAll && releasedAll) {
                     final DecimalFormat decimalFormat = new DecimalFormat("###,###.##");
                     final long durationNanos = cycleEndNanos - firstCycleNanos;

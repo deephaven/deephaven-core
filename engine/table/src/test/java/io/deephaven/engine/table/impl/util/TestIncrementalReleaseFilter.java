@@ -3,7 +3,7 @@
  */
 package io.deephaven.engine.table.impl.util;
 
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.util.TableTools;
@@ -30,7 +30,7 @@ public class TestIncrementalReleaseFilter extends RefreshingTableTestCase {
         assertEquals(2, filtered.size());
 
         for (int ii = 0; ii <= 10; ++ii) {
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(incrementalReleaseFilter::run);
+            UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(incrementalReleaseFilter::run);
 
             TableTools.show(filtered);
             assertEquals(Math.min(3 + ii, 10), filtered.size());
@@ -55,7 +55,7 @@ public class TestIncrementalReleaseFilter extends RefreshingTableTestCase {
 
         int cycles = 0;
         while (filtered.size() < source.size()) {
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(incrementalReleaseFilter::run);
+            UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(incrementalReleaseFilter::run);
             cycles++;
         }
         assertTableEquals(source, filtered);
@@ -89,7 +89,7 @@ public class TestIncrementalReleaseFilter extends RefreshingTableTestCase {
 
     public void testAutoTune2() {
         // I just want to see commas in the output
-        UpdateGraphProcessor.DEFAULT.setTargetCycleDurationMillis(100);
+        UpdateContext.updateGraphProcessor().setTargetCycleDurationMillis(100);
         final Table source = TableTools.emptyTable(1_000_000);
 
         final AutoTuningIncrementalReleaseFilter incrementalReleaseFilter =
@@ -97,12 +97,12 @@ public class TestIncrementalReleaseFilter extends RefreshingTableTestCase {
         incrementalReleaseFilter.start();
         final Table filtered = source.where(incrementalReleaseFilter);
 
-        final Table updated = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> filtered.update("I=0"));
+        final Table updated = UpdateContext.sharedLock().computeLocked(() -> filtered.update("I=0"));
 
         int steps = 0;
 
         while (filtered.size() < source.size()) {
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(incrementalReleaseFilter::run);
+            UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(incrementalReleaseFilter::run);
             if (steps++ > 100) {
                 TestCase.fail("Did not release rows promptly.");
             }
@@ -112,7 +112,7 @@ public class TestIncrementalReleaseFilter extends RefreshingTableTestCase {
     }
 
     private int testAutoTuneCycle(int cycleTime) {
-        UpdateGraphProcessor.DEFAULT.setTargetCycleDurationMillis(cycleTime);
+        UpdateContext.updateGraphProcessor().setTargetCycleDurationMillis(cycleTime);
         final Table source = TableTools.emptyTable(10_000);
         TableTools.show(source);
 
@@ -121,12 +121,12 @@ public class TestIncrementalReleaseFilter extends RefreshingTableTestCase {
         incrementalReleaseFilter.start();
         final Table filtered = source.updateView("I = ii").where(incrementalReleaseFilter);
 
-        final Table updated = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> filtered
+        final Table updated = UpdateContext.sharedLock().computeLocked(() -> filtered
                 .update("I=io.deephaven.engine.table.impl.util.TestIncrementalReleaseFilter.sleepValue(100000, I)"));
 
         int cycles = 0;
         while (filtered.size() < source.size()) {
-            UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(incrementalReleaseFilter::run);
+            UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(incrementalReleaseFilter::run);
             System.out.println(filtered.size() + " / " + updated.size());
             if (cycles++ > (2 * (source.size() * 100) / cycleTime)) {
                 TestCase.fail("Did not release rows promptly.");

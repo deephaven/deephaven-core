@@ -21,6 +21,7 @@ import io.deephaven.engine.table.impl.util.EngineMetrics;
 import io.deephaven.engine.tablelogger.QueryOperationPerformanceLogLogger;
 import io.deephaven.engine.tablelogger.QueryPerformanceLogLogger;
 import io.deephaven.engine.updategraph.DynamicNode;
+import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.hash.KeyedIntObjectHash;
 import io.deephaven.hash.KeyedIntObjectHashMap;
 import io.deephaven.hash.KeyedIntObjectKey;
@@ -156,7 +157,9 @@ public class SessionState {
         this.logPrefix = "SessionState{" + sessionId + "}: ";
         this.scheduler = scheduler;
         this.authContext = authContext;
-        this.executionContext = executionContextProvider.get().withAuthContext(authContext);
+        this.executionContext = executionContextProvider.get()
+                .withAuthContext(authContext)
+                .withUpdateContext(UpdateContext.get());
         log.debug().append(logPrefix).append("session initialized").endl();
     }
 

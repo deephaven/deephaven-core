@@ -13,11 +13,11 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
+import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.time.TimeZone;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TimeTable;
 import io.deephaven.engine.table.impl.replay.Replayer;
@@ -847,7 +847,7 @@ public class TableTools {
      * @return time table
      */
     public static Table timeTable(long periodNanos, ReplayerInterface replayer) {
-        return new TimeTable(UpdateGraphProcessor.DEFAULT, Replayer.getClock(replayer),
+        return new TimeTable(UpdateContext.updateGraphProcessor(), Replayer.getClock(replayer),
                 null, periodNanos, false);
     }
 
@@ -859,7 +859,7 @@ public class TableTools {
      * @return time table
      */
     public static Table timeTable(DateTime startTime, long periodNanos) {
-        return new TimeTable(UpdateGraphProcessor.DEFAULT, DateTimeUtils.currentClock(),
+        return new TimeTable(UpdateContext.updateGraphProcessor(), DateTimeUtils.currentClock(),
                 startTime, periodNanos, false);
     }
 
@@ -872,7 +872,7 @@ public class TableTools {
      * @return time table
      */
     public static Table timeTable(DateTime startTime, long periodNanos, ReplayerInterface replayer) {
-        return new TimeTable(UpdateGraphProcessor.DEFAULT, Replayer.getClock(replayer),
+        return new TimeTable(UpdateContext.updateGraphProcessor(), Replayer.getClock(replayer),
                 startTime, periodNanos, false);
     }
 
@@ -908,7 +908,7 @@ public class TableTools {
      * @return time table
      */
     public static Table timeTable(Clock clock, DateTime startTime, long periodNanos) {
-        return new TimeTable(UpdateGraphProcessor.DEFAULT, clock, startTime, periodNanos, false);
+        return new TimeTable(UpdateContext.updateGraphProcessor(), clock, startTime, periodNanos, false);
     }
 
     /**

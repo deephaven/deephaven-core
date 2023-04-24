@@ -21,7 +21,7 @@ import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.testutil.generator.CharGenerator;
 import io.deephaven.engine.testutil.generator.SortedDateTimeGenerator;
 import io.deephaven.engine.testutil.generator.TestDataGenerator;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTime;
 import org.jetbrains.annotations.NotNull;
@@ -798,7 +798,7 @@ public class TestEmMinMax extends BaseUpdateByTest {
         for (int ii = 0; ii < DYNAMIC_UPDATE_STEPS; ii++) {
             try {
                 if (appendOnly) {
-                    UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+                    UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
                         generateAppends(DYNAMIC_UPDATE_SIZE, billy, tickResult.t, tickResult.infos);
                         generateAppends(DYNAMIC_UPDATE_SIZE, billy, timeResult.t, timeResult.infos);
                     });

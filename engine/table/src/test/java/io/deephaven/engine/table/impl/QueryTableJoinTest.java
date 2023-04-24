@@ -10,13 +10,13 @@ import io.deephaven.engine.testutil.generator.IntGenerator;
 import io.deephaven.engine.testutil.generator.SetGenerator;
 import io.deephaven.engine.testutil.generator.SortedIntGenerator;
 import io.deephaven.engine.testutil.generator.UnsortedDateTimeGenerator;
+import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeFormatter;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.vector.IntVector;
 import io.deephaven.vector.ObjectVector;
 import io.deephaven.vector.DoubleVector;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
@@ -549,15 +549,15 @@ public class QueryTableJoinTest {
                 }
         };
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> table.notifyListeners(i(), i(), i()));
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> table.notifyListeners(i(), i(), i()));
         TstUtils.validate(en);
 
         System.out.println("Notifying listeners of modification.");
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> table.notifyListeners(i(), i(), i(4, 5)));
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> table.notifyListeners(i(), i(), i(4, 5)));
         System.out.println("Finished notifying listeners of modification.");
         TstUtils.validate(en);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             TstUtils.removeRows(table, i(4));
             table.notifyListeners(i(), i(4), i());
         });
@@ -618,7 +618,7 @@ public class QueryTableJoinTest {
 
         assertEquals(asList(null, null, null, null), asList((Object[]) aj.getColumn("RSentinel").getDirect()));
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             addToTable(left, i(2), col("Group", "h"), col("LInt", 4), col("LSentinel", "b"));
             left.notifyListeners(i(), i(), i(2));
         });

@@ -7,7 +7,7 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.table.impl.util.UpdateGraphProcessorJobScheduler;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.UpdateContext;
 import org.junit.Test;
 
 import java.util.concurrent.CompletableFuture;
@@ -20,13 +20,14 @@ public final class TestJobScheduler {
     public void testParallel() {
         final CompletableFuture<Void> waitForResult = new CompletableFuture<>();
 
-        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
-        UpdateGraphProcessor.DEFAULT.resetForUnitTests(false, true, 0, 4, 10, 5);
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().enableUnitTestMode();
+        UpdateContext.updateGraphProcessor().resetForUnitTests(false, true, 0, 4, 10, 5);
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             final boolean[] completed = new boolean[100];
 
             final JobScheduler scheduler = new UpdateGraphProcessorJobScheduler();
             scheduler.iterateParallel(
+                    UpdateContext.get(),
                     ExecutionContext.getContext(),
                     null,
                     JobScheduler.DEFAULT_CONTEXT_FACTORY,
@@ -65,13 +66,14 @@ public final class TestJobScheduler {
     public void testParallelWithResume() {
         final CompletableFuture<Void> waitForResult = new CompletableFuture<>();
 
-        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
-        UpdateGraphProcessor.DEFAULT.resetForUnitTests(false, true, 0, 4, 10, 5);
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().enableUnitTestMode();
+        UpdateContext.updateGraphProcessor().resetForUnitTests(false, true, 0, 4, 10, 5);
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             final boolean[] completed = new boolean[100];
 
             final JobScheduler scheduler = new UpdateGraphProcessorJobScheduler();
             scheduler.iterateParallel(
+                    UpdateContext.get(),
                     ExecutionContext.getContext(),
                     null,
                     JobScheduler.DEFAULT_CONTEXT_FACTORY,
@@ -114,9 +116,9 @@ public final class TestJobScheduler {
         final CompletableFuture<Void> waitForResult = new CompletableFuture<>();
         final AtomicInteger openCount = new AtomicInteger(0);
 
-        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
-        UpdateGraphProcessor.DEFAULT.resetForUnitTests(false, true, 0, 4, 10, 5);
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().enableUnitTestMode();
+        UpdateContext.updateGraphProcessor().resetForUnitTests(false, true, 0, 4, 10, 5);
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
 
             class TestJobThreadContext implements JobScheduler.JobThreadContext {
                 TestJobThreadContext() {
@@ -133,6 +135,7 @@ public final class TestJobScheduler {
 
             final JobScheduler scheduler = new UpdateGraphProcessorJobScheduler();
             scheduler.iterateParallel(
+                    UpdateContext.get(),
                     ExecutionContext.getContext(),
                     null,
                     TestJobThreadContext::new,
@@ -180,13 +183,14 @@ public final class TestJobScheduler {
     public void testSerialWithResume() {
         final CompletableFuture<Void> waitForResult = new CompletableFuture<>();
 
-        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
-        UpdateGraphProcessor.DEFAULT.resetForUnitTests(false, true, 0, 4, 10, 5);
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().enableUnitTestMode();
+        UpdateContext.updateGraphProcessor().resetForUnitTests(false, true, 0, 4, 10, 5);
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             final boolean[] completed = new boolean[100];
 
             final JobScheduler scheduler = new UpdateGraphProcessorJobScheduler();
             scheduler.iterateSerial(
+                    UpdateContext.get(),
                     ExecutionContext.getContext(),
                     null,
                     JobScheduler.DEFAULT_CONTEXT_FACTORY,
@@ -230,9 +234,9 @@ public final class TestJobScheduler {
         final CompletableFuture<Void> waitForResult = new CompletableFuture<>();
         final AtomicInteger openCount = new AtomicInteger(0);
 
-        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
-        UpdateGraphProcessor.DEFAULT.resetForUnitTests(false, true, 0, 4, 10, 5);
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().enableUnitTestMode();
+        UpdateContext.updateGraphProcessor().resetForUnitTests(false, true, 0, 4, 10, 5);
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
 
             class TestJobThreadContext implements JobScheduler.JobThreadContext {
                 TestJobThreadContext() {
@@ -249,6 +253,7 @@ public final class TestJobScheduler {
 
             final JobScheduler scheduler = new UpdateGraphProcessorJobScheduler();
             scheduler.iterateSerial(
+                    UpdateContext.get(),
                     ExecutionContext.getContext(),
                     null,
                     TestJobThreadContext::new,
@@ -296,12 +301,13 @@ public final class TestJobScheduler {
     public void testSerialEmpty() {
         final CompletableFuture<Void> waitForResult = new CompletableFuture<>();
 
-        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
-        UpdateGraphProcessor.DEFAULT.resetForUnitTests(false, true, 0, 4, 10, 5);
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().enableUnitTestMode();
+        UpdateContext.updateGraphProcessor().resetForUnitTests(false, true, 0, 4, 10, 5);
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
 
             final JobScheduler scheduler = new UpdateGraphProcessorJobScheduler();
             scheduler.iterateSerial(
+                    UpdateContext.get(),
                     ExecutionContext.getContext(),
                     null,
                     JobScheduler.DEFAULT_CONTEXT_FACTORY,
@@ -333,12 +339,13 @@ public final class TestJobScheduler {
     public void testParallelEmpty() {
         final CompletableFuture<Void> waitForResult = new CompletableFuture<>();
 
-        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
-        UpdateGraphProcessor.DEFAULT.resetForUnitTests(false, true, 0, 4, 10, 5);
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().enableUnitTestMode();
+        UpdateContext.updateGraphProcessor().resetForUnitTests(false, true, 0, 4, 10, 5);
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
 
             final JobScheduler scheduler = new UpdateGraphProcessorJobScheduler();
             scheduler.iterateParallel(
+                    UpdateContext.get(),
                     ExecutionContext.getContext(),
                     null,
                     JobScheduler.DEFAULT_CONTEXT_FACTORY,
@@ -371,9 +378,9 @@ public final class TestJobScheduler {
         final CompletableFuture<Void> waitForResult = new CompletableFuture<>();
         final AtomicInteger openCount = new AtomicInteger(0);
 
-        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
-        UpdateGraphProcessor.DEFAULT.resetForUnitTests(false, true, 0, 4, 10, 5);
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().enableUnitTestMode();
+        UpdateContext.updateGraphProcessor().resetForUnitTests(false, true, 0, 4, 10, 5);
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             final boolean[] completed = new boolean[50];
 
             class TestJobThreadContext implements JobScheduler.JobThreadContext {
@@ -389,6 +396,7 @@ public final class TestJobScheduler {
 
             final JobScheduler scheduler = new UpdateGraphProcessorJobScheduler();
             scheduler.iterateParallel(
+                    UpdateContext.get(),
                     ExecutionContext.getContext(),
                     null,
                     TestJobThreadContext::new,
@@ -442,9 +450,9 @@ public final class TestJobScheduler {
         final CompletableFuture<Void> waitForResult = new CompletableFuture<>();
         final AtomicInteger openCount = new AtomicInteger(0);
 
-        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
-        UpdateGraphProcessor.DEFAULT.resetForUnitTests(false, true, 0, 4, 10, 5);
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().enableUnitTestMode();
+        UpdateContext.updateGraphProcessor().resetForUnitTests(false, true, 0, 4, 10, 5);
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             final boolean[] completed = new boolean[100];
 
             class TestJobThreadContext implements JobScheduler.JobThreadContext {
@@ -460,6 +468,7 @@ public final class TestJobScheduler {
 
             final JobScheduler scheduler = new UpdateGraphProcessorJobScheduler();
             scheduler.iterateSerial(
+                    UpdateContext.get(),
                     ExecutionContext.getContext(),
                     null,
                     TestJobThreadContext::new,
@@ -521,9 +530,9 @@ public final class TestJobScheduler {
         final CompletableFuture<Void> waitForResult = new CompletableFuture<>();
         final AtomicInteger openCount = new AtomicInteger(0);
 
-        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
-        UpdateGraphProcessor.DEFAULT.resetForUnitTests(false, true, 0, 4, 10, 5);
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().enableUnitTestMode();
+        UpdateContext.updateGraphProcessor().resetForUnitTests(false, true, 0, 4, 10, 5);
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             final boolean[][] completed = new boolean[50][60];
 
             class TestJobThreadContext implements JobScheduler.JobThreadContext {
@@ -539,12 +548,14 @@ public final class TestJobScheduler {
 
             final JobScheduler scheduler = new UpdateGraphProcessorJobScheduler();
             scheduler.iterateParallel(
+                    UpdateContext.get(),
                     ExecutionContext.getContext(),
                     null,
                     TestJobThreadContext::new,
                     0,
                     50,
                     (context1, idx1, nec1, r1) -> scheduler.iterateParallel(
+                            UpdateContext.get(),
                             ExecutionContext.getContext(),
                             null,
                             TestJobThreadContext::new,
@@ -598,9 +609,9 @@ public final class TestJobScheduler {
         final CompletableFuture<Void> waitForResult = new CompletableFuture<>();
         final AtomicInteger openCount = new AtomicInteger(0);
 
-        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
-        UpdateGraphProcessor.DEFAULT.resetForUnitTests(false, true, 0, 4, 10, 5);
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().enableUnitTestMode();
+        UpdateContext.updateGraphProcessor().resetForUnitTests(false, true, 0, 4, 10, 5);
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             final boolean[][] completed = new boolean[50][60];
 
             class TestJobThreadContext implements JobScheduler.JobThreadContext {
@@ -616,6 +627,7 @@ public final class TestJobScheduler {
 
             final JobScheduler scheduler = new UpdateGraphProcessorJobScheduler();
             scheduler.iterateParallel(
+                    UpdateContext.get(),
                     ExecutionContext.getContext(),
                     null,
                     TestJobThreadContext::new,
@@ -626,6 +638,7 @@ public final class TestJobScheduler {
                             throw new IndexOutOfBoundsException("Test error");
                         }
                         scheduler.iterateParallel(
+                                UpdateContext.get(),
                                 ExecutionContext.getContext(),
                                 null,
                                 TestJobThreadContext::new,
@@ -674,9 +687,9 @@ public final class TestJobScheduler {
         final CompletableFuture<Void> waitForResult = new CompletableFuture<>();
         final AtomicInteger openCount = new AtomicInteger(0);
 
-        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
-        UpdateGraphProcessor.DEFAULT.resetForUnitTests(false, true, 0, 4, 10, 5);
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().enableUnitTestMode();
+        UpdateContext.updateGraphProcessor().resetForUnitTests(false, true, 0, 4, 10, 5);
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             final boolean[][] completed = new boolean[50][60];
 
             class TestJobThreadContext implements JobScheduler.JobThreadContext {
@@ -692,12 +705,14 @@ public final class TestJobScheduler {
 
             final JobScheduler scheduler = new UpdateGraphProcessorJobScheduler();
             scheduler.iterateParallel(
+                    UpdateContext.get(),
                     ExecutionContext.getContext(),
                     null,
                     TestJobThreadContext::new,
                     0,
                     50,
                     (context1, idx1, nec1, r1) -> scheduler.iterateParallel(
+                            UpdateContext.get(),
                             ExecutionContext.getContext(),
                             null,
                             TestJobThreadContext::new,

@@ -5,7 +5,7 @@ package io.deephaven.benchmark.engine;
 
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.benchmarking.*;
@@ -57,7 +57,7 @@ public class GroupByBenchmark {
 
     @Setup(Level.Trial)
     public void setupEnv(BenchmarkParams params) {
-        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
+        UpdateContext.updateGraphProcessor().enableUnitTestMode();
         QueryTable.setMemoizeResults(false);
 
         final BenchmarkTableBuilder builder;
@@ -153,26 +153,23 @@ public class GroupByBenchmark {
 
     @Benchmark
     public Table byStatic(@NotNull final Blackhole bh) {
-        final Table result =
-                UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> table.groupBy(keyName.split("[, ]+")));
+        final Table result = UpdateContext.sharedLock().computeLocked(() -> table.groupBy(keyName.split("[, ]+")));
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));
     }
 
     @Benchmark
     public Table byIncremental(@NotNull final Blackhole bh) {
-        final Table result = IncrementalBenchmark.incrementalBenchmark(
-                (t) -> UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> t.groupBy(keyName.split("[, ]+"))),
-                table);
+        final Table result = IncrementalBenchmark.incrementalBenchmark((t) -> UpdateContext.sharedLock().computeLocked(
+                () -> t.groupBy(keyName.split("[, ]+"))), table);
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));
     }
 
     @Benchmark
     public Table partitionByStatic(@NotNull final Blackhole bh) {
-        final PartitionedTable result =
-                UpdateGraphProcessor.DEFAULT.sharedLock()
-                        .computeLocked(() -> table.partitionBy(keyName.split("[, ]+")));
+        final PartitionedTable result = UpdateContext.sharedLock().computeLocked(
+                () -> table.partitionBy(keyName.split("[, ]+")));
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));
     }
@@ -180,8 +177,7 @@ public class GroupByBenchmark {
     @Benchmark
     public Table partitionByIncremental(@NotNull final Blackhole bh) {
         final PartitionedTable result = IncrementalBenchmark.incrementalBenchmark(
-                (t) -> UpdateGraphProcessor.DEFAULT.sharedLock()
-                        .computeLocked(() -> t.partitionBy(keyName.split("[, ]+"))),
+                (t) -> UpdateContext.sharedLock().computeLocked(() -> t.partitionBy(keyName.split("[, ]+"))),
                 table);
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));

@@ -14,7 +14,7 @@ import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.generator.IntGenerator;
 import io.deephaven.engine.testutil.generator.SetGenerator;
 import io.deephaven.engine.testutil.generator.SortedLongGenerator;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -370,7 +370,7 @@ public class QueryTableSliceTest extends QueryTableTestBase {
             for (int i = 0; i < steps; ++i) {
                 final long ii = i;
                 final long jj = j;
-                UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+                UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
                     RowSet added = RowSetFactory.fromRange(ii * jj, (ii + 1) * jj - 1);
                     upTable.getRowSet().writableCast().insert(added);
                     TableUpdate update =

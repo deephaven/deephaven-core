@@ -6,15 +6,16 @@ package io.deephaven.engine.table.impl.replay;
 import io.deephaven.base.clock.Clock;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.exceptions.CancellationException;
-import io.deephaven.engine.table.Table;
-import io.deephaven.time.DateTimeUtils;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.time.DateTime;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.TerminalNotification;
+import io.deephaven.engine.updategraph.UpdateContext;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.time.DateTime;
+import io.deephaven.time.DateTimeUtils;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -37,8 +38,9 @@ public class Replayer implements ReplayerInterface, Runnable {
     private boolean lastLap;
     private final ReplayerHandle handle = () -> Replayer.this;
 
+    private final UpdateGraphProcessor updateGraphProcessor = UpdateContext.updateGraphProcessor();
     // Condition variable for use with UpdateGraphProcessor lock - the object monitor is no longer used
-    private final Condition ugpCondition = UpdateGraphProcessor.DEFAULT.exclusiveLock().newCondition();
+    private final Condition ugpCondition = updateGraphProcessor.exclusiveLock().newCondition();
 
     /**
      * Creates a new replayer.
@@ -59,7 +61,7 @@ public class Replayer implements ReplayerInterface, Runnable {
     public void start() {
         deltaNanos = DateTimeUtils.millisToNanos(System.currentTimeMillis()) - startTime.getNanos();
         for (Runnable currentTable : currentTables) {
-            UpdateGraphProcessor.DEFAULT.addSource(currentTable);
+            updateGraphProcessor.addSource(currentTable);
         }
     }
 
@@ -84,12 +86,12 @@ public class Replayer implements ReplayerInterface, Runnable {
         if (done) {
             return;
         }
-        UpdateGraphProcessor.DEFAULT.removeSources(currentTables);
+        updateGraphProcessor.removeSources(currentTables);
         currentTables = null;
-        if (UpdateGraphProcessor.DEFAULT.exclusiveLock().isHeldByCurrentThread()) {
+        if (updateGraphProcessor.exclusiveLock().isHeldByCurrentThread()) {
             shutdownInternal();
-        } else if (UpdateGraphProcessor.DEFAULT.isRefreshThread()) {
-            UpdateGraphProcessor.DEFAULT.addNotification(new TerminalNotification() {
+        } else if (updateGraphProcessor.isRefreshThread()) {
+            updateGraphProcessor.addNotification(new TerminalNotification() {
                 @Override
                 public boolean mustExecuteWithUgpLock() {
                     return true;
@@ -101,13 +103,13 @@ public class Replayer implements ReplayerInterface, Runnable {
                 }
             });
         } else {
-            UpdateGraphProcessor.DEFAULT.exclusiveLock().doLocked(this::shutdownInternal);
+            updateGraphProcessor.exclusiveLock().doLocked(this::shutdownInternal);
         }
     }
 
     private void shutdownInternal() {
-        Assert.assertion(UpdateGraphProcessor.DEFAULT.exclusiveLock().isHeldByCurrentThread(),
-                "UpdateGraphProcessor.DEFAULT.exclusiveLock().isHeldByCurrentThread()");
+        Assert.assertion(updateGraphProcessor.exclusiveLock().isHeldByCurrentThread(),
+                "updateGraphProcessor.exclusiveLock().isHeldByCurrentThread()");
         done = true;
         ugpCondition.signalAll();
     }
@@ -125,7 +127,7 @@ public class Replayer implements ReplayerInterface, Runnable {
         if (done) {
             return;
         }
-        UpdateGraphProcessor.DEFAULT.exclusiveLock().doLocked(() -> {
+        updateGraphProcessor.exclusiveLock().doLocked(() -> {
             while (!done && expiryTime > System.currentTimeMillis()) {
                 try {
                     ugpCondition.await(expiryTime - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
@@ -191,7 +193,7 @@ public class Replayer implements ReplayerInterface, Runnable {
                 new ReplayTable(dataSource.getRowSet(), dataSource.getColumnSourceMap(), timeColumn, this);
         currentTables.add(result);
         if (deltaNanos < Long.MAX_VALUE) {
-            UpdateGraphProcessor.DEFAULT.addSource(result);
+            updateGraphProcessor.addSource(result);
         }
         return result;
     }
@@ -211,7 +213,7 @@ public class Replayer implements ReplayerInterface, Runnable {
                 dataSource.getColumnSourceMap(), timeColumn, this, groupingColumn);
         currentTables.add(result);
         if (deltaNanos < Long.MAX_VALUE) {
-            UpdateGraphProcessor.DEFAULT.addSource(result);
+            updateGraphProcessor.addSource(result);
         }
         return result;
     }
@@ -230,7 +232,7 @@ public class Replayer implements ReplayerInterface, Runnable {
                 dataSource.getColumnSourceMap(), timeColumn, this, groupingColumns);
         currentTables.add(result);
         if (deltaNanos < Long.MAX_VALUE) {
-            UpdateGraphProcessor.DEFAULT.addSource(result);
+            updateGraphProcessor.addSource(result);
         }
         return result;
     }

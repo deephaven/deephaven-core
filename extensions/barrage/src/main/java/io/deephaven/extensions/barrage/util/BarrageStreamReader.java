@@ -28,7 +28,6 @@ import io.deephaven.io.logger.Logger;
 import org.apache.arrow.flatbuf.Message;
 import org.apache.arrow.flatbuf.MessageHeader;
 import org.apache.arrow.flatbuf.RecordBatch;
-import org.apache.commons.lang3.mutable.MutableInt;
 
 import java.io.IOException;
 import java.io.InputStream;

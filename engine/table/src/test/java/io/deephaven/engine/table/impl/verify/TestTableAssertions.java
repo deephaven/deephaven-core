@@ -13,7 +13,7 @@ import io.deephaven.engine.testutil.EvalNuggetInterface;
 import io.deephaven.engine.testutil.GenerateTableUpdates;
 import io.deephaven.engine.testutil.generator.IntGenerator;
 import io.deephaven.engine.testutil.generator.SortedLongGenerator;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.util.QueryConstants;
@@ -69,7 +69,7 @@ public class TestTableAssertions {
         assertTableEquals(test, testPlant);
         assertTableEquals(test, testInt);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             removeRows(test, i(11));
             addToTable(test, i(11), stringCol("Plant", "Berry"), intCol("Int", 6));
             test.notifyListeners(i(11), i(11), i());
@@ -78,7 +78,7 @@ public class TestTableAssertions {
         assertTableEquals(test, testInt);
         assertTableEquals(test, testPlant);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             addToTable(test, i(9, 13, 18), stringCol("Plant", "Aaple", "DAFODIL", "Forsythia"),
                     intCol("Int", 10, 4, 0));
             TableTools.showWithRowSet(test);
@@ -110,7 +110,7 @@ public class TestTableAssertions {
         // final Random random1 = new Random(0);
         // QueryScope.addParam("random1", random);
 
-        // final Table badTable = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() ->
+        // final Table badTable = UpdateContext.sharedLock().computeLocked(() ->
         // table.update("RV=random1.nextDouble() < 0.00001 ? -1L : SortValue"));
 
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
@@ -136,7 +136,7 @@ public class TestTableAssertions {
         };
 
         for (int step = 0; step < maxSteps; step++) {
-            UpdateGraphProcessor.DEFAULT
+            UpdateContext.updateGraphProcessor()
                     .runWithinUnitTestCycle(() -> GenerateTableUpdates.generateShiftAwareTableUpdates(
                             GenerateTableUpdates.DEFAULT_PROFILE, size, random, table, columnInfo));
             validate(en);

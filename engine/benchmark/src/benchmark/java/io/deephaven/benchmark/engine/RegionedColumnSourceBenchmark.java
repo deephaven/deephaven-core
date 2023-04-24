@@ -5,7 +5,7 @@ package io.deephaven.benchmark.engine;
 
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.ColumnSource;
@@ -94,9 +94,9 @@ public class RegionedColumnSourceBenchmark {
 
     @Setup(Level.Trial)
     public void setupEnv(BenchmarkParams params) {
-        Configuration.getInstance().setProperty(UpdateGraphProcessor.ALLOW_UNIT_TEST_MODE_PROP, "true");
+        Configuration.getInstance().setProperty(UpdateContext.ALLOW_UNIT_TEST_MODE_PROP, "true");
 
-        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
+        UpdateContext.updateGraphProcessor().enableUnitTestMode();
 
         final BenchmarkTableBuilder builder;
         final int actualSize = BenchmarkTools.sizeWithSparsity(tableSize, sparsity);

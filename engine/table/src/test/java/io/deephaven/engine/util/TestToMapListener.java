@@ -6,7 +6,7 @@ package io.deephaven.engine.util;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.UpdateContext;
 
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.col;
@@ -32,7 +32,7 @@ public class TestToMapListener extends RefreshingTableTestCase {
         assertEquals("K", tml.get("D"));
         assertNull(tml.get("E"));
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             addToTable(source, i(10), col("Sentinel", "E"), col("Sentinel2", "L"));
             source.notifyListeners(i(10), i(), i());
 
@@ -49,7 +49,7 @@ public class TestToMapListener extends RefreshingTableTestCase {
         assertEquals("K", tml.get("D"));
         assertEquals("L", tml.get("E"));
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             addToTable(source, i(10), col("Sentinel", "E"), col("Sentinel2", "M"));
             removeRows(source, i(2));
             source.notifyListeners(i(), i(2), i(10));

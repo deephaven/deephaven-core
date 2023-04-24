@@ -8,6 +8,7 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.impl.NotificationStepSource;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
@@ -212,11 +213,11 @@ public abstract class ModelFarmBase<DATATYPE> implements ModelFarm {
             case UGP_LOCK_ALREADY_HELD:
                 return (queryDataRetrievalOperation, source) -> queryDataRetrievalOperation.retrieveData(false);
             case UGP_LOCK:
-                return (queryDataRetrievalOperation, source) -> UpdateGraphProcessor.DEFAULT.exclusiveLock()
-                        .doLocked(() -> queryDataRetrievalOperation.retrieveData(false));
+                return (queryDataRetrievalOperation, source) -> UpdateContext.exclusiveLock().doLocked(
+                        () -> queryDataRetrievalOperation.retrieveData(false));
             case UGP_READ_LOCK:
-                return (queryDataRetrievalOperation, source) -> UpdateGraphProcessor.DEFAULT.sharedLock()
-                        .doLocked(() -> queryDataRetrievalOperation.retrieveData(false));
+                return (queryDataRetrievalOperation, source) -> UpdateContext.sharedLock().doLocked(
+                        () -> queryDataRetrievalOperation.retrieveData(false));
             case SNAPSHOT:
                 return (queryDataRetrievalOperation, source) -> {
                     try {

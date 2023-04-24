@@ -20,7 +20,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.perf.PerformanceEntry;
 import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.table.impl.sources.FillUnordered;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.function.Numeric;
@@ -50,7 +50,7 @@ public final class TimeTable extends QueryTable implements Runnable {
     private static final Logger log = LoggerFactory.getLogger(TimeTable.class);
 
     public static class Builder {
-        private UpdateSourceRegistrar registrar = UpdateGraphProcessor.DEFAULT;
+        private UpdateSourceRegistrar registrar = UpdateContext.updateGraphProcessor();
         private Clock clock;
         private DateTime startTime;
         private long period;
@@ -108,10 +108,12 @@ public final class TimeTable extends QueryTable implements Runnable {
     private final Clock clock;
     private final PerformanceEntry entry;
     private final boolean isBlinkTable;
+    private final UpdateSourceRegistrar registrar;
 
     public TimeTable(UpdateSourceRegistrar registrar, Clock clock,
             @Nullable DateTime startTime, long period, boolean isBlinkTable) {
         super(RowSetFactory.empty().toTracking(), initColumn(startTime, period));
+        this.registrar = registrar;
         this.isBlinkTable = isBlinkTable;
         final String name = isBlinkTable ? "TimeTableBlink" : "TimeTable";
         this.entry = UpdatePerformanceTracker.getInstance().getEntry(name + "(" + startTime + "," + period + ")");
@@ -183,7 +185,7 @@ public final class TimeTable extends QueryTable implements Runnable {
     @Override
     protected void destroy() {
         super.destroy();
-        UpdateGraphProcessor.DEFAULT.removeSource(this);
+        registrar.removeSource(this);
     }
 
     private static final class SyntheticDateTimeSource extends AbstractColumnSource<DateTime> implements

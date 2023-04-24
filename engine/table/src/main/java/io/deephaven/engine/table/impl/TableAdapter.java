@@ -22,6 +22,7 @@ import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.hierarchical.RollupTable;
 import io.deephaven.engine.table.hierarchical.TreeTable;
+import io.deephaven.engine.updategraph.UpdateContext;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -42,6 +43,11 @@ public interface TableAdapter extends TableDefaults {
     private <T> T throwUnsupported() {
         final StackTraceElement caller = Thread.currentThread().getStackTrace()[1];
         throw new UnsupportedOperationException(getClass().getName() + " does not support " + caller.getMethodName());
+    }
+
+    @Override
+    default UpdateContext getUpdateContext() {
+        return throwUnsupported();
     }
 
     @Override

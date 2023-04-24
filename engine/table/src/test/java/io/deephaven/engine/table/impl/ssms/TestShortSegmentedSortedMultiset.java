@@ -15,7 +15,7 @@ import io.deephaven.engine.testutil.ColumnInfo;
 import io.deephaven.engine.testutil.GenerateTableUpdates;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.compare.ShortComparisons;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
@@ -184,7 +184,7 @@ public class TestShortSegmentedSortedMultiset extends RefreshingTableTestCase {
             asShort.addUpdateListener(asShortListener);
 
             while (desc.advance(50)) {
-                UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+                UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
                     final RowSet[] notify = GenerateTableUpdates.computeTableUpdates(desc.tableSize(), random, table, columnInfo, allowAddition, allowRemoval, false);
                     assertTrue(notify[2].isEmpty());
                     table.notifyListeners(notify[0], notify[1], notify[2]);

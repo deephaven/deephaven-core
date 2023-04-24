@@ -9,8 +9,8 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.TupleSource;
 import io.deephaven.engine.table.impl.TupleSourceFactory;
+import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.tuple.EmptyTuple;
-import io.deephaven.engine.updategraph.LogicalClock;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -110,7 +110,8 @@ public class RowSetIndexer implements TrackingRowSet.Indexer {
             if (ephemeralMappings == null) {
                 ephemeralMappings = new WeakHashMap<>();
             }
-            ephemeralMappings.put(sourcesKey, new MappingInfo(tupleSource, result, LogicalClock.DEFAULT.currentStep()));
+            ephemeralMappings.put(sourcesKey, new MappingInfo(tupleSource, result,
+                    UpdateContext.logicalClock().currentStep()));
         }
 
         return result;
@@ -150,7 +151,7 @@ public class RowSetIndexer implements TrackingRowSet.Indexer {
                 ephemeralPrevMappings = new WeakHashMap<>();
             }
             ephemeralPrevMappings.put(sourcesKey,
-                    new MappingInfo(tupleSource, result, LogicalClock.DEFAULT.currentStep()));
+                    new MappingInfo(tupleSource, result, UpdateContext.logicalClock().currentStep()));
         }
         return result;
     }
@@ -626,7 +627,7 @@ public class RowSetIndexer implements TrackingRowSet.Indexer {
             return null;
         }
 
-        if (resultInfo.creationTick != LogicalClock.DEFAULT.currentStep()) {
+        if (resultInfo.creationTick != UpdateContext.logicalClock().currentStep()) {
             groupingMap.remove(columnSourceKey);
             return null;
         }

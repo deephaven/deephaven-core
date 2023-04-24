@@ -5,7 +5,7 @@ package io.deephaven.engine.liveness;
 
 import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.util.SafeCloseable;
@@ -25,9 +25,9 @@ public class TestLiveness {
 
     @Before
     public void setUp() throws Exception {
-        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
-        UpdateGraphProcessor.DEFAULT.resetForUnitTests(false);
-        oldCheckUgp = UpdateGraphProcessor.DEFAULT.setCheckTableOperations(false);
+        UpdateContext.updateGraphProcessor().enableUnitTestMode();
+        UpdateContext.updateGraphProcessor().resetForUnitTests(false);
+        oldCheckUgp = UpdateContext.updateGraphProcessor().setCheckTableOperations(false);
         scope = new LivenessScope();
         LivenessScopeStack.push(scope);
         executionContext = TestExecutionContext.createForUnitTests().open();
@@ -37,8 +37,8 @@ public class TestLiveness {
     public void tearDown() throws Exception {
         LivenessScopeStack.pop(scope);
         scope.release();
-        UpdateGraphProcessor.DEFAULT.setCheckTableOperations(oldCheckUgp);
-        UpdateGraphProcessor.DEFAULT.resetForUnitTests(true);
+        UpdateContext.updateGraphProcessor().setCheckTableOperations(oldCheckUgp);
+        UpdateContext.updateGraphProcessor().resetForUnitTests(true);
         executionContext.close();
     }
 

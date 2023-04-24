@@ -45,10 +45,11 @@ public class OneShotUpdateCombiner implements Runnable, UpdateSourceRegistrar {
     }
 
     /**
-     * Passes through to the {@link UpdateGraphProcessor#DEFAULT update graph processor}.
+     * Passes through to the {@link UpdateGraphProcessor update graph processor} associated with the current update
+     * context.
      */
     @Override
     public void requestRefresh() {
-        UpdateGraphProcessor.DEFAULT.requestRefresh();
+        UpdateContext.get().getUpdateGraphProcessor().requestRefresh();
     }
 }

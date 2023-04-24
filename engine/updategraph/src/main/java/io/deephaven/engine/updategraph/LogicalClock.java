@@ -24,9 +24,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * When {@link #completeUpdateCycle()} is called, the clock transitions back to Idle.
  * </p>
  */
-public enum LogicalClock {
-
-    DEFAULT;
+public class LogicalClock {
 
     private static final Logger log = LoggerFactory.getLogger(LogicalClock.class);
 

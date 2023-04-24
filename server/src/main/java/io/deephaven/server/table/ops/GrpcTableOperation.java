@@ -6,11 +6,13 @@ package io.deephaven.server.table.ops;
 import io.deephaven.auth.AuthContext;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.TableReference;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.server.session.SessionState;
 import io.grpc.StatusRuntimeException;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;
 import java.util.List;
@@ -146,5 +148,43 @@ public abstract class GrpcTableOperation<T> {
         final List<Table> tables =
                 sourceTables.stream().map(SessionState.ExportObject::get).collect(Collectors.toList());
         permission.check(ExecutionContext.getContext().getAuthContext(), request, tables);
+    }
+
+    /**
+     * Get the appropriate update context for this operation. Returns the first update context found from a refreshing
+     * table.
+     *
+     * @param source the required "left hand side" source table
+     * @param otherSources any other source tables
+     * @return the update context
+     */
+    @NotNull
+    protected static UpdateContext getUpdateContext(final Table source, final Table... otherSources) {
+        if (source.isRefreshing()) {
+            return source.getUpdateContext();
+        }
+        for (final Table otherSource : otherSources) {
+            if (otherSource != null && otherSource.isRefreshing()) {
+                return otherSource.getUpdateContext();
+            }
+        }
+        return source.getUpdateContext();
+    }
+
+    /**
+     * Get the appropriate update context for this operation. Returns the first update context found from a refreshing
+     * table.
+     *
+     * @param sources the source tables; there must be at least one
+     * @return the update context
+     */
+    @NotNull
+    protected static UpdateContext getUpdateContext(final List<Table> sources) {
+        for (final Table source : sources) {
+            if (source.isRefreshing()) {
+                return source.getUpdateContext();
+            }
+        }
+        return sources.get(0).getUpdateContext();
     }
 }

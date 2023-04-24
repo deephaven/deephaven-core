@@ -7,12 +7,14 @@ import com.google.rpc.Code;
 import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.MergeTablesRequest;
 import io.deephaven.proto.util.Exceptions;
 import io.deephaven.server.session.SessionState;
+import io.deephaven.util.SafeCloseable;
 import io.grpc.StatusRuntimeException;
 
 import javax.inject.Inject;
@@ -51,16 +53,20 @@ public class MergeTablesGrpcImpl extends GrpcTableOperation<MergeTablesRequest> 
                 .map(SessionState.ExportObject::get)
                 .collect(Collectors.toList());
 
-        Table result;
         if (tables.stream().noneMatch(Table::isRefreshing)) {
-            result = keyColumn.isEmpty() ? TableTools.merge(tables) : TableTools.mergeSorted(keyColumn, tables);
+            return keyColumn.isEmpty() ? TableTools.merge(tables) : TableTools.mergeSorted(keyColumn, tables);
         } else {
-            result = updateGraphProcessor.sharedLock().computeLocked(() -> TableTools.merge(tables));
-            if (!keyColumn.isEmpty()) {
-                result = result.sort(keyColumn);
-            }
+            final UpdateContext updateContext = getUpdateContext(tables);
+            return updateContext.apply(() -> {
+                Table result;
+                try (final SafeCloseable ignored = updateContext.getSharedLock().lockCloseable()) {
+                    result = TableTools.merge(tables);
+                }
+                if (!keyColumn.isEmpty()) {
+                    result = result.sort(keyColumn);
+                }
+                return result;
+            });
         }
-
-        return result;
     }
 }

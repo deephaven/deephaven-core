@@ -10,7 +10,7 @@ import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.testutil.generator.TestDataGenerator;
 import io.deephaven.engine.testutil.generator.IntGenerator;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import org.junit.Rule;
 import org.junit.Test;
@@ -99,7 +99,7 @@ public class TestSharedContext {
         final String condition = String.join(" && ", conditions);
         final QueryTable t0 = getTable(size, random, initColumnInfos(cols, gs));
         final String sortCol = "TS";
-        UpdateGraphProcessor.DEFAULT.exclusiveLock().doLocked(() -> {
+        UpdateContext.exclusiveLock().doLocked(() -> {
             final Table t1 = t0.update(sortCol + "=i").reverse();
             final Table t1Filtered = t1.where(condition);
             final Table t2 = t1.sort(sortCol);
@@ -145,7 +145,7 @@ public class TestSharedContext {
         final QueryTable t0 = getTable(size, random, initColumnInfos(cols, gs));
         final String sortCol = "TS";
         final String formulaCol = "F";
-        UpdateGraphProcessor.DEFAULT.exclusiveLock().doLocked(() -> {
+        UpdateContext.exclusiveLock().doLocked(() -> {
             final Table t1 = t0.update(sortCol + "=i", formulaCol + "=" + cols[0] + "+" + cols[1]).reverse();
             final Table t1Filtered = t1.where(condition);
             final Table t2 = t1.sort(sortCol).naturalJoin(t1, sortCol, String.join(",", joinColumnsToAdd));

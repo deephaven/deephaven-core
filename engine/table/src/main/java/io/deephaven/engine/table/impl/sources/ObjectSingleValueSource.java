@@ -12,12 +12,12 @@ import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
-import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.updategraph.UpdateContext;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.util.type.TypeUtils.unbox;
@@ -46,7 +46,7 @@ public class ObjectSingleValueSource<T> extends SingleValueColumnSource<T> imple
     @Override
     public final void set(T value) {
         if (isTrackingPrevValues) {
-            final long currentStep = LogicalClock.DEFAULT.currentStep();
+            final long currentStep = UpdateContext.logicalClock().currentStep();
             if (changeTime < currentStep) {
                 prev = current;
                 changeTime = currentStep;
@@ -81,7 +81,7 @@ public class ObjectSingleValueSource<T> extends SingleValueColumnSource<T> imple
         if (rowKey == RowSequence.NULL_ROW_KEY) {
             return null;
         }
-        if (!isTrackingPrevValues || changeTime < LogicalClock.DEFAULT.currentStep()) {
+        if (!isTrackingPrevValues || changeTime < UpdateContext.logicalClock().currentStep()) {
             return current;
         }
         return prev;

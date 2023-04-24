@@ -12,6 +12,7 @@ import io.deephaven.engine.table.impl.NotificationStepSource;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
+import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.qst.type.Type;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
@@ -87,6 +88,8 @@ public enum PartitionedTableCreatorImpl implements PartitionedTableFactory.Creat
 
     @Override
     public PartitionedTable of(@NotNull final Table table) {
+        table.checkUpdateContextConsistency();
+
         final Map<Boolean, List<ColumnDefinition<?>>> splitColumns = table.getDefinition().getColumnStream().collect(
                 Collectors.partitioningBy(cd -> Table.class.isAssignableFrom(cd.getDataType())));
         final List<ColumnDefinition<?>> tableColumns = splitColumns.get(true);
@@ -160,6 +163,14 @@ public enum PartitionedTableCreatorImpl implements PartitionedTableFactory.Creat
         final Table[] constituentsToUse = Arrays.stream(constituents).filter(Objects::nonNull).toArray(Table[]::new);
         if (constituentsToUse.length == 0) {
             throw new IllegalArgumentException("No non-null constituents provided");
+        }
+        final UpdateContext updateContext = UpdateContext.get();
+        for (Table constituent : constituentsToUse) {
+            if (constituent.isRefreshing() && constituent.getUpdateContext() != updateContext) {
+                throw new IllegalStateException("Constituent table uses a different update context than what is "
+                        + " currently active. Constituent: " + constituent.getUpdateContext() + ", active context: "
+                        + updateContext);
+            }
         }
 
         final TableDefinition constituentDefinitionToUse =

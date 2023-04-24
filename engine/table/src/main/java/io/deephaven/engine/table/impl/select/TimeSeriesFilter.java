@@ -18,7 +18,6 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.time.DateTimeUtils;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.time.DateTime;
 import io.deephaven.engine.table.ColumnSource;
 
@@ -98,7 +97,7 @@ public class TimeSeriesFilter extends WhereFilterLivenessArtifactImpl implements
         Assert.eqNull(this.listener, "this.listener");
         this.listener = listener;
         listener.setIsRefreshing(true);
-        UpdateGraphProcessor.DEFAULT.addSource(this);
+        updateContext.getUpdateGraphProcessor().addSource(this);
     }
 
     @Override
@@ -119,6 +118,6 @@ public class TimeSeriesFilter extends WhereFilterLivenessArtifactImpl implements
     @Override
     protected void destroy() {
         super.destroy();
-        UpdateGraphProcessor.DEFAULT.removeSource(this);
+        updateContext.getUpdateGraphProcessor().removeSource(this);
     }
 }

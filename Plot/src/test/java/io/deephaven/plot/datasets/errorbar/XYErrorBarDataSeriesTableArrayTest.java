@@ -7,7 +7,7 @@ import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.testutil.TstUtils;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.UpdateContext;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.plot.BaseFigureImpl;
 import io.deephaven.plot.ChartImpl;
@@ -23,14 +23,14 @@ public class XYErrorBarDataSeriesTableArrayTest extends BaseArrayTestCase {
     @Override
     public void setUp() throws Exception {
         super.setUp();
-        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
-        UpdateGraphProcessor.DEFAULT.resetForUnitTests(false);
+        UpdateContext.updateGraphProcessor().enableUnitTestMode();
+        UpdateContext.updateGraphProcessor().resetForUnitTests(false);
     }
 
     @Override
     protected void tearDown() throws Exception {
         super.tearDown();
-        UpdateGraphProcessor.DEFAULT.resetForUnitTests(true);
+        UpdateContext.updateGraphProcessor().resetForUnitTests(true);
     }
 
     public void testXYErrorBarDataSeriesTableArray() {
@@ -95,7 +95,7 @@ public class XYErrorBarDataSeriesTableArrayTest extends BaseArrayTestCase {
 
         assertEquals(series.getX(4), Double.NaN);
 
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
+        UpdateContext.updateGraphProcessor().runWithinUnitTestCycle(() -> {
             addToTable(refreshingTable, i(7, 9), col("x", 4, 5), col("y", 4, 5), col("yLow", 3, 4), col("yHigh", 5, 6));
             refreshingTable.notifyListeners(i(7, 9), i(), i());
         });

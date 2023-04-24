@@ -210,7 +210,7 @@ public class SwapListener extends LivenessArtifact implements TableUpdateListene
             public void run() {
                 log.info().append("SwapListener {source=").append(System.identityHashCode(sourceTable))
                         .append(" swap=").append(System.identityHashCode(SwapListener.this))
-                        .append(", clock=").append(LogicalClock.DEFAULT.currentStep())
+                        .append(", clock=").append(UpdateContext.logicalClock().currentStep())
                         .append("} Firing notification")
                         .endl();
                 notification.run();
