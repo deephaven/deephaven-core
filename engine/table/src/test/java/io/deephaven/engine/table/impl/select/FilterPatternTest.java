@@ -12,6 +12,7 @@ import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.util.TableTools;
 
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -43,6 +44,7 @@ public class FilterPatternTest extends RefreshingTableTestCase {
 
     private static String[] data() {
         final String[] examples = {
+                null,
                 "",
                 " ",
                 "  ",
@@ -72,7 +74,7 @@ public class FilterPatternTest extends RefreshingTableTestCase {
         // mixin other data / modifications
         return Stream.of(
                 Stream.of(examples),
-                Stream.of(examples).map(Pattern::quote),
+                Stream.of(examples).filter(Objects::nonNull).map(Pattern::quote),
                 Stream.of(regex()),
                 Stream.of(regex()).map(Pattern::quote))
                 .flatMap(Function.identity())
@@ -95,7 +97,19 @@ public class FilterPatternTest extends RefreshingTableTestCase {
         final String[] data = data();
         for (String regex : regex()) {
             for (int flag : flags()) {
-                final FilterPattern matches = FilterPattern.of(COLUMN, Pattern.compile(regex, flag), Mode.MATCHES);
+                final FilterPattern matches =
+                        FilterPattern.of(COLUMN, Pattern.compile(regex, flag), Mode.MATCHES, false);
+                test(matches, data);
+            }
+        }
+    }
+
+    public void testMatchesInverted() {
+        final String[] data = data();
+        for (String regex : regex()) {
+            for (int flag : flags()) {
+                final FilterPattern matches =
+                        FilterPattern.of(COLUMN, Pattern.compile(regex, flag), Mode.MATCHES, true);
                 test(matches, data);
             }
         }
@@ -105,7 +119,17 @@ public class FilterPatternTest extends RefreshingTableTestCase {
         final String[] data = data();
         for (String regex : regex()) {
             for (int flag : flags()) {
-                final FilterPattern matches = FilterPattern.of(COLUMN, Pattern.compile(regex, flag), Mode.FIND);
+                final FilterPattern matches = FilterPattern.of(COLUMN, Pattern.compile(regex, flag), Mode.FIND, false);
+                test(matches, data);
+            }
+        }
+    }
+
+    public void testFindInverted() {
+        final String[] data = data();
+        for (String regex : regex()) {
+            for (int flag : flags()) {
+                final FilterPattern matches = FilterPattern.of(COLUMN, Pattern.compile(regex, flag), Mode.FIND, true);
                 test(matches, data);
             }
         }
@@ -135,16 +159,16 @@ public class FilterPatternTest extends RefreshingTableTestCase {
         return new TrackingWritableRowSet[] {yes.build().toTracking(), no.build().toTracking()};
     }
 
-    private static boolean test(FilterPattern pattern, CharSequence input) {
+    public static boolean test(FilterPattern filter, String value) {
         // This isn't the most robust of test setups - but it is divorced from all of the actual engine implementation
         // and is easy to express our expected logic here.
-        switch (pattern.mode()) {
+        switch (filter.mode()) {
             case FIND:
-                return pattern.pattern().matcher(input).find();
+                return value != null && (filter.invertPattern() ^ filter.pattern().matcher(value).find());
             case MATCHES:
-                return pattern.pattern().matcher(input).matches();
+                return value != null && (filter.invertPattern() ^ filter.pattern().matcher(value).matches());
             default:
-                throw new IllegalStateException();
+                throw new IllegalStateException("Unexpected mode " + filter.mode());
         }
     }
 }

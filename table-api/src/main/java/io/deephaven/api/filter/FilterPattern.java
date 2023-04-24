@@ -2,11 +2,26 @@ package io.deephaven.api.filter;
 
 import io.deephaven.annotations.BuildableStyle;
 import io.deephaven.api.expression.Expression;
+import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * A filter based on a regular-expression {@link Pattern}.
+ *
+ * <p>
+ * In the {@link Mode#MATCHES MATCHES} case, the logic is equivalent to
+ * {@code value != null && (invertPattern() ^ pattern().matcher(value).matches())}.
+ *
+ * <p>
+ * In the {@link Mode#FIND FIND} case, the logic is equivalent to
+ * {@code value != null && (invertPattern() ^ pattern().matcher(value).find())}.
+ *
+ * <p>
+ * This filter will never match {@code null} values.
+ */
 @Immutable
 @BuildableStyle
 public abstract class FilterPattern extends FilterBase {
@@ -15,11 +30,12 @@ public abstract class FilterPattern extends FilterBase {
         return ImmutableFilterPattern.builder();
     }
 
-    public static FilterPattern of(Expression expression, Pattern pattern, Mode mode) {
+    public static FilterPattern of(Expression expression, Pattern pattern, Mode mode, boolean invertPattern) {
         return builder()
                 .expression(expression)
                 .pattern(pattern)
                 .mode(mode)
+                .invertPattern(invertPattern)
                 .build();
     }
 
@@ -28,6 +44,11 @@ public abstract class FilterPattern extends FilterBase {
     public abstract Pattern pattern();
 
     public abstract Mode mode();
+
+    @Default
+    public boolean invertPattern() {
+        return false;
+    }
 
     @Override
     public final FilterNot<FilterPattern> invert() {
@@ -48,6 +69,7 @@ public abstract class FilterPattern extends FilterBase {
                 + ", pattern=" + pattern().pattern()
                 + ", patternFlags=" + pattern().flags()
                 + ", mode=" + mode()
+                + ", invertPattern=" + invertPattern()
                 + "}";
     }
 
@@ -62,10 +84,11 @@ public abstract class FilterPattern extends FilterBase {
             return false;
         }
         final FilterPattern other = (FilterPattern) obj;
-        return expression().equals(other.expression())
-                && pattern().pattern().equals(other.pattern().pattern())
+        return mode() == other.mode()
+                && invertPattern() == other.invertPattern()
                 && pattern().flags() == other.pattern().flags()
-                && mode() == other.mode();
+                && pattern().pattern().equals(other.pattern().pattern())
+                && expression().equals(other.expression());
     }
 
     @Override
@@ -75,17 +98,21 @@ public abstract class FilterPattern extends FilterBase {
         h += (h << 5) + pattern().pattern().hashCode();
         h += (h << 5) + Integer.hashCode(pattern().flags());
         h += (h << 5) + mode().hashCode();
+        h += (h << 5) + Boolean.hashCode(invertPattern());
         return h;
     }
 
+    /**
+     * The pattern mode
+     */
     public enum Mode {
         /**
-         * Matches the entire {@code input} against the {@code pattern}, uses {@link Matcher#matches()}.
+         * Matches any subsequence of the {@code input} against the {@code pattern}, uses {@link Matcher#find()}.
          */
         FIND,
 
         /**
-         * Matches any subsequence of the {@code input} against the {@code pattern}, uses {@link Matcher#find()}.
+         * Matches the entire {@code input} against the {@code pattern}, uses {@link Matcher#matches()}.
          */
         MATCHES
     }
@@ -96,6 +123,8 @@ public abstract class FilterPattern extends FilterBase {
         Builder pattern(Pattern pattern);
 
         Builder mode(Mode mode);
+
+        Builder invertPattern(boolean invertPattern);
 
         FilterPattern build();
     }

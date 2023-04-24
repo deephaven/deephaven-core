@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.api.ColumnName;
+import io.deephaven.api.filter.FilterPattern;
 import io.deephaven.api.filter.FilterPattern.Mode;
 import io.deephaven.api.filter.FilterQuick;
 import io.deephaven.base.Pair;
@@ -267,11 +268,11 @@ public class WhereFilterFactory {
                         final String colName = cd.getName();
                         if (filterMode == QuickFilterMode.REGEX) {
                             if (colClass.isAssignableFrom(String.class)) {
-                                return WhereFilterAdapter.ofNotNullAndPattern(
-                                        colName,
+                                return WhereFilterAdapter.of(FilterPattern.of(
+                                        ColumnName.of(colName),
                                         Pattern.compile(quickFilter, Pattern.CASE_INSENSITIVE | Pattern.DOTALL),
                                         Mode.MATCHES,
-                                        false);
+                                        false), false);
                             }
                             return null;
                         } else if (filterMode == QuickFilterMode.AND) {
@@ -355,11 +356,11 @@ public class WhereFilterFactory {
             return ComparableRangeFilter.makeBigDecimalRange(colName, quickFilter);
         } else if (filterMode != QuickFilterMode.NUMERIC) {
             if (colClass == String.class) {
-                return WhereFilterAdapter.ofNotNullAndPattern(
-                        colName,
+                return WhereFilterAdapter.of(FilterPattern.of(
+                        ColumnName.of(colName),
                         Pattern.compile(Pattern.quote(quickFilter), Pattern.CASE_INSENSITIVE),
                         Mode.FIND,
-                        false);
+                        false), false);
             } else if ((colClass == boolean.class || colClass == Boolean.class) && typeData.isBool) {
                 return new MatchFilter(colName, Boolean.parseBoolean(quickFilter));
             } else if (colClass == DateTime.class && typeData.dateLower != null && typeData.dateUpper != null) {
@@ -374,11 +375,11 @@ public class WhereFilterFactory {
     private static WhereFilter getSelectFilterForAnd(String colName, String quickFilter, Class<?> colClass) {
         // AND mode only supports String types
         if (colClass.isAssignableFrom(String.class)) {
-            return WhereFilterAdapter.ofNotNullAndPattern(
-                    colName,
+            return WhereFilterAdapter.of(FilterPattern.of(
+                    ColumnName.of(colName),
                     Pattern.compile(Pattern.quote(quickFilter), Pattern.CASE_INSENSITIVE),
                     Mode.FIND,
-                    false);
+                    false), false);
         }
         return null;
     }
@@ -411,11 +412,11 @@ public class WhereFilterFactory {
             String... values) {
         final String value =
                 constructStringContainsRegex(values, matchType, internalDisjunctive, removeQuotes, columnName);
-        return WhereFilterAdapter.ofNotNullAndPattern(
-                columnName,
+        return WhereFilterAdapter.of(FilterPattern.of(
+                ColumnName.of(columnName),
                 Pattern.compile(value, sensitivity == CaseSensitivity.IgnoreCase ? Pattern.CASE_INSENSITIVE : 0),
                 Mode.FIND,
-                matchType == MatchType.Inverted);
+                matchType == MatchType.Inverted), false);
     }
 
     private static String constructStringContainsRegex(

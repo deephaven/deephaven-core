@@ -82,29 +82,6 @@ public class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
         return WhereFilterFactory.getExpression(Strings.of(rawString, false, inverted));
     }
 
-    /**
-     * This creates a pattern filter that first filters out nulls. The {@code patternInverted} behavior is not
-     * equivalent to a "traditional invert" - it only inverts the inner pattern filter, and not the is-not-null filter.
-     *
-     * @param columnName the column name
-     * @param pattern the pattern
-     * @param mode the mode
-     * @param patternInverted if the pattern should be inverted
-     * @return the where filter
-     * @deprecated New callers are discouraged from calling this method, and instead encouraged to create {@link Filter
-     *             filters} directly and adapt via {@link WhereFilter#of(Filter, TableDefinition)}.
-     */
-    public static WhereFilter ofNotNullAndPattern(
-            String columnName,
-            Pattern pattern,
-            Mode mode,
-            boolean patternInverted) {
-        final ColumnName column = ColumnName.of(columnName);
-        return ConjunctiveFilter.makeConjunctiveFilter(
-                of(Filter.isNull(column), true),
-                of(FilterPattern.of(column, pattern, mode), patternInverted));
-    }
-
     private final TableDefinition parentDefinition;
     private final boolean inverted;
 
@@ -227,18 +204,11 @@ public class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
                         return new MatchFilter(lhs.name(), rhs);
                     case NOT_EQUALS:
                         return new MatchFilter(MatchType.Inverted, lhs.name(), rhs);
-                    // Note: we can't assume IntRangeFilter - even though the rhs literal is an int, it might be against
-                    // a different column type; we won't have the proper typing info until execution time.
                     case LESS_THAN:
-                        return new RangeConditionFilter(lhs.name(), Condition.LESS_THAN, Integer.toString(rhs));
                     case LESS_THAN_OR_EQUAL:
-                        return new RangeConditionFilter(lhs.name(), Condition.LESS_THAN_OR_EQUAL,
-                                Integer.toString(rhs));
                     case GREATER_THAN:
-                        return new RangeConditionFilter(lhs.name(), Condition.GREATER_THAN, Integer.toString(rhs));
                     case GREATER_THAN_OR_EQUAL:
-                        return new RangeConditionFilter(lhs.name(), Condition.GREATER_THAN_OR_EQUAL,
-                                Integer.toString(rhs));
+                        return range(Integer.toString(rhs));
                     default:
                         throw new IllegalStateException("Unexpected operator " + original.operator());
                 }
@@ -251,17 +221,11 @@ public class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
                         return new MatchFilter(lhs.name(), rhs);
                     case NOT_EQUALS:
                         return new MatchFilter(MatchType.Inverted, lhs.name(), rhs);
-                    // Note: we can't assume LongRangeFilter - even though the rhs literal is an int, it might be
-                    // against a different column type; we won't have the proper typing info until execution time.
                     case LESS_THAN:
-                        return new RangeConditionFilter(lhs.name(), Condition.LESS_THAN, Long.toString(rhs));
                     case LESS_THAN_OR_EQUAL:
-                        return new RangeConditionFilter(lhs.name(), Condition.LESS_THAN_OR_EQUAL, Long.toString(rhs));
                     case GREATER_THAN:
-                        return new RangeConditionFilter(lhs.name(), Condition.GREATER_THAN, Long.toString(rhs));
                     case GREATER_THAN_OR_EQUAL:
-                        return new RangeConditionFilter(lhs.name(), Condition.GREATER_THAN_OR_EQUAL,
-                                Long.toString(rhs));
+                        return range(Long.toString(rhs));
                     default:
                         throw new IllegalStateException("Unexpected operator " + original.operator());
                 }
@@ -292,13 +256,10 @@ public class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
                     case NOT_EQUALS:
                         return new MatchFilter(MatchType.Inverted, lhs.name(), rhs);
                     case LESS_THAN:
-                        return new RangeConditionFilter(lhs.name(), Condition.LESS_THAN, rhs);
                     case LESS_THAN_OR_EQUAL:
-                        return new RangeConditionFilter(lhs.name(), Condition.LESS_THAN_OR_EQUAL, rhs);
                     case GREATER_THAN:
-                        return new RangeConditionFilter(lhs.name(), Condition.GREATER_THAN, rhs);
                     case GREATER_THAN_OR_EQUAL:
-                        return new RangeConditionFilter(lhs.name(), Condition.GREATER_THAN_OR_EQUAL, rhs);
+                        return range(rhs);
                     default:
                         throw new IllegalStateException("Unexpected operator " + original.operator());
                 }
@@ -327,6 +288,21 @@ public class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
             @Override
             public WhereFilter visit(RawString rawString) {
                 return original();
+            }
+
+            private RangeConditionFilter range(String rhsValue) {
+                // TODO(deephaven-core#3730): More efficient io.deephaven.api.filter.FilterComparison to RangeFilter
+                switch (preferred.operator()) {
+                    case LESS_THAN:
+                        return new RangeConditionFilter(lhs.name(), Condition.LESS_THAN, rhsValue);
+                    case LESS_THAN_OR_EQUAL:
+                        return new RangeConditionFilter(lhs.name(), Condition.LESS_THAN_OR_EQUAL, rhsValue);
+                    case GREATER_THAN:
+                        return new RangeConditionFilter(lhs.name(), Condition.GREATER_THAN, rhsValue);
+                    case GREATER_THAN_OR_EQUAL:
+                        return new RangeConditionFilter(lhs.name(), Condition.GREATER_THAN_OR_EQUAL, rhsValue);
+                }
+                throw new IllegalStateException("Unexpected");
             }
         }
 
