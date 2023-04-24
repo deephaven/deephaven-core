@@ -118,7 +118,6 @@ class WhereListener extends MergedListener {
         // shift keyspace
         upstream.shifted().apply(currentMapping);
 
-
         // compute added against filters
         update.added = filterResult.getAddedResult();
         final RowSet matchingModifies = filterResult.getModifyResult();

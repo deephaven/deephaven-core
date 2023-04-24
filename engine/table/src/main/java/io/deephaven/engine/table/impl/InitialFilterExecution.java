@@ -14,7 +14,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * A FilterExecution that is used for initial filters. When we split of sub filters as child jobs, they are enqueued in
+ * A FilterExecution that is used for initial filters. When we split off sub filters as child jobs, they are enqueued in
  * the {@link OperationInitializationThreadPool}.
  */
 class InitialFilterExecution extends AbstractFilterExecution {

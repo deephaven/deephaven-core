@@ -21,9 +21,9 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 /**
- * The AbstractFilterExecution incorporates the idea that we have an added and modified Index to filter and that there
- * are a resulting pair of added and modified Indices representing what was filtered. There is also the possibility that
- * we encounter an exception "exceptionResult" in which case the operation should be considered a failure.
+ * The AbstractFilterExecution incorporates the idea that we have an added and modified RowSet to filter and that there
+ * are a resulting pair of added and modified rows representing what was filtered. There is also the possibility that we
+ * encounter an exception "exceptionResult" in which case the operation should be considered a failure.
  *
  * The strategy that is used to divide the work is that there is some target split (by default the number of threads in
  * the TableMapTransform or LiveTableMonitor update thread pools) that we will divide our operation into. If there is
@@ -47,14 +47,14 @@ abstract class AbstractFilterExecution extends AbstractNotification {
     final ModifiedColumnSet sourceModColumns;
 
     /**
-     * The added index we are filtering, and the positions within that Index that we must filter.
+     * The added RowSet we are filtering, and the positions within that RowSet that we must filter.
      */
     final RowSet addedInput;
     final long addStart;
     final long addEnd;
 
     /**
-     * The modified index we are filtering, and the positions within that Index that we must filter.
+     * The modified RowSet we are filtering, and the positions within that RowSet that we must filter.
      */
     final RowSet modifyInput;
     final long modifyStart;

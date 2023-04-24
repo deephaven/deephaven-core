@@ -21,6 +21,8 @@ import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.testutil.GenerateTableUpdates;
 import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.testutil.EvalNuggetInterface;
+import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.io.logger.Logger;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
@@ -65,6 +67,8 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public abstract class QueryTableWhereTest {
+    private Logger log = LoggerFactory.getLogger(QueryTableWhereTest.class);
+
     @Rule
     public final EngineCleanup base = new EngineCleanup();
 
@@ -278,7 +282,7 @@ public abstract class QueryTableWhereTest {
                 flushed = UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
                 TestCase.assertTrue(flushed);
 
-                System.out.println("Flushing parallel notifications for setTable1");
+                log.debug().append("Flushing parallel notifications for setTable1").endl();
                 TestCase.assertFalse(((QueryTable) setTable1).satisfied(LogicalClock.DEFAULT.currentStep()));
                 // we need to flush our intermediate notification
                 flushed = UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
@@ -299,7 +303,7 @@ public abstract class QueryTableWhereTest {
                 flushed = UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
                 TestCase.assertTrue(flushed);
             } else {
-                System.out.println("Flushing parallel notifications for setTable2");
+                log.debug().append("Flushing parallel notifications for setTable2").endl();
                 // we need to flush our intermediate notification
                 flushed = UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
                 TestCase.assertTrue(flushed);
@@ -308,7 +312,7 @@ public abstract class QueryTableWhereTest {
                 TestCase.assertTrue(flushed);
             }
 
-            System.out.println("Set Tables should be satisfied.");
+            log.debug().append("Set Tables should be satisfied.").end();
 
             // now we have the two set table's filtered we are ready to make sure nothing else is satisfied
 
@@ -318,7 +322,7 @@ public abstract class QueryTableWhereTest {
             TestCase.assertFalse(dynamicFilter2.satisfied(LogicalClock.DEFAULT.currentStep()));
             TestCase.assertFalse(composed.satisfied(LogicalClock.DEFAULT.currentStep()));
 
-            System.out.println("Flushing DynamicFilter Notifications.");
+            log.debug().append("Flushing DynamicFilter Notifications.").endl();
 
             // the dynamicFilter1 updates
             flushed = UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
@@ -334,14 +338,14 @@ public abstract class QueryTableWhereTest {
             flushed = UpdateGraphProcessor.DEFAULT.flushOneNotificationForUnitTests();
             TestCase.assertTrue(flushed);
 
-            System.out.println("Flushed DynamicFilter Notifications.");
+            log.debug().append("Flushed DynamicFilter Notifications.").endl();
 
             TestCase.assertTrue(setTable1.satisfied(LogicalClock.DEFAULT.currentStep()));
             TestCase.assertTrue(setTable2.satisfied(LogicalClock.DEFAULT.currentStep()));
             TestCase.assertTrue(dynamicFilter1.satisfied(LogicalClock.DEFAULT.currentStep()));
             TestCase.assertTrue(dynamicFilter2.satisfied(LogicalClock.DEFAULT.currentStep()));
 
-            System.out.println("Checking Composed.");
+            log.debug().append("Checking Composed.").endl();
 
             TestCase.assertFalse(composed.satisfied(LogicalClock.DEFAULT.currentStep()));
 
@@ -359,7 +363,7 @@ public abstract class QueryTableWhereTest {
                 TestCase.assertTrue(flushed);
             }
 
-            System.out.println("Composed flushed.");
+            log.debug().append("Composed flushed.").endl();
 
             TestCase.assertTrue(setTable1.satisfied(LogicalClock.DEFAULT.currentStep()));
             TestCase.assertTrue(setTable2.satisfied(LogicalClock.DEFAULT.currentStep()));
@@ -630,7 +634,7 @@ public abstract class QueryTableWhereTest {
 
         try {
             for (int i = 0; i < 100; i++) {
-                System.out.println("Step = " + i);
+                log.debug().append("Step = " + i).endl();
 
                 UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(
                         () -> GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE,
@@ -780,7 +784,7 @@ public abstract class QueryTableWhereTest {
         final Table filtered = tableToFilter.where(
                 "slowCounter.applyAsInt(X) % 2 == 0", "fastCounter.applyAsInt(X) % 3 == 0");
         final long end = System.currentTimeMillis();
-        System.out.println("Duration: " + (end - start));
+        log.debug().append("Duration: " + (end - start)).endl();
 
         assertTableEquals(tableToFilter.where("X%6==0"), filtered);
 
@@ -800,7 +804,7 @@ public abstract class QueryTableWhereTest {
                 caught.setValue(e);
             }
             final long end1 = System.currentTimeMillis();
-            System.out.println("Duration: " + (end1 - start1));
+            log.debug().append("Duration: " + (end1 - start1)).endl();
         });
         t.start();
 
@@ -855,7 +859,7 @@ public abstract class QueryTableWhereTest {
                 ChunkFilter.applyChunkFilter(tableToFilter.getRowSet(), tableToFilter.getColumnSource("X"),
                         false, slowCounter);
         final long end = System.currentTimeMillis();
-        System.out.println("Duration: " + (end - start));
+        log.debug().append("Duration: " + (end - start)).endl();
 
         assertEquals(RowSetFactory.fromRange(0, 999_999), result);
 
@@ -873,7 +877,7 @@ public abstract class QueryTableWhereTest {
                 caught.setValue(e);
             }
             final long end1 = System.currentTimeMillis();
-            System.out.println("Duration: " + (end1 - start1));
+            log.debug().append("Duration: " + (end1 - start1)).endl();
         });
         t.start();
 
@@ -887,8 +891,8 @@ public abstract class QueryTableWhereTest {
             e.printStackTrace();
         }
 
-        System.out.println("Invoked Values: " + slowCounter.invokedValues);
-        System.out.println("Invokes: " + slowCounter.invokes);
+        log.debug().append("Invoked Values: " + slowCounter.invokedValues).endl();
+        log.debug().append("Invokes: " + slowCounter.invokes).endl();
 
         assertTrue(slowCounter.invokedValues < 2_000_000L);
         assertEquals(1 << 20, slowCounter.invokedValues);
@@ -1061,7 +1065,7 @@ public abstract class QueryTableWhereTest {
         final Table backwards = table.sort("CH");
 
         showWithRowSet(sorted);
-        System.out.println("Pivot: " + array[5]);
+        log.debug().append("Pivot: " + array[5]).endl();
 
         final Table rangeFiltered = sorted.where("CH < '" + array[5] + "'");
         final Table standardFiltered = sorted.where("'" + array[5] + "' > CH");
