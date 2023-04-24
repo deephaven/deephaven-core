@@ -1842,7 +1842,7 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "failed to color format rows conditionally.") from e
 
-    def format_databar(self, columnName: str, valueColumn: str, min: float, max: float, axis: str = "proportional",
+    def format_databar(self, columnName: str, valueColumn: str, min: float = None, max: float = None, axis: str = "proportional",
                       positiveColor: str = '#6c757d', negativeColor: str = '#9cdb6c', valuePlacement: str = 'beside',
                       direction: str = 'LTR', opacity: float = 1) -> Table:
         try:

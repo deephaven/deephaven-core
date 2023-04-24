@@ -297,15 +297,28 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
     default Table formatDatabar(String columnName, String valueColumn, String axis, Double min, Double max,
             String positiveColor, String negativeColor, String valuePlacement, String direction, Double opacity) {
         String prefix = valueColumn + DATA_BAR_SUFFIX;
-        return this.naturalJoin(
-                this.aggBy(List.of(AggMin(prefix + "_MIN=" + valueColumn),
-                        AggMax(prefix + "_MAX=" + valueColumn)))
-                        .naturalJoin(TableTools.newTable(col(prefix + "_AXIS", axis),
-                                col(prefix + "_POSITIVE_COLOR", positiveColor),
-                                col(prefix + "_NEGATIVE_COLOR", negativeColor),
-                                col(prefix + "_VALUE_PLACEMENT", valuePlacement),
-                                col(prefix + "_DIRECTION", direction), col(prefix + "_OPACITY", opacity)), ""),
+        Table newTable = this;
+
+        if (min == null) {
+            newTable = newTable.naturalJoin(this.aggBy(AggMin(prefix + "_MIN=" + valueColumn)), "");
+        } else {
+            newTable = newTable.naturalJoin(TableTools.newTable(col(prefix + "_MIN", min)), "");
+        }
+
+        if (max == null) {
+            newTable = newTable.naturalJoin(this.aggBy(AggMax(prefix + "_MAX=" + valueColumn)), "");
+        } else {
+            newTable = newTable.naturalJoin(TableTools.newTable(col(prefix + "_MAX", max)), "");
+        }
+
+        return newTable.naturalJoin(
+                TableTools.newTable(col(prefix + "_AXIS", axis),
+                        col(prefix + "_POSITIVE_COLOR", positiveColor),
+                        col(prefix + "_NEGATIVE_COLOR", negativeColor),
+                        col(prefix + "_VALUE_PLACEMENT", valuePlacement),
+                        col(prefix + "_DIRECTION", direction), col(prefix + "_OPACITY", opacity)),
                 "");
+
     }
 
 
