@@ -314,7 +314,8 @@ class TableInterface(ABC):
         return self.table_op_handler(table_op)
 
     def head_by(self, num_rows: int, by: Union[str, List[str]]):
-        """ Perform a head-by aggregation on the table and return the result table.
+        """ Perform a head-by aggregation on the table and return a new table containing the first number of rows
+        for each group.
 
         Args:
             num_rows (int): the number of rows at the beginning of each group
@@ -331,7 +332,8 @@ class TableInterface(ABC):
         return self.table_op_handler(table_op)
 
     def tail_by(self, num_rows: int, by: Union[str, List[str]]):
-        """ Perform a tail-by aggregation on the table and return the result table.
+        """ Perform a tail-by aggregation on the table and return a new table containing the last number of rows
+        for each group.
 
         Args:
             num_rows (int): the number of rows at the end of each group
@@ -347,8 +349,8 @@ class TableInterface(ABC):
         return self.table_op_handler(table_op)
 
     def group_by(self, by: Union[str, List[str]] = None):
-        """ Perform a group-by aggregation on the table and return the result table. After the operation,
-        the columns not in the group-by columns become array-type.
+        """ Perform a group-by aggregation on the table and return a new table containing grouping columns and
+        grouped data, column content is grouped into arrays.
 
         If no group-by column is given, the content of each column is grouped into its own array.
 
@@ -366,12 +368,12 @@ class TableInterface(ABC):
         return self.table_op_handler(table_op)
 
     def ungroup(self, cols: Union[str, List[str]] = None, null_fill: bool = True):
-        """ Perform an ungroup operation on the table and return the result table. The ungroup columns should be of
-        array types.
+        """ Perform an ungroup operation on the table and return a new table in which array columns from the source
+        table are unwrapped into separate rows. The ungroup columns should be of array types.
 
         Args:
             cols (Union[str, List[str]], optional): the array column(s), default is None, meaning all array columns will
-                be ungrouped
+                be ungrouped, default is None, meaning all array columns will be ungrouped
             null_fill (bool, optional): indicates whether null should be used to fill missing cells, default is True
 
         Returns:
@@ -384,7 +386,7 @@ class TableInterface(ABC):
         return self.table_op_handler(table_op)
 
     def first_by(self, by: Union[str, List[str]] = None):
-        """ Perform First-by aggregation on the table and return the result table which contains the first row of each
+        """ Perform First-by aggregation on the table and return a new table which contains the first row of each
         distinct group.
 
         Args:
@@ -401,8 +403,8 @@ class TableInterface(ABC):
         return self.table_op_handler(table_op)
 
     def last_by(self, by: Union[str, List[str]] = None):
-        """ Perform last-by aggregation on the table and return the result table which contains the last row of each
-        distinct group.
+        """ Perform last-by aggregation on the table and return a new table which contains the last row of
+        each distinct group.
 
         Args:
             by (Union[str, List[str]], optional): the group-by column name(s), default is None, meaning grouping
@@ -418,8 +420,8 @@ class TableInterface(ABC):
         return self.table_op_handler(table_op)
 
     def sum_by(self, by: Union[str, List[str]] = None):
-        """ Perform sum-by aggregation on the table and return the result table. Columns not used in the grouping
-        must be of numeric types.
+        """ Perform sum-by aggregation on the table and return a new table containing the sum for each group. Columns
+        not used in the grouping must be of numeric types.
 
         Args:
             by (Union[str, List[str]]): the group-by column name(s), default is None, meaning grouping
@@ -435,8 +437,8 @@ class TableInterface(ABC):
         return self.table_op_handler(table_op)
 
     def avg_by(self, by: Union[str, List[str]] = None):
-        """ Perform avg-by aggregation on the table and return the result table. Columns not used in the grouping must
-        be of numeric types.
+        """ Perform avg-by aggregation on the table and return a new table containing the average for each group.
+        Columns not used in the grouping must be of numeric types.
 
         Args:
             by (Union[str, List[str]], optional): the group-by column name(s), default is None, meaning grouping
@@ -452,8 +454,8 @@ class TableInterface(ABC):
         return self.table_op_handler(table_op)
 
     def std_by(self, by: Union[str, List[str]] = None):
-        """ Perform std-by aggregation on the table and return the result table. Columns not used in the grouping
-        must be of numeric types.
+        """ Perform std-by aggregation on the table and return a new table containing the standard deviation for each
+        group. Columns not used in the grouping must be of numeric types.
 
         Args:
             by (Union[str, List[str]]): the group-by column names(s), default is None, meaning grouping
@@ -469,8 +471,8 @@ class TableInterface(ABC):
         return self.table_op_handler(table_op)
 
     def var_by(self, by: Union[str, List[str]] = None):
-        """ Perform var-by aggregation on the table and return the result table. Columns not used in the grouping
-        must be of numeric types.
+        """ Perform var-by aggregation on the table and return a new table containing the variance for each group.
+        Columns not used in the grouping must be of numeric types.
 
         Args:
             by (Union[str, List[str]], optional): the group-by column name(s), default is None, meaning grouping
@@ -486,8 +488,8 @@ class TableInterface(ABC):
         return self.table_op_handler(table_op)
 
     def median_by(self, by: Union[str, List[str]] = None):
-        """ Perform median-by aggregation on the table and return the result table. Columns not used in the grouping
-        must be of numeric types.
+        """ Perform median-by aggregation on the table and return a new table containing the median for each group.
+        Columns not used in the grouping must be of numeric types.
 
         Args:
             by (Union[str, List[str]], optional): the group-by column name(s), default is None, meaning grouping
@@ -503,8 +505,8 @@ class TableInterface(ABC):
         return self.table_op_handler(table_op)
 
     def min_by(self, by: Union[str, List[str]] = None):
-        """ Perform min-by aggregation on the table and return the result table. Columns not used in the grouping
-        must be of numeric types.
+        """ Perform min-by aggregation on the table and return a new table containing the minimum value for each
+        group. Columns not used in the grouping must be of numeric types.
 
         Args:
             by (Union[str, List[str]], optional): the group-by column name(s), default is None, meaning grouping
@@ -520,8 +522,8 @@ class TableInterface(ABC):
         return self.table_op_handler(table_op)
 
     def max_by(self, by: Union[str, List[str]] = None):
-        """ Perform max-by aggregation on the table and return the result table. Columns not used in the grouping
-        must be of numeric types.
+        """ Perform max-by aggregation on the table and return a new table containing the maximum value for each
+        group. Columns not used in the grouping must be of numeric types.
 
         Args:
             by (Union[str, List[str]], optional): the group-by column name(s), default is None, meaning grouping
@@ -537,8 +539,8 @@ class TableInterface(ABC):
         return self.table_op_handler(table_op)
 
     def count_by(self, col: str, by: Union[str, List[str]] = None):
-        """ Perform count-by aggregation on the table and return the result table. The count of each group is stored in
-        a new column named after the 'col' parameter.
+        """ Perform count-by aggregation on the table and return a new table containing the number of rows for each
+        group. The count of each group is stored in a new column named after the 'col' parameter.
 
         Args:
             col (str): the name of the column to store the counts
@@ -556,7 +558,7 @@ class TableInterface(ABC):
 
     def agg_by(self, aggs: Union[Aggregation, List[Aggregation]], by: Union[str, List[str]]):
         """ Create a new table containing grouping columns and grouped data. The resulting grouped data is defined by
-        the aggregations specified.
+        the aggregation(s) specified.
 
         Args:
             aggs (Union[Aggregation, List[Aggregation]]): the aggregation(s) to be applied
@@ -600,7 +602,11 @@ class TableInterface(ABC):
         return self.table_op_handler(table_op)
 
     def update_by(self, ops: Union[UpdateByOperation, List[UpdateByOperation]], by: Union[str, List[str]]):
-        """ Perform an update-by operation on the table and return the result table.
+        """ Perform an update-by operation on the table and create a table with additional columns calculated from
+        window-based aggregations of columns in this table. The aggregations are defined by the provided operations,
+        which support incremental aggregations over the corresponding rows in the table. The aggregations will
+        apply position or time-based windowing and compute the results over the entire table or each row group as
+        identified by the provided key columns.
 
         Args:
             ops (Union[UpdateByOperatoin, List[UpdateByOperation]]): the UpdateByOperation(s) to be applied
