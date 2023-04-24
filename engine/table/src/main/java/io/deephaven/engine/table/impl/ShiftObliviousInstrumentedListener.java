@@ -7,7 +7,6 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.ShiftObliviousListener;
-import io.deephaven.engine.table.impl.TableUpdateImpl;
 import org.jetbrains.annotations.Nullable;
 
 public abstract class ShiftObliviousInstrumentedListener extends InstrumentedTableListenerBase

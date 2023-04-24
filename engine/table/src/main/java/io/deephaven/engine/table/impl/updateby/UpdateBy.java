@@ -284,8 +284,7 @@ public abstract class UpdateBy {
                     dirtyWindowOperators[winIdx].set(0, windows[winIdx].operators.length);
                 }
                 // Create the proper JobScheduler for the following parallel tasks
-                if (OperationInitializationThreadPool.NUM_THREADS > 1
-                        && !OperationInitializationThreadPool.isInitializationThread()) {
+                if (OperationInitializationThreadPool.canParallelize()) {
                     jobScheduler = new OperationInitializationPoolJobScheduler();
                 } else {
                     jobScheduler = ImmediateJobScheduler.INSTANCE;

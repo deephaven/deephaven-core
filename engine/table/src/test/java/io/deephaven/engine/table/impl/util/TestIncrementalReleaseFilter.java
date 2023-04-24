@@ -9,6 +9,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.select.AutoTuningIncrementalReleaseFilter;
 import io.deephaven.engine.table.impl.select.IncrementalReleaseFilter;
+import io.deephaven.util.annotations.ScriptApi;
 import junit.framework.TestCase;
 
 import java.util.List;
@@ -62,6 +63,7 @@ public class TestIncrementalReleaseFilter extends RefreshingTableTestCase {
         System.out.println("Cycles: " + cycles);
     }
 
+    @SuppressWarnings("unused") // used by testAutoTuneCycle via an update query
     static public <T> T sleepValue(long duration, T retVal) {
         final Object blech = new Object();
         // noinspection SynchronizationOnLocalVariableOrMethodParameter

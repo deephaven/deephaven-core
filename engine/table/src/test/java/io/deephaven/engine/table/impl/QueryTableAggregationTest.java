@@ -1621,7 +1621,7 @@ public class QueryTableAggregationTest {
     }
 
     private void testSumByIncremental(final int size, final int seed, boolean grouped, boolean lotsOfStrings) {
-        try (final SafeCloseable ignored = LivenessScopeStack.open(new LivenessScope(true), true)) {
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
             doTestSumByIncremental(size, seed, grouped, lotsOfStrings);
         }
     }

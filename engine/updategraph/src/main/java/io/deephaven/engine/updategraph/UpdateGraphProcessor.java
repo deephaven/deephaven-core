@@ -10,7 +10,6 @@ import io.deephaven.base.reference.SimpleReference;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.chunk.util.pools.MultiChunkPool;
-import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessManager;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
@@ -768,7 +767,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
      *
      * @see #addNotification(Notification)
      */
-    public void addNotifications(@NotNull final Collection<Notification> notifications) {
+    public void addNotifications(@NotNull final Collection<? extends Notification> notifications) {
         synchronized (pendingNormalNotifications) {
             synchronized (terminalNotifications) {
                 notifications.forEach(this::addNotification);
@@ -1276,7 +1275,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
         }
 
         try (final SafeCloseable ignored = scope == null ? null : LivenessScopeStack.open(scope, releaseScopeOnClose)) {
-            notification.runInContext();
+            notification.run();
             logDependencies().append(Thread.currentThread().getName()).append(": Completed ").append(notification)
                     .endl();
         } catch (final Exception e) {
@@ -1753,8 +1752,6 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
 
         private final WeakReference<Runnable> updateSourceRef;
 
-        private final ExecutionContext executionContext = ExecutionContext.getContextToRecord();
-
         private UpdateSourceRefreshNotification(@NotNull final Runnable updateSource) {
             super(false);
             updateSourceRef = new WeakReference<>(updateSource);
@@ -1789,11 +1786,6 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
         @Override
         public void clear() {
             updateSourceRef.clear();
-        }
-
-        @Override
-        public ExecutionContext getExecutionContext() {
-            return executionContext;
         }
     }
 
