@@ -112,6 +112,22 @@ class TableFactoryTestCase(BaseTestCase):
         t = new_table(cols=cols)
         self.assertEqual(t.size, 2)
 
+    def test_new_table_nulls(self):
+        null_cols = [
+            datetime_col("datetime_col", [None]),
+            string_col("string_col", [None]),
+            char_col("char_col", [None]),
+            bool_col("bool_col", [None]),
+            int_col("int_col", [None]),
+            long_col("long_col", [None]),
+            float_col("float_col", [None]),
+            double_col("double_col", [None]),
+            byte_col("byte_col", [None]),
+            short_col("short_col", [None]),
+        ]
+        t = new_table(cols=null_cols)
+        self.assertEqual(t.to_string().count("null"), len(null_cols))
+
     def test_input_column_error(self):
         j_al = JArrayList()
 
