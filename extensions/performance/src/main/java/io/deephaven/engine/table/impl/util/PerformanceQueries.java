@@ -3,8 +3,10 @@
  */
 package io.deephaven.engine.table.impl.util;
 
+import com.google.auto.service.AutoService;
 import io.deephaven.engine.table.Table;
 
+import io.deephaven.engine.util.GroovyDeephavenSession;
 import io.deephaven.util.annotations.ScriptApi;
 
 import java.util.Map;
@@ -154,5 +156,18 @@ public class PerformanceQueries {
     @ScriptApi
     public static Map<String, Object> serverStateWithPlots() {
         return PerformanceQueriesGeneral.serverStateWithPlots(TableLoggers.serverStateLog());
+    }
+
+    @AutoService(GroovyDeephavenSession.InitScript.class)
+    public static class InitScript implements GroovyDeephavenSession.InitScript {
+        @Override
+        public String getScriptPath() {
+            return "groovy/1-performance.groovy";
+        }
+
+        @Override
+        public int priority() {
+            return 1;
+        }
     }
 }

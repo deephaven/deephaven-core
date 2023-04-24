@@ -825,19 +825,6 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
     }
 
     @AutoService(InitScript.class)
-    public static class PerformanceQueries implements InitScript {
-        @Override
-        public String getScriptPath() {
-            return "groovy/1-performance.groovy";
-        }
-
-        @Override
-        public int priority() {
-            return 1;
-        }
-    }
-
-    @AutoService(InitScript.class)
     public static class Calendars implements InitScript {
         @Override
         public String getScriptPath() {
