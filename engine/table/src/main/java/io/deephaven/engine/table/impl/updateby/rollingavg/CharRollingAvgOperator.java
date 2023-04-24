@@ -20,11 +20,11 @@ public class CharRollingAvgOperator extends BaseDoubleUpdateByOperator {
     // endregion extra-fields
 
     protected class Context extends BaseDoubleUpdateByOperator.Context {
-        protected CharChunk<? extends Values> charInfluencerValuesChunk;
+        protected CharChunk<? extends Values> influencerValuesChunk;
         protected CharRingBuffer charWindowValues;
 
-        protected Context(final int chunkSize) {
-            super(chunkSize);
+        protected Context(final int affectedChunkSize, final int influencerChunkSize) {
+            super(affectedChunkSize);
             charWindowValues = new CharRingBuffer(BUFFER_INITIAL_CAPACITY, true);
         }
 
@@ -35,8 +35,8 @@ public class CharRollingAvgOperator extends BaseDoubleUpdateByOperator {
         }
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            charInfluencerValuesChunk = valuesChunk.asCharChunk();
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
+            influencerValuesChunk = valueChunks[0].asCharChunk();
         }
 
         @Override
@@ -44,7 +44,7 @@ public class CharRollingAvgOperator extends BaseDoubleUpdateByOperator {
             charWindowValues.ensureRemaining(count);
 
             for (int ii = 0; ii < count; ii++) {
-                final char val = charInfluencerValuesChunk.get(pos + ii);
+                final char val = influencerValuesChunk.get(pos + ii);
                 charWindowValues.addUnsafe(val);
 
                 // increase the running sum
@@ -95,8 +95,8 @@ public class CharRollingAvgOperator extends BaseDoubleUpdateByOperator {
 
     @NotNull
     @Override
-    public UpdateByOperator.Context makeUpdateContext(final int chunkSize) {
-        return new Context(chunkSize);
+    public UpdateByOperator.Context makeUpdateContext(final int affectedChunkSize, final int influencerChunkSize) {
+        return new Context(affectedChunkSize, influencerChunkSize);
     }
 
     public CharRollingAvgOperator(@NotNull final MatchPair pair,

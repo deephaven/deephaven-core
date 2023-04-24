@@ -27,7 +27,7 @@ public class BigDecimalEMOperator extends BaseBigNumberEMOperator<BigDecimal> {
                 Chunk<? extends Values>[] valueChunkArr,
                 LongChunk<? extends Values> tsChunk,
                 int len) {
-            setValuesChunk(valueChunkArr[0]);
+            setValueChunks(valueChunkArr);
 
             // chunk processing
             if (timestampColumnName == null) {
@@ -116,7 +116,7 @@ public class BigDecimalEMOperator extends BaseBigNumberEMOperator<BigDecimal> {
 
     @NotNull
     @Override
-    public UpdateByOperator.Context makeUpdateContext(final int chunkSize) {
-        return new Context(chunkSize);
+    public UpdateByOperator.Context makeUpdateContext(final int affectedChunkSize, final int influencerChunkSize) {
+        return new Context(affectedChunkSize);
     }
 }

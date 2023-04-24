@@ -21,8 +21,8 @@ public class ObjectRollingCountOperator extends BaseLongUpdateByOperator {
         protected ObjectChunk<Object, ? extends Values> influencerValuesChunk;
         protected ByteRingBuffer buffer;
 
-        protected Context(final int chunkSize) {
-            super(chunkSize);
+        protected Context(final int affectedChunkSize, final int influencerChunkSize) {
+            super(affectedChunkSize);
             buffer = new ByteRingBuffer(BUFFER_INITIAL_CAPACITY, true);
         }
 
@@ -33,8 +33,8 @@ public class ObjectRollingCountOperator extends BaseLongUpdateByOperator {
         }
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            influencerValuesChunk = valuesChunk.asObjectChunk();
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
+            influencerValuesChunk = valueChunks[0].asObjectChunk();
         }
 
         @Override
@@ -81,8 +81,8 @@ public class ObjectRollingCountOperator extends BaseLongUpdateByOperator {
 
     @NotNull
     @Override
-    public UpdateByOperator.Context makeUpdateContext(final int chunkSize) {
-        return new Context(chunkSize);
+    public UpdateByOperator.Context makeUpdateContext(final int affectedChunkSize, final int influencerChunkSize) {
+        return new Context(affectedChunkSize, influencerChunkSize);
     }
 
     public ObjectRollingCountOperator(@NotNull final MatchPair pair,

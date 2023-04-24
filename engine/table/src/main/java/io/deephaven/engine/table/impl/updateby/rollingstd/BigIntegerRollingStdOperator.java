@@ -27,8 +27,8 @@ public class BigIntegerRollingStdOperator extends BaseObjectUpdateByOperator<Big
         protected AggregatingObjectRingBuffer<BigDecimal> valueBuffer;
         protected AggregatingObjectRingBuffer<BigDecimal> valueSquareBuffer;
 
-        protected Context(final int chunkSize) {
-            super(chunkSize);
+        protected Context(final int affectedChunkSize, final int influencerChunkSize) {
+            super(affectedChunkSize);
             valueBuffer = new AggregatingObjectRingBuffer<>(BUFFER_INITIAL_CAPACITY, BigDecimal.ZERO,
                     BigDecimal::add,
                     ((a, b) -> {
@@ -62,8 +62,8 @@ public class BigIntegerRollingStdOperator extends BaseObjectUpdateByOperator<Big
         }
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            influencerValuesChunk = valuesChunk.asObjectChunk();
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
+            influencerValuesChunk = valueChunks[0].asObjectChunk();
         }
 
         @Override
@@ -143,8 +143,8 @@ public class BigIntegerRollingStdOperator extends BaseObjectUpdateByOperator<Big
 
     @NotNull
     @Override
-    public UpdateByOperator.Context makeUpdateContext(final int chunkSize) {
-        return new Context(chunkSize);
+    public UpdateByOperator.Context makeUpdateContext(final int affectedChunkSize, final int influencerChunkSize) {
+        return new Context(affectedChunkSize, influencerChunkSize);
     }
 
     public BigIntegerRollingStdOperator(@NotNull final MatchPair pair,

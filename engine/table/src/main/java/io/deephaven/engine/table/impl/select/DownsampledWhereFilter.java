@@ -48,7 +48,7 @@ public class DownsampledWhereFilter extends WhereFilterImpl {
 
     /**
      * Creates a {@link DownsampledWhereFilter} which can be used in a .where clause to downsample time series rows.
-     * 
+     *
      * @param column {@link DateTime} column to use for filtering.
      * @param binSize Size in nanoseconds for the time bins. Constants like {@link DateTimeUtils#MINUTE} are typically
      *        used.
@@ -62,7 +62,7 @@ public class DownsampledWhereFilter extends WhereFilterImpl {
 
     /**
      * Creates a {@link DownsampledWhereFilter} which can be used in a .where clause to downsample time series rows.
-     * 
+     *
      * @param column {@link DateTime} column to use for filtering.
      * @param binSize Size in nanoseconds for the time bins. Constants like {@link DateTimeUtils#MINUTE} are typically
      *        used.
@@ -150,5 +150,10 @@ public class DownsampledWhereFilter extends WhereFilterImpl {
     @Override
     public DownsampledWhereFilter copy() {
         return new DownsampledWhereFilter(column, binSize, order);
+    }
+
+    @Override
+    public boolean permitParallelization() {
+        return false;
     }
 }

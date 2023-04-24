@@ -141,4 +141,9 @@ public class UnsortedClockFilter extends ClockFilter {
         }
         return addedBuilder == null ? null : addedBuilder.build();
     }
+
+    @Override
+    public boolean permitParallelization() {
+        return false;
+    }
 }

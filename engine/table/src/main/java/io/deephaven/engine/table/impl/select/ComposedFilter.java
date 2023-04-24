@@ -122,4 +122,9 @@ public abstract class ComposedFilter extends WhereFilterLivenessArtifactImpl imp
     public int hashCode() {
         return Arrays.hashCode(componentFilters);
     }
+
+    @Override
+    public boolean permitParallelization() {
+        return Arrays.stream(componentFilters).allMatch(WhereFilter::permitParallelization);
+    }
 }

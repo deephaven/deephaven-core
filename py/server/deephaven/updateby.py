@@ -1165,3 +1165,4 @@ def rolling_std_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[i
         return UpdateByOperation(j_updateby_op=_JUpdateByOperation.RollingStd(ts_col, rev_time, fwd_time, *cols))
     except Exception as e:
         raise DHError(e, "failed to create a rolling standard deviation (time) UpdateByOperation.") from e
+

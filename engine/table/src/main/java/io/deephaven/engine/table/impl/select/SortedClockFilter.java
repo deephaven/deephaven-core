@@ -81,4 +81,9 @@ public class SortedClockFilter extends ClockFilter {
                 range.consumeKeysAndAppendAdded(nanosColumnSource, clock.currentTimeNanos(), null);
         return addedBuilder == null ? null : addedBuilder.build();
     }
+
+    @Override
+    public boolean permitParallelization() {
+        return false;
+    }
 }

@@ -31,8 +31,8 @@ public class ByteRollingStdOperator extends BaseDoubleUpdateByOperator {
         protected AggregatingDoubleRingBuffer valueBuffer;
         protected AggregatingDoubleRingBuffer valueSquareBuffer;
 
-        protected Context(final int chunkSize) {
-            super(chunkSize);
+        protected Context(final int affectedChunkSize, final int influencerChunkSize) {
+            super(affectedChunkSize);
             valueBuffer = new AggregatingDoubleRingBuffer(BUFFER_INITIAL_CAPACITY, 0.0,
                     Double::sum,
                     ((a, b) -> {
@@ -66,8 +66,8 @@ public class ByteRollingStdOperator extends BaseDoubleUpdateByOperator {
         }
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            influencerValuesChunk = valuesChunk.asByteChunk();
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
+            influencerValuesChunk = valueChunks[0].asByteChunk();
         }
 
         @Override
@@ -132,8 +132,8 @@ public class ByteRollingStdOperator extends BaseDoubleUpdateByOperator {
 
     @NotNull
     @Override
-    public UpdateByOperator.Context makeUpdateContext(final int chunkSize) {
-        return new Context(chunkSize);
+    public UpdateByOperator.Context makeUpdateContext(final int affectedChunkSize, final int influencerChunkSize) {
+        return new Context(affectedChunkSize, influencerChunkSize);
     }
 
     public ByteRollingStdOperator(@NotNull final MatchPair pair,

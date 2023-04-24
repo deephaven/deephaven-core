@@ -155,6 +155,13 @@ public interface WhereFilter extends Filter {
     }
 
     /**
+     * @return if this filter can be applied in parallel
+     */
+    default boolean permitParallelization() {
+        return true;
+    }
+
+    /**
      * Set the RecomputeListener that should be notified if results based on this filter must be recomputed.
      *
      * @param result the listener to notify.
