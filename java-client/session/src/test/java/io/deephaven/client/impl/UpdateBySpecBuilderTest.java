@@ -194,13 +194,13 @@ public class UpdateBySpecBuilderTest {
             return null;
         }
 
-        // TODO: add this correctly (DHC #3392)
+        // TODO: add this correctly (DHC #3666)
         // @Override
         public UpdateByColumn.UpdateBySpec visit(RollingStdSpec spec) {
             return null;
         }
 
-        // TODO: add this correctly
+        // TODO: add this correctly (DHC #3666)
         @Override
         public UpdateByColumn.UpdateBySpec visit(RollingWAvgSpec spec) {
             return null;
