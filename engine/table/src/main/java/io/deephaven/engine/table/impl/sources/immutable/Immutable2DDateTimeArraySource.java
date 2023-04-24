@@ -25,7 +25,7 @@ public class Immutable2DDateTimeArraySource extends Immutable2DNanosBasedTimeArr
 
     @Override
     protected DateTime makeValue(long nanos) {
-        return DateTimeUtils.nanosToTime(nanos);
+        return DateTimeUtils.nanosToDateTime(nanos);
     }
 
     @Override

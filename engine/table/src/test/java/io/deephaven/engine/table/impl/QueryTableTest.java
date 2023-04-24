@@ -840,8 +840,8 @@ public class QueryTableTest extends QueryTableTestBase {
 
         final int size = 500;
 
-        final DateTime startTime = DateTimeUtils.convertDateTime("2019-04-30T16:00:00 NY");
-        final DateTime endTime = DateTimeUtils.convertDateTime("2019-04-30T16:01:00 NY");
+        final DateTime startTime = DateTimeUtils.toDateTime("2019-04-30T16:00:00 NY");
+        final DateTime endTime = DateTimeUtils.toDateTime("2019-04-30T16:01:00 NY");
 
         final ColumnInfo<?, ?>[] columnInfo;
         final QueryTable table = getTable(size, random,
@@ -901,8 +901,8 @@ public class QueryTableTest extends QueryTableTestBase {
 
         final int size = 500;
 
-        final DateTime startTime = DateTimeUtils.convertDateTime("2019-04-30T16:00:00 NY");
-        final DateTime endTime = DateTimeUtils.convertDateTime("2019-04-30T16:01:00 NY");
+        final DateTime startTime = DateTimeUtils.toDateTime("2019-04-30T16:00:00 NY");
+        final DateTime endTime = DateTimeUtils.toDateTime("2019-04-30T16:01:00 NY");
 
         final ColumnInfo<?, ?>[] columnInfo;
         final QueryTable table = getTable(size, random,
@@ -2221,10 +2221,10 @@ public class QueryTableTest extends QueryTableTestBase {
     public void testDateTimeColumns() {
         final QueryTable queryTable = testRefreshingTable(
                 col("Sym", "aa", "bc", "aa", "aa"),
-                col("Timestamp", DateTimeUtils.currentTime(),
-                        DateTimeUtils.currentTime(),
-                        DateTimeUtils.currentTime(),
-                        DateTimeUtils.currentTime()));
+                col("Timestamp", DateTimeUtils.now(),
+                        DateTimeUtils.now(),
+                        DateTimeUtils.now(),
+                        DateTimeUtils.now()));
         assertEquals(queryTable.groupBy("Sym").getDefinition().getColumn("Timestamp").getComponentType(),
                 DateTime.class);
         show(queryTable.update("x = Timestamp_[0]"));
@@ -2891,7 +2891,7 @@ public class QueryTableTest extends QueryTableTestBase {
                 ColumnDefinition.ofBoolean("Truthiness"));
 
         final String[] syms = new String[] {"Apple", "Banana", "Cantaloupe"};
-        final DateTime baseTime = DateTimeUtils.convertDateTime("2019-04-11T09:30 NY");
+        final DateTime baseTime = DateTimeUtils.toDateTime("2019-04-11T09:30 NY");
         final long[] dateOffset = new long[] {0, 5, 10, 15, 1, 6, 11, 16, 2, 7};
         final Boolean[] booleans = new Boolean[] {true, false, null, true, false, null, true, false, null, true, false};
         QueryScope.addParam("syms", syms);

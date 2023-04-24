@@ -517,11 +517,11 @@ public class WhereFilterFactory {
             ZonedDateTime dateUpper = null;
             try {
                 // Was it a full date?
-                dateLower = DateTimeUtils.getZonedDateTime(DateTimeUtils.convertDateTime(valString));
+                dateLower = DateTimeUtils.getZonedDateTime(DateTimeUtils.toDateTime(valString));
             } catch (RuntimeException ignored) {
                 try {
                     // Maybe it was just a TOD?
-                    long time = DateTimeUtils.convertTime(valString);
+                    long time = DateTimeUtils.toNanos(valString);
                     dateLower =
                             DateTimeUtils.getZonedDateTime(DateTime.nowMillis()).truncatedTo(ChronoUnit.DAYS).plus(time,
                                     ChronoUnit.NANOS);
@@ -535,9 +535,9 @@ public class WhereFilterFactory {
             }
 
             this.dateUpper =
-                    dateUpper == null ? null : DateTimeUtils.millisToTime(dateUpper.toInstant().toEpochMilli());
+                    dateUpper == null ? null : DateTimeUtils.millisToDateTime(dateUpper.toInstant().toEpochMilli());
             this.dateLower =
-                    dateLower == null ? null : DateTimeUtils.millisToTime(dateLower.toInstant().toEpochMilli());
+                    dateLower == null ? null : DateTimeUtils.millisToDateTime(dateLower.toInstant().toEpochMilli());
         }
     }
 }

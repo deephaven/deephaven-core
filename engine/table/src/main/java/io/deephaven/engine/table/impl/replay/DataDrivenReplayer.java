@@ -74,7 +74,7 @@ public class DataDrivenReplayer extends Replayer {
 
     @Override
     public void setTime(long updatedTime) {
-        currentTime = DateTimeUtils.millisToTime(Math.max(updatedTime, currentTime.getMillis()));
+        currentTime = DateTimeUtils.millisToDateTime(Math.max(updatedTime, currentTime.getMillis()));
     }
 
     @Override

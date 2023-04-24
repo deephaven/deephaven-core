@@ -49,6 +49,6 @@ public class DateColumnGenerator implements ColumnGenerator<DateTime> {
     }
 
     public DateTime get() {
-        return DateTimeUtils.nanosToTime(gen.getLong());
+        return DateTimeUtils.nanosToDateTime(gen.getLong());
     }
 }

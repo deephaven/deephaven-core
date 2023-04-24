@@ -57,7 +57,7 @@ public class ToDateTimePageFromInt96<ATTR extends Any> implements ToPage<ATTR, l
      * @param timeZone
      */
     public static void setReferenceTimeZone(@NotNull final String timeZone) {
-        offset = DateTimeUtils.nanosOfDay(DateTimeUtils.convertDateTime("1970-01-01T00:00:00 " + timeZone), TimeZone.TZ_UTC);
+        offset = DateTimeUtils.nanosOfDay(DateTimeUtils.toDateTime("1970-01-01T00:00:00 " + timeZone), TimeZone.TZ_UTC);
     }
 
     @Override
@@ -105,7 +105,7 @@ public class ToDateTimePageFromInt96<ATTR extends Any> implements ToPage<ATTR, l
 
         final int resultLength = result.length;
         for (int ri = 0; ri < resultLength; ++ri) {
-            to[ri] = DateTimeUtils.nanosToTime(result[ri]);
+            to[ri] = DateTimeUtils.nanosToDateTime(result[ri]);
         }
 
         return new ObjectVectorDirect<>(to);

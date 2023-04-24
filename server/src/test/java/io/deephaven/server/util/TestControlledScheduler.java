@@ -106,7 +106,7 @@ public class TestControlledScheduler extends ClockNanoBase implements Scheduler 
      * @return a DateTime representing {@code now + delayInMs}
      */
     public DateTime timeAfterMs(final long delayInMs) {
-        return DateTimeUtils.nanosToTime(currentTimeInNs + DateTimeUtils.millisToNanos(delayInMs));
+        return DateTimeUtils.nanosToDateTime(currentTimeInNs + DateTimeUtils.millisToNanos(delayInMs));
     }
 
     @Override
@@ -116,12 +116,12 @@ public class TestControlledScheduler extends ClockNanoBase implements Scheduler 
 
     @Override
     public void runAtTime(long epochMillis, @NotNull Runnable command) {
-        workQueue.add(new Pair<>(DateTimeUtils.millisToTime(epochMillis), command));
+        workQueue.add(new Pair<>(DateTimeUtils.millisToDateTime(epochMillis), command));
     }
 
     @Override
     public void runAfterDelay(final long delayMs, final @NotNull Runnable command) {
-        workQueue.add(new Pair<>(DateTimeUtils.nanosToTime(currentTimeInNs + delayMs * 1_000_000L), command));
+        workQueue.add(new Pair<>(DateTimeUtils.nanosToDateTime(currentTimeInNs + delayMs * 1_000_000L), command));
     }
 
     @Override

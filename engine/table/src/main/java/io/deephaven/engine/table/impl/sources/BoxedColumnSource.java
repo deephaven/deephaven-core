@@ -17,7 +17,6 @@ import io.deephaven.engine.rowset.RowSequence;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.Instant;
-import java.time.ZonedDateTime;
 
 /**
  * {@link ColumnSource} implementation for explicitly boxing a primitive into a more complex type, e.g. {@code byte} as
@@ -135,12 +134,12 @@ public abstract class BoxedColumnSource<DATA_TYPE> extends AbstractColumnSource<
 
         @Override
         public DateTime get(final long rowKey) {
-            return DateTimeUtils.nanosToTime(originalSource.getLong(rowKey));
+            return DateTimeUtils.nanosToDateTime(originalSource.getLong(rowKey));
         }
 
         @Override
         public DateTime getPrev(final long rowKey) {
-            return DateTimeUtils.nanosToTime(originalSource.getPrevLong(rowKey));
+            return DateTimeUtils.nanosToDateTime(originalSource.getPrevLong(rowKey));
         }
 
         @Override
@@ -152,7 +151,7 @@ public abstract class BoxedColumnSource<DATA_TYPE> extends AbstractColumnSource<
 
             final int sourceSize = typedSource.size();
             for (int pi = 0; pi < sourceSize; ++pi) {
-                typedDestination.set(pi, DateTimeUtils.nanosToTime(typedSource.get(pi)));
+                typedDestination.set(pi, DateTimeUtils.nanosToDateTime(typedSource.get(pi)));
             }
             typedDestination.setSize(sourceSize);
         }

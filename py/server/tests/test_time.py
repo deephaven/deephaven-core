@@ -101,6 +101,16 @@ class TimeTestCase(BaseTestCase):
         self.assertIn(day_of_year(dt, TimeZone.MT), range(1, 366))
         self.assertEqual(day_of_year(None, TimeZone.MT), NULL_INT)
 
+    def test_diff_days(self):
+        dt1 = now()
+        dt2 = plus_nanos(dt1, 2*DAY)
+        self.assertGreaterEqual(diff_days(dt2, dt1), 1.9)
+
+    def test_diff_years(self):
+        dt1 = now()
+        dt2 = plus_nanos(dt1, 2*YEAR)
+        self.assertGreaterEqual(diff_years(dt2, dt1), 1.9)
+
     def test_format_datetime(self):
         dt = now()
         self.assertIn(TimeZone.SYD.name, format_datetime(dt, TimeZone.SYD))

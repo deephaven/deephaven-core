@@ -44,10 +44,10 @@ import java.util.function.Function;
 
 public class TestReinterpretedColumn extends RefreshingTableTestCase {
     final int ROW_COUNT = 60;
-    private final long baseLongTime = DateTimeUtils.convertDateTime("2021-10-20T09:30:00.000 NY").getNanos();
-    private final DateTime baseDateTime = DateTimeUtils.convertDateTime("2021-10-19T10:30:00.000 NY");
+    private final long baseLongTime = DateTimeUtils.toDateTime("2021-10-20T09:30:00.000 NY").getNanos();
+    private final DateTime baseDateTime = DateTimeUtils.toDateTime("2021-10-19T10:30:00.000 NY");
     private final ZonedDateTime baseZDT = ZonedDateTime.of(2021, 10, 18, 11, 30, 0, 0, ZoneId.of("America/New_York"));
-    private final Instant baseInstant = DateTimeUtils.convertDateTime("2021-10-17T12:30:00.000 NY").getInstant();
+    private final Instant baseInstant = DateTimeUtils.toDateTime("2021-10-17T12:30:00.000 NY").getInstant();
 
     private QueryTable baseTable;
     private QueryTable sparseBaseTable;
@@ -89,7 +89,7 @@ public class TestReinterpretedColumn extends RefreshingTableTestCase {
         for (int ii = 0; ii < ROW_COUNT; ii++) {
             final long tOff = ii * 60 * 1_000_000_000L;
             longSource.set(ii, Long.valueOf(baseLongTime + tOff));
-            dtSource.set(ii, DateTimeUtils.nanosToTime(baseDateTime.getNanos() + tOff));
+            dtSource.set(ii, DateTimeUtils.nanosToDateTime(baseDateTime.getNanos() + tOff));
             iSource.set(ii, DateTimeUtils.makeInstant(DateTimeUtils.toEpochNano(baseInstant) + tOff));
             zdtSource.set(ii, DateTimeUtils.makeZonedDateTime(DateTimeUtils.toEpochNano(baseZDT) + tOff,
                     ZoneId.of("America/New_York")));

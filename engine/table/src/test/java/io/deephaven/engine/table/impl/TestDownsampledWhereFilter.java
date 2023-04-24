@@ -11,7 +11,6 @@ import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.select.DownsampledWhereFilter;
 import io.deephaven.util.SafeCloseable;
-import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -39,8 +38,8 @@ public class TestDownsampledWhereFilter {
         int size = 1000;
 
         final QueryTable table = getTable(false, size, random, initColumnInfos(new String[] {"Timestamp", "doubleCol"},
-                new SortedDateTimeGenerator(DateTimeUtils.convertDateTime("2015-09-11T09:30:00 NY"),
-                        DateTimeUtils.convertDateTime("2015-09-11T10:00:00 NY")),
+                new SortedDateTimeGenerator(DateTimeUtils.toDateTime("2015-09-11T09:30:00 NY"),
+                        DateTimeUtils.toDateTime("2015-09-11T10:00:00 NY")),
                 new DoubleGenerator(0, 100)));
 
         Table downsampled = table.where(new DownsampledWhereFilter("Timestamp", 60_000_000_000L));
@@ -59,8 +58,8 @@ public class TestDownsampledWhereFilter {
         int size = 1000;
 
         final QueryTable table = getTable(false, size, random, initColumnInfos(new String[] {"Timestamp", "doubleCol"},
-                new SortedDateTimeGenerator(DateTimeUtils.convertDateTime("2015-09-11T09:30:00 NY"),
-                        DateTimeUtils.convertDateTime("2015-09-11T10:00:00 NY")),
+                new SortedDateTimeGenerator(DateTimeUtils.toDateTime("2015-09-11T09:30:00 NY"),
+                        DateTimeUtils.toDateTime("2015-09-11T10:00:00 NY")),
                 new DoubleGenerator(0, 100)));
 
         Table downsampled = table.where(new DownsampledWhereFilter("Timestamp", 60_000_000_000L,

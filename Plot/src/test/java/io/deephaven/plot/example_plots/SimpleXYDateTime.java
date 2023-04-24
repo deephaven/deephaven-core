@@ -16,15 +16,15 @@ import static io.deephaven.plot.PlottingConvenience.plot;
 public class SimpleXYDateTime {
     public static void main(String[] args) {
 
-        final long dateTime = DateTimeUtils.convertDateTime("2018-02-01T09:30:00 NY").getNanos();
-        final DateTime[] dates = new DateTime[] {DateTimeUtils.nanosToTime(dateTime),
-                DateTimeUtils.nanosToTime(dateTime + DateTimeUtils.HOUR),
-                DateTimeUtils.nanosToTime(dateTime + 2 * DateTimeUtils.HOUR),
-                DateTimeUtils.nanosToTime(dateTime + 3 * DateTimeUtils.HOUR),
-                DateTimeUtils.nanosToTime(dateTime + 4 * DateTimeUtils.HOUR),
-                DateTimeUtils.nanosToTime(dateTime + 5 * DateTimeUtils.HOUR),
-                DateTimeUtils.nanosToTime(dateTime + 6 * DateTimeUtils.HOUR),
-                DateTimeUtils.nanosToTime(dateTime + 6 * DateTimeUtils.HOUR + 30 * DateTimeUtils.MINUTE),
+        final long dateTime = DateTimeUtils.toDateTime("2018-02-01T09:30:00 NY").getNanos();
+        final DateTime[] dates = new DateTime[] {DateTimeUtils.nanosToDateTime(dateTime),
+                DateTimeUtils.nanosToDateTime(dateTime + DateTimeUtils.HOUR),
+                DateTimeUtils.nanosToDateTime(dateTime + 2 * DateTimeUtils.HOUR),
+                DateTimeUtils.nanosToDateTime(dateTime + 3 * DateTimeUtils.HOUR),
+                DateTimeUtils.nanosToDateTime(dateTime + 4 * DateTimeUtils.HOUR),
+                DateTimeUtils.nanosToDateTime(dateTime + 5 * DateTimeUtils.HOUR),
+                DateTimeUtils.nanosToDateTime(dateTime + 6 * DateTimeUtils.HOUR),
+                DateTimeUtils.nanosToDateTime(dateTime + 6 * DateTimeUtils.HOUR + 30 * DateTimeUtils.MINUTE),
         };
 
         final double[] data = new double[] {1, 2, 3, 4, 5, 6, 7, 8};

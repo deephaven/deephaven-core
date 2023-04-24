@@ -24,7 +24,7 @@ public class DateTimeArraySource extends NanosBasedTimeArraySource<DateTime>
 
     @Override
     protected DateTime makeValue(long nanos) {
-        return DateTimeUtils.nanosToTime(nanos);
+        return DateTimeUtils.nanosToDateTime(nanos);
     }
 
     @Override

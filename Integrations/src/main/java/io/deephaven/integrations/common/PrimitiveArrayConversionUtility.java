@@ -60,7 +60,7 @@ public class PrimitiveArrayConversionUtility {
 
     /**
      * Translates a long array to a DateTime array. The mapping will be performed according to
-     * {@link DateTimeUtils#nanosToTime(long)}. This is the (psuedo)inverse of `translateArrayLongToDateTime`.
+     * {@link DateTimeUtils#nanosToDateTime(long)}. This is the (psuedo)inverse of `translateArrayLongToDateTime`.
      *
      * @param array - the long array
      * @return the corresponding DateTime array
@@ -68,7 +68,7 @@ public class PrimitiveArrayConversionUtility {
     public static DateTime[] translateArrayLongToDateTime(final long[] array) {
         final DateTime[] out = new DateTime[array.length];
         for (int ai = 0; ai < array.length; ai++) {
-            out[ai] = DateTimeUtils.nanosToTime(array[ai]);
+            out[ai] = DateTimeUtils.nanosToDateTime(array[ai]);
         }
         return out;
     }

@@ -91,17 +91,17 @@ public abstract class QueryScope implements LogOutputAppendable {
                     && stringValue.charAt(stringValue.length() - 1) == '\'') {
                 final String datetimeString = stringValue.substring(1, stringValue.length() - 1);
 
-                final DateTime dateTime = DateTimeUtils.convertDateTimeQuiet(datetimeString);
+                final DateTime dateTime = DateTimeUtils.toDateTimeQuiet(datetimeString);
                 if (dateTime != null) {
                     return dateTime;
                 }
 
-                final long localTime = DateTimeUtils.convertTimeQuiet(datetimeString);
+                final long localTime = DateTimeUtils.toNanosQuiet(datetimeString);
                 if (localTime != QueryConstants.NULL_LONG) {
                     return localTime;
                 }
 
-                final Period period = DateTimeUtils.convertPeriodQuiet(datetimeString);
+                final Period period = DateTimeUtils.toPeriodQuiet(datetimeString);
                 if (period != null) {
                     return period;
                 }

@@ -159,8 +159,8 @@ public class TestDefaultNoHolidayBusinessCalendar extends BaseArrayTestCase {
         assertEquals(noNonBusinessDays.nonBusinessDaysInRange("2010-01-01", "2019-01-01"), new String[0]);
         assertEquals(
                 noNonBusinessDays.diffNonBusinessNanos(
-                        DateTimeUtils.convertDateTime("2010-01-01T01:00:00.000000000 NY"),
-                        DateTimeUtils.convertDateTime("2019-01-01T01:00:00.000000000 NY")),
+                        DateTimeUtils.toDateTime("2010-01-01T01:00:00.000000000 NY"),
+                        DateTimeUtils.toDateTime("2019-01-01T01:00:00.000000000 NY")),
                 0);
         assertEquals(noNonBusinessDays.numberOfNonBusinessDays("2010-01-01", "2019-01-01"), 0);
 

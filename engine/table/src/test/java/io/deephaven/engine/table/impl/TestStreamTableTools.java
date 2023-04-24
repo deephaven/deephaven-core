@@ -34,9 +34,9 @@ public class TestStreamTableTools {
 
     @Test
     public void testStreamToAppendOnlyTable() {
-        final DateTime dt1 = DateTimeUtils.convertDateTime("2021-08-11T8:20:00 NY");
-        final DateTime dt2 = DateTimeUtils.convertDateTime("2021-08-11T8:21:00 NY");
-        final DateTime dt3 = DateTimeUtils.convertDateTime("2021-08-11T11:22:00 NY");
+        final DateTime dt1 = DateTimeUtils.toDateTime("2021-08-11T8:20:00 NY");
+        final DateTime dt2 = DateTimeUtils.toDateTime("2021-08-11T8:21:00 NY");
+        final DateTime dt3 = DateTimeUtils.toDateTime("2021-08-11T11:22:00 NY");
 
         final QueryTable streamTable = TstUtils.testRefreshingTable(i(1).toTracking(), intCol("I", 7),
                 doubleCol("D", Double.NEGATIVE_INFINITY), dateTimeCol("DT", dt1), col("B", Boolean.TRUE));

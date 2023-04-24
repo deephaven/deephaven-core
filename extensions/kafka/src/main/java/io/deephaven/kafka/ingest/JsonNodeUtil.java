@@ -740,7 +740,7 @@ public class JsonNodeUtil {
             final long value = node.asLong();
             return DateTimeUtils.autoEpochToTime(value);
         } else {
-            return DateTimeUtils.convertDateTime(node.asText());
+            return DateTimeUtils.toDateTime(node.asText());
         }
     }
 }

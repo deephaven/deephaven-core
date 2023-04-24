@@ -72,7 +72,7 @@ public final class TimeTable extends QueryTable implements Runnable {
         }
 
         public Builder startTime(String startTime) {
-            this.startTime = DateTimeUtils.convertDateTime(startTime);
+            this.startTime = DateTimeUtils.toDateTime(startTime);
             return this;
         }
 

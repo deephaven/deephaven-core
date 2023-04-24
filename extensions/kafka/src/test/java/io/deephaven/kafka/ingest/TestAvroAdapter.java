@@ -96,8 +96,8 @@ public class TestAvroAdapter {
                 int.class, long.class};
         final TableDefinition definition = TableDefinition.from(Arrays.asList(names), Arrays.asList(types));
 
-        final DateTime dt1 = DateTimeUtils.convertDateTime("2021-08-23T12:00:00.123456789 NY");
-        final DateTime dt2 = DateTimeUtils.convertDateTime("2021-08-23T13:00:00.500600700 NY");
+        final DateTime dt1 = DateTimeUtils.toDateTime("2021-08-23T12:00:00.123456789 NY");
+        final DateTime dt2 = DateTimeUtils.toDateTime("2021-08-23T13:00:00.500600700 NY");
 
         final GenericData.Record genericRecord1 = new GenericData.Record(avroSchema);
         genericRecord1.put("last_name", "LN1");

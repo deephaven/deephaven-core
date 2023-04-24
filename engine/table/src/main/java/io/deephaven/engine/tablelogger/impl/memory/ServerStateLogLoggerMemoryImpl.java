@@ -82,7 +82,7 @@ class ServerStateLogLoggerMemoryImpl extends MemoryTableLogger<ServerStateLogLog
                 final short intervalUGPCyclesSafePoints,
                 final int intervalUGPCyclesSafePointTimeMicros) throws IOException {
             setRowFlags(flags);
-            this.IntervalStartTime.set(DateTimeUtils.millisToTime(intervalStartTime));
+            this.IntervalStartTime.set(DateTimeUtils.millisToDateTime(intervalStartTime));
             this.IntervalDurationMicros.set(intervalDurationMicros);
             this.TotalMemoryMiB.set(totalMemoryMiB);
             this.FreeMemoryMiB.set(freeMemoryMiB);

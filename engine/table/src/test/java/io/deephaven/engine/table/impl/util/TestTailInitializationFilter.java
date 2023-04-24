@@ -24,8 +24,8 @@ public class TestTailInitializationFilter extends RefreshingTableTestCase {
         builder.appendRange(0, 99);
         builder.appendRange(1000, 1099);
         final long[] data = new long[200];
-        final DateTime baseTime = DateTimeUtils.convertDateTime("2020-08-20T07:00:00 NY");
-        final DateTime baseTime2 = DateTimeUtils.convertDateTime("2020-08-20T06:00:00 NY");
+        final DateTime baseTime = DateTimeUtils.toDateTime("2020-08-20T07:00:00 NY");
+        final DateTime baseTime2 = DateTimeUtils.toDateTime("2020-08-20T06:00:00 NY");
         for (int ii = 0; ii < 100; ii++) {
             data[ii] = baseTime.getNanos() + (DateTimeUtils.secondsToNanos(60) * (ii / 2));
             data[100 + ii] = baseTime2.getNanos() + (DateTimeUtils.secondsToNanos(60) * (ii / 2));
@@ -47,10 +47,10 @@ public class TestTailInitializationFilter extends RefreshingTableTestCase {
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             final DateTime[] data2 = new DateTime[4];
-            data2[0] = DateTimeUtils.convertDateTime("2020-08-20T06:00:00 NY");
-            data2[1] = DateTimeUtils.convertDateTime("2020-08-20T06:30:00 NY");
-            data2[0] = DateTimeUtils.convertDateTime("2020-08-20T07:00:00 NY");
-            data2[1] = DateTimeUtils.convertDateTime("2020-08-20T08:30:00 NY");
+            data2[0] = DateTimeUtils.toDateTime("2020-08-20T06:00:00 NY");
+            data2[1] = DateTimeUtils.toDateTime("2020-08-20T06:30:00 NY");
+            data2[0] = DateTimeUtils.toDateTime("2020-08-20T07:00:00 NY");
+            data2[1] = DateTimeUtils.toDateTime("2020-08-20T08:30:00 NY");
             final RowSet newRowSet = RowSetFactory.fromKeys(100, 101, 1100, 1101);
             input.getRowSet().writableCast().insert(newRowSet);
             ((DateTimeTestSource) input.<DateTime>getColumnSource("Timestamp")).add(newRowSet, data2);

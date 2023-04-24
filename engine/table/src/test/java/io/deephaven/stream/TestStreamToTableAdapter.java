@@ -251,11 +251,11 @@ public class TestStreamToTableAdapter {
         wic.set(2, BooleanUtils.booleanAsByte(null));
         final WritableLongChunk<Values> wlc = WritableLongChunk.makeWritableChunk(3);
         chunks[2] = wlc;
-        final DateTime dt1 = DateTimeUtils.convertDateTime("2021-04-28T12:00:00 NY");
+        final DateTime dt1 = DateTimeUtils.toDateTime("2021-04-28T12:00:00 NY");
         wlc.set(0, dt1.getNanos());
-        final DateTime dt2 = DateTimeUtils.convertDateTime("2012-08-25T12:00:00 NY");
+        final DateTime dt2 = DateTimeUtils.toDateTime("2012-08-25T12:00:00 NY");
         wlc.set(1, dt2.getNanos());
-        final DateTime dt3 = DateTimeUtils.convertDateTime("2030-01-20T12:00:00 NY");
+        final DateTime dt3 = DateTimeUtils.toDateTime("2030-01-20T12:00:00 NY");
         wlc.set(2, dt3.getNanos());
 
         adapter.accept(chunks);

@@ -33,7 +33,7 @@ import java.util.function.Function;
 import static io.deephaven.engine.testutil.GenerateTableUpdates.generateAppends;
 import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.simulateShiftAwareStep;
 import static io.deephaven.function.Basic.isNull;
-import static io.deephaven.time.DateTimeUtils.convertDateTime;
+import static io.deephaven.time.DateTimeUtils.toDateTime;
 
 @Category(OutOfBandTest.class)
 public class TestRollingAvg extends BaseUpdateByTest {
@@ -380,8 +380,8 @@ public class TestRollingAvg extends BaseUpdateByTest {
     private void doTestStaticZeroKeyTimed(final Duration prevTime, final Duration postTime) {
         final QueryTable t = createTestTable(STATIC_TABLE_SIZE, false, false, false, 0xFFFABBBC,
                 new String[] {"ts", "charCol"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
-                        convertDateTime("2022-03-09T09:00:00.000 NY"),
-                        convertDateTime("2022-03-09T16:30:00.000 NY")),
+                        toDateTime("2022-03-09T09:00:00.000 NY"),
+                        toDateTime("2022-03-09T16:30:00.000 NY")),
                         new CharGenerator('A', 'z', 0.1)}).t;
 
         final Table actual = t.updateBy(UpdateByOperation.RollingAvg("ts", prevTime, postTime, primitiveColumns));
@@ -502,8 +502,8 @@ public class TestRollingAvg extends BaseUpdateByTest {
     private void doTestStaticBucketedTimed(boolean grouped, Duration prevTime, Duration postTime) {
         final QueryTable t = createTestTable(STATIC_TABLE_SIZE, true, grouped, false, 0xFFFABBBC,
                 new String[] {"ts", "charCol"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
-                        convertDateTime("2022-03-09T09:00:00.000 NY"),
-                        convertDateTime("2022-03-09T16:30:00.000 NY")),
+                        toDateTime("2022-03-09T09:00:00.000 NY"),
+                        toDateTime("2022-03-09T16:30:00.000 NY")),
                         new CharGenerator('A', 'z', 0.1)}).t;
 
         final Table actual =
@@ -698,8 +698,8 @@ public class TestRollingAvg extends BaseUpdateByTest {
     private void doTestAppendOnlyTimed(boolean bucketed, Duration prevTime, Duration postTime) {
         final CreateResult result = createTestTable(DYNAMIC_TABLE_SIZE, bucketed, false, true, 0x31313131,
                 new String[] {"ts", "charCol"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
-                        convertDateTime("2022-03-09T09:00:00.000 NY"),
-                        convertDateTime("2022-03-09T16:30:00.000 NY")),
+                        toDateTime("2022-03-09T09:00:00.000 NY"),
+                        toDateTime("2022-03-09T16:30:00.000 NY")),
                         new CharGenerator('A', 'z', 0.1)});
         final QueryTable t = result.t;
         t.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
@@ -858,8 +858,8 @@ public class TestRollingAvg extends BaseUpdateByTest {
     private void doTestTickingTimed(final boolean bucketed, final Duration prevTime, final Duration postTime) {
         final CreateResult result = createTestTable(DYNAMIC_TABLE_SIZE, bucketed, false, true, 0x31313131,
                 new String[] {"ts", "charCol"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
-                        convertDateTime("2022-03-09T09:00:00.000 NY"),
-                        convertDateTime("2022-03-09T16:30:00.000 NY")),
+                        toDateTime("2022-03-09T09:00:00.000 NY"),
+                        toDateTime("2022-03-09T16:30:00.000 NY")),
                         new CharGenerator('A', 'z', 0.1)});
         final QueryTable t = result.t;
 
@@ -919,8 +919,8 @@ public class TestRollingAvg extends BaseUpdateByTest {
 
         final CreateResult result = createTestTable(DYNAMIC_TABLE_SIZE, true, false, true, 0x31313131,
                 new String[] {"ts", "charCol"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
-                        convertDateTime("2022-03-09T09:00:00.000 NY"),
-                        convertDateTime("2022-03-09T16:30:00.000 NY")),
+                        toDateTime("2022-03-09T09:00:00.000 NY"),
+                        toDateTime("2022-03-09T16:30:00.000 NY")),
                         new CharGenerator('A', 'z', 0.1)});
 
         final QueryTable t = result.t;

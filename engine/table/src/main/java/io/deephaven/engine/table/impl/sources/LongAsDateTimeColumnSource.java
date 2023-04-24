@@ -17,6 +17,6 @@ public class LongAsDateTimeColumnSource extends BoxedLongAsTimeSource<DateTime> 
 
     @Override
     protected DateTime makeValue(long val) {
-        return DateTimeUtils.nanosToTime(val);
+        return DateTimeUtils.nanosToDateTime(val);
     }
 }

@@ -309,8 +309,8 @@ public class DefaultBusinessCalendar extends AbstractBusinessCalendar implements
                     final String openDateStr = date.toString() + "T" + open + tz;
                     final String closeDateStr = closeDate.toString() + "T" + close + tz;
 
-                    businessPeriods[i++] = new BusinessPeriod(DateTimeUtils.convertDateTime(openDateStr),
-                            DateTimeUtils.convertDateTime(closeDateStr));
+                    businessPeriods[i++] = new BusinessPeriod(DateTimeUtils.toDateTime(openDateStr),
+                            DateTimeUtils.toDateTime(closeDateStr));
                 }
             }
         }

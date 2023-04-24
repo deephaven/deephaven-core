@@ -64,9 +64,9 @@ public class TestModelFarmUtils extends BaseArrayTestCase {
     }
 
     public void testArrayDateTime() {
-        final DateTime[] target = {DateTimeUtils.convertDateTime("2018-01-11T01:01:01 NY"),
-                DateTimeUtils.convertDateTime("2018-02-11T01:01:01 NY"),
-                DateTimeUtils.convertDateTime("2018-03-11T01:01:01 NY")};
+        final DateTime[] target = {DateTimeUtils.toDateTime("2018-01-11T01:01:01 NY"),
+                DateTimeUtils.toDateTime("2018-02-11T01:01:01 NY"),
+                DateTimeUtils.toDateTime("2018-03-11T01:01:01 NY")};
         final DateTime[] result = ModelFarmUtils.arrayDateTime(new ObjectVectorDirect<>(target));
         assertEquals(target, result);
         assertNull(ModelFarmUtils.arrayDateTime(null));

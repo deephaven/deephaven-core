@@ -329,7 +329,7 @@ public class MatchFilter extends WhereFilterImpl {
                             throw new IllegalArgumentException(
                                     "DateTime literal not enclosed in single-quotes (\"" + str + "\")");
                         }
-                        return DateTimeUtils.convertDateTime(str.substring(1, str.length() - 1));
+                        return DateTimeUtils.toDateTime(str.substring(1, str.length() - 1));
                     }
                 };
             }

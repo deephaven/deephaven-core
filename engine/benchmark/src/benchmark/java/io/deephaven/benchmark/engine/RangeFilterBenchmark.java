@@ -71,8 +71,8 @@ public class RangeFilterBenchmark {
         builder.setSeed(0xDEADBEEF)
                 .addColumn(BenchmarkTools.stringCol("PartCol", 4, 5, 7, 0xFEEDBEEF));
 
-        final DateTime startTime = DateTimeUtils.convertDateTime("2019-01-01T12:00:00 NY");
-        final DateTime endTime = DateTimeUtils.convertDateTime("2019-12-31T12:00:00 NY");
+        final DateTime startTime = DateTimeUtils.toDateTime("2019-01-01T12:00:00 NY");
+        final DateTime endTime = DateTimeUtils.toDateTime("2019-12-31T12:00:00 NY");
 
         switch (filterCol) {
             case "D1":
@@ -103,8 +103,8 @@ public class RangeFilterBenchmark {
             } else {
                 final long midpoint = (startTime.getNanos() + endTime.getNanos()) / 2;
                 final long range = (endTime.getNanos() - startTime.getNanos());
-                lowerBound = DateTimeUtils.nanosToTime(midpoint - (long) (range * (selectivity / 100.0)));
-                upperBound = DateTimeUtils.nanosToTime(midpoint + (long) (range * (selectivity / 100.0)));
+                lowerBound = DateTimeUtils.nanosToDateTime(midpoint - (long) (range * (selectivity / 100.0)));
+                upperBound = DateTimeUtils.nanosToDateTime(midpoint + (long) (range * (selectivity / 100.0)));
             }
 
             assert lowerBound != null;

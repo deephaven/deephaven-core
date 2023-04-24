@@ -45,8 +45,8 @@ public class SimulationClock implements Clock {
     public SimulationClock(@NotNull final String startTime,
             @NotNull final String endTime,
             @NotNull final String stepSize) {
-        this(DateTimeUtils.convertDateTime(startTime), DateTimeUtils.convertDateTime(endTime),
-                DateTimeUtils.convertTime(stepSize));
+        this(DateTimeUtils.toDateTime(startTime), DateTimeUtils.toDateTime(endTime),
+                DateTimeUtils.toNanos(stepSize));
     }
 
     /**

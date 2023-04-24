@@ -15,8 +15,8 @@ import java.time.LocalDate;
 public class StaticCalendarMethodsTest extends BaseArrayTestCase {
 
     private final BusinessCalendar calendar = Calendars.calendar();
-    private final DateTime time1 = DateTimeUtils.convertDateTime("2002-01-01T01:00:00.000000000 NY");
-    private final DateTime time2 = DateTimeUtils.convertDateTime("2002-01-21T01:00:00.000000000 NY");
+    private final DateTime time1 = DateTimeUtils.toDateTime("2002-01-01T01:00:00.000000000 NY");
+    private final DateTime time2 = DateTimeUtils.toDateTime("2002-01-21T01:00:00.000000000 NY");
     private final String date1 = "2017-08-01";
     private final String date2 = "2017-08-05";
 

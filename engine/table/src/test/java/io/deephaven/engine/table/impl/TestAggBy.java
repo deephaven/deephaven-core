@@ -31,7 +31,6 @@ import io.deephaven.vector.DoubleVector;
 import io.deephaven.vector.IntVector;
 import org.junit.experimental.categories.Category;
 
-import java.lang.reflect.Array;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -42,7 +41,7 @@ import java.util.Random;
 import static io.deephaven.api.agg.Aggregation.*;
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
-import static io.deephaven.time.DateTimeUtils.convertDateTime;
+import static io.deephaven.time.DateTimeUtils.toDateTime;
 import static io.deephaven.util.QueryConstants.*;
 import static org.junit.Assert.assertArrayEquals;
 
@@ -151,8 +150,8 @@ public class TestAggBy extends RefreshingTableTestCase {
                         new IntGenerator(10, 100),
                         new SetGenerator<>(10.1, 20.1, 30.1),
                         new FloatGenerator(0, 10.0f),
-                        new UnsortedDateTimeGenerator(convertDateTime("2020-03-17T12:00:00 NY"),
-                                convertDateTime("2020-03-18T12:00:00 NY")),
+                        new UnsortedDateTimeGenerator(toDateTime("2020-03-17T12:00:00 NY"),
+                                toDateTime("2020-03-18T12:00:00 NY")),
                         new BooleanGenerator(),
                         new BigIntegerGenerator(),
                         new BigDecimalGenerator()));
@@ -539,9 +538,9 @@ public class TestAggBy extends RefreshingTableTestCase {
     }
 
     public void testComboByAggUnique() {
-        final DateTime dtDefault = convertDateTime("1987-10-20T07:45:00.000 NY");
-        final DateTime dt1 = convertDateTime("2021-01-01T00:00:01.000 NY");
-        final DateTime dt2 = convertDateTime("2021-01-01T00:00:02.000 NY");
+        final DateTime dtDefault = toDateTime("1987-10-20T07:45:00.000 NY");
+        final DateTime dt1 = toDateTime("2021-01-01T00:00:01.000 NY");
+        final DateTime dt2 = toDateTime("2021-01-01T00:00:02.000 NY");
 
         QueryTable dataTable = TstUtils.testRefreshingTable(
                 col("USym", "AAPL", "AAPL", "AAPL", /**/ "GOOG", "GOOG", /**/ "SPY", "SPY", "SPY", "SPY", /**/ "VXX"),
@@ -625,8 +624,8 @@ public class TestAggBy extends RefreshingTableTestCase {
     }
 
     public void testAggUniqueDefaultValues() {
-        final DateTime dt1 = convertDateTime("2021-01-01T00:01:02.000 NY");
-        final DateTime dt2 = convertDateTime("2021-02-02T00:02:03.000 NY");
+        final DateTime dt1 = toDateTime("2021-01-01T00:01:02.000 NY");
+        final DateTime dt2 = toDateTime("2021-02-02T00:02:03.000 NY");
 
         QueryTable dataTable = TstUtils.testRefreshingTable(
                 col("USym", "NoKey", "SingleVal", "NonUnique", "NonUnique"),

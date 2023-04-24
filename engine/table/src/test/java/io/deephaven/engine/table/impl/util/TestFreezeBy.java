@@ -23,7 +23,7 @@ import static io.deephaven.engine.util.TableTools.*;
 
 public class TestFreezeBy extends RefreshingTableTestCase {
     public void testSimpleTypes() {
-        final DateTime timeBase = DateTimeUtils.convertDateTime("2020-09-10T09:00:00 NY");
+        final DateTime timeBase = DateTimeUtils.toDateTime("2020-09-10T09:00:00 NY");
         QueryScope.addParam("freezeByTimeBase", timeBase);
         final QueryTable input =
                 TstUtils.testRefreshingTable(stringCol("Key", "A", "B", "C"), intCol("Sentinel", 1, 2, 3));

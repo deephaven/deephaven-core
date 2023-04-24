@@ -11,8 +11,8 @@ import junit.framework.TestCase;
 public class TestBusinessPeriod extends BaseArrayTestCase {
 
     public void testBusinessPeriod() {
-        final DateTime open1 = DateTimeUtils.convertDateTime("2017-03-11T10:00:00.000000000 NY");
-        final DateTime close1 = DateTimeUtils.convertDateTime("2017-03-11T11:00:00.000000000 NY");
+        final DateTime open1 = DateTimeUtils.toDateTime("2017-03-11T10:00:00.000000000 NY");
+        final DateTime close1 = DateTimeUtils.toDateTime("2017-03-11T11:00:00.000000000 NY");
 
         try {
             new BusinessPeriod(null, close1);

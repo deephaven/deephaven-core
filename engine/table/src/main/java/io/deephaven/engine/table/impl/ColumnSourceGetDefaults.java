@@ -10,7 +10,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.time.Instant;
 
-import static io.deephaven.time.DateTimeUtils.nanosToTime;
+import static io.deephaven.time.DateTimeUtils.nanosToDateTime;
 import static io.deephaven.util.type.TypeUtils.box;
 
 /**
@@ -399,7 +399,7 @@ public final class ColumnSourceGetDefaults {
 
         @Override
         default DateTime get(final long rowKey) {
-            return nanosToTime(getLong(rowKey));
+            return nanosToDateTime(getLong(rowKey));
         }
     }
 

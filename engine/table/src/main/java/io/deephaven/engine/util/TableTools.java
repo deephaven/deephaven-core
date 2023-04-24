@@ -814,7 +814,7 @@ public class TableTools {
      * @return time table
      */
     public static Table timeTable(String startTime, String period) {
-        return timeTable(DateTimeUtils.convertDateTime(startTime), period);
+        return timeTable(DateTimeUtils.toDateTime(startTime), period);
     }
 
     /**
@@ -826,7 +826,7 @@ public class TableTools {
      * @return time table
      */
     public static Table timeTable(String startTime, String period, ReplayerInterface replayer) {
-        return timeTable(DateTimeUtils.convertDateTime(startTime), period, replayer);
+        return timeTable(DateTimeUtils.toDateTime(startTime), period, replayer);
     }
 
     /**
@@ -884,7 +884,7 @@ public class TableTools {
      * @return time table
      */
     public static Table timeTable(String startTime, long periodNanos) {
-        return timeTable(DateTimeUtils.convertDateTime(startTime), periodNanos);
+        return timeTable(DateTimeUtils.toDateTime(startTime), periodNanos);
     }
 
     /**
@@ -896,7 +896,7 @@ public class TableTools {
      * @return time table
      */
     public static Table timeTable(String startTime, long periodNanos, ReplayerInterface replayer) {
-        return timeTable(DateTimeUtils.convertDateTime(startTime), periodNanos, replayer);
+        return timeTable(DateTimeUtils.toDateTime(startTime), periodNanos, replayer);
     }
 
     /**

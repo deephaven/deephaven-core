@@ -26,7 +26,7 @@ import java.util.Random;
 
 import static io.deephaven.engine.testutil.GenerateTableUpdates.generateAppends;
 import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.simulateShiftAwareStep;
-import static io.deephaven.time.DateTimeUtils.convertDateTime;
+import static io.deephaven.time.DateTimeUtils.toDateTime;
 import static io.deephaven.util.QueryConstants.*;
 import static org.junit.Assert.assertArrayEquals;
 
@@ -60,8 +60,8 @@ public class TestDelta extends BaseUpdateByTest {
         final QueryTable t = createTestTable(STATIC_TABLE_SIZE, false, false, false, 0x31313131,
                 new String[] {"timeCol", "charCol"}, new TestDataGenerator[] {
                         new SortedDateTimeGenerator(
-                                convertDateTime("2022-03-09T09:00:00.000 NY"),
-                                convertDateTime("2022-03-09T16:30:00.000 NY")),
+                                toDateTime("2022-03-09T09:00:00.000 NY"),
+                                toDateTime("2022-03-09T16:30:00.000 NY")),
                         new CharGenerator('A', 'z', 0.1)}).t;
         t.setRefreshing(false);
 
@@ -95,8 +95,8 @@ public class TestDelta extends BaseUpdateByTest {
         final QueryTable t = createTestTable(100000, true, grouped, false, 0x31313131,
                 new String[] {"timeCol", "charCol"}, new TestDataGenerator[] {
                         new SortedDateTimeGenerator(
-                                convertDateTime("2022-03-09T09:00:00.000 NY"),
-                                convertDateTime("2022-03-09T16:30:00.000 NY")),
+                                toDateTime("2022-03-09T09:00:00.000 NY"),
+                                toDateTime("2022-03-09T16:30:00.000 NY")),
                         new CharGenerator('A', 'z', 0.1)}).t;
         t.setRefreshing(false);
 
@@ -137,8 +137,8 @@ public class TestDelta extends BaseUpdateByTest {
         final CreateResult result = createTestTable(DYNAMIC_TABLE_SIZE, bucketed, false, true, 0x31313131,
                 new String[] {"timeCol", "charCol"}, new TestDataGenerator[] {
                         new SortedDateTimeGenerator(
-                                convertDateTime("2022-03-09T09:00:00.000 NY"),
-                                convertDateTime("2022-03-09T16:30:00.000 NY")),
+                                toDateTime("2022-03-09T09:00:00.000 NY"),
+                                toDateTime("2022-03-09T16:30:00.000 NY")),
                         new CharGenerator('A', 'z', 0.1)});
         final QueryTable t = result.t;
         t.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
@@ -165,8 +165,8 @@ public class TestDelta extends BaseUpdateByTest {
         final CreateResult result = createTestTable(DYNAMIC_TABLE_SIZE, false, false, true, 0x31313131,
                 new String[] {"timeCol", "charCol"}, new TestDataGenerator[] {
                         new SortedDateTimeGenerator(
-                                convertDateTime("2022-03-09T09:00:00.000 NY"),
-                                convertDateTime("2022-03-09T16:30:00.000 NY")),
+                                toDateTime("2022-03-09T09:00:00.000 NY"),
+                                toDateTime("2022-03-09T16:30:00.000 NY")),
                         new CharGenerator('A', 'z', 0.1)});
         final QueryTable t = result.t;
 
@@ -188,8 +188,8 @@ public class TestDelta extends BaseUpdateByTest {
         final CreateResult result = createTestTable(DYNAMIC_TABLE_SIZE, true, false, true, 0x31313131,
                 new String[] {"timeCol", "charCol"}, new TestDataGenerator[] {
                         new SortedDateTimeGenerator(
-                                convertDateTime("2022-03-09T09:00:00.000 NY"),
-                                convertDateTime("2022-03-09T16:30:00.000 NY")),
+                                toDateTime("2022-03-09T09:00:00.000 NY"),
+                                toDateTime("2022-03-09T16:30:00.000 NY")),
                         new CharGenerator('A', 'z', 0.1)});
         final QueryTable t = result.t;
 

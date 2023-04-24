@@ -7,8 +7,6 @@ import io.deephaven.base.clock.Clock;
 import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
 
-import java.time.Instant;
-
 public class FixedStepReplayer extends Replayer {
     private long incrementNanos;
     private DateTime currentTime;
@@ -30,7 +28,7 @@ public class FixedStepReplayer extends Replayer {
 
     @Override
     public void setTime(long updatedTime) {
-        currentTime = DateTimeUtils.millisToTime(Math.max(updatedTime, currentTime.getMillis()));
+        currentTime = DateTimeUtils.millisToDateTime(Math.max(updatedTime, currentTime.getMillis()));
     }
 
     @Override
