@@ -12,6 +12,12 @@ import java.util.Map;
  * Formatter for DateTimes.
  */
 public class DateTimeFormatter {
+    //TODO: remove deprecated
+    //TODO: document
+    //TODO: remove Joda exposure
+    //TODO: curate API
+    //TODO: review public vs private
+
     private final String pattern;
     private final Map<TimeZone, java.time.format.DateTimeFormatter> formatCache = new HashMap<>(3);
 

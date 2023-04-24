@@ -34,6 +34,12 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
  */
 @SuppressWarnings("unused")
 public class DateTimeUtils {
+    //TODO: remove deprecated
+    //TODO: document
+    //TODO: remove Joda exposure
+    //TODO: curate API
+    //TODO: review public vs private
+
     //TODO: reorganize functions into better groupings
 
     //TODO: no equivalent.  Document and move out?

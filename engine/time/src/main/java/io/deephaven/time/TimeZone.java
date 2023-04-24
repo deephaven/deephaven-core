@@ -13,6 +13,11 @@ import java.util.List;
 /**
  * Defines Deephaven-supported timezones, which may be used for PQ-scheduling and display purposes
  */
+//TODO: remove deprecated
+//TODO: document
+//TODO: remove Joda exposure
+//TODO: curate API
+//TODO: review public vs private
 public enum TimeZone {
     /**
      * America/New_York
@@ -115,6 +120,7 @@ public enum TimeZone {
      */
     TZ_UTC("UTC");
 
+    //TODO: this is public and there are getter/setter methods.  Decide which is the right approach.
     /**
      * The default time zone for display purposes.
      */
@@ -195,6 +201,7 @@ public enum TimeZone {
         return allZones.toArray(new TimeZone[0]);
     }
 
+    //TODO: rename without Tz
     /**
      * Get the default time zone.
      *
@@ -204,6 +211,7 @@ public enum TimeZone {
         return TZ_DEFAULT;
     }
 
+    //TODO: rename without Tz
     /**
      * Set the default time zone.
      *

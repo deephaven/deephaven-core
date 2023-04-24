@@ -6,6 +6,11 @@ package io.deephaven.time;
 import java.io.*;
 
 public class Period implements Comparable<Period>, Serializable {
+    //TODO: remove deprecated
+    //TODO: document
+    //TODO: remove Joda exposure
+    //TODO: curate API
+    //TODO: review public vs private
 
     private String periodString;
 

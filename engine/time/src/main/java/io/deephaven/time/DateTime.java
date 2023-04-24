@@ -38,6 +38,11 @@ import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE;
 @TypeUtils.IsDateTime
 @ReflexiveUse(referrers = "io.deephaven.gui.table.filters.StringFilterData")
 public final class DateTime implements Comparable<DateTime>, Externalizable {
+    //TODO: remove deprecated
+    //TODO: document
+    //TODO: remove Joda exposure
+    //TODO: curate API
+    //TODO: review public vs private
 
     private static final long serialVersionUID = -9077991715632523353L;
     private static final DateTimeFormatter JODA_DATE_TIME_FORMAT =

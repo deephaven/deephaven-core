@@ -6,6 +6,11 @@ package io.deephaven.time;
 /**
  * Common DateTimeFormatters.
  */
+//TODO: remove deprecated
+//TODO: document
+//TODO: remove Joda exposure
+//TODO: curate API
+//TODO: review public vs private
 public enum DateTimeFormatters {
     // @formatter:off
     ISO9TZ(true, true, true, 9, true),
