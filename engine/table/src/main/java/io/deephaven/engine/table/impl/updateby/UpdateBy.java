@@ -802,7 +802,8 @@ public abstract class UpdateBy {
 
                     for (int ii = 0; ii < opIndices.length; ii++) {
                         final int opIdx = opIndices[ii];
-                        winOpContexts[ii] = windows[winIdx].operators[opIdx].makeUpdateContext(maxAffectedChunkSize);
+                        winOpContexts[ii] = windows[winIdx].operators[opIdx].makeUpdateContext(maxAffectedChunkSize,
+                                maxInfluencerChunkSize);
                     }
 
                     chunkArr = new Chunk[srcIndices.length];

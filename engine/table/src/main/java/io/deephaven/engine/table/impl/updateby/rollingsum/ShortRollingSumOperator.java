@@ -23,7 +23,6 @@ public class ShortRollingSumOperator extends BaseLongUpdateByOperator {
         protected ShortChunk<? extends Values> shortInfluencerValuesChunk;
         protected ShortRingBuffer shortWindowValues;
 
-
         protected Context(final int chunkSize) {
             super(chunkSize);
             shortWindowValues = new ShortRingBuffer(RING_BUFFER_INITIAL_CAPACITY, true);
@@ -37,8 +36,8 @@ public class ShortRollingSumOperator extends BaseLongUpdateByOperator {
 
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            shortInfluencerValuesChunk = valuesChunk.asShortChunk();
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
+            shortInfluencerValuesChunk = valueChunks[0].asShortChunk();
         }
 
         @Override
@@ -96,8 +95,8 @@ public class ShortRollingSumOperator extends BaseLongUpdateByOperator {
 
     @NotNull
     @Override
-    public UpdateByOperator.Context makeUpdateContext(final int chunkSize) {
-        return new Context(chunkSize);
+    public UpdateByOperator.Context makeUpdateContext(final int affectedChunkSize, final int influencerChunkSize) {
+        return new Context(affectedChunkSize);
     }
 
     public ShortRollingSumOperator(@NotNull final MatchPair pair,

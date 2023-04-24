@@ -30,7 +30,7 @@ public class UpdateBySpecBuilderTest {
         // gRPC message type.
 
         @Override
-        public UpdateByColumn.UpdateBySpec visit(EmaSpec ema) {
+        public UpdateByColumn.UpdateBySpec visit(EmaSpec spec) {
             return UpdateByColumn.UpdateBySpec
                     .newBuilder().setEma(
                             UpdateByEma.newBuilder()
@@ -55,18 +55,18 @@ public class UpdateBySpecBuilderTest {
         }
 
         @Override
-        public UpdateByColumn.UpdateBySpec visit(FillBySpec f) {
+        public UpdateByColumn.UpdateBySpec visit(FillBySpec spec) {
             return UpdateByColumn.UpdateBySpec.newBuilder().setFill(UpdateByFill.getDefaultInstance()).build();
         }
 
         @Override
-        public UpdateByColumn.UpdateBySpec visit(CumSumSpec c) {
+        public UpdateByColumn.UpdateBySpec visit(CumSumSpec spec) {
             return UpdateByColumn.UpdateBySpec.newBuilder().setSum(UpdateByCumulativeSum.getDefaultInstance()).build();
         }
 
         @Override
-        public UpdateByColumn.UpdateBySpec visit(CumMinMaxSpec m) {
-            if (m.isMax()) {
+        public UpdateByColumn.UpdateBySpec visit(CumMinMaxSpec spec) {
+            if (spec.isMax()) {
                 return UpdateByColumn.UpdateBySpec.newBuilder().setMax(UpdateByCumulativeMax.getDefaultInstance())
                         .build();
             } else {
@@ -76,7 +76,7 @@ public class UpdateBySpecBuilderTest {
         }
 
         @Override
-        public UpdateByColumn.UpdateBySpec visit(CumProdSpec p) {
+        public UpdateByColumn.UpdateBySpec visit(CumProdSpec spec) {
             return UpdateByColumn.UpdateBySpec.newBuilder().setProduct(UpdateByCumulativeProduct.getDefaultInstance())
                     .build();
         }
@@ -194,9 +194,15 @@ public class UpdateBySpecBuilderTest {
             return null;
         }
 
-        // TODO: add this correctly (DHC #3392)
+        // TODO: add this correctly (DHC #3666)
         // @Override
         public UpdateByColumn.UpdateBySpec visit(RollingStdSpec spec) {
+            return null;
+        }
+
+        // TODO: add this correctly (DHC #3666)
+        @Override
+        public UpdateByColumn.UpdateBySpec visit(RollingWAvgSpec spec) {
             return null;
         }
     }

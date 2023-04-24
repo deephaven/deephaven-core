@@ -28,7 +28,6 @@ public class IntRollingSumOperator extends BaseLongUpdateByOperator {
         protected IntChunk<? extends Values> intInfluencerValuesChunk;
         protected IntRingBuffer intWindowValues;
 
-
         protected Context(final int chunkSize) {
             super(chunkSize);
             intWindowValues = new IntRingBuffer(RING_BUFFER_INITIAL_CAPACITY, true);
@@ -42,8 +41,8 @@ public class IntRollingSumOperator extends BaseLongUpdateByOperator {
 
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            intInfluencerValuesChunk = valuesChunk.asIntChunk();
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
+            intInfluencerValuesChunk = valueChunks[0].asIntChunk();
         }
 
         @Override
@@ -101,8 +100,8 @@ public class IntRollingSumOperator extends BaseLongUpdateByOperator {
 
     @NotNull
     @Override
-    public UpdateByOperator.Context makeUpdateContext(final int chunkSize) {
-        return new Context(chunkSize);
+    public UpdateByOperator.Context makeUpdateContext(final int affectedChunkSize, final int influencerChunkSize) {
+        return new Context(affectedChunkSize);
     }
 
     public IntRollingSumOperator(@NotNull final MatchPair pair,

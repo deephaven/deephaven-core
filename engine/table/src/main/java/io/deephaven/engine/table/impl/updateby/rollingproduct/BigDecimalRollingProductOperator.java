@@ -55,8 +55,8 @@ public final class BigDecimalRollingProductOperator extends BaseObjectUpdateByOp
 
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            objectInfluencerValuesChunk = valuesChunk.asObjectChunk();
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
+            objectInfluencerValuesChunk = valueChunks[0].asObjectChunk();
         }
 
         @Override
@@ -109,8 +109,8 @@ public final class BigDecimalRollingProductOperator extends BaseObjectUpdateByOp
 
     @NotNull
     @Override
-    public UpdateByOperator.Context makeUpdateContext(final int chunkSize) {
-        return new Context(chunkSize);
+    public UpdateByOperator.Context makeUpdateContext(final int affectedChunkSize, final int influencerChunkSize) {
+        return new Context(affectedChunkSize);
     }
 
     public BigDecimalRollingProductOperator(@NotNull final MatchPair pair,

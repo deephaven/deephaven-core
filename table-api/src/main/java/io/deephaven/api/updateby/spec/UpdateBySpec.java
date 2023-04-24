@@ -91,6 +91,8 @@ public interface UpdateBySpec {
         T visit(RollingCountSpec spec);
 
         T visit(RollingStdSpec spec);
+
+        T visit(RollingWAvgSpec w);
     }
     // endregion
 }

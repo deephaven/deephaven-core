@@ -23,8 +23,8 @@ public class CharRollingCountOperator extends BaseLongUpdateByOperator {
         protected CharChunk<? extends Values> influencerValuesChunk;
         protected ByteRingBuffer buffer;
 
-        protected Context(final int chunkSize) {
-            super(chunkSize);
+        protected Context(final int affectedChunkSize, final int influencerChunkSize) {
+            super(affectedChunkSize);
             buffer = new ByteRingBuffer(BUFFER_INITIAL_CAPACITY, true);
         }
 
@@ -35,10 +35,9 @@ public class CharRollingCountOperator extends BaseLongUpdateByOperator {
         }
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            influencerValuesChunk = valuesChunk.asCharChunk();
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
+            influencerValuesChunk = valueChunks[0].asCharChunk();
         }
-
         @Override
         public void push(int pos, int count) {
             buffer.ensureRemaining(count);
@@ -83,8 +82,8 @@ public class CharRollingCountOperator extends BaseLongUpdateByOperator {
 
     @NotNull
     @Override
-    public UpdateByOperator.Context makeUpdateContext(final int chunkSize) {
-        return new Context(chunkSize);
+    public UpdateByOperator.Context makeUpdateContext(final int affectedChunkSize, final int influencerChunkSize) {
+        return new Context(affectedChunkSize, influencerChunkSize);
     }
 
     public CharRollingCountOperator(@NotNull final MatchPair pair,
