@@ -1,25 +1,58 @@
 package io.deephaven.engine.table.impl.rangejoin;
 
-import io.deephaven.api.*;
+import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.api.ColumnName;
+import io.deephaven.api.JoinAddition;
+import io.deephaven.api.JoinMatch;
+import io.deephaven.api.RangeJoinMatch;
+import io.deephaven.api.Strings;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.filter.Filter;
-import io.deephaven.chunk.sized.SizedLongChunk;
+import io.deephaven.base.MathUtil;
+import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.ChunkType;
+import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.WritableIntChunk;
+import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.chunk.attributes.ChunkPositions;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.exceptions.OperationException;
+import io.deephaven.engine.exceptions.OutOfOrderException;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
-import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.*;
+import io.deephaven.engine.table.ChunkSink;
+import io.deephaven.engine.table.ChunkSource;
+import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.SharedContext;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.WritableColumnSource;
+import io.deephaven.engine.table.impl.MemoizedOperationKey;
+import io.deephaven.engine.table.impl.OperationInitializationThreadPool;
+import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.SortingOrder;
+import io.deephaven.engine.table.impl.SwapListener;
 import io.deephaven.engine.table.impl.by.AggregationProcessor;
+import io.deephaven.engine.table.impl.join.dupcompact.DupCompactKernel;
+import io.deephaven.engine.table.impl.sort.LongSortKernel;
+import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.IntegerSparseArraySource;
+import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.sources.WritableRedirectedColumnSource;
 import io.deephaven.engine.table.impl.sources.sparse.SparseConstants;
-import io.deephaven.engine.table.impl.util.*;
+import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
+import io.deephaven.engine.table.impl.util.InverseWrappedRowSetRowRedirection;
+import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.table.impl.util.JobScheduler.IterateAction;
-import io.deephaven.engine.table.impl.util.JobScheduler.JobThreadContext;
+import io.deephaven.engine.table.impl.util.MultiplierWritableRowRedirection;
+import io.deephaven.engine.table.impl.util.OperationInitializationPoolJobScheduler;
+import io.deephaven.engine.table.impl.util.RowRedirection;
+import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -28,7 +61,9 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
+import static io.deephaven.base.ArrayUtil.MAX_ARRAY_SIZE;
 import static io.deephaven.engine.table.impl.by.AggregationProcessor.EXPOSED_GROUP_ROW_SETS;
+import static io.deephaven.util.QueryConstants.NULL_INT;
 
 /**
  * Implementation for {@link QueryTable#rangeJoin(Table, Collection, RangeJoinMatch, Collection)}.
@@ -37,6 +72,13 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
 
     private static final ColumnName LEFT_ROW_SET = EXPOSED_GROUP_ROW_SETS;
     private static final ColumnName RIGHT_ROW_SET = ColumnName.of("__RIGHT_ROW_SET__");
+
+    private static final int CHUNK_SIZE = ArrayBackedColumnSource.BLOCK_SIZE;
+
+    private static final int RESULT_MULTIPLIER = 3;
+    private static final int RESULT_SLOT_OFFSET = 0;
+    private static final int RESULT_START_OFFSET = 1;
+    private static final int RESULT_END_OFFSET = 2;
 
     private static final String MAXIMUM_STATIC_MEMORY_OVERHEAD_PROPERTY = "RangeJoin.maximumStaticMemoryOverhead";
     private static final double MAXIMUM_STATIC_MEMORY_OVERHEAD = Configuration.getInstance()
@@ -297,7 +339,14 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
         return inputTable.aggNoMemo(AggregationProcessor.forExposeGroupRowSets(), false, null, exactMatches);
     }
 
-    private class StaticRangeJoinPhase2 extends RangeJoinPhase implements IterateAction<JobThreadContext> {
+    private class StaticRangeJoinPhase2
+            extends RangeJoinPhase
+            implements IterateAction<StaticRangeJoinPhase2.TaskContext> {
+
+        private final ColumnSource<?> leftStartValues;
+        private final ColumnSource<?> rightRangeValues;
+        private final ColumnSource<?> leftEndValues;
+        private final ChunkType valueChunkType;
 
         private final RowRedirection outputRedirection;
         private final WritableColumnSource<Integer> outputSlotsAndPositionRanges;
@@ -309,14 +358,27 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
                 @NotNull final JobScheduler jobScheduler,
                 @NotNull final CompletableFuture<QueryTable> resultFuture) {
             super(jobScheduler, resultFuture);
+
+            leftStartValues = ReinterpretUtils.maybeConvertToPrimitive(
+                    leftTable.getColumnSource(rangeMatch.leftStartColumn().name()));
+            rightRangeValues = ReinterpretUtils.maybeConvertToPrimitive(
+                    rightTable.getColumnSource(rangeMatch.rightRangeColumn().name()));
+            leftEndValues = ReinterpretUtils.maybeConvertToPrimitive(
+                    leftTable.getColumnSource(rangeMatch.leftEndColumn().name()));
+            valueChunkType = leftStartValues.getChunkType();
+            Assert.eq(valueChunkType, "valueChunkType",
+                    rightRangeValues.getChunkType(), "rightRangeValues.getChunkType()");
+            Assert.eq(valueChunkType, "valueChunkType",
+                    leftEndValues.getChunkType(), "leftEndValues.getChunkType()");
+
             if (!leftTable.isFlat() && SparseConstants.sparseStructureExceedsOverhead(
                     leftTable.getRowSet(), MAXIMUM_STATIC_MEMORY_OVERHEAD)) {
                 outputRedirection = new MultiplierWritableRowRedirection(
-                        new InverseWrappedRowSetRowRedirection(leftTable.getRowSet()), 3);
+                        new InverseWrappedRowSetRowRedirection(leftTable.getRowSet()), RESULT_MULTIPLIER);
                 outputSlotsAndPositionRanges = WritableRedirectedColumnSource.maybeRedirect(
                         outputRedirection,
                         InMemoryColumnSource.getImmutableMemoryColumnSource(leftTable.size(), int.class, null),
-                        leftTable.size() * 3);
+                        leftTable.size() * RESULT_MULTIPLIER);
             } else {
                 outputRedirection = null;
                 outputSlotsAndPositionRanges = new IntegerSparseArraySource();
@@ -331,7 +393,7 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
             jobScheduler.iterateParallel(
                     ExecutionContext.getContextToRecord(),
                     logOutput -> logOutput.append("static range join find ranges"),
-                    JobScheduler.DEFAULT_CONTEXT_FACTORY,
+                    TaskContext::new,
                     0,
                     joinedInputTables.intSize(),
                     this,
@@ -341,18 +403,123 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
 
         private class TaskContext implements JobScheduler.JobThreadContext {
 
-//            private final SizedLongChunk<RowKeys>
+            private static final int CLOSED_SENTINEL = -1;
+
+            private final SharedContext leftSharedContext;
+            private final ChunkSource.FillContext leftStartValuesFillContext;
+            private final ChunkSource.FillContext leftEndValuesFillContext;
+            private final WritableChunk<Values> leftValuesChunk;
+            private final WritableIntChunk<ChunkPositions> leftChunkPositions;
+            private final LongSortKernel<Values, ChunkPositions> leftSortKernel;
+
+            private int rightChunkSize = 0;
+            private WritableLongChunk<RowKeys> rightGroupRowKeysChunk;
+            private ChunkSource.FillContext rightRangeValuesFillContext;
+            private WritableChunk<Values> rightRangeValuesChunk;
+            private final DupCompactKernel rightDupCompactKernel;
+
+            private final ChunkSink.FillFromContext outputFillFromContext;
+            private final WritableIntChunk<? extends Values> outputChunk;
+
+            private TaskContext() {
+                leftSharedContext = SharedContext.makeSharedContext();
+                leftStartValuesFillContext = leftStartValues.makeFillContext(CHUNK_SIZE, leftSharedContext);
+                leftEndValuesFillContext = leftEndValues.makeFillContext(CHUNK_SIZE, leftSharedContext);
+                leftValuesChunk = valueChunkType.makeWritableChunk(CHUNK_SIZE);
+                leftChunkPositions = WritableIntChunk.makeWritableChunk(CHUNK_SIZE);
+                leftSortKernel = LongSortKernel.makeContext(valueChunkType, SortingOrder.Ascending, CHUNK_SIZE, true);
+
+                ensureRightCapacity(CHUNK_SIZE);
+                rightDupCompactKernel = DupCompactKernel.makeDupCompact(valueChunkType, false);
+
+                outputFillFromContext =
+                        outputSlotsAndPositionRanges.makeFillFromContext(RESULT_MULTIPLIER * CHUNK_SIZE);
+                outputChunk = WritableIntChunk.makeWritableChunk(RESULT_MULTIPLIER * CHUNK_SIZE);
+            }
+
+            private void ensureRightCapacity(final long rightGroupSize) {
+                if (rightGroupSize > MAX_ARRAY_SIZE) {
+                    throw new IllegalArgumentException(
+                            String.format("%s: Unable to process right table bucket larger than %d, encountered %d",
+                                    description, MAX_ARRAY_SIZE, rightGroupSize));
+                }
+                if (rightGroupSize == CLOSED_SENTINEL) {
+                    throw new IllegalStateException(String.format("%s: used %s after close",
+                            description, this.getClass()));
+                }
+                if (rightGroupSize > rightChunkSize) {
+                    if (rightChunkSize > 0) {
+                        rightChunkSize = 0; // Record that we don't want to re-close
+                        final SafeCloseable sc1 = rightGroupRowKeysChunk;
+                        rightGroupRowKeysChunk = null;
+                        final SafeCloseable sc2 = rightRangeValuesFillContext;
+                        rightRangeValuesFillContext = null;
+                        final SafeCloseable sc3 = rightRangeValuesChunk;
+                        rightRangeValuesChunk = null;
+                        SafeCloseable.closeAll(sc1, sc2, sc3);
+                    }
+                    rightChunkSize = (int) Math.min(MAX_ARRAY_SIZE, 1L << MathUtil.ceilLog2(rightGroupSize));
+                    rightGroupRowKeysChunk = WritableLongChunk.makeWritableChunk(rightChunkSize);
+                    rightRangeValuesFillContext = rightRangeValues.makeFillContext(rightChunkSize);
+                    rightRangeValuesChunk = valueChunkType.makeWritableChunk(rightChunkSize);
+                }
+            }
+
+            @Override
+            public void close() {
+                rightChunkSize = CLOSED_SENTINEL;
+                SafeCloseable.closeAll(
+                        // Left resources
+                        leftSharedContext,
+                        leftStartValuesFillContext,
+                        leftEndValuesFillContext,
+                        leftValuesChunk,
+                        leftChunkPositions,
+                        leftSortKernel,
+                        // Right resources
+                        rightGroupRowKeysChunk,
+                        rightRangeValuesFillContext,
+                        rightRangeValuesChunk,
+                        rightDupCompactKernel,
+                        // Output resources
+                        outputFillFromContext,
+                        outputChunk);
+            }
         }
 
         @Override
         public void run(
-                @NotNull final JobThreadContext taskThreadContext,
+                @NotNull final TaskContext tc,
                 final int index,
                 @NotNull final Consumer<Exception> nestedErrorConsumer) {
-            // TODO-RWC: Grab groups, do stamping, update outputSlotsAndPositionRanges
             final RowSet leftRows = leftGroupRowSets.get(index);
-            final RowSet rightRows = rightGroupRowSets.get(index);
+            assert leftRows != null;
 
+            final RowSet rightRows = rightGroupRowSets.get(index);
+            if (rightRows == null) {
+                // Fill output with nulls
+                leftRows.forAllRowKeys((final long leftRowKey) -> {
+                    // TODO-RWC: Chunk-oriented output filling
+                    final long outRowKeyBase = leftRowKey * RESULT_MULTIPLIER;
+                    // @formatter:off
+                    outputSlotsAndPositionRanges.set(outRowKeyBase + RESULT_SLOT_OFFSET,  index);
+                    outputSlotsAndPositionRanges.set(outRowKeyBase + RESULT_START_OFFSET, NULL_INT);
+                    outputSlotsAndPositionRanges.set(outRowKeyBase + RESULT_END_OFFSET,   NULL_INT);
+                    // @formatter:on
+                });
+            } else {
+                // TODO-RWC: Do stamping, update outputSlotsAndPositionRanges
+                tc.ensureRightCapacity(rightRows.size());
+                rightRows.fillRowKeyChunk(tc.rightGroupRowKeysChunk);
+                rightRangeValues.fillChunk(tc.rightRangeValuesFillContext, tc.rightRangeValuesChunk, rightRows);
+                final int firstBadPosition = tc.rightDupCompactKernel.compactDuplicates(
+                        tc.rightRangeValuesChunk, tc.rightGroupRowKeysChunk);
+                if (firstBadPosition != -1) {
+                    throw new OutOfOrderException(String.format(
+                            "%s: encountered out of order data in right table at row key %d",
+                            description, rightRows.get(firstBadPosition)));
+                }
+            }
         }
     }
 
