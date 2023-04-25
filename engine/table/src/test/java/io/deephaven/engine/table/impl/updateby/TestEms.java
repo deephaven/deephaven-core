@@ -694,8 +694,8 @@ public class TestEms extends BaseUpdateByTest {
         actualSkipTime = t.updateBy(UpdateByOperation.Ems(skipControl, "ts", Duration.ofMinutes(10), columns));
         actualResetTime = t.updateBy(UpdateByOperation.Ems(resetControl, "ts", Duration.ofMinutes(10), columns));
     }
-    // endregion    
-    
+    // endregion
+
     // region Manual Verification functions
     public static double[] compute_ems_ticks(OperationControl control, long ticks, double[] values) {
         if (values == null) {
