@@ -302,6 +302,7 @@ class BatchTableRequestBuilder {
                     .setResultId(ticket)
                     .setSourceId(ref(whereTable.parent()));
             for (Filter filter : whereTable.filters()) {
+                // TODO(deephaven-core#3740): Remove engine crutch on io.deephaven.api.Strings
                 builder.addFilters(Strings.of(filter));
             }
             return op(Builder::setUnstructuredFilter, builder.build());

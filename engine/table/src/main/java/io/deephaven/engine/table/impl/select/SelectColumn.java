@@ -227,6 +227,7 @@ public interface SelectColumn extends Selectable {
         }
 
         private SelectColumn makeSelectColumn(String rhs) {
+            // TODO(deephaven-core#3740): Remove engine crutch on io.deephaven.api.Strings
             return SelectColumnFactory.getExpression(String.format("%s=%s", lhs.name(), rhs));
         }
     }

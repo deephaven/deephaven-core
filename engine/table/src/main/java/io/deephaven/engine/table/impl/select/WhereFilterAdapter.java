@@ -14,7 +14,6 @@ import io.deephaven.api.filter.FilterMatches;
 import io.deephaven.api.filter.FilterNot;
 import io.deephaven.api.filter.FilterOr;
 import io.deephaven.api.filter.FilterPattern;
-import io.deephaven.api.filter.FilterPattern.Mode;
 import io.deephaven.api.filter.FilterQuick;
 import io.deephaven.api.literal.Literal;
 import io.deephaven.engine.table.TableDefinition;
@@ -22,7 +21,6 @@ import io.deephaven.engine.table.impl.select.MatchFilter.MatchType;
 import io.deephaven.gui.table.filters.Condition;
 
 import java.util.Objects;
-import java.util.regex.Pattern;
 
 public class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
 
@@ -69,10 +67,12 @@ public class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
     }
 
     public static WhereFilter of(Function function, boolean inverted) {
+        // TODO(deephaven-core#3740): Remove engine crutch on io.deephaven.api.Strings
         return WhereFilterFactory.getExpression(Strings.of(function, inverted));
     }
 
     public static WhereFilter of(Method method, boolean inverted) {
+        // TODO(deephaven-core#3740): Remove engine crutch on io.deephaven.api.Strings
         return WhereFilterFactory.getExpression(Strings.of(method, inverted));
     }
 
@@ -81,6 +81,7 @@ public class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
     }
 
     public static WhereFilter of(RawString rawString, boolean inverted) {
+        // TODO(deephaven-core#3740): Remove engine crutch on io.deephaven.api.Strings
         return WhereFilterFactory.getExpression(Strings.of(rawString, false, inverted));
     }
 
@@ -177,6 +178,7 @@ public class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
         }
 
         private WhereFilter original() {
+            // TODO(deephaven-core#3740): Remove engine crutch on io.deephaven.api.Strings
             return WhereFilterFactory.getExpression(Strings.of(original));
         }
 
@@ -350,6 +352,7 @@ public class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
         }
 
         private WhereFilter getExpression(String x) {
+            // TODO(deephaven-core#3740): Remove engine crutch on io.deephaven.api.Strings
             return WhereFilterFactory.getExpression((inverted ? "!isNull(" : "isNull(") + x + ")");
         }
 

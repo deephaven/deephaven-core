@@ -88,28 +88,42 @@ public class Strings {
     }
 
     public static String of(FilterPattern pattern) {
-        throw new UnsupportedOperationException();
+        return pattern.toString();
     }
 
     public static String of(FilterPattern pattern, boolean encapsulate) {
-        throw new UnsupportedOperationException();
+        final String inner = of(pattern);
+        return encapsulate ? encapsulate(inner) : inner;
     }
 
     public static String of(FilterQuick quick) {
-        throw new UnsupportedOperationException();
+        return quick.toString();
     }
 
-    public static String of(FilterQuick quick, boolean encapsulate, boolean inverted) {
-        throw new UnsupportedOperationException();
+    public static String of(FilterQuick quick, boolean encapsulate, boolean invert) {
+        final String inner = of(quick);
+        if (invert) {
+            return "!" + encapsulate(inner);
+        }
+        if (encapsulate) {
+            return encapsulate(inner);
+        }
+        return inner;
     }
 
     public static String of(FilterMatches matches) {
-        throw new UnsupportedOperationException();
+        return matches.toString();
     }
 
-    public static String of(FilterMatches matches, boolean encapsulate, boolean inverted) {
-        // <ColumnName> [icase] [not] in <value 1>, <value 2>, ... , <value n>
-        throw new UnsupportedOperationException();
+    public static String of(FilterMatches matches, boolean encapsulate, boolean invert) {
+        final String inner = of(matches);
+        if (invert) {
+            return "!" + encapsulate(inner);
+        }
+        if (encapsulate) {
+            return encapsulate(inner);
+        }
+        return inner;
     }
 
     public static String of(Pair pair) {
