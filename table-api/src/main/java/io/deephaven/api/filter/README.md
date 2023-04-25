@@ -27,9 +27,12 @@ all_rows = t.where(or_([f, not_(f)]))
 
 That is, `not_(f)` matches all rows that `f` does _not_ match.
 
-## Safety
+## Well-defined
 
-`io.deephaven.api.filter.Filter`s are safe-by-default whereas filter expression strings may not be safe:
+`io.deephaven.api.filter.Filter`s are well-defined by-design.
+
+This means that all possible combinations of inputs result in a well-defined output - either it is matched, or not. This
+is in contrast with filter expression strings which may have input cases that result in exceptions:
 
 ```python
 from deephaven.filters import pattern, PatternMode
@@ -37,22 +40,18 @@ from deephaven.filters import pattern, PatternMode
 # Table with string column Foo
 t = ...
 
-# t1 is safe, will exclude rows where Foo == null
+# t1 is well-defined by-design, will exclude rows where Foo == null
 t1 = t.where(pattern(PatternMode.MATCHES, "Foo", "a.*z"))
 
-# t2 is safe due to explicit nullness checking
+# t2 is well-defined due to explicit nullness checking
 t2 = t.where("!isNull(Foo) && Foo.matches(`a.*z`)")
 
-# t3 is unsafe, will throw null pointer exception if Foo == null during evaluation
+# t3 is not well-defined, and will throw a null pointer exception if Foo == null during evaluation
 t3 = t.where("Foo.matches(`a.*z`)")
 ```
 
-Safety, in the context of the pattern filter, means that it won't throw a null pointer exception during execution - it
-explicitly excludes null values against matching. More generally though, safety is defined on a filter-by-filter basis
-considering the ranges of inputs it could receive. Frequently, this means the filter will include or exclude null values
-based on the most common use-cases for the filter.
-
-Consider a theoretical filter `is_positive` that operates on a single string column, roughly defined as an equivalent to
+Well-defined may encompass more thorough cases than simply defining behaviour around nulls. Consider the theoretical
+filter `is_positive` that operates on a string column, roughly defined as an equivalent to
 `Double.parseDouble(Foo) > 0.0`:
 
 ```python
@@ -63,8 +62,8 @@ t = ...
 t1 = t.where(is_positive("Foo"))
 ```
 
-In this case, we would likely want to define the "safety of is_positive" to mean that null and strings not parseable as
-doubles are excluded from matching.
+In this case, we would likely have the well-defined `is_positive` behavior documented as null values and strings not
+parseable as doubles are excluded from matching.
 
 ## Filter flags
 
@@ -94,4 +93,4 @@ exclude_match_include_null = t.where(not_(pattern(...)))
 # exclude_match_include_null = t.where(or_([is_null("Foo"), pattern(..., invert_pattern=True)]))
 ```
 
-[^1]: Advanced users may also choose to build their own filter logic using the engine API `io.deephaven.engine.table.impl.select.WhereFilter`.
+[^1]: Advanced users may also choose to build their own filter logic using the engine implementation API `io.deephaven.engine.table.impl.select.WhereFilter`.
