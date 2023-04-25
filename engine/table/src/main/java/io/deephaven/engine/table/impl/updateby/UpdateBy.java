@@ -126,7 +126,15 @@ public abstract class UpdateBy {
             assert rowRedirection != null;
 
             if (!rowRedirection.isWritable()) {
-                return upstream.removed().minus(upstream.added());
+                // The inner row key space is always a flattened view of the outer row key space in this case.
+                maxInnerRowKey = sourceRowSet.size() - 1;
+                final WritableRowSet denseRowsToClear = sourceRowSet.prev().invert(upstream.removed());
+                if (denseRowsToClear.isNonempty() && upstream.added().isNonempty()) {
+                    try (final RowSet invertedAdds = sourceRowSet.invert(upstream.added())) {
+                        denseRowsToClear.remove(invertedAdds);
+                    }
+                }
+                return denseRowsToClear;
             }
 
             final WritableRowRedirection writableRowRedirection = rowRedirection.writableCast();
