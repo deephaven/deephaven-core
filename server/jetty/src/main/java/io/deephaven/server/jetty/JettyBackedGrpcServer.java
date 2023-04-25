@@ -292,6 +292,7 @@ public class JettyBackedGrpcServer implements GrpcServer {
             httpConfig.addCustomizer(new SecureRequestCustomizer(sniHostCheck));
             final HTTP2ServerConnectionFactory h2 = new HTTP2ServerConnectionFactory(httpConfig);
             h2.setRateControlFactory(new RateControl.Factory() {});
+            h2.setStreamIdleTimeout(config.http2StreamIdleTimeoutOrDefault());
             final ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory();
             alpn.setDefaultProtocol(http11 != null ? http11.getProtocol() : h2.getProtocol());
             // The Jetty server is getting intermediate setup by default if none are configured. This is most similar to
@@ -311,6 +312,7 @@ public class JettyBackedGrpcServer implements GrpcServer {
         } else {
             final HTTP2CServerConnectionFactory h2c = new HTTP2CServerConnectionFactory(httpConfig);
             h2c.setRateControlFactory(new RateControl.Factory() {});
+            h2c.setStreamIdleTimeout(config.http2StreamIdleTimeoutOrDefault());
             if (http11 != null) {
                 serverConnector = new ServerConnector(server, http11, h2c);
             } else {
