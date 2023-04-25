@@ -5,7 +5,6 @@ package io.deephaven.time;
 
 import io.deephaven.base.clock.Clock;
 import io.deephaven.base.clock.TimeConstants;
-import io.deephaven.base.clock.TimeZones;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.configuration.Configuration;
@@ -173,6 +172,8 @@ public class DateTimeUtils {
 
     // endregion
 
+    // region Overflow / Underflow
+
     /**
      * A type of RuntimeException thrown when operations resulting in {@link DateTime} values would exceed the range
      * available by max or min long nanoseconds.
@@ -190,6 +191,98 @@ public class DateTimeUtils {
             super(message, cause);
         }
     }
+
+    // + can only result in flow if both positive or both negative
+    private static long checkOverflowPlus(final long l1, final long l2, final boolean minusOperation) {
+        if (l1 > 0 && l2 > 0 && Long.MAX_VALUE - l1 < l2) {
+            final String message = minusOperation
+                    ? "Subtracting " + -l2 + " nanos from " + l1 + " would overflow"
+                    : "Adding " + l2 + " nanos to " + l1 + " would overflow";
+            throw new DateTimeOverflowException(message);
+        }
+
+        if (l1 < 0 && l2 < 0) {
+            return checkUnderflowMinus(l1, -l2, false);
+        }
+
+        return l1 + l2;
+    }
+
+    // - can only result in flow if one is positive and one is negative
+    private static long checkUnderflowMinus(final long l1, final long l2, final boolean minusOperation) {
+        if (l1 < 0 && l2 > 0 && Long.MIN_VALUE + l2 > -l1) {
+            final String message = minusOperation
+                    ? "Subtracting " + l2 + " nanos from " + l1 + " would underflow"
+                    : "Adding " + -l2 + " nanos to " + l1 + " would underflow";
+            throw new DateTimeOverflowException(message);
+        }
+
+        if (l1 > 0 && l2 < 0) {
+            return checkOverflowPlus(l1, -l2, true);
+        }
+
+        return l1 - l2;
+    }
+
+    // endregion
+
+    // region Clock
+
+    // TODO(deephaven-core#3044): Improve scaffolding around full system replay
+    /**
+     * Clock used to compute the current time.  This allows a custom clock to be used instead of the current system clock.
+     * This is mainly used for replay simulations.
+     */
+    private static Clock clock;
+
+    /**
+     * Set the clock used to compute the current time.  This allows a custom clock to be used instead of the current system clock.
+     * This is mainly used for replay simulations.
+     * @param clock clock used to compute the current time.
+     */
+    public static void setClock( final Clock clock) {
+        DateTimeUtils.clock = clock;
+    }
+
+    //TODO: no equivalent
+    /**
+     * Returns the clock used to compute the current time.  This may be the current system clock, or it may be an alternative
+     * clock used for replay simulations.
+     *
+     * @return current clock.
+     */
+    public static Clock currentClock() {
+        return Objects.requireNonNullElse(clock, Clock.system());
+    }
+
+    //TODO: separate now() methods for the current clock and the system clock? -- adjust docs accordingly
+    /**
+     * Provides the current {@link DateTime} according to the current clock.
+     * Under most circumstances, this method will return the current system time, but during replay simulations,
+     * this method can return the replay time.
+     *
+     * @see #currentClock()
+     * @return the current {@link DateTime} according to the current clock.
+     */
+    @ScriptApi
+    public static DateTime now() {
+        return DateTime.of(currentClock());
+    }
+
+    //TODO: no equivalent
+    /**
+     * Provides the current {@link DateTime}, with millisecond resolution, according to the current clock.
+     * Under most circumstances, this method will return the current system time, but during replay simulations,
+     * this method can return the replay time.
+     *
+     * @see #currentClock()
+     * @return the current {@link DateTime}, with millisecond resolution, according to the current clock.
+     */
+    public static DateTime nowMillisResolution() {
+        return DateTime.ofMillis(currentClock());
+    }
+
+    // endregion
 
     // region Time Conversions
 
@@ -675,13 +768,6 @@ public class DateTimeUtils {
     }
 
 
-    //TODO: document
-    // TODO(deephaven-core#3044): Improve scaffolding around full system replay
-    /**
-     * Allows setting a custom clock instead of actual current time. This is mainly used when setting up for a replay
-     * simulation.
-     */
-    public static Clock clock;
 
 
     //TODO: no equivalent
@@ -1157,15 +1243,6 @@ public class DateTimeUtils {
 
 
 
-    //TODO: no equivalent
-    /**
-     * Returns the current clock. The current clock is {@link #clock} if set, otherwise {@link Clock#system()}.
-     *
-     * @return the current clock
-     */
-    public static Clock currentClock() {
-        return Objects.requireNonNullElse(clock, Clock.system());
-    }
 
     private static long safeComputeNanos(long epochSecond, long nanoOfSecond) {
         if (epochSecond >= MAX_CONVERTIBLE_SECONDS) {
@@ -1337,29 +1414,6 @@ public class DateTimeUtils {
 
     // region Query Helper Methods
 
-    //TODO: separate now() methods for the current clock and the system clock? -- adjust docs accordingly
-    //TODO: Equivalent to {@code DateTime.of(currentClock())}.
-    /**
-     * Provides the current DateTime.
-     * *****TODOEquivalent to {@code DateTime.of(currentClock())}.
-     *
-     * @return the current date time
-     */
-    @ScriptApi
-    public static DateTime now() {
-        return DateTime.of(currentClock());
-    }
-
-    //TODO: no equivalent
-    /**
-     * Equivalent to {@code DateTime.ofMillis(currentClock())}.
-     *
-     * @return the current date time
-     */
-    public static DateTime currentTimeMillis() {
-        return DateTime.ofMillis(currentClock());
-    }
-
     private abstract static class CachedDate {
 
         final TimeZone timeZone;
@@ -1415,6 +1469,9 @@ public class DateTimeUtils {
     private static final KeyedObjectHashMap<TimeZone, CachedCurrentDate> cachedCurrentDates =
             new KeyedObjectHashMap<>(new CachedDateKey<CachedCurrentDate>());
 
+    //TODO: move to clock
+    //TODO: make use clock
+    //TODO: this cache could be total garbage!
     //TODO: no equivalent
     /**
      * Returns a String of the current date in the specified {@link TimeZone}.
@@ -1565,38 +1622,6 @@ public class DateTimeUtils {
         return nanosToDateTime(Numeric.upperBin(dateTime.getNanos() - offset, intervalNanos) + offset);
     }
     // endregion
-
-    // + can only result in flow if both positive or both negative
-    private static long checkOverflowPlus(final long l1, final long l2, final boolean minusOperation) {
-        if (l1 > 0 && l2 > 0 && Long.MAX_VALUE - l1 < l2) {
-            final String message = minusOperation
-                    ? "Subtracting " + -l2 + " nanos from " + l1 + " would overflow"
-                    : "Adding " + l2 + " nanos to " + l1 + " would overflow";
-            throw new DateTimeOverflowException(message);
-        }
-
-        if (l1 < 0 && l2 < 0) {
-            return checkUnderflowMinus(l1, -l2, false);
-        }
-
-        return l1 + l2;
-    }
-
-    // - can only result in flow if one is positive and one is negative
-    private static long checkUnderflowMinus(final long l1, final long l2, final boolean minusOperation) {
-        if (l1 < 0 && l2 > 0 && Long.MIN_VALUE + l2 > -l1) {
-            final String message = minusOperation
-                    ? "Subtracting " + l2 + " nanos from " + l1 + " would underflow"
-                    : "Adding " + -l2 + " nanos to " + l1 + " would underflow";
-            throw new DateTimeOverflowException(message);
-        }
-
-        if (l1 > 0 && l2 < 0) {
-            return checkOverflowPlus(l1, -l2, true);
-        }
-
-        return l1 - l2;
-    }
 
     //TODO: no equivalent
     /**
