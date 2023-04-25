@@ -34,7 +34,6 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
  */
 @SuppressWarnings("unused")
 public class DateTimeUtils {
-    //TODO: remove deprecated
     //TODO: document
     //TODO: remove Joda exposure
     //TODO: curate API
@@ -349,22 +348,6 @@ public class DateTimeUtils {
         }
 
         return checkUnderflowMinus(d1.getNanos(), d2.getNanos(), true);
-    }
-
-    //TODO: remove deprecated -- ALL OF THEM
-    @Deprecated
-    public static long diff(DateTime d1, DateTime d2) {
-        return diffNanos(d1, d2);
-    }
-
-    @Deprecated
-    public static double yearDiff(DateTime start, DateTime end) {
-        return diffYears(start, end);
-    }
-
-    @Deprecated
-    public static double dayDiff(DateTime start, DateTime end) {
-        return diffDays(start, end);
     }
 
     /**

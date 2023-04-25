@@ -158,8 +158,8 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         DateTime dateTime1 = new DateTime(jodaDateTime1.getMillis() * 1000000 + 123456);
         DateTime dateTime2 = new DateTime(jodaDateTime2.getMillis() * 1000000 + 123456);
 
-        TestCase.assertEquals(3600000000000L, DateTimeUtils.diff(dateTime1, dateTime2));
-        TestCase.assertEquals(-3600000000000L, DateTimeUtils.diff(dateTime2, dateTime1));
+        TestCase.assertEquals(3600000000000L, DateTimeUtils.diffNanos(dateTime1, dateTime2));
+        TestCase.assertEquals(-3600000000000L, DateTimeUtils.diffNanos(dateTime2, dateTime1));
 
         TestCase.assertEquals(3600000000000L, DateTimeUtils.diffNanos(dateTime1, dateTime2));
         TestCase.assertEquals(-3600000000000L, DateTimeUtils.diffNanos(dateTime2, dateTime1));
@@ -175,10 +175,10 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         DateTime t3 = new DateTime(jt3.getMillis() * 1000000 + 123456);
 
 
-        TestCase.assertEquals(1.0, DateTimeUtils.yearDiff(t1, t2), 0.01);
-        TestCase.assertEquals(0.5, DateTimeUtils.yearDiff(t1, t3), 0.01);
-        TestCase.assertEquals(io.deephaven.util.QueryConstants.NULL_DOUBLE, DateTimeUtils.yearDiff(null, t1));
-        TestCase.assertEquals(io.deephaven.util.QueryConstants.NULL_DOUBLE, DateTimeUtils.yearDiff(t1, null));
+        TestCase.assertEquals(1.0, DateTimeUtils.diffYears(t1, t2), 0.01);
+        TestCase.assertEquals(0.5, DateTimeUtils.diffYears(t1, t3), 0.01);
+        TestCase.assertEquals(io.deephaven.util.QueryConstants.NULL_DOUBLE, DateTimeUtils.diffYears(null, t1));
+        TestCase.assertEquals(io.deephaven.util.QueryConstants.NULL_DOUBLE, DateTimeUtils.diffYears(t1, null));
 
         TestCase.assertEquals(1.0, DateTimeUtils.diffYears(t1, t2), 0.01);
         TestCase.assertEquals(0.5, DateTimeUtils.diffYears(t1, t3), 0.01);
