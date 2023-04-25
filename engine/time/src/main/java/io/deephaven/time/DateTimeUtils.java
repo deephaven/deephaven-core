@@ -39,6 +39,7 @@ public class DateTimeUtils {
     //TODO: curate API
     //TODO: review public vs private
     //TODO: test coverage
+    //TODO: variable and function naming consistency
 
     //TODO: reorganize functions into better groupings
 
@@ -144,6 +145,26 @@ public class DateTimeUtils {
      * Maximum time in seconds that can be converted to a {@link DateTime} without overflow.
      */
     private static final long MAX_CONVERTIBLE_SECONDS = Long.MAX_VALUE / 1_000_000_000L;
+
+    /**
+     * Number of seconds per nanosecond.
+     */
+    private static final double SECONDS_PER_NANO = 1. / (double) SECOND;
+
+    /**
+     * Number of minutes per nanosecond.
+     */
+    private static final double MINUTES_PER_NANO = 1. / (double) MINUTE;
+
+    /**
+     * Number of hours per nanosecond.
+     */
+    private static final double HOURS_PER_NANO = 1. / (double) HOUR;
+
+    /**
+     * Number of days per nanosecond.
+     */
+    private static final double DAYS_PER_NANO = 1. / (double) DAY;
 
     /**
      * Number of years per nanosecond.
@@ -408,6 +429,213 @@ public class DateTimeUtils {
 
     // endregion
 
+    // region Time Arithmetic
+
+    /**
+     * Adds nanoseconds to a {@link DateTime}.
+     *
+     * @param dateTime starting {@link DateTime} value.
+     * @param nanos number of nanoseconds to add.
+     * @return null if either input is null or {@link QueryConstants#NULL_LONG}; otherwise the starting {@link DateTime} plus the specified number
+     *      of nanoseconds.
+     * @throws DateTimeOverflowException if the resultant {@link DateTime} exceeds the supported range.
+     */
+    public static DateTime plus(DateTime dateTime, long nanos) {
+        if (dateTime == null || nanos == NULL_LONG) {
+            return null;
+        }
+
+        return new DateTime(checkOverflowPlus(dateTime.getNanos(), nanos, false));
+    }
+
+    /**
+     * Adds a time period to a {@link DateTime}.
+     *
+     * @param dateTime starting {@link DateTime} value.
+     * @param period time period.
+     * @return null if either input is null or {@link QueryConstants#NULL_LONG}; otherwise the starting {@link DateTime} plus the specified time period.
+     * @throws DateTimeOverflowException if the resultant {@link DateTime} exceeds the supported range.
+     */
+    public static DateTime plus(DateTime dateTime, Period period) {
+        if (dateTime == null || period == null) {
+            return null;
+        }
+
+        if (period.isPositive()) {
+            return new DateTime(millisToNanos(dateTime.getJodaDateTime().plus(period.getJodaPeriod()).getMillis())
+                    + dateTime.getNanosPartial());
+        } else {
+            return new DateTime(millisToNanos(dateTime.getJodaDateTime().minus(period.getJodaPeriod()).getMillis())
+                    + dateTime.getNanosPartial());
+        }
+    }
+
+    /**
+     * Subtracts nanoseconds from a {@link DateTime}.
+     *
+     * @param dateTime starting {@link DateTime} value.
+     * @param nanos number of nanoseconds to subtract.
+     * @return null if either input is null or {@link QueryConstants#NULL_LONG}; otherwise the starting {@link DateTime} minus the specified number
+     *      of nanoseconds.
+     * @throws DateTimeOverflowException if the resultant {@link DateTime} exceeds the supported range.
+     */
+    public static DateTime minus(DateTime dateTime, long nanos) {
+        if (dateTime == null || -nanos == NULL_LONG) {
+            return null;
+        }
+
+        return new DateTime(checkUnderflowMinus(dateTime.getNanos(), nanos, true));
+    }
+
+    /**
+     * Subtracts a time period from a {@link DateTime}.
+     *
+     * @param dateTime starting {@link DateTime} value.
+     * @param period time period.
+     * @return null if either input is null or {@link QueryConstants#NULL_LONG}; otherwise the starting {@link DateTime} minus the specified time period.
+     * @throws DateTimeOverflowException if the resultant {@link DateTime} exceeds the supported range.
+     */
+    public static DateTime minus(DateTime dateTime, Period period) {
+        if (dateTime == null || period == null) {
+            return null;
+        }
+
+        if (period.isPositive()) {
+            return new DateTime(millisToNanos(dateTime.getJodaDateTime().minus(period.getJodaPeriod()).getMillis())
+                    + dateTime.getNanosPartial());
+        } else {
+            return new DateTime(millisToNanos(dateTime.getJodaDateTime().plus(period.getJodaPeriod()).getMillis())
+                    + dateTime.getNanosPartial());
+        }
+    }
+
+    /**
+     * Subtract one time from another and return the difference in nanoseconds.
+     *
+     * @param dateTime1 first {@link DateTime}.
+     * @param dateTime2 second {@link DateTime}.
+     * @return {@link QueryConstants#NULL_LONG} if either input is null; otherwise the difference in dateTime1 and dateTime2 in nanoseconds.
+     * @throws DateTimeOverflowException if the datetime arithemetic overflows or underflows.
+     */
+    public static long minus(DateTime dateTime1, DateTime dateTime2) {
+        if (dateTime1 == null || dateTime2 == null) {
+            return NULL_LONG;
+        }
+
+        return checkUnderflowMinus(dateTime1.getNanos(), dateTime2.getNanos(), true);
+    }
+
+    /**
+     * Returns the difference in nanoseconds between two {@link DateTime} values.
+     *
+     * @param start start time.
+     * @param end end time.
+     * @return {@link QueryConstants#NULL_LONG} if either input is null; otherwise the difference in start and end in nanoseconds.
+     * @throws DateTimeOverflowException if the datetime arithemetic overflows or underflows.
+     */
+    @SuppressWarnings("WeakerAccess")
+    public static long diffNanos(DateTime start, DateTime end) {
+        return minus(end, start);
+    }
+
+    /**
+     * Returns the difference in microseconds between two {@link DateTime} values.
+     *
+     * @param start start time.
+     * @param end end time.
+     * @return {@link QueryConstants#NULL_LONG} if either input is null; otherwise the difference in start and end in microseconds.
+     * @throws DateTimeOverflowException if the datetime arithemetic overflows or underflows.
+     */
+    public static long diffMicros(DateTime start, DateTime end) {
+        if (start == null || end == null) {
+            return io.deephaven.util.QueryConstants.NULL_LONG;
+        }
+
+        return nanosToMicros(diffNanos(start, end));
+    }
+
+    /**
+     * Returns the difference in milliseconds between two {@link DateTime} values.
+     *
+     * @param start start time.
+     * @param end end time.
+     * @return {@link QueryConstants#NULL_LONG} if either input is null; otherwise the difference in start and end in milliseconds.
+     * @throws DateTimeOverflowException if the datetime arithemetic overflows or underflows.
+     */
+    public static long diffMillis(DateTime start, DateTime end) {
+        if (start == null || end == null) {
+            return io.deephaven.util.QueryConstants.NULL_LONG;
+        }
+
+        return nanosToMillis(diffNanos(start, end));
+    }
+
+    /**
+     * Returns the difference in seconds between two {@link DateTime} values.
+     *
+     * @param start start time.
+     * @param end end time.
+     * @return {@link QueryConstants#NULL_DOUBLE} if either input is null; otherwise the difference in start and end in seconds.
+     * @throws DateTimeOverflowException if the datetime arithemetic overflows or underflows.
+     */
+    public static double diffSeconds(DateTime start, DateTime end) {
+        if (start == null || end == null) {
+            return io.deephaven.util.QueryConstants.NULL_DOUBLE;
+        }
+
+        return (double) diffNanos(start, end) / SECOND;
+    }
+
+    /**
+     * Returns the difference in minutes between two {@link DateTime} values.
+     *
+     * @param start start time.
+     * @param end end time.
+     * @return {@link QueryConstants#NULL_DOUBLE} if either input is null; otherwise the difference in start and end in minutes.
+     * @throws DateTimeOverflowException if the datetime arithemetic overflows or underflows.
+     */
+    public static double diffMinutes(DateTime start, DateTime end) {
+        if (start == null || end == null) {
+            return io.deephaven.util.QueryConstants.NULL_DOUBLE;
+        }
+
+        return (double) diffNanos(start, end) / MINUTE;
+    }
+
+    /**
+     * Returns the difference in days between two {@link DateTime} values.
+     *
+     * @param start start time.
+     * @param end end time.
+     * @return {@link QueryConstants#NULL_DOUBLE} if either input is null; otherwise the difference in start and end in days.
+     * @throws DateTimeOverflowException if the datetime arithemetic overflows or underflows.
+     */
+    public static double diffDays(DateTime start, DateTime end) {
+        if (start == null || end == null) {
+            return io.deephaven.util.QueryConstants.NULL_DOUBLE;
+        }
+
+        return (double) diffNanos(start, end) / DAY;
+    }
+
+    /**
+     * Returns the difference in years (365-days) between two {@link DateTime} values.
+     *
+     * @param start start time.
+     * @param end end time.
+     * @return {@link QueryConstants#NULL_DOUBLE} if either input is null; otherwise the difference in start and end in years.
+     * @throws DateTimeOverflowException if the datetime arithemetic overflows or underflows.
+     */
+    public static double diffYears(DateTime start, DateTime end) {
+        if (start == null || end == null) {
+            return io.deephaven.util.QueryConstants.NULL_DOUBLE;
+        }
+
+        return (double) diffNanos(start, end) * YEARS_PER_NANO;
+    }
+
+    // endregion
+
     // ##############################################################################
 
 
@@ -504,181 +732,7 @@ public class DateTimeUtils {
         return d1.getNanos() > d2.getNanos();
     }
 
-    /**
-     * Adds one time from another.
-     *
-     * @param dateTime The starting {@link DateTime} value.
-     * @param nanos The long number of nanoseconds to add to dateTime.
-     * @return a null {@link DateTime} if either input is null; the starting {@link DateTime} plus the specified number
-     *         of nanoseconds, if the result is not too large for a {@link DateTime}; or throws a
-     *         {@link DateTimeOverflowException DateTimeOverflowException} if the resultant value is more than max long
-     *         nanoseconds from Epoch.
-     */
-    public static DateTime plus(DateTime dateTime, long nanos) {
-        if (dateTime == null || nanos == NULL_LONG) {
-            return null;
-        }
 
-        return new DateTime(checkOverflowPlus(dateTime.getNanos(), nanos, false));
-    }
-
-    /**
-     * Subtracts one time from another.
-     *
-     * @param dateTime The starting {@link DateTime} value.
-     * @param nanos The long number of nanoseconds to subtract from dateTime.
-     * @return a null {@link DateTime} if either input is null; the starting {@link DateTime} minus the specified number
-     *         of nanoseconds, if the result is not too negative for a {@link DateTime}; or throws a
-     *         {@link DateTimeOverflowException DateTimeOverflowException} if the resultant value is more than min long
-     *         nanoseconds from Epoch.
-     */
-    public static DateTime minus(DateTime dateTime, long nanos) {
-        if (dateTime == null || -nanos == NULL_LONG) {
-            return null;
-        }
-
-        return new DateTime(checkUnderflowMinus(dateTime.getNanos(), nanos, true));
-    }
-
-    /**
-     * Adds one time from another.
-     *
-     * @param dateTime The starting {@link DateTime} value.
-     * @param period The {@link Period} to add to dateTime.
-     * @return a null {@link DateTime} if either input is null; the starting {@link DateTime} plus the specified period,
-     *         if the result is not too large for a DateTime; or throws a {@link DateTimeOverflowException
-     *         DateTimeOverflowException} if the resultant value is more than max long nanoseconds from Epoch.
-     */
-    public static DateTime plus(DateTime dateTime, Period period) {
-        if (dateTime == null || period == null) {
-            return null;
-        }
-
-        if (period.isPositive()) {
-            return new DateTime(millisToNanos(dateTime.getJodaDateTime().plus(period.getJodaPeriod()).getMillis())
-                    + dateTime.getNanosPartial());
-        } else {
-            return new DateTime(millisToNanos(dateTime.getJodaDateTime().minus(period.getJodaPeriod()).getMillis())
-                    + dateTime.getNanosPartial());
-        }
-    }
-
-    /**
-     * Subtracts one time from another.
-     *
-     * @param dateTime The starting {@link DateTime} value.
-     * @param period The {@link Period} to subtract from dateTime.
-     * @return a null {@link DateTime} if either input is null; the starting {@link DateTime} minus the specified
-     *         period, if the result is not too negative for a {@link DateTime}; or throws a
-     *         {@link DateTimeOverflowException DateTimeOverflowException} if the resultant value is more than min long
-     *         nanoseconds from Epoch.
-     */
-    public static DateTime minus(DateTime dateTime, Period period) {
-        if (dateTime == null || period == null) {
-            return null;
-        }
-
-        if (period.isPositive()) {
-            return new DateTime(millisToNanos(dateTime.getJodaDateTime().minus(period.getJodaPeriod()).getMillis())
-                    + dateTime.getNanosPartial());
-        } else {
-            return new DateTime(millisToNanos(dateTime.getJodaDateTime().plus(period.getJodaPeriod()).getMillis())
-                    + dateTime.getNanosPartial());
-        }
-    }
-
-    /**
-     * Subtracts one time from another.
-     *
-     * @param d1 The first {@link DateTime}.
-     * @param d2 The {@link DateTime} to subtract from d1.
-     * @return {@link QueryConstants#NULL_LONG} if either input is null; the long nanoseconds from Epoch value of the
-     *         first {@link DateTime} minus d2, if the result is not out of range for a long value; or throws a
-     *         {@link DateTimeOverflowException DateTimeOverflowException} if the resultant value would be more than min
-     *         long or max long nanoseconds from Epoch.
-     *         <P>
-     *         Note that the subtraction is done based the nanosecond offsets of the two dates from Epoch, so, if either
-     *         date is before Epoch (negative offset), the result may be unexpected.
-     *         </P>
-     */
-    public static long minus(DateTime d1, DateTime d2) {
-        if (d1 == null || d2 == null) {
-            return NULL_LONG;
-        }
-
-        return checkUnderflowMinus(d1.getNanos(), d2.getNanos(), true);
-    }
-
-    /**
-     * Returns the difference in nanoseconds between two {@link DateTime} values.
-     *
-     * @param d1 The first {@link DateTime}.
-     * @param d2 The second {@link DateTime}.
-     * @return {@link QueryConstants#NULL_LONG} if either input is null; the long nanoseconds from Epoch value of the
-     *         first {@link DateTime} minus d2, if the result is not out of range for a long value; or throws a
-     *         {@link DateTimeOverflowException DateTimeOverflowException} if the resultant value would be more than min
-     *         long or max long nanoseconds from Epoch.
-     *         <P>
-     *         Note that the subtraction is done based the nanosecond offsets of the two dates from Epoch, so, if either
-     *         date is before Epoch (negative offset), the result may be unexpected.
-     *         </P>
-     *         If the first value is greater than the second value, the result will be negative.
-     */
-    //TODO: review note in docs
-    @SuppressWarnings("WeakerAccess")
-    public static long diffNanos(DateTime d1, DateTime d2) {
-        return minus(d2, d1);
-    }
-
-    /**
-     * Returns a double value of the number of 365 day units difference between two {@link DateTime} values.
-     *
-     * @param start The first {@link DateTime}.
-     * @param end The second {@link DateTime}.
-     * @return {@link QueryConstants#NULL_LONG} if either input is null; a double value of the number of 365 day periods
-     *         obtained from the first {@link DateTime} value minus d2, if the intermediate value of nanoseconds
-     *         difference between the two dates is not out of range for a long value; or throws a
-     *         {@link DateTimeOverflowException} if the intermediate value would be more than min long or max long
-     *         nanoseconds from Epoch.
-     *         <P>
-     *         Note that the subtraction is done based the nanosecond offsets of the two dates from Epoch, so, if either
-     *         date is before Epoch (negative offset), the result may be unexpected.
-     *         </P>
-     *         If the first value is greater than the second value, the result will be negative.
-     */
-    //TODO: review note in docs
-    public static double diffYears(DateTime start, DateTime end) {
-        if (start == null || end == null) {
-            return io.deephaven.util.QueryConstants.NULL_DOUBLE;
-        }
-
-        return (double) diffNanos(start, end) * YEARS_PER_NANO;
-    }
-
-    /**
-     * Returns a double value of the number of days difference between two {@link DateTime} values.
-     *
-     * @param start The first {@link DateTime}.
-     * @param end The second {@link DateTime}.
-     * @return {@link QueryConstants#NULL_LONG} if either input is null; a double value of the number of days obtained
-     *         from the first {@link DateTime} value minus d2, if the intermediate value of nanoseconds difference
-     *         between the two dates is not out of range for a long value; or throws a {@link DateTimeOverflowException
-     *         DateTimeOverflowException} if the intermediate value would be more than min long or max long nanoseconds
-     *         from Epoch.
-     *         <P>
-     *         Note that the subtraction is done based the nanosecond offsets of the two dates from Epoch, so, if either
-     *         date is before Epoch (negative offset), the result may be unexpected.
-     *         </P>
-     *         If the first value is greater than the second value, the result will be negative.
-     */
-    @SuppressWarnings("WeakerAccess")
-    public static double diffDays(DateTime start, DateTime end) {
-        if (start == null || end == null) {
-            return io.deephaven.util.QueryConstants.NULL_DOUBLE;
-        }
-
-        return (double) diffNanos(start, end) / DAY;
-    }
     // endregion
 
     /**
