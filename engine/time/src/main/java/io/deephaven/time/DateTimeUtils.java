@@ -32,6 +32,7 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
  * Utilities for Deephaven date/time storage and manipulation.
  */
 //@SuppressWarnings("unused")
+@SuppressWarnings("RegExpRedundantEscape")
 public class DateTimeUtils {
     //TODO: document
     //TODO: remove Joda exposure
@@ -489,6 +490,7 @@ public class DateTimeUtils {
     }
 
     //TODO: no equivalent
+    //TODO: make this method private b/c of timezone?
     /**
      * Converts a {@link DateTime} to an Excel time represented as a double.
      *
@@ -725,6 +727,74 @@ public class DateTimeUtils {
         }
 
         return (double) diffNanos(start, end) * YEARS_PER_NANO;
+    }
+
+    // endregion
+
+    // region Comparisons
+
+    /**
+     * Evaluates whether one {@link DateTime} value is before a second {@link DateTime} value.
+     *
+     * @param dateTime1 first {@link DateTime}.
+     * @param dateTime2 second {@link DateTime}.
+     * @return true if dateTime1 is before dateTime2; otherwise, false if either value is null or if dateTime2 is equal
+     *      to or before dateTime1.
+     */
+    public static boolean isBefore(DateTime dateTime1, DateTime dateTime2) {
+        if (dateTime1 == null || dateTime2 == null) {
+            return false;
+        }
+
+        return dateTime1.getNanos() < dateTime2.getNanos();
+    }
+
+    /**
+     * Evaluates whether one {@link DateTime} value is before or equal to a second {@link DateTime} value.
+     *
+     * @param dateTime1 first {@link DateTime}.
+     * @param dateTime2 second {@link DateTime}.
+     * @return true if dateTime1 is before or equal to dateTime2; otherwise, false if either value is null or if dateTime2
+     *      is before dateTime1.
+     */
+    public static boolean isBeforeOrEqual(DateTime dateTime1, DateTime dateTime2) {
+        if (dateTime1 == null || dateTime2 == null) {
+            return false;
+        }
+
+        return dateTime1.getNanos() <= dateTime2.getNanos();
+    }
+
+    /**
+     * Evaluates whether one {@link DateTime} value is after a second {@link DateTime} value.
+     *
+     * @param dateTime1 first {@link DateTime}.
+     * @param dateTime2 second {@link DateTime}.
+     * @return true if dateTime1 is after dateTime2; otherwise, false if either value is null or if dateTime2 is equal
+     *      to or after dateTime1.
+     */
+    public static boolean isAfter(DateTime dateTime1, DateTime dateTime2) {
+        if (dateTime1 == null || dateTime2 == null) {
+            return false;
+        }
+
+        return dateTime1.getNanos() > dateTime2.getNanos();
+    }
+
+    /**
+     * Evaluates whether one {@link DateTime} value is after or equal to a second {@link DateTime} value.
+     *
+     * @param dateTime1 first {@link DateTime}.
+     * @param dateTime2 second {@link DateTime}.
+     * @return true if dateTime1 is after or equal to dateTime2; otherwise, false if either value is null or if dateTime2
+     *      is after dateTime1.
+     */
+    public static boolean isAfterOrEqual(DateTime dateTime1, DateTime dateTime2) {
+        if (dateTime1 == null || dateTime2 == null) {
+            return false;
+        }
+
+        return dateTime1.getNanos() >= dateTime2.getNanos();
     }
 
     // endregion
@@ -1076,42 +1146,6 @@ public class DateTimeUtils {
         return Math.addExact(TimeUnit.SECONDS.toNanos(instant.getEpochSecond()), instant.getNano());
     }
 
-    // region Comparisons
-
-    /**
-     * Evaluates whether one {@link DateTime} value is earlier than a second {@link DateTime} value.
-     *
-     * @param d1 The first {@link DateTime} value to compare.
-     * @param d2 The second {@link DateTime} value to compare.
-     * @return Boolean true if d1 is earlier than d2, false if either value is null, or if d2 is equal to or earlier
-     *         than d1.
-     */
-    public static boolean isBefore(DateTime d1, DateTime d2) {
-        if (d1 == null || d2 == null) {
-            return false;
-        }
-
-        return d1.getNanos() < d2.getNanos();
-    }
-
-    /**
-     * Evaluates whether one {@link DateTime} value is later than a second {@link DateTime} value.
-     *
-     * @param d1 The first {@link DateTime} value to compare.
-     * @param d2 The second {@link DateTime} value to compare.
-     * @return Boolean true if d1 is later than d2, false if either value is null, or if d2 is equal to or later than
-     *         d1.
-     */
-    public static boolean isAfter(DateTime d1, DateTime d2) {
-        if (d1 == null || d2 == null) {
-            return false;
-        }
-
-        return d1.getNanos() > d2.getNanos();
-    }
-
-
-    // endregion
 
     /**
      * Returns a {@link DateTime} for the requested {@link DateTime} at midnight in the specified time zone.
@@ -1984,28 +2018,6 @@ public class DateTimeUtils {
         return ret;
     }
 
-
-    private static int extractTwoDigitNum(String s, int startIndex) {
-        return (s.charAt(startIndex) - '0') * 10 + (s.charAt(startIndex + 1) - '0');
-    }
-
-    private static int extractThreeDigitNum(String s, int startIndex) {
-        return (s.charAt(startIndex) - '0') * 100 + (s.charAt(startIndex + 1) - '0') * 10
-                + (s.charAt(startIndex + 2) - '0');
-    }
-
-    private static int extractFourDigitNum(String s, int startIndex) {
-        return (s.charAt(startIndex) - '0') * 1000 + (s.charAt(startIndex + 1) - '0') * 100
-                + (s.charAt(startIndex + 2) - '0') * 10 + (s.charAt(startIndex + 3) - '0');
-    }
-
-    private static int extractSixDigitNum(String s, int startIndex) {
-        int result = 0;
-        for (int i = startIndex; i < startIndex + 6; i++) {
-            result = result * 10 + s.charAt(i) - '0';
-        }
-        return result;
-    }
 
     //TODO: no equivalent
     /**
