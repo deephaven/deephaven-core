@@ -594,12 +594,12 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
                 DateTimeUtils.upperBin(DateTimeUtils.upperBin(time, second, second), second, second));
     }
 
-    public void testGetExcelDate() {
+    public void testDateTimeToExcel() {
         DateTime time = DateTimeUtils.toDateTime("2010-06-15T16:00:00 NY");
-        TestCase.assertTrue(CompareUtils.doubleEquals(40344.666666666664, DateTimeUtils.getExcelDateTime(time)));
+        TestCase.assertTrue(CompareUtils.doubleEquals(40344.666666666664, DateTimeUtils.dateTimeToExcel(time, TimeZones.TZ_NEWYORK)));
         TestCase.assertTrue(
-                CompareUtils.doubleEquals(40344.625, DateTimeUtils.getExcelDateTime(time, TimeZones.TZ_CHICAGO)));
-        TestCase.assertTrue(CompareUtils.doubleEquals(40344.625, DateTimeUtils.getExcelDateTime(time, TimeZone.TZ_MN)));
+                CompareUtils.doubleEquals(40344.625, DateTimeUtils.dateTimeToExcel(time, TimeZones.TZ_CHICAGO)));
+        TestCase.assertTrue(CompareUtils.doubleEquals(40344.625, DateTimeUtils.dateTimeToExcel(time, TimeZone.TZ_MN)));
     }
 
     /**

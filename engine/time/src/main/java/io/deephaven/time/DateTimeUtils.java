@@ -374,8 +374,39 @@ public class DateTimeUtils {
         return nanosToDateTime(secondsToNanos(seconds));
     }
 
-    // endregion
+    //TODO: no equivalent
+    /**
+     * Converts a {@link DateTime} to an Excel time represented as a double.
+     *
+     * @param dateTime {@link DateTime} to convert.
+     * @param timeZone {@link java.util.TimeZone} to use when interpreting the {@link DateTime}.
+     * @return 0.0 if either input is null; otherwise, the input {@link DateTime} converted to an Excel time represented as a double.
+     */
+    @SuppressWarnings("WeakerAccess")
+    public static double dateTimeToExcel(DateTime dateTime, java.util.TimeZone timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return 0.0d;
+        }
+        long millis = dateTime.getMillis();
 
+        return (double) (millis + timeZone.getOffset(millis)) / 86400000 + 25569;
+    }
+
+    //TODO: no equivalent
+    /**
+     * Converts a {@link DateTime} to an Excel time represented as a double.
+     *
+     * @param dateTime {@link DateTime} to convert.
+     * @param timeZone {@link TimeZone} to use when interpreting the {@link DateTime}.
+     */
+    @SuppressWarnings("WeakerAccess")
+    public static double dateTimeToExcel(DateTime dateTime, TimeZone timeZone) {
+        return dateTimeToExcel(dateTime, timeZone.getTimeZone().toTimeZone());
+    }
+
+    //TODO: add excelToDateTime
+
+    // endregion
 
     // ##############################################################################
 
@@ -1069,51 +1100,6 @@ public class DateTimeUtils {
 
     // region Base and Unit conversion
 
-    //TODO: no equivalent
-    /**
-     * Returns the Excel double time format representation of a {@link DateTime}.
-     *
-     * @param dateTime The {@link DateTime} to convert.
-     * @param timeZone The {@link TimeZone} to use when interpreting the date/time.
-     * @return 0.0 if either input is null, otherwise, a double value containing the Excel double format representation
-     *         of a {@link DateTime} in the specified time zone.
-     */
-    @SuppressWarnings("WeakerAccess")
-    public static double getExcelDateTime(DateTime dateTime, TimeZone timeZone) {
-        return getExcelDateTime(dateTime, timeZone.getTimeZone().toTimeZone());
-    }
-
-    //TODO: no equivalent
-    /**
-     * Returns the Excel double time format representation of a {@link DateTime}.
-     *
-     * @param dateTime The {@link DateTime} to convert.
-     * @param timeZone The {@link java.util.TimeZone} to use when interpreting the date/time.
-     * @return 0.0 if either input is null, otherwise, a double value containing the Excel double format representation
-     *         of a {@link DateTime} in the specified time zone.
-     */
-    @SuppressWarnings("WeakerAccess")
-    public static double getExcelDateTime(DateTime dateTime, java.util.TimeZone timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return 0.0d;
-        }
-        long millis = dateTime.getMillis();
-
-        return (double) (millis + timeZone.getOffset(millis)) / 86400000 + 25569;
-    }
-
-    //TODO: no equivalent
-    /**
-     * Returns the Excel double time format representation of a {@link DateTime}.
-     *
-     * @param dateTime The {@link DateTime} to convert.
-     * @return 0.0 if the input is null, otherwise, a double value containing the Excel double format representation of
-     *         a {@link DateTime} in the New York time zone.
-     */
-    @SuppressWarnings("WeakerAccess")
-    public static double getExcelDateTime(DateTime dateTime) {
-        return getExcelDateTime(dateTime, TimeZones.TZ_NEWYORK);
-    }
 
 
 
