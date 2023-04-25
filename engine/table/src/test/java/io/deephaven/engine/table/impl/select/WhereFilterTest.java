@@ -25,11 +25,11 @@ public class WhereFilterTest extends TestCase {
     private static final TableDefinition DUMMY_DEF = TableDefinition.of(Collections.emptyList());
 
     public void testFoo() {
-        expect(FOO, ConditionFilter.class, "Foo");
+        expect(FOO, ConditionFilter.class, "!isNull(Foo) && Foo");
     }
 
     public void testNotFoo() {
-        opposite(FOO, ConditionFilter.class, "!Foo");
+        opposite(FOO, ConditionFilter.class, "isNull(Foo) || !Foo");
     }
 
     public void testFooIsTrue() {
