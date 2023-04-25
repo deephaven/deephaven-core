@@ -13,7 +13,7 @@ from deephaven.filters import not_, or_
 # any Table
 t = ...
 
-# any API filter
+# any filter API
 f = ...
 
 # f ∧ ¬f = 0
@@ -46,6 +46,25 @@ t2 = t.where("!isNull(Foo) && Foo.matches(`a.*z`)")
 # t3 is unsafe, will throw null pointer exception if Foo == null during evaluation
 t3 = t.where("Foo.matches(`a.*z`)")
 ```
+
+Safety, in the context of the pattern filter, means that it won't throw a null pointer exception during execution - it
+explicitly excludes null values against matching. More generally though, safety is defined on a filter-by-filter basis
+considering the ranges of inputs it could receive. Frequently, this means the filter will include or exclude null values
+based on the most common use-cases for the filter.
+
+Consider a theoretical filter `is_positive` that operates on a single string column, roughly defined as an equivalent to
+`Double.parseDouble(Foo) > 0.0`:
+
+```python
+from deephaven.filters import is_positive
+
+# Table with string column Foo
+t = ...
+t1 = t.where(is_positive("Foo"))
+```
+
+In this case, we would likely want to define the "safety of is_positive" to mean that null and strings not parseable as
+doubles are excluded from matching.
 
 ## Filter flags
 
