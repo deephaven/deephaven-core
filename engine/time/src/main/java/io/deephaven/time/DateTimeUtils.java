@@ -31,7 +31,7 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
 /**
  * Utilities for Deephaven date/time storage and manipulation.
  */
-@SuppressWarnings("unused")
+//@SuppressWarnings("unused")
 public class DateTimeUtils {
     //TODO: document
     //TODO: remove Joda exposure
@@ -943,7 +943,83 @@ public class DateTimeUtils {
 
     // endregion
 
+    // region Format Times
 
+    /**
+     * Returns a DateTime formatted as a "yyyy-MM-ddThh:mm:ss.SSSSSSSSS TZ" string.
+     *
+     * @param dateTime time to format as a string.
+     * @param timeZone time zone to use when formatting the string.
+     * @return null if either input is null; otherwise, the time formatted as a "yyyy-MM-ddThh:mm:ss.nnnnnnnnn TZ" string.
+     */
+    public static String formatDateTime(DateTime dateTime, TimeZone timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return null;
+        }
+
+        return dateTime.toString(timeZone);
+    }
+
+    /**
+     * Returns a DateTime formatted as a "yyyy-MM-dd" string.
+     *
+     * @param dateTime time to format as a string.
+     * @param timeZone time zone to use when formatting the string.
+     * @return null if either input is null; otherwise, the time formatted as a "yyyy-MM-ddThh" string.
+    */
+    public static String formatDate(DateTime dateTime, TimeZone timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return null;
+        }
+
+        return dateTime.toDateString(timeZone);
+    }
+
+    /**
+     * Returns nanoseconds formatted as a "dddThh:mm:ss.nnnnnnnnn" string.
+     *
+     * @param nanos nanoseconds.
+     * @return the nanoseconds formatted as a "dddThh:mm:ss.nnnnnnnnn" string.
+     */
+    public static String formatNanos(long nanos) {
+        StringBuilder buf = new StringBuilder(25);
+
+        if (nanos < 0) {
+            buf.append('-');
+            nanos = -nanos;
+        }
+
+        int days = (int) (nanos / 86400000000000L);
+
+        nanos %= 86400000000000L;
+
+        int hours = (int) (nanos / 3600000000000L);
+
+        nanos %= 3600000000000L;
+
+        int minutes = (int) (nanos / 60000000000L);
+
+        nanos %= 60000000000L;
+
+        int seconds = (int) (nanos / 1000000000L);
+
+        nanos %= 1000000000L;
+
+        if (days != 0) {
+            buf.append(days).append('T');
+        }
+
+        buf.append(hours).append(':').append(pad(String.valueOf(minutes), 2)).append(':')
+                .append(pad(String.valueOf(seconds), 2));
+
+        if (nanos != 0) {
+            buf.append('.').append(pad(String.valueOf(nanos), 9));
+        }
+
+        return buf.toString();
+    }
+
+    // endregion
 
     // ##############################################################################
 
@@ -1074,88 +1150,6 @@ public class DateTimeUtils {
 
         return new DateTime(millisToNanos(new DateMidnight(millis, timeZone.getTimeZone()).getMillis()));
     }
-
-    // region Formatting
-
-    //TODO: rename formatting commands?
-    /**
-     * Returns a string DateTime representation formatted as "yyyy-MM-ddThh:mm:ss.SSSSSSSSS TZ".
-     *
-     * @param dateTime The {@link DateTime} to format as a String.
-     * @param timeZone The {@link TimeZone} to use when formatting the String.
-     * @return A null String if either input is null, otherwise a String formatted as "yyyy-MM-ddThh:mm:ss.nnnnnnnnn TZ".
-     */
-    public static String formatDateTime(DateTime dateTime, TimeZone timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return null;
-        }
-
-        return dateTime.toString(timeZone);
-    }
-
-    /**
-     * Returns a string date representation for a specified {@link DateTime} and time zone formatted as
-     * "yyy-MM-dd".
-     *
-     * @param dateTime The {@link DateTime} to format as a String.
-     * @param timeZone The {@link TimeZone} to use when formatting the String.
-     * @return A null String if either input is null, otherwise a String formatted as "yyyy-MM-dd".
-     */
-    @SuppressWarnings("WeakerAccess")
-    public static String formatDate(DateTime dateTime, TimeZone timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return null;
-        }
-
-        return dateTime.toDateString(timeZone);
-    }
-
-    /**
-     * Returns a string representation of a number of nanoseconds formatted as "dddThh:mm:ss.nnnnnnnnn".
-     * For periods less than one day, "dddT" is not included.
-     *
-     * @param nanos The long number of nanoseconds offset from Epoch.
-     * @return A String formatted as "dddThh:mm:ss.nnnnnnnnn" for periods of more and one day and "hh:mm:ss.nnnnnnnnn" otherwise.
-     */
-    public static String formatNanos(long nanos) {
-        StringBuilder buf = new StringBuilder(25);
-
-        if (nanos < 0) {
-            buf.append('-');
-            nanos = -nanos;
-        }
-
-        int days = (int) (nanos / 86400000000000L);
-
-        nanos %= 86400000000000L;
-
-        int hours = (int) (nanos / 3600000000000L);
-
-        nanos %= 3600000000000L;
-
-        int minutes = (int) (nanos / 60000000000L);
-
-        nanos %= 60000000000L;
-
-        int seconds = (int) (nanos / 1000000000L);
-
-        nanos %= 1000000000L;
-
-        if (days != 0) {
-            buf.append(days).append('T');
-        }
-
-        buf.append(hours).append(':').append(pad(String.valueOf(minutes), 2)).append(':')
-                .append(pad(String.valueOf(seconds), 2));
-
-        if (nanos != 0) {
-            buf.append('.').append(pad(String.valueOf(nanos), 9));
-        }
-
-        return buf.toString();
-    }
-
-    // endregion
 
     static String pad(@NotNull final String str, final int length) {
         if (length <= str.length()) {
