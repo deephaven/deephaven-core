@@ -189,6 +189,7 @@ def array(dtype: DType, seq: Sequence, remap: Callable[[Any], Any] = None) -> jp
     """
     try:
         if isinstance(seq, str) and dtype == char:
+            # ord is the Python builtin function that takes a unicode character and returns an integer code point value
             remap = ord
 
         if remap:
