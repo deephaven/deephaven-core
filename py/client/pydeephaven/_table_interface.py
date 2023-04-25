@@ -11,16 +11,15 @@ from pydeephaven import agg
 from pydeephaven._table_ops import UpdateOp, LazyUpdateOp, ViewOp, UpdateViewOp, SelectOp, DropColumnsOp, \
     SelectDistinctOp, SortOp, UnstructuredFilterOp, HeadOp, TailOp, HeadByOp, TailByOp, UngroupOp, NaturalJoinOp, \
     ExactJoinOp, CrossJoinOp, AsOfJoinOp, UpdateByOp, SnapshotTableOp, SnapshotWhenTableOp, WhereInTableOp, \
-    AggregateAllOp, AggregateOp
+    AggregateAllOp, AggregateOp, MatchRule, SortDirection
 from pydeephaven._utils import to_list
 from pydeephaven.agg import Aggregation, _AggregationColumns
-from pydeephaven.constants import MatchRule, SortDirection
 from pydeephaven.dherror import DHError
 from pydeephaven.updateby import UpdateByOperation
 
 
 class TableInterface(ABC):
-    """ TableInterface defines and implements a set of Table operations that eventually are performed on tables in
+    """TableInterface defines and implements a set of Table operations that eventually are performed on tables in
     the Deephaven server. It is inherited by the Table and Query classes for single table operations on a Table or a
     batch of operations that are defined by a Query.
     """
@@ -30,7 +29,8 @@ class TableInterface(ABC):
         ...
 
     def drop_columns(self, cols: Union[str, List[str]]):
-        """ Drop the specified columns from the table and return the result table.
+        """The drop_column method creates a new table with the same size as this table but omits any of the specified 
+        columns. 
 
         Args:
             cols (Union[str, List[str]]) : the column name(s)
@@ -45,7 +45,7 @@ class TableInterface(ABC):
         return self.table_op_handler(table_op)
 
     def update(self, formulas: Union[str, List[str]]):
-        """ Perform an update operation on the table and return the result table.
+        """The update method creates a new table containing a new, in-memory column for each formula.
 
         Args:
             formulas (Union[str, List[str]]): the column formula(s)
@@ -60,7 +60,7 @@ class TableInterface(ABC):
         return self.table_op_handler(table_op)
 
     def lazy_update(self, formulas: Union[str, List[str]]):
-        """ Perform a lazy-update operation on the table and return the result table.
+        """The lazy_update method creates a new table containing a new, cached, formula column for each formula.
 
         Args:
             formulas (Union[str, List[str]]): the column formula(s)
@@ -75,7 +75,7 @@ class TableInterface(ABC):
         return self.table_op_handler(table_op)
 
     def view(self, formulas: Union[str, List[str]]):
-        """ Perform a view operation on the table and return the result table.
+        """The view method creates a new formula table that includes one column for each formula.
 
         Args:
             formulas (Union[str, List[str]]): the column formula(s)
@@ -90,7 +90,7 @@ class TableInterface(ABC):
         return self.table_op_handler(table_op)
 
     def update_view(self, formulas: Union[str, List[str]]):
-        """ Perform an update-view operation on the table and return the result table.
+        """The update_view method creates a new table containing a new, formula column for each formula.
 
         Args:
             formulas (Union[str, List[str]]): the column formula(s)
@@ -105,7 +105,8 @@ class TableInterface(ABC):
         return self.table_op_handler(table_op)
 
     def select(self, formulas: Union[str, List[str]] = None):
-        """ Perform a select operation on the table and return the result table.
+        """The select method creates a new in-memory table that includes one column for each formula. If no formula 
+        is specified, all columns will be included. 
 
         Args:
             formulas (Union[str, List[str]], optional): the column formula(s), default is None
@@ -120,7 +121,9 @@ class TableInterface(ABC):
         return self.table_op_handler(table_op)
 
     def select_distinct(self, cols: Union[str, List[str]] = None):
-        """ Perform a select-distinct operation on the table and return the result table.
+        """The select_distinct method creates a new table containing all the unique values for a set of key columns. 
+        When the selectDistinct method is used on multiple columns, it looks for distinct sets of values in the 
+        selected columns. 
 
         Args:
             cols (Union[str, List[str]], optional): the column name(s), default is None
@@ -135,7 +138,8 @@ class TableInterface(ABC):
         return self.table_op_handler(table_op)
 
     def sort(self, order_by: Union[str, List[str]], order: Union[SortDirection, List[SortDirection]] = None):
-        """ Perform a sort operation on the table and return the result table.
+        """The sort method creates a new table where the rows are ordered based on values in the specified set of 
+        columns. 
 
         Args:
             order_by (Union[str, List[str]]): the column(s) to be sorted on
@@ -153,7 +157,8 @@ class TableInterface(ABC):
         return self.table_op_handler(table_op)
 
     def where(self, filters: Union[str, List[str]]):
-        """ Perform a filter operation on the table and return the result table.
+        """The where method creates a new table with only the rows meeting the filter criteria in the column(s) of 
+        the table. 
 
         Args:
             filters (Union[str, List[str]]): the filter condition expression(s)
@@ -168,7 +173,7 @@ class TableInterface(ABC):
         return self.table_op_handler(table_op)
 
     def head(self, num_rows: int):
-        """ Perform a head operation on the table and return the result table.
+        """The head method creates a new table with a specific number of rows from the beginning of the table. 
 
         Args:
             num_rows (int): the number of rows at the head of table
@@ -183,7 +188,7 @@ class TableInterface(ABC):
         return self.table_op_handler(table_op)
 
     def tail(self, num_rows: int):
-        """ Perform a tail operation on the table and return the result table.
+        """The tail method creates a new table with a specific number of rows from the end of the table. 
 
         Args:
             num_rows (int): the number of rows at the end of table
@@ -198,8 +203,10 @@ class TableInterface(ABC):
         return self.table_op_handler(table_op)
 
     def natural_join(self, table: Any, on: Union[str, List[str]], joins: Union[str, List[str]] = None):
-        """ Perform a natural-join between this table as the left table and another table as the right table) and
-        returns the result table.
+        """The natural_join method creates a new table containing all the rows and columns of this table, 
+        plus additional columns containing data from the right table. For columns appended to the left table (joins), 
+        row values equal the row values from the right table where the key values in the left and right tables are 
+        equal. If there is no matching key in the right table, appended row values are NULL. 
 
         Args:
             table (Table): the right-table of the join
@@ -219,8 +226,10 @@ class TableInterface(ABC):
         return self.table_op_handler(table_op)
 
     def exact_join(self, table: Any, on: Union[str, List[str]], joins: Union[str, List[str]] = None):
-        """ Perform a exact-join between this table as the left table and another table as the right table) and
-        returns the result table.
+        """The exact_join method creates a new table containing all the rows and columns of this table plus 
+        additional columns containing data from the right table. For columns appended to the left table (joins), 
+        row values equal the row values from the right table where the key values in the left and right tables are 
+        equal. 
 
         Args:
             table (Table): the right-table of the join
@@ -241,11 +250,10 @@ class TableInterface(ABC):
 
     def join(self, table: Any, on: Union[str, List[str]] = None, joins: Union[str, List[str]] = None,
              reserve_bits: int = 10):
-        """ Perform a cross-join between this table as the left table and another table as the right table) and
-        returns the result table. Rows that do not have matching criteria will not be included in the result. If
-        there are multiple matches between a row from the left table and rows from the right table, all matching
-        combinations will be included. If no columns to match (on) are specified, every combination of left and right
-        table rows is included.
+        """The join method creates a new table containing rows that have matching values in both tables. Rows that do 
+        not have matching criteria will not be included in the result. If there are multiple matches between a row 
+        from the left table and rows from the right table, all matching combinations will be included. If no columns 
+        to match (on) are specified, every combination of left and right table rows is included. 
 
         Args:
             table (Table): the right-table of the join
@@ -267,8 +275,11 @@ class TableInterface(ABC):
 
     def aj(self, table: Any, on: Union[str, List[str]], joins: Union[str, List[str]] = None,
            match_rule: MatchRule = MatchRule.LESS_THAN_EQUAL):
-        """ Perform a as-of join between this table as the left table and another table as the right table) and
-        returns the result table.
+        """The aj (as-of join) method creates a new table containing all the rows and columns of the left table, 
+        plus additional columns containing data from the right table. For columns appended to the left table (joins), 
+        row values equal the row values from the right table where the keys from the left table most closely match 
+        the keys from the right table without going over. If there is no matching key in the right table, 
+        appended row values are NULL. 
 
         Args:
             table (Table): the right-table of the join
@@ -291,8 +302,11 @@ class TableInterface(ABC):
 
     def raj(self, table: Any, on: Union[str, List[str]], joins: Union[str, List[str]] = None,
             match_rule: MatchRule = MatchRule.GREATER_THAN_EQUAL):
-        """ Perform a reverse as-of join between this table as the left table and another table as the right table) and
-        returns the result table.
+        """The raj (reverse as-of join) method creates a new table containing all the rows and columns of the left 
+        table, plus additional columns containing data from the right table. For columns appended to the left table (
+        joins), row values equal the row values from the right table where the keys from the left table most closely 
+        match the keys from the right table without going under. If there is no matching key in the right table, 
+        appended row values are NULL. 
 
         Args:
             table (Table): the right-table of the join
@@ -314,8 +328,7 @@ class TableInterface(ABC):
         return self.table_op_handler(table_op)
 
     def head_by(self, num_rows: int, by: Union[str, List[str]]):
-        """ Perform a head-by aggregation on the table and return a new table containing the first number of rows
-        for each group.
+        """The head_by method creates a new table containing the first number of rows for each group.
 
         Args:
             num_rows (int): the number of rows at the beginning of each group
@@ -332,8 +345,7 @@ class TableInterface(ABC):
         return self.table_op_handler(table_op)
 
     def tail_by(self, num_rows: int, by: Union[str, List[str]]):
-        """ Perform a tail-by aggregation on the table and return a new table containing the last number of rows
-        for each group.
+        """The tail_by method creates a new table containing the last number of rows for each group.
 
         Args:
             num_rows (int): the number of rows at the end of each group
@@ -349,8 +361,8 @@ class TableInterface(ABC):
         return self.table_op_handler(table_op)
 
     def group_by(self, by: Union[str, List[str]] = None):
-        """ Perform a group-by aggregation on the table and return a new table containing grouping columns and
-        grouped data, column content is grouped into arrays.
+        """The group_by method creates a new table containing grouping columns and grouped data, column content is 
+        grouped into arrays. 
 
         If no group-by column is given, the content of each column is grouped into its own array.
 
@@ -368,8 +380,8 @@ class TableInterface(ABC):
         return self.table_op_handler(table_op)
 
     def ungroup(self, cols: Union[str, List[str]] = None, null_fill: bool = True):
-        """ Perform an ungroup operation on the table and return a new table in which array columns from the source
-        table are unwrapped into separate rows. The ungroup columns should be of array types.
+        """The ungroup method creates a new table in which array columns from the source table are unwrapped into 
+        separate rows. The ungroup columns should be of array types. 
 
         Args:
             cols (Union[str, List[str]], optional): the array column(s), default is None, meaning all array columns will
@@ -386,8 +398,7 @@ class TableInterface(ABC):
         return self.table_op_handler(table_op)
 
     def first_by(self, by: Union[str, List[str]] = None):
-        """ Perform First-by aggregation on the table and return a new table which contains the first row of each
-        distinct group.
+        """The first_by method creates a new table which contains the first row of each distinct group.
 
         Args:
             by (Union[str, List[str]], optional): the group-by column name(s), default is None, meaning grouping
@@ -403,8 +414,7 @@ class TableInterface(ABC):
         return self.table_op_handler(table_op)
 
     def last_by(self, by: Union[str, List[str]] = None):
-        """ Perform last-by aggregation on the table and return a new table which contains the last row of
-        each distinct group.
+        """The last_by method creates a new table which contains the last row of each distinct group.
 
         Args:
             by (Union[str, List[str]], optional): the group-by column name(s), default is None, meaning grouping
@@ -420,8 +430,8 @@ class TableInterface(ABC):
         return self.table_op_handler(table_op)
 
     def sum_by(self, by: Union[str, List[str]] = None):
-        """ Perform sum-by aggregation on the table and return a new table containing the sum for each group. Columns
-        not used in the grouping must be of numeric types.
+        """The sum_by method creates a new table containing the sum for each group. Columns not used in the grouping
+        must be of numeric types.
 
         Args:
             by (Union[str, List[str]]): the group-by column name(s), default is None, meaning grouping
@@ -437,8 +447,8 @@ class TableInterface(ABC):
         return self.table_op_handler(table_op)
 
     def avg_by(self, by: Union[str, List[str]] = None):
-        """ Perform avg-by aggregation on the table and return a new table containing the average for each group.
-        Columns not used in the grouping must be of numeric types.
+        """The avg_by method creates a new table containing the average for each group. Columns not used in the
+        grouping must be of numeric types.
 
         Args:
             by (Union[str, List[str]], optional): the group-by column name(s), default is None, meaning grouping
@@ -454,8 +464,8 @@ class TableInterface(ABC):
         return self.table_op_handler(table_op)
 
     def std_by(self, by: Union[str, List[str]] = None):
-        """ Perform std-by aggregation on the table and return a new table containing the standard deviation for each
-        group. Columns not used in the grouping must be of numeric types.
+        """The std_by method creates a new table containing the standard deviation for each group. Columns not used
+        in the grouping must be of numeric types.
 
         Args:
             by (Union[str, List[str]]): the group-by column names(s), default is None, meaning grouping
@@ -471,8 +481,8 @@ class TableInterface(ABC):
         return self.table_op_handler(table_op)
 
     def var_by(self, by: Union[str, List[str]] = None):
-        """ Perform var-by aggregation on the table and return a new table containing the variance for each group.
-        Columns not used in the grouping must be of numeric types.
+        """The var_by method creates a new table containing the variance for each group. Columns not used in the
+        grouping must be of numeric types.
 
         Args:
             by (Union[str, List[str]], optional): the group-by column name(s), default is None, meaning grouping
@@ -488,8 +498,8 @@ class TableInterface(ABC):
         return self.table_op_handler(table_op)
 
     def median_by(self, by: Union[str, List[str]] = None):
-        """ Perform median-by aggregation on the table and return a new table containing the median for each group.
-        Columns not used in the grouping must be of numeric types.
+        """The median_by method creates a new table containing the median for each group. Columns not used in the
+        grouping must be of numeric types.
 
         Args:
             by (Union[str, List[str]], optional): the group-by column name(s), default is None, meaning grouping
@@ -505,8 +515,8 @@ class TableInterface(ABC):
         return self.table_op_handler(table_op)
 
     def min_by(self, by: Union[str, List[str]] = None):
-        """ Perform min-by aggregation on the table and return a new table containing the minimum value for each
-        group. Columns not used in the grouping must be of numeric types.
+        """The min_by method creates a new table containing the minimum value for each group. Columns not used in the
+        grouping must be of numeric types.
 
         Args:
             by (Union[str, List[str]], optional): the group-by column name(s), default is None, meaning grouping
@@ -522,8 +532,8 @@ class TableInterface(ABC):
         return self.table_op_handler(table_op)
 
     def max_by(self, by: Union[str, List[str]] = None):
-        """ Perform max-by aggregation on the table and return a new table containing the maximum value for each
-        group. Columns not used in the grouping must be of numeric types.
+        """The max_by method creates a new table containing the maximum value for each group. Columns not used in the
+        grouping must be of numeric types.
 
         Args:
             by (Union[str, List[str]], optional): the group-by column name(s), default is None, meaning grouping
@@ -539,8 +549,8 @@ class TableInterface(ABC):
         return self.table_op_handler(table_op)
 
     def count_by(self, col: str, by: Union[str, List[str]] = None):
-        """ Perform count-by aggregation on the table and return a new table containing the number of rows for each
-        group. The count of each group is stored in a new column named after the 'col' parameter.
+        """The count_by method creates a new table containing the number of rows for each group. The count of each
+        group is stored in a new column named after the 'col' parameter.
 
         Args:
             col (str): the name of the column to store the counts
@@ -557,8 +567,8 @@ class TableInterface(ABC):
         return self.table_op_handler(table_op)
 
     def agg_by(self, aggs: Union[Aggregation, List[Aggregation]], by: Union[str, List[str]]):
-        """ Create a new table containing grouping columns and grouped data. The resulting grouped data is defined by
-        the aggregation(s) specified.
+        """The agg_by method creates a new table containing grouping columns and grouped data. The resulting grouped
+        data is defined by the aggregation(s) specified.
 
         Args:
             aggs (Union[Aggregation, List[Aggregation]]): the aggregation(s) to be applied
@@ -579,8 +589,8 @@ class TableInterface(ABC):
         return self.table_op_handler(table_op)
 
     def agg_all_by(self, agg: Aggregation, by: Union[str, List[str]]):
-        """ Create a new table containing grouping columns and grouped data. The resulting grouped data is defined by
-        the aggregation specified.
+        """The agg_all_by method creates a new table containing grouping columns and grouped data. The resulting
+        grouped data is defined by the aggregation specified.
 
         Note, because agg_all_by applies the aggregation to all the columns of the table, it will ignore
         any column names specified for the aggregation.
@@ -602,7 +612,7 @@ class TableInterface(ABC):
         return self.table_op_handler(table_op)
 
     def update_by(self, ops: Union[UpdateByOperation, List[UpdateByOperation]], by: Union[str, List[str]]):
-        """ Perform an update-by operation on the table and create a table with additional columns calculated from
+        """The update_by method creates a table with additional columns calculated from
         window-based aggregations of columns in this table. The aggregations are defined by the provided operations,
         which support incremental aggregations over the corresponding rows in the table. The aggregations will
         apply position or time-based windowing and compute the results over the entire table or each row group as
@@ -622,7 +632,7 @@ class TableInterface(ABC):
         return self.table_op_handler(table_op)
 
     def snapshot(self):
-        """Returns a static snapshot table.
+        """The snapshot method creates a static snapshot table.
 
         Returns:
             a new Table
@@ -635,7 +645,7 @@ class TableInterface(ABC):
 
     def snapshot_when(self, trigger_table: Any, stamp_cols: Union[str, List[str]] = None, initial: bool = False,
                       incremental: bool = False, history: bool = False):
-        """Returns a table that captures a snapshot of this table whenever trigger_table updates.
+        """The snapshot_when creates a table that captures a snapshot of this table whenever trigger_table updates.
 
         When trigger_table updates, a snapshot of this table and the "stamp key" from trigger_table form the resulting
         table. The "stamp key" is the last row of the trigger_table, limited by the stamp_cols. If trigger_table is
@@ -666,8 +676,8 @@ class TableInterface(ABC):
         return self.table_op_handler(table_op)
 
     def where_in(self, filter_table: Any, cols: Union[str, List[str]]):
-        """The where_in method creates a new table containing rows from the source table, where the rows match
-        values in the filter table.
+        """The where_in method creates a new table containing rows from the source table, where the rows match values
+        in the filter table.
 
         Args:
             filter_table (Table): the table containing the set of values to filter on

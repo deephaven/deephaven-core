@@ -13,6 +13,7 @@ class ConfigService:
         self._grpc_app_stub = config_pb2_grpc.ConfigServiceStub(session.grpc_channel)
 
     def get_configuration_constants(self) -> Dict[str, Any]:
+        """Fetches the server configuration as a dict."""
         try:
             response = self._grpc_app_stub.GetConfigurationConstants(config_pb2.ConfigurationConstantsRequest(),
                                                                      metadata=self.session.grpc_metadata

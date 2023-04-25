@@ -15,11 +15,12 @@ class TableService:
         self._grpc_table_stub = table_pb2_grpc.TableServiceStub(session.grpc_channel)
 
     def batch(self, ops):
-        batch_op = BatchOpAssembler(self.session, table_ops=ops).build_batch()
+        """Assembles and executes chain table operations in a batch."""
+        batch_ops = BatchOpAssembler(self.session, table_ops=ops).build_batch()
 
         try:
             response = self._grpc_table_stub.Batch(
-                table_pb2.BatchTableRequest(ops=batch_op),
+                table_pb2.BatchTableRequest(ops=batch_ops),
                 metadata=self.session.grpc_metadata)
 
             exported_tables = []
@@ -36,6 +37,7 @@ class TableService:
             raise DHError("failed to finish the table batch operation.") from e
 
     def grpc_table_op(self, table: Table, op: TableOp, table_class: type = Table):
+        """Makes a single gRPC Table operation call and returns a new Table."""
         try:
             result_id = self.session.make_ticket()
             if table:

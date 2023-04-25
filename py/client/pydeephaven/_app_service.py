@@ -12,6 +12,7 @@ class AppService:
         self._grpc_app_stub = application_pb2_grpc.ApplicationServiceStub(session.grpc_channel)
 
     def list_fields(self):
+        """Fetches the current application fields."""
         try:
             fields = self._grpc_app_stub.ListFields(
                 application_pb2.ListFieldsRequest(),

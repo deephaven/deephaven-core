@@ -14,6 +14,7 @@ class ConsoleService:
         self.console_id = None
 
     def start_console(self):
+        """Starts a console session if one isn't already started."""
         if self.console_id:
             return
 
@@ -27,6 +28,7 @@ class ConsoleService:
             raise DHError("failed to start a console.") from e
 
     def run_script(self, server_script):
+        """Runs a Python script in the console."""
         self.start_console()
 
         try:
@@ -40,6 +42,7 @@ class ConsoleService:
             raise DHError("failed to execute a command in the console.") from e
 
     def open_table(self, name):
+        """Opens a table by name."""
         self.start_console()
 
         try:
@@ -61,6 +64,7 @@ class ConsoleService:
             raise DHError("failed to open a table.") from e
 
     def bind_table(self, table, variable_name):
+        """Binds a name to an opened Table."""
         if not table or not variable_name:
             raise DHError("invalid table and/or variable_name values.")
         try:

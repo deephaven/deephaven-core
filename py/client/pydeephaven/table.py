@@ -1,6 +1,8 @@
 #
 # Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
 #
+"""This module implements the Table and InputTable classes which are the main instruments to work with Deephaven
+data."""
 
 from __future__ import annotations
 
@@ -14,7 +16,7 @@ from pydeephaven._table_interface import TableInterface
 
 
 class Table(TableInterface):
-    """ A Table object represents a reference to a table on the server. It is the core data structure of
+    """A Table object represents a reference to a table on the server. It is the core data structure of
     Deephaven and supports a rich set of operations such as filtering, sorting, aggregating, joining, snapshotting etc.
 
     Note, an application should never instantiate a Table object directly. Table objects are always provided through
@@ -52,14 +54,16 @@ class Table(TableInterface):
 
     @property
     def is_refreshing(self):
+        """Whether this table is refreshing."""
         return not self.is_static
 
     @property
     def is_closed(self):
+        """Whether this table is closed on the server."""
         return not self.ticket
 
     def close(self) -> None:
-        """ Close the table reference on the server.
+        """Close the table reference on the server.
 
         Raises:
             DHError
@@ -76,14 +80,14 @@ class Table(TableInterface):
 
     @property
     def meta_table(self) -> Table:
-        """ The column definitions of the table in a Table form. """
+        """The column definitions of the table in a Table form."""
         if self._meta_table is None:
             table_op = MetaTableOp()
             self._meta_table = self.session.table_service.grpc_table_op(self, table_op)
         return self._meta_table
 
     def to_arrow(self) -> pa.Table:
-        """ Take a snapshot of the table and return a pyarrow Table.
+        """Takes a snapshot of the table and returns a pyarrow Table.
 
         Returns:
             a pyarrow.Table
@@ -95,8 +99,8 @@ class Table(TableInterface):
 
 
 class InputTable(Table):
-    """InputTable is a subclass of Table that allows the users to dynamically add/delete/modify data in it. There are two
-    types of InputTable - append-only and keyed.
+    """InputTable is a subclass of Table that allows the users to dynamically add/delete/modify data in it. There are
+    two types of InputTable - append-only and keyed.
 
     The append-only input table is not keyed, all rows are added to the end of the table, and deletions and edits are
     not permitted.
@@ -110,7 +114,7 @@ class InputTable(Table):
         self.key_cols: List[str] = None
 
     def add(self, table: Table) -> None:
-        """Write rows from the provided table to this input table. If this is a keyed input table, added rows with keys
+        """Writes rows from the provided table to this input table. If this is a keyed input table, added rows with keys
         that match existing rows will replace those rows.
 
         Args:
@@ -125,7 +129,7 @@ class InputTable(Table):
             raise DHError("add to InputTable failed.") from e
 
     def delete(self, table: Table) -> None:
-        """Delete the keys contained in the provided table from this keyed input table. If this method is called on an
+        """Deletes the keys contained in the provided table from this keyed input table. If this method is called on an
         append-only input table, a PermissionError will be raised.
 
         Args:
