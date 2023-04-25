@@ -37,6 +37,14 @@ class Filter(JObjectWrapper):
     def __init__(self, j_filter):
         self.j_filter = j_filter
 
+    def not_(self):
+        """Creates a new filter that evaluates to the opposite of what this filter evaluates to.
+
+        Returns:
+            a new not Filter
+        """
+        return Filter(j_filter=_JFilterNot.of(self.j_filter))
+
     @classmethod
     def from_(cls, conditions: Union[str, List[str]]) -> Union[Filter, List[Filter]]:
         """Creates filter(s) from the given condition(s).
@@ -68,7 +76,7 @@ def or_(filters: List[Filter]) -> Filter:
         filters (List[filter]): the component filters
 
     Returns:
-        a new Filter
+        a new or Filter
     """
     return Filter(j_filter=_JFilterOr.of(*[f.j_filter for f in filters]))
 
@@ -80,21 +88,33 @@ def and_(filters: List[Filter]) -> Filter:
         filters (List[filter]): the component filters
 
     Returns:
-        a new Filter
+        a new and Filter
     """
     return Filter(j_filter=_JFilterAnd.of(*[f.j_filter for f in filters]))
 
 
 def not_(filter_: Filter) -> Filter:
-    """Creates a new filter that evaluates to true when the given filter evaluates to false.
+    """Creates a new filter that evaluates to the opposite of what filter_ evaluates to.
 
     Args:
         filter_ (Filter): the filter to negate with
 
     Returns:
-        a new Filter
+        a new not Filter
     """
-    return Filter(j_filter=_JFilterNot.of(filter_.j_filter))
+    return filter_.not_()
+
+
+def is_null(col: str) -> Filter:
+    """Creates a new filter that evaluates to true when the col is null, and evaluates to false when col is not null.
+
+    Args:
+        col (str): the column name
+
+    Returns:
+        a new is-null Filter
+    """
+    return Filter(j_filter=_JFilter.isNull(_JColumnName.of(col)))
 
 
 class PatternMode(Enum):
