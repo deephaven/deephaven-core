@@ -29,6 +29,7 @@ import org.junit.experimental.categories.Category;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Random;
 
@@ -652,6 +653,49 @@ public class TestEms extends BaseUpdateByTest {
     }
     // endregion
 
+    // region Special Tests
+    @Test
+    public void testInterfaces() {
+        // This test will verify that the interfaces exposed by the UpdateByOperation class are usable without errors.
+
+        final QueryTable t = createTestTable(100, false, false, false, 0xFFFABBBC,
+                new String[] {"ts", "charCol"}, new TestDataGenerator[] {
+                        new SortedDateTimeGenerator(
+                                convertDateTime("2022-03-09T09:00:00.000 NY"),
+                                convertDateTime("2022-03-09T16:30:00.000 NY")),
+                        new CharGenerator('A', 'z', 0.1)}).t;
+
+        final OperationControl skipControl = OperationControl.builder()
+                .onNullValue(BadDataBehavior.SKIP)
+                .onNanValue(BadDataBehavior.SKIP).build();
+
+        final OperationControl resetControl = OperationControl.builder()
+                .onNullValue(BadDataBehavior.RESET)
+                .onNanValue(BadDataBehavior.RESET).build();
+
+        final DateTime[] ts = (DateTime[]) t.getColumn("ts").getDirect();
+        final long[] timestamps = new long[t.intSize()];
+        for (int i = 0; i < t.intSize(); i++) {
+            timestamps[i] = ts[i].getNanos();
+        }
+
+        Table actual = t.updateBy(UpdateByOperation.Ems(100, columns));
+
+        Table actualSkip = t.updateBy(UpdateByOperation.Ems(skipControl, 100, columns));
+        Table actualReset = t.updateBy(UpdateByOperation.Ems(resetControl, 100, columns));
+
+        Table actualTime = t.updateBy(UpdateByOperation.Ems("ts", 10 * MINUTE, columns));
+
+        Table actualSkipTime = t.updateBy(UpdateByOperation.Ems(skipControl, "ts", 10 * MINUTE, columns));
+        Table actualResetTime = t.updateBy(UpdateByOperation.Ems(resetControl, "ts", 10 * MINUTE, columns));
+
+        actualTime = t.updateBy(UpdateByOperation.Ems("ts", Duration.ofMinutes(10), columns));
+
+        actualSkipTime = t.updateBy(UpdateByOperation.Ems(skipControl, "ts", Duration.ofMinutes(10), columns));
+        actualResetTime = t.updateBy(UpdateByOperation.Ems(resetControl, "ts", Duration.ofMinutes(10), columns));
+    }
+    // endregion    
+    
     // region Manual Verification functions
     public static double[] compute_ems_ticks(OperationControl control, long ticks, double[] values) {
         if (values == null) {

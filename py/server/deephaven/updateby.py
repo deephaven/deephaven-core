@@ -49,8 +49,10 @@ class BadDataBehavior(Enum):
     POISON = _JBadDataBehavior.POISON
     """Allow the bad data to poison the result. This is only valid for use with NaN"""
 
+
 class DeltaControl(Enum):
-    """An Enum defining ways to handle null values during update-by Delta operations."""
+    """An Enum defining ways to handle null values during update-by Delta operations where delta operations return the
+    difference between the current row and the previous row."""
 
     NULL_DOMINATES = _JDeltaControl.NULL_DOMINATES
     """A valid value following a null value returns null"""
@@ -89,6 +91,7 @@ class OperationControl(JObjectWrapper):
                                  .bigValueContext(big_value_context.value).build())
         except Exception as e:
             raise DHError(e, "failed to build an OperationControl object.") from e
+
 
 class UpdateByOperation(JObjectWrapper):
     """A UpdateByOperation represents an operator for the Table update-by operation."""
@@ -135,13 +138,14 @@ def ema_tick_decay(time_scale_ticks: int, cols: Union[str, List[str]],
     except Exception as e:
         raise DHError(e, "failed to create a tick-decay EMA UpdateByOperation.") from e
 
+
 def ema_time_decay(ts_col: str, time_scale: Union[int, str], cols: Union[str, List[str]],
                    op_control: OperationControl = None) -> UpdateByOperation:
     """Creates an EMA(exponential moving average) UpdateByOperation for the supplied column names, using time as the
     decay unit.
 
     The formula used is
-        a = e^(-dt / time_scale_nanos)
+        a = e^(-dt / time_scale)
         ema_next = a * ema_last + (1 - a) * value
 
      Args:
@@ -203,13 +207,14 @@ def ems_tick_decay(time_scale_ticks: int, cols: Union[str, List[str]],
     except Exception as e:
         raise DHError(e, "failed to create a tick-decay EMS UpdateByOperation.") from e
 
+
 def ems_time_decay(ts_col: str, time_scale: Union[int, str], cols: Union[str, List[str]],
                    op_control: OperationControl = None) -> UpdateByOperation:
     """Creates an EMS (exponential moving sum) UpdateByOperation for the supplied column names, using time as the
     decay unit.
 
     The formula used is
-        a = e^(-dt / time_scale_nanos)
+        a = e^(-dt / time_scale)
         eems_next = a * ems_last + value
 
      Args:
@@ -271,13 +276,14 @@ def emmin_tick_decay(time_scale_ticks: int, cols: Union[str, List[str]],
     except Exception as e:
         raise DHError(e, "failed to create a tick-decay EM Min UpdateByOperation.") from e
 
+
 def emmin_time_decay(ts_col: str, time_scale: Union[int, str], cols: Union[str, List[str]],
                    op_control: OperationControl = None) -> UpdateByOperation:
     """Creates an EM Min (exponential moving minimum) UpdateByOperation for the supplied column names, using time as the
     decay unit.
 
     The formula used is
-        a = e^(-dt / time_scale_nanos)
+        a = e^(-dt / time_scale)
         em_val_next = min(a * em_val_last, value)
 
      Args:
@@ -339,13 +345,14 @@ def emmax_tick_decay(time_scale_ticks: int, cols: Union[str, List[str]],
     except Exception as e:
         raise DHError(e, "failed to create a tick-decay EM Max UpdateByOperation.") from e
 
+
 def emmax_time_decay(ts_col: str, time_scale: Union[int, str], cols: Union[str, List[str]],
                      op_control: OperationControl = None) -> UpdateByOperation:
     """Creates an EM Max (exponential moving maximum) UpdateByOperation for the supplied column names, using time as the
     decay unit.
 
     The formula used is
-        a = e^(-dt / time_scale_nanos)
+        a = e^(-dt / time_scale)
         em_val_next = max(a * em_val_last, value)
 
      Args:
@@ -483,7 +490,13 @@ def forward_fill(cols: Union[str, List[str]]) -> UpdateByOperation:
 
 
 def delta(cols: Union[str, List[str]], delta_control: DeltaControl = DeltaControl.VALUE_DOMINATES) -> UpdateByOperation:
-    """Creates a delta UpdateByOperation for the supplied column names.
+    """Creates a delta UpdateByOperation for the supplied column names. The Delta operation produces values by computing
+    the difference between the current value and the previous value. When the current value is null, this operation
+    will output null. When the current value is valid, the output will depend on the DeltaControl provided.
+
+        When delta_control is not provided or set to VALUE_DOMINATES, a valid value following a null value returns the
+            valid value.
+        When delta_control is set to NULL_DOMINATES, a valid value following a null value returns null.
 
     Args:
 
@@ -526,7 +539,6 @@ def rolling_sum_tick(cols: Union[str, List[str]], rev_ticks: int, fwd_ticks: int
         rev_ticks = -5, fwd_ticks = 10 - contains 5 rows, beginning 5 rows following, ending at 10 rows  following the
             current row (inclusive)
 
-
     Args:
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the rolling sum operation on all columns.
@@ -545,13 +557,14 @@ def rolling_sum_tick(cols: Union[str, List[str]], rev_ticks: int, fwd_ticks: int
     except Exception as e:
         raise DHError(e, "failed to create a rolling sum (tick) UpdateByOperation.") from e
 
+
 def rolling_sum_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[int, str],
                      fwd_time: Union[int, str] = 0) -> UpdateByOperation:
     """Creates a rolling sum UpdateByOperation for the supplied column names, using time as the windowing unit. This
     function accepts nanoseconds or time strings as the reverse and forward window parameters. Negative values are
     allowed and can be used to generate completely forward or completely reverse windows. A row containing a null in
-    the timestamp column belongs to no window and will not have a value computed or be considered in the windows of
-    other rows.
+    the timestamp column belongs to no window and will not be considered in the windows of other rows; its output will
+    be null.
      
     Here are some examples of window values:
         rev_time = 0, fwd_time = 0 - contains rows that exactly match the current row timestamp
@@ -608,7 +621,6 @@ def rolling_group_tick(cols: Union[str, List[str]], rev_ticks: int, fwd_ticks: i
         rev_ticks = -5, fwd_ticks = 10 - contains 5 rows, beginning 5 rows following, ending at 10 rows  following the
             current row (inclusive)
 
-
     Args:
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the rolling group operation on all columns.
@@ -627,13 +639,14 @@ def rolling_group_tick(cols: Union[str, List[str]], rev_ticks: int, fwd_ticks: i
     except Exception as e:
         raise DHError(e, "failed to create a rolling group (tick) UpdateByOperation.") from e
 
+
 def rolling_group_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[int, str],
                      fwd_time: Union[int, str] = 0) -> UpdateByOperation:
     """Creates a rolling group UpdateByOperation for the supplied column names, using time as the windowing unit. This
     function accepts nanoseconds or time strings as the reverse and forward window parameters. Negative values are
     allowed and can be used to generate completely forward or completely reverse windows. A row containing a null in
-    the timestamp column belongs to no window and will not have a value computed or be considered in the windows of
-    other rows.
+    the timestamp column belongs to no window and will not be considered in the windows of other rows; its output will
+    be null.
      
     Here are some examples of window values:
         rev_time = 0, fwd_time = 0 - contains rows that exactly match the current row timestamp
@@ -690,7 +703,6 @@ def rolling_avg_tick(cols: Union[str, List[str]], rev_ticks: int, fwd_ticks: int
         rev_ticks = -5, fwd_ticks = 10 - contains 5 rows, beginning 5 rows following, ending at 10 rows  following the
             current row (inclusive)
 
-
     Args:
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the rolling average operation on all columns.
@@ -709,13 +721,14 @@ def rolling_avg_tick(cols: Union[str, List[str]], rev_ticks: int, fwd_ticks: int
     except Exception as e:
         raise DHError(e, "failed to create a rolling average (tick) UpdateByOperation.") from e
 
+
 def rolling_avg_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[int, str],
                        fwd_time: Union[int, str] = 0) -> UpdateByOperation:
     """Creates a rolling average UpdateByOperation for the supplied column names, using time as the windowing unit. This
     function accepts nanoseconds or time strings as the reverse and forward window parameters. Negative values are
     allowed and can be used to generate completely forward or completely reverse windows. A row containing a null in
-    the timestamp column belongs to no window and will not have a value computed or be considered in the windows of
-    other rows.
+    the timestamp column belongs to no window and will not be considered in the windows of other rows; its output will
+    be null.
      
     Here are some examples of window values:
         rev_time = 0, fwd_time = 0 - contains rows that exactly match the current row timestamp
@@ -772,7 +785,6 @@ def rolling_min_tick(cols: Union[str, List[str]], rev_ticks: int, fwd_ticks: int
         rev_ticks = -5, fwd_ticks = 10 - contains 5 rows, beginning 5 rows following, ending at 10 rows  following the
             current row (inclusive)
 
-
     Args:
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the rolling minimum operation on all columns.
@@ -791,13 +803,14 @@ def rolling_min_tick(cols: Union[str, List[str]], rev_ticks: int, fwd_ticks: int
     except Exception as e:
         raise DHError(e, "failed to create a rolling minimum (tick) UpdateByOperation.") from e
 
+
 def rolling_min_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[int, str],
                        fwd_time: Union[int, str] = 0) -> UpdateByOperation:
     """Creates a rolling minimum UpdateByOperation for the supplied column names, using time as the windowing unit. This
     function accepts nanoseconds or time strings as the reverse and forward window parameters. Negative values are
     allowed and can be used to generate completely forward or completely reverse windows. A row containing a null in
-    the timestamp column belongs to no window and will not have a value computed or be considered in the windows of
-    other rows.
+    the timestamp column belongs to no window and will not be considered in the windows of other rows; its output will
+    be null.
      
     Here are some examples of window values:
         rev_time = 0, fwd_time = 0 - contains rows that exactly match the current row timestamp
@@ -854,7 +867,6 @@ def rolling_max_tick(cols: Union[str, List[str]], rev_ticks: int, fwd_ticks: int
         rev_ticks = -5, fwd_ticks = 10 - contains 5 rows, beginning 5 rows following, ending at 10 rows  following the
             current row (inclusive)
 
-
     Args:
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the rolling maximum operation on all columns.
@@ -873,13 +885,14 @@ def rolling_max_tick(cols: Union[str, List[str]], rev_ticks: int, fwd_ticks: int
     except Exception as e:
         raise DHError(e, "failed to create a rolling maximum (tick) UpdateByOperation.") from e
 
+
 def rolling_max_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[int, str],
                        fwd_time: Union[int, str] = 0) -> UpdateByOperation:
     """Creates a rolling maximum UpdateByOperation for the supplied column names, using time as the windowing unit. This
     function accepts nanoseconds or time strings as the reverse and forward window parameters. Negative values are
     allowed and can be used to generate completely forward or completely reverse windows. A row containing a null in
-    the timestamp column belongs to no window and will not have a value computed or be considered in the windows of
-    other rows.
+    the timestamp column belongs to no window and will not be considered in the windows of other rows; its output will
+    be null.
      
     Here are some examples of window values:
         rev_time = 0, fwd_time = 0 - contains rows that exactly match the current row timestamp
@@ -936,7 +949,6 @@ def rolling_prod_tick(cols: Union[str, List[str]], rev_ticks: int, fwd_ticks: in
         rev_ticks = -5, fwd_ticks = 10 - contains 5 rows, beginning 5 rows following, ending at 10 rows  following the
             current row (inclusive)
 
-
     Args:
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the rolling product operation on all columns.
@@ -955,13 +967,14 @@ def rolling_prod_tick(cols: Union[str, List[str]], rev_ticks: int, fwd_ticks: in
     except Exception as e:
         raise DHError(e, "failed to create a rolling product (tick) UpdateByOperation.") from e
 
+
 def rolling_prod_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[int, str],
                        fwd_time: Union[int, str] = 0) -> UpdateByOperation:
     """Creates a rolling product UpdateByOperation for the supplied column names, using time as the windowing unit. This
     function accepts nanoseconds or time strings as the reverse and forward window parameters. Negative values are
     allowed and can be used to generate completely forward or completely reverse windows. A row containing a null in
-    the timestamp column belongs to no window and will not have a value computed or be considered in the windows of
-    other rows.
+    the timestamp column belongs to no window and will not be considered in the windows of other rows; its output will
+    be null.
      
     Here are some examples of window values:
         rev_time = 0, fwd_time = 0 - contains rows that exactly match the current row timestamp
@@ -1018,7 +1031,6 @@ def rolling_count_tick(cols: Union[str, List[str]], rev_ticks: int, fwd_ticks: i
         rev_ticks = -5, fwd_ticks = 10 - contains 5 rows, beginning 5 rows following, ending at 10 rows following the
             current row (inclusive)
 
-
     Args:
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the rolling count operation on all columns.
@@ -1037,13 +1049,14 @@ def rolling_count_tick(cols: Union[str, List[str]], rev_ticks: int, fwd_ticks: i
     except Exception as e:
         raise DHError(e, "failed to create a rolling count (tick) UpdateByOperation.") from e
 
+
 def rolling_count_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[int, str],
                       fwd_time: Union[int, str] = 0) -> UpdateByOperation:
     """Creates a rolling count UpdateByOperation for the supplied column names, using time as the windowing unit. This
     function accepts nanoseconds or time strings as the reverse and forward window parameters. Negative values are
     allowed and can be used to generate completely forward or completely reverse windows. A row containing a null in
-    the timestamp column belongs to no window and will not have a value computed or be considered in the windows of
-    other rows.
+    the timestamp column belongs to no window and will not be considered in the windows of other rows; its output will
+    be null.
 
     Here are some examples of window values:
         rev_time = 0, fwd_time = 0 - contains rows that exactly match the current row timestamp
@@ -1100,7 +1113,6 @@ def rolling_std_tick(cols: Union[str, List[str]], rev_ticks: int, fwd_ticks: int
         rev_ticks = -5, fwd_ticks = 10 - contains 5 rows, beginning 5 rows following, ending at 10 rows following the
             current row (inclusive)
 
-
     Args:
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the rolling standard deviation operation on all columns.
@@ -1119,13 +1131,14 @@ def rolling_std_tick(cols: Union[str, List[str]], rev_ticks: int, fwd_ticks: int
     except Exception as e:
         raise DHError(e, "failed to create a rolling standard deviation (tick) UpdateByOperation.") from e
 
+
 def rolling_std_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[int, str],
                        fwd_time: Union[int, str] = 0) -> UpdateByOperation:
     """Creates a rolling standard deviation UpdateByOperation for the supplied column names, using time as the windowing unit. This
     function accepts nanoseconds or time strings as the reverse and forward window parameters. Negative values are
     allowed and can be used to generate completely forward or completely reverse windows. A row containing a null in
-    the timestamp column belongs to no window and will not have a value computed or be considered in the windows of
-    other rows.
+    the timestamp column belongs to no window and will not be considered in the windows of other rows; its output will
+    be null.
 
     Here are some examples of window values:
         rev_time = 0, fwd_time = 0 - contains rows that exactly match the current row timestamp
@@ -1182,7 +1195,6 @@ def rolling_wavg_tick(weight_col: str, cols: Union[str, List[str]], rev_ticks: i
         rev_ticks = -5, fwd_ticks = 10 - contains 5 rows, beginning 5 rows following, ending at 10 rows  following the
             current row (inclusive)
 
-
     Args:
         cols (Union[str, List[str]]): the column(s) to be operated on, can include expressions to rename the output,
             i.e. "new_col = col"; when empty, update_by perform the rolling weighted average operation on all columns.
@@ -1204,13 +1216,14 @@ def rolling_wavg_tick(weight_col: str, cols: Union[str, List[str]], rev_ticks: i
     except Exception as e:
         raise DHError(e, "failed to create a rolling weighted average (tick) UpdateByOperation.") from e
 
+
 def rolling_wavg_time(ts_col: str, weight_col: str, cols: Union[str, List[str]], rev_time: Union[int, str],
                       fwd_time: Union[int, str] = 0) -> UpdateByOperation:
     """Creates a rolling weighted average UpdateByOperation for the supplied column names, using time as the windowing unit. This
     function accepts nanoseconds or time strings as the reverse and forward window parameters. Negative values are
     allowed and can be used to generate completely forward or completely reverse windows. A row containing a null in
-    the timestamp column belongs to no window and will not have a value computed or be considered in the windows of
-    other rows.
+    the timestamp column belongs to no window and will not be considered in the windows of other rows; its output will
+    be null.
 
     Here are some examples of window values:
         rev_time = 0, fwd_time = 0 - contains rows that exactly match the current row timestamp
