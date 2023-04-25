@@ -63,7 +63,9 @@ public class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
     }
 
     public static WhereFilter of(ColumnName columnName, boolean inverted) {
-        return WhereFilterFactory.getExpression(Strings.of(columnName, inverted));
+        final String x = String.format(inverted ? "isNull(%s) || !%s" : "!isNull(%s) && %s", columnName.name(),
+                columnName.name());
+        return WhereFilterFactory.getExpression(x);
     }
 
     public static WhereFilter of(Function function, boolean inverted) {
