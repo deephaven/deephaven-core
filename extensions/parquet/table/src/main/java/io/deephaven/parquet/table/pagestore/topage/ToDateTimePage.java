@@ -82,7 +82,7 @@ public abstract class ToDateTimePage<ATTR extends Any> extends ToLongPage<ATTR> 
         @Override
         @NotNull
         public ObjectVector<DateTime> makeVector(long[] result) {
-            return makeVectorHelper(result, DateTimeUtils::microsToTime);
+            return makeVectorHelper(result, DateTimeUtils::microsToDateTime);
         }
 
         @Override

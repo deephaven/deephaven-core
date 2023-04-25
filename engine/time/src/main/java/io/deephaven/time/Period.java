@@ -11,6 +11,7 @@ public class Period implements Comparable<Period>, Serializable {
     //TODO: remove Joda exposure
     //TODO: curate API
     //TODO: review public vs private
+    //TODO: test coverage
 
     private String periodString;
 

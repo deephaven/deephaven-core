@@ -18,6 +18,7 @@ import java.util.List;
 //TODO: remove Joda exposure
 //TODO: curate API
 //TODO: review public vs private
+//TODO: test coverage
 public enum TimeZone {
     /**
      * America/New_York

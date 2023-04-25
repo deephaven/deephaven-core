@@ -43,6 +43,7 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
     //TODO: remove Joda exposure
     //TODO: curate API
     //TODO: review public vs private
+    //TODO: test coverage
 
     private static final long serialVersionUID = -9077991715632523353L;
     private static final DateTimeFormatter JODA_DATE_TIME_FORMAT =

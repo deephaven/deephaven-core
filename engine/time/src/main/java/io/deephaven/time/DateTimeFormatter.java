@@ -17,6 +17,7 @@ public class DateTimeFormatter {
     //TODO: remove Joda exposure
     //TODO: curate API
     //TODO: review public vs private
+    //TODO: test coverage
 
     private final String pattern;
     private final Map<TimeZone, java.time.format.DateTimeFormatter> formatCache = new HashMap<>(3);

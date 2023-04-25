@@ -38,11 +38,11 @@ public class DateTimeUtils {
     //TODO: remove Joda exposure
     //TODO: curate API
     //TODO: review public vs private
+    //TODO: test coverage
 
     //TODO: reorganize functions into better groupings
 
-    //TODO: no equivalent.  Document and move out?
-    public static final DateTime[] ZERO_LENGTH_DATETIME_ARRAY = new DateTime[0];
+    // region Format Patterns
 
     // The following 3 patterns support LocalDate literals. Note all LocalDate patterns must not have characters after
     // the date, to avoid confusion with DateTime literals.
@@ -50,6 +50,7 @@ public class DateTimeUtils {
     /** Matches yyyy-MM-dd. */
     private static final Pattern STD_DATE_PATTERN =
             Pattern.compile("^(?<year>[0-9][0-9][0-9][0-9])-(?<month>[0-9][0-9])-(?<day>[0-9][0-9])$");
+
     /** Matches yyyyMMdd (consistent with ISO dates). */
     private static final Pattern STD_DATE_PATTERN2 =
             Pattern.compile("^(?<year>[0-9][0-9][0-9][0-9])(?<month>[0-9][0-9])(?<day>[0-9][0-9])$");
@@ -80,6 +81,311 @@ public class DateTimeUtils {
             "\\-?([0-9]+[Yy])?([0-9]+[Mm])?([0-9]+[Ww])?([0-9]+[Dd])?(T([0-9]+[Hh])?([0-9]+[Mm])?([0-9]+[Ss])?)?");
     private static final String DATE_COLUMN_PARTITION_FORMAT_STRING = "yyyy-MM-dd";
 
+    private static final Pattern CAPTURING_DATETIME_PATTERN = Pattern.compile(
+            "(([0-9][0-9][0-9][0-9])-([0-9][0-9])-([0-9][0-9])T?)?(([0-9][0-9]?)(?::([0-9][0-9])(?::([0-9][0-9]))?(?:\\.([0-9][0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?))?)?)?( [a-zA-Z]+)?");
+
+    // endregion
+
+    // region Time Constants
+
+    //TODO: no equivalent
+    /**
+     * One microsecond in nanoseconds.
+     */
+    public static final long MICRO = 1_000;
+
+    //TODO: no equivalent
+    /**
+     * One millisecond in nanoseconds.
+     */
+    public static final long MILLI = 1_000_000;
+
+    /**
+     * One second in nanoseconds.
+     */
+    public static final long SECOND = 1_000_000_000;
+
+    /**
+     * One minute in nanoseconds.
+     */
+    public static final long MINUTE = 60 * SECOND;
+
+    /**
+     * One hour in nanoseconds.
+     */
+    public static final long HOUR = 60 * MINUTE;
+
+    /**
+     * One day in nanoseconds.
+     */
+    public static final long DAY = 24 * HOUR;
+
+    /**
+     * One week in nanoseconds.
+     */
+    public static final long WEEK = 7 * DAY;
+
+    /**
+     * One year (365 days) in nanoseconds.
+     */
+    public static final long YEAR = 365 * DAY;
+
+    /**
+     * Maximum time in microseconds that can be converted to a {@link DateTime} without overflow.
+     */
+    private static final long MAX_CONVERTIBLE_MICROS = Long.MAX_VALUE / 1_000L;
+
+    /**
+     * Maximum time in milliseconds that can be converted to a {@link DateTime} without overflow.
+     */
+    private static final long MAX_CONVERTIBLE_MILLIS = Long.MAX_VALUE / 1_000_000L;
+
+    /**
+     * Maximum time in seconds that can be converted to a {@link DateTime} without overflow.
+     */
+    private static final long MAX_CONVERTIBLE_SECONDS = Long.MAX_VALUE / 1_000_000_000L;
+
+    /**
+     * Number of years per nanosecond.
+     */
+    private static final double YEARS_PER_NANO = 1. / (double) YEAR;
+
+    // endregion
+
+    /**
+     * A type of RuntimeException thrown when operations resulting in {@link DateTime} values would exceed the range
+     * available by max or min long nanoseconds.
+     */
+    public static class DateTimeOverflowException extends RuntimeException {
+        private DateTimeOverflowException() {
+            super("Operation failed due to overflow");
+        }
+
+        private DateTimeOverflowException(String s) {
+            super(s);
+        }
+
+        private DateTimeOverflowException(String message, Throwable cause) {
+            super(message, cause);
+        }
+    }
+
+    // region Time Conversions
+
+    //TODO: no equivalent
+    /**
+     * Converts microseconds to nanoseconds.
+     *
+     * @param micros microseconds to convert.
+     * @return {@link QueryConstants#NULL_LONG} if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
+     *      microseconds converted to nanoseconds.
+     */
+    public static long microsToNanos(long micros) {
+        if (micros == NULL_LONG) {
+            return NULL_LONG;
+        }
+        if (Math.abs(micros) > MAX_CONVERTIBLE_MICROS) {
+            throw new DateTimeOverflowException("Converting " + micros + " micros to nanos would overflow");
+        }
+        return micros * 1000;
+    }
+
+    /**
+     * Converts milliseconds to nanoseconds.
+     *
+     * @param millis milliseconds to convert.
+     * @return {@link QueryConstants#NULL_LONG} if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
+     *      milliseconds converted to nanoseconds.
+     */
+    public static long millisToNanos(long millis) {
+        if (millis == NULL_LONG) {
+            return NULL_LONG;
+        }
+        if (Math.abs(millis) > MAX_CONVERTIBLE_MILLIS) {
+            throw new DateTimeOverflowException("Converting " + millis + " millis to nanos would overflow");
+        }
+        return millis * 1000000;
+    }
+
+    //TODO: no equivalent
+    /**
+     * Converts seconds to nanoseconds.
+     *
+     * @param seconds seconds to convert.
+     * @return {@link QueryConstants#NULL_LONG} if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
+     *      seconds converted to nanoseconds.
+     */
+    public static long secondsToNanos(long seconds) {
+        if (seconds == NULL_LONG) {
+            return NULL_LONG;
+        }
+        if (Math.abs(seconds) > MAX_CONVERTIBLE_SECONDS) {
+            throw new DateTimeOverflowException("Converting " + seconds + " seconds to nanos would overflow");
+        }
+
+        return seconds * 1000000000L;
+    }
+
+    //TODO: no equivalent
+    /**
+     * Converts nanoseconds to microseconds.
+     *
+     * @param nanos nanoseconds to convert.
+     * @return {@link QueryConstants#NULL_LONG} if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
+     *      nanoseconds converted to microseconds, rounded down.
+     */
+    @SuppressWarnings("WeakerAccess")
+    public static long nanosToMicros(long nanos) {
+        if (nanos == NULL_LONG) {
+            return NULL_LONG;
+        }
+        return nanos / MICRO;
+    }
+
+    /**
+     * Converts nanoseconds to milliseconds.
+     *
+     * @param nanos nanoseconds to convert.
+     * @return {@link QueryConstants#NULL_LONG} if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
+     *      nanoseconds converted to milliseconds, rounded down.
+     */
+    public static long nanosToMillis(long nanos) {
+        if (nanos == NULL_LONG) {
+            return NULL_LONG;
+        }
+
+        return nanos / MILLI;
+    }
+
+    //TODO: no equivalent
+    /**
+     * Converts nanoseconds to seconds.
+     *
+     * @param nanos nanoseconds to convert.
+     * @return {@link QueryConstants#NULL_LONG} if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
+     *      nanoseconds converted to seconds, rounded down.
+     */
+    @SuppressWarnings("WeakerAccess")
+    public static long nanosToSeconds(long nanos) {
+        if (nanos == NULL_LONG) {
+            return NULL_LONG;
+        }
+        return nanos / SECOND;
+    }
+
+    //TODO: add epoch to the name?
+    /**
+     * Returns nanoseconds from the Epoch for a {@link DateTime} value.
+     *
+     * @param dateTime {@link DateTime} to compute the Epoch offset for.
+     * @return nanoseconds since Epoch, or a NULL_LONG value if the {@link DateTime} is null.
+     */
+    public static long nanos(DateTime dateTime) {
+        if (dateTime == null) {
+            return NULL_LONG;
+        }
+
+        return dateTime.getNanos();
+    }
+
+    //TODO: add epoch to the name?
+    /**
+     * Returns milliseconds from the Epoch for a {@link DateTime} value.
+     *
+     * @param dateTime {@link DateTime} to compute the Epoch offset for.
+     * @return milliseconds since Epoch, or a NULL_LONG value if the {@link DateTime} is null.
+     */
+    public static long millis(DateTime dateTime) {
+        if (dateTime == null) {
+            return NULL_LONG;
+        }
+
+        return dateTime.getMillis();
+    }
+
+    //TODO: add epoch to the name?
+    //TODO: no equivalent
+    /**
+     * Returns seconds since from the Epoch for a {@link DateTime} value.
+     *
+     * @param dateTime {@link DateTime} to compute the Epoch offset for.
+     * @return seconds since Epoch, or a NULL_LONG value if the {@link DateTime} is null.
+     */
+    public static long seconds(DateTime dateTime) {
+        if (dateTime == null) {
+            return NULL_LONG;
+        }
+
+        return dateTime.getMillis() / 1000;
+    }
+
+    //TODO: add epoch to the name?
+    /**
+     * Converts nanoseconds from the Epoch to a {@link DateTime}.
+     *
+     * @param nanos nanoseconds since Epoch.
+     * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
+     *      nanoseconds from the Epoch converted to a {@link DateTime}.
+     * @throws DateTimeOverflowException if the resultant {@link DateTime} exceeds the supported range.
+     */
+    public static DateTime nanosToDateTime(long nanos) {
+        return nanos == NULL_LONG ? null : new DateTime(nanos);
+    }
+
+    //TODO: add epoch to the name?
+    //TODO: no equivalent
+    /**
+     * Converts microseconds from the Epoch to a {@link DateTime}.
+     *
+     * @param micros microseconds since Epoch.
+     * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
+     *      microseconds from the Epoch converted to a {@link DateTime}.
+     * @throws DateTimeOverflowException if the resultant {@link DateTime} exceeds the supported range.
+     */
+    public static DateTime microsToDateTime(long micros) {
+        return nanosToDateTime(microsToNanos(micros));
+    }
+
+    //TODO: add epoch to the name?
+    /**
+     * Converts milliseconds from the Epoch to a {@link DateTime}.
+     *
+     * @param millis milliseconds since Epoch.
+     * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
+     *      milliseconds from the Epoch converted to a {@link DateTime}.
+     * @throws DateTimeOverflowException if the resultant {@link DateTime} exceeds the supported range.
+     */
+    public static DateTime millisToDateTime(long millis) {
+        return nanosToDateTime(millisToNanos(millis));
+    }
+
+    //TODO: add epoch to the name?
+    //TODO: rename seconds to sec in methods?
+    //TODO: no equivalent
+    /**
+     * Converts seconds from the Epoch to a {@link DateTime}.
+     *
+     * @param seconds seconds since Epoch.
+     * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
+     *      seconds from the Epoch converted to a {@link DateTime}.
+     * @throws DateTimeOverflowException if the resultant {@link DateTime} exceeds the supported range.
+     */
+    public static DateTime secondsToDateTime(long seconds) {
+        return nanosToDateTime(secondsToNanos(seconds));
+    }
+
+    // endregion
+
+
+    // ##############################################################################
+
+
+    //TODO: no equivalent.  Document and move out?
+    public static final DateTime[] ZERO_LENGTH_DATETIME_ARRAY = new DateTime[0];
+
+
+    //TODO: document
+    //TODO: add to Format Patterns?
     /**
      * Date formatting styles for use in conversion functions such as {@link #convertDateQuiet(String, DateStyle)}.
      */
@@ -87,45 +393,11 @@ public class DateTimeUtils {
         MDY, DMY, YMD
     }
 
+    //TODO: add to Format Patterns?
     private static final DateStyle DATE_STYLE = DateStyle
             .valueOf(Configuration.getInstance().getStringWithDefault("DateTimeUtils.dateStyle", DateStyle.MDY.name()));
 
-    // region Constants
 
-    /**
-     * Constant value of one second in nanoseconds.
-     */
-    public static final long SECOND = 1_000_000_000;
-
-    /**
-     * Constant value of one minute in nanoseconds.
-     */
-    public static final long MINUTE = 60 * SECOND;
-
-    /**
-     * Constant value of one hour in nanoseconds.
-     */
-    public static final long HOUR = 60 * MINUTE;
-
-    /**
-     * Constant value of one day in nanoseconds.
-     */
-    public static final long DAY = 24 * HOUR;
-
-    /**
-     * Constant value of one week in nanoseconds.
-     */
-    public static final long WEEK = 7 * DAY;
-
-    /**
-     * Constant value of one year (365 days) in nanoseconds.
-     */
-    public static final long YEAR = 365 * DAY;
-
-    // endregion
-
-    private static final Pattern CAPTURING_DATETIME_PATTERN = Pattern.compile(
-            "(([0-9][0-9][0-9][0-9])-([0-9][0-9])-([0-9][0-9])T?)?(([0-9][0-9]?)(?::([0-9][0-9])(?::([0-9][0-9]))?(?:\\.([0-9][0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?))?)?)?( [a-zA-Z]+)?");
 
     private enum DateGroupId {
         // Date(1),
@@ -143,22 +415,6 @@ public class DateTimeUtils {
         }
     }
 
-    /**
-     * Maximum time in microseconds that can be converted to a {@link DateTime} without overflow.
-     */
-    private static final long MAX_CONVERTIBLE_MICROS = Long.MAX_VALUE / 1_000L;
-
-    /**
-     * Maximum time in milliseconds that can be converted to a {@link DateTime} without overflow.
-     */
-    private static final long MAX_CONVERTIBLE_MILLIS = Long.MAX_VALUE / 1_000_000L;
-
-    /**
-     * Maximum time in seconds that can be converted to a {@link DateTime} without overflow.
-     */
-    private static final long MAX_CONVERTIBLE_SECONDS = Long.MAX_VALUE / 1_000_000_000L;
-
-    private static final double YEARS_PER_NANO = 1. / (double) YEAR;
 
     //TODO: document
     // TODO(deephaven-core#3044): Improve scaffolding around full system replay
@@ -168,34 +424,6 @@ public class DateTimeUtils {
      */
     public static Clock clock;
 
-    /**
-     * Returns milliseconds since Epoch for a {@link DateTime} value.
-     *
-     * @param dateTime The {@link DateTime} for which the milliseconds offset should be returned.
-     * @return A long value of milliseconds since Epoch, or a {@link QueryConstants#NULL_LONG} value if the
-     *         {@link DateTime} is null.
-     */
-    public static long millis(DateTime dateTime) {
-        if (dateTime == null) {
-            return NULL_LONG;
-        }
-
-        return dateTime.getMillis();
-    }
-
-    /**
-     * Returns nanoseconds since Epoch for a {@link DateTime} value.
-     *
-     * @param dateTime The {@link DateTime} for which the nanoseconds offset should be returned.
-     * @return A long value of nanoseconds since Epoch, or a NULL_LONG value if the {@link DateTime} is null.
-     */
-    public static long nanos(DateTime dateTime) {
-        if (dateTime == null) {
-            return NULL_LONG;
-        }
-
-        return dateTime.getNanos();
-    }
 
     //TODO: no equivalent
     /**
@@ -887,128 +1115,6 @@ public class DateTimeUtils {
         return getExcelDateTime(dateTime, TimeZones.TZ_NEWYORK);
     }
 
-    //TODO: no equivalent
-    /**
-     * Converts microseconds to nanoseconds.
-     *
-     * @param micros The long value of microseconds to convert.
-     * @return A {@link QueryConstants#NULL_LONG} if the input is null. Throws a {@link DateTimeOverflowException} if
-     *         the resultant value would exceed the range that can be stored in a long. Otherwise, returns a long
-     *         containing the equivalent number of nanoseconds for the input in microseconds.
-     */
-    public static long microsToNanos(long micros) {
-        if (micros == NULL_LONG) {
-            return NULL_LONG;
-        }
-        if (Math.abs(micros) > MAX_CONVERTIBLE_MICROS) {
-            throw new DateTimeOverflowException("Converting " + micros + " micros to nanos would overflow");
-        }
-        return micros * 1000;
-    }
-
-    //TODO: no equivalent
-    /**
-     * Converts nanoseconds to microseconds.
-     *
-     * @param nanos The long value of nanoseconds to convert.
-     * @return A {@link QueryConstants#NULL_LONG} if the input is null. Otherwise, returns a long containing the
-     *         equivalent number of microseconds for the input in nanoseconds.
-     */
-    @SuppressWarnings("WeakerAccess")
-    public static long nanosToMicros(long nanos) {
-        if (nanos == NULL_LONG) {
-            return NULL_LONG;
-        }
-        return nanos / 1000;
-    }
-
-    //TODO: no equivalent
-    /**
-     * Converts a value of microseconds from Epoch in the UTC time zone to a {@link DateTime}.
-     *
-     * @param micros The long microseconds value to convert.
-     * @return {@link QueryConstants#NULL_LONG} if the input is null, otherwise, a {@link DateTime} representation of
-     *         the input.
-     */
-    public static DateTime microsToTime(long micros) {
-        return nanosToDateTime(microsToNanos(micros));
-    }
-
-    /**
-     * Converts milliseconds to nanoseconds.
-     *
-     * @param millis The long milliseconds value to convert.
-     * @return {@link QueryConstants#NULL_LONG} if the input is equal to {@link QueryConstants#NULL_LONG}. Throws
-     *         {@link DateTimeOverflowException} if the input is too large for conversion. Otherwise returns a long of
-     *         the equivalent number of nanoseconds to the input.
-     */
-    public static long millisToNanos(long millis) {
-        if (millis == NULL_LONG) {
-            return NULL_LONG;
-        }
-        if (Math.abs(millis) > MAX_CONVERTIBLE_MILLIS) {
-            throw new DateTimeOverflowException("Converting " + millis + " millis to nanos would overflow");
-        }
-        return millis * 1000000;
-    }
-
-    //TODO: no equivalent
-    /**
-     * Converts seconds to nanoseconds.
-     *
-     * @param seconds The long value of seconds to convert.
-     * @return A {@link QueryConstants#NULL_LONG} if the input is null. Throws a {@link DateTimeOverflowException} if
-     *         the resultant value would exceed the range that can be stored in a long. Otherwise, returns a long
-     *         containing the equivalent number of nanoseconds for the input in seconds.
-     */
-    public static long secondsToNanos(long seconds) {
-        if (seconds == NULL_LONG) {
-            return NULL_LONG;
-        }
-        if (Math.abs(seconds) > MAX_CONVERTIBLE_SECONDS) {
-            throw new DateTimeOverflowException("Converting " + seconds + " seconds to nanos would overflow");
-        }
-
-        return seconds * 1000000000L;
-    }
-
-    /**
-     * Converts nanoseconds to milliseconds.
-     *
-     * @param nanos The long value of nanoseconds to convert.
-     * @return A {@link QueryConstants#NULL_LONG} if the input is null. Otherwise, returns a long containing the
-     *         equivalent number of milliseconds for the input in nanoseconds.
-     */
-    public static long nanosToMillis(long nanos) {
-        if (nanos == NULL_LONG) {
-            return NULL_LONG;
-        }
-
-        return nanos / 1000000;
-    }
-
-    /**
-     * Converts a value of milliseconds from Epoch in the UTC time zone to a {@link DateTime}.
-     *
-     * @param millis The long milliseconds value to convert.
-     * @return {@link QueryConstants#NULL_LONG} if the input is null, otherwise, a {@link DateTime} representation of
-     *         the input.
-     */
-    public static DateTime millisToDateTime(long millis) {
-        return nanosToDateTime(millisToNanos(millis));
-    }
-
-    //TODO: no equivalent
-    /**
-     * Converts a value of seconds from Epoch in the UTC time zone to a {@link DateTime}.
-     *
-     * @param seconds The long seconds value to convert.
-     * @return {@link QueryConstants#NULL_LONG} if the input is null, otherwise, a {@link DateTime} representation of
-     *         the input.
-     */
-    public static DateTime secondsToTime(long seconds) {
-        return nanosToDateTime(secondsToNanos(seconds));
-    }
 
 
     //TODO: no equivalent
@@ -1280,16 +1386,6 @@ public class DateTimeUtils {
         return cachedCurrentDates.putIfAbsent(timeZone, CachedCurrentDate::new).get();
     }
 
-    /**
-     * Converts a value of nanoseconds from Epoch to a {@link DateTime}.
-     *
-     * @param nanos The long nanoseconds since Epoch value to convert.
-     * @return A DateTime for {@code nanos}, or {@code null} if {@code nanos} is equal to
-     *         {@link QueryConstants#NULL_LONG NULL_LONG}.
-     */
-    public static DateTime nanosToDateTime(long nanos) {
-        return nanos == NULL_LONG ? null : new DateTime(nanos);
-    }
 
     //TODO: no equivalent
     /**
@@ -1987,6 +2083,7 @@ public class DateTimeUtils {
         return null;
     }
 
+    //TODO: does this need to be in this class?
     /**
      * A container object for the result of {@link #convertExpression(String)}, which includes the converted formula
      * String, a String of instance variable declarations, and a map describing the names and types of these instance
@@ -2016,23 +2113,6 @@ public class DateTimeUtils {
         }
     }
 
-    /**
-     * A type of RuntimeException thrown when operations resulting in {@link DateTime} values would exceed the range
-     * available by max or min long nanoseconds.
-     */
-    public static class DateTimeOverflowException extends RuntimeException {
-        private DateTimeOverflowException() {
-            super("Operation failed due to overflow");
-        }
-
-        private DateTimeOverflowException(String s) {
-            super(s);
-        }
-
-        private DateTimeOverflowException(String message, Throwable cause) {
-            super(message, cause);
-        }
-    }
 
     //TODO: no equivalent
     /**
