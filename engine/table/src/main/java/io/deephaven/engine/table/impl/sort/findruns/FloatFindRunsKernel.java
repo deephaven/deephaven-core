@@ -96,7 +96,7 @@ public class FloatFindRunsKernel {
 
     private static boolean neq(float last, float next) {
         // region neq
-        return next != last;
+        return Float.floatToIntBits(next) != Float.floatToIntBits(last);
         // endregion neq
     }
 

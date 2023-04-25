@@ -96,7 +96,7 @@ public class DoubleFindRunsKernel {
 
     private static boolean neq(double last, double next) {
         // region neq
-        return next != last;
+        return Double.doubleToLongBits(next) != Double.doubleToLongBits(last);
         // endregion neq
     }
 
