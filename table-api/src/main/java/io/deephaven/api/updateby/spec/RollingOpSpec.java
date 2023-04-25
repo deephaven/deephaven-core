@@ -25,7 +25,7 @@ public abstract class RollingOpSpec extends UpdateBySpecBase {
     @Value.Check
     final void checkWindowSizes() {
         // assert some rational constraints on window sizes (leq MAX_SIZE and geq 0)
-        final long size = revWindowScale().timescaleUnits() + fwdWindowScale().timescaleUnits();
+        final double size = revWindowScale().timescaleUnits() + fwdWindowScale().timescaleUnits();
         if (size < 0) {
             throw new IllegalArgumentException("UpdateBy rolling window size must be non-negative");
         } else if (!revWindowScale().isTimeBased() && size > MAX_ARRAY_SIZE) {

@@ -221,8 +221,8 @@ public class UpdateByOperatorFactory {
 
                         // Windowed ops are unique per type (ticks/time-based) and window dimensions
                         hash = 31 * hash + Objects.hashCode(rollingSpec.revWindowScale().timestampCol());
-                        hash = 31 * hash + Long.hashCode(rollingSpec.revWindowScale().timescaleUnits());
-                        hash = 31 * hash + Long.hashCode(rollingSpec.fwdWindowScale().timescaleUnits());
+                        hash = 31 * hash + Double.hashCode(rollingSpec.revWindowScale().longTimescaleUnits());
+                        hash = 31 * hash + Double.hashCode(rollingSpec.fwdWindowScale().longTimescaleUnits());
                         return hash;
                     }
 
@@ -252,8 +252,8 @@ public class UpdateByOperatorFactory {
                         if (!Objects.equals(rsA.revWindowScale().timestampCol(), rsB.revWindowScale().timestampCol())) {
                             return false;
                         }
-                        return rsA.revWindowScale().timescaleUnits() == rsB.revWindowScale().timescaleUnits() &&
-                                rsA.fwdWindowScale().timescaleUnits() == rsB.fwdWindowScale().timescaleUnits();
+                        return rsA.revWindowScale().longTimescaleUnits() == rsB.revWindowScale().longTimescaleUnits() &&
+                                rsA.fwdWindowScale().longTimescaleUnits() == rsB.fwdWindowScale().longTimescaleUnits();
                     }
                 });
 
@@ -514,7 +514,7 @@ public class UpdateByOperatorFactory {
             }
 
             // use the correct units from the EmaSpec (depending on if Time or Tick based)
-            final long timeScaleUnits = spec.timeScale().timescaleUnits();
+            final double timeScaleUnits = spec.timeScale().timescaleUnits();
             final OperationControl control = spec.controlOrDefault();
             final MathContext mathCtx = control.bigValueContextOrDefault();
 
@@ -574,7 +574,7 @@ public class UpdateByOperatorFactory {
             }
 
             // use the correct units from the EmaSpec (depending on if Time or Tick based)
-            final long timeScaleUnits = spec.timeScale().timescaleUnits();
+            final double timeScaleUnits = spec.timeScale().timescaleUnits();
             final OperationControl control = spec.controlOrDefault();
             final MathContext mathCtx = control.bigValueContextOrDefault();
 
@@ -634,7 +634,7 @@ public class UpdateByOperatorFactory {
             }
 
             // use the correct units from the EmaSpec (depending on if Time or Tick based)
-            final long timeScaleUnits = spec.timeScale().timescaleUnits();
+            final double timeScaleUnits = spec.timeScale().timescaleUnits();
             final OperationControl control = spec.controlOrDefault();
             final MathContext mathCtx = control.bigValueContextOrDefault();
 
@@ -835,8 +835,8 @@ public class UpdateByOperatorFactory {
                 affectingColumns = new String[] {rs.revWindowScale().timestampCol(), pair.rightColumn};
             }
 
-            final long prevWindowScaleUnits = rs.revWindowScale().timescaleUnits();
-            final long fwdWindowScaleUnits = rs.fwdWindowScale().timescaleUnits();
+            final long prevWindowScaleUnits = rs.revWindowScale().longTimescaleUnits();
+            final long fwdWindowScaleUnits = rs.fwdWindowScale().longTimescaleUnits();
 
             if (csType == Boolean.class || csType == boolean.class) {
                 return new ByteRollingSumOperator(pair, affectingColumns, rowRedirection,
@@ -902,8 +902,8 @@ public class UpdateByOperatorFactory {
                 affectingColumns[ii] = pair.rightColumn;
             }
 
-            final long prevWindowScaleUnits = rg.revWindowScale().timescaleUnits();
-            final long fwdWindowScaleUnits = rg.fwdWindowScale().timescaleUnits();
+            final long prevWindowScaleUnits = rg.revWindowScale().longTimescaleUnits();
+            final long fwdWindowScaleUnits = rg.fwdWindowScale().longTimescaleUnits();
 
             return new RollingGroupOperator(pairs, affectingColumns, rowRedirection,
                     rg.revWindowScale().timestampCol(),
@@ -924,8 +924,8 @@ public class UpdateByOperatorFactory {
                 affectingColumns = new String[] {rs.revWindowScale().timestampCol(), pair.rightColumn};
             }
 
-            final long prevWindowScaleUnits = rs.revWindowScale().timescaleUnits();
-            final long fwdWindowScaleUnits = rs.fwdWindowScale().timescaleUnits();
+            final long prevWindowScaleUnits = rs.revWindowScale().longTimescaleUnits();
+            final long fwdWindowScaleUnits = rs.fwdWindowScale().longTimescaleUnits();
 
             if (csType == Boolean.class || csType == boolean.class) {
                 return new ByteRollingAvgOperator(pair, affectingColumns, rowRedirection,
@@ -985,8 +985,8 @@ public class UpdateByOperatorFactory {
                 affectingColumns = new String[] {rmm.revWindowScale().timestampCol(), pair.rightColumn};
             }
 
-            final long prevWindowScaleUnits = rmm.revWindowScale().timescaleUnits();
-            final long fwdWindowScaleUnits = rmm.fwdWindowScale().timescaleUnits();
+            final long prevWindowScaleUnits = rmm.revWindowScale().longTimescaleUnits();
+            final long fwdWindowScaleUnits = rmm.fwdWindowScale().longTimescaleUnits();
 
             if (csType == byte.class || csType == Byte.class) {
                 return new ByteRollingMinMaxOperator(pair, affectingColumns, rowRedirection,
@@ -1040,8 +1040,8 @@ public class UpdateByOperatorFactory {
                 affectingColumns = new String[] {rs.revWindowScale().timestampCol(), pair.rightColumn};
             }
 
-            final long prevWindowScaleUnits = rs.revWindowScale().timescaleUnits();
-            final long fwdWindowScaleUnits = rs.fwdWindowScale().timescaleUnits();
+            final long prevWindowScaleUnits = rs.revWindowScale().longTimescaleUnits();
+            final long fwdWindowScaleUnits = rs.fwdWindowScale().longTimescaleUnits();
 
             if (csType == byte.class || csType == Byte.class) {
                 return new ByteRollingProductOperator(pair, affectingColumns, rowRedirection,
@@ -1098,8 +1098,8 @@ public class UpdateByOperatorFactory {
                 affectingColumns = new String[] {rs.revWindowScale().timestampCol(), pair.rightColumn};
             }
 
-            final long prevWindowScaleUnits = rs.revWindowScale().timescaleUnits();
-            final long fwdWindowScaleUnits = rs.fwdWindowScale().timescaleUnits();
+            final long prevWindowScaleUnits = rs.revWindowScale().longTimescaleUnits();
+            final long fwdWindowScaleUnits = rs.fwdWindowScale().longTimescaleUnits();
 
             if (csType == boolean.class || csType == Boolean.class) {
                 return new ByteRollingCountOperator(pair, affectingColumns, rowRedirection,
@@ -1154,8 +1154,8 @@ public class UpdateByOperatorFactory {
                 affectingColumns = new String[] {rs.revWindowScale().timestampCol(), pair.rightColumn};
             }
 
-            final long prevWindowScaleUnits = rs.revWindowScale().timescaleUnits();
-            final long fwdWindowScaleUnits = rs.fwdWindowScale().timescaleUnits();
+            final long prevWindowScaleUnits = rs.revWindowScale().longTimescaleUnits();
+            final long fwdWindowScaleUnits = rs.fwdWindowScale().longTimescaleUnits();
 
             if (csType == Boolean.class || csType == boolean.class) {
                 return new ByteRollingStdOperator(pair, affectingColumns, rowRedirection,
@@ -1223,8 +1223,8 @@ public class UpdateByOperatorFactory {
                 affectingColumns = new String[] {rs.revWindowScale().timestampCol(), pair.rightColumn, rs.weightCol()};
             }
 
-            final long prevWindowScaleUnits = rs.revWindowScale().timescaleUnits();
-            final long fwdWindowScaleUnits = rs.fwdWindowScale().timescaleUnits();
+            final long prevWindowScaleUnits = rs.revWindowScale().longTimescaleUnits();
+            final long fwdWindowScaleUnits = rs.fwdWindowScale().longTimescaleUnits();
 
             if (csType == BigDecimal.class || csType == BigInteger.class ||
                     weightCsType == BigDecimal.class || weightCsType == BigInteger.class) {

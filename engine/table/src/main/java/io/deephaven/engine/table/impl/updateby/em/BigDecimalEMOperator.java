@@ -107,7 +107,7 @@ public class BigDecimalEMOperator extends BaseBigNumberEMOperator<BigDecimal> {
             @Nullable final RowRedirection rowRedirection,
             @NotNull final OperationControl control,
             @Nullable final String timestampColumnName,
-            final long windowScaleUnits,
+            final double windowScaleUnits,
             final ColumnSource<?> valueSource,
             @NotNull final EmFunction aggFunction) {
         super(pair, affectingColumns, rowRedirection, control, timestampColumnName, windowScaleUnits, valueSource,

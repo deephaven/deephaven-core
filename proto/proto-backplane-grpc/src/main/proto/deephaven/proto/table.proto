@@ -337,11 +337,11 @@ enum BadDataBehavior {
 // Reusable timescale message for the UpdateBy rolling operations.
 message UpdateByEmaTimescale {
   message UpdateByEmaTicks {
-    sint64 ticks = 1 [jstype=JS_STRING];
+    double ticks = 1;
   }
   message UpdateByEmaTime {
     string column = 1;
-    sint64 period_nanos = 2 [jstype=JS_STRING];
+    double period_nanos = 2;
   }
   oneof type {
     UpdateByEmaTicks ticks = 1;
