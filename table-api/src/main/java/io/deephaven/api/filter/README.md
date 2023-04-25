@@ -1,6 +1,6 @@
 # Filter
 
-Deephaven filters can be constructed via where filter expression parsing using strings or directly via the
+Deephaven filters can be constructed via expression parsing using strings or directly via the
 `io.deephaven.api.filter.Filter` APIs / `deephaven.filters` python package[^1].
 
 ## Logic
@@ -25,7 +25,7 @@ no_rows = t.where([f, not_(f)])
 all_rows = t.where(or_([f, not_(f)]))
 ```
 
-That is, `not_(f)` matches all rows that `f` does _not_ match.
+That is, `not_(f)` matches the rows that `f` does _not_ match and does _not_ match the rows that `f` does match.
 
 ## Well-defined
 
