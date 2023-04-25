@@ -16,6 +16,7 @@ import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableDiff;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTime;
+import io.deephaven.time.DateTimeUtils;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -34,7 +35,6 @@ import static io.deephaven.engine.testutil.TstUtils.testTable;
 import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.simulateShiftAwareStep;
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.function.Basic.isNull;
-import static io.deephaven.time.DateTimeUtils.toDateTime;
 import static io.deephaven.util.QueryConstants.*;
 import static org.junit.Assert.assertArrayEquals;
 
@@ -134,8 +134,8 @@ public class TestRollingSum extends BaseUpdateByTest {
     public void testStaticZeroKeyTimedRev() {
         final QueryTable t = createTestTable(10000, false, false, false, 0xFFFABBBC,
                 new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
-                        toDateTime("2022-03-09T09:00:00.000 NY"),
-                        toDateTime("2022-03-09T16:30:00.000 NY"))}).t;
+                        DateTimeUtils.parseDateTime("2022-03-09T09:00:00.000 NY"),
+                        DateTimeUtils.parseDateTime("2022-03-09T16:30:00.000 NY"))}).t;
 
         final Duration prevTime = Duration.ofMinutes(10);
         final Duration postTime = Duration.ZERO;
@@ -162,8 +162,8 @@ public class TestRollingSum extends BaseUpdateByTest {
     public void testStaticZeroKeyTimedRevExclusive() {
         final QueryTable t = createTestTable(10000, false, false, false, 0xFFFABBBC,
                 new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
-                        toDateTime("2022-03-09T09:00:00.000 NY"),
-                        toDateTime("2022-03-09T16:30:00.000 NY"))}).t;
+                        DateTimeUtils.parseDateTime("2022-03-09T09:00:00.000 NY"),
+                        DateTimeUtils.parseDateTime("2022-03-09T16:30:00.000 NY"))}).t;
 
         final Duration prevTime = Duration.ofMinutes(10);
         final Duration postTime = Duration.ofMinutes(-5);
@@ -190,8 +190,8 @@ public class TestRollingSum extends BaseUpdateByTest {
     public void testStaticZeroKeyTimedFwd() {
         final QueryTable t = createTestTable(10000, false, false, false, 0xFFFABBBC,
                 new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
-                        toDateTime("2022-03-09T09:00:00.000 NY"),
-                        toDateTime("2022-03-09T16:30:00.000 NY"))}).t;
+                        DateTimeUtils.parseDateTime("2022-03-09T09:00:00.000 NY"),
+                        DateTimeUtils.parseDateTime("2022-03-09T16:30:00.000 NY"))}).t;
 
         final Duration prevTime = Duration.ZERO;
         final Duration postTime = Duration.ofMinutes(10);
@@ -218,8 +218,8 @@ public class TestRollingSum extends BaseUpdateByTest {
     public void testStaticZeroKeyTimedFwdExclusive() {
         final QueryTable t = createTestTable(10000, false, false, false, 0xFFFABBBC,
                 new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
-                        toDateTime("2022-03-09T09:00:00.000 NY"),
-                        toDateTime("2022-03-09T16:30:00.000 NY"))}).t;
+                        DateTimeUtils.parseDateTime("2022-03-09T09:00:00.000 NY"),
+                        DateTimeUtils.parseDateTime("2022-03-09T16:30:00.000 NY"))}).t;
 
         final Duration prevTime = Duration.ofMinutes(-5);
         final Duration postTime = Duration.ofMinutes(10);
@@ -246,8 +246,8 @@ public class TestRollingSum extends BaseUpdateByTest {
     public void testStaticZeroKeyTimedFwdRev() {
         final QueryTable t = createTestTable(10000, false, false, false, 0xFFFABBBC,
                 new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
-                        toDateTime("2022-03-09T09:00:00.000 NY"),
-                        toDateTime("2022-03-09T16:30:00.000 NY"))}).t;
+                        DateTimeUtils.parseDateTime("2022-03-09T09:00:00.000 NY"),
+                        DateTimeUtils.parseDateTime("2022-03-09T16:30:00.000 NY"))}).t;
 
         final Duration prevTime = Duration.ofMinutes(10);
         final Duration postTime = Duration.ofMinutes(10);
@@ -394,8 +394,8 @@ public class TestRollingSum extends BaseUpdateByTest {
     private void doTestStaticBucketedTimed(boolean grouped, Duration prevTime, Duration postTime) {
         final QueryTable t = createTestTable(10000, true, grouped, false, 0xFFFABBBC,
                 new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
-                        toDateTime("2022-03-09T09:00:00.000 NY"),
-                        toDateTime("2022-03-09T16:30:00.000 NY"))}).t;
+                        DateTimeUtils.parseDateTime("2022-03-09T09:00:00.000 NY"),
+                        DateTimeUtils.parseDateTime("2022-03-09T16:30:00.000 NY"))}).t;
 
         final Table summed =
                 t.updateBy(UpdateByOperation.RollingSum("ts", prevTime, postTime, "byteCol", "shortCol", "intCol",
@@ -550,8 +550,8 @@ public class TestRollingSum extends BaseUpdateByTest {
     private void doTestAppendOnlyTimed(boolean bucketed, Duration prevTime, Duration postTime) {
         final CreateResult result = createTestTable(10000, bucketed, false, true, 0x31313131,
                 new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
-                        toDateTime("2022-03-09T09:00:00.000 NY"),
-                        toDateTime("2022-03-09T16:30:00.000 NY"))});
+                        DateTimeUtils.parseDateTime("2022-03-09T09:00:00.000 NY"),
+                        DateTimeUtils.parseDateTime("2022-03-09T16:30:00.000 NY"))});
         final QueryTable t = result.t;
         t.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
 
@@ -850,8 +850,8 @@ public class TestRollingSum extends BaseUpdateByTest {
 
         final CreateResult result = createTestTable(10000, true, false, true, 0x31313131,
                 new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
-                        toDateTime("2022-03-09T09:00:00.000 NY"),
-                        toDateTime("2022-03-09T16:30:00.000 NY"))});
+                        DateTimeUtils.parseDateTime("2022-03-09T09:00:00.000 NY"),
+                        DateTimeUtils.parseDateTime("2022-03-09T16:30:00.000 NY"))});
 
 
         final QueryTable t = result.t;
@@ -883,8 +883,8 @@ public class TestRollingSum extends BaseUpdateByTest {
 
         final CreateResult result = createTestTable(100, true, false, true, 0x31313131,
                 new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
-                        toDateTime("2022-03-09T09:00:00.000 NY"),
-                        toDateTime("2022-03-09T16:30:00.000 NY"))});
+                        DateTimeUtils.parseDateTime("2022-03-09T09:00:00.000 NY"),
+                        DateTimeUtils.parseDateTime("2022-03-09T16:30:00.000 NY"))});
 
 
         final QueryTable t = result.t;
@@ -916,8 +916,8 @@ public class TestRollingSum extends BaseUpdateByTest {
 
         final CreateResult result = createTestTable(10000, true, false, true, 0x31313131,
                 new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
-                        toDateTime("2022-03-09T09:00:00.000 NY"),
-                        toDateTime("2022-03-09T16:30:00.000 NY"))});
+                        DateTimeUtils.parseDateTime("2022-03-09T09:00:00.000 NY"),
+                        DateTimeUtils.parseDateTime("2022-03-09T16:30:00.000 NY"))});
 
 
         final QueryTable t = result.t;
@@ -949,8 +949,8 @@ public class TestRollingSum extends BaseUpdateByTest {
 
         final CreateResult result = createTestTable(10000, true, false, true, 0x31313131,
                 new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
-                        toDateTime("2022-03-09T09:00:00.000 NY"),
-                        toDateTime("2022-03-09T16:30:00.000 NY"))});
+                        DateTimeUtils.parseDateTime("2022-03-09T09:00:00.000 NY"),
+                        DateTimeUtils.parseDateTime("2022-03-09T16:30:00.000 NY"))});
 
 
         final QueryTable t = result.t;
@@ -982,8 +982,8 @@ public class TestRollingSum extends BaseUpdateByTest {
 
         final CreateResult result = createTestTable(10000, true, false, true, 0x31313131,
                 new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
-                        toDateTime("2022-03-09T09:00:00.000 NY"),
-                        toDateTime("2022-03-09T16:30:00.000 NY"))});
+                        DateTimeUtils.parseDateTime("2022-03-09T09:00:00.000 NY"),
+                        DateTimeUtils.parseDateTime("2022-03-09T16:30:00.000 NY"))});
 
 
         final QueryTable t = result.t;

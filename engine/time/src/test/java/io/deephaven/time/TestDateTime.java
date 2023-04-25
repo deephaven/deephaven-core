@@ -13,8 +13,6 @@ import java.time.ZoneId;
 import java.time.zone.ZoneRulesException;
 import java.util.Date;
 
-import static io.deephaven.time.DateTimeUtils.toDateTime;
-
 public class TestDateTime extends BaseArrayTestCase {
 
     public void testAll() throws Exception {
@@ -66,7 +64,7 @@ public class TestDateTime extends BaseArrayTestCase {
     }
 
     public void testToDateString() {
-        DateTime dateTime = toDateTime("2016-11-06T04:00 UTC"); // 11/6 is the last day of DST
+        DateTime dateTime = DateTimeUtils.parseDateTime("2016-11-06T04:00 UTC"); // 11/6 is the last day of DST
 
         { // America/New_York
             String zoneId = "America/New_York";

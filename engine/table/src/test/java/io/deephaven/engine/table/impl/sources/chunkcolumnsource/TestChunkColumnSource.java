@@ -479,7 +479,7 @@ public class TestChunkColumnSource {
     }
 
     private static DateTime makeExpectDateTime(int idx) {
-        return DateTimeUtils.plus(DateTimeUtils.toDateTime("2021-07-27T09:00 NY"), idx * 3600_000_000_000L);
+        return DateTimeUtils.plus(DateTimeUtils.parseDateTime("2021-07-27T09:00 NY"), idx * 3600_000_000_000L);
     }
 
     @Test

@@ -76,8 +76,8 @@ public class MatchFilterBenchmark {
         builder.setSeed(0xDEADBEEF)
                 .addColumn(BenchmarkTools.stringCol("PartCol", 4, 5, 7, 0xFEEDBEEF));
 
-        final DateTime startTime = DateTimeUtils.toDateTime("2019-01-01T12:00:00 NY");
-        final DateTime endTime = DateTimeUtils.toDateTime("2019-01-01T12:00:00.000001 NY");
+        final DateTime startTime = DateTimeUtils.parseDateTime("2019-01-01T12:00:00 NY");
+        final DateTime endTime = DateTimeUtils.parseDateTime("2019-01-01T12:00:00.000001 NY");
 
         switch (filterCol) {
             case "L1":

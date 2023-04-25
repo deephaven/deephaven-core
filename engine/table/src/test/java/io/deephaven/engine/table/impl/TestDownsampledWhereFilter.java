@@ -38,8 +38,8 @@ public class TestDownsampledWhereFilter {
         int size = 1000;
 
         final QueryTable table = getTable(false, size, random, initColumnInfos(new String[] {"Timestamp", "doubleCol"},
-                new SortedDateTimeGenerator(DateTimeUtils.toDateTime("2015-09-11T09:30:00 NY"),
-                        DateTimeUtils.toDateTime("2015-09-11T10:00:00 NY")),
+                new SortedDateTimeGenerator(DateTimeUtils.parseDateTime("2015-09-11T09:30:00 NY"),
+                        DateTimeUtils.parseDateTime("2015-09-11T10:00:00 NY")),
                 new DoubleGenerator(0, 100)));
 
         Table downsampled = table.where(new DownsampledWhereFilter("Timestamp", 60_000_000_000L));
@@ -58,8 +58,8 @@ public class TestDownsampledWhereFilter {
         int size = 1000;
 
         final QueryTable table = getTable(false, size, random, initColumnInfos(new String[] {"Timestamp", "doubleCol"},
-                new SortedDateTimeGenerator(DateTimeUtils.toDateTime("2015-09-11T09:30:00 NY"),
-                        DateTimeUtils.toDateTime("2015-09-11T10:00:00 NY")),
+                new SortedDateTimeGenerator(DateTimeUtils.parseDateTime("2015-09-11T09:30:00 NY"),
+                        DateTimeUtils.parseDateTime("2015-09-11T10:00:00 NY")),
                 new DoubleGenerator(0, 100)));
 
         Table downsampled = table.where(new DownsampledWhereFilter("Timestamp", 60_000_000_000L,

@@ -729,6 +729,222 @@ public class DateTimeUtils {
 
     // endregion
 
+    // region Parse Times
+
+    /**
+     * Converts a String of digits of any length to a nanoseconds long value. Will ignore anything longer than 9 digits,
+     * and will throw a NumberFormatException if any non-numeric character is found. Strings shorter than 9 digits will
+     * be interpreted as sub-second values to the right of the decimal point.
+     *
+     * @param s string to convert.
+     * @return value in nanoseconds.
+     * @throws NumberFormatException if any non-numeric character is found.
+     */
+    private static long parseNanosInternal(@NotNull final String s) {
+        long result = 0;
+        for (int i = 0; i < 9; i++) {
+            result *= 10;
+            final int digit;
+            if (i >= s.length()) {
+                digit = 0;
+            } else {
+                digit = Character.digit(s.charAt(i), 10);
+                if (digit < 0) {
+                    throw new NumberFormatException("Invalid character for nanoseconds conversion: " + s.charAt(i));
+                }
+            }
+            result += digit;
+        }
+        return result;
+    }
+
+    //TODO: think through toNanos vs toNanosQuiet
+    /**
+     * Converts a time string to nanoseconds. The format for the String is "hh:mm:ss[.nnnnnnnnn]".
+     *
+     * @param s string to be converted.
+     * @return the number of nanoseconds represented by the string.
+     * @throws RuntimeException if the string cannot be parsed.
+     */
+    public static long parseNanos(String s) {
+        long ret = parseNanosQuiet(s);
+
+        if (ret == NULL_LONG) {
+            throw new RuntimeException("Cannot parse time : " + s);
+        }
+
+        return ret;
+    }
+
+    //TODO: think through toNanos vs toNanosQuiet
+    /**
+     * Converts a time string to nanoseconds. The format for the String is "hh:mm:ss[.nnnnnnnnn]".
+     *
+     * @param s string to be converted.
+     * @return {@link QueryConstants#NULL_LONG} if the string cannot be parsed, otherwise the number of nanoseconds represented by the string.
+     */
+    public static long parseNanosQuiet(String s) {
+        try {
+            if (TIME_AND_DURATION_PATTERN.matcher(s).matches()) {
+                long multiplier = 1;
+                long dayNanos = 0;
+                long subsecondNanos = 0;
+
+                if (s.charAt(0) == '-') {
+                    multiplier = -1;
+
+                    s = s.substring(1);
+                }
+
+                int tIndex = s.indexOf('T');
+
+                if (tIndex != -1) {
+                    dayNanos = 86400000000000L * Integer.parseInt(s.substring(0, tIndex));
+
+                    s = s.substring(tIndex + 1);
+                }
+
+                int decimalIndex = s.indexOf('.');
+
+                if (decimalIndex != -1) {
+                    subsecondNanos = parseNanosInternal(s.substring(decimalIndex + 1));
+
+                    s = s.substring(0, decimalIndex);
+                }
+
+                String[] tokens = s.split(":");
+
+                if (tokens.length == 2) { // hh:mm
+                    return multiplier
+                            * (1000000000L * (3600 * Integer.parseInt(tokens[0]) + 60 * Integer.parseInt(tokens[1]))
+                            + dayNanos + subsecondNanos);
+                } else if (tokens.length == 3) { // hh:mm:ss
+                    return multiplier
+                            * (1000000000L * (3600 * Integer.parseInt(tokens[0]) + 60 * Integer.parseInt(tokens[1])
+                            + Integer.parseInt(tokens[2])) + dayNanos + subsecondNanos);
+                }
+            }
+        } catch (Exception e) {
+            // shouldn't get here too often, but somehow something snuck through. we'll just return null below...
+        }
+
+        return NULL_LONG;
+    }
+
+    //TODO: think through parseDateTime vs parseDateTimeQuiet
+    /**
+     * Converts a datetime string to a {@link DateTime}.
+     * <p>
+     * Supports ISO 8601 format ({@link DateTimeFormatter#ISO_INSTANT}), "yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ", and others.
+     *
+     * @param s string to be converted
+     * @return a {@link DateTime} represented by the input string.
+     * @throws RuntimeException if the string cannot be converted, otherwise a {@link DateTime} from the parsed String.
+     */
+    public static DateTime parseDateTime(String s) {
+        DateTime ret = parseDateTimeQuiet(s);
+
+        if (ret == null) {
+            throw new RuntimeException("Cannot parse datetime : " + s);
+        }
+
+        return ret;
+    }
+
+    //TODO: think through parseDateTime vs parseDateTimeQuiet
+    /**
+     * Converts a datetime string to a {@link DateTime}.
+     * <p>
+     * Supports ISO 8601 format ({@link DateTimeFormatter#ISO_INSTANT}), "yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ", and others.
+     *
+     * @param s string to be converted.
+     * @return a {@link DateTime} represented by the input string, or null if the format is not recognized or an exception occurs.
+     */
+    public static DateTime parseDateTimeQuiet(final String s) {
+        try {
+            return DateTime.of(Instant.parse(s));
+        } catch (DateTimeParseException e) {
+            // ignore
+        }
+        try {
+            TimeZone timeZone = null;
+            String dateTimeString = null;
+            if (DATETIME_PATTERN.matcher(s).matches()) {
+                int spaceIndex = s.indexOf(' ');
+                if (spaceIndex == -1) { // no timezone
+                    return null;
+                }
+                timeZone = TimeZone.valueOf("TZ_" + s.substring(spaceIndex + 1).trim().toUpperCase());
+                dateTimeString = s.substring(0, spaceIndex);
+            }
+
+            if (timeZone == null) {
+                return null;
+            }
+            int decimalIndex = dateTimeString.indexOf('.');
+            if (decimalIndex == -1) {
+                return new DateTime(
+                        millisToNanos(new org.joda.time.DateTime(dateTimeString, timeZone.getTimeZone()).getMillis()));
+            } else {
+                final long subsecondNanos = parseNanosInternal(dateTimeString.substring(decimalIndex + 1));
+
+                return new DateTime(millisToNanos(new org.joda.time.DateTime(dateTimeString.substring(0, decimalIndex),
+                        timeZone.getTimeZone()).getMillis()) + subsecondNanos);
+            }
+        } catch (Exception e) {
+            // shouldn't get here too often, but somehow something snuck through. we'll just return null below...
+        }
+
+        return null;
+    }
+
+    //TODO: think through parsePeriod vs parsePeriodQuiet
+    /**
+     * Converts a string into a time {@link Period}.
+     *
+     * @param s string in the form of "nYnMnWnDTnHnMnS", with n being numeric values, e.g. 1W for one week, T1M for
+     *          one minute, 1WT1H for one week plus one hour.
+     * @return time period {@link Period}.
+     * @throws RuntimeException if the string cannot be parsed.
+     */
+    public static Period parsePeriod(String s) {
+        Period ret = parsePeriodQuiet(s);
+
+        if (ret == null) {
+            throw new RuntimeException("Cannot parse period : " + s);
+        }
+
+        return ret;
+    }
+
+    //TODO: think through parsePeriod vs parsePeriodQuiet
+    /**
+     * Converts a string into a time {@link Period}.
+     *
+     * @param s a string in the form of "nYnMnWnDTnHnMnS", with n being numeric values, e.g. 1W for one week, T1M for
+     *          one minute, 1WT1H for one week plus one hour.
+     * @return a {@link Period} object, or null if the string can not be parsed.
+     */
+    public static Period parsePeriodQuiet(String s) {
+        if (s.length() <= 1) {
+            return null;
+        }
+
+        try {
+            if (PERIOD_PATTERN.matcher(s).matches()) {
+                return new Period(s);
+            }
+        } catch (Exception e) {
+            // shouldn't get here too often, but somehow something snuck through. we'll just return null below...
+        }
+
+        return null;
+    }
+
+    // endregion
+
+
+
     // ##############################################################################
 
 
@@ -1656,7 +1872,7 @@ public class DateTimeUtils {
                 continue;
             }
 
-            if (toDateTimeQuiet(s) != null) {
+            if (parseDateTimeQuiet(s) != null) {
                 matcher.appendReplacement(convertedFormula, "_date" + dateTimeIndex);
                 instanceVariablesString.append("        private DateTime _date").append(dateTimeIndex)
                         .append("=DateTimeUtils.toDateTime(\"")
@@ -1671,7 +1887,7 @@ public class DateTimeUtils {
                         .append("\");\n");
                 newVariables.put("_localDate" + localDateIndex, LocalDate.class);
                 localDateIndex++;
-            } else if (toNanosQuiet(s) != NULL_LONG) {
+            } else if (parseNanosQuiet(s) != NULL_LONG) {
                 matcher.appendReplacement(convertedFormula, "_time" + timeIndex);
                 instanceVariablesString.append("        private long _time").append(timeIndex)
                         .append("=DateTimeUtils.convertTime(\"").append(formula, matcher.start() + 1, matcher.end() - 1)
@@ -1679,7 +1895,7 @@ public class DateTimeUtils {
                 newVariables.put("_time" + timeIndex, long.class);
 
                 timeIndex++;
-            } else if (toPeriodQuiet(s) != null) {
+            } else if (parsePeriodQuiet(s) != null) {
                 matcher.appendReplacement(convertedFormula, "_period" + periodIndex);
                 instanceVariablesString.append("        private Period _period").append(periodIndex)
                         .append("=DateTimeUtils.convertPeriod(\"")
@@ -1734,15 +1950,15 @@ public class DateTimeUtils {
         boolean result = matcher.find();
 
         String s = formula.substring(matcher.start() + 1, matcher.end() - 1);
-        final DateTime dateTime = toDateTimeQuiet(s);
+        final DateTime dateTime = parseDateTimeQuiet(s);
         if (dateTime != null) {
             return dateTime.getNanos();
         }
-        long time = toNanosQuiet(s);
+        long time = parseNanosQuiet(s);
         if (time != NULL_LONG) {
             return time;
         }
-        final Period period = toPeriodQuiet(s);
+        final Period period = parsePeriodQuiet(s);
         if (period != null) {
             try {
                 return StrictMath.multiplyExact(period.getJodaPeriod().toStandardDuration().getMillis(),
@@ -1774,63 +1990,6 @@ public class DateTimeUtils {
         return ret;
     }
 
-    //TODO: think through toDateTime vs toDateTimeQuiet
-    /**
-     * Converts a datetime string to a {@link DateTime} object.
-     * <p>
-     * Supports ISO 8601 format ({@link DateTimeFormatter#ISO_INSTANT}), "yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ", and others.
-     *
-     * @param s String to be converted
-     * @return a {@link DateTime} represented by the input string.
-     * @throws RuntimeException if the String cannot be converted, otherwise a {@link DateTime} from the parsed String.
-     */
-    public static DateTime toDateTime(String s) {
-        DateTime ret = toDateTimeQuiet(s);
-
-        if (ret == null) {
-            throw new RuntimeException("Cannot parse datetime : " + s);
-        }
-
-        return ret;
-    }
-
-    //TODO: think through toNanos vs toNanosQuiet
-    /**
-     * Converts a time string to nanoseconds. The format for the String is "hh:mm:ss[.nnnnnnnnn]".
-     *
-     * @param s String to be converted.
-     * @return the number of nanoseconds represented by the string.
-     * @throws RuntimeException if the String cannot be parsed.
-     */
-    public static long toNanos(String s) {
-        long ret = toNanosQuiet(s);
-
-        if (ret == NULL_LONG) {
-            throw new RuntimeException("Cannot parse time : " + s);
-        }
-
-        return ret;
-    }
-
-    //TODO: think through toPeriod vs toPeriodQuiet
-    /**
-     * Converts a String into a {@link Period} object.
-     *
-     * @param s a string in the form of nYnMnWnDTnHnMnS, with n being numeric values, e.g. 1W for one week, T1M for
-     *          one minute, 1WT1H for one week plus one hour
-     * @return a {@link Period} object.
-     * @throws RuntimeException if the String cannot be parsed.
-     */
-    @SuppressWarnings("WeakerAccess")
-    public static Period toPeriod(String s) {
-        Period ret = toPeriodQuiet(s);
-
-        if (ret == null) {
-            throw new RuntimeException("Cannot parse period : " + s);
-        }
-
-        return ret;
-    }
 
     private static int extractTwoDigitNum(String s, int startIndex) {
         return (s.charAt(startIndex) - '0') * 10 + (s.charAt(startIndex + 1) - '0');
@@ -1973,157 +2132,8 @@ public class DateTimeUtils {
         return null;
     }
 
-    //TODO: think through toDateTime vs toDateTimeQuiet
-    /**
-     * Converts a datetime string to a {@link DateTime} object.
-     * <p>
-     * Supports ISO 8601 format ({@link DateTimeFormatter#ISO_INSTANT}), "yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ", and others.
-     *
-     * @param s String to be converted
-     * @return a {@link DateTime} represented by the input string, or null if the format is not recognized or an exception occurs.
-     */
-    public static DateTime toDateTimeQuiet(final String s) {
-        try {
-            return DateTime.of(Instant.parse(s));
-        } catch (DateTimeParseException e) {
-            // ignore
-        }
-        try {
-            TimeZone timeZone = null;
-            String dateTimeString = null;
-            if (DATETIME_PATTERN.matcher(s).matches()) {
-                int spaceIndex = s.indexOf(' ');
-                if (spaceIndex == -1) { // no timezone
-                    return null;
-                }
-                timeZone = TimeZone.valueOf("TZ_" + s.substring(spaceIndex + 1).trim().toUpperCase());
-                dateTimeString = s.substring(0, spaceIndex);
-            }
 
-            if (timeZone == null) {
-                return null;
-            }
-            int decimalIndex = dateTimeString.indexOf('.');
-            if (decimalIndex == -1) {
-                return new DateTime(
-                        millisToNanos(new org.joda.time.DateTime(dateTimeString, timeZone.getTimeZone()).getMillis()));
-            } else {
-                final long subsecondNanos = parseNanos(dateTimeString.substring(decimalIndex + 1));
 
-                return new DateTime(millisToNanos(new org.joda.time.DateTime(dateTimeString.substring(0, decimalIndex),
-                        timeZone.getTimeZone()).getMillis()) + subsecondNanos);
-            }
-        } catch (Exception e) {
-            // shouldn't get here too often, but somehow something snuck through. we'll just return null below...
-        }
-
-        return null;
-    }
-
-    /**
-     * Converts a String of digits of any length to a nanoseconds long value. Will ignore anything longer than 9 digits,
-     * and will throw a NumberFormatException if any non-numeric character is found. Strings shorter than 9 digits will
-     * be interpreted as sub-second values to the right of the decimal point.
-     *
-     * @param input The String to convert
-     * @return long value in nanoseconds
-     */
-    private static long parseNanos(@NotNull final String input) {
-        long result = 0;
-        for (int i = 0; i < 9; i++) {
-            result *= 10;
-            final int digit;
-            if (i >= input.length()) {
-                digit = 0;
-            } else {
-                digit = Character.digit(input.charAt(i), 10);
-                if (digit < 0) {
-                    throw new NumberFormatException("Invalid character for nanoseconds conversion: " + input.charAt(i));
-                }
-            }
-            result += digit;
-        }
-        return result;
-    }
-
-    //TODO: think through toNanos vs toNanosQuiet
-    /**
-     * Converts a time string to nanoseconds. The format for the String is "hh:mm:ss[.nnnnnnnnn]".
-     *
-     * @param s String to be converted.
-     * @return {@link QueryConstants#NULL_LONG} if the String cannot be parsed, otherwise a the number of nanoseconds represented by the string.
-     */
-    public static long toNanosQuiet(String s) {
-        try {
-            if (TIME_AND_DURATION_PATTERN.matcher(s).matches()) {
-                long multiplier = 1;
-                long dayNanos = 0;
-                long subsecondNanos = 0;
-
-                if (s.charAt(0) == '-') {
-                    multiplier = -1;
-
-                    s = s.substring(1);
-                }
-
-                int tIndex = s.indexOf('T');
-
-                if (tIndex != -1) {
-                    dayNanos = 86400000000000L * Integer.parseInt(s.substring(0, tIndex));
-
-                    s = s.substring(tIndex + 1);
-                }
-
-                int decimalIndex = s.indexOf('.');
-
-                if (decimalIndex != -1) {
-                    subsecondNanos = parseNanos(s.substring(decimalIndex + 1));
-
-                    s = s.substring(0, decimalIndex);
-                }
-
-                String[] tokens = s.split(":");
-
-                if (tokens.length == 2) { // hh:mm
-                    return multiplier
-                            * (1000000000L * (3600 * Integer.parseInt(tokens[0]) + 60 * Integer.parseInt(tokens[1]))
-                                    + dayNanos + subsecondNanos);
-                } else if (tokens.length == 3) { // hh:mm:ss
-                    return multiplier
-                            * (1000000000L * (3600 * Integer.parseInt(tokens[0]) + 60 * Integer.parseInt(tokens[1])
-                                    + Integer.parseInt(tokens[2])) + dayNanos + subsecondNanos);
-                }
-            }
-        } catch (Exception e) {
-            // shouldn't get here too often, but somehow something snuck through. we'll just return null below...
-        }
-
-        return NULL_LONG;
-    }
-
-    //TODO: think through toPeriod vs toPeriodQuiet
-    /**
-     * Converts a String into a {@link Period} object.
-     *
-     * @param s a string in the form of nYnMnWnDTnHnMnS, with n being numeric values, e.g. 1W for one week, T1M for
-     *          one minute, 1WT1H for one week plus one hour
-     * @return a {@link Period} object, or null if the string can not be parsed.
-     */
-    public static Period toPeriodQuiet(String s) {
-        if (s.length() <= 1) {
-            return null;
-        }
-
-        try {
-            if (PERIOD_PATTERN.matcher(s).matches()) {
-                return new Period(s);
-            }
-        } catch (Exception e) {
-            // shouldn't get here too often, but somehow something snuck through. we'll just return null below...
-        }
-
-        return null;
-    }
 
     //TODO: no equivalent
     /**

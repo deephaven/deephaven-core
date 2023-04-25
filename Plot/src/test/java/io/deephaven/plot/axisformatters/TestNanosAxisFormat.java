@@ -36,7 +36,7 @@ public class TestNanosAxisFormat extends BaseArrayTestCase {
     }
 
     public void testFormatString() {
-        final DateTime time = DateTimeUtils.toDateTime("2017-03-24T14:32:12.345678 MN");
+        final DateTime time = DateTimeUtils.parseDateTime("2017-03-24T14:32:12.345678 MN");
 
         final NanosAxisFormat formatMN = new NanosAxisFormat(TimeZone.TZ_MN);
         final NanosAxisFormat formatNY = new NanosAxisFormat(TimeZone.TZ_NY);

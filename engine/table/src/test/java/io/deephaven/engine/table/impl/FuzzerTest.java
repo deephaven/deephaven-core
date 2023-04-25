@@ -92,7 +92,7 @@ public class FuzzerTest {
             groovyString = FileUtils.readTextFile(in);
         }
 
-        final DateTime fakeStart = DateTimeUtils.toDateTime("2020-03-17T13:53:25.123456 NY");
+        final DateTime fakeStart = DateTimeUtils.parseDateTime("2020-03-17T13:53:25.123456 NY");
         final TestClock clock = realtime ? null : new TestClock(fakeStart.getNanos());
 
         final GroovyDeephavenSession session = getGroovySession(clock);
@@ -211,7 +211,7 @@ public class FuzzerTest {
         final Random sourceRandom = new Random(mainTestSeed);
         final Random timeRandom = new Random(mainTestSeed + 1);
 
-        final DateTime fakeStart = DateTimeUtils.toDateTime("2020-03-17T13:53:25.123456 NY");
+        final DateTime fakeStart = DateTimeUtils.parseDateTime("2020-03-17T13:53:25.123456 NY");
         final TestClock clock = new TestClock(fakeStart.getNanos());
 
         final long start = System.currentTimeMillis();

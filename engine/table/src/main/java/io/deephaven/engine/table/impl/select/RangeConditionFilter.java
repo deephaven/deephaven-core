@@ -212,7 +212,7 @@ public class RangeConditionFilter extends WhereFilterImpl {
 
     private static long parseDateTimeNanos(String value) {
         if (value.startsWith("'") && value.endsWith("'")) {
-            return DateTimeUtils.toDateTime(value.substring(1, value.length() - 1)).getNanos();
+            return DateTimeUtils.parseDateTime(value.substring(1, value.length() - 1)).getNanos();
         }
         return Long.parseLong(value);
     }

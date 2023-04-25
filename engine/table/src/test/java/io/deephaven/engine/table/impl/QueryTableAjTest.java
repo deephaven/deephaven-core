@@ -212,8 +212,8 @@ public class QueryTableAjTest {
 
     @Test
     public void testAjDateTime() {
-        final DateTime first = DateTimeUtils.toDateTime("2019-06-14T08:30:00 NY");
-        final DateTime second = DateTimeUtils.toDateTime("2019-06-14T19:30:00 NY");
+        final DateTime first = DateTimeUtils.parseDateTime("2019-06-14T08:30:00 NY");
+        final DateTime second = DateTimeUtils.parseDateTime("2019-06-14T19:30:00 NY");
 
         final Table left = TableTools.newTable(
                 col("Bucket", "A", "A", "B", "A", "B", "C", "C", "A"),

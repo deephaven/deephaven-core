@@ -42,7 +42,7 @@ public class TestDynamicTableWriter {
         writer.getSetter("DC").setDouble(6.6);
         writer.getSetter("StrC", String.class).set("Seven");
         writer.getSetter("BLC", Boolean.class).setBoolean(true);
-        writer.getSetter("DTC", DateTime.class).set(DateTimeUtils.toDateTime("2020-09-16T07:55:00 NY"));
+        writer.getSetter("DTC", DateTime.class).set(DateTimeUtils.parseDateTime("2020-09-16T07:55:00 NY"));
         writer.getSetter("BIC", BigInteger.class).set(BigInteger.valueOf(8));
         writer.writeRow();
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(result::run);
@@ -56,7 +56,7 @@ public class TestDynamicTableWriter {
                 doubleCol("DC", 6.6),
                 stringCol("StrC", "Seven"),
                 col("BLC", true),
-                col("DTC", DateTimeUtils.toDateTime("2020-09-16T07:55:00 NY")),
+                col("DTC", DateTimeUtils.parseDateTime("2020-09-16T07:55:00 NY")),
                 col("BIC", BigInteger.valueOf(8)));
         TstUtils.assertTableEquals(expected1, result);
 
@@ -71,7 +71,7 @@ public class TestDynamicTableWriter {
         row.getSetter("DC").setDouble(14.14);
         row.getSetter("StrC", String.class).set("Fifteen");
         row.getSetter("BLC", Boolean.class).setBoolean(true);
-        row.getSetter("DTC", DateTime.class).set(DateTimeUtils.toDateTime("2020-09-16T08:55:00 NY"));
+        row.getSetter("DTC", DateTime.class).set(DateTimeUtils.parseDateTime("2020-09-16T08:55:00 NY"));
         row.getSetter("BIC", BigInteger.class).set(BigInteger.valueOf(16));
         row.setFlags(Row.Flags.StartTransaction);
         row.writeRow();
@@ -86,7 +86,7 @@ public class TestDynamicTableWriter {
         row2.getSetter("DC").setDouble(22.22);
         row2.getSetter("StrC", String.class).set("Twenty Three");
         row2.getSetter("BLC", Boolean.class).setBoolean(false);
-        row2.getSetter("DTC", DateTime.class).set(DateTimeUtils.toDateTime("2020-09-16T09:55:00 NY"));
+        row2.getSetter("DTC", DateTime.class).set(DateTimeUtils.parseDateTime("2020-09-16T09:55:00 NY"));
         row2.getSetter("BIC", BigInteger.class).set(BigInteger.valueOf(24));
         row2.setFlags(Row.Flags.StartTransaction);
         row2.writeRow();
@@ -104,7 +104,7 @@ public class TestDynamicTableWriter {
         row3.getSetter("DC", double.class).set(30.30);
         row3.getSetter("StrC", String.class).set("Thirty One");
         row3.getSetter("BLC", Boolean.class).set(null);
-        row3.getSetter("DTC", DateTime.class).set(DateTimeUtils.toDateTime("2020-09-16T10:55:00 NY"));
+        row3.getSetter("DTC", DateTime.class).set(DateTimeUtils.parseDateTime("2020-09-16T10:55:00 NY"));
         row3.getSetter("BIC", BigInteger.class).set(BigInteger.valueOf(32));
         row3.setFlags(Row.Flags.EndTransaction);
         row3.writeRow();
@@ -120,9 +120,9 @@ public class TestDynamicTableWriter {
                 doubleCol("DC", 6.6, 22.22, 30.30),
                 stringCol("StrC", "Seven", "Twenty Three", "Thirty One"),
                 col("BLC", true, false, null),
-                col("DTC", DateTimeUtils.toDateTime("2020-09-16T07:55:00 NY"),
-                        DateTimeUtils.toDateTime("2020-09-16T09:55:00 NY"),
-                        DateTimeUtils.toDateTime("2020-09-16T10:55:00 NY")),
+                col("DTC", DateTimeUtils.parseDateTime("2020-09-16T07:55:00 NY"),
+                        DateTimeUtils.parseDateTime("2020-09-16T09:55:00 NY"),
+                        DateTimeUtils.parseDateTime("2020-09-16T10:55:00 NY")),
                 col("BIC", BigInteger.valueOf(8), BigInteger.valueOf(24), BigInteger.valueOf(32)));
         TstUtils.assertTableEquals(expected2, result);
 
@@ -161,7 +161,7 @@ public class TestDynamicTableWriter {
         row.getSetter("DC").setDouble(14.14);
         row.getSetter("StrC", String.class).set("Fifteen");
         row.getSetter("BLC", Boolean.class).setBoolean(true);
-        row.getSetter("DTC", DateTime.class).set(DateTimeUtils.toDateTime("2020-09-16T08:55:00 NY"));
+        row.getSetter("DTC", DateTime.class).set(DateTimeUtils.parseDateTime("2020-09-16T08:55:00 NY"));
         row.getSetter("BIC", BigInteger.class).set(BigInteger.valueOf(16));
         row.setFlags(Row.Flags.SingleRow);
         row.writeRow();
@@ -177,7 +177,7 @@ public class TestDynamicTableWriter {
                 doubleCol("DC", 14.14),
                 stringCol("StrC", "Fifteen"),
                 col("BLC", true),
-                col("DTC", DateTimeUtils.toDateTime("2020-09-16T08:55:00 NY")),
+                col("DTC", DateTimeUtils.parseDateTime("2020-09-16T08:55:00 NY")),
                 col("BIC", BigInteger.valueOf(16)));
         TstUtils.assertTableEquals(merge(expected1, expected2), result);
 

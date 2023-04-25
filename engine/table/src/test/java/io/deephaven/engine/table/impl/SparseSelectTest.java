@@ -70,8 +70,8 @@ public class SparseSelectTest {
                         new CharGenerator('a', 'z'),
                         new ByteGenerator(),
                         new ShortGenerator(),
-                        new UnsortedDateTimeGenerator(DateTimeUtils.toDateTime("2019-01-10T00:00:00 NY"),
-                                DateTimeUtils.toDateTime("2019-01-20T00:00:00 NY"))));
+                        new UnsortedDateTimeGenerator(DateTimeUtils.parseDateTime("2019-01-10T00:00:00 NY"),
+                                DateTimeUtils.parseDateTime("2019-01-20T00:00:00 NY"))));
 
         final Table sortedTable = queryTable.sort("intCol");
 

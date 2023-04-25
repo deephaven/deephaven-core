@@ -201,11 +201,11 @@ public class WhereFilterFactoryTest extends RefreshingTableTestCase {
 
 
     public void testInDateTimes() {
-        DateTime wed = DateTimeUtils.toDateTime("2018-05-02T10:00:00 NY");// not in the table
+        DateTime wed = DateTimeUtils.parseDateTime("2018-05-02T10:00:00 NY");// not in the table
 
-        DateTime mon = DateTimeUtils.toDateTime("2018-04-30T10:00:00 NY");
-        DateTime tues = DateTimeUtils.toDateTime("2018-05-01T10:00:00 NY");
-        DateTime thurs = DateTimeUtils.toDateTime("2018-05-03T10:00:00 NY");
+        DateTime mon = DateTimeUtils.parseDateTime("2018-04-30T10:00:00 NY");
+        DateTime tues = DateTimeUtils.parseDateTime("2018-05-01T10:00:00 NY");
+        DateTime thurs = DateTimeUtils.parseDateTime("2018-05-03T10:00:00 NY");
         Table t = TableTools.newTable(TableTools.col("Timestamp", new DateTime(mon.getNanos()),
                 new DateTime(tues.getNanos()), new DateTime(thurs.getNanos())));
         // match one item
@@ -291,17 +291,17 @@ public class WhereFilterFactoryTest extends RefreshingTableTestCase {
         checkDateRange("18:43", makeDateTime("18:43"), makeDateTime("18:44"));
         checkDateRange("18:43:40", makeDateTime("18:43:40"), makeDateTime("18:43:41"));
         checkDateRange("18:43:40.100", makeDateTime("18:43:40.100"), makeDateTime("18:43:40.101"));
-        checkDateRange("2018-03-25 NY", DateTimeUtils.toDateTime("2018-03-25 NY"),
-                DateTimeUtils.toDateTime("2018-03-26 NY"));
-        checkDateRange("2018-03-25T18:00 NY", DateTimeUtils.toDateTime("2018-03-25T18:00 NY"),
-                DateTimeUtils.toDateTime("2018-03-25T18:01 NY"));
-        checkDateRange("2018-03-25T18:00:00 NY", DateTimeUtils.toDateTime("2018-03-25T18:00:00 NY"),
-                DateTimeUtils.toDateTime("2018-03-25T18:00:01 NY"));
+        checkDateRange("2018-03-25 NY", DateTimeUtils.parseDateTime("2018-03-25 NY"),
+                DateTimeUtils.parseDateTime("2018-03-26 NY"));
+        checkDateRange("2018-03-25T18:00 NY", DateTimeUtils.parseDateTime("2018-03-25T18:00 NY"),
+                DateTimeUtils.parseDateTime("2018-03-25T18:01 NY"));
+        checkDateRange("2018-03-25T18:00:00 NY", DateTimeUtils.parseDateTime("2018-03-25T18:00:00 NY"),
+                DateTimeUtils.parseDateTime("2018-03-25T18:00:01 NY"));
     }
 
     private DateTime makeDateTime(String timeStr) {
         ZonedDateTime zdt = ZonedDateTime.now(ZoneId.of("America/New_York")).truncatedTo(ChronoUnit.DAYS)
-                .plus(DateTimeUtils.toNanos(timeStr), ChronoUnit.NANOS);
+                .plus(DateTimeUtils.parseNanos(timeStr), ChronoUnit.NANOS);
         return DateTimeUtils.millisToDateTime(zdt.toInstant().toEpochMilli());
     }
 

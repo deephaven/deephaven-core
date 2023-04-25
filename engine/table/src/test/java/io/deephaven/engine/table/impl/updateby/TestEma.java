@@ -25,6 +25,7 @@ import io.deephaven.numerics.movingaverages.ByEma;
 import io.deephaven.numerics.movingaverages.ByEmaSimple;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTime;
+import io.deephaven.time.DateTimeUtils;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -38,7 +39,6 @@ import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.simulateShiftAwareStep;
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.time.DateTimeUtils.MINUTE;
-import static io.deephaven.time.DateTimeUtils.toDateTime;
 import static io.deephaven.util.QueryConstants.*;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -50,8 +50,8 @@ public class TestEma extends BaseUpdateByTest {
     public void testStaticZeroKey() {
         final QueryTable t = createTestTable(100000, false, false, false, 0xFFFABBBC,
                 new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
-                        toDateTime("2022-03-09T09:00:00.000 NY"),
-                        toDateTime("2022-03-09T16:30:00.000 NY"))}).t;
+                        DateTimeUtils.parseDateTime("2022-03-09T09:00:00.000 NY"),
+                        DateTimeUtils.parseDateTime("2022-03-09T16:30:00.000 NY"))}).t;
 
         final OperationControl skipControl = OperationControl.builder()
                 .onNullValue(BadDataBehavior.SKIP)
@@ -83,8 +83,8 @@ public class TestEma extends BaseUpdateByTest {
     private void doTestStaticBucketed(boolean grouped) {
         final TableDefaults t = createTestTable(100000, true, grouped, false, 0x31313131,
                 new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
-                        toDateTime("2022-03-09T09:00:00.000 NY"),
-                        toDateTime("2022-03-09T16:30:00.000 NY"))}).t;
+                        DateTimeUtils.parseDateTime("2022-03-09T09:00:00.000 NY"),
+                        DateTimeUtils.parseDateTime("2022-03-09T16:30:00.000 NY"))}).t;
 
         final OperationControl skipControl = OperationControl.builder()
                 .onNullValue(BadDataBehavior.SKIP)
@@ -180,10 +180,10 @@ public class TestEma extends BaseUpdateByTest {
     @Test
     public void testTimeThrowBehaviors() {
         final ColumnHolder ts = col("ts",
-                toDateTime("2022-03-11T09:30:00.000 NY"),
-                toDateTime("2022-03-11T09:29:00.000 NY"),
-                toDateTime("2022-03-11T09:30:00.000 NY"),
-                toDateTime("2022-03-11T09:32:00.000 NY"),
+                DateTimeUtils.parseDateTime("2022-03-11T09:30:00.000 NY"),
+                DateTimeUtils.parseDateTime("2022-03-11T09:29:00.000 NY"),
+                DateTimeUtils.parseDateTime("2022-03-11T09:30:00.000 NY"),
+                DateTimeUtils.parseDateTime("2022-03-11T09:32:00.000 NY"),
                 null);
 
         testThrowsInternal(
@@ -242,12 +242,12 @@ public class TestEma extends BaseUpdateByTest {
                 .build();
 
         final ColumnHolder ts = col("ts",
-                toDateTime("2022-03-11T09:30:00.000 NY"),
-                toDateTime("2022-03-11T09:31:00.000 NY"),
-                toDateTime("2022-03-11T09:32:00.000 NY"),
-                toDateTime("2022-03-11T09:33:00.000 NY"),
-                toDateTime("2022-03-11T09:34:00.000 NY"),
-                toDateTime("2022-03-11T09:35:00.000 NY"));
+                DateTimeUtils.parseDateTime("2022-03-11T09:30:00.000 NY"),
+                DateTimeUtils.parseDateTime("2022-03-11T09:31:00.000 NY"),
+                DateTimeUtils.parseDateTime("2022-03-11T09:32:00.000 NY"),
+                DateTimeUtils.parseDateTime("2022-03-11T09:33:00.000 NY"),
+                DateTimeUtils.parseDateTime("2022-03-11T09:34:00.000 NY"),
+                DateTimeUtils.parseDateTime("2022-03-11T09:35:00.000 NY"));
 
         Table expected = testTable(RowSetFactory.flat(6).toTracking(), ts,
                 doubleCol("col", 0, NULL_DOUBLE, 2, NULL_DOUBLE, 4, NULL_DOUBLE));
@@ -338,11 +338,11 @@ public class TestEma extends BaseUpdateByTest {
         assertTableEquals(expected, input.updateBy(UpdateByOperation.Ema(nanCtl, 10)));
 
         final ColumnHolder ts = col("ts",
-                toDateTime("2022-03-11T09:30:00.000 NY"),
-                toDateTime("2022-03-11T09:31:00.000 NY"),
+                DateTimeUtils.parseDateTime("2022-03-11T09:30:00.000 NY"),
+                DateTimeUtils.parseDateTime("2022-03-11T09:31:00.000 NY"),
                 null,
-                toDateTime("2022-03-11T09:33:00.000 NY"),
-                toDateTime("2022-03-11T09:34:00.000 NY"),
+                DateTimeUtils.parseDateTime("2022-03-11T09:33:00.000 NY"),
+                DateTimeUtils.parseDateTime("2022-03-11T09:34:00.000 NY"),
                 null);
 
         expected = testTable(RowSetFactory.flat(6).toTracking(), ts,
@@ -392,8 +392,8 @@ public class TestEma extends BaseUpdateByTest {
     public void testNullTimestamps() {
         final CreateResult timeResult = createTestTable(100, true, false, true, 0x31313131,
                 new String[] {"ts"}, new TestDataGenerator[] {new SortedIntGeneratorWithNulls(
-                        toDateTime("2022-03-09T09:00:00.000 NY"),
-                        toDateTime("2022-03-09T16:30:00.000 NY"),
+                        DateTimeUtils.parseDateTime("2022-03-09T09:00:00.000 NY"),
+                        DateTimeUtils.parseDateTime("2022-03-09T16:30:00.000 NY"),
                         0.25)});
 
         final OperationControl skipControl = OperationControl.builder()
@@ -447,8 +447,8 @@ public class TestEma extends BaseUpdateByTest {
         final CreateResult tickResult = createTestTable(10000, bucketed, false, true, 0x31313131);
         final CreateResult timeResult = createTestTable(10000, bucketed, false, true, 0x31313131,
                 new String[] {"ts"}, new TestDataGenerator[] {new SortedDateTimeGenerator(
-                        toDateTime("2022-03-09T09:00:00.000 NY"),
-                        toDateTime("2022-03-09T16:30:00.000 NY"))});
+                        DateTimeUtils.parseDateTime("2022-03-09T09:00:00.000 NY"),
+                        DateTimeUtils.parseDateTime("2022-03-09T16:30:00.000 NY"))});
 
         if (appendOnly) {
             tickResult.t.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);

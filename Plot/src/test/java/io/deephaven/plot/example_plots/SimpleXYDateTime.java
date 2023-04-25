@@ -16,7 +16,7 @@ import static io.deephaven.plot.PlottingConvenience.plot;
 public class SimpleXYDateTime {
     public static void main(String[] args) {
 
-        final long dateTime = DateTimeUtils.toDateTime("2018-02-01T09:30:00 NY").getNanos();
+        final long dateTime = DateTimeUtils.parseDateTime("2018-02-01T09:30:00 NY").getNanos();
         final DateTime[] dates = new DateTime[] {DateTimeUtils.nanosToDateTime(dateTime),
                 DateTimeUtils.nanosToDateTime(dateTime + DateTimeUtils.HOUR),
                 DateTimeUtils.nanosToDateTime(dateTime + 2 * DateTimeUtils.HOUR),

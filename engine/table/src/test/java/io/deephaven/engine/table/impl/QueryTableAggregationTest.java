@@ -856,8 +856,8 @@ public class QueryTableAggregationTest {
                         new String[] {"Sym", "Date", "intCol", "doubleCol", "BooleanCol", "ByteCol", "CharCol",
                                 "ShortCol", "FloatCol", "LongCol", "BigDecimalCol", "NonKey"},
                         new SetGenerator<>("aa", "bb", "bc", "cc", "dd"),
-                        new UnsortedDateTimeLongGenerator(DateTimeUtils.toDateTime("2018-10-15T09:30:00 NY"),
-                                DateTimeUtils.toDateTime("2018-10-15T16:00:00 NY")),
+                        new UnsortedDateTimeLongGenerator(DateTimeUtils.parseDateTime("2018-10-15T09:30:00 NY"),
+                                DateTimeUtils.parseDateTime("2018-10-15T16:00:00 NY")),
                         new IntGenerator(0, 100),
                         new DoubleGenerator(0, 100),
                         new BooleanGenerator(),
@@ -1390,8 +1390,8 @@ public class QueryTableAggregationTest {
                 new BooleanGenerator(0.5, 0.1),
                 new BigIntegerGenerator(0.1),
                 new BigDecimalGenerator(0.1),
-                new UnsortedDateTimeGenerator(DateTimeUtils.toDateTime("2019-12-17T00:00:00 NY"),
-                        DateTimeUtils.toDateTime("2019-12-17T23:59:59 NY"), 0.1),
+                new UnsortedDateTimeGenerator(DateTimeUtils.parseDateTime("2019-12-17T00:00:00 NY"),
+                        DateTimeUtils.parseDateTime("2019-12-17T23:59:59 NY"), 0.1),
                 new BooleanGenerator(0.4, 0.1)));
 
         if (RefreshingTableTestCase.printTableUpdates) {
@@ -2305,8 +2305,8 @@ public class QueryTableAggregationTest {
                         new ShortGenerator((short) 10, (short) 100, 0.1),
                         new ByteGenerator((byte) 10, (byte) 100, 0.1),
                         new SetGenerator<>(10.1, 20.1, 30.1),
-                        new UnsortedDateTimeGenerator(DateTimeUtils.toDateTime("2020-01-01T00:00:00 NY"),
-                                DateTimeUtils.toDateTime("2020-01-25T00:00:00 NY")),
+                        new UnsortedDateTimeGenerator(DateTimeUtils.parseDateTime("2020-01-01T00:00:00 NY"),
+                                DateTimeUtils.parseDateTime("2020-01-25T00:00:00 NY")),
                         new BooleanGenerator(0.4, 0.2),
                         new DoubleGenerator(Double.MIN_NORMAL, Double.MIN_NORMAL, 0.05, 0.05),
                         new FloatGenerator(Float.MIN_NORMAL, Float.MIN_NORMAL, 0.05, 0.05)));
@@ -2874,9 +2874,9 @@ public class QueryTableAggregationTest {
 
         final Map<String, Object[]> expectedResults = new HashMap<>();
         expectedResults.put("Timestamp",
-                new Object[] {DateTimeUtils.toDateTime("2020-03-14T00:01:00 NY"),
-                        DateTimeUtils.toDateTime("2020-03-14T00:05:00 NY"),
-                        DateTimeUtils.toDateTime("2020-03-14T00:08:00 NY")});
+                new Object[] {DateTimeUtils.parseDateTime("2020-03-14T00:01:00 NY"),
+                        DateTimeUtils.parseDateTime("2020-03-14T00:05:00 NY"),
+                        DateTimeUtils.parseDateTime("2020-03-14T00:08:00 NY")});
         expectedResults.put("MyString", new Object[] {"1", "5", "8"});
         expectedResults.put("MyInt", new Object[] {1, 4.5, 8});
         expectedResults.put("MyLong", new Object[] {1L, 4.5, 8L});

@@ -782,7 +782,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
                 ColumnDefinition.ofBoolean("Truthiness"));
 
         final String[] syms = new String[] {"Apple", "Banana", "Cantaloupe"};
-        final DateTime baseTime = DateTimeUtils.toDateTime("2019-04-11T09:30 NY");
+        final DateTime baseTime = DateTimeUtils.parseDateTime("2019-04-11T09:30 NY");
         final long[] dateOffset = new long[] {0, 5, 10, 15, 1, 6, 11, 16, 2, 7};
         final Boolean[] booleans = new Boolean[] {true, false, null, true, false, null, true, false, null, true, false};
         QueryScope.addParam("syms", syms);

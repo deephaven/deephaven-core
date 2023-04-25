@@ -927,8 +927,8 @@ public abstract class QueryTableWhereTest {
                         new DoubleGenerator(0.0, 100.0, 0, 0, 0, 0),
                         new LongGenerator(-100, 100, 0.01),
                         new CharGenerator('A', 'Z', 0.1),
-                        new UnsortedDateTimeGenerator(DateTimeUtils.toDateTime("2020-01-01T00:00:00 NY"),
-                                DateTimeUtils.toDateTime("2020-01-01T01:00:00 NY"))));
+                        new UnsortedDateTimeGenerator(DateTimeUtils.parseDateTime("2020-01-01T00:00:00 NY"),
+                                DateTimeUtils.parseDateTime("2020-01-01T01:00:00 NY"))));
         final String bigIntConversion = "BI4=" + getClass().getCanonicalName() + ".convertToBigInteger(L3)";
         final Table augmentedInts =
                 table.update(bigIntConversion, "D5=(double)L3", "I6=(int)L3", "S7=(short)L3", "B8=(byte)L3");
@@ -949,7 +949,7 @@ public abstract class QueryTableWhereTest {
         final BigDecimal two = BigDecimal.valueOf(2);
         final BigDecimal nine = BigDecimal.valueOf(9);
         final String filterTimeString = "2020-01-01T00:30:00 NY";
-        final DateTime filterTime = DateTimeUtils.toDateTime(filterTimeString);
+        final DateTime filterTime = DateTimeUtils.parseDateTime(filterTimeString);
 
         QueryScope.addParam("two", two);
         QueryScope.addParam("nine", nine);
@@ -1031,7 +1031,7 @@ public abstract class QueryTableWhereTest {
 
     @Test
     public void testDateTimeRangeFilter() {
-        final DateTime startTime = DateTimeUtils.toDateTime("2021-04-23T09:30 NY");
+        final DateTime startTime = DateTimeUtils.parseDateTime("2021-04-23T09:30 NY");
         final DateTime[] array = new DateTime[10];
         for (int ii = 0; ii < array.length; ++ii) {
             array[ii] = DateTimeUtils.plus(startTime, 60_000_000_000L * ii);

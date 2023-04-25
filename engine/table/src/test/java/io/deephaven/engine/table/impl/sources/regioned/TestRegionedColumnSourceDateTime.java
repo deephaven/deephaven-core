@@ -23,13 +23,13 @@ public class TestRegionedColumnSourceDateTime
             null,
             DateTimeUtils.now(),
             DateTimeUtils.dateTimeAtMidnight(DateTimeUtils.now(), TimeZone.TZ_NY),
-            DateTimeUtils.toDateTime("2013-01-15T12:19:32.000 NY"),
-            DateTimeUtils.toDateTime("2013-01-15T09:30:00.000 NY"),
-            DateTimeUtils.toDateTime("2013-01-15T16:00:00.000 NY"),
-            DateTimeUtils.toDateTime("2013-01-15T16:15:00.000 NY"),
-            DateTimeUtils.toDateTime("2000-01-01T00:00:00.000 NY"),
-            DateTimeUtils.toDateTime("1999-12-31T23:59:59.000 NY"),
-            DateTimeUtils.toDateTime("1981-02-22T19:50:00.000 NY")
+            DateTimeUtils.parseDateTime("2013-01-15T12:19:32.000 NY"),
+            DateTimeUtils.parseDateTime("2013-01-15T09:30:00.000 NY"),
+            DateTimeUtils.parseDateTime("2013-01-15T16:00:00.000 NY"),
+            DateTimeUtils.parseDateTime("2013-01-15T16:15:00.000 NY"),
+            DateTimeUtils.parseDateTime("2000-01-01T00:00:00.000 NY"),
+            DateTimeUtils.parseDateTime("1999-12-31T23:59:59.000 NY"),
+            DateTimeUtils.parseDateTime("1981-02-22T19:50:00.000 NY")
     };
 
     private ColumnSource<Long> SUT_AS_LONG;

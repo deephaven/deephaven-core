@@ -71,12 +71,12 @@ public class TestWindowCheck {
 
         final ColumnInfo<?, ?>[] columnInfo;
         final int size = 100;
-        final DateTime startTime = DateTimeUtils.toDateTime("2018-02-23T09:30:00 NY");
+        final DateTime startTime = DateTimeUtils.parseDateTime("2018-02-23T09:30:00 NY");
         final DateTime endTime;
         if (SHORT_TESTS) {
-            endTime = DateTimeUtils.toDateTime("2018-02-23T10:30:00 NY");
+            endTime = DateTimeUtils.parseDateTime("2018-02-23T10:30:00 NY");
         } else {
-            endTime = DateTimeUtils.toDateTime("2018-02-23T16:00:00 NY");
+            endTime = DateTimeUtils.parseDateTime("2018-02-23T16:00:00 NY");
         }
         final QueryTable table = getTable(size, random, columnInfo = initColumnInfos(new String[] {"Timestamp", "C1"},
                 new UnsortedDateTimeGenerator(startTime, endTime, 0.01),
@@ -145,7 +145,7 @@ public class TestWindowCheck {
         base.setExpectError(false);
 
         final TestClock clock = new TestClock();
-        final DateTime startTime = DateTimeUtils.toDateTime("2018-02-23T09:30:00 NY");
+        final DateTime startTime = DateTimeUtils.parseDateTime("2018-02-23T09:30:00 NY");
         clock.now = startTime.getNanos();
 
         final DateTime[] emptyDateTimeArray = new DateTime[0];
@@ -165,12 +165,12 @@ public class TestWindowCheck {
     @Test
     public void testWindowCheckGetPrev() {
         final TestClock timeProvider = new TestClock();
-        final DateTime startTime = DateTimeUtils.toDateTime("2022-07-14T09:30:00 NY");
+        final DateTime startTime = DateTimeUtils.parseDateTime("2022-07-14T09:30:00 NY");
         timeProvider.now = startTime.getNanos();
 
         final DateTime[] initialValues = Stream.concat(Arrays.stream(
                 new String[] {"2022-07-14T09:25:00 NY", "2022-07-14T09:30:00 NY", "2022-07-14T09:35:00 NY"})
-                .map(DateTimeUtils::toDateTime), Stream.of((DateTime) null)).toArray(DateTime[]::new);
+                .map(DateTimeUtils::parseDateTime), Stream.of((DateTime) null)).toArray(DateTime[]::new);
         final QueryTable tableToCheck = testRefreshingTable(i(0, 1, 2, 3).toTracking(),
                 col("Timestamp", initialValues),
                 intCol("Sentinel", 1, 2, 3, 4));
@@ -197,7 +197,7 @@ public class TestWindowCheck {
 
         UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
 
-        timeProvider.now = DateTimeUtils.toDateTime("2022-07-14T09:34:00 NY").getNanos();
+        timeProvider.now = DateTimeUtils.parseDateTime("2022-07-14T09:34:00 NY").getNanos();
         windowed.second.run();
 
         while (((QueryTable) windowed.first).getLastNotificationStep() < LogicalClock.DEFAULT.currentStep()) {
@@ -220,12 +220,12 @@ public class TestWindowCheck {
     public void testWindowCheckStatic() {
 
         final TestClock timeProvider = new TestClock();
-        final DateTime startTime = DateTimeUtils.toDateTime("2022-07-14T09:30:00 NY");
+        final DateTime startTime = DateTimeUtils.parseDateTime("2022-07-14T09:30:00 NY");
         timeProvider.now = startTime.getNanos();
 
         final DateTime[] initialValues = Stream.concat(Arrays.stream(
                 new String[] {"2022-07-14T09:25:00 NY", "2022-07-14T09:30:00 NY", "2022-07-14T09:35:00 NY"})
-                .map(DateTimeUtils::toDateTime), Stream.of((DateTime) null)).toArray(DateTime[]::new);
+                .map(DateTimeUtils::parseDateTime), Stream.of((DateTime) null)).toArray(DateTime[]::new);
         final QueryTable tableToCheck = testTable(i(0, 1, 2, 3).toTracking(),
                 col("Timestamp", initialValues),
                 intCol("Sentinel", 1, 2, 3, 4));
@@ -253,7 +253,7 @@ public class TestWindowCheck {
 
         UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
 
-        timeProvider.now = DateTimeUtils.toDateTime("2022-07-14T09:34:00 NY").getNanos();
+        timeProvider.now = DateTimeUtils.parseDateTime("2022-07-14T09:34:00 NY").getNanos();
         windowed.second.run();
 
         while (((QueryTable) windowed.first).getLastNotificationStep() < LogicalClock.DEFAULT.currentStep()) {
