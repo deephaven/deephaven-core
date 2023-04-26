@@ -9,7 +9,7 @@ public class DoubleComparisons {
 
     public static int compare(double lhs, double rhs) {
         // Note this intentionally makes -0.0 and 0.0 compare equal
-        if (lhs == rhs) {
+        if (eq(lhs, rhs)) {
             return 0;
         }
         // One could be NULL, but not both
@@ -21,9 +21,6 @@ public class DoubleComparisons {
         }
         // One or both could be NaN
         if (Double.isNaN(lhs)) {
-            if (Double.isNaN(rhs)) {
-                return 0; // Both NaN
-            }
             return 1; // lhs is NaN, rhs is not
         }
         if (Double.isNaN(rhs)) {
@@ -34,7 +31,7 @@ public class DoubleComparisons {
     }
 
     public static boolean eq(double lhs, double rhs) {
-        return (Double.isNaN(lhs) && Double.isNaN(rhs)) || lhs == rhs;
+        return Double.doubleToLongBits(lhs) == Double.doubleToLongBits(rhs);
     }
 
     public static boolean gt(double lhs, double rhs) {
