@@ -90,8 +90,7 @@ dependencies {
     Classpaths.inheritJUnitPlatform(project)
     Classpaths.inheritAssertJ(project)
 
-    testRuntimeOnly project(':extensions-performance'),
-            project(':log-to-slf4j'),
+    testRuntimeOnly project(':log-to-slf4j'),
             project(path: ':configs'),
             project(path: ':test-configs')
     Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')

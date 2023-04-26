@@ -499,7 +499,6 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         final String commandPrefix = "package " + PACKAGE + ";\n" +
                 "import static io.deephaven.engine.util.TableTools.*;\n" +
                 "import static io.deephaven.engine.table.impl.util.TableLoggers.*;\n" +
-                "import static io.deephaven.engine.table.impl.util.PerformanceQueries.*;\n" +
                 "import io.deephaven.api.*;\n" +
                 "import io.deephaven.api.filter.*;\n" +
                 "import io.deephaven.engine.table.DataColumn;\n" +
