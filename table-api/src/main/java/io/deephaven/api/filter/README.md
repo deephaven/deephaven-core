@@ -25,7 +25,9 @@ no_rows = t.where([f, not_(f)])
 all_rows = t.where(or_([f, not_(f)]))
 ```
 
-That is, `not_(f)` matches the rows that `f` does _not_ match and does _not_ match the rows that `f` does match.
+That is, `not_(f)` (the "inverse" of `f`) matches the rows that `f` does _not_ match and does _not_ match the rows that
+`f` does match. This also implies that for any (properly typed) input `x`, `x` is in exactly one of `f` or `not_(f)`.
+
 
 ## Well-defined
 
@@ -83,14 +85,35 @@ include_match_exclude_null = t.where(pattern(...))
 
 # Foo == null || Foo.matches(...)
 include_match_include_null = t.where(not_(pattern(..., invert_pattern=True)))
-# include_match_include_null = t.where(or_([is_null("Foo"), pattern(...)]))
 
 # Foo != null && !Foo.matches(...)
 exclude_match_exclude_null = t.where(pattern(..., invert_pattern=True))
 
 # Foo == null || !Foo.matches(...)
 exclude_match_include_null = t.where(not_(pattern(...)))
-# exclude_match_include_null = t.where(or_([is_null("Foo"), pattern(..., invert_pattern=True)]))
 ```
 
+## Comparison operators
+
+Given all of the above, there is a design choice we have to make regarding comparison filters - does the inverse of a
+comparison filter results in another comparison filter?
+
+The reasons why we might want a comparison filter to have an inverse that is another comparison filter is because that
+is likely what most users expect. That is, `not_(Foo > Bar)` is equivalent to `Foo <= Bar`; `not_(Foo == Bar)`
+is equivalent to `Foo != Bar`. This also implies there is a total-ordering among inputs.
+
+The reasons why we might _not_ want a comparison filter to have an inverse that is another comparison filter is that
+there isn't a natural total-ordering among floating point values.[^2]  It would also give us the opportunity to filter
+out special values by default. For example, `Foo > 42` and `Foo <= 42` could both be defined to filter out nulls (in the
+case of integral values), and to filter out nulls and NaNs (in the case of floating-point values).
+
+Neither of the above design choices would exclude a user from composing their own more specific filters to achieve the
+behavior they desire.
+
+To most closely match the behavior in others Deephaven contexts (namely, `sort()`), comparison filters have been
+defined with "the inverse of a comparison filter results in another comparison filter", thus implying a total-ordering
+among inputs. The Deephaven total-ordering defines the null value as coming before all other values. In the case of
+floating point values, the NaN value comes after all other values.
+
 [^1]: Advanced users may also choose to build their own filter logic using the engine implementation API `io.deephaven.engine.table.impl.select.WhereFilter`.
+[^2]: It appears there may be _some_ standard, but it's behind a paywall: https://en.wikipedia.org/wiki/IEEE_754#Total-ordering_predicate
