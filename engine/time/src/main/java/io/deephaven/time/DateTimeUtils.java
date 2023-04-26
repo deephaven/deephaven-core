@@ -2265,83 +2265,84 @@ public class DateTimeUtils {
     }
 
 
-    //TODO: no equivalent
-    /**
-     * Create a DateTimeFormatter formatter with the specified time zone name using the standard yyyy-MM-dd format.
-     *
-     * @param timeZoneName the time zone name
-     * @return a formatter set for the specified time zone
-     */
-    public static DateTimeFormatter createFormatter(final String timeZoneName) {
-        final ZoneId zoneId = ZoneId.of(timeZoneName);
-        return DateTimeFormatter.ofPattern(DATE_COLUMN_PARTITION_FORMAT_STRING).withZone(zoneId);
-    }
+//    //TODO: no equivalent
+//    /**
+//     * Create a DateTimeFormatter formatter with the specified time zone name using the standard yyyy-MM-dd format.
+//     *
+//     * @param timeZoneName the time zone name
+//     * @return a formatter set for the specified time zone
+//     */
+//    public static DateTimeFormatter createFormatter(final String timeZoneName) {
+//        final ZoneId zoneId = ZoneId.of(timeZoneName);
+//        return DateTimeFormatter.ofPattern(DATE_COLUMN_PARTITION_FORMAT_STRING).withZone(zoneId);
+//    }
 
-    //TODO: no equivalent
-    /**
-     * Given a DateTimeFormatter and a timestamp in millis, return the date as a String in standard column-partition
-     * format of yyyy-MM-dd. A timestamp of NULL_LONG means use the system current time.
-     *
-     * @param dateTimeFormatter the date formatter
-     * @param timestampMillis the timestamp in millis
-     * @return the formatted date
-     */
-    public static String getPartitionFromTimestampMillis(@NotNull final DateTimeFormatter dateTimeFormatter,
-            final long timestampMillis) {
-        if (timestampMillis == NULL_LONG) {
-            return dateTimeFormatter.format(Instant.ofEpochMilli(System.currentTimeMillis()));
-        }
-        return dateTimeFormatter.format(Instant.ofEpochMilli(timestampMillis));
-    }
 
-    //TODO: no equivalent
-    /**
-     * Given a DateTimeFormatter and a timestamp in micros from epoch, return the date as a String in standard
-     * column-partition format of yyyy-MM-dd. A timestamp of NULL_LONG means use the system current time.
-     *
-     * @param dateTimeFormatter the date formatter
-     * @param timestampMicros the timestamp in micros
-     * @return the formatted date
-     */
-    public static String getPartitionFromTimestampMicros(@NotNull final DateTimeFormatter dateTimeFormatter,
-            final long timestampMicros) {
-        if (timestampMicros == NULL_LONG) {
-            return dateTimeFormatter.format(Instant.ofEpochMilli(System.currentTimeMillis()));
-        }
-        return dateTimeFormatter.format(Instant.ofEpochMilli(timestampMicros / 1_000));
-    }
-
-    //TODO: no equivalent
-    /**
-     * Given a DateTimeFormatter and a timestamp in nanos from epoch, return the date as a String in standard
-     * column-partition format of yyyy-MM-dd. A timestamp of NULL_LONG means use the system current time.
-     *
-     * @param dateTimeFormatter the date formatter
-     * @param timestampNanos the timestamp in nanos
-     * @return the formatted date
-     */
-    public static String getPartitionFromTimestampNanos(@NotNull final DateTimeFormatter dateTimeFormatter,
-            final long timestampNanos) {
-        if (timestampNanos == NULL_LONG) {
-            return dateTimeFormatter.format(Instant.ofEpochMilli(System.currentTimeMillis()));
-        }
-        return dateTimeFormatter.format(Instant.ofEpochMilli(timestampNanos / 1_000_000));
-    }
-
-    //TODO: no equivalent
-    /**
-     * Given a DateTimeFormatter and a timestamp in seconds from epoch, return the date as a String in standard
-     * column-partition format of yyyy-MM-dd. A timestamp of NULL_LONG means use the system current time.
-     *
-     * @param dateTimeFormatter the date formatter
-     * @param timestampSeconds the timestamp in seconds
-     * @return the formatted date
-     */
-    public static String getPartitionFromTimestampSeconds(@NotNull final DateTimeFormatter dateTimeFormatter,
-            final long timestampSeconds) {
-        if (timestampSeconds == NULL_LONG) {
-            return dateTimeFormatter.format(Instant.ofEpochMilli(System.currentTimeMillis()));
-        }
-        return dateTimeFormatter.format(Instant.ofEpochMilli(timestampSeconds * 1_000));
-    }
+//    //TODO: no equivalent
+//    /**
+//     * Given a DateTimeFormatter and a timestamp in millis, return the date as a String in standard column-partition
+//     * format of yyyy-MM-dd. A timestamp of NULL_LONG means use the system current time.
+//     *
+//     * @param dateTimeFormatter the date formatter
+//     * @param timestampMillis the timestamp in millis
+//     * @return the formatted date
+//     */
+//    public static String getPartitionFromTimestampMillis(@NotNull final DateTimeFormatter dateTimeFormatter,
+//            final long timestampMillis) {
+//        if (timestampMillis == NULL_LONG) {
+//            return dateTimeFormatter.format(Instant.ofEpochMilli(***System.currentTimeMillis()));
+//        }
+//        return dateTimeFormatter.format(Instant.ofEpochMilli(timestampMillis));
+//    }
+//
+//    //TODO: no equivalent
+//    /**
+//     * Given a DateTimeFormatter and a timestamp in micros from epoch, return the date as a String in standard
+//     * column-partition format of yyyy-MM-dd. A timestamp of NULL_LONG means use the system current time.
+//     *
+//     * @param dateTimeFormatter the date formatter
+//     * @param timestampMicros the timestamp in micros
+//     * @return the formatted date
+//     */
+//    public static String getPartitionFromTimestampMicros(@NotNull final DateTimeFormatter dateTimeFormatter,
+//            final long timestampMicros) {
+//        if (timestampMicros == NULL_LONG) {
+//            return dateTimeFormatter.format(Instant.ofEpochMilli(***System.currentTimeMillis()));
+//        }
+//        return dateTimeFormatter.format(Instant.ofEpochMilli(timestampMicros / 1_000));
+//    }
+//
+//    //TODO: no equivalent
+//    /**
+//     * Given a DateTimeFormatter and a timestamp in nanos from epoch, return the date as a String in standard
+//     * column-partition format of yyyy-MM-dd. A timestamp of NULL_LONG means use the system current time.
+//     *
+//     * @param dateTimeFormatter the date formatter
+//     * @param timestampNanos the timestamp in nanos
+//     * @return the formatted date
+//     */
+//    public static String getPartitionFromTimestampNanos(@NotNull final DateTimeFormatter dateTimeFormatter,
+//            final long timestampNanos) {
+//        if (timestampNanos == NULL_LONG) {
+//            return dateTimeFormatter.format(Instant.ofEpochMilli(****System.currentTimeMillis()));
+//        }
+//        return dateTimeFormatter.format(Instant.ofEpochMilli(timestampNanos / 1_000_000));
+//    }
+//
+//    //TODO: no equivalent
+//    /**
+//     * Given a DateTimeFormatter and a timestamp in seconds from epoch, return the date as a String in standard
+//     * column-partition format of yyyy-MM-dd. A timestamp of NULL_LONG means use the system current time.
+//     *
+//     * @param dateTimeFormatter the date formatter
+//     * @param timestampSeconds the timestamp in seconds
+//     * @return the formatted date
+//     */
+//    public static String getPartitionFromTimestampSeconds(@NotNull final DateTimeFormatter dateTimeFormatter,
+//            final long timestampSeconds) {
+//        if (timestampSeconds == NULL_LONG) {
+//            return dateTimeFormatter.format(Instant.ofEpochMilli(***System.currentTimeMillis()));
+//        }
+//        return dateTimeFormatter.format(Instant.ofEpochMilli(timestampSeconds * 1_000));
+//    }
 }
