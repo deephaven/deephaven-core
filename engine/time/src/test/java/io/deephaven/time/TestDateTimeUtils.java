@@ -656,26 +656,26 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
 
     public void testMicrosOfMilli() {
         TestCase.assertEquals(0,
-                DateTimeUtils.microsOfMilli(DateTimeUtils.parseDateTime("2015-07-31T20:40 NY"), TimeZone.TZ_NY));
+                DateTimeUtils.microsOfMilli(DateTimeUtils.parseDateTime("2015-07-31T20:40 NY")));
         TestCase.assertEquals(0,
-                DateTimeUtils.microsOfMilli(DateTimeUtils.parseDateTime("2015-07-31T20:40:00 NY"), TimeZone.TZ_NY));
+                DateTimeUtils.microsOfMilli(DateTimeUtils.parseDateTime("2015-07-31T20:40:00 NY")));
         TestCase.assertEquals(0,
-                DateTimeUtils.microsOfMilli(DateTimeUtils.parseDateTime("2015-07-31T20:40:00.123 NY"),
-                        TimeZone.TZ_NY));
+                DateTimeUtils.microsOfMilli(DateTimeUtils.parseDateTime("2015-07-31T20:40:00.123 NY")
+                ));
         TestCase.assertEquals(400,
-                DateTimeUtils.microsOfMilli(DateTimeUtils.parseDateTime("2015-07-31T20:40:00.1234 NY"),
-                        TimeZone.TZ_NY));
+                DateTimeUtils.microsOfMilli(DateTimeUtils.parseDateTime("2015-07-31T20:40:00.1234 NY")
+                ));
         TestCase.assertEquals(456,
-                DateTimeUtils.microsOfMilli(DateTimeUtils.parseDateTime("2015-07-31T20:40:00.123456 NY"),
-                        TimeZone.TZ_NY));
+                DateTimeUtils.microsOfMilli(DateTimeUtils.parseDateTime("2015-07-31T20:40:00.123456 NY")
+                ));
         // this one should round up
         TestCase.assertEquals(457,
-                DateTimeUtils.microsOfMilli(DateTimeUtils.parseDateTime("2015-07-31T20:40:00.1234567 NY"),
-                        TimeZone.TZ_NY));
+                DateTimeUtils.microsOfMilli(DateTimeUtils.parseDateTime("2015-07-31T20:40:00.1234567 NY")
+                ));
         // this one should round up
         TestCase.assertEquals(457,
-                DateTimeUtils.microsOfMilli(DateTimeUtils.parseDateTime("2015-07-31T20:40:00.123456789 NY"),
-                        TimeZone.TZ_NY));
+                DateTimeUtils.microsOfMilli(DateTimeUtils.parseDateTime("2015-07-31T20:40:00.123456789 NY")
+                ));
     }
 
     public void testZonedDateTime() {

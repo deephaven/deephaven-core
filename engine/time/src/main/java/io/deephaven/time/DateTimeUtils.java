@@ -1383,6 +1383,83 @@ public class DateTimeUtils {
 
     // endregion
 
+    // region Time Bins
+
+    /**
+     * Returns a {@link DateTime} value, which is at the starting (lower) end of a time range defined by the interval
+     * nanoseconds. For example, a 5*MINUTE intervalNanos value would return the {@link DateTime} value for the start of the
+     * five minute window that contains the input date time.
+     *
+     * @param dateTime {@link DateTime} for which to evaluate the start of the containing window.
+     * @param intervalNanos size of the window in nanoseconds.
+     * @return null if either input is null; otherwise, a {@link DateTime} representing the start of the window.
+     */
+    public static DateTime lowerBin(DateTime dateTime, long intervalNanos) {
+        if (dateTime == null || intervalNanos == NULL_LONG) {
+            return null;
+        }
+
+        return nanosToDateTime(Numeric.lowerBin(dateTime.getNanos(), intervalNanos));
+    }
+
+    /**
+     * Returns a {@link DateTime} value, which is at the starting (lower) end of a time range defined by the interval
+     * nanoseconds. For example, a 5*MINUTE intervalNanos value would return the {@link DateTime} value for the start of the
+     * five minute window that contains the input date time.
+     *
+     * @param dateTime {@link DateTime} for which to evaluate the start of the containing window.
+     * @param intervalNanos size of the window in nanoseconds.
+     * @param offset The window start offset in nanoseconds. For example, a value of MINUTE would offset all windows by
+     *        one minute.
+     * @return null if either input is null; otherwise, a {@link DateTime} representing the start of the window.
+     */
+    public static DateTime lowerBin(DateTime dateTime, long intervalNanos, long offset) {
+        if (dateTime == null || intervalNanos == NULL_LONG || offset == NULL_LONG) {
+            return null;
+        }
+
+        return nanosToDateTime(Numeric.lowerBin(dateTime.getNanos() - offset, intervalNanos) + offset);
+    }
+
+    /**
+     * Returns a {@link DateTime} value, which is at the ending (upper) end of a time range defined by the interval
+     * nanoseconds. For example, a 5*MINUTE intervalNanos value would return the {@link DateTime} value for the end of the
+     * five minute window that contains the input date time.
+     *
+     * @param dateTime {@link DateTime} for which to evaluate the start of the containing window.
+     * @param intervalNanos size of the window in nanoseconds.
+     * @return null if either input is null; otherwise, a {@link DateTime} representing the end of the window.
+     */
+    public static DateTime upperBin(DateTime dateTime, long intervalNanos) {
+        if (dateTime == null || intervalNanos == NULL_LONG) {
+            return null;
+        }
+
+        return nanosToDateTime(Numeric.upperBin(dateTime.getNanos(), intervalNanos));
+    }
+
+    /**
+     * Returns a {@link DateTime} value, which is at the ending (upper) end of a time range defined by the interval
+     * nanoseconds. For example, a 5*MINUTE intervalNanos value would return the {@link DateTime} value for the end of the
+     * five minute window that contains the input date time.
+     *
+     * @param dateTime {@link DateTime} for which to evaluate the start of the containing window.
+     * @param intervalNanos size of the window in nanoseconds.
+     * @param offset The window start offset in nanoseconds. For example, a value of MINUTE would offset all windows by
+     *        one minute.
+     * @return null if either input is null; otherwise, a {@link DateTime} representing the end of the window.
+     */
+    public static DateTime upperBin(DateTime dateTime, long intervalNanos, long offset) {
+        if (dateTime == null || intervalNanos == NULL_LONG
+                || offset == NULL_LONG) {
+            return null;
+        }
+
+        return nanosToDateTime(Numeric.upperBin(dateTime.getNanos() - offset, intervalNanos) + offset);
+    }
+
+    // endregion
+
     // ##############################################################################
 
 
@@ -1796,78 +1873,6 @@ public class DateTimeUtils {
         return (offset.compareTo(cap) > 0) ? cap : offset;
     }
 
-    /**
-     * Returns a {@link DateTime} value, which is at the starting (lower) end of a time range defined by the interval
-     * nanoseconds. For example, a 5*MINUTE intervalNanos value would return the date/time value for the start of the
-     * five minute window that contains the input date time.
-     *
-     * @param dateTime The {@link DateTime} for which to evaluate the start of the containing window.
-     * @param intervalNanos The size of the window in nanoseconds.
-     * @return Null if either input is null, otherwise a {@link DateTime} representing the start of the window.
-     */
-    public static DateTime lowerBin(DateTime dateTime, long intervalNanos) {
-        if (dateTime == null || intervalNanos == NULL_LONG) {
-            return null;
-        }
-
-        return nanosToDateTime(Numeric.lowerBin(dateTime.getNanos(), intervalNanos));
-    }
-
-    /**
-     * Returns a {@link DateTime} value, which is at the starting (lower) end of a time range defined by the interval
-     * nanoseconds. For example, a 5*MINUTE intervalNanos value would return the date/time value for the start of the
-     * five minute window that contains the input date time.
-     *
-     * @param dateTime The {@link DateTime} for which to evaluate the start of the containing window.
-     * @param intervalNanos The size of the window in nanoseconds.
-     * @param offset The window start offset in nanoseconds. For example, a value of MINUTE would offset all windows by
-     *        one minute.
-     * @return Null if either input is null, otherwise a {@link DateTime} representing the start of the window.
-     */
-    public static DateTime lowerBin(DateTime dateTime, long intervalNanos, long offset) {
-        if (dateTime == null || intervalNanos == NULL_LONG || offset == NULL_LONG) {
-            return null;
-        }
-
-        return nanosToDateTime(Numeric.lowerBin(dateTime.getNanos() - offset, intervalNanos) + offset);
-    }
-
-    /**
-     * Returns a {@link DateTime} value, which is at the ending (upper) end of a time range defined by the interval
-     * nanoseconds. For example, a 5*MINUTE intervalNanos value would return the date/time value for the end of the five
-     * minute window that contains the input date time.
-     *
-     * @param dateTime The {@link DateTime} for which to evaluate the end of the containing window.
-     * @param intervalNanos The size of the window in nanoseconds.
-     * @return Null if either input is null, otherwise a {@link DateTime} representing the end of the window.
-     */
-    public static DateTime upperBin(DateTime dateTime, long intervalNanos) {
-        if (dateTime == null || intervalNanos == NULL_LONG) {
-            return null;
-        }
-
-        return nanosToDateTime(Numeric.upperBin(dateTime.getNanos(), intervalNanos));
-    }
-
-    /**
-     * Returns a {@link DateTime} value, which is at the ending (upper) end of a time range defined by the interval
-     * nanoseconds. For example, a 5*MINUTE intervalNanos value would return the date/time value for the end of the five
-     * minute window that contains the input date time.
-     *
-     * @param dateTime The {@link DateTime} for which to evaluate the end of the containing window.
-     * @param intervalNanos The size of the window in nanoseconds.
-     * @param offset The window start offset in nanoseconds. For example, a value of MINUTE would offset all windows by
-     *        one minute.
-     * @return Null if either input is null, otherwise a {@link DateTime} representing the end of the window.
-     */
-    public static DateTime upperBin(DateTime dateTime, long intervalNanos, long offset) {
-        if (dateTime == null || intervalNanos == NULL_LONG
-                || offset == NULL_LONG) {
-            return null;
-        }
-
-        return nanosToDateTime(Numeric.upperBin(dateTime.getNanos() - offset, intervalNanos) + offset);
-    }
     // endregion
 
     //TODO: no equivalent
