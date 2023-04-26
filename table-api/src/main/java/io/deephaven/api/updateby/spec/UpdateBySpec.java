@@ -89,6 +89,10 @@ public interface UpdateBySpec {
         T visit(RollingProductSpec spec);
 
         T visit(RollingCountSpec spec);
+
+        T visit(RollingStdSpec spec);
+
+        T visit(RollingWAvgSpec w);
     }
     // endregion
 }

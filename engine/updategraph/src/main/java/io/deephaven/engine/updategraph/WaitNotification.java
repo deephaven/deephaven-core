@@ -5,7 +5,6 @@ package io.deephaven.engine.updategraph;
 
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.log.LogOutput;
-import io.deephaven.engine.context.ExecutionContext;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
@@ -43,11 +42,6 @@ public final class WaitNotification extends AbstractNotification {
     public LogOutput append(LogOutput logOutput) {
         return logOutput.append(getClass().getSimpleName()).append(": for dependencies")
                 .append(LogOutput.APPENDABLE_COLLECTION_FORMATTER, Arrays.asList(dependencies));
-    }
-
-    @Override
-    public ExecutionContext getExecutionContext() {
-        return null;
     }
 
     @Override

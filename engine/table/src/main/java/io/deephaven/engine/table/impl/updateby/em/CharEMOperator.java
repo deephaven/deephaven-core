@@ -23,8 +23,13 @@ public class CharEMOperator extends BasePrimitiveEMOperator {
     protected class Context extends BasePrimitiveEMOperator.Context {
         public CharChunk<? extends Values> charValueChunk;
 
-        protected Context(final int chunkSize) {
-            super(chunkSize);
+        protected Context(final int affectedChunkSize, final int influencerChunkSize) {
+            super(affectedChunkSize);
+        }
+
+        @Override
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
+            charValueChunk = valueChunks[0].asCharChunk();
         }
 
         @Override
@@ -32,7 +37,7 @@ public class CharEMOperator extends BasePrimitiveEMOperator {
                                          Chunk<? extends Values>[] valueChunkArr,
                                          LongChunk<? extends Values> tsChunk,
                                          int len) {
-            setValuesChunk(valueChunkArr[0]);
+            setValueChunks(valueChunkArr);
 
             // chunk processing
             if (timestampColumnName == null) {
@@ -88,11 +93,6 @@ public class CharEMOperator extends BasePrimitiveEMOperator {
         }
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            charValueChunk = valuesChunk.asCharChunk();
-        }
-
-        @Override
         public boolean isValueValid(long atKey) {
             return valueSource.getChar(atKey) != NULL_CHAR;
         }
@@ -133,7 +133,7 @@ public class CharEMOperator extends BasePrimitiveEMOperator {
 
     @NotNull
     @Override
-    public UpdateByOperator.Context makeUpdateContext(final int chunkSize) {
-        return new Context(chunkSize);
+    public UpdateByOperator.Context makeUpdateContext(final int affectedChunkSize, final int influencerChunkSize) {
+        return new Context(affectedChunkSize, influencerChunkSize);
     }
 }

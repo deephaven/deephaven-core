@@ -8,9 +8,9 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.exceptions.UncheckedTableException;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.table.TableListener;
+import io.deephaven.engine.table.impl.perf.BasePerformanceEntry;
 import io.deephaven.engine.table.impl.perf.PerformanceEntry;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.engine.updategraph.NotificationQueue;
@@ -57,8 +57,6 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
 
     @ReferentialIntegrity
     private Runnable delayedErrorReference;
-
-    private final ExecutionContext executionContext = ExecutionContext.getContextToRecord();
 
     protected MergedListener(
             Iterable<? extends ListenerRecorder> recorders,
@@ -256,6 +254,16 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
         return true;
     }
 
+    protected void handleUncaughtException(Exception updateException) {
+        log.error().append(logPrefix).append("Uncaught exception for entry= ").append(entry)
+                .append(": ").append(updateException).endl();
+        propagateError(true, updateException, entry);
+    }
+
+    protected void accumulatePeformanceEntry(BasePerformanceEntry subEntry) {
+        entry.accumulate(subEntry);
+    }
+
     private class MergedNotification extends AbstractNotification {
 
         public MergedNotification() {
@@ -310,9 +318,7 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
                     entry.onUpdateEnd();
                 }
             } catch (Exception updateException) {
-                log.error().append(logPrefix).append("Uncaught exception for entry= ").append(entry)
-                        .append(": ").append(updateException).endl();
-                propagateError(true, updateException, entry);
+                handleUncaughtException(updateException);
             } finally {
                 lastCompletedStep = currentStep;
                 releaseFromRecorders();
@@ -328,11 +334,6 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
         @Override
         public boolean canExecute(final long step) {
             return MergedListener.this.canExecute(step);
-        }
-
-        @Override
-        public ExecutionContext getExecutionContext() {
-            return executionContext;
         }
     }
 }

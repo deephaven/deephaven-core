@@ -33,13 +33,13 @@ public class IntDeltaOperator extends BaseIntUpdateByOperator {
         public IntChunk<? extends Values> intValueChunk;
         private int lastVal = NULL_INT;
 
-        protected Context(final int chunkSize) {
-            super(chunkSize);
+        protected Context(final int affectedChunkSize, final int influencerChunkSize) {
+            super(affectedChunkSize);
         }
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            intValueChunk = valuesChunk.asIntChunk();
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
+            intValueChunk = valueChunks[0].asIntChunk();
         }
 
         @Override
@@ -98,7 +98,7 @@ public class IntDeltaOperator extends BaseIntUpdateByOperator {
 
     @NotNull
     @Override
-    public UpdateByOperator.Context makeUpdateContext(final int chunkSize) {
-        return new Context(chunkSize);
+    public UpdateByOperator.Context makeUpdateContext(final int affectedChunkSize, final int influencerChunkSize) {
+        return new Context(affectedChunkSize, influencerChunkSize);
     }
 }

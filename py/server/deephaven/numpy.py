@@ -119,7 +119,7 @@ def to_numpy(table: Table, cols: List[str] = None) -> np.ndarray:
     except DHError:
         raise
     except Exception as e:
-        raise DHError(e, "failed to create a Numpy array from the table column.") from e
+        raise DHError(e, "failed to create a numpy array from the table column.") from e
 
 
 def to_table(np_array: np.ndarray, cols: List[str]) -> Table:

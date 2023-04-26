@@ -1932,7 +1932,7 @@ class Table(JObjectWrapper):
                   by: Union[str, List[str]] = None) -> Table:
         """Creates a table with additional columns calculated from window-based aggregations of columns in this table.
         The aggregations are defined by the provided operations, which support incremental aggregations over the
-        corresponding rows in the this table. The aggregations will apply position or time-based windowing and
+        corresponding rows in the table. The aggregations will apply position or time-based windowing and
         compute the results over the entire table or each row group as identified by the provided key columns.
 
         Args:

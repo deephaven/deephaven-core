@@ -32,6 +32,10 @@ public class OperationInitializationThreadPool {
         return isInitializationThread.get();
     }
 
+    public static boolean canParallelize() {
+        return NUM_THREADS > 1 && !isInitializationThread();
+    }
+
     public final static ExecutorService executorService;
     static {
         final ThreadGroup threadGroup = new ThreadGroup("OperationInitializationThreadPool");
