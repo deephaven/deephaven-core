@@ -43,7 +43,7 @@ public interface Calendar {
      * @return the current day
      */
     default String currentDay() {
-        return DateTimeUtils.currentDate(timeZone());
+        return DateTimeUtils.today(timeZone());
     }
 
     /**

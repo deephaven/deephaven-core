@@ -31,7 +31,7 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
 /**
  * Utilities for Deephaven date/time storage and manipulation.
  */
-//@SuppressWarnings("unused")
+//TODO: @SuppressWarnings("unused")
 @SuppressWarnings("RegExpRedundantEscape")
 public class DateTimeUtils {
     //TODO: document
@@ -281,6 +281,74 @@ public class DateTimeUtils {
      */
     public static DateTime nowMillisResolution() {
         return DateTime.ofMillis(currentClock());
+    }
+
+    private abstract static class CachedDate {
+
+        final TimeZone timeZone;
+
+        String value;
+        long valueExpirationTimeMillis;
+
+        private CachedDate(@NotNull final TimeZone timeZone) {
+            this.timeZone = timeZone;
+        }
+
+        private TimeZone getTimeZone() {
+            return timeZone;
+        }
+
+        public String get() {
+            return get(currentClock().currentTimeMillis());
+        }
+
+        public synchronized String get(final long currentTimeMillis) {
+            if (currentTimeMillis >= valueExpirationTimeMillis) {
+                update(currentTimeMillis);
+            }
+            return value;
+        }
+
+        abstract void update(long currentTimeMillis);
+    }
+
+    private static class CachedCurrentDate extends CachedDate {
+
+        private CachedCurrentDate(@NotNull final TimeZone timeZone) {
+            super(timeZone);
+        }
+
+        @Override
+        void update(final long currentTimeMillis) {
+            value = formatDate(millisToDateTime(currentTimeMillis), timeZone);
+            valueExpirationTimeMillis = new org.joda.time.DateTime(currentTimeMillis, timeZone.getTimeZone())
+                    .withFieldAdded(DurationFieldType.days(), 1).withTimeAtStartOfDay().getMillis();
+        }
+    }
+
+    private static class CachedDateKey<CACHED_DATE_TYPE extends CachedDate>
+            extends KeyedObjectKey.Basic<TimeZone, CACHED_DATE_TYPE> {
+
+        @Override
+        public TimeZone getKey(final CACHED_DATE_TYPE cachedDate) {
+            return cachedDate.timeZone;
+        }
+    }
+
+    private static final KeyedObjectHashMap<TimeZone, CachedCurrentDate> cachedCurrentDates =
+            new KeyedObjectHashMap<>(new CachedDateKey<>());
+
+    //TODO: no equivalent
+    /**
+     * Provides the current date according to the current clock.
+     * Under most circumstances, this method will return the date according to current system time, but during replay simulations,
+     * this method can return the date according to replay time.
+     *
+     * @see #currentClock()
+     * @return the current date according to the current clock formatted as "yyyy-MM-dd".
+     */
+    public static String today(TimeZone timeZone) {
+        return cachedCurrentDates.putIfAbsent(timeZone, CachedCurrentDate::new).get();
     }
 
     // endregion
@@ -1562,11 +1630,6 @@ public class DateTimeUtils {
     }
 
 
-    // region Base and Unit conversion
-
-
-
-
 
     private static long safeComputeNanos(long epochSecond, long nanoOfSecond) {
         if (epochSecond >= MAX_CONVERTIBLE_SECONDS) {
@@ -1734,7 +1797,6 @@ public class DateTimeUtils {
 
         return new DateTime(nanos + (seconds * DateTimeUtils.SECOND));
     }
-    // endregion
 
     // region Query Helper Methods
 
