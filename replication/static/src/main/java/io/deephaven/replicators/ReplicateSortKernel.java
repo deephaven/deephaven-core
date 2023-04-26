@@ -273,7 +273,7 @@ public class ReplicateSortKernel {
         final File objectFile = new File(objectPath);
         List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
 
-        lines = fixupObjectNeq(addImport(lines, "import java.util.Objects;"));
+        lines = fixupObjectNeq(fixupChunkAttributes(addImport(lines, "import java.util.Objects;")));
 
         FileUtils.writeLines(objectFile, lines);
     }

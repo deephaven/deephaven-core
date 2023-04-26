@@ -4,21 +4,28 @@
 package io.deephaven.engine.table.impl.sort.findruns;
 
 import io.deephaven.chunk.*;
+import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
+import org.jetbrains.annotations.NotNull;
+
+import static io.deephaven.util.compare.CharComparisons.leq;
 
 public class CharFindRunsKernel {
     /**
-     * Find runs of two or more identical values in a sorted chunk.  This is used as part of an overall sort, after the
+     * Find runs of two or more identical values in a sorted chunk. This is used as part of an overall sort, after the
      * timsort (or other sorting) kernel to identify the runs that must be sorted according to secondary keys.
      *
      * @param sortedValues a chunk of sorted values
      * @param offsetsOut an output chunk, with offsets of starting locations that a run occurred
      * @param lengthsOut an output chunk, parallel to offsetsOut, with the lengths of found runs
      *
-     * Note, lengthsOut only contain values greater than one.
+     *        Note, lengthsOut only contain values greater than one.
      */
-    static void findRuns(CharChunk sortedValues, WritableIntChunk<ChunkPositions> offsetsOut, WritableIntChunk<ChunkLengths> lengthsOut) {
+    static void findRuns(
+            @NotNull final CharChunk<? extends Any> sortedValues,
+            @NotNull final WritableIntChunk<ChunkPositions> offsetsOut,
+            @NotNull final WritableIntChunk<ChunkLengths> lengthsOut) {
         offsetsOut.setSize(0);
         lengthsOut.setSize(0);
 
@@ -26,13 +33,16 @@ public class CharFindRunsKernel {
     }
 
     /**
-     * Find runs of identical values in a sorted chunk.  If a single value exists, it is included as run of length 1.
+     * Find runs of identical values in a sorted chunk. If a single value exists, it is included as run of length 1.
      *
      * @param sortedValues a chunk of sorted values
      * @param offsetsOut an output chunk, with offsets of starting locations that a run occurred
      * @param lengthsOut an output chunk, parallel to offsetsOut, with the lengths of found runs
      */
-    public static void findRunsSingles(CharChunk sortedValues, WritableIntChunk<ChunkPositions> offsetsOut, WritableIntChunk<ChunkLengths> lengthsOut) {
+    public static void findRunsSingles(
+            @NotNull final CharChunk<? extends Any> sortedValues,
+            @NotNull final WritableIntChunk<ChunkPositions> offsetsOut,
+            @NotNull final WritableIntChunk<ChunkLengths> lengthsOut) {
         offsetsOut.setSize(0);
         lengthsOut.setSize(0);
 
@@ -40,7 +50,7 @@ public class CharFindRunsKernel {
     }
 
     /**
-     * Find runs of two or more identical values in a sorted chunk.  This is used as part of an overall sort, after the
+     * Find runs of two or more identical values in a sorted chunk. This is used as part of an overall sort, after the
      * timsort (or other sorting) kernel to identify the runs that must be sorted according to secondary keys.
      *
      * @param sortedValues a chunk of sorted values
@@ -49,9 +59,15 @@ public class CharFindRunsKernel {
      * @param offsetsOut an output chunk, with offsets of starting locations that a run occurred
      * @param lengthsOut an output chunk, parallel to offsetsOut, with the lengths of found runs
      *
-     * Note, that lengthsIn must contain values greater than 1, and lengthsOut additionally only contain values greater than one
+     *        Note, that lengthsIn must contain values greater than 1, and lengthsOut additionally only contain values
+     *        greater than one
      */
-    public static void findRuns(CharChunk sortedValues, IntChunk<ChunkPositions> offsetsIn, IntChunk<ChunkLengths> lengthsIn, WritableIntChunk<ChunkPositions> offsetsOut, WritableIntChunk<ChunkLengths> lengthsOut) {
+    public static void findRuns(
+            @NotNull final CharChunk<? extends Any> sortedValues,
+            @NotNull final IntChunk<ChunkPositions> offsetsIn,
+            @NotNull final IntChunk<ChunkLengths> lengthsIn,
+            @NotNull final WritableIntChunk<ChunkPositions> offsetsOut,
+            @NotNull final WritableIntChunk<ChunkLengths> lengthsOut) {
         offsetsOut.setSize(0);
         lengthsOut.setSize(0);
 
@@ -64,7 +80,13 @@ public class CharFindRunsKernel {
         }
     }
 
-    private static void findRuns(CharChunk sortedValues, int offset, int length, WritableIntChunk<ChunkPositions> offsetsOut, WritableIntChunk<ChunkLengths> lengthsOut, boolean includeSingles) {
+    private static void findRuns(
+            @NotNull final CharChunk<? extends Any> sortedValues,
+            final int offset,
+            final int length,
+            @NotNull final WritableIntChunk<ChunkPositions> offsetsOut,
+            @NotNull final WritableIntChunk<ChunkLengths> lengthsOut,
+            final boolean includeSingles) {
         if (length == 0) {
             return;
         }
@@ -89,26 +111,65 @@ public class CharFindRunsKernel {
         }
     }
 
-    private static boolean neq(char last, char next) {
+    private static boolean neq(final char last, final char next) {
         // region neq
         return next != last;
         // endregion neq
     }
 
-    private static class CharFindRunsKernelContext implements FindRunsKernel {
-        @Override
-        public void findRuns(Chunk sortedValues, IntChunk<ChunkPositions> offsetsIn, IntChunk<ChunkLengths> lengthsIn, WritableIntChunk<ChunkPositions> offsetsOut, WritableIntChunk<ChunkLengths> lengthsOut) {
-            CharFindRunsKernel.findRuns(sortedValues.asCharChunk(), offsetsIn, lengthsIn, offsetsOut, lengthsOut);
+    public static int compactRuns(
+            @NotNull final WritableCharChunk<? extends Any> sortedValues,
+            @NotNull final IntChunk<ChunkPositions> offsetsIn) {
+        final int numRuns = offsetsIn.size();
+        if (numRuns == 0) {
+            return -1;
         }
+        char last = sortedValues.get(0);
+        for(int ri = 1; ri < numRuns; ++ri) {
+            final char next = sortedValues.get(ri);
+            if (leq(next, last)) {
+                return ri;
+            }
+            sortedValues.set(ri, sortedValues.get(ri));
+            last = next;
+        }
+        sortedValues.setSize(numRuns);
+        return -1;
+    }
+
+    private static class CharFindRunsKernelContext implements FindRunsKernel {
 
         @Override
-        public void findRuns(Chunk sortedValues, WritableIntChunk<ChunkPositions> offsetsOut, WritableIntChunk<ChunkLengths> lengthsOut) {
+        public void findRuns(
+                @NotNull final Chunk<? extends Any> sortedValues,
+                @NotNull final WritableIntChunk<ChunkPositions> offsetsOut,
+                @NotNull final WritableIntChunk<ChunkLengths> lengthsOut) {
             CharFindRunsKernel.findRuns(sortedValues.asCharChunk(), offsetsOut, lengthsOut);
         }
 
         @Override
-        public void findRunsSingles(Chunk sortedValues, WritableIntChunk<ChunkPositions> offsetsOut, WritableIntChunk<ChunkLengths> lengthsOut) {
+        public void findRunsSingles(
+                @NotNull final Chunk<? extends Any> sortedValues,
+                @NotNull final WritableIntChunk<ChunkPositions> offsetsOut,
+                @NotNull final WritableIntChunk<ChunkLengths> lengthsOut) {
             CharFindRunsKernel.findRunsSingles(sortedValues.asCharChunk(), offsetsOut, lengthsOut);
+        }
+
+        @Override
+        public void findRuns(
+                @NotNull final Chunk<? extends Any> sortedValues,
+                @NotNull final IntChunk<ChunkPositions> offsetsIn,
+                @NotNull final IntChunk<ChunkLengths> lengthsIn,
+                @NotNull final WritableIntChunk<ChunkPositions> offsetsOut,
+                @NotNull final WritableIntChunk<ChunkLengths> lengthsOut) {
+            CharFindRunsKernel.findRuns(sortedValues.asCharChunk(), offsetsIn, lengthsIn, offsetsOut, lengthsOut);
+        }
+
+        @Override
+        public int compactRuns(
+                @NotNull final WritableChunk<? extends Any> sortedValues,
+                @NotNull final IntChunk<ChunkPositions> offsetsIn) {
+            return CharFindRunsKernel.compactRuns(sortedValues.asWritableCharChunk(), offsetsIn);
         }
     }
 
