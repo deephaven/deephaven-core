@@ -28,7 +28,7 @@ class ConsoleService:
         except Exception as e:
             raise DHError("failed to start a console.") from e
 
-    def run_script(self, server_script) -> Any:
+    def run_script(self, server_script: str) -> Any:
         """Runs a Python script in the console."""
         self.start_console()
 
@@ -42,7 +42,7 @@ class ConsoleService:
         except Exception as e:
             raise DHError("failed to execute a command in the console.") from e
 
-    def open_table(self, name) -> Table:
+    def open_table(self, name: str) -> Table:
         """Opens a table by name."""
         self.start_console()
 
@@ -64,7 +64,7 @@ class ConsoleService:
         except Exception as e:
             raise DHError("failed to open a table.") from e
 
-    def bind_table(self, table, variable_name):
+    def bind_table(self, table: Table, variable_name: str):
         """Binds a name to an opened Table."""
         if not table or not variable_name:
             raise DHError("invalid table and/or variable_name values.")

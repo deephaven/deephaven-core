@@ -24,7 +24,7 @@ class Query(TableInterface):
     constructor is subject to future changes to support more advanced features already planned.
     """
 
-    def table_op_handler(self, table_op) -> Query:
+    def table_op_handler(self, table_op: TableOp) -> Query:
         self._ops.append(table_op)
         return self
 

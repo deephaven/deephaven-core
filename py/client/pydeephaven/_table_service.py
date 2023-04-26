@@ -1,7 +1,7 @@
 #
 # Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
-from typing import Union
+from typing import Union, List
 
 from pydeephaven._batch_assembler import BatchOpAssembler
 from pydeephaven._table_ops import TableOp
@@ -15,7 +15,7 @@ class TableService:
         self.session = session
         self._grpc_table_stub = table_pb2_grpc.TableServiceStub(session.grpc_channel)
 
-    def batch(self, ops) -> Table:
+    def batch(self, ops: List[TableOp]) -> Table:
         """Assembles and executes chain table operations in a batch."""
         batch_ops = BatchOpAssembler(self.session, table_ops=ops).build_batch()
 
