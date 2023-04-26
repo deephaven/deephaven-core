@@ -67,6 +67,11 @@ t1 = t.where(is_positive("Foo"))
 In this case, we would likely have the well-defined `is_positive` behavior documented as null values and strings not
 parseable as doubles are excluded from matching.
 
+Note: even though a filter may be well-defined, that doesn't mean it's applicable against all tables. For example, the
+filter `is_null("Foo")` is only applicable for tables that have a column named "Foo"; `pattern(MATCHES, "Foo", "a.*z")`
+is only applicable to tables that have a string column named "Foo". When a filter is applied to a table for which it is
+not applicable, the user should expect to get back an error from the engine.
+
 ## Filter flags
 
 `io.deephaven.api.filter.Filter`s may have flag(s) to express inverting their "post-null-check logic", and this is _not_
