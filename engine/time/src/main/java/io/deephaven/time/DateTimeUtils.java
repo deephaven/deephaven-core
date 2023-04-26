@@ -1585,8 +1585,8 @@ public class DateTimeUtils {
      * <p>
      * Supports {@link DateTimeFormatter#ISO_INSTANT} format and others.
      *
-     * @param date String to be converted, usually in the form yyyy-MM-ddThh:mm:ss and with optional sub-seconds after an
-     *        optional decimal point, followed by a mandatory time zone character code
+     * @param date String to be converted, usually in the form yyyy-MM-ddThh:mm:ss and with optional sub-seconds after
+     *        an optional decimal point, followed by a mandatory time zone character code
      * @throws RuntimeException if the String cannot be converted, otherwise a {@link DateTime} from the parsed String.
      */
     public static DateTime convertDateTime(String date) {
@@ -1621,8 +1621,8 @@ public class DateTimeUtils {
     /**
      * Converts a String into a {@link Period} object.
      *
-     * @param date The String to convert in the form of numbertype, e.g. 1W for one week, and Tnumbertype for times, e.g.
-     *        T1M for one minute.
+     * @param date The String to convert in the form of numbertype, e.g. 1W for one week, and Tnumbertype for times,
+     *        e.g. T1M for one minute.
      * @throws RuntimeException if the String cannot be parsed, otherwise a {@link Period} object.
      */
     @SuppressWarnings("WeakerAccess")
@@ -1696,7 +1696,7 @@ public class DateTimeUtils {
      * @return the LocalDate formatted using the default date style.
      */
     public static LocalDate convertDateQuiet(String date) {
-        return convertDateQuiet(s, DATE_STYLE);
+        return convertDateQuiet(date, DATE_STYLE);
     }
 
     private static LocalDate matchStdDate(Pattern pattern, String date) {
@@ -1781,8 +1781,8 @@ public class DateTimeUtils {
      * <p>
      * Supports {@link DateTimeFormatter#ISO_INSTANT} format and others.
      *
-     * @param date String to be converted, usually in the form yyyy-MM-ddThh:mm:ss and with optional sub-seconds after an
-     *        optional decimal point, followed by a mandatory time zone character code
+     * @param date String to be converted, usually in the form yyyy-MM-ddThh:mm:ss and with optional sub-seconds after
+     *        an optional decimal point, followed by a mandatory time zone character code
      * @return A DateTime from the parsed String, or null if the format is not recognized or an exception occurs
      */
     public static DateTime convertDateTimeQuiet(final String date) {
@@ -1907,8 +1907,8 @@ public class DateTimeUtils {
     /**
      * Converts a String into a {@link Period} object.
      *
-     * @param date The String to convert in the form of numbertype, e.g. 1W for one week, and Tnumbertype for times, e.g.
-     *        T1M for one minute.
+     * @param date The String to convert in the form of numbertype, e.g. 1W for one week, and Tnumbertype for times,
+     *        e.g. T1M for one minute.
      * @return null if the String cannot be parsed, otherwise a {@link Period} object.
      */
     public static Period convertPeriodQuiet(String date) {
