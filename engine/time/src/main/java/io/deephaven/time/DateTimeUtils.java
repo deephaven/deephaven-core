@@ -1091,6 +1091,298 @@ public class DateTimeUtils {
 
     // endregion
 
+    // region Chronology
+
+    //TODO: no equivalent
+    /**
+     * Returns the number of nanoseconds that have elapsed since the top of the millisecond.
+     *
+     * @param dateTime time.
+     * @return {@link QueryConstants#NULL_INT} if the input is null; otherwise, number of nanoseconds that have
+     *      elapsed since the top of the millisecond.
+     */
+    public static int nanosOfMilli(DateTime dateTime) {
+        if (dateTime == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return (int) dateTime.getNanosPartial();
+    }
+
+    //TODO: no equivalent
+    /**
+     * Returns the number of microseconds that have elapsed since the top of the millisecond.
+     * Nanoseconds are rounded, not dropped -- '20:41:39.123456700' has 457 micros, not 456.
+     *
+     * @param dateTime time.
+     * @return {@link QueryConstants#NULL_INT} if the input is null; otherwise, number of microseconds that have
+     *      elapsed since the top of the millisecond.
+     */
+    public static int microsOfMilli(DateTime dateTime) {
+        if (dateTime == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return (int) Math.round(dateTime.getNanosPartial() / 1000d);
+    }
+
+    /**
+     * Returns the number of nanoseconds that have elapsed since the top of the second.
+     *
+     * @param dateTime time.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of nanoseconds that have
+     *      elapsed since the top of the second.
+     */
+    public static long nanosOfSecond(DateTime dateTime, TimeZone timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return NULL_LONG;
+        }
+
+        return millisToNanos(dateTime.getJodaDateTime(timeZone).getMillisOfSecond()) + dateTime.getNanosPartial();
+    }
+
+    /**
+     * Returns the number of microseconds that have elapsed since the top of the second.
+     *
+     * @param dateTime time.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of microseconds that have
+     *      elapsed since the top of the second.
+     */
+    public static long microsOfSecond(DateTime dateTime, TimeZone timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return NULL_LONG;
+        }
+
+        return nanosToMicros(nanosOfSecond(dateTime, timeZone));
+    }
+
+    /**
+     * Returns the number of milliseconds that have elapsed since the top of the second.
+     *
+     * @param dateTime time.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of milliseconds that have
+     *      elapsed since the top of the second.
+     */
+    public static int millisOfSecond(DateTime dateTime, TimeZone timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return dateTime.getJodaDateTime(timeZone).getMillisOfSecond();
+    }
+
+    /**
+     * Returns the number of seconds that have elapsed since the top of the minute.
+     *
+     * @param dateTime time.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of seconds that have
+     *      elapsed since the top of the minute.
+     */
+    public static int secondOfMinute(DateTime dateTime, TimeZone timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return dateTime.getJodaDateTime(timeZone).getSecondOfMinute();
+    }
+
+    /**
+     * Returns the number of minutes that have elapsed since the top of the hour.
+     *
+     * @param dateTime time.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of minutes that have
+     *      elapsed since the top of the hour.
+     */
+    public static int minuteOfHour(DateTime dateTime, TimeZone timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return dateTime.getJodaDateTime(timeZone).getMinuteOfHour();
+    }
+
+    /**
+     * Returns the number of nanoseconds that have elapsed since the top of the day.
+     *
+     * @param dateTime time.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of nanoseconds that have
+     *      elapsed since the top of the day.
+     */
+    public static long nanosOfDay(DateTime dateTime, TimeZone timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return NULL_LONG;
+        }
+
+        return millisToNanos(dateTime.getJodaDateTime(timeZone).getMillisOfDay()) + dateTime.getNanosPartial();
+    }
+
+    /**
+     * Returns the number of milliseconds that have elapsed since the top of the day.
+     *
+     * @param dateTime time.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of milliseconds that have
+     *      elapsed since the top of the day.
+     */
+    public static int millisOfDay(DateTime dateTime, TimeZone timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return dateTime.getJodaDateTime(timeZone).getMillisOfDay();
+    }
+
+    /**
+     * Returns the number of seconds that have elapsed since the top of the day.
+     *
+     * @param dateTime time.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of seconds that have
+     *      elapsed since the top of the day.
+     */
+    public static int secondOfDay(DateTime dateTime, TimeZone timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return dateTime.getJodaDateTime(timeZone).getSecondOfDay();
+    }
+
+    /**
+     * Returns the number of minutes that have elapsed since the top of the day.
+     *
+     * @param dateTime time.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of minutes that have
+     *      elapsed since the top of the day.
+     */
+    public static int minuteOfDay(DateTime dateTime, TimeZone timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return dateTime.getJodaDateTime(timeZone).getMinuteOfDay();
+    }
+
+    /**
+     * Returns the number of hours that have elapsed since the top of the day.
+     *
+     * @param dateTime time.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of hours that have
+     *      elapsed since the top of the day.
+     */
+    public static int hourOfDay(DateTime dateTime, TimeZone timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return dateTime.getJodaDateTime(timeZone).getHourOfDay();
+    }
+
+    /**
+     * Returns a 1-based int value of the day of the week for a {@link DateTime} in the specified time zone, with 1 being
+     * Monday and 7 being Sunday.
+     *
+     * @param dateTime time to find the day of the month of.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, the day of the week.
+     */
+    public static int dayOfWeek(DateTime dateTime, TimeZone timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return dateTime.getJodaDateTime(timeZone).getDayOfWeek();
+    }
+
+    /**
+     * Returns a 1-based int value of the day of the month for a {@link DateTime} and specified time zone.
+     * The first day of the month returns 1, the second day returns 2, etc.
+     *
+     * @param dateTime time to find the day of the month of.
+     * @param timeZone time zone.
+     * @return A {@link QueryConstants#NULL_INT} if either input is null; otherwise, the day of the month.
+     */
+    public static int dayOfMonth(DateTime dateTime, TimeZone timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return dateTime.getJodaDateTime(timeZone).getDayOfMonth();
+    }
+
+
+    /**
+     * Returns a 1-based int value of the day of the year (Julian date) for a {@link DateTime} in the specified time zone.
+     * The first day of the year returns 1, the second day returns 2, etc.
+     *
+     * @param dateTime time to find the day of the month of.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, the day of the year.
+     */
+    public static int dayOfYear(DateTime dateTime, TimeZone timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return dateTime.getJodaDateTime(timeZone).getDayOfYear();
+    }
+
+    /**
+     * Returns a 1-based int value of the month of the year (Julian date) for a {@link DateTime} in the specified time zone.
+     * January is 1, February is 2, etc.
+     *
+     * @param dateTime time to find the day of the month of.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, the month of the year.
+     */
+    public static int monthOfYear(DateTime dateTime, TimeZone timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return dateTime.getJodaDateTime(timeZone).getMonthOfYear();
+    }
+
+    /**
+     * Returns the year for a {@link DateTime} in the specified time zone.
+     *
+     * @param dateTime time to find the day of the month of.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, the year.
+     */
+    public static int year(DateTime dateTime, TimeZone timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return dateTime.getJodaDateTime(timeZone).getYear();
+    }
+
+    /**
+     * Returns the year of the century (two-digit year) for a {@link DateTime} in the specified time zone.
+     *
+     * @param dateTime time to find the day of the month of.
+     * @param timeZone time zone.
+     * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, the year of the century (two-digit year).
+     */
+    public static int yearOfCentury(DateTime dateTime, TimeZone timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return dateTime.getJodaDateTime(timeZone).getYearOfCentury();
+    }
+
+    // endregion
+
     // ##############################################################################
 
 
@@ -1192,295 +1484,6 @@ public class DateTimeUtils {
         return "0".repeat(length - str.length()) + str;
     }
 
-    // region Chronology Getters
-
-    /**
-     * Returns a 1-based int value of the day of the month for a {@link DateTime} and specified time zone.
-     *
-     * @param dateTime The {@link DateTime} for which to find the day of the month.
-     * @param timeZone The {@link TimeZone} to use when interpreting the date/time.
-     * @return A {@link QueryConstants#NULL_INT} if either input is null, otherwise, an int value of the day of the
-     *         month represented by the {@link DateTime} when interpreted in the specified time zone.
-     */
-    @SuppressWarnings("WeakerAccess")
-    public static int dayOfMonth(DateTime dateTime, TimeZone timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
-        }
-
-        return dateTime.getJodaDateTime(timeZone).getDayOfMonth();
-    }
-
-    /**
-     * Returns a 1-based int value of the day of the week for a {@link DateTime} in the specified time zone, with 1 being
-     * Monday and 7 being Sunday.
-     *
-     * @param dateTime The {@link DateTime} for which to find the day of the week.
-     * @param timeZone The {@link TimeZone} to use when interpreting the date/time.
-     * @return A {@link QueryConstants#NULL_INT} if either input is null, otherwise, an int value of the day of the week
-     *         represented by the {@link DateTime} when interpreted in the specified time zone.
-     */
-    public static int dayOfWeek(DateTime dateTime, TimeZone timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
-        }
-
-        return dateTime.getJodaDateTime(timeZone).getDayOfWeek();
-    }
-
-    /**
-     * Returns a 1-based int value of the day of the year (Julian date) for a {@link DateTime} in the specified time zone.
-     *
-     * @param dateTime The {@link DateTime} for which to find the day of the year.
-     * @param timeZone The {@link TimeZone} to use when interpreting the date/time.
-     * @return A {@link QueryConstants#NULL_INT} if either input is null, otherwise, an int value of the day of the year
-     *         represented by the {@link DateTime} when interpreted in the specified time zone.
-     */
-    public static int dayOfYear(DateTime dateTime, TimeZone timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
-        }
-
-        return dateTime.getJodaDateTime(timeZone).getDayOfYear();
-    }
-
-    /**
-     * Returns an int value of the hour of the day for a {@link DateTime} in the specified time zone. The hour is on a
-     * 24 hour clock (0 - 23).
-     *
-     * @param dateTime The {@link DateTime} for which to find the hour of the day.
-     * @param timeZone The {@link TimeZone} to use when interpreting the date/time.
-     * @return A {@link QueryConstants#NULL_INT} if either input is null, otherwise, an int value of the hour of the day
-     *         represented by the {@link DateTime} when interpreted in the specified time zone.
-     */
-    @SuppressWarnings("WeakerAccess")
-    public static int hourOfDay(DateTime dateTime, TimeZone timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
-        }
-
-        return dateTime.getJodaDateTime(timeZone).getHourOfDay();
-    }
-
-    /**
-     * Returns an int value of milliseconds since midnight for a {@link DateTime} in the specified time zone.
-     *
-     * @param dateTime The {@link DateTime} for which to find the milliseconds since midnight.
-     * @param timeZone The {@link TimeZone} to use when interpreting the date/time.
-     * @return A {@link QueryConstants#NULL_INT} if either input is null, otherwise, an int value of milliseconds since
-     *         midnight for the date/time represented by the {@link DateTime} when interpreted in the specified time
-     *         zone.
-     */
-    @SuppressWarnings("WeakerAccess")
-    public static int millisOfDay(DateTime dateTime, TimeZone timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
-        }
-
-        return dateTime.getJodaDateTime(timeZone).getMillisOfDay();
-    }
-
-    /**
-     * Returns an int value of milliseconds since the top of the second for a {@link DateTime} in the specified time
-     * zone.
-     *
-     * @param dateTime The {@link DateTime} for which to find the milliseconds.
-     * @param timeZone The {@link TimeZone} to use when interpreting the date/time.
-     * @return A {@link QueryConstants#NULL_INT} if either input is null, otherwise, an int value of milliseconds since
-     *         the top of the second for the date/time represented by the {@link DateTime} when interpreted in the
-     *         specified time zone.
-     */
-    @SuppressWarnings("WeakerAccess")
-    public static int millisOfSecond(DateTime dateTime, TimeZone timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
-        }
-
-        return dateTime.getJodaDateTime(timeZone).getMillisOfSecond();
-    }
-
-    /**
-     * Returns a long value of nanoseconds since midnight for a {@link DateTime} in the specified time zone.
-     *
-     * @param dateTime The {@link DateTime} for which to find the nanoseconds since midnight.
-     * @param timeZone The {@link TimeZone} to use when interpreting the date/time.
-     * @return A {@link QueryConstants#NULL_LONG} if either input is null, otherwise, a long value of nanoseconds since
-     *         midnight for the date/time represented by the {@link DateTime} when interpreted in the specified time
-     *         zone.
-     */
-    @SuppressWarnings("WeakerAccess")
-    public static long nanosOfDay(DateTime dateTime, TimeZone timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return NULL_LONG;
-        }
-
-        return millisToNanos(dateTime.getJodaDateTime(timeZone).getMillisOfDay()) + dateTime.getNanosPartial();
-    }
-
-    /**
-     * Returns a long value of nanoseconds since the top of the second for a {@link DateTime} in the specified time
-     * zone.
-     *
-     * @param dateTime The {@link DateTime} for which to find the nanoseconds.
-     * @param timeZone The {@link TimeZone} to use when interpreting the date/time.
-     * @return A {@link QueryConstants#NULL_LONG} if either input is null, otherwise, a long value of nanoseconds since
-     *         the top of the second for the date/time represented by the {@link DateTime} when interpreted in the
-     *         specified time zone.
-     */
-    @SuppressWarnings("WeakerAccess")
-    public static long nanosOfSecond(DateTime dateTime, TimeZone timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return NULL_LONG;
-        }
-
-        return millisToNanos(dateTime.getJodaDateTime(timeZone).getMillisOfSecond()) + dateTime.getNanosPartial();
-    }
-
-    //TODO: no equivalent
-    //TODO: not supported
-    /**
-     * Returns the number of microseconds that have elapsed since the start of the millisecond represented by the
-     * provided {@code dateTime} in the specified time zone. Nanoseconds are rounded, not dropped --
-     * '20:41:39.123456700' has 457 micros, not 456.
-     *
-     * @param dateTime The {@link DateTime} for which to find the microseconds.
-     * @param timeZone The {@link TimeZone} to use when interpreting the date/time.
-     * @return A {@link QueryConstants#NULL_INT} if either input is null, otherwise, an int value of microseconds since
-     *         the top of the millisecond for the date/time represented by the {@link DateTime} when interpreted in the
-     *         specified time zone.
-     */
-    @SuppressWarnings("WeakerAccess")
-    public static int microsOfMilli(DateTime dateTime, TimeZone timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
-        }
-
-        return (int) Math.round(dateTime.getNanosPartial() / 1000d);
-    }
-
-    /**
-     * Returns an int value of minutes since midnight for a {@link DateTime} in the specified time zone.
-     *
-     * @param dateTime The {@link DateTime} for which to find the minutes.
-     * @param timeZone The {@link TimeZone} to use when interpreting the date/time.
-     * @return A {@link QueryConstants#NULL_INT} if either input is null, otherwise, an int value of minutes since
-     *         midnight for the date/time represented by the {@link DateTime} when interpreted in the specified time
-     *         zone.
-     */
-    @SuppressWarnings("WeakerAccess")
-    public static int minuteOfDay(DateTime dateTime, TimeZone timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
-        }
-
-        return dateTime.getJodaDateTime(timeZone).getMinuteOfDay();
-    }
-
-    /**
-     * Returns an int value of minutes since the top of the hour for a {@link DateTime} in the specified time zone.
-     *
-     * @param dateTime The {@link DateTime} for which to find the minutes.
-     * @param timeZone The {@link TimeZone} to use when interpreting the date/time.
-     * @return A {@link QueryConstants#NULL_INT} if either input is null, otherwise, an int value of minutes since the
-     *         top of the hour for the date/time represented by the {@link DateTime} when interpreted in the specified
-     *         time zone.
-     */
-    @SuppressWarnings("WeakerAccess")
-    public static int minuteOfHour(DateTime dateTime, TimeZone timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
-        }
-
-        return dateTime.getJodaDateTime(timeZone).getMinuteOfHour();
-    }
-
-    /**
-     * Returns an int value for the month of a {@link DateTime} in the specified time zone.
-     *
-     * @param dateTime The {@link DateTime} for which to find the month.
-     * @param timeZone The {@link TimeZone} to use when interpreting the date/time.
-     * @return A {@link QueryConstants#NULL_INT} if either input is null, otherwise, an int value of the month for the
-     *         date/time represented by the {@link DateTime} when interpreted in the specified time zone. January is 1,
-     *         February is 2, etc.
-     */
-    @SuppressWarnings("WeakerAccess")
-    public static int monthOfYear(DateTime dateTime, TimeZone timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
-        }
-
-        return dateTime.getJodaDateTime(timeZone).getMonthOfYear();
-    }
-
-    /**
-     * Returns an int value of seconds since midnight for a {@link DateTime} in the specified time zone.
-     *
-     * @param dateTime The {@link DateTime} for which to find the seconds.
-     * @param timeZone The {@link TimeZone} to use when interpreting the date/time.
-     * @return A {@link QueryConstants#NULL_INT} if either input is null, otherwise, an int value of seconds since
-     *         midnight for the date/time represented by the {@link DateTime} when interpreted in the specified time
-     *         zone.
-     */
-    @SuppressWarnings("WeakerAccess")
-    public static int secondOfDay(DateTime dateTime, TimeZone timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
-        }
-
-        return dateTime.getJodaDateTime(timeZone).getSecondOfDay();
-    }
-
-    /**
-     * Returns an int value of seconds since the top of the minute for a {@link DateTime} in the specified time zone.
-     *
-     * @param dateTime The {@link DateTime} for which to find the seconds.
-     * @param timeZone The {@link TimeZone} to use when interpreting the date/time.
-     * @return A {@link QueryConstants#NULL_INT} if either input is null, otherwise, an int value of seconds since the
-     *         top of the minute for the date/time represented by the {@link DateTime} when interpreted in the specified
-     *         time zone.
-     */
-    @SuppressWarnings("WeakerAccess")
-    public static int secondOfMinute(DateTime dateTime, TimeZone timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
-        }
-
-        return dateTime.getJodaDateTime(timeZone).getSecondOfMinute();
-    }
-
-    /**
-     * Returns an int value of the year for a {@link DateTime} in the specified time zone.
-     *
-     * @param dateTime The {@link DateTime} for which to find the year.
-     * @param timeZone The {@link TimeZone} to use when interpreting the date/time.
-     * @return A {@link QueryConstants#NULL_INT} if either input is null, otherwise, an int value of the year for the
-     *         date/time represented by the {@link DateTime} when interpreted in the specified time zone.
-     */
-    public static int year(DateTime dateTime, TimeZone timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
-        }
-
-        return dateTime.getJodaDateTime(timeZone).getYear();
-    }
-
-    /**
-     * Returns an int value of the two-digit year for a {@link DateTime} in the specified time zone.
-     *
-     * @param dateTime The {@link DateTime} for which to find the year.
-     * @param timeZone The {@link TimeZone} to use when interpreting the date/time.
-     * @return A {@link QueryConstants#NULL_INT} if either input is null, otherwise, an int value of the two-digit year
-     *         for the date/time represented by the {@link DateTime} when interpreted in the specified time zone.
-     */
-    @SuppressWarnings("WeakerAccess")
-    public static int yearOfCentury(DateTime dateTime, TimeZone timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return io.deephaven.util.QueryConstants.NULL_INT;
-        }
-
-        return dateTime.getJodaDateTime(timeZone).getYearOfCentury();
-    }
-    // endregion
 
     // region Base and Unit conversion
 
