@@ -6,7 +6,7 @@ import unittest
 
 from deephaven import new_table, read_csv, DHError
 from deephaven.column import string_col
-from deephaven.filters import Filter, PatternMode, and_, is_null, or_, not_, pattern
+from deephaven.filters import Filter, PatternMode, and_, is_not_null, is_null, or_, not_, pattern
 from tests.testbase import BaseTestCase
 
 
@@ -55,9 +55,16 @@ class FilterTestCase(BaseTestCase):
     def test_is_null(self):
         x = new_table([string_col("X", ["a", "b", "c", None, "e", "f"])])
         x_is_null = new_table([string_col("X", [None])])
-        x_is_not_null = new_table([string_col("X", ["a", "b", "c", "e", "f"])])
+        x_not_is_null = new_table([string_col("X", ["a", "b", "c", "e", "f"])])
         self.assert_table_equals(x.where(is_null("X")), x_is_null)
-        self.assert_table_equals(x.where(not_(is_null("X"))), x_is_not_null)
+        self.assert_table_equals(x.where(not_(is_null("X"))), x_not_is_null)
+
+    def test_is_not_null(self):
+        x = new_table([string_col("X", ["a", "b", "c", None, "e", "f"])])
+        x_is_not_null = new_table([string_col("X", ["a", "b", "c", "e", "f"])])
+        x_not_is_not_null = new_table([string_col("X", [None])])
+        self.assert_table_equals(x.where(is_not_null("X")), x_is_not_null)
+        self.assert_table_equals(x.where(not_(is_not_null("X"))), x_not_is_not_null)
 
 if __name__ == '__main__':
     unittest.main()

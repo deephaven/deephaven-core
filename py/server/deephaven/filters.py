@@ -117,6 +117,18 @@ def is_null(col: str) -> Filter:
     return Filter(j_filter=_JFilter.isNull(_JColumnName.of(col)))
 
 
+def is_not_null(col: str) -> Filter:
+    """Creates a new filter that evaluates to true when the col is not null, and evaluates to false when col is null.
+
+    Args:
+        col (str): the column name
+
+    Returns:
+        a new is-not-null Filter
+    """
+    return Filter(j_filter=_JFilter.isNotNull(_JColumnName.of(col)))
+
+
 class PatternMode(Enum):
     MATCHES = _JPatternMode.MATCHES
     """Matches the entire input against the pattern"""
