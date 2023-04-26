@@ -60,6 +60,8 @@ class DeltaControl(Enum):
     VALUE_DOMINATES = _JDeltaControl.VALUE_DOMINATES
     """A valid value following a null value returns the valid value"""
 
+    ZERO_DOMINATES = _JDeltaControl.ZERO_DOMINATES
+    """A valid value following a null value returns zero"""
 
 class OperationControl(JObjectWrapper):
     """A OperationControl represents control parameters for performing operations with the table
@@ -489,14 +491,14 @@ def forward_fill(cols: Union[str, List[str]]) -> UpdateByOperation:
         raise DHError(e, "failed to create a forward fill UpdateByOperation.") from e
 
 
-def delta(cols: Union[str, List[str]], delta_control: DeltaControl = DeltaControl.VALUE_DOMINATES) -> UpdateByOperation:
+def delta(cols: Union[str, List[str]], delta_control: DeltaControl = DeltaControl.NULL_DOMINATES) -> UpdateByOperation:
     """Creates a delta UpdateByOperation for the supplied column names. The Delta operation produces values by computing
     the difference between the current value and the previous value. When the current value is null, this operation
     will output null. When the current value is valid, the output will depend on the DeltaControl provided.
 
-        When delta_control is not provided or set to VALUE_DOMINATES, a valid value following a null value returns the
-            valid value.
-        When delta_control is set to NULL_DOMINATES, a valid value following a null value returns null.
+        When delta_control is not provided or set to NULL_DOMINATES, a value following a null value returns null.
+        When delta_control is set to VALUE_DOMINATES, a value following a null value returns the value.
+        When delta_control is set to ZERO_DOMINATES, a value following a null value returns zero.
 
     Args:
 

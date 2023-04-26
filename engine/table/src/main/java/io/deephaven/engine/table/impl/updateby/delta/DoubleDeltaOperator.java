@@ -49,15 +49,16 @@ public class DoubleDeltaOperator extends BaseDoubleUpdateByOperator {
             // read the value from the values chunk
             final double currentVal = doubleValueChunk.get(pos);
 
-            // If the previous value is null, defer to the control object to decide what to do
-            if (lastVal == NULL_DOUBLE) {
-                curVal = (control.nullBehavior() == NullBehavior.NullDominates)
-                        ? NULL_DOUBLE
-                        : currentVal;
-            } else if (currentVal != NULL_DOUBLE) {
-                curVal = (double)(currentVal - lastVal);
-            } else {
+            if (currentVal == NULL_DOUBLE) {
                 curVal = NULL_DOUBLE;
+            } else if (lastVal == NULL_DOUBLE) {
+                curVal = control.nullBehavior() == NullBehavior.NullDominates
+                        ? NULL_DOUBLE
+                        : (control.nullBehavior() == NullBehavior.ZeroDominates
+                            ? (double)0
+                            : currentVal);
+            } else {
+                curVal = (double)(currentVal - lastVal);
             }
 
             lastVal = currentVal;

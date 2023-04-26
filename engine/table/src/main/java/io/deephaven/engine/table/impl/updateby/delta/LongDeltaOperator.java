@@ -49,15 +49,16 @@ public class LongDeltaOperator extends BaseLongUpdateByOperator {
             // read the value from the values chunk
             final long currentVal = longValueChunk.get(pos);
 
-            // If the previous value is null, defer to the control object to decide what to do
-            if (lastVal == NULL_LONG) {
-                curVal = (control.nullBehavior() == NullBehavior.NullDominates)
-                        ? NULL_LONG
-                        : currentVal;
-            } else if (currentVal != NULL_LONG) {
-                curVal = (long)(currentVal - lastVal);
-            } else {
+            if (currentVal == NULL_LONG) {
                 curVal = NULL_LONG;
+            } else if (lastVal == NULL_LONG) {
+                curVal = control.nullBehavior() == NullBehavior.NullDominates
+                        ? NULL_LONG
+                        : (control.nullBehavior() == NullBehavior.ZeroDominates
+                            ? (long)0
+                            : currentVal);
+            } else {
+                curVal = (long)(currentVal - lastVal);
             }
 
             lastVal = currentVal;

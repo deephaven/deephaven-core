@@ -49,15 +49,16 @@ public class IntDeltaOperator extends BaseIntUpdateByOperator {
             // read the value from the values chunk
             final int currentVal = intValueChunk.get(pos);
 
-            // If the previous value is null, defer to the control object to decide what to do
-            if (lastVal == NULL_INT) {
-                curVal = (control.nullBehavior() == NullBehavior.NullDominates)
-                        ? NULL_INT
-                        : currentVal;
-            } else if (currentVal != NULL_INT) {
-                curVal = (int)(currentVal - lastVal);
-            } else {
+            if (currentVal == NULL_INT) {
                 curVal = NULL_INT;
+            } else if (lastVal == NULL_INT) {
+                curVal = control.nullBehavior() == NullBehavior.NullDominates
+                        ? NULL_INT
+                        : (control.nullBehavior() == NullBehavior.ZeroDominates
+                            ? (int)0
+                            : currentVal);
+            } else {
+                curVal = (int)(currentVal - lastVal);
             }
 
             lastVal = currentVal;
