@@ -566,6 +566,10 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * In order to produce aggregated output, it is required that the two relative match expressions define a range of
      * values to determine the responsive rows to aggregate. There are a few noteworthy special cases of ranges.
      * <dl>
+     * <dt>empty range</dt>
+     * <dd>An <em>empty</em> range occurs for any left row with no responsive right rows. That is, no non-{@code null},
+     * non-{@code NaN} right rows were found using the exact join matches, or none were in range according to the range
+     * join match.</dd>
      * <dt>single-value ranges</dt>
      * <dd>A <em>single-value</em> range is a range where the left row’s values for the left start column and left end
      * column are equal and both relative matches are inclusive ({@code <=} and {@code >=}, respectively). For a
