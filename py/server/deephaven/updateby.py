@@ -97,7 +97,7 @@ class UpdateByOperation(JObjectWrapper):
 def ema_tick_decay(time_scale_ticks: float, cols: Union[str, List[str]],
                    op_control: OperationControl = None) -> UpdateByOperation:
     """Creates an EMA (exponential moving average) UpdateByOperation for the supplied column names, using ticks as
-    the decay unit. Fractional ticks are allowed
+    the decay unit.
 
     The formula used is
         a = e^(-1 / time_scale_ticks)

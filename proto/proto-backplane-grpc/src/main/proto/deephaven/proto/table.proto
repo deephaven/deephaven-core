@@ -341,7 +341,7 @@ message UpdateByEmaTimescale {
   }
   message UpdateByEmaTime {
     string column = 1;
-    double period_nanos = 2;
+    sint64 period_nanos = 2 [jstype=JS_STRING];
   }
   oneof type {
     UpdateByEmaTicks ticks = 1;

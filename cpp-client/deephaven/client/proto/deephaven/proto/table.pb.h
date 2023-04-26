@@ -2803,13 +2803,13 @@ class UpdateByEmaTimescale_UpdateByEmaTime final :
   std::string* _internal_mutable_column();
   public:
 
-  // double period_nanos = 2;
+  // sint64 period_nanos = 2 [jstype = JS_STRING];
   void clear_period_nanos();
-  double period_nanos() const;
-  void set_period_nanos(double value);
+  int64_t period_nanos() const;
+  void set_period_nanos(int64_t value);
   private:
-  double _internal_period_nanos() const;
-  void _internal_set_period_nanos(double value);
+  int64_t _internal_period_nanos() const;
+  void _internal_set_period_nanos(int64_t value);
   public:
 
   // @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale.UpdateByEmaTime)
@@ -2820,7 +2820,7 @@ class UpdateByEmaTimescale_UpdateByEmaTime final :
   typedef void InternalArenaConstructable_;
   typedef void DestructorSkippable_;
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr column_;
-  double period_nanos_;
+  int64_t period_nanos_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   friend struct ::TableStruct_deephaven_2fproto_2ftable_2eproto;
 };
@@ -23133,22 +23133,22 @@ inline void UpdateByEmaTimescale_UpdateByEmaTime::set_allocated_column(std::stri
   // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale.UpdateByEmaTime.column)
 }
 
-// double period_nanos = 2;
+// sint64 period_nanos = 2 [jstype = JS_STRING];
 inline void UpdateByEmaTimescale_UpdateByEmaTime::clear_period_nanos() {
-  period_nanos_ = 0;
+  period_nanos_ = int64_t{0};
 }
-inline double UpdateByEmaTimescale_UpdateByEmaTime::_internal_period_nanos() const {
+inline int64_t UpdateByEmaTimescale_UpdateByEmaTime::_internal_period_nanos() const {
   return period_nanos_;
 }
-inline double UpdateByEmaTimescale_UpdateByEmaTime::period_nanos() const {
+inline int64_t UpdateByEmaTimescale_UpdateByEmaTime::period_nanos() const {
   // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale.UpdateByEmaTime.period_nanos)
   return _internal_period_nanos();
 }
-inline void UpdateByEmaTimescale_UpdateByEmaTime::_internal_set_period_nanos(double value) {
+inline void UpdateByEmaTimescale_UpdateByEmaTime::_internal_set_period_nanos(int64_t value) {
   
   period_nanos_ = value;
 }
-inline void UpdateByEmaTimescale_UpdateByEmaTime::set_period_nanos(double value) {
+inline void UpdateByEmaTimescale_UpdateByEmaTime::set_period_nanos(int64_t value) {
   _internal_set_period_nanos(value);
   // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale.UpdateByEmaTime.period_nanos)
 }

@@ -12,23 +12,15 @@ import java.time.Duration;
 @SimpleStyle
 public abstract class WindowScale {
     public static WindowScale ofTime(final String timestampCol, long timeScaleNanos) {
-        return ImmutableWindowScale.of(timestampCol, timeScaleNanos);
-    }
-
-    public static WindowScale ofTime(final String timestampCol, double timeScaleNanos) {
-        return ImmutableWindowScale.of(timestampCol, timeScaleNanos);
+        return ImmutableWindowScale.of(timestampCol, 0, timeScaleNanos);
     }
 
     public static WindowScale ofTime(final String timestampCol, Duration duration) {
-        return ImmutableWindowScale.of(timestampCol, duration.toNanos());
-    }
-
-    public static WindowScale ofTicks(long tickWindow) {
-        return ImmutableWindowScale.of(null, tickWindow);
+        return ImmutableWindowScale.of(timestampCol, 0, duration.toNanos());
     }
 
     public static WindowScale ofTicks(double tickWindow) {
-        return ImmutableWindowScale.of(null, tickWindow);
+        return ImmutableWindowScale.of(null, tickWindow, 0);
     }
 
     @Parameter
@@ -36,38 +28,48 @@ public abstract class WindowScale {
     public abstract String timestampCol();
 
     /**
-     * Store the timescale units as a double and convert to long as needed.
+     * Store the tick units as a double and convert to long as needed.
      */
     @Parameter
-    public abstract double timescaleUnits();
+    public abstract double tickUnits();
+
+    /**
+     * Store the time units as a long (in nanoseconds).
+     */
+    @Parameter
+    public abstract long timeUnits();
+
 
     public final boolean isTimeBased() {
         return timestampCol() != null;
     }
 
-    public final long longTimescaleUnits() {
-        return (long) timescaleUnits();
+    /**
+     * Return the appropriate tick/time units as a long
+     */
+    public final long getTimeScaleUnits() {
+        return isTimeBased() ? timeUnits() : (long) tickUnits();
+    }
+
+    /**
+     * Return the appropriate tick/time units as a double
+     */
+    public final double getFractionalTimeScaleUnits() {
+        return isTimeBased() ? (double) timeUnits() : tickUnits();
     }
 
     public final Duration getDuration() {
         if (!isTimeBased()) {
             throw new IllegalStateException("getDuration() cannot be called on a tick-based Timescale");
         }
-        return Duration.ofNanos((long) timescaleUnits());
+        return Duration.ofNanos((long) tickUnits());
     }
 
     public final long getTicks() {
         if (isTimeBased()) {
             throw new IllegalStateException("getTicks() cannot be called on a time-based Timescale");
         }
-        return (long) timescaleUnits();
-    }
-
-    public final double getFractionalTicks() {
-        if (isTimeBased()) {
-            throw new IllegalStateException("getFractionalTicks() cannot be called on a time-based Timescale");
-        }
-        return timescaleUnits();
+        return (long) tickUnits();
     }
 
     @Value.Check
