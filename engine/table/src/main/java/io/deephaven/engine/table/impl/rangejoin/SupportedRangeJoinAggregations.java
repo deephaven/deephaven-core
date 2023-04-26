@@ -17,18 +17,22 @@ public class SupportedRangeJoinAggregations implements Aggregation.Visitor {
     /**
      * Validate {@code aggregations} for support by {@link Table#rangeJoin range join}.
      * 
+     * @param description A description of the range join operation
      * @param aggregations The {@link Aggregation aggregations} to validate
      * @throws UnsupportedOperationException if any of the {@code aggregations} is unsupported by {@link Table#rangeJoin
      *         range join}
      */
-    public static void validate(@NotNull final Collection<? extends Aggregation> aggregations) {
+    public static void validate(
+            @NotNull final String description,
+            @NotNull final Collection<? extends Aggregation> aggregations) {
         final SupportedRangeJoinAggregations visitor = new SupportedRangeJoinAggregations();
         final Collection<? extends Aggregation> unsupportedAggregations = aggregations.stream()
                 .filter((final Aggregation agg) -> !visitor.isSupported(agg))
                 .collect(Collectors.toList());
         if (!unsupportedAggregations.isEmpty()) {
             throw new UnsupportedOperationException(String.format(
-                    "rangeJoin only supports the \"group\" aggregation at this time - unsupported aggregations were requested: %s",
+                    "%s: rangeJoin only supports the \"group\" aggregation at this time - unsupported aggregations were requested: %s",
+                    description,
                     Strings.ofAggregations(unsupportedAggregations)));
         }
     }

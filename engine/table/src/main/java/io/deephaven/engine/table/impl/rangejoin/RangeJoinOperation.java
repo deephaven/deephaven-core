@@ -1,6 +1,5 @@
 package io.deephaven.engine.table.impl.rangejoin;
 
-import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.JoinAddition;
 import io.deephaven.api.JoinMatch;
@@ -92,6 +91,7 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
 
     private final String description;
     private final MemoizedOperationKey memoizedOperationKey;
+    private final Class<?> rangeValueType;
 
     public RangeJoinOperation(
             @NotNull final QueryTable leftTable,
@@ -116,15 +116,19 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
 
         if (leftTable.isRefreshing() || rightTable.isRefreshing()) {
             throw new UnsupportedOperationException(String.format(
-                    "rangeJoin only supports static (not refreshing) inputs at this time: left table is %s, right table is %s",
+                    "%s: rangeJoin only supports static (not refreshing) inputs at this time: left table is %s, right table is %s",
+                    description,
                     leftTable.isRefreshing() ? "refreshing" : "static",
                     rightTable.isRefreshing() ? "refreshing" : "static"));
         }
         validateExactMatchColumns();
-        validateRangeMatchColumns();
-        SupportedRangeJoinAggregations.validate(aggregations);
+        rangeValueType = validateRangeMatchColumns();
+        SupportedRangeJoinAggregations.validate(description, aggregations);
     }
 
+    /**
+     * Validate that the exact match columns exist and have the same type on both sides for each match.
+     */
     private void validateExactMatchColumns() {
         final TableDefinition leftTableDefinition = leftTable.getDefinition();
         final TableDefinition rightTableDefinition = rightTable.getDefinition();
@@ -154,12 +158,17 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
             }
         }
         if (issues != null) {
-            throw new IllegalArgumentException(
-                    String.format("Invalid exact matches: %s", String.join(", ", issues)));
+            throw new IllegalArgumentException(String.format(
+                    "%s: Invalid exact matches: %s", description, String.join(", ", issues)));
         }
     }
 
-    private void validateRangeMatchColumns() {
+    /**
+     * Validate that the range match columns exist, have the same type, and that that type is valid.
+     *
+     * @return The range match column value type
+     */
+    private Class<?> validateRangeMatchColumns() {
         final TableDefinition leftTableDefinition = leftTable.getDefinition();
         final TableDefinition rightTableDefinition = rightTable.getDefinition();
         final ColumnDefinition<?> leftStartColumnDefinition =
@@ -205,8 +214,15 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
         }
         if (issues != null) {
             throw new IllegalArgumentException(String.format(
-                    "Invalid range match %s: %s", Strings.of(rangeMatch), String.join(", ", issues)));
+                    "%s: Invalid range match %s: %s", description, Strings.of(rangeMatch), String.join(", ", issues)));
         }
+
+        final Class<?> rangeValueType = leftStartColumnDefinition.getDataType();
+        if (!rangeValueType.isPrimitive() && !Comparable.class.isAssignableFrom(rangeValueType)) {
+            throw new IllegalArgumentException(String.format(
+                    "%s: Invalid range value type %s, must be primitive or comparable", description, rangeValueType));
+        }
+        return rangeValueType;
     }
 
     @Override
@@ -327,8 +343,16 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
         }
 
         private void filterAndGroupRightTable() {
+            final Table rightTableCoalesced = rightTable.coalesce();
+            final Table rightTableFiltered;
+            if (rangeValueType == double.class || rangeValueType == float.class) {
+                rightTableFiltered = rightTableCoalesced.where(String.format("!isNaN(%s) && !isNull(%s)",
+                        rangeMatch.rightRangeColumn().name(), rangeMatch.rightRangeColumn().name()));
+            } else {
+                rightTableFiltered = rightTableCoalesced.where(Filter.isNotNull(rangeMatch.rightRangeColumn()));
+            }
             outputRightTableGrouped = exposeGroupRowSets(
-                    ((QueryTable) rightTable.coalesce().where(Filter.isNotNull(rangeMatch.rightRangeColumn()))),
+                    (QueryTable) rightTableFiltered,
                     JoinMatch.rights(exactMatches));
         }
     }
@@ -497,14 +521,14 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
 
             final RowSet rightRows = rightGroupRowSets.get(index);
             if (rightRows == null) {
-                // Fill output with nulls
+                // Fill output with empty groups
                 leftRows.forAllRowKeys((final long leftRowKey) -> {
                     // TODO-RWC: Chunk-oriented output filling
                     final long outRowKeyBase = leftRowKey * RESULT_MULTIPLIER;
                     // @formatter:off
                     outputSlotsAndPositionRanges.set(outRowKeyBase + RESULT_SLOT_OFFSET,  index);
-                    outputSlotsAndPositionRanges.set(outRowKeyBase + RESULT_START_OFFSET, NULL_INT);
-                    outputSlotsAndPositionRanges.set(outRowKeyBase + RESULT_END_OFFSET,   NULL_INT);
+                    outputSlotsAndPositionRanges.set(outRowKeyBase + RESULT_START_OFFSET, 0);
+                    outputSlotsAndPositionRanges.set(outRowKeyBase + RESULT_END_OFFSET,   0);
                     // @formatter:on
                 });
             } else {
