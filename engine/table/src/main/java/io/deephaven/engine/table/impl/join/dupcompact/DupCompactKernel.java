@@ -4,9 +4,9 @@
 package io.deephaven.engine.table.impl.join.dupcompact;
 
 import io.deephaven.chunk.attributes.Any;
-import io.deephaven.engine.table.Context;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
+import org.jetbrains.annotations.NotNull;
 
 public interface DupCompactKernel {
     static DupCompactKernel makeDupCompact(ChunkType chunkType, boolean reverse) {
@@ -61,15 +61,16 @@ public interface DupCompactKernel {
      * Remove all adjacent values from chunkToCompact, except the last value in any adjacent run. The keyIndices are
      * parallel to the chunkToCompact; and when a value is removed from chunkToCompact it is also removed from
      * keyIndices
-     *
-     * Additionally, verify that the elements are properly ordered; returning the first position of an out of order
+     * <p>
+     * Additionally, verify that the elements are properly ordered; returning the first position of an out-of-order
      * element.
      *
-     * @param chunkToCompact the values to remove duplicates from
-     * @param keyIndices the key indices parallel to chunkToCompact
+     * @param chunkToCompact The values to remove duplicates from
+     * @param keyIndices The key indices parallel to chunkToCompact
      *
-     * @return the first position of an out-of-order element, or -1 if all elements are in order
+     * @return The first position of an out-of-order element, or -1 if all elements are in order
      */
-    int compactDuplicates(WritableChunk<? extends Any> chunkToCompact,
-            WritableLongChunk<RowKeys> keyIndices);
+    int compactDuplicates(
+            @NotNull WritableChunk<? extends Any> chunkToCompact,
+            @NotNull WritableLongChunk<RowKeys> keyIndices);
 }

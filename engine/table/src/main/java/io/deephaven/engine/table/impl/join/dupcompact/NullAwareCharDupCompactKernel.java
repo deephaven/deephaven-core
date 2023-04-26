@@ -12,6 +12,7 @@ import io.deephaven.util.compare.CharComparisons;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
+import org.jetbrains.annotations.NotNull;
 
 public class NullAwareCharDupCompactKernel implements DupCompactKernel {
     static final NullAwareCharDupCompactKernel INSTANCE = new NullAwareCharDupCompactKernel();
@@ -19,11 +20,15 @@ public class NullAwareCharDupCompactKernel implements DupCompactKernel {
     private NullAwareCharDupCompactKernel() {} // use through the instance
 
     @Override
-    public int compactDuplicates(WritableChunk<? extends Any> chunkToCompact, WritableLongChunk<RowKeys> keyIndices) {
+    public int compactDuplicates(
+            @NotNull final WritableChunk<? extends Any> chunkToCompact,
+            @NotNull final WritableLongChunk<RowKeys> keyIndices) {
         return compactDuplicates(chunkToCompact.asWritableCharChunk(), keyIndices);
     }
 
-    private static int compactDuplicates(WritableCharChunk<? extends Any> chunkToCompact, WritableLongChunk<RowKeys> keyIndices) {
+    private static int compactDuplicates(
+            @NotNull final WritableCharChunk<? extends Any> chunkToCompact,
+            @NotNull final WritableLongChunk<RowKeys> keyIndices) {
         final int inputSize = chunkToCompact.size();
         if (inputSize == 0) {
             return -1;

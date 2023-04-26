@@ -11,6 +11,7 @@ package io.deephaven.engine.table.impl.join.dupcompact;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
+import org.jetbrains.annotations.NotNull;
 
 public class LongDupCompactKernel implements DupCompactKernel {
     static final LongDupCompactKernel INSTANCE = new LongDupCompactKernel();
@@ -18,11 +19,15 @@ public class LongDupCompactKernel implements DupCompactKernel {
     private LongDupCompactKernel() {} // use through the instance
 
     @Override
-    public int compactDuplicates(WritableChunk<? extends Any> chunkToCompact, WritableLongChunk<RowKeys> keyIndices) {
+    public int compactDuplicates(
+            @NotNull final WritableChunk<? extends Any> chunkToCompact,
+            @NotNull final WritableLongChunk<RowKeys> keyIndices) {
         return compactDuplicates(chunkToCompact.asWritableLongChunk(), keyIndices);
     }
 
-    private static int compactDuplicates(WritableLongChunk<? extends Any> chunkToCompact, WritableLongChunk<RowKeys> keyIndices) {
+    private static int compactDuplicates(
+            @NotNull final WritableLongChunk<? extends Any> chunkToCompact,
+            @NotNull final WritableLongChunk<RowKeys> keyIndices) {
         final int inputSize = chunkToCompact.size();
         if (inputSize == 0) {
             return -1;

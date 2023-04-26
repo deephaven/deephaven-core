@@ -13,6 +13,7 @@ import java.util.Objects;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
+import org.jetbrains.annotations.NotNull;
 
 public class ObjectDupCompactKernel implements DupCompactKernel {
     static final ObjectDupCompactKernel INSTANCE = new ObjectDupCompactKernel();
@@ -20,11 +21,15 @@ public class ObjectDupCompactKernel implements DupCompactKernel {
     private ObjectDupCompactKernel() {} // use through the instance
 
     @Override
-    public int compactDuplicates(WritableChunk<? extends Any> chunkToCompact, WritableLongChunk<RowKeys> keyIndices) {
+    public int compactDuplicates(
+            @NotNull final WritableChunk<? extends Any> chunkToCompact,
+            @NotNull final WritableLongChunk<RowKeys> keyIndices) {
         return compactDuplicates(chunkToCompact.asWritableObjectChunk(), keyIndices);
     }
 
-    private static int compactDuplicates(WritableObjectChunk<Object, ? extends Any> chunkToCompact, WritableLongChunk<RowKeys> keyIndices) {
+    private static int compactDuplicates(
+            @NotNull final WritableObjectChunk<Object, ? extends Any> chunkToCompact,
+            @NotNull final WritableLongChunk<RowKeys> keyIndices) {
         final int inputSize = chunkToCompact.size();
         if (inputSize == 0) {
             return -1;

@@ -13,6 +13,7 @@ import io.deephaven.util.compare.FloatComparisons;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
+import org.jetbrains.annotations.NotNull;
 
 public class FloatReverseDupCompactKernel implements DupCompactKernel {
     static final FloatReverseDupCompactKernel INSTANCE = new FloatReverseDupCompactKernel();
@@ -20,11 +21,15 @@ public class FloatReverseDupCompactKernel implements DupCompactKernel {
     private FloatReverseDupCompactKernel() {} // use through the instance
 
     @Override
-    public int compactDuplicates(WritableChunk<? extends Any> chunkToCompact, WritableLongChunk<RowKeys> keyIndices) {
+    public int compactDuplicates(
+            @NotNull final WritableChunk<? extends Any> chunkToCompact,
+            @NotNull final WritableLongChunk<RowKeys> keyIndices) {
         return compactDuplicates(chunkToCompact.asWritableFloatChunk(), keyIndices);
     }
 
-    private static int compactDuplicates(WritableFloatChunk<? extends Any> chunkToCompact, WritableLongChunk<RowKeys> keyIndices) {
+    private static int compactDuplicates(
+            @NotNull final WritableFloatChunk<? extends Any> chunkToCompact,
+            @NotNull final WritableLongChunk<RowKeys> keyIndices) {
         final int inputSize = chunkToCompact.size();
         if (inputSize == 0) {
             return -1;
