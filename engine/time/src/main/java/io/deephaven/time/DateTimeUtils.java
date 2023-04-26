@@ -1565,15 +1565,15 @@ public class DateTimeUtils {
      * those to be interpreted as DateTime values. The ideal date format is YYYY-MM-DD since it's the least ambiguous,
      * but this method also parses slash-delimited dates according to the system "date style".
      *
-     * @param s the date string to convert
+     * @param date the date string to convert
      * @throws RuntimeException if the date cannot be converted, otherwise returns a {@link LocalDate}
      */
     @SuppressWarnings("WeakerAccess")
-    public static LocalDate convertDate(String s) {
-        final LocalDate ret = convertDateQuiet(s);
+    public static LocalDate convertDate(String date) {
+        final LocalDate ret = convertDateQuiet(date);
 
         if (ret == null) {
-            throw new RuntimeException("Cannot parse date : " + s);
+            throw new RuntimeException("Cannot parse date : " + date);
         }
 
         return ret;
@@ -1585,15 +1585,15 @@ public class DateTimeUtils {
      * <p>
      * Supports {@link DateTimeFormatter#ISO_INSTANT} format and others.
      *
-     * @param s String to be converted, usually in the form yyyy-MM-ddThh:mm:ss and with optional sub-seconds after an
+     * @param date String to be converted, usually in the form yyyy-MM-ddThh:mm:ss and with optional sub-seconds after an
      *        optional decimal point, followed by a mandatory time zone character code
      * @throws RuntimeException if the String cannot be converted, otherwise a {@link DateTime} from the parsed String.
      */
-    public static DateTime convertDateTime(String s) {
-        DateTime ret = convertDateTimeQuiet(s);
+    public static DateTime convertDateTime(String date) {
+        DateTime ret = convertDateTimeQuiet(date);
 
         if (ret == null) {
-            throw new RuntimeException("Cannot parse datetime : " + s);
+            throw new RuntimeException("Cannot parse datetime : " + date);
         }
 
         return ret;
@@ -1604,15 +1604,15 @@ public class DateTimeUtils {
      * <p>
      * hh:mm:ss[.nnnnnnnnn].
      *
-     * @param s The String to be evaluated and converted.
+     * @param date The String to be evaluated and converted.
      * @return A long value representing an Epoch offset in nanoseconds. Throws {@link RuntimeException} if the String
      *         cannot be parsed.
      */
-    public static long convertTime(String s) {
-        long ret = convertTimeQuiet(s);
+    public static long convertTime(String date) {
+        long ret = convertTimeQuiet(date);
 
         if (ret == NULL_LONG) {
-            throw new RuntimeException("Cannot parse time : " + s);
+            throw new RuntimeException("Cannot parse time : " + date);
         }
 
         return ret;
@@ -1621,16 +1621,16 @@ public class DateTimeUtils {
     /**
      * Converts a String into a {@link Period} object.
      *
-     * @param s The String to convert in the form of numbertype, e.g. 1W for one week, and Tnumbertype for times, e.g.
+     * @param date The String to convert in the form of numbertype, e.g. 1W for one week, and Tnumbertype for times, e.g.
      *        T1M for one minute.
      * @throws RuntimeException if the String cannot be parsed, otherwise a {@link Period} object.
      */
     @SuppressWarnings("WeakerAccess")
-    public static Period convertPeriod(String s) {
-        Period ret = convertPeriodQuiet(s);
+    public static Period convertPeriod(String date) {
+        Period ret = convertPeriodQuiet(date);
 
         if (ret == null) {
-            throw new RuntimeException("Cannot parse period : " + s);
+            throw new RuntimeException("Cannot parse period : " + date);
         }
 
         return ret;
@@ -1661,14 +1661,14 @@ public class DateTimeUtils {
     /**
      * Converts a time String in the form hh:mm:ss[.nnnnnnnnn] to a {@link LocalTime}.
      *
-     * @param s The String to convert.
+     * @param date The String to convert.
      * @return null if the String cannot be parsed, otherwise a {@link LocalTime}.
      */
-    public static LocalTime convertLocalTimeQuiet(String s) {
+    public static LocalTime convertLocalTimeQuiet(String date) {
         try {
             // private static final Pattern LOCAL_TIME_PATTERN =
             // Pattern.compile("([0-9][0-9]):?([0-9][0-9])?:?([0-9][0-9])?(\\.([0-9]{1,9}))?");
-            final Matcher matcher = LOCAL_TIME_PATTERN.matcher(s);
+            final Matcher matcher = LOCAL_TIME_PATTERN.matcher(date);
             if (matcher.matches()) {
                 final int hour = Integer.parseInt(matcher.group(1)); // hour is the only required field
                 final int minute = matcher.group(2) != null ? Integer.parseInt(matcher.group(2)) : 0;
@@ -1692,15 +1692,15 @@ public class DateTimeUtils {
      * Attempt to convert the given string to a LocalDate. This should <b>not</b> accept dates with times, as we want
      * those to be interpreted as DateTime values. The ideal date format is YYYY-MM-DD since it's the least ambiguous.
      *
-     * @param s the date string to convert
+     * @param date the date string to convert
      * @return the LocalDate formatted using the default date style.
      */
-    public static LocalDate convertDateQuiet(String s) {
+    public static LocalDate convertDateQuiet(String date) {
         return convertDateQuiet(s, DATE_STYLE);
     }
 
-    private static LocalDate matchStdDate(Pattern pattern, String s) {
-        final Matcher matcher = pattern.matcher(s);
+    private static LocalDate matchStdDate(Pattern pattern, String date) {
+        final Matcher matcher = pattern.matcher(date);
         if (matcher.matches()) {
             final int year = Integer.parseInt(matcher.group("year"));
             final int month = Integer.parseInt(matcher.group("month"));
@@ -1714,24 +1714,24 @@ public class DateTimeUtils {
      * Attempt to convert the given string to a LocalDate. This should <b>not</b> accept dates with times, as we want
      * those to be interpreted as DateTime values. The ideal date format is YYYY-MM-DD since it's the least ambiguous.
      *
-     * @param s the date string
+     * @param date the date string
      * @param dateStyle indicates how to interpret slash-delimited dates
      * @return the LocalDate
      */
-    public static LocalDate convertDateQuiet(String s, DateStyle dateStyle) {
+    public static LocalDate convertDateQuiet(String date, DateStyle dateStyle) {
         try {
-            LocalDate localDate = matchStdDate(STD_DATE_PATTERN, s);
+            LocalDate localDate = matchStdDate(STD_DATE_PATTERN, date);
             if (localDate != null) {
                 return localDate;
             }
-            localDate = matchStdDate(STD_DATE_PATTERN2, s);
+            localDate = matchStdDate(STD_DATE_PATTERN2, date);
             if (localDate != null) {
                 return localDate;
             }
 
             // see if we can match one of the slash-delimited styles, the interpretation of which requires knowing the
             // system date style setting (for example Europeans often write dates as d/m/y).
-            final Matcher slashMatcher = SLASH_DATE_PATTERN.matcher(s);
+            final Matcher slashMatcher = SLASH_DATE_PATTERN.matcher(date);
             if (slashMatcher.matches()) {
                 final String yearGroup, monthGroup, dayGroup, yearFinal2DigitsGroup;
                 // note we have nested groups which allow us to detect 2 vs 4 digit year
@@ -1781,26 +1781,26 @@ public class DateTimeUtils {
      * <p>
      * Supports {@link DateTimeFormatter#ISO_INSTANT} format and others.
      *
-     * @param s String to be converted, usually in the form yyyy-MM-ddThh:mm:ss and with optional sub-seconds after an
+     * @param date String to be converted, usually in the form yyyy-MM-ddThh:mm:ss and with optional sub-seconds after an
      *        optional decimal point, followed by a mandatory time zone character code
      * @return A DateTime from the parsed String, or null if the format is not recognized or an exception occurs
      */
-    public static DateTime convertDateTimeQuiet(final String s) {
+    public static DateTime convertDateTimeQuiet(final String date) {
         try {
-            return DateTime.of(Instant.parse(s));
+            return DateTime.of(Instant.parse(date));
         } catch (DateTimeParseException e) {
             // ignore
         }
         try {
             TimeZone timeZone = null;
             String dateTimeString = null;
-            if (DATETIME_PATTERN.matcher(s).matches()) {
-                int spaceIndex = s.indexOf(' ');
+            if (DATETIME_PATTERN.matcher(date).matches()) {
+                int spaceIndex = date.indexOf(' ');
                 if (spaceIndex == -1) { // no timezone
                     return null;
                 }
-                timeZone = TimeZone.valueOf("TZ_" + s.substring(spaceIndex + 1).trim().toUpperCase());
-                dateTimeString = s.substring(0, spaceIndex);
+                timeZone = TimeZone.valueOf("TZ_" + date.substring(spaceIndex + 1).trim().toUpperCase());
+                dateTimeString = date.substring(0, spaceIndex);
             }
 
             if (timeZone == null) {
@@ -1852,40 +1852,40 @@ public class DateTimeUtils {
     /**
      * Converts a time String in the form hh:mm:ss[.nnnnnnnnn] to a long nanoseconds offset from Epoch.
      *
-     * @param s The String to convert.
+     * @param date The String to convert.
      * @return {@link QueryConstants#NULL_LONG} if the String cannot be parsed, otherwise long nanoseconds offset from
      *         Epoch.
      */
-    public static long convertTimeQuiet(String s) {
+    public static long convertTimeQuiet(String date) {
         try {
-            if (TIME_AND_DURATION_PATTERN.matcher(s).matches()) {
+            if (TIME_AND_DURATION_PATTERN.matcher(date).matches()) {
                 long multiplier = 1;
                 long dayNanos = 0;
                 long subsecondNanos = 0;
 
-                if (s.charAt(0) == '-') {
+                if (date.charAt(0) == '-') {
                     multiplier = -1;
 
-                    s = s.substring(1);
+                    date = date.substring(1);
                 }
 
-                int tIndex = s.indexOf('T');
+                int tIndex = date.indexOf('T');
 
                 if (tIndex != -1) {
-                    dayNanos = 86400000000000L * Integer.parseInt(s.substring(0, tIndex));
+                    dayNanos = 86400000000000L * Integer.parseInt(date.substring(0, tIndex));
 
-                    s = s.substring(tIndex + 1);
+                    date = date.substring(tIndex + 1);
                 }
 
-                int decimalIndex = s.indexOf('.');
+                int decimalIndex = date.indexOf('.');
 
                 if (decimalIndex != -1) {
-                    subsecondNanos = parseNanos(s.substring(decimalIndex + 1));
+                    subsecondNanos = parseNanos(date.substring(decimalIndex + 1));
 
-                    s = s.substring(0, decimalIndex);
+                    date = date.substring(0, decimalIndex);
                 }
 
-                String[] tokens = s.split(":");
+                String[] tokens = date.split(":");
 
                 if (tokens.length == 2) { // hh:mm
                     return multiplier
@@ -1907,18 +1907,18 @@ public class DateTimeUtils {
     /**
      * Converts a String into a {@link Period} object.
      *
-     * @param s The String to convert in the form of numbertype, e.g. 1W for one week, and Tnumbertype for times, e.g.
+     * @param date The String to convert in the form of numbertype, e.g. 1W for one week, and Tnumbertype for times, e.g.
      *        T1M for one minute.
      * @return null if the String cannot be parsed, otherwise a {@link Period} object.
      */
-    public static Period convertPeriodQuiet(String s) {
-        if (s.length() <= 1) {
+    public static Period convertPeriodQuiet(String date) {
+        if (date.length() <= 1) {
             return null;
         }
 
         try {
-            if (PERIOD_PATTERN.matcher(s).matches()) {
-                return new Period(s);
+            if (PERIOD_PATTERN.matcher(date).matches()) {
+                return new Period(date);
             }
         } catch (Exception e) {
             // shouldn't get here too often, but somehow something snuck through. we'll just return null below...
