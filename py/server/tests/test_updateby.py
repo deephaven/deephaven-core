@@ -5,8 +5,8 @@
 import unittest
 
 from deephaven import read_csv, time_table, ugp
-from deephaven.updateby import BadDataBehavior, MathContext, OperationControl, DeltaControl, ema_tick_decay, ema_time_decay, \
-    ems_tick_decay, ems_time_decay, emmin_tick_decay, emmin_time_decay, emmax_tick_decay, emmax_time_decay, \
+from deephaven.updateby import BadDataBehavior, MathContext, OperationControl, DeltaControl, ema_tick, ema_time, \
+    ems_tick, ems_time, emmin_tick, emmin_time, emmax_tick, emmax_time, \
     cum_sum, cum_prod, cum_min, cum_max, forward_fill, delta, rolling_sum_tick, rolling_sum_time, \
     rolling_group_tick, rolling_group_time, rolling_avg_tick, rolling_avg_time, rolling_min_tick, rolling_min_time, \
     rolling_max_tick, rolling_max_time, rolling_prod_tick, rolling_prod_time, rolling_count_tick, rolling_count_time, \
@@ -35,28 +35,28 @@ class UpdateByTestCase(BaseTestCase):
 
         cls.em_ops = [
             # exponential moving average
-            ema_tick_decay(time_scale_ticks=100, cols="ema_a = a"),
-            ema_tick_decay(time_scale_ticks=100, cols="ema_a = a", op_control=cls.em_op_ctrl),
-            ema_time_decay(ts_col="Timestamp", time_scale=10, cols="ema_a = a"),
-            ema_time_decay(ts_col="Timestamp", time_scale="00:00:00.001", cols="ema_c = c",
+            ema_tick(time_scale_ticks=100, cols="ema_a = a"),
+            ema_tick(time_scale_ticks=100, cols="ema_a = a", op_control=cls.em_op_ctrl),
+            ema_time(ts_col="Timestamp", time_scale=10, cols="ema_a = a"),
+            ema_time(ts_col="Timestamp", time_scale="00:00:00.001", cols="ema_c = c",
                            op_control=cls.em_op_ctrl),
             # exponential moving sum
-            ems_tick_decay(time_scale_ticks=100, cols="ema_a = a"),
-            ems_tick_decay(time_scale_ticks=100, cols="ema_a = a", op_control=cls.em_op_ctrl),
-            ems_time_decay(ts_col="Timestamp", time_scale=10, cols="ema_a = a"),
-            ems_time_decay(ts_col="Timestamp", time_scale="00:00:00.001", cols="ema_c = c",
+            ems_tick(time_scale_ticks=100, cols="ema_a = a"),
+            ems_tick(time_scale_ticks=100, cols="ema_a = a", op_control=cls.em_op_ctrl),
+            ems_time(ts_col="Timestamp", time_scale=10, cols="ema_a = a"),
+            ems_time(ts_col="Timestamp", time_scale="00:00:00.001", cols="ema_c = c",
                            op_control=cls.em_op_ctrl),
             # exponential moving minimum
-            emmin_tick_decay(time_scale_ticks=100, cols="ema_a = a"),
-            emmin_tick_decay(time_scale_ticks=100, cols="ema_a = a", op_control=cls.em_op_ctrl),
-            emmin_time_decay(ts_col="Timestamp", time_scale=10, cols="ema_a = a"),
-            emmin_time_decay(ts_col="Timestamp", time_scale="00:00:00.001", cols="ema_c = c",
+            emmin_tick(time_scale_ticks=100, cols="ema_a = a"),
+            emmin_tick(time_scale_ticks=100, cols="ema_a = a", op_control=cls.em_op_ctrl),
+            emmin_time(ts_col="Timestamp", time_scale=10, cols="ema_a = a"),
+            emmin_time(ts_col="Timestamp", time_scale="00:00:00.001", cols="ema_c = c",
                              op_control=cls.em_op_ctrl),
             # exponential moving maximum
-            emmax_tick_decay(time_scale_ticks=100, cols="ema_a = a"),
-            emmax_tick_decay(time_scale_ticks=100, cols="ema_a = a", op_control=cls.em_op_ctrl),
-            emmax_time_decay(ts_col="Timestamp", time_scale=10, cols="ema_a = a"),
-            emmax_time_decay(ts_col="Timestamp", time_scale="00:00:00.001", cols="ema_c = c",
+            emmax_tick(time_scale_ticks=100, cols="ema_a = a"),
+            emmax_tick(time_scale_ticks=100, cols="ema_a = a", op_control=cls.em_op_ctrl),
+            emmax_time(ts_col="Timestamp", time_scale=10, cols="ema_a = a"),
+            emmax_time(ts_col="Timestamp", time_scale="00:00:00.001", cols="ema_c = c",
                              op_control=cls.em_op_ctrl),
         ]
 
