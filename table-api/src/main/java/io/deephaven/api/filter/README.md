@@ -33,8 +33,9 @@ That is, `not_(f)` (the "inverse" of `f`) matches the rows that `f` does _not_ m
 
 `io.deephaven.api.filter.Filter`s are well-defined by-design.
 
-This means that all possible combinations of inputs result in a well-defined output - either it is matched, or not. This
-is in contrast with filter expression strings which may have input cases that result in exceptions:
+This means that the types of column that the filter works with is defined, and that all possible combinations of inputs
+result in a well-defined output - either it is matched, or not. This is in contrast with filter expression strings which
+may have input cases that result in exceptions:
 
 ```python
 from deephaven.filters import pattern, PatternMode
@@ -67,10 +68,10 @@ t1 = t.where(is_positive("Foo"))
 In this case, we would likely have the well-defined `is_positive` behavior documented as null values and strings not
 parseable as doubles are excluded from matching.
 
-Note: even though a filter may be well-defined, that doesn't mean it's applicable against all tables. For example, the
+Even though a filter may be well-defined, that doesn't mean it's applicable against all tables. For example, the
 filter `is_null("Foo")` is only applicable for tables that have a column named "Foo"; `pattern(MATCHES, "Foo", "a.*z")`
-is only applicable to tables that have a string column named "Foo". When a filter is applied to a table for which it is
-not applicable, the user should expect to get back an error from the engine.
+is only applicable to tables that have a CharSequence compatible column named "Foo". When a filter is applied to a table
+for which it is not applicable, the user should expect to get back an appropriate error from the engine.
 
 ## Filter flags
 

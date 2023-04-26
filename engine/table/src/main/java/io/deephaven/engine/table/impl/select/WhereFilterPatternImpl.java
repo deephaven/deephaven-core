@@ -38,7 +38,7 @@ final class WhereFilterPatternImpl extends WhereFilterImpl {
 
     private final FilterPattern filterPattern;
     private final boolean inverted;
-    private transient ObjectChunkFilter<String> chunkFilterImpl;
+    private transient ObjectChunkFilter<CharSequence> chunkFilterImpl;
 
     private WhereFilterPatternImpl(FilterPattern filterPattern, boolean inverted) {
         this.filterPattern = Objects.requireNonNull(filterPattern);
@@ -53,12 +53,16 @@ final class WhereFilterPatternImpl extends WhereFilterImpl {
             throw new RuntimeException(String.format("Column '%s' doesn't exist in this table, available columns: %s",
                     columnName, tableDefinition.getColumnNames()));
         }
+        if (!CharSequence.class.isAssignableFrom(column.getDataType())) {
+            throw new RuntimeException(
+                    String.format("Column '%s', type %s, is not a CharSequence", columnName, column.getDataType()));
+        }
         chunkFilterImpl = new ObjectChunkFilterPredicate<>(predicate());
     }
 
     @Override
     public WritableRowSet filter(RowSet selection, RowSet fullSet, Table table, boolean usePrev) {
-        final ColumnSource<String> columnSource = table.getColumnSource(columnName());
+        final ColumnSource<?> columnSource = table.getColumnSource(columnName());
         return ChunkFilter.applyChunkFilter(selection, columnSource, usePrev, chunkFilterImpl);
     }
 
@@ -123,8 +127,8 @@ final class WhereFilterPatternImpl extends WhereFilterImpl {
         return ((ColumnName) filterPattern.expression()).name();
     }
 
-    private Predicate<String> predicate() {
-        final Predicate<String> p;
+    private Predicate<CharSequence> predicate() {
+        final Predicate<CharSequence> p;
         switch (filterPattern.mode()) {
             case FIND:
                 p = filterPattern.invertPattern() ? this::findPatternInverted : this::find;
@@ -138,19 +142,19 @@ final class WhereFilterPatternImpl extends WhereFilterImpl {
         return inverted ? p.negate() : p;
     }
 
-    private boolean matches(String value) {
+    private boolean matches(CharSequence value) {
         return value != null && filterPattern.pattern().matcher(value).matches();
     }
 
-    private boolean matchesPatternInverted(String value) {
+    private boolean matchesPatternInverted(CharSequence value) {
         return value != null && !filterPattern.pattern().matcher(value).matches();
     }
 
-    private boolean find(String value) {
+    private boolean find(CharSequence value) {
         return value != null && filterPattern.pattern().matcher(value).find();
     }
 
-    private boolean findPatternInverted(String value) {
+    private boolean findPatternInverted(CharSequence value) {
         return value != null && !filterPattern.pattern().matcher(value).find();
     }
 

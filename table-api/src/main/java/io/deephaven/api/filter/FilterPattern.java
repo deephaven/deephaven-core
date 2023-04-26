@@ -9,7 +9,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * A filter based on a regular-expression {@link Pattern}.
+ * A filter based on a regular-expression {@link Pattern}, compatible with any column types that are compatible with
+ * {@link CharSequence}.
  *
  * <p>
  * In the {@link Mode#MATCHES MATCHES} case, the logic is equivalent to

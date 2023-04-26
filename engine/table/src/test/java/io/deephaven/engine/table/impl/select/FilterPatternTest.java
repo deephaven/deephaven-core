@@ -17,6 +17,9 @@ import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
+
 public class FilterPatternTest extends RefreshingTableTestCase {
 
     public static final ColumnName COLUMN = ColumnName.of("S");
@@ -132,6 +135,17 @@ public class FilterPatternTest extends RefreshingTableTestCase {
                 final FilterPattern matches = FilterPattern.of(COLUMN, Pattern.compile(regex, flag), Mode.FIND, true);
                 test(matches, data);
             }
+        }
+    }
+
+    public void testBadColumnType() {
+        final FilterPattern dotStar = FilterPattern.of(COLUMN, Pattern.compile(".*"), Mode.FIND, false);
+        final Table table = TableTools.newTable(TableTools.intCol(COLUMN.name(), 1, 2, 3));
+        try {
+            table.where(dotStar);
+            failBecauseExceptionWasNotThrown(RuntimeException.class);
+        } catch (RuntimeException e) {
+            assertThat(e).hasMessageContaining("is not a CharSequence");
         }
     }
 
