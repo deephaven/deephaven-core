@@ -30,7 +30,7 @@ import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
  * It's expected that outer row keys with the same base value (that is, {@code outerRowKey / multiplier}) will always be
  * fetched together, and the implementation makes this assumption.
  */
-public class MultiplierWritableRowRedirection implements RowRedirection {
+public class MultipleRowRedirection implements RowRedirection {
 
     /**
      * {@link RowRedirection} that expresses the multiplier-adjusted relationship between outer row keys and inner row
@@ -39,7 +39,7 @@ public class MultiplierWritableRowRedirection implements RowRedirection {
     private final RowRedirection innerRedirection;
     private final int multiplier;
 
-    public MultiplierWritableRowRedirection(@NotNull final RowRedirection innerRedirection, final int multiplier) {
+    public MultipleRowRedirection(@NotNull final RowRedirection innerRedirection, final int multiplier) {
         this.innerRedirection = innerRedirection;
         this.multiplier = multiplier;
     }
