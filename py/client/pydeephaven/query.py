@@ -3,6 +3,7 @@
 #
 """This module implements the Query class that can be used to execute a chained set of Table operations in one
 batch."""
+from __future__ import annotations
 
 from typing import Union
 
@@ -23,17 +24,17 @@ class Query(TableInterface):
     constructor is subject to future changes to support more advanced features already planned.
     """
 
-    def table_op_handler(self, table_op):
+    def table_op_handler(self, table_op) -> Query:
         self._ops.append(table_op)
         return self
 
-    def __init__(self, session, table):
+    def __init__(self, session: Any, table: Table) -> Query:
         self.session = session
         if not self.session or not table:
             raise DHError("invalid session or table value.")
         self._ops = [NoneOp(table=table)]
 
-    def exec(self):
+    def exec(self) -> Table:
         """Executes the query on the server and return the result table.
 
         Returns:
@@ -44,7 +45,7 @@ class Query(TableInterface):
         """
         return self.session.table_service.batch(self._ops)
 
-    def drop_columns(self, cols: Union[str, List[str]]):
+    def drop_columns(self, cols: Union[str, List[str]]) -> Query:
         """Adds a drop-columns operation to the query.
 
         Args:
@@ -55,7 +56,7 @@ class Query(TableInterface):
         """
         return super().drop_columns(cols)
 
-    def update(self, formulas: Union[str, List[str]]):
+    def update(self, formulas: Union[str, List[str]]) -> Query:
         """Adds an update operation to the query.
 
         Args:
@@ -66,7 +67,7 @@ class Query(TableInterface):
         """
         return super().update(formulas)
 
-    def lazy_update(self, formulas: Union[str, List[str]]):
+    def lazy_update(self, formulas: Union[str, List[str]]) -> Query:
         """Adds a lazy-update operation to the query.
 
         Args:
@@ -77,7 +78,7 @@ class Query(TableInterface):
         """
         return super().lazy_update(formulas)
 
-    def view(self, formulas: Union[str, List[str]]):
+    def view(self, formulas: Union[str, List[str]]) -> Query:
         """Adds a view operation to the query.
 
         Args:
@@ -88,7 +89,7 @@ class Query(TableInterface):
         """
         return super().view(formulas)
 
-    def update_view(self, formulas: Union[str, List[str]]):
+    def update_view(self, formulas: Union[str, List[str]]) -> Query:
         """Adds an update-view operation to the query.
 
         Args:
@@ -99,7 +100,7 @@ class Query(TableInterface):
         """
         return super().update_view(formulas)
 
-    def select(self, formulas: Union[str, List[str]] = None):
+    def select(self, formulas: Union[str, List[str]] = None) -> Query:
         """Adds a select operation to the query.
 
         Args:
@@ -110,7 +111,7 @@ class Query(TableInterface):
         """
         return super().select(formulas)
 
-    def select_distinct(self, cols: Union[str, List[str]] = None):
+    def select_distinct(self, cols: Union[str, List[str]] = None) -> Query:
         """Adds a select-distinct operation to the query.
 
         Args:
@@ -121,7 +122,7 @@ class Query(TableInterface):
         """
         return super().select_distinct(cols)
 
-    def sort(self, order_by: Union[str, List[str]], order: Union[SortDirection, List[SortDirection]] = None):
+    def sort(self, order_by: Union[str, List[str]], order: Union[SortDirection, List[SortDirection]] = None) -> Query:
         """Adds sort operation to the query.
 
         Args:
@@ -135,7 +136,7 @@ class Query(TableInterface):
         """
         return super().sort(order_by, order)
 
-    def where(self, filters: Union[str, List[str]]):
+    def where(self, filters: Union[str, List[str]]) -> Query:
         """Adds a filter operation to the query.
 
         Args:
@@ -146,7 +147,7 @@ class Query(TableInterface):
         """
         return super().where(filters)
 
-    def head(self, num_rows: int):
+    def head(self, num_rows: int) -> Query:
         """Adds a head operation to the query.
 
         Args:
@@ -157,7 +158,7 @@ class Query(TableInterface):
         """
         return super().head(num_rows)
 
-    def tail(self, num_rows: int):
+    def tail(self, num_rows: int) -> Query:
         """Adds a tail operation to the query.
 
         Args:
@@ -168,7 +169,7 @@ class Query(TableInterface):
         """
         return super().tail(num_rows)
 
-    def natural_join(self, table: Any, on: Union[str, List[str]], joins: Union[str, List[str]] = None):
+    def natural_join(self, table: Any, on: Union[str, List[str]], joins: Union[str, List[str]] = None) -> Query:
         """Adds a natural-join operation to the query.
 
         Args:
@@ -183,7 +184,7 @@ class Query(TableInterface):
         """
         return super().natural_join(table, on, joins)
 
-    def exact_join(self, table: Any, on: Union[str, List[str]], joins: Union[str, List[str]] = None):
+    def exact_join(self, table: Any, on: Union[str, List[str]], joins: Union[str, List[str]] = None) -> Query:
         """Adds an exact-join operation to the query.
 
         Args:
@@ -199,7 +200,7 @@ class Query(TableInterface):
         return super().exact_join(table, on, joins)
 
     def join(self, table: Any, on: Union[str, List[str]] = None, joins: Union[str, List[str]] = None,
-             reserve_bits: int = 10):
+             reserve_bits: int = 10) -> Query:
         """Adds a cross-join operation to the query.
 
         Args:
@@ -216,7 +217,7 @@ class Query(TableInterface):
         return super().join(table, on, joins)
 
     def aj(self, table: Any, on: Union[str, List[str]], joins: Union[str, List[str]] = None,
-           match_rule: MatchRule = MatchRule.LESS_THAN_EQUAL):
+           match_rule: MatchRule = MatchRule.LESS_THAN_EQUAL) -> Query:
         """Adds a as-of join operation to the query.
 
         Args:
@@ -233,7 +234,7 @@ class Query(TableInterface):
         return super().aj(table, on, joins, match_rule)
 
     def raj(self, table: Any, on: Union[str, List[str]], joins: Union[str, List[str]] = None,
-            match_rule: MatchRule = MatchRule.GREATER_THAN_EQUAL):
+            match_rule: MatchRule = MatchRule.GREATER_THAN_EQUAL) -> Query:
         """Adds a reverse as-of join operation to the query.
 
         Args:
@@ -249,7 +250,7 @@ class Query(TableInterface):
         """
         return super().raj(table, on, joins)
 
-    def head_by(self, num_rows: int, by: Union[str, List[str]]):
+    def head_by(self, num_rows: int, by: Union[str, List[str]]) -> Query:
         """Adds a head-by operation to the query.
 
         Args:
@@ -261,7 +262,7 @@ class Query(TableInterface):
         """
         return super().head_by(num_rows, by)
 
-    def tail_by(self, num_rows: int, by: Union[str, List[str]]):
+    def tail_by(self, num_rows: int, by: Union[str, List[str]]) -> Query:
         """Adds a tail-by operation to the query.
 
         Args:
@@ -273,7 +274,7 @@ class Query(TableInterface):
         """
         return super().tail_by(num_rows, by)
 
-    def group_by(self, by: Union[str, List[str]] = None):
+    def group_by(self, by: Union[str, List[str]] = None) -> Query:
         """Adds a group-by aggregation to the query.
 
         Args:
@@ -284,7 +285,7 @@ class Query(TableInterface):
         """
         return super().group_by(by)
 
-    def ungroup(self, cols: Union[str, List[str]] = None, null_fill: bool = True):
+    def ungroup(self, cols: Union[str, List[str]] = None, null_fill: bool = True) -> Query:
         """Adds an ungroup operation to the query.
 
         Args:
@@ -297,7 +298,7 @@ class Query(TableInterface):
         """
         return super().ungroup(cols, null_fill)
 
-    def first_by(self, by: Union[str, List[str]] = None):
+    def first_by(self, by: Union[str, List[str]] = None) -> Query:
         """Adds a first-by aggregation to the query.
 
         Args:
@@ -308,7 +309,7 @@ class Query(TableInterface):
         """
         return super().first_by(by)
 
-    def last_by(self, by: Union[str, List[str]] = None):
+    def last_by(self, by: Union[str, List[str]] = None) -> Query:
         """Adds a last-by aggregation to the query.
 
         Args:
@@ -319,7 +320,7 @@ class Query(TableInterface):
         """
         return super().last_by(by)
 
-    def sum_by(self, by: Union[str, List[str]] = None):
+    def sum_by(self, by: Union[str, List[str]] = None) -> Query:
         """Adds a sum-by aggregation to the query.
 
         Args:
@@ -330,7 +331,7 @@ class Query(TableInterface):
         """
         return super().sum_by(by)
 
-    def avg_by(self, by: Union[str, List[str]] = None):
+    def avg_by(self, by: Union[str, List[str]] = None) -> Query:
         """Adds an avg-by aggregation to the query.
 
         Args:
@@ -341,7 +342,7 @@ class Query(TableInterface):
         """
         return super().avg_by(by)
 
-    def std_by(self, by: Union[str, List[str]] = None):
+    def std_by(self, by: Union[str, List[str]] = None) -> Query:
         """Adds a std-by aggregation to the query.
 
         Args:
@@ -352,7 +353,7 @@ class Query(TableInterface):
         """
         return super().std_by(by)
 
-    def var_by(self, by: Union[str, List[str]] = None):
+    def var_by(self, by: Union[str, List[str]] = None) -> Query:
         """Adds a var-by aggregation to the query.
 
         Args:
@@ -363,7 +364,7 @@ class Query(TableInterface):
         """
         return super().var_by(by)
 
-    def median_by(self, by: Union[str, List[str]] = None):
+    def median_by(self, by: Union[str, List[str]] = None) -> Query:
         """Adds a median-by aggregation to the query.
 
         Args:
@@ -374,7 +375,7 @@ class Query(TableInterface):
         """
         return super().median_by(by)
 
-    def min_by(self, by: Union[str, List[str]] = None):
+    def min_by(self, by: Union[str, List[str]] = None) -> Query:
         """Adds a min-by aggregation to the query.
 
         Args:
@@ -385,7 +386,7 @@ class Query(TableInterface):
         """
         return super().min_by(by)
 
-    def max_by(self, by: Union[str, List[str]] = None):
+    def max_by(self, by: Union[str, List[str]] = None) -> Query:
         """Adds a max-by aggregation to the query.
 
         Args:
@@ -396,7 +397,7 @@ class Query(TableInterface):
         """
         return super().max_by(by)
 
-    def count_by(self, col: str, by: Union[str, List[str]] = None):
+    def count_by(self, col: str, by: Union[str, List[str]] = None) -> Query:
         """Adds a count-by aggregation to the query.
 
         Args:
@@ -408,7 +409,7 @@ class Query(TableInterface):
         """
         return super().count_by(col, by)
 
-    def agg_by(self, aggs: Union[Aggregation, List[Aggregation]], by: Union[str, List[str]]):
+    def agg_by(self, aggs: Union[Aggregation, List[Aggregation]], by: Union[str, List[str]]) -> Query:
         """Adds an Aggregate operation to the query.
 
         Args:
@@ -420,7 +421,7 @@ class Query(TableInterface):
         """
         return super().agg_by(aggs=aggs, by=by)
 
-    def agg_all_by(self, agg: Aggregation, by: Union[str, List[str]]):
+    def agg_all_by(self, agg: Aggregation, by: Union[str, List[str]]) -> Query:
         """Adds an AggregateAll operation to the query.
 
         Args:
@@ -432,7 +433,7 @@ class Query(TableInterface):
         """
         return super().agg_all_by(agg=agg, by=by)
 
-    def update_by(self, ops: Union[UpdateByOperation, List[UpdateByOperation]], by: Union[str, List[str]]):
+    def update_by(self, ops: Union[UpdateByOperation, List[UpdateByOperation]], by: Union[str, List[str]]) -> Query:
         """Adds an update-by operation to the query.
 
         Args:
@@ -444,7 +445,7 @@ class Query(TableInterface):
         """
         return super().update_by(ops, by)
 
-    def snapshot(self):
+    def snapshot(self) -> Query:
         """Adds a snapshot operation to the query.
 
         Returns:
@@ -453,7 +454,7 @@ class Query(TableInterface):
         return super().snapshot()
 
     def snapshot_when(self, trigger_table: Any, stamp_cols: Union[str, List[str]] = None, initial: bool = False,
-                      incremental: bool = False, history: bool = False):
+                      incremental: bool = False, history: bool = False) -> Query:
         """Adds a snapshot_when operation to the query.
 
         Args:
@@ -475,7 +476,7 @@ class Query(TableInterface):
         """
         return super().snapshot_when(trigger_table, stamp_cols, initial, incremental, history)
 
-    def where_in(self, filter_table: Any, cols: Union[str, List[str]]):
+    def where_in(self, filter_table: Any, cols: Union[str, List[str]]) -> Query:
         """Adds a where_in operation to the query.
 
         Args:
@@ -487,7 +488,7 @@ class Query(TableInterface):
         """
         return super().where_in(filter_table, cols)
 
-    def where_not_in(self, filter_table: Any, cols: Union[str, List[str]]):
+    def where_not_in(self, filter_table: Any, cols: Union[str, List[str]]) -> Query:
         """Adds a where_not_in operation to the query.
 
         Args:

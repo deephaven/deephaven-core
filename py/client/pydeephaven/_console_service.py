@@ -1,6 +1,7 @@
 #
 # Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
+from typing import Any
 
 from pydeephaven.dherror import DHError
 from pydeephaven.proto import console_pb2_grpc, console_pb2
@@ -27,7 +28,7 @@ class ConsoleService:
         except Exception as e:
             raise DHError("failed to start a console.") from e
 
-    def run_script(self, server_script):
+    def run_script(self, server_script) -> Any:
         """Runs a Python script in the console."""
         self.start_console()
 
@@ -41,7 +42,7 @@ class ConsoleService:
         except Exception as e:
             raise DHError("failed to execute a command in the console.") from e
 
-    def open_table(self, name):
+    def open_table(self, name) -> Table:
         """Opens a table by name."""
         self.start_console()
 

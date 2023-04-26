@@ -1,12 +1,13 @@
 #
 # Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
+from typing import Union
 
 from pydeephaven._batch_assembler import BatchOpAssembler
 from pydeephaven._table_ops import TableOp
 from pydeephaven.dherror import DHError
 from pydeephaven.proto import table_pb2_grpc, table_pb2
-from pydeephaven.table import Table
+from pydeephaven.table import Table, InputTable
 
 
 class TableService:
@@ -14,7 +15,7 @@ class TableService:
         self.session = session
         self._grpc_table_stub = table_pb2_grpc.TableServiceStub(session.grpc_channel)
 
-    def batch(self, ops):
+    def batch(self, ops) -> Table:
         """Assembles and executes chain table operations in a batch."""
         batch_ops = BatchOpAssembler(self.session, table_ops=ops).build_batch()
 
@@ -36,7 +37,7 @@ class TableService:
         except Exception as e:
             raise DHError("failed to finish the table batch operation.") from e
 
-    def grpc_table_op(self, table: Table, op: TableOp, table_class: type = Table):
+    def grpc_table_op(self, table: Table, op: TableOp, table_class: type = Table) -> Union[Table, InputTable]:
         """Makes a single gRPC Table operation call and returns a new Table."""
         try:
             result_id = self.session.make_ticket()
