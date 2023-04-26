@@ -8,7 +8,7 @@ import io.deephaven.engine.table.Context;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 
-public interface DupCompactKernel extends Context {
+public interface DupCompactKernel {
     static DupCompactKernel makeDupCompact(ChunkType chunkType, boolean reverse) {
         if (reverse) {
             switch (chunkType) {

@@ -152,7 +152,6 @@ class AsOfStampContext implements Context {
     @Override
     public void close() {
         stampKernel.close();
-        rightDupCompact.close();
         if (rightFillContext != null) {
             rightFillContext.close();
         }
