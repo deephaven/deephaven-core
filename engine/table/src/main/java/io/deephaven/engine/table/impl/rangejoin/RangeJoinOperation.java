@@ -13,6 +13,7 @@ import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
@@ -20,6 +21,7 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.exceptions.OperationException;
 import io.deephaven.engine.exceptions.OutOfOrderException;
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ChunkSink;
@@ -37,20 +39,18 @@ import io.deephaven.engine.table.impl.SortingOrder;
 import io.deephaven.engine.table.impl.SwapListener;
 import io.deephaven.engine.table.impl.by.AggregationProcessor;
 import io.deephaven.engine.table.impl.join.dupcompact.DupCompactKernel;
+import io.deephaven.engine.table.impl.sort.IntSortKernel;
 import io.deephaven.engine.table.impl.sort.LongSortKernel;
+import io.deephaven.engine.table.impl.sort.findruns.FindRunsKernel;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.IntegerSparseArraySource;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.sources.WritableRedirectedColumnSource;
 import io.deephaven.engine.table.impl.sources.sparse.SparseConstants;
-import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
-import io.deephaven.engine.table.impl.util.InverseWrappedRowSetRowRedirection;
-import io.deephaven.engine.table.impl.util.JobScheduler;
+import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.engine.table.impl.util.JobScheduler.IterateAction;
-import io.deephaven.engine.table.impl.util.MultiplierWritableRowRedirection;
-import io.deephaven.engine.table.impl.util.OperationInitializationPoolJobScheduler;
-import io.deephaven.engine.table.impl.util.RowRedirection;
+import io.deephaven.engine.table.impl.util.reverse.ReverseKernel;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 
@@ -62,7 +62,6 @@ import java.util.function.Consumer;
 
 import static io.deephaven.base.ArrayUtil.MAX_ARRAY_SIZE;
 import static io.deephaven.engine.table.impl.by.AggregationProcessor.EXPOSED_GROUP_ROW_SETS;
-import static io.deephaven.util.QueryConstants.NULL_INT;
 
 /**
  * Implementation for {@link QueryTable#rangeJoin(Table, Collection, RangeJoinMatch, Collection)}.
@@ -371,6 +370,8 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
         private final ColumnSource<?> rightRangeValues;
         private final ColumnSource<?> leftEndValues;
         private final ChunkType valueChunkType;
+        private final DupCompactKernel valueChunkDupCompactKernel;
+        private final ReverseKernel valueChunkReverseKernel;
 
         private final RowRedirection outputRedirection;
         private final WritableColumnSource<Integer> outputSlotsAndPositionRanges;
@@ -394,10 +395,12 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
                     rightRangeValues.getChunkType(), "rightRangeValues.getChunkType()");
             Assert.eq(valueChunkType, "valueChunkType",
                     leftEndValues.getChunkType(), "leftEndValues.getChunkType()");
+            valueChunkDupCompactKernel = DupCompactKernel.makeDupCompact(valueChunkType, false);
+            valueChunkReverseKernel = ReverseKernel.makeReverseKernel(valueChunkType);
 
             if (!leftTable.isFlat() && SparseConstants.sparseStructureExceedsOverhead(
                     leftTable.getRowSet(), MAXIMUM_STATIC_MEMORY_OVERHEAD)) {
-                outputRedirection = new MultiplierWritableRowRedirection(
+                outputRedirection = new MultipleRowRedirection(
                         new InverseWrappedRowSetRowRedirection(leftTable.getRowSet()), RESULT_MULTIPLIER);
                 outputSlotsAndPositionRanges = WritableRedirectedColumnSource.maybeRedirect(
                         outputRedirection,
@@ -429,33 +432,46 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
 
             private static final int CLOSED_SENTINEL = -1;
 
+            // Left resources, all final
             private final SharedContext leftSharedContext;
             private final ChunkSource.FillContext leftStartValuesFillContext;
             private final ChunkSource.FillContext leftEndValuesFillContext;
-            private final WritableChunk<Values> leftValuesChunk;
+            private final WritableChunk<Values> leftStartValuesChunk;
+            private final WritableChunk<Values> leftEndValuesChunk;
             private final WritableIntChunk<ChunkPositions> leftChunkPositions;
-            private final LongSortKernel<Values, ChunkPositions> leftSortKernel;
+            private final IntSortKernel<Values, ChunkPositions> leftSortKernel;
 
+            // Final right resources
+            private final FindRunsKernel rightFindRunsKernel;
+
+            // Resizable right resources
             private int rightChunkSize = 0;
-            private WritableLongChunk<RowKeys> rightGroupRowKeysChunk;
             private ChunkSource.FillContext rightRangeValuesFillContext;
             private WritableChunk<Values> rightRangeValuesChunk;
-            private final DupCompactKernel rightDupCompactKernel;
+            private WritableIntChunk<ChunkPositions> rightStartOffsets;
+            private WritableIntChunk<ChunkLengths> rightLengths;
 
+            // Output resources
             private final ChunkSink.FillFromContext outputFillFromContext;
             private final WritableIntChunk<? extends Values> outputChunk;
 
             private TaskContext() {
+                // Left resources
                 leftSharedContext = SharedContext.makeSharedContext();
                 leftStartValuesFillContext = leftStartValues.makeFillContext(CHUNK_SIZE, leftSharedContext);
                 leftEndValuesFillContext = leftEndValues.makeFillContext(CHUNK_SIZE, leftSharedContext);
-                leftValuesChunk = valueChunkType.makeWritableChunk(CHUNK_SIZE);
+                leftStartValuesChunk = valueChunkType.makeWritableChunk(CHUNK_SIZE);
+                leftEndValuesChunk = valueChunkType.makeWritableChunk(CHUNK_SIZE);
                 leftChunkPositions = WritableIntChunk.makeWritableChunk(CHUNK_SIZE);
-                leftSortKernel = LongSortKernel.makeContext(valueChunkType, SortingOrder.Ascending, CHUNK_SIZE, true);
+                leftSortKernel = IntSortKernel.makeContext(valueChunkType, SortingOrder.Ascending, CHUNK_SIZE, true);
 
+                // Final right resources
+                rightFindRunsKernel = FindRunsKernel.makeContext(valueChunkType);
+
+                // Resizable right resources
                 ensureRightCapacity(CHUNK_SIZE);
-                rightDupCompactKernel = DupCompactKernel.makeDupCompact(valueChunkType, false);
 
+                // Output resources
                 outputFillFromContext =
                         outputSlotsAndPositionRanges.makeFillFromContext(RESULT_MULTIPLIER * CHUNK_SIZE);
                 outputChunk = WritableIntChunk.makeWritableChunk(RESULT_MULTIPLIER * CHUNK_SIZE);
@@ -474,18 +490,21 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
                 if (rightGroupSize > rightChunkSize) {
                     if (rightChunkSize > 0) {
                         rightChunkSize = 0; // Record that we don't want to re-close
-                        final SafeCloseable sc1 = rightGroupRowKeysChunk;
-                        rightGroupRowKeysChunk = null;
-                        final SafeCloseable sc2 = rightRangeValuesFillContext;
+                        final SafeCloseable sc1 = rightRangeValuesFillContext;
                         rightRangeValuesFillContext = null;
-                        final SafeCloseable sc3 = rightRangeValuesChunk;
+                        final SafeCloseable sc2 = rightRangeValuesChunk;
                         rightRangeValuesChunk = null;
-                        SafeCloseable.closeAll(sc1, sc2, sc3);
+                        final SafeCloseable sc3 = rightStartOffsets;
+                        rightStartOffsets = null;
+                        final SafeCloseable sc4 = rightLengths;
+                        rightLengths = null;
+                        SafeCloseable.closeAll(sc1, sc2, sc3, sc4);
                     }
                     rightChunkSize = (int) Math.min(MAX_ARRAY_SIZE, 1L << MathUtil.ceilLog2(rightGroupSize));
-                    rightGroupRowKeysChunk = WritableLongChunk.makeWritableChunk(rightChunkSize);
                     rightRangeValuesFillContext = rightRangeValues.makeFillContext(rightChunkSize);
                     rightRangeValuesChunk = valueChunkType.makeWritableChunk(rightChunkSize);
+                    rightStartOffsets = WritableIntChunk.makeWritableChunk(rightChunkSize);
+                    rightLengths = WritableIntChunk.makeWritableChunk(rightChunkSize);
                 }
             }
 
@@ -497,14 +516,17 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
                         leftSharedContext,
                         leftStartValuesFillContext,
                         leftEndValuesFillContext,
-                        leftValuesChunk,
+                        leftStartValuesChunk,
+                        leftEndValuesChunk,
                         leftChunkPositions,
                         leftSortKernel,
-                        // Right resources
-                        rightGroupRowKeysChunk,
+                        // Final right resources
+                        rightFindRunsKernel,
+                        // Resizable right resources
                         rightRangeValuesFillContext,
                         rightRangeValuesChunk,
-                        rightDupCompactKernel,
+                        rightStartOffsets,
+                        rightLengths,
                         // Output resources
                         outputFillFromContext,
                         outputChunk);
@@ -520,28 +542,35 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
             assert leftRows != null;
 
             final RowSet rightRows = rightGroupRowSets.get(index);
-            if (rightRows == null) {
-                // Fill output with empty groups
-                leftRows.forAllRowKeys((final long leftRowKey) -> {
-                    // TODO-RWC: Chunk-oriented output filling
-                    final long outRowKeyBase = leftRowKey * RESULT_MULTIPLIER;
-                    // @formatter:off
-                    outputSlotsAndPositionRanges.set(outRowKeyBase + RESULT_SLOT_OFFSET,  index);
-                    outputSlotsAndPositionRanges.set(outRowKeyBase + RESULT_START_OFFSET, 0);
-                    outputSlotsAndPositionRanges.set(outRowKeyBase + RESULT_END_OFFSET,   0);
-                    // @formatter:on
-                });
-            } else {
-                // TODO-RWC: Do stamping, update outputSlotsAndPositionRanges
-                tc.ensureRightCapacity(rightRows.size());
-                rightRows.fillRowKeyChunk(tc.rightGroupRowKeysChunk);
+            final boolean nonEmptyRight = rightRows != null && rightRows.isNonempty();
+            if (nonEmptyRight) {
+                // Read right rows
+                tc.ensureRightCapacity(rightRows.intSize());
                 rightRangeValues.fillChunk(tc.rightRangeValuesFillContext, tc.rightRangeValuesChunk, rightRows);
-                final int firstBadPosition = tc.rightDupCompactKernel.compactDuplicates(
-                        tc.rightRangeValuesChunk, tc.rightGroupRowKeysChunk);
-                if (firstBadPosition != -1) {
+
+                // Find and compact right runs, verifying order
+                tc.rightFindRunsKernel.findRuns(tc.rightRangeValuesChunk, tc.rightStartOffsets, tc.rightLengths);
+                final int firstOutOfOrderRightPosition = tc.rightFindRunsKernel.compactRuns(
+                        tc.rightRangeValuesChunk, tc.rightStartOffsets);
+                if (firstOutOfOrderRightPosition != -1) {
                     throw new OutOfOrderException(String.format(
-                            "%s: encountered out of order data in right table at row key %d",
-                            description, rightRows.get(firstBadPosition)));
+                            "%s: Encountered out of order data in right table at row key %d",
+                            description, rightRows.get(firstOutOfOrderRightPosition)));
+                }
+            }
+
+            try (final RowSequence.Iterator leftRowsIterator = leftRows.getRowSequenceIterator()) {
+                while (leftRowsIterator.hasMore()) {
+                    final RowSequence leftRowsSlice = leftRowsIterator.getNextRowSequenceWithLength(CHUNK_SIZE);
+                    leftStartValues.fillChunk(tc.leftStartValuesFillContext, tc.leftStartValuesChunk, leftRowsSlice);
+                    leftEndValues.fillChunk(tc.leftEndValuesFillContext, tc.leftEndValuesChunk, leftRowsSlice);
+                    tc.leftSharedContext.reset();
+
+                    if (nonEmptyRight) {
+                        tc.leftChunkPositions.setSize(tc.leftStartValuesChunk.size());
+                        ChunkUtils.fillInOrder(tc.leftChunkPositions);
+                        tc.leftSortKernel.sort(tc.leftChunkPositions, tc.leftStartValuesChunk);
+                    }
                 }
             }
         }
@@ -558,5 +587,29 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
         public void start(@NotNull final ColumnSource<Integer> outputSlotsAndPositionRanges) {
             // TODO-RWC: Build grouped sources, return result QueryTable
         }
+    }
+
+    /**
+     * @param leftChunkPosition The left chunk position
+     * @return The output chunk position at which to record the aggregation slot
+     */
+    static int leftPositionToOutputSlotPosition(final int leftChunkPosition) {
+        return leftChunkPosition * RESULT_MULTIPLIER + RESULT_SLOT_OFFSET;
+    }
+
+    /**
+     * @param leftChunkPosition The left chunk position
+     * @return The output chunk position at which to record the right range start position (inclusive)
+     */
+    static int leftPositionToOutputStartPosition(final int leftChunkPosition) {
+        return leftChunkPosition * RESULT_MULTIPLIER + RESULT_START_OFFSET;
+    }
+
+    /**
+     * @param leftChunkPosition The left chunk position
+     * @return The output chunk position at which to record the right range end position (exclusive)
+     */
+    static int leftPositionToOutputEndPosition(final int leftChunkPosition) {
+        return leftChunkPosition * RESULT_MULTIPLIER + RESULT_END_OFFSET;
     }
 }
