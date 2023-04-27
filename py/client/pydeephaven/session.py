@@ -276,7 +276,7 @@ class Session:
                 raise DHError("failed to refresh auth token") from e
 
     @property
-    def is_alive(self):
+    def is_alive(self) -> bool:
         """Whether the session is alive."""
         with self._r_lock:
             if not self.is_connected:

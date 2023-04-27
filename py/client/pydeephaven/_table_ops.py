@@ -28,15 +28,12 @@ class MatchRule(Enum):
 
 
 class SortDirection(Enum):
-    """An enum defining the sorting orders."""
-    UNKNOWN = table_pb2.SortDescriptor.SortDirection.UNKNOWN
-    """"""
+    """An enum defining the sort ordering."""
+
     DESCENDING = table_pb2.SortDescriptor.SortDirection.DESCENDING
-    """"""
+    """Descending sort direction"""
     ASCENDING = table_pb2.SortDescriptor.SortDirection.ASCENDING
-    """"""
-    REVERSE = table_pb2.SortDescriptor.SortDirection.REVERSE
-    """"""
+    """Ascending sort direction"""
 
 
 class TableOp(ABC):
@@ -179,7 +176,7 @@ class UpdateViewOp(USVOp):
 
 
 class SelectOp(USVOp):
-    def __init__(self, column_specs: List[str] = []):
+    def __init__(self, column_specs: List[str]):
         self.column_specs = column_specs
 
     @classmethod
@@ -192,7 +189,7 @@ class SelectOp(USVOp):
 
 
 class SelectDistinctOp(TableOp):
-    def __init__(self, column_names: List[str] = []):
+    def __init__(self, column_names: List[str]):
         self.column_names = column_names
 
     @classmethod
@@ -363,7 +360,7 @@ class MergeTablesOp(TableOp):
 
 
 class NaturalJoinOp(TableOp):
-    def __init__(self, table: Any, keys: List[str], columns_to_add: List[str] = []):
+    def __init__(self, table: Any, keys: List[str], columns_to_add: List[str]):
         self.table = table
         self.keys = keys
         self.columns_to_add = columns_to_add
@@ -387,7 +384,7 @@ class NaturalJoinOp(TableOp):
 
 
 class ExactJoinOp(TableOp):
-    def __init__(self, table: Any, keys: List[str], columns_to_add: List[str] = []):
+    def __init__(self, table: Any, keys: List[str], columns_to_add: List[str]):
         self.table = table
         self.keys = keys
         self.columns_to_add = columns_to_add

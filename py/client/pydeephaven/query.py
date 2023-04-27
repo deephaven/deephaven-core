@@ -23,12 +23,13 @@ class Query(TableInterface):
     Note, an application should always use the factory method on the Session object to create a Query instance as the
     constructor is subject to future changes to support more advanced features already planned.
     """
+    _ops: List[TableOp]
 
     def table_op_handler(self, table_op: TableOp) -> Query:
         self._ops.append(table_op)
         return self
 
-    def __init__(self, session: Any, table: Table) -> Query:
+    def __init__(self, session: Any, table: Table):
         self.session = session
         if not self.session or not table:
             raise DHError("invalid session or table value.")

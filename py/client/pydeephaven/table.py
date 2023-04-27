@@ -53,12 +53,12 @@ class Table(TableInterface):
             pass
 
     @property
-    def is_refreshing(self):
+    def is_refreshing(self) -> bool:
         """Whether this table is refreshing."""
         return not self.is_static
 
     @property
-    def is_closed(self):
+    def is_closed(self) -> bool:
         """Whether this table is closed on the server."""
         return not self.ticket
 

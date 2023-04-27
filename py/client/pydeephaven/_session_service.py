@@ -13,8 +13,8 @@ class SessionService:
         self.session = session
         self._grpc_session_stub = None
 
-    def connect(self):
-        """Connects to the server."""
+    def connect(self) -> grpc.Channel:
+        """Connects to the server and returns a gRPC channel upon success."""
         grpc_channel = grpc.insecure_channel(":".join([self.session.host, str(self.session.port)]))
         self._grpc_session_stub = session_pb2_grpc.SessionServiceStub(grpc_channel)
         return grpc_channel
