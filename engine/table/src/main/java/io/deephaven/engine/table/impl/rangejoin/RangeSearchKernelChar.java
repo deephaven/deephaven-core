@@ -146,75 +146,35 @@ class RangeSearchKernelChar implements RangeSearchKernel {
         return !isNaN(start) && !isNaN(end) && (isNull(start) || isNull(end) || lt(start, end));
     }
 
-    private static void findStarts(
-            @NotNull final CharChunk<? extends Values> leftValues,
-            @NotNull final IntChunk<ChunkPositions> leftPositions,
-            @NotNull final CharChunk<? extends Values> rightValues,
-            @NotNull final IntChunk<ChunkPositions> rightStartOffsets,
-            @NotNull final RangeStartRule rule,
-            @NotNull final WritableIntChunk<? extends Values> output) {
-        final int leftSize = leftValues.size();
-        final int leftValidSize;
-
-        // First, handle a trailing region of NaN left values (for floating point types)
-        // region NaN-handling-for-starts
-        leftValidSize = leftSize;
-        // endregion NaN-handling-for-starts
-
-        // Next, handle the case where there are no right rows, by recording that all valid ranges begin at 0
-        final int rightSize = rightValues.size();
-        if (rightSize == 0) {
-            for (int leftIndex = 0; leftIndex < leftValidSize; ++leftIndex) {
-                output.set(leftPositionToOutputStartPosition(leftPositions.get(leftIndex)), 0);
-            }
-            return;
-        }
-
-        int leftIndex = 0;
-        for (; leftIndex < leftValidSize && isNull(leftValues.get(leftIndex)); ++leftIndex) {
-            output.set(leftPositionToOutputStartPosition(leftPositions.get(leftIndex)), 0);
-        }
-
-    }
-
     private static void findStartsLessThan(
             @NotNull final CharChunk<? extends Values> leftValues,
             @NotNull final IntChunk<ChunkPositions> leftPositions,
             @NotNull final CharChunk<? extends Values> rightValues,
             @NotNull final IntChunk<ChunkPositions> rightStartOffsets,
-            @NotNull final WritableIntChunk<? extends Values> output,
-            int nextLeftIndex,
-            final int leftValidSize) {
-        // First, handle a trailing region of NaN left values (for floating point types)
-        // region NaN-handling-for-starts
-        leftValidSize = leftSize;
-        // endregion NaN-handling-for-starts
-
-        // Next, handle the case where there are no right rows, by recording that all valid ranges begin at 0
+            @NotNull final WritableIntChunk<? extends Values> output) {
+        // Note that invalid and undefined ranges have already been eliminated
+        final int leftSize = leftValues.size();
         final int rightSize = rightValues.size();
-        if (rightSize == 0) {
-            for (int leftIndex = 0; leftIndex < leftValidSize; ++leftIndex) {
-                output.set(leftPositionToOutputStartPosition(leftPositions.get(leftIndex)), 0);
+
+        // Empty rights are handled via a different method
+        Assert.gtZero(rightSize, "rightSize");
+
+        // Process an initial sequence of null start values, which cause the range to start from right position 0
+        final int firstNonNullLeftIndex;
+        {
+            int li;
+            for (li = 0; li < leftSize && isNull(leftValues.get(li)); ++li) {
+                output.set(leftPositionToOutputStartPosition(leftPositions.get(li)), 0);
             }
-            return;
+            firstNonNullLeftIndex = li;
         }
 
-        int leftIndex = 0;
-        for (; leftIndex < leftValidSize && isNull(leftValues.get(leftIndex)); ++leftIndex) {
-            output.set(leftPositionToOutputStartPosition(leftPositions.get(leftIndex)), 0);
-        }
-
-        int rightHighIndex = rightSize - 1;
-        char rightHighValue = rightValues.get(rightHighIndex);
-        for (int li = 0; li < leftSize;) {
+        int rightLowIndex = 0;
+        final int maxRightIndex = rightSize - 1;
+        for (int li = firstNonNullLeftIndex; li < leftSize; ++li) {
             final char leftValue = leftValues.get(li);
-            final int outputPosition = leftPositionToOutputStartPosition(leftPositions.get(li));
 
-            if (geq(leftValue, rightHighValue)) {
-                break;
-            }
-
-            int rightLowIndex = 0;
+            int rightHighIndex = rightSize;
             while (rightLowIndex < rightHighIndex) {
                 final int rightMidIndex = ((rightHighIndex - rightLowIndex) / 2) + rightLowIndex;
                 final char rightMidValue = rightValues.get(rightMidIndex);
@@ -241,6 +201,8 @@ class RangeSearchKernelChar implements RangeSearchKernel {
                 }
             }
         }
+
+
     }
 
     private static void findEnds(
