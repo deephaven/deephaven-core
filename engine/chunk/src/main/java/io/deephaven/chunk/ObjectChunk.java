@@ -157,7 +157,7 @@ public class ObjectChunk<T, ATTR extends Any> extends ChunkBase<ATTR> {
      * This method does <em>not</em> compare {@code null} or {@code NaN} values according to Deephaven ordering rules.
      *
      * @param key The key to search for
-     * @return The index of the key in this chunk, or else {@code (-(insertion point - 1)} as defined by
+     * @return The index of the key in this chunk, or else {@code (-(insertion point) - 1)} as defined by
      *         {@link Arrays#binarySearch(T[], Object)}
      */
     public final int binarySearch(final Object key) {
@@ -174,7 +174,7 @@ public class ObjectChunk<T, ATTR extends Any> extends ChunkBase<ATTR> {
      * @param fromIndexInclusive The first index to be searched
      * @param toIndexExclusive The index after the last index to be searched
      * @param key The key to search for
-     * @return The index of the key in this chunk, or else {@code (-(insertion point - 1)} as defined by
+     * @return The index of the key in this chunk, or else {@code (-(insertion point) - 1)} as defined by
      *         {@link Arrays#binarySearch(T[], int, int, Object)}
      */
     public final int binarySearch(final int fromIndexInclusive, final int toIndexExclusive, final Object key) {
