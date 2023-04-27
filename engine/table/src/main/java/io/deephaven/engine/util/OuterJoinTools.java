@@ -4,6 +4,7 @@
 package io.deephaven.engine.util;
 
 import com.google.common.collect.Streams;
+import io.deephaven.api.JoinMatch;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.TableOperationsDefaults;
 import io.deephaven.engine.table.ColumnDefinition;
@@ -114,7 +115,7 @@ public class OuterJoinTools {
 
         // perform a natural join, filter for unmatched, and apply columnsToAdd / null view columns
         final Table unmatchedRightRows = table2.coalesce()
-                .naturalJoin(uniqueLeftGroups, rightMatchColumns, MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY)
+                .naturalJoin(uniqueLeftGroups, Arrays.asList(rightMatchColumns), Collections.emptyList())
                 .where(sentinelColumnName + " == null")
                 .view(rightColumns);
 

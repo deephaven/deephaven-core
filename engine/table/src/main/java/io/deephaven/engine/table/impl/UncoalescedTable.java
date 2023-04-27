@@ -317,7 +317,10 @@ public abstract class UncoalescedTable<IMPL_TYPE extends UncoalescedTable<IMPL_T
     }
 
     @Override
-    public Table exactJoin(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd) {
+    public Table exactJoin(
+            Table rightTable,
+            Collection<? extends JoinMatch> columnsToMatch,
+            Collection<? extends JoinAddition> columnsToAdd) {
         return coalesce().exactJoin(rightTable, columnsToMatch, columnsToAdd);
     }
 
@@ -334,14 +337,20 @@ public abstract class UncoalescedTable<IMPL_TYPE extends UncoalescedTable<IMPL_T
     }
 
     @Override
-    public Table naturalJoin(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd) {
+    public Table naturalJoin(
+            Table rightTable,
+            Collection<? extends JoinMatch> columnsToMatch,
+            Collection<? extends JoinAddition> columnsToAdd) {
         return coalesce().naturalJoin(rightTable, columnsToMatch, columnsToAdd);
     }
 
     @Override
-    public Table join(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd,
-            int numRightBitsToReserve) {
-        return coalesce().join(rightTable, columnsToMatch, columnsToAdd, numRightBitsToReserve);
+    public Table join(
+            Table rightTable,
+            Collection<? extends JoinMatch> columnsToMatch,
+            Collection<? extends JoinAddition> columnsToAdd,
+            int reserveBits) {
+        return coalesce().join(rightTable, columnsToMatch, columnsToAdd, reserveBits);
     }
 
     @Override

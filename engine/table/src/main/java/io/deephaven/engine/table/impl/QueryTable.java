@@ -651,7 +651,17 @@ public class QueryTable extends BaseTable<QueryTable> {
     }
 
     @Override
-    public Table exactJoin(Table table, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd) {
+    public Table exactJoin(
+            Table rightTable,
+            Collection<? extends JoinMatch> columnsToMatch,
+            Collection<? extends JoinAddition> columnsToAdd) {
+        return exactJoinImpl(
+                rightTable,
+                MatchPair.fromMatches(columnsToMatch),
+                MatchPair.fromAddition(columnsToAdd));
+    }
+
+    private Table exactJoinImpl(Table table, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd) {
         return QueryPerformanceRecorder.withNugget(
                 "exactJoin(" + table + "," + Arrays.toString(columnsToMatch) + "," + Arrays.toString(columnsToMatch)
                         + ")",
@@ -1927,7 +1937,17 @@ public class QueryTable extends BaseTable<QueryTable> {
     }
 
     @Override
-    public Table naturalJoin(final Table rightTable, final MatchPair[] columnsToMatch, MatchPair[] columnsToAdd) {
+    public Table naturalJoin(
+            Table rightTable,
+            Collection<? extends JoinMatch> columnsToMatch,
+            Collection<? extends JoinAddition> columnsToAdd) {
+        return naturalJoinImpl(
+                rightTable,
+                MatchPair.fromMatches(columnsToMatch),
+                MatchPair.fromAddition(columnsToAdd));
+    }
+
+    private Table naturalJoinImpl(final Table rightTable, final MatchPair[] columnsToMatch, MatchPair[] columnsToAdd) {
         return QueryPerformanceRecorder.withNugget(
                 "naturalJoin(" + matchString(columnsToMatch) + ", " + matchString(columnsToAdd) + ")",
                 () -> naturalJoinInternal(rightTable, columnsToMatch, columnsToAdd, false));
@@ -1971,9 +1991,18 @@ public class QueryTable extends BaseTable<QueryTable> {
     @Override
     public Table join(
             @NotNull final Table rightTable,
-            @NotNull final MatchPair[] columnsToMatch,
-            @NotNull final MatchPair[] columnsToAdd,
-            final int numRightBitsToReserve) {
+            @NotNull final Collection<? extends JoinMatch> columnsToMatch,
+            @NotNull final Collection<? extends JoinAddition> columnsToAdd,
+            int numRightBitsToReserve) {
+        return joinImpl(
+                rightTable,
+                MatchPair.fromMatches(columnsToMatch),
+                MatchPair.fromAddition(columnsToAdd),
+                numRightBitsToReserve);
+    }
+
+    private Table joinImpl(final Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd,
+            int numRightBitsToReserve) {
         return memoizeResult(
                 MemoizedOperationKey.crossJoin(rightTable, columnsToMatch, columnsToAdd,
                         numRightBitsToReserve),
@@ -2034,7 +2063,7 @@ public class QueryTable extends BaseTable<QueryTable> {
 
                     final Table rightGrouped = rightTable.groupBy(rightColumnsToMatch)
                             .view(columnsToAddSelectColumns.values());
-                    final Table naturalJoinResult = naturalJoin(rightGrouped, columnsToMatch,
+                    final Table naturalJoinResult = naturalJoinImpl(rightGrouped, columnsToMatch,
                             columnsToAddAfterRename.toArray(MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY));
                     final QueryTable ungroupedResult = (QueryTable) naturalJoinResult
                             .ungroup(columnsToUngroupBy.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));

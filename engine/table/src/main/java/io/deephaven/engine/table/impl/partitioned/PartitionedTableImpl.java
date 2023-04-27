@@ -324,9 +324,9 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
             final MatchPair[] joinAdditions =
                     new MatchPair[] {new MatchPair(RHS_CONSTITUENT, other.constituentColumnName())};
             final Table joined = uniqueKeys
-                    ? table.naturalJoin(other.table(), joinPairs, joinAdditions)
+                    ? table.naturalJoin(other.table(), Arrays.asList(joinPairs), Arrays.asList(joinAdditions))
                             .where(new MatchFilter(Inverted, RHS_CONSTITUENT, (Object) null))
-                    : table.join(other.table(), joinPairs, joinAdditions);
+                    : table.join(other.table(), Arrays.asList(joinPairs), Arrays.asList(joinAdditions));
 
             final Table asRefreshingIfNeeded = maybeCopyAsRefreshing(joined, expectRefreshingResults);
 

@@ -319,31 +319,11 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
 
     @Override
     @FinalDefault
-    default Table exactJoin(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
-            Collection<? extends JoinAddition> columnsToAdd) {
-        return exactJoin(
-                rightTable,
-                MatchPair.fromMatches(columnsToMatch),
-                MatchPair.fromAddition(columnsToAdd));
-    }
-
-    @Override
-    @FinalDefault
-    default Table naturalJoin(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
-            Collection<? extends JoinAddition> columnsToAdd) {
-        return naturalJoin(
-                rightTable,
-                MatchPair.fromMatches(columnsToMatch),
-                MatchPair.fromAddition(columnsToAdd));
-    }
-
-    @Override
-    @FinalDefault
     default Table join(Table rightTable) {
         return join(
                 rightTable,
-                MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY,
-                MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY);
+                Collections.emptyList(),
+                Collections.emptyList());
     }
 
     @Override
@@ -357,8 +337,8 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
     default Table join(Table rightTable, String columnsToMatch, int numRightBitsToReserve) {
         return join(
                 rightTable,
-                MatchPairFactory.getExpressions(TableOperationsDefaults.splitToCollection(columnsToMatch)),
-                MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY,
+                JoinMatch.from(TableOperationsDefaults.splitToCollection(columnsToMatch)),
+                Collections.emptyList(),
                 numRightBitsToReserve);
     }
 
@@ -367,15 +347,9 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
     default Table join(Table rightTable, String columnsToMatch, String columnsToAdd, int numRightBitsToReserve) {
         return join(
                 rightTable,
-                MatchPairFactory.getExpressions(TableOperationsDefaults.splitToCollection(columnsToMatch)),
-                MatchPairFactory.getExpressions(TableOperationsDefaults.splitToCollection(columnsToAdd)),
+                JoinMatch.from(TableOperationsDefaults.splitToCollection(columnsToMatch)),
+                JoinAddition.from(TableOperationsDefaults.splitToCollection(columnsToAdd)),
                 numRightBitsToReserve);
-    }
-
-    @Override
-    @FinalDefault
-    default Table join(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd) {
-        return join(rightTable, columnsToMatch, columnsToAdd, CrossJoinHelper.DEFAULT_NUM_RIGHT_BITS_TO_RESERVE);
     }
 
     @Override
@@ -384,19 +358,9 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
             Collection<? extends JoinAddition> columnsToAdd) {
         return join(
                 rightTable,
-                MatchPair.fromMatches(columnsToMatch),
-                MatchPair.fromAddition(columnsToAdd));
-    }
-
-    @Override
-    @FinalDefault
-    default Table join(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
-            Collection<? extends JoinAddition> columnsToAdd, int numRightBitsToReserve) {
-        return join(
-                rightTable,
-                MatchPair.fromMatches(columnsToMatch),
-                MatchPair.fromAddition(columnsToAdd),
-                numRightBitsToReserve);
+                columnsToMatch,
+                columnsToAdd,
+                CrossJoinHelper.DEFAULT_NUM_RIGHT_BITS_TO_RESERVE);
     }
 
     // -----------------------------------------------------------------------------------------------------------------

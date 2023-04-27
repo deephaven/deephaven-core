@@ -161,11 +161,13 @@ public abstract class JoinTablesGrpcImpl<T> extends GrpcTableOperation<T> {
         public static Table doJoin(final Table lhs, final Table rhs,
                 final MatchPair[] columnsToMatch, final MatchPair[] columnsToAdd,
                 final CrossJoinTablesRequest request) {
+            final List<MatchPair> match = Arrays.asList(columnsToMatch);
+            final List<MatchPair> add = Arrays.asList(columnsToAdd);
             int reserveBits = request.getReserveBits();
             if (reserveBits <= 0) {
-                return lhs.join(rhs, columnsToMatch, columnsToAdd); // use the default number of reserve_bits
+                return lhs.join(rhs, match, add); // use the default number of reserve_bits
             } else {
-                return lhs.join(rhs, columnsToMatch, columnsToAdd, reserveBits);
+                return lhs.join(rhs, match, add, reserveBits);
             }
         }
     }
@@ -190,7 +192,7 @@ public abstract class JoinTablesGrpcImpl<T> extends GrpcTableOperation<T> {
         public static Table doJoin(final Table lhs, final Table rhs,
                 final MatchPair[] columnsToMatch, final MatchPair[] columnsToAdd,
                 final ExactJoinTablesRequest request) {
-            return lhs.exactJoin(rhs, columnsToMatch, columnsToAdd);
+            return lhs.exactJoin(rhs, Arrays.asList(columnsToMatch), Arrays.asList(columnsToAdd));
         }
     }
 
@@ -238,7 +240,7 @@ public abstract class JoinTablesGrpcImpl<T> extends GrpcTableOperation<T> {
         public static Table doJoin(final Table lhs, final Table rhs,
                 final MatchPair[] columnsToMatch, final MatchPair[] columnsToAdd,
                 final NaturalJoinTablesRequest request) {
-            return lhs.naturalJoin(rhs, columnsToMatch, columnsToAdd);
+            return lhs.naturalJoin(rhs, Arrays.asList(columnsToMatch), Arrays.asList(columnsToAdd));
         }
     }
 }

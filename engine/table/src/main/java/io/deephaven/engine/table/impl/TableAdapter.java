@@ -248,7 +248,8 @@ public interface TableAdapter extends TableDefaults {
     }
 
     @Override
-    default Table exactJoin(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd) {
+    default Table exactJoin(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
+            Collection<? extends JoinAddition> columnsToAdd) {
         return throwUnsupported();
     }
 
@@ -265,13 +266,14 @@ public interface TableAdapter extends TableDefaults {
     }
 
     @Override
-    default Table naturalJoin(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd) {
+    default Table naturalJoin(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
+            Collection<? extends JoinAddition> columnsToAdd) {
         return throwUnsupported();
     }
 
     @Override
-    default Table join(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd,
-            int numRightBitsToReserve) {
+    default Table join(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
+            Collection<? extends JoinAddition> columnsToAdd, int reserveBits) {
         return throwUnsupported();
     }
 
