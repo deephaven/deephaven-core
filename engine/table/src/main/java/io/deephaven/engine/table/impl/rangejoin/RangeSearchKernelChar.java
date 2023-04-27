@@ -1,5 +1,7 @@
 package io.deephaven.engine.table.impl.rangejoin;
 
+import io.deephaven.api.RangeEndRule;
+import io.deephaven.api.RangeStartRule;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.ChunkLengths;
@@ -15,7 +17,307 @@ import static io.deephaven.util.QueryConstants.NULL_INT;
 /**
  * {@link RangeSearchKernel} for values of type char.
  */
-abstract class RangeSearchKernelChar implements RangeSearchKernel {
+enum RangeSearchKernelChar implements RangeSearchKernel {
+
+    LT_GT {
+        @Override
+        void populateAllRangeForEmptyRight(@NotNull final CharChunk<? extends Values> lsv,
+                @NotNull final CharChunk<? extends Values> lev, @NotNull final WritableIntChunk<? extends Values> o) {
+            populateAllRangesForEmptyRightDisallowEqual(lsv, lev, o);
+        }
+
+        @Override
+        void populateInvalidRanges(@NotNull final CharChunk<? extends Values> lsv,
+                @NotNull final CharChunk<? extends Values> lev, @NotNull final WritableBooleanChunk<? super Values> v,
+                @NotNull final WritableIntChunk<? extends Values> o) {
+            populateInvalidRangesDisallowEqual(lsv, lev, v, o);
+        }
+
+        @Override
+        void findStarts(@NotNull final CharChunk<? extends Values> lv, @NotNull final IntChunk<ChunkPositions> lp,
+                @NotNull final CharChunk<? extends Values> rv, @NotNull final IntChunk<ChunkPositions> rso,
+                @NotNull final IntChunk<ChunkLengths> rl, @NotNull final WritableIntChunk<? extends Values> o) {
+            findStartsLessThan(lv, lp, rv, rso, rl, o);
+        }
+
+        @Override
+        void findEnds(@NotNull final CharChunk<? extends Values> lv, @NotNull final IntChunk<ChunkPositions> lp,
+                @NotNull final CharChunk<? extends Values> rv, @NotNull final IntChunk<ChunkPositions> rso,
+                @NotNull final IntChunk<ChunkLengths> rl, @NotNull final WritableIntChunk<? extends Values> o) {
+            findEndsGreaterThan(lv, lp, rv, rso, rl, o);
+        }
+    },
+
+    LEQ_GT {
+        @Override
+        void populateAllRangeForEmptyRight(@NotNull final CharChunk<? extends Values> lsv,
+                @NotNull final CharChunk<? extends Values> lev, @NotNull final WritableIntChunk<? extends Values> o) {
+            populateAllRangesForEmptyRightDisallowEqual(lsv, lev, o);
+        }
+
+        @Override
+        void populateInvalidRanges(@NotNull final CharChunk<? extends Values> lsv,
+                @NotNull final CharChunk<? extends Values> lev, @NotNull final WritableBooleanChunk<? super Values> v,
+                @NotNull final WritableIntChunk<? extends Values> o) {
+            populateInvalidRangesDisallowEqual(lsv, lev, v, o);
+        }
+
+        @Override
+        void findStarts(@NotNull final CharChunk<? extends Values> lv, @NotNull final IntChunk<ChunkPositions> lp,
+                @NotNull final CharChunk<? extends Values> rv, @NotNull final IntChunk<ChunkPositions> rso,
+                @NotNull final IntChunk<ChunkLengths> rl, @NotNull final WritableIntChunk<? extends Values> o) {
+            findStartsLessThanEqual(lv, lp, rv, rso, rl, o);
+        }
+
+        @Override
+        void findEnds(@NotNull final CharChunk<? extends Values> lv, @NotNull final IntChunk<ChunkPositions> lp,
+                @NotNull final CharChunk<? extends Values> rv, @NotNull final IntChunk<ChunkPositions> rso,
+                @NotNull final IntChunk<ChunkLengths> rl, @NotNull final WritableIntChunk<? extends Values> o) {
+            findEndsGreaterThan(lv, lp, rv, rso, rl, o);
+        }
+    },
+
+    LEQAP_GT {
+        @Override
+        void populateAllRangeForEmptyRight(@NotNull final CharChunk<? extends Values> lsv,
+                @NotNull final CharChunk<? extends Values> lev, @NotNull final WritableIntChunk<? extends Values> o) {
+            populateAllRangesForEmptyRightDisallowEqual(lsv, lev, o);
+        }
+
+        @Override
+        void populateInvalidRanges(@NotNull final CharChunk<? extends Values> lsv,
+                @NotNull final CharChunk<? extends Values> lev, @NotNull final WritableBooleanChunk<? super Values> v,
+                @NotNull final WritableIntChunk<? extends Values> o) {
+            populateInvalidRangesDisallowEqual(lsv, lev, v, o);
+        }
+
+        @Override
+        void findStarts(@NotNull final CharChunk<? extends Values> lv, @NotNull final IntChunk<ChunkPositions> lp,
+                @NotNull final CharChunk<? extends Values> rv, @NotNull final IntChunk<ChunkPositions> rso,
+                @NotNull final IntChunk<ChunkLengths> rl, @NotNull final WritableIntChunk<? extends Values> o) {
+            findStartsLessThanEqualAllowPreceding(lv, lp, rv, rso, rl, o);
+        }
+
+        @Override
+        void findEnds(@NotNull final CharChunk<? extends Values> lv, @NotNull final IntChunk<ChunkPositions> lp,
+                @NotNull final CharChunk<? extends Values> rv, @NotNull final IntChunk<ChunkPositions> rso,
+                @NotNull final IntChunk<ChunkLengths> rl, @NotNull final WritableIntChunk<? extends Values> o) {
+            findEndsGreaterThan(lv, lp, rv, rso, rl, o);
+        }
+    },
+
+    LT_GEQ {
+        @Override
+        void populateAllRangeForEmptyRight(@NotNull final CharChunk<? extends Values> lsv,
+                @NotNull final CharChunk<? extends Values> lev, @NotNull final WritableIntChunk<? extends Values> o) {
+            populateAllRangesForEmptyRightDisallowEqual(lsv, lev, o);
+        }
+
+        @Override
+        void populateInvalidRanges(@NotNull final CharChunk<? extends Values> lsv,
+                @NotNull final CharChunk<? extends Values> lev, @NotNull final WritableBooleanChunk<? super Values> v,
+                @NotNull final WritableIntChunk<? extends Values> o) {
+            populateInvalidRangesDisallowEqual(lsv, lev, v, o);
+        }
+
+        @Override
+        void findStarts(@NotNull final CharChunk<? extends Values> lv, @NotNull final IntChunk<ChunkPositions> lp,
+                @NotNull final CharChunk<? extends Values> rv, @NotNull final IntChunk<ChunkPositions> rso,
+                @NotNull final IntChunk<ChunkLengths> rl, @NotNull final WritableIntChunk<? extends Values> o) {
+            findStartsLessThan(lv, lp, rv, rso, rl, o);
+        }
+
+        @Override
+        void findEnds(@NotNull final CharChunk<? extends Values> lv, @NotNull final IntChunk<ChunkPositions> lp,
+                @NotNull final CharChunk<? extends Values> rv, @NotNull final IntChunk<ChunkPositions> rso,
+                @NotNull final IntChunk<ChunkLengths> rl, @NotNull final WritableIntChunk<? extends Values> o) {
+            findEndsGreaterThanEqual(lv, lp, rv, rso, rl, o);
+        }
+    },
+
+    LEQ_GEQ {
+        @Override
+        void populateAllRangeForEmptyRight(@NotNull final CharChunk<? extends Values> lsv,
+                @NotNull final CharChunk<? extends Values> lev, @NotNull final WritableIntChunk<? extends Values> o) {
+            populateAllRangesForEmptyRightAllowEqual(lsv, lev, o);
+        }
+
+        @Override
+        void populateInvalidRanges(@NotNull final CharChunk<? extends Values> lsv,
+                @NotNull final CharChunk<? extends Values> lev, @NotNull final WritableBooleanChunk<? super Values> v,
+                @NotNull final WritableIntChunk<? extends Values> o) {
+            populateInvalidRangesAllowEqual(lsv, lev, v, o);
+        }
+
+        @Override
+        void findStarts(@NotNull final CharChunk<? extends Values> lv, @NotNull final IntChunk<ChunkPositions> lp,
+                @NotNull final CharChunk<? extends Values> rv, @NotNull final IntChunk<ChunkPositions> rso,
+                @NotNull final IntChunk<ChunkLengths> rl, @NotNull final WritableIntChunk<? extends Values> o) {
+            findStartsLessThanEqual(lv, lp, rv, rso, rl, o);
+        }
+
+        @Override
+        void findEnds(@NotNull final CharChunk<? extends Values> lv, @NotNull final IntChunk<ChunkPositions> lp,
+                @NotNull final CharChunk<? extends Values> rv, @NotNull final IntChunk<ChunkPositions> rso,
+                @NotNull final IntChunk<ChunkLengths> rl, @NotNull final WritableIntChunk<? extends Values> o) {
+            findEndsGreaterThanEqual(lv, lp, rv, rso, rl, o);
+        }
+    },
+
+    LEQAP_GEQ {
+        @Override
+        void populateAllRangeForEmptyRight(@NotNull final CharChunk<? extends Values> lsv,
+                @NotNull final CharChunk<? extends Values> lev, @NotNull final WritableIntChunk<? extends Values> o) {
+            populateAllRangesForEmptyRightAllowEqual(lsv, lev, o);
+        }
+
+        @Override
+        void populateInvalidRanges(@NotNull final CharChunk<? extends Values> lsv,
+                @NotNull final CharChunk<? extends Values> lev, @NotNull final WritableBooleanChunk<? super Values> v,
+                @NotNull final WritableIntChunk<? extends Values> o) {
+            populateInvalidRangesAllowEqual(lsv, lev, v, o);
+        }
+
+        @Override
+        void findStarts(@NotNull final CharChunk<? extends Values> lv, @NotNull final IntChunk<ChunkPositions> lp,
+                @NotNull final CharChunk<? extends Values> rv, @NotNull final IntChunk<ChunkPositions> rso,
+                @NotNull final IntChunk<ChunkLengths> rl, @NotNull final WritableIntChunk<? extends Values> o) {
+            findStartsLessThanEqualAllowPreceding(lv, lp, rv, rso, rl, o);
+        }
+
+        @Override
+        void findEnds(@NotNull final CharChunk<? extends Values> lv, @NotNull final IntChunk<ChunkPositions> lp,
+                @NotNull final CharChunk<? extends Values> rv, @NotNull final IntChunk<ChunkPositions> rso,
+                @NotNull final IntChunk<ChunkLengths> rl, @NotNull final WritableIntChunk<? extends Values> o) {
+            findEndsGreaterThanEqual(lv, lp, rv, rso, rl, o);
+        }
+    },
+
+    LT_GEQAF {
+        @Override
+        void populateAllRangeForEmptyRight(@NotNull final CharChunk<? extends Values> lsv,
+                @NotNull final CharChunk<? extends Values> lev, @NotNull final WritableIntChunk<? extends Values> o) {
+            populateAllRangesForEmptyRightDisallowEqual(lsv, lev, o);
+        }
+
+        @Override
+        void populateInvalidRanges(@NotNull final CharChunk<? extends Values> lsv,
+                @NotNull final CharChunk<? extends Values> lev, @NotNull final WritableBooleanChunk<? super Values> v,
+                @NotNull final WritableIntChunk<? extends Values> o) {
+            populateInvalidRangesDisallowEqual(lsv, lev, v, o);
+        }
+
+        @Override
+        void findStarts(@NotNull final CharChunk<? extends Values> lv, @NotNull final IntChunk<ChunkPositions> lp,
+                @NotNull final CharChunk<? extends Values> rv, @NotNull final IntChunk<ChunkPositions> rso,
+                @NotNull final IntChunk<ChunkLengths> rl, @NotNull final WritableIntChunk<? extends Values> o) {
+            findStartsLessThan(lv, lp, rv, rso, rl, o);
+        }
+
+        @Override
+        void findEnds(@NotNull final CharChunk<? extends Values> lv, @NotNull final IntChunk<ChunkPositions> lp,
+                @NotNull final CharChunk<? extends Values> rv, @NotNull final IntChunk<ChunkPositions> rso,
+                @NotNull final IntChunk<ChunkLengths> rl, @NotNull final WritableIntChunk<? extends Values> o) {
+            findEndsGreaterThanEqualAllowFollowing(lv, lp, rv, rso, rl, o);
+        }
+    },
+
+    LEQ_GEQAF {
+        @Override
+        void populateAllRangeForEmptyRight(@NotNull final CharChunk<? extends Values> lsv,
+                @NotNull final CharChunk<? extends Values> lev, @NotNull final WritableIntChunk<? extends Values> o) {
+            populateAllRangesForEmptyRightAllowEqual(lsv, lev, o);
+        }
+
+        @Override
+        void populateInvalidRanges(@NotNull final CharChunk<? extends Values> lsv,
+                @NotNull final CharChunk<? extends Values> lev, @NotNull final WritableBooleanChunk<? super Values> v,
+                @NotNull final WritableIntChunk<? extends Values> o) {
+            populateInvalidRangesAllowEqual(lsv, lev, v, o);
+        }
+
+        @Override
+        void findStarts(@NotNull final CharChunk<? extends Values> lv, @NotNull final IntChunk<ChunkPositions> lp,
+                @NotNull final CharChunk<? extends Values> rv, @NotNull final IntChunk<ChunkPositions> rso,
+                @NotNull final IntChunk<ChunkLengths> rl, @NotNull final WritableIntChunk<? extends Values> o) {
+            findStartsLessThanEqual(lv, lp, rv, rso, rl, o);
+        }
+
+        @Override
+        void findEnds(@NotNull final CharChunk<? extends Values> lv, @NotNull final IntChunk<ChunkPositions> lp,
+                @NotNull final CharChunk<? extends Values> rv, @NotNull final IntChunk<ChunkPositions> rso,
+                @NotNull final IntChunk<ChunkLengths> rl, @NotNull final WritableIntChunk<? extends Values> o) {
+            findEndsGreaterThanEqualAllowFollowing(lv, lp, rv, rso, rl, o);
+        }
+    },
+
+    LEQAP_GEQAF {
+        @Override
+        void populateAllRangeForEmptyRight(@NotNull final CharChunk<? extends Values> lsv,
+                @NotNull final CharChunk<? extends Values> lev, @NotNull final WritableIntChunk<? extends Values> o) {
+            populateAllRangesForEmptyRightAllowEqual(lsv, lev, o);
+        }
+
+        @Override
+        void populateInvalidRanges(@NotNull final CharChunk<? extends Values> lsv,
+                @NotNull final CharChunk<? extends Values> lev, @NotNull final WritableBooleanChunk<? super Values> v,
+                @NotNull final WritableIntChunk<? extends Values> o) {
+            populateInvalidRangesAllowEqual(lsv, lev, v, o);
+        }
+
+        @Override
+        void findStarts(@NotNull final CharChunk<? extends Values> lv, @NotNull final IntChunk<ChunkPositions> lp,
+                @NotNull final CharChunk<? extends Values> rv, @NotNull final IntChunk<ChunkPositions> rso,
+                @NotNull final IntChunk<ChunkLengths> rl, @NotNull final WritableIntChunk<? extends Values> o) {
+            findStartsLessThanEqualAllowPreceding(lv, lp, rv, rso, rl, o);
+        }
+
+        @Override
+        void findEnds(@NotNull final CharChunk<? extends Values> lv, @NotNull final IntChunk<ChunkPositions> lp,
+                @NotNull final CharChunk<? extends Values> rv, @NotNull final IntChunk<ChunkPositions> rso,
+                @NotNull final IntChunk<ChunkLengths> rl, @NotNull final WritableIntChunk<? extends Values> o) {
+            findEndsGreaterThanEqualAllowFollowing(lv, lp, rv, rso, rl, o);
+        }
+    };
+
+    static RangeSearchKernelChar forRules(
+            @NotNull final RangeStartRule startRule,
+            @NotNull final RangeEndRule endRule) {
+        switch (startRule) {
+            case LESS_THAN:
+                switch (endRule) {
+                    case GREATER_THAN:
+                        return LT_GT;
+                    case GREATER_THAN_OR_EQUAL:
+                        return LT_GEQ;
+                    case GREATER_THAN_OR_EQUAL_ALLOW_FOLLOWING:
+                        return LT_GEQAF;
+                }
+                break;
+            case LESS_THAN_OR_EQUAL:
+                switch (endRule) {
+                    case GREATER_THAN:
+                        return LEQ_GT;
+                    case GREATER_THAN_OR_EQUAL:
+                        return LEQ_GEQ;
+                    case GREATER_THAN_OR_EQUAL_ALLOW_FOLLOWING:
+                        return LEQ_GEQAF;
+                }
+                break;
+            case LESS_THAN_OR_EQUAL_ALLOW_PRECEDING:
+                switch (endRule) {
+                    case GREATER_THAN:
+                        return LEQAP_GT;
+                    case GREATER_THAN_OR_EQUAL:
+                        return LEQAP_GEQ;
+                    case GREATER_THAN_OR_EQUAL_ALLOW_FOLLOWING:
+                        return LEQAP_GEQAF;
+                }
+                break;
+        }
+        throw new UnsupportedOperationException(String.format(
+                "Unrecognized range rule pair {%s, %s}", startRule, endRule));
+    }
 
     @Override
     public final void populateAllRangeForEmptyRight(
@@ -498,8 +800,7 @@ abstract class RangeSearchKernelChar implements RangeSearchKernel {
     }
 
     /**
-     * Process an initial sequence of null left end values, which cause the responsive range to end from right
-     * position .
+     * Process an initial sequence of null left end values, which cause the responsive range to end from right position.
      *
      * @param leftValues The left values, sorted according to Deephaven sorting order (nulls first)
      * @param leftPositions The left positions, parallel to {@code leftValues}, used to determine {@code output} index
