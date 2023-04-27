@@ -579,7 +579,9 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * <dd>An <em>invalid</em> range occurs in two scenarios: First, when the range is inverted, i.e. when the value of
      * the left start column is greater than the value of the left end column. Second, when either relative-match is
      * exclusive ({@code <} or {@code >}) and the value in the left start column is equal to the value in the left end
-     * column. For invalid ranges, the result row will be {@code null} for all aggregation output columns.</dd>
+     * column (because {@code value < value == false}). Specifying "allow preceding" or "allow following" for either
+     * rule will not constitute an exception to either of these defined scenarios. For invalid ranges, the result row
+     * will be {@code null} for all aggregation output columns.</dd>
      * <dt>undefined ranges</dt>
      * <dd>An <em>undefined</em> range occurs when either the left start column or the left end column is {@code NaN}.
      * For rows with an undefined range, the corresponding output values will be {@code null} (as with invalid

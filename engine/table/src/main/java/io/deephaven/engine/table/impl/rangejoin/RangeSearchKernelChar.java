@@ -151,6 +151,100 @@ class RangeSearchKernelChar implements RangeSearchKernel {
             @NotNull final IntChunk<ChunkPositions> leftPositions,
             @NotNull final CharChunk<? extends Values> rightValues,
             @NotNull final IntChunk<ChunkPositions> rightStartOffsets,
+            @NotNull final IntChunk<ChunkLengths> rightLengths,
+            @NotNull final WritableIntChunk<? extends Values> output) {
+        // Note that invalid and undefined ranges have already been eliminated
+        final int leftSize = leftValues.size();
+        final int rightSize = rightValues.size();
+
+        // Empty rights are handled via a different method
+        Assert.gtZero(rightSize, "rightSize");
+
+        int leftIndex = consumeNullLeftValues(leftValues, leftPositions, output, leftSize);
+        if (leftIndex == leftSize) {
+            return;
+        }
+
+        // Find the range starts for non-null left values
+        int rightLowIndexInclusive = 0;
+        char leftValue = leftValues.get(leftIndex);
+        do {
+            final int searchResult = rightValues.binarySearch(rightLowIndexInclusive, rightSize, leftValue);
+            // Take insertion point for not found, or bump by one for found to avoid equal values
+            final int rightIndex = searchResult < 0 ? ~searchResult : searchResult + 1;
+            if (rightIndex == rightSize) {
+                break;
+            }
+            final int rightPosition = rightStartOffsets.get(rightIndex);
+            output.set(leftPositionToOutputStartPosition(leftPositions.get(leftIndex++)), rightPosition);
+            // Proceed linearly until we have a reason to binary search again. We can re-use rightPosition until
+            // we reach rightValue.
+            final char rightValue = rightValues.get(rightIndex);
+            while (leftIndex < leftSize && lt(leftValue = leftValues.get(leftIndex), rightValue)) {
+                output.set(leftPositionToOutputStartPosition(leftPositions.get(leftIndex++)), rightPosition);
+            }
+            // We've consumed all left values that can match rightIndex, so begin searching after rightIndex
+            rightLowIndexInclusive = rightIndex + 1;
+        } while (leftIndex < leftSize && rightLowIndexInclusive < rightSize);
+
+        consumeEmptyRangeStarts(leftPositions, rightStartOffsets, rightLengths, output, leftSize, rightSize, leftIndex);
+    }
+
+    /**
+     * Process an initial sequence of null start values, which cause the range to start from right position 0
+     * 
+     * @param leftValues The left values, sorted according to Deephaven sorting order (nulls first)
+     * @param leftPositions The left positions, parallel to {@code leftValues}, used to determine {@code output} index
+     * @param output The output chunk
+     * @param leftSize The size of {@code leftValues} and {@code leftPositions}, for convenience
+     * @return The number of left indices consumed
+     */
+    private static int consumeNullLeftValues(
+            @NotNull final CharChunk<? extends Values> leftValues,
+            @NotNull final IntChunk<ChunkPositions> leftPositions,
+            @NotNull final WritableIntChunk<? extends Values> output,
+            final int leftSize) {
+        int leftIndex = 0;
+        while (leftIndex < leftSize && isNull(leftValues.get(leftIndex))) {
+            output.set(leftPositionToOutputStartPosition(leftPositions.get(leftIndex++)), 0);
+        }
+        return leftIndex;
+    }
+
+    /**
+     * Fill range starts for left start values with no responsive right values.
+     *
+     * @param leftPositions The left positions, used to determine {@code output} index
+     * @param rightStartOffsets The right run start offsets
+     * @param rightLengths The right run lengths
+     * @param output The output chunk
+     * @param leftSize The size of {@code leftPositions}
+     * @param rightSize The size of {@code rightStartOffsets} and {@code rightLengths}
+     * @param leftIndex The left index to start from
+     */
+    private static void consumeEmptyRangeStarts(
+            @NotNull final IntChunk<ChunkPositions> leftPositions,
+            @NotNull final IntChunk<ChunkPositions> rightStartOffsets,
+            @NotNull final IntChunk<ChunkLengths> rightLengths,
+            @NotNull final WritableIntChunk<? extends Values> output,
+            final int leftSize,
+            final int rightSize,
+            int leftIndex) {
+        if (leftIndex == leftSize) {
+            return;
+        }
+        final int rightLastPositionExclusive = rightStartOffsets.get(rightSize - 1) + rightLengths.get(rightSize - 1);
+        while (leftIndex < leftSize) {
+            output.set(leftPositionToOutputStartPosition(leftPositions.get(leftIndex++)), rightLastPositionExclusive);
+        }
+    }
+
+    private static void findStartsLessThanEqual(
+            @NotNull final CharChunk<? extends Values> leftValues,
+            @NotNull final IntChunk<ChunkPositions> leftPositions,
+            @NotNull final CharChunk<? extends Values> rightValues,
+            @NotNull final IntChunk<ChunkPositions> rightStartOffsets,
+            @NotNull final IntChunk<ChunkLengths> rightLengths,
             @NotNull final WritableIntChunk<? extends Values> output) {
         // Note that invalid and undefined ranges have already been eliminated
         final int leftSize = leftValues.size();
@@ -160,49 +254,123 @@ class RangeSearchKernelChar implements RangeSearchKernel {
         Assert.gtZero(rightSize, "rightSize");
 
         // Process an initial sequence of null start values, which cause the range to start from right position 0
-        final int firstNonNullLeftIndex;
-        {
-            int li;
-            for (li = 0; li < leftSize && isNull(leftValues.get(li)); ++li) {
-                output.set(leftPositionToOutputStartPosition(leftPositions.get(li)), 0);
-            }
-            firstNonNullLeftIndex = li;
+        int leftIndex = 0;
+        while (leftIndex < leftSize && isNull(leftValues.get(leftIndex))) {
+            output.set(leftPositionToOutputStartPosition(leftPositions.get(leftIndex++)), 0);
+        }
+        if (leftIndex == leftSize) {
+            return;
         }
 
-        int rightLowIndex = 0;
-        final int maxRightIndex = rightSize - 1;
-        for (int li = firstNonNullLeftIndex; li < leftSize; ++li) {
-            final char leftValue = leftValues.get(li);
-
-            int rightHighIndex = rightSize;
-            while (rightLowIndex < rightHighIndex) {
-                final int rightMidIndex = ((rightHighIndex - rightLowIndex) / 2) + rightLowIndex;
-                final char rightMidValue = rightValues.get(rightMidIndex);
-
-                if (lt(leftValue, rightMidValue)) {
-                    rightHighIndex = rightMidIndex;
-                    if (rightLowIndex == rightHighIndex - 1) {
-                        break;
-                    }
-                } else {
-                    rightLowIndex = rightMidIndex;
-                }
+        // Find the range starts for non-null left values
+        int rightLowIndexInclusive = 0;
+        char leftValue = leftValues.get(leftIndex);
+        do {
+            final int searchResult = rightValues.binarySearch(rightLowIndexInclusive, rightSize, leftValue);
+            // Take insertion point in all cases
+            final int rightIndex = searchResult < 0 ? ~searchResult : searchResult;
+            if (rightIndex == rightSize) {
+                break;
             }
+            final int rightPosition = rightStartOffsets.get(rightIndex);
+            output.set(leftPositionToOutputStartPosition(leftPositions.get(leftIndex++)), rightPosition);
+            // Proceed linearly until we have a reason to binary search again. We can re-use rightPosition until
+            // we pass rightValue.
+            final char rightValue = rightValues.get(rightIndex);
+            while (leftIndex < leftSize && leq(leftValue = leftValues.get(leftIndex), rightValue)) {
+                output.set(leftPositionToOutputStartPosition(leftPositions.get(leftIndex++)), rightPosition);
+            }
+            // We've consumed all left values that can match rightIndex, so begin searching after rightIndex
+            rightLowIndexInclusive = rightIndex + 1;
+        } while (leftIndex < leftSize && rightLowIndexInclusive < rightSize);
 
-            final long redirectionKey = rightKeyIndices.get(rightLowIdx);
-            if (rightLowIdx == maxRightIdx) {
-                leftRedirections.fillWithValue(li, leftSize - li, redirectionKey);
-                return;
+        if (leftIndex == leftSize) {
+            return;
+        }
+        // Fill range starts for left values after the last right value
+        final int rightLastPositionExclusive = rightStartOffsets.get(rightSize - 1) + rightLengths.get(rightSize - 1);
+        while (leftIndex < leftSize) {
+            output.set(leftPositionToOutputStartPosition(leftPositions.get(leftIndex++)), rightLastPositionExclusive);
+        }
+    }
+
+    private static void findStartsLessThanEqualAllowPreceding(
+            @NotNull final CharChunk<? extends Values> leftValues,
+            @NotNull final IntChunk<ChunkPositions> leftPositions,
+            @NotNull final CharChunk<? extends Values> rightValues,
+            @NotNull final IntChunk<ChunkPositions> rightStartOffsets,
+            @NotNull final IntChunk<ChunkLengths> rightLengths,
+            @NotNull final WritableIntChunk<? extends Values> output) {
+        // Note that invalid and undefined ranges have already been eliminated
+        final int leftSize = leftValues.size();
+        final int rightSize = rightValues.size();
+
+        // Empty rights are handled via a different method
+        Assert.gtZero(rightSize, "rightSize");
+
+        // Process an initial sequence of null start values, which cause the range to start from right position 0
+        int leftIndex = 0;
+        while (leftIndex < leftSize && isNull(leftValues.get(leftIndex))) {
+            output.set(leftPositionToOutputStartPosition(leftPositions.get(leftIndex++)), 0);
+        }
+        if (leftIndex == leftSize) {
+            return;
+        }
+
+        // Find the range starts for non-null left values
+        int rightLowIndexInclusive = 0;
+        char leftValue = leftValues.get(leftIndex);
+        do {
+            final int searchResult = rightValues.binarySearch(rightLowIndexInclusive, rightSize, leftValue);
+            final int rightIndex;
+            final int precedingRightPosition;
+            final int rightPosition;
+            final char rightValue;
+            if (searchResult == -1) {
+                // Insertion point is 0. We can't look back from there, so we use the insertion point.
+                rightIndex = 0;
+                precedingRightPosition = -1;
+                rightPosition = rightStartOffsets.get(0);
+                rightValue = rightValues.get(0);
+            } else if (searchResult < 0) {
+                // Insertion point is not an exact match, so look behind
+                rightIndex = ~searchResult;
+                precedingRightPosition = rightStartOffsets.get(rightIndex - 1) + rightLengths.get(rightIndex - 1) - 1;
+                rightPosition = rightStartOffsets.get(rightIndex);
+                rightValue = rightValues.get(rightIndex);
             } else {
-                leftRedirections.set(li++, redirectionKey);
-                final char nextRightValue = rightStamps.get(rightLowIdx + 1);
-                while (li < leftSize && lt(leftStamps.get(li), nextRightValue)) {
-                    leftRedirections.set(li++, redirectionKey);
+                // We found an exact match, so use it
+                rightIndex = searchResult;
+                precedingRightPosition = -1;
+                rightPosition = rightStartOffsets.get(searchResult);
+                rightValue = rightValues.get(searchResult);
+            }
+            // Proceed linearly until we have a reason to binary search again
+            if (precedingRightPosition < 0) {
+                output.set(leftPositionToOutputStartPosition(leftPositions.get(leftIndex++)), rightPosition);
+            } else {
+                output.set(leftPositionToOutputStartPosition(leftPositions.get(leftIndex++)), precedingRightPosition);
+                // We can re-use precedingRightPosition until we reach rightValue
+                while (leftIndex < leftSize && lt(leftValue = leftValues.get(leftIndex), rightValue)) {
+                    output.set(leftPositionToOutputStartPosition(leftPositions.get(leftIndex++)), precedingRightPosition);
                 }
             }
+            // We can re-use rightPosition until we pass rightValue
+            while (leftIndex < leftSize && leq(leftValue = leftValues.get(leftIndex), rightValue)) {
+                output.set(leftPositionToOutputStartPosition(leftPositions.get(leftIndex++)), rightPosition);
+            }
+            // We've consumed all left values that can match rightIndex, so begin searching after rightIndex
+            rightLowIndexInclusive = rightIndex + 1;
+        } while (leftIndex < leftSize && rightLowIndexInclusive < rightSize);
+
+        if (leftIndex == leftSize) {
+            return;
         }
-
-
+        // Fill range starts for left values after the last right value
+        final int rightLastPositionExclusive = rightStartOffsets.get(rightSize - 1) + rightLengths.get(rightSize - 1);
+        while (leftIndex < leftSize) {
+            output.set(leftPositionToOutputStartPosition(leftPositions.get(leftIndex++)), rightLastPositionExclusive);
+        }
     }
 
     private static void findEnds(
