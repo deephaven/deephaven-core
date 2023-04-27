@@ -1,7 +1,5 @@
 package io.deephaven.engine.table.impl.rangejoin;
 
-import io.deephaven.api.RangeEndRule;
-import io.deephaven.api.RangeStartRule;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.ChunkLengths;
@@ -17,52 +15,77 @@ import static io.deephaven.util.QueryConstants.NULL_INT;
 /**
  * {@link RangeSearchKernel} for values of type char.
  */
-class RangeSearchKernelChar implements RangeSearchKernel {
-
-    static final RangeSearchKernelChar INSTANCE = new RangeSearchKernelChar();
-
-    private RangeSearchKernelChar() {}
+abstract class RangeSearchKernelChar implements RangeSearchKernel {
 
     @Override
-    public void populateInvalidRanges(
+    public final void populateAllRangeForEmptyRight(
             @NotNull final Chunk<? extends Values> leftStartValues,
             @NotNull final Chunk<? extends Values> leftEndValues,
-            final boolean allowEqual,
+            @NotNull final WritableIntChunk<? extends Values> output) {
+        populateAllRangeForEmptyRight(leftStartValues.asCharChunk(), leftEndValues.asCharChunk(), output);
+    }
+
+    abstract void populateAllRangeForEmptyRight(
+            @NotNull final CharChunk<? extends Values> leftStartValues,
+            @NotNull final CharChunk<? extends Values> leftEndValues,
+            @NotNull final WritableIntChunk<? extends Values> output);
+
+    @Override
+    public final void populateInvalidRanges(
+            @NotNull final Chunk<? extends Values> leftStartValues,
+            @NotNull final Chunk<? extends Values> leftEndValues,
             @NotNull final WritableBooleanChunk<? super Values> validity,
             @NotNull final WritableIntChunk<? extends Values> output) {
-        RangeSearchKernelChar.populateInvalidRanges(
-                leftStartValues.asCharChunk(), leftEndValues.asCharChunk(), allowEqual,
-                validity, output);
+        populateInvalidRanges(leftStartValues.asCharChunk(), leftEndValues.asCharChunk(), validity, output);
     }
 
-    @Override
-    public void findStarts(
-            @NotNull final Chunk<? extends Values> leftValues,
-            @NotNull final IntChunk<ChunkPositions> leftPositions,
-            @NotNull final Chunk<? extends Values> rightValues,
-            @NotNull final IntChunk<ChunkPositions> rightStartOffsets,
-            @NotNull final RangeStartRule rule,
-            @NotNull final WritableIntChunk<? extends Values> output) {
-        RangeSearchKernelChar.findStarts(
-                leftValues.asCharChunk(), leftPositions,
-                rightValues.asCharChunk(), rightStartOffsets,
-                rule, output);
-    }
+    abstract void populateInvalidRanges(
+            @NotNull final CharChunk<? extends Values> leftStartValues,
+            @NotNull final CharChunk<? extends Values> leftEndValues,
+            @NotNull final WritableBooleanChunk<? super Values> validity,
+            @NotNull final WritableIntChunk<? extends Values> output);
 
     @Override
-    public void findEnds(
+    public final void findStarts(
             @NotNull final Chunk<? extends Values> leftValues,
             @NotNull final IntChunk<ChunkPositions> leftPositions,
             @NotNull final Chunk<? extends Values> rightValues,
             @NotNull final IntChunk<ChunkPositions> rightStartOffsets,
             @NotNull final IntChunk<ChunkLengths> rightLengths,
-            @NotNull final RangeEndRule rule,
             @NotNull final WritableIntChunk<? extends Values> output) {
-        RangeSearchKernelChar.findEnds(
-                leftValues.asCharChunk(), leftPositions,
+        findStarts(leftValues.asCharChunk(), leftPositions,
                 rightValues.asCharChunk(), rightStartOffsets, rightLengths,
-                rule, output);
+                output);
     }
+
+    abstract void findStarts(
+            @NotNull final CharChunk<? extends Values> leftValues,
+            @NotNull final IntChunk<ChunkPositions> leftPositions,
+            @NotNull final CharChunk<? extends Values> rightValues,
+            @NotNull final IntChunk<ChunkPositions> rightStartOffsets,
+            @NotNull final IntChunk<ChunkLengths> rightLengths,
+            @NotNull final WritableIntChunk<? extends Values> output);
+
+    @Override
+    public final void findEnds(
+            @NotNull final Chunk<? extends Values> leftValues,
+            @NotNull final IntChunk<ChunkPositions> leftPositions,
+            @NotNull final Chunk<? extends Values> rightValues,
+            @NotNull final IntChunk<ChunkPositions> rightStartOffsets,
+            @NotNull final IntChunk<ChunkLengths> rightLengths,
+            @NotNull final WritableIntChunk<? extends Values> output) {
+        findEnds(leftValues.asCharChunk(), leftPositions,
+                rightValues.asCharChunk(), rightStartOffsets, rightLengths,
+                output);
+    }
+
+    abstract void findEnds(
+            @NotNull final CharChunk<? extends Values> leftValues,
+            @NotNull final IntChunk<ChunkPositions> leftPositions,
+            @NotNull final CharChunk<? extends Values> rightValues,
+            @NotNull final IntChunk<ChunkPositions> rightStartOffsets,
+            @NotNull final IntChunk<ChunkLengths> rightLengths,
+            @NotNull final WritableIntChunk<? extends Values> output);
 
     private static void populateInvalidRangesAllowEqual(
             @NotNull CharChunk<? extends Values> leftStartValues,
@@ -102,7 +125,7 @@ class RangeSearchKernelChar implements RangeSearchKernel {
         }
     }
 
-    private static void populateAllRangesEmptyRightAllowEqual(
+    private static void populateAllRangesForEmptyRightAllowEqual(
             @NotNull CharChunk<? extends Values> leftStartValues,
             @NotNull CharChunk<? extends Values> leftEndValues,
             @NotNull WritableIntChunk<? extends Values> output) {
@@ -120,7 +143,7 @@ class RangeSearchKernelChar implements RangeSearchKernel {
         }
     }
 
-    private static void populateAllRangesEmptyRightDisallowEqual(
+    private static void populateAllRangesForEmptyRightDisallowEqual(
             @NotNull CharChunk<? extends Values> leftStartValues,
             @NotNull CharChunk<? extends Values> leftEndValues,
             @NotNull WritableIntChunk<? extends Values> output) {
@@ -160,7 +183,7 @@ class RangeSearchKernelChar implements RangeSearchKernel {
         // Empty rights are handled via a different method
         Assert.gtZero(rightSize, "rightSize");
 
-        int leftIndex = consumeNullLeftValues(leftValues, leftPositions, output, leftSize);
+        int leftIndex = consumeNullLeftStartValues(leftValues, leftPositions, output);
         if (leftIndex == leftSize) {
             return;
         }
@@ -176,10 +199,10 @@ class RangeSearchKernelChar implements RangeSearchKernel {
                 break;
             }
             final int rightPosition = rightStartOffsets.get(rightIndex);
+            final char rightValue = rightValues.get(rightIndex);
             output.set(leftPositionToOutputStartPosition(leftPositions.get(leftIndex++)), rightPosition);
             // Proceed linearly until we have a reason to binary search again. We can re-use rightPosition until
             // we reach rightValue.
-            final char rightValue = rightValues.get(rightIndex);
             while (leftIndex < leftSize && lt(leftValue = leftValues.get(leftIndex), rightValue)) {
                 output.set(leftPositionToOutputStartPosition(leftPositions.get(leftIndex++)), rightPosition);
             }
@@ -187,56 +210,7 @@ class RangeSearchKernelChar implements RangeSearchKernel {
             rightLowIndexInclusive = rightIndex + 1;
         } while (leftIndex < leftSize && rightLowIndexInclusive < rightSize);
 
-        consumeEmptyRangeStarts(leftPositions, rightStartOffsets, rightLengths, output, leftSize, rightSize, leftIndex);
-    }
-
-    /**
-     * Process an initial sequence of null start values, which cause the range to start from right position 0
-     * 
-     * @param leftValues The left values, sorted according to Deephaven sorting order (nulls first)
-     * @param leftPositions The left positions, parallel to {@code leftValues}, used to determine {@code output} index
-     * @param output The output chunk
-     * @param leftSize The size of {@code leftValues} and {@code leftPositions}, for convenience
-     * @return The number of left indices consumed
-     */
-    private static int consumeNullLeftValues(
-            @NotNull final CharChunk<? extends Values> leftValues,
-            @NotNull final IntChunk<ChunkPositions> leftPositions,
-            @NotNull final WritableIntChunk<? extends Values> output,
-            final int leftSize) {
-        int leftIndex = 0;
-        while (leftIndex < leftSize && isNull(leftValues.get(leftIndex))) {
-            output.set(leftPositionToOutputStartPosition(leftPositions.get(leftIndex++)), 0);
-        }
-        return leftIndex;
-    }
-
-    /**
-     * Fill range starts for left start values with no responsive right values.
-     *
-     * @param leftPositions The left positions, used to determine {@code output} index
-     * @param rightStartOffsets The right run start offsets
-     * @param rightLengths The right run lengths
-     * @param output The output chunk
-     * @param leftSize The size of {@code leftPositions}
-     * @param rightSize The size of {@code rightStartOffsets} and {@code rightLengths}
-     * @param leftIndex The left index to start from
-     */
-    private static void consumeEmptyRangeStarts(
-            @NotNull final IntChunk<ChunkPositions> leftPositions,
-            @NotNull final IntChunk<ChunkPositions> rightStartOffsets,
-            @NotNull final IntChunk<ChunkLengths> rightLengths,
-            @NotNull final WritableIntChunk<? extends Values> output,
-            final int leftSize,
-            final int rightSize,
-            int leftIndex) {
-        if (leftIndex == leftSize) {
-            return;
-        }
-        final int rightLastPositionExclusive = rightStartOffsets.get(rightSize - 1) + rightLengths.get(rightSize - 1);
-        while (leftIndex < leftSize) {
-            output.set(leftPositionToOutputStartPosition(leftPositions.get(leftIndex++)), rightLastPositionExclusive);
-        }
+        consumeEmptyRangeStarts(leftPositions, rightStartOffsets, rightLengths, output, leftIndex);
     }
 
     private static void findStartsLessThanEqual(
@@ -253,11 +227,7 @@ class RangeSearchKernelChar implements RangeSearchKernel {
         // Empty rights are handled via a different method
         Assert.gtZero(rightSize, "rightSize");
 
-        // Process an initial sequence of null start values, which cause the range to start from right position 0
-        int leftIndex = 0;
-        while (leftIndex < leftSize && isNull(leftValues.get(leftIndex))) {
-            output.set(leftPositionToOutputStartPosition(leftPositions.get(leftIndex++)), 0);
-        }
+        int leftIndex = consumeNullLeftStartValues(leftValues, leftPositions, output);
         if (leftIndex == leftSize) {
             return;
         }
@@ -273,10 +243,10 @@ class RangeSearchKernelChar implements RangeSearchKernel {
                 break;
             }
             final int rightPosition = rightStartOffsets.get(rightIndex);
+            final char rightValue = rightValues.get(rightIndex);
             output.set(leftPositionToOutputStartPosition(leftPositions.get(leftIndex++)), rightPosition);
             // Proceed linearly until we have a reason to binary search again. We can re-use rightPosition until
             // we pass rightValue.
-            final char rightValue = rightValues.get(rightIndex);
             while (leftIndex < leftSize && leq(leftValue = leftValues.get(leftIndex), rightValue)) {
                 output.set(leftPositionToOutputStartPosition(leftPositions.get(leftIndex++)), rightPosition);
             }
@@ -284,14 +254,7 @@ class RangeSearchKernelChar implements RangeSearchKernel {
             rightLowIndexInclusive = rightIndex + 1;
         } while (leftIndex < leftSize && rightLowIndexInclusive < rightSize);
 
-        if (leftIndex == leftSize) {
-            return;
-        }
-        // Fill range starts for left values after the last right value
-        final int rightLastPositionExclusive = rightStartOffsets.get(rightSize - 1) + rightLengths.get(rightSize - 1);
-        while (leftIndex < leftSize) {
-            output.set(leftPositionToOutputStartPosition(leftPositions.get(leftIndex++)), rightLastPositionExclusive);
-        }
+        consumeEmptyRangeStarts(leftPositions, rightStartOffsets, rightLengths, output, leftIndex);
     }
 
     private static void findStartsLessThanEqualAllowPreceding(
@@ -308,11 +271,7 @@ class RangeSearchKernelChar implements RangeSearchKernel {
         // Empty rights are handled via a different method
         Assert.gtZero(rightSize, "rightSize");
 
-        // Process an initial sequence of null start values, which cause the range to start from right position 0
-        int leftIndex = 0;
-        while (leftIndex < leftSize && isNull(leftValues.get(leftIndex))) {
-            output.set(leftPositionToOutputStartPosition(leftPositions.get(leftIndex++)), 0);
-        }
+        int leftIndex = consumeNullLeftStartValues(leftValues, leftPositions, output);
         if (leftIndex == leftSize) {
             return;
         }
@@ -322,38 +281,23 @@ class RangeSearchKernelChar implements RangeSearchKernel {
         char leftValue = leftValues.get(leftIndex);
         do {
             final int searchResult = rightValues.binarySearch(rightLowIndexInclusive, rightSize, leftValue);
-            final int rightIndex;
-            final int precedingRightPosition;
-            final int rightPosition;
-            final char rightValue;
-            if (searchResult == -1) {
-                // Insertion point is 0. We can't look back from there, so we use the insertion point.
-                rightIndex = 0;
-                precedingRightPosition = -1;
-                rightPosition = rightStartOffsets.get(0);
-                rightValue = rightValues.get(0);
-            } else if (searchResult < 0) {
-                // Insertion point is not an exact match, so look behind
-                rightIndex = ~searchResult;
-                precedingRightPosition = rightStartOffsets.get(rightIndex - 1) + rightLengths.get(rightIndex - 1) - 1;
-                rightPosition = rightStartOffsets.get(rightIndex);
-                rightValue = rightValues.get(rightIndex);
-            } else {
-                // We found an exact match, so use it
-                rightIndex = searchResult;
-                precedingRightPosition = -1;
-                rightPosition = rightStartOffsets.get(searchResult);
-                rightValue = rightValues.get(searchResult);
-            }
+            // Take insertion point in all cases
+            final int rightIndex = searchResult < 0 ? ~searchResult : searchResult;
+            final int rightPosition = rightStartOffsets.get(rightIndex);
+            final char rightValue = rightValues.get(rightIndex);
             // Proceed linearly until we have a reason to binary search again
-            if (precedingRightPosition < 0) {
-                output.set(leftPositionToOutputStartPosition(leftPositions.get(leftIndex++)), rightPosition);
-            } else {
+            if (searchResult < 0 && rightIndex != 0) {
+                // If we had an inexact match that isn't at the beginning of the right values, look behind
+                final int precedingRightPosition =
+                        rightStartOffsets.get(rightIndex - 1) + rightLengths.get(rightIndex - 1) - 1;
                 output.set(leftPositionToOutputStartPosition(leftPositions.get(leftIndex++)), precedingRightPosition);
                 // We can re-use precedingRightPosition until we reach rightValue
                 while (leftIndex < leftSize && lt(leftValue = leftValues.get(leftIndex), rightValue)) {
-                    output.set(leftPositionToOutputStartPosition(leftPositions.get(leftIndex++)), precedingRightPosition);
+                    output.set(leftPositionToOutputStartPosition(leftPositions.get(leftIndex++)),
+                            precedingRightPosition);
                 }
+            } else {
+                output.set(leftPositionToOutputStartPosition(leftPositions.get(leftIndex++)), rightPosition);
             }
             // We can re-use rightPosition until we pass rightValue
             while (leftIndex < leftSize && leq(leftValue = leftValues.get(leftIndex), rightValue)) {
@@ -363,32 +307,246 @@ class RangeSearchKernelChar implements RangeSearchKernel {
             rightLowIndexInclusive = rightIndex + 1;
         } while (leftIndex < leftSize && rightLowIndexInclusive < rightSize);
 
+        consumeEmptyRangeStarts(leftPositions, rightStartOffsets, rightLengths, output, leftIndex);
+    }
+
+    /**
+     * Process an initial sequence of null left start values, which cause the responsive range to start from right
+     * position 0.
+     *
+     * @param leftValues The left values, sorted according to Deephaven sorting order (nulls first)
+     * @param leftPositions The left positions, parallel to {@code leftValues}, used to determine {@code output} index
+     * @param output The output chunk
+     * @return The number of left indices consumed
+     */
+    private static int consumeNullLeftStartValues(
+            @NotNull final CharChunk<? extends Values> leftValues,
+            @NotNull final IntChunk<ChunkPositions> leftPositions,
+            @NotNull final WritableIntChunk<? extends Values> output) {
+        final int leftSize = leftValues.size();
+        int leftIndex = 0;
+        while (leftIndex < leftSize && isNull(leftValues.get(leftIndex))) {
+            output.set(leftPositionToOutputStartPosition(leftPositions.get(leftIndex++)), 0);
+        }
+        return leftIndex;
+    }
+
+    /**
+     * Fill range starts for left start values with no responsive right values.
+     *
+     * @param leftPositions The left positions, used to determine {@code output} index
+     * @param rightStartOffsets The right run start offsets
+     * @param rightLengths The right run lengths
+     * @param output The output chunk
+     * @param leftIndex The left index to start from
+     */
+    private static void consumeEmptyRangeStarts(
+            @NotNull final IntChunk<ChunkPositions> leftPositions,
+            @NotNull final IntChunk<ChunkPositions> rightStartOffsets,
+            @NotNull final IntChunk<ChunkLengths> rightLengths,
+            @NotNull final WritableIntChunk<? extends Values> output,
+            int leftIndex) {
+        final int leftSize = leftPositions.size();
+        final int rightSize = rightStartOffsets.size();
         if (leftIndex == leftSize) {
             return;
         }
-        // Fill range starts for left values after the last right value
         final int rightLastPositionExclusive = rightStartOffsets.get(rightSize - 1) + rightLengths.get(rightSize - 1);
         while (leftIndex < leftSize) {
             output.set(leftPositionToOutputStartPosition(leftPositions.get(leftIndex++)), rightLastPositionExclusive);
         }
     }
 
-    private static void findEnds(
+    private static void findEndsGreaterThan(
             @NotNull final CharChunk<? extends Values> leftValues,
             @NotNull final IntChunk<ChunkPositions> leftPositions,
             @NotNull final CharChunk<? extends Values> rightValues,
             @NotNull final IntChunk<ChunkPositions> rightStartOffsets,
             @NotNull final IntChunk<ChunkLengths> rightLengths,
-            @NotNull final RangeEndRule rule,
             @NotNull final WritableIntChunk<? extends Values> output) {
+        // Note that invalid and undefined ranges have already been eliminated
         final int leftSize = leftValues.size();
         final int rightSize = rightValues.size();
 
-        if (rightSize == 0) {
-            for (int li = 0; li < leftSize; ++li) {
-                output.set(leftPositionToOutputEndPosition(leftPositions.get(li)), 0);
-            }
+        // Empty rights are handled via a different method
+        Assert.gtZero(rightSize, "rightSize");
+
+        int leftIndex = consumeNullLeftEndValues(leftValues, leftPositions, rightStartOffsets, rightLengths, output);
+        if (leftIndex == leftSize) {
             return;
+        }
+
+        // Find the range ends for non-null left values
+        int rightLowIndexInclusive = 0;
+        char leftValue = leftValues.get(leftIndex);
+        do {
+            final int searchResult = rightValues.binarySearch(rightLowIndexInclusive, rightSize, leftValue);
+            // Take insertion point for not found, or decrement by one for found to avoid equal values
+            final int rightIndex = searchResult < 0 ? ~searchResult : searchResult - 1;
+            if (rightIndex == rightSize) {
+                break;
+            }
+            final int rightPosition = rightStartOffsets.get(rightIndex) + rightLengths.get(rightIndex) + 1;
+            final char rightValue = rightValues.get(rightIndex);
+            output.set(leftPositionToOutputEndPosition(leftPositions.get(leftIndex++)), rightPosition);
+            // Proceed linearly until we have a reason to binary search again. We can re-use rightPosition until
+            // we reach rightValue.
+            while (leftIndex < leftSize && lt(leftValue = leftValues.get(leftIndex), rightValue)) {
+                output.set(leftPositionToOutputEndPosition(leftPositions.get(leftIndex++)), rightPosition);
+            }
+            // We've consumed all left values that can match rightIndex, so begin searching after rightIndex
+            rightLowIndexInclusive = rightIndex + 1;
+        } while (leftIndex < leftSize && rightLowIndexInclusive < rightSize);
+
+        consumeEmptyRangeEnds(leftPositions, rightStartOffsets, rightLengths, output, leftIndex);
+    }
+
+    private static void findEndsGreaterThanEqual(
+            @NotNull final CharChunk<? extends Values> leftValues,
+            @NotNull final IntChunk<ChunkPositions> leftPositions,
+            @NotNull final CharChunk<? extends Values> rightValues,
+            @NotNull final IntChunk<ChunkPositions> rightStartOffsets,
+            @NotNull final IntChunk<ChunkLengths> rightLengths,
+            @NotNull final WritableIntChunk<? extends Values> output) {
+        // Note that invalid and undefined ranges have already been eliminated
+        final int leftSize = leftValues.size();
+        final int rightSize = rightValues.size();
+
+        // Empty rights are handled via a different method
+        Assert.gtZero(rightSize, "rightSize");
+
+        int leftIndex = consumeNullLeftEndValues(leftValues, leftPositions, rightStartOffsets, rightLengths, output);
+        if (leftIndex == leftSize) {
+            return;
+        }
+
+        // Find the range ends for non-null left values
+        int rightLowIndexInclusive = 0;
+        char leftValue = leftValues.get(leftIndex);
+        do {
+            final int searchResult = rightValues.binarySearch(rightLowIndexInclusive, rightSize, leftValue);
+            // Take insertion point in all cases
+            final int rightIndex = searchResult < 0 ? ~searchResult : searchResult;
+            if (rightIndex == rightSize) {
+                break;
+            }
+            final int rightPosition = rightStartOffsets.get(rightIndex) + rightLengths.get(rightIndex) + 1;
+            final char rightValue = rightValues.get(rightIndex);
+            output.set(leftPositionToOutputEndPosition(leftPositions.get(leftIndex++)), rightPosition);
+            // Proceed linearly until we have a reason to binary search again. We can re-use rightPosition until
+            // we pass rightValue.
+            while (leftIndex < leftSize && leq(leftValue = leftValues.get(leftIndex), rightValue)) {
+                output.set(leftPositionToOutputEndPosition(leftPositions.get(leftIndex++)), rightPosition);
+            }
+            // We've consumed all left values that can match rightIndex, so begin searching after rightIndex
+            rightLowIndexInclusive = rightIndex + 1;
+        } while (leftIndex < leftSize && rightLowIndexInclusive < rightSize);
+
+        consumeEmptyRangeEnds(leftPositions, rightStartOffsets, rightLengths, output, leftIndex);
+    }
+
+    private static void findEndsGreaterThanEqualAllowFollowing(
+            @NotNull final CharChunk<? extends Values> leftValues,
+            @NotNull final IntChunk<ChunkPositions> leftPositions,
+            @NotNull final CharChunk<? extends Values> rightValues,
+            @NotNull final IntChunk<ChunkPositions> rightStartOffsets,
+            @NotNull final IntChunk<ChunkLengths> rightLengths,
+            @NotNull final WritableIntChunk<? extends Values> output) {
+        // Note that invalid and undefined ranges have already been eliminated
+        final int leftSize = leftValues.size();
+        final int rightSize = rightValues.size();
+
+        // Empty rights are handled via a different method
+        Assert.gtZero(rightSize, "rightSize");
+
+        int leftIndex = consumeNullLeftEndValues(leftValues, leftPositions, rightStartOffsets, rightLengths, output);
+        if (leftIndex == leftSize) {
+            return;
+        }
+
+        // Find the range ends for non-null left values
+        int rightLowIndexInclusive = 0;
+        char leftValue = leftValues.get(leftIndex);
+        do {
+            final int searchResult = rightValues.binarySearch(rightLowIndexInclusive, rightSize, leftValue);
+            // Take insertion point in all cases
+            final int rightIndex = searchResult < 0 ? ~searchResult : searchResult;
+            final int rightPosition = rightStartOffsets.get(rightIndex) + rightLengths.get(rightIndex) + 1;
+            final char rightValue = rightValues.get(rightIndex);
+            // Proceed linearly until we have a reason to binary search again
+            if (searchResult < 0 && rightIndex != rightSize - 1) {
+                // If we had an inexact match that isn't at the end of the right values, look ahead
+                final int followingRightPosition = rightStartOffsets.get(rightIndex + 1);
+                output.set(leftPositionToOutputStartPosition(leftPositions.get(leftIndex++)), followingRightPosition);
+                // We can re-use followingRightPosition until we reach rightValue
+                while (leftIndex < leftSize && lt(leftValue = leftValues.get(leftIndex), rightValue)) {
+                    output.set(leftPositionToOutputStartPosition(leftPositions.get(leftIndex++)),
+                            followingRightPosition);
+                }
+            } else {
+                output.set(leftPositionToOutputStartPosition(leftPositions.get(leftIndex++)), rightPosition);
+            }
+            // We can re-use rightPosition until we pass rightValue
+            while (leftIndex < leftSize && leq(leftValue = leftValues.get(leftIndex), rightValue)) {
+                output.set(leftPositionToOutputStartPosition(leftPositions.get(leftIndex++)), rightPosition);
+            }
+            // We've consumed all left values that can match rightIndex, so begin searching after rightIndex
+            rightLowIndexInclusive = rightIndex + 1;
+        } while (leftIndex < leftSize && rightLowIndexInclusive < rightSize);
+
+        consumeEmptyRangeEnds(leftPositions, rightStartOffsets, rightLengths, output, leftIndex);
+    }
+
+    /**
+     * Process an initial sequence of null left end values, which cause the responsive range to end from right
+     * position .
+     *
+     * @param leftValues The left values, sorted according to Deephaven sorting order (nulls first)
+     * @param leftPositions The left positions, parallel to {@code leftValues}, used to determine {@code output} index
+     * @param rightStartOffsets The right run start offsets
+     * @param rightLengths The right run lengths
+     * @param output The output chunk
+     * @return The number of left indices consumed
+     */
+    private static int consumeNullLeftEndValues(
+            @NotNull final CharChunk<? extends Values> leftValues,
+            @NotNull final IntChunk<ChunkPositions> leftPositions,
+            @NotNull final IntChunk<ChunkPositions> rightStartOffsets,
+            @NotNull final IntChunk<ChunkLengths> rightLengths,
+            @NotNull final WritableIntChunk<? extends Values> output) {
+        final int leftSize = leftValues.size();
+        final int rightSize = rightStartOffsets.size();
+        final int rightLastPositionExclusive = rightStartOffsets.get(rightSize - 1) + rightLengths.get(rightSize - 1);
+        int leftIndex = 0;
+        while (leftIndex < leftSize && isNull(leftValues.get(leftIndex))) {
+            output.set(leftPositionToOutputEndPosition(leftPositions.get(leftIndex++)), rightLastPositionExclusive);
+        }
+        return leftIndex;
+    }
+
+    /**
+     * Fill range ends for left end values with no responsive right values.
+     *
+     * @param leftPositions The left positions, used to determine {@code output} index
+     * @param rightStartOffsets The right run start offsets
+     * @param rightLengths The right run lengths
+     * @param output The output chunk
+     * @param leftIndex The left index to start from
+     */
+    private static void consumeEmptyRangeEnds(
+            @NotNull final IntChunk<ChunkPositions> leftPositions,
+            @NotNull final IntChunk<ChunkPositions> rightStartOffsets,
+            @NotNull final IntChunk<ChunkLengths> rightLengths,
+            @NotNull final WritableIntChunk<? extends Values> output,
+            int leftIndex) {
+        final int leftSize = leftPositions.size();
+        final int rightSize = rightStartOffsets.size();
+        if (leftIndex == leftSize) {
+            return;
+        }
+        final int rightLastPositionExclusive = rightStartOffsets.get(rightSize - 1) + rightLengths.get(rightSize - 1);
+        while (leftIndex < leftSize) {
+            output.set(leftPositionToOutputEndPosition(leftPositions.get(leftIndex++)), rightLastPositionExclusive);
         }
     }
 
@@ -417,19 +575,5 @@ class RangeSearchKernelChar implements RangeSearchKernel {
         // region lt
         return a <= b;
         // endregion lt
-    }
-
-    private static boolean gt(final char a, final char b) {
-        // We need not deal with null or NaN values here
-        // region lt
-        return a > b;
-        // endregion lt
-    }
-
-    private static boolean geq(final char a, final char b) {
-        // We need not deal with null or NaN values here
-        // region geq
-        return a >= b;
-        // endregion geq
     }
 }
