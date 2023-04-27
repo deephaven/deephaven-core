@@ -591,6 +591,8 @@ public class ReplicateSourcesAndChunks {
         List<String> classLines = FileUtils.readLines(classFile, Charset.defaultCharset());
         classLines = ReplicationUtils.removeRegion(classLines, "BufferImports");
         classLines = ReplicationUtils.removeRegion(classLines, "CopyToBuffer");
+        classLines = ReplicationUtils.removeRegion(classLines, "BinarySearchImports");
+        classLines = ReplicationUtils.removeRegion(classLines, "BinarySearch");
         FileUtils.writeLines(classFile, classLines);
     }
 
