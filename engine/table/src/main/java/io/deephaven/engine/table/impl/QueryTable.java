@@ -4,10 +4,12 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.api.AsOfJoinRule;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.JoinAddition;
 import io.deephaven.api.JoinMatch;
 import io.deephaven.api.RangeJoinMatch;
+import io.deephaven.api.ReverseAsOfJoinRule;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.Strings;
@@ -1812,7 +1814,32 @@ public class QueryTable extends BaseTable<QueryTable> {
     }
 
     @Override
-    public Table aj(final Table rightTable, final MatchPair[] columnsToMatch, final MatchPair[] columnsToAdd,
+    public Table aj(
+            Table rightTable,
+            Collection<? extends JoinMatch> columnsToMatch,
+            Collection<? extends JoinAddition> columnsToAdd,
+            AsOfJoinRule asOfJoinRule) {
+        return ajImpl(
+                rightTable,
+                MatchPair.fromMatches(columnsToMatch),
+                MatchPair.fromAddition(columnsToAdd),
+                AsOfMatchRule.of(asOfJoinRule));
+    }
+
+    @Override
+    public Table raj(
+            Table rightTable,
+            Collection<? extends JoinMatch> columnsToMatch,
+            Collection<? extends JoinAddition> columnsToAdd,
+            ReverseAsOfJoinRule reverseAsOfJoinRule) {
+        return rajImpl(
+                rightTable,
+                MatchPair.fromMatches(columnsToMatch),
+                MatchPair.fromAddition(columnsToAdd),
+                AsOfMatchRule.of(reverseAsOfJoinRule));
+    }
+
+    private Table ajImpl(final Table rightTable, final MatchPair[] columnsToMatch, final MatchPair[] columnsToAdd,
             AsOfMatchRule asOfMatchRule) {
         if (rightTable == null) {
             throw new IllegalArgumentException("aj() requires a non-null right hand side table.");
@@ -1824,8 +1851,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                         asOfMatchRule));
     }
 
-    @Override
-    public Table raj(final Table rightTable, final MatchPair[] columnsToMatch, final MatchPair[] columnsToAdd,
+    private Table rajImpl(final Table rightTable, final MatchPair[] columnsToMatch, final MatchPair[] columnsToAdd,
             AsOfMatchRule asOfMatchRule) {
         if (rightTable == null) {
             throw new IllegalArgumentException("raj() requires a non-null right hand side table.");
@@ -3446,5 +3472,32 @@ public class QueryTable extends BaseTable<QueryTable> {
 
     static Boolean isParallelWhereDisabledForThread() {
         return disableParallelWhereForThread.get();
+    }
+
+    /**
+     * Rules for the inexact matching performed on the final column to match by in {@link #aj} and {@link #raj}.
+     */
+    private enum AsOfMatchRule {
+        LESS_THAN_EQUAL, LESS_THAN, GREATER_THAN_EQUAL, GREATER_THAN;
+
+        public static AsOfMatchRule of(AsOfJoinRule rule) {
+            switch (rule) {
+                case LESS_THAN_EQUAL:
+                    return LESS_THAN_EQUAL;
+                case LESS_THAN:
+                    return LESS_THAN;
+            }
+            throw new IllegalStateException("Unexpected rule " + rule);
+        }
+
+        public static AsOfMatchRule of(ReverseAsOfJoinRule rule) {
+            switch (rule) {
+                case GREATER_THAN_EQUAL:
+                    return GREATER_THAN_EQUAL;
+                case GREATER_THAN:
+                    return GREATER_THAN;
+            }
+            throw new IllegalStateException("Unexpected rule " + rule);
+        }
     }
 }

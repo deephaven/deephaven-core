@@ -4,6 +4,8 @@
 package io.deephaven.server.table.ops;
 
 import com.google.rpc.Code;
+import io.deephaven.api.AsOfJoinRule;
+import io.deephaven.api.ReverseAsOfJoinRule;
 import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.api.expression.ExpressionException;
@@ -24,6 +26,7 @@ import io.grpc.StatusRuntimeException;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
 
@@ -121,16 +124,19 @@ public abstract class JoinTablesGrpcImpl<T> extends GrpcTableOperation<T> {
         public static Table doJoin(final Table lhs, final Table rhs,
                 final MatchPair[] columnsToMatch, final MatchPair[] columnsToAdd,
                 final AsOfJoinTablesRequest request) {
-            Table.AsOfMatchRule matchRule = Table.AsOfMatchRule.valueOf(request.getAsOfMatchRule().name());
-            switch (matchRule) {
+            final List<MatchPair> match = Arrays.asList(columnsToMatch);
+            final List<MatchPair> add = Arrays.asList(columnsToAdd);
+            switch (request.getAsOfMatchRule()) {
                 case LESS_THAN:
+                    return lhs.aj(rhs, match, add, AsOfJoinRule.LESS_THAN);
                 case LESS_THAN_EQUAL:
-                    return lhs.aj(rhs, columnsToMatch, columnsToAdd, matchRule);
+                    return lhs.aj(rhs, match, add, AsOfJoinRule.LESS_THAN_EQUAL);
                 case GREATER_THAN:
+                    return lhs.raj(rhs, match, add, ReverseAsOfJoinRule.GREATER_THAN);
                 case GREATER_THAN_EQUAL:
-                    return lhs.raj(rhs, columnsToMatch, columnsToAdd, matchRule);
+                    return lhs.raj(rhs, match, add, ReverseAsOfJoinRule.GREATER_THAN_EQUAL);
                 default:
-                    throw new RuntimeException("Unsupported join type: " + matchRule);
+                    throw new RuntimeException("Unsupported join type: " + request.getAsOfMatchRule());
             }
         }
     }

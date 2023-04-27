@@ -3,9 +3,12 @@
  */
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.api.AsOfJoinRule;
 import io.deephaven.api.ColumnName;
+import io.deephaven.api.JoinAddition;
 import io.deephaven.api.JoinMatch;
 import io.deephaven.api.RangeJoinMatch;
+import io.deephaven.api.ReverseAsOfJoinRule;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.Aggregation;
@@ -319,15 +322,15 @@ public abstract class UncoalescedTable<IMPL_TYPE extends UncoalescedTable<IMPL_T
     }
 
     @Override
-    public Table aj(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd,
-            AsOfMatchRule asOfMatchRule) {
-        return coalesce().aj(rightTable, columnsToMatch, columnsToAdd, asOfMatchRule);
+    public Table aj(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
+            Collection<? extends JoinAddition> columnsToAdd, AsOfJoinRule asOfJoinRule) {
+        return coalesce().aj(rightTable, columnsToMatch, columnsToAdd, asOfJoinRule);
     }
 
     @Override
-    public Table raj(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd,
-            AsOfMatchRule asOfMatchRule) {
-        return coalesce().raj(rightTable, columnsToMatch, columnsToAdd, asOfMatchRule);
+    public Table raj(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
+            Collection<? extends JoinAddition> columnsToAdd, ReverseAsOfJoinRule reverseAsOfJoinRule) {
+        return coalesce().raj(rightTable, columnsToMatch, columnsToAdd, reverseAsOfJoinRule);
     }
 
     @Override

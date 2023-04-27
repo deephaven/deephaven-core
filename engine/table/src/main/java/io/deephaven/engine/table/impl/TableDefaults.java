@@ -15,7 +15,6 @@ import io.deephaven.engine.table.hierarchical.RollupTable;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.SelectColumnFactory;
-import io.deephaven.api.expression.AsOfJoinMatchFactory;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.table.impl.select.WouldMatchPairFactory;
 import io.deephaven.engine.util.TableTools;
@@ -326,62 +325,6 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
                 rightTable,
                 MatchPair.fromMatches(columnsToMatch),
                 MatchPair.fromAddition(columnsToAdd));
-    }
-
-    @Override
-    @FinalDefault
-    default Table aj(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd) {
-        return aj(rightTable, columnsToMatch, columnsToAdd, AsOfMatchRule.LESS_THAN_EQUAL);
-    }
-
-    @Override
-    @FinalDefault
-    default Table aj(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
-            Collection<? extends JoinAddition> columnsToAdd, AsOfJoinRule asOfJoinRule) {
-        return aj(
-                rightTable,
-                MatchPair.fromMatches(columnsToMatch),
-                MatchPair.fromAddition(columnsToAdd),
-                AsOfMatchRule.of(asOfJoinRule));
-    }
-
-    @Override
-    @FinalDefault
-    default Table aj(Table rightTable, Collection<String> columnsToMatch) {
-        AsOfJoinMatchFactory.AsOfJoinResult result = AsOfJoinMatchFactory.getAjExpressions(columnsToMatch);
-        return aj(
-                rightTable,
-                MatchPair.fromMatches(List.of(result.matches)),
-                MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY,
-                AsOfMatchRule.of(result.rule));
-    }
-
-    @Override
-    @FinalDefault
-    default Table raj(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd) {
-        return raj(rightTable, columnsToMatch, columnsToAdd, AsOfMatchRule.GREATER_THAN_EQUAL);
-    }
-
-    @Override
-    @FinalDefault
-    default Table raj(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
-            Collection<? extends JoinAddition> columnsToAdd, ReverseAsOfJoinRule reverseAsOfJoinRule) {
-        return raj(
-                rightTable,
-                MatchPair.fromMatches(columnsToMatch),
-                MatchPair.fromAddition(columnsToAdd),
-                AsOfMatchRule.of(reverseAsOfJoinRule));
-    }
-
-    @Override
-    @FinalDefault
-    default Table raj(Table rightTable, Collection<String> columnsToMatch) {
-        AsOfJoinMatchFactory.ReverseAsOfJoinResult result = AsOfJoinMatchFactory.getRajExpressions(columnsToMatch);
-        return raj(
-                rightTable,
-                MatchPair.fromMatches(List.of(result.matches)),
-                MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY,
-                AsOfMatchRule.of(result.rule));
     }
 
     @Override
