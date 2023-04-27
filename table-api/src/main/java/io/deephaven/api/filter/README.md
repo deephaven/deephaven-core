@@ -121,5 +121,8 @@ defined with "the inverse of a comparison filter results in another comparison f
 among inputs. The Deephaven total-ordering defines the null value as coming before all other values. In the case of
 floating point values, the NaN value comes after all other values.
 
+The one caveat to total-ordering is that Deephaven does not differentiate between NaN representations, nor between
+-0.0 and 0.0.
+
 [^1]: Advanced users may also choose to build their own filter logic using the engine implementation API `io.deephaven.engine.table.impl.select.WhereFilter`.
 [^2]: It appears there may be _some_ standard, but it's behind a paywall: https://en.wikipedia.org/wiki/IEEE_754#Total-ordering_predicate
