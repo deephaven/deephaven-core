@@ -23,11 +23,10 @@ Examples:
     >>> session.close()
 """
 
-from .table import Table
 from .session import Session
 from .dherror import DHError
 from ._table_interface import SortDirection, MatchRule
 from .query import Query
 
-__all__ = ["Table", "Session", "DHError", "SortDirection", "MatchRule"]
+__all__ = ["Session", "DHError", "SortDirection", "MatchRule"]
 __version__ = "0.24.0"

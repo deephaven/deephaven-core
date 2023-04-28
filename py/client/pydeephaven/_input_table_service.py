@@ -1,7 +1,7 @@
 #
 # Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
 #
-from pydeephaven import Table
+from pydeephaven.table import Table
 from pydeephaven.dherror import DHError
 from pydeephaven.proto import inputtable_pb2, inputtable_pb2_grpc
 from pydeephaven.table import InputTable

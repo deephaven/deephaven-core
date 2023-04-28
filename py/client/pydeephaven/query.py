@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from typing import Union
 
-from pydeephaven import Table
+from pydeephaven.table import Table
 from pydeephaven._table_interface import TableInterface
 from pydeephaven._table_ops import *
 from pydeephaven.dherror import DHError
