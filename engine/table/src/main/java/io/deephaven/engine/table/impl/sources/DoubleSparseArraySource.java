@@ -416,7 +416,7 @@ public class DoubleSparseArraySource extends SparseArrayColumnSource<Double>
     }
 
     @Override
-    public void prepareForParallelPopulation(final RowSet changedRows) {
+    public void prepareForParallelPopulation(final RowSequence changedRows) {
         final long currentStep = LogicalClock.DEFAULT.currentStep();
         if (prepareForParallelPopulationClockCycle == currentStep) {
             throw new IllegalStateException("May not call prepareForParallelPopulation twice on one clock cycle!");

@@ -1495,8 +1495,8 @@ public class ReplicateSourcesAndChunks {
                 "        }",
                 "",
                 "        @Override",
-                "        public void prepareForParallelPopulation(RowSet rowSet) {",
-                "           wrapped.prepareForParallelPopulation(rowSet);",
+                "        public void prepareForParallelPopulation(RowSequence rowSequence) {",
+                "           wrapped.prepareForParallelPopulation(rowSequence);",
                 "        }",
                 "    }"));
         FileUtils.writeLines(booleanFile, lines);

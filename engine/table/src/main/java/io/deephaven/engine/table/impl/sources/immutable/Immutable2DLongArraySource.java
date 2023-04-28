@@ -25,7 +25,6 @@ import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSequenceFactory;
-import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.WritableSourceWithPrepareForParallelPopulation;
@@ -462,7 +461,7 @@ public class Immutable2DLongArraySource extends AbstractDeferredGroupingColumnSo
     }
 
     @Override
-    public void prepareForParallelPopulation(RowSet rowSet) {
+    public void prepareForParallelPopulation(RowSequence rowSequence) {
         // nothing to do
     }
 

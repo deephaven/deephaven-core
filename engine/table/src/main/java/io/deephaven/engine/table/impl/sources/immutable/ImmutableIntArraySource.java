@@ -296,7 +296,7 @@ public class ImmutableIntArraySource extends AbstractDeferredGroupingColumnSourc
     }
 
     @Override
-    public void prepareForParallelPopulation(RowSet rowSet) {
+    public void prepareForParallelPopulation(RowSequence rowSequence) {
         // we don't track previous values, so we don't care to do any work
     }
 
