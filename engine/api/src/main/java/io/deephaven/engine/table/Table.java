@@ -453,39 +453,6 @@ public interface Table extends
      */
     Table join(Table rightTable);
 
-    /**
-     * Perform a cross join with the right table.
-     * <p>
-     * Returns a table that is the cartesian product of left rows X right rows, with one column for each of the left
-     * table's columns, and one column corresponding to each of the right table's columns that are included in the
-     * columnsToAdd argument. The rows are ordered first by the left table then by the right table. If columnsToMatch is
-     * non-empty then the product is filtered by the supplied match conditions.
-     * <p>
-     * To efficiently produce updates, the bits that represent a key for a given row are split into two. Unless
-     * specified, join reserves 16 bits to represent a right row. When there are too few bits to represent all of the
-     * right rows for a given aggregation group the table will shift a bit from the left side to the right side. The
-     * default of 16 bits was carefully chosen because it results in an efficient implementation to process live
-     * updates.
-     * <p>
-     * An {@link io.deephaven.engine.exceptions.OutOfKeySpaceException} is thrown when the total number of bits needed
-     * to express the result table exceeds that needed to represent Long.MAX_VALUE. There are a few work arounds: - If
-     * the left table is sparse, consider flattening the left table. - If there are no key-columns and the right table
-     * is sparse, consider flattening the right table. - If the maximum size of a right table's group is small, you can
-     * reserve fewer bits by setting numRightBitsToReserve on initialization.
-     * <p>
-     * Note: If you can prove that a given group has at most one right-row then you should prefer using
-     * {@link #naturalJoin}.
-     *
-     * @param rightTable The right side table on the join.
-     * @param columnsToMatch A comma separated list of match conditions ("leftColumn=rightColumn" or
-     *        "columnFoundInBoth")
-     * @param columnsToAdd A comma separated list with the columns from the right side that need to be added to the left
-     *        side as a result of the match.
-     * @param numRightBitsToReserve The number of bits to reserve for rightTable groups.
-     * @return a new table joined according to the specification in columnsToMatch and columnsToAdd
-     */
-    Table join(Table rightTable, String columnsToMatch, String columnsToAdd, int numRightBitsToReserve);
-
     // -----------------------------------------------------------------------------------------------------------------
     // Aggregation Operations
     // -----------------------------------------------------------------------------------------------------------------
