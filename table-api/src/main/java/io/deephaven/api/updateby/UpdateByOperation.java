@@ -624,7 +624,7 @@ public interface UpdateByOperation {
      * @return The aggregation
      */
     static UpdateByOperation Delta(DeltaControl control, String... pairs) {
-        return DeltaSpec.of().clause(pairs);
+        return DeltaSpec.of(control).clause(pairs);
     }
 
     /**

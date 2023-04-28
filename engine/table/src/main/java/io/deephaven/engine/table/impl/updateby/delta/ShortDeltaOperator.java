@@ -49,15 +49,16 @@ public class ShortDeltaOperator extends BaseShortUpdateByOperator {
             // read the value from the values chunk
             final short currentVal = shortValueChunk.get(pos);
 
-            // If the previous value is null, defer to the control object to decide what to do
-            if (lastVal == NULL_SHORT) {
-                curVal = (control.nullBehavior() == NullBehavior.NullDominates)
-                        ? NULL_SHORT
-                        : currentVal;
-            } else if (currentVal != NULL_SHORT) {
-                curVal = (short)(currentVal - lastVal);
-            } else {
+            if (currentVal == NULL_SHORT) {
                 curVal = NULL_SHORT;
+            } else if (lastVal == NULL_SHORT) {
+                curVal = control.nullBehavior() == NullBehavior.NullDominates
+                        ? NULL_SHORT
+                        : (control.nullBehavior() == NullBehavior.ZeroDominates
+                            ? (short)0
+                            : currentVal);
+            } else {
+                curVal = (short)(currentVal - lastVal);
             }
 
             lastVal = currentVal;

@@ -20,7 +20,7 @@ public abstract class EmMinMaxSpec extends UpdateBySpecBase {
     }
 
     public static EmMinMaxSpec of(boolean isMax, WindowScale windowScale) {
-        return ImmutableEmMinMaxSpec.builder().timeScale(windowScale).build();
+        return ImmutableEmMinMaxSpec.builder().isMax(isMax).timeScale(windowScale).build();
     }
 
     public static EmMinMaxSpec ofTime(OperationControl control,

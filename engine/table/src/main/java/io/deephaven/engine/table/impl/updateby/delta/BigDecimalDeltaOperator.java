@@ -45,15 +45,16 @@ public class BigDecimalDeltaOperator extends BaseObjectUpdateByOperator<BigDecim
             // read the value from the values chunk
             final BigDecimal currentVal = objectValueChunk.get(pos);
 
-            // If the previous value is null, defer to the control object to decide what to do
-            if (lastVal == null) {
-                curVal = (control.nullBehavior() == NullBehavior.NullDominates)
-                        ? null
-                        : currentVal;
-            } else if (currentVal != null) {
-                curVal = currentVal.subtract(lastVal);
-            } else {
+            if (currentVal == null) {
                 curVal = null;
+            } else if (lastVal == null) {
+                curVal = control.nullBehavior() == NullBehavior.NullDominates
+                        ? null
+                        : (control.nullBehavior() == NullBehavior.ZeroDominates
+                                ? BigDecimal.ZERO
+                                : currentVal);
+            } else {
+                curVal = currentVal.subtract(lastVal);
             }
 
             lastVal = currentVal;

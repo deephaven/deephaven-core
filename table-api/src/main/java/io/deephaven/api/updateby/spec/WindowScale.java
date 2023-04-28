@@ -62,7 +62,7 @@ public abstract class WindowScale {
         if (!isTimeBased()) {
             throw new IllegalStateException("getDuration() cannot be called on a tick-based Timescale");
         }
-        return Duration.ofNanos((long) tickUnits());
+        return Duration.ofNanos(timeUnits());
     }
 
     public final long getTicks() {

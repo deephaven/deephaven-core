@@ -219,7 +219,7 @@ public class UpdateByOperatorFactory {
 
                         final RollingOpSpec rollingSpec = (RollingOpSpec) spec;
 
-                        // Leverage the immutable hashCode() function.
+                        // Leverage ImmutableWindowScale.hashCode() function.
                         hash = 31 * hash + Objects.hashCode(rollingSpec.revWindowScale());
                         hash = 31 * hash + Objects.hashCode(rollingSpec.fwdWindowScale());
                         return hash;
@@ -251,7 +251,7 @@ public class UpdateByOperatorFactory {
                         if (!Objects.equals(rsA.revWindowScale().timestampCol(), rsB.revWindowScale().timestampCol())) {
                             return false;
                         }
-                        // Leverage the immutable equals() functions.
+                        // Leverage ImmutableWindowScale.equals() functions.
                         return Objects.equals(rsA.revWindowScale(), rsB.revWindowScale()) &&
                                 Objects.equals(rsA.fwdWindowScale(), rsB.fwdWindowScale());
                     }
