@@ -29,4 +29,5 @@ from .dherror import DHError
 from ._table_interface import SortDirection, MatchRule
 from .query import Query
 
+__all__ = ["Table", "Session", "DHError", "SortDirection", "MatchRule"]
 __version__ = "0.24.0"
