@@ -1,3 +1,8 @@
+/*
+ * ---------------------------------------------------------------------------------------------------------------------
+ * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit RangeSearchKernelChar and regenerate
+ * ---------------------------------------------------------------------------------------------------------------------
+ */
 package io.deephaven.engine.table.impl.rangejoin;
 
 import io.deephaven.api.RangeEndRule;
@@ -11,38 +16,38 @@ import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.engine.table.impl.rangejoin.RangeJoinOperation.leftPositionToOutputEndPosition;
 import static io.deephaven.engine.table.impl.rangejoin.RangeJoinOperation.leftPositionToOutputStartPosition;
-import static io.deephaven.util.QueryConstants.NULL_CHAR;
+import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 import static io.deephaven.util.QueryConstants.NULL_INT;
 
 /**
- * {@link RangeSearchKernel} for values of type char.
+ * {@link RangeSearchKernel} for values of type double.
  */
-enum RangeSearchKernelChar implements RangeSearchKernel {
+enum RangeSearchKernelDouble implements RangeSearchKernel {
 
     LT_GT {
         @Override
-        void populateAllRangeForEmptyRight(@NotNull final CharChunk<? extends Values> lsv,
-                @NotNull final CharChunk<? extends Values> lev, @NotNull final WritableIntChunk<? extends Values> o) {
+        void populateAllRangeForEmptyRight(@NotNull final DoubleChunk<? extends Values> lsv,
+                @NotNull final DoubleChunk<? extends Values> lev, @NotNull final WritableIntChunk<? extends Values> o) {
             populateAllRangesForEmptyRightDisallowEqual(lsv, lev, o);
         }
 
         @Override
-        void populateInvalidRanges(@NotNull final CharChunk<? extends Values> lsv,
-                @NotNull final CharChunk<? extends Values> lev, @NotNull final WritableBooleanChunk<? super Values> v,
+        void populateInvalidRanges(@NotNull final DoubleChunk<? extends Values> lsv,
+                @NotNull final DoubleChunk<? extends Values> lev, @NotNull final WritableBooleanChunk<? super Values> v,
                 @NotNull final WritableIntChunk<? extends Values> o) {
             populateInvalidRangesDisallowEqual(lsv, lev, v, o);
         }
 
         @Override
-        void findStarts(@NotNull final CharChunk<? extends Values> lv, @NotNull final IntChunk<ChunkPositions> lp,
-                @NotNull final CharChunk<? extends Values> rv, @NotNull final IntChunk<ChunkPositions> rso,
+        void findStarts(@NotNull final DoubleChunk<? extends Values> lv, @NotNull final IntChunk<ChunkPositions> lp,
+                @NotNull final DoubleChunk<? extends Values> rv, @NotNull final IntChunk<ChunkPositions> rso,
                 @NotNull final IntChunk<ChunkLengths> rl, @NotNull final WritableIntChunk<? extends Values> o) {
             findStartsLessThan(lv, lp, rv, rso, rl, o);
         }
 
         @Override
-        void findEnds(@NotNull final CharChunk<? extends Values> lv, @NotNull final IntChunk<ChunkPositions> lp,
-                @NotNull final CharChunk<? extends Values> rv, @NotNull final IntChunk<ChunkPositions> rso,
+        void findEnds(@NotNull final DoubleChunk<? extends Values> lv, @NotNull final IntChunk<ChunkPositions> lp,
+                @NotNull final DoubleChunk<? extends Values> rv, @NotNull final IntChunk<ChunkPositions> rso,
                 @NotNull final IntChunk<ChunkLengths> rl, @NotNull final WritableIntChunk<? extends Values> o) {
             findEndsGreaterThan(lv, lp, rv, rso, rl, o);
         }
@@ -50,28 +55,28 @@ enum RangeSearchKernelChar implements RangeSearchKernel {
 
     LEQ_GT {
         @Override
-        void populateAllRangeForEmptyRight(@NotNull final CharChunk<? extends Values> lsv,
-                @NotNull final CharChunk<? extends Values> lev, @NotNull final WritableIntChunk<? extends Values> o) {
+        void populateAllRangeForEmptyRight(@NotNull final DoubleChunk<? extends Values> lsv,
+                @NotNull final DoubleChunk<? extends Values> lev, @NotNull final WritableIntChunk<? extends Values> o) {
             populateAllRangesForEmptyRightDisallowEqual(lsv, lev, o);
         }
 
         @Override
-        void populateInvalidRanges(@NotNull final CharChunk<? extends Values> lsv,
-                @NotNull final CharChunk<? extends Values> lev, @NotNull final WritableBooleanChunk<? super Values> v,
+        void populateInvalidRanges(@NotNull final DoubleChunk<? extends Values> lsv,
+                @NotNull final DoubleChunk<? extends Values> lev, @NotNull final WritableBooleanChunk<? super Values> v,
                 @NotNull final WritableIntChunk<? extends Values> o) {
             populateInvalidRangesDisallowEqual(lsv, lev, v, o);
         }
 
         @Override
-        void findStarts(@NotNull final CharChunk<? extends Values> lv, @NotNull final IntChunk<ChunkPositions> lp,
-                @NotNull final CharChunk<? extends Values> rv, @NotNull final IntChunk<ChunkPositions> rso,
+        void findStarts(@NotNull final DoubleChunk<? extends Values> lv, @NotNull final IntChunk<ChunkPositions> lp,
+                @NotNull final DoubleChunk<? extends Values> rv, @NotNull final IntChunk<ChunkPositions> rso,
                 @NotNull final IntChunk<ChunkLengths> rl, @NotNull final WritableIntChunk<? extends Values> o) {
             findStartsLessThanEqual(lv, lp, rv, rso, rl, o);
         }
 
         @Override
-        void findEnds(@NotNull final CharChunk<? extends Values> lv, @NotNull final IntChunk<ChunkPositions> lp,
-                @NotNull final CharChunk<? extends Values> rv, @NotNull final IntChunk<ChunkPositions> rso,
+        void findEnds(@NotNull final DoubleChunk<? extends Values> lv, @NotNull final IntChunk<ChunkPositions> lp,
+                @NotNull final DoubleChunk<? extends Values> rv, @NotNull final IntChunk<ChunkPositions> rso,
                 @NotNull final IntChunk<ChunkLengths> rl, @NotNull final WritableIntChunk<? extends Values> o) {
             findEndsGreaterThan(lv, lp, rv, rso, rl, o);
         }
@@ -79,28 +84,28 @@ enum RangeSearchKernelChar implements RangeSearchKernel {
 
     LEQAP_GT {
         @Override
-        void populateAllRangeForEmptyRight(@NotNull final CharChunk<? extends Values> lsv,
-                @NotNull final CharChunk<? extends Values> lev, @NotNull final WritableIntChunk<? extends Values> o) {
+        void populateAllRangeForEmptyRight(@NotNull final DoubleChunk<? extends Values> lsv,
+                @NotNull final DoubleChunk<? extends Values> lev, @NotNull final WritableIntChunk<? extends Values> o) {
             populateAllRangesForEmptyRightDisallowEqual(lsv, lev, o);
         }
 
         @Override
-        void populateInvalidRanges(@NotNull final CharChunk<? extends Values> lsv,
-                @NotNull final CharChunk<? extends Values> lev, @NotNull final WritableBooleanChunk<? super Values> v,
+        void populateInvalidRanges(@NotNull final DoubleChunk<? extends Values> lsv,
+                @NotNull final DoubleChunk<? extends Values> lev, @NotNull final WritableBooleanChunk<? super Values> v,
                 @NotNull final WritableIntChunk<? extends Values> o) {
             populateInvalidRangesDisallowEqual(lsv, lev, v, o);
         }
 
         @Override
-        void findStarts(@NotNull final CharChunk<? extends Values> lv, @NotNull final IntChunk<ChunkPositions> lp,
-                @NotNull final CharChunk<? extends Values> rv, @NotNull final IntChunk<ChunkPositions> rso,
+        void findStarts(@NotNull final DoubleChunk<? extends Values> lv, @NotNull final IntChunk<ChunkPositions> lp,
+                @NotNull final DoubleChunk<? extends Values> rv, @NotNull final IntChunk<ChunkPositions> rso,
                 @NotNull final IntChunk<ChunkLengths> rl, @NotNull final WritableIntChunk<? extends Values> o) {
             findStartsLessThanEqualAllowPreceding(lv, lp, rv, rso, rl, o);
         }
 
         @Override
-        void findEnds(@NotNull final CharChunk<? extends Values> lv, @NotNull final IntChunk<ChunkPositions> lp,
-                @NotNull final CharChunk<? extends Values> rv, @NotNull final IntChunk<ChunkPositions> rso,
+        void findEnds(@NotNull final DoubleChunk<? extends Values> lv, @NotNull final IntChunk<ChunkPositions> lp,
+                @NotNull final DoubleChunk<? extends Values> rv, @NotNull final IntChunk<ChunkPositions> rso,
                 @NotNull final IntChunk<ChunkLengths> rl, @NotNull final WritableIntChunk<? extends Values> o) {
             findEndsGreaterThan(lv, lp, rv, rso, rl, o);
         }
@@ -108,28 +113,28 @@ enum RangeSearchKernelChar implements RangeSearchKernel {
 
     LT_GEQ {
         @Override
-        void populateAllRangeForEmptyRight(@NotNull final CharChunk<? extends Values> lsv,
-                @NotNull final CharChunk<? extends Values> lev, @NotNull final WritableIntChunk<? extends Values> o) {
+        void populateAllRangeForEmptyRight(@NotNull final DoubleChunk<? extends Values> lsv,
+                @NotNull final DoubleChunk<? extends Values> lev, @NotNull final WritableIntChunk<? extends Values> o) {
             populateAllRangesForEmptyRightDisallowEqual(lsv, lev, o);
         }
 
         @Override
-        void populateInvalidRanges(@NotNull final CharChunk<? extends Values> lsv,
-                @NotNull final CharChunk<? extends Values> lev, @NotNull final WritableBooleanChunk<? super Values> v,
+        void populateInvalidRanges(@NotNull final DoubleChunk<? extends Values> lsv,
+                @NotNull final DoubleChunk<? extends Values> lev, @NotNull final WritableBooleanChunk<? super Values> v,
                 @NotNull final WritableIntChunk<? extends Values> o) {
             populateInvalidRangesDisallowEqual(lsv, lev, v, o);
         }
 
         @Override
-        void findStarts(@NotNull final CharChunk<? extends Values> lv, @NotNull final IntChunk<ChunkPositions> lp,
-                @NotNull final CharChunk<? extends Values> rv, @NotNull final IntChunk<ChunkPositions> rso,
+        void findStarts(@NotNull final DoubleChunk<? extends Values> lv, @NotNull final IntChunk<ChunkPositions> lp,
+                @NotNull final DoubleChunk<? extends Values> rv, @NotNull final IntChunk<ChunkPositions> rso,
                 @NotNull final IntChunk<ChunkLengths> rl, @NotNull final WritableIntChunk<? extends Values> o) {
             findStartsLessThan(lv, lp, rv, rso, rl, o);
         }
 
         @Override
-        void findEnds(@NotNull final CharChunk<? extends Values> lv, @NotNull final IntChunk<ChunkPositions> lp,
-                @NotNull final CharChunk<? extends Values> rv, @NotNull final IntChunk<ChunkPositions> rso,
+        void findEnds(@NotNull final DoubleChunk<? extends Values> lv, @NotNull final IntChunk<ChunkPositions> lp,
+                @NotNull final DoubleChunk<? extends Values> rv, @NotNull final IntChunk<ChunkPositions> rso,
                 @NotNull final IntChunk<ChunkLengths> rl, @NotNull final WritableIntChunk<? extends Values> o) {
             findEndsGreaterThanEqual(lv, lp, rv, rso, rl, o);
         }
@@ -137,28 +142,28 @@ enum RangeSearchKernelChar implements RangeSearchKernel {
 
     LEQ_GEQ {
         @Override
-        void populateAllRangeForEmptyRight(@NotNull final CharChunk<? extends Values> lsv,
-                @NotNull final CharChunk<? extends Values> lev, @NotNull final WritableIntChunk<? extends Values> o) {
+        void populateAllRangeForEmptyRight(@NotNull final DoubleChunk<? extends Values> lsv,
+                @NotNull final DoubleChunk<? extends Values> lev, @NotNull final WritableIntChunk<? extends Values> o) {
             populateAllRangesForEmptyRightAllowEqual(lsv, lev, o);
         }
 
         @Override
-        void populateInvalidRanges(@NotNull final CharChunk<? extends Values> lsv,
-                @NotNull final CharChunk<? extends Values> lev, @NotNull final WritableBooleanChunk<? super Values> v,
+        void populateInvalidRanges(@NotNull final DoubleChunk<? extends Values> lsv,
+                @NotNull final DoubleChunk<? extends Values> lev, @NotNull final WritableBooleanChunk<? super Values> v,
                 @NotNull final WritableIntChunk<? extends Values> o) {
             populateInvalidRangesAllowEqual(lsv, lev, v, o);
         }
 
         @Override
-        void findStarts(@NotNull final CharChunk<? extends Values> lv, @NotNull final IntChunk<ChunkPositions> lp,
-                @NotNull final CharChunk<? extends Values> rv, @NotNull final IntChunk<ChunkPositions> rso,
+        void findStarts(@NotNull final DoubleChunk<? extends Values> lv, @NotNull final IntChunk<ChunkPositions> lp,
+                @NotNull final DoubleChunk<? extends Values> rv, @NotNull final IntChunk<ChunkPositions> rso,
                 @NotNull final IntChunk<ChunkLengths> rl, @NotNull final WritableIntChunk<? extends Values> o) {
             findStartsLessThanEqual(lv, lp, rv, rso, rl, o);
         }
 
         @Override
-        void findEnds(@NotNull final CharChunk<? extends Values> lv, @NotNull final IntChunk<ChunkPositions> lp,
-                @NotNull final CharChunk<? extends Values> rv, @NotNull final IntChunk<ChunkPositions> rso,
+        void findEnds(@NotNull final DoubleChunk<? extends Values> lv, @NotNull final IntChunk<ChunkPositions> lp,
+                @NotNull final DoubleChunk<? extends Values> rv, @NotNull final IntChunk<ChunkPositions> rso,
                 @NotNull final IntChunk<ChunkLengths> rl, @NotNull final WritableIntChunk<? extends Values> o) {
             findEndsGreaterThanEqual(lv, lp, rv, rso, rl, o);
         }
@@ -166,28 +171,28 @@ enum RangeSearchKernelChar implements RangeSearchKernel {
 
     LEQAP_GEQ {
         @Override
-        void populateAllRangeForEmptyRight(@NotNull final CharChunk<? extends Values> lsv,
-                @NotNull final CharChunk<? extends Values> lev, @NotNull final WritableIntChunk<? extends Values> o) {
+        void populateAllRangeForEmptyRight(@NotNull final DoubleChunk<? extends Values> lsv,
+                @NotNull final DoubleChunk<? extends Values> lev, @NotNull final WritableIntChunk<? extends Values> o) {
             populateAllRangesForEmptyRightAllowEqual(lsv, lev, o);
         }
 
         @Override
-        void populateInvalidRanges(@NotNull final CharChunk<? extends Values> lsv,
-                @NotNull final CharChunk<? extends Values> lev, @NotNull final WritableBooleanChunk<? super Values> v,
+        void populateInvalidRanges(@NotNull final DoubleChunk<? extends Values> lsv,
+                @NotNull final DoubleChunk<? extends Values> lev, @NotNull final WritableBooleanChunk<? super Values> v,
                 @NotNull final WritableIntChunk<? extends Values> o) {
             populateInvalidRangesAllowEqual(lsv, lev, v, o);
         }
 
         @Override
-        void findStarts(@NotNull final CharChunk<? extends Values> lv, @NotNull final IntChunk<ChunkPositions> lp,
-                @NotNull final CharChunk<? extends Values> rv, @NotNull final IntChunk<ChunkPositions> rso,
+        void findStarts(@NotNull final DoubleChunk<? extends Values> lv, @NotNull final IntChunk<ChunkPositions> lp,
+                @NotNull final DoubleChunk<? extends Values> rv, @NotNull final IntChunk<ChunkPositions> rso,
                 @NotNull final IntChunk<ChunkLengths> rl, @NotNull final WritableIntChunk<? extends Values> o) {
             findStartsLessThanEqualAllowPreceding(lv, lp, rv, rso, rl, o);
         }
 
         @Override
-        void findEnds(@NotNull final CharChunk<? extends Values> lv, @NotNull final IntChunk<ChunkPositions> lp,
-                @NotNull final CharChunk<? extends Values> rv, @NotNull final IntChunk<ChunkPositions> rso,
+        void findEnds(@NotNull final DoubleChunk<? extends Values> lv, @NotNull final IntChunk<ChunkPositions> lp,
+                @NotNull final DoubleChunk<? extends Values> rv, @NotNull final IntChunk<ChunkPositions> rso,
                 @NotNull final IntChunk<ChunkLengths> rl, @NotNull final WritableIntChunk<? extends Values> o) {
             findEndsGreaterThanEqual(lv, lp, rv, rso, rl, o);
         }
@@ -195,28 +200,28 @@ enum RangeSearchKernelChar implements RangeSearchKernel {
 
     LT_GEQAF {
         @Override
-        void populateAllRangeForEmptyRight(@NotNull final CharChunk<? extends Values> lsv,
-                @NotNull final CharChunk<? extends Values> lev, @NotNull final WritableIntChunk<? extends Values> o) {
+        void populateAllRangeForEmptyRight(@NotNull final DoubleChunk<? extends Values> lsv,
+                @NotNull final DoubleChunk<? extends Values> lev, @NotNull final WritableIntChunk<? extends Values> o) {
             populateAllRangesForEmptyRightDisallowEqual(lsv, lev, o);
         }
 
         @Override
-        void populateInvalidRanges(@NotNull final CharChunk<? extends Values> lsv,
-                @NotNull final CharChunk<? extends Values> lev, @NotNull final WritableBooleanChunk<? super Values> v,
+        void populateInvalidRanges(@NotNull final DoubleChunk<? extends Values> lsv,
+                @NotNull final DoubleChunk<? extends Values> lev, @NotNull final WritableBooleanChunk<? super Values> v,
                 @NotNull final WritableIntChunk<? extends Values> o) {
             populateInvalidRangesDisallowEqual(lsv, lev, v, o);
         }
 
         @Override
-        void findStarts(@NotNull final CharChunk<? extends Values> lv, @NotNull final IntChunk<ChunkPositions> lp,
-                @NotNull final CharChunk<? extends Values> rv, @NotNull final IntChunk<ChunkPositions> rso,
+        void findStarts(@NotNull final DoubleChunk<? extends Values> lv, @NotNull final IntChunk<ChunkPositions> lp,
+                @NotNull final DoubleChunk<? extends Values> rv, @NotNull final IntChunk<ChunkPositions> rso,
                 @NotNull final IntChunk<ChunkLengths> rl, @NotNull final WritableIntChunk<? extends Values> o) {
             findStartsLessThan(lv, lp, rv, rso, rl, o);
         }
 
         @Override
-        void findEnds(@NotNull final CharChunk<? extends Values> lv, @NotNull final IntChunk<ChunkPositions> lp,
-                @NotNull final CharChunk<? extends Values> rv, @NotNull final IntChunk<ChunkPositions> rso,
+        void findEnds(@NotNull final DoubleChunk<? extends Values> lv, @NotNull final IntChunk<ChunkPositions> lp,
+                @NotNull final DoubleChunk<? extends Values> rv, @NotNull final IntChunk<ChunkPositions> rso,
                 @NotNull final IntChunk<ChunkLengths> rl, @NotNull final WritableIntChunk<? extends Values> o) {
             findEndsGreaterThanEqualAllowFollowing(lv, lp, rv, rso, rl, o);
         }
@@ -224,28 +229,28 @@ enum RangeSearchKernelChar implements RangeSearchKernel {
 
     LEQ_GEQAF {
         @Override
-        void populateAllRangeForEmptyRight(@NotNull final CharChunk<? extends Values> lsv,
-                @NotNull final CharChunk<? extends Values> lev, @NotNull final WritableIntChunk<? extends Values> o) {
+        void populateAllRangeForEmptyRight(@NotNull final DoubleChunk<? extends Values> lsv,
+                @NotNull final DoubleChunk<? extends Values> lev, @NotNull final WritableIntChunk<? extends Values> o) {
             populateAllRangesForEmptyRightAllowEqual(lsv, lev, o);
         }
 
         @Override
-        void populateInvalidRanges(@NotNull final CharChunk<? extends Values> lsv,
-                @NotNull final CharChunk<? extends Values> lev, @NotNull final WritableBooleanChunk<? super Values> v,
+        void populateInvalidRanges(@NotNull final DoubleChunk<? extends Values> lsv,
+                @NotNull final DoubleChunk<? extends Values> lev, @NotNull final WritableBooleanChunk<? super Values> v,
                 @NotNull final WritableIntChunk<? extends Values> o) {
             populateInvalidRangesAllowEqual(lsv, lev, v, o);
         }
 
         @Override
-        void findStarts(@NotNull final CharChunk<? extends Values> lv, @NotNull final IntChunk<ChunkPositions> lp,
-                @NotNull final CharChunk<? extends Values> rv, @NotNull final IntChunk<ChunkPositions> rso,
+        void findStarts(@NotNull final DoubleChunk<? extends Values> lv, @NotNull final IntChunk<ChunkPositions> lp,
+                @NotNull final DoubleChunk<? extends Values> rv, @NotNull final IntChunk<ChunkPositions> rso,
                 @NotNull final IntChunk<ChunkLengths> rl, @NotNull final WritableIntChunk<? extends Values> o) {
             findStartsLessThanEqual(lv, lp, rv, rso, rl, o);
         }
 
         @Override
-        void findEnds(@NotNull final CharChunk<? extends Values> lv, @NotNull final IntChunk<ChunkPositions> lp,
-                @NotNull final CharChunk<? extends Values> rv, @NotNull final IntChunk<ChunkPositions> rso,
+        void findEnds(@NotNull final DoubleChunk<? extends Values> lv, @NotNull final IntChunk<ChunkPositions> lp,
+                @NotNull final DoubleChunk<? extends Values> rv, @NotNull final IntChunk<ChunkPositions> rso,
                 @NotNull final IntChunk<ChunkLengths> rl, @NotNull final WritableIntChunk<? extends Values> o) {
             findEndsGreaterThanEqualAllowFollowing(lv, lp, rv, rso, rl, o);
         }
@@ -253,34 +258,34 @@ enum RangeSearchKernelChar implements RangeSearchKernel {
 
     LEQAP_GEQAF {
         @Override
-        void populateAllRangeForEmptyRight(@NotNull final CharChunk<? extends Values> lsv,
-                @NotNull final CharChunk<? extends Values> lev, @NotNull final WritableIntChunk<? extends Values> o) {
+        void populateAllRangeForEmptyRight(@NotNull final DoubleChunk<? extends Values> lsv,
+                @NotNull final DoubleChunk<? extends Values> lev, @NotNull final WritableIntChunk<? extends Values> o) {
             populateAllRangesForEmptyRightAllowEqual(lsv, lev, o);
         }
 
         @Override
-        void populateInvalidRanges(@NotNull final CharChunk<? extends Values> lsv,
-                @NotNull final CharChunk<? extends Values> lev, @NotNull final WritableBooleanChunk<? super Values> v,
+        void populateInvalidRanges(@NotNull final DoubleChunk<? extends Values> lsv,
+                @NotNull final DoubleChunk<? extends Values> lev, @NotNull final WritableBooleanChunk<? super Values> v,
                 @NotNull final WritableIntChunk<? extends Values> o) {
             populateInvalidRangesAllowEqual(lsv, lev, v, o);
         }
 
         @Override
-        void findStarts(@NotNull final CharChunk<? extends Values> lv, @NotNull final IntChunk<ChunkPositions> lp,
-                @NotNull final CharChunk<? extends Values> rv, @NotNull final IntChunk<ChunkPositions> rso,
+        void findStarts(@NotNull final DoubleChunk<? extends Values> lv, @NotNull final IntChunk<ChunkPositions> lp,
+                @NotNull final DoubleChunk<? extends Values> rv, @NotNull final IntChunk<ChunkPositions> rso,
                 @NotNull final IntChunk<ChunkLengths> rl, @NotNull final WritableIntChunk<? extends Values> o) {
             findStartsLessThanEqualAllowPreceding(lv, lp, rv, rso, rl, o);
         }
 
         @Override
-        void findEnds(@NotNull final CharChunk<? extends Values> lv, @NotNull final IntChunk<ChunkPositions> lp,
-                @NotNull final CharChunk<? extends Values> rv, @NotNull final IntChunk<ChunkPositions> rso,
+        void findEnds(@NotNull final DoubleChunk<? extends Values> lv, @NotNull final IntChunk<ChunkPositions> lp,
+                @NotNull final DoubleChunk<? extends Values> rv, @NotNull final IntChunk<ChunkPositions> rso,
                 @NotNull final IntChunk<ChunkLengths> rl, @NotNull final WritableIntChunk<? extends Values> o) {
             findEndsGreaterThanEqualAllowFollowing(lv, lp, rv, rso, rl, o);
         }
     };
 
-    static RangeSearchKernelChar forRules(
+    static RangeSearchKernelDouble forRules(
             @NotNull final RangeStartRule startRule,
             @NotNull final RangeEndRule endRule) {
         switch (startRule) {
@@ -324,12 +329,12 @@ enum RangeSearchKernelChar implements RangeSearchKernel {
             @NotNull final Chunk<? extends Values> leftStartValues,
             @NotNull final Chunk<? extends Values> leftEndValues,
             @NotNull final WritableIntChunk<? extends Values> output) {
-        populateAllRangeForEmptyRight(leftStartValues.asCharChunk(), leftEndValues.asCharChunk(), output);
+        populateAllRangeForEmptyRight(leftStartValues.asDoubleChunk(), leftEndValues.asDoubleChunk(), output);
     }
 
     abstract void populateAllRangeForEmptyRight(
-            @NotNull final CharChunk<? extends Values> leftStartValues,
-            @NotNull final CharChunk<? extends Values> leftEndValues,
+            @NotNull final DoubleChunk<? extends Values> leftStartValues,
+            @NotNull final DoubleChunk<? extends Values> leftEndValues,
             @NotNull final WritableIntChunk<? extends Values> output);
 
     @Override
@@ -338,12 +343,12 @@ enum RangeSearchKernelChar implements RangeSearchKernel {
             @NotNull final Chunk<? extends Values> leftEndValues,
             @NotNull final WritableBooleanChunk<? super Values> validity,
             @NotNull final WritableIntChunk<? extends Values> output) {
-        populateInvalidRanges(leftStartValues.asCharChunk(), leftEndValues.asCharChunk(), validity, output);
+        populateInvalidRanges(leftStartValues.asDoubleChunk(), leftEndValues.asDoubleChunk(), validity, output);
     }
 
     abstract void populateInvalidRanges(
-            @NotNull final CharChunk<? extends Values> leftStartValues,
-            @NotNull final CharChunk<? extends Values> leftEndValues,
+            @NotNull final DoubleChunk<? extends Values> leftStartValues,
+            @NotNull final DoubleChunk<? extends Values> leftEndValues,
             @NotNull final WritableBooleanChunk<? super Values> validity,
             @NotNull final WritableIntChunk<? extends Values> output);
 
@@ -355,15 +360,15 @@ enum RangeSearchKernelChar implements RangeSearchKernel {
             @NotNull final IntChunk<ChunkPositions> rightStartOffsets,
             @NotNull final IntChunk<ChunkLengths> rightLengths,
             @NotNull final WritableIntChunk<? extends Values> output) {
-        findStarts(leftValues.asCharChunk(), leftPositions,
-                rightValues.asCharChunk(), rightStartOffsets, rightLengths,
+        findStarts(leftValues.asDoubleChunk(), leftPositions,
+                rightValues.asDoubleChunk(), rightStartOffsets, rightLengths,
                 output);
     }
 
     abstract void findStarts(
-            @NotNull final CharChunk<? extends Values> leftValues,
+            @NotNull final DoubleChunk<? extends Values> leftValues,
             @NotNull final IntChunk<ChunkPositions> leftPositions,
-            @NotNull final CharChunk<? extends Values> rightValues,
+            @NotNull final DoubleChunk<? extends Values> rightValues,
             @NotNull final IntChunk<ChunkPositions> rightStartOffsets,
             @NotNull final IntChunk<ChunkLengths> rightLengths,
             @NotNull final WritableIntChunk<? extends Values> output);
@@ -376,22 +381,22 @@ enum RangeSearchKernelChar implements RangeSearchKernel {
             @NotNull final IntChunk<ChunkPositions> rightStartOffsets,
             @NotNull final IntChunk<ChunkLengths> rightLengths,
             @NotNull final WritableIntChunk<? extends Values> output) {
-        findEnds(leftValues.asCharChunk(), leftPositions,
-                rightValues.asCharChunk(), rightStartOffsets, rightLengths,
+        findEnds(leftValues.asDoubleChunk(), leftPositions,
+                rightValues.asDoubleChunk(), rightStartOffsets, rightLengths,
                 output);
     }
 
     abstract void findEnds(
-            @NotNull final CharChunk<? extends Values> leftValues,
+            @NotNull final DoubleChunk<? extends Values> leftValues,
             @NotNull final IntChunk<ChunkPositions> leftPositions,
-            @NotNull final CharChunk<? extends Values> rightValues,
+            @NotNull final DoubleChunk<? extends Values> rightValues,
             @NotNull final IntChunk<ChunkPositions> rightStartOffsets,
             @NotNull final IntChunk<ChunkLengths> rightLengths,
             @NotNull final WritableIntChunk<? extends Values> output);
 
     private static void populateInvalidRangesAllowEqual(
-            @NotNull CharChunk<? extends Values> leftStartValues,
-            @NotNull CharChunk<? extends Values> leftEndValues,
+            @NotNull DoubleChunk<? extends Values> leftStartValues,
+            @NotNull DoubleChunk<? extends Values> leftEndValues,
             @NotNull WritableBooleanChunk<? super Values> validity,
             @NotNull WritableIntChunk<? extends Values> output) {
         final int size = leftStartValues.size();
@@ -409,8 +414,8 @@ enum RangeSearchKernelChar implements RangeSearchKernel {
     }
 
     private static void populateInvalidRangesDisallowEqual(
-            @NotNull CharChunk<? extends Values> leftStartValues,
-            @NotNull CharChunk<? extends Values> leftEndValues,
+            @NotNull DoubleChunk<? extends Values> leftStartValues,
+            @NotNull DoubleChunk<? extends Values> leftEndValues,
             @NotNull WritableBooleanChunk<? super Values> validity,
             @NotNull WritableIntChunk<? extends Values> output) {
         final int size = leftStartValues.size();
@@ -428,8 +433,8 @@ enum RangeSearchKernelChar implements RangeSearchKernel {
     }
 
     private static void populateAllRangesForEmptyRightAllowEqual(
-            @NotNull CharChunk<? extends Values> leftStartValues,
-            @NotNull CharChunk<? extends Values> leftEndValues,
+            @NotNull DoubleChunk<? extends Values> leftStartValues,
+            @NotNull DoubleChunk<? extends Values> leftEndValues,
             @NotNull WritableIntChunk<? extends Values> output) {
         final int size = leftStartValues.size();
         Assert.eq(size, "leftStartValues.size()", leftEndValues.size(), "leftEndValues.size()");
@@ -446,8 +451,8 @@ enum RangeSearchKernelChar implements RangeSearchKernel {
     }
 
     private static void populateAllRangesForEmptyRightDisallowEqual(
-            @NotNull CharChunk<? extends Values> leftStartValues,
-            @NotNull CharChunk<? extends Values> leftEndValues,
+            @NotNull DoubleChunk<? extends Values> leftStartValues,
+            @NotNull DoubleChunk<? extends Values> leftEndValues,
             @NotNull WritableIntChunk<? extends Values> output) {
         final int size = leftStartValues.size();
         Assert.eq(size, "leftStartValues.size()", leftEndValues.size(), "leftEndValues.size()");
@@ -463,18 +468,18 @@ enum RangeSearchKernelChar implements RangeSearchKernel {
         }
     }
 
-    private static boolean isValidPairAllowEqual(final char start, final char end) {
+    private static boolean isValidPairAllowEqual(final double start, final double end) {
         return !isNaN(start) && !isNaN(end) && (isNull(start) || isNull(end) || leq(start, end));
     }
 
-    private static boolean isValidPairDisallowEqual(final char start, final char end) {
+    private static boolean isValidPairDisallowEqual(final double start, final double end) {
         return !isNaN(start) && !isNaN(end) && (isNull(start) || isNull(end) || lt(start, end));
     }
 
     private static void findStartsLessThan(
-            @NotNull final CharChunk<? extends Values> leftValues,
+            @NotNull final DoubleChunk<? extends Values> leftValues,
             @NotNull final IntChunk<ChunkPositions> leftPositions,
-            @NotNull final CharChunk<? extends Values> rightValues,
+            @NotNull final DoubleChunk<? extends Values> rightValues,
             @NotNull final IntChunk<ChunkPositions> rightStartOffsets,
             @NotNull final IntChunk<ChunkLengths> rightLengths,
             @NotNull final WritableIntChunk<? extends Values> output) {
@@ -492,7 +497,7 @@ enum RangeSearchKernelChar implements RangeSearchKernel {
 
         // Find the range starts for non-null left values
         int rightLowIndexInclusive = 0;
-        char leftValue = leftValues.get(leftIndex);
+        double leftValue = leftValues.get(leftIndex);
         do {
             final int searchResult = rightValues.binarySearch(rightLowIndexInclusive, rightSize, leftValue);
             // Take insertion point for not found, or bump by one for found to avoid equal values
@@ -501,7 +506,7 @@ enum RangeSearchKernelChar implements RangeSearchKernel {
                 break;
             }
             final int rightPosition = rightStartOffsets.get(rightIndex);
-            final char rightValue = rightValues.get(rightIndex);
+            final double rightValue = rightValues.get(rightIndex);
             output.set(leftPositionToOutputStartPosition(leftPositions.get(leftIndex++)), rightPosition);
             // Proceed linearly until we have a reason to binary search again. We can re-use rightPosition until
             // we reach rightValue.
@@ -516,9 +521,9 @@ enum RangeSearchKernelChar implements RangeSearchKernel {
     }
 
     private static void findStartsLessThanEqual(
-            @NotNull final CharChunk<? extends Values> leftValues,
+            @NotNull final DoubleChunk<? extends Values> leftValues,
             @NotNull final IntChunk<ChunkPositions> leftPositions,
-            @NotNull final CharChunk<? extends Values> rightValues,
+            @NotNull final DoubleChunk<? extends Values> rightValues,
             @NotNull final IntChunk<ChunkPositions> rightStartOffsets,
             @NotNull final IntChunk<ChunkLengths> rightLengths,
             @NotNull final WritableIntChunk<? extends Values> output) {
@@ -536,7 +541,7 @@ enum RangeSearchKernelChar implements RangeSearchKernel {
 
         // Find the range starts for non-null left values
         int rightLowIndexInclusive = 0;
-        char leftValue = leftValues.get(leftIndex);
+        double leftValue = leftValues.get(leftIndex);
         do {
             final int searchResult = rightValues.binarySearch(rightLowIndexInclusive, rightSize, leftValue);
             // Take insertion point in all cases
@@ -545,7 +550,7 @@ enum RangeSearchKernelChar implements RangeSearchKernel {
                 break;
             }
             final int rightPosition = rightStartOffsets.get(rightIndex);
-            final char rightValue = rightValues.get(rightIndex);
+            final double rightValue = rightValues.get(rightIndex);
             output.set(leftPositionToOutputStartPosition(leftPositions.get(leftIndex++)), rightPosition);
             // Proceed linearly until we have a reason to binary search again. We can re-use rightPosition until
             // we pass rightValue.
@@ -560,9 +565,9 @@ enum RangeSearchKernelChar implements RangeSearchKernel {
     }
 
     private static void findStartsLessThanEqualAllowPreceding(
-            @NotNull final CharChunk<? extends Values> leftValues,
+            @NotNull final DoubleChunk<? extends Values> leftValues,
             @NotNull final IntChunk<ChunkPositions> leftPositions,
-            @NotNull final CharChunk<? extends Values> rightValues,
+            @NotNull final DoubleChunk<? extends Values> rightValues,
             @NotNull final IntChunk<ChunkPositions> rightStartOffsets,
             @NotNull final IntChunk<ChunkLengths> rightLengths,
             @NotNull final WritableIntChunk<? extends Values> output) {
@@ -580,13 +585,13 @@ enum RangeSearchKernelChar implements RangeSearchKernel {
 
         // Find the range starts for non-null left values
         int rightLowIndexInclusive = 0;
-        char leftValue = leftValues.get(leftIndex);
+        double leftValue = leftValues.get(leftIndex);
         do {
             final int searchResult = rightValues.binarySearch(rightLowIndexInclusive, rightSize, leftValue);
             // Take insertion point in all cases
             final int rightIndex = searchResult < 0 ? ~searchResult : searchResult;
             final int rightPosition = rightStartOffsets.get(rightIndex);
-            final char rightValue = rightValues.get(rightIndex);
+            final double rightValue = rightValues.get(rightIndex);
             // Proceed linearly until we have a reason to binary search again
             if (searchResult < 0 && rightIndex != 0) {
                 // If we had an inexact match that isn't at the beginning of the right values, look behind
@@ -622,7 +627,7 @@ enum RangeSearchKernelChar implements RangeSearchKernel {
      * @return The number of left indices consumed
      */
     private static int consumeNullLeftStartValues(
-            @NotNull final CharChunk<? extends Values> leftValues,
+            @NotNull final DoubleChunk<? extends Values> leftValues,
             @NotNull final IntChunk<ChunkPositions> leftPositions,
             @NotNull final WritableIntChunk<? extends Values> output) {
         final int leftSize = leftValues.size();
@@ -660,9 +665,9 @@ enum RangeSearchKernelChar implements RangeSearchKernel {
     }
 
     private static void findEndsGreaterThan(
-            @NotNull final CharChunk<? extends Values> leftValues,
+            @NotNull final DoubleChunk<? extends Values> leftValues,
             @NotNull final IntChunk<ChunkPositions> leftPositions,
-            @NotNull final CharChunk<? extends Values> rightValues,
+            @NotNull final DoubleChunk<? extends Values> rightValues,
             @NotNull final IntChunk<ChunkPositions> rightStartOffsets,
             @NotNull final IntChunk<ChunkLengths> rightLengths,
             @NotNull final WritableIntChunk<? extends Values> output) {
@@ -680,7 +685,7 @@ enum RangeSearchKernelChar implements RangeSearchKernel {
 
         // Find the range ends for non-null left values
         int rightLowIndexInclusive = 0;
-        char leftValue = leftValues.get(leftIndex);
+        double leftValue = leftValues.get(leftIndex);
         do {
             final int searchResult = rightValues.binarySearch(rightLowIndexInclusive, rightSize, leftValue);
             // Take insertion point for not found, or decrement by one for found to avoid equal values
@@ -689,7 +694,7 @@ enum RangeSearchKernelChar implements RangeSearchKernel {
                 break;
             }
             final int rightPosition = rightStartOffsets.get(rightIndex) + rightLengths.get(rightIndex) + 1;
-            final char rightValue = rightValues.get(rightIndex);
+            final double rightValue = rightValues.get(rightIndex);
             output.set(leftPositionToOutputEndPosition(leftPositions.get(leftIndex++)), rightPosition);
             // Proceed linearly until we have a reason to binary search again. We can re-use rightPosition until
             // we reach rightValue.
@@ -704,9 +709,9 @@ enum RangeSearchKernelChar implements RangeSearchKernel {
     }
 
     private static void findEndsGreaterThanEqual(
-            @NotNull final CharChunk<? extends Values> leftValues,
+            @NotNull final DoubleChunk<? extends Values> leftValues,
             @NotNull final IntChunk<ChunkPositions> leftPositions,
-            @NotNull final CharChunk<? extends Values> rightValues,
+            @NotNull final DoubleChunk<? extends Values> rightValues,
             @NotNull final IntChunk<ChunkPositions> rightStartOffsets,
             @NotNull final IntChunk<ChunkLengths> rightLengths,
             @NotNull final WritableIntChunk<? extends Values> output) {
@@ -724,7 +729,7 @@ enum RangeSearchKernelChar implements RangeSearchKernel {
 
         // Find the range ends for non-null left values
         int rightLowIndexInclusive = 0;
-        char leftValue = leftValues.get(leftIndex);
+        double leftValue = leftValues.get(leftIndex);
         do {
             final int searchResult = rightValues.binarySearch(rightLowIndexInclusive, rightSize, leftValue);
             // Take insertion point in all cases
@@ -733,7 +738,7 @@ enum RangeSearchKernelChar implements RangeSearchKernel {
                 break;
             }
             final int rightPosition = rightStartOffsets.get(rightIndex) + rightLengths.get(rightIndex) + 1;
-            final char rightValue = rightValues.get(rightIndex);
+            final double rightValue = rightValues.get(rightIndex);
             output.set(leftPositionToOutputEndPosition(leftPositions.get(leftIndex++)), rightPosition);
             // Proceed linearly until we have a reason to binary search again. We can re-use rightPosition until
             // we pass rightValue.
@@ -748,9 +753,9 @@ enum RangeSearchKernelChar implements RangeSearchKernel {
     }
 
     private static void findEndsGreaterThanEqualAllowFollowing(
-            @NotNull final CharChunk<? extends Values> leftValues,
+            @NotNull final DoubleChunk<? extends Values> leftValues,
             @NotNull final IntChunk<ChunkPositions> leftPositions,
-            @NotNull final CharChunk<? extends Values> rightValues,
+            @NotNull final DoubleChunk<? extends Values> rightValues,
             @NotNull final IntChunk<ChunkPositions> rightStartOffsets,
             @NotNull final IntChunk<ChunkLengths> rightLengths,
             @NotNull final WritableIntChunk<? extends Values> output) {
@@ -768,13 +773,13 @@ enum RangeSearchKernelChar implements RangeSearchKernel {
 
         // Find the range ends for non-null left values
         int rightLowIndexInclusive = 0;
-        char leftValue = leftValues.get(leftIndex);
+        double leftValue = leftValues.get(leftIndex);
         do {
             final int searchResult = rightValues.binarySearch(rightLowIndexInclusive, rightSize, leftValue);
             // Take insertion point in all cases
             final int rightIndex = searchResult < 0 ? ~searchResult : searchResult;
             final int rightPosition = rightStartOffsets.get(rightIndex) + rightLengths.get(rightIndex) + 1;
-            final char rightValue = rightValues.get(rightIndex);
+            final double rightValue = rightValues.get(rightIndex);
             // Proceed linearly until we have a reason to binary search again
             if (searchResult < 0 && rightIndex != rightSize - 1) {
                 // If we had an inexact match that isn't at the end of the right values, look ahead
@@ -810,7 +815,7 @@ enum RangeSearchKernelChar implements RangeSearchKernel {
      * @return The number of left indices consumed
      */
     private static int consumeNullLeftEndValues(
-            @NotNull final CharChunk<? extends Values> leftValues,
+            @NotNull final DoubleChunk<? extends Values> leftValues,
             @NotNull final IntChunk<ChunkPositions> leftPositions,
             @NotNull final IntChunk<ChunkPositions> rightStartOffsets,
             @NotNull final IntChunk<ChunkLengths> rightLengths,
@@ -853,27 +858,27 @@ enum RangeSearchKernelChar implements RangeSearchKernel {
 
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     // region isNaN
-    private static boolean isNaN(@SuppressWarnings("unused") final char v) {
-        return false;
+    private static boolean isNaN(final double v) {
+        return Double.isNaN(v);
     }
     // endregion isNaN
 
     // region isNull
-    private static boolean isNull(final char v) {
+    private static boolean isNull(final double v) {
         // We need not deal with NaN values here
-        return v == NULL_CHAR;
+        return v == NULL_DOUBLE;
     }
     // endregion isNull
 
     // region lt
-    private static boolean lt(final char a, final char b) {
+    private static boolean lt(final double a, final double b) {
         // We need not deal with null or NaN values here
         return a < b;
     }
     // endregion lt
 
     // region leq
-    private static boolean leq(final char a, final char b) {
+    private static boolean leq(final double a, final double b) {
         // We need not deal with null or NaN values here
         return a <= b;
     }

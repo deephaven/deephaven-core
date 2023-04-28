@@ -82,6 +82,7 @@ task replicateAllSafe {
 
     dependsOn Tasks.registerMainExecTask(project, 'replicatePrimitiveInterfaces', 'io.deephaven.replicators.ReplicatePrimitiveInterfaces')
 
+    dependsOn Tasks.registerMainExecTask(project, 'replicateRangeSearchKernels', 'io.deephaven.replicators.ReplicateRangeSearchKernels')
 }
 
 // These replicators need manual fix-up post replication and should not be run without supervision
