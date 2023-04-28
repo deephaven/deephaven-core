@@ -3,6 +3,7 @@
  */
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.api.JoinMatch;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.testutil.EvalNugget;
@@ -15,7 +16,7 @@ import io.deephaven.test.types.OutOfBandTest;
 import org.apache.commons.lang3.mutable.MutableInt;
 
 import java.util.Arrays;
-import java.util.Collections;
+import java.util.List;
 
 import org.junit.experimental.categories.Category;
 
@@ -88,7 +89,7 @@ public class QueryTableCrossJoinSmallRightBitsTest extends QueryTableCrossJoinTe
                     Assert.eqTrue(thrown, "thrown");
 
                     // we can fit if we use min right bits
-                    left.join(right, "A=B", 1);
+                    left.join(right, List.of(JoinMatch.parse("A=B")), emptyList(), 1);
                 } else {
                     left.join(right, "A=B"); // static - static should be OK because it always uses min right bits
                 }
@@ -116,11 +117,13 @@ public class QueryTableCrossJoinSmallRightBitsTest extends QueryTableCrossJoinTe
         }
 
         final EvalNugget[] en = new EvalNugget[] {
-                EvalNugget.from(() -> lTable.join(rTable, "A", numRightBitsToReserve)),
+                EvalNugget.from(
+                        () -> lTable.join(rTable, List.of(JoinMatch.parse("A")), emptyList(), numRightBitsToReserve)),
         };
         TstUtils.validate(en);
 
-        final QueryTable jt = (QueryTable) lTable.join(rTable, "A", numRightBitsToReserve);
+        final QueryTable jt =
+                (QueryTable) lTable.join(rTable, List.of(JoinMatch.parse("A")), emptyList(), numRightBitsToReserve);
         final io.deephaven.engine.table.impl.SimpleListener listener =
                 new io.deephaven.engine.table.impl.SimpleListener(jt);
         jt.addUpdateListener(listener);
@@ -173,11 +176,13 @@ public class QueryTableCrossJoinSmallRightBitsTest extends QueryTableCrossJoinTe
         }
 
         final EvalNugget[] en = new EvalNugget[] {
-                EvalNugget.from(() -> lTable.join(rTable, "A", numRightBitsToReserve)),
+                EvalNugget.from(
+                        () -> lTable.join(rTable, List.of(JoinMatch.parse("A")), emptyList(), numRightBitsToReserve)),
         };
         TstUtils.validate(en);
 
-        final QueryTable jt = (QueryTable) lTable.join(rTable, "A", numRightBitsToReserve);
+        final QueryTable jt =
+                (QueryTable) lTable.join(rTable, List.of(JoinMatch.parse("A")), emptyList(), numRightBitsToReserve);
         final io.deephaven.engine.table.impl.SimpleListener listener =
                 new io.deephaven.engine.table.impl.SimpleListener(jt);
         jt.addUpdateListener(listener);
@@ -227,11 +232,13 @@ public class QueryTableCrossJoinSmallRightBitsTest extends QueryTableCrossJoinTe
         }
 
         final EvalNugget[] en = new EvalNugget[] {
-                EvalNugget.from(() -> lTable.join(rTable, "A", numRightBitsToReserve)),
+                EvalNugget.from(
+                        () -> lTable.join(rTable, List.of(JoinMatch.parse("A")), emptyList(), numRightBitsToReserve)),
         };
         TstUtils.validate(en);
 
-        final QueryTable jt = (QueryTable) lTable.join(rTable, "A", numRightBitsToReserve);
+        final QueryTable jt =
+                (QueryTable) lTable.join(rTable, List.of(JoinMatch.parse("A")), emptyList(), numRightBitsToReserve);
         final io.deephaven.engine.table.impl.SimpleListener listener =
                 new io.deephaven.engine.table.impl.SimpleListener(jt);
         jt.addUpdateListener(listener);
@@ -287,11 +294,13 @@ public class QueryTableCrossJoinSmallRightBitsTest extends QueryTableCrossJoinTe
         }
 
         final EvalNugget[] en = new EvalNugget[] {
-                EvalNugget.from(() -> lTable.join(rTable, "A", numRightBitsToReserve)),
+                EvalNugget.from(
+                        () -> lTable.join(rTable, List.of(JoinMatch.parse("A")), emptyList(), numRightBitsToReserve)),
         };
         TstUtils.validate(en);
 
-        final QueryTable jt = (QueryTable) lTable.join(rTable, "A", numRightBitsToReserve);
+        final QueryTable jt =
+                (QueryTable) lTable.join(rTable, List.of(JoinMatch.parse("A")), emptyList(), numRightBitsToReserve);
         final io.deephaven.engine.table.impl.SimpleListener listener =
                 new io.deephaven.engine.table.impl.SimpleListener(jt);
         jt.addUpdateListener(listener);
