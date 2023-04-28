@@ -6,6 +6,9 @@ import io.deephaven.api.JoinMatch;
 import io.deephaven.api.RangeJoinMatch;
 import io.deephaven.api.Strings;
 import io.deephaven.api.agg.Aggregation;
+import io.deephaven.api.agg.AggregationOptimizer;
+import io.deephaven.api.agg.AggregationPairs;
+import io.deephaven.api.agg.Pair;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.base.MathUtil;
 import io.deephaven.base.verify.Assert;
@@ -33,7 +36,9 @@ import io.deephaven.engine.table.impl.sort.IntSortKernel;
 import io.deephaven.engine.table.impl.sort.findruns.FindRunsKernel;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.IntegerSparseArraySource;
+import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
+import io.deephaven.engine.table.impl.sources.aggregate.AggregateColumnSource;
 import io.deephaven.engine.table.impl.sources.sparse.SparseConstants;
 import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.engine.table.impl.util.JobScheduler.IterateAction;
@@ -41,11 +46,10 @@ import io.deephaven.engine.table.impl.util.compact.CompactKernel;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import static io.deephaven.base.ArrayUtil.MAX_ARRAY_SIZE;
 import static io.deephaven.engine.table.WritableSourceWithPrepareForParallelPopulation.allSupportParallelPopulation;
@@ -439,6 +443,7 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
                     joinedInputTables.intSize(),
                     this,
                     () -> new StaticRangeJoinPhase3(jobScheduler, resultFuture).start(
+                            rightGroupRowSets,
                             outputSlotsExposed,
                             outputStartPositionsInclusiveExposed,
                             outputEndPositionsExclusiveExposed),
@@ -635,13 +640,16 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
 
                     if (outputRedirection == null) {
                         outputSlotsExposed.fillFromChunk(
-                                tc.outputSlotsFillFromContext, tc.outputSlotsChunk,
+                                tc.outputSlotsFillFromContext,
+                                tc.outputSlotsChunk,
                                 leftRowsSlice);
                         outputStartPositionsInclusiveExposed.fillFromChunk(
-                                tc.outputStartPositionsInclusiveFillFromContext, tc.outputStartPositionsInclusiveChunk,
+                                tc.outputStartPositionsInclusiveFillFromContext,
+                                tc.outputStartPositionsInclusiveChunk,
                                 leftRowsSlice);
                         outputEndPositionsExclusiveExposed.fillFromChunk(
-                                tc.outputEndPositionsExclusiveFillFromContext, tc.outputEndPositionsExclusiveChunk,
+                                tc.outputEndPositionsExclusiveFillFromContext,
+                                tc.outputEndPositionsExclusiveChunk,
                                 leftRowsSlice);
                     } else {
                         // @formatter:off
@@ -649,14 +657,17 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
                              final RowSequence invertedLeftRowsSlice = leftTable.getRowSet().invert(leftSliceRowSet)) {
                             // @formatter:on
                             outputSlotsInner.fillFromChunk(
-                                    tc.outputSlotsFillFromContext, tc.outputSlotsChunk,
-                                    leftRowsSlice);
+                                    tc.outputSlotsFillFromContext,
+                                    tc.outputSlotsChunk,
+                                    invertedLeftRowsSlice);
                             outputStartPositionsInclusiveInner.fillFromChunk(
-                                    tc.outputStartPositionsInclusiveFillFromContext, tc.outputStartPositionsInclusiveChunk,
-                                    leftRowsSlice);
+                                    tc.outputStartPositionsInclusiveFillFromContext,
+                                    tc.outputStartPositionsInclusiveChunk,
+                                    invertedLeftRowsSlice);
                             outputEndPositionsExclusiveInner.fillFromChunk(
-                                    tc.outputEndPositionsExclusiveFillFromContext, tc.outputEndPositionsExclusiveChunk,
-                                    leftRowsSlice);
+                                    tc.outputEndPositionsExclusiveFillFromContext,
+                                    tc.outputEndPositionsExclusiveChunk,
+                                    invertedLeftRowsSlice);
                         }
                     }
                 }
@@ -673,10 +684,24 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
         }
 
         public void start(
+                @NotNull final ColumnSource<RowSet> rightGroupRowSets,
                 @NotNull final ColumnSource<Integer> outputSlots,
                 @NotNull final ColumnSource<Integer> outputStartPositionsInclusive,
                 @NotNull final ColumnSource<Integer> outputEndPositionsExclusive) {
-            // TODO-RWC: Build grouped sources, return result QueryTable
+            // We support only ColumnAggregation(s) with spec of type AggSpecGroup at this time. Since we validate our
+            // inputs in the RangeJoinOperation constructor, we can proceed here using just input/output pairs, knowing
+            // that all are for a "group" aggregation.
+            final List<Pair> groupPairs = AggregationPairs.of(aggregations).collect(Collectors.toList());
+            final ColumnSource<RowSet> outputRowSets =
+                    maybeRedirect(new IntColumnSourceRowRedirection<>(outputSlots), rightGroupRowSets);
+            final Map<String, ColumnSource<?>> resultColumnSources =
+                    new LinkedHashMap<>(leftTable.getColumnSourceMap());
+            groupPairs.forEach((final Pair groupPair) -> {
+                resultColumnSources.put(groupPair.output().name(),
+                        // TODO-RWC: Make the sources
+                        null);
+            });
+            resultFuture.complete(new QueryTable(leftTable.getRowSet(), resultColumnSources));
         }
     }
 }
