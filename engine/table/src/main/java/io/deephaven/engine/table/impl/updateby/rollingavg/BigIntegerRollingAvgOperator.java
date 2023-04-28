@@ -28,8 +28,8 @@ public final class BigIntegerRollingAvgOperator extends BaseObjectUpdateByOperat
         protected ObjectChunk<BigInteger, ? extends Values> objectInfluencerValuesChunk;
         protected RingBuffer<BigInteger> objectWindowValues;
 
-        protected Context(final int chunkSize) {
-            super(chunkSize);
+        protected Context(final int affectedChunkSize, final int influencerChunkSize) {
+            super(affectedChunkSize);
             objectWindowValues = new RingBuffer<>(RING_BUFFER_INITIAL_CAPACITY);
         }
 
@@ -41,8 +41,8 @@ public final class BigIntegerRollingAvgOperator extends BaseObjectUpdateByOperat
 
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            objectInfluencerValuesChunk = valuesChunk.asObjectChunk();
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
+            objectInfluencerValuesChunk = valueChunks[0].asObjectChunk();
         }
 
         @Override
@@ -100,8 +100,8 @@ public final class BigIntegerRollingAvgOperator extends BaseObjectUpdateByOperat
 
     @NotNull
     @Override
-    public UpdateByOperator.Context makeUpdateContext(final int chunkSize) {
-        return new Context(chunkSize);
+    public UpdateByOperator.Context makeUpdateContext(final int affectedChunkSize, final int influencerChunkSize) {
+        return new Context(affectedChunkSize, influencerChunkSize);
     }
 
     public BigIntegerRollingAvgOperator(@NotNull final MatchPair pair,

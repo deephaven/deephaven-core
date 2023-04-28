@@ -3,13 +3,11 @@
  */
 package io.deephaven.engine.table.impl.select;
 
-import io.deephaven.base.clock.Clock;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.engine.updategraph.TerminalNotification;
 import io.deephaven.util.annotations.ScriptApi;
-import org.jetbrains.annotations.NotNull;
 
 import java.text.DecimalFormat;
 

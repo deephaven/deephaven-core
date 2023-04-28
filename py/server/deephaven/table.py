@@ -41,6 +41,7 @@ _JFilterOr = jpy.get_type("io.deephaven.api.filter.FilterOr")
 _JPair = jpy.get_type("io.deephaven.api.agg.Pair")
 _JMatchPair = jpy.get_type("io.deephaven.engine.table.MatchPair")
 _JLayoutHintBuilder = jpy.get_type("io.deephaven.engine.util.LayoutHintBuilder")
+_JSearchDisplayMode = jpy.get_type("io.deephaven.engine.util.LayoutHintBuilder$SearchDisplayModes")
 _JSnapshotWhenOptions = jpy.get_type("io.deephaven.api.snapshot.SnapshotWhenOptions")
 
 # PartitionedTable
@@ -87,6 +88,14 @@ class NodeType(Enum):
     include_constituent=True. The constituent level is the lowest in a rollup table. These nodes have column names 
     and types from the source table of the RollupTable. """
 
+class SearchDisplayMode(Enum):
+    """An enum of search display modes for layout hints"""
+    DEFAULT = _JSearchDisplayMode.Default
+    """Use the system default. This may depend on your user and/or system settings."""
+    SHOW = _JSearchDisplayMode.Show
+    """Permit the search bar to be displayed, regardless of user or system settings."""
+    HIDE = _JSearchDisplayMode.Hide
+    """Hide the search bar, regardless of user or system settings."""
 
 class _FormatOperationsRecorder(Protocol):
     """A mixin for creating format operations to be applied to individual nodes of either RollupTable or TreeTable."""
@@ -1861,7 +1870,7 @@ class Table(JObjectWrapper):
 
     def layout_hints(self, front: Union[str, List[str]] = None, back: Union[str, List[str]] = None,
                      freeze: Union[str, List[str]] = None, hide: Union[str, List[str]] = None,
-                     column_groups: List[dict] = None) -> Table:
+                     column_groups: List[dict] = None, search_display_mode: SearchDisplayMode = None) -> Table:
         """ Sets layout hints on the Table
 
         Args:
@@ -1876,6 +1885,9 @@ class Table(JObjectWrapper):
                 name (str): The group name
                 children (List[str]): The
                 color (Optional[str]): The hex color string or Deephaven color name
+            search_display_mode (SearchDisplayMode): set the search bar to explicitly be accessible or inaccessible, or use the system default.
+                :attr:`SearchDisplayMode.Show` will show the search bar, :attr:`SearchDisplayMode.Hide` will hide the search bar, and
+                :attr:`SearchDisplayMode.Default` will use the default value configured by the user and system settings.
 
         Returns:
             a new table with the layout hints set
@@ -1902,6 +1914,10 @@ class Table(JObjectWrapper):
                 for group in column_groups:
                     _j_layout_hint_builder.columnGroup(group.get("name"), j_array_list(group.get("children")),
                                                        group.get("color", ""))
+
+            if search_display_mode is not None:
+                _j_layout_hint_builder.setSearchBarAccess(search_display_mode.value)
+
         except Exception as e:
             raise DHError(e, "failed to create layout hints") from e
 
@@ -1933,7 +1949,7 @@ class Table(JObjectWrapper):
                   by: Union[str, List[str]] = None) -> Table:
         """Creates a table with additional columns calculated from window-based aggregations of columns in this table.
         The aggregations are defined by the provided operations, which support incremental aggregations over the
-        corresponding rows in the this table. The aggregations will apply position or time-based windowing and
+        corresponding rows in the table. The aggregations will apply position or time-based windowing and
         compute the results over the entire table or each row group as identified by the provided key columns.
 
         Args:

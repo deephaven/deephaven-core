@@ -3,7 +3,6 @@
  */
 package io.deephaven.engine.table.impl.util.cast;
 
-import io.deephaven.chunk.util.hashing.*;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.DoubleChunk;
@@ -18,7 +17,7 @@ public interface ToDoubleCast extends SafeCloseable {
      * @param type the type of chunk, must be an integral primitive type
      * @param size the size of the largest chunk that can be cast by this kernel
      *
-     * @return a {@link ToIntFunctor} that can be applied to chunks of type in order to produce a DoubleChunk of values
+     * @return a {@link ToDoubleCast} that can be applied to chunks of type in order to produce a DoubleChunk of values
      */
     static ToDoubleCast makeToDoubleCast(ChunkType type, int size) {
         switch (type) {

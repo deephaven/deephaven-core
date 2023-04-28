@@ -34,7 +34,8 @@ public class ByteToDoubleCast implements ToDoubleCast {
     }
 
     public static <T2 extends Any> void castInto(ByteChunk<? extends T2> input, WritableDoubleChunk<T2> result) {
-        for (int ii = 0; ii < input.size(); ++ii) {
+        final int size = input.size();
+        for (int ii = 0; ii < size; ++ii) {
             final byte value = input.get(ii);
             if (value == QueryConstants.NULL_BYTE) {
                 result.set(ii, QueryConstants.NULL_DOUBLE);

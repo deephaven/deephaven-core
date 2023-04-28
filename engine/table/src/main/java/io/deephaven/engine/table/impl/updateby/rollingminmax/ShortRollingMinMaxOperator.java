@@ -30,8 +30,8 @@ public class ShortRollingMinMaxOperator extends BaseShortUpdateByOperator {
         protected AggregatingShortRingBuffer aggMinMax;
         protected boolean evaluationNeeded;
 
-        protected Context(final int chunkSize) {
-            super(chunkSize);
+        protected Context(final int affectedChunkSize, final int influencerChunkSize) {
+            super(affectedChunkSize);
             if (isMax) {
                 aggMinMax = new AggregatingShortRingBuffer(BUFFER_INITIAL_CAPACITY, Short.MIN_VALUE, (a, b) -> {
                     if (a == NULL_SHORT) {
@@ -62,8 +62,8 @@ public class ShortRollingMinMaxOperator extends BaseShortUpdateByOperator {
         }
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            shortInfluencerValuesChunk = valuesChunk.asShortChunk();
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
+            shortInfluencerValuesChunk = valueChunks[0].asShortChunk();
         }
 
         @Override
@@ -133,8 +133,8 @@ public class ShortRollingMinMaxOperator extends BaseShortUpdateByOperator {
 
     @NotNull
     @Override
-    public UpdateByOperator.Context makeUpdateContext(final int chunkSize) {
-        return new Context(chunkSize);
+    public UpdateByOperator.Context makeUpdateContext(final int affectedChunkSize, final int influencerChunkSize) {
+        return new Context(affectedChunkSize, influencerChunkSize);
     }
 
     public ShortRollingMinMaxOperator(@NotNull final MatchPair pair,

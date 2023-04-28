@@ -5,13 +5,14 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import List, Any
+from typing import List, Any, Union
 
 from pydeephaven import agg
 from pydeephaven._table_ops import UpdateOp, LazyUpdateOp, ViewOp, UpdateViewOp, SelectOp, DropColumnsOp, \
     SelectDistinctOp, SortOp, UnstructuredFilterOp, HeadOp, TailOp, HeadByOp, TailByOp, UngroupOp, NaturalJoinOp, \
     ExactJoinOp, CrossJoinOp, AsOfJoinOp, UpdateByOp, SnapshotTableOp, SnapshotWhenTableOp, WhereInTableOp, \
     AggregateAllOp, AggregateOp
+from pydeephaven._utils import to_list
 from pydeephaven.agg import Aggregation, _AggregationColumns
 from pydeephaven.constants import MatchRule, SortDirection
 from pydeephaven.dherror import DHError
@@ -28,11 +29,11 @@ class TableInterface(ABC):
     def table_op_handler(self, table_op):
         ...
 
-    def drop_columns(self, cols: List[str]):
+    def drop_columns(self, cols: Union[str, List[str]]):
         """ Drop the specified columns from the table and return the result table.
 
         Args:
-            cols (List[str]) : the list of column names
+            cols (Union[str, List[str]]) : the column name(s)
 
         Returns:
             a Table object
@@ -40,14 +41,14 @@ class TableInterface(ABC):
         Raises:
             DHError
         """
-        table_op = DropColumnsOp(column_names=cols)
+        table_op = DropColumnsOp(column_names=to_list(cols))
         return self.table_op_handler(table_op)
 
-    def update(self, formulas: List[str]):
+    def update(self, formulas: Union[str, List[str]]):
         """ Perform an update operation on the table and return the result table.
 
         Args:
-            formulas (List[str]): the column formulas
+            formulas (Union[str, List[str]]): the column formula(s)
 
         Returns:
             a Table object
@@ -55,14 +56,14 @@ class TableInterface(ABC):
         Raises:
             DHError
         """
-        table_op = UpdateOp(column_specs=formulas)
+        table_op = UpdateOp(column_specs=to_list(formulas))
         return self.table_op_handler(table_op)
 
-    def lazy_update(self, formulas: List[str]):
+    def lazy_update(self, formulas: Union[str, List[str]]):
         """ Perform a lazy-update operation on the table and return the result table.
 
         Args:
-            formulas (List[str]): the column formulas
+            formulas (Union[str, List[str]]): the column formula(s)
 
         Returns:
             a Table object
@@ -70,14 +71,14 @@ class TableInterface(ABC):
         Raises:
             DHError
         """
-        table_op = LazyUpdateOp(column_specs=formulas)
+        table_op = LazyUpdateOp(column_specs=to_list(formulas))
         return self.table_op_handler(table_op)
 
-    def view(self, formulas: List[str]):
+    def view(self, formulas: Union[str, List[str]]):
         """ Perform a view operation on the table and return the result table.
 
         Args:
-            formulas (List[str]): the column formulas
+            formulas (Union[str, List[str]]): the column formula(s)
 
         Returns:
             a Table object
@@ -85,14 +86,14 @@ class TableInterface(ABC):
         Raises:
             DHError
         """
-        table_op = ViewOp(column_specs=formulas)
+        table_op = ViewOp(column_specs=to_list(formulas))
         return self.table_op_handler(table_op)
 
-    def update_view(self, formulas: List[str]):
+    def update_view(self, formulas: Union[str, List[str]]):
         """ Perform an update-view operation on the table and return the result table.
 
         Args:
-            formulas (List[str]): the column formulas
+            formulas (Union[str, List[str]]): the column formula(s)
 
         Returns:
             a Table object
@@ -100,14 +101,14 @@ class TableInterface(ABC):
         Raises:
             DHError
         """
-        table_op = UpdateViewOp(column_specs=formulas)
+        table_op = UpdateViewOp(column_specs=to_list(formulas))
         return self.table_op_handler(table_op)
 
-    def select(self, formulas: List[str] = []):
+    def select(self, formulas: Union[str, List[str]] = None):
         """ Perform a select operation on the table and return the result table.
 
         Args:
-            formulas (List[str], optional): the column formulas, default is empty
+            formulas (Union[str, List[str]], optional): the column formula(s), default is None
 
         Returns:
             a Table object
@@ -115,14 +116,14 @@ class TableInterface(ABC):
         Raises:
             DHError
         """
-        table_op = SelectOp(column_specs=formulas)
+        table_op = SelectOp(column_specs=to_list(formulas))
         return self.table_op_handler(table_op)
 
-    def select_distinct(self, cols: List[str] = []):
+    def select_distinct(self, cols: Union[str, List[str]] = None):
         """ Perform a select-distinct operation on the table and return the result table.
 
         Args:
-            cols (List[str], optional): the list of column names, default is empty
+            cols (Union[str, List[str]], optional): the column name(s), default is None
 
         Returns:
             a Table object
@@ -130,16 +131,17 @@ class TableInterface(ABC):
         Raises:
             DHError
         """
-        table_op = SelectDistinctOp(column_names=cols)
+        table_op = SelectDistinctOp(column_names=to_list(cols))
         return self.table_op_handler(table_op)
 
-    def sort(self, order_by: List[str], order: List[SortDirection] = []):
+    def sort(self, order_by: Union[str, List[str]], order: Union[SortDirection, List[SortDirection]] = None):
         """ Perform a sort operation on the table and return the result table.
 
         Args:
-            order_by (List[str]): the names of the columns to be sorted on
-            order (List[SortDirection], optional): the corresponding sort directions for each sort column, default
-                is empty. In the absence of explicit sort directions, data will be sorted in the ascending order.
+            order_by (Union[str, List[str]]): the column(s) to be sorted on
+            order (Union[SortDirection, List[SortDirection]], optional): the corresponding sort direction(s) for each
+                sort column, default is None. In the absence of explicit sort directions, data will be sorted in the
+                ascending order.
 
         Returns:
             a Table object
@@ -147,14 +149,14 @@ class TableInterface(ABC):
         Raises:
             DHError
         """
-        table_op = SortOp(column_names=order_by, directions=order)
+        table_op = SortOp(column_names=to_list(order_by), directions=to_list(order))
         return self.table_op_handler(table_op)
 
-    def where(self, filters: List[str]):
+    def where(self, filters: Union[str, List[str]]):
         """ Perform a filter operation on the table and return the result table.
 
         Args:
-            filters (List[str]): a list of filter condition expressions
+            filters (Union[str, List[str]]): the filter condition expression(s)
 
         Returns:
             a Table object
@@ -162,7 +164,7 @@ class TableInterface(ABC):
         Raises:
             DHError
         """
-        table_op = UnstructuredFilterOp(filters=filters)
+        table_op = UnstructuredFilterOp(filters=to_list(filters))
         return self.table_op_handler(table_op)
 
     def head(self, num_rows: int):
@@ -195,16 +197,17 @@ class TableInterface(ABC):
         table_op = TailOp(num_rows=num_rows)
         return self.table_op_handler(table_op)
 
-    def natural_join(self, table: Any, on: List[str], joins: List[str] = []):
+    def natural_join(self, table: Any, on: Union[str, List[str]], joins: Union[str, List[str]] = None):
         """ Perform a natural-join between this table as the left table and another table as the right table) and
         returns the result table.
 
         Args:
             table (Table): the right-table of the join
-            on (List[str]): the columns to match, can be a common name or an equal expression,
+            on (Union[str, List[str]]): the column(s) to match, can be a common name or an equal expression,
                 i.e. "col_a = col_b" for different column names
-            joins (List[str], optional): a list of the columns to be added from the right table to the result
-                table, can be renaming expressions, i.e. "new_col = col"; default is empty
+            joins (Union[str, List[str]], optional): the column(s) to be added from the right table to the result
+                table, can be renaming expressions, i.e. "new_col = col"; default is None, which means all the columns
+                from the right table, excluding those specified in 'on'
 
         Returns:
             a Table object
@@ -212,19 +215,20 @@ class TableInterface(ABC):
         Raises:
             DHError
         """
-        table_op = NaturalJoinOp(table=table, keys=on, columns_to_add=joins)
+        table_op = NaturalJoinOp(table=table, keys=to_list(on), columns_to_add=to_list(joins))
         return self.table_op_handler(table_op)
 
-    def exact_join(self, table: Any, on: List[str], joins: List[str] = []):
+    def exact_join(self, table: Any, on: Union[str, List[str]], joins: Union[str, List[str]] = None):
         """ Perform a exact-join between this table as the left table and another table as the right table) and
         returns the result table.
 
         Args:
             table (Table): the right-table of the join
-            on (List[str]): the columns to match, can be a common name or an equal expression,
-                i.e. "col_a = col_b" for different column names
-            joins (List[str], optional): a list of the columns to be added from the right table to the result
-                table, can be renaming expressions, i.e. "new_col = col"; default is empty
+            on (Union[str, List[str]]): the column(s) to match, can be a common name or an equal expression,
+                i.e. "col_a = col_b" for different column names              
+            joins (Union[str, List[str]], optional): the column(s) to be added from the right table to the result
+                table, can be renaming expressions, i.e. "new_col = col"; default is None, which means all the columns
+                from the right table, excluding those specified in 'on'
 
         Returns:
             a Table object
@@ -232,19 +236,24 @@ class TableInterface(ABC):
         Raises:
             DHError
         """
-        table_op = ExactJoinOp(table=table, keys=on, columns_to_add=joins)
+        table_op = ExactJoinOp(table=table, keys=to_list(on), columns_to_add=to_list(joins))
         return self.table_op_handler(table_op)
 
-    def join(self, table: Any, on: List[str] = [], joins: List[str] = [], reserve_bits: int = 10):
+    def join(self, table: Any, on: Union[str, List[str]] = None, joins: Union[str, List[str]] = None,
+             reserve_bits: int = 10):
         """ Perform a cross-join between this table as the left table and another table as the right table) and
-        returns the result table.
+        returns the result table. Rows that do not have matching criteria will not be included in the result. If
+        there are multiple matches between a row from the left table and rows from the right table, all matching
+        combinations will be included. If no columns to match (on) are specified, every combination of left and right
+        table rows is included.
 
         Args:
             table (Table): the right-table of the join
-            on (List[str]): the columns to match, can be a common name or an equal expression,
-                i.e. "col_a = col_b" for different column names
-            joins (List[str], optional): a list of the columns to be added from the right table to the result
-                table, can be renaming expressions, i.e. "new_col = col"; default is empty
+            on (Union[str, List[str]]): the column(s) to match, can be a common name or an equal expression,
+                i.e. "col_a = col_b" for different column names, default is None
+            joins (Union[str, List[str]], optional): the column(s) to be added from the right table to the result
+                table, can be renaming expressions, i.e. "new_col = col"; default is None, which means all the columns
+                from the right table, excluding those specified in 'on'
             reserve_bits(int, optional): the number of bits of key-space to initially reserve per group; default is 10
 
         Returns:
@@ -253,19 +262,21 @@ class TableInterface(ABC):
         Raises:
             DHError
         """
-        table_op = CrossJoinOp(table=table, keys=on, columns_to_add=joins, reserve_bits=reserve_bits)
+        table_op = CrossJoinOp(table=table, keys=to_list(on), columns_to_add=to_list(joins), reserve_bits=reserve_bits)
         return self.table_op_handler(table_op)
 
-    def aj(self, table: Any, on: List[str], joins: List[str] = [], match_rule: MatchRule = MatchRule.LESS_THAN_EQUAL):
+    def aj(self, table: Any, on: Union[str, List[str]], joins: Union[str, List[str]] = None,
+           match_rule: MatchRule = MatchRule.LESS_THAN_EQUAL):
         """ Perform a as-of join between this table as the left table and another table as the right table) and
         returns the result table.
 
         Args:
             table (Table): the right-table of the join
-            on (List[str]): the columns to match, can be a common name or an equal expression,
+            on (Union[str, List[str]]): the column(s) to match, can be a common name or an equal expression,
                 i.e. "col_a = col_b" for different column names
-            joins (List[str], optional): a list of the columns to be added from the right table to the result
-                table, can be renaming expressions, i.e. "new_col = col"; default is empty
+            joins (Union[str, List[str]], optional): the column(s) to be added from the right table to the result
+                table, can be renaming expressions, i.e. "new_col = col"; default is None,, which means all the columns
+                from the right table, excluding those specified in 'on'
             match_rule (MatchRule, optional): the match rule for the as-of join, default is LESS_THAN_EQUAL
 
         Returns:
@@ -275,20 +286,21 @@ class TableInterface(ABC):
             DHError
         """
         match_rule = MatchRule.LESS_THAN if match_rule == MatchRule.LESS_THAN else MatchRule.LESS_THAN_EQUAL
-        table_op = AsOfJoinOp(table=table, keys=on, columns_to_add=joins, match_rule=match_rule)
+        table_op = AsOfJoinOp(table=table, keys=to_list(on), columns_to_add=to_list(joins), match_rule=match_rule)
         return self.table_op_handler(table_op)
 
-    def raj(self, table: Any, on: List[str], joins: List[str] = [],
+    def raj(self, table: Any, on: Union[str, List[str]], joins: Union[str, List[str]] = None,
             match_rule: MatchRule = MatchRule.GREATER_THAN_EQUAL):
         """ Perform a reverse as-of join between this table as the left table and another table as the right table) and
         returns the result table.
 
         Args:
             table (Table): the right-table of the join
-            on (List[str]): the columns to match, can be a common name or an equal expression,
+            on (Union[str, List[str]]): the column(s) to match, can be a common name or an equal expression,
                 i.e. "col_a = col_b" for different column names
-            joins (List[str], optional): a list of the columns to be added from the right table to the result
-                table, can be renaming expressions, i.e. "new_col = col"; default is empty
+            joins (Union[str, List[str]], optional): the column(s) to be added from the right table to the result
+                table, can be renaming expressions, i.e. "new_col = col"; default is None, which means all the columns
+                from the right table, excluding those specified in 'on'
             match_rule (MatchRule, optional): the match rule for the as-of join, default is GREATER_THAN_EQUAL
 
         Returns:
@@ -298,16 +310,16 @@ class TableInterface(ABC):
             DHError
         """
         match_rule = MatchRule.GREATER_THAN if match_rule == MatchRule.GREATER_THAN else MatchRule.GREATER_THAN_EQUAL
-        table_op = AsOfJoinOp(table=table, keys=on, columns_to_add=joins,
-                              match_rule=match_rule)
+        table_op = AsOfJoinOp(table=table, keys=to_list(on), columns_to_add=to_list(joins), match_rule=match_rule)
         return self.table_op_handler(table_op)
 
-    def head_by(self, num_rows: int, by: List[str]):
-        """ Perform a head-by aggregation on the table and return the result table.
+    def head_by(self, num_rows: int, by: Union[str, List[str]]):
+        """ Perform a head-by aggregation on the table and return a new table containing the first number of rows
+        for each group.
 
         Args:
             num_rows (int): the number of rows at the beginning of each group
-            by (List[str]): the group-by column names
+            by (Union[str, List[str]]): the group-by column name(s)
 
         Returns:
             a Table object
@@ -315,15 +327,17 @@ class TableInterface(ABC):
         Raises:
             DHError
         """
-        table_op = HeadByOp(num_rows=num_rows, column_names=by)
+        by = to_list(by)
+        table_op = HeadByOp(num_rows=num_rows, column_names=to_list(by))
         return self.table_op_handler(table_op)
 
-    def tail_by(self, num_rows: int, by: List[str]):
-        """ Perform a tail-by aggregation on the table and return the result table.
+    def tail_by(self, num_rows: int, by: Union[str, List[str]]):
+        """ Perform a tail-by aggregation on the table and return a new table containing the last number of rows
+        for each group.
 
         Args:
             num_rows (int): the number of rows at the end of each group
-            by (List[str]): the group-by column names
+            by (Union[str, List[str]]): the group-by column name(s)
 
         Returns:
             a Table object
@@ -331,17 +345,18 @@ class TableInterface(ABC):
         Raises:
             DHError
         """
-        table_op = TailByOp(num_rows=num_rows, column_names=by)
+        table_op = TailByOp(num_rows=num_rows, column_names=to_list(by))
         return self.table_op_handler(table_op)
 
-    def group_by(self, by: List[str] = []):
-        """ Perform a group-by aggregation on the table and return the result table. After the operation,
-        the columns not in the group-by columns become array-type.
+    def group_by(self, by: Union[str, List[str]] = None):
+        """ Perform a group-by aggregation on the table and return a new table containing grouping columns and
+        grouped data, column content is grouped into arrays.
 
-        If no group-by column is given,the content of each column is grouped into its own array.
+        If no group-by column is given, the content of each column is grouped into its own array.
 
         Args:
-            by (List[str], optional): the group-by column names; default is empty
+            by (Union[str, List[str]], optional): the group-by column name(s), default is None, meaning grouping
+                all the rows into one group
 
         Returns:
             a Table object
@@ -349,16 +364,16 @@ class TableInterface(ABC):
         Raises:
             DHError
         """
-        table_op = AggregateAllOp(agg=agg.group(), by=by)
+        table_op = AggregateAllOp(agg=agg.group(), by=to_list(by))
         return self.table_op_handler(table_op)
 
-    def ungroup(self, cols: List[str] = [], null_fill: bool = True):
-        """ Perform an ungroup operation on the table and return the result table. The ungroup columns should be of
-        array types.
+    def ungroup(self, cols: Union[str, List[str]] = None, null_fill: bool = True):
+        """ Perform an ungroup operation on the table and return a new table in which array columns from the source
+        table are unwrapped into separate rows. The ungroup columns should be of array types.
 
         Args:
-            cols (List[str], optional): the names of the array columns, if empty, all array columns will be
-                ungrouped, default is empty
+            cols (Union[str, List[str]], optional): the array column(s), default is None, meaning all array columns will
+                be ungrouped, default is None, meaning all array columns will be ungrouped
             null_fill (bool, optional): indicates whether null should be used to fill missing cells, default is True
 
         Returns:
@@ -367,15 +382,16 @@ class TableInterface(ABC):
         Raises:
             DHError
         """
-        table_op = UngroupOp(column_names=cols, null_fill=null_fill)
+        table_op = UngroupOp(column_names=to_list(cols), null_fill=null_fill)
         return self.table_op_handler(table_op)
 
-    def first_by(self, by: List[str] = []):
-        """ Perform First-by aggregation on the table and return the result table which contains the first row of each
+    def first_by(self, by: Union[str, List[str]] = None):
+        """ Perform First-by aggregation on the table and return a new table which contains the first row of each
         distinct group.
 
         Args:
-            by (List[str], optional): the group-by column names, default is empty
+            by (Union[str, List[str]], optional): the group-by column name(s), default is None, meaning grouping
+                all the rows into one group
 
         Returns:
             a Table object
@@ -383,15 +399,16 @@ class TableInterface(ABC):
         Raises:
             DHError
         """
-        table_op = AggregateAllOp(agg=agg.first(), by=by)
+        table_op = AggregateAllOp(agg=agg.first(), by=to_list(by))
         return self.table_op_handler(table_op)
 
-    def last_by(self, by: List[str] = []):
-        """ Perform last-by aggregation on the table and return the result table which contains the last row of each
-        distinct group.
+    def last_by(self, by: Union[str, List[str]] = None):
+        """ Perform last-by aggregation on the table and return a new table which contains the last row of
+        each distinct group.
 
         Args:
-            by (List[str], optional): the group-by column names, default is empty
+            by (Union[str, List[str]], optional): the group-by column name(s), default is None, meaning grouping
+                all the rows into one group
 
         Returns:
             a Table object
@@ -399,15 +416,16 @@ class TableInterface(ABC):
         Raises:
             DHError
         """
-        table_op = AggregateAllOp(agg=agg.last(), by=by)
+        table_op = AggregateAllOp(agg=agg.last(), by=to_list(by))
         return self.table_op_handler(table_op)
 
-    def sum_by(self, by: List[str] = []):
-        """ Perform sum-by aggregation on the table and return the result table. Columns not used in the grouping
-        must be of numeric types.
+    def sum_by(self, by: Union[str, List[str]] = None):
+        """ Perform sum-by aggregation on the table and return a new table containing the sum for each group. Columns
+        not used in the grouping must be of numeric types.
 
         Args:
-            by (List[str]): the group-by column names
+            by (Union[str, List[str]]): the group-by column name(s), default is None, meaning grouping
+                all the rows into one group
 
         Returns:
             a Table object
@@ -415,15 +433,16 @@ class TableInterface(ABC):
         Raises:
             DHError
         """
-        table_op = AggregateAllOp(agg=agg.sum_(), by=by)
+        table_op = AggregateAllOp(agg=agg.sum_(), by=to_list(by))
         return self.table_op_handler(table_op)
 
-    def avg_by(self, by: List[str] = []):
-        """ Perform avg-by aggregation on the table and return the result table. Columns not used in the grouping must
-        be of numeric types.
+    def avg_by(self, by: Union[str, List[str]] = None):
+        """ Perform avg-by aggregation on the table and return a new table containing the average for each group.
+        Columns not used in the grouping must be of numeric types.
 
         Args:
-            by (List[str], optional): the group-by column names, default is empty
+            by (Union[str, List[str]], optional): the group-by column name(s), default is None, meaning grouping
+                all the rows into one group
 
         Returns:
             a Table object
@@ -431,15 +450,16 @@ class TableInterface(ABC):
         Raises:
             DHError
         """
-        table_op = AggregateAllOp(agg=agg.avg(), by=by)
+        table_op = AggregateAllOp(agg=agg.avg(), by=to_list(by))
         return self.table_op_handler(table_op)
 
-    def std_by(self, by: List[str] = []):
-        """ Perform std-by aggregation on the table and return the result table. Columns not used in the grouping
-        must be of numeric types.
+    def std_by(self, by: Union[str, List[str]] = None):
+        """ Perform std-by aggregation on the table and return a new table containing the standard deviation for each
+        group. Columns not used in the grouping must be of numeric types.
 
         Args:
-            by (List[str]): the group-by column names
+            by (Union[str, List[str]]): the group-by column names(s), default is None, meaning grouping
+                all the rows into one group
 
         Returns:
             a Table object
@@ -447,15 +467,16 @@ class TableInterface(ABC):
         Raises:
             DHError
         """
-        table_op = AggregateAllOp(agg=agg.std(), by=by)
+        table_op = AggregateAllOp(agg=agg.std(), by=to_list(by))
         return self.table_op_handler(table_op)
 
-    def var_by(self, by: List[str] = []):
-        """ Perform var-by aggregation on the table and return the result table. Columns not used in the grouping
-        must be of numeric types.
+    def var_by(self, by: Union[str, List[str]] = None):
+        """ Perform var-by aggregation on the table and return a new table containing the variance for each group.
+        Columns not used in the grouping must be of numeric types.
 
         Args:
-            by (List[str], optional): the group-by column names, default is empty
+            by (Union[str, List[str]], optional): the group-by column name(s), default is None, meaning grouping
+                all the rows into one group
 
         Returns:
             a Table object
@@ -463,15 +484,16 @@ class TableInterface(ABC):
         Raises:
             DHError
         """
-        table_op = AggregateAllOp(agg=agg.var(), by=by)
+        table_op = AggregateAllOp(agg=agg.var(), by=to_list(by))
         return self.table_op_handler(table_op)
 
-    def median_by(self, by: List[str] = []):
-        """ Perform median-by aggregation on the table and return the result table. Columns not used in the grouping
-        must be of numeric types.
+    def median_by(self, by: Union[str, List[str]] = None):
+        """ Perform median-by aggregation on the table and return a new table containing the median for each group.
+        Columns not used in the grouping must be of numeric types.
 
         Args:
-            by (List[str], optional): the group-by column names, default is empty
+            by (Union[str, List[str]], optional): the group-by column name(s), default is None, meaning grouping
+                all the rows into one group
 
         Returns:
             a Table object
@@ -479,15 +501,16 @@ class TableInterface(ABC):
         Raises:
             DHError
         """
-        table_op = AggregateAllOp(agg=agg.median(), by=by)
+        table_op = AggregateAllOp(agg=agg.median(), by=to_list(by))
         return self.table_op_handler(table_op)
 
-    def min_by(self, by: List[str] = []):
-        """ Perform min-by aggregation on the table and return the result table. Columns not used in the grouping
-        must be of numeric types.
+    def min_by(self, by: Union[str, List[str]] = None):
+        """ Perform min-by aggregation on the table and return a new table containing the minimum value for each
+        group. Columns not used in the grouping must be of numeric types.
 
         Args:
-            by (List[str], optional): the group-by column names, default is empty
+            by (Union[str, List[str]], optional): the group-by column name(s), default is None, meaning grouping
+                all the rows into one group
 
         Returns:
             a Table object
@@ -495,15 +518,16 @@ class TableInterface(ABC):
         Raises:
             DHError
         """
-        table_op = AggregateAllOp(agg=agg.min_(), by=by)
+        table_op = AggregateAllOp(agg=agg.min_(), by=to_list(by))
         return self.table_op_handler(table_op)
 
-    def max_by(self, by: List[str] = []):
-        """ Perform max-by aggregation on the table and return the result table. Columns not used in the grouping
-        must be of numeric types.
+    def max_by(self, by: Union[str, List[str]] = None):
+        """ Perform max-by aggregation on the table and return a new table containing the maximum value for each
+        group. Columns not used in the grouping must be of numeric types.
 
         Args:
-            by (List[str], optional): the group-by column names, default is empty
+            by (Union[str, List[str]], optional): the group-by column name(s), default is None, meaning grouping
+                all the rows into one group
 
         Returns:
             a Table object
@@ -511,16 +535,17 @@ class TableInterface(ABC):
         Raises:
             DHError
         """
-        table_op = AggregateAllOp(agg=agg.max_(), by=by)
+        table_op = AggregateAllOp(agg=agg.max_(), by=to_list(by))
         return self.table_op_handler(table_op)
 
-    def count_by(self, col: str, by: List[str] = []):
-        """ Perform count-by aggregation on the table and return the result table. The count of each group is stored in
-        a new column named after the 'col' parameter.
+    def count_by(self, col: str, by: Union[str, List[str]] = None):
+        """ Perform count-by aggregation on the table and return a new table containing the number of rows for each
+        group. The count of each group is stored in a new column named after the 'col' parameter.
 
         Args:
             col (str): the name of the column to store the counts
-            by (List[str], optional): the group-by column names, default is empty
+            by (Union[str, List[str]], optional): the group-by column name(s), default is None, meaning grouping
+                all the rows into one group
 
         Returns:
             a Table object
@@ -528,16 +553,16 @@ class TableInterface(ABC):
         Raises:
             DHError
         """
-        table_op = AggregateOp(aggs=[agg.count_(col=col)], by=by)
+        table_op = AggregateOp(aggs=[agg.count_(col=col)], by=to_list(by))
         return self.table_op_handler(table_op)
 
-    def agg_by(self, aggs: List[Aggregation], by: List[str]):
+    def agg_by(self, aggs: Union[Aggregation, List[Aggregation]], by: Union[str, List[str]]):
         """ Create a new table containing grouping columns and grouped data. The resulting grouped data is defined by
-        the aggregations specified.
+        the aggregation(s) specified.
 
         Args:
-            aggs (List[Aggregation]): the aggregations to be applied
-            by (List[str]): the group-by column names
+            aggs (Union[Aggregation, List[Aggregation]]): the aggregation(s) to be applied
+            by (Union[str, List[str]]): the group-by column name(s)
 
         Returns:
             a Table object
@@ -545,14 +570,15 @@ class TableInterface(ABC):
         Raises:
             DHError
         """
+        aggs = to_list(aggs)
         for agg in aggs:
             if hasattr(agg, 'cols') and not agg.cols:
                 raise DHError(message="No columns specified for the aggregation operation {agg}.")
 
-        table_op = AggregateOp(aggs=aggs, by=by)
+        table_op = AggregateOp(aggs=aggs, by=to_list(by))
         return self.table_op_handler(table_op)
 
-    def agg_all_by(self, agg: Aggregation, by: List[str]):
+    def agg_all_by(self, agg: Aggregation, by: Union[str, List[str]]):
         """ Create a new table containing grouping columns and grouped data. The resulting grouped data is defined by
         the aggregation specified.
 
@@ -561,7 +587,7 @@ class TableInterface(ABC):
 
         Args:
             agg (Aggregation): the aggregation to be applied
-            by (List[str]): the group-by column names
+            by (Union[str, List[str]]): the group-by column name(s)
 
         Returns:
             a Table object
@@ -572,15 +598,19 @@ class TableInterface(ABC):
         if not isinstance(agg, _AggregationColumns):
             raise DHError(f"unsupported aggregation {agg}.")
 
-        table_op = AggregateAllOp(agg=agg, by=by)
+        table_op = AggregateAllOp(agg=agg, by=to_list(by))
         return self.table_op_handler(table_op)
 
-    def update_by(self, ops: List[UpdateByOperation], by: List[str]):
-        """ Perform an update-by operation on the table and return the result table.
+    def update_by(self, ops: Union[UpdateByOperation, List[UpdateByOperation]], by: Union[str, List[str]]):
+        """ Perform an update-by operation on the table and create a table with additional columns calculated from
+        window-based aggregations of columns in this table. The aggregations are defined by the provided operations,
+        which support incremental aggregations over the corresponding rows in the table. The aggregations will
+        apply position or time-based windowing and compute the results over the entire table or each row group as
+        identified by the provided key columns.
 
         Args:
-            ops (List[UpdateByOperation]): the UpdateByOperations to be applied
-            by (List[str]): the group-by column names
+            ops (Union[UpdateByOperatoin, List[UpdateByOperation]]): the UpdateByOperation(s) to be applied
+            by (Union[str, List[str]]): the group-by column name(s)
 
         Returns:
             a Table object
@@ -588,7 +618,7 @@ class TableInterface(ABC):
         Raises:
             DHError
         """
-        table_op = UpdateByOp(operations=ops, by=by)
+        table_op = UpdateByOp(operations=to_list(ops), by=to_list(by))
         return self.table_op_handler(table_op)
 
     def snapshot(self):
@@ -603,7 +633,7 @@ class TableInterface(ABC):
         table_op = SnapshotTableOp()
         return self.table_op_handler(table_op)
 
-    def snapshot_when(self, trigger_table: Any, stamp_cols: List[str] = None, initial: bool = False,
+    def snapshot_when(self, trigger_table: Any, stamp_cols: Union[str, List[str]] = None, initial: bool = False,
                       incremental: bool = False, history: bool = False):
         """Returns a table that captures a snapshot of this table whenever trigger_table updates.
 
@@ -613,8 +643,8 @@ class TableInterface(ABC):
 
         Args:
             trigger_table (Table): the trigger table
-            stamp_cols (List[str]): The columns from trigger_table that form the "stamp key", may be
-                renames. None, or empty, means that all columns from trigger_table form the "stamp key".
+            stamp_cols (Union[str, List[str]]): The column(s) from trigger_table that form the "stamp key", may be
+                renames, default is None, meaning that all columns from trigger_table form the "stamp key".
             initial (bool): Whether to take an initial snapshot upon construction, default is False. When False, the
                 resulting table will remain empty until trigger_table first updates.
             incremental (bool): Whether the resulting table should be incremental, default is False. When False, all
@@ -631,17 +661,17 @@ class TableInterface(ABC):
         Raises:
             DHError
         """
-        table_op = SnapshotWhenTableOp(trigger_table=trigger_table, stamp_cols=stamp_cols, initial=initial,
+        table_op = SnapshotWhenTableOp(trigger_table=trigger_table, stamp_cols=to_list(stamp_cols), initial=initial,
                                        incremental=incremental, history=history)
         return self.table_op_handler(table_op)
 
-    def where_in(self, filter_table: Any, cols: List[str]):
+    def where_in(self, filter_table: Any, cols: Union[str, List[str]]):
         """The where_in method creates a new table containing rows from the source table, where the rows match
         values in the filter table.
 
         Args:
             filter_table (Table): the table containing the set of values to filter on
-            cols (List[str]]): the column name(s)
+            cols (Union[str, List[str]]): the column name(s)
 
         Returns:
             a new table
@@ -649,16 +679,16 @@ class TableInterface(ABC):
         Raises:
             DHError
         """
-        table_op = WhereInTableOp(filter_table=filter_table, cols=cols, inverted=False)
+        table_op = WhereInTableOp(filter_table=filter_table, cols=to_list(cols), inverted=False)
         return self.table_op_handler(table_op)
 
-    def where_not_in(self, filter_table: Any, cols: List[str]):
+    def where_not_in(self, filter_table: Any, cols: Union[str, List[str]]):
         """The where_not_in method creates a new table containing rows from the source table, where the rows do not
         match values in the filter table.
 
         Args:
             filter_table (Table): the table containing the set of values to filter on
-            cols (List[str]]): the column name(s)
+            cols (Union[str, List[str]]): the column name(s)
 
         Returns:
             a new table
@@ -666,5 +696,5 @@ class TableInterface(ABC):
         Raises:
             DHError
         """
-        table_op = WhereInTableOp(filter_table=filter_table, cols=cols, inverted=True)
+        table_op = WhereInTableOp(filter_table=filter_table, cols=to_list(cols), inverted=True)
         return self.table_op_handler(table_op)
