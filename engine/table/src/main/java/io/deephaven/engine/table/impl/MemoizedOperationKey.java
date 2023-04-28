@@ -553,7 +553,7 @@ public abstract class MemoizedOperationKey {
         private final int cachedHashCode;
 
         CrossJoin(final Table rightTable, final MatchPair[] columnsToMatch,
-                  final MatchPair[] columnsToAdd, final int numRightBitsToReserve) {
+                final MatchPair[] columnsToAdd, final int numRightBitsToReserve) {
             this.rightTableReference = new WeakReference<>(rightTable);
             this.columnsToMatch = columnsToMatch;
             this.columnsToAdd = columnsToAdd;
@@ -594,7 +594,7 @@ public abstract class MemoizedOperationKey {
     }
 
     public static CrossJoin crossJoin(final Table rightTable, final MatchPair[] columnsToMatch,
-                                      final MatchPair[] columnsToAdd, final int numRightBitsToReserve) {
+            final MatchPair[] columnsToAdd, final int numRightBitsToReserve) {
         return new CrossJoin(rightTable, columnsToMatch, columnsToAdd, numRightBitsToReserve);
     }
 

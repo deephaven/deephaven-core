@@ -337,12 +337,12 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                 assert chunkSourceContext != null;
                 final boolean needToUnmanagePrevValues = resultTypeIsLivenessReferent && liveResultOwner != null;
                 try (final RowSequence.Iterator keyIter = upstream.modified().getRowSequenceIterator();
-                     final RowSequence.Iterator prevKeyIter = needToUnmanagePrevValues
-                             ? upstream.getModifiedPreShift().getRowSequenceIterator()
-                             : null;
-                     final ChunkSource.FillContext fillContext = needToUnmanagePrevValues
-                             ? columnSource.makeFillContext(PAGE_SIZE)
-                             : null) {
+                        final RowSequence.Iterator prevKeyIter = needToUnmanagePrevValues
+                                ? upstream.getModifiedPreShift().getRowSequenceIterator()
+                                : null;
+                        final ChunkSource.FillContext fillContext = needToUnmanagePrevValues
+                                ? columnSource.makeFillContext(PAGE_SIZE)
+                                : null) {
                     while (keyIter.hasMore()) {
                         final RowSequence keys = keyIter.getNextRowSequenceWithLength(PAGE_SIZE);
                         final Chunk<? extends Values> modifiedResults = chunkSource.getChunk(chunkSourceContext, keys);

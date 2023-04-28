@@ -74,7 +74,8 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
         if (mode == Mode.SELECT_REDIRECTED_STATIC) {
             rowRedirection = new InverseWrappedRowSetRowRedirection(rowSet);
         } else if (mode == Mode.SELECT_REDIRECTED_REFRESHING && rowSet.size() < Integer.MAX_VALUE) {
-            final WritableRowRedirection writableRowRedirection = WritableRowRedirection.FACTORY.createRowRedirection(rowSet.intSize());
+            final WritableRowRedirection writableRowRedirection =
+                    WritableRowRedirection.FACTORY.createRowRedirection(rowSet.intSize());
             analyzer = analyzer.createRedirectionLayer(rowSet, writableRowRedirection);
             rowRedirection = writableRowRedirection;
         } else {
