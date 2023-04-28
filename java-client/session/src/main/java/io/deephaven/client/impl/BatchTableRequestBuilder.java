@@ -340,9 +340,11 @@ class BatchTableRequestBuilder {
 
         @Override
         public void visit(JoinTable j) {
-            CrossJoinTablesRequest.Builder builder =
-                    CrossJoinTablesRequest.newBuilder().setResultId(ticket).setLeftId(ref(j.left()))
-                            .setRightId(ref(j.right())).setReserveBits(j.reserveBits());
+            CrossJoinTablesRequest.Builder builder = CrossJoinTablesRequest.newBuilder()
+                    .setResultId(ticket)
+                    .setLeftId(ref(j.left()))
+                    .setRightId(ref(j.right()));
+            j.reserveBits().ifPresent(builder::setReserveBits);
             for (JoinMatch match : j.matches()) {
                 builder.addColumnsToMatch(Strings.of(match));
             }
