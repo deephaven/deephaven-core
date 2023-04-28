@@ -318,6 +318,18 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * Perform a cross join with the {@code rightTable}.
      *
      * <p>
+     * Equivalent to {@code join(rightTable, emptyList(), emptyList())}.
+     *
+     * @param rightTable The right side table on the join.
+     * @return a new table joined according to the specification with zero key-columns and includes all right columns
+     * @see #join(Object, Collection, Collection)
+     */
+    TOPS join(TABLE rightTable);
+
+    /**
+     * Perform a cross join with the {@code rightTable}.
+     *
+     * <p>
      * Delegates to {@link #join(Object, Collection, Collection, int)}.
      *
      * @param rightTable The right side table on the join.

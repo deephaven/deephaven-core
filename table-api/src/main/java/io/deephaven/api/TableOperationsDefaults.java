@@ -136,6 +136,11 @@ public interface TableOperationsDefaults<TOPS extends TableOperations<TOPS, TABL
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
+    default TOPS join(TABLE rightTable) {
+        return join(rightTable, Collections.emptyList(), Collections.emptyList());
+    }
+
+    @Override
     default TOPS join(TABLE rightTable, String columnsToMatch) {
         return join(rightTable, JoinMatch.from(splitToCollection(columnsToMatch)), Collections.emptyList());
     }

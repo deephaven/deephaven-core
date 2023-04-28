@@ -319,15 +319,6 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
 
     @Override
     @FinalDefault
-    default Table join(Table rightTable) {
-        return join(
-                rightTable,
-                Collections.emptyList(),
-                Collections.emptyList());
-    }
-
-    @Override
-    @FinalDefault
     default Table join(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
             Collection<? extends JoinAddition> columnsToAdd) {
         return join(
