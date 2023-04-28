@@ -21,7 +21,7 @@ interface RangeSearchKernel {
      * @param endRule The range end rule
      * @return The RangeSearchKernel to use
      */
-    static RangeSearchKernel lookup(
+    static RangeSearchKernel makeRangeSearchKernel(
             @NotNull final ChunkType chunkType,
             @NotNull final RangeStartRule startRule,
             @NotNull final RangeEndRule endRule) {

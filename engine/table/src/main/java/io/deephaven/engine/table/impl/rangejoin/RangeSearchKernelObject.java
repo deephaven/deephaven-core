@@ -410,6 +410,7 @@ enum RangeSearchKernelObject implements RangeSearchKernel {
                 output.set(leftPositionToOutputEndPosition(li), NULL_INT);
             }
         }
+        validity.setSize(size);
     }
 
     private static void populateInvalidRangesDisallowEqual(
@@ -429,6 +430,7 @@ enum RangeSearchKernelObject implements RangeSearchKernel {
                 output.set(leftPositionToOutputEndPosition(li), NULL_INT);
             }
         }
+        validity.setSize(size);
     }
 
     private static void populateAllRangesForEmptyRightAllowEqual(
