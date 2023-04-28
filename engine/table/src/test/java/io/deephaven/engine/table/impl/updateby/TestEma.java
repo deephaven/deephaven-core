@@ -66,6 +66,9 @@ public class TestEma extends BaseUpdateByTest {
         computeEma((TableDefaults) t.dropColumns("ts"), null, 100, skipControl);
         computeEma((TableDefaults) t.dropColumns("ts"), null, 100, resetControl);
 
+        computeEma((TableDefaults) t.dropColumns("ts"), null, 1.5, skipControl);
+        computeEma((TableDefaults) t.dropColumns("ts"), null, 1.5, resetControl);
+
         computeEma(t, "ts", 10 * MINUTE, skipControl);
         computeEma(t, "ts", 10 * MINUTE, resetControl);
     }
@@ -97,6 +100,9 @@ public class TestEma extends BaseUpdateByTest {
                 .onNanValue(BadDataBehavior.RESET).build();
         computeEma((TableDefaults) t.dropColumns("ts"), null, 100, skipControl, "Sym");
         computeEma((TableDefaults) t.dropColumns("ts"), null, 100, resetControl, "Sym");
+
+        computeEma((TableDefaults) t.dropColumns("ts"), null, 1.5, skipControl, "Sym");
+        computeEma((TableDefaults) t.dropColumns("ts"), null, 1.5, resetControl, "Sym");
 
         computeEma(t, "ts", 10 * MINUTE, skipControl, "Sym");
         computeEma(t, "ts", 10 * MINUTE, resetControl, "Sym");
@@ -481,7 +487,24 @@ public class TestEma extends BaseUpdateByTest {
                                 ? tickResult.t.updateBy(UpdateByOperation.Ema(resetControl, 100), "Sym")
                                 : tickResult.t.updateBy(UpdateByOperation.Ema(resetControl, 100));
                     }
-                }
+                },
+                new EvalNugget() {
+                    @Override
+                    protected Table e() {
+                        return bucketed
+                                ? tickResult.t.updateBy(UpdateByOperation.Ema(skipControl, 1.5), "Sym")
+                                : tickResult.t.updateBy(UpdateByOperation.Ema(skipControl, 1.5));
+                    }
+                },
+                new EvalNugget() {
+                    @Override
+                    protected Table e() {
+                        return bucketed
+                                ? tickResult.t.updateBy(UpdateByOperation.Ema(resetControl, 1.5), "Sym")
+                                : tickResult.t.updateBy(UpdateByOperation.Ema(resetControl, 1.5));
+                    }
+                },
+
         };
 
         final EvalNugget[] timeNuggets = new EvalNugget[] {
@@ -579,7 +602,7 @@ public class TestEma extends BaseUpdateByTest {
 
     private void computeEma(TableDefaults source,
             final String tsCol,
-            long scale,
+            double scale,
             OperationControl control,
             String... groups) {
         final boolean useTicks = StringUtils.isNullOrEmpty(tsCol);
@@ -625,7 +648,7 @@ public class TestEma extends BaseUpdateByTest {
         if (useTicks) {
             emaClause = UpdateByOperation.Ema(control, scale);
         } else {
-            emaClause = UpdateByOperation.Ema(control, tsCol, scale);
+            emaClause = UpdateByOperation.Ema(control, tsCol, (long) scale);
         }
 
         final Table result = source.updateBy(emaClause, groups)

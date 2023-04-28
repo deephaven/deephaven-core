@@ -99,7 +99,7 @@ public interface UpdateByOperation {
      * @param pairs The input/output column name pairs
      * @return The aggregation
      */
-    static UpdateByOperation Ema(long tickDecay, String... pairs) {
+    static UpdateByOperation Ema(double tickDecay, String... pairs) {
         return EmaSpec.ofTicks(tickDecay).clause(pairs);
     }
 
@@ -121,7 +121,7 @@ public interface UpdateByOperation {
      * @param pairs The input/output column name pairs
      * @return The aggregation
      */
-    static UpdateByOperation Ema(final OperationControl control, long tickDecay, String... pairs) {
+    static UpdateByOperation Ema(final OperationControl control, double tickDecay, String... pairs) {
         return EmaSpec.ofTicks(control, tickDecay).clause(pairs);
     }
 
@@ -230,7 +230,7 @@ public interface UpdateByOperation {
      * @param pairs The input/output column name pairs
      * @return The aggregation
      */
-    static UpdateByOperation Ems(long tickDecay, String... pairs) {
+    static UpdateByOperation Ems(double tickDecay, String... pairs) {
         return EmsSpec.ofTicks(tickDecay).clause(pairs);
     }
 
@@ -252,7 +252,7 @@ public interface UpdateByOperation {
      * @param pairs The input/output column name pairs
      * @return The aggregation
      */
-    static UpdateByOperation Ems(final OperationControl control, long tickDecay, String... pairs) {
+    static UpdateByOperation Ems(final OperationControl control, double tickDecay, String... pairs) {
         return EmsSpec.ofTicks(control, tickDecay).clause(pairs);
     }
 
@@ -361,7 +361,7 @@ public interface UpdateByOperation {
      * @param pairs The input/output column name pairs
      * @return The aggregation
      */
-    static UpdateByOperation EmMin(long tickDecay, String... pairs) {
+    static UpdateByOperation EmMin(double tickDecay, String... pairs) {
         return EmMinMaxSpec.ofTicks(false, tickDecay).clause(pairs);
     }
 
@@ -383,7 +383,7 @@ public interface UpdateByOperation {
      * @param pairs The input/output column name pairs
      * @return The aggregation
      */
-    static UpdateByOperation EmMin(final OperationControl control, long tickDecay, String... pairs) {
+    static UpdateByOperation EmMin(final OperationControl control, double tickDecay, String... pairs) {
         return EmMinMaxSpec.ofTicks(control, false, tickDecay).clause(pairs);
     }
 
@@ -492,7 +492,7 @@ public interface UpdateByOperation {
      * @param pairs The input/output column name pairs
      * @return The aggregation
      */
-    static UpdateByOperation EmMax(long tickDecay, String... pairs) {
+    static UpdateByOperation EmMax(double tickDecay, String... pairs) {
         return EmMinMaxSpec.ofTicks(true, tickDecay).clause(pairs);
     }
 
@@ -514,7 +514,7 @@ public interface UpdateByOperation {
      * @param pairs The input/output column name pairs
      * @return The aggregation
      */
-    static UpdateByOperation EmMax(final OperationControl control, long tickDecay, String... pairs) {
+    static UpdateByOperation EmMax(final OperationControl control, double tickDecay, String... pairs) {
         return EmMinMaxSpec.ofTicks(control, true, tickDecay).clause(pairs);
     }
 

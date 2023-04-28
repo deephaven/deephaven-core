@@ -95,13 +95,13 @@ class UpdateByBuilder {
                 return UpdateByEmaTimescale.newBuilder()
                         .setTime(UpdateByEmaTimescale.UpdateByEmaTime.newBuilder()
                                 .setColumn(windowScale.timestampCol())
-                                .setPeriodNanos(windowScale.timescaleUnits())
+                                .setPeriodNanos(windowScale.timeUnits())
                                 .build())
                         .build();
             } else {
                 return UpdateByEmaTimescale.newBuilder()
                         .setTicks(UpdateByEmaTimescale.UpdateByEmaTicks.newBuilder()
-                                .setTicks(windowScale.timescaleUnits())
+                                .setTicks(windowScale.tickUnits())
                                 .build())
                         .build();
             }

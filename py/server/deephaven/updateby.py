@@ -108,7 +108,7 @@ class UpdateByOperation(JObjectWrapper):
         return self.j_updateby_op
 
 
-def ema_tick(time_scale_ticks: int, cols: Union[str, List[str]],
+def ema_tick(time_scale_ticks: float, cols: Union[str, List[str]],
                    op_control: OperationControl = None) -> UpdateByOperation:
     """Creates an EMA (exponential moving average) UpdateByOperation for the supplied column names, using ticks as
     the decay unit.
@@ -177,7 +177,7 @@ def ema_time(ts_col: str, time_scale: Union[int, str], cols: Union[str, List[str
         raise DHError(e, "failed to create a time-decay EMA UpdateByOperation.") from e
 
 
-def ems_tick(time_scale_ticks: int, cols: Union[str, List[str]],
+def ems_tick(time_scale_ticks: float, cols: Union[str, List[str]],
                    op_control: OperationControl = None) -> UpdateByOperation:
     """Creates an EMS (exponential moving sum) UpdateByOperation for the supplied column names, using ticks as
     the decay unit.
@@ -246,7 +246,7 @@ def ems_time(ts_col: str, time_scale: Union[int, str], cols: Union[str, List[str
         raise DHError(e, "failed to create a time-decay EMS UpdateByOperation.") from e
 
 
-def emmin_tick(time_scale_ticks: int, cols: Union[str, List[str]],
+def emmin_tick(time_scale_ticks: float, cols: Union[str, List[str]],
                    op_control: OperationControl = None) -> UpdateByOperation:
     """Creates an EM Min (exponential moving minimum) UpdateByOperation for the supplied column names, using ticks as
     the decay unit.
@@ -315,7 +315,7 @@ def emmin_time(ts_col: str, time_scale: Union[int, str], cols: Union[str, List[s
         raise DHError(e, "failed to create a time-decay EM Min UpdateByOperation.") from e
 
 
-def emmax_tick(time_scale_ticks: int, cols: Union[str, List[str]],
+def emmax_tick(time_scale_ticks: float, cols: Union[str, List[str]],
                      op_control: OperationControl = None) -> UpdateByOperation:
     """Creates an EM Max (exponential moving maximum) UpdateByOperation for the supplied column names, using ticks as
     the decay unit.
