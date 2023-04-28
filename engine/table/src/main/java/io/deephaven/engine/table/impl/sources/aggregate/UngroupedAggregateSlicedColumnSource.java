@@ -173,45 +173,45 @@ final class UngroupedAggregateSlicedColumnSource<DATA_TYPE>
                     reset();
                 }
 
-                currentIndex = -1;
+                currentGroup = -1;
                 componentKeys.setSize(0);
                 rowSequence.forAllRowKeys((final long rowKey) -> {
                     // Store the group rowset index in rowsetKeyIndices.
-                    final long indexrowKey = getGroupIndexKey(rowKey, base);
-                    if (currentIndex == -1 || indexrowKey != rowKeys.get(currentIndex)) {
-                        ++currentIndex;
-                        rowKeys.set(currentIndex, indexrowKey);
-                        sameIndexRunLengths.set(currentIndex, 1);
+                    final long groupKey = getGroupIndexKey(rowKey, base);
+                    if (currentGroup == -1 || groupKey != groupKeys.get(currentGroup)) {
+                        ++currentGroup;
+                        groupKeys.set(currentGroup, groupKey);
+                        sameGroupRunLengths.set(currentGroup, 1);
                     } else {
-                        sameIndexRunLengths.set(currentIndex,
-                                sameIndexRunLengths.get(currentIndex) + 1);
+                        sameGroupRunLengths.set(currentGroup,
+                                sameGroupRunLengths.get(currentGroup) + 1);
                     }
                     // Store the offset to the current key in componentKeyIndices.
-                    final long componentrowKey = getOffsetInGroup(rowKey, base);
-                    componentKeys.add(componentrowKey);
+                    final long componentKey = getOffsetInGroup(rowKey, base);
+                    componentKeys.add(componentKey);
                 });
-                rowKeys.setSize(currentIndex + 1);
-                sameIndexRunLengths.setSize(currentIndex + 1);
+                groupKeys.setSize(currentGroup + 1);
+                sameGroupRunLengths.setSize(currentGroup + 1);
 
                 // Preload a chunk of rowsets (and start/end offsets if appropriate).
                 final ObjectChunk<RowSet, ? extends Values> rowSets;
                 final LongChunk<? extends Values> startOffsets;
-                try (final RowSequence indexRowSequence =
-                        RowSequenceFactory.wrapRowKeysChunkAsRowSequence(rowKeys)) {
+                try (final RowSequence groupRowSequence =
+                        RowSequenceFactory.wrapRowKeysChunkAsRowSequence(groupKeys)) {
                     if (usePrev) {
-                        rowSets = groupRowSetSource.getPrevChunk(rowsetGetContext, indexRowSequence).asObjectChunk();
+                        rowSets = groupRowSetSource.getPrevChunk(groupGetContext, groupRowSequence).asObjectChunk();
                         startOffsets = startSource != null
-                                ? startSource.getPrevChunk(startGetContext, indexRowSequence).asLongChunk()
+                                ? startSource.getPrevChunk(startGetContext, groupRowSequence).asLongChunk()
                                 : null;
                     } else {
-                        rowSets = groupRowSetSource.getChunk(rowsetGetContext, indexRowSequence).asObjectChunk();
+                        rowSets = groupRowSetSource.getChunk(groupGetContext, groupRowSequence).asObjectChunk();
                         startOffsets = startSource != null
-                                ? startSource.getChunk(startGetContext, indexRowSequence).asLongChunk()
+                                ? startSource.getChunk(startGetContext, groupRowSequence).asLongChunk()
                                 : null;
                     }
                 }
 
-                currentIndex = 0;
+                currentGroup = 0;
                 for (int ii = 0; ii < rowSets.size(); ++ii) {
                     // Get the bucket rowset for the current group.
                     final RowSet currRowSet = rowSets.get(ii);
@@ -223,26 +223,26 @@ final class UngroupedAggregateSlicedColumnSource<DATA_TYPE>
                     final long bucketSize = bucketRowSet.size();
 
                     // Read the total length of items in this group.
-                    final int lengthFromThisGroup = sameIndexRunLengths.get(ii);
+                    final int lengthFromThisGroup = sameGroupRunLengths.get(ii);
                     // Determine when to stop iterating for the items in this group.
-                    final long endIndex = currentIndex + lengthFromThisGroup;
+                    final long endIndex = currentGroup + lengthFromThisGroup;
 
                     // Get the row key and determine the starting position for the first entry of this group.
-                    final long rowKey = rowKeys.get(ii);
+                    final long rowKey = groupKeys.get(ii);
                     final long rowPos = bucketRowSet.find(rowKey);
                     final long localStartOffset = startOffsets != null ? startOffsets.get(ii) : startOffset;
                     final long startPos = ClampUtil.clampLong(0, bucketSize, rowPos + localStartOffset);
 
-                    while (currentIndex < endIndex) {
+                    while (currentGroup < endIndex) {
                         // Read the offset for this output row and determine the key in the underlying source.
-                        final long offsetInGroup = componentKeys.get(currentIndex);
+                        final long offsetInGroup = componentKeys.get(currentGroup);
                         final long pos = startPos + offsetInGroup;
                         final long key = bucketRowSet.get(pos);
 
                         // Re-use 'componentKeyIndices' as the destination for the keys.
-                        componentKeys.set(currentIndex, key);
+                        componentKeys.set(currentGroup, key);
 
-                        currentIndex++;
+                        currentGroup++;
                     }
                 }
 

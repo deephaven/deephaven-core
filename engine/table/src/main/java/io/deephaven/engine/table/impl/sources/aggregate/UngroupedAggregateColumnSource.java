@@ -73,49 +73,49 @@ final class UngroupedAggregateColumnSource<DATA_TYPE>
                     reset();
                 }
 
-                currentIndex = -1;
+                currentGroup = -1;
                 componentKeys.setSize(0);
                 rowSequence.forAllRowKeys((final long rowKey) -> {
                     final long indexrowKey = getGroupIndexKey(rowKey, base);
-                    if (currentIndex == -1 || indexrowKey != rowKeys.get(currentIndex)) {
-                        ++currentIndex;
-                        rowKeys.set(currentIndex, indexrowKey);
-                        sameIndexRunLengths.set(currentIndex, 1);
+                    if (currentGroup == -1 || indexrowKey != groupKeys.get(currentGroup)) {
+                        ++currentGroup;
+                        groupKeys.set(currentGroup, indexrowKey);
+                        sameGroupRunLengths.set(currentGroup, 1);
                     } else {
-                        sameIndexRunLengths.set(currentIndex,
-                                sameIndexRunLengths.get(currentIndex) + 1);
+                        sameGroupRunLengths.set(currentGroup,
+                                sameGroupRunLengths.get(currentGroup) + 1);
                     }
                     final long componentrowKey = getOffsetInGroup(rowKey, base);
                     componentKeys.add(componentrowKey);
                 });
-                rowKeys.setSize(currentIndex + 1);
-                sameIndexRunLengths.setSize(currentIndex + 1);
+                groupKeys.setSize(currentGroup + 1);
+                sameGroupRunLengths.setSize(currentGroup + 1);
 
                 final ObjectChunk<RowSet, ? extends Values> indexes;
                 try (final RowSequence indexRowSequence =
-                        RowSequenceFactory.wrapRowKeysChunkAsRowSequence(rowKeys)) {
+                        RowSequenceFactory.wrapRowKeysChunkAsRowSequence(groupKeys)) {
                     if (usePrev) {
-                        indexes = groupRowSetSource.getPrevChunk(rowsetGetContext, indexRowSequence).asObjectChunk();
+                        indexes = groupRowSetSource.getPrevChunk(groupGetContext, indexRowSequence).asObjectChunk();
                     } else {
-                        indexes = groupRowSetSource.getChunk(rowsetGetContext, indexRowSequence).asObjectChunk();
+                        indexes = groupRowSetSource.getChunk(groupGetContext, indexRowSequence).asObjectChunk();
                     }
                 }
 
-                currentIndex = 0;
+                currentGroup = 0;
                 for (int ii = 0; ii < indexes.size(); ++ii) {
                     final RowSet currRowSet = indexes.get(ii);
                     Assert.neqNull(currRowSet, "currRowSet");
                     final boolean usePrevIndex = usePrev && currRowSet.isTracking();
                     final RowSet rowSet = usePrevIndex ? currRowSet.trackingCast().prev() : currRowSet;
-                    final int lengthFromThisIndex = sameIndexRunLengths.get(ii);
+                    final int lengthFromThisIndex = sameGroupRunLengths.get(ii);
 
                     final WritableLongChunk<OrderedRowKeys> remappedComponentKeys =
                             componentKeySlice.resetFromTypedChunk(componentKeys,
-                                    currentIndex, lengthFromThisIndex);
+                                    currentGroup, lengthFromThisIndex);
                     rowSet.getKeysForPositions(new LongChunkIterator(componentKeySlice),
                             new LongChunkAppender(remappedComponentKeys));
 
-                    currentIndex += lengthFromThisIndex;
+                    currentGroup += lengthFromThisIndex;
                 }
 
                 stateReusable = shared;

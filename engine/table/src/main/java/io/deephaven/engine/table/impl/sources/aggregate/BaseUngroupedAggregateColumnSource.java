@@ -24,6 +24,7 @@ import static io.deephaven.util.QueryConstants.*;
  */
 abstract class BaseUngroupedAggregateColumnSource<DATA_TYPE, SOURCE_TYPE extends AggregateColumnSource<?, DATA_TYPE>>
         extends UngroupedColumnSource<DATA_TYPE> {
+
     final SOURCE_TYPE aggregateColumnSource;
 
     BaseUngroupedAggregateColumnSource(@NotNull final SOURCE_TYPE aggregateColumnSource,
@@ -243,23 +244,24 @@ abstract class BaseUngroupedAggregateColumnSource<DATA_TYPE, SOURCE_TYPE extends
 
         static abstract class Shareable extends SharedContext {
             final boolean shared;
-            final GetContext rowsetGetContext;
-            final WritableLongChunk<OrderedRowKeys> rowKeys;
-            final WritableIntChunk<ChunkLengths> sameIndexRunLengths;
+            final GetContext groupGetContext;
+            final WritableLongChunk<OrderedRowKeys> groupKeys;
+            final WritableIntChunk<ChunkLengths> sameGroupRunLengths;
             final WritableLongChunk<OrderedRowKeys> componentKeys;
             final ResettableWritableLongChunk<OrderedRowKeys> componentKeySlice;
 
             boolean stateReusable;
-            int currentIndex;
+            int currentGroup;
 
-            Shareable(final boolean shared,
+            Shareable(
+                    final boolean shared,
                     @NotNull final ColumnSource<? extends RowSet> groupRowSetSource,
                     final int chunkCapacity) {
                 this.shared = shared;
 
-                rowsetGetContext = groupRowSetSource.makeGetContext(chunkCapacity, this);
-                rowKeys = WritableLongChunk.makeWritableChunk(chunkCapacity);
-                sameIndexRunLengths = WritableIntChunk.makeWritableChunk(chunkCapacity);
+                groupGetContext = groupRowSetSource.makeGetContext(chunkCapacity, this);
+                groupKeys = WritableLongChunk.makeWritableChunk(chunkCapacity);
+                sameGroupRunLengths = WritableIntChunk.makeWritableChunk(chunkCapacity);
                 componentKeys = WritableLongChunk.makeWritableChunk(chunkCapacity);
                 componentKeySlice = ResettableWritableLongChunk.makeResettableChunk();
             }
@@ -273,39 +275,45 @@ abstract class BaseUngroupedAggregateColumnSource<DATA_TYPE, SOURCE_TYPE extends
             @Override
             public void close() {
                 SafeCloseable.closeAll(
-                        rowsetGetContext,
-                        rowKeys,
-                        sameIndexRunLengths,
+                        groupGetContext,
+                        groupKeys,
+                        sameGroupRunLengths,
                         componentKeys,
                         componentKeySlice);
                 super.close();
             }
         }
 
-        void doFillChunk(@NotNull final ColumnSource<?> valueSource, final boolean usePrev,
+        void doFillChunk(
+                @NotNull final ColumnSource<?> valueSource,
+                final boolean usePrev,
                 @NotNull final WritableChunk<? super Values> destination) {
             final Shareable shareable = getShareable();
 
-            int componentKeyIndicesPosition = 0;
-            for (int ii = 0; ii < shareable.sameIndexRunLengths.size(); ++ii) {
-                final int lengthFromThisIndex = shareable.sameIndexRunLengths.get(ii);
+            int componentKeysOffset = 0;
+            for (int ii = 0; ii < shareable.sameGroupRunLengths.size(); ++ii) {
+                final int lengthFromThisGroup = shareable.sameGroupRunLengths.get(ii);
 
                 final WritableLongChunk<OrderedRowKeys> remappedComponentKeys =
                         shareable.componentKeySlice.resetFromTypedChunk(shareable.componentKeys,
-                                componentKeyIndicesPosition, lengthFromThisIndex);
+                                componentKeysOffset, lengthFromThisGroup);
 
                 try (final RowSequence componentRowSequence =
                         RowSequenceFactory.wrapRowKeysChunkAsRowSequence(remappedComponentKeys)) {
                     if (usePrev) {
-                        valueSource.fillPrevChunk(aggregatedFillContext, destinationSlice.resetFromChunk(destination,
-                                componentKeyIndicesPosition, lengthFromThisIndex), componentRowSequence);
+                        valueSource.fillPrevChunk(
+                                aggregatedFillContext,
+                                destinationSlice.resetFromChunk(destination, componentKeysOffset, lengthFromThisGroup),
+                                componentRowSequence);
                     } else {
-                        valueSource.fillChunk(aggregatedFillContext, destinationSlice.resetFromChunk(destination,
-                                componentKeyIndicesPosition, lengthFromThisIndex), componentRowSequence);
+                        valueSource.fillChunk(
+                                aggregatedFillContext,
+                                destinationSlice.resetFromChunk(destination, componentKeysOffset, lengthFromThisGroup),
+                                componentRowSequence);
                     }
                 }
 
-                componentKeyIndicesPosition += lengthFromThisIndex;
+                componentKeysOffset += lengthFromThisGroup;
             }
         }
 
