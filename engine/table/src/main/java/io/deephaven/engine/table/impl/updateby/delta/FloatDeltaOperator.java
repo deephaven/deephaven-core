@@ -49,15 +49,16 @@ public class FloatDeltaOperator extends BaseFloatUpdateByOperator {
             // read the value from the values chunk
             final float currentVal = floatValueChunk.get(pos);
 
-            // If the previous value is null, defer to the control object to decide what to do
-            if (lastVal == NULL_FLOAT) {
-                curVal = (control.nullBehavior() == NullBehavior.NullDominates)
-                        ? NULL_FLOAT
-                        : currentVal;
-            } else if (currentVal != NULL_FLOAT) {
-                curVal = (float)(currentVal - lastVal);
-            } else {
+            if (currentVal == NULL_FLOAT) {
                 curVal = NULL_FLOAT;
+            } else if (lastVal == NULL_FLOAT) {
+                curVal = control.nullBehavior() == NullBehavior.NullDominates
+                        ? NULL_FLOAT
+                        : (control.nullBehavior() == NullBehavior.ZeroDominates
+                            ? (float)0
+                            : currentVal);
+            } else {
+                curVal = (float)(currentVal - lastVal);
             }
 
             lastVal = currentVal;

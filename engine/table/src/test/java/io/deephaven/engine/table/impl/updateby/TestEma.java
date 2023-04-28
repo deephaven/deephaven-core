@@ -15,6 +15,7 @@ import io.deephaven.engine.table.impl.TableDefaults;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.testutil.EvalNugget;
+import io.deephaven.engine.testutil.generator.CharGenerator;
 import io.deephaven.engine.testutil.generator.SortedDateTimeGenerator;
 import io.deephaven.engine.testutil.generator.TestDataGenerator;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
@@ -30,6 +31,7 @@ import org.junit.experimental.categories.Category;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.time.Duration;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
@@ -528,6 +530,50 @@ public class TestEma extends BaseUpdateByTest {
                 throw t;
             }
         }
+    }
+    // endregion
+
+    // region Special Tests
+    @Test
+    public void testInterfaces() {
+        // This test will verify that the interfaces exposed by the UpdateByOperation class are usable without errors.
+
+        final QueryTable t = createTestTable(100, false, false, false, 0xFFFABBBC,
+                new String[] {"ts", "charCol"}, new TestDataGenerator[] {
+                        new SortedDateTimeGenerator(
+                                convertDateTime("2022-03-09T09:00:00.000 NY"),
+                                convertDateTime("2022-03-09T16:30:00.000 NY")),
+                        new CharGenerator('A', 'z', 0.1)}).t;
+
+        final OperationControl skipControl = OperationControl.builder()
+                .onNullValue(BadDataBehavior.SKIP)
+                .onNanValue(BadDataBehavior.SKIP).build();
+
+        final OperationControl resetControl = OperationControl.builder()
+                .onNullValue(BadDataBehavior.RESET)
+                .onNanValue(BadDataBehavior.RESET).build();
+
+        final DateTime[] ts = (DateTime[]) t.getColumn("ts").getDirect();
+        final long[] timestamps = new long[t.intSize()];
+        for (int i = 0; i < t.intSize(); i++) {
+            timestamps[i] = ts[i].getNanos();
+        }
+
+        Table actual = t.updateBy(UpdateByOperation.Ema(100));
+
+        Table actualSkip = t.updateBy(UpdateByOperation.Ema(skipControl, 100));
+        Table actualReset = t.updateBy(UpdateByOperation.Ema(resetControl, 100));
+
+        Table actualTime = t.updateBy(UpdateByOperation.Ema("ts", 10 * MINUTE));
+
+        Table actualSkipTime = t.updateBy(UpdateByOperation.Ema(skipControl, "ts", 10 * MINUTE));
+        Table actualResetTime = t.updateBy(UpdateByOperation.Ema(resetControl, "ts", 10 * MINUTE));
+
+        actualTime = t.updateBy(UpdateByOperation.Ema("ts", Duration.ofMinutes(10)));
+
+        actualSkipTime = t.updateBy(UpdateByOperation.Ema(skipControl, "ts", Duration.ofMinutes(10)));
+        actualResetTime = t.updateBy(UpdateByOperation.Ema(resetControl, "ts", Duration.ofMinutes(10)));
+
     }
     // endregion
 
