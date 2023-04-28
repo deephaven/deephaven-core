@@ -1304,4 +1304,16 @@ public class TableTools {
         }
         return dataType;
     }
+
+    public static String serialize(String[] colors) {
+        final StringBuilder builder = new StringBuilder();
+        for (int i = 0; i < colors.length; i++) {
+            builder.append(colors[i]);
+            if (i < colors.length - 1) {
+                builder.append(",");
+            }
+        }
+
+        return builder.toString();
+    }
 }
