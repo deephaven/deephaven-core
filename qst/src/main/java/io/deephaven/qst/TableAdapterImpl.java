@@ -226,8 +226,13 @@ class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> impleme
     public void visit(JoinTable joinTable) {
         final TOPS left = ops(joinTable.left());
         final TABLE right = table(joinTable.right());
-        addOp(joinTable,
-                left.join(right, joinTable.matches(), joinTable.additions(), joinTable.reserveBits()));
+        if (joinTable.reserveBits().isPresent()) {
+            addOp(joinTable,
+                    left.join(right, joinTable.matches(), joinTable.additions(), joinTable.reserveBits().getAsInt()));
+        } else {
+            addOp(joinTable,
+                    left.join(right, joinTable.matches(), joinTable.additions()));
+        }
     }
 
     @Override
