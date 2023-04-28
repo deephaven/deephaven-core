@@ -137,8 +137,8 @@ public class Strings {
         if (!entries.hasNext()) {
             return "[]";
         }
-        final BiConsumer<StringBuilder, Map.Entry<String, String>> appender = (sb, e) ->
-                sb.append(e.getKey()).append(" = ").append(e.getValue());
+        final BiConsumer<StringBuilder, Map.Entry<String, String>> appender =
+                (sb, e) -> sb.append(e.getKey()).append(" = ").append(e.getValue());
         final StringBuilder sb = new StringBuilder();
         appender.accept(sb.append('['), entries.next());
         while (entries.hasNext()) {
