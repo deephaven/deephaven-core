@@ -1,18 +1,55 @@
 package io.deephaven.engine.table.impl.rangejoin;
 
-import io.deephaven.chunk.Chunk;
-import io.deephaven.chunk.IntChunk;
-import io.deephaven.chunk.WritableBooleanChunk;
-import io.deephaven.chunk.WritableIntChunk;
+import io.deephaven.api.RangeEndRule;
+import io.deephaven.api.RangeStartRule;
+import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.util.SimpleTypeMap;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.function.BiFunction;
 
 /**
  * Kernel interface for finding range start and end positions for range join.
  */
 interface RangeSearchKernel {
+
+    /**
+     * Lookup the appropriate singleton RangeSearchKernel for the supplied value type and rules.
+     *
+     * @param valueType The type of the values to be searched
+     * @param startRule The range start rule
+     * @param endRule The range end rule
+     * @return The RangeSearchKernel to use
+     */
+    static RangeSearchKernel lookup(
+            @NotNull final Class<?> valueType,
+            @NotNull final RangeStartRule startRule,
+            @NotNull final RangeEndRule endRule) {
+        return FactoryHelper.TYPE_TO_FACTORY.get(valueType).apply(startRule, endRule);
+    }
+
+    final class FactoryHelper {
+
+        private static final SimpleTypeMap<BiFunction<RangeStartRule, RangeEndRule, ? extends RangeSearchKernel>> TYPE_TO_FACTORY =
+                SimpleTypeMap.create(
+                        (final RangeStartRule start, final RangeEndRule end) -> {
+                            throw new UnsupportedOperationException(
+                                    "Cannot create a range search kernel for primitive booleans");
+                        },
+                        RangeSearchKernelChar::forRules,
+                        RangeSearchKernelByte::forRules,
+                        RangeSearchKernelShort::forRules,
+                        RangeSearchKernelInt::forRules,
+                        RangeSearchKernelLong::forRules,
+                        RangeSearchKernelFloat::forRules,
+                        RangeSearchKernelDouble::forRules,
+                        RangeSearchKernelObject::forRules);
+
+        private FactoryHelper() {}
+    }
 
     /**
      * Examine the (source-ordered) left start and end value pairs in {@code leftStartValues} and {@code leftEndValues},

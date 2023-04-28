@@ -372,6 +372,7 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
         private final ChunkType valueChunkType;
         private final DupCompactKernel valueChunkDupCompactKernel;
         private final ReverseKernel valueChunkReverseKernel;
+        private final RangeSearchKernel rangeSearchKernel;
 
         private final RowRedirection outputRedirection;
         private final WritableColumnSource<Integer> outputSlotsAndPositionRanges;
@@ -397,6 +398,8 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
                     leftEndValues.getChunkType(), "leftEndValues.getChunkType()");
             valueChunkDupCompactKernel = DupCompactKernel.makeDupCompact(valueChunkType, false);
             valueChunkReverseKernel = ReverseKernel.makeReverseKernel(valueChunkType);
+            rangeSearchKernel = RangeSearchKernel.lookup(
+                    leftStartValues.getType(), rangeMatch.rangeStartRule(), rangeMatch.rangeEndRule());
 
             if (!leftTable.isFlat() && SparseConstants.sparseStructureExceedsOverhead(
                     leftTable.getRowSet(), MAXIMUM_STATIC_MEMORY_OVERHEAD)) {
