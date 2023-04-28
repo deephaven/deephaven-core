@@ -10,6 +10,7 @@ unlocks the unique power of Deephaven to the Python community.
 __version__ = "0.24.0"
 
 from deephaven_internal import jvm
+
 try:
     jvm.check_ready()
 finally:
@@ -25,3 +26,7 @@ from .table_factory import empty_table, time_table, merge, merge_sorted, new_tab
 from .replay import TableReplayer
 from ._gc import garbage_collect
 from .dbc import read_sql
+
+__all__ = ["read_csv", "write_csv", "kafka_consumer", "kafka_producer", "empty_table", "time_table", "merge",
+           "merge_sorted", "new_table", "input_table", "DynamicTableWriter", "TableReplayer", "garbage_collect",
+           "read_sql", "DHError", "SortDirection"]
