@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.Selectable;
+import io.deephaven.api.agg.Pair;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
@@ -105,7 +106,14 @@ public abstract class RedefinableTable<IMPL_TYPE extends RedefinableTable<IMPL_T
     }
 
     @Override
-    public Table renameColumns(MatchPair... pairs) {
+    public Table renameColumns(Collection<Pair> columns) {
+        if (columns == null || columns.isEmpty()) {
+            return this;
+        }
+        return renameColumnsImpl(MatchPair.fromPairs(columns));
+    }
+
+    private Table renameColumnsImpl(MatchPair... pairs) {
         if (pairs == null || pairs.length == 0) {
             return this;
         }

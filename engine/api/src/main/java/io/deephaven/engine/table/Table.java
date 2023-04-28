@@ -5,6 +5,7 @@ package io.deephaven.engine.table;
 
 import io.deephaven.api.*;
 import io.deephaven.api.agg.Aggregation;
+import io.deephaven.api.agg.Pair;
 import io.deephaven.engine.liveness.LivenessNode;
 import io.deephaven.engine.primitive.iterator.*;
 import io.deephaven.engine.rowset.TrackingRowSet;
@@ -302,9 +303,7 @@ public interface Table extends
     @ConcurrentMethod
     Table dropColumnFormats();
 
-    Table renameColumns(MatchPair... pairs);
-
-    Table renameColumns(Collection<String> columns);
+    Table renameColumns(Collection<Pair> columns);
 
     Table renameColumns(String... columns);
 

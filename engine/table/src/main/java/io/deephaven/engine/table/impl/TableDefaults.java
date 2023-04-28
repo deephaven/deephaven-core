@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.*;
 import io.deephaven.api.agg.Aggregation;
+import io.deephaven.api.agg.Pair;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.snapshot.SnapshotWhenOptions;
 import io.deephaven.api.snapshot.SnapshotWhenOptions.Flag;
@@ -212,21 +213,18 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
 
     @Override
     @FinalDefault
-    default Table renameColumns(Collection<String> columns) {
-        return renameColumns(MatchPairFactory.getExpressions(columns));
-    }
-
-    @Override
-    @FinalDefault
     default Table renameColumns(String... columns) {
-        return renameColumns(MatchPairFactory.getExpressions(columns));
+        return renameColumns(Pair.from(columns));
     }
 
     @Override
     @FinalDefault
     default Table renameAllColumns(UnaryOperator<String> renameFunction) {
-        return renameColumns(getDefinition().getColumnStream().map(ColumnDefinition::getName)
-                .map(n -> new MatchPair(renameFunction.apply(n), n)).toArray(MatchPair[]::new));
+        return renameColumns(getDefinition()
+                .getColumnStream()
+                .map(ColumnDefinition::getName)
+                .map(n -> Pair.of(ColumnName.of(n), ColumnName.of(renameFunction.apply(n))))
+                .collect(Collectors.toList()));
     }
 
     @Override

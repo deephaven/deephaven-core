@@ -9,6 +9,7 @@ import io.deephaven.api.ReverseAsOfJoinRule;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.Aggregation;
+import io.deephaven.api.agg.Pair;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.snapshot.SnapshotWhenOptions;
@@ -218,7 +219,7 @@ public interface TableAdapter extends TableDefaults {
     }
 
     @Override
-    default Table renameColumns(MatchPair... pairs) {
+    default Table renameColumns(Collection<Pair> columns) {
         return throwUnsupported();
     }
 

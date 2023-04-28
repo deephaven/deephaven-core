@@ -6,6 +6,10 @@ package io.deephaven.api.agg;
 import io.deephaven.api.ColumnName;
 
 import java.io.Serializable;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * A column pair represents an {@link #input() input} and an {@link #output() output} column.
@@ -30,6 +34,14 @@ public interface Pair extends Serializable {
         ColumnName output = ColumnName.parse(x.substring(0, ix));
         ColumnName input = ColumnName.parse(x.substring(ix + 1));
         return of(input, output);
+    }
+
+    static List<Pair> from(String... values) {
+        return from(Arrays.asList(values));
+    }
+
+    static List<Pair> from(Collection<String> values) {
+        return values.stream().map(Pair::parse).collect(Collectors.toList());
     }
 
     /**

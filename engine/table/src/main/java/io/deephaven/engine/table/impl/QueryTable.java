@@ -1757,7 +1757,11 @@ public class QueryTable extends BaseTable<QueryTable> {
     }
 
     @Override
-    public Table renameColumns(MatchPair... pairs) {
+    public Table renameColumns(Collection<io.deephaven.api.agg.Pair> columns) {
+        return renameColumnsImpl(MatchPair.fromPairs(columns));
+    }
+
+    private Table renameColumnsImpl(MatchPair... pairs) {
         return QueryPerformanceRecorder.withNugget("renameColumns(" + matchString(pairs) + ")",
                 sizeForInstrumentation(), () -> {
                     if (pairs == null || pairs.length == 0) {
