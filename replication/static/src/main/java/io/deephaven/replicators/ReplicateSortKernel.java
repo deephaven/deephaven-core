@@ -398,7 +398,7 @@ public class ReplicateSortKernel {
                 "        if (rhs == null) {",
                 "            return 1;",
                 "        }",
-                "        //noinspection unchecked",
+                "        //noinspection unchecked,rawtypes",
                 "        return ((Comparable)lhs).compareTo(rhs);",
                 "    }",
                 "");
@@ -414,7 +414,7 @@ public class ReplicateSortKernel {
                 "        if (rhs == null) {",
                 "            return -1;",
                 "        }",
-                "        //noinspection unchecked",
+                "        //noinspection unchecked,rawtypes",
                 "        return ((Comparable)rhs).compareTo(lhs);",
                 "    }");
 
