@@ -148,8 +148,7 @@ class TableInterface(ABC):
         table_op = SelectDistinctOp(column_names=to_list(cols))
         return self.table_op_handler(table_op)
 
-    def sort(self, order_by: Union[str, List[str]], order: Union[SortDirection, List[SortDirection]] = None) -> Union[
-        Table, Query]:
+    def sort(self, order_by: Union[str, List[str]], order: Union[SortDirection, List[SortDirection]] = None) -> Table:
 
         """The sort method creates a new table where the rows are ordered based on values in the specified set of 
         columns. 
@@ -218,8 +217,7 @@ class TableInterface(ABC):
         table_op = TailOp(num_rows=num_rows)
         return self.table_op_handler(table_op)
 
-    def natural_join(self, table: Table, on: Union[str, List[str]], joins: Union[str, List[str]] = None) -> Union[
-            Table, Query]:
+    def natural_join(self, table: Table, on: Union[str, List[str]], joins: Union[str, List[str]] = None) -> Table:
 
         """The natural_join method creates a new table containing all the rows and columns of this table, 
         plus additional columns containing data from the right table. For columns appended to the left table (joins), 
@@ -243,8 +241,7 @@ class TableInterface(ABC):
         table_op = NaturalJoinOp(table=table, keys=to_list(on), columns_to_add=to_list(joins))
         return self.table_op_handler(table_op)
 
-    def exact_join(self, table: Table, on: Union[str, List[str]], joins: Union[str, List[str]] = None) -> Union[
-            Table, Query]:
+    def exact_join(self, table: Table, on: Union[str, List[str]], joins: Union[str, List[str]] = None) -> Table:
 
         """The exact_join method creates a new table containing all the rows and columns of this table plus 
         additional columns containing data from the right table. For columns appended to the left table (joins), 
@@ -649,8 +646,7 @@ class TableInterface(ABC):
         table_op = AggregateAllOp(agg=agg, by=to_list(by))
         return self.table_op_handler(table_op)
 
-    def update_by(self, ops: Union[UpdateByOperation, List[UpdateByOperation]], by: Union[str, List[str]]) -> Union[
-            Table, Query]:
+    def update_by(self, ops: Union[UpdateByOperation, List[UpdateByOperation]], by: Union[str, List[str]]) -> Table:
 
         """The update_by method creates a table with additional columns calculated from
         window-based aggregations of columns in this table. The aggregations are defined by the provided operations,
