@@ -105,7 +105,7 @@ public class WebBarrageUtils {
 
             cols[i].setDescription(fieldMetadata.get("description"));
 
-            cols[i].setPartitionColumn(fieldMetadata.get("isPartition").equals("true"));
+            cols[i].setPartitionColumn(fieldMetadata.get("isPartitioning").equals("true"));
 
             cols[i].setHierarchicalExpandByColumn(
                     "true".equals(fieldMetadata.get("hierarchicalTable.isExpandByColumn")));
