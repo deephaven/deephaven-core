@@ -20,15 +20,11 @@ import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.exceptions.OperationException;
 import io.deephaven.engine.exceptions.OutOfOrderException;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.table.ChunkSink;
-import io.deephaven.engine.table.ChunkSource;
-import io.deephaven.engine.table.ColumnDefinition;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.SharedContext;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.WritableColumnSource;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.impl.ExpandedRowSequence;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.MemoizedOperationKey;
 import io.deephaven.engine.table.impl.OperationInitializationThreadPool;
 import io.deephaven.engine.table.impl.QueryTable;
@@ -57,6 +53,7 @@ import java.util.function.Consumer;
 
 import static io.deephaven.base.ArrayUtil.MAX_ARRAY_SIZE;
 import static io.deephaven.engine.table.impl.by.AggregationProcessor.EXPOSED_GROUP_ROW_SETS;
+import static io.deephaven.engine.table.impl.sources.InMemoryColumnSource.getImmutableMemoryColumnSource;
 
 /**
  * Implementation for {@link QueryTable#rangeJoin(Table, Collection, RangeJoinMatch, Collection)}.
@@ -369,6 +366,7 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
         private final CompactKernel valueChunkCompactKernel;
 
         private final RowRedirection outputRedirection;
+        private final WritableColumnSource<Integer> outputInnerSource;
         private final WritableColumnSource<Integer> outputSlotsAndPositionRanges;
 
         private ColumnSource<RowSet> leftGroupRowSets;
@@ -398,13 +396,23 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
                     leftTable.getRowSet(), MAXIMUM_STATIC_MEMORY_OVERHEAD)) {
                 outputRedirection = new ExpandedRowRedirection(
                         new InverseWrappedRowSetRowRedirection(leftTable.getRowSet()), RESULT_MULTIPLIER);
+                outputInnerSource = getImmutableMemoryColumnSource(leftTable.size(), int.class, null);
+                try (final RowSet flatOutputRowSet = RowSetFactory.flat(leftTable.size() * RESULT_MULTIPLIER)) {
+                    ((WritableSourceWithPrepareForParallelPopulation) outputInnerSource)
+                            .prepareForParallelPopulation(flatOutputRowSet);
+                }
                 outputSlotsAndPositionRanges = WritableRedirectedColumnSource.maybeRedirect(
                         outputRedirection,
-                        InMemoryColumnSource.getImmutableMemoryColumnSource(leftTable.size(), int.class, null),
+                        outputInnerSource,
                         leftTable.size() * RESULT_MULTIPLIER);
             } else {
                 outputRedirection = null;
+                outputInnerSource = null;
                 outputSlotsAndPositionRanges = new IntegerSparseArraySource();
+                // TODO-RWC: This won't work. I don't have an expanded rowset implementation I can use for this.
+                //           Maybe I should back off and use three columns.
+                ((WritableSourceWithPrepareForParallelPopulation) outputSlotsAndPositionRanges)
+                        .prepareForParallelPopulation(leftTable.getRowSet());
             }
         }
 
@@ -451,6 +459,7 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
             // Output resources
             private final ChunkSink.FillFromContext outputFillFromContext;
             private final WritableIntChunk<? extends Values> outputChunk;
+            private final ExpandedRowSequence outputExpandedRowSequence;
 
             private TaskContext() {
                 // Left resources
@@ -470,9 +479,11 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
                 ensureRightCapacity(CHUNK_SIZE);
 
                 // Output resources
-                outputFillFromContext =
-                        outputSlotsAndPositionRanges.makeFillFromContext(RESULT_MULTIPLIER * CHUNK_SIZE);
+                outputFillFromContext = outputRedirection == null
+                        ? outputSlotsAndPositionRanges.makeFillFromContext(RESULT_MULTIPLIER * CHUNK_SIZE)
+                        : outputInnerSource.makeFillFromContext(RESULT_MULTIPLIER * CHUNK_SIZE);
                 outputChunk = WritableIntChunk.makeWritableChunk(RESULT_MULTIPLIER * CHUNK_SIZE);
+                outputExpandedRowSequence = new ExpandedRowSequence();
             }
 
             private void ensureRightCapacity(final long rightGroupSize) {
@@ -528,7 +539,8 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
                         rightLengths,
                         // Output resources
                         outputFillFromContext,
-                        outputChunk);
+                        outputChunk,
+                        outputExpandedRowSequence);
             }
         }
 
@@ -594,9 +606,16 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
                     tc.outputChunk.setSize(sliceSize * RESULT_MULTIPLIER);
 
                     if (outputRedirection == null) {
-
+                        outputSlotsAndPositionRanges.fillFromChunk(tc.outputFillFromContext, tc.outputChunk,
+                                tc.outputExpandedRowSequence.reset(leftRowsSlice, RESULT_MULTIPLIER));
                     } else {
-
+                        // @formatter:off
+                        try (final RowSet leftSliceRowSet = leftRowsSlice.asRowSet();
+                             final RowSequence invertedLeftRowsSlice = leftTable.getRowSet().invert(leftSliceRowSet)) {
+                            // @formatter:on
+                            outputInnerSource.fillFromChunk(tc.outputFillFromContext, tc.outputChunk,
+                                    tc.outputExpandedRowSequence.reset(invertedLeftRowsSlice, RESULT_MULTIPLIER));
+                        }
                     }
                 }
             }
