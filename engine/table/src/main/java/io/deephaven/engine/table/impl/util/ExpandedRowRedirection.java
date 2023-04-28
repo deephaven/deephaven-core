@@ -20,9 +20,9 @@ import org.jetbrains.annotations.Nullable;
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
 
 /**
- * Wraps an internal {@link RowRedirection} <em>innerRedirection</em> along with an associated <em>multiplier</em>. An
- * outer row key <em>k</em> is mapped to inner row key
- * {@code innerRedirection.get(k / multiplier) * multiplier + k % multiplier}.
+ * Wraps an internal {@link RowRedirection} {@code innerRedirection} along with an associated {@code multiplier}. Each
+ * mapping in the {@code innerRedirection} is <em>expanded</em> into {@code multiplier} mappings. An outer row key
+ * {@code k} is mapped to inner row key {@code innerRedirection.get(k / multiplier) * multiplier + k % multiplier}.
  * <p>
  * This allows for a row redirection that tracks only a fraction of the actual redirected row keys, which is useful when
  * a set of related values are stored adjacently in a single column.
@@ -30,7 +30,7 @@ import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
  * It's expected that outer row keys with the same base value (that is, {@code outerRowKey / multiplier}) will always be
  * fetched together, and the implementation makes this assumption.
  */
-public class MultipleRowRedirection implements RowRedirection {
+public class ExpandedRowRedirection implements RowRedirection {
 
     /**
      * {@link RowRedirection} that expresses the multiplier-adjusted relationship between outer row keys and inner row
@@ -39,7 +39,7 @@ public class MultipleRowRedirection implements RowRedirection {
     private final RowRedirection innerRedirection;
     private final int multiplier;
 
-    public MultipleRowRedirection(@NotNull final RowRedirection innerRedirection, final int multiplier) {
+    public ExpandedRowRedirection(@NotNull final RowRedirection innerRedirection, final int multiplier) {
         this.innerRedirection = innerRedirection;
         this.multiplier = multiplier;
     }
