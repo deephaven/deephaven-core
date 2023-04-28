@@ -328,12 +328,6 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
 
     @Override
     @FinalDefault
-    default Table join(Table rightTable, int numRightBitsToReserve) {
-        return join(rightTable, Collections.emptyList(), Collections.emptyList(), numRightBitsToReserve);
-    }
-
-    @Override
-    @FinalDefault
     default Table join(Table rightTable, String columnsToMatch, int numRightBitsToReserve) {
         return join(
                 rightTable,

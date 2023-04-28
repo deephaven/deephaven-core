@@ -33,6 +33,7 @@ import org.junit.experimental.categories.Category;
 
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.engine.testutil.TstUtils.*;
+import static java.util.Collections.emptyList;
 
 @Category(OutOfBandTest.class)
 public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
@@ -60,11 +61,11 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         addToTable(rTable, i(1, (1 << 16) - 1), longCol("Y", 1, 2));
 
         final EvalNugget[] en = new EvalNugget[] {
-                EvalNugget.from(() -> lTable.join(rTable, numRightBitsToReserve)),
+                EvalNugget.from(() -> lTable.join(rTable, emptyList(), emptyList(), numRightBitsToReserve)),
         };
         TstUtils.validate(en);
 
-        final QueryTable jt = (QueryTable) lTable.join(rTable, numRightBitsToReserve);
+        final QueryTable jt = (QueryTable) lTable.join(rTable, emptyList(), emptyList(), numRightBitsToReserve);
         final io.deephaven.engine.table.impl.SimpleListener listener =
                 new io.deephaven.engine.table.impl.SimpleListener(jt);
         jt.addUpdateListener(listener);
@@ -96,11 +97,11 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         addToTable(rTable, i(0, origIndex), longCol("Y", 1, 2));
 
         final EvalNugget[] en = new EvalNugget[] {
-                EvalNugget.from(() -> lTable.join(rTable, numRightBitsToReserve)),
+                EvalNugget.from(() -> lTable.join(rTable, emptyList(), emptyList(), numRightBitsToReserve)),
         };
         TstUtils.validate(en);
 
-        final QueryTable jt = (QueryTable) lTable.join(rTable, numRightBitsToReserve);
+        final QueryTable jt = (QueryTable) lTable.join(rTable, emptyList(), emptyList(), numRightBitsToReserve);
         final io.deephaven.engine.table.impl.SimpleListener listener =
                 new io.deephaven.engine.table.impl.SimpleListener(jt);
         jt.addUpdateListener(listener);
@@ -135,11 +136,11 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         addToTable(rTable, i(1, 128, (1 << 16) - 1), longCol("Y", 1, 2, 3));
 
         final EvalNugget[] en = new EvalNugget[] {
-                EvalNugget.from(() -> lTable.join(rTable, numRightBitsToReserve)),
+                EvalNugget.from(() -> lTable.join(rTable, emptyList(), emptyList(), numRightBitsToReserve)),
         };
         TstUtils.validate(en);
 
-        final QueryTable jt = (QueryTable) lTable.join(rTable, numRightBitsToReserve);
+        final QueryTable jt = (QueryTable) lTable.join(rTable, emptyList(), emptyList(), numRightBitsToReserve);
         final io.deephaven.engine.table.impl.SimpleListener listener =
                 new io.deephaven.engine.table.impl.SimpleListener(jt);
         jt.addUpdateListener(listener);
@@ -172,7 +173,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         addToTable(rTable, i(1, 128, (1 << 16) - 1), longCol("Y", 1, 2, 3));
 
         final EvalNugget[] en = new EvalNugget[] {
-                EvalNugget.from(() -> lTable.join(rTable, numRightBitsToReserve)),
+                EvalNugget.from(() -> lTable.join(rTable, emptyList(), emptyList(), numRightBitsToReserve)),
         };
         TstUtils.validate(en);
 
@@ -271,9 +272,9 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
 
         final EvalNugget[] en = new EvalNugget[] {
                 // Zero-Key Joins
-                EvalNugget.from(() -> leftTicking.join(rightTicking, numRightBitsToReserve)),
-                EvalNugget.from(() -> leftStatic.join(rightTicking, numRightBitsToReserve)),
-                EvalNugget.from(() -> leftTicking.join(rightStatic, numRightBitsToReserve)),
+                EvalNugget.from(() -> leftTicking.join(rightTicking, emptyList(), emptyList(), numRightBitsToReserve)),
+                EvalNugget.from(() -> leftStatic.join(rightTicking, emptyList(), emptyList(), numRightBitsToReserve)),
+                EvalNugget.from(() -> leftTicking.join(rightStatic, emptyList(), emptyList(), numRightBitsToReserve)),
         };
 
         for (numSteps.setValue(0); numSteps.intValue() < maxSteps; numSteps.increment()) {
