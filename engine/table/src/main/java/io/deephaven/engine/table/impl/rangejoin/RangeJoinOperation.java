@@ -20,7 +20,6 @@ import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.exceptions.OperationException;
 import io.deephaven.engine.exceptions.OutOfOrderException;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.impl.ExpandedRowSequence;
@@ -34,7 +33,6 @@ import io.deephaven.engine.table.impl.by.AggregationProcessor;
 import io.deephaven.engine.table.impl.sort.IntSortKernel;
 import io.deephaven.engine.table.impl.sort.findruns.FindRunsKernel;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
-import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.IntegerSparseArraySource;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.sources.WritableRedirectedColumnSource;
@@ -409,10 +407,9 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
                 outputRedirection = null;
                 outputInnerSource = null;
                 outputSlotsAndPositionRanges = new IntegerSparseArraySource();
-                // TODO-RWC: This won't work. I don't have an expanded rowset implementation I can use for this.
-                //           Maybe I should back off and use three columns.
                 ((WritableSourceWithPrepareForParallelPopulation) outputSlotsAndPositionRanges)
-                        .prepareForParallelPopulation(leftTable.getRowSet());
+                        .prepareForParallelPopulation(
+                                ExpandedRowSequence.expand(leftTable.getRowSet(), RESULT_MULTIPLIER));
             }
         }
 

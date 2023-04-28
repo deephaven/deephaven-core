@@ -8,6 +8,8 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetBuilderSequential;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.util.datastructures.LongAbortableConsumer;
@@ -20,44 +22,57 @@ import org.jetbrains.annotations.NotNull;
  * each inner key {@code k} is mapped to {@code multiplier} outer row keys in range
  * {@code [k * multiplier, k * multiplier + multiplier)}.
  * <p>
- * Note that this is a very implementation-specific tool, and may not support all usual RowSequence methods. Notably,
- * it does not support getting sub-RowSequences, RowSequence.Iterators, or conversion to RowSet.
+ * Note that this is a very implementation-specific tool, and may not support all usual RowSequence methods. Notably, it
+ * does not support getting sub-RowSequences, RowSequence.Iterators, or conversion to RowSet.
  */
 public class ExpandedRowSequence extends RowSequenceAsChunkImpl implements RowSequence {
 
     public static RowSequence expand(@NotNull final RowSequence innerRowSequence, final int multiplier) {
         Require.gtZero(multiplier, "multiplier");
-        if (innerRowSequence instanceof ExpandedRowSequence) {
-            final ExpandedRowSequence innerExpanded = ((ExpandedRowSequence) innerRowSequence);
-            return expand(innerExpanded.innerRowSequence, innerExpanded.multiplier * multiplier);
-        }
-        return multiplier == 1 ? innerRowSequence : new ExpandedRowSequence(innerRowSequence, multiplier);
+        // noinspection resource
+        return multiplier == 1
+                ? innerRowSequence
+                : new ExpandedRowSequence().reset(innerRowSequence, multiplier, 0,
+                        innerRowSequence.size() * multiplier);
     }
 
     private RowSequence innerRowSequence;
     private int multiplier;
+    private long offset;
+    private long size;
 
-    private ExpandedRowSequence(@NotNull final RowSequence innerRowSequence, final int multiplier) {
-        Assert.assertion(!(innerRowSequence instanceof ExpandedRowSequence),
-                "innerRowSequence must not be an ExpandedRowSequence");
-        this.innerRowSequence = innerRowSequence;
-        this.multiplier = multiplier;
-    }
+    /**
+     * Make a reusable ExpandedRowSequence, to be paired with {@link #reset(RowSequence, int, long, long)}.
+     */
+    public ExpandedRowSequence() {}
 
-    public ExpandedRowSequence() {
-        innerRowSequence = null;
-        multiplier = 0;
-    }
-
-    public RowSequence reset(@NotNull final RowSequence innerRowSequence, final int multiplier) {
+    /**
+     * Reset the contexts of this ExpandedRowSequence.
+     *
+     * @param innerRowSequence The new inner row sequence; must not be an ExpandedRowSequence
+     * @param multiplier The new multiplier
+     * @param offset Offset into the expanded space where this RowSequence begins
+     * @param size Total size of the expanded space after the offset
+     * @return {@code this}
+     */
+    public RowSequence reset(
+            @NotNull final RowSequence innerRowSequence,
+            final int multiplier,
+            final long offset,
+            final long size) {
+        Require.leq(size, "size", innerRowSequence.size() * multiplier, "innerRowSequence.size() * multiplier");
         if (innerRowSequence instanceof ExpandedRowSequence) {
             final ExpandedRowSequence innerExpanded = ((ExpandedRowSequence) innerRowSequence);
             this.innerRowSequence = innerExpanded.innerRowSequence;
             this.multiplier = innerExpanded.multiplier * multiplier;
+            this.offset = innerExpanded.offset * multiplier + offset;
         } else {
             this.innerRowSequence = innerRowSequence;
             this.multiplier = multiplier;
+            this.offset = offset;
         }
+        // TODO: Maybe separate concerns, and create a slice row sequence?
+        this.size = size;
         invalidateRowSequenceAsChunkImpl();
         return this;
     }
@@ -65,12 +80,49 @@ public class ExpandedRowSequence extends RowSequenceAsChunkImpl implements RowSe
     public final void clear() {
         innerRowSequence = null;
         multiplier = 0;
+        offset = 0;
+        size = 0;
         invalidateRowSequenceAsChunkImpl();
     }
 
     @Override
     public Iterator getRowSequenceIterator() {
-        throw new UnsupportedOperationException();
+        return new Iterator();
+    }
+
+    private class Iterator implements RowSequence.Iterator {
+
+        private final ExpandedRowSequence expandedSlice = new ExpandedRowSequence();
+
+        @Override
+        public boolean hasMore() {
+            return false;
+        }
+
+        @Override
+        public long peekNextKey() {
+            return 0;
+        }
+
+        @Override
+        public RowSequence getNextRowSequenceThrough(final long maxKeyInclusive) {
+            return null;
+        }
+
+        @Override
+        public RowSequence getNextRowSequenceWithLength(final long numberOfKeys) {
+            return null;
+        }
+
+        @Override
+        public boolean advance(final long nextKey) {
+            return false;
+        }
+
+        @Override
+        public long getRelativePosition() {
+            return 0;
+        }
     }
 
     @Override
@@ -85,47 +137,44 @@ public class ExpandedRowSequence extends RowSequenceAsChunkImpl implements RowSe
 
     @Override
     public RowSet asRowSet() {
-        throw new UnsupportedOperationException();
+        final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
+        forAllRowKeyRanges(builder::appendRange);
+        return builder.build();
     }
 
     @Override
     public void fillRowKeyChunk(@NotNull final WritableLongChunk<? super OrderedRowKeys> chunkToFill) {
         chunkToFill.setSize(0);
-        innerRowSequence.forAllRowKeyRanges((s, e) -> {
-            final long last = e * multiplier + multiplier - 1;
-            for (long next = s * multiplier; next <= last; ++next) {
-                chunkToFill.add(next);
-            }
-        });
+        forAllRowKeys(chunkToFill::add);
     }
 
     @Override
     public void fillRowKeyRangesChunk(@NotNull final WritableLongChunk<OrderedRowKeyRanges> chunkToFill) {
         chunkToFill.setSize(0);
-        innerRowSequence.forAllRowKeyRanges((s, e) -> {
-            chunkToFill.add(s * multiplier);
-            chunkToFill.add(e * multiplier + multiplier - 1);
+        forAllRowKeyRanges((s, e) -> {
+            chunkToFill.add(s);
+            chunkToFill.add(e);
         });
     }
 
     @Override
     public boolean isEmpty() {
-        return innerRowSequence.isEmpty();
+        return size == 0;
     }
 
     @Override
     public long firstRowKey() {
-        return innerRowSequence.firstRowKey() * multiplier;
+        return size == 0 ? NULL_ROW_KEY : innerRowSequence.firstRowKey() * multiplier;
     }
 
     @Override
     public long lastRowKey() {
-        return innerRowSequence.lastRowKey() * multiplier + multiplier - 1;
+        return innerRowSequence.get(size / multiplier) innerRowSequence.lastRowKey() * multiplier + multiplier - 1;
     }
 
     @Override
     public long size() {
-        return innerRowSequence.size() * multiplier;
+        return size;
     }
 
     @Override
