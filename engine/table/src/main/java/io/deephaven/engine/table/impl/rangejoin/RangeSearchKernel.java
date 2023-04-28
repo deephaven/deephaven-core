@@ -53,43 +53,51 @@ interface RangeSearchKernel {
     /**
      * Examine the (source-ordered) left start and end value pairs in {@code leftStartValues} and {@code leftEndValues},
      * populating range start positions and range end positions in {@code output} for all pairs. Valid pairs will have
-     * an empty result, while invalid pairs will have a {@code null} result.
+     * an empty result, while invalid pairs will have a {@code null} result. This method also ensures that the output
+     * chunks have their size set to match {@code leftStartValues.size()}, which must match
+     * {@code leftEndValues.size()}.
      *
-     * @param leftStartValues The left start values
-     * @param leftEndValues The left end values
-     * @param output The output chunk to be populated for invalid ranges
+     * @param leftStartValues The left start values in source (and output) order
+     * @param leftEndValues The left end values in source (and output) order
+     * @param outputStartPositionsInclusive The output chunk of start positions to be populated for invalid ranges
+     * @param outputEndPositionsExclusive The output chunk of end positions to be populated for invalid ranges
      */
     void populateAllRangeForEmptyRight(
             @NotNull Chunk<? extends Values> leftStartValues,
             @NotNull Chunk<? extends Values> leftEndValues,
-            @NotNull WritableIntChunk<? extends Values> output);
+            @NotNull WritableIntChunk<? extends Values> outputStartPositionsInclusive,
+            @NotNull WritableIntChunk<? extends Values> outputEndPositionsExclusive);
 
     /**
      * Examine the (source-ordered) left start and end value pairs in {@code leftStartValues} and {@code leftEndValues},
      * populating range start positions and range end positions in {@code output} for any invalid pairs, and recording
-     * whether each pair was valid in {@code validity}.
+     * whether each pair was valid in {@code validity}. This method also ensures that the output chunks have their size
+     * set to match {@code leftStartValues.size()}, which must match {@code leftEndValues.size()}.
      *
-     * @param leftStartValues The left start values
-     * @param leftEndValues The left end values
+     * @param leftStartValues The left start values in source (and output) order
+     * @param leftEndValues The left end values in source (and output) order
      * @param validity Output chunk to record the validity of each left (start, end) pair
-     * @param output The output chunk to be populated for invalid ranges
+     * @param outputStartPositionsInclusive The output chunk of start positions to be populated for invalid ranges
+     * @param outputEndPositionsExclusive The output chunk of end positions to be populated for invalid ranges
      */
     void populateInvalidRanges(
             @NotNull Chunk<? extends Values> leftStartValues,
             @NotNull Chunk<? extends Values> leftEndValues,
             @NotNull WritableBooleanChunk<? super Values> validity,
-            @NotNull WritableIntChunk<? extends Values> output);
+            @NotNull WritableIntChunk<? extends Values> outputStartPositionsInclusive,
+            @NotNull WritableIntChunk<? extends Values> outputEndPositionsExclusive);
 
     /**
      * Find the appropriate right range start position (inclusive) for each left value, and record it at the appropriate
      * output slot.
      *
-     * @param leftValues Ascending left values
-     * @param leftPositions Left positions, sorted according to {@code leftValues}
+     * @param leftValues Ascending left start values
+     * @param leftPositions Left positions, sorted according to {@code leftValues}, to be used when writing to
+     *        {@code outputStartPositionsInclusive}
      * @param rightValues Ascending, de-duplicated right values
      * @param rightStartOffsets Right run start offsets corresponding to each element in {@code rightValues}
      * @param rightLengths Right run lengths corresponding to each element in {@code rightValues}
-     * @param output The output chunk; results will be written at the appropriate multiple for start positions
+     * @param outputStartPositionsInclusive The output chunk of start positions
      */
     void findStarts(
             @NotNull Chunk<? extends Values> leftValues,
@@ -97,18 +105,19 @@ interface RangeSearchKernel {
             @NotNull Chunk<? extends Values> rightValues,
             @NotNull IntChunk<ChunkPositions> rightStartOffsets,
             @NotNull IntChunk<ChunkLengths> rightLengths,
-            @NotNull WritableIntChunk<? extends Values> output);
+            @NotNull WritableIntChunk<? extends Values> outputStartPositionsInclusive);
 
     /**
      * Find the appropriate right range end position (exclusive) for each left value, and record it at the appropriate
      * output slot.
      *
-     * @param leftValues Ascending left values
-     * @param leftPositions Left positions, sorted according to {@code leftValues}
+     * @param leftValues Ascending left end values
+     * @param leftPositions Left positions, sorted according to {@code leftValues}, to be used when writing to
+     *        {@code outputEndPositionsExclusive}
      * @param rightValues Ascending, de-duplicated right values
      * @param rightStartOffsets Right run start offsets corresponding to each element in {@code rightValues}
      * @param rightLengths Right run lengths corresponding to each element in {@code rightValues}
-     * @param output The output chunk; results will be written at the appropriate multiple for end positions
+     * @param outputEndPositionsExclusive The output chunk of end positions
      */
     void findEnds(
             @NotNull Chunk<? extends Values> leftValues,
@@ -116,5 +125,5 @@ interface RangeSearchKernel {
             @NotNull Chunk<? extends Values> rightValues,
             @NotNull IntChunk<ChunkPositions> rightStartOffsets,
             @NotNull IntChunk<ChunkLengths> rightLengths,
-            @NotNull WritableIntChunk<? extends Values> output);
+            @NotNull WritableIntChunk<? extends Values> outputEndPositionsExclusive);
 }

@@ -22,7 +22,6 @@ import io.deephaven.engine.exceptions.OutOfOrderException;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.rowset.impl.ExpandedRowSequence;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.MemoizedOperationKey;
 import io.deephaven.engine.table.impl.OperationInitializationThreadPool;
@@ -35,7 +34,6 @@ import io.deephaven.engine.table.impl.sort.findruns.FindRunsKernel;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.IntegerSparseArraySource;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
-import io.deephaven.engine.table.impl.sources.WritableRedirectedColumnSource;
 import io.deephaven.engine.table.impl.sources.sparse.SparseConstants;
 import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.engine.table.impl.util.JobScheduler.IterateAction;
@@ -50,8 +48,11 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 import static io.deephaven.base.ArrayUtil.MAX_ARRAY_SIZE;
+import static io.deephaven.engine.table.WritableSourceWithPrepareForParallelPopulation.allSupportParallelPopulation;
+import static io.deephaven.engine.table.WritableSourceWithPrepareForParallelPopulation.prepareAll;
 import static io.deephaven.engine.table.impl.by.AggregationProcessor.EXPOSED_GROUP_ROW_SETS;
 import static io.deephaven.engine.table.impl.sources.InMemoryColumnSource.getImmutableMemoryColumnSource;
+import static io.deephaven.engine.table.impl.sources.WritableRedirectedColumnSource.maybeRedirect;
 
 /**
  * Implementation for {@link QueryTable#rangeJoin(Table, Collection, RangeJoinMatch, Collection)}.
@@ -62,11 +63,6 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
     private static final ColumnName RIGHT_ROW_SET = ColumnName.of("__RIGHT_ROW_SET__");
 
     private static final int CHUNK_SIZE = ArrayBackedColumnSource.BLOCK_SIZE;
-
-    private static final int RESULT_MULTIPLIER = 3;
-    private static final int RESULT_SLOT_OFFSET = 0;
-    private static final int RESULT_START_OFFSET = 1;
-    private static final int RESULT_END_OFFSET = 2;
 
     private static final String MAXIMUM_STATIC_MEMORY_OVERHEAD_PROPERTY = "RangeJoin.maximumStaticMemoryOverhead";
     private static final double MAXIMUM_STATIC_MEMORY_OVERHEAD = Configuration.getInstance()
@@ -364,8 +360,12 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
         private final CompactKernel valueChunkCompactKernel;
 
         private final RowRedirection outputRedirection;
-        private final WritableColumnSource<Integer> outputInnerSource;
-        private final WritableColumnSource<Integer> outputSlotsAndPositionRanges;
+        private final WritableColumnSource<Integer> outputSlotsInner;
+        private final WritableColumnSource<Integer> outputSlotsExposed;
+        private final WritableColumnSource<Integer> outputStartPositionsInclusiveInner;
+        private final WritableColumnSource<Integer> outputStartPositionsInclusiveExposed;
+        private final WritableColumnSource<Integer> outputEndPositionsExclusiveInner;
+        private final WritableColumnSource<Integer> outputEndPositionsExclusiveExposed;
 
         private ColumnSource<RowSet> leftGroupRowSets;
         private ColumnSource<RowSet> rightGroupRowSets;
@@ -392,24 +392,37 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
 
             if (!leftTable.isFlat() && SparseConstants.sparseStructureExceedsOverhead(
                     leftTable.getRowSet(), MAXIMUM_STATIC_MEMORY_OVERHEAD)) {
-                outputRedirection = new ExpandedRowRedirection(
-                        new InverseWrappedRowSetRowRedirection(leftTable.getRowSet()), RESULT_MULTIPLIER);
-                outputInnerSource = getImmutableMemoryColumnSource(leftTable.size(), int.class, null);
-                try (final RowSet flatOutputRowSet = RowSetFactory.flat(leftTable.size() * RESULT_MULTIPLIER)) {
-                    ((WritableSourceWithPrepareForParallelPopulation) outputInnerSource)
-                            .prepareForParallelPopulation(flatOutputRowSet);
+                outputRedirection = new InverseWrappedRowSetRowRedirection(leftTable.getRowSet());
+                outputSlotsInner = getImmutableMemoryColumnSource(leftTable.size(), int.class, null);
+                outputStartPositionsInclusiveInner = getImmutableMemoryColumnSource(leftTable.size(), int.class, null);
+                outputEndPositionsExclusiveInner = getImmutableMemoryColumnSource(leftTable.size(), int.class, null);
+
+                Assert.assertion(allSupportParallelPopulation(
+                        outputSlotsInner, outputStartPositionsInclusiveInner, outputEndPositionsExclusiveInner),
+                        "All output inner sources support parallel population");
+                try (final RowSet flatOutputRowSet = RowSetFactory.flat(leftTable.size())) {
+                    prepareAll(flatOutputRowSet,
+                            outputSlotsInner, outputStartPositionsInclusiveInner, outputEndPositionsExclusiveInner);
                 }
-                outputSlotsAndPositionRanges = WritableRedirectedColumnSource.maybeRedirect(
-                        outputRedirection,
-                        outputInnerSource,
-                        leftTable.size() * RESULT_MULTIPLIER);
+                outputSlotsExposed = maybeRedirect(
+                        outputRedirection, outputSlotsInner, leftTable.size() - 1);
+                outputStartPositionsInclusiveExposed = maybeRedirect(
+                        outputRedirection, outputStartPositionsInclusiveInner, leftTable.size() - 1);
+                outputEndPositionsExclusiveExposed = maybeRedirect(
+                        outputRedirection, outputEndPositionsExclusiveInner, leftTable.size() - 1);
             } else {
                 outputRedirection = null;
-                outputInnerSource = null;
-                outputSlotsAndPositionRanges = new IntegerSparseArraySource();
-                ((WritableSourceWithPrepareForParallelPopulation) outputSlotsAndPositionRanges)
-                        .prepareForParallelPopulation(
-                                ExpandedRowSequence.expand(leftTable.getRowSet(), RESULT_MULTIPLIER));
+                outputSlotsInner = null;
+                outputStartPositionsInclusiveInner = null;
+                outputEndPositionsExclusiveInner = null;
+                outputSlotsExposed = new IntegerSparseArraySource();
+                outputStartPositionsInclusiveExposed = new IntegerSparseArraySource();
+                outputEndPositionsExclusiveExposed = new IntegerSparseArraySource();
+                Assert.assertion(allSupportParallelPopulation(
+                        outputSlotsExposed, outputStartPositionsInclusiveExposed, outputEndPositionsExclusiveExposed),
+                        "All output exposed sources support parallel population");
+                prepareAll(leftTable.getRowSet(),
+                        outputSlotsExposed, outputStartPositionsInclusiveExposed, outputEndPositionsExclusiveExposed);
             }
         }
 
@@ -425,7 +438,10 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
                     0,
                     joinedInputTables.intSize(),
                     this,
-                    () -> new StaticRangeJoinPhase3(jobScheduler, resultFuture).start(outputSlotsAndPositionRanges),
+                    () -> new StaticRangeJoinPhase3(jobScheduler, resultFuture).start(
+                            outputSlotsExposed,
+                            outputStartPositionsInclusiveExposed,
+                            outputEndPositionsExclusiveExposed),
                     resultFuture::completeExceptionally);
         }
 
@@ -454,9 +470,12 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
             private WritableIntChunk<ChunkLengths> rightLengths;
 
             // Output resources
-            private final ChunkSink.FillFromContext outputFillFromContext;
-            private final WritableIntChunk<? extends Values> outputChunk;
-            private final ExpandedRowSequence outputExpandedRowSequence;
+            private final ChunkSink.FillFromContext outputSlotsFillFromContext;
+            private final WritableIntChunk<? extends Values> outputSlotsChunk;
+            private final ChunkSink.FillFromContext outputStartPositionsInclusiveFillFromContext;
+            private final WritableIntChunk<? extends Values> outputStartPositionsInclusiveChunk;
+            private final ChunkSink.FillFromContext outputEndPositionsExclusiveFillFromContext;
+            private final WritableIntChunk<? extends Values> outputEndPositionsExclusiveChunk;
 
             private TaskContext() {
                 // Left resources
@@ -476,11 +495,18 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
                 ensureRightCapacity(CHUNK_SIZE);
 
                 // Output resources
-                outputFillFromContext = outputRedirection == null
-                        ? outputSlotsAndPositionRanges.makeFillFromContext(RESULT_MULTIPLIER * CHUNK_SIZE)
-                        : outputInnerSource.makeFillFromContext(RESULT_MULTIPLIER * CHUNK_SIZE);
-                outputChunk = WritableIntChunk.makeWritableChunk(RESULT_MULTIPLIER * CHUNK_SIZE);
-                outputExpandedRowSequence = new ExpandedRowSequence();
+                outputSlotsFillFromContext = outputRedirection == null
+                        ? outputSlotsExposed.makeFillFromContext(CHUNK_SIZE)
+                        : outputSlotsInner.makeFillFromContext(CHUNK_SIZE);
+                outputSlotsChunk = WritableIntChunk.makeWritableChunk(CHUNK_SIZE);
+                outputStartPositionsInclusiveFillFromContext = outputRedirection == null
+                        ? outputStartPositionsInclusiveExposed.makeFillFromContext(CHUNK_SIZE)
+                        : outputStartPositionsInclusiveInner.makeFillFromContext(CHUNK_SIZE);
+                outputStartPositionsInclusiveChunk = WritableIntChunk.makeWritableChunk(CHUNK_SIZE);
+                outputEndPositionsExclusiveFillFromContext = outputRedirection == null
+                        ? outputEndPositionsExclusiveExposed.makeFillFromContext(CHUNK_SIZE)
+                        : outputEndPositionsExclusiveInner.makeFillFromContext(CHUNK_SIZE);
+                outputEndPositionsExclusiveChunk = WritableIntChunk.makeWritableChunk(CHUNK_SIZE);
             }
 
             private void ensureRightCapacity(final long rightGroupSize) {
@@ -535,9 +561,12 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
                         rightStartOffsets,
                         rightLengths,
                         // Output resources
-                        outputFillFromContext,
-                        outputChunk,
-                        outputExpandedRowSequence);
+                        outputSlotsFillFromContext,
+                        outputSlotsChunk,
+                        outputStartPositionsInclusiveFillFromContext,
+                        outputStartPositionsInclusiveChunk,
+                        outputEndPositionsExclusiveFillFromContext,
+                        outputEndPositionsExclusiveChunk);
             }
         }
 
@@ -577,7 +606,8 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
 
                     if (nonEmptyRight) {
                         rangeSearchKernel.populateInvalidRanges(
-                                tc.leftStartValuesChunk, tc.leftEndValuesChunk, tc.leftValidity, tc.outputChunk);
+                                tc.leftStartValuesChunk, tc.leftEndValuesChunk, tc.leftValidity,
+                                tc.outputStartPositionsInclusiveChunk, tc.outputEndPositionsExclusiveChunk);
                         valueChunkCompactKernel.compact(tc.leftStartValuesChunk, tc.leftValidity);
                         valueChunkCompactKernel.compact(tc.leftEndValuesChunk, tc.leftValidity);
 
@@ -585,33 +615,48 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
                         ChunkUtils.fillInOrder(tc.leftChunkPositions);
                         tc.leftSortKernel.sort(tc.leftChunkPositions, tc.leftStartValuesChunk);
                         rangeSearchKernel.findStarts(tc.leftStartValuesChunk, tc.leftChunkPositions,
-                                tc.rightRangeValuesChunk, tc.rightStartOffsets, tc.rightLengths, tc.outputChunk);
+                                tc.rightRangeValuesChunk, tc.rightStartOffsets, tc.rightLengths,
+                                tc.outputStartPositionsInclusiveChunk);
 
                         tc.leftChunkPositions.setSize(tc.leftEndValuesChunk.size());
                         ChunkUtils.fillInOrder(tc.leftChunkPositions);
                         tc.leftSortKernel.sort(tc.leftChunkPositions, tc.leftEndValuesChunk);
                         rangeSearchKernel.findEnds(tc.leftEndValuesChunk, tc.leftChunkPositions,
-                                tc.rightRangeValuesChunk, tc.rightStartOffsets, tc.rightLengths, tc.outputChunk);
+                                tc.rightRangeValuesChunk, tc.rightStartOffsets, tc.rightLengths,
+                                tc.outputEndPositionsExclusiveChunk);
                     } else {
                         rangeSearchKernel.populateAllRangeForEmptyRight(
-                                tc.leftStartValuesChunk, tc.leftEndValuesChunk, tc.outputChunk);
+                                tc.leftStartValuesChunk, tc.leftEndValuesChunk,
+                                tc.outputStartPositionsInclusiveChunk, tc.outputEndPositionsExclusiveChunk);
                     }
 
-                    for (int vi = 0; vi < sliceSize; ++vi) {
-                        tc.outputChunk.set(leftPositionToOutputSlotPosition(vi), index);
-                    }
-                    tc.outputChunk.setSize(sliceSize * RESULT_MULTIPLIER);
+                    tc.outputSlotsChunk.fillWithValue(0, sliceSize, index);
+                    tc.outputSlotsChunk.setSize(sliceSize);
 
                     if (outputRedirection == null) {
-                        outputSlotsAndPositionRanges.fillFromChunk(tc.outputFillFromContext, tc.outputChunk,
-                                tc.outputExpandedRowSequence.reset(leftRowsSlice, RESULT_MULTIPLIER));
+                        outputSlotsExposed.fillFromChunk(
+                                tc.outputSlotsFillFromContext, tc.outputSlotsChunk,
+                                leftRowsSlice);
+                        outputStartPositionsInclusiveExposed.fillFromChunk(
+                                tc.outputStartPositionsInclusiveFillFromContext, tc.outputStartPositionsInclusiveChunk,
+                                leftRowsSlice);
+                        outputEndPositionsExclusiveExposed.fillFromChunk(
+                                tc.outputEndPositionsExclusiveFillFromContext, tc.outputEndPositionsExclusiveChunk,
+                                leftRowsSlice);
                     } else {
                         // @formatter:off
                         try (final RowSet leftSliceRowSet = leftRowsSlice.asRowSet();
                              final RowSequence invertedLeftRowsSlice = leftTable.getRowSet().invert(leftSliceRowSet)) {
                             // @formatter:on
-                            outputInnerSource.fillFromChunk(tc.outputFillFromContext, tc.outputChunk,
-                                    tc.outputExpandedRowSequence.reset(invertedLeftRowsSlice, RESULT_MULTIPLIER));
+                            outputSlotsInner.fillFromChunk(
+                                    tc.outputSlotsFillFromContext, tc.outputSlotsChunk,
+                                    leftRowsSlice);
+                            outputStartPositionsInclusiveInner.fillFromChunk(
+                                    tc.outputStartPositionsInclusiveFillFromContext, tc.outputStartPositionsInclusiveChunk,
+                                    leftRowsSlice);
+                            outputEndPositionsExclusiveInner.fillFromChunk(
+                                    tc.outputEndPositionsExclusiveFillFromContext, tc.outputEndPositionsExclusiveChunk,
+                                    leftRowsSlice);
                         }
                     }
                 }
@@ -627,32 +672,11 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
             super(jobScheduler, resultFuture);
         }
 
-        public void start(@NotNull final ColumnSource<Integer> outputSlotsAndPositionRanges) {
+        public void start(
+                @NotNull final ColumnSource<Integer> outputSlots,
+                @NotNull final ColumnSource<Integer> outputStartPositionsInclusive,
+                @NotNull final ColumnSource<Integer> outputEndPositionsExclusive) {
             // TODO-RWC: Build grouped sources, return result QueryTable
         }
-    }
-
-    /**
-     * @param leftChunkPosition The left chunk position
-     * @return The output chunk position at which to record the aggregation slot
-     */
-    private static int leftPositionToOutputSlotPosition(final int leftChunkPosition) {
-        return leftChunkPosition * RESULT_MULTIPLIER + RESULT_SLOT_OFFSET;
-    }
-
-    /**
-     * @param leftChunkPosition The left chunk position
-     * @return The output chunk position at which to record the right range start position (inclusive)
-     */
-    static int leftPositionToOutputStartPosition(final int leftChunkPosition) {
-        return leftChunkPosition * RESULT_MULTIPLIER + RESULT_START_OFFSET;
-    }
-
-    /**
-     * @param leftChunkPosition The left chunk position
-     * @return The output chunk position at which to record the right range end position (exclusive)
-     */
-    static int leftPositionToOutputEndPosition(final int leftChunkPosition) {
-        return leftChunkPosition * RESULT_MULTIPLIER + RESULT_END_OFFSET;
     }
 }
