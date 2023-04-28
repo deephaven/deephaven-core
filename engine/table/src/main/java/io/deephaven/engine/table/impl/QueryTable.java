@@ -1336,7 +1336,7 @@ public class QueryTable extends BaseTable<QueryTable> {
 
     @Override
     public Table select(Collection<? extends Selectable> columns) {
-        return selectInternal(SelectColumn.from(columns));
+        return selectInternal(SelectColumn.from(columns.isEmpty() ? definition.getTypedColumnNames() : columns));
     }
 
     private Table selectInternal(SelectColumn... selectColumns) {

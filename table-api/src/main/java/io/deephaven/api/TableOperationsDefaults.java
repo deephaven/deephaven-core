@@ -105,6 +105,12 @@ public interface TableOperationsDefaults<TOPS extends TableOperations<TOPS, TABL
 
     // -----------------------------------------------------------------------------------------------------------------
 
+
+    @Override
+    default TOPS select() {
+        return select(Collections.emptyList());
+    }
+
     @Override
     default TOPS select(String... columns) {
         return select(Selectable.from(columns));

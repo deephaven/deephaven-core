@@ -165,6 +165,11 @@ public abstract class TableBase implements TableSpec {
     }
 
     @Override
+    public final SelectTable select() {
+        return SelectTable.builder().parent(this).build();
+    }
+
+    @Override
     public final TableSpec select(Collection<? extends Selectable> columns) {
         return SelectTable.builder().parent(this).addAllColumns(columns).build();
     }

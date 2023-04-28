@@ -289,8 +289,6 @@ public interface Table extends
 
     Table select(Selectable... columns);
 
-    Table select();
-
     Table update(Selectable... newColumns);
 
     Table lazyUpdate(Selectable... newColumns);

@@ -456,7 +456,8 @@ class PartitionedTableProxyImpl extends LivenessArtifact implements PartitionedT
 
     @NotNull
     private SelectColumn[] toSelectColumns(Collection<? extends Selectable> columns) {
-        final SelectColumn[] selectColumns = SelectColumn.from(columns);
+        final SelectColumn[] selectColumns =
+                SelectColumn.from(columns.isEmpty() ? target.constituentDefinition().getTypedColumnNames() : columns);
         SelectAndViewAnalyzer.initializeSelectColumns(
                 target.constituentDefinition().getColumnNameMap(), selectColumns);
         return selectColumns;

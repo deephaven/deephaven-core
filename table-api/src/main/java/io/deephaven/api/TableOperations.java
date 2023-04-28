@@ -220,6 +220,8 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
 
     // -------------------------------------------------------------------------------------------
 
+    TOPS select();
+
     TOPS select(String... columns);
 
     TOPS select(Collection<? extends Selectable> columns);

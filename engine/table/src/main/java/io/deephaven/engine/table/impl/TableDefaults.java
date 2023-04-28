@@ -163,12 +163,6 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
     }
 
     @Override
-    @FinalDefault
-    default Table select() {
-        return select(getDefinition().getColumnNamesArray());
-    }
-
-    @Override
     @ConcurrentMethod
     @FinalDefault
     default Table selectDistinct() {
