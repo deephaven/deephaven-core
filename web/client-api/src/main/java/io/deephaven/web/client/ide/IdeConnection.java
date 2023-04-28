@@ -47,7 +47,7 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
     @Deprecated
     @JsConstructor
     public IdeConnection(String serverUrl, @JsOptional Object connectOptions, @JsOptional Boolean fromJava) {
-        this.serverUrl = serverUrl;
+        this.serverUrl = serverUrl.replaceAll("/+$", "");
         deathListenerCleanup = JsRunnable.doNothing();
 
         if (connectOptions != null) {
