@@ -399,7 +399,7 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
             valueChunkDupCompactKernel = DupCompactKernel.makeDupCompact(valueChunkType, false);
             valueChunkReverseKernel = ReverseKernel.makeReverseKernel(valueChunkType);
             rangeSearchKernel = RangeSearchKernel.lookup(
-                    leftStartValues.getType(), rangeMatch.rangeStartRule(), rangeMatch.rangeEndRule());
+                    valueChunkType, rangeMatch.rangeStartRule(), rangeMatch.rangeEndRule());
 
             if (!leftTable.isFlat() && SparseConstants.sparseStructureExceedsOverhead(
                     leftTable.getRowSet(), MAXIMUM_STATIC_MEMORY_OVERHEAD)) {

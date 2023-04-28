@@ -6,10 +6,7 @@ import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.util.SimpleTypeMap;
 import org.jetbrains.annotations.NotNull;
-
-import java.util.function.BiFunction;
 
 /**
  * Kernel interface for finding range start and end positions for range join.
@@ -17,38 +14,40 @@ import java.util.function.BiFunction;
 interface RangeSearchKernel {
 
     /**
-     * Lookup the appropriate singleton RangeSearchKernel for the supplied value type and rules.
+     * Lookup the appropriate singleton RangeSearchKernel for the supplied chunk type and rules.
      *
-     * @param valueType The type of the values to be searched
+     * @param chunkType The chunk type for the values to be searched
      * @param startRule The range start rule
      * @param endRule The range end rule
      * @return The RangeSearchKernel to use
      */
     static RangeSearchKernel lookup(
-            @NotNull final Class<?> valueType,
+            @NotNull final ChunkType chunkType,
             @NotNull final RangeStartRule startRule,
             @NotNull final RangeEndRule endRule) {
-        return FactoryHelper.TYPE_TO_FACTORY.get(valueType).apply(startRule, endRule);
-    }
-
-    final class FactoryHelper {
-
-        private static final SimpleTypeMap<BiFunction<RangeStartRule, RangeEndRule, ? extends RangeSearchKernel>> TYPE_TO_FACTORY =
-                SimpleTypeMap.create(
-                        (final RangeStartRule start, final RangeEndRule end) -> {
-                            throw new UnsupportedOperationException(
-                                    "Cannot create a range search kernel for primitive booleans");
-                        },
-                        RangeSearchKernelChar::forRules,
-                        RangeSearchKernelByte::forRules,
-                        RangeSearchKernelShort::forRules,
-                        RangeSearchKernelInt::forRules,
-                        RangeSearchKernelLong::forRules,
-                        RangeSearchKernelFloat::forRules,
-                        RangeSearchKernelDouble::forRules,
-                        RangeSearchKernelObject::forRules);
-
-        private FactoryHelper() {}
+        switch (chunkType) {
+            case Boolean:
+                throw new UnsupportedOperationException("Cannot create a range search kernel for primitive booleans");
+            case Char:
+                return RangeSearchKernelChar.forRules(startRule, endRule);
+            case Byte:
+                return RangeSearchKernelByte.forRules(startRule, endRule);
+            case Short:
+                return RangeSearchKernelShort.forRules(startRule, endRule);
+            case Int:
+                return RangeSearchKernelInt.forRules(startRule, endRule);
+            case Long:
+                return RangeSearchKernelLong.forRules(startRule, endRule);
+            case Float:
+                return RangeSearchKernelFloat.forRules(startRule, endRule);
+            case Double:
+                return RangeSearchKernelDouble.forRules(startRule, endRule);
+            case Object:
+                return RangeSearchKernelObject.forRules(startRule, endRule);
+            default:
+                throw new UnsupportedOperationException(String.format(
+                        "Cannot create a range search kernel for unknown chunk type %s", chunkType));
+        }
     }
 
     /**
