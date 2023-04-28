@@ -104,6 +104,9 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
     TOPS where(String... filters);
 
     @ConcurrentMethod
+    TOPS where(Filter... filters);
+
+    @ConcurrentMethod
     TOPS where(Collection<? extends Filter> filters);
 
     // -------------------------------------------------------------------------------------------

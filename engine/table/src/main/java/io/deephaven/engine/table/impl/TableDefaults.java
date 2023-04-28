@@ -6,7 +6,6 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.api.*;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.spec.AggSpec;
-import io.deephaven.api.filter.Filter;
 import io.deephaven.api.snapshot.SnapshotWhenOptions;
 import io.deephaven.api.snapshot.SnapshotWhenOptions.Flag;
 import io.deephaven.datastructures.util.CollectionUtil;
@@ -145,13 +144,6 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
     // -----------------------------------------------------------------------------------------------------------------
     // Filter Operations
     // -----------------------------------------------------------------------------------------------------------------
-
-    @Override
-    @ConcurrentMethod
-    @FinalDefault
-    default Table where(Filter... filters) {
-        return where(List.of(filters));
-    }
 
     @Override
     @ConcurrentMethod

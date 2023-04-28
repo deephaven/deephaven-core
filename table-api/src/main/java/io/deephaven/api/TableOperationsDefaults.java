@@ -51,6 +51,12 @@ public interface TableOperationsDefaults<TOPS extends TableOperations<TOPS, TABL
         return where(Filter.from(filters));
     }
 
+    @Override
+    @ConcurrentMethod
+    default TOPS where(Filter... filters) {
+        return where(Arrays.asList(filters));
+    }
+
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override

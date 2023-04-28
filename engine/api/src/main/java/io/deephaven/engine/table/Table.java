@@ -5,7 +5,6 @@ package io.deephaven.engine.table;
 
 import io.deephaven.api.*;
 import io.deephaven.api.agg.Aggregation;
-import io.deephaven.api.filter.Filter;
 import io.deephaven.engine.liveness.LivenessNode;
 import io.deephaven.engine.primitive.iterator.*;
 import io.deephaven.engine.rowset.TrackingRowSet;
@@ -270,9 +269,6 @@ public interface Table extends
     // -----------------------------------------------------------------------------------------------------------------
     // Filter Operations
     // -----------------------------------------------------------------------------------------------------------------
-
-    @ConcurrentMethod
-    Table where(Filter... filters);
 
     /**
      * A table operation that applies the supplied predicate to each row in the table and produces columns containing
