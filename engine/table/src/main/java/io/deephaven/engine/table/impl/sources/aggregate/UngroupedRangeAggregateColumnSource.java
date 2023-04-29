@@ -3,16 +3,17 @@
  */
 package io.deephaven.engine.table.impl.sources.aggregate;
 
-import io.deephaven.base.ClampUtil;
-import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.IntChunk;
-import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.chunk.util.LongChunkAppender;
+import io.deephaven.chunk.util.LongChunkIterator;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.impl.sources.UngroupedColumnSource;
@@ -93,7 +94,6 @@ final class UngroupedRangeAggregateColumnSource<DATA_TYPE>
         private static final class Shareable extends BaseUngroupedAggregateColumnSource.UngroupedFillContext.Shareable {
 
             private final GetContext startPositionsInclusiveGetContext;
-            private final GetContext endPositionsExclusiveGetContext;
 
             private Shareable(
                     final boolean shared,
@@ -102,14 +102,11 @@ final class UngroupedRangeAggregateColumnSource<DATA_TYPE>
                 super(shared, aggregateColumnSource.rowSets, chunkCapacity);
                 startPositionsInclusiveGetContext =
                         aggregateColumnSource.startPositionsInclusive.makeGetContext(chunkCapacity, this);
-                endPositionsExclusiveGetContext =
-                        aggregateColumnSource.endPositionsExclusive.makeGetContext(chunkCapacity, this);
             }
 
             private void extractFillChunkInformation(
                     @NotNull final ColumnSource<? extends RowSet> groupRowSets,
                     @NotNull final ColumnSource<Integer> startPositionsInclusive,
-                    @NotNull final ColumnSource<Integer> endPositionsExclusive,
                     final long base,
                     final boolean usePrev,
                     @NotNull final RowSequence rowSequence) {
@@ -120,74 +117,67 @@ final class UngroupedRangeAggregateColumnSource<DATA_TYPE>
                     reset();
                 }
 
-                currentGroup = -1;
+                currentIndex = -1;
                 componentKeys.setSize(0);
                 rowSequence.forAllRowKeys((final long rowKey) -> {
                     // Store the group rowset index in rowKeys.
                     final long groupKey = getGroupIndexKey(rowKey, base);
-                    if (currentGroup == -1 || groupKey != groupKeys.get(currentGroup)) {
-                        ++currentGroup;
-                        groupKeys.set(currentGroup, groupKey);
-                        sameGroupRunLengths.set(currentGroup, 1);
+                    if (currentIndex == -1 || groupKey != groupKeys.get(currentIndex)) {
+                        ++currentIndex;
+                        groupKeys.set(currentIndex, groupKey);
+                        sameGroupRunLengths.set(currentIndex, 1);
                     } else {
-                        sameGroupRunLengths.set(currentGroup,
-                                sameGroupRunLengths.get(currentGroup) + 1);
+                        sameGroupRunLengths.set(currentIndex, sameGroupRunLengths.get(currentIndex) + 1);
                     }
                     // Store the offset to the current key in componentKeyIndices.
                     final long componentKey = getOffsetInGroup(rowKey, base);
                     componentKeys.add(componentKey);
                 });
-                groupKeys.setSize(currentGroup + 1);
-                sameGroupRunLengths.setSize(currentGroup + 1);
+                groupKeys.setSize(currentIndex + 1);
+                sameGroupRunLengths.setSize(currentIndex + 1);
 
                 // Preload a chunk of group RowSets and start positions
                 final ObjectChunk<RowSet, ? extends Values> rowSetsChunk;
                 final IntChunk<? extends Values> startPositionsInclusiveChunk;
-                try (final RowSequence groupRowSequence =
-                        RowSequenceFactory.wrapRowKeysChunkAsRowSequence(groupKeys)) {
+                try (final RowSequence groupRowSequence = RowSequenceFactory.wrapRowKeysChunkAsRowSequence(groupKeys)) {
                     if (usePrev) {
                         rowSetsChunk = groupRowSets.getPrevChunk(groupGetContext, groupRowSequence).asObjectChunk();
-                        startPositionsInclusiveChunk = startPositionsInclusive.getPrevChunk(startPositionsInclusiveGetContext, groupRowSequence).asIntChunk();
+                        startPositionsInclusiveChunk = startPositionsInclusive.getPrevChunk(
+                                startPositionsInclusiveGetContext, groupRowSequence).asIntChunk();
                     } else {
                         rowSetsChunk = groupRowSets.getChunk(groupGetContext, groupRowSequence).asObjectChunk();
-                        startPositionsInclusiveChunk = startPositionsInclusive.getChunk(startPositionsInclusiveGetContext, groupRowSequence).asIntChunk();
+                        startPositionsInclusiveChunk = startPositionsInclusive.getChunk(
+                                startPositionsInclusiveGetContext, groupRowSequence).asIntChunk();
                     }
                 }
 
-                // TODO-RWC: Resume cleanup from here.
-                currentGroup = 0;
-                for (int ii = 0; ii < rowSetsChunk.size(); ++ii) {
-                    // Get the bucket rowset for the current group.
-                    final RowSet currRowSet = rowSetsChunk.get(ii);
-                    Assert.neqNull(currRowSet, "currRowSet");
+                currentIndex = 0;
+                for (int gi = 0; gi < rowSetsChunk.size(); ++gi) {
+                    // Get the RowSet for the current group
+                    final RowSet currRowSet = rowSetsChunk.get(gi);
 
-                    // Get the previous rowset for the current group if needed.
-                    final boolean usePrevIndex = usePrev && currRowSet.isTracking();
-                    final RowSet bucketRowSet = usePrevIndex ? currRowSet.trackingCast().prev() : currRowSet;
-                    final long bucketSize = bucketRowSet.size();
+                    // Get the previous rowset for the current group if needed
+                    final boolean usePrevRowSet = usePrev && currRowSet.isTracking();
+                    final RowSet groupRowSet = usePrevRowSet ? currRowSet.trackingCast().prev() : currRowSet;
 
-                    // Read the total length of items in this group.
-                    final int lengthFromThisGroup = sameGroupRunLengths.get(ii);
-                    // Determine when to stop iterating for the items in this group.
-                    final long endIndex = currentGroup + lengthFromThisGroup;
+                    // Read the total length of items in this group
+                    final int lengthFromThisGroup = sameGroupRunLengths.get(gi);
 
-                    // Get the row key and determine the starting position for the first entry of this group.
-                    final long rowKey = groupKeys.get(ii);
-                    final long rowPos = bucketRowSet.find(rowKey);
-                    final long localStartOffset = startPositionsInclusiveChunk != null ? startPositionsInclusiveChunk.get(ii) : startOffset;
-                    final long startPos = ClampUtil.clampLong(0, bucketSize, rowPos + localStartOffset);
+                    // Get the starting position for the first entry of this group
+                    final int startPositionInclusive = startPositionsInclusiveChunk.get(gi);
 
-                    while (currentGroup < endIndex) {
-                        // Read the offset for this output row and determine the key in the underlying source.
-                        final long offsetInGroup = componentKeys.get(currentGroup);
-                        final long pos = startPos + offsetInGroup;
-                        final long key = bucketRowSet.get(pos);
+                    final WritableLongChunk<OrderedRowKeys> remappedComponentKeys =
+                            componentKeySlice.resetFromTypedChunk(componentKeys, currentIndex, lengthFromThisGroup);
 
-                        // Re-use 'componentKeyIndices' as the destination for the keys.
-                        componentKeys.set(currentGroup, key);
-
-                        currentGroup++;
+                    // Offset the component keys by start position
+                    for (int ci = 0; ci < lengthFromThisGroup; ++ci) {
+                        remappedComponentKeys.set(ci, remappedComponentKeys.get(ci) + startPositionInclusive);
                     }
+                    groupRowSet.getKeysForPositions(
+                            new LongChunkIterator(remappedComponentKeys),
+                            new LongChunkAppender(remappedComponentKeys));
+
+                    currentIndex += lengthFromThisGroup;
                 }
 
                 stateReusable = shared;
@@ -196,9 +186,8 @@ final class UngroupedRangeAggregateColumnSource<DATA_TYPE>
             @Override
             public void close() {
                 SafeCloseable.closeAll(
-                        startGetContext,
-                        endGetContext);
-                super.close();
+                        startPositionsInclusiveGetContext,
+                        super::close);
             }
         }
     }
@@ -219,7 +208,6 @@ final class UngroupedRangeAggregateColumnSource<DATA_TYPE>
         tc.shareable.extractFillChunkInformation(
                 aggregateColumnSource.rowSets,
                 aggregateColumnSource.startPositionsInclusive,
-                aggregateColumnSource.endPositionsExclusive,
                 base,
                 false,
                 rowSequence);
@@ -237,7 +225,6 @@ final class UngroupedRangeAggregateColumnSource<DATA_TYPE>
         tc.shareable.extractFillChunkInformation(
                 aggregateColumnSource.rowSets,
                 aggregateColumnSource.startPositionsInclusive,
-                aggregateColumnSource.endPositionsExclusive,
                 getPrevBase(),
                 true,
                 rowSequence);

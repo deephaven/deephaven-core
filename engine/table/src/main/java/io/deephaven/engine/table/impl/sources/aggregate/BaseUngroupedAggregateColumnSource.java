@@ -243,6 +243,7 @@ abstract class BaseUngroupedAggregateColumnSource<DATA_TYPE, SOURCE_TYPE extends
         abstract Shareable getShareable();
 
         static abstract class Shareable extends SharedContext {
+
             final boolean shared;
             final GetContext groupGetContext;
             final WritableLongChunk<OrderedRowKeys> groupKeys;
@@ -251,7 +252,7 @@ abstract class BaseUngroupedAggregateColumnSource<DATA_TYPE, SOURCE_TYPE extends
             final ResettableWritableLongChunk<OrderedRowKeys> componentKeySlice;
 
             boolean stateReusable;
-            int currentGroup;
+            int currentIndex;
 
             Shareable(
                     final boolean shared,
@@ -279,8 +280,8 @@ abstract class BaseUngroupedAggregateColumnSource<DATA_TYPE, SOURCE_TYPE extends
                         groupKeys,
                         sameGroupRunLengths,
                         componentKeys,
-                        componentKeySlice);
-                super.close();
+                        componentKeySlice,
+                        super::close);
             }
         }
 

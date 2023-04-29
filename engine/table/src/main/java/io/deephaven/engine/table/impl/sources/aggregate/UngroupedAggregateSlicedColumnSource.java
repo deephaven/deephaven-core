@@ -19,11 +19,14 @@ import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static io.deephaven.util.QueryConstants.NULL_LONG;
+
 /**
  * {@link UngroupedColumnSource} implementation for {@link BaseAggregateSlicedColumnSource}s.
  */
 final class UngroupedAggregateSlicedColumnSource<DATA_TYPE>
         extends BaseUngroupedAggregateColumnSource<DATA_TYPE, BaseAggregateSlicedColumnSource<?, DATA_TYPE>> {
+
     UngroupedAggregateSlicedColumnSource(
             @NotNull final BaseAggregateSlicedColumnSource<?, DATA_TYPE> aggregateColumnSource) {
         super(aggregateColumnSource, aggregateColumnSource.aggregatedSource.getType());
@@ -41,30 +44,28 @@ final class UngroupedAggregateSlicedColumnSource<DATA_TYPE>
             if (aggregateColumnSource.startSource == null) {
                 shareable = sharedContext == null
                         ? new Shareable(false, aggregateColumnSource.groupRowSetSource,
-                                aggregateColumnSource.startOffset, aggregateColumnSource.endOffset, chunkCapacity)
+                                aggregateColumnSource.startOffset, chunkCapacity)
                         : sharedContext.getOrCreate(new SharingKey(
                                 aggregateColumnSource.groupRowSetSource,
-                                aggregateColumnSource.startSource,
-                                aggregateColumnSource.endSource,
+                                null,
+                                null,
                                 aggregateColumnSource.startOffset,
                                 aggregateColumnSource.endOffset),
                                 () -> new Shareable(true, aggregateColumnSource.groupRowSetSource,
-                                        aggregateColumnSource.startOffset, aggregateColumnSource.endOffset,
-                                        chunkCapacity));
+                                        aggregateColumnSource.startOffset, chunkCapacity));
 
             } else {
                 shareable = sharedContext == null
                         ? new Shareable(false, aggregateColumnSource.groupRowSetSource,
-                                aggregateColumnSource.startSource, aggregateColumnSource.endSource, chunkCapacity)
+                                aggregateColumnSource.startSource, chunkCapacity)
                         : sharedContext.getOrCreate(new SharingKey(
                                 aggregateColumnSource.groupRowSetSource,
                                 aggregateColumnSource.startSource,
                                 aggregateColumnSource.endSource,
-                                aggregateColumnSource.startOffset,
-                                aggregateColumnSource.endOffset),
+                                NULL_LONG,
+                                NULL_LONG),
                                 () -> new Shareable(true, aggregateColumnSource.groupRowSetSource,
-                                        aggregateColumnSource.startSource, aggregateColumnSource.endSource,
-                                        chunkCapacity));
+                                        aggregateColumnSource.startSource, chunkCapacity));
             }
         }
 
@@ -128,41 +129,33 @@ final class UngroupedAggregateSlicedColumnSource<DATA_TYPE>
         }
 
         private static final class Shareable extends BaseUngroupedAggregateColumnSource.UngroupedFillContext.Shareable {
+
             private final GetContext startGetContext;
-            private final GetContext endGetContext;
             private final long startOffset;
-            private final long endOffset;
 
             private Shareable(final boolean shared,
                     @NotNull final ColumnSource<? extends RowSet> groupRowSetSource,
-                    @Nullable final ColumnSource<Long> startSource,
-                    @Nullable final ColumnSource<Long> endSource,
+                    @NotNull final ColumnSource<Long> startSource,
                     final int chunkCapacity) {
                 super(shared, groupRowSetSource, chunkCapacity);
 
                 startGetContext = startSource.makeGetContext(chunkCapacity, this);
-                endGetContext = endSource.makeGetContext(chunkCapacity, this);
                 startOffset = 0;
-                endOffset = 0;
             }
 
             private Shareable(final boolean shared,
                     @NotNull final ColumnSource<? extends RowSet> groupRowSetSource,
                     final long startOffset,
-                    final long endOffset,
                     final int chunkCapacity) {
                 super(shared, groupRowSetSource, chunkCapacity);
 
                 startGetContext = null;
-                endGetContext = null;
                 this.startOffset = startOffset;
-                this.endOffset = endOffset;
             }
 
             private void extractFillChunkInformation(
                     @NotNull final ColumnSource<? extends RowSet> groupRowSetSource,
                     @Nullable final ColumnSource<Long> startSource,
-                    @Nullable final ColumnSource<Long> endSource,
                     final long base,
                     final boolean usePrev,
                     @NotNull final RowSequence rowSequence) {
@@ -173,27 +166,26 @@ final class UngroupedAggregateSlicedColumnSource<DATA_TYPE>
                     reset();
                 }
 
-                currentGroup = -1;
+                currentIndex = -1;
                 componentKeys.setSize(0);
                 rowSequence.forAllRowKeys((final long rowKey) -> {
                     // Store the group rowset index in rowsetKeyIndices.
                     final long groupKey = getGroupIndexKey(rowKey, base);
-                    if (currentGroup == -1 || groupKey != groupKeys.get(currentGroup)) {
-                        ++currentGroup;
-                        groupKeys.set(currentGroup, groupKey);
-                        sameGroupRunLengths.set(currentGroup, 1);
+                    if (currentIndex == -1 || groupKey != groupKeys.get(currentIndex)) {
+                        ++currentIndex;
+                        groupKeys.set(currentIndex, groupKey);
+                        sameGroupRunLengths.set(currentIndex, 1);
                     } else {
-                        sameGroupRunLengths.set(currentGroup,
-                                sameGroupRunLengths.get(currentGroup) + 1);
+                        sameGroupRunLengths.set(currentIndex, sameGroupRunLengths.get(currentIndex) + 1);
                     }
                     // Store the offset to the current key in componentKeyIndices.
                     final long componentKey = getOffsetInGroup(rowKey, base);
                     componentKeys.add(componentKey);
                 });
-                groupKeys.setSize(currentGroup + 1);
-                sameGroupRunLengths.setSize(currentGroup + 1);
+                groupKeys.setSize(currentIndex + 1);
+                sameGroupRunLengths.setSize(currentIndex + 1);
 
-                // Preload a chunk of rowsets (and start/end offsets if appropriate).
+                // Preload a chunk of RowSets (and start offsets if appropriate)
                 final ObjectChunk<RowSet, ? extends Values> rowSets;
                 final LongChunk<? extends Values> startOffsets;
                 try (final RowSequence groupRowSequence =
@@ -211,38 +203,38 @@ final class UngroupedAggregateSlicedColumnSource<DATA_TYPE>
                     }
                 }
 
-                currentGroup = 0;
+                currentIndex = 0;
                 for (int ii = 0; ii < rowSets.size(); ++ii) {
-                    // Get the bucket rowset for the current group.
+                    // Get the bucket RowSet for the current group
                     final RowSet currRowSet = rowSets.get(ii);
                     Assert.neqNull(currRowSet, "currRowSet");
 
-                    // Get the previous rowset for the current group if needed.
-                    final boolean usePrevIndex = usePrev && currRowSet.isTracking();
-                    final RowSet bucketRowSet = usePrevIndex ? currRowSet.trackingCast().prev() : currRowSet;
+                    // Get the previous rowset for the current group if needed
+                    final boolean usePrevRowSet = usePrev && currRowSet.isTracking();
+                    final RowSet bucketRowSet = usePrevRowSet ? currRowSet.trackingCast().prev() : currRowSet;
                     final long bucketSize = bucketRowSet.size();
 
-                    // Read the total length of items in this group.
+                    // Read the total length of items in this group
                     final int lengthFromThisGroup = sameGroupRunLengths.get(ii);
-                    // Determine when to stop iterating for the items in this group.
-                    final long endIndex = currentGroup + lengthFromThisGroup;
+                    // Determine when to stop iterating for the items in this group
+                    final long endIndex = currentIndex + lengthFromThisGroup;
 
-                    // Get the row key and determine the starting position for the first entry of this group.
+                    // Get the row key and determine the starting position for the first entry of this group
                     final long rowKey = groupKeys.get(ii);
                     final long rowPos = bucketRowSet.find(rowKey);
                     final long localStartOffset = startOffsets != null ? startOffsets.get(ii) : startOffset;
                     final long startPos = ClampUtil.clampLong(0, bucketSize, rowPos + localStartOffset);
 
-                    while (currentGroup < endIndex) {
-                        // Read the offset for this output row and determine the key in the underlying source.
-                        final long offsetInGroup = componentKeys.get(currentGroup);
+                    while (currentIndex < endIndex) {
+                        // Read the offset for this output row and determine the key in the underlying source
+                        final long offsetInGroup = componentKeys.get(currentIndex);
                         final long pos = startPos + offsetInGroup;
                         final long key = bucketRowSet.get(pos);
 
-                        // Re-use 'componentKeyIndices' as the destination for the keys.
-                        componentKeys.set(currentGroup, key);
+                        // Re-use 'componentKeys' as the destination for the keys
+                        componentKeys.set(currentIndex, key);
 
-                        currentGroup++;
+                        currentIndex++;
                     }
                 }
 
@@ -253,8 +245,7 @@ final class UngroupedAggregateSlicedColumnSource<DATA_TYPE>
             public void close() {
                 SafeCloseable.closeAll(
                         startGetContext,
-                        endGetContext);
-                super.close();
+                        super::close);
             }
         }
     }
@@ -275,7 +266,6 @@ final class UngroupedAggregateSlicedColumnSource<DATA_TYPE>
         tc.shareable.extractFillChunkInformation(
                 aggregateColumnSource.groupRowSetSource,
                 aggregateColumnSource.startSource,
-                aggregateColumnSource.endSource,
                 base,
                 false,
                 rowSequence);
@@ -293,7 +283,6 @@ final class UngroupedAggregateSlicedColumnSource<DATA_TYPE>
         tc.shareable.extractFillChunkInformation(
                 aggregateColumnSource.groupRowSetSource,
                 aggregateColumnSource.startSource,
-                aggregateColumnSource.endSource,
                 getPrevBase(),
                 true,
                 rowSequence);
