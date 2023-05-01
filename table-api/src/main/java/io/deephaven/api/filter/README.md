@@ -102,7 +102,7 @@ exclude_match_include_null = t.where(not_(pattern(...)))
 ## Comparison operators
 
 Given all of the above, there is a design choice we have to make regarding comparison filters - does the inverse of a
-comparison filter results in another comparison filter?
+comparison filter result in another comparison filter?
 
 The reasons why we might want a comparison filter to have an inverse that is another comparison filter is because that
 is likely what most users expect. That is, `not_(Foo > Bar)` is equivalent to `Foo <= Bar`; `not_(Foo == Bar)`
