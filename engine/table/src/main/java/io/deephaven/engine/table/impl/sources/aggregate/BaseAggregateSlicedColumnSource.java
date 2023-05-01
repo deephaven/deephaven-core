@@ -20,7 +20,7 @@ import static io.deephaven.util.QueryConstants.*;
 /**
  * Base {@link ColumnSource} implementation for sliced rowset aggregation result columns.
  */
-public abstract class BaseAggregateSlicedColumnSource<VECTOR_TYPE extends Vector, COMPONENT_TYPE>
+public abstract class BaseAggregateSlicedColumnSource<VECTOR_TYPE extends Vector<VECTOR_TYPE>, COMPONENT_TYPE>
         extends AbstractColumnSource<VECTOR_TYPE> implements AggregateColumnSource<VECTOR_TYPE, COMPONENT_TYPE> {
 
     protected final ColumnSource<COMPONENT_TYPE> aggregatedSource;

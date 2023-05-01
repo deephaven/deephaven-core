@@ -22,7 +22,7 @@ import static io.deephaven.util.QueryConstants.*;
  * position. When either the start position or end position is null, the element is null. When the start position and
  * end position are equal, the element is empty.
  */
-public abstract class RangeAggregateColumnSource<VECTOR_TYPE extends Vector, COMPONENT_TYPE>
+public abstract class RangeAggregateColumnSource<VECTOR_TYPE extends Vector<VECTOR_TYPE>, COMPONENT_TYPE>
         extends AbstractColumnSource<VECTOR_TYPE>
         implements AggregateColumnSource<VECTOR_TYPE, COMPONENT_TYPE> {
 

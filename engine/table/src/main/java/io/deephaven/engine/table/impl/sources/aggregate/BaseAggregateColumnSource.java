@@ -17,7 +17,7 @@ import static io.deephaven.util.QueryConstants.*;
 /**
  * Base {@link ColumnSource} implementation for aggregation result columns.
  */
-abstract class BaseAggregateColumnSource<VECTOR_TYPE extends Vector, COMPONENT_TYPE>
+abstract class BaseAggregateColumnSource<VECTOR_TYPE extends Vector<VECTOR_TYPE>, COMPONENT_TYPE>
         extends AbstractColumnSource<VECTOR_TYPE>
         implements AggregateColumnSource<VECTOR_TYPE, COMPONENT_TYPE> {
 

@@ -21,14 +21,16 @@ import static io.deephaven.util.QueryConstants.NULL_INT;
  * {@link ColumnSource} implementation for aggregation result char columns.
  */
 public final class RangeAggregateColumnSourceObject<COMPONENT_TYPE>
-        extends RangeAggregateColumnSource<ObjectVector, COMPONENT_TYPE> {
+        extends RangeAggregateColumnSource<ObjectVector<COMPONENT_TYPE>, COMPONENT_TYPE> {
 
     public RangeAggregateColumnSourceObject(
             @NotNull final ColumnSource<COMPONENT_TYPE> aggregated,
             @NotNull final ColumnSource<? extends RowSet> rowSets,
             @NotNull final ColumnSource<Integer> startPositionsInclusive,
             @NotNull final ColumnSource<Integer> endPositionsExclusive) {
-        super(ObjectVector.class, aggregated, rowSets, startPositionsInclusive, endPositionsExclusive);
+        // noinspection unchecked,rawtypes
+        super((Class<ObjectVector<COMPONENT_TYPE>>) (Class) ObjectVector.class,
+                aggregated, rowSets, startPositionsInclusive, endPositionsExclusive);
     }
 
     @NotNull

@@ -18,12 +18,12 @@ import java.util.function.BiFunction;
 /**
  * {@link ColumnSource} and {@link UngroupableColumnSource} interface for aggregation result columns.
  */
-public interface AggregateColumnSource<VECTOR_TYPE extends Vector, COMPONENT_TYPE>
+public interface AggregateColumnSource<VECTOR_TYPE extends Vector<VECTOR_TYPE>, COMPONENT_TYPE>
         extends UngroupableColumnSource, MutableColumnSourceGetDefaults.ForObject<VECTOR_TYPE> {
 
     UngroupedColumnSource<COMPONENT_TYPE> ungrouped();
 
-    static <VECTOR_TYPE extends Vector, DATA_TYPE> AggregateColumnSource<VECTOR_TYPE, DATA_TYPE> make(
+    static <VECTOR_TYPE extends Vector<VECTOR_TYPE>, DATA_TYPE> AggregateColumnSource<VECTOR_TYPE, DATA_TYPE> make(
             @NotNull final ColumnSource<DATA_TYPE> aggregatedSource,
             @NotNull final ColumnSource<? extends RowSet> groupRowSetSource) {
         // noinspection unchecked
@@ -39,7 +39,7 @@ public interface AggregateColumnSource<VECTOR_TYPE extends Vector, COMPONENT_TYP
      * @param startPosSource the column source that maps rows to starting position offsets
      * @param endPosSource the column source that maps rows to ending position offsets (exclusive)
      */
-    static <VECTOR_TYPE extends Vector, DATA_TYPE> AggregateColumnSource<VECTOR_TYPE, DATA_TYPE> makeSliced(
+    static <VECTOR_TYPE extends Vector<VECTOR_TYPE>, DATA_TYPE> AggregateColumnSource<VECTOR_TYPE, DATA_TYPE> makeSliced(
             @NotNull final ColumnSource<DATA_TYPE> aggregatedSource,
             @NotNull final ColumnSource<? extends RowSet> groupRowSetSource,
             @NotNull final WritableColumnSource<Long> startPosSource,
@@ -58,7 +58,7 @@ public interface AggregateColumnSource<VECTOR_TYPE extends Vector, COMPONENT_TYP
      * @param startPosOffset the fixed starting position offset for every row
      * @param endPosOffset the fixed ending position offset for every row (exclusive)
      */
-    static <VECTOR_TYPE extends Vector, DATA_TYPE> AggregateColumnSource<VECTOR_TYPE, DATA_TYPE> makeSliced(
+    static <VECTOR_TYPE extends Vector<VECTOR_TYPE>, DATA_TYPE> AggregateColumnSource<VECTOR_TYPE, DATA_TYPE> makeSliced(
             @NotNull final ColumnSource<DATA_TYPE> aggregatedSource,
             @NotNull final ColumnSource<? extends RowSet> groupRowSetSource,
             final long startPosOffset,
