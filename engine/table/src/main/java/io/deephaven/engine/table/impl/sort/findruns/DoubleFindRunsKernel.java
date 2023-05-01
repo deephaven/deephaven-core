@@ -180,7 +180,7 @@ public class DoubleFindRunsKernel {
 
     private final static FindRunsKernel INSTANCE = new DoubleFindRunsKernelContext();
 
-    public static FindRunsKernel createContext() {
+    public static FindRunsKernel getInstance() {
         return INSTANCE;
     }
 }

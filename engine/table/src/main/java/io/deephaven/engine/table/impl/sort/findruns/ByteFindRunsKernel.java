@@ -180,7 +180,7 @@ public class ByteFindRunsKernel {
 
     private final static FindRunsKernel INSTANCE = new ByteFindRunsKernelContext();
 
-    public static FindRunsKernel createContext() {
+    public static FindRunsKernel getInstance() {
         return INSTANCE;
     }
 }

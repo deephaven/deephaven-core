@@ -182,7 +182,7 @@ public class ObjectFindRunsKernel {
 
     private final static FindRunsKernel INSTANCE = new ObjectFindRunsKernelContext();
 
-    public static FindRunsKernel createContext() {
+    public static FindRunsKernel getInstance() {
         return INSTANCE;
     }
 }

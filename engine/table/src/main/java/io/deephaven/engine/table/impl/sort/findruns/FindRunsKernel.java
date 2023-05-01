@@ -6,30 +6,29 @@ package io.deephaven.engine.table.impl.sort.findruns;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
-import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.table.Context;
 import io.deephaven.chunk.*;
 import org.jetbrains.annotations.NotNull;
 
-public interface FindRunsKernel extends Context {
-    static FindRunsKernel makeContext(ChunkType chunkType) {
+public interface FindRunsKernel {
+
+    static FindRunsKernel getInstance(ChunkType chunkType) {
         switch (chunkType) {
             case Char:
-                return CharFindRunsKernel.createContext();
+                return CharFindRunsKernel.getInstance();
             case Byte:
-                return ByteFindRunsKernel.createContext();
+                return ByteFindRunsKernel.getInstance();
             case Short:
-                return ShortFindRunsKernel.createContext();
+                return ShortFindRunsKernel.getInstance();
             case Int:
-                return IntFindRunsKernel.createContext();
+                return IntFindRunsKernel.getInstance();
             case Long:
-                return LongFindRunsKernel.createContext();
+                return LongFindRunsKernel.getInstance();
             case Float:
-                return FloatFindRunsKernel.createContext();
+                return FloatFindRunsKernel.getInstance();
             case Double:
-                return DoubleFindRunsKernel.createContext();
+                return DoubleFindRunsKernel.getInstance();
             default:
-                return ObjectFindRunsKernel.createContext();
+                return ObjectFindRunsKernel.getInstance();
         }
     }
 

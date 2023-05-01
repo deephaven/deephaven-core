@@ -31,8 +31,8 @@ import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.SortingOrder;
 import io.deephaven.engine.table.impl.SwapListener;
 import io.deephaven.engine.table.impl.by.AggregationProcessor;
+import io.deephaven.engine.table.impl.join.dupcompact.DupCompactKernel;
 import io.deephaven.engine.table.impl.sort.IntSortKernel;
-import io.deephaven.engine.table.impl.sort.findruns.FindRunsKernel;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.IntegerSparseArraySource;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
@@ -352,6 +352,7 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
         private final ColumnSource<?> rightRangeValues;
         private final ColumnSource<?> leftEndValues;
         private final ChunkType valueChunkType;
+        private final DupCompactKernel valueChunkDupCompactKernel;
         private final RangeSearchKernel rangeSearchKernel;
         private final CompactKernel valueChunkCompactKernel;
 
@@ -382,9 +383,10 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
                     rightRangeValues.getChunkType(), "rightRangeValues.getChunkType()");
             Assert.eq(valueChunkType, "valueChunkType",
                     leftEndValues.getChunkType(), "leftEndValues.getChunkType()");
+            valueChunkDupCompactKernel = DupCompactKernel.makeDupCompactNaturalOrdering(valueChunkType, false);
+            valueChunkCompactKernel = CompactKernel.makeCompact(valueChunkType);
             rangeSearchKernel = RangeSearchKernel.makeRangeSearchKernel(
                     valueChunkType, rangeMatch.rangeStartRule(), rangeMatch.rangeEndRule());
-            valueChunkCompactKernel = CompactKernel.makeCompact(valueChunkType);
 
             if (!leftTable.isFlat() && SparseConstants.sparseStructureExceedsOverhead(
                     leftTable.getRowSet(), MAXIMUM_STATIC_MEMORY_OVERHEAD)) {
@@ -456,9 +458,6 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
             private final WritableIntChunk<ChunkPositions> leftChunkPositions;
             private final IntSortKernel<Values, ChunkPositions> leftSortKernel;
 
-            // Final right resources
-            private final FindRunsKernel rightFindRunsKernel;
-
             // Resizable right resources
             private int rightChunkSize = 0;
             private ChunkSource.FillContext rightRangeValuesFillContext;
@@ -484,9 +483,6 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
                 leftValidity = WritableBooleanChunk.makeWritableChunk(CHUNK_SIZE);
                 leftChunkPositions = WritableIntChunk.makeWritableChunk(CHUNK_SIZE);
                 leftSortKernel = IntSortKernel.makeContext(valueChunkType, SortingOrder.Ascending, CHUNK_SIZE, true);
-
-                // Final right resources
-                rightFindRunsKernel = FindRunsKernel.makeContext(valueChunkType);
 
                 // Resizable right resources
                 ensureRightCapacity(CHUNK_SIZE);
@@ -550,8 +546,6 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
                         leftValidity,
                         leftChunkPositions,
                         leftSortKernel,
-                        // Final right resources
-                        rightFindRunsKernel,
                         // Resizable right resources
                         rightRangeValuesFillContext,
                         rightRangeValuesChunk,
@@ -583,8 +577,8 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
                 rightRangeValues.fillChunk(tc.rightRangeValuesFillContext, tc.rightRangeValuesChunk, rightRows);
 
                 // Find and compact right runs, verifying order
-                tc.rightFindRunsKernel.findRunsSingles(tc.rightRangeValuesChunk, tc.rightStartOffsets, tc.rightLengths);
-                final int firstOutOfOrderRightPosition = tc.rightFindRunsKernel.compactRuns(
+                ChunkUtils.fillInOrder(tc.rightStartOffsets);
+                final int firstOutOfOrderRightPosition = valueChunkDupCompactKernel.compactDuplicatesPreferFirst(
                         tc.rightRangeValuesChunk, tc.rightStartOffsets);
                 if (firstOutOfOrderRightPosition != -1) {
                     throw new OutOfOrderException(String.format(

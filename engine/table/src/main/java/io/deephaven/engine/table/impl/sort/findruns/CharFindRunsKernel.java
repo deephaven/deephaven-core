@@ -175,7 +175,7 @@ public class CharFindRunsKernel {
 
     private final static FindRunsKernel INSTANCE = new CharFindRunsKernelContext();
 
-    public static FindRunsKernel createContext() {
+    public static FindRunsKernel getInstance() {
         return INSTANCE;
     }
 }

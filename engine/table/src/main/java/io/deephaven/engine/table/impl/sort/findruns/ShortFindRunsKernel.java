@@ -180,7 +180,7 @@ public class ShortFindRunsKernel {
 
     private final static FindRunsKernel INSTANCE = new ShortFindRunsKernelContext();
 
-    public static FindRunsKernel createContext() {
+    public static FindRunsKernel getInstance() {
         return INSTANCE;
     }
 }
