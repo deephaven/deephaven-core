@@ -24,7 +24,7 @@ enum RangeSearchKernelFloat implements RangeSearchKernel {
 
     LT_GT {
         @Override
-        void populateAllRangeForEmptyRight(
+        void processAllRangesForEmptyRight(
                 @NotNull final FloatChunk<? extends Values> lsv,
                 @NotNull final FloatChunk<? extends Values> lev,
                 @NotNull final WritableIntChunk<? extends Values> ospi,
@@ -33,41 +33,41 @@ enum RangeSearchKernelFloat implements RangeSearchKernel {
         }
 
         @Override
-        void populateInvalidRanges(
+        void processInvalidRanges(
                 @NotNull final FloatChunk<? extends Values> lsv,
                 @NotNull final FloatChunk<? extends Values> lev,
                 @NotNull final WritableBooleanChunk<? super Values> validity,
                 @NotNull final WritableIntChunk<? extends Values> ospi,
                 @NotNull final WritableIntChunk<? extends Values> oepe) {
-            populateInvalidRangesDisallowEqual(lsv, lev, validity, ospi, oepe);
+            processInvalidRangesDisallowEqual(lsv, lev, validity, ospi, oepe);
         }
 
         @Override
-        void findStarts(
+        void processRangeStarts(
                 @NotNull final FloatChunk<? extends Values> lv,
                 @NotNull final IntChunk<ChunkPositions> lp,
                 @NotNull final FloatChunk<? extends Values> rv,
                 @NotNull final IntChunk<ChunkPositions> rso,
                 @NotNull final IntChunk<ChunkLengths> rl,
                 @NotNull final WritableIntChunk<? extends Values> ospi) {
-            findStartsLessThan(lv, lp, rv, rso, rl, ospi);
+            processRangeStartsLessThan(lv, lp, rv, rso, rl, ospi);
         }
 
         @Override
-        void findEnds(
+        void processRangeEnds(
                 @NotNull final FloatChunk<? extends Values> lv,
                 @NotNull final IntChunk<ChunkPositions> lp,
                 @NotNull final FloatChunk<? extends Values> rv,
                 @NotNull final IntChunk<ChunkPositions> rso,
                 @NotNull final IntChunk<ChunkLengths> rl,
                 @NotNull final WritableIntChunk<? extends Values> oepe) {
-            findEndsGreaterThan(lv, lp, rv, rso, rl, oepe);
+            processRangeEndsGreaterThan(lv, lp, rv, rso, rl, oepe);
         }
     },
 
     LEQ_GT {
         @Override
-        void populateAllRangeForEmptyRight(
+        void processAllRangesForEmptyRight(
                 @NotNull final FloatChunk<? extends Values> lsv,
                 @NotNull final FloatChunk<? extends Values> lev,
                 @NotNull final WritableIntChunk<? extends Values> ospi,
@@ -76,41 +76,41 @@ enum RangeSearchKernelFloat implements RangeSearchKernel {
         }
 
         @Override
-        void populateInvalidRanges(
+        void processInvalidRanges(
                 @NotNull final FloatChunk<? extends Values> lsv,
                 @NotNull final FloatChunk<? extends Values> lev,
                 @NotNull final WritableBooleanChunk<? super Values> validity,
                 @NotNull final WritableIntChunk<? extends Values> ospi,
                 @NotNull final WritableIntChunk<? extends Values> oepe) {
-            populateInvalidRangesDisallowEqual(lsv, lev, validity, ospi, oepe);
+            processInvalidRangesDisallowEqual(lsv, lev, validity, ospi, oepe);
         }
 
         @Override
-        void findStarts(
+        void processRangeStarts(
                 @NotNull final FloatChunk<? extends Values> lv,
                 @NotNull final IntChunk<ChunkPositions> lp,
                 @NotNull final FloatChunk<? extends Values> rv,
                 @NotNull final IntChunk<ChunkPositions> rso,
                 @NotNull final IntChunk<ChunkLengths> rl,
                 @NotNull final WritableIntChunk<? extends Values> ospi) {
-            findStartsLessThanEqual(lv, lp, rv, rso, rl, ospi);
+            processRangeStartsLessThanEqual(lv, lp, rv, rso, rl, ospi);
         }
 
         @Override
-        void findEnds(
+        void processRangeEnds(
                 @NotNull final FloatChunk<? extends Values> lv,
                 @NotNull final IntChunk<ChunkPositions> lp,
                 @NotNull final FloatChunk<? extends Values> rv,
                 @NotNull final IntChunk<ChunkPositions> rso,
                 @NotNull final IntChunk<ChunkLengths> rl,
                 @NotNull final WritableIntChunk<? extends Values> oepe) {
-            findEndsGreaterThan(lv, lp, rv, rso, rl, oepe);
+            processRangeEndsGreaterThan(lv, lp, rv, rso, rl, oepe);
         }
     },
 
     LEQAP_GT {
         @Override
-        void populateAllRangeForEmptyRight(
+        void processAllRangesForEmptyRight(
                 @NotNull final FloatChunk<? extends Values> lsv,
                 @NotNull final FloatChunk<? extends Values> lev,
                 @NotNull final WritableIntChunk<? extends Values> ospi,
@@ -119,41 +119,41 @@ enum RangeSearchKernelFloat implements RangeSearchKernel {
         }
 
         @Override
-        void populateInvalidRanges(
+        void processInvalidRanges(
                 @NotNull final FloatChunk<? extends Values> lsv,
                 @NotNull final FloatChunk<? extends Values> lev,
                 @NotNull final WritableBooleanChunk<? super Values> validity,
                 @NotNull final WritableIntChunk<? extends Values> ospi,
                 @NotNull final WritableIntChunk<? extends Values> oepe) {
-            populateInvalidRangesDisallowEqual(lsv, lev, validity, ospi, oepe);
+            processInvalidRangesDisallowEqual(lsv, lev, validity, ospi, oepe);
         }
 
         @Override
-        void findStarts(
+        void processRangeStarts(
                 @NotNull final FloatChunk<? extends Values> lv,
                 @NotNull final IntChunk<ChunkPositions> lp,
                 @NotNull final FloatChunk<? extends Values> rv,
                 @NotNull final IntChunk<ChunkPositions> rso,
                 @NotNull final IntChunk<ChunkLengths> rl,
                 @NotNull final WritableIntChunk<? extends Values> ospi) {
-            findStartsLessThanEqualAllowPreceding(lv, lp, rv, rso, rl, ospi);
+            processRangeStartsLessThanEqualAllowPreceding(lv, lp, rv, rso, rl, ospi);
         }
 
         @Override
-        void findEnds(
+        void processRangeEnds(
                 @NotNull final FloatChunk<? extends Values> lv,
                 @NotNull final IntChunk<ChunkPositions> lp,
                 @NotNull final FloatChunk<? extends Values> rv,
                 @NotNull final IntChunk<ChunkPositions> rso,
                 @NotNull final IntChunk<ChunkLengths> rl,
                 @NotNull final WritableIntChunk<? extends Values> oepe) {
-            findEndsGreaterThan(lv, lp, rv, rso, rl, oepe);
+            processRangeEndsGreaterThan(lv, lp, rv, rso, rl, oepe);
         }
     },
 
     LT_GEQ {
         @Override
-        void populateAllRangeForEmptyRight(
+        void processAllRangesForEmptyRight(
                 @NotNull final FloatChunk<? extends Values> lsv,
                 @NotNull final FloatChunk<? extends Values> lev,
                 @NotNull final WritableIntChunk<? extends Values> ospi,
@@ -162,41 +162,41 @@ enum RangeSearchKernelFloat implements RangeSearchKernel {
         }
 
         @Override
-        void populateInvalidRanges(
+        void processInvalidRanges(
                 @NotNull final FloatChunk<? extends Values> lsv,
                 @NotNull final FloatChunk<? extends Values> lev,
                 @NotNull final WritableBooleanChunk<? super Values> validity,
                 @NotNull final WritableIntChunk<? extends Values> ospi,
                 @NotNull final WritableIntChunk<? extends Values> oepe) {
-            populateInvalidRangesDisallowEqual(lsv, lev, validity, ospi, oepe);
+            processInvalidRangesDisallowEqual(lsv, lev, validity, ospi, oepe);
         }
 
         @Override
-        void findStarts(
+        void processRangeStarts(
                 @NotNull final FloatChunk<? extends Values> lv,
                 @NotNull final IntChunk<ChunkPositions> lp,
                 @NotNull final FloatChunk<? extends Values> rv,
                 @NotNull final IntChunk<ChunkPositions> rso,
                 @NotNull final IntChunk<ChunkLengths> rl,
                 @NotNull final WritableIntChunk<? extends Values> ospi) {
-            findStartsLessThan(lv, lp, rv, rso, rl, ospi);
+            processRangeStartsLessThan(lv, lp, rv, rso, rl, ospi);
         }
 
         @Override
-        void findEnds(
+        void processRangeEnds(
                 @NotNull final FloatChunk<? extends Values> lv,
                 @NotNull final IntChunk<ChunkPositions> lp,
                 @NotNull final FloatChunk<? extends Values> rv,
                 @NotNull final IntChunk<ChunkPositions> rso,
                 @NotNull final IntChunk<ChunkLengths> rl,
                 @NotNull final WritableIntChunk<? extends Values> oepe) {
-            findEndsGreaterThanEqual(lv, lp, rv, rso, rl, oepe);
+            processRangeEndsGreaterThanEqual(lv, lp, rv, rso, rl, oepe);
         }
     },
 
     LEQ_GEQ {
         @Override
-        void populateAllRangeForEmptyRight(
+        void processAllRangesForEmptyRight(
                 @NotNull final FloatChunk<? extends Values> lsv,
                 @NotNull final FloatChunk<? extends Values> lev,
                 @NotNull final WritableIntChunk<? extends Values> ospi,
@@ -205,41 +205,41 @@ enum RangeSearchKernelFloat implements RangeSearchKernel {
         }
 
         @Override
-        void populateInvalidRanges(
+        void processInvalidRanges(
                 @NotNull final FloatChunk<? extends Values> lsv,
                 @NotNull final FloatChunk<? extends Values> lev,
                 @NotNull final WritableBooleanChunk<? super Values> validity,
                 @NotNull final WritableIntChunk<? extends Values> ospi,
                 @NotNull final WritableIntChunk<? extends Values> oepe) {
-            populateInvalidRangesAllowEqual(lsv, lev, validity, ospi, oepe);
+            processInvalidRangesAllowEqual(lsv, lev, validity, ospi, oepe);
         }
 
         @Override
-        void findStarts(
+        void processRangeStarts(
                 @NotNull final FloatChunk<? extends Values> lv,
                 @NotNull final IntChunk<ChunkPositions> lp,
                 @NotNull final FloatChunk<? extends Values> rv,
                 @NotNull final IntChunk<ChunkPositions> rso,
                 @NotNull final IntChunk<ChunkLengths> rl,
                 @NotNull final WritableIntChunk<? extends Values> ospi) {
-            findStartsLessThanEqual(lv, lp, rv, rso, rl, ospi);
+            processRangeStartsLessThanEqual(lv, lp, rv, rso, rl, ospi);
         }
 
         @Override
-        void findEnds(
+        void processRangeEnds(
                 @NotNull final FloatChunk<? extends Values> lv,
                 @NotNull final IntChunk<ChunkPositions> lp,
                 @NotNull final FloatChunk<? extends Values> rv,
                 @NotNull final IntChunk<ChunkPositions> rso,
                 @NotNull final IntChunk<ChunkLengths> rl,
                 @NotNull final WritableIntChunk<? extends Values> oepe) {
-            findEndsGreaterThanEqual(lv, lp, rv, rso, rl, oepe);
+            processRangeEndsGreaterThanEqual(lv, lp, rv, rso, rl, oepe);
         }
     },
 
     LEQAP_GEQ {
         @Override
-        void populateAllRangeForEmptyRight(
+        void processAllRangesForEmptyRight(
                 @NotNull final FloatChunk<? extends Values> lsv,
                 @NotNull final FloatChunk<? extends Values> lev,
                 @NotNull final WritableIntChunk<? extends Values> ospi,
@@ -248,41 +248,41 @@ enum RangeSearchKernelFloat implements RangeSearchKernel {
         }
 
         @Override
-        void populateInvalidRanges(
+        void processInvalidRanges(
                 @NotNull final FloatChunk<? extends Values> lsv,
                 @NotNull final FloatChunk<? extends Values> lev,
                 @NotNull final WritableBooleanChunk<? super Values> validity,
                 @NotNull final WritableIntChunk<? extends Values> ospi,
                 @NotNull final WritableIntChunk<? extends Values> oepe) {
-            populateInvalidRangesAllowEqual(lsv, lev, validity, ospi, oepe);
+            processInvalidRangesAllowEqual(lsv, lev, validity, ospi, oepe);
         }
 
         @Override
-        void findStarts(
+        void processRangeStarts(
                 @NotNull final FloatChunk<? extends Values> lv,
                 @NotNull final IntChunk<ChunkPositions> lp,
                 @NotNull final FloatChunk<? extends Values> rv,
                 @NotNull final IntChunk<ChunkPositions> rso,
                 @NotNull final IntChunk<ChunkLengths> rl,
                 @NotNull final WritableIntChunk<? extends Values> ospi) {
-            findStartsLessThanEqualAllowPreceding(lv, lp, rv, rso, rl, ospi);
+            processRangeStartsLessThanEqualAllowPreceding(lv, lp, rv, rso, rl, ospi);
         }
 
         @Override
-        void findEnds(
+        void processRangeEnds(
                 @NotNull final FloatChunk<? extends Values> lv,
                 @NotNull final IntChunk<ChunkPositions> lp,
                 @NotNull final FloatChunk<? extends Values> rv,
                 @NotNull final IntChunk<ChunkPositions> rso,
                 @NotNull final IntChunk<ChunkLengths> rl,
                 @NotNull final WritableIntChunk<? extends Values> oepe) {
-            findEndsGreaterThanEqual(lv, lp, rv, rso, rl, oepe);
+            processRangeEndsGreaterThanEqual(lv, lp, rv, rso, rl, oepe);
         }
     },
 
     LT_GEQAF {
         @Override
-        void populateAllRangeForEmptyRight(
+        void processAllRangesForEmptyRight(
                 @NotNull final FloatChunk<? extends Values> lsv,
                 @NotNull final FloatChunk<? extends Values> lev,
                 @NotNull final WritableIntChunk<? extends Values> ospi,
@@ -291,41 +291,41 @@ enum RangeSearchKernelFloat implements RangeSearchKernel {
         }
 
         @Override
-        void populateInvalidRanges(
+        void processInvalidRanges(
                 @NotNull final FloatChunk<? extends Values> lsv,
                 @NotNull final FloatChunk<? extends Values> lev,
                 @NotNull final WritableBooleanChunk<? super Values> validity,
                 @NotNull final WritableIntChunk<? extends Values> ospi,
                 @NotNull final WritableIntChunk<? extends Values> oepe) {
-            populateInvalidRangesDisallowEqual(lsv, lev, validity, ospi, oepe);
+            processInvalidRangesDisallowEqual(lsv, lev, validity, ospi, oepe);
         }
 
         @Override
-        void findStarts(
+        void processRangeStarts(
                 @NotNull final FloatChunk<? extends Values> lv,
                 @NotNull final IntChunk<ChunkPositions> lp,
                 @NotNull final FloatChunk<? extends Values> rv,
                 @NotNull final IntChunk<ChunkPositions> rso,
                 @NotNull final IntChunk<ChunkLengths> rl,
                 @NotNull final WritableIntChunk<? extends Values> ospi) {
-            findStartsLessThan(lv, lp, rv, rso, rl, ospi);
+            processRangeStartsLessThan(lv, lp, rv, rso, rl, ospi);
         }
 
         @Override
-        void findEnds(
+        void processRangeEnds(
                 @NotNull final FloatChunk<? extends Values> lv,
                 @NotNull final IntChunk<ChunkPositions> lp,
                 @NotNull final FloatChunk<? extends Values> rv,
                 @NotNull final IntChunk<ChunkPositions> rso,
                 @NotNull final IntChunk<ChunkLengths> rl,
                 @NotNull final WritableIntChunk<? extends Values> oepe) {
-            findEndsGreaterThanEqualAllowFollowing(lv, lp, rv, rso, rl, oepe);
+            processRangeEndsGreaterThanEqualAllowFollowing(lv, lp, rv, rso, rl, oepe);
         }
     },
 
     LEQ_GEQAF {
         @Override
-        void populateAllRangeForEmptyRight(
+        void processAllRangesForEmptyRight(
                 @NotNull final FloatChunk<? extends Values> lsv,
                 @NotNull final FloatChunk<? extends Values> lev,
                 @NotNull final WritableIntChunk<? extends Values> ospi,
@@ -334,41 +334,41 @@ enum RangeSearchKernelFloat implements RangeSearchKernel {
         }
 
         @Override
-        void populateInvalidRanges(
+        void processInvalidRanges(
                 @NotNull final FloatChunk<? extends Values> lsv,
                 @NotNull final FloatChunk<? extends Values> lev,
                 @NotNull final WritableBooleanChunk<? super Values> validity,
                 @NotNull final WritableIntChunk<? extends Values> ospi,
                 @NotNull final WritableIntChunk<? extends Values> oepe) {
-            populateInvalidRangesAllowEqual(lsv, lev, validity, ospi, oepe);
+            processInvalidRangesAllowEqual(lsv, lev, validity, ospi, oepe);
         }
 
         @Override
-        void findStarts(
+        void processRangeStarts(
                 @NotNull final FloatChunk<? extends Values> lv,
                 @NotNull final IntChunk<ChunkPositions> lp,
                 @NotNull final FloatChunk<? extends Values> rv,
                 @NotNull final IntChunk<ChunkPositions> rso,
                 @NotNull final IntChunk<ChunkLengths> rl,
                 @NotNull final WritableIntChunk<? extends Values> ospi) {
-            findStartsLessThanEqual(lv, lp, rv, rso, rl, ospi);
+            processRangeStartsLessThanEqual(lv, lp, rv, rso, rl, ospi);
         }
 
         @Override
-        void findEnds(
+        void processRangeEnds(
                 @NotNull final FloatChunk<? extends Values> lv,
                 @NotNull final IntChunk<ChunkPositions> lp,
                 @NotNull final FloatChunk<? extends Values> rv,
                 @NotNull final IntChunk<ChunkPositions> rso,
                 @NotNull final IntChunk<ChunkLengths> rl,
                 @NotNull final WritableIntChunk<? extends Values> oepe) {
-            findEndsGreaterThanEqualAllowFollowing(lv, lp, rv, rso, rl, oepe);
+            processRangeEndsGreaterThanEqualAllowFollowing(lv, lp, rv, rso, rl, oepe);
         }
     },
 
     LEQAP_GEQAF {
         @Override
-        void populateAllRangeForEmptyRight(
+        void processAllRangesForEmptyRight(
                 @NotNull final FloatChunk<? extends Values> lsv,
                 @NotNull final FloatChunk<? extends Values> lev,
                 @NotNull final WritableIntChunk<? extends Values> ospi,
@@ -377,35 +377,35 @@ enum RangeSearchKernelFloat implements RangeSearchKernel {
         }
 
         @Override
-        void populateInvalidRanges(
+        void processInvalidRanges(
                 @NotNull final FloatChunk<? extends Values> lsv,
                 @NotNull final FloatChunk<? extends Values> lev,
                 @NotNull final WritableBooleanChunk<? super Values> validity,
                 @NotNull final WritableIntChunk<? extends Values> ospi,
                 @NotNull final WritableIntChunk<? extends Values> oepe) {
-            populateInvalidRangesAllowEqual(lsv, lev, validity, ospi, oepe);
+            processInvalidRangesAllowEqual(lsv, lev, validity, ospi, oepe);
         }
 
         @Override
-        void findStarts(
+        void processRangeStarts(
                 @NotNull final FloatChunk<? extends Values> lv,
                 @NotNull final IntChunk<ChunkPositions> lp,
                 @NotNull final FloatChunk<? extends Values> rv,
                 @NotNull final IntChunk<ChunkPositions> rso,
                 @NotNull final IntChunk<ChunkLengths> rl,
                 @NotNull final WritableIntChunk<? extends Values> ospi) {
-            findStartsLessThanEqualAllowPreceding(lv, lp, rv, rso, rl, ospi);
+            processRangeStartsLessThanEqualAllowPreceding(lv, lp, rv, rso, rl, ospi);
         }
 
         @Override
-        void findEnds(
+        void processRangeEnds(
                 @NotNull final FloatChunk<? extends Values> lv,
                 @NotNull final IntChunk<ChunkPositions> lp,
                 @NotNull final FloatChunk<? extends Values> rv,
                 @NotNull final IntChunk<ChunkPositions> rso,
                 @NotNull final IntChunk<ChunkLengths> rl,
                 @NotNull final WritableIntChunk<? extends Values> oepe) {
-            findEndsGreaterThanEqualAllowFollowing(lv, lp, rv, rso, rl, oepe);
+            processRangeEndsGreaterThanEqualAllowFollowing(lv, lp, rv, rso, rl, oepe);
         }
     };
 
@@ -449,32 +449,32 @@ enum RangeSearchKernelFloat implements RangeSearchKernel {
     }
 
     @Override
-    public final void populateAllRangeForEmptyRight(
+    public final void processAllRangesForEmptyRight(
             @NotNull final Chunk<? extends Values> leftStartValues,
             @NotNull final Chunk<? extends Values> leftEndValues,
             @NotNull final WritableIntChunk<? extends Values> outputStartPositionsInclusive,
             @NotNull final WritableIntChunk<? extends Values> outputEndPositionsExclusive) {
-        populateAllRangeForEmptyRight(
+        processAllRangesForEmptyRight(
                 leftStartValues.asFloatChunk(),
                 leftEndValues.asFloatChunk(),
                 outputStartPositionsInclusive,
                 outputEndPositionsExclusive);
     }
 
-    abstract void populateAllRangeForEmptyRight(
+    abstract void processAllRangesForEmptyRight(
             @NotNull FloatChunk<? extends Values> leftStartValues,
             @NotNull FloatChunk<? extends Values> leftEndValues,
             @NotNull WritableIntChunk<? extends Values> outputStartPositionsInclusive,
             @NotNull WritableIntChunk<? extends Values> outputEndPositionsExclusive);
 
     @Override
-    public final void populateInvalidRanges(
+    public final void processInvalidRanges(
             @NotNull final Chunk<? extends Values> leftStartValues,
             @NotNull final Chunk<? extends Values> leftEndValues,
             @NotNull final WritableBooleanChunk<? super Values> validity,
             @NotNull final WritableIntChunk<? extends Values> outputStartPositionsInclusive,
             @NotNull final WritableIntChunk<? extends Values> outputEndPositionsExclusive) {
-        populateInvalidRanges(
+        processInvalidRanges(
                 leftStartValues.asFloatChunk(),
                 leftEndValues.asFloatChunk(),
                 validity,
@@ -482,7 +482,7 @@ enum RangeSearchKernelFloat implements RangeSearchKernel {
                 outputEndPositionsExclusive);
     }
 
-    abstract void populateInvalidRanges(
+    abstract void processInvalidRanges(
             @NotNull FloatChunk<? extends Values> leftStartValues,
             @NotNull FloatChunk<? extends Values> leftEndValues,
             @NotNull WritableBooleanChunk<? super Values> validity,
@@ -490,14 +490,14 @@ enum RangeSearchKernelFloat implements RangeSearchKernel {
             @NotNull WritableIntChunk<? extends Values> outputEndPositionsExclusive);
 
     @Override
-    public final void findStarts(
+    public final void processRangeStarts(
             @NotNull final Chunk<? extends Values> leftValues,
             @NotNull final IntChunk<ChunkPositions> leftPositions,
             @NotNull final Chunk<? extends Values> rightValues,
             @NotNull final IntChunk<ChunkPositions> rightStartOffsets,
             @NotNull final IntChunk<ChunkLengths> rightLengths,
             @NotNull final WritableIntChunk<? extends Values> outputStartPositionsInclusive) {
-        findStarts(
+        processRangeStarts(
                 leftValues.asFloatChunk(),
                 leftPositions,
                 rightValues.asFloatChunk(),
@@ -506,7 +506,7 @@ enum RangeSearchKernelFloat implements RangeSearchKernel {
                 outputStartPositionsInclusive);
     }
 
-    abstract void findStarts(
+    abstract void processRangeStarts(
             @NotNull FloatChunk<? extends Values> leftValues,
             @NotNull IntChunk<ChunkPositions> leftPositions,
             @NotNull FloatChunk<? extends Values> rightValues,
@@ -515,14 +515,14 @@ enum RangeSearchKernelFloat implements RangeSearchKernel {
             @NotNull WritableIntChunk<? extends Values> outputStartPositionsInclusive);
 
     @Override
-    public final void findEnds(
+    public final void processRangeEnds(
             @NotNull final Chunk<? extends Values> leftValues,
             @NotNull final IntChunk<ChunkPositions> leftPositions,
             @NotNull final Chunk<? extends Values> rightValues,
             @NotNull final IntChunk<ChunkPositions> rightStartOffsets,
             @NotNull final IntChunk<ChunkLengths> rightLengths,
             @NotNull final WritableIntChunk<? extends Values> outputEndPositionsExclusive) {
-        findEnds(
+        processRangeEnds(
                 leftValues.asFloatChunk(),
                 leftPositions,
                 rightValues.asFloatChunk(),
@@ -531,7 +531,7 @@ enum RangeSearchKernelFloat implements RangeSearchKernel {
                 outputEndPositionsExclusive);
     }
 
-    abstract void findEnds(
+    abstract void processRangeEnds(
             @NotNull FloatChunk<? extends Values> leftValues,
             @NotNull IntChunk<ChunkPositions> leftPositions,
             @NotNull FloatChunk<? extends Values> rightValues,
@@ -581,7 +581,7 @@ enum RangeSearchKernelFloat implements RangeSearchKernel {
         outputEndPositionsExclusive.setSize(size);
     }
 
-    private static void populateInvalidRangesAllowEqual(
+    private static void processInvalidRangesAllowEqual(
             @NotNull final FloatChunk<? extends Values> leftStartValues,
             @NotNull final FloatChunk<? extends Values> leftEndValues,
             @NotNull final WritableBooleanChunk<? super Values> validity,
@@ -604,7 +604,7 @@ enum RangeSearchKernelFloat implements RangeSearchKernel {
         outputEndPositionsExclusive.setSize(size);
     }
 
-    private static void populateInvalidRangesDisallowEqual(
+    private static void processInvalidRangesDisallowEqual(
             @NotNull final FloatChunk<? extends Values> leftStartValues,
             @NotNull final FloatChunk<? extends Values> leftEndValues,
             @NotNull final WritableBooleanChunk<? super Values> validity,
@@ -635,7 +635,7 @@ enum RangeSearchKernelFloat implements RangeSearchKernel {
         return !isNaN(start) && !isNaN(end) && (isNull(start) || isNull(end) || lt(start, end));
     }
 
-    private static void findStartsLessThan(
+    private static void processRangeStartsLessThan(
             @NotNull final FloatChunk<? extends Values> leftValues,
             @NotNull final IntChunk<ChunkPositions> leftPositions,
             @NotNull final FloatChunk<? extends Values> rightValues,
@@ -649,7 +649,7 @@ enum RangeSearchKernelFloat implements RangeSearchKernel {
         // Empty rights are handled via a different method
         Assert.gtZero(rightSize, "rightSize");
 
-        int leftIndex = consumeNullLeftStartValues(leftValues, leftPositions, outputStartPositionsInclusive);
+        int leftIndex = processNullLeftStartValues(leftValues, leftPositions, outputStartPositionsInclusive);
         if (leftIndex == leftSize) {
             return;
         }
@@ -659,7 +659,8 @@ enum RangeSearchKernelFloat implements RangeSearchKernel {
         float leftValue = leftValues.get(leftIndex);
         do {
             final int searchResult = rightValues.binarySearch(rightLowIndexInclusive, rightSize, leftValue);
-            // Take insertion point for not found, or bump by one for found to avoid equal values
+            // rightIndex should be the index of the first right value whose first position we want to include, so
+            // take the insertion point (when not found) or one past the insertion point (when found)
             final int rightIndex = searchResult < 0 ? ~searchResult : searchResult + 1;
             if (rightIndex == rightSize) {
                 break;
@@ -672,15 +673,16 @@ enum RangeSearchKernelFloat implements RangeSearchKernel {
             while (leftIndex < leftSize && lt(leftValue = leftValues.get(leftIndex), rightValue)) {
                 outputStartPositionsInclusive.set(leftPositions.get(leftIndex++), rightPosition);
             }
-            // We've consumed all left values that can match rightIndex, so begin searching after rightIndex
+            // We've processed all left values that can include rightValue, so begin searching after rightIndex
             rightLowIndexInclusive = rightIndex + 1;
         } while (leftIndex < leftSize && rightLowIndexInclusive < rightSize);
 
-        consumeEmptyRangeStarts(
+        // All remaining ranges start after last right (and are thus empty)
+        fillRemainingWithLastRightPositionExclusive(
                 leftPositions, rightStartOffsets, rightLengths, outputStartPositionsInclusive, leftIndex);
     }
 
-    private static void findStartsLessThanEqual(
+    private static void processRangeStartsLessThanEqual(
             @NotNull final FloatChunk<? extends Values> leftValues,
             @NotNull final IntChunk<ChunkPositions> leftPositions,
             @NotNull final FloatChunk<? extends Values> rightValues,
@@ -694,7 +696,7 @@ enum RangeSearchKernelFloat implements RangeSearchKernel {
         // Empty rights are handled via a different method
         Assert.gtZero(rightSize, "rightSize");
 
-        int leftIndex = consumeNullLeftStartValues(leftValues, leftPositions, outputStartPositionsInclusive);
+        int leftIndex = processNullLeftStartValues(leftValues, leftPositions, outputStartPositionsInclusive);
         if (leftIndex == leftSize) {
             return;
         }
@@ -704,7 +706,8 @@ enum RangeSearchKernelFloat implements RangeSearchKernel {
         float leftValue = leftValues.get(leftIndex);
         do {
             final int searchResult = rightValues.binarySearch(rightLowIndexInclusive, rightSize, leftValue);
-            // Take insertion point in all cases
+            // rightIndex should be the index of the first right value whose first position we want to include, so
+            // take the insertion point whether found or not
             final int rightIndex = searchResult < 0 ? ~searchResult : searchResult;
             if (rightIndex == rightSize) {
                 break;
@@ -717,15 +720,16 @@ enum RangeSearchKernelFloat implements RangeSearchKernel {
             while (leftIndex < leftSize && leq(leftValue = leftValues.get(leftIndex), rightValue)) {
                 outputStartPositionsInclusive.set(leftPositions.get(leftIndex++), rightPosition);
             }
-            // We've consumed all left values that can match rightIndex, so begin searching after rightIndex
+            // We've processed all left values that can include rightValue, so begin searching after rightIndex
             rightLowIndexInclusive = rightIndex + 1;
         } while (leftIndex < leftSize && rightLowIndexInclusive < rightSize);
 
-        consumeEmptyRangeStarts(
+        // All remaining ranges start after last right (and are thus empty)
+        fillRemainingWithLastRightPositionExclusive(
                 leftPositions, rightStartOffsets, rightLengths, outputStartPositionsInclusive, leftIndex);
     }
 
-    private static void findStartsLessThanEqualAllowPreceding(
+    private static void processRangeStartsLessThanEqualAllowPreceding(
             @NotNull final FloatChunk<? extends Values> leftValues,
             @NotNull final IntChunk<ChunkPositions> leftPositions,
             @NotNull final FloatChunk<? extends Values> rightValues,
@@ -739,7 +743,7 @@ enum RangeSearchKernelFloat implements RangeSearchKernel {
         // Empty rights are handled via a different method
         Assert.gtZero(rightSize, "rightSize");
 
-        int leftIndex = consumeNullLeftStartValues(leftValues, leftPositions, outputStartPositionsInclusive);
+        int leftIndex = processNullLeftStartValues(leftValues, leftPositions, outputStartPositionsInclusive);
         if (leftIndex == leftSize) {
             return;
         }
@@ -749,15 +753,18 @@ enum RangeSearchKernelFloat implements RangeSearchKernel {
         float leftValue = leftValues.get(leftIndex);
         do {
             final int searchResult = rightValues.binarySearch(rightLowIndexInclusive, rightSize, leftValue);
-            // Take insertion point in all cases
+            // rightIndex should be the index of the first right value whose first position we want to include, so
+            // take the insertion point whether found or not
             final int rightIndex = searchResult < 0 ? ~searchResult : searchResult;
+            if (rightIndex == rightSize) {
+                break;
+            }
             final int rightPosition = rightStartOffsets.get(rightIndex);
             final float rightValue = rightValues.get(rightIndex);
             // Proceed linearly until we have a reason to binary search again
             if (searchResult < 0 && rightIndex != 0) {
                 // If we had an inexact match that isn't at the beginning of the right values, look behind
-                final int precedingRightPosition =
-                        rightStartOffsets.get(rightIndex - 1) + rightLengths.get(rightIndex - 1) - 1;
+                final int precedingRightPosition = rightPosition - 1;
                 outputStartPositionsInclusive.set(leftPositions.get(leftIndex++), precedingRightPosition);
                 // We can re-use precedingRightPosition until we reach rightValue
                 while (leftIndex < leftSize && lt(leftValue = leftValues.get(leftIndex), rightValue)) {
@@ -770,12 +777,19 @@ enum RangeSearchKernelFloat implements RangeSearchKernel {
             while (leftIndex < leftSize && leq(leftValue = leftValues.get(leftIndex), rightValue)) {
                 outputStartPositionsInclusive.set(leftPositions.get(leftIndex++), rightPosition);
             }
-            // We've consumed all left values that can match rightIndex, so begin searching after rightIndex
+            // We've processed all left values that can include rightValue, so begin searching after rightIndex
             rightLowIndexInclusive = rightIndex + 1;
         } while (leftIndex < leftSize && rightLowIndexInclusive < rightSize);
 
-        consumeEmptyRangeStarts(
-                leftPositions, rightStartOffsets, rightLengths, outputStartPositionsInclusive, leftIndex);
+        // All remaining left start values are after last right value. Last right position is in range by "allow
+        // preceding" logic.
+        if (leftIndex == leftSize) {
+            return;
+        }
+        final int lastRightPosition = rightStartOffsets.get(rightSize - 1) + rightLengths.get(rightSize - 1) - 1;
+        while (leftIndex < leftSize) {
+            outputStartPositionsInclusive.set(leftPositions.get(leftIndex++), lastRightPosition);
+        }
     }
 
     /**
@@ -785,9 +799,9 @@ enum RangeSearchKernelFloat implements RangeSearchKernel {
      * @param leftValues The left values, sorted according to Deephaven sorting order (nulls first)
      * @param leftPositions The left positions, parallel to {@code leftValues}, used to determine {@code output} index
      * @param outputStartPositionsInclusive The output chunk
-     * @return The number of left indices consumed
+     * @return The number of left indices processed
      */
-    private static int consumeNullLeftStartValues(
+    private static int processNullLeftStartValues(
             @NotNull final FloatChunk<? extends Values> leftValues,
             @NotNull final IntChunk<ChunkPositions> leftPositions,
             @NotNull final WritableIntChunk<? extends Values> outputStartPositionsInclusive) {
@@ -799,33 +813,7 @@ enum RangeSearchKernelFloat implements RangeSearchKernel {
         return leftIndex;
     }
 
-    /**
-     * Fill range starts for left start values with no responsive right values.
-     *
-     * @param leftPositions The left positions, used to determine {@code output} index
-     * @param rightStartOffsets The right run start offsets
-     * @param rightLengths The right run lengths
-     * @param outputStartPositionsInclusive The output chunk
-     * @param leftIndex The left index to start from
-     */
-    private static void consumeEmptyRangeStarts(
-            @NotNull final IntChunk<ChunkPositions> leftPositions,
-            @NotNull final IntChunk<ChunkPositions> rightStartOffsets,
-            @NotNull final IntChunk<ChunkLengths> rightLengths,
-            @NotNull final WritableIntChunk<? extends Values> outputStartPositionsInclusive,
-            int leftIndex) {
-        final int leftSize = leftPositions.size();
-        final int rightSize = rightStartOffsets.size();
-        if (leftIndex == leftSize) {
-            return;
-        }
-        final int rightLastPositionExclusive = rightStartOffsets.get(rightSize - 1) + rightLengths.get(rightSize - 1);
-        while (leftIndex < leftSize) {
-            outputStartPositionsInclusive.set(leftPositions.get(leftIndex++), rightLastPositionExclusive);
-        }
-    }
-
-    private static void findEndsGreaterThan(
+    private static void processRangeEndsGreaterThan(
             @NotNull final FloatChunk<? extends Values> leftValues,
             @NotNull final IntChunk<ChunkPositions> leftPositions,
             @NotNull final FloatChunk<? extends Values> rightValues,
@@ -839,7 +827,7 @@ enum RangeSearchKernelFloat implements RangeSearchKernel {
         // Empty rights are handled via a different method
         Assert.gtZero(rightSize, "rightSize");
 
-        int leftIndex = consumeNullLeftEndValues(
+        int leftIndex = processNullLeftEndValues(
                 leftValues, leftPositions, rightStartOffsets, rightLengths, outputEndPositionsExclusive);
         if (leftIndex == leftSize) {
             return;
@@ -850,57 +838,13 @@ enum RangeSearchKernelFloat implements RangeSearchKernel {
         float leftValue = leftValues.get(leftIndex);
         do {
             final int searchResult = rightValues.binarySearch(rightLowIndexInclusive, rightSize, leftValue);
-            // Take insertion point for not found, or decrement by one for found to avoid equal values
-            final int rightIndex = searchResult < 0 ? ~searchResult : searchResult - 1;
-            if (rightIndex == rightSize) {
-                break;
-            }
-            final int rightPosition = rightStartOffsets.get(rightIndex) + rightLengths.get(rightIndex) + 1;
-            final float rightValue = rightValues.get(rightIndex);
-            outputEndPositionsExclusive.set(leftPositions.get(leftIndex++), rightPosition);
-            // Proceed linearly until we have a reason to binary search again. We can re-use rightPosition until
-            // we reach rightValue.
-            while (leftIndex < leftSize && lt(leftValue = leftValues.get(leftIndex), rightValue)) {
-                outputEndPositionsExclusive.set(leftPositions.get(leftIndex++), rightPosition);
-            }
-            // We've consumed all left values that can match rightIndex, so begin searching after rightIndex
-            rightLowIndexInclusive = rightIndex + 1;
-        } while (leftIndex < leftSize && rightLowIndexInclusive < rightSize);
-
-        consumeEmptyRangeEnds(leftPositions, rightStartOffsets, rightLengths, outputEndPositionsExclusive, leftIndex);
-    }
-
-    private static void findEndsGreaterThanEqual(
-            @NotNull final FloatChunk<? extends Values> leftValues,
-            @NotNull final IntChunk<ChunkPositions> leftPositions,
-            @NotNull final FloatChunk<? extends Values> rightValues,
-            @NotNull final IntChunk<ChunkPositions> rightStartOffsets,
-            @NotNull final IntChunk<ChunkLengths> rightLengths,
-            @NotNull final WritableIntChunk<? extends Values> outputEndPositionsExclusive) {
-        // Note that invalid and undefined ranges have already been eliminated
-        final int leftSize = leftValues.size();
-        final int rightSize = rightValues.size();
-
-        // Empty rights are handled via a different method
-        Assert.gtZero(rightSize, "rightSize");
-
-        int leftIndex = consumeNullLeftEndValues(
-                leftValues, leftPositions, rightStartOffsets, rightLengths, outputEndPositionsExclusive);
-        if (leftIndex == leftSize) {
-            return;
-        }
-
-        // Find the range ends for non-null left values
-        int rightLowIndexInclusive = 0;
-        float leftValue = leftValues.get(leftIndex);
-        do {
-            final int searchResult = rightValues.binarySearch(rightLowIndexInclusive, rightSize, leftValue);
-            // Take insertion point in all cases
+            // rightIndex should be the index of the first right value whose first position we want to exclude, so
+            // take the insertion point whether found or not
             final int rightIndex = searchResult < 0 ? ~searchResult : searchResult;
             if (rightIndex == rightSize) {
                 break;
             }
-            final int rightPosition = rightStartOffsets.get(rightIndex) + rightLengths.get(rightIndex) + 1;
+            final int rightPosition = rightStartOffsets.get(rightIndex);
             final float rightValue = rightValues.get(rightIndex);
             outputEndPositionsExclusive.set(leftPositions.get(leftIndex++), rightPosition);
             // Proceed linearly until we have a reason to binary search again. We can re-use rightPosition until
@@ -908,14 +852,16 @@ enum RangeSearchKernelFloat implements RangeSearchKernel {
             while (leftIndex < leftSize && leq(leftValue = leftValues.get(leftIndex), rightValue)) {
                 outputEndPositionsExclusive.set(leftPositions.get(leftIndex++), rightPosition);
             }
-            // We've consumed all left values that can match rightIndex, so begin searching after rightIndex
-            rightLowIndexInclusive = rightIndex + 1;
+            // We've processed all left values that can exclude rightValue, so begin searching at rightIndex
+            rightLowIndexInclusive = rightIndex;
         } while (leftIndex < leftSize && rightLowIndexInclusive < rightSize);
 
-        consumeEmptyRangeEnds(leftPositions, rightStartOffsets, rightLengths, outputEndPositionsExclusive, leftIndex);
+        // All remaining ranges end at last right
+        fillRemainingWithLastRightPositionExclusive(
+                leftPositions, rightStartOffsets, rightLengths, outputEndPositionsExclusive, leftIndex);
     }
 
-    private static void findEndsGreaterThanEqualAllowFollowing(
+    private static void processRangeEndsGreaterThanEqual(
             @NotNull final FloatChunk<? extends Values> leftValues,
             @NotNull final IntChunk<ChunkPositions> leftPositions,
             @NotNull final FloatChunk<? extends Values> rightValues,
@@ -929,7 +875,7 @@ enum RangeSearchKernelFloat implements RangeSearchKernel {
         // Empty rights are handled via a different method
         Assert.gtZero(rightSize, "rightSize");
 
-        int leftIndex = consumeNullLeftEndValues(
+        int leftIndex = processNullLeftEndValues(
                 leftValues, leftPositions, rightStartOffsets, rightLengths, outputEndPositionsExclusive);
         if (leftIndex == leftSize) {
             return;
@@ -940,14 +886,68 @@ enum RangeSearchKernelFloat implements RangeSearchKernel {
         float leftValue = leftValues.get(leftIndex);
         do {
             final int searchResult = rightValues.binarySearch(rightLowIndexInclusive, rightSize, leftValue);
-            // Take insertion point in all cases
-            final int rightIndex = searchResult < 0 ? ~searchResult : searchResult;
-            final int rightPosition = rightStartOffsets.get(rightIndex) + rightLengths.get(rightIndex) + 1;
+            // rightIndex should be the index of the first right value whose first position we want to exclude, so
+            // take the insertion point (when not found) or one past the insertion point (when found)
+            final int rightIndex = searchResult < 0 ? ~searchResult : searchResult + 1;
+            if (rightIndex == rightSize) {
+                break;
+            }
+            final int rightPosition = rightStartOffsets.get(rightIndex);
+            final float rightValue = rightValues.get(rightIndex);
+            outputEndPositionsExclusive.set(leftPositions.get(leftIndex++), rightPosition);
+            // Proceed linearly until we have a reason to binary search again. We can re-use rightPosition until
+            // we reach rightValue.
+            while (leftIndex < leftSize && lt(leftValue = leftValues.get(leftIndex), rightValue)) {
+                outputEndPositionsExclusive.set(leftPositions.get(leftIndex++), rightPosition);
+            }
+            // We've processed all left values that can exclude rightValue, so begin searching at rightIndex
+            rightLowIndexInclusive = rightIndex;
+        } while (leftIndex < leftSize && rightLowIndexInclusive < rightSize);
+
+        // All remaining ranges end at last right
+        fillRemainingWithLastRightPositionExclusive(
+                leftPositions, rightStartOffsets, rightLengths, outputEndPositionsExclusive, leftIndex);
+    }
+
+    private static void processRangeEndsGreaterThanEqualAllowFollowing(
+            @NotNull final FloatChunk<? extends Values> leftValues,
+            @NotNull final IntChunk<ChunkPositions> leftPositions,
+            @NotNull final FloatChunk<? extends Values> rightValues,
+            @NotNull final IntChunk<ChunkPositions> rightStartOffsets,
+            @NotNull final IntChunk<ChunkLengths> rightLengths,
+            @NotNull final WritableIntChunk<? extends Values> outputEndPositionsExclusive) {
+        // Note that invalid and undefined ranges have already been eliminated
+        final int leftSize = leftValues.size();
+        final int rightSize = rightValues.size();
+
+        // Empty rights are handled via a different method
+        Assert.gtZero(rightSize, "rightSize");
+
+        int leftIndex = processNullLeftEndValues(
+                leftValues, leftPositions, rightStartOffsets, rightLengths, outputEndPositionsExclusive);
+        if (leftIndex == leftSize) {
+            return;
+        }
+
+        // Find the range ends for non-null left values
+        int rightLowIndexInclusive = 0;
+        float leftValue = leftValues.get(leftIndex);
+        do {
+            final int searchResult = rightValues.binarySearch(rightLowIndexInclusive, rightSize, leftValue);
+            // rightIndex should be the index of the first right value whose first position we want to exclude, so
+            // take the insertion point (when not found) or one past the insertion point (when found)
+            final int rightIndex = searchResult < 0 ? ~searchResult : searchResult + 1;
+            if (rightIndex == rightSize) {
+                // This left value and all remaining left values are at or after last right value. All right positions
+                // are within this bound.
+                break;
+            }
+            final int rightPosition = rightStartOffsets.get(rightIndex);
             final float rightValue = rightValues.get(rightIndex);
             // Proceed linearly until we have a reason to binary search again
-            if (searchResult < 0 && rightIndex != rightSize - 1) {
+            if (searchResult < 0 && (rightIndex != rightSize - 1 || rightLengths.get(rightIndex) != 1)) {
                 // If we had an inexact match that isn't at the end of the right values, look ahead
-                final int followingRightPosition = rightStartOffsets.get(rightIndex + 1);
+                final int followingRightPosition = rightPosition + 1;
                 outputEndPositionsExclusive.set(leftPositions.get(leftIndex++), followingRightPosition);
                 // We can re-use followingRightPosition until we reach rightValue
                 while (leftIndex < leftSize && lt(leftValue = leftValues.get(leftIndex), rightValue)) {
@@ -955,16 +955,18 @@ enum RangeSearchKernelFloat implements RangeSearchKernel {
                 }
             } else {
                 outputEndPositionsExclusive.set(leftPositions.get(leftIndex++), rightPosition);
+                // We can re-use rightPosition until we reach rightValue
+                while (leftIndex < leftSize && lt(leftValue = leftValues.get(leftIndex), rightValue)) {
+                    outputEndPositionsExclusive.set(leftPositions.get(leftIndex++), rightPosition);
+                }
             }
-            // We can re-use rightPosition until we pass rightValue
-            while (leftIndex < leftSize && leq(leftValue = leftValues.get(leftIndex), rightValue)) {
-                outputEndPositionsExclusive.set(leftPositions.get(leftIndex++), rightPosition);
-            }
-            // We've consumed all left values that can match rightIndex, so begin searching after rightIndex
-            rightLowIndexInclusive = rightIndex + 1;
+            // We've processed all left values that can exclude rightValue, so begin searching at rightIndex
+            rightLowIndexInclusive = rightIndex;
         } while (leftIndex < leftSize && rightLowIndexInclusive < rightSize);
 
-        consumeEmptyRangeEnds(leftPositions, rightStartOffsets, rightLengths, outputEndPositionsExclusive, leftIndex);
+        // All remaining ranges end at last right
+        fillRemainingWithLastRightPositionExclusive(
+                leftPositions, rightStartOffsets, rightLengths, outputEndPositionsExclusive, leftIndex);
     }
 
     /**
@@ -975,9 +977,9 @@ enum RangeSearchKernelFloat implements RangeSearchKernel {
      * @param rightStartOffsets The right run start offsets
      * @param rightLengths The right run lengths
      * @param outputEndPositionsExclusive The output chunk
-     * @return The number of left indices consumed
+     * @return The number of left indices processed
      */
-    private static int consumeNullLeftEndValues(
+    private static int processNullLeftEndValues(
             @NotNull final FloatChunk<? extends Values> leftValues,
             @NotNull final IntChunk<ChunkPositions> leftPositions,
             @NotNull final IntChunk<ChunkPositions> rightStartOffsets,
@@ -994,19 +996,20 @@ enum RangeSearchKernelFloat implements RangeSearchKernel {
     }
 
     /**
-     * Fill range ends for left end values with no responsive right values.
+     * Fill the remaining output positions with the last right position (exclusive). This is used to record starts for
+     * which no right rows are responsive, or ends for which all right rows are responsive.
      *
      * @param leftPositions The left positions, used to determine {@code output} index
      * @param rightStartOffsets The right run start offsets
      * @param rightLengths The right run lengths
-     * @param outputEndPositionsExclusive The output chunk
+     * @param outputPositions The output chunk
      * @param leftIndex The left index to start from
      */
-    private static void consumeEmptyRangeEnds(
+    private static void fillRemainingWithLastRightPositionExclusive(
             @NotNull final IntChunk<ChunkPositions> leftPositions,
             @NotNull final IntChunk<ChunkPositions> rightStartOffsets,
             @NotNull final IntChunk<ChunkLengths> rightLengths,
-            @NotNull final WritableIntChunk<? extends Values> outputEndPositionsExclusive,
+            @NotNull final WritableIntChunk<? extends Values> outputPositions,
             int leftIndex) {
         final int leftSize = leftPositions.size();
         final int rightSize = rightStartOffsets.size();
@@ -1015,7 +1018,7 @@ enum RangeSearchKernelFloat implements RangeSearchKernel {
         }
         final int rightLastPositionExclusive = rightStartOffsets.get(rightSize - 1) + rightLengths.get(rightSize - 1);
         while (leftIndex < leftSize) {
-            outputEndPositionsExclusive.set(leftPositions.get(leftIndex++), rightLastPositionExclusive);
+            outputPositions.set(leftPositions.get(leftIndex++), rightLastPositionExclusive);
         }
     }
 

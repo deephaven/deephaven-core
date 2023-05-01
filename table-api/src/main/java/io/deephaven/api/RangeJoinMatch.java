@@ -59,13 +59,13 @@ public abstract class RangeJoinMatch implements Serializable {
                     input, EXPRESSION_PATTERN.pattern()));
         }
 
-        final boolean allowPreceding = !matcher.group(1).isEmpty();
+        final boolean allowPreceding = matcher.group(1) != null;
         final ColumnName leftStartColumn = ColumnName.of(matcher.group(2));
         final boolean startAllowsEqual = matcher.group(3).length() == 2;
         final ColumnName rightRangeColumn = ColumnName.of(matcher.group(4));
         final boolean endAllowsEqual = matcher.group(5).length() == 2;
         final ColumnName leftEndColumn = ColumnName.of(matcher.group(6));
-        final boolean allowFollowing = !matcher.group(7).isEmpty();
+        final boolean allowFollowing = matcher.group(7) != null;
 
         if (allowPreceding && !startAllowsEqual) {
             throw new IllegalArgumentException("Error parsing expression " + input +

@@ -62,7 +62,7 @@ interface RangeSearchKernel {
      * @param outputStartPositionsInclusive The output chunk of start positions to be populated for invalid ranges
      * @param outputEndPositionsExclusive The output chunk of end positions to be populated for invalid ranges
      */
-    void populateAllRangeForEmptyRight(
+    void processAllRangesForEmptyRight(
             @NotNull Chunk<? extends Values> leftStartValues,
             @NotNull Chunk<? extends Values> leftEndValues,
             @NotNull WritableIntChunk<? extends Values> outputStartPositionsInclusive,
@@ -80,7 +80,7 @@ interface RangeSearchKernel {
      * @param outputStartPositionsInclusive The output chunk of start positions to be populated for invalid ranges
      * @param outputEndPositionsExclusive The output chunk of end positions to be populated for invalid ranges
      */
-    void populateInvalidRanges(
+    void processInvalidRanges(
             @NotNull Chunk<? extends Values> leftStartValues,
             @NotNull Chunk<? extends Values> leftEndValues,
             @NotNull WritableBooleanChunk<? super Values> validity,
@@ -99,7 +99,7 @@ interface RangeSearchKernel {
      * @param rightLengths Right run lengths corresponding to each element in {@code rightValues}
      * @param outputStartPositionsInclusive The output chunk of start positions
      */
-    void findStarts(
+    void processRangeStarts(
             @NotNull Chunk<? extends Values> leftValues,
             @NotNull IntChunk<ChunkPositions> leftPositions,
             @NotNull Chunk<? extends Values> rightValues,
@@ -119,7 +119,7 @@ interface RangeSearchKernel {
      * @param rightLengths Right run lengths corresponding to each element in {@code rightValues}
      * @param outputEndPositionsExclusive The output chunk of end positions
      */
-    void findEnds(
+    void processRangeEnds(
             @NotNull Chunk<? extends Values> leftValues,
             @NotNull IntChunk<ChunkPositions> leftPositions,
             @NotNull Chunk<? extends Values> rightValues,

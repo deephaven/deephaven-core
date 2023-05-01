@@ -282,9 +282,6 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
 
     private class StaticRangeJoinPhase1 extends RangeJoinPhase {
 
-        private Table outputLeftTableGrouped;
-        private Table outputRightTableGrouped;
-
         private StaticRangeJoinPhase1(
                 @NotNull final JobScheduler jobScheduler,
                 @NotNull final CompletableFuture<QueryTable> resultFuture) {
@@ -293,16 +290,17 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
 
         private void start() {
             // Perform the left table work via the job scheduler, possibly concurrently with the right table work.
-            final CompletableFuture<?> groupLeftTableFuture = new CompletableFuture<>();
+            final CompletableFuture<Table> groupLeftTableFuture = new CompletableFuture<>();
             jobScheduler.submit(
                     ExecutionContext.getContextToRecord(),
-                    this::groupLeftTable,
+                    () -> groupLeftTableFuture.complete(groupLeftTable()),
                     logOutput -> logOutput.append("static range join group left table"),
                     groupLeftTableFuture::completeExceptionally);
             // Perform the right table work on this thread. We don't need to involve the scheduler, and this way we may
             // be able to exploit filter parallelism.
+            final Table rightTableGrouped;
             try {
-                filterAndGroupRightTable();
+                rightTableGrouped = filterAndGroupRightTable();
             } catch (Exception e) {
                 // Try to ensure that the group-left-table job is no longer running before re-throwing
                 groupLeftTableFuture.cancel(true);
@@ -313,23 +311,21 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
                 resultFuture.completeExceptionally(e);
                 return;
             }
+            final Table leftTableGrouped;
             try {
-                groupLeftTableFuture.get();
+                leftTableGrouped = groupLeftTableFuture.get();
             } catch (Exception e) {
                 resultFuture.completeExceptionally(e);
                 return;
             }
-            new StaticRangeJoinPhase2(jobScheduler, resultFuture)
-                    .start(outputLeftTableGrouped, outputRightTableGrouped);
+            new StaticRangeJoinPhase2(jobScheduler, resultFuture).start(leftTableGrouped, rightTableGrouped);
         }
 
-        private void groupLeftTable() {
-            outputLeftTableGrouped = exposeGroupRowSets(
-                    leftTable,
-                    JoinMatch.lefts(exactMatches));
+        private Table groupLeftTable() {
+            return exposeGroupRowSets(leftTable, JoinMatch.lefts(exactMatches));
         }
 
-        private void filterAndGroupRightTable() {
+        private Table filterAndGroupRightTable() {
             final Table rightTableCoalesced = rightTable.coalesce();
             final Table rightTableFiltered;
             if (rangeValueType == double.class || rangeValueType == float.class) {
@@ -338,9 +334,7 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
             } else {
                 rightTableFiltered = rightTableCoalesced.where(Filter.isNotNull(rangeMatch.rightRangeColumn()));
             }
-            outputRightTableGrouped = exposeGroupRowSets(
-                    (QueryTable) rightTableFiltered,
-                    JoinMatch.rights(exactMatches));
+            return exposeGroupRowSets((QueryTable) rightTableFiltered, JoinMatch.rights(exactMatches));
         }
     }
 
@@ -589,7 +583,7 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
                 rightRangeValues.fillChunk(tc.rightRangeValuesFillContext, tc.rightRangeValuesChunk, rightRows);
 
                 // Find and compact right runs, verifying order
-                tc.rightFindRunsKernel.findRuns(tc.rightRangeValuesChunk, tc.rightStartOffsets, tc.rightLengths);
+                tc.rightFindRunsKernel.findRunsSingles(tc.rightRangeValuesChunk, tc.rightStartOffsets, tc.rightLengths);
                 final int firstOutOfOrderRightPosition = tc.rightFindRunsKernel.compactRuns(
                         tc.rightRangeValuesChunk, tc.rightStartOffsets);
                 if (firstOutOfOrderRightPosition != -1) {
@@ -608,7 +602,7 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
                     tc.leftSharedContext.reset();
 
                     if (nonEmptyRight) {
-                        rangeSearchKernel.populateInvalidRanges(
+                        rangeSearchKernel.processInvalidRanges(
                                 tc.leftStartValuesChunk, tc.leftEndValuesChunk, tc.leftValidity,
                                 tc.outputStartPositionsInclusiveChunk, tc.outputEndPositionsExclusiveChunk);
                         valueChunkCompactKernel.compact(tc.leftStartValuesChunk, tc.leftValidity);
@@ -617,18 +611,18 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
                         tc.leftChunkPositions.setSize(tc.leftStartValuesChunk.size());
                         ChunkUtils.fillInOrder(tc.leftChunkPositions);
                         tc.leftSortKernel.sort(tc.leftChunkPositions, tc.leftStartValuesChunk);
-                        rangeSearchKernel.findStarts(tc.leftStartValuesChunk, tc.leftChunkPositions,
+                        rangeSearchKernel.processRangeStarts(tc.leftStartValuesChunk, tc.leftChunkPositions,
                                 tc.rightRangeValuesChunk, tc.rightStartOffsets, tc.rightLengths,
                                 tc.outputStartPositionsInclusiveChunk);
 
                         tc.leftChunkPositions.setSize(tc.leftEndValuesChunk.size());
                         ChunkUtils.fillInOrder(tc.leftChunkPositions);
                         tc.leftSortKernel.sort(tc.leftChunkPositions, tc.leftEndValuesChunk);
-                        rangeSearchKernel.findEnds(tc.leftEndValuesChunk, tc.leftChunkPositions,
+                        rangeSearchKernel.processRangeEnds(tc.leftEndValuesChunk, tc.leftChunkPositions,
                                 tc.rightRangeValuesChunk, tc.rightStartOffsets, tc.rightLengths,
                                 tc.outputEndPositionsExclusiveChunk);
                     } else {
-                        rangeSearchKernel.populateAllRangeForEmptyRight(
+                        rangeSearchKernel.processAllRangesForEmptyRight(
                                 tc.leftStartValuesChunk, tc.leftEndValuesChunk,
                                 tc.outputStartPositionsInclusiveChunk, tc.outputEndPositionsExclusiveChunk);
                     }
