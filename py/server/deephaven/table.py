@@ -88,6 +88,7 @@ class NodeType(Enum):
     include_constituent=True. The constituent level is the lowest in a rollup table. These nodes have column names 
     and types from the source table of the RollupTable. """
 
+
 class SearchDisplayMode(Enum):
     """An enum of search display modes for layout hints"""
     DEFAULT = _JSearchDisplayMode.Default
@@ -96,6 +97,7 @@ class SearchDisplayMode(Enum):
     """Permit the search bar to be displayed, regardless of user or system settings."""
     HIDE = _JSearchDisplayMode.Hide
     """Hide the search bar, regardless of user or system settings."""
+
 
 class _FormatOperationsRecorder(Protocol):
     """A mixin for creating format operations to be applied to individual nodes of either RollupTable or TreeTable."""
