@@ -12,7 +12,7 @@ from deephaven import DHError, read_csv, time_table, empty_table, merge, merge_s
 from deephaven.column import byte_col, char_col, short_col, bool_col, int_col, long_col, float_col, double_col, \
     string_col, datetime_col, pyobj_col, jobj_col
 from deephaven.constants import NULL_DOUBLE, NULL_FLOAT, NULL_LONG, NULL_INT, NULL_SHORT, NULL_BYTE
-from deephaven.table_factory import DynamicTableWriter
+from deephaven.table_factory import DynamicTableWriter, ring_table
 from tests.testbase import BaseTestCase
 
 JArrayList = jpy.get_type("java.util.ArrayList")
@@ -273,6 +273,30 @@ class TableFactoryTestCase(BaseTestCase):
             self.assertEqual(keyed_input_table.size, 2)
             keyed_input_table.delete(t.select(["String", "Double"]))
             self.assertEqual(keyed_input_table.size, 0)
+
+    def test_ring_table(self):
+        cols = [
+            bool_col(name="Boolean", data=[True, False]),
+            byte_col(name="Byte", data=(1, -1)),
+            char_col(name="Char", data='-1'),
+            short_col(name="Short", data=[1, -1]),
+            int_col(name="Int", data=[1, -1]),
+            long_col(name="Long", data=[1, -1]),
+            long_col(name="NPLong", data=np.array([1, -1], dtype=np.int8)),
+            float_col(name="Float", data=[1.01, -1.01]),
+            double_col(name="Double", data=[1.01, -1.01]),
+            string_col(name="String", data=["foo", "bar"]),
+        ]
+        t = new_table(cols=cols)
+        keyed_input_table = input_table(init_table=t, key_cols=["String"])
+        ring_t = ring_table(parent=keyed_input_table, capacity=6, initialize=False)
+        for i in range(5):
+            keyed_input_table.delete(t.select(["String"]))
+            keyed_input_table.add(t)
+        self.assertTrue(keyed_input_table.is_refreshing)
+        self.assertEqual(keyed_input_table.size, 2)
+        self.assertTrue(ring_t.is_refreshing)
+        self.wait_ticking_table_update(ring_t, 6, 5)
 
 
 if __name__ == '__main__':
