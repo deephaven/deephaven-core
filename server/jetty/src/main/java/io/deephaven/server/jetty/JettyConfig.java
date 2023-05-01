@@ -107,7 +107,7 @@ public abstract class JettyConfig implements ServerConfig {
             builder.http1(Boolean.parseBoolean(httpHttp1));
         }
         if (h2StreamIdleTimeout != null) {
-            builder.http2StreamIdleTimeout(Integer.parseInt(h2StreamIdleTimeout));
+            builder.http2StreamIdleTimeout(Long.parseLong(h2StreamIdleTimeout));
         }
         return builder;
     }
