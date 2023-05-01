@@ -622,8 +622,8 @@ type ExportedTableCreationResponse struct {
 	// Whether or not this table might change.
 	IsStatic bool `protobuf:"varint,5,opt,name=is_static,json=isStatic,proto3" json:"is_static,omitempty"`
 	// The current number of rows for this table. If this is negative, the table isn't coalesced, meaning the
-	// size isn't known without scanning partitions. Typically, the client should filter the data by the partitioned
-	// columns first.
+	// size isn't known without scanning partitions. Typically, the client should filter the data by the
+	// partitioning columns first.
 	Size int64 `protobuf:"zigzag64,6,opt,name=size,proto3" json:"size,omitempty"`
 }
 
