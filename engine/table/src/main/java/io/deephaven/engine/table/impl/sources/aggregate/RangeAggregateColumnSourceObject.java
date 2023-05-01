@@ -11,52 +11,50 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.impl.vector.CharVectorColumnWrapper;
-import io.deephaven.vector.CharVector;
-import io.deephaven.vector.CharVectorSlice;
+import io.deephaven.engine.table.impl.vector.ObjectVectorColumnWrapper;
+import io.deephaven.vector.*;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.util.QueryConstants.NULL_INT;
-import static io.deephaven.vector.CharVectorDirect.ZERO_LENGTH_VECTOR;
 
 /**
  * {@link ColumnSource} implementation for aggregation result char columns.
  */
-public final class RangeAggregateColumnSourceChar
-        extends RangeAggregateColumnSource<CharVector, Character> {
+public final class RangeAggregateColumnSourceObject<COMPONENT_TYPE>
+        extends RangeAggregateColumnSource<ObjectVector, COMPONENT_TYPE> {
 
-    public RangeAggregateColumnSourceChar(
-            @NotNull final ColumnSource<Character> aggregated,
+    public RangeAggregateColumnSourceObject(
+            @NotNull final ColumnSource<COMPONENT_TYPE> aggregated,
             @NotNull final ColumnSource<? extends RowSet> rowSets,
             @NotNull final ColumnSource<Integer> startPositionsInclusive,
             @NotNull final ColumnSource<Integer> endPositionsExclusive) {
-        super(CharVector.class, aggregated, rowSets, startPositionsInclusive, endPositionsExclusive);
+        super(ObjectVector.class, aggregated, rowSets, startPositionsInclusive, endPositionsExclusive);
     }
 
     @NotNull
-    private CharVector makeVector(
+    private ObjectVector<COMPONENT_TYPE> makeVector(
             @NotNull final RowSet rowSet,
             final int startPositionInclusive,
             final int length) {
-        return new CharVectorSlice(
-                new CharVectorColumnWrapper(aggregated, rowSet),
+        return new ObjectVectorSlice<>(
+                new ObjectVectorColumnWrapper<>(aggregated, rowSet),
                 startPositionInclusive,
                 length);
     }
 
     @NotNull
-    private CharVector makePrevVector(
+    private ObjectVector<COMPONENT_TYPE> makePrevVector(
             @NotNull final RowSet rowSet,
             final int startPositionInclusive,
             final int length) {
-        return new CharVectorSlice(
-                new CharVectorColumnWrapper(aggregatedPrev, rowSet),
+        return new ObjectVectorSlice<>(
+                new ObjectVectorColumnWrapper<>(aggregatedPrev, rowSet),
                 startPositionInclusive,
                 length);
     }
 
     @Override
-    public CharVector get(final long rowKey) {
+    public ObjectVector<COMPONENT_TYPE> get(final long rowKey) {
         if (rowKey == RowSequence.NULL_ROW_KEY) {
             return null;
         }
@@ -72,7 +70,7 @@ public final class RangeAggregateColumnSourceChar
 
         final int length = endPositionExclusive - startPositionInclusive;
         if (length == 0) {
-            return ZERO_LENGTH_VECTOR;
+            return ObjectVectorDirect.empty();
         }
 
         final RowSet rowSet = groupRowSet(rowKey);
@@ -80,7 +78,7 @@ public final class RangeAggregateColumnSourceChar
     }
 
     @Override
-    public CharVector getPrev(final long rowKey) {
+    public ObjectVector<COMPONENT_TYPE> getPrev(final long rowKey) {
         if (rowKey == RowSequence.NULL_ROW_KEY) {
             return null;
         }
@@ -96,7 +94,7 @@ public final class RangeAggregateColumnSourceChar
 
         final int length = endPositionExclusive - startPositionInclusive;
         if (length == 0) {
-            return ZERO_LENGTH_VECTOR;
+            return ObjectVectorDirect.empty();
         }
 
         final RowSet rowSet = prevGroupRowSet(rowKey);
@@ -117,7 +115,8 @@ public final class RangeAggregateColumnSourceChar
         final IntChunk<? extends Values> endPositionsChunk =
                 endPositionsExclusive.getChunk(fc.endPositionsExclusiveGetContext, rowSequence).asIntChunk();
 
-        final WritableObjectChunk<CharVector, ? super Values> typedDestination = destination.asWritableObjectChunk();
+        final WritableObjectChunk<ObjectVector<COMPONENT_TYPE>, ? super Values> typedDestination =
+                destination.asWritableObjectChunk();
         final int size = rowSequence.intSize();
         for (int di = 0; di < size; ++di) {
             final int startPositionInclusive = startPositionsChunk.get(di);
@@ -132,7 +131,7 @@ public final class RangeAggregateColumnSourceChar
             }
             final int length = endPositionExclusive - startPositionInclusive;
             if (length == 0) {
-                typedDestination.set(di, ZERO_LENGTH_VECTOR);
+                typedDestination.set(di, ObjectVectorDirect.empty());
                 continue;
             }
             final RowSet rowSet = rowSetChunk.get(di);
@@ -153,7 +152,8 @@ public final class RangeAggregateColumnSourceChar
         final IntChunk<? extends Values> endPositionsChunk =
                 endPositionsExclusive.getPrevChunk(fc.endPositionsExclusiveGetContext, rowSequence).asIntChunk();
 
-        final WritableObjectChunk<CharVector, ? super Values> typedDestination = destination.asWritableObjectChunk();
+        final WritableObjectChunk<ObjectVector<COMPONENT_TYPE>, ? super Values> typedDestination =
+                destination.asWritableObjectChunk();
         final int size = rowSequence.intSize();
         for (int di = 0; di < size; ++di) {
             final int startPositionInclusive = startPositionsChunk.get(di);
@@ -168,7 +168,7 @@ public final class RangeAggregateColumnSourceChar
             }
             final int length = endPositionExclusive - startPositionInclusive;
             if (length == 0) {
-                typedDestination.set(di, ZERO_LENGTH_VECTOR);
+                typedDestination.set(di, ObjectVectorDirect.empty());
                 continue;
             }
             final RowSet rowSetRaw = rowSetChunk.get(di);

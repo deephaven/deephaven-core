@@ -173,8 +173,8 @@ public abstract class RangeAggregateColumnSource<VECTOR_TYPE extends Vector, COM
         if (groupRowKey == NULL_ROW_KEY) {
             return null;
         }
-        final long rowKey = groupAndOffsetToOuterRowKey(groupRowKey, offsetInGroup);
-        return aggregated.get(rowKey);
+        final long outerRowKey = groupAndOffsetToOuterRowKey(groupRowKey, offsetInGroup);
+        return aggregated.get(outerRowKey);
     }
 
     @Override
@@ -182,8 +182,8 @@ public abstract class RangeAggregateColumnSource<VECTOR_TYPE extends Vector, COM
         if (groupRowKey == NULL_ROW_KEY) {
             return null;
         }
-        final long rowKey = prevGroupAndOffsetToOuterRowKey(groupRowKey, offsetInGroup);
-        return aggregated.getPrev(rowKey);
+        final long outerRowKey = prevGroupAndOffsetToOuterRowKey(groupRowKey, offsetInGroup);
+        return aggregated.getPrev(outerRowKey);
     }
 
     @Override
@@ -191,8 +191,8 @@ public abstract class RangeAggregateColumnSource<VECTOR_TYPE extends Vector, COM
         if (groupRowKey == NULL_ROW_KEY) {
             return null;
         }
-        final long rowKey = groupAndOffsetToOuterRowKey(groupRowKey, offsetInGroup);
-        return aggregated.getBoolean(rowKey);
+        final long outerRowKey = groupAndOffsetToOuterRowKey(groupRowKey, offsetInGroup);
+        return aggregated.getBoolean(outerRowKey);
     }
 
     @Override
@@ -200,8 +200,8 @@ public abstract class RangeAggregateColumnSource<VECTOR_TYPE extends Vector, COM
         if (groupRowKey == NULL_ROW_KEY) {
             return NULL_BOOLEAN;
         }
-        final long rowKey = prevGroupAndOffsetToOuterRowKey(groupRowKey, offsetInGroup);
-        return aggregated.getPrevBoolean(rowKey);
+        final long outerRowKey = prevGroupAndOffsetToOuterRowKey(groupRowKey, offsetInGroup);
+        return aggregated.getPrevBoolean(outerRowKey);
     }
 
     @Override
@@ -209,8 +209,8 @@ public abstract class RangeAggregateColumnSource<VECTOR_TYPE extends Vector, COM
         if (groupRowKey == NULL_ROW_KEY) {
             return NULL_DOUBLE;
         }
-        final long rowKey = groupAndOffsetToOuterRowKey(groupRowKey, offsetInGroup);
-        return aggregated.getDouble(rowKey);
+        final long outerRowKey = groupAndOffsetToOuterRowKey(groupRowKey, offsetInGroup);
+        return aggregated.getDouble(outerRowKey);
     }
 
     @Override
@@ -218,8 +218,8 @@ public abstract class RangeAggregateColumnSource<VECTOR_TYPE extends Vector, COM
         if (groupRowKey == NULL_ROW_KEY) {
             return NULL_DOUBLE;
         }
-        final long rowKey = prevGroupAndOffsetToOuterRowKey(groupRowKey, offsetInGroup);
-        return aggregated.getPrevDouble(rowKey);
+        final long outerRowKey = prevGroupAndOffsetToOuterRowKey(groupRowKey, offsetInGroup);
+        return aggregated.getPrevDouble(outerRowKey);
     }
 
     @Override
@@ -227,8 +227,8 @@ public abstract class RangeAggregateColumnSource<VECTOR_TYPE extends Vector, COM
         if (groupRowKey == NULL_ROW_KEY) {
             return NULL_FLOAT;
         }
-        final long rowKey = groupAndOffsetToOuterRowKey(groupRowKey, offsetInGroup);
-        return aggregated.getFloat(rowKey);
+        final long outerRowKey = groupAndOffsetToOuterRowKey(groupRowKey, offsetInGroup);
+        return aggregated.getFloat(outerRowKey);
     }
 
     @Override
@@ -236,8 +236,8 @@ public abstract class RangeAggregateColumnSource<VECTOR_TYPE extends Vector, COM
         if (groupRowKey == NULL_ROW_KEY) {
             return NULL_FLOAT;
         }
-        final long rowKey = prevGroupAndOffsetToOuterRowKey(groupRowKey, offsetInGroup);
-        return aggregated.getPrevFloat(rowKey);
+        final long outerRowKey = prevGroupAndOffsetToOuterRowKey(groupRowKey, offsetInGroup);
+        return aggregated.getPrevFloat(outerRowKey);
     }
 
     @Override
@@ -245,8 +245,8 @@ public abstract class RangeAggregateColumnSource<VECTOR_TYPE extends Vector, COM
         if (groupRowKey == NULL_ROW_KEY) {
             return NULL_BYTE;
         }
-        final long rowKey = groupAndOffsetToOuterRowKey(groupRowKey, offsetInGroup);
-        return aggregated.getByte(rowKey);
+        final long outerRowKey = groupAndOffsetToOuterRowKey(groupRowKey, offsetInGroup);
+        return aggregated.getByte(outerRowKey);
     }
 
     @Override
@@ -254,8 +254,8 @@ public abstract class RangeAggregateColumnSource<VECTOR_TYPE extends Vector, COM
         if (groupRowKey == NULL_ROW_KEY) {
             return NULL_BYTE;
         }
-        final long rowKey = prevGroupAndOffsetToOuterRowKey(groupRowKey, offsetInGroup);
-        return aggregated.getPrevByte(rowKey);
+        final long outerRowKey = prevGroupAndOffsetToOuterRowKey(groupRowKey, offsetInGroup);
+        return aggregated.getPrevByte(outerRowKey);
     }
 
     @Override
@@ -263,8 +263,8 @@ public abstract class RangeAggregateColumnSource<VECTOR_TYPE extends Vector, COM
         if (groupRowKey == NULL_ROW_KEY) {
             return NULL_CHAR;
         }
-        final long rowKey = groupAndOffsetToOuterRowKey(groupRowKey, offsetInGroup);
-        return aggregated.getChar(rowKey);
+        final long outerRowKey = groupAndOffsetToOuterRowKey(groupRowKey, offsetInGroup);
+        return aggregated.getChar(outerRowKey);
     }
 
     @Override
@@ -272,8 +272,8 @@ public abstract class RangeAggregateColumnSource<VECTOR_TYPE extends Vector, COM
         if (groupRowKey == NULL_ROW_KEY) {
             return NULL_CHAR;
         }
-        final long rowKey = prevGroupAndOffsetToOuterRowKey(groupRowKey, offsetInGroup);
-        return aggregated.getPrevChar(rowKey);
+        final long outerRowKey = prevGroupAndOffsetToOuterRowKey(groupRowKey, offsetInGroup);
+        return aggregated.getPrevChar(outerRowKey);
     }
 
     @Override
@@ -281,8 +281,8 @@ public abstract class RangeAggregateColumnSource<VECTOR_TYPE extends Vector, COM
         if (groupRowKey == NULL_ROW_KEY) {
             return NULL_SHORT;
         }
-        final long rowKey = groupAndOffsetToOuterRowKey(groupRowKey, offsetInGroup);
-        return aggregated.getShort(rowKey);
+        final long outerRowKey = groupAndOffsetToOuterRowKey(groupRowKey, offsetInGroup);
+        return aggregated.getShort(outerRowKey);
     }
 
     @Override
@@ -290,8 +290,8 @@ public abstract class RangeAggregateColumnSource<VECTOR_TYPE extends Vector, COM
         if (groupRowKey == NULL_ROW_KEY) {
             return NULL_SHORT;
         }
-        final long rowKey = prevGroupAndOffsetToOuterRowKey(groupRowKey, offsetInGroup);
-        return aggregated.getPrevShort(rowKey);
+        final long outerRowKey = prevGroupAndOffsetToOuterRowKey(groupRowKey, offsetInGroup);
+        return aggregated.getPrevShort(outerRowKey);
     }
 
     @Override
@@ -299,8 +299,8 @@ public abstract class RangeAggregateColumnSource<VECTOR_TYPE extends Vector, COM
         if (groupRowKey == NULL_ROW_KEY) {
             return NULL_INT;
         }
-        final long rowKey = groupAndOffsetToOuterRowKey(groupRowKey, offsetInGroup);
-        return aggregated.getInt(rowKey);
+        final long outerRowKey = groupAndOffsetToOuterRowKey(groupRowKey, offsetInGroup);
+        return aggregated.getInt(outerRowKey);
     }
 
     @Override
@@ -308,8 +308,8 @@ public abstract class RangeAggregateColumnSource<VECTOR_TYPE extends Vector, COM
         if (groupRowKey == NULL_ROW_KEY) {
             return NULL_INT;
         }
-        final long rowKey = prevGroupAndOffsetToOuterRowKey(groupRowKey, offsetInGroup);
-        return aggregated.getPrevInt(rowKey);
+        final long outerRowKey = prevGroupAndOffsetToOuterRowKey(groupRowKey, offsetInGroup);
+        return aggregated.getPrevInt(outerRowKey);
     }
 
     @Override
@@ -317,8 +317,8 @@ public abstract class RangeAggregateColumnSource<VECTOR_TYPE extends Vector, COM
         if (groupRowKey == NULL_ROW_KEY) {
             return NULL_LONG;
         }
-        final long rowKey = groupAndOffsetToOuterRowKey(groupRowKey, offsetInGroup);
-        return aggregated.getLong(rowKey);
+        final long outerRowKey = groupAndOffsetToOuterRowKey(groupRowKey, offsetInGroup);
+        return aggregated.getLong(outerRowKey);
     }
 
     @Override
@@ -326,8 +326,8 @@ public abstract class RangeAggregateColumnSource<VECTOR_TYPE extends Vector, COM
         if (groupRowKey == NULL_ROW_KEY) {
             return NULL_LONG;
         }
-        final long rowKey = prevGroupAndOffsetToOuterRowKey(groupRowKey, offsetInGroup);
-        return aggregated.getPrevLong(rowKey);
+        final long outerRowKey = prevGroupAndOffsetToOuterRowKey(groupRowKey, offsetInGroup);
+        return aggregated.getPrevLong(outerRowKey);
     }
 
     @Override
