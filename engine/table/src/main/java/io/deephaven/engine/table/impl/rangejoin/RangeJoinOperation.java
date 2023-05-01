@@ -6,7 +6,6 @@ import io.deephaven.api.JoinMatch;
 import io.deephaven.api.RangeJoinMatch;
 import io.deephaven.api.Strings;
 import io.deephaven.api.agg.Aggregation;
-import io.deephaven.api.agg.AggregationOptimizer;
 import io.deephaven.api.agg.AggregationPairs;
 import io.deephaven.api.agg.Pair;
 import io.deephaven.api.filter.Filter;
@@ -36,7 +35,6 @@ import io.deephaven.engine.table.impl.sort.IntSortKernel;
 import io.deephaven.engine.table.impl.sort.findruns.FindRunsKernel;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.IntegerSparseArraySource;
-import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.sources.aggregate.AggregateColumnSource;
 import io.deephaven.engine.table.impl.sources.sparse.SparseConstants;
@@ -696,11 +694,13 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
                     maybeRedirect(new IntColumnSourceRowRedirection<>(outputSlots), rightGroupRowSets);
             final Map<String, ColumnSource<?>> resultColumnSources =
                     new LinkedHashMap<>(leftTable.getColumnSourceMap());
-            groupPairs.forEach((final Pair groupPair) -> {
-                resultColumnSources.put(groupPair.output().name(),
-                        // TODO-RWC: Make the sources
-                        null);
-            });
+            groupPairs.forEach((final Pair groupPair) -> resultColumnSources.put(
+                    groupPair.output().name(),
+                    AggregateColumnSource.forRangeJoin(
+                            rightTable.getColumnSource(groupPair.input().name()),
+                            outputRowSets,
+                            outputStartPositionsInclusive,
+                            outputEndPositionsExclusive)));
             resultFuture.complete(new QueryTable(leftTable.getRowSet(), resultColumnSources));
         }
     }
