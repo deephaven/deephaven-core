@@ -153,7 +153,6 @@ public class PythonAutoCompleteObserver extends SessionCloseableObserver<AutoCom
 
         } catch (Throwable exception) {
             if (ConsoleServiceGrpcImpl.QUIET_AUTOCOMPLETE_ERRORS) {
-                exception.printStackTrace();
                 if (log.isTraceEnabled()) {
                     log.trace().append("Exception occurred during autocomplete").append(exception).endl();
                 }
