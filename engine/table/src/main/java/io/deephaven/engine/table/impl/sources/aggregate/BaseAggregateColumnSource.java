@@ -17,14 +17,15 @@ import static io.deephaven.util.QueryConstants.*;
 /**
  * Base {@link ColumnSource} implementation for aggregation result columns.
  */
-abstract class BaseAggregateColumnSource<DB_ARRAY_TYPE extends Vector, COMPONENT_TYPE>
-        extends AbstractColumnSource<DB_ARRAY_TYPE> implements AggregateColumnSource<DB_ARRAY_TYPE, COMPONENT_TYPE> {
+abstract class BaseAggregateColumnSource<VECTOR_TYPE extends Vector, COMPONENT_TYPE>
+        extends AbstractColumnSource<VECTOR_TYPE>
+        implements AggregateColumnSource<VECTOR_TYPE, COMPONENT_TYPE> {
 
     final ColumnSource<COMPONENT_TYPE> aggregatedSource;
     final ColumnSource<COMPONENT_TYPE> aggregatedSourcePrev;
     final ColumnSource<? extends RowSet> groupRowSetSource;
 
-    BaseAggregateColumnSource(@NotNull final Class<DB_ARRAY_TYPE> vectorType,
+    BaseAggregateColumnSource(@NotNull final Class<VECTOR_TYPE> vectorType,
             @NotNull final ColumnSource<COMPONENT_TYPE> aggregatedSource,
             @NotNull final ColumnSource<? extends RowSet> groupRowSetSource) {
         super(vectorType, aggregatedSource.getType());
