@@ -40,10 +40,10 @@ abstract class BaseUngroupedAggregateColumnSource<DATA_TYPE, SOURCE_TYPE extends
         if (rowKey == RowSequence.NULL_ROW_KEY) {
             return null;
         }
-        final long groupIndexKey = getGroupIndexKey(rowKey, base);
+        final long groupRowKey = getGroupRowKey(rowKey, base);
         final long offsetInGroup = getOffsetInGroup(rowKey, base);
         // noinspection unchecked
-        return (DATA_TYPE) aggregateColumnSource.getUngrouped(groupIndexKey, (int) offsetInGroup);
+        return (DATA_TYPE) aggregateColumnSource.getUngrouped(groupRowKey, (int) offsetInGroup);
     }
 
     @Override
@@ -51,9 +51,9 @@ abstract class BaseUngroupedAggregateColumnSource<DATA_TYPE, SOURCE_TYPE extends
         if (rowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_BOOLEAN;
         }
-        final long groupIndexKey = getGroupIndexKey(rowKey, base);
+        final long groupRowKey = getGroupRowKey(rowKey, base);
         final long offsetInGroup = getOffsetInGroup(rowKey, base);
-        return aggregateColumnSource.getUngroupedBoolean(groupIndexKey, (int) offsetInGroup);
+        return aggregateColumnSource.getUngroupedBoolean(groupRowKey, (int) offsetInGroup);
     }
 
     @Override
@@ -61,9 +61,9 @@ abstract class BaseUngroupedAggregateColumnSource<DATA_TYPE, SOURCE_TYPE extends
         if (rowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_BYTE;
         }
-        final long groupIndexKey = getGroupIndexKey(rowKey, base);
+        final long groupRowKey = getGroupRowKey(rowKey, base);
         final long offsetInGroup = getOffsetInGroup(rowKey, base);
-        return aggregateColumnSource.getUngroupedByte(groupIndexKey, (int) offsetInGroup);
+        return aggregateColumnSource.getUngroupedByte(groupRowKey, (int) offsetInGroup);
     }
 
     @Override
@@ -71,9 +71,9 @@ abstract class BaseUngroupedAggregateColumnSource<DATA_TYPE, SOURCE_TYPE extends
         if (rowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_CHAR;
         }
-        final long groupIndexKey = getGroupIndexKey(rowKey, base);
+        final long groupRowKey = getGroupRowKey(rowKey, base);
         final long offsetInGroup = getOffsetInGroup(rowKey, base);
-        return aggregateColumnSource.getUngroupedChar(groupIndexKey, (int) offsetInGroup);
+        return aggregateColumnSource.getUngroupedChar(groupRowKey, (int) offsetInGroup);
     }
 
     @Override
@@ -81,9 +81,9 @@ abstract class BaseUngroupedAggregateColumnSource<DATA_TYPE, SOURCE_TYPE extends
         if (rowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_DOUBLE;
         }
-        final long groupIndexKey = getGroupIndexKey(rowKey, base);
+        final long groupRowKey = getGroupRowKey(rowKey, base);
         final long offsetInGroup = getOffsetInGroup(rowKey, base);
-        return aggregateColumnSource.getUngroupedDouble(groupIndexKey, (int) offsetInGroup);
+        return aggregateColumnSource.getUngroupedDouble(groupRowKey, (int) offsetInGroup);
     }
 
     @Override
@@ -91,9 +91,9 @@ abstract class BaseUngroupedAggregateColumnSource<DATA_TYPE, SOURCE_TYPE extends
         if (rowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_FLOAT;
         }
-        final long groupIndexKey = getGroupIndexKey(rowKey, base);
+        final long groupRowKey = getGroupRowKey(rowKey, base);
         final long offsetInGroup = getOffsetInGroup(rowKey, base);
-        return aggregateColumnSource.getUngroupedFloat(groupIndexKey, (int) offsetInGroup);
+        return aggregateColumnSource.getUngroupedFloat(groupRowKey, (int) offsetInGroup);
     }
 
     @Override
@@ -101,9 +101,9 @@ abstract class BaseUngroupedAggregateColumnSource<DATA_TYPE, SOURCE_TYPE extends
         if (rowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_INT;
         }
-        final long groupIndexKey = getGroupIndexKey(rowKey, base);
+        final long groupRowKey = getGroupRowKey(rowKey, base);
         final long offsetInGroup = getOffsetInGroup(rowKey, base);
-        return aggregateColumnSource.getUngroupedInt(groupIndexKey, (int) offsetInGroup);
+        return aggregateColumnSource.getUngroupedInt(groupRowKey, (int) offsetInGroup);
     }
 
     @Override
@@ -111,9 +111,9 @@ abstract class BaseUngroupedAggregateColumnSource<DATA_TYPE, SOURCE_TYPE extends
         if (rowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_LONG;
         }
-        final long groupIndexKey = getGroupIndexKey(rowKey, base);
+        final long groupRowKey = getGroupRowKey(rowKey, base);
         final long offsetInGroup = getOffsetInGroup(rowKey, base);
-        return aggregateColumnSource.getUngroupedLong(groupIndexKey, (int) offsetInGroup);
+        return aggregateColumnSource.getUngroupedLong(groupRowKey, (int) offsetInGroup);
     }
 
     @Override
@@ -121,9 +121,9 @@ abstract class BaseUngroupedAggregateColumnSource<DATA_TYPE, SOURCE_TYPE extends
         if (rowKey == RowSequence.NULL_ROW_KEY) {
             return NULL_SHORT;
         }
-        final long groupIndexKey = getGroupIndexKey(rowKey, base);
+        final long groupRowKey = getGroupRowKey(rowKey, base);
         final long offsetInGroup = getOffsetInGroup(rowKey, base);
-        return aggregateColumnSource.getUngroupedShort(groupIndexKey, (int) offsetInGroup);
+        return aggregateColumnSource.getUngroupedShort(groupRowKey, (int) offsetInGroup);
     }
 
     @Override
@@ -132,10 +132,10 @@ abstract class BaseUngroupedAggregateColumnSource<DATA_TYPE, SOURCE_TYPE extends
             return null;
         }
         final long prevBase = getPrevBase();
-        final long groupIndexKey = getGroupIndexKey(rowKey, prevBase);
+        final long groupRowKey = getGroupRowKey(rowKey, prevBase);
         final long offsetInGroup = getOffsetInGroup(rowKey, prevBase);
         // noinspection unchecked
-        return (DATA_TYPE) aggregateColumnSource.getUngroupedPrev(groupIndexKey, (int) offsetInGroup);
+        return (DATA_TYPE) aggregateColumnSource.getUngroupedPrev(groupRowKey, (int) offsetInGroup);
     }
 
     @Override
@@ -144,9 +144,9 @@ abstract class BaseUngroupedAggregateColumnSource<DATA_TYPE, SOURCE_TYPE extends
             return NULL_BOOLEAN;
         }
         final long prevBase = getPrevBase();
-        final long groupIndexKey = getGroupIndexKey(rowKey, prevBase);
+        final long groupRowKey = getGroupRowKey(rowKey, prevBase);
         final long offsetInGroup = getOffsetInGroup(rowKey, prevBase);
-        return aggregateColumnSource.getUngroupedPrevBoolean(groupIndexKey, (int) offsetInGroup);
+        return aggregateColumnSource.getUngroupedPrevBoolean(groupRowKey, (int) offsetInGroup);
     }
 
     @Override
@@ -155,9 +155,9 @@ abstract class BaseUngroupedAggregateColumnSource<DATA_TYPE, SOURCE_TYPE extends
             return NULL_BYTE;
         }
         final long prevBase = getPrevBase();
-        final long groupIndexKey = getGroupIndexKey(rowKey, prevBase);
+        final long groupRowKey = getGroupRowKey(rowKey, prevBase);
         final long offsetInGroup = getOffsetInGroup(rowKey, prevBase);
-        return aggregateColumnSource.getUngroupedPrevByte(groupIndexKey, (int) offsetInGroup);
+        return aggregateColumnSource.getUngroupedPrevByte(groupRowKey, (int) offsetInGroup);
     }
 
     @Override
@@ -166,9 +166,9 @@ abstract class BaseUngroupedAggregateColumnSource<DATA_TYPE, SOURCE_TYPE extends
             return NULL_CHAR;
         }
         final long prevBase = getPrevBase();
-        final long groupIndexKey = getGroupIndexKey(rowKey, prevBase);
+        final long groupRowKey = getGroupRowKey(rowKey, prevBase);
         final long offsetInGroup = getOffsetInGroup(rowKey, prevBase);
-        return aggregateColumnSource.getUngroupedPrevChar(groupIndexKey, (int) offsetInGroup);
+        return aggregateColumnSource.getUngroupedPrevChar(groupRowKey, (int) offsetInGroup);
     }
 
     @Override
@@ -177,9 +177,9 @@ abstract class BaseUngroupedAggregateColumnSource<DATA_TYPE, SOURCE_TYPE extends
             return NULL_DOUBLE;
         }
         final long prevBase = getPrevBase();
-        final long groupIndexKey = getGroupIndexKey(rowKey, prevBase);
+        final long groupRowKey = getGroupRowKey(rowKey, prevBase);
         final long offsetInGroup = getOffsetInGroup(rowKey, prevBase);
-        return aggregateColumnSource.getUngroupedPrevDouble(groupIndexKey, (int) offsetInGroup);
+        return aggregateColumnSource.getUngroupedPrevDouble(groupRowKey, (int) offsetInGroup);
     }
 
     @Override
@@ -188,9 +188,9 @@ abstract class BaseUngroupedAggregateColumnSource<DATA_TYPE, SOURCE_TYPE extends
             return NULL_FLOAT;
         }
         final long prevBase = getPrevBase();
-        final long groupIndexKey = getGroupIndexKey(rowKey, prevBase);
+        final long groupRowKey = getGroupRowKey(rowKey, prevBase);
         final long offsetInGroup = getOffsetInGroup(rowKey, prevBase);
-        return aggregateColumnSource.getUngroupedPrevFloat(groupIndexKey, (int) offsetInGroup);
+        return aggregateColumnSource.getUngroupedPrevFloat(groupRowKey, (int) offsetInGroup);
     }
 
     @Override
@@ -199,9 +199,9 @@ abstract class BaseUngroupedAggregateColumnSource<DATA_TYPE, SOURCE_TYPE extends
             return NULL_INT;
         }
         final long prevBase = getPrevBase();
-        final long groupIndexKey = getGroupIndexKey(rowKey, prevBase);
+        final long groupRowKey = getGroupRowKey(rowKey, prevBase);
         final long offsetInGroup = getOffsetInGroup(rowKey, prevBase);
-        return aggregateColumnSource.getUngroupedPrevInt(groupIndexKey, (int) offsetInGroup);
+        return aggregateColumnSource.getUngroupedPrevInt(groupRowKey, (int) offsetInGroup);
     }
 
     @Override
@@ -210,9 +210,9 @@ abstract class BaseUngroupedAggregateColumnSource<DATA_TYPE, SOURCE_TYPE extends
             return NULL_LONG;
         }
         final long prevBase = getPrevBase();
-        final long groupIndexKey = getGroupIndexKey(rowKey, prevBase);
+        final long groupRowKey = getGroupRowKey(rowKey, prevBase);
         final long offsetInGroup = getOffsetInGroup(rowKey, prevBase);
-        return aggregateColumnSource.getUngroupedPrevLong(groupIndexKey, (int) offsetInGroup);
+        return aggregateColumnSource.getUngroupedPrevLong(groupRowKey, (int) offsetInGroup);
     }
 
     @Override
@@ -221,9 +221,9 @@ abstract class BaseUngroupedAggregateColumnSource<DATA_TYPE, SOURCE_TYPE extends
             return NULL_SHORT;
         }
         final long prevBase = getPrevBase();
-        final long groupIndexKey = getGroupIndexKey(rowKey, prevBase);
+        final long groupRowKey = getGroupRowKey(rowKey, prevBase);
         final long offsetInGroup = getOffsetInGroup(rowKey, prevBase);
-        return aggregateColumnSource.getUngroupedPrevShort(groupIndexKey, (int) offsetInGroup);
+        return aggregateColumnSource.getUngroupedPrevShort(groupRowKey, (int) offsetInGroup);
     }
     // endregion
 
@@ -246,10 +246,10 @@ abstract class BaseUngroupedAggregateColumnSource<DATA_TYPE, SOURCE_TYPE extends
 
             final boolean shared;
             final GetContext groupGetContext;
-            final WritableLongChunk<OrderedRowKeys> groupKeys;
+            final WritableLongChunk<OrderedRowKeys> groupRowKeys;
             final WritableIntChunk<ChunkLengths> sameGroupRunLengths;
-            final WritableLongChunk<OrderedRowKeys> componentKeys;
-            final ResettableWritableLongChunk<OrderedRowKeys> componentKeySlice;
+            final WritableLongChunk<OrderedRowKeys> componentRowKeys;
+            final ResettableWritableLongChunk<OrderedRowKeys> componentRowKeySlice;
 
             boolean stateReusable;
             int currentIndex;
@@ -261,10 +261,10 @@ abstract class BaseUngroupedAggregateColumnSource<DATA_TYPE, SOURCE_TYPE extends
                 this.shared = shared;
 
                 groupGetContext = groupRowSetSource.makeGetContext(chunkCapacity, this);
-                groupKeys = WritableLongChunk.makeWritableChunk(chunkCapacity);
+                groupRowKeys = WritableLongChunk.makeWritableChunk(chunkCapacity);
                 sameGroupRunLengths = WritableIntChunk.makeWritableChunk(chunkCapacity);
-                componentKeys = WritableLongChunk.makeWritableChunk(chunkCapacity);
-                componentKeySlice = ResettableWritableLongChunk.makeResettableChunk();
+                componentRowKeys = WritableLongChunk.makeWritableChunk(chunkCapacity);
+                componentRowKeySlice = ResettableWritableLongChunk.makeResettableChunk();
             }
 
             @Override
@@ -277,10 +277,10 @@ abstract class BaseUngroupedAggregateColumnSource<DATA_TYPE, SOURCE_TYPE extends
             public void close() {
                 SafeCloseable.closeAll(
                         groupGetContext,
-                        groupKeys,
+                        groupRowKeys,
                         sameGroupRunLengths,
-                        componentKeys,
-                        componentKeySlice,
+                        componentRowKeys,
+                        componentRowKeySlice,
                         super::close);
             }
         }
@@ -291,30 +291,32 @@ abstract class BaseUngroupedAggregateColumnSource<DATA_TYPE, SOURCE_TYPE extends
                 @NotNull final WritableChunk<? super Values> destination) {
             final Shareable shareable = getShareable();
 
-            int componentKeysOffset = 0;
+            int componentRowKeysOffset = 0;
             for (int ii = 0; ii < shareable.sameGroupRunLengths.size(); ++ii) {
                 final int lengthFromThisGroup = shareable.sameGroupRunLengths.get(ii);
 
-                final WritableLongChunk<OrderedRowKeys> remappedComponentKeys =
-                        shareable.componentKeySlice.resetFromTypedChunk(shareable.componentKeys,
-                                componentKeysOffset, lengthFromThisGroup);
+                final WritableLongChunk<OrderedRowKeys> remappedComponentRowKeys =
+                        shareable.componentRowKeySlice.resetFromTypedChunk(shareable.componentRowKeys,
+                                componentRowKeysOffset, lengthFromThisGroup);
 
                 try (final RowSequence componentRowSequence =
-                        RowSequenceFactory.wrapRowKeysChunkAsRowSequence(remappedComponentKeys)) {
+                        RowSequenceFactory.wrapRowKeysChunkAsRowSequence(remappedComponentRowKeys)) {
                     if (usePrev) {
                         valueSource.fillPrevChunk(
                                 aggregatedFillContext,
-                                destinationSlice.resetFromChunk(destination, componentKeysOffset, lengthFromThisGroup),
+                                destinationSlice.resetFromChunk(destination, componentRowKeysOffset,
+                                        lengthFromThisGroup),
                                 componentRowSequence);
                     } else {
                         valueSource.fillChunk(
                                 aggregatedFillContext,
-                                destinationSlice.resetFromChunk(destination, componentKeysOffset, lengthFromThisGroup),
+                                destinationSlice.resetFromChunk(destination, componentRowKeysOffset,
+                                        lengthFromThisGroup),
                                 componentRowSequence);
                     }
                 }
 
-                componentKeysOffset += lengthFromThisGroup;
+                componentRowKeysOffset += lengthFromThisGroup;
             }
         }
 
@@ -347,7 +349,7 @@ abstract class BaseUngroupedAggregateColumnSource<DATA_TYPE, SOURCE_TYPE extends
         return aggregateColumnSource.isImmutable();
     }
 
-    static long getGroupIndexKey(final long rowKey, final long base) {
+    static long getGroupRowKey(final long rowKey, final long base) {
         return rowKey >> base;
     }
 

@@ -64,8 +64,11 @@ final class UngroupedAggregateColumnSource<DATA_TYPE>
                 super(shared, groupRowSetSource, chunkCapacity);
             }
 
-            private void extractFillChunkInformation(@NotNull final ColumnSource<? extends RowSet> groupRowSetSource,
-                    final long base, final boolean usePrev, @NotNull final RowSequence rowSequence) {
+            private void extractFillChunkInformation(
+                    @NotNull final ColumnSource<? extends RowSet> groupRowSetSource,
+                    final long base,
+                    final boolean usePrev,
+                    @NotNull final RowSequence rowSequence) {
                 if (stateReusable) {
                     return;
                 }
@@ -74,24 +77,26 @@ final class UngroupedAggregateColumnSource<DATA_TYPE>
                 }
 
                 currentIndex = -1;
-                componentKeys.setSize(0);
+                componentRowKeys.setSize(0);
                 rowSequence.forAllRowKeys((final long rowKey) -> {
-                    final long groupKey = getGroupIndexKey(rowKey, base);
-                    if (currentIndex == -1 || groupKey != groupKeys.get(currentIndex)) {
+                    final long groupRowKey = getGroupRowKey(rowKey, base);
+                    if (currentIndex == -1 || groupRowKey != groupRowKeys.get(currentIndex)) {
                         ++currentIndex;
-                        groupKeys.set(currentIndex, groupKey);
+                        groupRowKeys.set(currentIndex, groupRowKey);
                         sameGroupRunLengths.set(currentIndex, 1);
                     } else {
                         sameGroupRunLengths.set(currentIndex, sameGroupRunLengths.get(currentIndex) + 1);
                     }
-                    final long componentKey = getOffsetInGroup(rowKey, base);
-                    componentKeys.add(componentKey);
+                    // Initially we fill componentRowKeys with positions, which will be inverted before use
+                    final long componentRowPosition = getOffsetInGroup(rowKey, base);
+                    componentRowKeys.add(componentRowPosition);
                 });
-                groupKeys.setSize(currentIndex + 1);
+                groupRowKeys.setSize(currentIndex + 1);
                 sameGroupRunLengths.setSize(currentIndex + 1);
 
                 final ObjectChunk<RowSet, ? extends Values> groups;
-                try (final RowSequence groupRowSequence = RowSequenceFactory.wrapRowKeysChunkAsRowSequence(groupKeys)) {
+                try (final RowSequence groupRowSequence =
+                        RowSequenceFactory.wrapRowKeysChunkAsRowSequence(groupRowKeys)) {
                     if (usePrev) {
                         groups = groupRowSetSource.getPrevChunk(groupGetContext, groupRowSequence).asObjectChunk();
                     } else {
@@ -107,11 +112,12 @@ final class UngroupedAggregateColumnSource<DATA_TYPE>
                     final RowSet groupRowSet = usePrevGroup ? currGroupRowSet.trackingCast().prev() : currGroupRowSet;
                     final int lengthFromGroup = sameGroupRunLengths.get(ii);
 
-                    final WritableLongChunk<OrderedRowKeys> remappedComponentKeys =
-                            componentKeySlice.resetFromTypedChunk(componentKeys, currentIndex, lengthFromGroup);
+                    final WritableLongChunk<OrderedRowKeys> remappedComponentRowKeys =
+                            componentRowKeySlice.resetFromTypedChunk(componentRowKeys, currentIndex, lengthFromGroup);
+                    // Invert the component row positions to component row keys, in-place
                     groupRowSet.getKeysForPositions(
-                            new LongChunkIterator(remappedComponentKeys),
-                            new LongChunkAppender(remappedComponentKeys));
+                            new LongChunkIterator(remappedComponentRowKeys),
+                            new LongChunkAppender(remappedComponentRowKeys));
 
                     currentIndex += lengthFromGroup;
                 }

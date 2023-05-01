@@ -167,29 +167,29 @@ final class UngroupedAggregateSlicedColumnSource<DATA_TYPE>
                 }
 
                 currentIndex = -1;
-                componentKeys.setSize(0);
+                componentRowKeys.setSize(0);
                 rowSequence.forAllRowKeys((final long rowKey) -> {
                     // Store the group rowset index in rowsetKeyIndices.
-                    final long groupKey = getGroupIndexKey(rowKey, base);
-                    if (currentIndex == -1 || groupKey != groupKeys.get(currentIndex)) {
+                    final long groupKey = getGroupRowKey(rowKey, base);
+                    if (currentIndex == -1 || groupKey != groupRowKeys.get(currentIndex)) {
                         ++currentIndex;
-                        groupKeys.set(currentIndex, groupKey);
+                        groupRowKeys.set(currentIndex, groupKey);
                         sameGroupRunLengths.set(currentIndex, 1);
                     } else {
                         sameGroupRunLengths.set(currentIndex, sameGroupRunLengths.get(currentIndex) + 1);
                     }
-                    // Store the offset to the current key in componentKeyIndices.
-                    final long componentKey = getOffsetInGroup(rowKey, base);
-                    componentKeys.add(componentKey);
+                    // Initially we fill componentRowKeys with positions, which will be inverted before use
+                    final long componentRowPosition = getOffsetInGroup(rowKey, base);
+                    componentRowKeys.add(componentRowPosition);
                 });
-                groupKeys.setSize(currentIndex + 1);
+                groupRowKeys.setSize(currentIndex + 1);
                 sameGroupRunLengths.setSize(currentIndex + 1);
 
                 // Preload a chunk of RowSets (and start offsets if appropriate)
                 final ObjectChunk<RowSet, ? extends Values> rowSets;
                 final LongChunk<? extends Values> startOffsets;
                 try (final RowSequence groupRowSequence =
-                        RowSequenceFactory.wrapRowKeysChunkAsRowSequence(groupKeys)) {
+                        RowSequenceFactory.wrapRowKeysChunkAsRowSequence(groupRowKeys)) {
                     if (usePrev) {
                         rowSets = groupRowSetSource.getPrevChunk(groupGetContext, groupRowSequence).asObjectChunk();
                         startOffsets = startSource != null
@@ -220,19 +220,19 @@ final class UngroupedAggregateSlicedColumnSource<DATA_TYPE>
                     final long endIndex = currentIndex + lengthFromThisGroup;
 
                     // Get the row key and determine the starting position for the first entry of this group
-                    final long rowKey = groupKeys.get(ii);
+                    final long rowKey = groupRowKeys.get(ii);
                     final long rowPos = bucketRowSet.find(rowKey);
                     final long localStartOffset = startOffsets != null ? startOffsets.get(ii) : startOffset;
                     final long startPos = ClampUtil.clampLong(0, bucketSize, rowPos + localStartOffset);
 
                     while (currentIndex < endIndex) {
                         // Read the offset for this output row and determine the key in the underlying source
-                        final long offsetInGroup = componentKeys.get(currentIndex);
+                        final long offsetInGroup = componentRowKeys.get(currentIndex);
                         final long pos = startPos + offsetInGroup;
                         final long key = bucketRowSet.get(pos);
 
-                        // Re-use 'componentKeys' as the destination for the keys
-                        componentKeys.set(currentIndex, key);
+                        // Map component row position to row key in-place
+                        componentRowKeys.set(currentIndex, key);
 
                         currentIndex++;
                     }

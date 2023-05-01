@@ -118,28 +118,29 @@ final class UngroupedRangeAggregateColumnSource<DATA_TYPE>
                 }
 
                 currentIndex = -1;
-                componentKeys.setSize(0);
+                componentRowKeys.setSize(0);
                 rowSequence.forAllRowKeys((final long rowKey) -> {
                     // Store the group rowset index in rowKeys.
-                    final long groupKey = getGroupIndexKey(rowKey, base);
-                    if (currentIndex == -1 || groupKey != groupKeys.get(currentIndex)) {
+                    final long groupKey = getGroupRowKey(rowKey, base);
+                    if (currentIndex == -1 || groupKey != groupRowKeys.get(currentIndex)) {
                         ++currentIndex;
-                        groupKeys.set(currentIndex, groupKey);
+                        groupRowKeys.set(currentIndex, groupKey);
                         sameGroupRunLengths.set(currentIndex, 1);
                     } else {
                         sameGroupRunLengths.set(currentIndex, sameGroupRunLengths.get(currentIndex) + 1);
                     }
-                    // Store the offset to the current key in componentKeyIndices.
-                    final long componentKey = getOffsetInGroup(rowKey, base);
-                    componentKeys.add(componentKey);
+                    // Initially we fill componentRowKeys with positions, which will be inverted before use
+                    final long componentRowPosition = getOffsetInGroup(rowKey, base);
+                    componentRowKeys.add(componentRowPosition);
                 });
-                groupKeys.setSize(currentIndex + 1);
+                groupRowKeys.setSize(currentIndex + 1);
                 sameGroupRunLengths.setSize(currentIndex + 1);
 
                 // Preload a chunk of group RowSets and start positions
                 final ObjectChunk<RowSet, ? extends Values> rowSetsChunk;
                 final IntChunk<? extends Values> startPositionsInclusiveChunk;
-                try (final RowSequence groupRowSequence = RowSequenceFactory.wrapRowKeysChunkAsRowSequence(groupKeys)) {
+                try (final RowSequence groupRowSequence =
+                        RowSequenceFactory.wrapRowKeysChunkAsRowSequence(groupRowKeys)) {
                     if (usePrev) {
                         rowSetsChunk = groupRowSets.getPrevChunk(groupGetContext, groupRowSequence).asObjectChunk();
                         startPositionsInclusiveChunk = startPositionsInclusive.getPrevChunk(
@@ -166,13 +167,14 @@ final class UngroupedRangeAggregateColumnSource<DATA_TYPE>
                     // Get the starting position for the first entry of this group
                     final int startPositionInclusive = startPositionsInclusiveChunk.get(gi);
 
-                    final WritableLongChunk<OrderedRowKeys> remappedComponentKeys =
-                            componentKeySlice.resetFromTypedChunk(componentKeys, currentIndex, lengthFromThisGroup);
+                    final WritableLongChunk<OrderedRowKeys> remappedComponentKeys = componentRowKeySlice
+                            .resetFromTypedChunk(componentRowKeys, currentIndex, lengthFromThisGroup);
 
-                    // Offset the component keys by start position
+                    // Offset the component row positions by start position
                     for (int ci = 0; ci < lengthFromThisGroup; ++ci) {
                         remappedComponentKeys.set(ci, remappedComponentKeys.get(ci) + startPositionInclusive);
                     }
+                    // Invert the component row positions to component row keys, in-place
                     groupRowSet.getKeysForPositions(
                             new LongChunkIterator(remappedComponentKeys),
                             new LongChunkAppender(remappedComponentKeys));

@@ -92,46 +92,46 @@ public abstract class RangeAggregateColumnSource<VECTOR_TYPE extends Vector, COM
     }
 
     @NotNull
-    RowSet groupRowSet(final long groupIndex) {
+    RowSet groupRowSet(final long groupRowKey) {
         // noinspection DataFlowIssue
-        return rowSets.get(groupIndex);
+        return rowSets.get(groupRowKey);
     }
 
     @NotNull
-    RowSet prevGroupRowSet(final long groupIndex) {
-        final RowSet prevGroupRowSet = rowSets.getPrev(groupIndex);
+    RowSet prevGroupRowSet(final long groupRowKey) {
+        final RowSet prevGroupRowSet = rowSets.getPrev(groupRowKey);
         // noinspection DataFlowIssue
         return prevGroupRowSet.isTracking()
                 ? prevGroupRowSet.trackingCast().prev()
                 : prevGroupRowSet;
     }
 
-    int startPositionInclusive(final long groupIndexKey) {
-        return startPositionsInclusive.getInt(groupIndexKey);
+    int startPositionInclusive(final long groupRowKey) {
+        return startPositionsInclusive.getInt(groupRowKey);
     }
 
-    int endPositionExclusive(final long groupIndexKey) {
-        return endPositionsExclusive.getInt(groupIndexKey);
+    int endPositionExclusive(final long groupRowKey) {
+        return endPositionsExclusive.getInt(groupRowKey);
     }
 
-    int prevStartPositionInclusive(final long groupIndexKey) {
-        return startPositionsInclusive.getPrevInt(groupIndexKey);
+    int prevStartPositionInclusive(final long groupRowKey) {
+        return startPositionsInclusive.getPrevInt(groupRowKey);
     }
 
-    int prevEndPositionExclusive(final long groupIndexKey) {
-        return endPositionsExclusive.getPrevInt(groupIndexKey);
+    int prevEndPositionExclusive(final long groupRowKey) {
+        return endPositionsExclusive.getPrevInt(groupRowKey);
     }
 
     @Override
-    public long getUngroupedSize(final long groupIndexKey) {
-        if (groupIndexKey == NULL_ROW_KEY) {
+    public long getUngroupedSize(final long groupRowKey) {
+        if (groupRowKey == NULL_ROW_KEY) {
             return 0;
         }
-        final long startPositionInclusive = startPositionInclusive(groupIndexKey);
+        final long startPositionInclusive = startPositionInclusive(groupRowKey);
         if (startPositionInclusive == NULL_INT) {
             return 0;
         }
-        final long endPositionExclusive = endPositionExclusive(groupIndexKey);
+        final long endPositionExclusive = endPositionExclusive(groupRowKey);
         if (endPositionExclusive == NULL_INT) {
             return 0;
         }
@@ -139,194 +139,194 @@ public abstract class RangeAggregateColumnSource<VECTOR_TYPE extends Vector, COM
     }
 
     @Override
-    public final long getUngroupedPrevSize(final long groupIndexKey) {
-        if (groupIndexKey == NULL_ROW_KEY) {
+    public final long getUngroupedPrevSize(final long groupRowKey) {
+        if (groupRowKey == NULL_ROW_KEY) {
             return 0;
         }
-        final long startPositionInclusive = prevStartPositionInclusive(groupIndexKey);
+        final long startPositionInclusive = prevStartPositionInclusive(groupRowKey);
         if (startPositionInclusive == NULL_INT) {
             return 0;
         }
-        final long endPositionExclusive = prevEndPositionExclusive(groupIndexKey);
+        final long endPositionExclusive = prevEndPositionExclusive(groupRowKey);
         if (endPositionExclusive == NULL_INT) {
             return 0;
         }
         return endPositionExclusive - startPositionInclusive;
     }
 
-    private long groupAndOffsetToOuterRowKey(final long groupIndex, final int offsetInGroup) {
+    private long groupAndOffsetToOuterRowKey(final long groupRowKey, final int offsetInGroup) {
         // noinspection resource
-        final RowSet groupRowSet = groupRowSet(groupIndex);
-        final int startPositionInclusive = startPositionInclusive(groupIndex);
+        final RowSet groupRowSet = groupRowSet(groupRowKey);
+        final int startPositionInclusive = startPositionInclusive(groupRowKey);
         return groupRowSet.get(startPositionInclusive + offsetInGroup);
     }
 
-    private long prevGroupAndOffsetToOuterRowKey(final long groupIndex, final int offsetInGroup) {
+    private long prevGroupAndOffsetToOuterRowKey(final long groupRowKey, final int offsetInGroup) {
         // noinspection resource
-        final RowSet groupRowSet = prevGroupRowSet(groupIndex);
-        final int startPositionInclusive = prevStartPositionInclusive(groupIndex);
+        final RowSet groupRowSet = prevGroupRowSet(groupRowKey);
+        final int startPositionInclusive = prevStartPositionInclusive(groupRowKey);
         return groupRowSet.get(startPositionInclusive + offsetInGroup);
     }
 
     @Override
-    public final Object getUngrouped(final long groupIndexKey, final int offsetInGroup) {
-        if (groupIndexKey == NULL_ROW_KEY) {
+    public final Object getUngrouped(final long groupRowKey, final int offsetInGroup) {
+        if (groupRowKey == NULL_ROW_KEY) {
             return null;
         }
-        final long rowKey = groupAndOffsetToOuterRowKey(groupIndexKey, offsetInGroup);
+        final long rowKey = groupAndOffsetToOuterRowKey(groupRowKey, offsetInGroup);
         return aggregated.get(rowKey);
     }
 
     @Override
-    public final Object getUngroupedPrev(final long groupIndexKey, final int offsetInGroup) {
-        if (groupIndexKey == NULL_ROW_KEY) {
+    public final Object getUngroupedPrev(final long groupRowKey, final int offsetInGroup) {
+        if (groupRowKey == NULL_ROW_KEY) {
             return null;
         }
-        final long rowKey = prevGroupAndOffsetToOuterRowKey(groupIndexKey, offsetInGroup);
+        final long rowKey = prevGroupAndOffsetToOuterRowKey(groupRowKey, offsetInGroup);
         return aggregated.getPrev(rowKey);
     }
 
     @Override
-    public final Boolean getUngroupedBoolean(final long groupIndexKey, final int offsetInGroup) {
-        if (groupIndexKey == NULL_ROW_KEY) {
+    public final Boolean getUngroupedBoolean(final long groupRowKey, final int offsetInGroup) {
+        if (groupRowKey == NULL_ROW_KEY) {
             return null;
         }
-        final long rowKey = groupAndOffsetToOuterRowKey(groupIndexKey, offsetInGroup);
+        final long rowKey = groupAndOffsetToOuterRowKey(groupRowKey, offsetInGroup);
         return aggregated.getBoolean(rowKey);
     }
 
     @Override
-    public final Boolean getUngroupedPrevBoolean(final long groupIndexKey, final int offsetInGroup) {
-        if (groupIndexKey == NULL_ROW_KEY) {
+    public final Boolean getUngroupedPrevBoolean(final long groupRowKey, final int offsetInGroup) {
+        if (groupRowKey == NULL_ROW_KEY) {
             return NULL_BOOLEAN;
         }
-        final long rowKey = prevGroupAndOffsetToOuterRowKey(groupIndexKey, offsetInGroup);
+        final long rowKey = prevGroupAndOffsetToOuterRowKey(groupRowKey, offsetInGroup);
         return aggregated.getPrevBoolean(rowKey);
     }
 
     @Override
-    public final double getUngroupedDouble(final long groupIndexKey, final int offsetInGroup) {
-        if (groupIndexKey == NULL_ROW_KEY) {
+    public final double getUngroupedDouble(final long groupRowKey, final int offsetInGroup) {
+        if (groupRowKey == NULL_ROW_KEY) {
             return NULL_DOUBLE;
         }
-        final long rowKey = groupAndOffsetToOuterRowKey(groupIndexKey, offsetInGroup);
+        final long rowKey = groupAndOffsetToOuterRowKey(groupRowKey, offsetInGroup);
         return aggregated.getDouble(rowKey);
     }
 
     @Override
-    public final double getUngroupedPrevDouble(final long groupIndexKey, final int offsetInGroup) {
-        if (groupIndexKey == NULL_ROW_KEY) {
+    public final double getUngroupedPrevDouble(final long groupRowKey, final int offsetInGroup) {
+        if (groupRowKey == NULL_ROW_KEY) {
             return NULL_DOUBLE;
         }
-        final long rowKey = prevGroupAndOffsetToOuterRowKey(groupIndexKey, offsetInGroup);
+        final long rowKey = prevGroupAndOffsetToOuterRowKey(groupRowKey, offsetInGroup);
         return aggregated.getPrevDouble(rowKey);
     }
 
     @Override
-    public final float getUngroupedFloat(final long groupIndexKey, final int offsetInGroup) {
-        if (groupIndexKey == NULL_ROW_KEY) {
+    public final float getUngroupedFloat(final long groupRowKey, final int offsetInGroup) {
+        if (groupRowKey == NULL_ROW_KEY) {
             return NULL_FLOAT;
         }
-        final long rowKey = groupAndOffsetToOuterRowKey(groupIndexKey, offsetInGroup);
+        final long rowKey = groupAndOffsetToOuterRowKey(groupRowKey, offsetInGroup);
         return aggregated.getFloat(rowKey);
     }
 
     @Override
-    public final float getUngroupedPrevFloat(final long groupIndexKey, final int offsetInGroup) {
-        if (groupIndexKey == NULL_ROW_KEY) {
+    public final float getUngroupedPrevFloat(final long groupRowKey, final int offsetInGroup) {
+        if (groupRowKey == NULL_ROW_KEY) {
             return NULL_FLOAT;
         }
-        final long rowKey = prevGroupAndOffsetToOuterRowKey(groupIndexKey, offsetInGroup);
+        final long rowKey = prevGroupAndOffsetToOuterRowKey(groupRowKey, offsetInGroup);
         return aggregated.getPrevFloat(rowKey);
     }
 
     @Override
-    public final byte getUngroupedByte(final long groupIndexKey, final int offsetInGroup) {
-        if (groupIndexKey == NULL_ROW_KEY) {
+    public final byte getUngroupedByte(final long groupRowKey, final int offsetInGroup) {
+        if (groupRowKey == NULL_ROW_KEY) {
             return NULL_BYTE;
         }
-        final long rowKey = groupAndOffsetToOuterRowKey(groupIndexKey, offsetInGroup);
+        final long rowKey = groupAndOffsetToOuterRowKey(groupRowKey, offsetInGroup);
         return aggregated.getByte(rowKey);
     }
 
     @Override
-    public final byte getUngroupedPrevByte(final long groupIndexKey, final int offsetInGroup) {
-        if (groupIndexKey == NULL_ROW_KEY) {
+    public final byte getUngroupedPrevByte(final long groupRowKey, final int offsetInGroup) {
+        if (groupRowKey == NULL_ROW_KEY) {
             return NULL_BYTE;
         }
-        final long rowKey = prevGroupAndOffsetToOuterRowKey(groupIndexKey, offsetInGroup);
+        final long rowKey = prevGroupAndOffsetToOuterRowKey(groupRowKey, offsetInGroup);
         return aggregated.getPrevByte(rowKey);
     }
 
     @Override
-    public final char getUngroupedChar(final long groupIndexKey, final int offsetInGroup) {
-        if (groupIndexKey == NULL_ROW_KEY) {
+    public final char getUngroupedChar(final long groupRowKey, final int offsetInGroup) {
+        if (groupRowKey == NULL_ROW_KEY) {
             return NULL_CHAR;
         }
-        final long rowKey = groupAndOffsetToOuterRowKey(groupIndexKey, offsetInGroup);
+        final long rowKey = groupAndOffsetToOuterRowKey(groupRowKey, offsetInGroup);
         return aggregated.getChar(rowKey);
     }
 
     @Override
-    public final char getUngroupedPrevChar(final long groupIndexKey, final int offsetInGroup) {
-        if (groupIndexKey == NULL_ROW_KEY) {
+    public final char getUngroupedPrevChar(final long groupRowKey, final int offsetInGroup) {
+        if (groupRowKey == NULL_ROW_KEY) {
             return NULL_CHAR;
         }
-        final long rowKey = prevGroupAndOffsetToOuterRowKey(groupIndexKey, offsetInGroup);
+        final long rowKey = prevGroupAndOffsetToOuterRowKey(groupRowKey, offsetInGroup);
         return aggregated.getPrevChar(rowKey);
     }
 
     @Override
-    public final short getUngroupedShort(final long groupIndexKey, final int offsetInGroup) {
-        if (groupIndexKey == NULL_ROW_KEY) {
+    public final short getUngroupedShort(final long groupRowKey, final int offsetInGroup) {
+        if (groupRowKey == NULL_ROW_KEY) {
             return NULL_SHORT;
         }
-        final long rowKey = groupAndOffsetToOuterRowKey(groupIndexKey, offsetInGroup);
+        final long rowKey = groupAndOffsetToOuterRowKey(groupRowKey, offsetInGroup);
         return aggregated.getShort(rowKey);
     }
 
     @Override
-    public final short getUngroupedPrevShort(final long groupIndexKey, final int offsetInGroup) {
-        if (groupIndexKey == NULL_ROW_KEY) {
+    public final short getUngroupedPrevShort(final long groupRowKey, final int offsetInGroup) {
+        if (groupRowKey == NULL_ROW_KEY) {
             return NULL_SHORT;
         }
-        final long rowKey = prevGroupAndOffsetToOuterRowKey(groupIndexKey, offsetInGroup);
+        final long rowKey = prevGroupAndOffsetToOuterRowKey(groupRowKey, offsetInGroup);
         return aggregated.getPrevShort(rowKey);
     }
 
     @Override
-    public final int getUngroupedInt(final long groupIndexKey, final int offsetInGroup) {
-        if (groupIndexKey == NULL_ROW_KEY) {
+    public final int getUngroupedInt(final long groupRowKey, final int offsetInGroup) {
+        if (groupRowKey == NULL_ROW_KEY) {
             return NULL_INT;
         }
-        final long rowKey = groupAndOffsetToOuterRowKey(groupIndexKey, offsetInGroup);
+        final long rowKey = groupAndOffsetToOuterRowKey(groupRowKey, offsetInGroup);
         return aggregated.getInt(rowKey);
     }
 
     @Override
-    public final int getUngroupedPrevInt(final long groupIndexKey, final int offsetInGroup) {
-        if (groupIndexKey == NULL_ROW_KEY) {
+    public final int getUngroupedPrevInt(final long groupRowKey, final int offsetInGroup) {
+        if (groupRowKey == NULL_ROW_KEY) {
             return NULL_INT;
         }
-        final long rowKey = prevGroupAndOffsetToOuterRowKey(groupIndexKey, offsetInGroup);
+        final long rowKey = prevGroupAndOffsetToOuterRowKey(groupRowKey, offsetInGroup);
         return aggregated.getPrevInt(rowKey);
     }
 
     @Override
-    public final long getUngroupedLong(final long groupIndexKey, final int offsetInGroup) {
-        if (groupIndexKey == NULL_ROW_KEY) {
+    public final long getUngroupedLong(final long groupRowKey, final int offsetInGroup) {
+        if (groupRowKey == NULL_ROW_KEY) {
             return NULL_LONG;
         }
-        final long rowKey = groupAndOffsetToOuterRowKey(groupIndexKey, offsetInGroup);
+        final long rowKey = groupAndOffsetToOuterRowKey(groupRowKey, offsetInGroup);
         return aggregated.getLong(rowKey);
     }
 
     @Override
-    public final long getUngroupedPrevLong(final long groupIndexKey, final int offsetInGroup) {
-        if (groupIndexKey == NULL_ROW_KEY) {
+    public final long getUngroupedPrevLong(final long groupRowKey, final int offsetInGroup) {
+        if (groupRowKey == NULL_ROW_KEY) {
             return NULL_LONG;
         }
-        final long rowKey = prevGroupAndOffsetToOuterRowKey(groupIndexKey, offsetInGroup);
+        final long rowKey = prevGroupAndOffsetToOuterRowKey(groupRowKey, offsetInGroup);
         return aggregated.getPrevLong(rowKey);
     }
 

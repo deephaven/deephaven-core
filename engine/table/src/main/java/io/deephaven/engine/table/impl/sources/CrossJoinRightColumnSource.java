@@ -234,105 +234,105 @@ public class CrossJoinRightColumnSource<T> extends AbstractColumnSource<T> imple
     }
 
     @Override
-    public long getUngroupedSize(long columnIndex) {
-        return ((UngroupableColumnSource) innerSource).getUngroupedSize(redirect(columnIndex));
+    public long getUngroupedSize(long groupRowKey) {
+        return ((UngroupableColumnSource) innerSource).getUngroupedSize(redirect(groupRowKey));
     }
 
     @Override
-    public long getUngroupedPrevSize(long columnIndex) {
-        return ((UngroupableColumnSource) innerSource).getUngroupedPrevSize(redirectPrev(columnIndex));
+    public long getUngroupedPrevSize(long groupRowKey) {
+        return ((UngroupableColumnSource) innerSource).getUngroupedPrevSize(redirectPrev(groupRowKey));
     }
 
     @Override
-    public T getUngrouped(long columnIndex, int arrayIndex) {
+    public T getUngrouped(long groupRowKey, int offsetInGroup) {
         // noinspection unchecked
-        return (T) ((UngroupableColumnSource) innerSource).getUngrouped(redirect(columnIndex), arrayIndex);
+        return (T) ((UngroupableColumnSource) innerSource).getUngrouped(redirect(groupRowKey), offsetInGroup);
     }
 
     @Override
-    public T getUngroupedPrev(long columnIndex, int arrayIndex) {
+    public T getUngroupedPrev(long groupRowKey, int offsetInGroup) {
         // noinspection unchecked
-        return (T) ((UngroupableColumnSource) innerSource).getUngroupedPrev(redirectPrev(columnIndex), arrayIndex);
+        return (T) ((UngroupableColumnSource) innerSource).getUngroupedPrev(redirectPrev(groupRowKey), offsetInGroup);
     }
 
     @Override
-    public Boolean getUngroupedBoolean(long columnIndex, int arrayIndex) {
-        return ((UngroupableColumnSource) innerSource).getUngroupedBoolean(redirect(columnIndex), arrayIndex);
+    public Boolean getUngroupedBoolean(long groupRowKey, int offsetInGroup) {
+        return ((UngroupableColumnSource) innerSource).getUngroupedBoolean(redirect(groupRowKey), offsetInGroup);
     }
 
     @Override
-    public Boolean getUngroupedPrevBoolean(long columnIndex, int arrayIndex) {
-        return ((UngroupableColumnSource) innerSource).getUngroupedPrevBoolean(redirectPrev(columnIndex), arrayIndex);
+    public Boolean getUngroupedPrevBoolean(long groupRowKey, int offsetInGroup) {
+        return ((UngroupableColumnSource) innerSource).getUngroupedPrevBoolean(redirectPrev(groupRowKey), offsetInGroup);
     }
 
     @Override
-    public double getUngroupedDouble(long columnIndex, int arrayIndex) {
-        return ((UngroupableColumnSource) innerSource).getUngroupedDouble(redirect(columnIndex), arrayIndex);
+    public double getUngroupedDouble(long groupRowKey, int offsetInGroup) {
+        return ((UngroupableColumnSource) innerSource).getUngroupedDouble(redirect(groupRowKey), offsetInGroup);
     }
 
     @Override
-    public double getUngroupedPrevDouble(long columnIndex, int arrayIndex) {
-        return ((UngroupableColumnSource) innerSource).getUngroupedPrevDouble(redirectPrev(columnIndex), arrayIndex);
+    public double getUngroupedPrevDouble(long groupRowKey, int offsetInGroup) {
+        return ((UngroupableColumnSource) innerSource).getUngroupedPrevDouble(redirectPrev(groupRowKey), offsetInGroup);
     }
 
     @Override
-    public float getUngroupedFloat(long columnIndex, int arrayIndex) {
-        return ((UngroupableColumnSource) innerSource).getUngroupedFloat(redirect(columnIndex), arrayIndex);
+    public float getUngroupedFloat(long groupRowKey, int offsetInGroup) {
+        return ((UngroupableColumnSource) innerSource).getUngroupedFloat(redirect(groupRowKey), offsetInGroup);
     }
 
     @Override
-    public float getUngroupedPrevFloat(long columnIndex, int arrayIndex) {
-        return ((UngroupableColumnSource) innerSource).getUngroupedPrevFloat(redirectPrev(columnIndex), arrayIndex);
+    public float getUngroupedPrevFloat(long groupRowKey, int offsetInGroup) {
+        return ((UngroupableColumnSource) innerSource).getUngroupedPrevFloat(redirectPrev(groupRowKey), offsetInGroup);
     }
 
     @Override
-    public byte getUngroupedByte(long columnIndex, int arrayIndex) {
-        return ((UngroupableColumnSource) innerSource).getUngroupedByte(redirect(columnIndex), arrayIndex);
+    public byte getUngroupedByte(long groupRowKey, int offsetInGroup) {
+        return ((UngroupableColumnSource) innerSource).getUngroupedByte(redirect(groupRowKey), offsetInGroup);
     }
 
     @Override
-    public byte getUngroupedPrevByte(long columnIndex, int arrayIndex) {
-        return ((UngroupableColumnSource) innerSource).getUngroupedPrevByte(redirectPrev(columnIndex), arrayIndex);
+    public byte getUngroupedPrevByte(long groupRowKey, int offsetInGroup) {
+        return ((UngroupableColumnSource) innerSource).getUngroupedPrevByte(redirectPrev(groupRowKey), offsetInGroup);
     }
 
     @Override
-    public char getUngroupedChar(long columnIndex, int arrayIndex) {
-        return ((UngroupableColumnSource) innerSource).getUngroupedChar(redirect(columnIndex), arrayIndex);
+    public char getUngroupedChar(long groupRowKey, int offsetInGroup) {
+        return ((UngroupableColumnSource) innerSource).getUngroupedChar(redirect(groupRowKey), offsetInGroup);
     }
 
     @Override
-    public char getUngroupedPrevChar(long columnIndex, int arrayIndex) {
-        return ((UngroupableColumnSource) innerSource).getUngroupedPrevChar(redirectPrev(columnIndex), arrayIndex);
+    public char getUngroupedPrevChar(long groupRowKey, int offsetInGroup) {
+        return ((UngroupableColumnSource) innerSource).getUngroupedPrevChar(redirectPrev(groupRowKey), offsetInGroup);
     }
 
     @Override
-    public short getUngroupedShort(long columnIndex, int arrayIndex) {
-        return ((UngroupableColumnSource) innerSource).getUngroupedShort(redirect(columnIndex), arrayIndex);
+    public short getUngroupedShort(long groupRowKey, int offsetInGroup) {
+        return ((UngroupableColumnSource) innerSource).getUngroupedShort(redirect(groupRowKey), offsetInGroup);
     }
 
     @Override
-    public short getUngroupedPrevShort(long columnIndex, int arrayIndex) {
-        return ((UngroupableColumnSource) innerSource).getUngroupedPrevShort(redirectPrev(columnIndex), arrayIndex);
+    public short getUngroupedPrevShort(long groupRowKey, int offsetInGroup) {
+        return ((UngroupableColumnSource) innerSource).getUngroupedPrevShort(redirectPrev(groupRowKey), offsetInGroup);
     }
 
     @Override
-    public int getUngroupedInt(long columnIndex, int arrayIndex) {
-        return ((UngroupableColumnSource) innerSource).getUngroupedInt(redirect(columnIndex), arrayIndex);
+    public int getUngroupedInt(long groupRowKey, int offsetInGroup) {
+        return ((UngroupableColumnSource) innerSource).getUngroupedInt(redirect(groupRowKey), offsetInGroup);
     }
 
     @Override
-    public int getUngroupedPrevInt(long columnIndex, int arrayIndex) {
-        return ((UngroupableColumnSource) innerSource).getUngroupedPrevInt(redirectPrev(columnIndex), arrayIndex);
+    public int getUngroupedPrevInt(long groupRowKey, int offsetInGroup) {
+        return ((UngroupableColumnSource) innerSource).getUngroupedPrevInt(redirectPrev(groupRowKey), offsetInGroup);
     }
 
     @Override
-    public long getUngroupedLong(long columnIndex, int arrayIndex) {
-        return ((UngroupableColumnSource) innerSource).getUngroupedLong(redirect(columnIndex), arrayIndex);
+    public long getUngroupedLong(long groupRowKey, int offsetInGroup) {
+        return ((UngroupableColumnSource) innerSource).getUngroupedLong(redirect(groupRowKey), offsetInGroup);
     }
 
     @Override
-    public long getUngroupedPrevLong(long columnIndex, int arrayIndex) {
-        return ((UngroupableColumnSource) innerSource).getUngroupedPrevLong(redirectPrev(columnIndex), arrayIndex);
+    public long getUngroupedPrevLong(long groupRowKey, int offsetInGroup) {
+        return ((UngroupableColumnSource) innerSource).getUngroupedPrevLong(redirectPrev(groupRowKey), offsetInGroup);
     }
 
     @Override
