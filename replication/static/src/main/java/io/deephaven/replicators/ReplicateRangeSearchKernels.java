@@ -50,6 +50,11 @@ public class ReplicateRangeSearchKernels {
         objectLines = removeImport(objectLines, "import static io.deephaven.util.QueryConstants.NULL_OBJECT;");
         objectLines = fixupChunkAttributes(objectLines);
         objectLines = simpleFixup(objectLines, "isNull", "v == NULL_OBJECT", "v == null");
+        objectLines = replaceRegion(objectLines, "eq", List.of(
+                "    private static boolean eq(final Object a, final Object b) {",
+                "        // We need not deal with null or NaN values here",
+                "        return a.equals(b);",
+                "    }"));
         objectLines = replaceRegion(objectLines, "lt", List.of(
                 "    private static boolean lt(final Object a, final Object b) {",
                 "        // We need not deal with null or NaN values here",

@@ -656,7 +656,9 @@ enum RangeSearchKernelChar implements RangeSearchKernel {
         int rightLowIndexInclusive = 0;
         char leftValue = leftValues.get(leftIndex);
         do {
-            final int searchResult = rightValues.binarySearch(rightLowIndexInclusive, rightSize, leftValue);
+            final int searchResult = eq(leftValue, rightValues.get(rightLowIndexInclusive))
+                    ? rightLowIndexInclusive
+                    : rightValues.binarySearch(rightLowIndexInclusive, rightSize, leftValue);
             // rightIndex should be the index of the first right value whose first position we want to include, so
             // take the insertion point (when not found) or one past the insertion point (when found)
             final int rightIndex = searchResult < 0 ? ~searchResult : searchResult + 1;
@@ -671,7 +673,7 @@ enum RangeSearchKernelChar implements RangeSearchKernel {
             while (leftIndex < leftSize && lt(leftValue = leftValues.get(leftIndex), rightValue)) {
                 outputStartPositionsInclusive.set(leftPositions.get(leftIndex++), rightPosition);
             }
-            // We've processed all left values that can include rightValue, so begin searching after rightIndex
+            // We've processed all left values that care about rightValue, so begin searching after rightIndex
             rightLowIndexInclusive = rightIndex + 1;
         } while (leftIndex < leftSize && rightLowIndexInclusive < rightSize);
 
@@ -708,7 +710,9 @@ enum RangeSearchKernelChar implements RangeSearchKernel {
         int rightLowIndexInclusive = 0;
         char leftValue = leftValues.get(leftIndex);
         do {
-            final int searchResult = rightValues.binarySearch(rightLowIndexInclusive, rightSize, leftValue);
+            final int searchResult = eq(leftValue, rightValues.get(rightLowIndexInclusive))
+                    ? rightLowIndexInclusive
+                    : rightValues.binarySearch(rightLowIndexInclusive, rightSize, leftValue);
             // rightIndex should be the index of the first right value whose first position we want to include, so
             // take the insertion point whether found or not
             final int rightIndex = searchResult < 0 ? ~searchResult : searchResult;
@@ -723,7 +727,7 @@ enum RangeSearchKernelChar implements RangeSearchKernel {
             while (leftIndex < leftSize && leq(leftValue = leftValues.get(leftIndex), rightValue)) {
                 outputStartPositionsInclusive.set(leftPositions.get(leftIndex++), rightPosition);
             }
-            // We've processed all left values that can include rightValue, so begin searching after rightIndex
+            // We've processed all left values that care about rightValue, so begin searching after rightIndex
             rightLowIndexInclusive = rightIndex + 1;
         } while (leftIndex < leftSize && rightLowIndexInclusive < rightSize);
 
@@ -760,7 +764,9 @@ enum RangeSearchKernelChar implements RangeSearchKernel {
         int rightLowIndexInclusive = 0;
         char leftValue = leftValues.get(leftIndex);
         do {
-            final int searchResult = rightValues.binarySearch(rightLowIndexInclusive, rightSize, leftValue);
+            final int searchResult = eq(leftValue, rightValues.get(rightLowIndexInclusive))
+                    ? rightLowIndexInclusive
+                    : rightValues.binarySearch(rightLowIndexInclusive, rightSize, leftValue);
             // rightIndex should be the index of the first right value whose first position we want to include, so
             // take the insertion point whether found or not
             final int rightIndex = searchResult < 0 ? ~searchResult : searchResult;
@@ -785,7 +791,7 @@ enum RangeSearchKernelChar implements RangeSearchKernel {
             while (leftIndex < leftSize && leq(leftValue = leftValues.get(leftIndex), rightValue)) {
                 outputStartPositionsInclusive.set(leftPositions.get(leftIndex++), rightPosition);
             }
-            // We've processed all left values that can include rightValue, so begin searching after rightIndex
+            // We've processed all left values that care about rightValue, so begin searching after rightIndex
             rightLowIndexInclusive = rightIndex + 1;
         } while (leftIndex < leftSize && rightLowIndexInclusive < rightSize);
 
@@ -824,7 +830,9 @@ enum RangeSearchKernelChar implements RangeSearchKernel {
         int rightLowIndexInclusive = 0;
         char leftValue = leftValues.get(leftIndex);
         do {
-            final int searchResult = rightValues.binarySearch(rightLowIndexInclusive, rightSize, leftValue);
+            final int searchResult = eq(leftValue, rightValues.get(rightLowIndexInclusive))
+                    ? rightLowIndexInclusive
+                    : rightValues.binarySearch(rightLowIndexInclusive, rightSize, leftValue);
             // rightIndex should be the index of the first right value whose first position we want to exclude, so
             // take the insertion point whether found or not
             final int rightIndex = searchResult < 0 ? ~searchResult : searchResult;
@@ -839,8 +847,8 @@ enum RangeSearchKernelChar implements RangeSearchKernel {
             while (leftIndex < leftSize && leq(leftValue = leftValues.get(leftIndex), rightValue)) {
                 outputEndPositionsExclusive.set(leftPositions.get(leftIndex++), rightPosition);
             }
-            // We've processed all left values that can exclude rightValue, so begin searching at rightIndex
-            rightLowIndexInclusive = rightIndex;
+            // We've processed all left values that care about rightValue, so begin searching after rightIndex
+            rightLowIndexInclusive = rightIndex + 1;
         } while (leftIndex < leftSize && rightLowIndexInclusive < rightSize);
 
         // All remaining ranges end at last right
@@ -876,7 +884,9 @@ enum RangeSearchKernelChar implements RangeSearchKernel {
         int rightLowIndexInclusive = 0;
         char leftValue = leftValues.get(leftIndex);
         do {
-            final int searchResult = rightValues.binarySearch(rightLowIndexInclusive, rightSize, leftValue);
+            final int searchResult = eq(leftValue, rightValues.get(rightLowIndexInclusive))
+                    ? rightLowIndexInclusive
+                    : rightValues.binarySearch(rightLowIndexInclusive, rightSize, leftValue);
             // rightIndex should be the index of the first right value whose first position we want to exclude, so
             // take the insertion point (when not found) or one past the insertion point (when found)
             final int rightIndex = searchResult < 0 ? ~searchResult : searchResult + 1;
@@ -928,7 +938,9 @@ enum RangeSearchKernelChar implements RangeSearchKernel {
         int rightLowIndexInclusive = 0;
         char leftValue = leftValues.get(leftIndex);
         do {
-            final int searchResult = rightValues.binarySearch(rightLowIndexInclusive, rightSize, leftValue);
+            final int searchResult = eq(leftValue, rightValues.get(rightLowIndexInclusive))
+                    ? rightLowIndexInclusive
+                    : rightValues.binarySearch(rightLowIndexInclusive, rightSize, leftValue);
             // rightIndex should be the index of the first right value whose first position we want to exclude, so
             // take the insertion point (when not found) or one past the insertion point (when found)
             final int rightIndex = searchResult < 0 ? ~searchResult : searchResult + 1;
@@ -983,6 +995,13 @@ enum RangeSearchKernelChar implements RangeSearchKernel {
         return v == NULL_CHAR;
     }
     // endregion isNull
+
+    // region eq
+    private static boolean eq(final char a, final char b) {
+        // We need not deal with null or NaN values here
+        return a == b;
+    }
+    // endregion eq
 
     // region lt
     private static boolean lt(final char a, final char b) {
