@@ -813,7 +813,10 @@ public abstract class QueryTableWhereTest {
         t.interrupt();
 
         try {
-            t.join();
+            t.join(30000);
+            if (t.isAlive()) {
+                throw new RuntimeException("Thread did not terminate within a reasonable time");
+            }
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
