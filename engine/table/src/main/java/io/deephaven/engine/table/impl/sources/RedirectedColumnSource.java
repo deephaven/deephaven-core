@@ -301,7 +301,8 @@ public class RedirectedColumnSource<T> extends AbstractDeferredGroupingColumnSou
 
     @Override
     public float getUngroupedFloat(long groupRowKey, int offsetInGroup) {
-        return ((UngroupableColumnSource) innerSource).getUngroupedFloat(rowRedirection.get(groupRowKey), offsetInGroup);
+        return ((UngroupableColumnSource) innerSource).getUngroupedFloat(rowRedirection.get(groupRowKey),
+                offsetInGroup);
     }
 
     @Override
@@ -334,7 +335,8 @@ public class RedirectedColumnSource<T> extends AbstractDeferredGroupingColumnSou
 
     @Override
     public short getUngroupedShort(long groupRowKey, int offsetInGroup) {
-        return ((UngroupableColumnSource) innerSource).getUngroupedShort(rowRedirection.get(groupRowKey), offsetInGroup);
+        return ((UngroupableColumnSource) innerSource).getUngroupedShort(rowRedirection.get(groupRowKey),
+                offsetInGroup);
     }
 
     @Override

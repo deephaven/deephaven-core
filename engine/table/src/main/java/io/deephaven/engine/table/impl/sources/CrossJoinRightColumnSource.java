@@ -262,7 +262,8 @@ public class CrossJoinRightColumnSource<T> extends AbstractColumnSource<T> imple
 
     @Override
     public Boolean getUngroupedPrevBoolean(long groupRowKey, int offsetInGroup) {
-        return ((UngroupableColumnSource) innerSource).getUngroupedPrevBoolean(redirectPrev(groupRowKey), offsetInGroup);
+        return ((UngroupableColumnSource) innerSource).getUngroupedPrevBoolean(redirectPrev(groupRowKey),
+                offsetInGroup);
     }
 
     @Override

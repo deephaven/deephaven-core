@@ -223,7 +223,8 @@ public class BitMaskingColumnSource<T> extends AbstractColumnSource<T> implement
     @Override
     public T getUngrouped(long groupRowKey, int offsetInGroup) {
         // noinspection unchecked
-        return (T) ((UngroupableColumnSource) innerSource).getUngrouped(shiftState.getMasked(groupRowKey), offsetInGroup);
+        return (T) ((UngroupableColumnSource) innerSource).getUngrouped(shiftState.getMasked(groupRowKey),
+                offsetInGroup);
     }
 
     @Override
@@ -259,7 +260,8 @@ public class BitMaskingColumnSource<T> extends AbstractColumnSource<T> implement
 
     @Override
     public float getUngroupedFloat(long groupRowKey, int offsetInGroup) {
-        return ((UngroupableColumnSource) innerSource).getUngroupedFloat(shiftState.getMasked(groupRowKey), offsetInGroup);
+        return ((UngroupableColumnSource) innerSource).getUngroupedFloat(shiftState.getMasked(groupRowKey),
+                offsetInGroup);
     }
 
     @Override
@@ -270,7 +272,8 @@ public class BitMaskingColumnSource<T> extends AbstractColumnSource<T> implement
 
     @Override
     public byte getUngroupedByte(long groupRowKey, int offsetInGroup) {
-        return ((UngroupableColumnSource) innerSource).getUngroupedByte(shiftState.getMasked(groupRowKey), offsetInGroup);
+        return ((UngroupableColumnSource) innerSource).getUngroupedByte(shiftState.getMasked(groupRowKey),
+                offsetInGroup);
     }
 
     @Override
@@ -281,7 +284,8 @@ public class BitMaskingColumnSource<T> extends AbstractColumnSource<T> implement
 
     @Override
     public char getUngroupedChar(long groupRowKey, int offsetInGroup) {
-        return ((UngroupableColumnSource) innerSource).getUngroupedChar(shiftState.getMasked(groupRowKey), offsetInGroup);
+        return ((UngroupableColumnSource) innerSource).getUngroupedChar(shiftState.getMasked(groupRowKey),
+                offsetInGroup);
     }
 
     @Override
@@ -292,7 +296,8 @@ public class BitMaskingColumnSource<T> extends AbstractColumnSource<T> implement
 
     @Override
     public short getUngroupedShort(long groupRowKey, int offsetInGroup) {
-        return ((UngroupableColumnSource) innerSource).getUngroupedShort(shiftState.getMasked(groupRowKey), offsetInGroup);
+        return ((UngroupableColumnSource) innerSource).getUngroupedShort(shiftState.getMasked(groupRowKey),
+                offsetInGroup);
     }
 
     @Override
@@ -303,7 +308,8 @@ public class BitMaskingColumnSource<T> extends AbstractColumnSource<T> implement
 
     @Override
     public int getUngroupedInt(long groupRowKey, int offsetInGroup) {
-        return ((UngroupableColumnSource) innerSource).getUngroupedInt(shiftState.getMasked(groupRowKey), offsetInGroup);
+        return ((UngroupableColumnSource) innerSource).getUngroupedInt(shiftState.getMasked(groupRowKey),
+                offsetInGroup);
     }
 
     @Override
@@ -314,7 +320,8 @@ public class BitMaskingColumnSource<T> extends AbstractColumnSource<T> implement
 
     @Override
     public long getUngroupedLong(long groupRowKey, int offsetInGroup) {
-        return ((UngroupableColumnSource) innerSource).getUngroupedLong(shiftState.getMasked(groupRowKey), offsetInGroup);
+        return ((UngroupableColumnSource) innerSource).getUngroupedLong(shiftState.getMasked(groupRowKey),
+                offsetInGroup);
     }
 
     @Override

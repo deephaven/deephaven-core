@@ -226,7 +226,8 @@ public class BitShiftingColumnSource<T> extends AbstractColumnSource<T> implemen
     @Override
     public T getUngrouped(long groupRowKey, int offsetInGroup) {
         // noinspection unchecked
-        return (T) ((UngroupableColumnSource) innerSource).getUngrouped(shiftState.getShifted(groupRowKey), offsetInGroup);
+        return (T) ((UngroupableColumnSource) innerSource).getUngrouped(shiftState.getShifted(groupRowKey),
+                offsetInGroup);
     }
 
     @Override
@@ -274,7 +275,8 @@ public class BitShiftingColumnSource<T> extends AbstractColumnSource<T> implemen
 
     @Override
     public byte getUngroupedByte(long groupRowKey, int offsetInGroup) {
-        return ((UngroupableColumnSource) innerSource).getUngroupedByte(shiftState.getShifted(groupRowKey), offsetInGroup);
+        return ((UngroupableColumnSource) innerSource).getUngroupedByte(shiftState.getShifted(groupRowKey),
+                offsetInGroup);
     }
 
     @Override
@@ -285,7 +287,8 @@ public class BitShiftingColumnSource<T> extends AbstractColumnSource<T> implemen
 
     @Override
     public char getUngroupedChar(long groupRowKey, int offsetInGroup) {
-        return ((UngroupableColumnSource) innerSource).getUngroupedChar(shiftState.getShifted(groupRowKey), offsetInGroup);
+        return ((UngroupableColumnSource) innerSource).getUngroupedChar(shiftState.getShifted(groupRowKey),
+                offsetInGroup);
     }
 
     @Override
@@ -308,7 +311,8 @@ public class BitShiftingColumnSource<T> extends AbstractColumnSource<T> implemen
 
     @Override
     public int getUngroupedInt(long groupRowKey, int offsetInGroup) {
-        return ((UngroupableColumnSource) innerSource).getUngroupedInt(shiftState.getShifted(groupRowKey), offsetInGroup);
+        return ((UngroupableColumnSource) innerSource).getUngroupedInt(shiftState.getShifted(groupRowKey),
+                offsetInGroup);
     }
 
     @Override
@@ -319,7 +323,8 @@ public class BitShiftingColumnSource<T> extends AbstractColumnSource<T> implemen
 
     @Override
     public long getUngroupedLong(long groupRowKey, int offsetInGroup) {
-        return ((UngroupableColumnSource) innerSource).getUngroupedLong(shiftState.getShifted(groupRowKey), offsetInGroup);
+        return ((UngroupableColumnSource) innerSource).getUngroupedLong(shiftState.getShifted(groupRowKey),
+                offsetInGroup);
     }
 
     @Override
