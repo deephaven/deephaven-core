@@ -1,9 +1,12 @@
 #
 #     Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
 #
+"""This module defines the UpdateByOperation and provides factory functions to create specific UpdateByOperations
+instances."""
+
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import List, Union
+from typing import List, Union, Any
 
 from ._utils import to_list
 from .dherror import DHError
@@ -22,7 +25,7 @@ _GrpcMathContext = table_pb2.MathContext
 
 class _UpdateByBase(ABC):
     @abstractmethod
-    def make_grpc_message(self):
+    def make_grpc_message(self) -> Any:
         ...
 
 
@@ -77,7 +80,7 @@ class OperationControl(_UpdateByBase):
         self.on_nan = on_nan
         self.big_value_context = big_value_context
 
-    def make_grpc_message(self):
+    def make_grpc_message(self) -> Any:
         return _GrpcUpdateByEmaOptions(on_null_value=self.on_null.value, on_nan_value=self.on_nan.value,
                                        big_value_context=_GrpcMathContext(precision=self.big_value_context.value[0],
                                                                           rounding_mode=self.big_value_context.value[
@@ -90,7 +93,7 @@ class UpdateByOperation(_UpdateByBase):
     def __init__(self, ub_column):
         self.ub_column = ub_column
 
-    def make_grpc_message(self):
+    def make_grpc_message(self) -> Any:
         return _GrpcUpdateByOperation(column=self.ub_column)
 
 
