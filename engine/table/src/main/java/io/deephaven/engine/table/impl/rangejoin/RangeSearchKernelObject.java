@@ -9,7 +9,6 @@ import io.deephaven.api.RangeEndRule;
 import io.deephaven.api.RangeStartRule;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.*;
-import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
 import org.jetbrains.annotations.NotNull;
@@ -47,9 +46,9 @@ enum RangeSearchKernelObject implements RangeSearchKernel {
                 @NotNull final IntChunk<ChunkPositions> lp,
                 @NotNull final ObjectChunk<Object, ? extends Values> rv,
                 @NotNull final IntChunk<ChunkPositions> rso,
-                @NotNull final IntChunk<ChunkLengths> rl,
+                int rse,
                 @NotNull final WritableIntChunk<? extends Values> ospi) {
-            processRangeStartsLessThan(lv, lp, rv, rso, rl, ospi);
+            processRangeStartsLessThan(lv, lp, rv, rso, rse, ospi);
         }
 
         @Override
@@ -58,9 +57,9 @@ enum RangeSearchKernelObject implements RangeSearchKernel {
                 @NotNull final IntChunk<ChunkPositions> lp,
                 @NotNull final ObjectChunk<Object, ? extends Values> rv,
                 @NotNull final IntChunk<ChunkPositions> rso,
-                @NotNull final IntChunk<ChunkLengths> rl,
+                int rse,
                 @NotNull final WritableIntChunk<? extends Values> oepe) {
-            processRangeEndsGreaterThan(lv, lp, rv, rso, rl, oepe);
+            processRangeEndsGreaterThan(lv, lp, rv, rso, rse, oepe);
         }
     },
 
@@ -90,9 +89,9 @@ enum RangeSearchKernelObject implements RangeSearchKernel {
                 @NotNull final IntChunk<ChunkPositions> lp,
                 @NotNull final ObjectChunk<Object, ? extends Values> rv,
                 @NotNull final IntChunk<ChunkPositions> rso,
-                @NotNull final IntChunk<ChunkLengths> rl,
+                int rse,
                 @NotNull final WritableIntChunk<? extends Values> ospi) {
-            processRangeStartsLessThanEqual(lv, lp, rv, rso, rl, ospi);
+            processRangeStartsLessThanEqual(lv, lp, rv, rso, rse, ospi);
         }
 
         @Override
@@ -101,9 +100,9 @@ enum RangeSearchKernelObject implements RangeSearchKernel {
                 @NotNull final IntChunk<ChunkPositions> lp,
                 @NotNull final ObjectChunk<Object, ? extends Values> rv,
                 @NotNull final IntChunk<ChunkPositions> rso,
-                @NotNull final IntChunk<ChunkLengths> rl,
+                int rse,
                 @NotNull final WritableIntChunk<? extends Values> oepe) {
-            processRangeEndsGreaterThan(lv, lp, rv, rso, rl, oepe);
+            processRangeEndsGreaterThan(lv, lp, rv, rso, rse, oepe);
         }
     },
 
@@ -133,9 +132,9 @@ enum RangeSearchKernelObject implements RangeSearchKernel {
                 @NotNull final IntChunk<ChunkPositions> lp,
                 @NotNull final ObjectChunk<Object, ? extends Values> rv,
                 @NotNull final IntChunk<ChunkPositions> rso,
-                @NotNull final IntChunk<ChunkLengths> rl,
+                int rse,
                 @NotNull final WritableIntChunk<? extends Values> ospi) {
-            processRangeStartsLessThanEqualAllowPreceding(lv, lp, rv, rso, rl, ospi);
+            processRangeStartsLessThanEqualAllowPreceding(lv, lp, rv, rso, rse, ospi);
         }
 
         @Override
@@ -144,9 +143,9 @@ enum RangeSearchKernelObject implements RangeSearchKernel {
                 @NotNull final IntChunk<ChunkPositions> lp,
                 @NotNull final ObjectChunk<Object, ? extends Values> rv,
                 @NotNull final IntChunk<ChunkPositions> rso,
-                @NotNull final IntChunk<ChunkLengths> rl,
+                int rse,
                 @NotNull final WritableIntChunk<? extends Values> oepe) {
-            processRangeEndsGreaterThan(lv, lp, rv, rso, rl, oepe);
+            processRangeEndsGreaterThan(lv, lp, rv, rso, rse, oepe);
         }
     },
 
@@ -176,9 +175,9 @@ enum RangeSearchKernelObject implements RangeSearchKernel {
                 @NotNull final IntChunk<ChunkPositions> lp,
                 @NotNull final ObjectChunk<Object, ? extends Values> rv,
                 @NotNull final IntChunk<ChunkPositions> rso,
-                @NotNull final IntChunk<ChunkLengths> rl,
+                int rse,
                 @NotNull final WritableIntChunk<? extends Values> ospi) {
-            processRangeStartsLessThan(lv, lp, rv, rso, rl, ospi);
+            processRangeStartsLessThan(lv, lp, rv, rso, rse, ospi);
         }
 
         @Override
@@ -187,9 +186,9 @@ enum RangeSearchKernelObject implements RangeSearchKernel {
                 @NotNull final IntChunk<ChunkPositions> lp,
                 @NotNull final ObjectChunk<Object, ? extends Values> rv,
                 @NotNull final IntChunk<ChunkPositions> rso,
-                @NotNull final IntChunk<ChunkLengths> rl,
+                int rse,
                 @NotNull final WritableIntChunk<? extends Values> oepe) {
-            processRangeEndsGreaterThanEqual(lv, lp, rv, rso, rl, oepe);
+            processRangeEndsGreaterThanEqual(lv, lp, rv, rso, rse, oepe);
         }
     },
 
@@ -219,9 +218,9 @@ enum RangeSearchKernelObject implements RangeSearchKernel {
                 @NotNull final IntChunk<ChunkPositions> lp,
                 @NotNull final ObjectChunk<Object, ? extends Values> rv,
                 @NotNull final IntChunk<ChunkPositions> rso,
-                @NotNull final IntChunk<ChunkLengths> rl,
+                int rse,
                 @NotNull final WritableIntChunk<? extends Values> ospi) {
-            processRangeStartsLessThanEqual(lv, lp, rv, rso, rl, ospi);
+            processRangeStartsLessThanEqual(lv, lp, rv, rso, rse, ospi);
         }
 
         @Override
@@ -230,9 +229,9 @@ enum RangeSearchKernelObject implements RangeSearchKernel {
                 @NotNull final IntChunk<ChunkPositions> lp,
                 @NotNull final ObjectChunk<Object, ? extends Values> rv,
                 @NotNull final IntChunk<ChunkPositions> rso,
-                @NotNull final IntChunk<ChunkLengths> rl,
+                int rse,
                 @NotNull final WritableIntChunk<? extends Values> oepe) {
-            processRangeEndsGreaterThanEqual(lv, lp, rv, rso, rl, oepe);
+            processRangeEndsGreaterThanEqual(lv, lp, rv, rso, rse, oepe);
         }
     },
 
@@ -262,9 +261,9 @@ enum RangeSearchKernelObject implements RangeSearchKernel {
                 @NotNull final IntChunk<ChunkPositions> lp,
                 @NotNull final ObjectChunk<Object, ? extends Values> rv,
                 @NotNull final IntChunk<ChunkPositions> rso,
-                @NotNull final IntChunk<ChunkLengths> rl,
+                int rse,
                 @NotNull final WritableIntChunk<? extends Values> ospi) {
-            processRangeStartsLessThanEqualAllowPreceding(lv, lp, rv, rso, rl, ospi);
+            processRangeStartsLessThanEqualAllowPreceding(lv, lp, rv, rso, rse, ospi);
         }
 
         @Override
@@ -273,9 +272,9 @@ enum RangeSearchKernelObject implements RangeSearchKernel {
                 @NotNull final IntChunk<ChunkPositions> lp,
                 @NotNull final ObjectChunk<Object, ? extends Values> rv,
                 @NotNull final IntChunk<ChunkPositions> rso,
-                @NotNull final IntChunk<ChunkLengths> rl,
+                int rse,
                 @NotNull final WritableIntChunk<? extends Values> oepe) {
-            processRangeEndsGreaterThanEqual(lv, lp, rv, rso, rl, oepe);
+            processRangeEndsGreaterThanEqual(lv, lp, rv, rso, rse, oepe);
         }
     },
 
@@ -305,9 +304,9 @@ enum RangeSearchKernelObject implements RangeSearchKernel {
                 @NotNull final IntChunk<ChunkPositions> lp,
                 @NotNull final ObjectChunk<Object, ? extends Values> rv,
                 @NotNull final IntChunk<ChunkPositions> rso,
-                @NotNull final IntChunk<ChunkLengths> rl,
+                int rse,
                 @NotNull final WritableIntChunk<? extends Values> ospi) {
-            processRangeStartsLessThan(lv, lp, rv, rso, rl, ospi);
+            processRangeStartsLessThan(lv, lp, rv, rso, rse, ospi);
         }
 
         @Override
@@ -316,9 +315,9 @@ enum RangeSearchKernelObject implements RangeSearchKernel {
                 @NotNull final IntChunk<ChunkPositions> lp,
                 @NotNull final ObjectChunk<Object, ? extends Values> rv,
                 @NotNull final IntChunk<ChunkPositions> rso,
-                @NotNull final IntChunk<ChunkLengths> rl,
+                int rse,
                 @NotNull final WritableIntChunk<? extends Values> oepe) {
-            processRangeEndsGreaterThanEqualAllowFollowing(lv, lp, rv, rso, rl, oepe);
+            processRangeEndsGreaterThanEqualAllowFollowing(lv, lp, rv, rso, rse, oepe);
         }
     },
 
@@ -348,9 +347,9 @@ enum RangeSearchKernelObject implements RangeSearchKernel {
                 @NotNull final IntChunk<ChunkPositions> lp,
                 @NotNull final ObjectChunk<Object, ? extends Values> rv,
                 @NotNull final IntChunk<ChunkPositions> rso,
-                @NotNull final IntChunk<ChunkLengths> rl,
+                int rse,
                 @NotNull final WritableIntChunk<? extends Values> ospi) {
-            processRangeStartsLessThanEqual(lv, lp, rv, rso, rl, ospi);
+            processRangeStartsLessThanEqual(lv, lp, rv, rso, rse, ospi);
         }
 
         @Override
@@ -359,9 +358,9 @@ enum RangeSearchKernelObject implements RangeSearchKernel {
                 @NotNull final IntChunk<ChunkPositions> lp,
                 @NotNull final ObjectChunk<Object, ? extends Values> rv,
                 @NotNull final IntChunk<ChunkPositions> rso,
-                @NotNull final IntChunk<ChunkLengths> rl,
+                int rse,
                 @NotNull final WritableIntChunk<? extends Values> oepe) {
-            processRangeEndsGreaterThanEqualAllowFollowing(lv, lp, rv, rso, rl, oepe);
+            processRangeEndsGreaterThanEqualAllowFollowing(lv, lp, rv, rso, rse, oepe);
         }
     },
 
@@ -391,9 +390,9 @@ enum RangeSearchKernelObject implements RangeSearchKernel {
                 @NotNull final IntChunk<ChunkPositions> lp,
                 @NotNull final ObjectChunk<Object, ? extends Values> rv,
                 @NotNull final IntChunk<ChunkPositions> rso,
-                @NotNull final IntChunk<ChunkLengths> rl,
+                int rse,
                 @NotNull final WritableIntChunk<? extends Values> ospi) {
-            processRangeStartsLessThanEqualAllowPreceding(lv, lp, rv, rso, rl, ospi);
+            processRangeStartsLessThanEqualAllowPreceding(lv, lp, rv, rso, rse, ospi);
         }
 
         @Override
@@ -402,9 +401,9 @@ enum RangeSearchKernelObject implements RangeSearchKernel {
                 @NotNull final IntChunk<ChunkPositions> lp,
                 @NotNull final ObjectChunk<Object, ? extends Values> rv,
                 @NotNull final IntChunk<ChunkPositions> rso,
-                @NotNull final IntChunk<ChunkLengths> rl,
+                int rse,
                 @NotNull final WritableIntChunk<? extends Values> oepe) {
-            processRangeEndsGreaterThanEqualAllowFollowing(lv, lp, rv, rso, rl, oepe);
+            processRangeEndsGreaterThanEqualAllowFollowing(lv, lp, rv, rso, rse, oepe);
         }
     };
 
@@ -494,14 +493,14 @@ enum RangeSearchKernelObject implements RangeSearchKernel {
             @NotNull final IntChunk<ChunkPositions> leftPositions,
             @NotNull final Chunk<? extends Values> rightValues,
             @NotNull final IntChunk<ChunkPositions> rightStartOffsets,
-            @NotNull final IntChunk<ChunkLengths> rightLengths,
+            final int rightSizeExpanded,
             @NotNull final WritableIntChunk<? extends Values> outputStartPositionsInclusive) {
         processRangeStarts(
                 leftValues.asObjectChunk(),
                 leftPositions,
                 rightValues.asObjectChunk(),
                 rightStartOffsets,
-                rightLengths,
+                rightSizeExpanded,
                 outputStartPositionsInclusive);
     }
 
@@ -510,7 +509,7 @@ enum RangeSearchKernelObject implements RangeSearchKernel {
             @NotNull IntChunk<ChunkPositions> leftPositions,
             @NotNull ObjectChunk<Object, ? extends Values> rightValues,
             @NotNull IntChunk<ChunkPositions> rightStartOffsets,
-            @NotNull IntChunk<ChunkLengths> rightLengths,
+            int rightSizeExpanded,
             @NotNull WritableIntChunk<? extends Values> outputStartPositionsInclusive);
 
     @Override
@@ -519,14 +518,14 @@ enum RangeSearchKernelObject implements RangeSearchKernel {
             @NotNull final IntChunk<ChunkPositions> leftPositions,
             @NotNull final Chunk<? extends Values> rightValues,
             @NotNull final IntChunk<ChunkPositions> rightStartOffsets,
-            @NotNull final IntChunk<ChunkLengths> rightLengths,
+            final int rightSizeExpanded,
             @NotNull final WritableIntChunk<? extends Values> outputEndPositionsExclusive) {
         processRangeEnds(
                 leftValues.asObjectChunk(),
                 leftPositions,
                 rightValues.asObjectChunk(),
                 rightStartOffsets,
-                rightLengths,
+                rightSizeExpanded,
                 outputEndPositionsExclusive);
     }
 
@@ -535,7 +534,7 @@ enum RangeSearchKernelObject implements RangeSearchKernel {
             @NotNull IntChunk<ChunkPositions> leftPositions,
             @NotNull ObjectChunk<Object, ? extends Values> rightValues,
             @NotNull IntChunk<ChunkPositions> rightStartOffsets,
-            @NotNull IntChunk<ChunkLengths> rightLengths,
+            int rightSizeExpanded,
             @NotNull WritableIntChunk<? extends Values> outputEndPositionsExclusive);
 
     private static void populateAllRangesForEmptyRightAllowEqual(
@@ -639,7 +638,7 @@ enum RangeSearchKernelObject implements RangeSearchKernel {
             @NotNull final IntChunk<ChunkPositions> leftPositions,
             @NotNull final ObjectChunk<Object, ? extends Values> rightValues,
             @NotNull final IntChunk<ChunkPositions> rightStartOffsets,
-            @NotNull final IntChunk<ChunkLengths> rightLengths,
+            final int rightSizeExpanded,
             @NotNull final WritableIntChunk<? extends Values> outputStartPositionsInclusive) {
         // Note that invalid and undefined ranges have already been eliminated
         final int leftSize = leftValues.size();
@@ -648,7 +647,11 @@ enum RangeSearchKernelObject implements RangeSearchKernel {
         // Empty rights are handled via a different method
         Assert.gtZero(rightSize, "rightSize");
 
-        int leftIndex = processNullLeftStartValues(leftValues, leftPositions, outputStartPositionsInclusive);
+        // null left start values imply that the responsive right range starts at position 0
+        int leftIndex = 0;
+        while (leftIndex < leftSize && isNull(leftValues.get(leftIndex))) {
+            outputStartPositionsInclusive.set(leftPositions.get(leftIndex++), 0);
+        }
         if (leftIndex == leftSize) {
             return;
         }
@@ -677,8 +680,9 @@ enum RangeSearchKernelObject implements RangeSearchKernel {
         } while (leftIndex < leftSize && rightLowIndexInclusive < rightSize);
 
         // All remaining ranges start after last right (and are thus empty)
-        fillRemainingWithLastRightPositionExclusive(
-                leftPositions, rightStartOffsets, rightLengths, outputStartPositionsInclusive, leftIndex);
+        while (leftIndex < leftSize) {
+            outputStartPositionsInclusive.set(leftPositions.get(leftIndex++), rightSizeExpanded);
+        }
     }
 
     private static void processRangeStartsLessThanEqual(
@@ -686,7 +690,7 @@ enum RangeSearchKernelObject implements RangeSearchKernel {
             @NotNull final IntChunk<ChunkPositions> leftPositions,
             @NotNull final ObjectChunk<Object, ? extends Values> rightValues,
             @NotNull final IntChunk<ChunkPositions> rightStartOffsets,
-            @NotNull final IntChunk<ChunkLengths> rightLengths,
+            final int rightSizeExpanded,
             @NotNull final WritableIntChunk<? extends Values> outputStartPositionsInclusive) {
         // Note that invalid and undefined ranges have already been eliminated
         final int leftSize = leftValues.size();
@@ -695,7 +699,11 @@ enum RangeSearchKernelObject implements RangeSearchKernel {
         // Empty rights are handled via a different method
         Assert.gtZero(rightSize, "rightSize");
 
-        int leftIndex = processNullLeftStartValues(leftValues, leftPositions, outputStartPositionsInclusive);
+        // null left start values imply that the responsive right range starts at position 0
+        int leftIndex = 0;
+        while (leftIndex < leftSize && isNull(leftValues.get(leftIndex))) {
+            outputStartPositionsInclusive.set(leftPositions.get(leftIndex++), 0);
+        }
         if (leftIndex == leftSize) {
             return;
         }
@@ -724,8 +732,9 @@ enum RangeSearchKernelObject implements RangeSearchKernel {
         } while (leftIndex < leftSize && rightLowIndexInclusive < rightSize);
 
         // All remaining ranges start after last right (and are thus empty)
-        fillRemainingWithLastRightPositionExclusive(
-                leftPositions, rightStartOffsets, rightLengths, outputStartPositionsInclusive, leftIndex);
+        while (leftIndex < leftSize) {
+            outputStartPositionsInclusive.set(leftPositions.get(leftIndex++), rightSizeExpanded);
+        }
     }
 
     private static void processRangeStartsLessThanEqualAllowPreceding(
@@ -733,7 +742,7 @@ enum RangeSearchKernelObject implements RangeSearchKernel {
             @NotNull final IntChunk<ChunkPositions> leftPositions,
             @NotNull final ObjectChunk<Object, ? extends Values> rightValues,
             @NotNull final IntChunk<ChunkPositions> rightStartOffsets,
-            @NotNull final IntChunk<ChunkLengths> rightLengths,
+            final int rightSizeExpanded,
             @NotNull final WritableIntChunk<? extends Values> outputStartPositionsInclusive) {
         // Note that invalid and undefined ranges have already been eliminated
         final int leftSize = leftValues.size();
@@ -742,7 +751,11 @@ enum RangeSearchKernelObject implements RangeSearchKernel {
         // Empty rights are handled via a different method
         Assert.gtZero(rightSize, "rightSize");
 
-        int leftIndex = processNullLeftStartValues(leftValues, leftPositions, outputStartPositionsInclusive);
+        // null left start values imply that the responsive right range starts at position 0
+        int leftIndex = 0;
+        while (leftIndex < leftSize && isNull(leftValues.get(leftIndex))) {
+            outputStartPositionsInclusive.set(leftPositions.get(leftIndex++), 0);
+        }
         if (leftIndex == leftSize) {
             return;
         }
@@ -782,34 +795,10 @@ enum RangeSearchKernelObject implements RangeSearchKernel {
 
         // All remaining left start values are after last right value. Last right position is in range by "allow
         // preceding" logic.
-        if (leftIndex == leftSize) {
-            return;
-        }
-        final int lastRightPosition = rightStartOffsets.get(rightSize - 1) + rightLengths.get(rightSize - 1) - 1;
+        final int lastRightPosition = rightSizeExpanded - 1;
         while (leftIndex < leftSize) {
             outputStartPositionsInclusive.set(leftPositions.get(leftIndex++), lastRightPosition);
         }
-    }
-
-    /**
-     * Process an initial sequence of null left start values, which cause the responsive range to start from right
-     * position 0.
-     *
-     * @param leftValues The left values, sorted according to Deephaven sorting order (nulls first)
-     * @param leftPositions The left positions, parallel to {@code leftValues}, used to determine {@code output} index
-     * @param outputStartPositionsInclusive The output chunk
-     * @return The number of left indices processed
-     */
-    private static int processNullLeftStartValues(
-            @NotNull final ObjectChunk<Object, ? extends Values> leftValues,
-            @NotNull final IntChunk<ChunkPositions> leftPositions,
-            @NotNull final WritableIntChunk<? extends Values> outputStartPositionsInclusive) {
-        final int leftSize = leftValues.size();
-        int leftIndex = 0;
-        while (leftIndex < leftSize && isNull(leftValues.get(leftIndex))) {
-            outputStartPositionsInclusive.set(leftPositions.get(leftIndex++), 0);
-        }
-        return leftIndex;
     }
 
     private static void processRangeEndsGreaterThan(
@@ -817,7 +806,7 @@ enum RangeSearchKernelObject implements RangeSearchKernel {
             @NotNull final IntChunk<ChunkPositions> leftPositions,
             @NotNull final ObjectChunk<Object, ? extends Values> rightValues,
             @NotNull final IntChunk<ChunkPositions> rightStartOffsets,
-            @NotNull final IntChunk<ChunkLengths> rightLengths,
+            final int rightSizeExpanded,
             @NotNull final WritableIntChunk<? extends Values> outputEndPositionsExclusive) {
         // Note that invalid and undefined ranges have already been eliminated
         final int leftSize = leftValues.size();
@@ -826,8 +815,11 @@ enum RangeSearchKernelObject implements RangeSearchKernel {
         // Empty rights are handled via a different method
         Assert.gtZero(rightSize, "rightSize");
 
-        int leftIndex = processNullLeftEndValues(
-                leftValues, leftPositions, rightStartOffsets, rightLengths, outputEndPositionsExclusive);
+        // null left end values imply that the responsive right range ends at rightSizeExpanded (exclusive)
+        int leftIndex = 0;
+        while (leftIndex < leftSize && isNull(leftValues.get(leftIndex))) {
+            outputEndPositionsExclusive.set(leftPositions.get(leftIndex++), rightSizeExpanded);
+        }
         if (leftIndex == leftSize) {
             return;
         }
@@ -856,8 +848,9 @@ enum RangeSearchKernelObject implements RangeSearchKernel {
         } while (leftIndex < leftSize && rightLowIndexInclusive < rightSize);
 
         // All remaining ranges end at last right
-        fillRemainingWithLastRightPositionExclusive(
-                leftPositions, rightStartOffsets, rightLengths, outputEndPositionsExclusive, leftIndex);
+        while (leftIndex < leftSize) {
+            outputEndPositionsExclusive.set(leftPositions.get(leftIndex++), rightSizeExpanded);
+        }
     }
 
     private static void processRangeEndsGreaterThanEqual(
@@ -865,7 +858,7 @@ enum RangeSearchKernelObject implements RangeSearchKernel {
             @NotNull final IntChunk<ChunkPositions> leftPositions,
             @NotNull final ObjectChunk<Object, ? extends Values> rightValues,
             @NotNull final IntChunk<ChunkPositions> rightStartOffsets,
-            @NotNull final IntChunk<ChunkLengths> rightLengths,
+            final int rightSizeExpanded,
             @NotNull final WritableIntChunk<? extends Values> outputEndPositionsExclusive) {
         // Note that invalid and undefined ranges have already been eliminated
         final int leftSize = leftValues.size();
@@ -874,8 +867,11 @@ enum RangeSearchKernelObject implements RangeSearchKernel {
         // Empty rights are handled via a different method
         Assert.gtZero(rightSize, "rightSize");
 
-        int leftIndex = processNullLeftEndValues(
-                leftValues, leftPositions, rightStartOffsets, rightLengths, outputEndPositionsExclusive);
+        // null left end values imply that the responsive right range ends at rightSizeExpanded (exclusive)
+        int leftIndex = 0;
+        while (leftIndex < leftSize && isNull(leftValues.get(leftIndex))) {
+            outputEndPositionsExclusive.set(leftPositions.get(leftIndex++), rightSizeExpanded);
+        }
         if (leftIndex == leftSize) {
             return;
         }
@@ -904,8 +900,9 @@ enum RangeSearchKernelObject implements RangeSearchKernel {
         } while (leftIndex < leftSize && rightLowIndexInclusive < rightSize);
 
         // All remaining ranges end at last right
-        fillRemainingWithLastRightPositionExclusive(
-                leftPositions, rightStartOffsets, rightLengths, outputEndPositionsExclusive, leftIndex);
+        while (leftIndex < leftSize) {
+            outputEndPositionsExclusive.set(leftPositions.get(leftIndex++), rightSizeExpanded);
+        }
     }
 
     private static void processRangeEndsGreaterThanEqualAllowFollowing(
@@ -913,7 +910,7 @@ enum RangeSearchKernelObject implements RangeSearchKernel {
             @NotNull final IntChunk<ChunkPositions> leftPositions,
             @NotNull final ObjectChunk<Object, ? extends Values> rightValues,
             @NotNull final IntChunk<ChunkPositions> rightStartOffsets,
-            @NotNull final IntChunk<ChunkLengths> rightLengths,
+            final int rightSizeExpanded,
             @NotNull final WritableIntChunk<? extends Values> outputEndPositionsExclusive) {
         // Note that invalid and undefined ranges have already been eliminated
         final int leftSize = leftValues.size();
@@ -922,8 +919,11 @@ enum RangeSearchKernelObject implements RangeSearchKernel {
         // Empty rights are handled via a different method
         Assert.gtZero(rightSize, "rightSize");
 
-        int leftIndex = processNullLeftEndValues(
-                leftValues, leftPositions, rightStartOffsets, rightLengths, outputEndPositionsExclusive);
+        // null left end values imply that the responsive right range ends at rightSizeExpanded (exclusive)
+        int leftIndex = 0;
+        while (leftIndex < leftSize && isNull(leftValues.get(leftIndex))) {
+            outputEndPositionsExclusive.set(leftPositions.get(leftIndex++), rightSizeExpanded);
+        }
         if (leftIndex == leftSize) {
             return;
         }
@@ -944,9 +944,14 @@ enum RangeSearchKernelObject implements RangeSearchKernel {
             final int rightPosition = rightStartOffsets.get(rightIndex);
             final Object rightValue = rightValues.get(rightIndex);
             // Proceed linearly until we have a reason to binary search again
-            if (searchResult < 0 && (rightIndex != rightSize - 1 || rightLengths.get(rightIndex) != 1)) {
+            if (searchResult < 0) {
                 // If we had an inexact match that isn't at the end of the right values, look ahead
                 final int followingRightPosition = rightPosition + 1;
+                if (followingRightPosition == rightSizeExpanded) {
+                    // We're going to fill the remainder with rightSizeExpanded, and we don't need any value comparisons
+                    // to figure that out
+                    break;
+                }
                 outputEndPositionsExclusive.set(leftPositions.get(leftIndex++), followingRightPosition);
                 // We can re-use followingRightPosition until we reach rightValue
                 while (leftIndex < leftSize && lt(leftValue = leftValues.get(leftIndex), rightValue)) {
@@ -964,60 +969,8 @@ enum RangeSearchKernelObject implements RangeSearchKernel {
         } while (leftIndex < leftSize && rightLowIndexInclusive < rightSize);
 
         // All remaining ranges end at last right
-        fillRemainingWithLastRightPositionExclusive(
-                leftPositions, rightStartOffsets, rightLengths, outputEndPositionsExclusive, leftIndex);
-    }
-
-    /**
-     * Process an initial sequence of null left end values, which cause the responsive range to end from right position.
-     *
-     * @param leftValues The left values, sorted according to Deephaven sorting order (nulls first)
-     * @param leftPositions The left positions, parallel to {@code leftValues}, used to determine {@code output} index
-     * @param rightStartOffsets The right run start offsets
-     * @param rightLengths The right run lengths
-     * @param outputEndPositionsExclusive The output chunk
-     * @return The number of left indices processed
-     */
-    private static int processNullLeftEndValues(
-            @NotNull final ObjectChunk<Object, ? extends Values> leftValues,
-            @NotNull final IntChunk<ChunkPositions> leftPositions,
-            @NotNull final IntChunk<ChunkPositions> rightStartOffsets,
-            @NotNull final IntChunk<ChunkLengths> rightLengths,
-            @NotNull final WritableIntChunk<? extends Values> outputEndPositionsExclusive) {
-        final int leftSize = leftValues.size();
-        final int rightSize = rightStartOffsets.size();
-        final int rightLastPositionExclusive = rightStartOffsets.get(rightSize - 1) + rightLengths.get(rightSize - 1);
-        int leftIndex = 0;
-        while (leftIndex < leftSize && isNull(leftValues.get(leftIndex))) {
-            outputEndPositionsExclusive.set(leftPositions.get(leftIndex++), rightLastPositionExclusive);
-        }
-        return leftIndex;
-    }
-
-    /**
-     * Fill the remaining output positions with the last right position (exclusive). This is used to record starts for
-     * which no right rows are responsive, or ends for which all right rows are responsive.
-     *
-     * @param leftPositions The left positions, used to determine {@code output} index
-     * @param rightStartOffsets The right run start offsets
-     * @param rightLengths The right run lengths
-     * @param outputPositions The output chunk
-     * @param leftIndex The left index to start from
-     */
-    private static void fillRemainingWithLastRightPositionExclusive(
-            @NotNull final IntChunk<ChunkPositions> leftPositions,
-            @NotNull final IntChunk<ChunkPositions> rightStartOffsets,
-            @NotNull final IntChunk<ChunkLengths> rightLengths,
-            @NotNull final WritableIntChunk<? extends Values> outputPositions,
-            int leftIndex) {
-        final int leftSize = leftPositions.size();
-        final int rightSize = rightStartOffsets.size();
-        if (leftIndex == leftSize) {
-            return;
-        }
-        final int rightLastPositionExclusive = rightStartOffsets.get(rightSize - 1) + rightLengths.get(rightSize - 1);
         while (leftIndex < leftSize) {
-            outputPositions.set(leftPositions.get(leftIndex++), rightLastPositionExclusive);
+            outputEndPositionsExclusive.set(leftPositions.get(leftIndex++), rightSizeExpanded);
         }
     }
 

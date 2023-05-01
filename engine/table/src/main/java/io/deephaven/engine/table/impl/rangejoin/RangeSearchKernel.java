@@ -3,7 +3,6 @@ package io.deephaven.engine.table.impl.rangejoin;
 import io.deephaven.api.RangeEndRule;
 import io.deephaven.api.RangeStartRule;
 import io.deephaven.chunk.*;
-import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
 import org.jetbrains.annotations.NotNull;
@@ -96,7 +95,7 @@ interface RangeSearchKernel {
      *        {@code outputStartPositionsInclusive}
      * @param rightValues Ascending, de-duplicated right values
      * @param rightStartOffsets Right run start offsets corresponding to each element in {@code rightValues}
-     * @param rightLengths Right run lengths corresponding to each element in {@code rightValues}
+     * @param rightSizeExpanded Total size of right, before de-duplication
      * @param outputStartPositionsInclusive The output chunk of start positions
      */
     void processRangeStarts(
@@ -104,7 +103,7 @@ interface RangeSearchKernel {
             @NotNull IntChunk<ChunkPositions> leftPositions,
             @NotNull Chunk<? extends Values> rightValues,
             @NotNull IntChunk<ChunkPositions> rightStartOffsets,
-            @NotNull IntChunk<ChunkLengths> rightLengths,
+            int rightSizeExpanded,
             @NotNull WritableIntChunk<? extends Values> outputStartPositionsInclusive);
 
     /**
@@ -116,7 +115,7 @@ interface RangeSearchKernel {
      *        {@code outputEndPositionsExclusive}
      * @param rightValues Ascending, de-duplicated right values
      * @param rightStartOffsets Right run start offsets corresponding to each element in {@code rightValues}
-     * @param rightLengths Right run lengths corresponding to each element in {@code rightValues}
+     * @param rightSizeExpanded Total size of right, before de-duplication
      * @param outputEndPositionsExclusive The output chunk of end positions
      */
     void processRangeEnds(
@@ -124,6 +123,6 @@ interface RangeSearchKernel {
             @NotNull IntChunk<ChunkPositions> leftPositions,
             @NotNull Chunk<? extends Values> rightValues,
             @NotNull IntChunk<ChunkPositions> rightStartOffsets,
-            @NotNull IntChunk<ChunkLengths> rightLengths,
+            int rightSizeExpanded,
             @NotNull WritableIntChunk<? extends Values> outputEndPositionsExclusive);
 }

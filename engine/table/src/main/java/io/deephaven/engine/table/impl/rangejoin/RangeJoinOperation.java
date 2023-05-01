@@ -576,10 +576,10 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
             assert leftRows != null;
 
             final RowSet rightRows = rightGroupRowSets.get(index);
-            final boolean nonEmptyRight = rightRows != null && rightRows.isNonempty();
-            if (nonEmptyRight) {
+            final int rightSize = rightRows == null ? 0 : rightRows.intSize();
+            if (rightSize != 0) {
                 // Read right rows
-                tc.ensureRightCapacity(rightRows.intSize());
+                tc.ensureRightCapacity(rightSize);
                 rightRangeValues.fillChunk(tc.rightRangeValuesFillContext, tc.rightRangeValuesChunk, rightRows);
 
                 // Find and compact right runs, verifying order
@@ -601,7 +601,7 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
                     leftEndValues.fillChunk(tc.leftEndValuesFillContext, tc.leftEndValuesChunk, leftRowsSlice);
                     tc.leftSharedContext.reset();
 
-                    if (nonEmptyRight) {
+                    if (rightSize != 0) {
                         rangeSearchKernel.processInvalidRanges(
                                 tc.leftStartValuesChunk, tc.leftEndValuesChunk, tc.leftValidity,
                                 tc.outputStartPositionsInclusiveChunk, tc.outputEndPositionsExclusiveChunk);
@@ -612,14 +612,14 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
                         ChunkUtils.fillInOrder(tc.leftChunkPositions);
                         tc.leftSortKernel.sort(tc.leftChunkPositions, tc.leftStartValuesChunk);
                         rangeSearchKernel.processRangeStarts(tc.leftStartValuesChunk, tc.leftChunkPositions,
-                                tc.rightRangeValuesChunk, tc.rightStartOffsets, tc.rightLengths,
+                                tc.rightRangeValuesChunk, tc.rightStartOffsets, rightSize,
                                 tc.outputStartPositionsInclusiveChunk);
 
                         tc.leftChunkPositions.setSize(tc.leftEndValuesChunk.size());
                         ChunkUtils.fillInOrder(tc.leftChunkPositions);
                         tc.leftSortKernel.sort(tc.leftChunkPositions, tc.leftEndValuesChunk);
                         rangeSearchKernel.processRangeEnds(tc.leftEndValuesChunk, tc.leftChunkPositions,
-                                tc.rightRangeValuesChunk, tc.rightStartOffsets, tc.rightLengths,
+                                tc.rightRangeValuesChunk, tc.rightStartOffsets, rightSize,
                                 tc.outputEndPositionsExclusiveChunk);
                     } else {
                         rangeSearchKernel.processAllRangesForEmptyRight(
