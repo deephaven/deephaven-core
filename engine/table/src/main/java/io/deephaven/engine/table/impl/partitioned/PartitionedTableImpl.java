@@ -279,9 +279,9 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
             final Table asRefreshingIfNeeded = maybeCopyAsRefreshing(table, expectRefreshingResults);
 
             // Perform the transformation
-            resultTable = asRefreshingIfNeeded.update(new TableTransformationColumn(
+            resultTable = asRefreshingIfNeeded.update(List.of(new TableTransformationColumn(
                     constituentColumnName, executionContext,
-                    asRefreshingIfNeeded.isRefreshing() ? transformer : assertResultsStatic(transformer)));
+                    asRefreshingIfNeeded.isRefreshing() ? transformer : assertResultsStatic(transformer))));
             enclosingScope.manage(resultTable);
 
             // Make sure we have a valid result constituent definition
@@ -331,8 +331,10 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
             final Table asRefreshingIfNeeded = maybeCopyAsRefreshing(joined, expectRefreshingResults);
 
             resultTable = asRefreshingIfNeeded
-                    .update(new BiTableTransformationColumn(constituentColumnName, RHS_CONSTITUENT, executionContext,
-                            asRefreshingIfNeeded.isRefreshing() ? transformer : assertResultsStatic(transformer)))
+                    .update(List.of(
+                            new BiTableTransformationColumn(constituentColumnName, RHS_CONSTITUENT, executionContext,
+                                    asRefreshingIfNeeded.isRefreshing() ? transformer
+                                            : assertResultsStatic(transformer))))
                     .dropColumns(RHS_CONSTITUENT);
             enclosingScope.manage(resultTable);
 

@@ -139,7 +139,7 @@ public interface TreeTable extends HierarchicalTable<TreeTable> {
                         .naturalJoin(source,
                                 List.of(JoinMatch.of(parent, identifier)),
                                 List.of(JoinAddition.of(sentinel, identifier)))
-                        .view(viewColumns),
+                        .view(List.of(viewColumns)),
                 source::isRefreshing,
                 DynamicNode::isRefreshing);
     }

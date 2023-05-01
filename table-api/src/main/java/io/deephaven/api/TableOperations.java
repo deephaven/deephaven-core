@@ -944,9 +944,6 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
     TOPS selectDistinct(String... columns);
 
     @ConcurrentMethod
-    TOPS selectDistinct(Selectable... columns);
-
-    @ConcurrentMethod
     TOPS selectDistinct(Collection<? extends Selectable> columns);
 
     // -------------------------------------------------------------------------------------------

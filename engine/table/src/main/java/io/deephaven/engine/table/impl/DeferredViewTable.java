@@ -129,7 +129,7 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
             result = result.dropColumns(deferredDropColumns);
         }
         if (deferredViewColumns.length > 0) {
-            result = result.view(SelectColumn.copyFrom(deferredViewColumns));
+            result = result.view(List.of(SelectColumn.copyFrom(deferredViewColumns)));
         }
         return result;
     }

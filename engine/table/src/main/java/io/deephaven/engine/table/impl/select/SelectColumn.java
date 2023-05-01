@@ -27,6 +27,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * The interface for a query table to perform retrieve values from a column for select like operations.
@@ -49,6 +50,10 @@ public interface SelectColumn extends Selectable {
 
     static SelectColumn[] copyFrom(SelectColumn[] selectColumns) {
         return Arrays.stream(selectColumns).map(SelectColumn::copy).toArray(SelectColumn[]::new);
+    }
+
+    static Collection<SelectColumn> copyFrom(Collection<SelectColumn> selectColumns) {
+        return selectColumns.stream().map(SelectColumn::copy).collect(Collectors.toList());
     }
 
     /**

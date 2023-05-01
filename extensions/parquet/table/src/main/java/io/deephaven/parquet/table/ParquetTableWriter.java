@@ -331,13 +331,11 @@ public class ParquetTableWriter {
 
         Table transformed = table;
         if (!viewColumnsTransform.isEmpty()) {
-            transformed =
-                    transformed.view(viewColumnsTransform.toArray((SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY)));
+            transformed = transformed.view(viewColumnsTransform);
         }
 
         if (!updateViewColumnsTransform.isEmpty()) {
-            transformed = transformed
-                    .updateView(updateViewColumnsTransform.toArray(SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY));
+            transformed = transformed.updateView(updateViewColumnsTransform);
         }
         return transformed;
     }

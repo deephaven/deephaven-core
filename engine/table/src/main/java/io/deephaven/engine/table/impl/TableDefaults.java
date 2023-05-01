@@ -158,40 +158,10 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    @FinalDefault
-    default Table select(Selectable... columns) {
-        return select(List.of(columns));
-    }
-
-    @Override
     @ConcurrentMethod
     @FinalDefault
     default Table selectDistinct() {
         return selectDistinct(getDefinition().getColumnNamesArray());
-    }
-
-    @Override
-    @FinalDefault
-    default Table update(Selectable... newColumns) {
-        return update(List.of(newColumns));
-    }
-
-    @Override
-    @FinalDefault
-    default Table lazyUpdate(Selectable... newColumns) {
-        return lazyUpdate(List.of(newColumns));
-    }
-
-    @Override
-    @FinalDefault
-    default Table view(Selectable... columns) {
-        return view(List.of(columns));
-    }
-
-    @Override
-    @FinalDefault
-    default Table updateView(Selectable... newColumns) {
-        return updateView(List.of(newColumns));
     }
 
     @Override
@@ -247,14 +217,14 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
     @ConcurrentMethod
     @FinalDefault
     default Table formatColumns(String... columnFormats) {
-        final SelectColumn[] selectColumns = SelectColumnFactory.getFormatExpressions(columnFormats);
+        final List<SelectColumn> selectColumns = Arrays.asList(SelectColumnFactory.getFormatExpressions(columnFormats));
 
         final Set<String> existingColumns = getDefinition().getColumnNames()
                 .stream()
                 .filter(column -> !ColumnFormatting.isFormattingColumn(column))
                 .collect(Collectors.toSet());
 
-        final String[] unknownColumns = Arrays.stream(selectColumns)
+        final String[] unknownColumns = selectColumns.stream()
                 .map(sc -> ColumnFormatting.getFormatBaseColumn(sc.getName()))
                 .filter(column -> (column != null
                         && !column.equals(ColumnFormatting.Constants.ROW_FORMAT_WILDCARD)

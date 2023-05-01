@@ -122,10 +122,10 @@ public class QueryTableTest extends QueryTableTestBase {
         final SelectColumn sc = SelectColumnFactory.getExpression("Result = '2020-03-15T09:45:00.000000000 UTC'");
         // First time ok
         // noinspection unused
-        final Table t1 = empty.select(sc);
+        final Table t1 = empty.select(List.of(sc));
         // Second time throws exception
         // noinspection unused
-        final Table t2 = empty.select(sc);
+        final Table t2 = empty.select(List.of(sc));
     }
 
     /**
@@ -148,7 +148,7 @@ public class QueryTableTest extends QueryTableTestBase {
         final Table empty = emptyTable(5);
         final SelectColumn sc = SelectColumnFactory.getExpression("Result = '2020-03-15T09:45:00.000000000 UTC'");
         ((QueryTable) empty).validateSelect(sc);
-        empty.select(sc);
+        empty.select(List.of(sc));
     }
 
     /**
@@ -173,7 +173,7 @@ public class QueryTableTest extends QueryTableTestBase {
         final Table t = emptyTable(10).select("II = ii").where("II > 5");
         final SelectColumn sc = SelectColumnFactory.getExpression("XX = II + 1000");
         ((QueryTable) t).validateSelect(sc);
-        final Table result = t.select(sc);
+        final Table result = t.select(List.of(sc));
     }
 
     public void testIds1822() {
@@ -448,7 +448,7 @@ public class QueryTableTest extends QueryTableTestBase {
         final Table source = emptyTable(5).select("dt = nanosToTime(ii)", "n = ii");
         final Table result = source.dateTimeColumnAsNanos("dt");
         assertEquals((long[]) result.getColumn(0).getDirect(), LongStream.range(0, 5).toArray());
-        final Table reflexive = result.view(new ReinterpretedColumn<>("dt", long.class, "dt", DateTime.class));
+        final Table reflexive = result.view(List.of(new ReinterpretedColumn<>("dt", long.class, "dt", DateTime.class)));
         assertTableEquals(reflexive, source.dropColumns("n"));
         final Table sortedSource = source.sortDescending("dt").dropColumns("dt");
         final Table sortedResult = result.sortDescending("dt").dropColumns("dt");

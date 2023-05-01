@@ -269,12 +269,12 @@ public class ShiftedColumnsFactory extends VoidVisitorAdapter<ShiftedColumnsFact
             for (Map.Entry<Long, List<MatchPair>> entry : formulaMapPair.getSecond().entrySet()) {
                 if (entry.getKey() == 0) {
                     // if there is no shift, then just add an alias to the table
-                    Selectable[] colPairs = entry.getValue().stream()
+                    List<Selectable> colPairs = entry.getValue().stream()
                             .map(matchPair -> Selectable.of(
                                     ColumnName.of(formulaColumn.getName() + matchPair.leftColumn),
                                     ColumnName.of(matchPair.rightColumn)))
-                            .toArray(Selectable[]::new);
-                    Arrays.stream(colPairs).forEach(selectable -> columnsToDrop.add(selectable.newColumn().name()));
+                            .collect(Collectors.toList());
+                    colPairs.forEach(selectable -> columnsToDrop.add(selectable.newColumn().name()));
                     tableSoFar = tableSoFar.updateView(colPairs);
                 } else {
                     // Add formulaColName as prefix to ShiftedCols

@@ -18,6 +18,8 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * This class contains static methods to support conversions between various time types such as {@link DateTime},
@@ -53,7 +55,8 @@ public class TableTimeConversions {
             return source;
         }
 
-        return source.updateView(new ReinterpretedColumn<>(mp.rightColumn, colType, mp.leftColumn, resultType, params));
+        return source.updateView(
+                List.of(new ReinterpretedColumn<>(mp.rightColumn, colType, mp.leftColumn, resultType, params)));
     }
 
     // region To ZonedDateTime

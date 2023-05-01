@@ -288,18 +288,6 @@ public interface Table extends
     // Column Selection Operations
     // -----------------------------------------------------------------------------------------------------------------
 
-    Table select(Selectable... columns);
-
-    Table update(Selectable... newColumns);
-
-    Table lazyUpdate(Selectable... newColumns);
-
-    @ConcurrentMethod
-    Table view(Selectable... columns);
-
-    @ConcurrentMethod
-    Table updateView(Selectable... newColumns);
-
     @ConcurrentMethod
     Table dropColumnFormats();
 
