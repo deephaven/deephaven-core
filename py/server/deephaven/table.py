@@ -922,7 +922,11 @@ class Table(JObjectWrapper):
         try:
             filters = to_sequence(filters)
             with _query_scope_ctx():
-                return Table(j_table=self.j_table.where(*filters))
+                if filters and isinstance(filters[0], str):
+                    j_table = self.j_table.where(*filters)
+                else:
+                    j_table = self.j_table.where(j_array_list(filters))
+                return Table(j_table=j_table)
         except Exception as e:
             raise DHError(e, "table where operation failed.") from e
 
@@ -985,7 +989,7 @@ class Table(JObjectWrapper):
             filters = to_sequence(filters)
             with _query_scope_ctx():
                 return Table(
-                    j_table=self.j_table.where(_JFilterOr.of(_JFilter.from_(*filters)))
+                    j_table=self.j_table.where(j_array_list([_JFilterOr.of(_JFilter.from_(*filters))]))
                 )
         except Exception as e:
             raise DHError(e, "table where_one_of operation failed.") from e

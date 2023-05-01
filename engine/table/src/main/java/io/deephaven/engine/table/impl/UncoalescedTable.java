@@ -211,8 +211,8 @@ public abstract class UncoalescedTable<IMPL_TYPE extends UncoalescedTable<IMPL_T
 
     @Override
     @ConcurrentMethod
-    public Table where(Collection<? extends Filter> filters) {
-        return coalesce().where(filters);
+    public Table where(Filter filter) {
+        return coalesce().where(filter);
     }
 
     @Override

@@ -146,12 +146,11 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
     }
 
     @Override
-    public TreeTable withFilters(@NotNull Collection<? extends Filter> filters) {
-        if (filters.isEmpty()) {
+    public TreeTable withFilter(@NotNull Filter filter) {
+        final WhereFilter[] whereFilters = WhereFilter.fromInternal(filter);
+        if (whereFilters.length == 0) {
             return noopResult();
         }
-
-        final WhereFilter[] whereFilters = WhereFilter.from(filters);
         final Map<Boolean, List<WhereFilter>> nodeSuitabilityToFilters = Stream.of(whereFilters)
                 .peek(wf -> wf.init(source.getDefinition()))
                 .collect(Collectors.partitioningBy(wf -> {
@@ -163,10 +162,10 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
         final List<WhereFilter> sourceFilters = nodeSuitabilityToFilters.get(false);
 
         final NodeOperationsRecorder nodeFiltersRecorder =
-                nodeFilters.isEmpty() ? null : makeNodeOperationsRecorder().where(nodeFilters);
+                nodeFilters.isEmpty() ? null : makeNodeOperationsRecorder().where(Filter.and(nodeFilters));
         if (sourceFilters.isEmpty()) {
             Assert.neqNull(nodeFiltersRecorder, "nodeFiltersRecorder");
-            return withNodeOperations(makeNodeOperationsRecorder().where(nodeFilters));
+            return withNodeOperations(makeNodeOperationsRecorder().where(Filter.and(nodeFilters)));
         }
 
         final QueryTable filteredSource = (QueryTable) source.apply(

@@ -14,11 +14,13 @@ import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.util.annotations.FinalDefault;
+import io.deephaven.util.annotations.InternalUseOnly;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Interface for individual filters within a where clause.
@@ -35,6 +37,15 @@ public interface WhereFilter extends Filter {
 
     static WhereFilter[] copyFrom(WhereFilter[] filters) {
         return Arrays.stream(filters).map(WhereFilter::copy).toArray(WhereFilter[]::new);
+    }
+
+    static Collection<WhereFilter> copyFrom(Collection<WhereFilter> filters) {
+        return filters.stream().map(WhereFilter::copy).collect(Collectors.toList());
+    }
+
+    @InternalUseOnly
+    static WhereFilter[] fromInternal(Filter filter) {
+        return from(FilterToListImpl.of(filter));
     }
 
     /**
@@ -130,7 +141,7 @@ public interface WhereFilter extends Filter {
      *
      * <p>
      * Defaults to
-     * 
+     *
      * <pre>
      * {@code
      * try (final WritableRowSet regular = filter(selection, fullSet, table, usePrev)) {
@@ -141,7 +152,7 @@ public interface WhereFilter extends Filter {
      *
      * <p>
      * Implementations are encouraged to override this when they can provide more efficient implementations.
-     * 
+     *
      * @param selection the indices that should be filtered. The selection must be a subset of fullSet, and may include
      *        rows that the engine determines need not be evaluated to produce the result. Implementations <em>may
      *        not</em> mutate or {@link RowSet#close() close} {@code selection}.

@@ -454,7 +454,7 @@ public interface TableAdapter extends TableDefaults {
     }
 
     @Override
-    default Table where(Collection<? extends Filter> filters) {
+    default Table where(Filter filter) {
         return throwUnsupported();
     }
 

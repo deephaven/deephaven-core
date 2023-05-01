@@ -65,8 +65,8 @@ public abstract class TableBase implements TableSpec {
     }
 
     @Override
-    public final TableSpec where(Collection<? extends Filter> filters) {
-        return WhereTable.builder().parent(this).addAllFilters(filters).build();
+    public final TableSpec where(Filter filter) {
+        return WhereTable.of(this, filter);
     }
 
     @Override

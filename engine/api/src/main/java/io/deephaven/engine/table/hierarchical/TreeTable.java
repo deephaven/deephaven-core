@@ -64,12 +64,12 @@ public interface TreeTable extends HierarchicalTable<TreeTable> {
     TreeTable withNodeFilterColumns(@NotNull Collection<? extends ColumnName> columns);
 
     /**
-     * Apply a set of filters to the columns of this TreeTable in order to produce a new TreeTable.
+     * Apply a filter to the columns of this TreeTable in order to produce a new TreeTable.
      *
-     * @param filters The filters to apply
+     * @param filter The filter to apply
      * @return The new TreeTable
      */
-    TreeTable withFilters(@NotNull Collection<? extends Filter> filters);
+    TreeTable withFilter(@NotNull Filter filter);
 
     /**
      * Recorder for node-level operations to be applied when gathering snapshots.

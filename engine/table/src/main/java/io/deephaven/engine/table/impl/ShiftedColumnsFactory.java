@@ -124,6 +124,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -182,8 +183,8 @@ public class ShiftedColumnsFactory extends VoidVisitorAdapter<ShiftedColumnsFact
     }
 
     /**
-     * Performs {@link Table#where(Filter...)} operation on interim table built using shifted columns. Returns result
-     * table with only the original display columns.
+     * Performs {@link Table#where(Filter)} operation on interim table built using shifted columns. Returns result table
+     * with only the original display columns.
      *
      * @param source input table
      * @param shiftColPairs list of formula to shift column pairs
@@ -203,8 +204,9 @@ public class ShiftedColumnsFactory extends VoidVisitorAdapter<ShiftedColumnsFact
         return QueryPerformanceRecorder.withNugget(nuggetName, source.sizeForInstrumentation(), () -> {
             String[] displayColumns = source.getDefinition().getColumnNamesArray();
             Pair<Table, Filter[]> resultPair = getShiftedTableFilterPair(source, shiftColPairs);
-            Table result = resultPair.getFirst().where(Streams.concat(
-                    currFilters.stream(), Arrays.stream(resultPair.second)).collect(Collectors.toList()));
+            final List<Filter> filters = Streams.concat(currFilters.stream(), Arrays.stream(resultPair.second))
+                    .collect(Collectors.toList());
+            Table result = resultPair.getFirst().where(Filter.and(filters));
             return result.view(Selectable.from(displayColumns));
         });
     }

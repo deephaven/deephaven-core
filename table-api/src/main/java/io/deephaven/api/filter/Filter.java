@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 /**
  * Represents an evaluate-able filter.
  *
- * @see io.deephaven.api.TableOperations#where(Collection)
+ * @see io.deephaven.api.TableOperations#where(Filter)
  * @see FilterIsNull
  * @see FilterComparison
  * @see FilterIn

@@ -235,7 +235,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
                     + " found in filters: " + filters);
         }
         return new PartitionedTableImpl(
-                table.where(whereFilters),
+                table.where(Filter.and(whereFilters)),
                 keyColumnNames,
                 uniqueKeys,
                 constituentColumnName,

@@ -1072,8 +1072,8 @@ public class QueryTable extends BaseTable<QueryTable> {
     }
 
     @Override
-    public Table where(final Collection<? extends Filter> filters) {
-        return whereInternal(WhereFilter.from(filters));
+    public Table where(Filter filter) {
+        return whereInternal(WhereFilter.fromInternal(filter));
     }
 
     private QueryTable whereInternal(final WhereFilter... filters) {

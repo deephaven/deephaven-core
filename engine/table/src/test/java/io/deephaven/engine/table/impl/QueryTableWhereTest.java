@@ -48,6 +48,7 @@ import org.junit.Test;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Collections;
+import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -77,15 +78,15 @@ public abstract class QueryTableWhereTest {
         final QueryTable table = testRefreshingTable(i(2, 4, 6).toTracking(),
                 col("x", 1, 2, 3), col("y", 'a', 'b', 'c'));
 
-        assertTableEquals(table.where(Filter.from("k%2 == 0")), table);
+        assertTableEquals(table.where("k%2 == 0"), table);
         assertTableEquals(table.where(filter.apply("k%2 == 0")), table);
 
-        assertTableEquals(table.where(Filter.from("i%2 == 0")),
+        assertTableEquals(table.where("i%2 == 0"),
                 testRefreshingTable(i(2, 6).toTracking(), col("x", 1, 3), col("y", 'a', 'c')));
         assertTableEquals(table.where(filter.apply("i%2 == 0")), testRefreshingTable(
                 i(2, 6).toTracking(), col("x", 1, 3), col("y", 'a', 'c')));
 
-        assertTableEquals(table.where((Filter.from("(y-'a') = 2"))), testRefreshingTable(
+        assertTableEquals(table.where("(y-'a') = 2"), testRefreshingTable(
                 i(2).toTracking(), col("x", 3), col("y", 'c')));
         assertTableEquals(table.where(filter.apply("(y-'a') = 2")), testRefreshingTable(
                 i(2).toTracking(), col("x", 3), col("y", 'c')));
@@ -603,7 +604,8 @@ public abstract class QueryTableWhereTest {
         final EvalNugget[] en = new EvalNugget[] {
                 new EvalNugget() {
                     public Table e() {
-                        return filteredTable.where(Filter.or(Filter.from("Sym in `aa`, `ee`", "intCol % 2 == 0")));
+                        return filteredTable
+                                .where(Filter.or(Filter.from("Sym in `aa`, `ee`", "intCol % 2 == 0")));
                     }
                 },
                 new EvalNugget() {
