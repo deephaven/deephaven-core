@@ -261,7 +261,9 @@ message ExportedTableCreationResponse {
   // Whether or not this table might change.
   bool is_static = 5;
 
-  // The current number of rows for this table.
+  // The current number of rows for this table. If this is negative, the table isn't coalesced, meaning the
+  // size isn't known without scanning partitions. Typically, the client should filter the data by the
+  // partitioning columns first.
   sint64 size = 6 [jstype=JS_STRING];
 
   // TODO: attributes

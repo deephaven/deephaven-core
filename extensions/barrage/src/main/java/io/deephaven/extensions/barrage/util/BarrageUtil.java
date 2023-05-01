@@ -192,6 +192,8 @@ public class BarrageUtil {
             final Class<?> componentType = column.getComponentType();
             final Map<String, String> metadata = fieldMetadataFactory.apply(name);
 
+            putMetadata(metadata, "isPartitioning", column.isPartitioning() + "");
+
             // Wire up style and format column references
             final String styleFormatName = ColumnFormatting.getStyleFormatColumn(name);
             if (formatColumns.contains(styleFormatName)) {
