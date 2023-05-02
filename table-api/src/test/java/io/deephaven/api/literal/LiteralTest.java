@@ -90,8 +90,13 @@ public class LiteralTest {
      */
     public static void visitAll(Visitor<?> visitor) {
         visitor.visit(false);
+        visitor.visit((char) 0);
+        visitor.visit((byte) 0);
+        visitor.visit((short) 0);
         visitor.visit(0);
         visitor.visit(0L);
+        visitor.visit(0.0f);
+        visitor.visit(0.0);
         visitor.visit((String) null);
     }
 

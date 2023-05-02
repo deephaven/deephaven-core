@@ -204,31 +204,31 @@ public class Strings {
     }
 
     public static String of(char literal) {
-        return String.format("'%c'", literal);
+        return "'" + literal + "'";
     }
 
     public static String of(byte literal) {
-        return String.format("(byte)%d", literal);
+        return "(byte)" + literal;
     }
 
     public static String of(short literal) {
-        return String.format("(short)%d", literal);
+        return "(short)" + literal;
     }
 
     public static String of(int literal) {
-        return String.format("(int)%d", literal);
+        return "(int)" + literal;
     }
 
     public static String of(long literal) {
-        return String.format("%dL", literal);
+        return literal + "L";
     }
 
     public static String of(float literal) {
-        return String.format("%ff", literal);
+        return literal + "f";
     }
 
     public static String of(double literal) {
-        return String.format("%f", literal);
+        return Double.toString(literal);
     }
 
     public static String of(String literal) {
