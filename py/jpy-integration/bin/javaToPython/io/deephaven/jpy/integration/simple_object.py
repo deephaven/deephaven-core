@@ -1,0 +1,2 @@
+class SimpleObject( object ):
+  pass
