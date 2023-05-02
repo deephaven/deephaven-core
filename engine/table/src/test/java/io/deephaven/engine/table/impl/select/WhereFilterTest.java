@@ -21,14 +21,6 @@ public class WhereFilterTest extends TestCase {
     private static final ColumnName BAZ = ColumnName.of("Baz");
     private static final Literal V42 = Literal.of(42L);
 
-    public void testFoo() {
-        expect(FOO, ConditionFilter.class, "!isNull(Foo) && Foo");
-    }
-
-    public void testNotFoo() {
-        opposite(FOO, ConditionFilter.class, "isNull(Foo) || !Foo");
-    }
-
     public void testFooIsTrue() {
         expect(Filter.isTrue(FOO), MatchFilter.class, "Foo in [true]");
     }

@@ -105,17 +105,11 @@ public class FilterTest {
     }
 
     @Test
-    void filterColumnName() {
-        toString(FOO, "Foo");
-        toString(not(FOO), "!Foo");
-        toString(not(not(FOO)), "Foo");
-    }
-
-    @Test
     void filterEqPrecedence() {
-        toString(eq(or(FOO, eq(BAR, BAZ)), and(FOO, neq(BAR, BAZ))), "(Foo || (Bar == Baz)) == (Foo && (Bar != Baz))");
-        toString(not(eq(or(FOO, eq(BAR, BAZ)), and(FOO, neq(BAR, BAZ)))),
-                "(Foo || (Bar == Baz)) != (Foo && (Bar != Baz))");
+        toString(eq(or(isTrue(FOO), eq(BAR, BAZ)), and(isTrue(FOO), neq(BAR, BAZ))),
+                "((Foo == true) || (Bar == Baz)) == ((Foo == true) && (Bar != Baz))");
+        toString(not(eq(or(isTrue(FOO), eq(BAR, BAZ)), and(isTrue(FOO), neq(BAR, BAZ)))),
+                "((Foo == true) || (Bar == Baz)) != ((Foo == true) && (Bar != Baz))");
     }
 
     @Test
@@ -165,7 +159,6 @@ public class FilterTest {
         visitor.visit((FilterPattern) null);
         visitor.visit((FilterQuick) null);
         visitor.visit((FilterMatches) null);
-        visitor.visit((ColumnName) null);
         visitor.visit((Function) null);
         visitor.visit((Method) null);
         visitor.visit(false);
@@ -213,11 +206,6 @@ public class FilterTest {
         @Override
         public String visit(FilterMatches matches) {
             return of(matches);
-        }
-
-        @Override
-        public String visit(ColumnName columnName) {
-            return of(columnName);
         }
 
         @Override
@@ -288,12 +276,6 @@ public class FilterTest {
 
         @Override
         public CountingVisitor visit(FilterMatches matches) {
-            ++count;
-            return this;
-        }
-
-        @Override
-        public CountingVisitor visit(ColumnName columnName) {
             ++count;
             return this;
         }

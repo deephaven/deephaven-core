@@ -223,8 +223,6 @@ public interface Filter extends Expression, Serializable {
 
         T visit(FilterMatches matches);
 
-        T visit(ColumnName columnName);
-
         T visit(Function function);
 
         T visit(Method method);

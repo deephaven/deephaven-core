@@ -845,12 +845,6 @@ class BatchTableRequestBuilder {
         }
 
         @Override
-        public Condition visit(ColumnName columnName) {
-            // TODO(deephaven-core#3609): Update gRPC expression / filter / literal structures
-            throw new UnsupportedOperationException("Can't build Condition with ColumnName");
-        }
-
-        @Override
         public Condition visit(Function function) {
             // TODO(deephaven-core#3609): Update gRPC expression / filter / literal structures
             throw new UnsupportedOperationException("Can't build Condition with Function");

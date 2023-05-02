@@ -343,11 +343,6 @@ public class Strings {
         }
 
         @Override
-        public String visit(ColumnName columnName) {
-            return of(columnName, invert);
-        }
-
-        @Override
         public String visit(Function function) {
             return of(function, invert);
         }

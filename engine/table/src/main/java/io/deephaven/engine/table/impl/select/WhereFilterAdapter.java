@@ -59,12 +59,6 @@ public class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
         return MatchFilter.ofStringValues(matches, inverted);
     }
 
-    public static WhereFilter of(ColumnName columnName, boolean inverted) {
-        final String x = String.format(inverted ? "isNull(%s) || !%s" : "!isNull(%s) && %s", columnName.name(),
-                columnName.name());
-        return WhereFilterFactory.getExpression(x);
-    }
-
     public static WhereFilter of(Function function, boolean inverted) {
         // TODO(deephaven-core#3740): Remove engine crutch on io.deephaven.api.Strings
         return WhereFilterFactory.getExpression(Strings.of(function, inverted));
@@ -117,11 +111,6 @@ public class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
         // !A || !B || ... || !Z
         // A && B && ... && Z
         return inverted ? of(ands.invert()) : of(ands);
-    }
-
-    @Override
-    public WhereFilter visit(ColumnName columnName) {
-        return of(columnName, inverted);
     }
 
     @Override
