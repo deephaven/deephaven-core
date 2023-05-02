@@ -29,7 +29,7 @@ final class WhereFilterPatternImpl extends WhereFilterImpl {
 
     private static final long serialVersionUID = 1L;
 
-    public static WhereFilterPatternImpl of(FilterPattern pattern, boolean inverted) {
+    static WhereFilterPatternImpl of(FilterPattern pattern, boolean inverted) {
         if (!(pattern.expression() instanceof ColumnName)) {
             throw new IllegalArgumentException("WhereFilterPatternImpl only supports filtering against a column name");
         }
@@ -83,12 +83,12 @@ final class WhereFilterPatternImpl extends WhereFilterImpl {
 
     @Override
     public List<String> getColumns() {
-        return Collections.singletonList(columnName());
+        return List.of(columnName());
     }
 
     @Override
     public List<String> getColumnArrays() {
-        return Collections.emptyList();
+        return List.of();
     }
 
     @Override

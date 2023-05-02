@@ -140,7 +140,7 @@ class TreeNodeOperationsRecorder extends BaseNodeOperationsRecorder<TreeTable.No
         }
 
         private Stream<? extends WhereFilter> whereFilters() {
-            return Stream.of(WhereFilter.from(filters, getDefinition())).peek(wf -> wf.init(getDefinition()));
+            return Stream.of(WhereFilter.from(filters)).peek(wf -> wf.init(getDefinition()));
         }
     }
 }

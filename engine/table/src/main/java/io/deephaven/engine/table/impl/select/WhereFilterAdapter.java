@@ -16,7 +16,6 @@ import io.deephaven.api.filter.FilterOr;
 import io.deephaven.api.filter.FilterPattern;
 import io.deephaven.api.filter.FilterQuick;
 import io.deephaven.api.literal.Literal;
-import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.select.MatchFilter.MatchType;
 import io.deephaven.gui.table.filters.Condition;
 
@@ -24,20 +23,20 @@ import java.util.Objects;
 
 public class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
 
-    public static WhereFilter of(Filter filter, TableDefinition parentDefinition) {
-        return filter.walk(new WhereFilterAdapter(parentDefinition, false));
+    public static WhereFilter of(Filter filter) {
+        return filter.walk(new WhereFilterAdapter(false));
     }
 
-    public static WhereFilter of(FilterNot<?> not, TableDefinition parentDefinition) {
-        return not.filter().walk(new WhereFilterAdapter(parentDefinition, true));
+    public static WhereFilter of(FilterNot<?> not) {
+        return not.filter().walk(new WhereFilterAdapter(true));
     }
 
-    public static WhereFilter of(FilterOr ors, TableDefinition parentDefinition) {
-        return DisjunctiveFilter.of(ors, parentDefinition);
+    public static WhereFilter of(FilterOr ors) {
+        return DisjunctiveFilter.of(ors);
     }
 
-    public static WhereFilter of(FilterAnd ands, TableDefinition parentDefinition) {
-        return ConjunctiveFilter.of(ands, parentDefinition);
+    public static WhereFilter of(FilterAnd ands) {
+        return ConjunctiveFilter.of(ands);
     }
 
     public static WhereFilter of(FilterComparison comparison) {
@@ -52,8 +51,8 @@ public class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
         return WhereFilterPatternImpl.of(pattern, inverted);
     }
 
-    public static WhereFilter of(FilterQuick quick, TableDefinition parentDefinition) {
-        return WhereFilterFactory.quickFilter(quick, parentDefinition);
+    public static WhereFilter of(FilterQuick quick, boolean inverted) {
+        return WhereFilterQuickImpl.of(quick, inverted);
     }
 
     public static WhereFilter of(FilterMatches matches, boolean inverted) {
@@ -85,11 +84,9 @@ public class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
         return WhereFilterFactory.getExpression(Strings.of(rawString, false, inverted));
     }
 
-    private final TableDefinition parentDefinition;
     private final boolean inverted;
 
-    private WhereFilterAdapter(TableDefinition parentDefinition, boolean inverted) {
-        this.parentDefinition = Objects.requireNonNull(parentDefinition);
+    private WhereFilterAdapter(boolean inverted) {
         this.inverted = inverted;
     }
 
@@ -100,7 +97,7 @@ public class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
 
     @Override
     public WhereFilter visit(FilterNot<?> not) {
-        return inverted ? of(not.invert(), parentDefinition) : of(not, parentDefinition);
+        return inverted ? of(not.invert()) : of(not);
     }
 
     @Override
@@ -112,14 +109,14 @@ public class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
     public WhereFilter visit(FilterOr ors) {
         // !A && !B && ... && !Z
         // A || B || ... || Z
-        return inverted ? of(ors.invert(), parentDefinition) : of(ors, parentDefinition);
+        return inverted ? of(ors.invert()) : of(ors);
     }
 
     @Override
     public WhereFilter visit(FilterAnd ands) {
         // !A || !B || ... || !Z
         // A && B && ... && Z
-        return inverted ? of(ands.invert(), parentDefinition) : of(ands, parentDefinition);
+        return inverted ? of(ands.invert()) : of(ands);
     }
 
     @Override
@@ -134,7 +131,7 @@ public class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
 
     @Override
     public WhereFilter visit(FilterQuick quick) {
-        return inverted ? of(quick.invert(), parentDefinition) : of(quick, parentDefinition);
+        return of(quick, inverted);
     }
 
     @Override

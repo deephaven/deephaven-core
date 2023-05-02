@@ -8,7 +8,6 @@ import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.util.SafeCloseable;
 
 import java.util.*;
@@ -19,8 +18,8 @@ public class ConjunctiveFilter extends ComposedFilter {
         super(componentFilters);
     }
 
-    public static WhereFilter of(FilterAnd ands, TableDefinition parentDefinition) {
-        return makeConjunctiveFilter(WhereFilter.from(ands.filters(), parentDefinition));
+    public static WhereFilter of(FilterAnd ands) {
+        return makeConjunctiveFilter(WhereFilter.from(ands.filters()));
     }
 
     public static WhereFilter of(WhereFilter... filters) {

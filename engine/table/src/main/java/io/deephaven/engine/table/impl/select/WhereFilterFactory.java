@@ -221,20 +221,6 @@ public class WhereFilterFactory {
         return expressions.stream().map(WhereFilterFactory::getExpression).toArray(WhereFilter[]::new);
     }
 
-    public static WhereFilter quickFilter(FilterQuick quick, TableDefinition parentDefinition) {
-        if (!(quick.expression() instanceof ColumnName)) {
-            throw new IllegalArgumentException(
-                    "WhereFilterFactory quickFilter only supports filtering against a column name");
-        }
-        final String columnName = ((ColumnName) quick.expression()).name();
-        final ColumnDefinition<?> cd = parentDefinition.getColumn(columnName);
-        final WhereFilter filter = createQuickFilter(cd, quick.quickSearch(), QuickFilterMode.NORMAL);
-        if (filter == null) {
-            throw new UnsupportedOperationException("Unable to create quick filter for " + cd);
-        }
-        return filter;
-    }
-
     public static WhereFilter[] expandQuickFilter(
             @NotNull final TableDefinition tableDefinition,
             final String quickFilter,
@@ -323,6 +309,21 @@ public class WhereFilterFactory {
         }
 
         return filters.toArray(WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY);
+    }
+
+    static WhereFilter quickFilter(FilterQuick quick, TableDefinition tableDefinition) {
+        if (!(quick.expression() instanceof ColumnName)) {
+            throw new IllegalArgumentException(
+                    "WhereFilterFactory quickFilter only supports filtering against a column name");
+        }
+        final String columnName = ((ColumnName) quick.expression()).name();
+        final ColumnDefinition<?> cd = tableDefinition.getColumn(columnName);
+        final WhereFilter filter =
+                WhereFilterFactory.createQuickFilter(cd, quick.quickSearch(), QuickFilterMode.NORMAL);
+        if (filter == null) {
+            throw new UnsupportedOperationException("Unable to create quick filter for " + cd);
+        }
+        return filter;
     }
 
     private static WhereFilter createQuickFilter(ColumnDefinition<?> colDef, String quickFilter,

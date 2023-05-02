@@ -272,7 +272,7 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
         if (filters.isEmpty()) {
             return QueryPerformanceRecorder.withNugget(description + ".coalesce()", this::coalesce);
         }
-        final WhereFilter[] whereFilters = WhereFilter.from(filters, definition);
+        final WhereFilter[] whereFilters = WhereFilter.from(filters);
 
         ArrayList<WhereFilter> partitionFilters = new ArrayList<>();
         ArrayList<WhereFilter> groupFilters = new ArrayList<>();

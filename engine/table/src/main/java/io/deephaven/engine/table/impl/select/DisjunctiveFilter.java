@@ -8,7 +8,6 @@ import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.util.SafeCloseable;
 
 import java.util.*;
@@ -18,8 +17,8 @@ public class DisjunctiveFilter extends ComposedFilter {
         super(componentFilters);
     }
 
-    public static WhereFilter of(FilterOr ors, TableDefinition parentDefinition) {
-        return DisjunctiveFilter.makeDisjunctiveFilter(WhereFilter.from(ors.filters(), parentDefinition));
+    public static WhereFilter of(FilterOr ors) {
+        return DisjunctiveFilter.makeDisjunctiveFilter(WhereFilter.from(ors.filters()));
     }
 
     public static WhereFilter makeDisjunctiveFilter(WhereFilter... componentFilters) {

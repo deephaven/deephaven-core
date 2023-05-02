@@ -24,12 +24,12 @@ import java.util.List;
  */
 public interface WhereFilter extends Filter {
 
-    static WhereFilter of(Filter filter, TableDefinition parentDefinition) {
-        return (filter instanceof WhereFilter) ? (WhereFilter) filter : WhereFilterAdapter.of(filter, parentDefinition);
+    static WhereFilter of(Filter filter) {
+        return (filter instanceof WhereFilter) ? (WhereFilter) filter : WhereFilterAdapter.of(filter);
     }
 
-    static WhereFilter[] from(Collection<? extends Filter> filters, TableDefinition parentDefinition) {
-        return filters.stream().map(f -> of(f, parentDefinition)).toArray(WhereFilter[]::new);
+    static WhereFilter[] from(Collection<? extends Filter> filters) {
+        return filters.stream().map(WhereFilter::of).toArray(WhereFilter[]::new);
     }
 
     static WhereFilter[] copyFrom(WhereFilter[] filters) {

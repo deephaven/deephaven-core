@@ -225,7 +225,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
     @ConcurrentMethod
     @Override
     public PartitionedTableImpl filter(@NotNull final Collection<? extends Filter> filters) {
-        final WhereFilter[] whereFilters = WhereFilter.from(filters, table.getDefinition());
+        final WhereFilter[] whereFilters = WhereFilter.from(filters);
         final boolean invalidFilter = Arrays.stream(whereFilters).flatMap((final WhereFilter filter) -> {
             filter.init(table.getDefinition());
             return Stream.concat(filter.getColumns().stream(), filter.getColumnArrays().stream());

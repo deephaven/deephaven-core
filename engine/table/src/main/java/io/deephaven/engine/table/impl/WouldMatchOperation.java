@@ -51,7 +51,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
         }
 
         WhereFilter getFilter() {
-            return WhereFilter.of(wouldMatchPair.getFilter(), parent.getDefinition());
+            return WhereFilter.of(wouldMatchPair.getFilter());
         }
     }
 

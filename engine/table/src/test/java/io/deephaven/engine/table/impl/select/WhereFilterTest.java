@@ -9,10 +9,7 @@ import io.deephaven.api.expression.Function;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.filter.FilterComparison;
 import io.deephaven.api.literal.Literal;
-import io.deephaven.engine.table.TableDefinition;
 import junit.framework.TestCase;
-
-import java.util.Collections;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -22,8 +19,6 @@ public class WhereFilterTest extends TestCase {
     private static final ColumnName BAR = ColumnName.of("Bar");
     private static final ColumnName BAZ = ColumnName.of("Baz");
     private static final Literal V42 = Literal.of(42L);
-    private static final TableDefinition DUMMY_DEF = TableDefinition.of(Collections.emptyList());
-
     public void testFoo() {
         expect(FOO, ConditionFilter.class, "!isNull(Foo) && Foo");
     }
@@ -201,15 +196,15 @@ public class WhereFilterTest extends TestCase {
     }
 
     public void testFilterTrue() {
-        assertThat(WhereFilter.of(Filter.ofTrue(), DUMMY_DEF)).isEqualTo(WhereAllFilter.INSTANCE);
+        assertThat(WhereFilter.of(Filter.ofTrue())).isEqualTo(WhereAllFilter.INSTANCE);
     }
 
     public void testFilterFalse() {
-        assertThat(WhereFilter.of(Filter.ofFalse(), DUMMY_DEF)).isEqualTo(WhereNoneFilter.INSTANCE);
+        assertThat(WhereFilter.of(Filter.ofFalse())).isEqualTo(WhereNoneFilter.INSTANCE);
     }
 
     private static void expect(Filter filter, Class<? extends WhereFilter> clazz, String expected) {
-        WhereFilter impl = WhereFilter.of(filter, DUMMY_DEF);
+        WhereFilter impl = WhereFilter.of(filter);
         assertThat(impl).isInstanceOf(clazz);
         // WhereFilter doesn't necessary implement equals, so we need to use the string repr
         assertThat(impl.toString()).isEqualTo(expected);

@@ -271,7 +271,7 @@ public class RollupTableImpl extends HierarchicalTableImpl<RollupTable, RollupTa
             @NotNull final Collection<? extends ColumnName> groupByColumns,
             @NotNull final Collection<? extends Filter> filters,
             @NotNull final Function<String, ? extends RuntimeException> exceptionFactory) {
-        final WhereFilter[] whereFilters = WhereFilter.from(filters, source.getDefinition());
+        final WhereFilter[] whereFilters = WhereFilter.from(filters);
         for (final WhereFilter whereFilter : whereFilters) {
             whereFilter.init(source.getDefinition());
             final List<String> invalidColumnsUsed = whereFilter.getColumns().stream().map(ColumnName::of)
