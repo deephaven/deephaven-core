@@ -1211,7 +1211,7 @@ public class DateTimeUtils {
      *
      * @param dateTime time to format as a string.
      * @param timeZone time zone to use when formatting the string.
-     * @return null if either input is null; otherwise, the time formatted as a "yyyy-MM-ddThh" string.
+     * @return null if either input is null; otherwise, the time formatted as a "yyyy-MM-dd" string.
     */
     public static String formatDate(DateTime dateTime, TimeZone timeZone) {
         if (dateTime == null || timeZone == null) {
