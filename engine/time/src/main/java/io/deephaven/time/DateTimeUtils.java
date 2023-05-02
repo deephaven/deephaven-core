@@ -57,6 +57,7 @@ public class DateTimeUtils {
     /** Matches yyyyMMdd (consistent with ISO dates). */
     private static final Pattern STD_DATE_PATTERN2 =
             Pattern.compile("^(?<year>[0-9][0-9][0-9][0-9])(?<month>[0-9][0-9])(?<day>[0-9][0-9])$");
+
     /**
      * Matches variations of month/day/year or day/month/year or year/month/day - how this is interpreted depends on the
      * DateTimeUtils.dateStyle system property.
@@ -65,24 +66,35 @@ public class DateTimeUtils {
             Pattern.compile(
                     "^(?<part1>[0-9]?[0-9](?<part1sub2>[0-9][0-9])?)\\/(?<part2>[0-9]?[0-9])\\/(?<part3>[0-9]?[0-9](?<part3sub2>[0-9][0-9])?)$");
 
-    /** for use when interpreting two digit years (we use Java's rules). */
+    /** DateTimeFormatter for use when interpreting two digit years (we use Java's rules). */
     private static final DateTimeFormatter TWO_DIGIT_YR_FORMAT = DateTimeFormatter.ofPattern("yy");
 
     /**
-     * for LocalTime literals. Note these must begin with "L" to avoid ambiguity with the older
+     * Matches LocalTime literals. Note these must begin with "L" to avoid ambiguity with the older
      * TIME_AND_DURATION_PATTERN
      */
     private static final Pattern LOCAL_TIME_PATTERN =
             Pattern.compile("^L([0-9][0-9]):?([0-9][0-9])?:?([0-9][0-9])?(\\.([0-9]{1,9}))?");
 
-    // DateTime literals
+    /**
+     * Matches datetimes.
+     */
     private static final Pattern DATETIME_PATTERN = Pattern.compile(
             "[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9](T[0-9][0-9]?:[0-9][0-9](:[0-9][0-9])?(\\.[0-9][0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?)?)? [a-zA-Z]+");
+    /**
+     * Matches times and durations.
+     */
     private static final Pattern TIME_AND_DURATION_PATTERN = Pattern.compile(
             "\\-?([0-9]+T)?([0-9]+):([0-9]+)(:[0-9]+)?(\\.[0-9][0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?)?");
+    /**
+     * Matches periods.
+     */
     private static final Pattern PERIOD_PATTERN = Pattern.compile(
             "\\-?([0-9]+[Yy])?([0-9]+[Mm])?([0-9]+[Ww])?([0-9]+[Dd])?(T([0-9]+[Hh])?([0-9]+[Mm])?([0-9]+[Ss])?)?");
 
+    /**
+     * Matches datetimes.
+     */
     private static final Pattern CAPTURING_DATETIME_PATTERN = Pattern.compile(
             "(([0-9][0-9][0-9][0-9])-([0-9][0-9])-([0-9][0-9])T?)?(([0-9][0-9]?)(?::([0-9][0-9])(?::([0-9][0-9]))?(?:\\.([0-9][0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?))?)?)?( [a-zA-Z]+)?");
 
