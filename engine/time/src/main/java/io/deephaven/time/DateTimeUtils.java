@@ -1528,7 +1528,6 @@ public class DateTimeUtils {
         return dateTime.getJodaDateTime(timeZone).getDayOfMonth();
     }
 
-
     /**
      * Returns a 1-based int value of the day of the year (Julian date) for a {@link DateTime} in the specified time zone.
      * The first day of the year returns 1, the second day returns 2, etc.
@@ -1589,6 +1588,23 @@ public class DateTimeUtils {
         }
 
         return dateTime.getJodaDateTime(timeZone).getYearOfCentury();
+    }
+
+    /**
+     * Returns a {@link DateTime} for the prior midnight in the specified time zone.
+     *
+     * @param dateTime time to compute the prior midnight for.
+     * @param timeZone time zone.
+     * @return null if either input is null; otherwise a {@link DateTime} representing the prior midnight in the
+     *      specified time zone.
+     */
+    public static DateTime dateTimeAtMidnight(DateTime dateTime, TimeZone timeZone) {
+        if (dateTime == null || timeZone == null) {
+            return null;
+        }
+
+        return new DateTime(millisToNanos(new DateMidnight(dateTime.getMillis(), timeZone.getTimeZone()).getMillis())
+                + dateTime.getNanosPartial());
     }
 
     // endregion
@@ -2002,42 +2018,6 @@ public class DateTimeUtils {
 
 
 
-    /**
-     * Returns a {@link DateTime} for the requested {@link DateTime} at midnight in the specified time zone.
-     *
-     * @param dateTime {@link DateTime} for which the new value at midnight should be calculated.
-     * @param timeZone {@link TimeZone} for which the new value at midnight should be calculated.
-     * @return A null {@link DateTime} if either input is null, otherwise a {@link DateTime} representing midnight for
-     *         the date and time zone of the inputs.
-     */
-    public static DateTime dateTimeAtMidnight(DateTime dateTime, TimeZone timeZone) {
-        if (dateTime == null || timeZone == null) {
-            return null;
-        }
-
-        return new DateTime(millisToNanos(new DateMidnight(dateTime.getMillis(), timeZone.getTimeZone()).getMillis())
-                + dateTime.getNanosPartial());
-    }
-
-    //TODO: remove or support
-    /**
-     * Returns a {@link DateTime} representing midnight in a selected time zone on the date specified by a number of
-     * milliseconds from Epoch.
-     *
-     * @param millis A long value of the number of milliseconds from Epoch for which the {@link DateTime} is to be
-     *        calculated.
-     * @param timeZone {@link TimeZone} for which the new value at midnight should be calculated.
-     * @return A {@link DateTime} rounded down to midnight in the selected time zone for the specified number of
-     *         milliseconds from Epoch.
-     */
-    @SuppressWarnings("WeakerAccess")
-    public static DateTime millisToDateAtMidnight(final long millis, final TimeZone timeZone) {
-        if (millis == NULL_LONG) {
-            return null;
-        }
-
-        return new DateTime(millisToNanos(new DateMidnight(millis, timeZone.getTimeZone()).getMillis()));
-    }
 
 
 
@@ -2204,9 +2184,10 @@ public class DateTimeUtils {
         return null;
     }
 
+
     //TODO: RENAME: autoEpochToTime : epochAutoToDateTime
     //TODO: RENAME: autoEpochToNanos : epochAutoToEpochNanos
-
+    //TODO: RIP: millisToDateAtMidnight: replace with dateTimeAtMidnight(epochMillisToDateTime(millis), timeZone)
     //TODO: RIP: cappedTimeOffset : replace with: max(dt+p,cap)
     //TODO: RIP: expressionToNanos : replace with parseNanos or parseDateTime, note that it no longer parses datetimes (which was a bad idea)
     //TODO: RIP: createFormatter: deleted, see DateTimeFormatters.DATEONLY.format(datetime,timezone) and formatDate(datetime)

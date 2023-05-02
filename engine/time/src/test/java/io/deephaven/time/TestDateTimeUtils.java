@@ -46,11 +46,6 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         DateTime midnight = DateTimeUtils.dateTimeAtMidnight(dateTime, TimeZone.TZ_NY);
 
         TestCase.assertEquals(jodaMidnight.getMillis(), DateTimeUtils.epochMillis(midnight));
-        TestCase.assertEquals(jodaMidnight.getMillis(),
-                DateTimeUtils.millisToDateAtMidnight(dateTime.getMillis(), TimeZone.TZ_NY).getMillis());
-
-        TestCase.assertNull(DateTimeUtils.millisToDateAtMidnight(io.deephaven.util.QueryConstants.NULL_LONG,
-                TimeZone.TZ_NY));
     }
 
     public void testIsBefore() throws Exception {
