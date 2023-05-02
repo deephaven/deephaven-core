@@ -46,7 +46,7 @@ public class DateTimeObjectLongColumnTupleSource extends AbstractTupleSource<Lon
     @Override
     public final LongObjectLongTuple createTuple(final long rowKey) {
         return new LongObjectLongTuple(
-                DateTimeUtils.nanos(columnSource1.get(rowKey)),
+                DateTimeUtils.epochNanos(columnSource1.get(rowKey)),
                 columnSource2.get(rowKey),
                 columnSource3.getLong(rowKey)
         );
@@ -55,7 +55,7 @@ public class DateTimeObjectLongColumnTupleSource extends AbstractTupleSource<Lon
     @Override
     public final LongObjectLongTuple createPreviousTuple(final long rowKey) {
         return new LongObjectLongTuple(
-                DateTimeUtils.nanos(columnSource1.getPrev(rowKey)),
+                DateTimeUtils.epochNanos(columnSource1.getPrev(rowKey)),
                 columnSource2.getPrev(rowKey),
                 columnSource3.getPrevLong(rowKey)
         );
@@ -64,7 +64,7 @@ public class DateTimeObjectLongColumnTupleSource extends AbstractTupleSource<Lon
     @Override
     public final LongObjectLongTuple createTupleFromValues(@NotNull final Object... values) {
         return new LongObjectLongTuple(
-                DateTimeUtils.nanos((DateTime)values[0]),
+                DateTimeUtils.epochNanos((DateTime)values[0]),
                 values[1],
                 TypeUtils.unbox((Long)values[2])
         );
@@ -73,7 +73,7 @@ public class DateTimeObjectLongColumnTupleSource extends AbstractTupleSource<Lon
     @Override
     public final LongObjectLongTuple createTupleFromReinterpretedValues(@NotNull final Object... values) {
         return new LongObjectLongTuple(
-                DateTimeUtils.nanos((DateTime)values[0]),
+                DateTimeUtils.epochNanos((DateTime)values[0]),
                 values[1],
                 TypeUtils.unbox((Long)values[2])
         );
@@ -83,7 +83,7 @@ public class DateTimeObjectLongColumnTupleSource extends AbstractTupleSource<Lon
     @Override
     public final <ELEMENT_TYPE> void exportElement(@NotNull final LongObjectLongTuple tuple, final int elementIndex, @NotNull final WritableColumnSource<ELEMENT_TYPE> writableSource, final long destinationRowKey) {
         if (elementIndex == 0) {
-            writableSource.set(destinationRowKey, (ELEMENT_TYPE) DateTimeUtils.nanosToDateTime(tuple.getFirstElement()));
+            writableSource.set(destinationRowKey, (ELEMENT_TYPE) DateTimeUtils.epochNanosToDateTime(tuple.getFirstElement()));
             return;
         }
         if (elementIndex == 1) {
@@ -100,7 +100,7 @@ public class DateTimeObjectLongColumnTupleSource extends AbstractTupleSource<Lon
     @Override
     public final Object exportElement(@NotNull final LongObjectLongTuple tuple, int elementIndex) {
         if (elementIndex == 0) {
-            return DateTimeUtils.nanosToDateTime(tuple.getFirstElement());
+            return DateTimeUtils.epochNanosToDateTime(tuple.getFirstElement());
         }
         if (elementIndex == 1) {
             return tuple.getSecondElement();
@@ -114,7 +114,7 @@ public class DateTimeObjectLongColumnTupleSource extends AbstractTupleSource<Lon
     @Override
     public final Object exportElementReinterpreted(@NotNull final LongObjectLongTuple tuple, int elementIndex) {
         if (elementIndex == 0) {
-            return DateTimeUtils.nanosToDateTime(tuple.getFirstElement());
+            return DateTimeUtils.epochNanosToDateTime(tuple.getFirstElement());
         }
         if (elementIndex == 1) {
             return tuple.getSecondElement();
@@ -132,7 +132,7 @@ public class DateTimeObjectLongColumnTupleSource extends AbstractTupleSource<Lon
         ObjectChunk<Object, ? extends Values> chunk2 = chunks[1].asObjectChunk();
         LongChunk<? extends Values> chunk3 = chunks[2].asLongChunk();
         for (int ii = 0; ii < chunkSize; ++ii) {
-            destinationObjectChunk.set(ii, new LongObjectLongTuple(DateTimeUtils.nanos(chunk1.get(ii)), chunk2.get(ii), chunk3.get(ii)));
+            destinationObjectChunk.set(ii, new LongObjectLongTuple(DateTimeUtils.epochNanos(chunk1.get(ii)), chunk2.get(ii), chunk3.get(ii)));
         }
         destinationObjectChunk.setSize(chunkSize);
     }

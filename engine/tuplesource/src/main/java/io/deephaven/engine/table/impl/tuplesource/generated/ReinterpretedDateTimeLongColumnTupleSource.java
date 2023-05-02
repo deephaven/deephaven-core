@@ -58,7 +58,7 @@ public class ReinterpretedDateTimeLongColumnTupleSource extends AbstractTupleSou
     @Override
     public final LongLongTuple createTupleFromValues(@NotNull final Object... values) {
         return new LongLongTuple(
-                DateTimeUtils.nanos((DateTime)values[0]),
+                DateTimeUtils.epochNanos((DateTime)values[0]),
                 TypeUtils.unbox((Long)values[1])
         );
     }
@@ -75,7 +75,7 @@ public class ReinterpretedDateTimeLongColumnTupleSource extends AbstractTupleSou
     @Override
     public final <ELEMENT_TYPE> void exportElement(@NotNull final LongLongTuple tuple, final int elementIndex, @NotNull final WritableColumnSource<ELEMENT_TYPE> writableSource, final long destinationRowKey) {
         if (elementIndex == 0) {
-            writableSource.set(destinationRowKey, (ELEMENT_TYPE) DateTimeUtils.nanosToDateTime(tuple.getFirstElement()));
+            writableSource.set(destinationRowKey, (ELEMENT_TYPE) DateTimeUtils.epochNanosToDateTime(tuple.getFirstElement()));
             return;
         }
         if (elementIndex == 1) {
@@ -88,7 +88,7 @@ public class ReinterpretedDateTimeLongColumnTupleSource extends AbstractTupleSou
     @Override
     public final Object exportElement(@NotNull final LongLongTuple tuple, int elementIndex) {
         if (elementIndex == 0) {
-            return DateTimeUtils.nanosToDateTime(tuple.getFirstElement());
+            return DateTimeUtils.epochNanosToDateTime(tuple.getFirstElement());
         }
         if (elementIndex == 1) {
             return TypeUtils.box(tuple.getSecondElement());

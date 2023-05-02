@@ -15,7 +15,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
 
-import static io.deephaven.time.DateTimeUtils.nanosToDateTime;
+import static io.deephaven.time.DateTimeUtils.epochNanosToDateTime;
 
 /**
  * A {@link SsmBackedColumnSource} for Longs.
@@ -69,7 +69,7 @@ public class DateTimeSsmSourceWrapper extends AbstractColumnSource<ObjectVector>
 
         @Override
         public DateTime get(long index) {
-            return nanosToDateTime(underlying.get(index));
+            return epochNanosToDateTime(underlying.get(index));
         }
 
         @Override
@@ -125,7 +125,7 @@ public class DateTimeSsmSourceWrapper extends AbstractColumnSource<ObjectVector>
         public static ObjectVector<DateTime> getPrevValues(LongVector previousLongs) {
             final DateTime[] asDates = new DateTime[previousLongs.intSize()];
             for (int ii = 0; ii < asDates.length; ii++) {
-                asDates[ii] = nanosToDateTime(previousLongs.get(ii));
+                asDates[ii] = epochNanosToDateTime(previousLongs.get(ii));
             }
 
             return new ObjectVectorDirect<>(asDates);

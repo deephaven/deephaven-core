@@ -107,7 +107,7 @@ public class TimeTableTest extends RefreshingTableTestCase {
     @Test
     public void testProvidedStartTimeOnBoundary() {
         build(TimeTable.newBuilder()
-                .startTime(DateTimeUtils.nanosToDateTime(10))
+                .startTime(DateTimeUtils.epochNanosToDateTime(10))
                 .period(10));
 
         tick(9);
@@ -121,7 +121,7 @@ public class TimeTableTest extends RefreshingTableTestCase {
     @Test
     public void testProvidedStartTimeOffsetPeriod() {
         build(TimeTable.newBuilder()
-                .startTime(DateTimeUtils.nanosToDateTime(15))
+                .startTime(DateTimeUtils.epochNanosToDateTime(15))
                 .period(10));
 
         tick(14);
@@ -173,7 +173,7 @@ public class TimeTableTest extends RefreshingTableTestCase {
     public void testStreamProvidedStartTimeOnBoundary() {
         build(TimeTable.newBuilder()
                 .streamTable(true)
-                .startTime(DateTimeUtils.nanosToDateTime(10))
+                .startTime(DateTimeUtils.epochNanosToDateTime(10))
                 .period(10));
 
         tick(9);
@@ -188,7 +188,7 @@ public class TimeTableTest extends RefreshingTableTestCase {
     public void testStreamProvidedStartTimeOffsetPeriod() {
         build(TimeTable.newBuilder()
                 .streamTable(true)
-                .startTime(DateTimeUtils.nanosToDateTime(15))
+                .startTime(DateTimeUtils.epochNanosToDateTime(15))
                 .period(10));
 
         tick(14);
@@ -214,7 +214,7 @@ public class TimeTableTest extends RefreshingTableTestCase {
 
         final Long[] longKeys = new Long[] {null, 1000L, 1050L, 1100L, 1025L};
         final DateTime[] keys = Arrays.stream(longKeys)
-                .map(l -> l == null ? null : DateTimeUtils.nanosToDateTime(l))
+                .map(l -> l == null ? null : DateTimeUtils.epochNanosToDateTime(l))
                 .toArray(DateTime[]::new);
         try (final RowSet match =
                 dtColumn.match(false, false, false, RowSetFactory.fromRange(100, 110), (Object[]) keys)) {

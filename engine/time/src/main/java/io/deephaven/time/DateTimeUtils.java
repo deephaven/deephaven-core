@@ -102,13 +102,11 @@ public class DateTimeUtils {
 
     // region Time Constants
 
-    //TODO: no equivalent
     /**
      * One microsecond in nanoseconds.
      */
     public static final long MICRO = 1_000;
 
-    //TODO: no equivalent
     /**
      * One millisecond in nanoseconds.
      */
@@ -273,7 +271,6 @@ public class DateTimeUtils {
         DateTimeUtils.clock = clock;
     }
 
-    //TODO: no equivalent
     /**
      * Returns the clock used to compute the current time.  This may be the current system clock, or it may be an alternative
      * clock used for replay simulations.
@@ -301,7 +298,6 @@ public class DateTimeUtils {
         return DateTime.of(currentClock());
     }
 
-    //TODO: no equivalent
     /**
      * Provides the current {@link DateTime}, with millisecond resolution, according to the current clock.
      * Under most circumstances, this method will return the current system time, but during replay simulations,
@@ -316,7 +312,6 @@ public class DateTimeUtils {
         return DateTime.ofMillis(currentClock());
     }
 
-    //TODO: no equivalent
     /**
      * Provides the current {@link DateTime} according to the system clock.
      * Note that the system time may not be desirable during replay simulations.
@@ -380,7 +375,7 @@ public class DateTimeUtils {
 
         @Override
         void update(final long currentTimeMillis) {
-            value = formatDate(millisToDateTime(currentTimeMillis), timeZone);
+            value = formatDate(epochMillisToDateTime(currentTimeMillis), timeZone);
             valueExpirationTimeMillis = new org.joda.time.DateTime(currentTimeMillis, timeZone.getTimeZone())
                     .withFieldAdded(DurationFieldType.days(), 1).withTimeAtStartOfDay().getMillis();
         }
@@ -398,7 +393,6 @@ public class DateTimeUtils {
     private static final KeyedObjectHashMap<TimeZone, CachedCurrentDate> cachedCurrentDates =
             new KeyedObjectHashMap<>(new CachedDateKey<>());
 
-    //TODO: no equivalent
     /**
      * Provides the current date according to the current clock.
      * Under most circumstances, this method will return the date according to current system time, but during replay simulations,
@@ -416,7 +410,6 @@ public class DateTimeUtils {
 
     // region Time Conversions
 
-    //TODO: no equivalent
     /**
      * Converts microseconds to nanoseconds.
      *
@@ -451,7 +444,6 @@ public class DateTimeUtils {
         return millis * 1000000;
     }
 
-    //TODO: no equivalent
     /**
      * Converts seconds to nanoseconds.
      *
@@ -470,7 +462,6 @@ public class DateTimeUtils {
         return seconds * 1000000000L;
     }
 
-    //TODO: no equivalent
     /**
      * Converts nanoseconds to microseconds.
      *
@@ -478,7 +469,6 @@ public class DateTimeUtils {
      * @return {@link QueryConstants#NULL_LONG} if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
      *      nanoseconds converted to microseconds, rounded down.
      */
-    @SuppressWarnings("WeakerAccess")
     public static long nanosToMicros(long nanos) {
         if (nanos == NULL_LONG) {
             return NULL_LONG;
@@ -501,7 +491,6 @@ public class DateTimeUtils {
         return nanos / MILLI;
     }
 
-    //TODO: no equivalent
     /**
      * Converts nanoseconds to seconds.
      *
@@ -509,7 +498,6 @@ public class DateTimeUtils {
      * @return {@link QueryConstants#NULL_LONG} if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
      *      nanoseconds converted to seconds, rounded down.
      */
-    @SuppressWarnings("WeakerAccess")
     public static long nanosToSeconds(long nanos) {
         if (nanos == NULL_LONG) {
             return NULL_LONG;
@@ -517,14 +505,15 @@ public class DateTimeUtils {
         return nanos / SECOND;
     }
 
-    //TODO: add epoch to the name?
+    //TODO: rename these to dateTimeToEpochSeconds??? --- consider the excel method naming as well
+
     /**
      * Returns nanoseconds from the Epoch for a {@link DateTime} value.
      *
      * @param dateTime {@link DateTime} to compute the Epoch offset for.
      * @return nanoseconds since Epoch, or a NULL_LONG value if the {@link DateTime} is null.
      */
-    public static long nanos(DateTime dateTime) {
+    public static long epochNanos(DateTime dateTime) {
         if (dateTime == null) {
             return NULL_LONG;
         }
@@ -532,14 +521,27 @@ public class DateTimeUtils {
         return dateTime.getNanos();
     }
 
-    //TODO: add epoch to the name?
+    /**
+     * Returns microseconds from the Epoch for a {@link DateTime} value.
+     *
+     * @param dateTime {@link DateTime} to compute the Epoch offset for.
+     * @return microseconds since Epoch, or a NULL_LONG value if the {@link DateTime} is null.
+     */
+    public static long epochMicros(DateTime dateTime) {
+        if (dateTime == null) {
+            return NULL_LONG;
+        }
+
+        return nanosToMicros(dateTime.getNanos());
+    }
+
     /**
      * Returns milliseconds from the Epoch for a {@link DateTime} value.
      *
      * @param dateTime {@link DateTime} to compute the Epoch offset for.
      * @return milliseconds since Epoch, or a NULL_LONG value if the {@link DateTime} is null.
      */
-    public static long millis(DateTime dateTime) {
+    public static long epochMillis(DateTime dateTime) {
         if (dateTime == null) {
             return NULL_LONG;
         }
@@ -547,15 +549,13 @@ public class DateTimeUtils {
         return dateTime.getMillis();
     }
 
-    //TODO: add epoch to the name?
-    //TODO: no equivalent
     /**
      * Returns seconds since from the Epoch for a {@link DateTime} value.
      *
      * @param dateTime {@link DateTime} to compute the Epoch offset for.
      * @return seconds since Epoch, or a NULL_LONG value if the {@link DateTime} is null.
      */
-    public static long seconds(DateTime dateTime) {
+    public static long epochSeconds(DateTime dateTime) {
         if (dateTime == null) {
             return NULL_LONG;
         }
@@ -563,7 +563,6 @@ public class DateTimeUtils {
         return dateTime.getMillis() / 1000;
     }
 
-    //TODO: add epoch to the name?
     /**
      * Converts nanoseconds from the Epoch to a {@link DateTime}.
      *
@@ -572,12 +571,10 @@ public class DateTimeUtils {
      *      nanoseconds from the Epoch converted to a {@link DateTime}.
      * @throws DateTimeOverflowException if the resultant {@link DateTime} exceeds the supported range.
      */
-    public static DateTime nanosToDateTime(long nanos) {
+    public static DateTime epochNanosToDateTime(long nanos) {
         return nanos == NULL_LONG ? null : new DateTime(nanos);
     }
 
-    //TODO: add epoch to the name?
-    //TODO: no equivalent
     /**
      * Converts microseconds from the Epoch to a {@link DateTime}.
      *
@@ -586,11 +583,10 @@ public class DateTimeUtils {
      *      microseconds from the Epoch converted to a {@link DateTime}.
      * @throws DateTimeOverflowException if the resultant {@link DateTime} exceeds the supported range.
      */
-    public static DateTime microsToDateTime(long micros) {
-        return nanosToDateTime(microsToNanos(micros));
+    public static DateTime epochMicrosToDateTime(long micros) {
+        return epochNanosToDateTime(microsToNanos(micros));
     }
 
-    //TODO: add epoch to the name?
     /**
      * Converts milliseconds from the Epoch to a {@link DateTime}.
      *
@@ -599,13 +595,12 @@ public class DateTimeUtils {
      *      milliseconds from the Epoch converted to a {@link DateTime}.
      * @throws DateTimeOverflowException if the resultant {@link DateTime} exceeds the supported range.
      */
-    public static DateTime millisToDateTime(long millis) {
-        return nanosToDateTime(millisToNanos(millis));
+    public static DateTime epochMillisToDateTime(long millis) {
+        return epochNanosToDateTime(millisToNanos(millis));
     }
 
-    //TODO: add epoch to the name?
     //TODO: rename seconds to sec in methods?
-    //TODO: no equivalent
+
     /**
      * Converts seconds from the Epoch to a {@link DateTime}.
      *
@@ -614,12 +609,10 @@ public class DateTimeUtils {
      *      seconds from the Epoch converted to a {@link DateTime}.
      * @throws DateTimeOverflowException if the resultant {@link DateTime} exceeds the supported range.
      */
-    public static DateTime secondsToDateTime(long seconds) {
-        return nanosToDateTime(secondsToNanos(seconds));
+    public static DateTime epochSecondsToDateTime(long seconds) {
+        return epochNanosToDateTime(secondsToNanos(seconds));
     }
 
-    //TODO: no equivalent
-    //TODO: make this method private b/c of timezone?
     /**
      * Converts a {@link DateTime} to an Excel time represented as a double.
      *
@@ -627,7 +620,6 @@ public class DateTimeUtils {
      * @param timeZone {@link java.util.TimeZone} to use when interpreting the {@link DateTime}.
      * @return 0.0 if either input is null; otherwise, the input {@link DateTime} converted to an Excel time represented as a double.
      */
-    @SuppressWarnings("WeakerAccess")
     public static double dateTimeToExcel(DateTime dateTime, java.util.TimeZone timeZone) {
         if (dateTime == null || timeZone == null) {
             return 0.0d;
@@ -637,19 +629,48 @@ public class DateTimeUtils {
         return (double) (millis + timeZone.getOffset(millis)) / 86400000 + 25569;
     }
 
-    //TODO: no equivalent
     /**
      * Converts a {@link DateTime} to an Excel time represented as a double.
      *
      * @param dateTime {@link DateTime} to convert.
      * @param timeZone {@link TimeZone} to use when interpreting the {@link DateTime}.
+     * @return 0.0 if either input is null; otherwise, the input {@link DateTime} converted to an Excel time represented as a double.
      */
-    @SuppressWarnings("WeakerAccess")
     public static double dateTimeToExcel(DateTime dateTime, TimeZone timeZone) {
         return dateTimeToExcel(dateTime, timeZone.getTimeZone().toTimeZone());
     }
 
-    //TODO: add excelToDateTime
+    /**
+     * Converts an Excel time represented as a double to a {@link DateTime}.
+     *
+     * @param excel excel time represented as a double.
+     * @param timeZone {@link java.util.TimeZone} to use when interpreting the Excel time.
+     * @return null if timeZone is null; otherwise, the input Excel time converted to a {@link DateTime}.
+     */
+    public static DateTime excelToDateTime(double excel, java.util.TimeZone timeZone) {
+        if(timeZone == null) {
+            return null;
+        }
+
+        //TODO: test this DST handling
+        final long mpo = (long)((excel - 25569) * 86400000);
+        final long o = timeZone.getOffset(mpo);
+        final long m = mpo - o;
+        final long o2 = timeZone.getOffset(m);
+        final long m2 = mpo-o2;
+        return epochMillisToDateTime(m2);
+    }
+
+    /**
+     * Converts an Excel time represented as a double to a {@link DateTime}.
+     *
+     * @param excel excel time represented as a double.
+     * @param timeZone {@link java.util.TimeZone} to use when interpreting the Excel time.
+     * @return null if timeZone is null; otherwise, the input Excel time converted to a {@link DateTime}.
+     */
+    public static DateTime excelToDateTime(double excel, TimeZone timeZone) {
+        return excelToDateTime(excel, timeZone.getTimeZone().toTimeZone());
+    }
 
     // endregion
 
@@ -1250,7 +1271,6 @@ public class DateTimeUtils {
 
     // region Chronology
 
-    //TODO: no equivalent
     /**
      * Returns the number of nanoseconds that have elapsed since the top of the millisecond.
      *
@@ -1266,7 +1286,6 @@ public class DateTimeUtils {
         return (int) dateTime.getNanosPartial();
     }
 
-    //TODO: no equivalent
     /**
      * Returns the number of microseconds that have elapsed since the top of the millisecond.
      * Nanoseconds are rounded, not dropped -- '20:41:39.123456700' has 457 micros, not 456.
@@ -1556,7 +1575,7 @@ public class DateTimeUtils {
             return null;
         }
 
-        return nanosToDateTime(Numeric.lowerBin(dateTime.getNanos(), intervalNanos));
+        return epochNanosToDateTime(Numeric.lowerBin(dateTime.getNanos(), intervalNanos));
     }
 
     /**
@@ -1575,7 +1594,7 @@ public class DateTimeUtils {
             return null;
         }
 
-        return nanosToDateTime(Numeric.lowerBin(dateTime.getNanos() - offset, intervalNanos) + offset);
+        return epochNanosToDateTime(Numeric.lowerBin(dateTime.getNanos() - offset, intervalNanos) + offset);
     }
 
     /**
@@ -1592,7 +1611,7 @@ public class DateTimeUtils {
             return null;
         }
 
-        return nanosToDateTime(Numeric.upperBin(dateTime.getNanos(), intervalNanos));
+        return epochNanosToDateTime(Numeric.upperBin(dateTime.getNanos(), intervalNanos));
     }
 
     /**
@@ -1612,7 +1631,7 @@ public class DateTimeUtils {
             return null;
         }
 
-        return nanosToDateTime(Numeric.upperBin(dateTime.getNanos() - offset, intervalNanos) + offset);
+        return epochNanosToDateTime(Numeric.upperBin(dateTime.getNanos() - offset, intervalNanos) + offset);
     }
 
     // endregion
@@ -1631,7 +1650,6 @@ public class DateTimeUtils {
         return epochSecond * 1_000_000_000L + nanoOfSecond;
     }
 
-    //TODO: no equivalent
     /**
      * Returns nanoseconds since Epoch for an {@link Instant} value.
      *
@@ -1645,7 +1663,6 @@ public class DateTimeUtils {
         return Math.addExact(TimeUnit.SECONDS.toNanos(instant.getEpochSecond()), instant.getNano());
     }
 
-    //TODO: no equivalent
     /**
      * Convert the specified instant to nanoseconds since epoch, or {@link QueryConstants#NULL_LONG null}.
      *
@@ -1661,7 +1678,6 @@ public class DateTimeUtils {
         return safeComputeNanos(value.getEpochSecond(), value.getNano());
     }
 
-    //TODO: no equivalent
     /**
      * Convert the specified {@link ZonedDateTime} to nanoseconds since epoch, or {@link QueryConstants#NULL_LONG null}.
      *
@@ -1677,7 +1693,6 @@ public class DateTimeUtils {
         return safeComputeNanos(value.toEpochSecond(), value.getNano());
     }
 
-    //TODO: no equivalent
     /**
      * Convert nanos since epoch to an {@link Instant} value.
      *
@@ -1689,7 +1704,6 @@ public class DateTimeUtils {
         return nanos == NULL_LONG ? null : Instant.ofEpochSecond(nanos / 1_000_000_000L, nanos % 1_000_000_000L);
     }
 
-    //TODO: no equivalent
     /**
      * Converts nanos of epoch to a {@link ZonedDateTime} using the {@link TimeZone#TZ_DEFAULT default} time zone.
      *
@@ -1701,7 +1715,6 @@ public class DateTimeUtils {
         return makeZonedDateTime(nanos, TimeZone.TZ_DEFAULT.getZoneId());
     }
 
-    //TODO: no equivalent
     /**
      * Converts nanos of epoch to a {@link ZonedDateTime}.
      *
@@ -1715,7 +1728,6 @@ public class DateTimeUtils {
         return makeZonedDateTime(nanos, timeZone.getZoneId());
     }
 
-    //TODO: no equivalent
     /**
      * Converts nanos of epoch to a {@link ZonedDateTime}.
      *
@@ -1730,7 +1742,6 @@ public class DateTimeUtils {
         return nanos == NULL_LONG ? null : ZonedDateTime.ofInstant(makeInstant(nanos), zone);
     }
 
-    //TODO: no equivalent
     /**
      * Converts a {@link DateTime} to a {@link ZonedDateTime}.
      *
@@ -1743,7 +1754,6 @@ public class DateTimeUtils {
         return getZonedDateTime(dateTime, TimeZone.TZ_DEFAULT);
     }
 
-    //TODO: no equivalent
     /**
      * Converts a {@link DateTime} to a {@link ZonedDateTime}.
      *
@@ -1761,7 +1771,6 @@ public class DateTimeUtils {
         return dateTime.toZonedDateTime(zone);
     }
 
-    //TODO: no equivalent
     /**
      * Converts a {@link DateTime} to a {@link ZonedDateTime}.
      *
@@ -1778,7 +1787,6 @@ public class DateTimeUtils {
         return dateTime.toZonedDateTime(timeZone);
     }
 
-    //TODO: no equivalent
     /**
      * Converts a {@link ZonedDateTime} to a {@link DateTime}.
      *
@@ -1803,7 +1811,6 @@ public class DateTimeUtils {
         return new DateTime(nanos + (seconds * DateTimeUtils.SECOND));
     }
 
-    //TODO: no equivalent
     /**
      * Attempt to convert the given string to a LocalDate. This should <b>not</b> accept dates with times, as we want
      * those to be interpreted as DateTime values. The ideal date format is YYYY-MM-DD since it's the least ambiguous,
@@ -1824,7 +1831,6 @@ public class DateTimeUtils {
     }
 
 
-    //TODO: no equivalent
     /**
      * Converts a time String in the form hh:mm:ss[.nnnnnnnnn] to a {@link LocalTime}.
      *
@@ -1855,7 +1861,6 @@ public class DateTimeUtils {
         return null;
     }
 
-    //TODO: no equivalent
     /**
      * Attempt to convert the given string to a LocalDate. This should <b>not</b> accept dates with times, as we want
      * those to be interpreted as DateTime values. The ideal date format is YYYY-MM-DD since it's the least ambiguous.
@@ -1980,7 +1985,6 @@ public class DateTimeUtils {
                 + dateTime.getNanosPartial());
     }
 
-    //TODO: no equivalent
     //TODO: remove or support
     /**
      * Returns a {@link DateTime} representing midnight in a selected time zone on the date specified by a number of
@@ -2008,7 +2012,6 @@ public class DateTimeUtils {
     //TODO: NEXT ***
 
     //TODO *** rename and keep epochToTimeAuto *** what to name existing?
-    //TODO: no equivalent
     /**
      * Converts a long offset from Epoch value to a {@link DateTime}. This method uses expected date ranges to infer
      * whether the passed value is in milliseconds, microseconds, or nanoseconds. Thresholds used are
@@ -2028,7 +2031,6 @@ public class DateTimeUtils {
     //TODO: NEXT ***
 
     //TODO *** rename and keep epochToTimeAuto *** what to name existing?
-    //TODO: no equivalent
     /**
      * Converts a long offset from Epoch value to a nanoseconds as a long. This method uses expected date ranges to
      * infer whether the passed value is in milliseconds, microseconds, or nanoseconds. Thresholds used are
@@ -2093,7 +2095,6 @@ public class DateTimeUtils {
     }
 
     //TODO: move out of here?
-    //TODO: no equivalent
     /**
      * Converts an expression, replacing DateTime and Period literals with references to constant DateTime/Period
      * instances.
@@ -2197,7 +2198,6 @@ public class DateTimeUtils {
     }
 
     // TODO: is this something we want to expose in queries or python?
-    //TODO: no equivalent
     /**
      * Returns a {@link ChronoField} indicating the level of precision in a String time value.
      *

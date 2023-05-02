@@ -47,7 +47,7 @@ public class DateTimeCharacterReinterpretedDateTimeColumnTupleSource extends Abs
     @Override
     public final LongCharLongTuple createTuple(final long rowKey) {
         return new LongCharLongTuple(
-                DateTimeUtils.nanos(columnSource1.get(rowKey)),
+                DateTimeUtils.epochNanos(columnSource1.get(rowKey)),
                 columnSource2.getChar(rowKey),
                 columnSource3.getLong(rowKey)
         );
@@ -56,7 +56,7 @@ public class DateTimeCharacterReinterpretedDateTimeColumnTupleSource extends Abs
     @Override
     public final LongCharLongTuple createPreviousTuple(final long rowKey) {
         return new LongCharLongTuple(
-                DateTimeUtils.nanos(columnSource1.getPrev(rowKey)),
+                DateTimeUtils.epochNanos(columnSource1.getPrev(rowKey)),
                 columnSource2.getPrevChar(rowKey),
                 columnSource3.getPrevLong(rowKey)
         );
@@ -65,16 +65,16 @@ public class DateTimeCharacterReinterpretedDateTimeColumnTupleSource extends Abs
     @Override
     public final LongCharLongTuple createTupleFromValues(@NotNull final Object... values) {
         return new LongCharLongTuple(
-                DateTimeUtils.nanos((DateTime)values[0]),
+                DateTimeUtils.epochNanos((DateTime)values[0]),
                 TypeUtils.unbox((Character)values[1]),
-                DateTimeUtils.nanos((DateTime)values[2])
+                DateTimeUtils.epochNanos((DateTime)values[2])
         );
     }
 
     @Override
     public final LongCharLongTuple createTupleFromReinterpretedValues(@NotNull final Object... values) {
         return new LongCharLongTuple(
-                DateTimeUtils.nanos((DateTime)values[0]),
+                DateTimeUtils.epochNanos((DateTime)values[0]),
                 TypeUtils.unbox((Character)values[1]),
                 TypeUtils.unbox((Long)values[2])
         );
@@ -84,7 +84,7 @@ public class DateTimeCharacterReinterpretedDateTimeColumnTupleSource extends Abs
     @Override
     public final <ELEMENT_TYPE> void exportElement(@NotNull final LongCharLongTuple tuple, final int elementIndex, @NotNull final WritableColumnSource<ELEMENT_TYPE> writableSource, final long destinationRowKey) {
         if (elementIndex == 0) {
-            writableSource.set(destinationRowKey, (ELEMENT_TYPE) DateTimeUtils.nanosToDateTime(tuple.getFirstElement()));
+            writableSource.set(destinationRowKey, (ELEMENT_TYPE) DateTimeUtils.epochNanosToDateTime(tuple.getFirstElement()));
             return;
         }
         if (elementIndex == 1) {
@@ -92,7 +92,7 @@ public class DateTimeCharacterReinterpretedDateTimeColumnTupleSource extends Abs
             return;
         }
         if (elementIndex == 2) {
-            writableSource.set(destinationRowKey, (ELEMENT_TYPE) DateTimeUtils.nanosToDateTime(tuple.getThirdElement()));
+            writableSource.set(destinationRowKey, (ELEMENT_TYPE) DateTimeUtils.epochNanosToDateTime(tuple.getThirdElement()));
             return;
         }
         throw new IndexOutOfBoundsException("Invalid element index " + elementIndex + " for export");
@@ -101,13 +101,13 @@ public class DateTimeCharacterReinterpretedDateTimeColumnTupleSource extends Abs
     @Override
     public final Object exportElement(@NotNull final LongCharLongTuple tuple, int elementIndex) {
         if (elementIndex == 0) {
-            return DateTimeUtils.nanosToDateTime(tuple.getFirstElement());
+            return DateTimeUtils.epochNanosToDateTime(tuple.getFirstElement());
         }
         if (elementIndex == 1) {
             return TypeUtils.box(tuple.getSecondElement());
         }
         if (elementIndex == 2) {
-            return DateTimeUtils.nanosToDateTime(tuple.getThirdElement());
+            return DateTimeUtils.epochNanosToDateTime(tuple.getThirdElement());
         }
         throw new IllegalArgumentException("Bad elementIndex for 3 element tuple: " + elementIndex);
     }
@@ -115,7 +115,7 @@ public class DateTimeCharacterReinterpretedDateTimeColumnTupleSource extends Abs
     @Override
     public final Object exportElementReinterpreted(@NotNull final LongCharLongTuple tuple, int elementIndex) {
         if (elementIndex == 0) {
-            return DateTimeUtils.nanosToDateTime(tuple.getFirstElement());
+            return DateTimeUtils.epochNanosToDateTime(tuple.getFirstElement());
         }
         if (elementIndex == 1) {
             return TypeUtils.box(tuple.getSecondElement());
@@ -133,7 +133,7 @@ public class DateTimeCharacterReinterpretedDateTimeColumnTupleSource extends Abs
         CharChunk<? extends Values> chunk2 = chunks[1].asCharChunk();
         LongChunk<? extends Values> chunk3 = chunks[2].asLongChunk();
         for (int ii = 0; ii < chunkSize; ++ii) {
-            destinationObjectChunk.set(ii, new LongCharLongTuple(DateTimeUtils.nanos(chunk1.get(ii)), chunk2.get(ii), chunk3.get(ii)));
+            destinationObjectChunk.set(ii, new LongCharLongTuple(DateTimeUtils.epochNanos(chunk1.get(ii)), chunk2.get(ii), chunk3.get(ii)));
         }
         destinationObjectChunk.setSize(chunkSize);
     }

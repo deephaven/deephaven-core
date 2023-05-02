@@ -28,7 +28,7 @@ public class FixedStepReplayer extends Replayer {
 
     @Override
     public void setTime(long updatedTime) {
-        currentTime = DateTimeUtils.millisToDateTime(Math.max(updatedTime, currentTime.getMillis()));
+        currentTime = DateTimeUtils.epochMillisToDateTime(Math.max(updatedTime, currentTime.getMillis()));
     }
 
     @Override

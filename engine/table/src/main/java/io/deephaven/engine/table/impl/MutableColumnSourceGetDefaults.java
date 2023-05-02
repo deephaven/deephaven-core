@@ -10,7 +10,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.time.Instant;
 
-import static io.deephaven.time.DateTimeUtils.nanosToDateTime;
+import static io.deephaven.time.DateTimeUtils.epochNanosToDateTime;
 import static io.deephaven.util.type.TypeUtils.box;
 
 /**
@@ -401,7 +401,7 @@ public final class MutableColumnSourceGetDefaults {
         @Nullable
         @Override
         default DateTime getPrev(final long rowKey) {
-            return nanosToDateTime(getPrevLong(rowKey));
+            return epochNanosToDateTime(getPrevLong(rowKey));
         }
     }
 

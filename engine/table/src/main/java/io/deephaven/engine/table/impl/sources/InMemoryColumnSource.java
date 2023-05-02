@@ -141,9 +141,9 @@ public interface InMemoryColumnSource {
         } else if (dataType == short.class || dataType == Short.class) {
             result = new ImmutableConstantShortSource(TypeUtils.unbox((Short) value));
         } else if (dataType == DateTime.class) {
-            result = new ImmutableConstantDateTimeSource(DateTimeUtils.nanos((DateTime) value));
+            result = new ImmutableConstantDateTimeSource(DateTimeUtils.epochNanos((DateTime) value));
         } else if (dataType == Instant.class) {
-            result = new ImmutableConstantInstantSource(DateTimeUtils.nanos((DateTime) value));
+            result = new ImmutableConstantInstantSource(DateTimeUtils.epochNanos((DateTime) value));
         } else {
             result = new ImmutableConstantObjectSource<>(dataType, componentType, value);
         }

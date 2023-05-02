@@ -67,7 +67,7 @@ public class ReinterpretedBooleanReinterpretedDateTimeDoubleColumnTupleSource ex
     public final ByteLongDoubleTuple createTupleFromValues(@NotNull final Object... values) {
         return new ByteLongDoubleTuple(
                 BooleanUtils.booleanAsByte((Boolean)values[0]),
-                DateTimeUtils.nanos((DateTime)values[1]),
+                DateTimeUtils.epochNanos((DateTime)values[1]),
                 TypeUtils.unbox((Double)values[2])
         );
     }
@@ -89,7 +89,7 @@ public class ReinterpretedBooleanReinterpretedDateTimeDoubleColumnTupleSource ex
             return;
         }
         if (elementIndex == 1) {
-            writableSource.set(destinationRowKey, (ELEMENT_TYPE) DateTimeUtils.nanosToDateTime(tuple.getSecondElement()));
+            writableSource.set(destinationRowKey, (ELEMENT_TYPE) DateTimeUtils.epochNanosToDateTime(tuple.getSecondElement()));
             return;
         }
         if (elementIndex == 2) {
@@ -105,7 +105,7 @@ public class ReinterpretedBooleanReinterpretedDateTimeDoubleColumnTupleSource ex
             return BooleanUtils.byteAsBoolean(tuple.getFirstElement());
         }
         if (elementIndex == 1) {
-            return DateTimeUtils.nanosToDateTime(tuple.getSecondElement());
+            return DateTimeUtils.epochNanosToDateTime(tuple.getSecondElement());
         }
         if (elementIndex == 2) {
             return TypeUtils.box(tuple.getThirdElement());

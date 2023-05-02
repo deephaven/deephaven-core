@@ -47,7 +47,7 @@ public class DateTimeIntegerDoubleColumnTupleSource extends AbstractTupleSource<
     @Override
     public final LongIntDoubleTuple createTuple(final long rowKey) {
         return new LongIntDoubleTuple(
-                DateTimeUtils.nanos(columnSource1.get(rowKey)),
+                DateTimeUtils.epochNanos(columnSource1.get(rowKey)),
                 columnSource2.getInt(rowKey),
                 columnSource3.getDouble(rowKey)
         );
@@ -56,7 +56,7 @@ public class DateTimeIntegerDoubleColumnTupleSource extends AbstractTupleSource<
     @Override
     public final LongIntDoubleTuple createPreviousTuple(final long rowKey) {
         return new LongIntDoubleTuple(
-                DateTimeUtils.nanos(columnSource1.getPrev(rowKey)),
+                DateTimeUtils.epochNanos(columnSource1.getPrev(rowKey)),
                 columnSource2.getPrevInt(rowKey),
                 columnSource3.getPrevDouble(rowKey)
         );
@@ -65,7 +65,7 @@ public class DateTimeIntegerDoubleColumnTupleSource extends AbstractTupleSource<
     @Override
     public final LongIntDoubleTuple createTupleFromValues(@NotNull final Object... values) {
         return new LongIntDoubleTuple(
-                DateTimeUtils.nanos((DateTime)values[0]),
+                DateTimeUtils.epochNanos((DateTime)values[0]),
                 TypeUtils.unbox((Integer)values[1]),
                 TypeUtils.unbox((Double)values[2])
         );
@@ -74,7 +74,7 @@ public class DateTimeIntegerDoubleColumnTupleSource extends AbstractTupleSource<
     @Override
     public final LongIntDoubleTuple createTupleFromReinterpretedValues(@NotNull final Object... values) {
         return new LongIntDoubleTuple(
-                DateTimeUtils.nanos((DateTime)values[0]),
+                DateTimeUtils.epochNanos((DateTime)values[0]),
                 TypeUtils.unbox((Integer)values[1]),
                 TypeUtils.unbox((Double)values[2])
         );
@@ -84,7 +84,7 @@ public class DateTimeIntegerDoubleColumnTupleSource extends AbstractTupleSource<
     @Override
     public final <ELEMENT_TYPE> void exportElement(@NotNull final LongIntDoubleTuple tuple, final int elementIndex, @NotNull final WritableColumnSource<ELEMENT_TYPE> writableSource, final long destinationRowKey) {
         if (elementIndex == 0) {
-            writableSource.set(destinationRowKey, (ELEMENT_TYPE) DateTimeUtils.nanosToDateTime(tuple.getFirstElement()));
+            writableSource.set(destinationRowKey, (ELEMENT_TYPE) DateTimeUtils.epochNanosToDateTime(tuple.getFirstElement()));
             return;
         }
         if (elementIndex == 1) {
@@ -101,7 +101,7 @@ public class DateTimeIntegerDoubleColumnTupleSource extends AbstractTupleSource<
     @Override
     public final Object exportElement(@NotNull final LongIntDoubleTuple tuple, int elementIndex) {
         if (elementIndex == 0) {
-            return DateTimeUtils.nanosToDateTime(tuple.getFirstElement());
+            return DateTimeUtils.epochNanosToDateTime(tuple.getFirstElement());
         }
         if (elementIndex == 1) {
             return TypeUtils.box(tuple.getSecondElement());
@@ -115,7 +115,7 @@ public class DateTimeIntegerDoubleColumnTupleSource extends AbstractTupleSource<
     @Override
     public final Object exportElementReinterpreted(@NotNull final LongIntDoubleTuple tuple, int elementIndex) {
         if (elementIndex == 0) {
-            return DateTimeUtils.nanosToDateTime(tuple.getFirstElement());
+            return DateTimeUtils.epochNanosToDateTime(tuple.getFirstElement());
         }
         if (elementIndex == 1) {
             return TypeUtils.box(tuple.getSecondElement());
@@ -133,7 +133,7 @@ public class DateTimeIntegerDoubleColumnTupleSource extends AbstractTupleSource<
         IntChunk<? extends Values> chunk2 = chunks[1].asIntChunk();
         DoubleChunk<? extends Values> chunk3 = chunks[2].asDoubleChunk();
         for (int ii = 0; ii < chunkSize; ++ii) {
-            destinationObjectChunk.set(ii, new LongIntDoubleTuple(DateTimeUtils.nanos(chunk1.get(ii)), chunk2.get(ii), chunk3.get(ii)));
+            destinationObjectChunk.set(ii, new LongIntDoubleTuple(DateTimeUtils.epochNanos(chunk1.get(ii)), chunk2.get(ii), chunk3.get(ii)));
         }
         destinationObjectChunk.setSize(chunkSize);
     }

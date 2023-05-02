@@ -46,8 +46,8 @@ public class DateTimeDateTimeFloatColumnTupleSource extends AbstractTupleSource<
     @Override
     public final LongLongFloatTuple createTuple(final long rowKey) {
         return new LongLongFloatTuple(
-                DateTimeUtils.nanos(columnSource1.get(rowKey)),
-                DateTimeUtils.nanos(columnSource2.get(rowKey)),
+                DateTimeUtils.epochNanos(columnSource1.get(rowKey)),
+                DateTimeUtils.epochNanos(columnSource2.get(rowKey)),
                 columnSource3.getFloat(rowKey)
         );
     }
@@ -55,8 +55,8 @@ public class DateTimeDateTimeFloatColumnTupleSource extends AbstractTupleSource<
     @Override
     public final LongLongFloatTuple createPreviousTuple(final long rowKey) {
         return new LongLongFloatTuple(
-                DateTimeUtils.nanos(columnSource1.getPrev(rowKey)),
-                DateTimeUtils.nanos(columnSource2.getPrev(rowKey)),
+                DateTimeUtils.epochNanos(columnSource1.getPrev(rowKey)),
+                DateTimeUtils.epochNanos(columnSource2.getPrev(rowKey)),
                 columnSource3.getPrevFloat(rowKey)
         );
     }
@@ -64,8 +64,8 @@ public class DateTimeDateTimeFloatColumnTupleSource extends AbstractTupleSource<
     @Override
     public final LongLongFloatTuple createTupleFromValues(@NotNull final Object... values) {
         return new LongLongFloatTuple(
-                DateTimeUtils.nanos((DateTime)values[0]),
-                DateTimeUtils.nanos((DateTime)values[1]),
+                DateTimeUtils.epochNanos((DateTime)values[0]),
+                DateTimeUtils.epochNanos((DateTime)values[1]),
                 TypeUtils.unbox((Float)values[2])
         );
     }
@@ -73,8 +73,8 @@ public class DateTimeDateTimeFloatColumnTupleSource extends AbstractTupleSource<
     @Override
     public final LongLongFloatTuple createTupleFromReinterpretedValues(@NotNull final Object... values) {
         return new LongLongFloatTuple(
-                DateTimeUtils.nanos((DateTime)values[0]),
-                DateTimeUtils.nanos((DateTime)values[1]),
+                DateTimeUtils.epochNanos((DateTime)values[0]),
+                DateTimeUtils.epochNanos((DateTime)values[1]),
                 TypeUtils.unbox((Float)values[2])
         );
     }
@@ -83,11 +83,11 @@ public class DateTimeDateTimeFloatColumnTupleSource extends AbstractTupleSource<
     @Override
     public final <ELEMENT_TYPE> void exportElement(@NotNull final LongLongFloatTuple tuple, final int elementIndex, @NotNull final WritableColumnSource<ELEMENT_TYPE> writableSource, final long destinationRowKey) {
         if (elementIndex == 0) {
-            writableSource.set(destinationRowKey, (ELEMENT_TYPE) DateTimeUtils.nanosToDateTime(tuple.getFirstElement()));
+            writableSource.set(destinationRowKey, (ELEMENT_TYPE) DateTimeUtils.epochNanosToDateTime(tuple.getFirstElement()));
             return;
         }
         if (elementIndex == 1) {
-            writableSource.set(destinationRowKey, (ELEMENT_TYPE) DateTimeUtils.nanosToDateTime(tuple.getSecondElement()));
+            writableSource.set(destinationRowKey, (ELEMENT_TYPE) DateTimeUtils.epochNanosToDateTime(tuple.getSecondElement()));
             return;
         }
         if (elementIndex == 2) {
@@ -100,10 +100,10 @@ public class DateTimeDateTimeFloatColumnTupleSource extends AbstractTupleSource<
     @Override
     public final Object exportElement(@NotNull final LongLongFloatTuple tuple, int elementIndex) {
         if (elementIndex == 0) {
-            return DateTimeUtils.nanosToDateTime(tuple.getFirstElement());
+            return DateTimeUtils.epochNanosToDateTime(tuple.getFirstElement());
         }
         if (elementIndex == 1) {
-            return DateTimeUtils.nanosToDateTime(tuple.getSecondElement());
+            return DateTimeUtils.epochNanosToDateTime(tuple.getSecondElement());
         }
         if (elementIndex == 2) {
             return TypeUtils.box(tuple.getThirdElement());
@@ -114,10 +114,10 @@ public class DateTimeDateTimeFloatColumnTupleSource extends AbstractTupleSource<
     @Override
     public final Object exportElementReinterpreted(@NotNull final LongLongFloatTuple tuple, int elementIndex) {
         if (elementIndex == 0) {
-            return DateTimeUtils.nanosToDateTime(tuple.getFirstElement());
+            return DateTimeUtils.epochNanosToDateTime(tuple.getFirstElement());
         }
         if (elementIndex == 1) {
-            return DateTimeUtils.nanosToDateTime(tuple.getSecondElement());
+            return DateTimeUtils.epochNanosToDateTime(tuple.getSecondElement());
         }
         if (elementIndex == 2) {
             return TypeUtils.box(tuple.getThirdElement());
@@ -132,7 +132,7 @@ public class DateTimeDateTimeFloatColumnTupleSource extends AbstractTupleSource<
         ObjectChunk<DateTime, ? extends Values> chunk2 = chunks[1].asObjectChunk();
         FloatChunk<? extends Values> chunk3 = chunks[2].asFloatChunk();
         for (int ii = 0; ii < chunkSize; ++ii) {
-            destinationObjectChunk.set(ii, new LongLongFloatTuple(DateTimeUtils.nanos(chunk1.get(ii)), DateTimeUtils.nanos(chunk2.get(ii)), chunk3.get(ii)));
+            destinationObjectChunk.set(ii, new LongLongFloatTuple(DateTimeUtils.epochNanos(chunk1.get(ii)), DateTimeUtils.epochNanos(chunk2.get(ii)), chunk3.get(ii)));
         }
         destinationObjectChunk.setSize(chunkSize);
     }

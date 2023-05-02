@@ -49,7 +49,7 @@ public class ReinterpretedBooleanDateTimeCharacterColumnTupleSource extends Abst
     public final ByteLongCharTuple createTuple(final long rowKey) {
         return new ByteLongCharTuple(
                 columnSource1.getByte(rowKey),
-                DateTimeUtils.nanos(columnSource2.get(rowKey)),
+                DateTimeUtils.epochNanos(columnSource2.get(rowKey)),
                 columnSource3.getChar(rowKey)
         );
     }
@@ -58,7 +58,7 @@ public class ReinterpretedBooleanDateTimeCharacterColumnTupleSource extends Abst
     public final ByteLongCharTuple createPreviousTuple(final long rowKey) {
         return new ByteLongCharTuple(
                 columnSource1.getPrevByte(rowKey),
-                DateTimeUtils.nanos(columnSource2.getPrev(rowKey)),
+                DateTimeUtils.epochNanos(columnSource2.getPrev(rowKey)),
                 columnSource3.getPrevChar(rowKey)
         );
     }
@@ -67,7 +67,7 @@ public class ReinterpretedBooleanDateTimeCharacterColumnTupleSource extends Abst
     public final ByteLongCharTuple createTupleFromValues(@NotNull final Object... values) {
         return new ByteLongCharTuple(
                 BooleanUtils.booleanAsByte((Boolean)values[0]),
-                DateTimeUtils.nanos((DateTime)values[1]),
+                DateTimeUtils.epochNanos((DateTime)values[1]),
                 TypeUtils.unbox((Character)values[2])
         );
     }
@@ -76,7 +76,7 @@ public class ReinterpretedBooleanDateTimeCharacterColumnTupleSource extends Abst
     public final ByteLongCharTuple createTupleFromReinterpretedValues(@NotNull final Object... values) {
         return new ByteLongCharTuple(
                 TypeUtils.unbox((Byte)values[0]),
-                DateTimeUtils.nanos((DateTime)values[1]),
+                DateTimeUtils.epochNanos((DateTime)values[1]),
                 TypeUtils.unbox((Character)values[2])
         );
     }
@@ -89,7 +89,7 @@ public class ReinterpretedBooleanDateTimeCharacterColumnTupleSource extends Abst
             return;
         }
         if (elementIndex == 1) {
-            writableSource.set(destinationRowKey, (ELEMENT_TYPE) DateTimeUtils.nanosToDateTime(tuple.getSecondElement()));
+            writableSource.set(destinationRowKey, (ELEMENT_TYPE) DateTimeUtils.epochNanosToDateTime(tuple.getSecondElement()));
             return;
         }
         if (elementIndex == 2) {
@@ -105,7 +105,7 @@ public class ReinterpretedBooleanDateTimeCharacterColumnTupleSource extends Abst
             return BooleanUtils.byteAsBoolean(tuple.getFirstElement());
         }
         if (elementIndex == 1) {
-            return DateTimeUtils.nanosToDateTime(tuple.getSecondElement());
+            return DateTimeUtils.epochNanosToDateTime(tuple.getSecondElement());
         }
         if (elementIndex == 2) {
             return TypeUtils.box(tuple.getThirdElement());
@@ -119,7 +119,7 @@ public class ReinterpretedBooleanDateTimeCharacterColumnTupleSource extends Abst
             return TypeUtils.box(tuple.getFirstElement());
         }
         if (elementIndex == 1) {
-            return DateTimeUtils.nanosToDateTime(tuple.getSecondElement());
+            return DateTimeUtils.epochNanosToDateTime(tuple.getSecondElement());
         }
         if (elementIndex == 2) {
             return TypeUtils.box(tuple.getThirdElement());
@@ -134,7 +134,7 @@ public class ReinterpretedBooleanDateTimeCharacterColumnTupleSource extends Abst
         ObjectChunk<DateTime, ? extends Values> chunk2 = chunks[1].asObjectChunk();
         CharChunk<? extends Values> chunk3 = chunks[2].asCharChunk();
         for (int ii = 0; ii < chunkSize; ++ii) {
-            destinationObjectChunk.set(ii, new ByteLongCharTuple(chunk1.get(ii), DateTimeUtils.nanos(chunk2.get(ii)), chunk3.get(ii)));
+            destinationObjectChunk.set(ii, new ByteLongCharTuple(chunk1.get(ii), DateTimeUtils.epochNanos(chunk2.get(ii)), chunk3.get(ii)));
         }
         destinationObjectChunk.setSize(chunkSize);
     }

@@ -66,8 +66,8 @@ public class ReinterpretedBooleanReinterpretedDateTimeReinterpretedDateTimeColum
     public final ByteLongLongTuple createTupleFromValues(@NotNull final Object... values) {
         return new ByteLongLongTuple(
                 BooleanUtils.booleanAsByte((Boolean)values[0]),
-                DateTimeUtils.nanos((DateTime)values[1]),
-                DateTimeUtils.nanos((DateTime)values[2])
+                DateTimeUtils.epochNanos((DateTime)values[1]),
+                DateTimeUtils.epochNanos((DateTime)values[2])
         );
     }
 
@@ -88,11 +88,11 @@ public class ReinterpretedBooleanReinterpretedDateTimeReinterpretedDateTimeColum
             return;
         }
         if (elementIndex == 1) {
-            writableSource.set(destinationRowKey, (ELEMENT_TYPE) DateTimeUtils.nanosToDateTime(tuple.getSecondElement()));
+            writableSource.set(destinationRowKey, (ELEMENT_TYPE) DateTimeUtils.epochNanosToDateTime(tuple.getSecondElement()));
             return;
         }
         if (elementIndex == 2) {
-            writableSource.set(destinationRowKey, (ELEMENT_TYPE) DateTimeUtils.nanosToDateTime(tuple.getThirdElement()));
+            writableSource.set(destinationRowKey, (ELEMENT_TYPE) DateTimeUtils.epochNanosToDateTime(tuple.getThirdElement()));
             return;
         }
         throw new IndexOutOfBoundsException("Invalid element index " + elementIndex + " for export");
@@ -104,10 +104,10 @@ public class ReinterpretedBooleanReinterpretedDateTimeReinterpretedDateTimeColum
             return BooleanUtils.byteAsBoolean(tuple.getFirstElement());
         }
         if (elementIndex == 1) {
-            return DateTimeUtils.nanosToDateTime(tuple.getSecondElement());
+            return DateTimeUtils.epochNanosToDateTime(tuple.getSecondElement());
         }
         if (elementIndex == 2) {
-            return DateTimeUtils.nanosToDateTime(tuple.getThirdElement());
+            return DateTimeUtils.epochNanosToDateTime(tuple.getThirdElement());
         }
         throw new IllegalArgumentException("Bad elementIndex for 3 element tuple: " + elementIndex);
     }

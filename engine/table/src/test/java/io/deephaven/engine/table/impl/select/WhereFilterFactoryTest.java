@@ -302,7 +302,7 @@ public class WhereFilterFactoryTest extends RefreshingTableTestCase {
     private DateTime makeDateTime(String timeStr) {
         ZonedDateTime zdt = ZonedDateTime.now(ZoneId.of("America/New_York")).truncatedTo(ChronoUnit.DAYS)
                 .plus(DateTimeUtils.parseNanos(timeStr), ChronoUnit.NANOS);
-        return DateTimeUtils.millisToDateTime(zdt.toInstant().toEpochMilli());
+        return DateTimeUtils.epochMillisToDateTime(zdt.toInstant().toEpochMilli());
     }
 
     private void checkDateRange(String input, DateTime lowerDate, DateTime upperDate) {

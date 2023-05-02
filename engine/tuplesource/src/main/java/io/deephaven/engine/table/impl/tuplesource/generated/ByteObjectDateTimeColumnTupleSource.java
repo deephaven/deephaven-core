@@ -48,7 +48,7 @@ public class ByteObjectDateTimeColumnTupleSource extends AbstractTupleSource<Byt
         return new ByteObjectLongTuple(
                 columnSource1.getByte(rowKey),
                 columnSource2.get(rowKey),
-                DateTimeUtils.nanos(columnSource3.get(rowKey))
+                DateTimeUtils.epochNanos(columnSource3.get(rowKey))
         );
     }
 
@@ -57,7 +57,7 @@ public class ByteObjectDateTimeColumnTupleSource extends AbstractTupleSource<Byt
         return new ByteObjectLongTuple(
                 columnSource1.getPrevByte(rowKey),
                 columnSource2.getPrev(rowKey),
-                DateTimeUtils.nanos(columnSource3.getPrev(rowKey))
+                DateTimeUtils.epochNanos(columnSource3.getPrev(rowKey))
         );
     }
 
@@ -66,7 +66,7 @@ public class ByteObjectDateTimeColumnTupleSource extends AbstractTupleSource<Byt
         return new ByteObjectLongTuple(
                 TypeUtils.unbox((Byte)values[0]),
                 values[1],
-                DateTimeUtils.nanos((DateTime)values[2])
+                DateTimeUtils.epochNanos((DateTime)values[2])
         );
     }
 
@@ -75,7 +75,7 @@ public class ByteObjectDateTimeColumnTupleSource extends AbstractTupleSource<Byt
         return new ByteObjectLongTuple(
                 TypeUtils.unbox((Byte)values[0]),
                 values[1],
-                DateTimeUtils.nanos((DateTime)values[2])
+                DateTimeUtils.epochNanos((DateTime)values[2])
         );
     }
 
@@ -91,7 +91,7 @@ public class ByteObjectDateTimeColumnTupleSource extends AbstractTupleSource<Byt
             return;
         }
         if (elementIndex == 2) {
-            writableSource.set(destinationRowKey, (ELEMENT_TYPE) DateTimeUtils.nanosToDateTime(tuple.getThirdElement()));
+            writableSource.set(destinationRowKey, (ELEMENT_TYPE) DateTimeUtils.epochNanosToDateTime(tuple.getThirdElement()));
             return;
         }
         throw new IndexOutOfBoundsException("Invalid element index " + elementIndex + " for export");
@@ -106,7 +106,7 @@ public class ByteObjectDateTimeColumnTupleSource extends AbstractTupleSource<Byt
             return tuple.getSecondElement();
         }
         if (elementIndex == 2) {
-            return DateTimeUtils.nanosToDateTime(tuple.getThirdElement());
+            return DateTimeUtils.epochNanosToDateTime(tuple.getThirdElement());
         }
         throw new IllegalArgumentException("Bad elementIndex for 3 element tuple: " + elementIndex);
     }
@@ -120,7 +120,7 @@ public class ByteObjectDateTimeColumnTupleSource extends AbstractTupleSource<Byt
             return tuple.getSecondElement();
         }
         if (elementIndex == 2) {
-            return DateTimeUtils.nanosToDateTime(tuple.getThirdElement());
+            return DateTimeUtils.epochNanosToDateTime(tuple.getThirdElement());
         }
         throw new IllegalArgumentException("Bad elementIndex for 3 element tuple: " + elementIndex);
     }
@@ -132,7 +132,7 @@ public class ByteObjectDateTimeColumnTupleSource extends AbstractTupleSource<Byt
         ObjectChunk<Object, ? extends Values> chunk2 = chunks[1].asObjectChunk();
         ObjectChunk<DateTime, ? extends Values> chunk3 = chunks[2].asObjectChunk();
         for (int ii = 0; ii < chunkSize; ++ii) {
-            destinationObjectChunk.set(ii, new ByteObjectLongTuple(chunk1.get(ii), chunk2.get(ii), DateTimeUtils.nanos(chunk3.get(ii))));
+            destinationObjectChunk.set(ii, new ByteObjectLongTuple(chunk1.get(ii), chunk2.get(ii), DateTimeUtils.epochNanos(chunk3.get(ii))));
         }
         destinationObjectChunk.setSize(chunkSize);
     }

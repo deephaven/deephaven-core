@@ -64,8 +64,8 @@ public class LongReinterpretedDateTimeReinterpretedDateTimeColumnTupleSource ext
     public final LongLongLongTuple createTupleFromValues(@NotNull final Object... values) {
         return new LongLongLongTuple(
                 TypeUtils.unbox((Long)values[0]),
-                DateTimeUtils.nanos((DateTime)values[1]),
-                DateTimeUtils.nanos((DateTime)values[2])
+                DateTimeUtils.epochNanos((DateTime)values[1]),
+                DateTimeUtils.epochNanos((DateTime)values[2])
         );
     }
 
@@ -86,11 +86,11 @@ public class LongReinterpretedDateTimeReinterpretedDateTimeColumnTupleSource ext
             return;
         }
         if (elementIndex == 1) {
-            writableSource.set(destinationRowKey, (ELEMENT_TYPE) DateTimeUtils.nanosToDateTime(tuple.getSecondElement()));
+            writableSource.set(destinationRowKey, (ELEMENT_TYPE) DateTimeUtils.epochNanosToDateTime(tuple.getSecondElement()));
             return;
         }
         if (elementIndex == 2) {
-            writableSource.set(destinationRowKey, (ELEMENT_TYPE) DateTimeUtils.nanosToDateTime(tuple.getThirdElement()));
+            writableSource.set(destinationRowKey, (ELEMENT_TYPE) DateTimeUtils.epochNanosToDateTime(tuple.getThirdElement()));
             return;
         }
         throw new IndexOutOfBoundsException("Invalid element index " + elementIndex + " for export");
@@ -102,10 +102,10 @@ public class LongReinterpretedDateTimeReinterpretedDateTimeColumnTupleSource ext
             return TypeUtils.box(tuple.getFirstElement());
         }
         if (elementIndex == 1) {
-            return DateTimeUtils.nanosToDateTime(tuple.getSecondElement());
+            return DateTimeUtils.epochNanosToDateTime(tuple.getSecondElement());
         }
         if (elementIndex == 2) {
-            return DateTimeUtils.nanosToDateTime(tuple.getThirdElement());
+            return DateTimeUtils.epochNanosToDateTime(tuple.getThirdElement());
         }
         throw new IllegalArgumentException("Bad elementIndex for 3 element tuple: " + elementIndex);
     }

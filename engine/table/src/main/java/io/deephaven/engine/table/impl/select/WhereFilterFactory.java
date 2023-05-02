@@ -535,9 +535,9 @@ public class WhereFilterFactory {
             }
 
             this.dateUpper =
-                    dateUpper == null ? null : DateTimeUtils.millisToDateTime(dateUpper.toInstant().toEpochMilli());
+                    dateUpper == null ? null : DateTimeUtils.epochMillisToDateTime(dateUpper.toInstant().toEpochMilli());
             this.dateLower =
-                    dateLower == null ? null : DateTimeUtils.millisToDateTime(dateLower.toInstant().toEpochMilli());
+                    dateLower == null ? null : DateTimeUtils.epochMillisToDateTime(dateLower.toInstant().toEpochMilli());
         }
     }
 }

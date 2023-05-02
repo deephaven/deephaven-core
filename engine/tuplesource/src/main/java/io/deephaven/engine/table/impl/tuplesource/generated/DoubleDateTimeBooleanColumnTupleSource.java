@@ -48,7 +48,7 @@ public class DoubleDateTimeBooleanColumnTupleSource extends AbstractTupleSource<
     public final DoubleLongByteTuple createTuple(final long rowKey) {
         return new DoubleLongByteTuple(
                 columnSource1.getDouble(rowKey),
-                DateTimeUtils.nanos(columnSource2.get(rowKey)),
+                DateTimeUtils.epochNanos(columnSource2.get(rowKey)),
                 BooleanUtils.booleanAsByte(columnSource3.getBoolean(rowKey))
         );
     }
@@ -57,7 +57,7 @@ public class DoubleDateTimeBooleanColumnTupleSource extends AbstractTupleSource<
     public final DoubleLongByteTuple createPreviousTuple(final long rowKey) {
         return new DoubleLongByteTuple(
                 columnSource1.getPrevDouble(rowKey),
-                DateTimeUtils.nanos(columnSource2.getPrev(rowKey)),
+                DateTimeUtils.epochNanos(columnSource2.getPrev(rowKey)),
                 BooleanUtils.booleanAsByte(columnSource3.getPrevBoolean(rowKey))
         );
     }
@@ -66,7 +66,7 @@ public class DoubleDateTimeBooleanColumnTupleSource extends AbstractTupleSource<
     public final DoubleLongByteTuple createTupleFromValues(@NotNull final Object... values) {
         return new DoubleLongByteTuple(
                 TypeUtils.unbox((Double)values[0]),
-                DateTimeUtils.nanos((DateTime)values[1]),
+                DateTimeUtils.epochNanos((DateTime)values[1]),
                 BooleanUtils.booleanAsByte((Boolean)values[2])
         );
     }
@@ -75,7 +75,7 @@ public class DoubleDateTimeBooleanColumnTupleSource extends AbstractTupleSource<
     public final DoubleLongByteTuple createTupleFromReinterpretedValues(@NotNull final Object... values) {
         return new DoubleLongByteTuple(
                 TypeUtils.unbox((Double)values[0]),
-                DateTimeUtils.nanos((DateTime)values[1]),
+                DateTimeUtils.epochNanos((DateTime)values[1]),
                 BooleanUtils.booleanAsByte((Boolean)values[2])
         );
     }
@@ -88,7 +88,7 @@ public class DoubleDateTimeBooleanColumnTupleSource extends AbstractTupleSource<
             return;
         }
         if (elementIndex == 1) {
-            writableSource.set(destinationRowKey, (ELEMENT_TYPE) DateTimeUtils.nanosToDateTime(tuple.getSecondElement()));
+            writableSource.set(destinationRowKey, (ELEMENT_TYPE) DateTimeUtils.epochNanosToDateTime(tuple.getSecondElement()));
             return;
         }
         if (elementIndex == 2) {
@@ -104,7 +104,7 @@ public class DoubleDateTimeBooleanColumnTupleSource extends AbstractTupleSource<
             return TypeUtils.box(tuple.getFirstElement());
         }
         if (elementIndex == 1) {
-            return DateTimeUtils.nanosToDateTime(tuple.getSecondElement());
+            return DateTimeUtils.epochNanosToDateTime(tuple.getSecondElement());
         }
         if (elementIndex == 2) {
             return BooleanUtils.byteAsBoolean(tuple.getThirdElement());
@@ -118,7 +118,7 @@ public class DoubleDateTimeBooleanColumnTupleSource extends AbstractTupleSource<
             return TypeUtils.box(tuple.getFirstElement());
         }
         if (elementIndex == 1) {
-            return DateTimeUtils.nanosToDateTime(tuple.getSecondElement());
+            return DateTimeUtils.epochNanosToDateTime(tuple.getSecondElement());
         }
         if (elementIndex == 2) {
             return BooleanUtils.byteAsBoolean(tuple.getThirdElement());
@@ -133,7 +133,7 @@ public class DoubleDateTimeBooleanColumnTupleSource extends AbstractTupleSource<
         ObjectChunk<DateTime, ? extends Values> chunk2 = chunks[1].asObjectChunk();
         ObjectChunk<Boolean, ? extends Values> chunk3 = chunks[2].asObjectChunk();
         for (int ii = 0; ii < chunkSize; ++ii) {
-            destinationObjectChunk.set(ii, new DoubleLongByteTuple(chunk1.get(ii), DateTimeUtils.nanos(chunk2.get(ii)), BooleanUtils.booleanAsByte(chunk3.get(ii))));
+            destinationObjectChunk.set(ii, new DoubleLongByteTuple(chunk1.get(ii), DateTimeUtils.epochNanos(chunk2.get(ii)), BooleanUtils.booleanAsByte(chunk3.get(ii))));
         }
         destinationObjectChunk.setSize(chunkSize);
     }

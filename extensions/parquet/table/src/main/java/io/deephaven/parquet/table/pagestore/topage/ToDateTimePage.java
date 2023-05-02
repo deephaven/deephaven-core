@@ -74,7 +74,7 @@ public abstract class ToDateTimePage<ATTR extends Any> extends ToLongPage<ATTR> 
         @Override
         @NotNull
         public ObjectVector<DateTime> makeVector(long[] result) {
-            return makeVectorHelper(result, DateTimeUtils::nanosToDateTime);
+            return makeVectorHelper(result, DateTimeUtils::epochNanosToDateTime);
         }
     }
 
@@ -82,7 +82,7 @@ public abstract class ToDateTimePage<ATTR extends Any> extends ToLongPage<ATTR> 
         @Override
         @NotNull
         public ObjectVector<DateTime> makeVector(long[] result) {
-            return makeVectorHelper(result, DateTimeUtils::microsToDateTime);
+            return makeVectorHelper(result, DateTimeUtils::epochMicrosToDateTime);
         }
 
         @Override
@@ -95,7 +95,7 @@ public abstract class ToDateTimePage<ATTR extends Any> extends ToLongPage<ATTR> 
         @Override
         @NotNull
         public ObjectVector<DateTime> makeVector(long[] result) {
-            return makeVectorHelper(result, DateTimeUtils::millisToDateTime);
+            return makeVectorHelper(result, DateTimeUtils::epochMillisToDateTime);
         }
 
         @Override

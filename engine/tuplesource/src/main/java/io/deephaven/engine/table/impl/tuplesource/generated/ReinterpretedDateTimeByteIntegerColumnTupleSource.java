@@ -65,7 +65,7 @@ public class ReinterpretedDateTimeByteIntegerColumnTupleSource extends AbstractT
     @Override
     public final LongByteIntTuple createTupleFromValues(@NotNull final Object... values) {
         return new LongByteIntTuple(
-                DateTimeUtils.nanos((DateTime)values[0]),
+                DateTimeUtils.epochNanos((DateTime)values[0]),
                 TypeUtils.unbox((Byte)values[1]),
                 TypeUtils.unbox((Integer)values[2])
         );
@@ -84,7 +84,7 @@ public class ReinterpretedDateTimeByteIntegerColumnTupleSource extends AbstractT
     @Override
     public final <ELEMENT_TYPE> void exportElement(@NotNull final LongByteIntTuple tuple, final int elementIndex, @NotNull final WritableColumnSource<ELEMENT_TYPE> writableSource, final long destinationRowKey) {
         if (elementIndex == 0) {
-            writableSource.set(destinationRowKey, (ELEMENT_TYPE) DateTimeUtils.nanosToDateTime(tuple.getFirstElement()));
+            writableSource.set(destinationRowKey, (ELEMENT_TYPE) DateTimeUtils.epochNanosToDateTime(tuple.getFirstElement()));
             return;
         }
         if (elementIndex == 1) {
@@ -101,7 +101,7 @@ public class ReinterpretedDateTimeByteIntegerColumnTupleSource extends AbstractT
     @Override
     public final Object exportElement(@NotNull final LongByteIntTuple tuple, int elementIndex) {
         if (elementIndex == 0) {
-            return DateTimeUtils.nanosToDateTime(tuple.getFirstElement());
+            return DateTimeUtils.epochNanosToDateTime(tuple.getFirstElement());
         }
         if (elementIndex == 1) {
             return TypeUtils.box(tuple.getSecondElement());

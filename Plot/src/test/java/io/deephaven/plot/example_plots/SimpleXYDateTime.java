@@ -17,14 +17,14 @@ public class SimpleXYDateTime {
     public static void main(String[] args) {
 
         final long dateTime = DateTimeUtils.parseDateTime("2018-02-01T09:30:00 NY").getNanos();
-        final DateTime[] dates = new DateTime[] {DateTimeUtils.nanosToDateTime(dateTime),
-                DateTimeUtils.nanosToDateTime(dateTime + DateTimeUtils.HOUR),
-                DateTimeUtils.nanosToDateTime(dateTime + 2 * DateTimeUtils.HOUR),
-                DateTimeUtils.nanosToDateTime(dateTime + 3 * DateTimeUtils.HOUR),
-                DateTimeUtils.nanosToDateTime(dateTime + 4 * DateTimeUtils.HOUR),
-                DateTimeUtils.nanosToDateTime(dateTime + 5 * DateTimeUtils.HOUR),
-                DateTimeUtils.nanosToDateTime(dateTime + 6 * DateTimeUtils.HOUR),
-                DateTimeUtils.nanosToDateTime(dateTime + 6 * DateTimeUtils.HOUR + 30 * DateTimeUtils.MINUTE),
+        final DateTime[] dates = new DateTime[] {DateTimeUtils.epochNanosToDateTime(dateTime),
+                DateTimeUtils.epochNanosToDateTime(dateTime + DateTimeUtils.HOUR),
+                DateTimeUtils.epochNanosToDateTime(dateTime + 2 * DateTimeUtils.HOUR),
+                DateTimeUtils.epochNanosToDateTime(dateTime + 3 * DateTimeUtils.HOUR),
+                DateTimeUtils.epochNanosToDateTime(dateTime + 4 * DateTimeUtils.HOUR),
+                DateTimeUtils.epochNanosToDateTime(dateTime + 5 * DateTimeUtils.HOUR),
+                DateTimeUtils.epochNanosToDateTime(dateTime + 6 * DateTimeUtils.HOUR),
+                DateTimeUtils.epochNanosToDateTime(dateTime + 6 * DateTimeUtils.HOUR + 30 * DateTimeUtils.MINUTE),
         };
 
         final double[] data = new double[] {1, 2, 3, 4, 5, 6, 7, 8};

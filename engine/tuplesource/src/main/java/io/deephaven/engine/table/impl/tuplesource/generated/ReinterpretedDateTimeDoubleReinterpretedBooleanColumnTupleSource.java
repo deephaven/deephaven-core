@@ -66,7 +66,7 @@ public class ReinterpretedDateTimeDoubleReinterpretedBooleanColumnTupleSource ex
     @Override
     public final LongDoubleByteTuple createTupleFromValues(@NotNull final Object... values) {
         return new LongDoubleByteTuple(
-                DateTimeUtils.nanos((DateTime)values[0]),
+                DateTimeUtils.epochNanos((DateTime)values[0]),
                 TypeUtils.unbox((Double)values[1]),
                 BooleanUtils.booleanAsByte((Boolean)values[2])
         );
@@ -85,7 +85,7 @@ public class ReinterpretedDateTimeDoubleReinterpretedBooleanColumnTupleSource ex
     @Override
     public final <ELEMENT_TYPE> void exportElement(@NotNull final LongDoubleByteTuple tuple, final int elementIndex, @NotNull final WritableColumnSource<ELEMENT_TYPE> writableSource, final long destinationRowKey) {
         if (elementIndex == 0) {
-            writableSource.set(destinationRowKey, (ELEMENT_TYPE) DateTimeUtils.nanosToDateTime(tuple.getFirstElement()));
+            writableSource.set(destinationRowKey, (ELEMENT_TYPE) DateTimeUtils.epochNanosToDateTime(tuple.getFirstElement()));
             return;
         }
         if (elementIndex == 1) {
@@ -102,7 +102,7 @@ public class ReinterpretedDateTimeDoubleReinterpretedBooleanColumnTupleSource ex
     @Override
     public final Object exportElement(@NotNull final LongDoubleByteTuple tuple, int elementIndex) {
         if (elementIndex == 0) {
-            return DateTimeUtils.nanosToDateTime(tuple.getFirstElement());
+            return DateTimeUtils.epochNanosToDateTime(tuple.getFirstElement());
         }
         if (elementIndex == 1) {
             return TypeUtils.box(tuple.getSecondElement());

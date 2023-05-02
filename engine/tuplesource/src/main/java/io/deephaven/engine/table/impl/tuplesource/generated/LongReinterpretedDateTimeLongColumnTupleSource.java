@@ -64,7 +64,7 @@ public class LongReinterpretedDateTimeLongColumnTupleSource extends AbstractTupl
     public final LongLongLongTuple createTupleFromValues(@NotNull final Object... values) {
         return new LongLongLongTuple(
                 TypeUtils.unbox((Long)values[0]),
-                DateTimeUtils.nanos((DateTime)values[1]),
+                DateTimeUtils.epochNanos((DateTime)values[1]),
                 TypeUtils.unbox((Long)values[2])
         );
     }
@@ -86,7 +86,7 @@ public class LongReinterpretedDateTimeLongColumnTupleSource extends AbstractTupl
             return;
         }
         if (elementIndex == 1) {
-            writableSource.set(destinationRowKey, (ELEMENT_TYPE) DateTimeUtils.nanosToDateTime(tuple.getSecondElement()));
+            writableSource.set(destinationRowKey, (ELEMENT_TYPE) DateTimeUtils.epochNanosToDateTime(tuple.getSecondElement()));
             return;
         }
         if (elementIndex == 2) {
@@ -102,7 +102,7 @@ public class LongReinterpretedDateTimeLongColumnTupleSource extends AbstractTupl
             return TypeUtils.box(tuple.getFirstElement());
         }
         if (elementIndex == 1) {
-            return DateTimeUtils.nanosToDateTime(tuple.getSecondElement());
+            return DateTimeUtils.epochNanosToDateTime(tuple.getSecondElement());
         }
         if (elementIndex == 2) {
             return TypeUtils.box(tuple.getThirdElement());

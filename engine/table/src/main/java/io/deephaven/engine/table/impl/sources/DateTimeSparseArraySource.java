@@ -26,11 +26,11 @@ public class DateTimeSparseArraySource extends NanosBasedTimeSparseArraySource<D
 
     @Override
     protected DateTime makeValue(long nanos) {
-        return DateTimeUtils.nanosToDateTime(nanos);
+        return DateTimeUtils.epochNanosToDateTime(nanos);
     }
 
     @Override
     protected long toNanos(DateTime value) {
-        return DateTimeUtils.nanos(value);
+        return DateTimeUtils.epochNanos(value);
     }
 }

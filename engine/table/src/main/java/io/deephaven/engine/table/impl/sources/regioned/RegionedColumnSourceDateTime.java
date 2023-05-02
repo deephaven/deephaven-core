@@ -45,7 +45,7 @@ final class RegionedColumnSourceDateTime
         final int length = longChunk.size();
 
         for (int i = 0; i < length; ++i) {
-            objectChunk.set(size + i, DateTimeUtils.nanosToDateTime(longChunk.get(i)));
+            objectChunk.set(size + i, DateTimeUtils.epochNanosToDateTime(longChunk.get(i)));
         }
         objectChunk.setSize(size + length);
     }
@@ -53,7 +53,7 @@ final class RegionedColumnSourceDateTime
     @Override
     public DateTime get(final long rowKey) {
         return rowKey == RowSequence.NULL_ROW_KEY ? null
-                : DateTimeUtils.nanosToDateTime(getNativeSource().lookupRegion(rowKey).getLong(rowKey));
+                : DateTimeUtils.epochNanosToDateTime(getNativeSource().lookupRegion(rowKey).getLong(rowKey));
     }
 
     @Override

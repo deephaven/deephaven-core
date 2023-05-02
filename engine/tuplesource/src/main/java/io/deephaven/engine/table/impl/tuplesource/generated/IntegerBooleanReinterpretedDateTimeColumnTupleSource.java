@@ -68,7 +68,7 @@ public class IntegerBooleanReinterpretedDateTimeColumnTupleSource extends Abstra
         return new IntByteLongTuple(
                 TypeUtils.unbox((Integer)values[0]),
                 BooleanUtils.booleanAsByte((Boolean)values[1]),
-                DateTimeUtils.nanos((DateTime)values[2])
+                DateTimeUtils.epochNanos((DateTime)values[2])
         );
     }
 
@@ -93,7 +93,7 @@ public class IntegerBooleanReinterpretedDateTimeColumnTupleSource extends Abstra
             return;
         }
         if (elementIndex == 2) {
-            writableSource.set(destinationRowKey, (ELEMENT_TYPE) DateTimeUtils.nanosToDateTime(tuple.getThirdElement()));
+            writableSource.set(destinationRowKey, (ELEMENT_TYPE) DateTimeUtils.epochNanosToDateTime(tuple.getThirdElement()));
             return;
         }
         throw new IndexOutOfBoundsException("Invalid element index " + elementIndex + " for export");
@@ -108,7 +108,7 @@ public class IntegerBooleanReinterpretedDateTimeColumnTupleSource extends Abstra
             return BooleanUtils.byteAsBoolean(tuple.getSecondElement());
         }
         if (elementIndex == 2) {
-            return DateTimeUtils.nanosToDateTime(tuple.getThirdElement());
+            return DateTimeUtils.epochNanosToDateTime(tuple.getThirdElement());
         }
         throw new IllegalArgumentException("Bad elementIndex for 3 element tuple: " + elementIndex);
     }

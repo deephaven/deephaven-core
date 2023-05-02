@@ -89,7 +89,7 @@ public class TestReinterpretedColumn extends RefreshingTableTestCase {
         for (int ii = 0; ii < ROW_COUNT; ii++) {
             final long tOff = ii * 60 * 1_000_000_000L;
             longSource.set(ii, Long.valueOf(baseLongTime + tOff));
-            dtSource.set(ii, DateTimeUtils.nanosToDateTime(baseDateTime.getNanos() + tOff));
+            dtSource.set(ii, DateTimeUtils.epochNanosToDateTime(baseDateTime.getNanos() + tOff));
             iSource.set(ii, DateTimeUtils.makeInstant(DateTimeUtils.toEpochNano(baseInstant) + tOff));
             zdtSource.set(ii, DateTimeUtils.makeZonedDateTime(DateTimeUtils.toEpochNano(baseZDT) + tOff,
                     ZoneId.of("America/New_York")));
@@ -307,13 +307,13 @@ public class TestReinterpretedColumn extends RefreshingTableTestCase {
     @Test
     public void testReinterpretDBDT() {
         doReinterpretTestBasic(
-                baseTable, DateTime.class, TableTimeConversions::asDateTime, "DT", DateTimeUtils::nanos);
+                baseTable, DateTime.class, TableTimeConversions::asDateTime, "DT", DateTimeUtils::epochNanos);
         doReinterpretTestBasic(
-                sparseBaseTable, DateTime.class, TableTimeConversions::asDateTime, "DT", DateTimeUtils::nanos);
+                sparseBaseTable, DateTime.class, TableTimeConversions::asDateTime, "DT", DateTimeUtils::epochNanos);
         doReinterpretTestBasic(
-                objectTable, DateTime.class, TableTimeConversions::asDateTime, "DT", DateTimeUtils::nanos);
+                objectTable, DateTime.class, TableTimeConversions::asDateTime, "DT", DateTimeUtils::epochNanos);
         doReinterpretTestBasic(
-                sparseObjectTable, DateTime.class, TableTimeConversions::asDateTime, "DT", DateTimeUtils::nanos);
+                sparseObjectTable, DateTime.class, TableTimeConversions::asDateTime, "DT", DateTimeUtils::epochNanos);
     }
 
     @Test

@@ -166,7 +166,7 @@ public class Replayer implements ReplayerInterface, Runnable {
     @Override
     public void setTime(long updatedTime) {
         if (deltaNanos == Long.MAX_VALUE) {
-            startTime = DateTimeUtils.millisToDateTime(updatedTime);
+            startTime = DateTimeUtils.epochMillisToDateTime(updatedTime);
         } else {
             long adjustment = updatedTime - clock().currentTimeMillis();
             if (adjustment > 0) {

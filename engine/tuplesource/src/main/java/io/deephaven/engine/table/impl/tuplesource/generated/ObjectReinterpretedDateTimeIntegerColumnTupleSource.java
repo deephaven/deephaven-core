@@ -66,7 +66,7 @@ public class ObjectReinterpretedDateTimeIntegerColumnTupleSource extends Abstrac
     public final ObjectLongIntTuple createTupleFromValues(@NotNull final Object... values) {
         return new ObjectLongIntTuple(
                 values[0],
-                DateTimeUtils.nanos((DateTime)values[1]),
+                DateTimeUtils.epochNanos((DateTime)values[1]),
                 TypeUtils.unbox((Integer)values[2])
         );
     }
@@ -88,7 +88,7 @@ public class ObjectReinterpretedDateTimeIntegerColumnTupleSource extends Abstrac
             return;
         }
         if (elementIndex == 1) {
-            writableSource.set(destinationRowKey, (ELEMENT_TYPE) DateTimeUtils.nanosToDateTime(tuple.getSecondElement()));
+            writableSource.set(destinationRowKey, (ELEMENT_TYPE) DateTimeUtils.epochNanosToDateTime(tuple.getSecondElement()));
             return;
         }
         if (elementIndex == 2) {
@@ -104,7 +104,7 @@ public class ObjectReinterpretedDateTimeIntegerColumnTupleSource extends Abstrac
             return tuple.getFirstElement();
         }
         if (elementIndex == 1) {
-            return DateTimeUtils.nanosToDateTime(tuple.getSecondElement());
+            return DateTimeUtils.epochNanosToDateTime(tuple.getSecondElement());
         }
         if (elementIndex == 2) {
             return TypeUtils.box(tuple.getThirdElement());

@@ -49,7 +49,7 @@ public class ReinterpretedBooleanDateTimeDoubleColumnTupleSource extends Abstrac
     public final ByteLongDoubleTuple createTuple(final long rowKey) {
         return new ByteLongDoubleTuple(
                 columnSource1.getByte(rowKey),
-                DateTimeUtils.nanos(columnSource2.get(rowKey)),
+                DateTimeUtils.epochNanos(columnSource2.get(rowKey)),
                 columnSource3.getDouble(rowKey)
         );
     }
@@ -58,7 +58,7 @@ public class ReinterpretedBooleanDateTimeDoubleColumnTupleSource extends Abstrac
     public final ByteLongDoubleTuple createPreviousTuple(final long rowKey) {
         return new ByteLongDoubleTuple(
                 columnSource1.getPrevByte(rowKey),
-                DateTimeUtils.nanos(columnSource2.getPrev(rowKey)),
+                DateTimeUtils.epochNanos(columnSource2.getPrev(rowKey)),
                 columnSource3.getPrevDouble(rowKey)
         );
     }
@@ -67,7 +67,7 @@ public class ReinterpretedBooleanDateTimeDoubleColumnTupleSource extends Abstrac
     public final ByteLongDoubleTuple createTupleFromValues(@NotNull final Object... values) {
         return new ByteLongDoubleTuple(
                 BooleanUtils.booleanAsByte((Boolean)values[0]),
-                DateTimeUtils.nanos((DateTime)values[1]),
+                DateTimeUtils.epochNanos((DateTime)values[1]),
                 TypeUtils.unbox((Double)values[2])
         );
     }
@@ -76,7 +76,7 @@ public class ReinterpretedBooleanDateTimeDoubleColumnTupleSource extends Abstrac
     public final ByteLongDoubleTuple createTupleFromReinterpretedValues(@NotNull final Object... values) {
         return new ByteLongDoubleTuple(
                 TypeUtils.unbox((Byte)values[0]),
-                DateTimeUtils.nanos((DateTime)values[1]),
+                DateTimeUtils.epochNanos((DateTime)values[1]),
                 TypeUtils.unbox((Double)values[2])
         );
     }
@@ -89,7 +89,7 @@ public class ReinterpretedBooleanDateTimeDoubleColumnTupleSource extends Abstrac
             return;
         }
         if (elementIndex == 1) {
-            writableSource.set(destinationRowKey, (ELEMENT_TYPE) DateTimeUtils.nanosToDateTime(tuple.getSecondElement()));
+            writableSource.set(destinationRowKey, (ELEMENT_TYPE) DateTimeUtils.epochNanosToDateTime(tuple.getSecondElement()));
             return;
         }
         if (elementIndex == 2) {
@@ -105,7 +105,7 @@ public class ReinterpretedBooleanDateTimeDoubleColumnTupleSource extends Abstrac
             return BooleanUtils.byteAsBoolean(tuple.getFirstElement());
         }
         if (elementIndex == 1) {
-            return DateTimeUtils.nanosToDateTime(tuple.getSecondElement());
+            return DateTimeUtils.epochNanosToDateTime(tuple.getSecondElement());
         }
         if (elementIndex == 2) {
             return TypeUtils.box(tuple.getThirdElement());
@@ -119,7 +119,7 @@ public class ReinterpretedBooleanDateTimeDoubleColumnTupleSource extends Abstrac
             return TypeUtils.box(tuple.getFirstElement());
         }
         if (elementIndex == 1) {
-            return DateTimeUtils.nanosToDateTime(tuple.getSecondElement());
+            return DateTimeUtils.epochNanosToDateTime(tuple.getSecondElement());
         }
         if (elementIndex == 2) {
             return TypeUtils.box(tuple.getThirdElement());
@@ -134,7 +134,7 @@ public class ReinterpretedBooleanDateTimeDoubleColumnTupleSource extends Abstrac
         ObjectChunk<DateTime, ? extends Values> chunk2 = chunks[1].asObjectChunk();
         DoubleChunk<? extends Values> chunk3 = chunks[2].asDoubleChunk();
         for (int ii = 0; ii < chunkSize; ++ii) {
-            destinationObjectChunk.set(ii, new ByteLongDoubleTuple(chunk1.get(ii), DateTimeUtils.nanos(chunk2.get(ii)), chunk3.get(ii)));
+            destinationObjectChunk.set(ii, new ByteLongDoubleTuple(chunk1.get(ii), DateTimeUtils.epochNanos(chunk2.get(ii)), chunk3.get(ii)));
         }
         destinationObjectChunk.setSize(chunkSize);
     }

@@ -60,7 +60,7 @@ public class CharacterReinterpretedDateTimeColumnTupleSource extends AbstractTup
     public final CharLongTuple createTupleFromValues(@NotNull final Object... values) {
         return new CharLongTuple(
                 TypeUtils.unbox((Character)values[0]),
-                DateTimeUtils.nanos((DateTime)values[1])
+                DateTimeUtils.epochNanos((DateTime)values[1])
         );
     }
 
@@ -80,7 +80,7 @@ public class CharacterReinterpretedDateTimeColumnTupleSource extends AbstractTup
             return;
         }
         if (elementIndex == 1) {
-            writableSource.set(destinationRowKey, (ELEMENT_TYPE) DateTimeUtils.nanosToDateTime(tuple.getSecondElement()));
+            writableSource.set(destinationRowKey, (ELEMENT_TYPE) DateTimeUtils.epochNanosToDateTime(tuple.getSecondElement()));
             return;
         }
         throw new IndexOutOfBoundsException("Invalid element index " + elementIndex + " for export");
@@ -92,7 +92,7 @@ public class CharacterReinterpretedDateTimeColumnTupleSource extends AbstractTup
             return TypeUtils.box(tuple.getFirstElement());
         }
         if (elementIndex == 1) {
-            return DateTimeUtils.nanosToDateTime(tuple.getSecondElement());
+            return DateTimeUtils.epochNanosToDateTime(tuple.getSecondElement());
         }
         throw new IllegalArgumentException("Bad elementIndex for 2 element tuple: " + elementIndex);
     }

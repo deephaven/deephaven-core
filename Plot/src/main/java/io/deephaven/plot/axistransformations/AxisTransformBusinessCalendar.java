@@ -155,7 +155,7 @@ public class AxisTransformBusinessCalendar implements AxisTransform, Serializabl
     @Override
     public boolean isVisible(final double timeNanos) {
         return !(Double.isInfinite(timeNanos) || Double.isNaN(timeNanos))
-                && busCal.isBusinessTime(DateTimeUtils.nanosToDateTime((long) timeNanos));
+                && busCal.isBusinessTime(DateTimeUtils.epochNanosToDateTime((long) timeNanos));
 
     }
 

@@ -17,6 +17,6 @@ public class DateTimeAsLongColumnSource extends UnboxedTimeBackedColumnSource<Da
 
     @Override
     protected long toEpochNano(DateTime val) {
-        return DateTimeUtils.nanos(val);
+        return DateTimeUtils.epochNanos(val);
     }
 }

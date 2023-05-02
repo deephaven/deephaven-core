@@ -23,9 +23,9 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
 
         DateTime dateTime = new DateTime(jodaDateTime.getMillis() * 1000000 + 123456);
 
-        TestCase.assertEquals(jodaDateTime.getMillis(), DateTimeUtils.millis(dateTime));
+        TestCase.assertEquals(jodaDateTime.getMillis(), DateTimeUtils.epochMillis(dateTime));
 
-        TestCase.assertEquals(io.deephaven.util.QueryConstants.NULL_LONG, DateTimeUtils.millis(null));
+        TestCase.assertEquals(io.deephaven.util.QueryConstants.NULL_LONG, DateTimeUtils.epochMillis(null));
     }
 
     public void testNanos() throws Exception {
@@ -33,9 +33,9 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
 
         DateTime dateTime = new DateTime(jodaDateTime.getMillis() * 1000000 + 123456);
 
-        TestCase.assertEquals(jodaDateTime.getMillis() * 1000000 + 123456, DateTimeUtils.nanos(dateTime));
+        TestCase.assertEquals(jodaDateTime.getMillis() * 1000000 + 123456, DateTimeUtils.epochNanos(dateTime));
 
-        TestCase.assertEquals(io.deephaven.util.QueryConstants.NULL_LONG, DateTimeUtils.nanos((DateTime) null));
+        TestCase.assertEquals(io.deephaven.util.QueryConstants.NULL_LONG, DateTimeUtils.epochNanos((DateTime) null));
     }
 
     public void testMidnightConversion() throws Exception {
@@ -45,7 +45,7 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         DateTime dateTime = new DateTime(jodaDateTime.getMillis() * 1000000 + 123456);
         DateTime midnight = DateTimeUtils.dateTimeAtMidnight(dateTime, TimeZone.TZ_NY);
 
-        TestCase.assertEquals(jodaMidnight.getMillis(), DateTimeUtils.millis(midnight));
+        TestCase.assertEquals(jodaMidnight.getMillis(), DateTimeUtils.epochMillis(midnight));
         TestCase.assertEquals(jodaMidnight.getMillis(),
                 DateTimeUtils.millisToDateAtMidnight(dateTime.getMillis(), TimeZone.TZ_NY).getMillis());
 

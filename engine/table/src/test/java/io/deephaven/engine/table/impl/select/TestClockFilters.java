@@ -11,7 +11,7 @@ import static io.deephaven.engine.util.TableTools.col;
 import static io.deephaven.engine.util.TableTools.intCol;
 import static io.deephaven.engine.util.TableTools.merge;
 import static io.deephaven.engine.util.TableTools.newTable;
-import static io.deephaven.time.DateTimeUtils.nanosToDateTime;
+import static io.deephaven.time.DateTimeUtils.epochNanosToDateTime;
 
 import io.deephaven.engine.testutil.StepClock;
 
@@ -25,13 +25,13 @@ public class TestClockFilters extends RefreshingTableTestCase {
     private final Table testInput3;
     {
         final Table testInputRangeA = newTable(
-                col("Timestamp", nanosToDateTime(1000L), nanosToDateTime(2000L), nanosToDateTime(3000L), nanosToDateTime(1000L),
-                        nanosToDateTime(2000L), nanosToDateTime(3000L)),
+                col("Timestamp", epochNanosToDateTime(1000L), epochNanosToDateTime(2000L), epochNanosToDateTime(3000L), epochNanosToDateTime(1000L),
+                        epochNanosToDateTime(2000L), epochNanosToDateTime(3000L)),
                 intCol("Int", 1, 2, 3, 1, 2, 3));
         testInput1 = merge(testInputRangeA, testInputRangeA, testInputRangeA);
         final Table testInputRangeB = newTable(
-                col("Timestamp", nanosToDateTime(2000L), nanosToDateTime(2000L), nanosToDateTime(3000L), nanosToDateTime(2000L),
-                        nanosToDateTime(2000L), nanosToDateTime(3000L)),
+                col("Timestamp", epochNanosToDateTime(2000L), epochNanosToDateTime(2000L), epochNanosToDateTime(3000L), epochNanosToDateTime(2000L),
+                        epochNanosToDateTime(2000L), epochNanosToDateTime(3000L)),
                 intCol("Int", 2, 2, 3, 2, 2, 3));
         testInput2 = merge(testInputRangeA, testInputRangeB, testInputRangeA);
         testInput3 = merge(testInputRangeA, testInputRangeB, testInputRangeB);

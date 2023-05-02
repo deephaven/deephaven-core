@@ -49,7 +49,7 @@ public class ReinterpretedDateTimeIntegerDateTimeColumnTupleSource extends Abstr
         return new LongIntLongTuple(
                 columnSource1.getLong(rowKey),
                 columnSource2.getInt(rowKey),
-                DateTimeUtils.nanos(columnSource3.get(rowKey))
+                DateTimeUtils.epochNanos(columnSource3.get(rowKey))
         );
     }
 
@@ -58,16 +58,16 @@ public class ReinterpretedDateTimeIntegerDateTimeColumnTupleSource extends Abstr
         return new LongIntLongTuple(
                 columnSource1.getPrevLong(rowKey),
                 columnSource2.getPrevInt(rowKey),
-                DateTimeUtils.nanos(columnSource3.getPrev(rowKey))
+                DateTimeUtils.epochNanos(columnSource3.getPrev(rowKey))
         );
     }
 
     @Override
     public final LongIntLongTuple createTupleFromValues(@NotNull final Object... values) {
         return new LongIntLongTuple(
-                DateTimeUtils.nanos((DateTime)values[0]),
+                DateTimeUtils.epochNanos((DateTime)values[0]),
                 TypeUtils.unbox((Integer)values[1]),
-                DateTimeUtils.nanos((DateTime)values[2])
+                DateTimeUtils.epochNanos((DateTime)values[2])
         );
     }
 
@@ -76,7 +76,7 @@ public class ReinterpretedDateTimeIntegerDateTimeColumnTupleSource extends Abstr
         return new LongIntLongTuple(
                 TypeUtils.unbox((Long)values[0]),
                 TypeUtils.unbox((Integer)values[1]),
-                DateTimeUtils.nanos((DateTime)values[2])
+                DateTimeUtils.epochNanos((DateTime)values[2])
         );
     }
 
@@ -84,7 +84,7 @@ public class ReinterpretedDateTimeIntegerDateTimeColumnTupleSource extends Abstr
     @Override
     public final <ELEMENT_TYPE> void exportElement(@NotNull final LongIntLongTuple tuple, final int elementIndex, @NotNull final WritableColumnSource<ELEMENT_TYPE> writableSource, final long destinationRowKey) {
         if (elementIndex == 0) {
-            writableSource.set(destinationRowKey, (ELEMENT_TYPE) DateTimeUtils.nanosToDateTime(tuple.getFirstElement()));
+            writableSource.set(destinationRowKey, (ELEMENT_TYPE) DateTimeUtils.epochNanosToDateTime(tuple.getFirstElement()));
             return;
         }
         if (elementIndex == 1) {
@@ -92,7 +92,7 @@ public class ReinterpretedDateTimeIntegerDateTimeColumnTupleSource extends Abstr
             return;
         }
         if (elementIndex == 2) {
-            writableSource.set(destinationRowKey, (ELEMENT_TYPE) DateTimeUtils.nanosToDateTime(tuple.getThirdElement()));
+            writableSource.set(destinationRowKey, (ELEMENT_TYPE) DateTimeUtils.epochNanosToDateTime(tuple.getThirdElement()));
             return;
         }
         throw new IndexOutOfBoundsException("Invalid element index " + elementIndex + " for export");
@@ -101,13 +101,13 @@ public class ReinterpretedDateTimeIntegerDateTimeColumnTupleSource extends Abstr
     @Override
     public final Object exportElement(@NotNull final LongIntLongTuple tuple, int elementIndex) {
         if (elementIndex == 0) {
-            return DateTimeUtils.nanosToDateTime(tuple.getFirstElement());
+            return DateTimeUtils.epochNanosToDateTime(tuple.getFirstElement());
         }
         if (elementIndex == 1) {
             return TypeUtils.box(tuple.getSecondElement());
         }
         if (elementIndex == 2) {
-            return DateTimeUtils.nanosToDateTime(tuple.getThirdElement());
+            return DateTimeUtils.epochNanosToDateTime(tuple.getThirdElement());
         }
         throw new IllegalArgumentException("Bad elementIndex for 3 element tuple: " + elementIndex);
     }
@@ -121,7 +121,7 @@ public class ReinterpretedDateTimeIntegerDateTimeColumnTupleSource extends Abstr
             return TypeUtils.box(tuple.getSecondElement());
         }
         if (elementIndex == 2) {
-            return DateTimeUtils.nanosToDateTime(tuple.getThirdElement());
+            return DateTimeUtils.epochNanosToDateTime(tuple.getThirdElement());
         }
         throw new IllegalArgumentException("Bad elementIndex for 3 element tuple: " + elementIndex);
     }
@@ -133,7 +133,7 @@ public class ReinterpretedDateTimeIntegerDateTimeColumnTupleSource extends Abstr
         IntChunk<? extends Values> chunk2 = chunks[1].asIntChunk();
         ObjectChunk<DateTime, ? extends Values> chunk3 = chunks[2].asObjectChunk();
         for (int ii = 0; ii < chunkSize; ++ii) {
-            destinationObjectChunk.set(ii, new LongIntLongTuple(chunk1.get(ii), chunk2.get(ii), DateTimeUtils.nanos(chunk3.get(ii))));
+            destinationObjectChunk.set(ii, new LongIntLongTuple(chunk1.get(ii), chunk2.get(ii), DateTimeUtils.epochNanos(chunk3.get(ii))));
         }
         destinationObjectChunk.setSize(chunkSize);
     }

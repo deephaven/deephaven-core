@@ -12,8 +12,6 @@ import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
-import io.deephaven.util.BooleanUtils;
-import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;
@@ -37,7 +35,7 @@ public class WritableLongAsDateTimeColumnSource extends LongAsDateTimeColumnSour
 
     @Override
     public void set(long key, DateTime value) {
-        alternateColumnSource.set(key, DateTimeUtils.nanos(value));
+        alternateColumnSource.set(key, DateTimeUtils.epochNanos(value));
     }
 
     @Override
@@ -63,7 +61,7 @@ public class WritableLongAsDateTimeColumnSource extends LongAsDateTimeColumnSour
         private void convert(ObjectChunk<DateTime, ? extends Values> src) {
             longChunk.setSize(src.size());
             for (int ii = 0; ii < src.size(); ++ii) {
-                longChunk.set(ii, DateTimeUtils.nanos(src.get(ii)));
+                longChunk.set(ii, DateTimeUtils.epochNanos(src.get(ii)));
             }
         }
     }

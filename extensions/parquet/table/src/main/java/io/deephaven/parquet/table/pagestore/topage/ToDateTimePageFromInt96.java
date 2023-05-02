@@ -105,7 +105,7 @@ public class ToDateTimePageFromInt96<ATTR extends Any> implements ToPage<ATTR, l
 
         final int resultLength = result.length;
         for (int ri = 0; ri < resultLength; ++ri) {
-            to[ri] = DateTimeUtils.nanosToDateTime(result[ri]);
+            to[ri] = DateTimeUtils.epochNanosToDateTime(result[ri]);
         }
 
         return new ObjectVectorDirect<>(to);

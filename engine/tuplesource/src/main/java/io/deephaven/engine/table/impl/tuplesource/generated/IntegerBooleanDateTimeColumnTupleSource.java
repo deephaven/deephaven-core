@@ -49,7 +49,7 @@ public class IntegerBooleanDateTimeColumnTupleSource extends AbstractTupleSource
         return new IntByteLongTuple(
                 columnSource1.getInt(rowKey),
                 BooleanUtils.booleanAsByte(columnSource2.getBoolean(rowKey)),
-                DateTimeUtils.nanos(columnSource3.get(rowKey))
+                DateTimeUtils.epochNanos(columnSource3.get(rowKey))
         );
     }
 
@@ -58,7 +58,7 @@ public class IntegerBooleanDateTimeColumnTupleSource extends AbstractTupleSource
         return new IntByteLongTuple(
                 columnSource1.getPrevInt(rowKey),
                 BooleanUtils.booleanAsByte(columnSource2.getPrevBoolean(rowKey)),
-                DateTimeUtils.nanos(columnSource3.getPrev(rowKey))
+                DateTimeUtils.epochNanos(columnSource3.getPrev(rowKey))
         );
     }
 
@@ -67,7 +67,7 @@ public class IntegerBooleanDateTimeColumnTupleSource extends AbstractTupleSource
         return new IntByteLongTuple(
                 TypeUtils.unbox((Integer)values[0]),
                 BooleanUtils.booleanAsByte((Boolean)values[1]),
-                DateTimeUtils.nanos((DateTime)values[2])
+                DateTimeUtils.epochNanos((DateTime)values[2])
         );
     }
 
@@ -76,7 +76,7 @@ public class IntegerBooleanDateTimeColumnTupleSource extends AbstractTupleSource
         return new IntByteLongTuple(
                 TypeUtils.unbox((Integer)values[0]),
                 BooleanUtils.booleanAsByte((Boolean)values[1]),
-                DateTimeUtils.nanos((DateTime)values[2])
+                DateTimeUtils.epochNanos((DateTime)values[2])
         );
     }
 
@@ -92,7 +92,7 @@ public class IntegerBooleanDateTimeColumnTupleSource extends AbstractTupleSource
             return;
         }
         if (elementIndex == 2) {
-            writableSource.set(destinationRowKey, (ELEMENT_TYPE) DateTimeUtils.nanosToDateTime(tuple.getThirdElement()));
+            writableSource.set(destinationRowKey, (ELEMENT_TYPE) DateTimeUtils.epochNanosToDateTime(tuple.getThirdElement()));
             return;
         }
         throw new IndexOutOfBoundsException("Invalid element index " + elementIndex + " for export");
@@ -107,7 +107,7 @@ public class IntegerBooleanDateTimeColumnTupleSource extends AbstractTupleSource
             return BooleanUtils.byteAsBoolean(tuple.getSecondElement());
         }
         if (elementIndex == 2) {
-            return DateTimeUtils.nanosToDateTime(tuple.getThirdElement());
+            return DateTimeUtils.epochNanosToDateTime(tuple.getThirdElement());
         }
         throw new IllegalArgumentException("Bad elementIndex for 3 element tuple: " + elementIndex);
     }
@@ -121,7 +121,7 @@ public class IntegerBooleanDateTimeColumnTupleSource extends AbstractTupleSource
             return BooleanUtils.byteAsBoolean(tuple.getSecondElement());
         }
         if (elementIndex == 2) {
-            return DateTimeUtils.nanosToDateTime(tuple.getThirdElement());
+            return DateTimeUtils.epochNanosToDateTime(tuple.getThirdElement());
         }
         throw new IllegalArgumentException("Bad elementIndex for 3 element tuple: " + elementIndex);
     }
@@ -133,7 +133,7 @@ public class IntegerBooleanDateTimeColumnTupleSource extends AbstractTupleSource
         ObjectChunk<Boolean, ? extends Values> chunk2 = chunks[1].asObjectChunk();
         ObjectChunk<DateTime, ? extends Values> chunk3 = chunks[2].asObjectChunk();
         for (int ii = 0; ii < chunkSize; ++ii) {
-            destinationObjectChunk.set(ii, new IntByteLongTuple(chunk1.get(ii), BooleanUtils.booleanAsByte(chunk2.get(ii)), DateTimeUtils.nanos(chunk3.get(ii))));
+            destinationObjectChunk.set(ii, new IntByteLongTuple(chunk1.get(ii), BooleanUtils.booleanAsByte(chunk2.get(ii)), DateTimeUtils.epochNanos(chunk3.get(ii))));
         }
         destinationObjectChunk.setSize(chunkSize);
     }

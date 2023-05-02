@@ -59,7 +59,7 @@ public class ReinterpretedDateTimeCharacterColumnTupleSource extends AbstractTup
     @Override
     public final LongCharTuple createTupleFromValues(@NotNull final Object... values) {
         return new LongCharTuple(
-                DateTimeUtils.nanos((DateTime)values[0]),
+                DateTimeUtils.epochNanos((DateTime)values[0]),
                 TypeUtils.unbox((Character)values[1])
         );
     }
@@ -76,7 +76,7 @@ public class ReinterpretedDateTimeCharacterColumnTupleSource extends AbstractTup
     @Override
     public final <ELEMENT_TYPE> void exportElement(@NotNull final LongCharTuple tuple, final int elementIndex, @NotNull final WritableColumnSource<ELEMENT_TYPE> writableSource, final long destinationRowKey) {
         if (elementIndex == 0) {
-            writableSource.set(destinationRowKey, (ELEMENT_TYPE) DateTimeUtils.nanosToDateTime(tuple.getFirstElement()));
+            writableSource.set(destinationRowKey, (ELEMENT_TYPE) DateTimeUtils.epochNanosToDateTime(tuple.getFirstElement()));
             return;
         }
         if (elementIndex == 1) {
@@ -89,7 +89,7 @@ public class ReinterpretedDateTimeCharacterColumnTupleSource extends AbstractTup
     @Override
     public final Object exportElement(@NotNull final LongCharTuple tuple, int elementIndex) {
         if (elementIndex == 0) {
-            return DateTimeUtils.nanosToDateTime(tuple.getFirstElement());
+            return DateTimeUtils.epochNanosToDateTime(tuple.getFirstElement());
         }
         if (elementIndex == 1) {
             return TypeUtils.box(tuple.getSecondElement());

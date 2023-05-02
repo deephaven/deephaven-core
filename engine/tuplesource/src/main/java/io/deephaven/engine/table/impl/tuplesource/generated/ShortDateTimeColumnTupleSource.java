@@ -44,7 +44,7 @@ public class ShortDateTimeColumnTupleSource extends AbstractTupleSource<ShortLon
     public final ShortLongTuple createTuple(final long rowKey) {
         return new ShortLongTuple(
                 columnSource1.getShort(rowKey),
-                DateTimeUtils.nanos(columnSource2.get(rowKey))
+                DateTimeUtils.epochNanos(columnSource2.get(rowKey))
         );
     }
 
@@ -52,7 +52,7 @@ public class ShortDateTimeColumnTupleSource extends AbstractTupleSource<ShortLon
     public final ShortLongTuple createPreviousTuple(final long rowKey) {
         return new ShortLongTuple(
                 columnSource1.getPrevShort(rowKey),
-                DateTimeUtils.nanos(columnSource2.getPrev(rowKey))
+                DateTimeUtils.epochNanos(columnSource2.getPrev(rowKey))
         );
     }
 
@@ -60,7 +60,7 @@ public class ShortDateTimeColumnTupleSource extends AbstractTupleSource<ShortLon
     public final ShortLongTuple createTupleFromValues(@NotNull final Object... values) {
         return new ShortLongTuple(
                 TypeUtils.unbox((Short)values[0]),
-                DateTimeUtils.nanos((DateTime)values[1])
+                DateTimeUtils.epochNanos((DateTime)values[1])
         );
     }
 
@@ -68,7 +68,7 @@ public class ShortDateTimeColumnTupleSource extends AbstractTupleSource<ShortLon
     public final ShortLongTuple createTupleFromReinterpretedValues(@NotNull final Object... values) {
         return new ShortLongTuple(
                 TypeUtils.unbox((Short)values[0]),
-                DateTimeUtils.nanos((DateTime)values[1])
+                DateTimeUtils.epochNanos((DateTime)values[1])
         );
     }
 
@@ -80,7 +80,7 @@ public class ShortDateTimeColumnTupleSource extends AbstractTupleSource<ShortLon
             return;
         }
         if (elementIndex == 1) {
-            writableSource.set(destinationRowKey, (ELEMENT_TYPE) DateTimeUtils.nanosToDateTime(tuple.getSecondElement()));
+            writableSource.set(destinationRowKey, (ELEMENT_TYPE) DateTimeUtils.epochNanosToDateTime(tuple.getSecondElement()));
             return;
         }
         throw new IndexOutOfBoundsException("Invalid element index " + elementIndex + " for export");
@@ -92,7 +92,7 @@ public class ShortDateTimeColumnTupleSource extends AbstractTupleSource<ShortLon
             return TypeUtils.box(tuple.getFirstElement());
         }
         if (elementIndex == 1) {
-            return DateTimeUtils.nanosToDateTime(tuple.getSecondElement());
+            return DateTimeUtils.epochNanosToDateTime(tuple.getSecondElement());
         }
         throw new IllegalArgumentException("Bad elementIndex for 2 element tuple: " + elementIndex);
     }
@@ -103,7 +103,7 @@ public class ShortDateTimeColumnTupleSource extends AbstractTupleSource<ShortLon
             return TypeUtils.box(tuple.getFirstElement());
         }
         if (elementIndex == 1) {
-            return DateTimeUtils.nanosToDateTime(tuple.getSecondElement());
+            return DateTimeUtils.epochNanosToDateTime(tuple.getSecondElement());
         }
         throw new IllegalArgumentException("Bad elementIndex for 2 element tuple: " + elementIndex);
     }
@@ -113,7 +113,7 @@ public class ShortDateTimeColumnTupleSource extends AbstractTupleSource<ShortLon
         ShortChunk<? extends Values> chunk1 = chunks[0].asShortChunk();
         ObjectChunk<DateTime, ? extends Values> chunk2 = chunks[1].asObjectChunk();
         for (int ii = 0; ii < chunkSize; ++ii) {
-            destinationObjectChunk.set(ii, new ShortLongTuple(chunk1.get(ii), DateTimeUtils.nanos(chunk2.get(ii))));
+            destinationObjectChunk.set(ii, new ShortLongTuple(chunk1.get(ii), DateTimeUtils.epochNanos(chunk2.get(ii))));
         }
         destination.setSize(chunkSize);
     }

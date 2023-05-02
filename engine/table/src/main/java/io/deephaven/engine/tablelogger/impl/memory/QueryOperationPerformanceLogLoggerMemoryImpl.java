@@ -95,10 +95,10 @@ class QueryOperationPerformanceLogLoggerMemoryImpl
             this.CallerLine.set(nugget.getCallerLine());
             this.IsTopLevel.setBoolean(nugget.isTopLevel());
             this.IsCompilation.setBoolean(nugget.getName().startsWith("Compile:"));
-            this.StartTime.set(DateTimeUtils.millisToDateTime(nugget.getStartClockTime()));
+            this.StartTime.set(DateTimeUtils.epochMillisToDateTime(nugget.getStartClockTime()));
             this.EndTime.set(nugget.getTotalTimeNanos() == null
                     ? null
-                    : DateTimeUtils.millisToDateTime(
+                    : DateTimeUtils.epochMillisToDateTime(
                             nugget.getStartClockTime() + DateTimeUtils.nanosToMillis(nugget.getTotalTimeNanos())));
             this.DurationNanos.setLong(
                     nugget.getTotalTimeNanos() == null ? QueryConstants.NULL_LONG : nugget.getTotalTimeNanos());

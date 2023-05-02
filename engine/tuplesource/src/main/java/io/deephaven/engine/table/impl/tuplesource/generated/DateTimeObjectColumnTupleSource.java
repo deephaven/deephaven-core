@@ -41,7 +41,7 @@ public class DateTimeObjectColumnTupleSource extends AbstractTupleSource<LongObj
     @Override
     public final LongObjectTuple createTuple(final long rowKey) {
         return new LongObjectTuple(
-                DateTimeUtils.nanos(columnSource1.get(rowKey)),
+                DateTimeUtils.epochNanos(columnSource1.get(rowKey)),
                 columnSource2.get(rowKey)
         );
     }
@@ -49,7 +49,7 @@ public class DateTimeObjectColumnTupleSource extends AbstractTupleSource<LongObj
     @Override
     public final LongObjectTuple createPreviousTuple(final long rowKey) {
         return new LongObjectTuple(
-                DateTimeUtils.nanos(columnSource1.getPrev(rowKey)),
+                DateTimeUtils.epochNanos(columnSource1.getPrev(rowKey)),
                 columnSource2.getPrev(rowKey)
         );
     }
@@ -57,7 +57,7 @@ public class DateTimeObjectColumnTupleSource extends AbstractTupleSource<LongObj
     @Override
     public final LongObjectTuple createTupleFromValues(@NotNull final Object... values) {
         return new LongObjectTuple(
-                DateTimeUtils.nanos((DateTime)values[0]),
+                DateTimeUtils.epochNanos((DateTime)values[0]),
                 values[1]
         );
     }
@@ -65,7 +65,7 @@ public class DateTimeObjectColumnTupleSource extends AbstractTupleSource<LongObj
     @Override
     public final LongObjectTuple createTupleFromReinterpretedValues(@NotNull final Object... values) {
         return new LongObjectTuple(
-                DateTimeUtils.nanos((DateTime)values[0]),
+                DateTimeUtils.epochNanos((DateTime)values[0]),
                 values[1]
         );
     }
@@ -74,7 +74,7 @@ public class DateTimeObjectColumnTupleSource extends AbstractTupleSource<LongObj
     @Override
     public final <ELEMENT_TYPE> void exportElement(@NotNull final LongObjectTuple tuple, final int elementIndex, @NotNull final WritableColumnSource<ELEMENT_TYPE> writableSource, final long destinationRowKey) {
         if (elementIndex == 0) {
-            writableSource.set(destinationRowKey, (ELEMENT_TYPE) DateTimeUtils.nanosToDateTime(tuple.getFirstElement()));
+            writableSource.set(destinationRowKey, (ELEMENT_TYPE) DateTimeUtils.epochNanosToDateTime(tuple.getFirstElement()));
             return;
         }
         if (elementIndex == 1) {
@@ -87,7 +87,7 @@ public class DateTimeObjectColumnTupleSource extends AbstractTupleSource<LongObj
     @Override
     public final Object exportElement(@NotNull final LongObjectTuple tuple, int elementIndex) {
         if (elementIndex == 0) {
-            return DateTimeUtils.nanosToDateTime(tuple.getFirstElement());
+            return DateTimeUtils.epochNanosToDateTime(tuple.getFirstElement());
         }
         if (elementIndex == 1) {
             return tuple.getSecondElement();
@@ -98,7 +98,7 @@ public class DateTimeObjectColumnTupleSource extends AbstractTupleSource<LongObj
     @Override
     public final Object exportElementReinterpreted(@NotNull final LongObjectTuple tuple, int elementIndex) {
         if (elementIndex == 0) {
-            return DateTimeUtils.nanosToDateTime(tuple.getFirstElement());
+            return DateTimeUtils.epochNanosToDateTime(tuple.getFirstElement());
         }
         if (elementIndex == 1) {
             return tuple.getSecondElement();
@@ -111,7 +111,7 @@ public class DateTimeObjectColumnTupleSource extends AbstractTupleSource<LongObj
         ObjectChunk<DateTime, ? extends Values> chunk1 = chunks[0].asObjectChunk();
         ObjectChunk<Object, ? extends Values> chunk2 = chunks[1].asObjectChunk();
         for (int ii = 0; ii < chunkSize; ++ii) {
-            destinationObjectChunk.set(ii, new LongObjectTuple(DateTimeUtils.nanos(chunk1.get(ii)), chunk2.get(ii)));
+            destinationObjectChunk.set(ii, new LongObjectTuple(DateTimeUtils.epochNanos(chunk1.get(ii)), chunk2.get(ii)));
         }
         destination.setSize(chunkSize);
     }

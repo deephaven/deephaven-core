@@ -48,7 +48,7 @@ public class BooleanDateTimeIntegerColumnTupleSource extends AbstractTupleSource
     public final ByteLongIntTuple createTuple(final long rowKey) {
         return new ByteLongIntTuple(
                 BooleanUtils.booleanAsByte(columnSource1.getBoolean(rowKey)),
-                DateTimeUtils.nanos(columnSource2.get(rowKey)),
+                DateTimeUtils.epochNanos(columnSource2.get(rowKey)),
                 columnSource3.getInt(rowKey)
         );
     }
@@ -57,7 +57,7 @@ public class BooleanDateTimeIntegerColumnTupleSource extends AbstractTupleSource
     public final ByteLongIntTuple createPreviousTuple(final long rowKey) {
         return new ByteLongIntTuple(
                 BooleanUtils.booleanAsByte(columnSource1.getPrevBoolean(rowKey)),
-                DateTimeUtils.nanos(columnSource2.getPrev(rowKey)),
+                DateTimeUtils.epochNanos(columnSource2.getPrev(rowKey)),
                 columnSource3.getPrevInt(rowKey)
         );
     }
@@ -66,7 +66,7 @@ public class BooleanDateTimeIntegerColumnTupleSource extends AbstractTupleSource
     public final ByteLongIntTuple createTupleFromValues(@NotNull final Object... values) {
         return new ByteLongIntTuple(
                 BooleanUtils.booleanAsByte((Boolean)values[0]),
-                DateTimeUtils.nanos((DateTime)values[1]),
+                DateTimeUtils.epochNanos((DateTime)values[1]),
                 TypeUtils.unbox((Integer)values[2])
         );
     }
@@ -75,7 +75,7 @@ public class BooleanDateTimeIntegerColumnTupleSource extends AbstractTupleSource
     public final ByteLongIntTuple createTupleFromReinterpretedValues(@NotNull final Object... values) {
         return new ByteLongIntTuple(
                 BooleanUtils.booleanAsByte((Boolean)values[0]),
-                DateTimeUtils.nanos((DateTime)values[1]),
+                DateTimeUtils.epochNanos((DateTime)values[1]),
                 TypeUtils.unbox((Integer)values[2])
         );
     }
@@ -88,7 +88,7 @@ public class BooleanDateTimeIntegerColumnTupleSource extends AbstractTupleSource
             return;
         }
         if (elementIndex == 1) {
-            writableSource.set(destinationRowKey, (ELEMENT_TYPE) DateTimeUtils.nanosToDateTime(tuple.getSecondElement()));
+            writableSource.set(destinationRowKey, (ELEMENT_TYPE) DateTimeUtils.epochNanosToDateTime(tuple.getSecondElement()));
             return;
         }
         if (elementIndex == 2) {
@@ -104,7 +104,7 @@ public class BooleanDateTimeIntegerColumnTupleSource extends AbstractTupleSource
             return BooleanUtils.byteAsBoolean(tuple.getFirstElement());
         }
         if (elementIndex == 1) {
-            return DateTimeUtils.nanosToDateTime(tuple.getSecondElement());
+            return DateTimeUtils.epochNanosToDateTime(tuple.getSecondElement());
         }
         if (elementIndex == 2) {
             return TypeUtils.box(tuple.getThirdElement());
@@ -118,7 +118,7 @@ public class BooleanDateTimeIntegerColumnTupleSource extends AbstractTupleSource
             return BooleanUtils.byteAsBoolean(tuple.getFirstElement());
         }
         if (elementIndex == 1) {
-            return DateTimeUtils.nanosToDateTime(tuple.getSecondElement());
+            return DateTimeUtils.epochNanosToDateTime(tuple.getSecondElement());
         }
         if (elementIndex == 2) {
             return TypeUtils.box(tuple.getThirdElement());
@@ -133,7 +133,7 @@ public class BooleanDateTimeIntegerColumnTupleSource extends AbstractTupleSource
         ObjectChunk<DateTime, ? extends Values> chunk2 = chunks[1].asObjectChunk();
         IntChunk<? extends Values> chunk3 = chunks[2].asIntChunk();
         for (int ii = 0; ii < chunkSize; ++ii) {
-            destinationObjectChunk.set(ii, new ByteLongIntTuple(BooleanUtils.booleanAsByte(chunk1.get(ii)), DateTimeUtils.nanos(chunk2.get(ii)), chunk3.get(ii)));
+            destinationObjectChunk.set(ii, new ByteLongIntTuple(BooleanUtils.booleanAsByte(chunk1.get(ii)), DateTimeUtils.epochNanos(chunk2.get(ii)), chunk3.get(ii)));
         }
         destinationObjectChunk.setSize(chunkSize);
     }

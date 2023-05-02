@@ -28,7 +28,7 @@ public class JsonNodeDateTimeFieldCopier implements FieldCopier {
         for (int ii = 0; ii < length; ++ii) {
             final JsonNode node = (JsonNode) inputChunk.get(ii + sourceOffset);
             final DateTime dateTime = JsonNodeUtil.getDateTime(node, fieldPointer, true, true);
-            output.set(ii + destOffset, DateTimeUtils.nanos(dateTime));
+            output.set(ii + destOffset, DateTimeUtils.epochNanos(dateTime));
         }
     }
 }
