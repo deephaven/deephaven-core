@@ -266,6 +266,7 @@ public class DateTimeUtils {
     /**
      * Set the clock used to compute the current time.  This allows a custom clock to be used instead of the current system clock.
      * This is mainly used for replay simulations.
+     *
      * @param clock clock used to compute the current time.
      */
     public static void setClock( final Clock clock) {
@@ -277,19 +278,22 @@ public class DateTimeUtils {
      * Returns the clock used to compute the current time.  This may be the current system clock, or it may be an alternative
      * clock used for replay simulations.
      *
+     * @see #setClock(Clock)
      * @return current clock.
      */
     public static Clock currentClock() {
         return Objects.requireNonNullElse(clock, Clock.system());
     }
 
-    //TODO: separate now() methods for the current clock and the system clock? -- adjust docs accordingly
+    //TODO: what are the script annotations???
     /**
      * Provides the current {@link DateTime} according to the current clock.
      * Under most circumstances, this method will return the current system time, but during replay simulations,
      * this method can return the replay time.
      *
      * @see #currentClock()
+     * @see #setClock(Clock)
+     * @see #nowSystem()
      * @return the current {@link DateTime} according to the current clock.
      */
     @ScriptApi
@@ -304,16 +308,45 @@ public class DateTimeUtils {
      * this method can return the replay time.
      *
      * @see #currentClock()
+     * @see #setClock(Clock)
+     * @see #nowSystemMillisResolution()
      * @return the current {@link DateTime}, with millisecond resolution, according to the current clock.
      */
     public static DateTime nowMillisResolution() {
         return DateTime.ofMillis(currentClock());
     }
 
+    //TODO: no equivalent
+    /**
+     * Provides the current {@link DateTime} according to the system clock.
+     * Note that the system time may not be desirable during replay simulations.
+     *
+     * @see #now()
+     * @return the current {@link DateTime} according to the system clock.
+     */
+    @ScriptApi
+    public static DateTime nowSystem() {
+        return DateTime.now();
+    }
+
+    /**
+     * Provides the current {@link DateTime}, with millisecond resolution, according to the system clock.
+     * Note that the system time may not be desirable during replay simulations.
+     *
+     * @see #nowMillisResolution()
+     * @return the current {@link DateTime}, with millisecond resolution, according to the system clock.
+     */
+    public static DateTime nowSystemMillisResolution() {
+        return DateTime.nowMillis();
+    }
+
+    /**
+     * A cached date in a specific timezone.  The cache is invalidated when the current clock indicates the next
+     * day has arrived.
+     */
     private abstract static class CachedDate {
 
         final TimeZone timeZone;
-
         String value;
         long valueExpirationTimeMillis;
 
@@ -372,6 +405,7 @@ public class DateTimeUtils {
      * this method can return the date according to replay time.
      *
      * @see #currentClock()
+     * @see #setClock(Clock)
      * @return the current date according to the current clock formatted as "yyyy-MM-dd".
      */
     public static String today(TimeZone timeZone) {
