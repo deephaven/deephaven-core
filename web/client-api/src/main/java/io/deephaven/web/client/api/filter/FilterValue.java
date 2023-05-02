@@ -80,6 +80,11 @@ public class FilterValue {
         }
     }
 
+    @JsIgnore
+    public static FilterValue ofNumber(double input) {
+        return ofNumber(Js.cast(input));
+    }
+
     public static FilterValue ofNumber(OfNumberUnionParam input) {
         Objects.requireNonNull(input);
         if (input.isLongWrapper()) {

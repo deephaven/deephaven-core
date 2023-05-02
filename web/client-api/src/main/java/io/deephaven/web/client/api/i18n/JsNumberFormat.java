@@ -4,22 +4,17 @@
 package io.deephaven.web.client.api.i18n;
 
 import com.google.gwt.i18n.client.NumberFormat;
-import com.vertispan.tsdefs.annotations.TsTypeRef;
 import com.vertispan.tsdefs.annotations.TsUnion;
 import com.vertispan.tsdefs.annotations.TsUnionMember;
 import io.deephaven.web.client.api.BigDecimalWrapper;
 import io.deephaven.web.client.api.BigIntegerWrapper;
 import io.deephaven.web.client.api.LongWrapper;
-import jsinterop.annotations.JsConstructor;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsOverlay;
 import jsinterop.annotations.JsPackage;
 import jsinterop.annotations.JsType;
-import jsinterop.base.Any;
 import jsinterop.base.Js;
 
-import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -104,13 +99,13 @@ public class JsNumberFormat {
     }
 
     @JsIgnore
-    public String format(Number number) {
-        return wrapped.format(number);
+    public String format(double number) {
+        return format(Js.<NumberUnion>cast(number));
     }
 
     @JsIgnore
     public String format(LongWrapper number) {
-        return wrapped.format(number.getWrapped());
+        return format(Js.<NumberUnion>cast(number));
     }
 
     public String format(NumberUnion number) {

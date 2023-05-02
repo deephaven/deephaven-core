@@ -44,6 +44,7 @@ public class JsAxisDescriptor {
     public int minorTickCount = 0;
     @JsNullable
     public double gapBetweenMajorTicks = -1.0;
+    @JsNullable
     public JsArray<Double> majorTickLocations = new JsArray<>();
     @JsNullable
     public double tickLabelAngle = 0.0;
