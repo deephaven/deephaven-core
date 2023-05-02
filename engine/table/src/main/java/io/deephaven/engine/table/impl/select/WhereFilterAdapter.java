@@ -76,7 +76,7 @@ public class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
     }
 
     public static WhereFilter of(boolean literal) {
-        return literal ? WhereAllFilter.INSTANCE : WhereNoneFilter.INSTANCE;
+        throw new UnsupportedOperationException("Should not be constructing literal boolean WhereFilter");
     }
 
     public static WhereFilter of(RawString rawString, boolean inverted) {

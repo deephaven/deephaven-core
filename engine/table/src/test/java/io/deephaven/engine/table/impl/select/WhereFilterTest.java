@@ -12,6 +12,7 @@ import io.deephaven.api.literal.Literal;
 import junit.framework.TestCase;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
 public class WhereFilterTest extends TestCase {
 
@@ -19,6 +20,7 @@ public class WhereFilterTest extends TestCase {
     private static final ColumnName BAR = ColumnName.of("Bar");
     private static final ColumnName BAZ = ColumnName.of("Baz");
     private static final Literal V42 = Literal.of(42L);
+
     public void testFoo() {
         expect(FOO, ConditionFilter.class, "!isNull(Foo) && Foo");
     }
@@ -196,11 +198,21 @@ public class WhereFilterTest extends TestCase {
     }
 
     public void testFilterTrue() {
-        assertThat(WhereFilter.of(Filter.ofTrue())).isEqualTo(WhereAllFilter.INSTANCE);
+        try {
+            WhereFilter.of(Filter.ofTrue());
+            failBecauseExceptionWasNotThrown(UnsupportedOperationException.class);
+        } catch (UnsupportedOperationException e) {
+            // expected
+        }
     }
 
     public void testFilterFalse() {
-        assertThat(WhereFilter.of(Filter.ofFalse())).isEqualTo(WhereNoneFilter.INSTANCE);
+        try {
+            WhereFilter.of(Filter.ofFalse());
+            failBecauseExceptionWasNotThrown(UnsupportedOperationException.class);
+        } catch (UnsupportedOperationException e) {
+            // expected
+        }
     }
 
     private static void expect(Filter filter, Class<? extends WhereFilter> clazz, String expected) {
