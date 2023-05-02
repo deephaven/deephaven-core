@@ -41,8 +41,6 @@ public class DateTimeUtils {
     //TODO: test coverage
     //TODO: variable and function naming consistency
 
-    //TODO: reorganize functions into better groupings
-
     public static final DateTime[] ZERO_LENGTH_DATETIME_ARRAY = new DateTime[0];
 
     // region Format Patterns
@@ -670,6 +668,44 @@ public class DateTimeUtils {
      */
     public static DateTime excelToDateTime(double excel, TimeZone timeZone) {
         return excelToDateTime(excel, timeZone.getTimeZone().toTimeZone());
+    }
+
+    /**
+     * Converts an offset from the Epoch to a nanoseconds from the Epoch.  The offset can be in milliseconds, microseconds,
+     * or nanoseconds.  Expected date ranges are used to infer the units for the offset.
+     *
+     * @param epochOffset time offset from the Epoch.
+     * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
+     *      offset from the Epoch converted to nanoseconds from the Epoch.
+     */
+    public static long epochAutoToEpochNanos(final long epochOffset) {
+        if (epochOffset == NULL_LONG) {
+            return epochOffset;
+        }
+        final long absEpoch = Math.abs(epochOffset);
+        if (absEpoch > 1000 * TimeConstants.MICROTIME_THRESHOLD) { // Nanoseconds
+            return epochOffset;
+        }
+        if (absEpoch > TimeConstants.MICROTIME_THRESHOLD) { // Microseconds
+            return 1000 * epochOffset;
+        }
+        if (absEpoch > TimeConstants.MICROTIME_THRESHOLD / 1000) { // Milliseconds
+            return 1000 * 1000 * epochOffset;
+        }
+        // Seconds
+        return 1000 * 1000 * 1000 * epochOffset;
+    }
+
+    /**
+     * Converts an offset from the Epoch to a {@link DateTime}.  The offset can be in milliseconds, microseconds,
+     * or nanoseconds.  Expected date ranges are used to infer the units for the offset.
+     *
+     * @param epochOffset time offset from the Epoch.
+     * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
+     *      offset from the Epoch converted to a {@link DateTime}.
+     */
+    public static DateTime epochAutoToDateTime(long epochOffset) {
+        return new DateTime(epochAutoToEpochNanos(epochOffset));
     }
 
     // endregion
@@ -2007,56 +2043,6 @@ public class DateTimeUtils {
 
 
 
-    //TODO: NEXT ***
-
-    //TODO *** rename and keep epochToTimeAuto *** what to name existing?
-    /**
-     * Converts a long offset from Epoch value to a {@link DateTime}. This method uses expected date ranges to infer
-     * whether the passed value is in milliseconds, microseconds, or nanoseconds. Thresholds used are
-     * {@link TimeConstants#MICROTIME_THRESHOLD} divided by 1000 for milliseconds, as-is for microseconds, and
-     * multiplied by 1000 for nanoseconds. The value is tested to see if its ABS exceeds the threshold. E.g. a value
-     * whose ABS is greater than 1000 * {@link TimeConstants#MICROTIME_THRESHOLD} will be treated as nanoseconds.
-     *
-     * @param epoch The long Epoch offset value to convert.
-     * @return null, if the input is equal to {@link QueryConstants#NULL_LONG}, otherwise a {@link DateTime} based on
-     *         the inferred conversion.
-     */
-    @SuppressWarnings("WeakerAccess")
-    public static DateTime autoEpochToTime(long epoch) {
-        return new DateTime(autoEpochToNanos(epoch));
-    }
-
-    //TODO: NEXT ***
-
-    //TODO *** rename and keep epochToTimeAuto *** what to name existing?
-    /**
-     * Converts a long offset from Epoch value to a nanoseconds as a long. This method uses expected date ranges to
-     * infer whether the passed value is in milliseconds, microseconds, or nanoseconds. Thresholds used are
-     * {@link TimeConstants#MICROTIME_THRESHOLD} divided by 1000 for milliseconds, as-is for microseconds, and
-     * multiplied by 1000 for nanoseconds. The value is tested to see if its ABS exceeds the threshold. E.g. a value
-     * whose ABS is greater than 1000 * {@link TimeConstants#MICROTIME_THRESHOLD} will be treated as nanoseconds.
-     *
-     * @param epoch The long Epoch offset value to convert.
-     * @return null, if the input is equal to {@link QueryConstants#NULL_LONG}, otherwise a nanoseconds value
-     *         corresponding to the passed in epoch value.
-     */
-    public static long autoEpochToNanos(final long epoch) {
-        if (epoch == NULL_LONG) {
-            return epoch;
-        }
-        final long absEpoch = Math.abs(epoch);
-        if (absEpoch > 1000 * TimeConstants.MICROTIME_THRESHOLD) { // Nanoseconds
-            return epoch;
-        }
-        if (absEpoch > TimeConstants.MICROTIME_THRESHOLD) { // Microseconds
-            return 1000 * epoch;
-        }
-        if (absEpoch > TimeConstants.MICROTIME_THRESHOLD / 1000) { // Milliseconds
-            return 1000 * 1000 * epoch;
-        }
-        // Seconds
-        return 1000 * 1000 * 1000 * epoch;
-    }
 
 
 
@@ -2218,6 +2204,8 @@ public class DateTimeUtils {
         return null;
     }
 
+    //TODO: RENAME: autoEpochToTime : epochAutoToDateTime
+    //TODO: RENAME: autoEpochToNanos : epochAutoToEpochNanos
 
     //TODO: RIP: cappedTimeOffset : replace with: max(dt+p,cap)
     //TODO: RIP: expressionToNanos : replace with parseNanos or parseDateTime, note that it no longer parses datetimes (which was a bad idea)

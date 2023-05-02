@@ -738,7 +738,7 @@ public class JsonNodeUtil {
         // ISO Zoned String, millis (small number), or nanos (large number)
         if (node.isLong() || node.isInt()) {
             final long value = node.asLong();
-            return DateTimeUtils.autoEpochToTime(value);
+            return DateTimeUtils.epochAutoToDateTime(value);
         } else {
             return DateTimeUtils.parseDateTime(node.asText());
         }

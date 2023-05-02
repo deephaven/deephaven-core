@@ -609,26 +609,26 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
      * @return The year (in the New York timezone) in which the given time falls.
      */
     public int doTestAutoEpochToTime(long epoch) {
-        TestCase.assertEquals(DateTimeUtils.autoEpochToTime(epoch).getMillis(), epoch * 1000);
-        TestCase.assertEquals(DateTimeUtils.autoEpochToTime(epoch).getMicros(), epoch * 1000 * 1000);
-        TestCase.assertEquals(DateTimeUtils.autoEpochToTime(epoch).getNanos(), epoch * 1000 * 1000 * 1000);
+        TestCase.assertEquals(DateTimeUtils.epochAutoToDateTime(epoch).getMillis(), epoch * 1000);
+        TestCase.assertEquals(DateTimeUtils.epochAutoToDateTime(epoch).getMicros(), epoch * 1000 * 1000);
+        TestCase.assertEquals(DateTimeUtils.epochAutoToDateTime(epoch).getNanos(), epoch * 1000 * 1000 * 1000);
 
         final long milliValue = epoch * 1000 + (int) (Math.signum(epoch) * 123);
-        TestCase.assertEquals(DateTimeUtils.autoEpochToTime(milliValue).getMillis(), milliValue);
-        TestCase.assertEquals(DateTimeUtils.autoEpochToTime(milliValue).getMicros(), milliValue * 1000);
-        TestCase.assertEquals(DateTimeUtils.autoEpochToTime(milliValue).getNanos(), milliValue * 1000 * 1000);
+        TestCase.assertEquals(DateTimeUtils.epochAutoToDateTime(milliValue).getMillis(), milliValue);
+        TestCase.assertEquals(DateTimeUtils.epochAutoToDateTime(milliValue).getMicros(), milliValue * 1000);
+        TestCase.assertEquals(DateTimeUtils.epochAutoToDateTime(milliValue).getNanos(), milliValue * 1000 * 1000);
 
         final long microValue = milliValue * 1000 + (int) (Math.signum(milliValue) * 456);
-        TestCase.assertEquals(DateTimeUtils.autoEpochToTime(microValue).getMillis(), milliValue);
-        TestCase.assertEquals(DateTimeUtils.autoEpochToTime(microValue).getMicros(), microValue);
-        TestCase.assertEquals(DateTimeUtils.autoEpochToTime(microValue).getNanos(), microValue * 1000);
+        TestCase.assertEquals(DateTimeUtils.epochAutoToDateTime(microValue).getMillis(), milliValue);
+        TestCase.assertEquals(DateTimeUtils.epochAutoToDateTime(microValue).getMicros(), microValue);
+        TestCase.assertEquals(DateTimeUtils.epochAutoToDateTime(microValue).getNanos(), microValue * 1000);
 
         final long nanoValue = microValue * 1000 + (int) (Math.signum(microValue) * 789);
-        TestCase.assertEquals(DateTimeUtils.autoEpochToTime(nanoValue).getMillis(), milliValue);
-        TestCase.assertEquals(DateTimeUtils.autoEpochToTime(nanoValue).getMicros(), microValue);
-        TestCase.assertEquals(DateTimeUtils.autoEpochToTime(nanoValue).getNanos(), nanoValue);
+        TestCase.assertEquals(DateTimeUtils.epochAutoToDateTime(nanoValue).getMillis(), milliValue);
+        TestCase.assertEquals(DateTimeUtils.epochAutoToDateTime(nanoValue).getMicros(), microValue);
+        TestCase.assertEquals(DateTimeUtils.epochAutoToDateTime(nanoValue).getNanos(), nanoValue);
 
-        return DateTimeUtils.year(DateTimeUtils.autoEpochToTime(nanoValue), TimeZone.TZ_NY);
+        return DateTimeUtils.year(DateTimeUtils.epochAutoToDateTime(nanoValue), TimeZone.TZ_NY);
     }
 
     public void testAutoEpochToTime() {
