@@ -40,6 +40,11 @@ public class WhereNoneFilter extends WhereFilterImpl {
     }
 
     @Override
+    public WritableRowSet filterInverse(RowSet selection, RowSet fullSet, Table table, boolean usePrev) {
+        return selection.copy();
+    }
+
+    @Override
     public boolean isSimpleFilter() {
         return true;
     }

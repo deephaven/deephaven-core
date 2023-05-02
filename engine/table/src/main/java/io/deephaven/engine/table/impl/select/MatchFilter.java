@@ -168,6 +168,12 @@ public class MatchFilter extends WhereFilterImpl {
     }
 
     @Override
+    public WritableRowSet filterInverse(RowSet selection, RowSet fullSet, Table table, boolean usePrev) {
+        final ColumnSource columnSource = table.getColumnSource(columnName);
+        return columnSource.match(!invertMatch, usePrev, caseInsensitive, selection, values);
+    }
+
+    @Override
     public boolean isSimpleFilter() {
         return true;
     }

@@ -13,6 +13,7 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
+import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
@@ -123,6 +124,48 @@ public interface WhereFilter extends Filter {
      * @return The subset of selection accepted by this filter; ownership passes to the caller
      */
     WritableRowSet filter(RowSet selection, RowSet fullSet, Table table, boolean usePrev);
+
+    /**
+     * Filter selection to only non-matching rows.
+     *
+     * <p>
+     * Defaults to
+     * 
+     * <pre>
+     * {@code
+     * try (final WritableRowSet regular = filter(selection, fullSet, table, usePrev)) {
+     *     return selection.minus(regular);
+     * }
+     * }
+     * </pre>
+     *
+     * <p>
+     * Implementations are encouraged to override this when they can provide more efficient implementations.
+     * 
+     * @param selection the indices that should be filtered. The selection must be a subset of fullSet, and may include
+     *        rows that the engine determines need not be evaluated to produce the result. Implementations <em>may
+     *        not</em> mutate or {@link RowSet#close() close} {@code selection}.
+     * @param fullSet the complete RowSet of the table to filter. The fullSet is used for calculating variables like "i"
+     *        or "ii". Implementations <em>may not</em> mutate or {@link RowSet#close() close} {@code fullSet}.
+     * @param table the table to filter
+     * @param usePrev true if previous values should be used. Implementing previous value filtering is optional, and a
+     *        {@link PreviousFilteringNotSupported} exception may be thrown. If a PreviousFiltering exception is thrown,
+     *        then the caller must acquire the UpdateGraphProcessor lock.
+     *
+     * @return The subset of selection not accepted by this filter; ownership passes to the caller
+     */
+    default WritableRowSet filterInverse(RowSet selection, RowSet fullSet, Table table, boolean usePrev) {
+        try (final WritableRowSet regular = filter(selection, fullSet, table, usePrev)) {
+            return selection.minus(regular);
+        }
+    }
+
+    @FinalDefault
+    default WritableRowSet filter(RowSet selection, RowSet fullSet, Table table, boolean usePrev, boolean invert) {
+        return invert
+                ? filterInverse(selection, fullSet, table, usePrev)
+                : filter(selection, fullSet, table, usePrev);
+    }
 
     /**
      * @return true if this is a filter that does not require any code execution, but rather is handled entirely within

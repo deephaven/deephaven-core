@@ -251,6 +251,11 @@ public class RangeConditionFilter extends WhereFilterImpl {
     }
 
     @Override
+    public WritableRowSet filterInverse(RowSet selection, RowSet fullSet, Table table, boolean usePrev) {
+        return filter.filterInverse(selection, fullSet, table, usePrev);
+    }
+
+    @Override
     public boolean isSimpleFilter() {
         return true;
     }

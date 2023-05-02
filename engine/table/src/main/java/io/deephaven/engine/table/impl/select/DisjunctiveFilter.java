@@ -12,6 +12,8 @@ import io.deephaven.util.SafeCloseable;
 
 import java.util.*;
 
+import static io.deephaven.engine.table.impl.select.ConjunctiveFilter.andImpl;
+
 public class DisjunctiveFilter extends ComposedFilter {
     private DisjunctiveFilter(WhereFilter[] componentFilters) {
         super(componentFilters);
@@ -38,22 +40,19 @@ public class DisjunctiveFilter extends ComposedFilter {
         return new DisjunctiveFilter(rawComponents.toArray(WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY));
     }
 
-    @Override
-    public WritableRowSet filter(RowSet selection, RowSet fullSet, Table table, boolean usePrev) {
+    static WritableRowSet orImpl(RowSet selection, RowSet fullSet, Table table, boolean usePrev, boolean invert,
+            WhereFilter[] filters) {
         WritableRowSet matched = null;
         try (WritableRowSet remaining = selection.copy()) {
-            for (WhereFilter filter : componentFilters) {
+            for (WhereFilter filter : filters) {
                 if (Thread.interrupted()) {
                     throw new CancellationException("interrupted while filtering");
                 }
-
                 // If a previous clause has already matched a row, we do not need to re-evaluate it
                 if (matched != null) {
                     remaining.remove(matched);
                 }
-
-                final WritableRowSet filterMatched = filter.filter(remaining, fullSet, table, usePrev);
-
+                final WritableRowSet filterMatched = filter.filter(remaining, fullSet, table, usePrev, invert);
                 // All matched entries get put into the value
                 if (matched == null) {
                     matched = filterMatched;
@@ -62,15 +61,23 @@ public class DisjunctiveFilter extends ComposedFilter {
                         matched.insert(filterMatched);
                     }
                 }
-
                 if (matched.size() == selection.size()) {
                     // Everything in the input set already belongs in the output set
                     break;
                 }
             }
         }
-
         return matched == null ? selection.copy() : matched.copy();
+    }
+
+    @Override
+    public WritableRowSet filter(RowSet selection, RowSet fullSet, Table table, boolean usePrev) {
+        return orImpl(selection, fullSet, table, usePrev, false, componentFilters);
+    }
+
+    @Override
+    public WritableRowSet filterInverse(RowSet selection, RowSet fullSet, Table table, boolean usePrev) {
+        return andImpl(selection, fullSet, table, usePrev, true, componentFilters);
     }
 
     @Override

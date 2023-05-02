@@ -12,6 +12,8 @@ import io.deephaven.util.SafeCloseable;
 
 import java.util.*;
 
+import static io.deephaven.engine.table.impl.select.DisjunctiveFilter.orImpl;
+
 public class ConjunctiveFilter extends ComposedFilter {
 
     private ConjunctiveFilter(WhereFilter[] componentFilters) {
@@ -42,21 +44,28 @@ public class ConjunctiveFilter extends ComposedFilter {
         return new ConjunctiveFilter(rawComponents.toArray(WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY));
     }
 
-    @Override
-    public WritableRowSet filter(RowSet selection, RowSet fullSet, Table table, boolean usePrev) {
+    static WritableRowSet andImpl(RowSet selection, RowSet fullSet, Table table, boolean usePrev, boolean invert,
+            WhereFilter[] filters) {
         WritableRowSet matched = selection.copy();
-
-        for (WhereFilter filter : componentFilters) {
+        for (WhereFilter filter : filters) {
             if (Thread.interrupted()) {
                 throw new CancellationException("interrupted while filtering");
             }
-
             try (final SafeCloseable ignored = matched) { // Ensure we close old matched
-                matched = filter.filter(matched, fullSet, table, usePrev);
+                matched = filter.filter(matched, fullSet, table, usePrev, invert);
             }
         }
-
         return matched;
+    }
+
+    @Override
+    public WritableRowSet filter(RowSet selection, RowSet fullSet, Table table, boolean usePrev) {
+        return andImpl(selection, fullSet, table, usePrev, false, componentFilters);
+    }
+
+    @Override
+    public WritableRowSet filterInverse(RowSet selection, RowSet fullSet, Table table, boolean usePrev) {
+        return orImpl(selection, fullSet, table, usePrev, true, componentFilters);
     }
 
     @Override

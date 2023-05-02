@@ -20,7 +20,6 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter.ObjectChunkFilter;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
@@ -29,20 +28,20 @@ final class WhereFilterPatternImpl extends WhereFilterImpl {
 
     private static final long serialVersionUID = 1L;
 
-    static WhereFilterPatternImpl of(FilterPattern pattern, boolean inverted) {
+    static WhereFilter of(FilterPattern pattern, boolean inverted) {
         if (!(pattern.expression() instanceof ColumnName)) {
             throw new IllegalArgumentException("WhereFilterPatternImpl only supports filtering against a column name");
         }
-        return new WhereFilterPatternImpl(pattern, inverted);
+        final WhereFilterPatternImpl impl = new WhereFilterPatternImpl(pattern);
+        return inverted ? new WhereFilterInvertedImpl(impl) : impl;
     }
 
     private final FilterPattern filterPattern;
-    private final boolean inverted;
     private transient ObjectChunkFilter<CharSequence> chunkFilterImpl;
+    private transient ObjectChunkFilter<CharSequence> chunkFilterInverseImpl;
 
-    private WhereFilterPatternImpl(FilterPattern filterPattern, boolean inverted) {
+    private WhereFilterPatternImpl(FilterPattern filterPattern) {
         this.filterPattern = Objects.requireNonNull(filterPattern);
-        this.inverted = inverted;
     }
 
     @Override
@@ -57,13 +56,21 @@ final class WhereFilterPatternImpl extends WhereFilterImpl {
             throw new RuntimeException(
                     String.format("Column '%s', type %s, is not a CharSequence", columnName, column.getDataType()));
         }
-        chunkFilterImpl = new ObjectChunkFilterPredicate<>(predicate());
+        final Predicate<CharSequence> p = predicate();
+        chunkFilterImpl = new ObjectChunkFilterPredicate<>(p);
+        chunkFilterInverseImpl = new ObjectChunkFilterPredicate<>(p.negate());
     }
 
     @Override
     public WritableRowSet filter(RowSet selection, RowSet fullSet, Table table, boolean usePrev) {
         final ColumnSource<?> columnSource = table.getColumnSource(columnName());
         return ChunkFilter.applyChunkFilter(selection, columnSource, usePrev, chunkFilterImpl);
+    }
+
+    @Override
+    public WritableRowSet filterInverse(RowSet selection, RowSet fullSet, Table table, boolean usePrev) {
+        final ColumnSource<?> columnSource = table.getColumnSource(columnName());
+        return ChunkFilter.applyChunkFilter(selection, columnSource, usePrev, chunkFilterInverseImpl);
     }
 
     @Override
@@ -93,7 +100,7 @@ final class WhereFilterPatternImpl extends WhereFilterImpl {
 
     @Override
     public WhereFilter copy() {
-        return new WhereFilterPatternImpl(filterPattern, inverted);
+        return new WhereFilterPatternImpl(filterPattern);
     }
 
     @Override
@@ -103,24 +110,17 @@ final class WhereFilterPatternImpl extends WhereFilterImpl {
         if (o == null || getClass() != o.getClass())
             return false;
         WhereFilterPatternImpl that = (WhereFilterPatternImpl) o;
-        if (inverted != that.inverted)
-            return false;
         return filterPattern.equals(that.filterPattern);
     }
 
     @Override
     public int hashCode() {
-        int result = filterPattern.hashCode();
-        result = 31 * result + (inverted ? 1 : 0);
-        return result;
+        return filterPattern.hashCode();
     }
 
     @Override
     public String toString() {
-        return "WhereFilterPatternImpl{" +
-                "filterPattern=" + filterPattern +
-                ", inverted=" + inverted +
-                '}';
+        return filterPattern.toString();
     }
 
     private String columnName() {
@@ -139,7 +139,7 @@ final class WhereFilterPatternImpl extends WhereFilterImpl {
             default:
                 throw new IllegalStateException("Unexpected filter pattern mode " + filterPattern.mode());
         }
-        return inverted ? p.negate() : p;
+        return p;
     }
 
     private boolean matches(CharSequence value) {
