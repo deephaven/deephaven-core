@@ -193,14 +193,28 @@ public class DateTimeUtils {
      * available by max or min long nanoseconds.
      */
     public static class DateTimeOverflowException extends RuntimeException {
+        /**
+         * Creates a new overflow exception.
+         */
         private DateTimeOverflowException() {
             super("Operation failed due to overflow");
         }
 
-        private DateTimeOverflowException(String s) {
-            super(s);
+        /**
+         * Creates a new overflow exception.
+         *
+         * @param message error string.
+         */
+        private DateTimeOverflowException(String message) {
+            super(message);
         }
 
+        /**
+         * Creates a new overflow exception.
+         *
+         * @param message error message.
+         * @param cause cause of the overflow.
+         */
         private DateTimeOverflowException(String message, Throwable cause) {
             super(message, cause);
         }
