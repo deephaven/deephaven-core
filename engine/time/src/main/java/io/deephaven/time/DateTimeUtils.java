@@ -778,7 +778,6 @@ public class DateTimeUtils {
      * @return {@link QueryConstants#NULL_LONG} if either input is null; otherwise the difference in start and end in nanoseconds.
      * @throws DateTimeOverflowException if the datetime arithemetic overflows or underflows.
      */
-    @SuppressWarnings("WeakerAccess")
     public static long diffNanos(DateTime start, DateTime end) {
         return minus(end, start);
     }
