@@ -396,7 +396,7 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
     @NotNull
     public String toString(@NotNull final TimeZone timeZone) {
         return JODA_DATE_TIME_FORMAT.withZone(timeZone.getTimeZone()).print(getMillis())
-                + DateTimeUtils.padTime(String.valueOf(getNanosPartial()), 6) + " " + timeZone.toString().substring(3);
+                + DateTimeUtils.padZeros(String.valueOf(getNanosPartial()), 6) + " " + timeZone.toString().substring(3);
     }
 
     /**

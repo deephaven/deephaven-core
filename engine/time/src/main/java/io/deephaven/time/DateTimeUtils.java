@@ -1098,14 +1098,14 @@ public class DateTimeUtils {
     // region Format Times
 
     /**
-     * Pads a time string with zeros.
+     * Pads a string with zeros.
      *
-     * @param str time string.
+     * @param str string.
      * @param length desired time string length.
-     * @return input time string padded with zeros to the desired length.  If the input string is longer than the
+     * @return input string padded with zeros to the desired length.  If the input string is longer than the
      *      desired length, the input string is returned.
      */
-    static String padTime(@NotNull final String str, final int length) {
+    static String padZeros(@NotNull final String str, final int length) {
         if (length <= str.length()) {
             return str;
         }
@@ -1176,11 +1176,11 @@ public class DateTimeUtils {
             buf.append(days).append('T');
         }
 
-        buf.append(hours).append(':').append(padTime(String.valueOf(minutes), 2)).append(':')
-                .append(padTime(String.valueOf(seconds), 2));
+        buf.append(hours).append(':').append(padZeros(String.valueOf(minutes), 2)).append(':')
+                .append(padZeros(String.valueOf(seconds), 2));
 
         if (nanos != 0) {
-            buf.append('.').append(padTime(String.valueOf(nanos), 9));
+            buf.append('.').append(padZeros(String.valueOf(nanos), 9));
         }
 
         return buf.toString();
