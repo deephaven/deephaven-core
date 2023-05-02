@@ -296,9 +296,10 @@ public interface Table extends
      * the pass/fail result of the predicate application. This is similar to {@link #where(String...)} except that
      * instead of selecting only rows that meet the criteria, new columns are added with the result of the comparison.
      *
-     * @param expressions one or more strings, each of which performs an assignment and a truth check,
-     *                    e.g., "NewColumnName = ExistingColumnName == 3" or "XMoreThan5 = X > 5"
-     * @return a new table with boolean column that contains values indicating whether each row would match the filter's criteria.
+     * @param expressions one or more strings, each of which performs an assignment and a truth check, e.g.,
+     *        "NewColumnName = ExistingColumnName == 3" or "XMoreThan5 = X > 5"
+     * @return a new table with boolean column that contains values indicating whether each row would match the filter's
+     *         criteria.
      */
     @ConcurrentMethod
     Table wouldMatch(String... expressions);
@@ -311,7 +312,7 @@ public interface Table extends
      * Creates a new in-memory table that includes one column for each argument.
      *
      * @param columns the formulas to compute columns in the new table. Column from table: "A" (equivalent to "A = A").
-     *                Renamed column from table: "X = A". Calculated column: "X = A * sqrt(B)"
+     *        Renamed column from table: "X = A". Calculated column: "X = A * sqrt(B)"
      * @return a new in-memory table that includes on column for each argument.
      */
     Table select(Selectable... columns);
@@ -327,7 +328,8 @@ public interface Table extends
      * Creates a new table containing a new, in-memory column for each argument.
      *
      * @param newColumns formulas to compute columns in the new table, e.g., "X = A * sqrt(B)"
-     * @return a new table that includes all the original columns from the source table and all the newly defined columns.
+     * @return a new table that includes all the original columns from the source table and all the newly defined
+     *         columns.
      */
     Table update(Selectable... newColumns);
 
@@ -335,7 +337,8 @@ public interface Table extends
      * Creates a new, cached formula column for each argument.
      *
      * @param newColumns formulas to compute columns in the new table, e.g., "X = A * sqrt(B)"
-     * @return a new table that includes all the original columns from the source table and all the newly defined columns.
+     * @return a new table that includes all the original columns from the source table and all the newly defined
+     *         columns.
      */
     Table lazyUpdate(Selectable... newColumns);
 
@@ -343,16 +346,16 @@ public interface Table extends
      * Creates a new formula table that includes one column for each argument.
      *
      * @param columns formulas to compute columns in the new table. Column from source: "X" (equivalent to "X = X").
-     *                Renamed column from source: "X = Y". Calculated column: "X = A * sqrt(B)"
+     *        Renamed column from source: "X = Y". Calculated column: "X = A * sqrt(B)"
      * @return a new formula table that includes one column for each argument
      */
     @ConcurrentMethod
     Table view(Selectable... columns);
 
     /**
-     * Creates a new table containing a new formula column for each argument. When using updateView, the new columns
-     * are not stored in memory. Rather, a formula is stored that is used to recalculate each cell every time it
-     * is accessed.
+     * Creates a new table containing a new formula column for each argument. When using updateView, the new columns are
+     * not stored in memory. Rather, a formula is stored that is used to recalculate each cell every time it is
+     * accessed.
      *
      * @param newColumns formulas to compute columns in the new table, e.g., "X = A * sqrt(B)".
      * @return a new table that includes all columns from the source table and the newly defined formula columns
@@ -397,13 +400,14 @@ public interface Table extends
     /**
      * Creates a table containing a new formula column, which defines a column format for each argument.
      *
-     * @param columnFormats Formulas to compute formats for columns or rows in the table; e.g., "X = Y > 5 ? RED : NO_FORMATTING".
-     *                      For color formats, the result of each formula must be either a color string
-     *                      (such as a hexadecimal RGB color, e.g., "#040427"), a Color, or a packed long representation
-     *                      of the background and foreground color as returned by "bgfg()" or "bgfga()").
-     *                      For decimal formats, the result must be a string, and the formula must be wrapped in the
-     *                      special internal function "Decimal()", e.g., "X = Decimal(`$#,##0.00`)".
-     * @return a new table containing all the original columns from the source table and the newly defined format columns.
+     * @param columnFormats Formulas to compute formats for columns or rows in the table; e.g., "X = Y > 5 ? RED :
+     *        NO_FORMATTING". For color formats, the result of each formula must be either a color string (such as a
+     *        hexadecimal RGB color, e.g., "#040427"), a Color, or a packed long representation of the background and
+     *        foreground color as returned by "bgfg()" or "bgfga()"). For decimal formats, the result must be a string,
+     *        and the formula must be wrapped in the special internal function "Decimal()", e.g., "X =
+     *        Decimal(`$#,##0.00`)".
+     * @return a new table containing all the original columns from the source table and the newly defined format
+     *         columns.
      */
     @ConcurrentMethod
     Table formatColumns(String... columnFormats);
@@ -548,9 +552,10 @@ public interface Table extends
      * Perform an exact-join with the rightTable.
      *
      * @param rightTable the right side table on the join
-     * @param columnsToMatch a comma-separated list of match conditions ("leftColumn=rightColumn" or "columnFoundInBoth")
-     * @param columnsToAdd the columns from the right side that need to be added to the left side as a
-     *                     result of the match
+     * @param columnsToMatch a comma-separated list of match conditions ("leftColumn=rightColumn" or
+     *        "columnFoundInBoth")
+     * @param columnsToAdd the columns from the right side that need to be added to the left side as a result of the
+     *        match
      * @return the exact-joined table
      */
     Table exactJoin(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd);
@@ -679,9 +684,10 @@ public interface Table extends
      * Perform a natural join with the rightTable.
      *
      * @param rightTable the right side table on the join
-     * @param columnsToMatch a comma-separated list of match conditions ("leftColumn=rightColumn" or "columnFoundInBoth")
-     * @param columnsToAdd a comma-separated list with the columns from the right side that need to be added
-     *                     to the left side as a result of the match.
+     * @param columnsToMatch a comma-separated list of match conditions ("leftColumn=rightColumn" or
+     *        "columnFoundInBoth")
+     * @param columnsToAdd a comma-separated list with the columns from the right side that need to be added to the left
+     *        side as a result of the match.
      * @return the natural-joined table
      */
     Table naturalJoin(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd);
