@@ -1323,6 +1323,110 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table reverse-as-of join operation failed.") from e
 
+    def range_join(self, table: Table, on: Union[str, List[str]], aggs: List[Aggregation]) -> Table:
+        """The range_join method creates a new table containing all the rows and columns of the left table,
+        plus additional columns containing aggregated data from the right table. For columns appended to the
+        left table (joins), cell values equal aggregations over vectors of values from the right table.
+        These vectors are formed from all values in the right table where the right table keys fall within the
+        ranges of keys defined by the left table (responsive ranges).
+
+        range_join is a join plus aggregation that (1) joins arrays of data from the right table onto the left table,
+        and then (2) aggregates over the joined data. Oftentimes this is used to join data for a particular time range
+        from the right table onto the left table.
+
+        Rows from the right table with null or NaN key values are discarded; that is, they are never included in the
+        vectors used for aggregation.  For all rows that are not discarded, the right table must be sorted according
+        to the right range column for all rows within a group.
+
+        Join key ranges, specified by the 'on' argument, are defined by zero-or-more exact join matches and a single
+        range join match. The range join match must be the last match in the list.
+
+        The exact match expressions are parsed as in other join operations. That is, they are either a column name
+        common to both tables or a column name from the left table followed by an equals sign followed by a column
+        name from the right table.
+        Examples:
+            Match on the same column name in both tables:
+                "common_column"
+            Match on different column names in each table:
+                "left_column = right_column"
+                or
+                "left_column == right_column"
+
+        The range match expression is expressed as a ternary logical expression, expressing the relationship between
+        the left start column, the right range column, and the left end column. Each column name pair is separated by
+        a logical operator, either < or <=. Additionally, the entire expression may be preceded by a left arrow <-
+        and/or followed by a right arrow ->.  The arrows indicate that range match can 'allow preceding' or 'allow
+        following' to match values outside the explicit range. 'Allow preceding' means that if no matching right
+        range column value is equal to the left start column value, the immediately preceding matching right row
+        should be included in the aggregation if such a row exists. 'Allow following' means that if no matching right
+        range column value is equal to the left end column value, the immediately following matching right row should
+        be included in the aggregation if such a row exists.
+        Examples:
+            For less than paired with greater than:
+               "left_start_column < right_range_column < left_end_column"
+            For less than or equal paired with greater than or equal:
+               "left_start_column <= right_range_column <= left_end_column"
+            For less than or equal (allow preceding) paired with greater than or equal (allow following):
+               "<- left_start_column <= right_range_column <= left_end_column ->"
+
+        Special Cases
+            In order to produce aggregated output, range match expressions must define a range of values to aggregate
+            over. There are a few noteworthy special cases of ranges.
+
+            Empty Range
+            An empty range occurs for any left row with no matching right rows. That is, no non-null, non-NaN right
+            rows were found using the exact join matches, or none were in range according to the range join match.
+
+            Single-value Ranges
+            A single-value range is a range where the left row's values for the left start column and left end
+            column are equal and both relative matches are inclusive (<= and >=, respectively). For a single-value
+            range, only rows within the bucket where the right range column matches the single value are included in
+            the output aggregations.
+
+            Invalid Ranges
+            An invalid range occurs in two scenarios:
+                (1) When the range is inverted, i.e., when the value of the left start column is greater than the value
+                    of the left end column.
+                (2) When either relative-match is exclusive (< or >) and the value in the left start column is equal to
+                    the value in the left end column.
+            For invalid ranges, the result row will be null for all aggregation output columns.
+
+            Undefined Ranges
+            An undefined range occurs when either the left start column or the left end column is NaN. For rows with an
+            undefined range, the corresponding output values will be null (as with invalid ranges).
+
+            Unbounded Ranges
+            A partially or fully unbounded range occurs when either the left start column or the left end column is
+            null. If the left start column value is null and the left end column value is non-null, the range is
+            unbounded at the beginning, and only the left end column subexpression will be used for the match. If the
+            left start column value is non-null and the left end column value is null, the range is unbounded at the
+            end, and only the left start column subexpression will be used for the match. If the left start column
+            and left end column values are null, the range is unbounded, and all rows will be included.
+
+        Note: At this time, implementations only support static tables. This operation remains under active development.
+
+
+        Args:
+            table (Table): the right table of the join
+            on (Union[str, List[str]]): the match expression(s) that must include zero-or-more exact match expression,
+                and exactly one range match expression as described above
+            aggs (Union[Aggregation, List[Aggregation]]): the aggregation(s) to perform over the responsive ranges from
+                the right table for each row from this Table
+
+        Returns:
+            a new table
+
+        Raises:
+            DHError
+        """
+        try:
+            on = to_sequence(on)
+            aggs = to_sequence(aggs)
+            j_agg_list = j_array_list([agg.j_aggregation for agg in aggs])
+            return Table(j_table=self.j_table.rangeJoin(table.j_table, on, j_agg_list))
+        except Exception as e:
+            raise DHError(e, message="table range_join operation failed.") from e
+
     # endregion
 
     #
@@ -1864,15 +1968,16 @@ class Table(JObjectWrapper):
             freeze (Union[str, List[str]]): the columns to freeze to the front.
                 These will not be affected by horizontal scrolling.
             hide (Union[str, List[str]]): the columns to hide.
-            column_groups (List[Dict]): A list of dicts specifying which columns should be grouped in the UI
+            column_groups (List[Dict]): A list of dicts specifying which columns should be grouped in the UI.
                 The dicts can specify the following:
 
-                name (str): The group name
-                children (List[str]): The
-                color (Optional[str]): The hex color string or Deephaven color name
-            search_display_mode (SearchDisplayMode): set the search bar to explicitly be accessible or inaccessible, or use the system default.
-                :attr:`SearchDisplayMode.Show` will show the search bar, :attr:`SearchDisplayMode.Hide` will hide the search bar, and
-                :attr:`SearchDisplayMode.Default` will use the default value configured by the user and system settings.
+                * name (str): The group name
+                * children (List[str]): The column names in the group
+                * color (Optional[str]): The hex color string or Deephaven color name
+            search_display_mode (SearchDisplayMode): set the search bar to explicitly be accessible or inaccessible,
+                or use the system default. :attr:`SearchDisplayMode.SHOW` will show the search bar,
+                :attr:`SearchDisplayMode.HIDE` will hide the search bar, and :attr:`SearchDisplayMode.DEFAULT` will
+                use the default value configured by the user and system settings.
 
         Returns:
             a new table with the layout hints set
