@@ -55,22 +55,47 @@ public class GenerateContextualAuthWiring {
         System.err.println("Generating: " + packageName + "." + serviceName);
 
         // create a default implementation that is permissive
+        final TypeSpec.Builder delegateAllSpec = TypeSpec.classBuilder("DelegateAll")
+                .addModifiers(Modifier.PUBLIC, Modifier.STATIC, Modifier.ABSTRACT)
+                .addSuperinterface(resultInterface)
+                .addJavadoc("A default implementation that funnels all requests to invoke {@code checkPermission}.\n");
+        final MethodSpec.Builder delegateMethodSpec = MethodSpec.methodBuilder("checkPermission")
+                .addModifiers(Modifier.PROTECTED, Modifier.ABSTRACT)
+                .addParameter(AuthContext.class, "authContext")
+                .addParameter(ParameterizedTypeName.get(List.class, Table.class), "sourceTables");
+        delegateAllSpec.addMethod(delegateMethodSpec.build());
+        visitAllMethods(service, typeMap, delegateAllSpec, (methodName, method) -> {
+            method.addCode("checkPermission(authContext, sourceTables);\n");
+        });
+        final ClassName abstractDelegate = ClassName.bestGuess("DelegateAll");
+
+        // create a default implementation that is permissive
         final TypeSpec.Builder allowAllSpec = TypeSpec.classBuilder("AllowAll")
                 .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
-                .addSuperinterface(resultInterface);
-        visitAllMethods(service, typeMap, allowAllSpec, (methodName, method) -> {
-            // default impl is to do nothing
-        });
+                .superclass(abstractDelegate)
+                .addJavadoc("A default implementation that allows all requests.\n");
+        final MethodSpec.Builder allowAllMethodSpec = MethodSpec.methodBuilder("checkPermission")
+                .addAnnotation(Override.class)
+                .addModifiers(Modifier.PROTECTED)
+                .addParameter(AuthContext.class, "authContext")
+                .addParameter(ParameterizedTypeName.get(List.class, Table.class), "sourceTables");
+        // default impl is to do nothing
+        allowAllSpec.addMethod(allowAllMethodSpec.build());
 
         final ClassName authWiringClass = ClassName.bestGuess("io.deephaven.auth.ServiceAuthWiring");
 
         // create a default implementation that is restrictive
         final TypeSpec.Builder denyAllSpec = TypeSpec.classBuilder("DenyAll")
                 .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
-                .addSuperinterface(resultInterface);
-        visitAllMethods(service, typeMap, denyAllSpec, (methodName, method) -> {
-            method.addCode("$T.operationNotAllowed();\n", authWiringClass);
-        });
+                .superclass(abstractDelegate)
+                .addJavadoc("A default implementation that denies all requests.\n");
+        final MethodSpec.Builder denyAllMethodSpec = MethodSpec.methodBuilder("checkPermission")
+                .addAnnotation(Override.class)
+                .addModifiers(Modifier.PROTECTED)
+                .addParameter(AuthContext.class, "authContext")
+                .addParameter(ParameterizedTypeName.get(List.class, Table.class), "sourceTables");
+        denyAllMethodSpec.addCode("$T.operationNotAllowed();\n", authWiringClass);
+        denyAllSpec.addMethod(denyAllMethodSpec.build());
 
         // create a test implementation with runtime-injectable behavior
         final TypeSpec.Builder testImplSpec = TypeSpec.classBuilder("TestUseOnly")
@@ -99,6 +124,7 @@ public class GenerateContextualAuthWiring {
                     methodName);
         });
 
+        typeSpec.addType(delegateAllSpec.build());
         typeSpec.addType(allowAllSpec.build());
         typeSpec.addType(denyAllSpec.build());
         typeSpec.addType(testImplSpec.build());
