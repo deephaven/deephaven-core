@@ -455,6 +455,21 @@ public class MatchFilter extends WhereFilterImpl {
         }
 
         @Override
+        public String visit(char literal) {
+            return Character.toString(literal);
+        }
+
+        @Override
+        public String visit(byte literal) {
+            return Byte.toString(literal);
+        }
+
+        @Override
+        public String visit(short literal) {
+            return Short.toString(literal);
+        }
+
+        @Override
         public String visit(int literal) {
             return Integer.toString(literal);
         }
@@ -462,6 +477,16 @@ public class MatchFilter extends WhereFilterImpl {
         @Override
         public String visit(long literal) {
             return Long.toString(literal);
+        }
+
+        @Override
+        public String visit(float literal) {
+            return Float.toString(literal);
+        }
+
+        @Override
+        public String visit(double literal) {
+            return Double.toString(literal);
         }
 
         @Override

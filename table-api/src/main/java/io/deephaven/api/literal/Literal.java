@@ -21,6 +21,36 @@ public interface Literal extends Expression {
     }
 
     /**
+     * Creates a literal char from {@code value}.
+     *
+     * @param value the value
+     * @return the literal
+     */
+    static Literal of(char value) {
+        return LiteralChar.of(value);
+    }
+
+    /**
+     * Creates a literal byte from {@code value}.
+     *
+     * @param value the value
+     * @return the literal
+     */
+    static Literal of(byte value) {
+        return LiteralByte.of(value);
+    }
+
+    /**
+     * Creates a literal short from {@code value}.
+     *
+     * @param value the value
+     * @return the literal
+     */
+    static Literal of(short value) {
+        return LiteralShort.of(value);
+    }
+
+    /**
      * Creates a literal int from {@code value}.
      *
      * @param value the value
@@ -41,6 +71,26 @@ public interface Literal extends Expression {
     }
 
     /**
+     * Creates a literal float from {@code value}.
+     *
+     * @param value the value
+     * @return the literal
+     */
+    static Literal of(float value) {
+        return LiteralFloat.of(value);
+    }
+
+    /**
+     * Creates a literal double from {@code value}.
+     *
+     * @param value the value
+     * @return the literal
+     */
+    static Literal of(double value) {
+        return LiteralDouble.of(value);
+    }
+
+    /**
      * Creates a literal String from {@code value}.
      *
      * @param value the value
@@ -53,12 +103,21 @@ public interface Literal extends Expression {
     <T> T walk(Visitor<T> visitor);
 
     interface Visitor<T> {
-
         T visit(boolean literal);
+
+        T visit(char literal);
+
+        T visit(byte literal);
+
+        T visit(short literal);
 
         T visit(int literal);
 
         T visit(long literal);
+
+        T visit(float literal);
+
+        T visit(double literal);
 
         T visit(String literal);
     }

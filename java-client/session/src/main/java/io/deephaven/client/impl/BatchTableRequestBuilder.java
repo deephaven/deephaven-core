@@ -571,6 +571,10 @@ class BatchTableRequestBuilder {
         return io.deephaven.proto.backplane.grpc.Literal.newBuilder().setBoolValue(x).build();
     }
 
+    private static io.deephaven.proto.backplane.grpc.Literal literal(double x) {
+        return io.deephaven.proto.backplane.grpc.Literal.newBuilder().setDoubleValue(x).build();
+    }
+
     private static io.deephaven.proto.backplane.grpc.Literal literal(String x) {
         return io.deephaven.proto.backplane.grpc.Literal.newBuilder().setStringValue(x).build();
     }
@@ -590,6 +594,24 @@ class BatchTableRequestBuilder {
         }
 
         @Override
+        public Value visit(char literal) {
+            // TODO(deephaven-core#3609): Update gRPC expression / filter / literal structures
+            throw new UnsupportedOperationException("Value does not support literal char");
+        }
+
+        @Override
+        public Value visit(byte literal) {
+            // TODO(deephaven-core#3609): Update gRPC expression / filter / literal structures
+            throw new UnsupportedOperationException("Value does not support literal byte");
+        }
+
+        @Override
+        public Value visit(short literal) {
+            // TODO(deephaven-core#3609): Update gRPC expression / filter / literal structures
+            throw new UnsupportedOperationException("Value does not support literal short");
+        }
+
+        @Override
         public Value visit(int literal) {
             // TODO(deephaven-core#3609): Update gRPC expression / filter / literal structures
             throw new UnsupportedOperationException("Value does not support literal int");
@@ -602,6 +624,17 @@ class BatchTableRequestBuilder {
 
         @Override
         public Value visit(boolean literal) {
+            return Value.newBuilder().setLiteral(literal(literal)).build();
+        }
+
+        @Override
+        public Value visit(float literal) {
+            // TODO(deephaven-core#3609): Update gRPC expression / filter / literal structures
+            throw new UnsupportedOperationException("Value does not support literal float");
+        }
+
+        @Override
+        public Value visit(double literal) {
             return Value.newBuilder().setLiteral(literal(literal)).build();
         }
 
@@ -657,12 +690,37 @@ class BatchTableRequestBuilder {
         }
 
         @Override
+        public io.deephaven.proto.backplane.grpc.Literal visit(char literal) {
+            throw new UnsupportedOperationException("Doesn't support char literal");
+        }
+
+        @Override
+        public io.deephaven.proto.backplane.grpc.Literal visit(byte literal) {
+            throw new UnsupportedOperationException("Doesn't support byte literal");
+        }
+
+        @Override
+        public io.deephaven.proto.backplane.grpc.Literal visit(short literal) {
+            throw new UnsupportedOperationException("Doesn't support short literal");
+        }
+
+        @Override
         public io.deephaven.proto.backplane.grpc.Literal visit(int literal) {
             throw new UnsupportedOperationException("Doesn't support int literal");
         }
 
         @Override
         public io.deephaven.proto.backplane.grpc.Literal visit(long literal) {
+            return literal(literal);
+        }
+
+        @Override
+        public io.deephaven.proto.backplane.grpc.Literal visit(float literal) {
+            throw new UnsupportedOperationException("Doesn't support float literal");
+        }
+
+        @Override
+        public io.deephaven.proto.backplane.grpc.Literal visit(double literal) {
             return literal(literal);
         }
 

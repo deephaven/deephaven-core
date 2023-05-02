@@ -203,12 +203,32 @@ public class Strings {
         return Boolean.toString(literal);
     }
 
+    public static String of(char literal) {
+        return String.format("'%c'", literal);
+    }
+
+    public static String of(byte literal) {
+        return String.format("(byte)%d", literal);
+    }
+
+    public static String of(short literal) {
+        return String.format("(short)%d", literal);
+    }
+
     public static String of(int literal) {
-        return String.format("(int)%s", literal);
+        return String.format("(int)%d", literal);
     }
 
     public static String of(long literal) {
-        return String.format("%sL", literal);
+        return String.format("%dL", literal);
+    }
+
+    public static String of(float literal) {
+        return String.format("%ff", literal);
+    }
+
+    public static String of(double literal) {
+        return String.format("%f", literal);
     }
 
     public static String of(String literal) {
@@ -362,6 +382,30 @@ public class Strings {
         }
 
         @Override
+        public String visit(char literal) {
+            if (inverted) {
+                throw new IllegalArgumentException();
+            }
+            return of(literal);
+        }
+
+        @Override
+        public String visit(byte literal) {
+            if (inverted) {
+                throw new IllegalArgumentException();
+            }
+            return of(literal);
+        }
+
+        @Override
+        public String visit(short literal) {
+            if (inverted) {
+                throw new IllegalArgumentException();
+            }
+            return of(literal);
+        }
+
+        @Override
         public String visit(int literal) {
             if (inverted) {
                 throw new IllegalArgumentException();
@@ -371,6 +415,22 @@ public class Strings {
 
         @Override
         public String visit(long literal) {
+            if (inverted) {
+                throw new IllegalArgumentException();
+            }
+            return of(literal);
+        }
+
+        @Override
+        public String visit(float literal) {
+            if (inverted) {
+                throw new IllegalArgumentException();
+            }
+            return of(literal);
+        }
+
+        @Override
+        public String visit(double literal) {
             if (inverted) {
                 throw new IllegalArgumentException();
             }

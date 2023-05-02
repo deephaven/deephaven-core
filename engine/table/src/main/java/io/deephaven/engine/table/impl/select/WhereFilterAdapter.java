@@ -192,6 +192,22 @@ public class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
                 this.lhs = Objects.requireNonNull(lhs);
             }
 
+            private WhereFilter matchOrRange(Object rhs) {
+                switch (preferred.operator()) {
+                    case EQUALS:
+                        return new MatchFilter(lhs.name(), rhs);
+                    case NOT_EQUALS:
+                        return new MatchFilter(MatchType.Inverted, lhs.name(), rhs);
+                    case LESS_THAN:
+                    case LESS_THAN_OR_EQUAL:
+                    case GREATER_THAN:
+                    case GREATER_THAN_OR_EQUAL:
+                        return range(rhs.toString());
+                    default:
+                        throw new IllegalStateException("Unexpected operator " + original.operator());
+                }
+            }
+
             @Override
             public WhereFilter visit(ColumnName rhs) {
                 // LHS column = RHS column
@@ -200,36 +216,42 @@ public class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
 
             @Override
             public WhereFilter visit(int rhs) {
-                switch (preferred.operator()) {
-                    case EQUALS:
-                        return new MatchFilter(lhs.name(), rhs);
-                    case NOT_EQUALS:
-                        return new MatchFilter(MatchType.Inverted, lhs.name(), rhs);
-                    case LESS_THAN:
-                    case LESS_THAN_OR_EQUAL:
-                    case GREATER_THAN:
-                    case GREATER_THAN_OR_EQUAL:
-                        return range(Integer.toString(rhs));
-                    default:
-                        throw new IllegalStateException("Unexpected operator " + original.operator());
-                }
+                return matchOrRange(rhs);
             }
 
             @Override
             public WhereFilter visit(long rhs) {
-                switch (preferred.operator()) {
-                    case EQUALS:
-                        return new MatchFilter(lhs.name(), rhs);
-                    case NOT_EQUALS:
-                        return new MatchFilter(MatchType.Inverted, lhs.name(), rhs);
-                    case LESS_THAN:
-                    case LESS_THAN_OR_EQUAL:
-                    case GREATER_THAN:
-                    case GREATER_THAN_OR_EQUAL:
-                        return range(Long.toString(rhs));
-                    default:
-                        throw new IllegalStateException("Unexpected operator " + original.operator());
-                }
+                return matchOrRange(rhs);
+            }
+
+            @Override
+            public WhereFilter visit(byte rhs) {
+                return matchOrRange(rhs);
+            }
+
+            @Override
+            public WhereFilter visit(short rhs) {
+                return matchOrRange(rhs);
+            }
+
+            @Override
+            public WhereFilter visit(float rhs) {
+                return matchOrRange(rhs);
+            }
+
+            @Override
+            public WhereFilter visit(double rhs) {
+                return matchOrRange(rhs);
+            }
+
+            @Override
+            public WhereFilter visit(char rhs) {
+                return matchOrRange(rhs);
+            }
+
+            @Override
+            public WhereFilter visit(String rhs) {
+                return matchOrRange(rhs);
             }
 
             @Override
@@ -244,23 +266,6 @@ public class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
                     case GREATER_THAN:
                     case GREATER_THAN_OR_EQUAL:
                         return original();
-                    default:
-                        throw new IllegalStateException("Unexpected operator " + original.operator());
-                }
-            }
-
-            @Override
-            public WhereFilter visit(String rhs) {
-                switch (preferred.operator()) {
-                    case EQUALS:
-                        return new MatchFilter(lhs.name(), rhs);
-                    case NOT_EQUALS:
-                        return new MatchFilter(MatchType.Inverted, lhs.name(), rhs);
-                    case LESS_THAN:
-                    case LESS_THAN_OR_EQUAL:
-                    case GREATER_THAN:
-                    case GREATER_THAN_OR_EQUAL:
-                        return range(rhs);
                     default:
                         throw new IllegalStateException("Unexpected operator " + original.operator());
                 }

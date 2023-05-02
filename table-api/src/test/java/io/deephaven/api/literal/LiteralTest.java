@@ -35,6 +35,21 @@ public class LiteralTest {
     }
 
     @Test
+    void charValue() {
+        toString(Literal.of('a'), "'a'");
+    }
+
+    @Test
+    void byteValue() {
+        toString(Literal.of((byte) 42), "(byte)42");
+    }
+
+    @Test
+    void shortValue() {
+        toString(Literal.of((short) 42), "(short)42");
+    }
+
+    @Test
     void intValue() {
         toString(Literal.of(42), "(int)42");
     }
@@ -42,6 +57,16 @@ public class LiteralTest {
     @Test
     void longValue() {
         toString(Literal.of(42L), "42L");
+    }
+
+    @Test
+    void floatValue() {
+        toString(Literal.of(42.0f), "42.0f");
+    }
+
+    @Test
+    void doubleValue() {
+        toString(Literal.of(42.0), "42.0");
     }
 
     @Test
@@ -80,6 +105,24 @@ public class LiteralTest {
         }
 
         @Override
+        public CountingVisitor visit(char literal) {
+            ++count;
+            return this;
+        }
+
+        @Override
+        public CountingVisitor visit(byte literal) {
+            ++count;
+            return this;
+        }
+
+        @Override
+        public CountingVisitor visit(short literal) {
+            ++count;
+            return this;
+        }
+
+        @Override
         public CountingVisitor visit(int literal) {
             ++count;
             return this;
@@ -87,6 +130,18 @@ public class LiteralTest {
 
         @Override
         public CountingVisitor visit(long literal) {
+            ++count;
+            return this;
+        }
+
+        @Override
+        public CountingVisitor visit(float literal) {
+            ++count;
+            return this;
+        }
+
+        @Override
+        public CountingVisitor visit(double literal) {
             ++count;
             return this;
         }

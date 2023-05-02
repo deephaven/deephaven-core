@@ -148,6 +148,25 @@ public class StringsTest {
         }
 
         @Override
+        public Void visit(char literal) {
+            ensureExplicitStringOf(char.class);
+            return null;
+        }
+
+        @Override
+        public Void visit(byte literal) {
+            ensureExplicitStringOf(byte.class);
+            return null;
+        }
+
+        @Override
+        public Void visit(short literal) {
+            ensureExplicitStringOf(short.class);
+            return null;
+        }
+
+
+        @Override
         public Void visit(int literal) {
             ensureExplicitStringOf(int.class);
             return null;
@@ -156,6 +175,18 @@ public class StringsTest {
         @Override
         public Void visit(long literal) {
             ensureExplicitStringOf(long.class);
+            return null;
+        }
+
+        @Override
+        public Void visit(float literal) {
+            ensureExplicitStringOf(float.class);
+            return null;
+        }
+
+        @Override
+        public Void visit(double literal) {
+            ensureExplicitStringOf(double.class);
             return null;
         }
 
