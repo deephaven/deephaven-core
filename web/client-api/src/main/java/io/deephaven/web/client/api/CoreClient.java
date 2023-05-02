@@ -110,6 +110,7 @@ public class CoreClient extends HasEventHandling {
             }
         }
 
+        boolean alreadyRunning = ideConnection.connection.isAvailable();
         WorkerConnection workerConnection = ideConnection.connection.get();
         LazyPromise<Void> loginPromise = new LazyPromise<>();
         ideConnection.addEventListenerOneShot(
@@ -129,6 +130,10 @@ public class CoreClient extends HasEventHandling {
             // Ignore this failure and suppress browser logging, we have a safe fallback
             return Promise.resolve((Object) null);
         });
+
+        if (alreadyRunning) {
+            ideConnection.connection.get().forceReconnect();
+        }
         return login;
     }
 
@@ -147,10 +152,6 @@ public class CoreClient extends HasEventHandling {
                         ideConnection.connection.get().metadata(),
                         c::apply),
                 ConfigurationConstantsResponse::getConfigValuesMap);
-    }
-
-    public Promise<UserInfo> getUserInfo() {
-        return Promise.resolve(new UserInfo());
     }
 
     public JsStorageService getStorageService() {
