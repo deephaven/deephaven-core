@@ -25,7 +25,7 @@ public class ByteRangeFilter extends AbstractRangeFilter {
         return new ByteRangeFilter(columnName, QueryConstants.NULL_BYTE, x, true, false);
     }
 
-    public static ByteRangeFilter lte(String columnName, byte x) {
+    public static ByteRangeFilter leq(String columnName, byte x) {
         return new ByteRangeFilter(columnName, QueryConstants.NULL_BYTE, x, true, true);
     }
 
@@ -33,7 +33,7 @@ public class ByteRangeFilter extends AbstractRangeFilter {
         return new ByteRangeFilter(columnName, x, QueryConstants.MAX_BYTE, false, true);
     }
 
-    public static ByteRangeFilter gte(String columnName, byte x) {
+    public static ByteRangeFilter geq(String columnName, byte x) {
         return new ByteRangeFilter(columnName, x, QueryConstants.MAX_BYTE, true, true);
     }
 
@@ -42,7 +42,6 @@ public class ByteRangeFilter extends AbstractRangeFilter {
 
     public ByteRangeFilter(String columnName, byte val1, byte val2, boolean lowerInclusive, boolean upperInclusive) {
         super(columnName, lowerInclusive, upperInclusive);
-
         if(ByteComparisons.gt(val1, val2)) {
             upper = val1;
             lower = val2;
@@ -57,11 +56,11 @@ public class ByteRangeFilter extends AbstractRangeFilter {
             case LESS_THAN:
                 return lt(columnName, RangeConditionFilter.parseByteFilter(value));
             case LESS_THAN_OR_EQUAL:
-                return lte(columnName, RangeConditionFilter.parseByteFilter(value));
+                return leq(columnName, RangeConditionFilter.parseByteFilter(value));
             case GREATER_THAN:
                 return gt(columnName, RangeConditionFilter.parseByteFilter(value));
             case GREATER_THAN_OR_EQUAL:
-                return gte(columnName, RangeConditionFilter.parseByteFilter(value));
+                return geq(columnName, RangeConditionFilter.parseByteFilter(value));
             default:
                 throw new IllegalArgumentException("RangeConditionFilter does not support condition " + condition);
         }

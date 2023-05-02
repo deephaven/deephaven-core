@@ -25,7 +25,7 @@ public class ShortRangeFilter extends AbstractRangeFilter {
         return new ShortRangeFilter(columnName, QueryConstants.NULL_SHORT, x, true, false);
     }
 
-    public static ShortRangeFilter lte(String columnName, short x) {
+    public static ShortRangeFilter leq(String columnName, short x) {
         return new ShortRangeFilter(columnName, QueryConstants.NULL_SHORT, x, true, true);
     }
 
@@ -33,7 +33,7 @@ public class ShortRangeFilter extends AbstractRangeFilter {
         return new ShortRangeFilter(columnName, x, QueryConstants.MAX_SHORT, false, true);
     }
 
-    public static ShortRangeFilter gte(String columnName, short x) {
+    public static ShortRangeFilter geq(String columnName, short x) {
         return new ShortRangeFilter(columnName, x, QueryConstants.MAX_SHORT, true, true);
     }
 
@@ -42,7 +42,6 @@ public class ShortRangeFilter extends AbstractRangeFilter {
 
     public ShortRangeFilter(String columnName, short val1, short val2, boolean lowerInclusive, boolean upperInclusive) {
         super(columnName, lowerInclusive, upperInclusive);
-
         if(ShortComparisons.gt(val1, val2)) {
             upper = val1;
             lower = val2;
@@ -57,11 +56,11 @@ public class ShortRangeFilter extends AbstractRangeFilter {
             case LESS_THAN:
                 return lt(columnName, RangeConditionFilter.parseShortFilter(value));
             case LESS_THAN_OR_EQUAL:
-                return lte(columnName, RangeConditionFilter.parseShortFilter(value));
+                return leq(columnName, RangeConditionFilter.parseShortFilter(value));
             case GREATER_THAN:
                 return gt(columnName, RangeConditionFilter.parseShortFilter(value));
             case GREATER_THAN_OR_EQUAL:
-                return gte(columnName, RangeConditionFilter.parseShortFilter(value));
+                return geq(columnName, RangeConditionFilter.parseShortFilter(value));
             default:
                 throw new IllegalArgumentException("RangeConditionFilter does not support condition " + condition);
         }

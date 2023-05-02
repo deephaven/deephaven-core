@@ -25,7 +25,7 @@ public class IntRangeFilter extends AbstractRangeFilter {
         return new IntRangeFilter(columnName, QueryConstants.NULL_INT, x, true, false);
     }
 
-    public static IntRangeFilter lte(String columnName, int x) {
+    public static IntRangeFilter leq(String columnName, int x) {
         return new IntRangeFilter(columnName, QueryConstants.NULL_INT, x, true, true);
     }
 
@@ -33,7 +33,7 @@ public class IntRangeFilter extends AbstractRangeFilter {
         return new IntRangeFilter(columnName, x, QueryConstants.MAX_INT, false, true);
     }
 
-    public static IntRangeFilter gte(String columnName, int x) {
+    public static IntRangeFilter geq(String columnName, int x) {
         return new IntRangeFilter(columnName, x, QueryConstants.MAX_INT, true, true);
     }
 
@@ -42,7 +42,6 @@ public class IntRangeFilter extends AbstractRangeFilter {
 
     public IntRangeFilter(String columnName, int val1, int val2, boolean lowerInclusive, boolean upperInclusive) {
         super(columnName, lowerInclusive, upperInclusive);
-
         if(IntComparisons.gt(val1, val2)) {
             upper = val1;
             lower = val2;
@@ -57,11 +56,11 @@ public class IntRangeFilter extends AbstractRangeFilter {
             case LESS_THAN:
                 return lt(columnName, RangeConditionFilter.parseIntFilter(value));
             case LESS_THAN_OR_EQUAL:
-                return lte(columnName, RangeConditionFilter.parseIntFilter(value));
+                return leq(columnName, RangeConditionFilter.parseIntFilter(value));
             case GREATER_THAN:
                 return gt(columnName, RangeConditionFilter.parseIntFilter(value));
             case GREATER_THAN_OR_EQUAL:
-                return gte(columnName, RangeConditionFilter.parseIntFilter(value));
+                return geq(columnName, RangeConditionFilter.parseIntFilter(value));
             default:
                 throw new IllegalArgumentException("RangeConditionFilter does not support condition " + condition);
         }
