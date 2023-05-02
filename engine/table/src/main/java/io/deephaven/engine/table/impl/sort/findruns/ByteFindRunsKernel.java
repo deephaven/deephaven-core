@@ -14,6 +14,7 @@ import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import org.jetbrains.annotations.NotNull;
 
+import static io.deephaven.util.compare.ByteComparisons.eq;
 import static io.deephaven.util.compare.ByteComparisons.leq;
 
 public class ByteFindRunsKernel {
@@ -100,7 +101,7 @@ public class ByteFindRunsKernel {
         byte last = sortedValues.get(cursor++);
         while (cursor < offset + length) {
             final byte next = sortedValues.get(cursor);
-            if (neq(last, next)) {
+            if (!eq(last, next)) {
                 if (includeSingles || cursor != startRun + 1) {
                     offsetsOut.add(startRun);
                     lengthsOut.add(cursor - startRun);
@@ -114,12 +115,6 @@ public class ByteFindRunsKernel {
             offsetsOut.add(startRun);
             lengthsOut.add(cursor - startRun);
         }
-    }
-
-    private static boolean neq(final byte last, final byte next) {
-        // region neq
-        return next != last;
-        // endregion neq
     }
 
     public static int compactRuns(

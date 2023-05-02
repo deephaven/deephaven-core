@@ -14,6 +14,7 @@ import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import org.jetbrains.annotations.NotNull;
 
+import static io.deephaven.util.compare.DoubleComparisons.eq;
 import static io.deephaven.util.compare.DoubleComparisons.leq;
 
 public class DoubleFindRunsKernel {
@@ -100,7 +101,7 @@ public class DoubleFindRunsKernel {
         double last = sortedValues.get(cursor++);
         while (cursor < offset + length) {
             final double next = sortedValues.get(cursor);
-            if (neq(last, next)) {
+            if (!eq(last, next)) {
                 if (includeSingles || cursor != startRun + 1) {
                     offsetsOut.add(startRun);
                     lengthsOut.add(cursor - startRun);
@@ -114,12 +115,6 @@ public class DoubleFindRunsKernel {
             offsetsOut.add(startRun);
             lengthsOut.add(cursor - startRun);
         }
-    }
-
-    private static boolean neq(final double last, final double next) {
-        // region neq
-        return Double.doubleToLongBits(next) != Double.doubleToLongBits(last);
-        // endregion neq
     }
 
     public static int compactRuns(

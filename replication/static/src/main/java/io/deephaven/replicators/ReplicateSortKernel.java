@@ -34,16 +34,8 @@ public class ReplicateSortKernel {
         doCharMegaMergeReplication(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/megamerge/CharLongMegaMergeKernel.java");
 
-        charToAllButBooleanAndFloats(
+        charToAllButBoolean(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/findruns/CharFindRunsKernel.java");
-        final String doubleRunPath = charToDouble(
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/findruns/CharFindRunsKernel.java",
-                Collections.emptyMap());
-        fixupDoubleRuns(doubleRunPath);
-        final String floatRunPath = charToFloat(
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/findruns/CharFindRunsKernel.java",
-                Collections.emptyMap());
-        fixupFloatRuns(floatRunPath);
         final String objectRunPath = charToObject(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/findruns/CharFindRunsKernel.java");
         fixupObjectRuns(objectRunPath);
@@ -251,30 +243,10 @@ public class ReplicateSortKernel {
         FileUtils.writeLines(objectFile, complines);
     }
 
-    private static void fixupDoubleRuns(@NotNull final String doublePath) throws IOException {
-        final File doubleFile = new File(doublePath);
-        List<String> doubleLines = FileUtils.readLines(doubleFile, Charset.defaultCharset());
-        doubleLines = ReplicationUtils.simpleFixup(doubleLines, "neq",
-                "next != last",
-                "Double.doubleToLongBits(next) != Double.doubleToLongBits(last)");
-        FileUtils.writeLines(doubleFile, doubleLines);
-    }
-
-    private static void fixupFloatRuns(@NotNull final String floatPath) throws IOException {
-        final File floatFile = new File(floatPath);
-        List<String> floatLines = FileUtils.readLines(floatFile, Charset.defaultCharset());
-        floatLines = simpleFixup(floatLines, "neq",
-                "next != last",
-                "Float.floatToIntBits(next) != Float.floatToIntBits(last)");
-        FileUtils.writeLines(floatFile, floatLines);
-    }
-
     private static void fixupObjectRuns(String objectPath) throws IOException {
         final File objectFile = new File(objectPath);
         List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
-
-        lines = fixupObjectNeq(fixupChunkAttributes(addImport(lines, "import java.util.Objects;")));
-
+        lines = fixupChunkAttributes(lines);
         FileUtils.writeLines(objectFile, lines);
     }
 
@@ -431,10 +403,4 @@ public class ReplicateSortKernel {
                         m -> Collections.singletonList(m.group(1) + "-1 * " + m.group(2))),
                 "comparison functions", descendingComment);
     }
-
-    private static List<String> fixupObjectNeq(List<String> lines) {
-        return applyFixup(lines, "neq", "\\s+return next != last;",
-                m -> Collections.singletonList("        return !Objects.equals(next, last);"));
-    }
-
 }

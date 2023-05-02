@@ -8,14 +8,13 @@
  */
 package io.deephaven.engine.table.impl.sort.findruns;
 
-import java.util.Objects;
-
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import org.jetbrains.annotations.NotNull;
 
+import static io.deephaven.util.compare.ObjectComparisons.eq;
 import static io.deephaven.util.compare.ObjectComparisons.leq;
 
 public class ObjectFindRunsKernel {
@@ -102,7 +101,7 @@ public class ObjectFindRunsKernel {
         Object last = sortedValues.get(cursor++);
         while (cursor < offset + length) {
             final Object next = sortedValues.get(cursor);
-            if (neq(last, next)) {
+            if (!eq(last, next)) {
                 if (includeSingles || cursor != startRun + 1) {
                     offsetsOut.add(startRun);
                     lengthsOut.add(cursor - startRun);
@@ -116,12 +115,6 @@ public class ObjectFindRunsKernel {
             offsetsOut.add(startRun);
             lengthsOut.add(cursor - startRun);
         }
-    }
-
-    private static boolean neq(final Object last, final Object next) {
-        // region neq
-        return !Objects.equals(next, last);
-        // endregion neq
     }
 
     public static int compactRuns(

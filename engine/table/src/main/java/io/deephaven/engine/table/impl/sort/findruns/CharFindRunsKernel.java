@@ -9,6 +9,7 @@ import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import org.jetbrains.annotations.NotNull;
 
+import static io.deephaven.util.compare.CharComparisons.eq;
 import static io.deephaven.util.compare.CharComparisons.leq;
 
 public class CharFindRunsKernel {
@@ -95,7 +96,7 @@ public class CharFindRunsKernel {
         char last = sortedValues.get(cursor++);
         while (cursor < offset + length) {
             final char next = sortedValues.get(cursor);
-            if (neq(last, next)) {
+            if (!eq(last, next)) {
                 if (includeSingles || cursor != startRun + 1) {
                     offsetsOut.add(startRun);
                     lengthsOut.add(cursor - startRun);
@@ -109,12 +110,6 @@ public class CharFindRunsKernel {
             offsetsOut.add(startRun);
             lengthsOut.add(cursor - startRun);
         }
-    }
-
-    private static boolean neq(final char last, final char next) {
-        // region neq
-        return next != last;
-        // endregion neq
     }
 
     public static int compactRuns(

@@ -9,7 +9,7 @@ public class FloatComparisons {
 
     public static int compare(float lhs, float rhs) {
         // Note this intentionally makes -0.0 and 0.0 compare equal
-        if (eq(lhs, rhs)) {
+        if (lhs == rhs) {
             return 0;
         }
         // One could be NULL, but not both
@@ -21,6 +21,9 @@ public class FloatComparisons {
         }
         // One or both could be NaN
         if (Float.isNaN(lhs)) {
+            if (Float.isNaN(rhs)) {
+                return 0; // Both NaN
+            }
             return 1; // lhs is NaN, rhs is not
         }
         if (Float.isNaN(rhs)) {
@@ -31,7 +34,7 @@ public class FloatComparisons {
     }
 
     public static boolean eq(float lhs, float rhs) {
-        return Float.floatToIntBits(lhs) == Float.floatToIntBits(rhs);
+        return (Float.isNaN(lhs) && Float.isNaN(rhs)) || lhs == rhs;
     }
 
     public static boolean gt(float lhs, float rhs) {
