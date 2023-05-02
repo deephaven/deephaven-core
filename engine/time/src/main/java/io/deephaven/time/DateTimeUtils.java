@@ -1562,7 +1562,7 @@ public class DateTimeUtils {
     /**
      * Returns a {@link DateTime} value, which is at the starting (lower) end of a time range defined by the interval
      * nanoseconds. For example, a 5*MINUTE intervalNanos value would return the {@link DateTime} value for the start of the
-     * five minute window that contains the input date time.
+     * five-minute window that contains the input date time.
      *
      * @param dateTime {@link DateTime} for which to evaluate the start of the containing window.
      * @param intervalNanos size of the window in nanoseconds.
@@ -1579,7 +1579,7 @@ public class DateTimeUtils {
     /**
      * Returns a {@link DateTime} value, which is at the starting (lower) end of a time range defined by the interval
      * nanoseconds. For example, a 5*MINUTE intervalNanos value would return the {@link DateTime} value for the start of the
-     * five minute window that contains the input date time.
+     * five-minute window that contains the input date time.
      *
      * @param dateTime {@link DateTime} for which to evaluate the start of the containing window.
      * @param intervalNanos size of the window in nanoseconds.
@@ -1598,7 +1598,7 @@ public class DateTimeUtils {
     /**
      * Returns a {@link DateTime} value, which is at the ending (upper) end of a time range defined by the interval
      * nanoseconds. For example, a 5*MINUTE intervalNanos value would return the {@link DateTime} value for the end of the
-     * five minute window that contains the input date time.
+     * five-minute window that contains the input date time.
      *
      * @param dateTime {@link DateTime} for which to evaluate the start of the containing window.
      * @param intervalNanos size of the window in nanoseconds.
@@ -1615,7 +1615,7 @@ public class DateTimeUtils {
     /**
      * Returns a {@link DateTime} value, which is at the ending (upper) end of a time range defined by the interval
      * nanoseconds. For example, a 5*MINUTE intervalNanos value would return the {@link DateTime} value for the end of the
-     * five minute window that contains the input date time.
+     * five-minute window that contains the input date time.
      *
      * @param dateTime {@link DateTime} for which to evaluate the start of the containing window.
      * @param intervalNanos size of the window in nanoseconds.
