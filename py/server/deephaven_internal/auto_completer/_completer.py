@@ -188,7 +188,7 @@ class Completer:
         https://github.com/pappasam/jedi-language-server/blob/main/jedi_language_server/server.py#L255
         """
         if not self._versions[uri] == version:
-            # if you aren't the newest completion, you get nothing, quickly
+            # if you aren't the newest, you get nothing, quickly
             return []
 
         completer = self.get_completer(uri)
@@ -212,20 +212,20 @@ class Completer:
 
     def do_hover(
         self, uri: str, version: int, line: int, col: int
-    ) -> list[str]:
+    ) -> str:
         """ Gets hover help at the position
 
         Modeled after Jedi language server
         https://github.com/pappasam/jedi-language-server/blob/main/jedi_language_server/server.py#L366
         """
         if not self._versions[uri] == version:
-            # if you aren't the newest completion, you get nothing, quickly
-            return []
+            # if you aren't the newest, you get nothing, quickly
+            return ''
 
         completer = self.get_completer(uri)
         hovers = completer.help(line, col)
         if not hovers or hovers[0].type == "keyword":
-            return ['']
+            return ''
 
         # LSP doesn't support multiple hovers really. Not sure if/when Jedi would return multiple either
         hover = hovers[0]
@@ -250,4 +250,4 @@ class Completer:
         if raw_docstring:
             hoverstring += '\n---\n' + wrap_plaintext(raw_docstring)
 
-        return [hoverstring.strip()]
+        return hoverstring.strip()

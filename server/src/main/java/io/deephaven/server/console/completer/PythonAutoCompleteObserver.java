@@ -279,18 +279,15 @@ public class PythonAutoCompleteObserver extends SessionCloseableObserver<AutoCom
                 // our java is 0-indexed lines and chars. jedi is 1-indexed lines and 0-indexed chars
                 // we'll keep that translation ugliness to the in-java result-processing.
                 pos.getLine() + 1, pos.getCharacter());
-        if (!result.isList()) {
+        if (!result.isString()) {
             throw new UnsupportedOperationException(
-                    "Expected list from jedi_settings.do_hover, got " + result.call("repr"));
+                    "Expected string from jedi_settings.do_hover, got " + result.call("repr"));
         }
 
-        // We expect [ contents ] as our result
         // We don't set the range b/c Jedi doesn't seem to give the word range under the cursor easily
         // Monaco in the web auto-detects the word range for the hover if not set
-        final List<PyObject> hover = result.asList();
-
         return GetHoverResponse.newBuilder()
-                .setContents(MarkupContent.newBuilder().setValue(hover.get(0).getStringValue()).setKind("markdown"))
+                .setContents(MarkupContent.newBuilder().setValue(result.getStringValue()).setKind("markdown"))
                 .build();
     }
 
