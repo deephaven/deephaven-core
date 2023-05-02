@@ -5,10 +5,10 @@ package io.deephaven.time;
 
 import io.deephaven.base.clock.Clock;
 import io.deephaven.base.clock.TimeConstants;
-import io.deephaven.hash.KeyedObjectHashMap;
-import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.function.Numeric;
+import io.deephaven.hash.KeyedObjectHashMap;
+import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.ScriptApi;
 import org.jetbrains.annotations.NotNull;
@@ -42,6 +42,8 @@ public class DateTimeUtils {
     //TODO: variable and function naming consistency
 
     //TODO: reorganize functions into better groupings
+
+    public static final DateTime[] ZERO_LENGTH_DATETIME_ARRAY = new DateTime[0];
 
     // region Format Patterns
 
@@ -80,7 +82,6 @@ public class DateTimeUtils {
             "\\-?([0-9]+T)?([0-9]+):([0-9]+)(:[0-9]+)?(\\.[0-9][0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?)?");
     private static final Pattern PERIOD_PATTERN = Pattern.compile(
             "\\-?([0-9]+[Yy])?([0-9]+[Mm])?([0-9]+[Ww])?([0-9]+[Dd])?(T([0-9]+[Hh])?([0-9]+[Mm])?([0-9]+[Ss])?)?");
-    private static final String DATE_COLUMN_PARTITION_FORMAT_STRING = "yyyy-MM-dd";
 
     private static final Pattern CAPTURING_DATETIME_PATTERN = Pattern.compile(
             "(([0-9][0-9][0-9][0-9])-([0-9][0-9])-([0-9][0-9])T?)?(([0-9][0-9]?)(?::([0-9][0-9])(?::([0-9][0-9]))?(?:\\.([0-9][0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?))?)?)?( [a-zA-Z]+)?");
@@ -898,7 +899,8 @@ public class DateTimeUtils {
 
     //TODO: think through toNanos vs toNanosQuiet
     /**
-     * Converts a time string to nanoseconds. The format for the String is "hh:mm:ss[.nnnnnnnnn]".
+     * Converts a time string to nanoseconds. The format for the string is "hh:mm:ss[.nnnnnnnnn]" or
+     * "nYnMnWnDTnHnMnS", with n being numeric values, e.g. 1W for one week, T1M for one minute, 1WT1H for one week plus one hour.
      *
      * @param s string to be converted.
      * @return the number of nanoseconds represented by the string.
@@ -916,7 +918,8 @@ public class DateTimeUtils {
 
     //TODO: think through toNanos vs toNanosQuiet
     /**
-     * Converts a time string to nanoseconds. The format for the String is "hh:mm:ss[.nnnnnnnnn]".
+     * Converts a time string to nanoseconds. The format for the string is "hh:mm:ss[.nnnnnnnnn]" or
+     * "nYnMnWnDTnHnMnS", with n being numeric values, e.g. 1W for one week, T1M for one minute, 1WT1H for one week plus one hour.
      *
      * @param s string to be converted.
      * @return {@link QueryConstants#NULL_LONG} if the string cannot be parsed, otherwise the number of nanoseconds represented by the string.
@@ -960,6 +963,17 @@ public class DateTimeUtils {
                     return multiplier
                             * (1000000000L * (3600 * Integer.parseInt(tokens[0]) + 60 * Integer.parseInt(tokens[1])
                             + Integer.parseInt(tokens[2])) + dayNanos + subsecondNanos);
+                }
+            }
+
+            if (PERIOD_PATTERN.matcher(s).matches()) {
+                final Period period = new Period(s);
+
+                try {
+                    return StrictMath.multiplyExact(period.getJodaPeriod().toStandardDuration().getMillis(),
+                            period.isPositive() ? 1_000_000L : -1_000_000L);
+                } catch (ArithmeticException ex) {
+                    throw new DateTimeOverflowException("Period length in nanoseconds exceeds Long.MAX_VALUE : " + s, ex);
                 }
             }
         } catch (Exception e) {
@@ -1084,6 +1098,21 @@ public class DateTimeUtils {
     // region Format Times
 
     /**
+     * Pads a time string with zeros.
+     *
+     * @param str time string.
+     * @param length desired time string length.
+     * @return input time string padded with zeros to the desired length.  If the input string is longer than the
+     *      desired length, the input string is returned.
+     */
+    static String padTime(@NotNull final String str, final int length) {
+        if (length <= str.length()) {
+            return str;
+        }
+        return "0".repeat(length - str.length()) + str;
+    }
+
+    /**
      * Returns a DateTime formatted as a "yyyy-MM-ddThh:mm:ss.SSSSSSSSS TZ" string.
      *
      * @param dateTime time to format as a string.
@@ -1147,11 +1176,11 @@ public class DateTimeUtils {
             buf.append(days).append('T');
         }
 
-        buf.append(hours).append(':').append(pad(String.valueOf(minutes), 2)).append(':')
-                .append(pad(String.valueOf(seconds), 2));
+        buf.append(hours).append(':').append(padTime(String.valueOf(minutes), 2)).append(':')
+                .append(padTime(String.valueOf(seconds), 2));
 
         if (nanos != 0) {
-            buf.append('.').append(pad(String.valueOf(nanos), 9));
+            buf.append('.').append(padTime(String.valueOf(nanos), 9));
         }
 
         return buf.toString();
@@ -1533,6 +1562,15 @@ public class DateTimeUtils {
     //TODO: clean up java time
     // region TODO: Java Time
 
+    private static long safeComputeNanos(long epochSecond, long nanoOfSecond) {
+        if (epochSecond >= MAX_CONVERTIBLE_SECONDS) {
+            throw new IllegalArgumentException("Numeric overflow detected during conversion of " + epochSecond
+                    + " to nanoseconds");
+        }
+
+        return epochSecond * 1_000_000_000L + nanoOfSecond;
+    }
+
     //TODO: no equivalent
     /**
      * Returns nanoseconds since Epoch for an {@link Instant} value.
@@ -1845,13 +1883,6 @@ public class DateTimeUtils {
         return null;
     }
 
-    // endregion
-
-
-    //TODO: no equivalent.  Document and move out?
-    public static final DateTime[] ZERO_LENGTH_DATETIME_ARRAY = new DateTime[0];
-
-
     //TODO: document
     //TODO: add to Format Patterns?
     /**
@@ -1865,21 +1896,10 @@ public class DateTimeUtils {
     private static final DateStyle DATE_STYLE = DateStyle
             .valueOf(Configuration.getInstance().getStringWithDefault("DateTimeUtils.dateStyle", DateStyle.MDY.name()));
 
-    private enum DateGroupId {
-        // Date(1),
-        Year(2, ChronoField.YEAR), Month(3, ChronoField.MONTH_OF_YEAR), Day(4, ChronoField.DAY_OF_MONTH),
-        // Tod(5),
-        Hours(6, ChronoField.HOUR_OF_DAY), Minutes(7, ChronoField.MINUTE_OF_HOUR), Seconds(8,
-                ChronoField.SECOND_OF_MINUTE), Fraction(9, ChronoField.MILLI_OF_SECOND);
+    // endregion
 
-        public final int id;
-        public final ChronoField field;
 
-        DateGroupId(int id, ChronoField field) {
-            this.id = id;
-            this.field = field;
-        }
-    }
+
 
 
 
@@ -1921,26 +1941,13 @@ public class DateTimeUtils {
         return new DateTime(millisToNanos(new DateMidnight(millis, timeZone.getTimeZone()).getMillis()));
     }
 
-    static String pad(@NotNull final String str, final int length) {
-        if (length <= str.length()) {
-            return str;
-        }
-        return "0".repeat(length - str.length()) + str;
-    }
 
 
 
-    private static long safeComputeNanos(long epochSecond, long nanoOfSecond) {
-        if (epochSecond >= MAX_CONVERTIBLE_SECONDS) {
-            throw new IllegalArgumentException("Numeric overflow detected during conversion of " + epochSecond
-                    + " to nanoseconds");
-        }
 
-        return epochSecond * 1_000_000_000L + nanoOfSecond;
-    }
+    //TODO: NEXT ***
 
-
-    //TODO ***
+    //TODO *** rename and keep epochToTimeAuto *** what to name existing?
     //TODO: no equivalent
     /**
      * Converts a long offset from Epoch value to a {@link DateTime}. This method uses expected date ranges to infer
@@ -1958,6 +1965,9 @@ public class DateTimeUtils {
         return new DateTime(autoEpochToNanos(epoch));
     }
 
+    //TODO: NEXT ***
+
+    //TODO *** rename and keep epochToTimeAuto *** what to name existing?
     //TODO: no equivalent
     /**
      * Converts a long offset from Epoch value to a nanoseconds as a long. This method uses expected date ranges to
@@ -1988,25 +1998,41 @@ public class DateTimeUtils {
         return 1000 * 1000 * 1000 * epoch;
     }
 
-    //TODO: no equivalent
+
+
+
+    //TODO: move out of here?
+    //TODO: does this need to be in this class?
     /**
-     * Returns a {@link DateTime} value based on a starting value and a {@link Period} to add to it, but with a cap max
-     * value which is returned in case the starting value plus period exceeds the cap.
-     *
-     * @param original The starting {@link DateTime} value.
-     * @param period The {@link Period} to add to dateTime.
-     * @param cap A {@link DateTime} value to use as the maximum return value.
-     * @return a null {@link DateTime} if either original or period are null; the starting {@link DateTime} plus the
-     *         specified period, if the result is not too large for a DateTime and does not exceed the cap value; the
-     *         cap value if this is less than offset plus period. Throws a {@link DateTimeOverflowException
-     *         DateTimeOverflowException} if the resultant value is more than max long nanoseconds from Epoch.
+     * A container object for the result of {@link #convertExpression(String)}, which includes the converted formula
+     * String, a String of instance variable declarations, and a map describing the names and types of these instance
+     * variables.
      */
-    public static DateTime cappedTimeOffset(DateTime original, Period period, DateTime cap) {
-        DateTime offset = DateTimeUtils.plus(original, period);
-        return (offset.compareTo(cap) > 0) ? cap : offset;
+    public static class Result {
+        private final String convertedFormula;
+        private final String instanceVariablesString;
+        private final HashMap<String, Class<?>> newVariables;
+
+        public Result(String convertedFormula, String instanceVariablesString, HashMap<String, Class<?>> newVariables) {
+            this.convertedFormula = convertedFormula;
+            this.instanceVariablesString = instanceVariablesString;
+            this.newVariables = newVariables;
+        }
+
+        public String getConvertedFormula() {
+            return convertedFormula;
+        }
+
+        public String getInstanceVariablesString() {
+            return instanceVariablesString;
+        }
+
+        public HashMap<String, Class<?>> getNewVariables() {
+            return newVariables;
+        }
     }
 
-
+    //TODO: move out of here?
     //TODO: no equivalent
     /**
      * Converts an expression, replacing DateTime and Period literals with references to constant DateTime/Period
@@ -2089,56 +2115,28 @@ public class DateTimeUtils {
         return new Result(convertedFormula.toString(), instanceVariablesString.toString(), newVariables);
     }
 
-    //TODO: no equivalent
-    /**
-     * Converts a String date/time to nanoseconds from Epoch or a nanoseconds period. Three patterns are supported:
-     * <p>
-     * yyyy-MM-ddThh:mm:ss[.nnnnnnnnn] TZ for date/time values
-     * </p>
-     * <p>
-     * hh:mm:ss[.nnnnnnnnn] for time values
-     * </p>
-     * <p>
-     * Period Strings in the form of numbertype, e.g. 1W for one week, and Tnumbertype for times, e.g. T1M for one
-     * minute
-     * </p>
-     *
-     * @param formula The String to be evaluated and converted. Optionally, but preferred, enclosed in straight single
-     *        ticks.
-     * @return A long value representing an Epoch offset in nanoseconds for a time or date/time, or a duration in
-     *         nanoseconds for a period. Throws {@link DateTimeOverflowException} if the resultant value would be longer
-     *         than max long, or {@link IllegalArgumentException} if expression cannot be evaluated.
-     */
-    public static long expressionToNanos(String formula) {
-        if (!formula.startsWith("'")) {
-            formula = '\'' + formula + '\'';
-        }
-        Matcher matcher = Pattern.compile("'[^'][^']+'").matcher(formula);
 
-        boolean result = matcher.find();
+    private enum DateGroupId {
+        // Date(1),
+        Year(2, ChronoField.YEAR),
+        Month(3, ChronoField.MONTH_OF_YEAR),
+        Day(4, ChronoField.DAY_OF_MONTH),
+        // Tod(5),
+        Hours(6, ChronoField.HOUR_OF_DAY),
+        Minutes(7, ChronoField.MINUTE_OF_HOUR),
+        Seconds(8, ChronoField.SECOND_OF_MINUTE),
+        Fraction(9, ChronoField.MILLI_OF_SECOND);
 
-        String s = formula.substring(matcher.start() + 1, matcher.end() - 1);
-        final DateTime dateTime = parseDateTimeQuiet(s);
-        if (dateTime != null) {
-            return dateTime.getNanos();
+        public final int id;
+        public final ChronoField field;
+
+        DateGroupId(int id, ChronoField field) {
+            this.id = id;
+            this.field = field;
         }
-        long time = parseNanosQuiet(s);
-        if (time != NULL_LONG) {
-            return time;
-        }
-        final Period period = parsePeriodQuiet(s);
-        if (period != null) {
-            try {
-                return StrictMath.multiplyExact(period.getJodaPeriod().toStandardDuration().getMillis(),
-                        period.isPositive() ? 1_000_000L : -1_000_000L);
-            } catch (ArithmeticException ex) {
-                throw new DateTimeOverflowException("Period length in nanoseconds exceeds Long.MAX_VALUE : " + s, ex);
-            }
-        }
-        throw new IllegalArgumentException("Cannot parse datetime/time/period : " + s);
     }
 
-
+    // TODO: is this something we want to expose in queries or python?
     //TODO: no equivalent
     /**
      * Returns a {@link ChronoField} indicating the level of precision in a String time value.
@@ -2162,110 +2160,12 @@ public class DateTimeUtils {
         return null;
     }
 
-    //TODO: does this need to be in this class?
-    /**
-     * A container object for the result of {@link #convertExpression(String)}, which includes the converted formula
-     * String, a String of instance variable declarations, and a map describing the names and types of these instance
-     * variables.
-     */
-    public static class Result {
-        private final String convertedFormula;
-        private final String instanceVariablesString;
-        private final HashMap<String, Class<?>> newVariables;
 
-        public Result(String convertedFormula, String instanceVariablesString, HashMap<String, Class<?>> newVariables) {
-            this.convertedFormula = convertedFormula;
-            this.instanceVariablesString = instanceVariablesString;
-            this.newVariables = newVariables;
-        }
-
-        public String getConvertedFormula() {
-            return convertedFormula;
-        }
-
-        public String getInstanceVariablesString() {
-            return instanceVariablesString;
-        }
-
-        public HashMap<String, Class<?>> getNewVariables() {
-            return newVariables;
-        }
-    }
-
-
-//    /**
-//     * Create a DateTimeFormatter formatter with the specified time zone name using the standard yyyy-MM-dd format.
-//     *
-//     * @param timeZoneName the time zone name
-//     * @return a formatter set for the specified time zone
-//     */
-//    public static DateTimeFormatter createFormatter(final String timeZoneName) {
-//        final ZoneId zoneId = ZoneId.of(timeZoneName);
-//        return DateTimeFormatter.ofPattern(DATE_COLUMN_PARTITION_FORMAT_STRING).withZone(zoneId);
-//    }
-
-
-//    /**
-//     * Given a DateTimeFormatter and a timestamp in millis, return the date as a String in standard column-partition
-//     * format of yyyy-MM-dd. A timestamp of NULL_LONG means use the system current time.
-//     *
-//     * @param dateTimeFormatter the date formatter
-//     * @param timestampMillis the timestamp in millis
-//     * @return the formatted date
-//     */
-//    public static String getPartitionFromTimestampMillis(@NotNull final DateTimeFormatter dateTimeFormatter,
-//            final long timestampMillis) {
-//        if (timestampMillis == NULL_LONG) {
-//            return dateTimeFormatter.format(Instant.ofEpochMilli(***System.currentTimeMillis()));
-//        }
-//        return dateTimeFormatter.format(Instant.ofEpochMilli(timestampMillis));
-//    }
-//
-//    /**
-//     * Given a DateTimeFormatter and a timestamp in micros from epoch, return the date as a String in standard
-//     * column-partition format of yyyy-MM-dd. A timestamp of NULL_LONG means use the system current time.
-//     *
-//     * @param dateTimeFormatter the date formatter
-//     * @param timestampMicros the timestamp in micros
-//     * @return the formatted date
-//     */
-//    public static String getPartitionFromTimestampMicros(@NotNull final DateTimeFormatter dateTimeFormatter,
-//            final long timestampMicros) {
-//        if (timestampMicros == NULL_LONG) {
-//            return dateTimeFormatter.format(Instant.ofEpochMilli(***System.currentTimeMillis()));
-//        }
-//        return dateTimeFormatter.format(Instant.ofEpochMilli(timestampMicros / 1_000));
-//    }
-//
-//    /**
-//     * Given a DateTimeFormatter and a timestamp in nanos from epoch, return the date as a String in standard
-//     * column-partition format of yyyy-MM-dd. A timestamp of NULL_LONG means use the system current time.
-//     *
-//     * @param dateTimeFormatter the date formatter
-//     * @param timestampNanos the timestamp in nanos
-//     * @return the formatted date
-//     */
-//    public static String getPartitionFromTimestampNanos(@NotNull final DateTimeFormatter dateTimeFormatter,
-//            final long timestampNanos) {
-//        if (timestampNanos == NULL_LONG) {
-//            return dateTimeFormatter.format(Instant.ofEpochMilli(****System.currentTimeMillis()));
-//        }
-//        return dateTimeFormatter.format(Instant.ofEpochMilli(timestampNanos / 1_000_000));
-//    }
-//
-//    /**
-//     * Given a DateTimeFormatter and a timestamp in seconds from epoch, return the date as a String in standard
-//     * column-partition format of yyyy-MM-dd. A timestamp of NULL_LONG means use the system current time.
-//     *
-//     * @param dateTimeFormatter the date formatter
-//     * @param timestampSeconds the timestamp in seconds
-//     * @return the formatted date
-//     */
-//    public static String getPartitionFromTimestampSeconds(@NotNull final DateTimeFormatter dateTimeFormatter,
-//            final long timestampSeconds) {
-//        if (timestampSeconds == NULL_LONG) {
-//            return dateTimeFormatter.format(Instant.ofEpochMilli(***System.currentTimeMillis()));
-//        }
-//        return dateTimeFormatter.format(Instant.ofEpochMilli(timestampSeconds * 1_000));
-//    }
+    //TODO: RIP: cappedTimeOffset : replace with: max(dt+p,cap)
+    //TODO: RIP: expressionToNanos : replace with parseNanos or parseDateTime, note that it no longer parses datetimes (which was a bad idea)
+    //TODO: RIP: createFormatter: deleted, see DateTimeFormatters.DATEONLY.format(datetime,timezone) and formatDate(datetime)
+    //TODO: RIP: getPartitionFromTimestampMillis: deleted, see DateTimeFormatters.DATEONLY.format(datetime,timezone) and formatDate(datetime)
+    //TODO: RIP: getPartitionFromTimestampMicros : deleted, see DateTimeFormatters.DATEONLY.format(datetime,timezone) and formatDate(datetime)
+    //TODO: RIP: getPartitionFromTimestampNanos : deleted, see DateTimeFormatters.DATEONLY.format(datetime,timezone) and formatDate(datetime)
+    //TODO: RIP: getPartitionFromTimestampSeconds : deleted, see DateTimeFormatters.DATEONLY.format(datetime,timezone) and formatDate(datetime)
 }

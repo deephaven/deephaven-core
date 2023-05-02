@@ -82,7 +82,7 @@ public final class TimeTable extends QueryTable implements Runnable {
         }
 
         public Builder period(String period) {
-            this.period = DateTimeUtils.expressionToNanos(period);
+            this.period = DateTimeUtils.parseNanos(period);
             return this;
         }
 

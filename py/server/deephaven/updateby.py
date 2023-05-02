@@ -153,7 +153,7 @@ def ema_time_decay(ts_col: str, time_scale: Union[int, str], cols: Union[str, Li
         DHError
      """
     try:
-        time_scale = _JDateTimeUtils.expressionToNanos(time_scale) if isinstance(time_scale, str) else time_scale
+        time_scale = _JDateTimeUtils.parseNanos(time_scale) if isinstance(time_scale, str) else time_scale
         cols = to_sequence(cols)
         if op_control is None:
             return UpdateByOperation(j_updateby_op=_JUpdateByOperation.Ema(ts_col, time_scale, *cols))
@@ -346,8 +346,8 @@ def rolling_sum_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[i
     """
     try:
         cols = to_sequence(cols)
-        rev_time = _JDateTimeUtils.expressionToNanos(rev_time) if isinstance(rev_time, str) else rev_time
-        fwd_time = _JDateTimeUtils.expressionToNanos(fwd_time) if isinstance(fwd_time, str) else fwd_time
+        rev_time = _JDateTimeUtils.parseNanos(rev_time) if isinstance(rev_time, str) else rev_time
+        fwd_time = _JDateTimeUtils.parseNanos(fwd_time) if isinstance(fwd_time, str) else fwd_time
         return UpdateByOperation(j_updateby_op=_JUpdateByOperation.RollingSum(ts_col, rev_time, fwd_time, *cols))
     except Exception as e:
         raise DHError(e, "failed to create a rolling sum (time) UpdateByOperation.") from e
@@ -428,8 +428,8 @@ def rolling_group_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union
     """
     try:
         cols = to_sequence(cols)
-        rev_time = _JDateTimeUtils.expressionToNanos(rev_time) if isinstance(rev_time, str) else rev_time
-        fwd_time = _JDateTimeUtils.expressionToNanos(fwd_time) if isinstance(fwd_time, str) else fwd_time
+        rev_time = _JDateTimeUtils.parseNanos(rev_time) if isinstance(rev_time, str) else rev_time
+        fwd_time = _JDateTimeUtils.parseNanos(fwd_time) if isinstance(fwd_time, str) else fwd_time
         return UpdateByOperation(j_updateby_op=_JUpdateByOperation.RollingGroup(ts_col, rev_time, fwd_time, *cols))
     except Exception as e:
         raise DHError(e, "failed to create a rolling group (time) UpdateByOperation.") from e
@@ -510,8 +510,8 @@ def rolling_avg_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[i
     """
     try:
         cols = to_sequence(cols)
-        rev_time = _JDateTimeUtils.expressionToNanos(rev_time) if isinstance(rev_time, str) else rev_time
-        fwd_time = _JDateTimeUtils.expressionToNanos(fwd_time) if isinstance(fwd_time, str) else fwd_time
+        rev_time = _JDateTimeUtils.parseNanos(rev_time) if isinstance(rev_time, str) else rev_time
+        fwd_time = _JDateTimeUtils.parseNanos(fwd_time) if isinstance(fwd_time, str) else fwd_time
         return UpdateByOperation(j_updateby_op=_JUpdateByOperation.RollingAvg(ts_col, rev_time, fwd_time, *cols))
     except Exception as e:
         raise DHError(e, "failed to create a rolling average (time) UpdateByOperation.") from e
@@ -592,8 +592,8 @@ def rolling_min_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[i
     """
     try:
         cols = to_sequence(cols)
-        rev_time = _JDateTimeUtils.expressionToNanos(rev_time) if isinstance(rev_time, str) else rev_time
-        fwd_time = _JDateTimeUtils.expressionToNanos(fwd_time) if isinstance(fwd_time, str) else fwd_time
+        rev_time = _JDateTimeUtils.parseNanos(rev_time) if isinstance(rev_time, str) else rev_time
+        fwd_time = _JDateTimeUtils.parseNanos(fwd_time) if isinstance(fwd_time, str) else fwd_time
         return UpdateByOperation(j_updateby_op=_JUpdateByOperation.RollingMin(ts_col, rev_time, fwd_time, *cols))
     except Exception as e:
         raise DHError(e, "failed to create a rolling minimum (time) UpdateByOperation.") from e
@@ -674,8 +674,8 @@ def rolling_max_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[i
     """
     try:
         cols = to_sequence(cols)
-        rev_time = _JDateTimeUtils.expressionToNanos(rev_time) if isinstance(rev_time, str) else rev_time
-        fwd_time = _JDateTimeUtils.expressionToNanos(fwd_time) if isinstance(fwd_time, str) else fwd_time
+        rev_time = _JDateTimeUtils.parseNanos(rev_time) if isinstance(rev_time, str) else rev_time
+        fwd_time = _JDateTimeUtils.parseNanos(fwd_time) if isinstance(fwd_time, str) else fwd_time
         return UpdateByOperation(j_updateby_op=_JUpdateByOperation.RollingMax(ts_col, rev_time, fwd_time, *cols))
     except Exception as e:
         raise DHError(e, "failed to create a rolling maximum (time) UpdateByOperation.") from e
@@ -755,8 +755,8 @@ def rolling_prod_time(ts_col: str, cols: Union[str, List[str]], rev_time: Union[
     """
     try:
         cols = to_sequence(cols)
-        rev_time = _JDateTimeUtils.expressionToNanos(rev_time) if isinstance(rev_time, str) else rev_time
-        fwd_time = _JDateTimeUtils.expressionToNanos(fwd_time) if isinstance(fwd_time, str) else fwd_time
+        rev_time = _JDateTimeUtils.parseNanos(rev_time) if isinstance(rev_time, str) else rev_time
+        fwd_time = _JDateTimeUtils.parseNanos(fwd_time) if isinstance(fwd_time, str) else fwd_time
         return UpdateByOperation(j_updateby_op=_JUpdateByOperation.RollingProduct(ts_col, rev_time, fwd_time, *cols))
     except Exception as e:
         raise DHError(e, "failed to create a rolling product (time) UpdateByOperation.") from e

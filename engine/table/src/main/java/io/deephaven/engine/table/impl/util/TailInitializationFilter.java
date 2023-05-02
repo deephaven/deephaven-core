@@ -42,11 +42,11 @@ public class TailInitializationFilter {
      *
      * @param table the source table to filter
      * @param timestampName the name of the timestamp column
-     * @param period interval between the last row in a partition (as converted by DateTimeUtils.expressionToNanos)
+     * @param period interval between the last row in a partition (as converted by DateTimeUtils.parseNanos)
      * @return a table with only the most recent values in each partition
      */
     public static Table mostRecent(final Table table, final String timestampName, final String period) {
-        return mostRecent(table, timestampName, DateTimeUtils.expressionToNanos(period));
+        return mostRecent(table, timestampName, DateTimeUtils.parseNanos(period));
     }
 
     /**
