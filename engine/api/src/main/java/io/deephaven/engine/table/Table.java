@@ -271,6 +271,12 @@ public interface Table extends
     // Filter Operations
     // -----------------------------------------------------------------------------------------------------------------
 
+    /**
+     * Filters rows of data from the source table.
+     *
+     * @param filters formula(e) for filtering. Filters can be a match filter or a conditional filter.
+     * @return a new table with only the rows from the source table that meet the filter criteria.
+     */
     @ConcurrentMethod
     Table where(Filter... filters);
 
@@ -279,11 +285,21 @@ public interface Table extends
      * the pass/fail result of the predicate application. This is similar to {@link #where(String...)} except that
      * instead of selecting only rows that meet the criteria, new columns are added with the result of the comparison.
      *
+     * @param matchers a pair of either a column name and a filter, or a column name and a String expression
      * @return a table with new columns containing the filter result for each row.
      */
     @ConcurrentMethod
     Table wouldMatch(WouldMatchPair... matchers);
 
+    /**
+     * A table operation that applies the supplied predicate to each row in the table and produces columns containing
+     * the pass/fail result of the predicate application. This is similar to {@link #where(String...)} except that
+     * instead of selecting only rows that meet the criteria, new columns are added with the result of the comparison.
+     *
+     * @param expressions one or more strings, each of which performs an assignment and a truth check,
+     *                    e.g., "NewColumnName = ExistingColumnName == 3" or "XMoreThan5 = X > 5"
+     * @return a new table with boolean column that contains values indicating whether each row would match the filter's criteria.
+     */
     @ConcurrentMethod
     Table wouldMatch(String... expressions);
 
@@ -291,37 +307,125 @@ public interface Table extends
     // Column Selection Operations
     // -----------------------------------------------------------------------------------------------------------------
 
+    /**
+     * Creates a new in-memory table that includes one column for each argument.
+     *
+     * @param columns the formulas to compute columns in the new table. Column from table: "A" (equivalent to "A = A").
+     *                Renamed column from table: "X = A". Calculated column: "X = A * sqrt(B)"
+     * @return a new in-memory table that includes on column for each argument.
+     */
     Table select(Selectable... columns);
 
+    /**
+     * Creates a new in-memory table that includes one column for each column in the source table.
+     *
+     * @return a new in-memory table that includes one column for each column in the source table.
+     */
     Table select();
 
+    /**
+     * Creates a new table containing a new, in-memory column for each argument.
+     *
+     * @param newColumns formulas to compute columns in the new table, e.g., "X = A * sqrt(B)"
+     * @return a new table that includes all the original columns from the source table and all the newly defined columns.
+     */
     Table update(Selectable... newColumns);
 
+    /**
+     * Creates a new, cached formula column for each argument.
+     *
+     * @param newColumns formulas to compute columns in the new table, e.g., "X = A * sqrt(B)"
+     * @return a new table that includes all the original columns from the source table and all the newly defined columns.
+     */
     Table lazyUpdate(Selectable... newColumns);
 
+    /**
+     * Creates a new formula table that includes one column for each argument.
+     *
+     * @param columns formulas to compute columns in the new table. Column from source: "X" (equivalent to "X = X").
+     *                Renamed column from source: "X = Y". Calculated column: "X = A * sqrt(B)"
+     * @return a new formula table that includes one column for each argument
+     */
     @ConcurrentMethod
     Table view(Selectable... columns);
 
+    /**
+     * Creates a new table containing a new formula column for each argument. When using updateView, the new columns
+     * are not stored in memory. Rather, a formula is stored that is used to recalculate each cell every time it
+     * is accessed.
+     *
+     * @param newColumns formulas to compute columns in the new table, e.g., "X = A * sqrt(B)".
+     * @return a new table that includes all columns from the source table and the newly defined formula columns
+     */
     @ConcurrentMethod
     Table updateView(Selectable... newColumns);
 
+    /**
+     * Removes formatting from all the columns in a table.
+     *
+     * @return a new table with all the rows and columns from the source table, but without the original formatting.
+     */
     @ConcurrentMethod
     Table dropColumnFormats();
 
+    /**
+     * Creates a new table with the specified columns renamed.
+     *
+     * @param pairs the column-rename expressions, e.g., "X = Y"
+     * @return a new table with the specified columns renamed.
+     */
     Table renameColumns(MatchPair... pairs);
 
+    /**
+     * Creates a new table with the specified columns renamed.
+     *
+     * @param columns the column-rename expressions, e.g., "X = Y"
+     * @return a new table with the specified columns renamed
+     */
     Table renameColumns(Collection<String> columns);
 
+    /**
+     * Creates a new table with the specified columns renamed.
+     *
+     * @param columns the column-rename expressions, e.g., "X = Y"
+     * @return a new table with specified columns renamed
+     */
     Table renameColumns(String... columns);
 
     Table renameAllColumns(UnaryOperator<String> renameFunction);
 
+    /**
+     * Creates a table containing a new formula column, which defines a column format for each argument.
+     *
+     * @param columnFormats Formulas to compute formats for columns or rows in the table; e.g., "X = Y > 5 ? RED : NO_FORMATTING".
+     *                      For color formats, the result of each formula must be either a color string
+     *                      (such as a hexadecimal RGB color, e.g., "#040427"), a Color, or a packed long representation
+     *                      of the background and foreground color as returned by "bgfg()" or "bgfga()").
+     *                      For decimal formats, the result must be a string, and the formula must be wrapped in the
+     *                      special internal function "Decimal()", e.g., "X = Decimal(`$#,##0.00`)".
+     * @return a new table containing all the original columns from the source table and the newly defined format columns.
+     */
     @ConcurrentMethod
     Table formatColumns(String... columnFormats);
 
+    /**
+     * Formats an entire row when a specified condition exists.
+     *
+     * @param condition the condition under which rows will be reformatted, e.g., "Value > 50".
+     * @param formula the formula to apply when the condition exists, e.g., "VIVID_PURPLE".
+     * @return a new table where rows that meet the supplied condition have the formula applied to them.
+     */
     @ConcurrentMethod
     Table formatRowWhere(String condition, String formula);
 
+    /**
+     * Applies a formula to an entire column when the supplied condition is met.
+     *
+     * @param columnName the name of the column to apply the formula to.
+     * @param condition the condition under which rows will be reformatted, e.g., "Value > 50".
+     * @param formula the formula to apply when the condition exists, e.g., "VIVID_PURPLE".
+     * @return a new table where columns that meet the supplied condition have the formula applied to them.
+     */
     @ConcurrentMethod
     Table formatColumnWhere(String columnName, String condition, String formula);
 
@@ -356,6 +460,15 @@ public interface Table extends
     @ConcurrentMethod
     Table moveColumns(int index, String... columnsToMove);
 
+    /**
+     * Produce a new table with the specified columns moved to the specified {@code index}. Column indices begin at 0.
+     * Columns can be renamed with the usual syntax, i.e. {@code "NewColumnName=OldColumnName")}.
+     *
+     * @param index the index to which the specified columns should be moved
+     * @param moveToEnd whether to move the specified columns to the end of the table
+     * @param columnsToMove the names of the columns to be moved
+     * @return a new table with specified columns moved to the specified column index value
+     */
     @ConcurrentMethod
     Table moveColumns(int index, boolean moveToEnd, String... columnsToMove);
 
@@ -418,6 +531,12 @@ public interface Table extends
     @ConcurrentMethod
     Table headPct(double percent);
 
+    /**
+     * Provides a table with a specific percentage of rows from the end of the source table.
+     *
+     * @param percent the percentage of rows to return, given as a value from 0.0(0%) to 1.0(100%).
+     * @return a new table with a specific percentage of rows from the end of the table.
+     */
     @ConcurrentMethod
     Table tailPct(double percent);
 
@@ -425,6 +544,15 @@ public interface Table extends
     // Join Operations
     // -----------------------------------------------------------------------------------------------------------------
 
+    /**
+     * Perform an exact-join with the rightTable.
+     *
+     * @param rightTable the right side table on the join
+     * @param columnsToMatch a comma-separated list of match conditions ("leftColumn=rightColumn" or "columnFoundInBoth")
+     * @param columnsToAdd the columns from the right side that need to be added to the left side as a
+     *                     result of the match
+     * @return the exact-joined table
+     */
     Table exactJoin(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd);
 
     /**
@@ -547,6 +675,15 @@ public interface Table extends
      */
     Table raj(Table rightTable, Collection<String> columnsToMatch);
 
+    /**
+     * Perform a natural join with the rightTable.
+     *
+     * @param rightTable the right side table on the join
+     * @param columnsToMatch a comma-separated list of match conditions ("leftColumn=rightColumn" or "columnFoundInBoth")
+     * @param columnsToAdd a comma-separated list with the columns from the right side that need to be added
+     *                     to the left side as a result of the match.
+     * @return the natural-joined table
+     */
     Table naturalJoin(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd);
 
     /**
@@ -736,12 +873,40 @@ public interface Table extends
     // Aggregation Operations
     // -----------------------------------------------------------------------------------------------------------------
 
+    /**
+     * Returns the first (N) rows for each group.
+     *
+     * @param nRows the number of rows to return for each group
+     * @param groupByColumnNames the column(s) by which to group data
+     * @return a new table containing the first (N) rows for each group
+     */
     Table headBy(long nRows, Collection<String> groupByColumnNames);
 
+    /**
+     * Returns the first (N) rows for each group.
+     *
+     * @param nRows the number of rows to return for each group
+     * @param groupByColumnNames the column(s) by which to group data
+     * @return a new table containing the first (N) rows for each group
+     */
     Table headBy(long nRows, String... groupByColumnNames);
 
+    /**
+     * Returns the last (N) rows for each group.
+     *
+     * @param nRows the number of rows to return for each group
+     * @param groupByColumnNames the column(s) by which to group data
+     * @return a new table containing the last (N) rows for each group
+     */
     Table tailBy(long nRows, Collection<String> groupByColumnNames);
 
+    /**
+     * Returns the last (N) rows for each group.
+     *
+     * @param nRows the number of rows to return for each group
+     * @param groupByColumnNames the column(s) by which to group data
+     * @return a new table containing the last (N) rows for each group
+     */
     Table tailBy(long nRows, String... groupByColumnNames);
 
     /**
@@ -791,6 +956,12 @@ public interface Table extends
     // Disaggregation Operations
     // -----------------------------------------------------------------------------------------------------------------
 
+    /**
+     * Ungroups all grouped columns except for those specified.
+     *
+     * @param columnsNotToUngroup the columns not to ungroup
+     * @return a new table with all columns ungrouped except those specified
+     */
     Table ungroupAllBut(String... columnsNotToUngroup);
 
     // -----------------------------------------------------------------------------------------------------------------
