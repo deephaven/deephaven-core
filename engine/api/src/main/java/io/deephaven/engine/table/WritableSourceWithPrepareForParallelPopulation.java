@@ -58,7 +58,9 @@ public interface WritableSourceWithPrepareForParallelPopulation {
             @NotNull final WritableColumnSource<?>... sources) {
         for (final WritableColumnSource<?> source : sources) {
             if (!supportsParallelPopulation(source)) {
-                throw new IllegalArgumentException(String.format("%s does not support parallel population", source));
+                throw new IllegalArgumentException(String.format(
+                        "WritableColumnSource implementation %s does not support parallel population",
+                        source.getClass()));
             }
             ((WritableSourceWithPrepareForParallelPopulation) source).prepareForParallelPopulation(rowSequence);
         }

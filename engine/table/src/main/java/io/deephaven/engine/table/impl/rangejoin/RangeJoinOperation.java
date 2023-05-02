@@ -64,7 +64,7 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
     private static final ColumnName LEFT_ROW_SET = EXPOSED_GROUP_ROW_SETS;
     private static final ColumnName RIGHT_ROW_SET = ColumnName.of("__RIGHT_ROW_SET__");
 
-    private static final int CHUNK_SIZE = ArrayBackedColumnSource.BLOCK_SIZE;
+    private static final int MAX_LEFT_CHUNK_CAPACITY = ArrayBackedColumnSource.BLOCK_SIZE;
 
     private static final String MAXIMUM_STATIC_MEMORY_OVERHEAD_PROPERTY = "RangeJoin.maximumStaticMemoryOverhead";
     private static final double MAXIMUM_STATIC_MEMORY_OVERHEAD = Configuration.getInstance()
@@ -123,25 +123,34 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
         for (final JoinMatch exactMatch : exactMatches) {
             final ColumnDefinition<?> leftColumnDefinition = leftTableDefinition.getColumn(exactMatch.left().name());
             final ColumnDefinition<?> rightColumnDefinition = rightTableDefinition.getColumn(exactMatch.right().name());
-            if (leftColumnDefinition == null) {
-                if (rightColumnDefinition == null) {
-                    (issues == null ? issues = new ArrayList<>() : issues).add(
-                            String.format("both columns from %s are missing", Strings.of(exactMatch)));
-                } else {
-                    (issues == null ? issues = new ArrayList<>() : issues).add(
-                            String.format("left column from %s is missing", Strings.of(exactMatch)));
+            if (leftColumnDefinition == null || rightColumnDefinition == null) {
+                if (leftColumnDefinition == null) {
+                    (issues == null ? issues = new ArrayList<>() : issues).add(String.format(
+                            "left table has no column \"%s\"", Strings.of(exactMatch.left())));
                 }
-            } else if (rightColumnDefinition == null) {
-                (issues == null ? issues = new ArrayList<>() : issues).add(
-                        String.format("right column from %s is missing", Strings.of(exactMatch)));
+                if (rightColumnDefinition == null) {
+                    (issues == null ? issues = new ArrayList<>() : issues).add(String.format(
+                            "right table has no column \"%s\"", Strings.of(exactMatch.right())));
+                }
             } else if (!leftColumnDefinition.hasCompatibleDataType(rightColumnDefinition)) {
-                (issues == null ? issues = new ArrayList<>() : issues).add(
-                        String.format("incompatible columns in %s: left has (%s, %s) and right has (%s, %s)",
-                                Strings.of(exactMatch),
-                                leftColumnDefinition.getDataType(),
-                                leftColumnDefinition.getComponentType(),
-                                rightColumnDefinition.getDataType(),
-                                rightColumnDefinition.getComponentType()));
+                if (leftColumnDefinition.getComponentType() != null
+                        || rightColumnDefinition.getComponentType() != null) {
+                    (issues == null ? issues = new ArrayList<>() : issues).add(String.format(
+                            "left table column \"%s\" (data type %s, component type %s), is incompatible with right table column \"%s\" (data type %s, component type %s)",
+                            Strings.of(exactMatch.left()),
+                            leftColumnDefinition.getDataType(),
+                            leftColumnDefinition.getComponentType(),
+                            Strings.of(exactMatch.right()),
+                            rightColumnDefinition.getDataType(),
+                            rightColumnDefinition.getComponentType()));
+                } else {
+                    (issues == null ? issues = new ArrayList<>() : issues).add(String.format(
+                            "left table column \"%s\" (data type %s), is incompatible with right table column \"%s\" (data type %s)",
+                            Strings.of(exactMatch.left()),
+                            leftColumnDefinition.getDataType(),
+                            Strings.of(exactMatch.right()),
+                            rightColumnDefinition.getDataType()));
+                }
             }
         }
         if (issues != null) {
@@ -348,6 +357,7 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
             extends RangeJoinPhase
             implements IterateAction<StaticRangeJoinPhase2.TaskContext> {
 
+        // Derived from operation inputs
         private final ColumnSource<?> leftStartValues;
         private final ColumnSource<?> rightRangeValues;
         private final ColumnSource<?> leftEndValues;
@@ -356,6 +366,12 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
         private final RangeSearchKernel rangeSearchKernel;
         private final CompactKernel valueChunkCompactKernel;
 
+        // Output fields:
+        // When output is redirected, outputRedirection is non-null and the (non-null) "inner" sources are used for
+        // dense storage, redirected from the left table's row key space to a flat space.
+        // Otherwise, the outputRedirection and the "inner" sources are null, and the "exposed" sources are used
+        // directly for sparse storage in the left table's row key space.
+        // "Exposed" sources are the output used for constructing our result aggregations.
         private final RowRedirection outputRedirection;
         private final WritableColumnSource<Integer> outputSlotsInner;
         private final WritableColumnSource<Integer> outputSlotsExposed;
@@ -364,6 +380,7 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
         private final WritableColumnSource<Integer> outputEndPositionsExclusiveInner;
         private final WritableColumnSource<Integer> outputEndPositionsExclusiveExposed;
 
+        // Derived from phase inputs
         private ColumnSource<RowSet> leftGroupRowSets;
         private ColumnSource<RowSet> rightGroupRowSets;
 
@@ -448,94 +465,170 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
 
             private static final int CLOSED_SENTINEL = -1;
 
-            // Left resources, all final
-            private final SharedContext leftSharedContext;
-            private final ChunkSource.FillContext leftStartValuesFillContext;
-            private final ChunkSource.FillContext leftEndValuesFillContext;
-            private final WritableChunk<Values> leftStartValuesChunk;
-            private final WritableChunk<Values> leftEndValuesChunk;
-            private final WritableBooleanChunk<Any> leftValidity;
-            private final WritableIntChunk<ChunkPositions> leftChunkPositions;
-            private final IntSortKernel<Values, ChunkPositions> leftSortKernel;
+            // Left resources, size bounded by leftChunkCapacity
+            private int leftChunkCapacity;
+            private SharedContext leftSharedContext;
+            private ChunkSource.FillContext leftStartValuesFillContext;
+            private ChunkSource.FillContext leftEndValuesFillContext;
+            private WritableChunk<Values> leftStartValuesChunk;
+            private WritableChunk<Values> leftEndValuesChunk;
+            private WritableBooleanChunk<Any> leftValidity;
+            private WritableIntChunk<ChunkPositions> leftChunkPositions;
+            private IntSortKernel<Values, ChunkPositions> leftSortKernel;
 
-            // Resizable right resources
-            private int rightChunkSize = 0;
+            // Right resources, size bounded by rightChunkCapacity
+            private int rightChunkCapacity;
             private ChunkSource.FillContext rightRangeValuesFillContext;
             private WritableChunk<Values> rightRangeValuesChunk;
             private WritableIntChunk<ChunkPositions> rightStartOffsets;
             private WritableIntChunk<ChunkLengths> rightLengths;
 
-            // Output resources
-            private final ChunkSink.FillFromContext outputSlotsFillFromContext;
-            private final WritableIntChunk<? extends Values> outputSlotsChunk;
-            private final ChunkSink.FillFromContext outputStartPositionsInclusiveFillFromContext;
-            private final WritableIntChunk<? extends Values> outputStartPositionsInclusiveChunk;
-            private final ChunkSink.FillFromContext outputEndPositionsExclusiveFillFromContext;
-            private final WritableIntChunk<? extends Values> outputEndPositionsExclusiveChunk;
+            // Output resources, size bounded by leftChunkCapacity
+            private ChunkSink.FillFromContext outputSlotsFillFromContext;
+            private ChunkSink.FillFromContext outputStartPositionsInclusiveFillFromContext;
+            private ChunkSink.FillFromContext outputEndPositionsExclusiveFillFromContext;
+            private WritableIntChunk<? extends Values> outputSlotsChunk;
+            private WritableIntChunk<? extends Values> outputStartPositionsInclusiveChunk;
+            private WritableIntChunk<? extends Values> outputEndPositionsExclusiveChunk;
 
             private TaskContext() {
-                // Left resources
-                leftSharedContext = SharedContext.makeSharedContext();
-                leftStartValuesFillContext = leftStartValues.makeFillContext(CHUNK_SIZE, leftSharedContext);
-                leftEndValuesFillContext = leftEndValues.makeFillContext(CHUNK_SIZE, leftSharedContext);
-                leftStartValuesChunk = valueChunkType.makeWritableChunk(CHUNK_SIZE);
-                leftEndValuesChunk = valueChunkType.makeWritableChunk(CHUNK_SIZE);
-                leftValidity = WritableBooleanChunk.makeWritableChunk(CHUNK_SIZE);
-                leftChunkPositions = WritableIntChunk.makeWritableChunk(CHUNK_SIZE);
-                leftSortKernel = IntSortKernel.makeContext(valueChunkType, SortingOrder.Ascending, CHUNK_SIZE, true);
+                // All resources are resizable. Nothing is allocated until needed.
+            }
 
-                // Resizable right resources
-                ensureRightCapacity(CHUNK_SIZE);
+            private void ensureLeftCapacity(final long leftGroupSize) {
+                if (leftChunkCapacity == CLOSED_SENTINEL) {
+                    throw new IllegalStateException(String.format(
+                            "%s: used %s after close", description, this.getClass()));
+                }
+                if (leftChunkCapacity >= leftGroupSize) {
+                    return;
+                }
+                if (leftChunkCapacity > 0) {
+                    final SafeCloseable[] toClose = new SafeCloseable[] {
+                            leftSharedContext, // Do close() leftSharedContext
+                            leftStartValuesFillContext,
+                            leftEndValuesFillContext,
+                            leftStartValuesChunk,
+                            leftEndValuesChunk,
+                            leftValidity,
+                            leftChunkPositions,
+                            leftSortKernel,
 
-                // Output resources
-                outputSlotsFillFromContext = outputRedirection == null
-                        ? outputSlotsExposed.makeFillFromContext(CHUNK_SIZE)
-                        : outputSlotsInner.makeFillFromContext(CHUNK_SIZE);
-                outputSlotsChunk = WritableIntChunk.makeWritableChunk(CHUNK_SIZE);
-                outputStartPositionsInclusiveFillFromContext = outputRedirection == null
-                        ? outputStartPositionsInclusiveExposed.makeFillFromContext(CHUNK_SIZE)
-                        : outputStartPositionsInclusiveInner.makeFillFromContext(CHUNK_SIZE);
-                outputStartPositionsInclusiveChunk = WritableIntChunk.makeWritableChunk(CHUNK_SIZE);
-                outputEndPositionsExclusiveFillFromContext = outputRedirection == null
-                        ? outputEndPositionsExclusiveExposed.makeFillFromContext(CHUNK_SIZE)
-                        : outputEndPositionsExclusiveInner.makeFillFromContext(CHUNK_SIZE);
-                outputEndPositionsExclusiveChunk = WritableIntChunk.makeWritableChunk(CHUNK_SIZE);
+                            outputSlotsFillFromContext,
+                            outputStartPositionsInclusiveFillFromContext,
+                            outputEndPositionsExclusiveFillFromContext,
+                            outputSlotsChunk,
+                            outputStartPositionsInclusiveChunk,
+                            outputEndPositionsExclusiveChunk
+                    };
+
+                    leftChunkCapacity = 0; // Record that we don't want to re-close
+
+                    // Don't null out the leftSharedContext; close() is sufficient to empty it for re-use
+                    leftStartValuesFillContext = null;
+                    leftEndValuesFillContext = null;
+                    leftStartValuesChunk = null;
+                    leftEndValuesChunk = null;
+                    leftValidity = null;
+                    leftChunkPositions = null;
+                    leftSortKernel = null;
+
+                    outputSlotsFillFromContext = null;
+                    outputStartPositionsInclusiveFillFromContext = null;
+                    outputEndPositionsExclusiveFillFromContext = null;
+                    outputSlotsChunk = null;
+                    outputStartPositionsInclusiveChunk = null;
+                    outputEndPositionsExclusiveChunk = null;
+
+                    SafeCloseable.closeAll(toClose);
+                }
+
+                leftChunkCapacity = (int) Math.min(MAX_LEFT_CHUNK_CAPACITY, leftGroupSize);
+
+                if (leftSharedContext == null) { // We can re-use a SharedContext after close(), no need to re-allocate
+                    leftSharedContext = SharedContext.makeSharedContext();
+                }
+
+                leftStartValuesFillContext = leftStartValues.makeFillContext(leftChunkCapacity, leftSharedContext);
+                leftEndValuesFillContext = leftEndValues.makeFillContext(leftChunkCapacity, leftSharedContext);
+                leftStartValuesChunk = valueChunkType.makeWritableChunk(leftChunkCapacity);
+                leftEndValuesChunk = valueChunkType.makeWritableChunk(leftChunkCapacity);
+                leftValidity = WritableBooleanChunk.makeWritableChunk(leftChunkCapacity);
+                leftChunkPositions = WritableIntChunk.makeWritableChunk(leftChunkCapacity);
+                leftSortKernel = IntSortKernel.makeContext(
+                        valueChunkType, SortingOrder.Ascending, leftChunkCapacity, true);
+
+                if (outputRedirection == null) {
+                    // We'll be filling exposed, sparse sources directly
+                    outputSlotsFillFromContext =
+                            outputSlotsExposed.makeFillFromContext(leftChunkCapacity);
+                    outputStartPositionsInclusiveFillFromContext =
+                            outputStartPositionsInclusiveExposed.makeFillFromContext(leftChunkCapacity);
+                    outputEndPositionsExclusiveFillFromContext =
+                            outputEndPositionsExclusiveExposed.makeFillFromContext(leftChunkCapacity);
+                } else {
+                    // We'll be filling the inner, dense sources
+                    // noinspection DataFlowIssue
+                    outputSlotsFillFromContext =
+                            outputSlotsInner.makeFillFromContext(leftChunkCapacity);
+                    // noinspection DataFlowIssue
+                    outputStartPositionsInclusiveFillFromContext =
+                            outputStartPositionsInclusiveInner.makeFillFromContext(leftChunkCapacity);
+                    // noinspection DataFlowIssue
+                    outputEndPositionsExclusiveFillFromContext =
+                            outputEndPositionsExclusiveInner.makeFillFromContext(leftChunkCapacity);
+                }
+                outputSlotsChunk = WritableIntChunk.makeWritableChunk(leftChunkCapacity);
+                outputStartPositionsInclusiveChunk = WritableIntChunk.makeWritableChunk(leftChunkCapacity);
+                outputEndPositionsExclusiveChunk = WritableIntChunk.makeWritableChunk(leftChunkCapacity);
             }
 
             private void ensureRightCapacity(final long rightGroupSize) {
+                if (rightChunkCapacity == CLOSED_SENTINEL) {
+                    throw new IllegalStateException(String.format(
+                            "%s: used %s after close", description, this.getClass()));
+                }
                 if (rightGroupSize > MAX_ARRAY_SIZE) {
                     throw new IllegalArgumentException(
                             String.format("%s: Unable to process right table bucket larger than %d, encountered %d",
                                     description, MAX_ARRAY_SIZE, rightGroupSize));
                 }
-                if (rightGroupSize == CLOSED_SENTINEL) {
-                    throw new IllegalStateException(String.format("%s: used %s after close",
-                            description, this.getClass()));
+                if (rightChunkCapacity >= rightGroupSize) {
+                    return;
                 }
-                if (rightGroupSize > rightChunkSize) {
-                    if (rightChunkSize > 0) {
-                        rightChunkSize = 0; // Record that we don't want to re-close
-                        final SafeCloseable sc1 = rightRangeValuesFillContext;
-                        rightRangeValuesFillContext = null;
-                        final SafeCloseable sc2 = rightRangeValuesChunk;
-                        rightRangeValuesChunk = null;
-                        final SafeCloseable sc3 = rightStartOffsets;
-                        rightStartOffsets = null;
-                        final SafeCloseable sc4 = rightLengths;
-                        rightLengths = null;
-                        SafeCloseable.closeAll(sc1, sc2, sc3, sc4);
-                    }
-                    rightChunkSize = (int) Math.min(MAX_ARRAY_SIZE, 1L << MathUtil.ceilLog2(rightGroupSize));
-                    rightRangeValuesFillContext = rightRangeValues.makeFillContext(rightChunkSize);
-                    rightRangeValuesChunk = valueChunkType.makeWritableChunk(rightChunkSize);
-                    rightStartOffsets = WritableIntChunk.makeWritableChunk(rightChunkSize);
-                    rightLengths = WritableIntChunk.makeWritableChunk(rightChunkSize);
+                if (rightChunkCapacity > 0) {
+                    final SafeCloseable[] toClose = new SafeCloseable[] {
+                            rightRangeValuesFillContext,
+                            rightRangeValuesChunk,
+                            rightStartOffsets,
+                            rightLengths
+                    };
+
+                    rightChunkCapacity = 0; // Record that we don't want to re-close
+
+                    rightRangeValuesFillContext = null;
+                    rightRangeValuesChunk = null;
+                    rightStartOffsets = null;
+                    rightLengths = null;
+
+                    SafeCloseable.closeAll(toClose);
                 }
+
+                rightChunkCapacity = (int) Math.min(MAX_ARRAY_SIZE, 1L << MathUtil.ceilLog2(rightGroupSize));
+
+                rightRangeValuesFillContext = rightRangeValues.makeFillContext(rightChunkCapacity);
+                rightRangeValuesChunk = valueChunkType.makeWritableChunk(rightChunkCapacity);
+                rightStartOffsets = WritableIntChunk.makeWritableChunk(rightChunkCapacity);
+                rightLengths = WritableIntChunk.makeWritableChunk(rightChunkCapacity);
             }
 
             @Override
             public void close() {
-                rightChunkSize = CLOSED_SENTINEL;
+                if (rightChunkCapacity == CLOSED_SENTINEL) {
+                    throw new IllegalStateException(String.format(
+                            "%s: closed %s more than once", description, this.getClass()));
+                }
+                leftChunkCapacity = rightChunkCapacity = CLOSED_SENTINEL;
                 SafeCloseable.closeAll(
                         // Left resources
                         leftSharedContext,
@@ -546,7 +639,7 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
                         leftValidity,
                         leftChunkPositions,
                         leftSortKernel,
-                        // Resizable right resources
+                        // Right resources
                         rightRangeValuesFillContext,
                         rightRangeValuesChunk,
                         rightStartOffsets,
@@ -568,6 +661,7 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
                 @NotNull final Consumer<Exception> nestedErrorConsumer) {
             final RowSet leftRows = leftGroupRowSets.get(index);
             assert leftRows != null;
+            tc.ensureLeftCapacity(leftRows.size());
 
             final RowSet rightRows = rightGroupRowSets.get(index);
             final int rightSize = rightRows == null ? 0 : rightRows.intSize();
@@ -589,7 +683,8 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
 
             try (final RowSequence.Iterator leftRowsIterator = leftRows.getRowSequenceIterator()) {
                 while (leftRowsIterator.hasMore()) {
-                    final RowSequence leftRowsSlice = leftRowsIterator.getNextRowSequenceWithLength(CHUNK_SIZE);
+                    final RowSequence leftRowsSlice =
+                            leftRowsIterator.getNextRowSequenceWithLength(MAX_LEFT_CHUNK_CAPACITY);
                     final int sliceSize = leftRowsSlice.intSize();
                     leftStartValues.fillChunk(tc.leftStartValuesFillContext, tc.leftStartValuesChunk, leftRowsSlice);
                     leftEndValues.fillChunk(tc.leftEndValuesFillContext, tc.leftEndValuesChunk, leftRowsSlice);

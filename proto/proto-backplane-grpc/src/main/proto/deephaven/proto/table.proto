@@ -1167,6 +1167,7 @@ message BatchTableRequest {
       SnapshotTableRequest snapshot = 36;
       SnapshotWhenTableRequest snapshot_when = 37;
       MetaTableRequest meta_table = 38;
-      RangeJoinTablesRequest range_join = 39;}
+      RangeJoinTablesRequest range_join = 39;
+    }
   }
 }

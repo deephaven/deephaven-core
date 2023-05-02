@@ -11,7 +11,7 @@ public interface UngroupableColumnSource {
     /**
      * Does this particular ColumnSource support ungrouping?
      * 
-     * @return {@code true} f you can call the getUngrouped family of methods and get a valid answer
+     * @return {@code true} if you can call the getUngrouped family of methods and get a valid answer
      */
     boolean isUngroupable();
 

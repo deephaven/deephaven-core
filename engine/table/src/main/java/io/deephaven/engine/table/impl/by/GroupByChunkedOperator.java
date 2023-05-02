@@ -72,6 +72,11 @@ public final class GroupByChunkedOperator implements IterativeChunkedAggregation
                 matchPair -> AggregateColumnSource
                         .make(inputTable.getColumnSource(matchPair.rightColumn()), rowSets),
                 Assert::neverInvoked, LinkedHashMap::new));
+        if (exposeRowSetsAs != null && resultAggregatedColumns.containsKey(exposeRowSetsAs)) {
+            throw new IllegalArgumentException(String.format(
+                    "Exposing group RowSets as %s, but this conflicts with a requested grouped output column name",
+                    exposeRowSetsAs));
+        }
         inputColumnNames = MatchPair.getRightColumns(aggregatedColumnPairs);
         if (live) {
             aggregationInputsModifiedColumnSet = inputTable.newModifiedColumnSet(inputColumnNames);

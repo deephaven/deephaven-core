@@ -542,7 +542,7 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * Perform a range join with {@code rightTable}. For each row in {@code this} Table, this operation joins
      * {@link Aggregation aggregations} over a <em>range</em> of responsive rows from {@code rightTable} according to
      * zero-or-more <em>exact join matches</em> and one <em>range join match</em>.
-     *
+     * <p>
      * <h4>Matching Rules</h4>
      * <p>
      * The <em>exact join matches</em> identify possibly-responsive rows according to exactly matching values between
@@ -552,7 +552,7 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * <em>rangeStartRule</em>, and bounds the end of the responsive range for a given output row by the relationship
      * between a <em>left end column</em> and the <em><u>same</u> right range column</em>, governed by the
      * <em>rangeEndRule</em>.
-     *
+     * <p>
      * <h4>Right Table Row-Inclusion Criteria and Relative Ordering Requirements</h4>
      * <p>
      * Rows from {@code rightTable} with {@code null} or {@code NaN} values for the <em>right range column</em> are
@@ -560,7 +560,7 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * the same values for the <em>right exact match columns</em>, {@code rightTable} <em><u>must</u></em> be relatively
      * ordered (as if {@link #sort sorted}) according to the <em>right range column</em> for all rows that are not
      * discarded.
-     *
+     * <p>
      * <h4>Special Cases</h4>
      * <p>
      * In order to produce aggregated output, it is required that the two relative match expressions define a range of
@@ -621,7 +621,7 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * identically to {@link #rangeJoin(TABLE, Collection, RangeJoinMatch, Collection)}, after parsing is applied to the
      * elements of {@code columnsToMatch} to produce the {@link JoinMatch exact join matches} and {@link RangeJoinMatch
      * range join match}.
-     *
+     * <p>
      * <h4>{@code columnsToMatch} Parsing</h4>
      * <p>
      * The {@code columnsToMatch} argument is parsed as zero-or-more exact match expressions followed by a single range
