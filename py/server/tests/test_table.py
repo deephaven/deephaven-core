@@ -979,6 +979,20 @@ class TableTestCase(BaseTestCase):
         self.assertEqual(df.loc[0]['Col'], 1)
         self.assertTrue(rt.columns[0].data_type == dtypes.int32)
 
+    def test_await_update(self):
+        with self.assertRaises(DHError):
+            empty_table(10).await_update()
+
+        time_t = time_table("00:00:00.001")
+        updated = time_t.await_update()
+        self.assertTrue(updated)
+        updated = time_t.update("X = i % 2").where("X = 2").await_update(0)
+        self.assertFalse(updated)
+        updated = time_t.update("X = i % 2").where("X = 2").await_update(1)
+        self.assertFalse(updated)
+        updated = time_t.update("X = i % 2").where("X = 2").await_update(-1)
+        self.assertFalse(updated)
+
 
 if __name__ == "__main__":
     unittest.main()
