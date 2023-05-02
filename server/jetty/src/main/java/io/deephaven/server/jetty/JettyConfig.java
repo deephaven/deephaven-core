@@ -6,12 +6,12 @@ package io.deephaven.server.jetty;
 import io.deephaven.annotations.BuildableStyle;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.server.config.ServerConfig;
-import org.immutables.value.Value;
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Style;
 
 import javax.annotation.Nullable;
+import java.util.OptionalLong;
 
 /**
  * The jetty server configuration.
@@ -26,6 +26,7 @@ public abstract class JettyConfig implements ServerConfig {
     public static final int DEFAULT_PLAINTEXT_PORT = 10000;
     public static final String HTTP_WEBSOCKETS = "http.websockets";
     public static final String HTTP_HTTP1 = "http.http1";
+    public static final String HTTP_STREAM_TIMEOUT = "http2.stream.idleTimeoutMs";
 
     /**
      * Values to indicate what kind of websocket support should be offered.
@@ -84,6 +85,7 @@ public abstract class JettyConfig implements ServerConfig {
         final Builder builder = ServerConfig.buildFromConfig(builder(), config);
         String httpWebsockets = config.getStringWithDefault(HTTP_WEBSOCKETS, null);
         String httpHttp1 = config.getStringWithDefault(HTTP_HTTP1, null);
+        String h2StreamIdleTimeout = config.getStringWithDefault(HTTP_STREAM_TIMEOUT, null);
         if (httpWebsockets != null) {
             switch (httpWebsockets.toLowerCase()) {
                 case "true":// backwards compatible
@@ -103,6 +105,9 @@ public abstract class JettyConfig implements ServerConfig {
         }
         if (httpHttp1 != null) {
             builder.http1(Boolean.parseBoolean(httpHttp1));
+        }
+        if (h2StreamIdleTimeout != null) {
+            builder.http2StreamIdleTimeout(Long.parseLong(h2StreamIdleTimeout));
         }
         return builder;
     }
@@ -127,6 +132,16 @@ public abstract class JettyConfig implements ServerConfig {
      */
     @Nullable
     public abstract Boolean http1();
+
+    public abstract OptionalLong http2StreamIdleTimeout();
+
+    /**
+     * How long can a stream be idle in milliseconds before it should be shut down. Non-positive values disable this
+     * feature. Default is zero.
+     */
+    public long http2StreamIdleTimeoutOrDefault() {
+        return http2StreamIdleTimeout().orElse(0);
+    }
 
     /**
      * Returns {@link #websockets()} if explicitly set. If {@link #proxyHint()} is {@code true}, returns {@code false}.
@@ -167,5 +182,7 @@ public abstract class JettyConfig implements ServerConfig {
         Builder websockets(WebsocketsSupport websockets);
 
         Builder http1(Boolean http1);
+
+        Builder http2StreamIdleTimeout(long timeoutInMillis);
     }
 }
