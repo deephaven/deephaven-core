@@ -1022,7 +1022,7 @@ public interface Table extends
      */
     @ConcurrentMethod
     PartitionedTable partitionedAggBy(Collection<? extends Aggregation> aggregations, boolean preserveEmpty,
-                                      Table initialGroups, String... keyColumnNames);
+            Table initialGroups, String... keyColumnNames);
 
     // -----------------------------------------------------------------------------------------------------------------
     // Hierarchical table operations (rollup and tree).
@@ -1079,7 +1079,7 @@ public interface Table extends
      */
     @ConcurrentMethod
     RollupTable rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents,
-                       String... groupByColumns);
+            String... groupByColumns);
 
     /**
      * Create a rollup table.
@@ -1094,7 +1094,7 @@ public interface Table extends
      */
     @ConcurrentMethod
     RollupTable rollup(Collection<? extends Aggregation> aggregations,
-                       Collection<? extends ColumnName> groupByColumns);
+            Collection<? extends ColumnName> groupByColumns);
 
     /**
      * Create a rollup table.
@@ -1110,7 +1110,7 @@ public interface Table extends
      */
     @ConcurrentMethod
     RollupTable rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents,
-                       Collection<? extends ColumnName> groupByColumns);
+            Collection<? extends ColumnName> groupByColumns);
 
     /**
      * Create a hierarchical tree table.
