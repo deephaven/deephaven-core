@@ -22,10 +22,12 @@ import org.junit.experimental.categories.Category;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
 
 import static io.deephaven.engine.testutil.GenerateTableUpdates.generateAppends;
 import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.simulateShiftAwareStep;
+import static io.deephaven.engine.util.TableTools.intCol;
 import static io.deephaven.time.DateTimeUtils.convertDateTime;
 import static io.deephaven.util.QueryConstants.*;
 import static org.junit.Assert.assertArrayEquals;
@@ -53,6 +55,31 @@ public class TestDelta extends BaseUpdateByTest {
     final int DYNAMIC_UPDATE_SIZE = 100;
     final int DYNAMIC_UPDATE_STEPS = 20;
 
+    @Test
+    public void testManualVerification() {
+        final int[] inputData = {100, 101, 102, NULL_INT, 103, 104};
+
+        final int[] outputNullDominates = {NULL_INT, 1, 1, NULL_INT, NULL_INT, 1};
+        final int[] outputValueDominates = {100, 1, 1, NULL_INT, 103, 1};
+        final int[] outputZeroDominates = {0, 1, 1, NULL_INT, 0, 1};
+
+        final QueryTable table = TstUtils.testRefreshingTable(
+                intCol("Int", inputData));
+
+        // default is NULL_DOMINATES
+        QueryTable result = (QueryTable) table.updateBy(List.of(UpdateByOperation.Delta()));
+        assertArrayEquals((int[]) result.getColumn("Int").getDirect(), outputNullDominates);
+
+        result = (QueryTable) table.updateBy(List.of(UpdateByOperation.Delta(DeltaControl.NULL_DOMINATES)));
+        assertArrayEquals((int[]) result.getColumn("Int").getDirect(), outputNullDominates);
+
+        result = (QueryTable) table.updateBy(List.of(UpdateByOperation.Delta(DeltaControl.VALUE_DOMINATES)));
+        assertArrayEquals((int[]) result.getColumn("Int").getDirect(), outputValueDominates);
+
+        result = (QueryTable) table.updateBy(List.of(UpdateByOperation.Delta(DeltaControl.ZERO_DOMINATES)));
+        assertArrayEquals((int[]) result.getColumn("Int").getDirect(), outputZeroDominates);
+    }
+
     // region Zero Key Tests
 
     @Test
@@ -65,7 +92,7 @@ public class TestDelta extends BaseUpdateByTest {
                         new CharGenerator('A', 'z', 0.1)}).t;
         t.setRefreshing(false);
 
-        final Table result = t.updateBy(UpdateByOperation.Delta(columns));
+        Table result = t.updateBy(UpdateByOperation.Delta(columns));
 
         for (String col : columns) {
             if ("boolCol".equals(col)) {
@@ -74,6 +101,39 @@ public class TestDelta extends BaseUpdateByTest {
             assertWithDelta(t.getColumn(col).getDirect(),
                     result.getColumn(col).getDirect(),
                     DeltaControl.DEFAULT);
+        }
+
+        result = t.updateBy(UpdateByOperation.Delta(DeltaControl.NULL_DOMINATES, columns));
+
+        for (String col : columns) {
+            if ("boolCol".equals(col)) {
+                continue;
+            }
+            assertWithDelta(t.getColumn(col).getDirect(),
+                    result.getColumn(col).getDirect(),
+                    DeltaControl.NULL_DOMINATES);
+        }
+
+        result = t.updateBy(UpdateByOperation.Delta(DeltaControl.VALUE_DOMINATES, columns));
+
+        for (String col : columns) {
+            if ("boolCol".equals(col)) {
+                continue;
+            }
+            assertWithDelta(t.getColumn(col).getDirect(),
+                    result.getColumn(col).getDirect(),
+                    DeltaControl.VALUE_DOMINATES);
+        }
+
+        result = t.updateBy(UpdateByOperation.Delta(DeltaControl.ZERO_DOMINATES, columns));
+
+        for (String col : columns) {
+            if ("boolCol".equals(col)) {
+                continue;
+            }
+            assertWithDelta(t.getColumn(col).getDirect(),
+                    result.getColumn(col).getDirect(),
+                    DeltaControl.ZERO_DOMINATES);
         }
     }
 
@@ -100,20 +160,61 @@ public class TestDelta extends BaseUpdateByTest {
                         new CharGenerator('A', 'z', 0.1)}).t;
         t.setRefreshing(false);
 
-        final Table summed = t.updateBy(UpdateByOperation.Delta(columns), "Sym");
-
-
-        final PartitionedTable preOp = t.partitionBy("Sym");
-        final PartitionedTable postOp = summed.partitionBy("Sym");
-
-        String[] columns = Arrays.stream(t.getDefinition().getColumnNamesArray())
+        final String[] columns = Arrays.stream(t.getDefinition().getColumnNamesArray())
                 .filter(col -> !col.equals("Sym") && !col.equals("boolCol")).toArray(String[]::new);
+
+        Table result = t.updateBy(UpdateByOperation.Delta(columns), "Sym");
+
+        PartitionedTable preOp = t.partitionBy("Sym");
+        PartitionedTable postOp = result.partitionBy("Sym");
 
         preOp.partitionedTransform(postOp, (source, actual) -> {
             Arrays.stream(columns).forEach(col -> {
                 assertWithDelta(source.getColumn(col).getDirect(),
                         actual.getColumn(col).getDirect(),
                         DeltaControl.DEFAULT);
+            });
+            return source;
+        });
+
+        result = t.updateBy(UpdateByOperation.Delta(DeltaControl.NULL_DOMINATES, columns), "Sym");
+
+        preOp = t.partitionBy("Sym");
+        postOp = result.partitionBy("Sym");
+
+        preOp.partitionedTransform(postOp, (source, actual) -> {
+            Arrays.stream(columns).forEach(col -> {
+                assertWithDelta(source.getColumn(col).getDirect(),
+                        actual.getColumn(col).getDirect(),
+                        DeltaControl.NULL_DOMINATES);
+            });
+            return source;
+        });
+
+        result = t.updateBy(UpdateByOperation.Delta(DeltaControl.VALUE_DOMINATES, columns), "Sym");
+
+        preOp = t.partitionBy("Sym");
+        postOp = result.partitionBy("Sym");
+
+        preOp.partitionedTransform(postOp, (source, actual) -> {
+            Arrays.stream(columns).forEach(col -> {
+                assertWithDelta(source.getColumn(col).getDirect(),
+                        actual.getColumn(col).getDirect(),
+                        DeltaControl.VALUE_DOMINATES);
+            });
+            return source;
+        });
+
+        result = t.updateBy(UpdateByOperation.Delta(DeltaControl.ZERO_DOMINATES, columns), "Sym");
+
+        preOp = t.partitionBy("Sym");
+        postOp = result.partitionBy("Sym");
+
+        preOp.partitionedTransform(postOp, (source, actual) -> {
+            Arrays.stream(columns).forEach(col -> {
+                assertWithDelta(source.getColumn(col).getDirect(),
+                        actual.getColumn(col).getDirect(),
+                        DeltaControl.ZERO_DOMINATES);
             });
             return source;
         });
@@ -218,12 +319,16 @@ public class TestDelta extends BaseUpdateByTest {
     private static byte[] delta(@NotNull final byte[] expected, DeltaControl control) {
         final byte[] result = new byte[expected.length];
         for (int ii = 0; ii < expected.length; ii++) {
-            if (ii == 0 || expected[ii - 1] == NULL_BYTE) {
+            if (expected[ii] == NULL_BYTE) {
+                result[ii] = NULL_BYTE;
+            } else if (ii == 0 || expected[ii - 1] == NULL_BYTE) {
                 result[ii] = control.nullBehavior() == NullBehavior.ValueDominates
                         ? expected[ii]
-                        : NULL_BYTE;
+                        : (control.nullBehavior() == NullBehavior.NullDominates
+                                ? NULL_BYTE
+                                : 0); // ZeroDominates
             } else {
-                result[ii] = expected[ii] == NULL_BYTE ? NULL_BYTE : (byte) (expected[ii] - expected[ii - 1]);
+                result[ii] = (byte) (expected[ii] - expected[ii - 1]);
             }
         }
 
@@ -233,12 +338,16 @@ public class TestDelta extends BaseUpdateByTest {
     private static char[] delta(@NotNull final char[] expected, DeltaControl control) {
         final char[] result = new char[expected.length];
         for (int ii = 0; ii < expected.length; ii++) {
-            if (ii == 0 || expected[ii - 1] == NULL_CHAR) {
+            if (expected[ii] == NULL_CHAR) {
+                result[ii] = NULL_CHAR;
+            } else if (ii == 0 || expected[ii - 1] == NULL_CHAR) {
                 result[ii] = control.nullBehavior() == NullBehavior.ValueDominates
                         ? expected[ii]
-                        : NULL_CHAR;
+                        : (control.nullBehavior() == NullBehavior.NullDominates
+                                ? NULL_CHAR
+                                : 0); // ZeroDominates
             } else {
-                result[ii] = expected[ii] == NULL_CHAR ? NULL_CHAR : (char) (expected[ii] - expected[ii - 1]);
+                result[ii] = (char) (expected[ii] - expected[ii - 1]);
             }
         }
 
@@ -248,12 +357,16 @@ public class TestDelta extends BaseUpdateByTest {
     private static short[] delta(@NotNull final short[] expected, DeltaControl control) {
         final short[] result = new short[expected.length];
         for (int ii = 0; ii < expected.length; ii++) {
-            if (ii == 0 || expected[ii - 1] == NULL_SHORT) {
+            if (expected[ii] == NULL_SHORT) {
+                result[ii] = NULL_SHORT;
+            } else if (ii == 0 || expected[ii - 1] == NULL_SHORT) {
                 result[ii] = control.nullBehavior() == NullBehavior.ValueDominates
                         ? expected[ii]
-                        : NULL_SHORT;
+                        : (control.nullBehavior() == NullBehavior.NullDominates
+                                ? NULL_SHORT
+                                : 0); // ZeroDominates
             } else {
-                result[ii] = expected[ii] == NULL_SHORT ? NULL_SHORT : (short) (expected[ii] - expected[ii - 1]);
+                result[ii] = (short) (expected[ii] - expected[ii - 1]);
             }
         }
 
@@ -263,12 +376,16 @@ public class TestDelta extends BaseUpdateByTest {
     private static int[] delta(@NotNull final int[] expected, DeltaControl control) {
         final int[] result = new int[expected.length];
         for (int ii = 0; ii < expected.length; ii++) {
-            if (ii == 0 || expected[ii - 1] == NULL_INT) {
+            if (expected[ii] == NULL_INT) {
+                result[ii] = NULL_INT;
+            } else if (ii == 0 || expected[ii - 1] == NULL_INT) {
                 result[ii] = control.nullBehavior() == NullBehavior.ValueDominates
                         ? expected[ii]
-                        : NULL_INT;
+                        : (control.nullBehavior() == NullBehavior.NullDominates
+                                ? NULL_INT
+                                : 0); // ZeroDominates
             } else {
-                result[ii] = expected[ii] == NULL_INT ? NULL_INT : expected[ii] - expected[ii - 1];
+                result[ii] = (int) (expected[ii] - expected[ii - 1]);
             }
         }
 
@@ -278,12 +395,16 @@ public class TestDelta extends BaseUpdateByTest {
     private static long[] delta(@NotNull final long[] expected, DeltaControl control) {
         final long[] result = new long[expected.length];
         for (int ii = 0; ii < expected.length; ii++) {
-            if (ii == 0 || expected[ii - 1] == NULL_LONG) {
+            if (expected[ii] == NULL_LONG) {
+                result[ii] = NULL_LONG;
+            } else if (ii == 0 || expected[ii - 1] == NULL_LONG) {
                 result[ii] = control.nullBehavior() == NullBehavior.ValueDominates
                         ? expected[ii]
-                        : NULL_LONG;
+                        : (control.nullBehavior() == NullBehavior.NullDominates
+                                ? NULL_LONG
+                                : 0); // ZeroDominates
             } else {
-                result[ii] = expected[ii] == NULL_LONG ? NULL_LONG : expected[ii] - expected[ii - 1];
+                result[ii] = (long) (expected[ii] - expected[ii - 1]);
             }
         }
 
@@ -293,12 +414,16 @@ public class TestDelta extends BaseUpdateByTest {
     private static float[] delta(@NotNull final float[] expected, DeltaControl control) {
         final float[] result = new float[expected.length];
         for (int ii = 0; ii < expected.length; ii++) {
-            if (ii == 0 || expected[ii - 1] == NULL_FLOAT) {
+            if (expected[ii] == NULL_FLOAT) {
+                result[ii] = NULL_FLOAT;
+            } else if (ii == 0 || expected[ii - 1] == NULL_FLOAT) {
                 result[ii] = control.nullBehavior() == NullBehavior.ValueDominates
                         ? expected[ii]
-                        : NULL_FLOAT;
+                        : (control.nullBehavior() == NullBehavior.NullDominates
+                                ? NULL_FLOAT
+                                : 0); // ZeroDominates
             } else {
-                result[ii] = expected[ii] == NULL_FLOAT ? NULL_FLOAT : expected[ii] - expected[ii - 1];
+                result[ii] = (float) (expected[ii] - expected[ii - 1]);
             }
         }
 
@@ -308,12 +433,16 @@ public class TestDelta extends BaseUpdateByTest {
     private static double[] delta(@NotNull final double[] expected, DeltaControl control) {
         final double[] result = new double[expected.length];
         for (int ii = 0; ii < expected.length; ii++) {
-            if (ii == 0 || expected[ii - 1] == NULL_DOUBLE) {
+            if (expected[ii] == NULL_DOUBLE) {
+                result[ii] = NULL_DOUBLE;
+            } else if (ii == 0 || expected[ii - 1] == NULL_DOUBLE) {
                 result[ii] = control.nullBehavior() == NullBehavior.ValueDominates
                         ? expected[ii]
-                        : NULL_DOUBLE;
+                        : (control.nullBehavior() == NullBehavior.NullDominates
+                                ? NULL_DOUBLE
+                                : 0); // ZeroDominates
             } else {
-                result[ii] = expected[ii] == NULL_DOUBLE ? NULL_DOUBLE : expected[ii] - expected[ii - 1];
+                result[ii] = (double) (expected[ii] - expected[ii - 1]);
             }
         }
 
@@ -323,38 +452,48 @@ public class TestDelta extends BaseUpdateByTest {
 
     private static Object[] delta(@NotNull final Object[] expected, DeltaControl control) {
         final Object[] result = new Object[expected.length];
+
         for (int ii = 0; ii < expected.length; ii++) {
-            if (ii == 0 || expected[ii - 1] == null) {
-                result[ii] = control.nullBehavior() == NullBehavior.ValueDominates
-                        ? expected[ii]
-                        : null;
-            } else {
-                if (expected[ii] == null) {
-                    result[ii] = null;
-                } else if (expected[ii] instanceof BigInteger) {
+            if (expected[ii] == null) {
+                result[ii] = null;
+            } else if (expected[ii] instanceof BigInteger) {
+                if (ii == 0 || expected[ii - 1] == null) {
+                    result[ii] = control.nullBehavior() == NullBehavior.ValueDominates
+                            ? expected[ii]
+                            : (control.nullBehavior() == NullBehavior.NullDominates
+                                    ? null
+                                    : BigInteger.ZERO); // ZeroDominates
+                } else {
                     result[ii] = ((BigInteger) expected[ii]).subtract((BigInteger) expected[ii - 1]);
+                }
+            } else {
+                if (ii == 0 || expected[ii - 1] == null) {
+                    result[ii] = control.nullBehavior() == NullBehavior.ValueDominates
+                            ? expected[ii]
+                            : (control.nullBehavior() == NullBehavior.NullDominates
+                                    ? null
+                                    : BigDecimal.ZERO); // ZeroDominates
                 } else {
                     result[ii] = ((BigDecimal) expected[ii]).subtract((BigDecimal) expected[ii - 1]);
                 }
             }
         }
-
         return result;
     }
 
     private static long[] deltaTime(@NotNull final Object[] expected, DeltaControl control) {
         final long[] result = new long[expected.length];
         for (int ii = 0; ii < expected.length; ii++) {
-            if (ii == 0 || expected[ii - 1] == null) {
+            if (expected[ii] == null) {
+                result[ii] = NULL_LONG;
+            } else if (ii == 0 || expected[ii - 1] == null) {
                 result[ii] = control.nullBehavior() == NullBehavior.ValueDominates
                         ? ((DateTime) expected[ii]).getNanos()
-                        : NULL_LONG;
+                        : (control.nullBehavior() == NullBehavior.NullDominates
+                                ? NULL_LONG
+                                : 0); // ZeroDominates
             } else {
-                if (expected[ii] == null) {
-                    result[ii] = NULL_LONG;
-                } else {
-                    result[ii] = ((DateTime) expected[ii]).getNanos() - ((DateTime) expected[ii - 1]).getNanos();
-                }
+                result[ii] = ((DateTime) expected[ii]).getNanos() - ((DateTime) expected[ii - 1]).getNanos();
             }
         }
 

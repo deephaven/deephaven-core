@@ -670,19 +670,19 @@ public class SessionState {
          *
          * <pre>
          * {@code
-         *  <T> T getFromExport(ExportObject<T> export) {
-         *      if (export.tryRetainReference()) {
-         *          try {
-         *              if (export.getState() == ExportNotification.State.EXPORTED) {
-         *                  return export.get();
-         *              }
-         *          } finally {
-         *              export.dropReference();
-         *          }
-         *      }
-         *      return null;
-         *  }
-         *  }
+         * <T> T getFromExport(ExportObject<T> export) {
+         *     if (export.tryRetainReference()) {
+         *         try {
+         *             if (export.getState() == ExportNotification.State.EXPORTED) {
+         *                 return export.get();
+         *             }
+         *         } finally {
+         *             export.dropReference();
+         *         }
+         *     }
+         *     return null;
+         * }
+         * }
          * </pre>
          *
          * @return the result of the computed export

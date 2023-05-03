@@ -1,11 +1,13 @@
 #
 #   Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
 #
+"""This module defines the Aggregation class and provides factory functions to create specific Aggregation instances."""
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import List 
+from typing import List, Union
 
+from pydeephaven._utils import to_list
 from pydeephaven.proto import table_pb2
 
 _GrpcAggregation = table_pb2.Aggregation
@@ -29,10 +31,10 @@ class Aggregation(ABC):
 @dataclass
 class _AggregationColumns(Aggregation):
     agg_spec: _GrpcAggSpec
-    cols: List[str]
+    cols: Union[str, List[str]]
 
     def make_grpc_message(self) -> _GrpcAggregation:
-        agg_columns = _GrpcAggregationColumns(spec=self.agg_spec, match_pairs=self.cols)
+        agg_columns = _GrpcAggregationColumns(spec=self.agg_spec, match_pairs=to_list(self.cols))
         return _GrpcAggregation(columns=agg_columns)
 
 
@@ -55,64 +57,64 @@ class _AggregationPartition(Aggregation):
         return _GrpcAggregation(partition=agg_count)
 
 
-def sum_(cols: List[str] = None) -> Aggregation:
-    """Create a Sum aggregation.
+def sum_(cols: Union[str, List[str]] = None) -> Aggregation:
+    """Creates a Sum aggregation.
 
     Args:
-        cols (List[str]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
+        cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
             default is None, only valid when used in Table agg_all_by operation
 
     Returns:
         an aggregation
     """
     agg_spec = _GrpcAggSpec(sum=_GrpcAggSpec.AggSpecSum())
-    return _AggregationColumns(agg_spec=agg_spec, cols=cols)
+    return _AggregationColumns(agg_spec=agg_spec, cols=to_list(cols))
 
 
-def abs_sum(cols: List[str] = None) -> Aggregation:
-    """Create an Absolute-sum aggregation.
+def abs_sum(cols: Union[str, List[str]] = None) -> Aggregation:
+    """Creates an Absolute-sum aggregation.
 
     Args:
-        cols (List[str]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
+        cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
             default is None, only valid when used in Table agg_all_by operation
 
     Returns:
         an aggregation
     """
     agg_spec = _GrpcAggSpec(abs_sum=_GrpcAggSpec.AggSpecAbsSum())
-    return _AggregationColumns(agg_spec=agg_spec, cols=cols)
+    return _AggregationColumns(agg_spec=agg_spec, cols=to_list(cols))
 
 
-def group(cols: List[str] = None) -> Aggregation:
-    """Create a Group aggregation.
+def group(cols: Union[str, List[str]] = None) -> Aggregation:
+    """Creates a Group aggregation.
 
     Args:
-        cols (List[str]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
+        cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
             default is None, only valid when used in Table agg_all_by operation
 
     Returns:
         an aggregation
     """
     agg_spec = _GrpcAggSpec(group=_GrpcAggSpec.AggSpecGroup())
-    return _AggregationColumns(agg_spec=agg_spec, cols=cols)
+    return _AggregationColumns(agg_spec=agg_spec, cols=to_list(cols))
 
 
-def avg(cols: List[str] = None) -> Aggregation:
-    """Create an Average aggregation.
+def avg(cols: Union[str, List[str]] = None) -> Aggregation:
+    """Creates an Average aggregation.
 
     Args:
-        cols (List[str]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
+        cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
             default is None, only valid when used in Table agg_all_by operation
 
     Returns:
         an aggregation
     """
     agg_spec = _GrpcAggSpec(avg=_GrpcAggSpec.AggSpecAvg())
-    return _AggregationColumns(agg_spec=agg_spec, cols=cols)
+    return _AggregationColumns(agg_spec=agg_spec, cols=to_list(cols))
 
 
 def count_(col: str) -> Aggregation:
-    """Create a Count aggregation. This is not supported in 'Table.agg_all_by'.
+    """Creates a Count aggregation. This is not supported in 'Table.agg_all_by'.
 
     Args:
         col (str): the column to hold the counts of each distinct group
@@ -124,7 +126,7 @@ def count_(col: str) -> Aggregation:
 
 
 def partition(col: str, include_by_columns: bool = True) -> Aggregation:
-    """Create a Partition aggregation. This is not supported in 'Table.agg_all_by'.
+    """Creates a Partition aggregation. This is not supported in 'Table.agg_all_by'.
 
     Args:
         col (str): the column to hold the sub tables
@@ -136,112 +138,112 @@ def partition(col: str, include_by_columns: bool = True) -> Aggregation:
     return _AggregationPartition(col=col, include_by_columns=include_by_columns)
 
 
-def count_distinct(cols: List[str] = None) -> Aggregation:
-    """Create a Count Distinct aggregation.
+def count_distinct(cols: Union[str, List[str]] = None) -> Aggregation:
+    """Creates a Count Distinct aggregation.
 
     Args:
-        cols (List[str]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
+        cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
             default is None, only valid when used in Table agg_all_by operation
 
     Returns:
         an aggregation
     """
     agg_spec = _GrpcAggSpec(count_distinct=_GrpcAggSpec.AggSpecCountDistinct(False))
-    return _AggregationColumns(agg_spec=agg_spec, cols=cols)
+    return _AggregationColumns(agg_spec=agg_spec, cols=to_list(cols))
 
 
-def first(cols: List[str] = None) -> Aggregation:
-    """Create a First aggregation.
+def first(cols: Union[str, List[str]] = None) -> Aggregation:
+    """Creates a First aggregation.
 
     Args:
-        cols (List[str]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
+        cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
             default is None, only valid when used in Table agg_all_by operation
 
     Returns:
         an aggregation
     """
     agg_spec = _GrpcAggSpec(first=_GrpcAggSpec.AggSpecFirst())
-    return _AggregationColumns(agg_spec=agg_spec, cols=cols)
+    return _AggregationColumns(agg_spec=agg_spec, cols=to_list(cols))
 
 
-def formula(formula: str, formula_param: str, cols: List[str] = None) -> Aggregation:
-    """Create a user defined formula aggregation.
+def formula(formula: str, formula_param: str, cols: Union[str, List[str]] = None) -> Aggregation:
+    """Creates a user defined formula aggregation.
 
     Args:
         formula (str): the user defined formula to apply to each group
         formula_param (str): the parameter name within the formula
-        cols (List[str]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
+        cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
             default is None, only valid when used in Table agg_all_by operation
 
     Returns:
         an aggregation
     """
     agg_spec = _GrpcAggSpec(formula=_GrpcAggSpec.AggSpecFormula(formula=formula, param_token=formula_param))
-    return _AggregationColumns(agg_spec=agg_spec, cols=cols)
+    return _AggregationColumns(agg_spec=agg_spec, cols=to_list(cols))
 
 
-def last(cols: List[str] = None) -> Aggregation:
-    """Create a Last aggregation.
+def last(cols: Union[str, List[str]] = None) -> Aggregation:
+    """Creates a Last aggregation.
 
     Args:
-        cols (List[str]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
+        cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
             default is None, only valid when used in Table agg_all_by operation
 
     Returns:
         an aggregation
     """
     agg_spec = _GrpcAggSpec(last=_GrpcAggSpec.AggSpecLast())
-    return _AggregationColumns(agg_spec=agg_spec, cols=cols)
+    return _AggregationColumns(agg_spec=agg_spec, cols=to_list(cols))
 
 
-def min_(cols: List[str] = None) -> Aggregation:
-    """Create a Min aggregation.
+def min_(cols: Union[str, List[str]] = None) -> Aggregation:
+    """Creates a Min aggregation.
 
     Args:
-        cols (List[str]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
+        cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
             default is None, only valid when used in Table agg_all_by operation
 
     Returns:
         an aggregation
     """
     agg_spec = _GrpcAggSpec(min=_GrpcAggSpec.AggSpecMin())
-    return _AggregationColumns(agg_spec=agg_spec, cols=cols)
+    return _AggregationColumns(agg_spec=agg_spec, cols=to_list(cols))
 
 
-def max_(cols: List[str] = None) -> Aggregation:
-    """Create a Max aggregation.
+def max_(cols: Union[str, List[str]] = None) -> Aggregation:
+    """Creates a Max aggregation.
 
     Args:
-        cols (List[str]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
+        cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
             default is None, only valid when used in Table agg_all_by operation
 
     Returns:
         an aggregation
     """
     agg_spec = _GrpcAggSpec(max=_GrpcAggSpec.AggSpecMax())
-    return _AggregationColumns(agg_spec=agg_spec, cols=cols)
+    return _AggregationColumns(agg_spec=agg_spec, cols=to_list(cols))
 
 
-def median(cols: List[str] = None) -> Aggregation:
-    """Create a Median aggregation.
+def median(cols: Union[str, List[str]] = None) -> Aggregation:
+    """Creates a Median aggregation.
 
     Args:
-        cols (List[str]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
+        cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
             default is None, only valid when used in Table agg_all_by operation
 
     Returns:
         an aggregation
     """
     agg_spec = _GrpcAggSpec(median=_GrpcAggSpec.AggSpecMedian(average_evenly_divided=True))
-    return _AggregationColumns(agg_spec=agg_spec, cols=cols)
+    return _AggregationColumns(agg_spec=agg_spec, cols=to_list(cols))
 
 
-def pct(percentile: float, cols: List[str] = None) -> Aggregation:
-    """Create a Percentile aggregation.
+def pct(percentile: float, cols: Union[str, List[str]] = None) -> Aggregation:
+    """Creates a Percentile aggregation.
 
     Args:
         percentile (float): the percentile used for calculation
-        cols (List[str]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
+        cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
             default is None, only valid when used in Table agg_all_by operation
 
     Returns:
@@ -249,15 +251,15 @@ def pct(percentile: float, cols: List[str] = None) -> Aggregation:
     """
     agg_spec = _GrpcAggSpec(percentile=_GrpcAggSpec.AggSpecPercentile(percentile=percentile,
                                                                       average_evenly_divided=False))
-    return _AggregationColumns(agg_spec=agg_spec, cols=cols)
+    return _AggregationColumns(agg_spec=agg_spec, cols=to_list(cols))
 
 
-def sorted_first(order_by: str, cols: List[str] = None) -> Aggregation:
-    """Create a SortedFirst aggregation.
+def sorted_first(order_by: str, cols: Union[str, List[str]] = None) -> Aggregation:
+    """Creates a SortedFirst aggregation.
 
     Args:
         order_by (str): the column to sort by
-        cols (List[str]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
+        cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
             default is None, only valid when used in Table agg_all_by operation
 
     Returns:
@@ -265,15 +267,15 @@ def sorted_first(order_by: str, cols: List[str] = None) -> Aggregation:
     """
     sorted_column = _GrpcAggSpec.AggSpecSortedColumn(column_name=order_by)
     agg_spec = _GrpcAggSpec(sorted_first=_GrpcAggSpec.AggSpecSorted(columns=[sorted_column]))
-    return _AggregationColumns(agg_spec=agg_spec, cols=cols)
+    return _AggregationColumns(agg_spec=agg_spec, cols=to_list(cols))
 
 
-def sorted_last(order_by: str, cols: List[str] = None) -> Aggregation:
-    """Create a SortedLast aggregation.
+def sorted_last(order_by: str, cols: Union[str, List[str]] = None) -> Aggregation:
+    """Creates a SortedLast aggregation.
 
     Args:
         order_by (str): the column to sort by
-        cols (List[str]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
+        cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
             default is None, only valid when used in Table agg_all_by operation
 
     Returns:
@@ -281,76 +283,76 @@ def sorted_last(order_by: str, cols: List[str] = None) -> Aggregation:
     """
     sorted_column = _GrpcAggSpec.AggSpecSortedColumn(column_name=order_by)
     agg_spec = _GrpcAggSpec(sorted_last=_GrpcAggSpec.AggSpecSorted(columns=[sorted_column]))
-    return _AggregationColumns(agg_spec=agg_spec, cols=cols)
+    return _AggregationColumns(agg_spec=agg_spec, cols=to_list(cols))
 
 
-def std(cols: List[str] = None) -> Aggregation:
-    """Create a Std (standard deviation) aggregation.
+def std(cols: Union[str, List[str]] = None) -> Aggregation:
+    """Creates a Std (standard deviation) aggregation.
 
     Args:
-        cols (List[str]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
+        cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
             default is None, only valid when used in Table agg_all_by operation
 
     Returns:
         an aggregation
     """
     agg_spec = _GrpcAggSpec(std=_GrpcAggSpec.AggSpecStd())
-    return _AggregationColumns(agg_spec=agg_spec, cols=cols)
+    return _AggregationColumns(agg_spec=agg_spec, cols=to_list(cols))
 
 
-def unique(cols: List[str] = None) -> Aggregation:
-    """Create a Unique aggregation.
+def unique(cols: Union[str, List[str]] = None) -> Aggregation:
+    """Creates a Unique aggregation.
 
     Args:
-        cols (List[str]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
+        cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
             default is None, only valid when used in Table agg_all_by operation
 
     Returns:
         an aggregation
     """
     agg_spec = _GrpcAggSpec(unique=_GrpcAggSpec.AggSpecUnique(include_nulls=False, non_unique_sentinel=None))
-    return _AggregationColumns(agg_spec=agg_spec, cols=cols)
+    return _AggregationColumns(agg_spec=agg_spec, cols=to_list(cols))
 
 
-def var(cols: List[str] = None) -> Aggregation:
-    """Create a Variance aggregation.
+def var(cols: Union[str, List[str]] = None) -> Aggregation:
+    """Creates a Variance aggregation.
 
     Args:
-        cols (List[str]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
+        cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
             default is None, only valid when used in Table agg_all_by operation
 
     Returns:
         an aggregation
     """
     agg_spec = _GrpcAggSpec(var=_GrpcAggSpec.AggSpecVar())
-    return _AggregationColumns(agg_spec=agg_spec, cols=cols)
+    return _AggregationColumns(agg_spec=agg_spec, cols=to_list(cols))
 
 
-def weighted_avg(wcol: str, cols: List[str] = None) -> Aggregation:
-    """Create a Weighted-average aggregation.
+def weighted_avg(wcol: str, cols: Union[str, List[str]] = None) -> Aggregation:
+    """Creates a Weighted-average aggregation.
 
     Args:
         wcol (str): the name of the weight column
-        cols (List[str]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
+        cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
             default is None, only valid when used in Table agg_all_by operation
 
     Returns:
         an aggregation
     """
     agg_spec = _GrpcAggSpec(weighted_avg=_GrpcAggSpec.AggSpecWeighted(weight_column=wcol))
-    return _AggregationColumns(agg_spec=agg_spec, cols=cols)
+    return _AggregationColumns(agg_spec=agg_spec, cols=to_list(cols))
 
 
-def weighted_sum(wcol: str, cols: List[str] = None) -> Aggregation:
-    """Create a Weighted-sum aggregation.
+def weighted_sum(wcol: str, cols: Union[str, List[str]] = None) -> Aggregation:
+    """Creates a Weighted-sum aggregation.
 
     Args:
         wcol (str): the name of the weight column
-        cols (List[str]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
+        cols (Union[str, List[str]]): the column(s) to aggregate on, can be renaming expressions, i.e. "new_col = col";
             default is None, only valid when used in Table agg_all_by operation
 
     Returns:
         an aggregation
     """
     agg_spec = _GrpcAggSpec(weighted_sum=_GrpcAggSpec.AggSpecWeighted(weight_column=wcol))
-    return _AggregationColumns(agg_spec=agg_spec, cols=cols)
+    return _AggregationColumns(agg_spec=agg_spec, cols=to_list(cols))

@@ -31,7 +31,7 @@ public class FloatEMOperator extends BasePrimitiveEMOperator {
                                          Chunk<? extends Values>[] valueChunkArr,
                                          LongChunk<? extends Values> tsChunk,
                                          int len) {
-            setValuesChunk(valueChunkArr[0]);
+            setValueChunks(valueChunkArr);
 
             // chunk processing
             if (timestampColumnName == null) {
@@ -74,7 +74,7 @@ public class FloatEMOperator extends BasePrimitiveEMOperator {
                     } else {
                         final long dt = timestamp - lastStamp;
                         if (dt != 0) {
-                            final double alpha = Math.exp(-dt / (double) reverseWindowScaleUnits);
+                            final double alpha = Math.exp(-dt / reverseWindowScaleUnits);
                             final double oneMinusAlpha = 1.0 - alpha;
                             curVal = aggFunction.apply(curVal, input, alpha, oneMinusAlpha);
                             lastStamp = timestamp;
@@ -89,8 +89,8 @@ public class FloatEMOperator extends BasePrimitiveEMOperator {
         }
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            floatValueChunk = valuesChunk.asFloatChunk();
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
+            floatValueChunk = valueChunks[0].asFloatChunk();
         }
 
         @Override
@@ -125,7 +125,7 @@ public class FloatEMOperator extends BasePrimitiveEMOperator {
                            @Nullable final RowRedirection rowRedirection,
                            @NotNull final OperationControl control,
                            @Nullable final String timestampColumnName,
-                           final long windowScaleUnits,
+                           final double windowScaleUnits,
                            final ColumnSource<?> valueSource,
                            @NotNull final EmFunction aggFunction
                            // region extra-constructor-args
@@ -139,7 +139,7 @@ public class FloatEMOperator extends BasePrimitiveEMOperator {
 
     @NotNull
     @Override
-    public UpdateByOperator.Context makeUpdateContext(final int chunkSize) {
-        return new Context(chunkSize);
+    public UpdateByOperator.Context makeUpdateContext(final int affectedChunkSize, final int influencerChunkSize) {
+        return new Context(affectedChunkSize);
     }
 }

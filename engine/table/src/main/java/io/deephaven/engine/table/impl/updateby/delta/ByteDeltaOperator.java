@@ -33,13 +33,13 @@ public class ByteDeltaOperator extends BaseByteUpdateByOperator {
         public ByteChunk<? extends Values> byteValueChunk;
         private byte lastVal = NULL_BYTE;
 
-        protected Context(final int chunkSize) {
-            super(chunkSize);
+        protected Context(final int affectedChunkSize, final int influencerChunkSize) {
+            super(affectedChunkSize);
         }
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            byteValueChunk = valuesChunk.asByteChunk();
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
+            byteValueChunk = valueChunks[0].asByteChunk();
         }
 
         @Override
@@ -49,15 +49,16 @@ public class ByteDeltaOperator extends BaseByteUpdateByOperator {
             // read the value from the values chunk
             final byte currentVal = byteValueChunk.get(pos);
 
-            // If the previous value is null, defer to the control object to decide what to do
-            if (lastVal == NULL_BYTE) {
-                curVal = (control.nullBehavior() == NullBehavior.NullDominates)
-                        ? NULL_BYTE
-                        : currentVal;
-            } else if (currentVal != NULL_BYTE) {
-                curVal = (byte)(currentVal - lastVal);
-            } else {
+            if (currentVal == NULL_BYTE) {
                 curVal = NULL_BYTE;
+            } else if (lastVal == NULL_BYTE) {
+                curVal = control.nullBehavior() == NullBehavior.NullDominates
+                        ? NULL_BYTE
+                        : (control.nullBehavior() == NullBehavior.ZeroDominates
+                            ? (byte)0
+                            : currentVal);
+            } else {
+                curVal = (byte)(currentVal - lastVal);
             }
 
             lastVal = currentVal;
@@ -98,7 +99,7 @@ public class ByteDeltaOperator extends BaseByteUpdateByOperator {
 
     @NotNull
     @Override
-    public UpdateByOperator.Context makeUpdateContext(final int chunkSize) {
-        return new Context(chunkSize);
+    public UpdateByOperator.Context makeUpdateContext(final int affectedChunkSize, final int influencerChunkSize) {
+        return new Context(affectedChunkSize, influencerChunkSize);
     }
 }

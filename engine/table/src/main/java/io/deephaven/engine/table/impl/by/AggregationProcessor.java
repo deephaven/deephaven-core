@@ -249,11 +249,11 @@ public class AggregationProcessor implements AggregationContextFactory {
         final String duplicationErrorMessage = (type.isRollup
                 ? RollupAggregationOutputs.of(aggregations)
                 : AggregationOutputs.of(aggregations))
-                        .collect(Collectors.groupingBy(ColumnName::name, Collectors.counting())).entrySet()
-                        .stream()
-                        .filter(kv -> kv.getValue() > 1)
-                        .map(kv -> kv.getKey() + " used " + kv.getValue() + " times")
-                        .collect(Collectors.joining(", "));
+                .collect(Collectors.groupingBy(ColumnName::name, Collectors.counting())).entrySet()
+                .stream()
+                .filter(kv -> kv.getValue() > 1)
+                .map(kv -> kv.getKey() + " used " + kv.getValue() + " times")
+                .collect(Collectors.joining(", "));
         if (!duplicationErrorMessage.isBlank()) {
             throw new IllegalArgumentException("Duplicate output columns found: " + duplicationErrorMessage);
         }

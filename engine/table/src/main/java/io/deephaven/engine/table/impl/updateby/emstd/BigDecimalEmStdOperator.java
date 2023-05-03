@@ -19,8 +19,8 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 public class BigDecimalEmStdOperator extends BaseBigNumberEmStdOperator<BigDecimal> {
     public class Context extends BaseBigNumberEmStdOperator<BigDecimal>.Context {
-        protected Context(final int chunkSize) {
-            super(chunkSize);
+        protected Context(final int affectedChunkSize, final int influencerChunkSize) {
+            super(affectedChunkSize);
         }
 
         @Override
@@ -28,7 +28,7 @@ public class BigDecimalEmStdOperator extends BaseBigNumberEmStdOperator<BigDecim
                 @NotNull final Chunk<? extends Values>[] valueChunkArr,
                 @NotNull final LongChunk<? extends Values> tsChunk,
                 final int len) {
-            setValuesChunk(valueChunkArr[0]);
+            setValueChunks(valueChunkArr);
 
             // chunk processing
             if (timestampColumnName == null) {
@@ -134,7 +134,7 @@ public class BigDecimalEmStdOperator extends BaseBigNumberEmStdOperator<BigDecim
             @Nullable final RowRedirection rowRedirection,
             @NotNull final OperationControl control,
             @Nullable final String timestampColumnName,
-            final long windowScaleUnits,
+            final double windowScaleUnits,
             final ColumnSource<?> valueSource,
             final boolean sourceRefreshing,
             @NotNull final MathContext mathContext) {
@@ -144,7 +144,7 @@ public class BigDecimalEmStdOperator extends BaseBigNumberEmStdOperator<BigDecim
 
     @NotNull
     @Override
-    public UpdateByOperator.Context makeUpdateContext(final int chunkSize) {
-        return new Context(chunkSize);
+    public UpdateByOperator.Context makeUpdateContext(final int affectedChunkSize, final int influencerChunkSize) {
+        return new Context(affectedChunkSize, influencerChunkSize);
     }
 }

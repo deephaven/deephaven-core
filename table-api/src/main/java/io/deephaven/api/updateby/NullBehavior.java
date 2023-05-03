@@ -12,5 +12,10 @@ public enum NullBehavior {
     /**
      * In the case of Current - null, the current value dominates so Column[i] - null = Column[i]
      */
-    ValueDominates
+    ValueDominates,
+
+    /**
+     * In the case of Current - null, return zero so Column[i] - null = 0
+     */
+    ZeroDominates
 }

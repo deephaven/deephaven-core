@@ -33,13 +33,13 @@ public class DoubleDeltaOperator extends BaseDoubleUpdateByOperator {
         public DoubleChunk<? extends Values> doubleValueChunk;
         private double lastVal = NULL_DOUBLE;
 
-        protected Context(final int chunkSize) {
-            super(chunkSize);
+        protected Context(final int affectedChunkSize, final int influencerChunkSize) {
+            super(affectedChunkSize);
         }
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            doubleValueChunk = valuesChunk.asDoubleChunk();
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
+            doubleValueChunk = valueChunks[0].asDoubleChunk();
         }
 
         @Override
@@ -49,15 +49,16 @@ public class DoubleDeltaOperator extends BaseDoubleUpdateByOperator {
             // read the value from the values chunk
             final double currentVal = doubleValueChunk.get(pos);
 
-            // If the previous value is null, defer to the control object to decide what to do
-            if (lastVal == NULL_DOUBLE) {
-                curVal = (control.nullBehavior() == NullBehavior.NullDominates)
-                        ? NULL_DOUBLE
-                        : currentVal;
-            } else if (currentVal != NULL_DOUBLE) {
-                curVal = (double)(currentVal - lastVal);
-            } else {
+            if (currentVal == NULL_DOUBLE) {
                 curVal = NULL_DOUBLE;
+            } else if (lastVal == NULL_DOUBLE) {
+                curVal = control.nullBehavior() == NullBehavior.NullDominates
+                        ? NULL_DOUBLE
+                        : (control.nullBehavior() == NullBehavior.ZeroDominates
+                            ? (double)0
+                            : currentVal);
+            } else {
+                curVal = (double)(currentVal - lastVal);
             }
 
             lastVal = currentVal;
@@ -98,7 +99,7 @@ public class DoubleDeltaOperator extends BaseDoubleUpdateByOperator {
 
     @NotNull
     @Override
-    public UpdateByOperator.Context makeUpdateContext(final int chunkSize) {
-        return new Context(chunkSize);
+    public UpdateByOperator.Context makeUpdateContext(final int affectedChunkSize, final int influencerChunkSize) {
+        return new Context(affectedChunkSize, influencerChunkSize);
     }
 }

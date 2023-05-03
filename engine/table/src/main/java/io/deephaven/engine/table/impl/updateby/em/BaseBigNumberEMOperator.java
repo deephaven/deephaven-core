@@ -23,6 +23,8 @@ public abstract class BaseBigNumberEMOperator<T> extends BaseObjectUpdateByOpera
     protected final ColumnSource<?> valueSource;
     protected final OperationControl control;
 
+    /** For EM operators, we can allow floating-point tick/time units. */
+    protected final double reverseWindowScaleUnits;
     protected final BigDecimal opAlpha;
     protected final BigDecimal opOneMinusAlpha;
 
@@ -45,8 +47,8 @@ public abstract class BaseBigNumberEMOperator<T> extends BaseObjectUpdateByOpera
         }
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            objectValueChunk = valuesChunk.asObjectChunk();
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
+            objectValueChunk = valueChunks[0].asObjectChunk();
         }
 
         @Override
@@ -81,19 +83,20 @@ public abstract class BaseBigNumberEMOperator<T> extends BaseObjectUpdateByOpera
             @Nullable final RowRedirection rowRedirection,
             @NotNull final OperationControl control,
             @Nullable final String timestampColumnName,
-            final long windowScaleUnits,
+            final double windowScaleUnits,
             @NotNull final ColumnSource<?> valueSource,
             @NotNull final EmFunction aggFunction) {
-        super(pair, affectingColumns, rowRedirection, timestampColumnName, windowScaleUnits, 0, false,
+        super(pair, affectingColumns, rowRedirection, timestampColumnName, 0, 0, false,
                 BigDecimal.class);
 
         this.control = control;
         this.valueSource = valueSource;
         this.aggFunction = aggFunction;
+        this.reverseWindowScaleUnits = windowScaleUnits;
 
         if (timestampColumnName == null) {
             // tick-based, pre-compute alpha and oneMinusAlpha
-            opAlpha = computeAlpha(-1, windowScaleUnits);
+            opAlpha = computeAlpha(-1, reverseWindowScaleUnits);
             opOneMinusAlpha = computeOneMinusAlpha(opAlpha);
         } else {
             // time-based, must compute alpha and oneMinusAlpha for each time delta
@@ -128,8 +131,8 @@ public abstract class BaseBigNumberEMOperator<T> extends BaseObjectUpdateByOpera
         }
     }
 
-    BigDecimal computeAlpha(final long dt, final long timeScaleUnits) {
-        return BigDecimal.valueOf(Math.exp(dt / (double) timeScaleUnits));
+    BigDecimal computeAlpha(final long dt, final double timeScaleUnits) {
+        return BigDecimal.valueOf(Math.exp(dt / timeScaleUnits));
     }
 
     BigDecimal computeOneMinusAlpha(final BigDecimal alpha) {

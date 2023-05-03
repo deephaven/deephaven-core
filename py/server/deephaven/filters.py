@@ -37,6 +37,14 @@ class Filter(JObjectWrapper):
     def __init__(self, j_filter):
         self.j_filter = j_filter
 
+    def not_(self):
+        """Creates a new filter that evaluates to the opposite of what this filter evaluates to.
+
+        Returns:
+            a new not Filter
+        """
+        return Filter(j_filter=_JFilterNot.of(self.j_filter))
+
     @classmethod
     def from_(cls, conditions: Union[str, List[str]]) -> Union[Filter, List[Filter]]:
         """Creates filter(s) from the given condition(s).
@@ -68,7 +76,7 @@ def or_(filters: List[Filter]) -> Filter:
         filters (List[filter]): the component filters
 
     Returns:
-        a new Filter
+        a new or Filter
     """
     return Filter(j_filter=_JFilterOr.of(*[f.j_filter for f in filters]))
 
@@ -80,21 +88,45 @@ def and_(filters: List[Filter]) -> Filter:
         filters (List[filter]): the component filters
 
     Returns:
-        a new Filter
+        a new and Filter
     """
     return Filter(j_filter=_JFilterAnd.of(*[f.j_filter for f in filters]))
 
 
 def not_(filter_: Filter) -> Filter:
-    """Creates a new filter that evaluates to true when the given filter evaluates to false.
+    """Creates a new filter that evaluates to the opposite of what filter_ evaluates to.
 
     Args:
         filter_ (Filter): the filter to negate with
 
     Returns:
-        a new Filter
+        a new not Filter
     """
-    return Filter(j_filter=_JFilterNot.of(filter_.j_filter))
+    return filter_.not_()
+
+
+def is_null(col: str) -> Filter:
+    """Creates a new filter that evaluates to true when the col is null, and evaluates to false when col is not null.
+
+    Args:
+        col (str): the column name
+
+    Returns:
+        a new is-null Filter
+    """
+    return Filter(j_filter=_JFilter.isNull(_JColumnName.of(col)))
+
+
+def is_not_null(col: str) -> Filter:
+    """Creates a new filter that evaluates to true when the col is not null, and evaluates to false when col is null.
+
+    Args:
+        col (str): the column name
+
+    Returns:
+        a new is-not-null Filter
+    """
+    return Filter(j_filter=_JFilter.isNotNull(_JColumnName.of(col)))
 
 
 class PatternMode(Enum):
@@ -105,128 +137,21 @@ class PatternMode(Enum):
     """Matches any subsequence of the input against the pattern"""
 
 
-class PatternFlag(Enum):
-    CASE_INSENSITIVE = _JPattern.CASE_INSENSITIVE
-    """Enables case-insensitive matching.
-
-    By default, case-insensitive matching assumes that only characters in the US-ASCII charset are being matched.
-    Unicode-aware case-insensitive matching can be enabled by specifying the UNICODE_CASE flag in conjunction with this
-    flag.
-
-    Case-insensitive matching can also be enabled via the embedded flag expression (?i).
-
-    Specifying this flag may impose a slight performance penalty.
-    """
-
-    MULTILINE = _JPattern.MULTILINE
-    """Enables multiline mode.
-
-    In multiline mode the expressions ^ and $ match just after or just before, respectively, a line terminator or the
-    end of the input sequence. By default these expressions only match at the beginning and the end of the entire input
-    sequence.
-
-    Multiline mode can also be enabled via the embedded flag expression (?m).
-    """
-
-    DOTALL = _JPattern.DOTALL
-    """Enables dotall mode.
-
-    In dotall mode, the expression . matches any character, including a line terminator. By default this expression does
-    not match line terminators.
-
-    Dotall mode can also be enabled via the embedded flag expression (?s). (The s is a mnemonic for "single-line" mode,
-    which is what this is called in Perl.)
-    """
-
-    UNICODE_CASE = _JPattern.UNICODE_CASE
-    """Enables Unicode-aware case folding.
-
-    When this flag is specified then case-insensitive matching, when enabled by the CASE_INSENSITIVE flag, is done in a
-    manner consistent with the Unicode Standard. By default, case-insensitive matching assumes that only characters in
-    the US-ASCII charset are being matched.
-
-    Unicode-aware case folding can also be enabled via the embedded flag expression (?u).
-
-    Specifying this flag may impose a performance penalty.
-    """
-
-    CANON_EQ = _JPattern.CANON_EQ
-    """Enables canonical equivalence.
-
-    When this flag is specified then two characters will be considered to match if, and only if, their full canonical
-    decompositions match. The expression "a\u030A", for example, will match the string "\u00E5" when this flag is
-    specified. By default, matching does not take canonical equivalence into account.
-
-    There is no embedded flag character for enabling canonical equivalence.
-
-    Specifying this flag may impose a performance penalty.
-    """
-
-    UNIX_LINES = _JPattern.UNIX_LINES
-    """Enables Unix lines mode.
-
-    In this mode, only the '\n' line terminator is recognized in the behavior of ., ^, and $.
-
-    Unix lines mode can also be enabled via the embedded flag expression (?d).
-    """
-
-    LITERAL = _JPattern.LITERAL
-    """Enables literal parsing of the pattern.
-
-    When this flag is specified then the input string that specifies the pattern is treated as a sequence of literal
-    characters. Metacharacters or escape sequences in the input sequence will be given no special meaning.
-
-    The flags CASE_INSENSITIVE and UNICODE_CASE retain their impact on matching when used in conjunction with this flag.
-    The other flags become superfluous.
-
-    There is no embedded flag character for enabling literal parsing.
-    """
-
-    UNICODE_CHARACTER_CLASS = _JPattern.UNICODE_CHARACTER_CLASS
-    """Enables the Unicode version of Predefined character classes and POSIX character classes.
-
-    When this flag is specified then the (US-ASCII only) Predefined character classes and POSIX character classes are in
-    conformance with Unicode Technical Standard #18: Unicode Regular Expression Annex C: Compatibility Properties.
-
-    The UNICODE_CHARACTER_CLASS mode can also be enabled via the embedded flag expression (?U).
-
-    The flag implies UNICODE_CASE, that is, it enables Unicode-aware case folding.
-
-    Specifying this flag may impose a performance penalty.
-    """
-
-    COMMENTS = _JPattern.COMMENTS
-    """Permits whitespace and comments in pattern.
-
-    In this mode, whitespace is ignored, and embedded comments starting with # are ignored until the end of a line.
-
-    Comments mode can also be enabled via the embedded flag expression (?x).
-    """
-
-    @staticmethod
-    def _bitwise_or(flags: Union[PatternFlag, List[PatternFlag]]) -> int:
-        return functools.reduce(
-            lambda x, y: x | y, [flag.value for flag in to_sequence(flags)]
-        )
-
-    def __repr__(self):
-        return self.name
-
-
 def pattern(
     mode: PatternMode,
     col: str,
     regex: str,
-    flags: Union[PatternFlag, List[PatternFlag]] = None,
     invert_pattern: bool = False,
 ) -> Filter:
     """Creates a regular-expression pattern filter.
+
+    See https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/util/regex/Pattern.html for documentation on
+    the regex pattern.
 
     Args:
         mode (PatternMode): the mode
         col (str): the column name
         regex (str): the regex pattern
-        flags (Union[PatternFlag, List[PatternFlag]]): the regex flags
         invert_pattern (bool): if the pattern match should be inverted
 
     Returns:
@@ -240,7 +165,7 @@ def pattern(
         return Filter(
             j_filter=_JPatternFilter(
                 _JColumnName.of(col),
-                _JPattern.compile(regex, PatternFlag._bitwise_or(flags)),
+                _JPattern.compile(regex),
                 mode.value,
                 invert_pattern,
             )

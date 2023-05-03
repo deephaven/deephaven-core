@@ -29,8 +29,13 @@ public class ByteEMOperator extends BasePrimitiveEMOperator {
     protected class Context extends BasePrimitiveEMOperator.Context {
         public ByteChunk<? extends Values> byteValueChunk;
 
-        protected Context(final int chunkSize) {
-            super(chunkSize);
+        protected Context(final int affectedChunkSize, final int influencerChunkSize) {
+            super(affectedChunkSize);
+        }
+
+        @Override
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
+            byteValueChunk = valueChunks[0].asByteChunk();
         }
 
         @Override
@@ -38,7 +43,7 @@ public class ByteEMOperator extends BasePrimitiveEMOperator {
                                          Chunk<? extends Values>[] valueChunkArr,
                                          LongChunk<? extends Values> tsChunk,
                                          int len) {
-            setValuesChunk(valueChunkArr[0]);
+            setValueChunks(valueChunkArr);
 
             // chunk processing
             if (timestampColumnName == null) {
@@ -78,7 +83,7 @@ public class ByteEMOperator extends BasePrimitiveEMOperator {
                         final long dt = timestamp - lastStamp;
                         if (dt != lastDt) {
                             // Alpha is dynamic based on time, but only recalculated when needed
-                            alpha = Math.exp(-dt / (double) reverseWindowScaleUnits);
+                            alpha = Math.exp(-dt / reverseWindowScaleUnits);
                             oneMinusAlpha = 1.0 - alpha;
                             lastDt = dt;
                         }
@@ -91,11 +96,6 @@ public class ByteEMOperator extends BasePrimitiveEMOperator {
 
             // chunk output to column
             writeToOutputColumn(inputKeys);
-        }
-
-        @Override
-        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            byteValueChunk = valuesChunk.asByteChunk();
         }
 
         @Override
@@ -125,7 +125,7 @@ public class ByteEMOperator extends BasePrimitiveEMOperator {
                           @Nullable final RowRedirection rowRedirection,
                           @NotNull final OperationControl control,
                           @Nullable final String timestampColumnName,
-                          final long windowScaleUnits,
+                          final double windowScaleUnits,
                           final ColumnSource<?> valueSource,
                           @NotNull final EmFunction aggFunction
                           // region extra-constructor-args
@@ -141,7 +141,7 @@ public class ByteEMOperator extends BasePrimitiveEMOperator {
 
     @NotNull
     @Override
-    public UpdateByOperator.Context makeUpdateContext(final int chunkSize) {
-        return new Context(chunkSize);
+    public UpdateByOperator.Context makeUpdateContext(final int affectedChunkSize, final int influencerChunkSize) {
+        return new Context(affectedChunkSize, influencerChunkSize);
     }
 }

@@ -15,6 +15,8 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 public abstract class BasePrimitiveEMOperator extends BaseDoubleUpdateByOperator {
     protected final OperationControl control;
+    /** For EM operators, we can allow floating-point tick/time units. */
+    protected final double reverseWindowScaleUnits;
     protected final double opAlpha;
     protected double opOneMinusAlpha;
     final EmFunction aggFunction;
@@ -57,13 +59,14 @@ public abstract class BasePrimitiveEMOperator extends BaseDoubleUpdateByOperator
             @Nullable final RowRedirection rowRedirection,
             @NotNull final OperationControl control,
             @Nullable final String timestampColumnName,
-            final long windowScaleUnits,
+            final double windowScaleUnits,
             @NotNull final EmFunction aggFunction) {
-        super(pair, affectingColumns, rowRedirection, timestampColumnName, windowScaleUnits, 0, false);
+        super(pair, affectingColumns, rowRedirection, timestampColumnName, 0, 0, false);
         this.control = control;
         this.aggFunction = aggFunction;
+        this.reverseWindowScaleUnits = windowScaleUnits;
 
-        opAlpha = Math.exp(-1.0 / (double) windowScaleUnits);
+        opAlpha = Math.exp(-1.0 / reverseWindowScaleUnits);
         opOneMinusAlpha = 1 - opAlpha;
 
     }

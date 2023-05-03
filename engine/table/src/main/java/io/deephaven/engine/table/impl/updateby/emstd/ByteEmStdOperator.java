@@ -30,8 +30,8 @@ public class ByteEmStdOperator extends BasePrimitiveEmStdOperator {
 
         public ByteChunk<? extends Values> byteValueChunk;
 
-        protected Context(final int chunkSize) {
-            super(chunkSize);
+        protected Context(final int affectedChunkSize, final int influencerChunkSize) {
+            super(affectedChunkSize);
         }
 
         @Override
@@ -39,7 +39,7 @@ public class ByteEmStdOperator extends BasePrimitiveEmStdOperator {
                                          Chunk<? extends Values>[] valueChunkArr,
                                          LongChunk<? extends Values> tsChunk,
                                          int len) {
-            setValuesChunk(valueChunkArr[0]);
+            setValueChunks(valueChunkArr);
 
             // chunk processing
             if (timestampColumnName == null) {
@@ -125,8 +125,8 @@ public class ByteEmStdOperator extends BasePrimitiveEmStdOperator {
         }
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            byteValueChunk = valuesChunk.asByteChunk();
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valuesChunks) {
+            byteValueChunk = valuesChunks[0].asByteChunk();
         }
 
         @Override
@@ -157,7 +157,7 @@ public class ByteEmStdOperator extends BasePrimitiveEmStdOperator {
                              @Nullable final RowRedirection rowRedirection,
                              @NotNull final OperationControl control,
                              @Nullable final String timestampColumnName,
-                             final long windowScaleUnits,
+                             final double windowScaleUnits,
                              final ColumnSource<?> valueSource,
                              final boolean sourceRefreshing
                              // region extra-constructor-args
@@ -173,7 +173,7 @@ public class ByteEmStdOperator extends BasePrimitiveEmStdOperator {
 
     @NotNull
     @Override
-    public UpdateByOperator.Context makeUpdateContext(final int chunkSize) {
-        return new Context(chunkSize);
+    public UpdateByOperator.Context makeUpdateContext(final int affectedChunkSize, final int influencerChunkSize) {
+        return new Context(affectedChunkSize, influencerChunkSize);
     }
 }

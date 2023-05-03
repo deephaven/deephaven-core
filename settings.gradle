@@ -243,6 +243,9 @@ project(':extensions-jdbc').projectDir = file('extensions/jdbc')
 include(':extensions-suanshu')
 project(':extensions-suanshu').projectDir = file('extensions/suanshu')
 
+include(':extensions-performance')
+project(':extensions-performance').projectDir = file('extensions/performance')
+
 include(':plugin')
 
 include(':plugin-dagger')

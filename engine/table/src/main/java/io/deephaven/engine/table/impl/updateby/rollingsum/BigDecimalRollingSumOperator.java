@@ -36,8 +36,8 @@ public final class BigDecimalRollingSumOperator extends BaseObjectUpdateByOperat
 
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            objectInfluencerValuesChunk = valuesChunk.asObjectChunk();
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
+            objectInfluencerValuesChunk = valueChunks[0].asObjectChunk();
         }
 
         @Override
@@ -93,8 +93,8 @@ public final class BigDecimalRollingSumOperator extends BaseObjectUpdateByOperat
 
     @NotNull
     @Override
-    public UpdateByOperator.Context makeUpdateContext(final int chunkSize) {
-        return new Context(chunkSize);
+    public UpdateByOperator.Context makeUpdateContext(final int affectedChunkSize, final int influencerChunkSize) {
+        return new Context(affectedChunkSize);
     }
 
     public BigDecimalRollingSumOperator(@NotNull final MatchPair pair,

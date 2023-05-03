@@ -29,13 +29,13 @@ public class BigIntegerDeltaOperator extends BaseObjectUpdateByOperator<BigInteg
         public ObjectChunk<BigInteger, ? extends Values> objectValueChunk;
         private BigInteger lastVal = null;
 
-        protected Context(final int chunkSize) {
-            super(chunkSize);
+        protected Context(final int affectedChunkSize, final int influencerChunkSize) {
+            super(affectedChunkSize);
         }
 
         @Override
-        public void setValuesChunk(@NotNull final Chunk<? extends Values> valuesChunk) {
-            objectValueChunk = valuesChunk.asObjectChunk();
+        public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
+            objectValueChunk = valueChunks[0].asObjectChunk();
         }
 
         @Override
@@ -45,15 +45,16 @@ public class BigIntegerDeltaOperator extends BaseObjectUpdateByOperator<BigInteg
             // read the value from the values chunk
             final BigInteger currentVal = objectValueChunk.get(pos);
 
-            // If the previous value is null, defer to the control object to decide what to do
-            if (lastVal == null) {
-                curVal = (control.nullBehavior() == NullBehavior.NullDominates)
-                        ? null
-                        : currentVal;
-            } else if (currentVal != null) {
-                curVal = currentVal.subtract(lastVal);
-            } else {
+            if (currentVal == null) {
                 curVal = null;
+            } else if (lastVal == null) {
+                curVal = control.nullBehavior() == NullBehavior.NullDominates
+                        ? null
+                        : (control.nullBehavior() == NullBehavior.ZeroDominates
+                            ? BigInteger.ZERO
+                            : currentVal);
+            } else {
+                curVal = currentVal.subtract(lastVal);
             }
 
             lastVal = currentVal;
@@ -94,7 +95,7 @@ public class BigIntegerDeltaOperator extends BaseObjectUpdateByOperator<BigInteg
 
     @NotNull
     @Override
-    public UpdateByOperator.Context makeUpdateContext(final int chunkSize) {
-        return new Context(chunkSize);
+    public UpdateByOperator.Context makeUpdateContext(final int affectedChunkSize, final int influencerChunkSize) {
+        return new Context(affectedChunkSize, influencerChunkSize);
     }
 }

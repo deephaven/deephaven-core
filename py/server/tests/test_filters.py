@@ -4,8 +4,9 @@
 
 import unittest
 
-from deephaven import read_csv, DHError
-from deephaven.filters import Filter, PatternMode, PatternFlag, and_, or_, not_, pattern
+from deephaven import new_table, read_csv, DHError
+from deephaven.column import string_col
+from deephaven.filters import Filter, PatternMode, and_, is_not_null, is_null, or_, not_, pattern
 from tests.testbase import BaseTestCase
 
 
@@ -20,7 +21,7 @@ class FilterTestCase(BaseTestCase):
 
     def test_pattern_filter(self):
         new_test_table = self.test_table.update("X = String.valueOf(d)")
-        regex_filter = pattern(PatternMode.MATCHES, "X", "...", flags=[PatternFlag.DOTALL])
+        regex_filter = pattern(PatternMode.MATCHES, "X", "(?s)...")
         with self.assertRaises(DHError):
             filtered_table = self.test_table.where(filters=regex_filter)
 
@@ -31,7 +32,7 @@ class FilterTestCase(BaseTestCase):
             filtered_table = new_test_table.where(filters=[regex_filter, "b < 100"])
 
         new_test_table = new_test_table.update("Y = String.valueOf(e)")
-        regex_filter1 = pattern(PatternMode.MATCHES, "Y", ".0.", flags=[PatternFlag.DOTALL])
+        regex_filter1 = pattern(PatternMode.MATCHES, "Y", "(?s).0.")
         filtered_table = new_test_table.where(filters=[regex_filter, regex_filter1])
         self.assertLessEqual(filtered_table.size, new_test_table.size)
 
@@ -51,6 +52,19 @@ class FilterTestCase(BaseTestCase):
         filtered_table_not = self.test_table.where(filter_not)
         self.assertEqual(filtered_table_or.size + filtered_table_not.size, self.test_table.size)
 
+    def test_is_null(self):
+        x = new_table([string_col("X", ["a", "b", "c", None, "e", "f"])])
+        x_is_null = new_table([string_col("X", [None])])
+        x_not_is_null = new_table([string_col("X", ["a", "b", "c", "e", "f"])])
+        self.assert_table_equals(x.where(is_null("X")), x_is_null)
+        self.assert_table_equals(x.where(not_(is_null("X"))), x_not_is_null)
+
+    def test_is_not_null(self):
+        x = new_table([string_col("X", ["a", "b", "c", None, "e", "f"])])
+        x_is_not_null = new_table([string_col("X", ["a", "b", "c", "e", "f"])])
+        x_not_is_not_null = new_table([string_col("X", [None])])
+        self.assert_table_equals(x.where(is_not_null("X")), x_is_not_null)
+        self.assert_table_equals(x.where(not_(is_not_null("X"))), x_not_is_not_null)
 
 if __name__ == '__main__':
     unittest.main()

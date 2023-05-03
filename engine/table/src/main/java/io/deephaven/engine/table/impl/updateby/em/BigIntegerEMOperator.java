@@ -28,7 +28,7 @@ public class BigIntegerEMOperator extends BaseBigNumberEMOperator<BigInteger> {
                                          Chunk<? extends Values>[] valueChunkArr,
                                          LongChunk<? extends Values> tsChunk,
                                          int len) {
-            setValuesChunk(valueChunkArr[0]);
+            setValueChunks(valueChunkArr);
 
             // chunk processing
             if (timestampColumnName == null) {
@@ -107,7 +107,7 @@ public class BigIntegerEMOperator extends BaseBigNumberEMOperator<BigInteger> {
                                 @Nullable final RowRedirection rowRedirection,
                                 @NotNull final OperationControl control,
                                 @Nullable final String timestampColumnName,
-                                final long windowScaleUnits,
+                                final double windowScaleUnits,
                                 final ColumnSource<?> valueSource,
                                 @NotNull final EmFunction aggFunction) {
         super(pair, affectingColumns, rowRedirection, control, timestampColumnName, windowScaleUnits, valueSource, aggFunction);
@@ -115,7 +115,7 @@ public class BigIntegerEMOperator extends BaseBigNumberEMOperator<BigInteger> {
 
     @NotNull
     @Override
-    public UpdateByOperator.Context makeUpdateContext(final int chunkSize) {
-        return new Context(chunkSize);
+    public UpdateByOperator.Context makeUpdateContext(final int affectedChunkSize, final int influencerChunkSize) {
+        return new Context(affectedChunkSize);
     }
 }

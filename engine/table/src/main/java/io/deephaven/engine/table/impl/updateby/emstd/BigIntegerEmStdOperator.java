@@ -20,8 +20,8 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 public class BigIntegerEmStdOperator extends BaseBigNumberEmStdOperator<BigInteger> {
     public class Context extends BaseBigNumberEmStdOperator<BigInteger>.Context {
-        protected Context(final int chunkSize) {
-            super(chunkSize);
+        protected Context(final int affectedChunkSize, final int influencerChunkSize) {
+            super(affectedChunkSize);
         }
 
         @Override
@@ -29,7 +29,7 @@ public class BigIntegerEmStdOperator extends BaseBigNumberEmStdOperator<BigInteg
                                          @NotNull final Chunk<? extends Values>[] valueChunkArr,
                                          @NotNull final LongChunk<? extends Values> tsChunk,
                                          final int len) {
-            setValuesChunk(valueChunkArr[0]);
+            setValueChunks(valueChunkArr);
 
             // chunk processing
             if (timestampColumnName == null) {
@@ -135,7 +135,7 @@ public class BigIntegerEmStdOperator extends BaseBigNumberEmStdOperator<BigInteg
                                    @Nullable final RowRedirection rowRedirection,
                                    @NotNull final OperationControl control,
                                    @Nullable final String timestampColumnName,
-                                   final long windowScaleUnits,
+                                   final double windowScaleUnits,
                                    final ColumnSource<?> valueSource,
                                    final boolean sourceRefreshing,
                                    @NotNull final MathContext mathContext) {
@@ -145,7 +145,7 @@ public class BigIntegerEmStdOperator extends BaseBigNumberEmStdOperator<BigInteg
 
     @NotNull
     @Override
-    public UpdateByOperator.Context makeUpdateContext(final int chunkSize) {
-        return new Context(chunkSize);
+    public UpdateByOperator.Context makeUpdateContext(final int affectedChunkSize, final int influencerChunkSize) {
+        return new Context(affectedChunkSize, influencerChunkSize);
     }
 }

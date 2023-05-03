@@ -11,6 +11,7 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.config_pb_ser
 import io.deephaven.javascript.proto.dhinternal.jspb.Map;
 import io.deephaven.web.client.api.storage.JsStorageService;
 import io.deephaven.web.client.fu.JsLog;
+import io.deephaven.web.client.fu.LazyPromise;
 import io.deephaven.web.client.ide.IdeConnection;
 import io.deephaven.web.shared.data.ConnectToken;
 import io.deephaven.web.shared.fu.JsBiConsumer;
@@ -108,14 +109,20 @@ public class CoreClient extends HasEventHandling {
                 JsLog.warn("username ignored for login type " + creds.getType());
             }
         }
-        Promise<Void> login =
-                ideConnection.connection.get().whenServerReady("login").then(ignore -> Promise.resolve((Void) null));
+
+        boolean alreadyRunning = ideConnection.connection.isAvailable();
+        WorkerConnection workerConnection = ideConnection.connection.get();
+        LazyPromise<Void> loginPromise = new LazyPromise<>();
+        ideConnection.addEventListenerOneShot(
+                EventPair.of(QueryInfoConstants.EVENT_CONNECT, ignore -> loginPromise.succeed(null)),
+                EventPair.of(CoreClient.EVENT_RECONNECT_AUTH_FAILED, loginPromise::fail));
+        Promise<Void> login = loginPromise.asPromise();
 
         // fetch configs and check session timeout
         login.then(ignore -> getServerConfigValues()).then(configs -> {
             for (String[] config : configs) {
                 if (config[0].equals("http.session.durationMs")) {
-                    ideConnection.connection.get().setSessionTimeoutMs(Double.parseDouble(config[1]));
+                    workerConnection.setSessionTimeoutMs(Double.parseDouble(config[1]));
                 }
             }
             return null;
@@ -123,6 +130,10 @@ public class CoreClient extends HasEventHandling {
             // Ignore this failure and suppress browser logging, we have a safe fallback
             return Promise.resolve((Object) null);
         });
+
+        if (alreadyRunning) {
+            ideConnection.connection.get().forceReconnect();
+        }
         return login;
     }
 
@@ -141,10 +152,6 @@ public class CoreClient extends HasEventHandling {
                         ideConnection.connection.get().metadata(),
                         c::apply),
                 ConfigurationConstantsResponse::getConfigValuesMap);
-    }
-
-    public Promise<UserInfo> getUserInfo() {
-        return Promise.resolve(new UserInfo());
     }
 
     public JsStorageService getStorageService() {

@@ -88,6 +88,7 @@ class NodeType(Enum):
     include_constituent=True. The constituent level is the lowest in a rollup table. These nodes have column names 
     and types from the source table of the RollupTable. """
 
+
 class SearchDisplayMode(Enum):
     """An enum of search display modes for layout hints"""
     DEFAULT = _JSearchDisplayMode.Default
@@ -96,6 +97,7 @@ class SearchDisplayMode(Enum):
     """Permit the search bar to be displayed, regardless of user or system settings."""
     HIDE = _JSearchDisplayMode.Hide
     """Hide the search bar, regardless of user or system settings."""
+
 
 class _FormatOperationsRecorder(Protocol):
     """A mixin for creating format operations to be applied to individual nodes of either RollupTable or TreeTable."""
@@ -1932,7 +1934,7 @@ class Table(JObjectWrapper):
                   by: Union[str, List[str]] = None) -> Table:
         """Creates a table with additional columns calculated from window-based aggregations of columns in this table.
         The aggregations are defined by the provided operations, which support incremental aggregations over the
-        corresponding rows in the this table. The aggregations will apply position or time-based windowing and
+        corresponding rows in the table. The aggregations will apply position or time-based windowing and
         compute the results over the entire table or each row group as identified by the provided key columns.
 
         Args:
@@ -2054,6 +2056,32 @@ class Table(JObjectWrapper):
             return TreeTable(j_tree_table=j_table.tree(id_col, parent_col), id_col=id_col, parent_col=parent_col)
         except Exception as e:
             raise DHError(e, "table tree operation failed.") from e
+
+    def await_update(self, timeout: int = None) -> bool:
+        """Waits until either this refreshing Table is updated or the timeout elapses if provided.
+
+        Args:
+            timeout (int): the maximum time to wait in milliseconds, default is None, meaning no timeout
+
+        Returns:
+            True when the table is updated or False when the timeout has been reached.
+
+        Raises:
+            DHError
+        """
+        if not self.is_refreshing:
+            raise DHError(message="await_update can only be called on refreshing tables.")
+
+        updated = True
+        try:
+            if timeout is not None:
+                updated = self.j_table.awaitUpdate(timeout)
+            else:
+                self.j_table.awaitUpdate()
+        except Exception as e:
+            raise DHError(e, "await_update was interrupted.") from e
+        else:
+            return updated
 
 
 class PartitionedTable(JObjectWrapper):

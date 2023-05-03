@@ -15,15 +15,10 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
+import io.deephaven.proto.backplane.grpc.UpdateByEmaTimescale;
 import io.deephaven.proto.backplane.grpc.UpdateByRequest;
 import io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn;
-import io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByCumulativeMax;
-import io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByCumulativeMin;
-import io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByCumulativeProduct;
-import io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByCumulativeSum;
-import io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma;
-import io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByEma.UpdateByEmaOptions;
-import io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.UpdateByFill;
+import io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOperation.UpdateByColumn.UpdateBySpec.*;
 import io.deephaven.proto.backplane.grpc.UpdateByRequest.UpdateByOptions;
 import io.deephaven.proto.util.Exceptions;
 import io.deephaven.server.session.SessionState;
@@ -147,6 +142,20 @@ public final class UpdateByGrpcImpl extends GrpcTableOperation<UpdateByRequest> 
                 return adaptFill(spec.getFill());
             case EMA:
                 return adaptEma(spec.getEma());
+
+            case ROLLING_SUM:
+                return adaptRollingSum(spec.getRollingSum());
+            case ROLLING_GROUP:
+                return adaptRollingGroup(spec.getRollingGroup());
+            case ROLLING_AVG:
+                return adaptRollingAvg(spec.getRollingAvg());
+            case ROLLING_MIN:
+                return adaptRollingMin(spec.getRollingMin());
+            case ROLLING_MAX:
+                return adaptRollingMax(spec.getRollingMax());
+            case ROLLING_PRODUCT:
+                return adaptRollingProduct(spec.getRollingProduct());
+
             case TYPE_NOT_SET:
             default:
                 throw new IllegalArgumentException("Unexpected spec type: " + spec.getTypeCase());
@@ -178,7 +187,7 @@ public final class UpdateByGrpcImpl extends GrpcTableOperation<UpdateByRequest> 
                 : EmaSpec.of(adaptTimescale(ema.getTimescale()));
     }
 
-    private static OperationControl adaptEmaOptions(UpdateByEmaOptions options) {
+    private static OperationControl adaptEmaOptions(UpdateByEma.UpdateByEmaOptions options) {
         final OperationControl.Builder builder = OperationControl.builder();
         if (options.hasOnNullValue()) {
             builder.onNullValue(adaptBadDataBehavior(options.getOnNullValue()));
@@ -190,6 +199,42 @@ public final class UpdateByGrpcImpl extends GrpcTableOperation<UpdateByRequest> 
             builder.bigValueContext(adaptMathContext(options.getBigValueContext()));
         }
         return builder.build();
+    }
+
+    private static RollingSumSpec adaptRollingSum(UpdateByColumn.UpdateBySpec.UpdateByRollingSum sum) {
+        return RollingSumSpec.of(
+                adaptTimescale(sum.getReverseTimescale()),
+                adaptTimescale(sum.getForwardTimescale()));
+    }
+
+    private static RollingGroupSpec adaptRollingGroup(UpdateByColumn.UpdateBySpec.UpdateByRollingGroup group) {
+        return RollingGroupSpec.of(
+                adaptTimescale(group.getReverseTimescale()),
+                adaptTimescale(group.getForwardTimescale()));
+    }
+
+    private static RollingAvgSpec adaptRollingAvg(UpdateByColumn.UpdateBySpec.UpdateByRollingAvg avg) {
+        return RollingAvgSpec.of(
+                adaptTimescale(avg.getReverseTimescale()),
+                adaptTimescale(avg.getForwardTimescale()));
+    }
+
+    private static RollingMinMaxSpec adaptRollingMin(UpdateByColumn.UpdateBySpec.UpdateByRollingMin min) {
+        return RollingMinMaxSpec.of(false,
+                adaptTimescale(min.getReverseTimescale()),
+                adaptTimescale(min.getForwardTimescale()));
+    }
+
+    private static RollingMinMaxSpec adaptRollingMax(UpdateByColumn.UpdateBySpec.UpdateByRollingMax max) {
+        return RollingMinMaxSpec.of(true,
+                adaptTimescale(max.getReverseTimescale()),
+                adaptTimescale(max.getForwardTimescale()));
+    }
+
+    private static RollingProductSpec adaptRollingProduct(UpdateByColumn.UpdateBySpec.UpdateByRollingProduct product) {
+        return RollingProductSpec.of(
+                adaptTimescale(product.getReverseTimescale()),
+                adaptTimescale(product.getForwardTimescale()));
     }
 
     private static MathContext adaptMathContext(io.deephaven.proto.backplane.grpc.MathContext bigValueContext) {
@@ -221,7 +266,7 @@ public final class UpdateByGrpcImpl extends GrpcTableOperation<UpdateByRequest> 
         }
     }
 
-    private static WindowScale adaptTimescale(UpdateByEma.UpdateByEmaTimescale timescale) {
+    private static WindowScale adaptTimescale(UpdateByEmaTimescale timescale) {
         switch (timescale.getTypeCase()) {
             case TICKS:
                 return WindowScale.ofTicks(timescale.getTicks().getTicks());

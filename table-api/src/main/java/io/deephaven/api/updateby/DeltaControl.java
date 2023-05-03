@@ -11,7 +11,8 @@ import org.immutables.value.Value;
 public abstract class DeltaControl {
     public static final DeltaControl NULL_DOMINATES = builder().nullDominates().build();
     public static final DeltaControl VALUE_DOMINATES = builder().valueDominates().build();
-    public static final DeltaControl DEFAULT = VALUE_DOMINATES;
+    public static final DeltaControl ZERO_DOMINATES = builder().zeroDominates().build();
+    public static final DeltaControl DEFAULT = NULL_DOMINATES;
 
     /**
      * Get a new {@link Builder} for construction {@link DeltaControl} objects.
@@ -29,7 +30,7 @@ public abstract class DeltaControl {
      */
     @Value.Default
     public NullBehavior nullBehavior() {
-        return NullBehavior.ValueDominates;
+        return NullBehavior.NullDominates;
     }
 
     /**
@@ -53,6 +54,16 @@ public abstract class DeltaControl {
          */
         default Builder valueDominates() {
             this.nullBehavior(NullBehavior.ValueDominates);
+            return this;
+        }
+
+        /**
+         * Set the {@link NullBehavior} for the result to {@link NullBehavior#ZeroDominates}
+         *
+         * @return this builder.
+         */
+        default Builder zeroDominates() {
+            this.nullBehavior(NullBehavior.ZeroDominates);
             return this;
         }
 

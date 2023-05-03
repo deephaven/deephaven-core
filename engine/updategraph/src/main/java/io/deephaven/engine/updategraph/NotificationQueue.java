@@ -4,7 +4,6 @@
 package io.deephaven.engine.updategraph;
 
 import io.deephaven.base.log.LogOutputAppendable;
-import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedNode;
 import org.jetbrains.annotations.NotNull;
 
@@ -43,23 +42,6 @@ public interface NotificationQueue {
          * @return true if this notification can be executed, false if it has unmet dependencies
          */
         boolean canExecute(long step);
-
-        /**
-         * @return the execution context this notification should be run under
-         */
-        ExecutionContext getExecutionContext();
-
-        /**
-         * Run under the execution context.
-         */
-        default void runInContext() {
-            ExecutionContext executionContext = getExecutionContext();
-            if (executionContext != null) {
-                executionContext.apply(this);
-            } else {
-                this.run();
-            }
-        }
     }
 
     /**
