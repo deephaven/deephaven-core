@@ -90,6 +90,9 @@ class InitialFilterExecution extends AbstractFilterExecution {
                 try {
                     if (!root.cancelled.get()) {
                         notification.run();
+                    } else {
+                        // we must ensure that we, the parent InitialFilterExecution, are notified of completion
+                        onChildCompleted();
                     }
                     if (Thread.interrupted()) {
                         // we would like to throw a query cancellation exception
