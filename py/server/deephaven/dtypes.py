@@ -25,7 +25,10 @@ _j_name_type_map: Dict[str, DType] = {}
 
 
 def _qst_custom_type(cls_name: str):
-    return _JQstType.find(_JTableTools.typeFromName(cls_name))
+    try:
+        return _JQstType.find(_JTableTools.typeFromName(cls_name))
+    except:
+        return None
 
 
 class DType:
