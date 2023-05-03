@@ -89,6 +89,7 @@ public class CoreClient extends HasEventHandling {
                     // Explicitly creating a new client, and not passing auth details, so this works pre-connection
                     c -> new ConfigServiceClient(getServerUrl(), CLIENT_OPTIONS).getAuthenticationConstants(
                             new AuthenticationConstantsRequest(),
+                            metadata,
                             c::apply),
                     AuthenticationConstantsResponse::getConfigValuesMap);
         });
