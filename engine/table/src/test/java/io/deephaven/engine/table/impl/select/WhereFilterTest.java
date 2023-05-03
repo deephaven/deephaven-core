@@ -13,7 +13,6 @@ import io.deephaven.api.filter.FilterIn;
 import io.deephaven.api.filter.FilterNot;
 import io.deephaven.api.filter.FilterPattern;
 import io.deephaven.api.filter.FilterPattern.Mode;
-import io.deephaven.api.filter.FilterQuick;
 import io.deephaven.api.literal.Literal;
 import junit.framework.TestCase;
 
@@ -235,13 +234,6 @@ public class WhereFilterTest extends TestCase {
         final FilterPattern pattern = FilterPattern.of(FOO, Pattern.compile("myregex"), Mode.FIND, false);
         regular(pattern, WhereFilterPatternImpl.class, str);
         regularInverse(pattern, WhereFilterPatternImpl.class, str);
-    }
-
-    public void testQuick() {
-        final String str = "FilterQuick(ColumnName(Foo), bar)";
-        final FilterQuick quick = FilterQuick.of(FOO, "bar");
-        regular(quick, WhereFilterQuickImpl.class, str);
-        regularInverse(quick, WhereFilterQuickImpl.class, str);
     }
 
     public void testInSingle() {

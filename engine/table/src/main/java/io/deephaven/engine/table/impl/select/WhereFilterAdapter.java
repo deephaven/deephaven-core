@@ -14,7 +14,6 @@ import io.deephaven.api.filter.FilterIsNull;
 import io.deephaven.api.filter.FilterNot;
 import io.deephaven.api.filter.FilterOr;
 import io.deephaven.api.filter.FilterPattern;
-import io.deephaven.api.filter.FilterQuick;
 import io.deephaven.api.literal.Literal;
 import io.deephaven.engine.table.impl.select.MatchFilter.MatchType;
 import io.deephaven.gui.table.filters.Condition;
@@ -56,10 +55,6 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
 
     public static WhereFilter of(FilterPattern pattern) {
         return WhereFilterPatternImpl.of(pattern);
-    }
-
-    public static WhereFilter of(FilterQuick quick) {
-        return WhereFilterQuickImpl.of(quick);
     }
 
     public static WhereFilter of(Function function) {
@@ -122,11 +117,6 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
         return inverted ? WhereFilterInvertedImpl.of(filter) : filter;
     }
 
-    public static WhereFilter of(FilterQuick quick, boolean inverted) {
-        final WhereFilter filter = of(quick);
-        return inverted ? WhereFilterInvertedImpl.of(filter) : filter;
-    }
-
     public static WhereFilter of(Function function, boolean inverted) {
         // TODO(deephaven-core#3740): Remove engine crutch on io.deephaven.api.Strings
         return WhereFilterFactory.getExpression(Strings.of(function, inverted));
@@ -181,11 +171,6 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
     @Override
     public WhereFilter visit(FilterPattern pattern) {
         return of(pattern, inverted);
-    }
-
-    @Override
-    public WhereFilter visit(FilterQuick quick) {
-        return of(quick, inverted);
     }
 
     @Override

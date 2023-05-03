@@ -158,7 +158,6 @@ public class FilterTest {
         visitor.visit((FilterOr) null);
         visitor.visit((FilterAnd) null);
         visitor.visit((FilterPattern) null);
-        visitor.visit((FilterQuick) null);
         visitor.visit((Function) null);
         visitor.visit((Method) null);
         visitor.visit(false);
@@ -202,11 +201,6 @@ public class FilterTest {
         @Override
         public String visit(FilterPattern pattern) {
             return of(pattern);
-        }
-
-        @Override
-        public String visit(FilterQuick quick) {
-            return of(quick);
         }
 
         @Override
@@ -271,12 +265,6 @@ public class FilterTest {
 
         @Override
         public CountingVisitor visit(FilterPattern pattern) {
-            ++count;
-            return this;
-        }
-
-        @Override
-        public CountingVisitor visit(FilterQuick quick) {
             ++count;
             return this;
         }

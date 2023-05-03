@@ -27,7 +27,6 @@ import io.deephaven.api.filter.FilterIsNull;
 import io.deephaven.api.filter.FilterNot;
 import io.deephaven.api.filter.FilterOr;
 import io.deephaven.api.filter.FilterPattern;
-import io.deephaven.api.filter.FilterQuick;
 import io.deephaven.api.snapshot.SnapshotWhenOptions;
 import io.deephaven.api.snapshot.SnapshotWhenOptions.Flag;
 import io.deephaven.api.literal.Literal;
@@ -819,20 +818,6 @@ class BatchTableRequestBuilder {
         public Condition visit(FilterPattern pattern) {
             // TODO(deephaven-core#3609): Update gRPC expression / filter / literal structures
             throw new UnsupportedOperationException("Can't build Condition with FilterPattern");
-        }
-
-        @Override
-        public Condition visit(FilterQuick quick) {
-            if (!(quick.expression() instanceof ColumnName)) {
-                // TODO(deephaven-core#3609): Update gRPC expression / filter / literal structures
-                throw new UnsupportedOperationException(
-                        "Can't build Condition with FilterMatches.expression not a ColumnName");
-            }
-            return Condition.newBuilder().setSearch(SearchCondition.newBuilder()
-                    .setSearchString(quick.quickSearch())
-                    .addOptionalReferences(reference(((ColumnName) quick.expression())))
-                    .build())
-                    .build();
         }
 
         @Override

@@ -15,7 +15,6 @@ import io.deephaven.api.filter.FilterIsNull;
 import io.deephaven.api.filter.FilterNot;
 import io.deephaven.api.filter.FilterOr;
 import io.deephaven.api.filter.FilterPattern;
-import io.deephaven.api.filter.FilterQuick;
 import io.deephaven.api.literal.Literal;
 import org.apache.commons.text.StringEscapeUtils;
 
@@ -109,21 +108,6 @@ public class Strings {
     public static String of(FilterPattern pattern, boolean encapsulate) {
         final String inner = of(pattern);
         return encapsulate ? encapsulate(inner) : inner;
-    }
-
-    public static String of(FilterQuick quick) {
-        return quick.toString();
-    }
-
-    public static String of(FilterQuick quick, boolean encapsulate, boolean invert) {
-        final String inner = of(quick);
-        if (invert) {
-            return "!" + encapsulate(inner);
-        }
-        if (encapsulate) {
-            return encapsulate(inner);
-        }
-        return inner;
     }
 
     public static String of(Pair pair) {
@@ -335,11 +319,6 @@ public class Strings {
         @Override
         public String visit(FilterPattern pattern) {
             return invert ? of(pattern.invert(), encapsulate) : of(pattern, encapsulate);
-        }
-
-        @Override
-        public String visit(FilterQuick quick) {
-            return of(quick, encapsulate, invert);
         }
 
         @Override

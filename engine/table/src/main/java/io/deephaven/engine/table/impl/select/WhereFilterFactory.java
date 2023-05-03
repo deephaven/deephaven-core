@@ -6,7 +6,6 @@ package io.deephaven.engine.table.impl.select;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.filter.FilterPattern;
 import io.deephaven.api.filter.FilterPattern.Mode;
-import io.deephaven.api.filter.FilterQuick;
 import io.deephaven.base.Pair;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.api.expression.AbstractExpressionFactory;
@@ -309,21 +308,6 @@ public class WhereFilterFactory {
         }
 
         return filters.toArray(WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY);
-    }
-
-    static WhereFilter quickFilter(FilterQuick quick, TableDefinition tableDefinition) {
-        if (!(quick.expression() instanceof ColumnName)) {
-            throw new IllegalArgumentException(
-                    "WhereFilterFactory quickFilter only supports filtering against a column name");
-        }
-        final String columnName = ((ColumnName) quick.expression()).name();
-        final ColumnDefinition<?> cd = tableDefinition.getColumn(columnName);
-        final WhereFilter filter =
-                WhereFilterFactory.createQuickFilter(cd, quick.quickSearch(), QuickFilterMode.NORMAL);
-        if (filter == null) {
-            throw new UnsupportedOperationException("Unable to create quick filter for " + cd);
-        }
-        return filter;
     }
 
     private static WhereFilter createQuickFilter(ColumnDefinition<?> colDef, String quickFilter,

@@ -26,7 +26,6 @@ import java.util.stream.Collectors;
  * @see FilterNot
  * @see FilterOr
  * @see FilterAnd
- * @see FilterQuick
  * @see FilterPattern
  * @see ColumnName
  * @see Function
@@ -220,8 +219,6 @@ public interface Filter extends Expression, Serializable {
         T visit(FilterAnd ands);
 
         T visit(FilterPattern pattern);
-
-        T visit(FilterQuick quick);
 
         T visit(Function function);
 
