@@ -28,4 +28,9 @@ public abstract class FilterQuick extends FilterBase {
     public final <T> T walk(Visitor<T> visitor) {
         return visitor.visit(this);
     }
+
+    @Override
+    public final String toString() {
+        return "FilterQuick(" + expression() + ", " + quickSearch() + ")";
+    }
 }

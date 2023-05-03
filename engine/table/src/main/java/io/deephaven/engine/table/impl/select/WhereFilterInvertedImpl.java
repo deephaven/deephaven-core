@@ -5,6 +5,7 @@ import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.BaseTable;
+import io.deephaven.util.annotations.VisibleForTesting;
 
 import java.util.List;
 import java.util.Objects;
@@ -105,6 +106,11 @@ class WhereFilterInvertedImpl implements WhereFilter {
 
     @Override
     public String toString() {
-        return "WhereFilterInvertedImpl(" + filter + ")";
+        return "not(" + filter + ")";
+    }
+
+    @VisibleForTesting
+    WhereFilter filter() {
+        return filter;
     }
 }

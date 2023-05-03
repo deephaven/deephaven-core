@@ -6,10 +6,18 @@ package io.deephaven.engine.table.impl.select;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.RawString;
 import io.deephaven.api.expression.Function;
+import io.deephaven.api.expression.Method;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.filter.FilterComparison;
+import io.deephaven.api.filter.FilterMatches;
+import io.deephaven.api.filter.FilterNot;
+import io.deephaven.api.filter.FilterPattern;
+import io.deephaven.api.filter.FilterPattern.Mode;
+import io.deephaven.api.filter.FilterQuick;
 import io.deephaven.api.literal.Literal;
 import junit.framework.TestCase;
+
+import java.util.regex.Pattern;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
@@ -22,171 +30,174 @@ public class WhereFilterTest extends TestCase {
     private static final Literal V42 = Literal.of(42L);
 
     public void testFooIsTrue() {
-        expect(Filter.isTrue(FOO), MatchFilter.class, "Foo in [true]");
+        regular(Filter.isTrue(FOO), MatchFilter.class, "Foo in [true]");
+        inverse(Filter.isTrue(FOO), MatchFilter.class, "Foo not in [true]");
     }
 
     public void testFooIsFalse() {
-        expect(Filter.isFalse(FOO), MatchFilter.class, "Foo in [false]");
-    }
-
-    public void testFooIsNotTrue() {
-        // This is *not* logically equivalent to "Foo in [false]"
-        // since we are really dealing with true, false, and null
-        opposite(Filter.isTrue(FOO), MatchFilter.class, "Foo not in [true]");
-    }
-
-    public void testFooIsNotFalse() {
-        // This is *not* logically equivalent to "Foo in [true]"
-        // since we are really dealing with true, false, and null
-        opposite(Filter.isFalse(FOO), MatchFilter.class, "Foo not in [false]");
+        regular(Filter.isFalse(FOO), MatchFilter.class, "Foo in [false]");
+        inverse(Filter.isFalse(FOO), MatchFilter.class, "Foo not in [false]");
     }
 
     public void testFooIsNull() {
-        expect(Filter.isNull(FOO), MatchFilter.class, "Foo in [null]");
+        regular(Filter.isNull(FOO), MatchFilter.class, "Foo in [null]");
+        inverse(Filter.isNull(FOO), MatchFilter.class, "Foo not in [null]");
     }
 
     public void testFooIsNotNull() {
-        expect(Filter.isNotNull(FOO), MatchFilter.class, "Foo not in [null]");
+        regular(Filter.isNotNull(FOO), MatchFilter.class, "Foo not in [null]");
+        inverse(Filter.isNotNull(FOO), MatchFilter.class, "Foo in [null]");
     }
 
     public void testFooAndBar() {
-        expect(Filter.and(Filter.isTrue(FOO), Filter.isTrue(BAR)), ConjunctiveFilter.class,
+        regular(Filter.and(Filter.isTrue(FOO), Filter.isTrue(BAR)), ConjunctiveFilter.class,
                 "ConjunctiveFilter([Foo in [true], Bar in [true]])");
-        opposite(Filter.and(Filter.isTrue(FOO), Filter.isTrue(BAR)), DisjunctiveFilter.class,
+        inverse(Filter.and(Filter.isTrue(FOO), Filter.isTrue(BAR)), DisjunctiveFilter.class,
                 "DisjunctiveFilter([Foo not in [true], Bar not in [true]])");
     }
 
     public void testFooOrBar() {
-        expect(Filter.or(Filter.isTrue(FOO), Filter.isTrue(BAR)), DisjunctiveFilter.class,
+        regular(Filter.or(Filter.isTrue(FOO), Filter.isTrue(BAR)), DisjunctiveFilter.class,
                 "DisjunctiveFilter([Foo in [true], Bar in [true]])");
-        opposite(Filter.or(Filter.isTrue(FOO), Filter.isTrue(BAR)), ConjunctiveFilter.class,
+        inverse(Filter.or(Filter.isTrue(FOO), Filter.isTrue(BAR)), ConjunctiveFilter.class,
                 "ConjunctiveFilter([Foo not in [true], Bar not in [true]])");
     }
 
     public void testRawString() {
-        expect(RawString.of("X * y > foo(Z)"), ConditionFilter.class, "X * y > foo(Z)");
-        opposite(RawString.of("X * y > foo(Z)"), ConditionFilter.class, "!(X * y > foo(Z))");
+        regular(RawString.of("X * y > foo(Z)"), ConditionFilter.class, "X * y > foo(Z)");
+        inverse(RawString.of("X * y > foo(Z)"), ConditionFilter.class, "!(X * y > foo(Z))");
     }
 
     public void testEq() {
-        expect(FilterComparison.eq(FOO, V42), MatchFilter.class, "Foo in [42]");
-        expect(FilterComparison.eq(V42, FOO), MatchFilter.class, "Foo in [42]");
-        expect(FilterComparison.eq(FOO, BAR), ConditionFilter.class, "Foo == Bar");
+        regular(FilterComparison.eq(FOO, V42), MatchFilter.class, "Foo in [42]");
+        regular(FilterComparison.eq(V42, FOO), MatchFilter.class, "Foo in [42]");
+        regular(FilterComparison.eq(FOO, BAR), ConditionFilter.class, "Foo == Bar");
 
-        opposite(FilterComparison.eq(FOO, V42), MatchFilter.class, "Foo not in [42]");
-        opposite(FilterComparison.eq(V42, FOO), MatchFilter.class, "Foo not in [42]");
-        opposite(FilterComparison.eq(FOO, BAR), ConditionFilter.class, "Foo != Bar");
+        inverse(FilterComparison.eq(FOO, V42), MatchFilter.class, "Foo not in [42]");
+        inverse(FilterComparison.eq(V42, FOO), MatchFilter.class, "Foo not in [42]");
+        inverse(FilterComparison.eq(FOO, BAR), ConditionFilter.class, "Foo != Bar");
     }
 
     public void testNeq() {
-        expect(FilterComparison.neq(FOO, V42), MatchFilter.class, "Foo not in [42]");
-        expect(FilterComparison.neq(V42, FOO), MatchFilter.class, "Foo not in [42]");
-        expect(FilterComparison.neq(FOO, BAR), ConditionFilter.class, "Foo != Bar");
+        regular(FilterComparison.neq(FOO, V42), MatchFilter.class, "Foo not in [42]");
+        regular(FilterComparison.neq(V42, FOO), MatchFilter.class, "Foo not in [42]");
+        regular(FilterComparison.neq(FOO, BAR), ConditionFilter.class, "Foo != Bar");
 
-        opposite(FilterComparison.neq(FOO, V42), MatchFilter.class, "Foo in [42]");
-        opposite(FilterComparison.neq(V42, FOO), MatchFilter.class, "Foo in [42]");
-        opposite(FilterComparison.neq(FOO, BAR), ConditionFilter.class, "Foo == Bar");
+        inverse(FilterComparison.neq(FOO, V42), MatchFilter.class, "Foo in [42]");
+        inverse(FilterComparison.neq(V42, FOO), MatchFilter.class, "Foo in [42]");
+        inverse(FilterComparison.neq(FOO, BAR), ConditionFilter.class, "Foo == Bar");
     }
 
     public void testGt() {
-        expect(FilterComparison.gt(FOO, V42), RangeConditionFilter.class,
+        regular(FilterComparison.gt(FOO, V42), RangeConditionFilter.class,
                 "RangeConditionFilter(Foo greater than 42)");
-        expect(FilterComparison.gt(V42, FOO), RangeConditionFilter.class,
+        regular(FilterComparison.gt(V42, FOO), RangeConditionFilter.class,
                 "RangeConditionFilter(Foo less than 42)");
-        expect(FilterComparison.gt(FOO, BAR), ConditionFilter.class, "Foo > Bar");
+        regular(FilterComparison.gt(FOO, BAR), ConditionFilter.class, "Foo > Bar");
 
-        opposite(FilterComparison.gt(FOO, V42), RangeConditionFilter.class,
+        inverse(FilterComparison.gt(FOO, V42), RangeConditionFilter.class,
                 "RangeConditionFilter(Foo less than or equal to 42)");
-        opposite(FilterComparison.gt(V42, FOO), RangeConditionFilter.class,
+        inverse(FilterComparison.gt(V42, FOO), RangeConditionFilter.class,
                 "RangeConditionFilter(Foo greater than or equal to 42)");
-        opposite(FilterComparison.gt(FOO, BAR), ConditionFilter.class, "Foo <= Bar");
+        inverse(FilterComparison.gt(FOO, BAR), ConditionFilter.class, "Foo <= Bar");
     }
 
     public void testGte() {
-        expect(FilterComparison.gte(FOO, V42), RangeConditionFilter.class,
+        regular(FilterComparison.gte(FOO, V42), RangeConditionFilter.class,
                 "RangeConditionFilter(Foo greater than or equal to 42)");
-        expect(FilterComparison.gte(V42, FOO), RangeConditionFilter.class,
+        regular(FilterComparison.gte(V42, FOO), RangeConditionFilter.class,
                 "RangeConditionFilter(Foo less than or equal to 42)");
-        expect(FilterComparison.gte(FOO, BAR), ConditionFilter.class, "Foo >= Bar");
+        regular(FilterComparison.gte(FOO, BAR), ConditionFilter.class, "Foo >= Bar");
 
-        opposite(FilterComparison.gte(FOO, V42), RangeConditionFilter.class,
+        inverse(FilterComparison.gte(FOO, V42), RangeConditionFilter.class,
                 "RangeConditionFilter(Foo less than 42)");
-        opposite(FilterComparison.gte(V42, FOO), RangeConditionFilter.class,
+        inverse(FilterComparison.gte(V42, FOO), RangeConditionFilter.class,
                 "RangeConditionFilter(Foo greater than 42)");
-        opposite(FilterComparison.gte(FOO, BAR), ConditionFilter.class, "Foo < Bar");
+        inverse(FilterComparison.gte(FOO, BAR), ConditionFilter.class, "Foo < Bar");
     }
 
     public void testLt() {
-        expect(FilterComparison.lt(FOO, V42), RangeConditionFilter.class,
+        regular(FilterComparison.lt(FOO, V42), RangeConditionFilter.class,
                 "RangeConditionFilter(Foo less than 42)");
-        expect(FilterComparison.lt(V42, FOO), RangeConditionFilter.class,
+        regular(FilterComparison.lt(V42, FOO), RangeConditionFilter.class,
                 "RangeConditionFilter(Foo greater than 42)");
-        expect(FilterComparison.lt(FOO, BAR), ConditionFilter.class, "Foo < Bar");
+        regular(FilterComparison.lt(FOO, BAR), ConditionFilter.class, "Foo < Bar");
 
-        opposite(FilterComparison.lt(FOO, V42), RangeConditionFilter.class,
+        inverse(FilterComparison.lt(FOO, V42), RangeConditionFilter.class,
                 "RangeConditionFilter(Foo greater than or equal to 42)");
-        opposite(FilterComparison.lt(V42, FOO), RangeConditionFilter.class,
+        inverse(FilterComparison.lt(V42, FOO), RangeConditionFilter.class,
                 "RangeConditionFilter(Foo less than or equal to 42)");
-        opposite(FilterComparison.lt(FOO, BAR), ConditionFilter.class, "Foo >= Bar");
+        inverse(FilterComparison.lt(FOO, BAR), ConditionFilter.class, "Foo >= Bar");
     }
 
     public void testLte() {
-        expect(FilterComparison.lte(FOO, V42), RangeConditionFilter.class,
+        regular(FilterComparison.lte(FOO, V42), RangeConditionFilter.class,
                 "RangeConditionFilter(Foo less than or equal to 42)");
-        expect(FilterComparison.lte(V42, FOO), RangeConditionFilter.class,
+        regular(FilterComparison.lte(V42, FOO), RangeConditionFilter.class,
                 "RangeConditionFilter(Foo greater than or equal to 42)");
-        expect(FilterComparison.lte(FOO, BAR), ConditionFilter.class, "Foo <= Bar");
+        regular(FilterComparison.lte(FOO, BAR), ConditionFilter.class, "Foo <= Bar");
 
-        opposite(FilterComparison.lte(FOO, V42), RangeConditionFilter.class,
+        inverse(FilterComparison.lte(FOO, V42), RangeConditionFilter.class,
                 "RangeConditionFilter(Foo greater than 42)");
-        opposite(FilterComparison.lte(V42, FOO), RangeConditionFilter.class,
+        inverse(FilterComparison.lte(V42, FOO), RangeConditionFilter.class,
                 "RangeConditionFilter(Foo less than 42)");
-        opposite(FilterComparison.lte(FOO, BAR), ConditionFilter.class, "Foo > Bar");
+        inverse(FilterComparison.lte(FOO, BAR), ConditionFilter.class, "Foo > Bar");
     }
 
     public void testFunction() {
-        expect(Function.of("someMethod"), ConditionFilter.class, "someMethod()");
-        expect(Filter.not(Function.of("someMethod")), ConditionFilter.class, "!someMethod()");
+        regular(Function.of("someMethod"), ConditionFilter.class, "someMethod()");
+        inverse(Function.of("someMethod"), ConditionFilter.class, "!someMethod()");
 
-        expect(Function.of("someMethod", FOO), ConditionFilter.class, "someMethod(Foo)");
-        expect(Filter.not(Function.of("someMethod", FOO)), ConditionFilter.class, "!someMethod(Foo)");
+        regular(Function.of("someMethod", FOO), ConditionFilter.class, "someMethod(Foo)");
+        inverse(Function.of("someMethod", FOO), ConditionFilter.class, "!someMethod(Foo)");
 
-        expect(Function.of("someMethod", FOO, BAR), ConditionFilter.class, "someMethod(Foo, Bar)");
-        expect(Filter.not(Function.of("someMethod", FOO, BAR)), ConditionFilter.class, "!someMethod(Foo, Bar)");
+        regular(Function.of("someMethod", FOO, BAR), ConditionFilter.class, "someMethod(Foo, Bar)");
+        inverse(Function.of("someMethod", FOO, BAR), ConditionFilter.class, "!someMethod(Foo, Bar)");
     }
 
     public void testFunctionIsNull() {
-        expect(Filter.isNull(Function.of("someMethod", FOO, BAR)), ConditionFilter.class,
+        regular(Filter.isNull(Function.of("someMethod", FOO, BAR)), ConditionFilter.class,
                 "isNull(someMethod(Foo, Bar))");
-        expect(Filter.not(Filter.isNull(Function.of("someMethod", FOO, BAR))), ConditionFilter.class,
+        inverse(Filter.isNull(Function.of("someMethod", FOO, BAR)), ConditionFilter.class,
                 "!isNull(someMethod(Foo, Bar))");
     }
 
     public void testFunctionIsNotNull() {
-        expect(Filter.isNotNull(Function.of("someMethod", FOO, BAR)), ConditionFilter.class,
+        regular(Filter.isNotNull(Function.of("someMethod", FOO, BAR)), ConditionFilter.class,
                 "!isNull(someMethod(Foo, Bar))");
-        expect(Filter.not(Filter.isNotNull(Function.of("someMethod", FOO, BAR))), ConditionFilter.class,
+        inverse(Filter.isNotNull(Function.of("someMethod", FOO, BAR)), ConditionFilter.class,
                 "isNull(someMethod(Foo, Bar))");
     }
 
+    public void testMethod() {
+        regular(Method.of(BAZ, "someMethod"), ConditionFilter.class, "Baz.someMethod()");
+        inverse(Method.of(BAZ, "someMethod"), ConditionFilter.class, "!Baz.someMethod()");
+
+        regular(Method.of(BAZ, "someMethod", FOO), ConditionFilter.class, "Baz.someMethod(Foo)");
+        inverse(Method.of(BAZ, "someMethod", FOO), ConditionFilter.class, "!Baz.someMethod(Foo)");
+
+        regular(Method.of(BAZ, "someMethod", FOO, BAR), ConditionFilter.class, "Baz.someMethod(Foo, Bar)");
+        inverse(Method.of(BAZ, "someMethod", FOO, BAR), ConditionFilter.class, "!Baz.someMethod(Foo, Bar)");
+    }
+
     public void testLiteralIsTrue() {
-        expect(Filter.isTrue(Literal.of(42)), ConditionFilter.class, "(int)42 == true");
-        opposite(Filter.isTrue(Literal.of(42)), ConditionFilter.class, "(int)42 != true");
+        regular(Filter.isTrue(Literal.of(42)), ConditionFilter.class, "(int)42 == true");
+        inverse(Filter.isTrue(Literal.of(42)), ConditionFilter.class, "(int)42 != true");
     }
 
     public void testLiteralIsFalse() {
-        expect(Filter.isFalse(Literal.of(42)), ConditionFilter.class, "(int)42 == false");
-        opposite(Filter.isFalse(Literal.of(42)), ConditionFilter.class, "(int)42 != false");
+        regular(Filter.isFalse(Literal.of(42)), ConditionFilter.class, "(int)42 == false");
+        inverse(Filter.isFalse(Literal.of(42)), ConditionFilter.class, "(int)42 != false");
     }
 
     public void testLiteralIsNull() {
-        expect(Filter.isNull(Literal.of(42)), ConditionFilter.class, "isNull((int)42)");
-        opposite(Filter.isNull(Literal.of(42)), ConditionFilter.class, "!isNull((int)42)");
+        regular(Filter.isNull(Literal.of(42)), ConditionFilter.class, "isNull((int)42)");
+        inverse(Filter.isNull(Literal.of(42)), ConditionFilter.class, "!isNull((int)42)");
     }
 
     public void testLiteralIsNotNull() {
-        expect(Filter.isNotNull(Literal.of(42)), ConditionFilter.class, "!isNull((int)42)");
-        opposite(Filter.isNotNull(Literal.of(42)), ConditionFilter.class, "isNull((int)42)");
+        regular(Filter.isNotNull(Literal.of(42)), ConditionFilter.class, "!isNull((int)42)");
+        inverse(Filter.isNotNull(Literal.of(42)), ConditionFilter.class, "isNull((int)42)");
     }
 
     public void testFilterTrue() {
@@ -207,15 +218,70 @@ public class WhereFilterTest extends TestCase {
         }
     }
 
-    private static void expect(Filter filter, Class<? extends WhereFilter> clazz, String expected) {
-        WhereFilter impl = WhereFilter.of(filter);
-        assertThat(impl).isInstanceOf(clazz);
-        // WhereFilter doesn't necessary implement equals, so we need to use the string repr
-        assertThat(impl.toString()).isEqualTo(expected);
+    public void testAnd() {
+        final Filter filter = Filter.and(Filter.isNull(FOO), Filter.isNotNull(BAR));
+        regular(filter, ConjunctiveFilter.class, "ConjunctiveFilter([Foo in [null], Bar not in [null]])");
+        inverse(filter, DisjunctiveFilter.class, "DisjunctiveFilter([Foo not in [null], Bar in [null]])");
     }
 
-    private static void opposite(Filter filter, Class<? extends WhereFilter> clazz, String expected) {
-        expect(Filter.not(filter), clazz, expected);
-        expect(filter.invert(), clazz, expected);
+    public void testOr() {
+        final Filter filter = Filter.or(Filter.isNull(FOO), Filter.isNotNull(BAR));
+        regular(filter, DisjunctiveFilter.class, "DisjunctiveFilter([Foo in [null], Bar not in [null]])");
+        inverse(filter, ConjunctiveFilter.class, "ConjunctiveFilter([Foo not in [null], Bar in [null]])");
+    }
+
+    public void testPattern() {
+        final String str = "FilterPattern(ColumnName(Foo), myregex, 0, FIND, false)";
+        final FilterPattern pattern = FilterPattern.of(FOO, Pattern.compile("myregex"), Mode.FIND, false);
+        regular(pattern, WhereFilterPatternImpl.class, str);
+        regularInverse(pattern, WhereFilterPatternImpl.class, str);
+    }
+
+    public void testQuick() {
+        final String str = "FilterQuick(ColumnName(Foo), bar)";
+        final FilterQuick quick = FilterQuick.of(FOO, "bar");
+        regular(quick, WhereFilterQuickImpl.class, str);
+        regularInverse(quick, WhereFilterQuickImpl.class, str);
+    }
+
+    public void testMatches() {
+        final FilterMatches matches = FilterMatches.builder()
+                .expression(FOO)
+                .addValues(Literal.of(40), Literal.of(42))
+                .build();
+        regular(matches, MatchFilter.class, "Foo in [40, 42]");
+        inverse(matches, MatchFilter.class, "Foo not in [40, 42]");
+    }
+
+    public void testRaw() {
+        final RawString filter = RawString.of("some_crazy_thing(x, y, z)");
+        regular(filter, ConditionFilter.class, "some_crazy_thing(x, y, z)");
+        inverse(filter, ConditionFilter.class, "!(some_crazy_thing(x, y, z))");
+    }
+
+    private static <T extends WhereFilter> T regular(Filter f, Class<T> clazz, String expected) {
+        WhereFilter filter = WhereFilter.of(f);
+        assertThat(filter).isInstanceOf(clazz);
+        // WhereFilter doesn't necessary implement equals, so we need to use the string repr
+        assertThat(filter.toString()).isEqualTo(expected);
+        {
+            // Ensure doubly nested negations produce the same results
+            final FilterNot<FilterNot<Filter>> doubleNot = Filter.not(Filter.not(f));
+            final WhereFilter filter2 = WhereFilter.of(doubleNot);
+            assertThat(filter2).isInstanceOf(clazz);
+            assertThat(filter2.toString()).isEqualTo(expected);
+        }
+        return clazz.cast(filter);
+    }
+
+    private static <T extends WhereFilter> T inverse(Filter f, Class<T> clazz, String expected) {
+        regular(Filter.not(f), clazz, expected);
+        return regular(f.invert(), clazz, expected);
+    }
+
+    private static void regularInverse(Filter f, Class<? extends WhereFilter> clazz, String expected) {
+        final WhereFilterInvertedImpl filter = inverse(f, WhereFilterInvertedImpl.class, "not(" + expected + ")");
+        final WhereFilter inner = filter.filter();
+        assertThat(inner).isInstanceOf(clazz);
     }
 }

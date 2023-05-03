@@ -65,13 +65,13 @@ public abstract class FilterPattern extends FilterBase {
 
     @Override
     public final String toString() {
-        return "FilterPattern{"
-                + "expression=" + expression()
-                + ", pattern=" + pattern().pattern()
-                + ", patternFlags=" + pattern().flags()
-                + ", mode=" + mode()
-                + ", invertPattern=" + invertPattern()
-                + "}";
+        return "FilterPattern("
+                + expression()
+                + ", " + pattern().pattern()
+                + ", " + pattern().flags()
+                + ", " + mode()
+                + ", " + invertPattern()
+                + ")";
     }
 
     // Implementation note: equals / hashCode are needed because Pattern does not override equals / hashCode

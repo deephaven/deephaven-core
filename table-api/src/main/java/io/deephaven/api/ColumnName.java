@@ -134,4 +134,9 @@ public abstract class ColumnName
     public final ColumnName existingColumn() {
         return this;
     }
+
+    @Override
+    public final String toString() {
+        return "ColumnName(" + name() + ")";
+    }
 }

@@ -66,4 +66,9 @@ public class WhereNoneFilter extends WhereFilterImpl {
     public boolean canMemoize() {
         return true;
     }
+
+    @Override
+    public String toString() {
+        return "WhereNoneFilter";
+    }
 }
