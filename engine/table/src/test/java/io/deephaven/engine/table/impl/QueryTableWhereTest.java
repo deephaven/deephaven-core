@@ -801,6 +801,7 @@ public abstract class QueryTableWhereTest {
             try (final SafeCloseable ignored = executionContext.open()) {
                 tableToFilter.where("slowCounter.applyAsInt(X) % 2 == 0", "fastCounter.applyAsInt(X) % 3 == 0");
             } catch (Exception e) {
+                log.error().append("extra thread caught ").append(e).endl();
                 caught.setValue(e);
             }
             final long end1 = System.currentTimeMillis();
@@ -813,7 +814,11 @@ public abstract class QueryTableWhereTest {
         t.interrupt();
 
         try {
-            t.join();
+            final long timeout_ms = 300_000; // 5 min
+            t.join(timeout_ms);
+            if (t.isAlive()) {
+                throw new RuntimeException("Thread did not terminate within " + timeout_ms + " ms");
+            }
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
