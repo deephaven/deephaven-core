@@ -338,8 +338,8 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
             final Table rightTableCoalesced = rightTable.coalesce();
             final Table rightTableFiltered;
             if (rangeValueType == double.class || rangeValueType == float.class) {
-                rightTableFiltered = rightTableCoalesced.where(String.format("!isNaN(%s) && !isNull(%s)",
-                        rangeMatch.rightRangeColumn().name(), rangeMatch.rightRangeColumn().name()));
+                rightTableFiltered = rightTableCoalesced.where(
+                        new ValidFloatingPointFilter(rangeMatch.rightRangeColumn()));
             } else {
                 rightTableFiltered = rightTableCoalesced.where(Filter.isNotNull(rangeMatch.rightRangeColumn()));
             }
