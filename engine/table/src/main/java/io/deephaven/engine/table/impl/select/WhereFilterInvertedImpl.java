@@ -10,75 +10,80 @@ import java.util.List;
 import java.util.Objects;
 
 class WhereFilterInvertedImpl implements WhereFilter {
-    private final WhereFilter impl;
 
-    public WhereFilterInvertedImpl(WhereFilter impl) {
-        this.impl = Objects.requireNonNull(impl);
+    static WhereFilter of(WhereFilter filter) {
+        return new WhereFilterInvertedImpl(filter);
+    }
+
+    private final WhereFilter filter;
+
+    private WhereFilterInvertedImpl(WhereFilter filter) {
+        this.filter = Objects.requireNonNull(filter);
     }
 
     @Override
     public List<String> getColumns() {
-        return impl.getColumns();
+        return filter.getColumns();
     }
 
     @Override
     public List<String> getColumnArrays() {
-        return impl.getColumnArrays();
+        return filter.getColumnArrays();
     }
 
     @Override
     public void init(TableDefinition tableDefinition) {
-        impl.init(tableDefinition);
+        filter.init(tableDefinition);
     }
 
     @Override
     public void validateSafeForRefresh(BaseTable<?> sourceTable) {
-        impl.validateSafeForRefresh(sourceTable);
+        filter.validateSafeForRefresh(sourceTable);
     }
 
     @Override
     public WritableRowSet filter(RowSet selection, RowSet fullSet, Table table, boolean usePrev) {
-        return impl.filterInverse(selection, fullSet, table, usePrev);
+        return filter.filterInverse(selection, fullSet, table, usePrev);
     }
 
     @Override
     public WritableRowSet filterInverse(RowSet selection, RowSet fullSet, Table table, boolean usePrev) {
-        return impl.filter(selection, fullSet, table, usePrev);
+        return filter.filter(selection, fullSet, table, usePrev);
     }
 
     @Override
     public boolean isSimpleFilter() {
-        return impl.isSimpleFilter();
+        return filter.isSimpleFilter();
     }
 
     @Override
     public boolean isRefreshing() {
-        return impl.isRefreshing();
+        return filter.isRefreshing();
     }
 
     @Override
     public void setRecomputeListener(RecomputeListener result) {
-        impl.setRecomputeListener(result);
+        filter.setRecomputeListener(result);
     }
 
     @Override
     public boolean isAutomatedFilter() {
-        return impl.isAutomatedFilter();
+        return filter.isAutomatedFilter();
     }
 
     @Override
     public void setAutomatedFilter(boolean value) {
-        impl.setAutomatedFilter(value);
+        filter.setAutomatedFilter(value);
     }
 
     @Override
     public boolean canMemoize() {
-        return impl.canMemoize();
+        return filter.canMemoize();
     }
 
     @Override
     public WhereFilter copy() {
-        return new WhereFilterInvertedImpl(impl.copy());
+        return new WhereFilterInvertedImpl(filter.copy());
     }
 
     @Override
@@ -88,18 +93,18 @@ class WhereFilterInvertedImpl implements WhereFilter {
         if (o == null || getClass() != o.getClass())
             return false;
         WhereFilterInvertedImpl that = (WhereFilterInvertedImpl) o;
-        return impl.equals(that.impl);
+        return filter.equals(that.filter);
     }
 
     @Override
     public int hashCode() {
-        return impl.hashCode();
+        // Use class hashcode to improve hashcode to account for if a filter and its inverse are both in the same
+        // HashMap
+        return WhereFilterInvertedImpl.class.hashCode() ^ filter.hashCode();
     }
 
     @Override
     public String toString() {
-        return "WhereFilterInvertedImpl{" +
-                "impl=" + impl +
-                '}';
+        return "WhereFilterInvertedImpl(" + filter + ")";
     }
 }

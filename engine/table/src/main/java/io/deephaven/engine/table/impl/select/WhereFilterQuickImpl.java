@@ -13,12 +13,11 @@ import java.util.Objects;
 
 class WhereFilterQuickImpl extends WhereFilterImpl {
 
-    static WhereFilter of(FilterQuick quick, boolean inverted) {
+    static WhereFilter of(FilterQuick quick) {
         if (!(quick.expression() instanceof ColumnName)) {
             throw new IllegalArgumentException("WhereFilterQuickImpl only supports filtering against a column name");
         }
-        final WhereFilterQuickImpl impl = new WhereFilterQuickImpl(quick);
-        return inverted ? new WhereFilterInvertedImpl(impl) : impl;
+        return new WhereFilterQuickImpl(quick);
     }
 
     private final FilterQuick quick;

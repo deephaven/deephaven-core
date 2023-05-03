@@ -160,6 +160,22 @@ public interface WhereFilter extends Filter {
         }
     }
 
+    /**
+     * Delegates to {@link #filter(RowSet, RowSet, Table, boolean)} when {@code invert == false} and
+     * {@link #filterInverse(RowSet, RowSet, Table, boolean)} when {@code invert == true}.
+     *
+     * @param selection the indices that should be filtered. The selection must be a subset of fullSet, and may include
+     *        rows that the engine determines need not be evaluated to produce the result. Implementations <em>may
+     *        not</em> mutate or {@link RowSet#close() close} {@code selection}.
+     * @param fullSet the complete RowSet of the table to filter. The fullSet is used for calculating variables like "i"
+     *        or "ii". Implementations <em>may not</em> mutate or {@link RowSet#close() close} {@code fullSet}.
+     * @param table the table to filter
+     * @param usePrev true if previous values should be used. Implementing previous value filtering is optional, and a
+     *        {@link PreviousFilteringNotSupported} exception may be thrown. If a PreviousFiltering exception is thrown,
+     *        then the caller must acquire the UpdateGraphProcessor lock.
+     * @param invert if the filter should be inverted
+     * @return The subset of selection; ownership passes to the caller
+     */
     @FinalDefault
     default WritableRowSet filter(RowSet selection, RowSet fullSet, Table table, boolean usePrev, boolean invert) {
         return invert

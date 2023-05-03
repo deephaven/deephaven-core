@@ -21,7 +21,7 @@ import io.deephaven.gui.table.filters.Condition;
 
 import java.util.Objects;
 
-public class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
+class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
 
     public static WhereFilter of(Filter filter) {
         return filter.walk(new WhereFilterAdapter(false));
@@ -32,10 +32,12 @@ public class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
     }
 
     public static WhereFilter of(FilterOr ors) {
+        // A || B || ... || Z
         return DisjunctiveFilter.of(ors);
     }
 
     public static WhereFilter of(FilterAnd ands) {
+        // A && B && ... && Z
         return ConjunctiveFilter.of(ands);
     }
 
@@ -43,16 +45,77 @@ public class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
         return FilterComparisonAdapter.of(comparison);
     }
 
+    public static WhereFilter of(FilterIsNull isNull) {
+        return isNull.expression().walk(new ExpressionIsNullAdapter(false));
+    }
+
+    public static WhereFilter of(FilterPattern pattern) {
+        return WhereFilterPatternImpl.of(pattern);
+    }
+
+    public static WhereFilter of(FilterQuick quick) {
+        return WhereFilterQuickImpl.of(quick);
+    }
+
+    public static WhereFilter of(FilterMatches matches) {
+        return MatchFilter.ofStringValues(matches, false);
+    }
+
+    public static WhereFilter of(Function function) {
+        // TODO(deephaven-core#3740): Remove engine crutch on io.deephaven.api.Strings
+        return WhereFilterFactory.getExpression(Strings.of(function));
+    }
+
+    public static WhereFilter of(Method method) {
+        // TODO(deephaven-core#3740): Remove engine crutch on io.deephaven.api.Strings
+        return WhereFilterFactory.getExpression(Strings.of(method));
+    }
+
+    public static WhereFilter of(RawString rawString) {
+        // TODO(deephaven-core#3740): Remove engine crutch on io.deephaven.api.Strings
+        return WhereFilterFactory.getExpression(Strings.of(rawString, false, false));
+    }
+
+    public static WhereFilter of(boolean literal) {
+        throw new UnsupportedOperationException("Should not be constructing literal boolean WhereFilter");
+    }
+
+    public static WhereFilter of(Filter filter, boolean inverted) {
+        return inverted ? filter.walk(new WhereFilterAdapter(true)) : of(filter);
+    }
+
+    public static WhereFilter of(FilterNot<?> not, boolean inverted) {
+        return inverted ? of(not.invert()) : of(not);
+    }
+
+    public static WhereFilter of(FilterOr ors, boolean inverted) {
+        // !A && !B && ... && !Z (inverted)
+        // A || B || ... || Z (regular)
+        return inverted ? of(ors.invert(), false) : of(ors);
+    }
+
+    public static WhereFilter of(FilterAnd ands, boolean inverted) {
+        // !A || !B || ... || !Z (inverted)
+        // A && B && ... && Z (regular)
+        return inverted ? of(ands.invert(), false) : of(ands);
+    }
+
+    public static WhereFilter of(FilterComparison comparison, boolean inverted) {
+        return of(inverted ? comparison.invert() : comparison);
+    }
+
     public static WhereFilter of(FilterIsNull isNull, boolean inverted) {
         return isNull.expression().walk(new ExpressionIsNullAdapter(inverted));
     }
 
     public static WhereFilter of(FilterPattern pattern, boolean inverted) {
-        return WhereFilterPatternImpl.of(pattern, inverted);
+        final WhereFilter filter = of(pattern);
+        return inverted ? WhereFilterInvertedImpl.of(filter) : filter;
     }
 
     public static WhereFilter of(FilterQuick quick, boolean inverted) {
-        return WhereFilterQuickImpl.of(quick, inverted);
+        final WhereFilter filter = of(quick);
+        return inverted ? WhereFilterInvertedImpl.of(filter) : filter;
     }
 
     public static WhereFilter of(FilterMatches matches, boolean inverted) {
@@ -69,10 +132,6 @@ public class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
         return WhereFilterFactory.getExpression(Strings.of(method, inverted));
     }
 
-    public static WhereFilter of(boolean literal) {
-        throw new UnsupportedOperationException("Should not be constructing literal boolean WhereFilter");
-    }
-
     public static WhereFilter of(RawString rawString, boolean inverted) {
         // TODO(deephaven-core#3740): Remove engine crutch on io.deephaven.api.Strings
         return WhereFilterFactory.getExpression(Strings.of(rawString, false, inverted));
@@ -85,13 +144,13 @@ public class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
     }
 
     @Override
-    public WhereFilter visit(FilterComparison comparison) {
-        return of(inverted ? comparison.invert() : comparison);
+    public WhereFilter visit(FilterNot<?> not) {
+        return of(not, inverted);
     }
 
     @Override
-    public WhereFilter visit(FilterNot<?> not) {
-        return inverted ? of(not.invert()) : of(not);
+    public WhereFilter visit(FilterComparison comparison) {
+        return of(comparison, inverted);
     }
 
     @Override
@@ -101,16 +160,12 @@ public class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
 
     @Override
     public WhereFilter visit(FilterOr ors) {
-        // !A && !B && ... && !Z
-        // A || B || ... || Z
-        return inverted ? of(ors.invert()) : of(ors);
+        return of(ors, inverted);
     }
 
     @Override
     public WhereFilter visit(FilterAnd ands) {
-        // !A || !B || ... || !Z
-        // A && B && ... && Z
-        return inverted ? of(ands.invert()) : of(ands);
+        return of(ands, inverted);
     }
 
     @Override

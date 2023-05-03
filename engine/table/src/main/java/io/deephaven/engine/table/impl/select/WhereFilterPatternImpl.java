@@ -5,7 +5,6 @@ package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.filter.FilterPattern;
-import io.deephaven.api.filter.FilterPattern.Mode;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableLongChunk;
@@ -28,12 +27,11 @@ final class WhereFilterPatternImpl extends WhereFilterImpl {
 
     private static final long serialVersionUID = 1L;
 
-    static WhereFilter of(FilterPattern pattern, boolean inverted) {
+    static WhereFilter of(FilterPattern pattern) {
         if (!(pattern.expression() instanceof ColumnName)) {
             throw new IllegalArgumentException("WhereFilterPatternImpl only supports filtering against a column name");
         }
-        final WhereFilterPatternImpl impl = new WhereFilterPatternImpl(pattern);
-        return inverted ? new WhereFilterInvertedImpl(impl) : impl;
+        return new WhereFilterPatternImpl(pattern);
     }
 
     private final FilterPattern filterPattern;

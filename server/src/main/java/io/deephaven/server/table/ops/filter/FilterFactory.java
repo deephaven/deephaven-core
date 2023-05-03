@@ -13,7 +13,6 @@ import io.deephaven.engine.table.impl.select.FormulaParserConfiguration;
 import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.engine.table.impl.select.RangeConditionFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
-import io.deephaven.engine.table.impl.select.WhereFilterAdapter;
 import io.deephaven.engine.table.impl.select.WhereFilterFactory;
 import io.deephaven.engine.table.impl.select.WhereNoneFilter;
 import io.deephaven.proto.backplane.grpc.CaseSensitivity;
@@ -239,11 +238,11 @@ public class FilterFactory implements FilterVisitor<WhereFilter> {
     public WhereFilter onContains(Reference reference, String searchString, CaseSensitivity caseSensitivity,
             MatchType matchType) {
         final int flags = caseSensitivity == CaseSensitivity.IGNORE_CASE ? Pattern.CASE_INSENSITIVE : 0;
-        return WhereFilterAdapter.of(FilterPattern.of(
+        return WhereFilter.of(FilterPattern.of(
                 ColumnName.of(reference.getColumnName()),
                 Pattern.compile(Pattern.quote(searchString), flags),
                 Mode.FIND,
-                matchType == MatchType.INVERTED), false);
+                matchType == MatchType.INVERTED));
     }
 
     @Override
@@ -251,11 +250,11 @@ public class FilterFactory implements FilterVisitor<WhereFilter> {
             MatchType matchType) {
         final int flags =
                 (caseSensitivity == CaseSensitivity.IGNORE_CASE ? Pattern.CASE_INSENSITIVE : 0) | Pattern.DOTALL;
-        return WhereFilterAdapter.of(FilterPattern.of(
+        return WhereFilter.of(FilterPattern.of(
                 ColumnName.of(reference.getColumnName()),
                 Pattern.compile(regex, flags),
                 Mode.MATCHES,
-                matchType == MatchType.INVERTED), false);
+                matchType == MatchType.INVERTED));
     }
 
     @Override

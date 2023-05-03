@@ -56,4 +56,14 @@ public class WhereNoneFilter extends WhereFilterImpl {
     public WhereFilter copy() {
         return INSTANCE;
     }
+
+    @Override
+    public boolean isRefreshing() {
+        return false;
+    }
+
+    @Override
+    public boolean canMemoize() {
+        return true;
+    }
 }
