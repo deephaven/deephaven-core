@@ -20,7 +20,6 @@ import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoField;
-import java.util.HashMap;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
@@ -29,11 +28,12 @@ import java.util.regex.Pattern;
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 
 /**
- * Utilities for Deephaven date/time storage and manipulation.
+ * Functions for working with time.
  */
 //TODO: @SuppressWarnings("unused")
 @SuppressWarnings("RegExpRedundantEscape")
 public class DateTimeUtils {
+    //TODO: rename class
     //TODO: document
     //TODO: remove Joda exposure
     //TODO: curate API
@@ -2014,133 +2014,6 @@ public class DateTimeUtils {
     // endregion
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-    //TODO: move out of here?
-    //TODO: does this need to be in this class?
-    /**
-     * A container object for the result of {@link #convertExpression(String)}, which includes the converted formula
-     * String, a String of instance variable declarations, and a map describing the names and types of these instance
-     * variables.
-     */
-    public static class Result {
-        private final String convertedFormula;
-        private final String instanceVariablesString;
-        private final HashMap<String, Class<?>> newVariables;
-
-        public Result(String convertedFormula, String instanceVariablesString, HashMap<String, Class<?>> newVariables) {
-            this.convertedFormula = convertedFormula;
-            this.instanceVariablesString = instanceVariablesString;
-            this.newVariables = newVariables;
-        }
-
-        public String getConvertedFormula() {
-            return convertedFormula;
-        }
-
-        public String getInstanceVariablesString() {
-            return instanceVariablesString;
-        }
-
-        public HashMap<String, Class<?>> getNewVariables() {
-            return newVariables;
-        }
-    }
-
-    //TODO: move out of here?
-    /**
-     * Converts an expression, replacing DateTime and Period literals with references to constant DateTime/Period
-     * instances.
-     *
-     * @param formula The formula to convert.
-     * @return A {@link Result} object, which includes the converted formula string, a string of instance variable
-     *         declarations, and a map describing the names and types of these instance variables.
-     *
-     * @throws Exception If any error occurs or a literal value cannot be parsed.
-     */
-    // TODO: This should probably be handled in LanguageParser.accept(CharLiteralExpr, StringBuilder).
-    public static Result convertExpression(String formula) throws Exception { // TODO: Why throw Exception?
-        final StringBuilder instanceVariablesString = new StringBuilder();
-        final HashMap<String, Class<?>> newVariables = new HashMap<>();
-
-        final StringBuilder convertedFormula = new StringBuilder();
-
-        int localDateIndex = 0;
-        int dateTimeIndex = 0;
-        int timeIndex = 0;
-        int periodIndex = 0;
-
-        final Matcher matcher = Pattern.compile("'[^']*'").matcher(formula);
-
-        while (matcher.find()) {
-            String s = formula.substring(matcher.start() + 1, matcher.end() - 1);
-
-            if (s.length() <= 1) {
-                // leave chars and also bad empty ones alone
-                continue;
-            }
-
-            if (parseDateTimeQuiet(s) != null) {
-                matcher.appendReplacement(convertedFormula, "_date" + dateTimeIndex);
-                instanceVariablesString.append("        private DateTime _date").append(dateTimeIndex)
-                        .append("=DateTimeUtils.toDateTime(\"")
-                        .append(formula, matcher.start() + 1, matcher.end() - 1).append("\");\n");
-                newVariables.put("_date" + dateTimeIndex, DateTime.class);
-
-                dateTimeIndex++;
-            } else if (convertDateQuiet(s) != null) {
-                matcher.appendReplacement(convertedFormula, "_localDate" + localDateIndex);
-                instanceVariablesString.append("        private java.time.LocalDate _localDate").append(localDateIndex)
-                        .append("=DateTimeUtils.convertDate(\"").append(formula, matcher.start() + 1, matcher.end() - 1)
-                        .append("\");\n");
-                newVariables.put("_localDate" + localDateIndex, LocalDate.class);
-                localDateIndex++;
-            } else if (parseNanosQuiet(s) != NULL_LONG) {
-                matcher.appendReplacement(convertedFormula, "_time" + timeIndex);
-                instanceVariablesString.append("        private long _time").append(timeIndex)
-                        .append("=DateTimeUtils.convertTime(\"").append(formula, matcher.start() + 1, matcher.end() - 1)
-                        .append("\");\n");
-                newVariables.put("_time" + timeIndex, long.class);
-
-                timeIndex++;
-            } else if (parsePeriodQuiet(s) != null) {
-                matcher.appendReplacement(convertedFormula, "_period" + periodIndex);
-                instanceVariablesString.append("        private Period _period").append(periodIndex)
-                        .append("=DateTimeUtils.convertPeriod(\"")
-                        .append(formula, matcher.start() + 1, matcher.end() - 1)
-                        .append("\");\n");
-                newVariables.put("_period" + periodIndex, Period.class);
-
-                periodIndex++;
-            } else if (convertLocalTimeQuiet(s) != null) {
-                matcher.appendReplacement(convertedFormula, "_localTime" + timeIndex);
-                instanceVariablesString.append("        private java.time.LocalTime _localTime").append(timeIndex)
-                        .append("=DateTimeUtils.convertLocalTime(\"")
-                        .append(formula, matcher.start() + 1, matcher.end() - 1).append("\");\n");
-                newVariables.put("_localTime" + timeIndex, LocalTime.class);
-                timeIndex++;
-            } else {
-                throw new Exception("Cannot parse datetime/time/period : " + s);
-            }
-        }
-
-        matcher.appendTail(convertedFormula);
-
-        return new Result(convertedFormula.toString(), instanceVariablesString.toString(), newVariables);
-    }
-
-
     private enum DateGroupId {
         // Date(1),
         Year(2, ChronoField.YEAR),
@@ -2184,7 +2057,7 @@ public class DateTimeUtils {
         return null;
     }
 
-
+    //TODO: RENAME: convertExpression : replace TimeLiteralReplacedExpression.convertExpression
     //TODO: RENAME: autoEpochToTime : epochAutoToDateTime
     //TODO: RENAME: autoEpochToNanos : epochAutoToEpochNanos
     //TODO: RIP: millisToDateAtMidnight: replace with dateTimeAtMidnight(epochMillisToDateTime(millis), timeZone)

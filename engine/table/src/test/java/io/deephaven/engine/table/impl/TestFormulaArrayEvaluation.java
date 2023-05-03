@@ -30,7 +30,7 @@ import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.test.types.OutOfBandTest;
-import io.deephaven.time.DateTimeUtils;
+import io.deephaven.time.TimeLiteralReplacedExpression;
 import org.apache.commons.lang3.tuple.ImmutableTriple;
 import org.apache.commons.lang3.tuple.Triple;
 import org.junit.Assert;
@@ -1147,7 +1147,7 @@ public class TestFormulaArrayEvaluation {
 
         for (String[] formulaPair : formulas) {
             try {
-                final DateTimeUtils.Result timeConversionResult = DateTimeUtils.convertExpression(formulaPair[0]);
+                final TimeLiteralReplacedExpression timeConversionResult = TimeLiteralReplacedExpression.convertExpression(formulaPair[0]);
                 final String convertedFilterFormula = timeConversionResult.getConvertedFormula();
                 final String shiftedFilterFormula = ShiftedColumnsFactory.convertToShiftedFormula(formulaPair[0]);
 

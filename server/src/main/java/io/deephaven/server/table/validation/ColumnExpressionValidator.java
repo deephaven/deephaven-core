@@ -26,6 +26,7 @@ import io.deephaven.engine.table.impl.select.WhereFilterFactory;
 import io.deephaven.engine.util.ColorUtilImpl;
 import io.deephaven.libs.GroovyStaticImports;
 import io.deephaven.time.DateTime;
+import io.deephaven.time.TimeLiteralReplacedExpression;
 import io.deephaven.time.DateTimeUtils;
 
 import java.lang.reflect.Method;
@@ -125,9 +126,9 @@ public class ColumnExpressionValidator extends VoidVisitorAdapter<Object> {
         final int indexOfEquals = originalExpression.indexOf('=');
         Assert.assertion(indexOfEquals != -1, "Expected formula expression");
         final String formulaString = originalExpression.substring(indexOfEquals + 1);
-        final DateTimeUtils.Result timeConversionResult;
+        final TimeLiteralReplacedExpression timeConversionResult;
         try {
-            timeConversionResult = DateTimeUtils.convertExpression(formulaString);
+            timeConversionResult = TimeLiteralReplacedExpression.convertExpression(formulaString);
         } catch (final Exception e) {
             // in theory not possible, since we already parsed it once
             throw new IllegalStateException("Error occurred while re-compiling formula for whitelist", e);

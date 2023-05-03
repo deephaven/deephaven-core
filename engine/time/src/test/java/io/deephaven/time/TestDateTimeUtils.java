@@ -642,13 +642,6 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         TestCase.assertEquals("doTestAutoEpochToTime(inTheYear1926)", 1926, doTestAutoEpochToTime(inTheYear1926));
     }
 
-    public void testConvertExpression() throws Exception {
-        TestCase.assertEquals("_date0", DateTimeUtils.convertExpression("'2010-01-01 NY'").getConvertedFormula());
-        TestCase.assertEquals("_time0", DateTimeUtils.convertExpression("'12:00'").getConvertedFormula());
-        TestCase.assertEquals("_period0", DateTimeUtils.convertExpression("'T1S'").getConvertedFormula());
-        TestCase.assertEquals("'g'", DateTimeUtils.convertExpression("'g'").getConvertedFormula());
-    }
-
     public void testMicrosOfMilli() {
         TestCase.assertEquals(0,
                 DateTimeUtils.microsOfMilli(DateTimeUtils.parseDateTime("2015-07-31T20:40 NY")));

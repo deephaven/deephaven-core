@@ -32,7 +32,7 @@ import io.deephaven.engine.util.caching.C14nUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.time.DateTime;
-import io.deephaven.time.DateTimeUtils;
+import io.deephaven.time.TimeLiteralReplacedExpression;
 import io.deephaven.util.type.TypeUtils;
 import io.deephaven.vector.ObjectVector;
 import io.deephaven.vector.Vector;
@@ -190,7 +190,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
         }
 
         try {
-            final DateTimeUtils.Result timeConversionResult = DateTimeUtils.convertExpression(formulaString);
+            final TimeLiteralReplacedExpression timeConversionResult = TimeLiteralReplacedExpression.convertExpression(formulaString);
             final QueryLanguageParser.Result result = FormulaAnalyzer.getCompiledFormula(columnDefinitionMap,
                     timeConversionResult);
             analyzedFormula = FormulaAnalyzer.analyze(formulaString, columnDefinitionMap,
