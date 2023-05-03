@@ -124,7 +124,8 @@ public class ShortFindRunsKernel {
         if (numRuns == 0) {
             return -1;
         }
-        short last = sortedValues.get(0);
+        short last = sortedValues.get(offsetsIn.get(0));
+        sortedValues.set(0, last);
         for(int ri = 1; ri < numRuns; ++ri) {
             final int nextOffset = offsetsIn.get(ri);
             final short next = sortedValues.get(nextOffset);

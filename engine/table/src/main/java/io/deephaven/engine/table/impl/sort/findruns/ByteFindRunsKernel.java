@@ -124,7 +124,8 @@ public class ByteFindRunsKernel {
         if (numRuns == 0) {
             return -1;
         }
-        byte last = sortedValues.get(0);
+        byte last = sortedValues.get(offsetsIn.get(0));
+        sortedValues.set(0, last);
         for(int ri = 1; ri < numRuns; ++ri) {
             final int nextOffset = offsetsIn.get(ri);
             final byte next = sortedValues.get(nextOffset);

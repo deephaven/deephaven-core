@@ -124,7 +124,8 @@ public class ObjectFindRunsKernel {
         if (numRuns == 0) {
             return -1;
         }
-        Object last = sortedValues.get(0);
+        Object last = sortedValues.get(offsetsIn.get(0));
+        sortedValues.set(0, last);
         for(int ri = 1; ri < numRuns; ++ri) {
             final int nextOffset = offsetsIn.get(ri);
             final Object next = sortedValues.get(nextOffset);

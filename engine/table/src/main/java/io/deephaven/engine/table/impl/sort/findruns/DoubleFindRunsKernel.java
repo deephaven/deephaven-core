@@ -124,7 +124,8 @@ public class DoubleFindRunsKernel {
         if (numRuns == 0) {
             return -1;
         }
-        double last = sortedValues.get(0);
+        double last = sortedValues.get(offsetsIn.get(0));
+        sortedValues.set(0, last);
         for(int ri = 1; ri < numRuns; ++ri) {
             final int nextOffset = offsetsIn.get(ri);
             final double next = sortedValues.get(nextOffset);
