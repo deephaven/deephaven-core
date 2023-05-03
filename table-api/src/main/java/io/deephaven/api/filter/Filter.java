@@ -22,11 +22,11 @@ import java.util.stream.Collectors;
  * @see io.deephaven.api.TableOperations#where(Collection)
  * @see FilterIsNull
  * @see FilterComparison
+ * @see FilterIn
  * @see FilterNot
  * @see FilterOr
  * @see FilterAnd
  * @see FilterQuick
- * @see FilterMatches
  * @see FilterPattern
  * @see ColumnName
  * @see Function
@@ -211,6 +211,8 @@ public interface Filter extends Expression, Serializable {
 
         T visit(FilterComparison comparison);
 
+        T visit(FilterIn in);
+
         T visit(FilterNot<?> not);
 
         T visit(FilterOr ors);
@@ -220,8 +222,6 @@ public interface Filter extends Expression, Serializable {
         T visit(FilterPattern pattern);
 
         T visit(FilterQuick quick);
-
-        T visit(FilterMatches matches);
 
         T visit(Function function);
 

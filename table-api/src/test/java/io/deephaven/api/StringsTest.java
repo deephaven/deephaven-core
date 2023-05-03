@@ -7,8 +7,8 @@ import io.deephaven.api.expression.Method;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.filter.FilterAnd;
 import io.deephaven.api.filter.FilterComparison;
+import io.deephaven.api.filter.FilterIn;
 import io.deephaven.api.filter.FilterIsNull;
-import io.deephaven.api.filter.FilterMatches;
 import io.deephaven.api.filter.FilterNot;
 import io.deephaven.api.filter.FilterOr;
 import io.deephaven.api.filter.FilterPattern;
@@ -75,6 +75,12 @@ public class StringsTest {
         }
 
         @Override
+        public Void visit(FilterIn in) {
+            ensureExplicitStringOf(FilterIn.class);
+            return null;
+        }
+
+        @Override
         public Void visit(FilterNot<?> not) {
             ensureExplicitStringOf(FilterNot.class);
             return null;
@@ -101,12 +107,6 @@ public class StringsTest {
         @Override
         public Void visit(FilterQuick quick) {
             ensureExplicitStringOf(FilterQuick.class);
-            return null;
-        }
-
-        @Override
-        public Void visit(FilterMatches matches) {
-            ensureExplicitStringOf(FilterMatches.class);
             return null;
         }
 

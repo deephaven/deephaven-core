@@ -3,8 +3,6 @@
  */
 package io.deephaven.engine.table.impl.select;
 
-import io.deephaven.api.ColumnName;
-import io.deephaven.api.filter.FilterMatches;
 import io.deephaven.api.literal.Literal;
 import io.deephaven.base.string.cache.CompressedString;
 import io.deephaven.engine.context.ExecutionContext;
@@ -28,15 +26,16 @@ public class MatchFilter extends WhereFilterImpl {
 
     private static final long serialVersionUID = 1L;
 
-    public static MatchFilter ofStringValues(FilterMatches matches, boolean inverted) {
-        if (!(matches.expression() instanceof ColumnName)) {
-            throw new IllegalArgumentException("MatchFilter only supports filtering against a column name");
-        }
+    static MatchFilter ofLiterals(
+            String columnName,
+            Collection<Literal> literals,
+            boolean inverted) {
         return new MatchFilter(
-                matches.caseInsensitive() ? CaseSensitivity.IgnoreCase : CaseSensitivity.MatchCase,
+                CaseSensitivity.MatchCase,
                 inverted ? MatchType.Inverted : MatchType.Regular,
-                ((ColumnName) matches.expression()).name(),
-                matches.values().stream().map(ColumnTypeConvertorCompatibleString::of).toArray(String[]::new));
+                columnName,
+                true,
+                literals.stream().map(ColumnTypeConvertorCompatibleString::of).toArray(String[]::new));
     }
 
     @NotNull
@@ -45,6 +44,7 @@ public class MatchFilter extends WhereFilterImpl {
     private final String[] strValues;
     private final boolean invertMatch;
     private final boolean caseInsensitive;
+    private final boolean excludeQueryScope;
     private boolean initialized = false;
 
     public enum MatchType {
@@ -61,6 +61,8 @@ public class MatchFilter extends WhereFilterImpl {
         this.strValues = null;
         this.invertMatch = (matchType == MatchType.Inverted);
         this.caseInsensitive = false;
+        // Query scope doesn't come into play when strValues == null.
+        this.excludeQueryScope = true;
     }
 
     public MatchFilter(String columnName, Object... values) {
@@ -72,10 +74,16 @@ public class MatchFilter extends WhereFilterImpl {
     }
 
     public MatchFilter(CaseSensitivity sensitivity, MatchType matchType, String columnName, String... strValues) {
+        this(sensitivity, matchType, columnName, false, strValues);
+    }
+
+    private MatchFilter(CaseSensitivity sensitivity, MatchType matchType, String columnName, boolean excludeQueryScope,
+            String... strValues) {
         this.columnName = columnName;
         this.strValues = strValues;
         this.caseInsensitive = (sensitivity == CaseSensitivity.IgnoreCase);
         this.invertMatch = (matchType == MatchType.Inverted);
+        this.excludeQueryScope = excludeQueryScope;
     }
 
     public MatchFilter renameFilter(String newName) {
@@ -86,7 +94,7 @@ public class MatchFilter extends WhereFilterImpl {
         if (strValues == null) {
             return new MatchFilter(matchType, newName, values);
         } else {
-            return new MatchFilter(sensitivity, matchType, newName, strValues);
+            return new MatchFilter(sensitivity, matchType, newName, excludeQueryScope, strValues);
         }
     }
 
@@ -127,11 +135,11 @@ public class MatchFilter extends WhereFilterImpl {
                     + "\" doesn't exist in this table, available columns: " + tableDefinition.getColumnNames());
         }
         final List<Object> valueList = new ArrayList<>();
-        final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
+        final QueryScope queryScope = excludeQueryScope ? null : ExecutionContext.getContext().getQueryScope();
         final ColumnTypeConvertor convertor =
                 ColumnTypeConvertorFactory.getConvertor(column.getDataType(), column.getName());
         for (String strValue : strValues) {
-            if (queryScope.hasParamName(strValue)) {
+            if (queryScope != null && queryScope.hasParamName(strValue)) {
                 Object paramValue = queryScope.readParamValue(strValue);
                 if (paramValue != null && paramValue.getClass().isArray()) {
                     ArrayTypeUtils.ArrayAccessor<?> accessor = ArrayTypeUtils.getArrayAccessor(paramValue);
@@ -413,6 +421,7 @@ public class MatchFilter extends WhereFilterImpl {
         final MatchFilter that = (MatchFilter) o;
         return invertMatch == that.invertMatch &&
                 caseInsensitive == that.caseInsensitive &&
+                excludeQueryScope == that.excludeQueryScope &&
                 Objects.equals(columnName, that.columnName) &&
                 Arrays.equals(values, that.values) &&
                 Arrays.equals(strValues, that.strValues);
@@ -420,7 +429,7 @@ public class MatchFilter extends WhereFilterImpl {
 
     @Override
     public int hashCode() {
-        int result = Objects.hash(columnName, invertMatch, caseInsensitive);
+        int result = Objects.hash(columnName, invertMatch, caseInsensitive, excludeQueryScope);
         result = 31 * result + Arrays.hashCode(values);
         result = 31 * result + Arrays.hashCode(strValues);
         return result;
@@ -437,7 +446,7 @@ public class MatchFilter extends WhereFilterImpl {
         final MatchFilter copy;
         if (strValues != null) {
             copy = new MatchFilter(caseInsensitive ? CaseSensitivity.IgnoreCase : CaseSensitivity.MatchCase,
-                    getMatchType(), columnName, strValues);
+                    getMatchType(), columnName, excludeQueryScope, strValues);
         } else {
             copy = new MatchFilter(getMatchType(), columnName, values);
         }

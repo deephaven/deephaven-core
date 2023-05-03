@@ -121,7 +121,7 @@ public abstract class FilterComparison extends FilterBase implements Serializabl
         return Operator.LESS_THAN.of(lhs, rhs);
     }
 
-    public static FilterComparison lte(Expression lhs, Expression rhs) {
+    public static FilterComparison leq(Expression lhs, Expression rhs) {
         return Operator.LESS_THAN_OR_EQUAL.of(lhs, rhs);
     }
 
@@ -129,7 +129,7 @@ public abstract class FilterComparison extends FilterBase implements Serializabl
         return Operator.GREATER_THAN.of(lhs, rhs);
     }
 
-    public static FilterComparison gte(Expression lhs, Expression rhs) {
+    public static FilterComparison geq(Expression lhs, Expression rhs) {
         return Operator.GREATER_THAN_OR_EQUAL.of(lhs, rhs);
     }
 

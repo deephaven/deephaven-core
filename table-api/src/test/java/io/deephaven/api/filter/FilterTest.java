@@ -153,12 +153,12 @@ public class FilterTest {
     public static void visitAll(Visitor<?> visitor) {
         visitor.visit((FilterIsNull) null);
         visitor.visit((FilterComparison) null);
+        visitor.visit((FilterIn) null);
         visitor.visit((FilterNot<?>) null);
         visitor.visit((FilterOr) null);
         visitor.visit((FilterAnd) null);
         visitor.visit((FilterPattern) null);
         visitor.visit((FilterQuick) null);
-        visitor.visit((FilterMatches) null);
         visitor.visit((Function) null);
         visitor.visit((Method) null);
         visitor.visit(false);
@@ -177,6 +177,12 @@ public class FilterTest {
         public String visit(FilterComparison comparison) {
             return of(comparison);
         }
+
+        @Override
+        public String visit(FilterIn in) {
+            return of(in);
+        }
+
 
         @Override
         public String visit(FilterNot<?> not) {
@@ -201,11 +207,6 @@ public class FilterTest {
         @Override
         public String visit(FilterQuick quick) {
             return of(quick);
-        }
-
-        @Override
-        public String visit(FilterMatches matches) {
-            return of(matches);
         }
 
         @Override
@@ -245,6 +246,12 @@ public class FilterTest {
         }
 
         @Override
+        public CountingVisitor visit(FilterIn in) {
+            ++count;
+            return this;
+        }
+
+        @Override
         public CountingVisitor visit(FilterNot<?> not) {
             ++count;
             return this;
@@ -270,12 +277,6 @@ public class FilterTest {
 
         @Override
         public CountingVisitor visit(FilterQuick quick) {
-            ++count;
-            return this;
-        }
-
-        @Override
-        public CountingVisitor visit(FilterMatches matches) {
             ++count;
             return this;
         }

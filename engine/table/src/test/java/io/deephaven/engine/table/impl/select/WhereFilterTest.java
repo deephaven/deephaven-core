@@ -9,7 +9,7 @@ import io.deephaven.api.expression.Function;
 import io.deephaven.api.expression.Method;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.filter.FilterComparison;
-import io.deephaven.api.filter.FilterMatches;
+import io.deephaven.api.filter.FilterIn;
 import io.deephaven.api.filter.FilterNot;
 import io.deephaven.api.filter.FilterPattern;
 import io.deephaven.api.filter.FilterPattern.Mode;
@@ -103,17 +103,17 @@ public class WhereFilterTest extends TestCase {
     }
 
     public void testGte() {
-        regular(FilterComparison.gte(FOO, V42), RangeConditionFilter.class,
+        regular(FilterComparison.geq(FOO, V42), RangeConditionFilter.class,
                 "RangeConditionFilter(Foo greater than or equal to 42)");
-        regular(FilterComparison.gte(V42, FOO), RangeConditionFilter.class,
+        regular(FilterComparison.geq(V42, FOO), RangeConditionFilter.class,
                 "RangeConditionFilter(Foo less than or equal to 42)");
-        regular(FilterComparison.gte(FOO, BAR), ConditionFilter.class, "Foo >= Bar");
+        regular(FilterComparison.geq(FOO, BAR), ConditionFilter.class, "Foo >= Bar");
 
-        inverse(FilterComparison.gte(FOO, V42), RangeConditionFilter.class,
+        inverse(FilterComparison.geq(FOO, V42), RangeConditionFilter.class,
                 "RangeConditionFilter(Foo less than 42)");
-        inverse(FilterComparison.gte(V42, FOO), RangeConditionFilter.class,
+        inverse(FilterComparison.geq(V42, FOO), RangeConditionFilter.class,
                 "RangeConditionFilter(Foo greater than 42)");
-        inverse(FilterComparison.gte(FOO, BAR), ConditionFilter.class, "Foo < Bar");
+        inverse(FilterComparison.geq(FOO, BAR), ConditionFilter.class, "Foo < Bar");
     }
 
     public void testLt() {
@@ -131,17 +131,17 @@ public class WhereFilterTest extends TestCase {
     }
 
     public void testLte() {
-        regular(FilterComparison.lte(FOO, V42), RangeConditionFilter.class,
+        regular(FilterComparison.leq(FOO, V42), RangeConditionFilter.class,
                 "RangeConditionFilter(Foo less than or equal to 42)");
-        regular(FilterComparison.lte(V42, FOO), RangeConditionFilter.class,
+        regular(FilterComparison.leq(V42, FOO), RangeConditionFilter.class,
                 "RangeConditionFilter(Foo greater than or equal to 42)");
-        regular(FilterComparison.lte(FOO, BAR), ConditionFilter.class, "Foo <= Bar");
+        regular(FilterComparison.leq(FOO, BAR), ConditionFilter.class, "Foo <= Bar");
 
-        inverse(FilterComparison.lte(FOO, V42), RangeConditionFilter.class,
+        inverse(FilterComparison.leq(FOO, V42), RangeConditionFilter.class,
                 "RangeConditionFilter(Foo greater than 42)");
-        inverse(FilterComparison.lte(V42, FOO), RangeConditionFilter.class,
+        inverse(FilterComparison.leq(V42, FOO), RangeConditionFilter.class,
                 "RangeConditionFilter(Foo less than 42)");
-        inverse(FilterComparison.lte(FOO, BAR), ConditionFilter.class, "Foo > Bar");
+        inverse(FilterComparison.leq(FOO, BAR), ConditionFilter.class, "Foo > Bar");
     }
 
     public void testFunction() {
@@ -244,13 +244,41 @@ public class WhereFilterTest extends TestCase {
         regularInverse(quick, WhereFilterQuickImpl.class, str);
     }
 
-    public void testMatches() {
-        final FilterMatches matches = FilterMatches.builder()
-                .expression(FOO)
-                .addValues(Literal.of(40), Literal.of(42))
-                .build();
-        regular(matches, MatchFilter.class, "Foo in [40, 42]");
-        inverse(matches, MatchFilter.class, "Foo not in [40, 42]");
+    public void testInSingle() {
+        final FilterIn in = FilterIn.of(FOO, Literal.of(40));
+        regular(in, MatchFilter.class, "Foo in [40]");
+        inverse(in, MatchFilter.class, "Foo not in [40]");
+    }
+
+    public void testInSingleString() {
+        final FilterIn in = FilterIn.of(FOO, Literal.of("mystr"));
+        regular(in, MatchFilter.class, "Foo in [mystr]");
+        inverse(in, MatchFilter.class, "Foo not in [mystr]");
+    }
+
+    public void testInLiterals() {
+        final FilterIn in = FilterIn.of(FOO, Literal.of(40), Literal.of(42));
+        regular(in, MatchFilter.class, "Foo in [40, 42]");
+        inverse(in, MatchFilter.class, "Foo not in [40, 42]");
+    }
+
+    public void testInLiteralsDifferentTypes() {
+        final FilterIn in = FilterIn.of(FOO, Literal.of(40), Literal.of("mystr"));
+        regular(in, MatchFilter.class, "Foo in [40, mystr]");
+        inverse(in, MatchFilter.class, "Foo not in [40, mystr]");
+    }
+
+    public void testInSingleNotLiteral() {
+        final FilterIn in = FilterIn.of(FOO, BAR);
+        regular(in, ConditionFilter.class, "Foo == Bar");
+        inverse(in, ConditionFilter.class, "Foo != Bar");
+    }
+
+
+    public void testInNotAllLiterals() {
+        final FilterIn in = FilterIn.of(FOO, Literal.of(40), BAR);
+        regular(in, DisjunctiveFilter.class, "DisjunctiveFilter([Foo in [40], Foo == Bar])");
+        inverse(in, ConjunctiveFilter.class, "ConjunctiveFilter([Foo not in [40], Foo != Bar])");
     }
 
     public void testRaw() {

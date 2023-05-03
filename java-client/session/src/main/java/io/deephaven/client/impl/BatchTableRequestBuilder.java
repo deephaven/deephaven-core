@@ -22,8 +22,8 @@ import io.deephaven.api.filter.Filter;
 import io.deephaven.api.filter.FilterAnd;
 import io.deephaven.api.filter.FilterComparison;
 import io.deephaven.api.filter.FilterComparison.Operator;
+import io.deephaven.api.filter.FilterIn;
 import io.deephaven.api.filter.FilterIsNull;
-import io.deephaven.api.filter.FilterMatches;
 import io.deephaven.api.filter.FilterNot;
 import io.deephaven.api.filter.FilterOr;
 import io.deephaven.api.filter.FilterPattern;
@@ -780,6 +780,12 @@ class BatchTableRequestBuilder {
         }
 
         @Override
+        public Condition visit(FilterIn in) {
+            // TODO(deephaven-core#3609): Update gRPC expression / filter / literal structures
+            throw new UnsupportedOperationException("Can't build Condition with FilterIn");
+        }
+
+        @Override
         public Condition visit(FilterNot<?> not) {
             // This is a shallow simplification that removes the need for setNot when it is not needed.
             final Filter invertedFilter = not.invertFilter();
@@ -827,21 +833,6 @@ class BatchTableRequestBuilder {
                     .addOptionalReferences(reference(((ColumnName) quick.expression())))
                     .build())
                     .build();
-        }
-
-        @Override
-        public Condition visit(FilterMatches matches) {
-            if (!(matches.expression() instanceof ColumnName)) {
-                // TODO(deephaven-core#3609): Update gRPC expression / filter / literal structures
-                throw new UnsupportedOperationException(
-                        "Can't build Condition with FilterMatches.expression not a ColumnName");
-            }
-            final InCondition.Builder builder = InCondition.newBuilder()
-                    .setTarget(Value.newBuilder().setReference(reference(((ColumnName) matches.expression()))).build());
-            for (Literal value : matches.values()) {
-                builder.addCandidates(Value.newBuilder().setLiteral(LiteralAdapter.of(value)));
-            }
-            return Condition.newBuilder().setIn(builder.build()).build();
         }
 
         @Override

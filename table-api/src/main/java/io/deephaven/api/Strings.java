@@ -10,8 +10,8 @@ import io.deephaven.api.expression.Method;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.filter.FilterAnd;
 import io.deephaven.api.filter.FilterComparison;
+import io.deephaven.api.filter.FilterIn;
 import io.deephaven.api.filter.FilterIsNull;
-import io.deephaven.api.filter.FilterMatches;
 import io.deephaven.api.filter.FilterNot;
 import io.deephaven.api.filter.FilterOr;
 import io.deephaven.api.filter.FilterPattern;
@@ -56,9 +56,24 @@ public class Strings {
         return String.format("%s %s %s", lhs, comparison.operator().javaOperator(), rhs);
     }
 
+    public static String of(FilterIn in) {
+        return in.toString();
+    }
+
     public static String of(FilterComparison comparison, boolean encapsulate) {
         final String inner = of(comparison);
         return encapsulate ? encapsulate(inner) : inner;
+    }
+
+    public static String of(FilterIn in, boolean encapsulate, boolean invert) {
+        final String inner = of(in);
+        if (invert) {
+            return "!" + encapsulate(inner);
+        }
+        if (encapsulate) {
+            return encapsulate(inner);
+        }
+        return inner;
     }
 
     public static String of(FilterIsNull isNull) {
@@ -102,21 +117,6 @@ public class Strings {
 
     public static String of(FilterQuick quick, boolean encapsulate, boolean invert) {
         final String inner = of(quick);
-        if (invert) {
-            return "!" + encapsulate(inner);
-        }
-        if (encapsulate) {
-            return encapsulate(inner);
-        }
-        return inner;
-    }
-
-    public static String of(FilterMatches matches) {
-        return matches.toString();
-    }
-
-    public static String of(FilterMatches matches, boolean encapsulate, boolean invert) {
-        final String inner = of(matches);
         if (invert) {
             return "!" + encapsulate(inner);
         }
@@ -313,6 +313,11 @@ public class Strings {
         }
 
         @Override
+        public String visit(FilterIn in) {
+            return of(in, encapsulate, invert);
+        }
+
+        @Override
         public String visit(FilterNot<?> not) {
             return not.filter().walk(new FilterAdapter(encapsulate, !invert));
         }
@@ -335,11 +340,6 @@ public class Strings {
         @Override
         public String visit(FilterQuick quick) {
             return of(quick, encapsulate, invert);
-        }
-
-        @Override
-        public String visit(FilterMatches matches) {
-            return of(matches, encapsulate, invert);
         }
 
         @Override
