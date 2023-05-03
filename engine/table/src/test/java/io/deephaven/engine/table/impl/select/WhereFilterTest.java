@@ -269,8 +269,20 @@ public class WhereFilterTest extends TestCase {
 
     public void testInNotAllLiterals() {
         final FilterIn in = FilterIn.of(FOO, Literal.of(40), BAR);
-        regular(in, DisjunctiveFilter.class, "DisjunctiveFilter([Foo in [40], Foo == Bar])");
-        inverse(in, ConjunctiveFilter.class, "ConjunctiveFilter([Foo not in [40], Foo != Bar])");
+        regular(in, ConditionFilter.class, "(Foo == (int)40) || (Foo == Bar)");
+        inverse(in, ConditionFilter.class, "(Foo != (int)40) && (Foo != Bar)");
+    }
+
+    public void testLiteralInColumnName() {
+        final FilterIn in = FilterIn.of(Literal.of(42), FOO);
+        regular(in, MatchFilter.class, "Foo in [42]");
+        inverse(in, MatchFilter.class, "Foo not in [42]");
+    }
+
+    public void testLiteralInMultipleColumns() {
+        final FilterIn in = FilterIn.of(Literal.of(42), FOO, BAR, BAZ);
+        regular(in, DisjunctiveFilter.class, "DisjunctiveFilter([Foo in [42], Bar in [42], Baz in [42]])");
+        inverse(in, ConjunctiveFilter.class, "ConjunctiveFilter([Foo not in [42], Bar not in [42], Baz not in [42]])");
     }
 
     public void testRaw() {

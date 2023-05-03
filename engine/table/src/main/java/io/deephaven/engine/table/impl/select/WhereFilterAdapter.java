@@ -98,14 +98,27 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
     }
 
     public static WhereFilter of(FilterIn in, boolean inverted) {
-        if (in.expression() instanceof ColumnName && in.values().stream().allMatch(p -> p instanceof Literal)) {
-            return MatchFilter.ofLiterals(
-                    ((ColumnName) in.expression()).name(),
-                    in.values().stream().map(Literal.class::cast).collect(Collectors.toList()),
-                    inverted);
+        if (in.values().size() == 1) {
+            // Simplified case, handles transpositions of LHS / RHS most optimally
+            final FilterComparison eq = FilterComparison.eq(in.expression(), in.values().get(0));
+            return of(eq, inverted);
         }
-        // Delegate to comparisons
-        return of(inverted ? in.inverseAsComparisons() : in.asComparisons());
+        if (in.expression() instanceof ColumnName) {
+            // In the case where LHS is a column name, we want to be as efficient as possible and only read that column
+            // data once. MatchFilter allows us to do that.
+            if (in.values().stream().allMatch(p -> p instanceof Literal)) {
+                return MatchFilter.ofLiterals(
+                        ((ColumnName) in.expression()).name(),
+                        in.values().stream().map(Literal.class::cast).collect(Collectors.toList()),
+                        inverted);
+            }
+            // It would be nice if there was a way to allow efficient read access with Disjunctive / Conjunctive
+            // constructions. Otherwise, we fall back to Condition filter.
+            // TODO(deephaven-core#3791): Non-vectorized version of Disjunctive / Conjunctive filters
+            // TODO(deephaven-core#3740): Remove engine crutch on io.deephaven.api.Strings
+            return WhereFilterFactory.getExpression(Strings.of(in.asComparisons(), inverted));
+        }
+        return of(in.asComparisons(), inverted);
     }
 
     public static WhereFilter of(FilterIsNull isNull, boolean inverted) {

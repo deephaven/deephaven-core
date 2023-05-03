@@ -61,22 +61,6 @@ public abstract class FilterIn extends FilterBase {
         return Filter.or(values().stream().map(this::expEq).collect(Collectors.toList()));
     }
 
-    /**
-     * Creates the logical equivalent of {@code not(this)} as an {@link Filter#and(Collection)} with
-     * {@link FilterComparison#neq(Expression, Expression)} between {@link #expression()} and each {@link #values()}.
-     *
-     * <p>
-     * Equivalent to
-     * {@code Filter.and(values().stream().map(rhs -> FilterComparison.neq(expression(), rhs)).collect(Collectors.toList()))}.
-     *
-     * @return the inverse filter as comparisons
-     * @see Filter#and(Collection)
-     * @see FilterComparison#neq(Expression, Expression)
-     */
-    public final Filter inverseAsComparisons() {
-        return Filter.and(values().stream().map(this::expNeq).collect(Collectors.toList()));
-    }
-
     @Check
     final void checkNotEmpty() {
         if (values().isEmpty()) {

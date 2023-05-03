@@ -31,11 +31,9 @@ public class MatchFilter extends WhereFilterImpl {
             Collection<Literal> literals,
             boolean inverted) {
         return new MatchFilter(
-                CaseSensitivity.MatchCase,
                 inverted ? MatchType.Inverted : MatchType.Regular,
                 columnName,
-                true,
-                literals.stream().map(ColumnTypeConvertorCompatibleString::of).toArray(String[]::new));
+                literals.stream().map(AsObject::of).toArray());
     }
 
     @NotNull
@@ -44,7 +42,6 @@ public class MatchFilter extends WhereFilterImpl {
     private final String[] strValues;
     private final boolean invertMatch;
     private final boolean caseInsensitive;
-    private final boolean excludeQueryScope;
     private boolean initialized = false;
 
     public enum MatchType {
@@ -61,8 +58,6 @@ public class MatchFilter extends WhereFilterImpl {
         this.strValues = null;
         this.invertMatch = (matchType == MatchType.Inverted);
         this.caseInsensitive = false;
-        // Query scope doesn't come into play when strValues == null.
-        this.excludeQueryScope = true;
     }
 
     public MatchFilter(String columnName, Object... values) {
@@ -74,16 +69,10 @@ public class MatchFilter extends WhereFilterImpl {
     }
 
     public MatchFilter(CaseSensitivity sensitivity, MatchType matchType, String columnName, String... strValues) {
-        this(sensitivity, matchType, columnName, false, strValues);
-    }
-
-    private MatchFilter(CaseSensitivity sensitivity, MatchType matchType, String columnName, boolean excludeQueryScope,
-            String... strValues) {
         this.columnName = columnName;
         this.strValues = strValues;
         this.caseInsensitive = (sensitivity == CaseSensitivity.IgnoreCase);
         this.invertMatch = (matchType == MatchType.Inverted);
-        this.excludeQueryScope = excludeQueryScope;
     }
 
     public MatchFilter renameFilter(String newName) {
@@ -94,7 +83,7 @@ public class MatchFilter extends WhereFilterImpl {
         if (strValues == null) {
             return new MatchFilter(matchType, newName, values);
         } else {
-            return new MatchFilter(sensitivity, matchType, newName, excludeQueryScope, strValues);
+            return new MatchFilter(sensitivity, matchType, newName, strValues);
         }
     }
 
@@ -139,7 +128,7 @@ public class MatchFilter extends WhereFilterImpl {
             return;
         }
         final List<Object> valueList = new ArrayList<>();
-        final QueryScope queryScope = excludeQueryScope ? null : ExecutionContext.getContext().getQueryScope();
+        final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
         final ColumnTypeConvertor convertor =
                 ColumnTypeConvertorFactory.getConvertor(column.getDataType(), column.getName());
         for (String strValue : strValues) {
@@ -425,7 +414,6 @@ public class MatchFilter extends WhereFilterImpl {
         final MatchFilter that = (MatchFilter) o;
         return invertMatch == that.invertMatch &&
                 caseInsensitive == that.caseInsensitive &&
-                excludeQueryScope == that.excludeQueryScope &&
                 Objects.equals(columnName, that.columnName) &&
                 Arrays.equals(values, that.values) &&
                 Arrays.equals(strValues, that.strValues);
@@ -433,7 +421,7 @@ public class MatchFilter extends WhereFilterImpl {
 
     @Override
     public int hashCode() {
-        int result = Objects.hash(columnName, invertMatch, caseInsensitive, excludeQueryScope);
+        int result = Objects.hash(columnName, invertMatch, caseInsensitive);
         result = 31 * result + Arrays.hashCode(values);
         result = 31 * result + Arrays.hashCode(strValues);
         return result;
@@ -450,7 +438,7 @@ public class MatchFilter extends WhereFilterImpl {
         final MatchFilter copy;
         if (strValues != null) {
             copy = new MatchFilter(caseInsensitive ? CaseSensitivity.IgnoreCase : CaseSensitivity.MatchCase,
-                    getMatchType(), columnName, excludeQueryScope, strValues);
+                    getMatchType(), columnName, strValues);
         } else {
             copy = new MatchFilter(getMatchType(), columnName, values);
         }
@@ -461,55 +449,55 @@ public class MatchFilter extends WhereFilterImpl {
         return copy;
     }
 
-    private enum ColumnTypeConvertorCompatibleString implements Literal.Visitor<String> {
+    private enum AsObject implements Literal.Visitor<Object> {
         INSTANCE;
 
-        public static String of(Literal literal) {
+        public static Object of(Literal literal) {
             return literal.walk(INSTANCE);
         }
 
         @Override
-        public String visit(boolean literal) {
-            return Boolean.toString(literal);
+        public Object visit(boolean literal) {
+            return literal;
         }
 
         @Override
-        public String visit(char literal) {
-            return Character.toString(literal);
+        public Object visit(char literal) {
+            return literal;
         }
 
         @Override
-        public String visit(byte literal) {
-            return Byte.toString(literal);
+        public Object visit(byte literal) {
+            return literal;
         }
 
         @Override
-        public String visit(short literal) {
-            return Short.toString(literal);
+        public Object visit(short literal) {
+            return literal;
         }
 
         @Override
-        public String visit(int literal) {
-            return Integer.toString(literal);
+        public Object visit(int literal) {
+            return literal;
         }
 
         @Override
-        public String visit(long literal) {
-            return Long.toString(literal);
+        public Object visit(long literal) {
+            return literal;
         }
 
         @Override
-        public String visit(float literal) {
-            return Float.toString(literal);
+        public Object visit(float literal) {
+            return literal;
         }
 
         @Override
-        public String visit(double literal) {
-            return Double.toString(literal);
+        public Object visit(double literal) {
+            return literal;
         }
 
         @Override
-        public String visit(String literal) {
+        public Object visit(String literal) {
             return literal;
         }
     }
