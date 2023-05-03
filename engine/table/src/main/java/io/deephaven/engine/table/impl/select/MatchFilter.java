@@ -126,13 +126,17 @@ public class MatchFilter extends WhereFilterImpl {
 
     @Override
     public synchronized void init(TableDefinition tableDefinition) {
-        if (initialized || strValues == null) {
+        if (initialized) {
             return;
         }
         ColumnDefinition<?> column = tableDefinition.getColumn(columnName);
         if (column == null) {
             throw new RuntimeException("Column \"" + columnName
                     + "\" doesn't exist in this table, available columns: " + tableDefinition.getColumnNames());
+        }
+        if (strValues == null) {
+            initialized = true;
+            return;
         }
         final List<Object> valueList = new ArrayList<>();
         final QueryScope queryScope = excludeQueryScope ? null : ExecutionContext.getContext().getQueryScope();
