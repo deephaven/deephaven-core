@@ -10,6 +10,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.updateby.em.*;
+import io.deephaven.engine.table.impl.updateby.emstd.*;
 import io.deephaven.engine.table.impl.updateby.delta.*;
 import io.deephaven.engine.table.impl.updateby.fill.*;
 import io.deephaven.engine.table.impl.updateby.minmax.*;
@@ -88,6 +89,9 @@ public class UpdateByOperatorFactory {
         if (v.rollingGroupSpec != null) {
             v.ops.add(v.makeRollingGroupOperator(v.rollingGroupPairs, source, v.rollingGroupSpec));
         }
+
+        // Each EmStd operator needs to be paired with an Ema operator. If one already exists for the input column,
+        // use it. Otherwise create one but hide the output columns.
         return v.ops;
     }
 
@@ -336,6 +340,20 @@ public class UpdateByOperatorFactory {
             Arrays.stream(pairs)
                     .filter(p -> !isTimeBased || !p.rightColumn().equals(timestampCol))
                     .map(fc -> makeEmMinMaxOperator(fc,
+                            source,
+                            spec))
+                    .forEach(ops::add);
+            return null;
+        }
+
+        @Override
+        public Void visit(@NotNull final EmStdSpec spec) {
+            final boolean isTimeBased = spec.timeScale().isTimeBased();
+            final String timestampCol = spec.timeScale().timestampCol();
+
+            Arrays.stream(pairs)
+                    .filter(p -> !isTimeBased || !p.rightColumn().equals(timestampCol))
+                    .map(fc -> makeEmStdOperator(fc,
                             source,
                             spec))
                     .forEach(ops::add);
@@ -665,6 +683,59 @@ public class UpdateByOperatorFactory {
             }
 
             throw new IllegalArgumentException("Can not perform EmMinMax on type " + csType);
+        }
+
+        private UpdateByOperator makeEmStdOperator(@NotNull final MatchPair pair,
+                @NotNull final Table source,
+                @NotNull final EmStdSpec spec) {
+            // noinspection rawtypes
+            final ColumnSource columnSource = source.getColumnSource(pair.rightColumn);
+            final Class<?> csType = columnSource.getType();
+
+            final String[] affectingColumns;
+            if (spec.timeScale().timestampCol() == null) {
+                affectingColumns = new String[] {pair.rightColumn};
+            } else {
+                affectingColumns = new String[] {spec.timeScale().timestampCol(), pair.rightColumn};
+            }
+
+            // use the correct units from the EmaSpec (depending on if Time or Tick based)
+            final long timeScaleUnits = spec.timeScale().timescaleUnits();
+            final OperationControl control = spec.controlOrDefault();
+            final MathContext mathCtx = control.bigValueContextOrDefault();
+
+            final boolean sourceRefreshing = source.isRefreshing();
+
+            if (csType == byte.class || csType == Byte.class) {
+                return new ByteEmStdOperator(pair, affectingColumns, rowRedirection, control,
+                        spec.timeScale().timestampCol(), timeScaleUnits, columnSource, sourceRefreshing, NULL_BYTE);
+            } else if (csType == char.class || csType == Character.class) {
+                return new CharEmStdOperator(pair, affectingColumns, rowRedirection, control,
+                        spec.timeScale().timestampCol(), timeScaleUnits, columnSource, sourceRefreshing);
+            } else if (csType == short.class || csType == Short.class) {
+                return new ShortEmStdOperator(pair, affectingColumns, rowRedirection, control,
+                        spec.timeScale().timestampCol(), timeScaleUnits, columnSource, sourceRefreshing);
+            } else if (csType == int.class || csType == Integer.class) {
+                return new IntEmStdOperator(pair, affectingColumns, rowRedirection, control,
+                        spec.timeScale().timestampCol(), timeScaleUnits, columnSource, sourceRefreshing);
+            } else if (csType == long.class || csType == Long.class) {
+                return new LongEmStdOperator(pair, affectingColumns, rowRedirection, control,
+                        spec.timeScale().timestampCol(), timeScaleUnits, columnSource, sourceRefreshing);
+            } else if (csType == float.class || csType == Float.class) {
+                return new FloatEmStdOperator(pair, affectingColumns, rowRedirection, control,
+                        spec.timeScale().timestampCol(), timeScaleUnits, columnSource, sourceRefreshing);
+            } else if (csType == double.class || csType == Double.class) {
+                return new DoubleEmStdOperator(pair, affectingColumns, rowRedirection, control,
+                        spec.timeScale().timestampCol(), timeScaleUnits, columnSource, sourceRefreshing);
+            } else if (csType == BigDecimal.class) {
+                return new BigDecimalEmStdOperator(pair, affectingColumns, rowRedirection, control,
+                        spec.timeScale().timestampCol(), timeScaleUnits, columnSource, sourceRefreshing, mathCtx);
+            } else if (csType == BigInteger.class) {
+                return new BigIntegerEmStdOperator(pair, affectingColumns, rowRedirection, control,
+                        spec.timeScale().timestampCol(), timeScaleUnits, columnSource, sourceRefreshing, mathCtx);
+            }
+
+            throw new IllegalArgumentException("Can not perform EmStd on type " + csType);
         }
 
         private UpdateByOperator makeCumProdOperator(MatchPair fc, Table source) {

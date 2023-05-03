@@ -343,8 +343,18 @@ public abstract class TableOperationsAdapter<TOPS_1 extends TableOperations<TOPS
     }
 
     @Override
+    public final TOPS_1 updateBy(UpdateByControl control, UpdateByOperation operation) {
+        return adapt(delegate.updateBy(control, operation));
+    }
+
+    @Override
     public final TOPS_1 updateBy(UpdateByOperation operation, String... byColumns) {
         return adapt(delegate.updateBy(operation, byColumns));
+    }
+
+    @Override
+    public final TOPS_1 updateBy(UpdateByControl control, UpdateByOperation operation, String... byColumns) {
+        return adapt(delegate.updateBy(control, operation, byColumns));
     }
 
     @Override

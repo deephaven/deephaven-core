@@ -68,6 +68,8 @@ public interface UpdateBySpec {
 
         T visit(EmMinMaxSpec spec);
 
+        T visit(EmStdSpec spec);
+
         T visit(FillBySpec spec);
 
         T visit(CumSumSpec spec);

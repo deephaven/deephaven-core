@@ -534,9 +534,30 @@ public abstract class TableBase implements TableSpec {
     }
 
     @Override
+    public final UpdateByTable updateBy(UpdateByControl control, UpdateByOperation operation) {
+        return UpdateByTable.builder()
+                .parent(this)
+                .control(control)
+                .addOperations(operation)
+                .build();
+    }
+
+    @Override
     public final UpdateByTable updateBy(UpdateByOperation operation, String... byColumns) {
         UpdateByTable.Builder builder = UpdateByTable.builder()
                 .parent(this)
+                .addOperations(operation);
+        for (String byColumn : byColumns) {
+            builder.addGroupByColumns(ColumnName.of(byColumn));
+        }
+        return builder.build();
+    }
+
+    @Override
+    public final UpdateByTable updateBy(UpdateByControl control, UpdateByOperation operation, String... byColumns) {
+        UpdateByTable.Builder builder = UpdateByTable.builder()
+                .parent(this)
+                .control(control)
                 .addOperations(operation);
         for (String byColumn : byColumns) {
             builder.addGroupByColumns(ColumnName.of(byColumn));
