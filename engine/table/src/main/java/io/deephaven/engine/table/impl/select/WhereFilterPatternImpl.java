@@ -21,7 +21,6 @@ import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter.ObjectChunkFilter;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Predicate;
 
 final class WhereFilterPatternImpl extends WhereFilterImpl {
 
@@ -54,9 +53,8 @@ final class WhereFilterPatternImpl extends WhereFilterImpl {
             throw new RuntimeException(
                     String.format("Column '%s', type %s, is not a CharSequence", columnName, column.getDataType()));
         }
-        final Predicate<CharSequence> p = predicate();
-        chunkFilterImpl = new ObjectChunkFilterPredicate<>(p);
-        chunkFilterInverseImpl = new ObjectChunkFilterPredicate<>(p.negate());
+        chunkFilterImpl = filter();
+        chunkFilterInverseImpl = notFilter();
     }
 
     @Override
@@ -125,19 +123,26 @@ final class WhereFilterPatternImpl extends WhereFilterImpl {
         return ((ColumnName) filterPattern.expression()).name();
     }
 
-    private Predicate<CharSequence> predicate() {
-        final Predicate<CharSequence> p;
+    private ObjectChunkFilter<CharSequence> filter() {
         switch (filterPattern.mode()) {
             case FIND:
-                p = filterPattern.invertPattern() ? this::findPatternInverted : this::find;
-                break;
+                return filterPattern.invertPattern() ? new FindPatternInverted() : new Find();
             case MATCHES:
-                p = filterPattern.invertPattern() ? this::matchesPatternInverted : this::matches;
-                break;
+                return filterPattern.invertPattern() ? new MatchesPatternInverted() : new Matches();
             default:
                 throw new IllegalStateException("Unexpected filter pattern mode " + filterPattern.mode());
         }
-        return p;
+    }
+
+    private ObjectChunkFilter<CharSequence> notFilter() {
+        switch (filterPattern.mode()) {
+            case FIND:
+                return filterPattern.invertPattern() ? new NotFindPatternInverted() : new NotFind();
+            case MATCHES:
+                return filterPattern.invertPattern() ? new NotMatchesPatternInverted() : new NotMatches();
+            default:
+                throw new IllegalStateException("Unexpected filter pattern mode " + filterPattern.mode());
+        }
     }
 
     private boolean matches(CharSequence value) {
@@ -156,21 +161,120 @@ final class WhereFilterPatternImpl extends WhereFilterImpl {
         return value != null && !filterPattern.pattern().matcher(value).find();
     }
 
-    private static class ObjectChunkFilterPredicate<T> implements ObjectChunkFilter<T> {
-        private final Predicate<T> predicate;
-
-        public ObjectChunkFilterPredicate(Predicate<T> predicate) {
-            this.predicate = Objects.requireNonNull(predicate);
-        }
-
+    private class Matches implements ObjectChunkFilter<CharSequence> {
         @Override
         public void filter(
-                ObjectChunk<T, ? extends Values> values,
+                ObjectChunk<CharSequence, ? extends Values> values,
                 LongChunk<OrderedRowKeys> keys,
                 WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ix = 0; ix < values.size(); ++ix) {
-                if (predicate.test(values.get(ix))) {
+                if (matches(values.get(ix))) {
+                    results.add(keys.get(ix));
+                }
+            }
+        }
+    }
+
+    private class MatchesPatternInverted implements ObjectChunkFilter<CharSequence> {
+        @Override
+        public void filter(
+                ObjectChunk<CharSequence, ? extends Values> values,
+                LongChunk<OrderedRowKeys> keys,
+                WritableLongChunk<OrderedRowKeys> results) {
+            results.setSize(0);
+            for (int ix = 0; ix < values.size(); ++ix) {
+                if (matchesPatternInverted(values.get(ix))) {
+                    results.add(keys.get(ix));
+                }
+            }
+        }
+    }
+
+    private class Find implements ObjectChunkFilter<CharSequence> {
+        @Override
+        public void filter(
+                ObjectChunk<CharSequence, ? extends Values> values,
+                LongChunk<OrderedRowKeys> keys,
+                WritableLongChunk<OrderedRowKeys> results) {
+            results.setSize(0);
+            for (int ix = 0; ix < values.size(); ++ix) {
+                if (find(values.get(ix))) {
+                    results.add(keys.get(ix));
+                }
+            }
+        }
+    }
+
+    private class FindPatternInverted implements ObjectChunkFilter<CharSequence> {
+        @Override
+        public void filter(
+                ObjectChunk<CharSequence, ? extends Values> values,
+                LongChunk<OrderedRowKeys> keys,
+                WritableLongChunk<OrderedRowKeys> results) {
+            results.setSize(0);
+            for (int ix = 0; ix < values.size(); ++ix) {
+                if (findPatternInverted(values.get(ix))) {
+                    results.add(keys.get(ix));
+                }
+            }
+        }
+    }
+
+    private class NotMatches implements ObjectChunkFilter<CharSequence> {
+        @Override
+        public void filter(
+                ObjectChunk<CharSequence, ? extends Values> values,
+                LongChunk<OrderedRowKeys> keys,
+                WritableLongChunk<OrderedRowKeys> results) {
+            results.setSize(0);
+            for (int ix = 0; ix < values.size(); ++ix) {
+                if (!matches(values.get(ix))) {
+                    results.add(keys.get(ix));
+                }
+            }
+        }
+    }
+
+    private class NotMatchesPatternInverted implements ObjectChunkFilter<CharSequence> {
+        @Override
+        public void filter(
+                ObjectChunk<CharSequence, ? extends Values> values,
+                LongChunk<OrderedRowKeys> keys,
+                WritableLongChunk<OrderedRowKeys> results) {
+            results.setSize(0);
+            for (int ix = 0; ix < values.size(); ++ix) {
+                if (!matchesPatternInverted(values.get(ix))) {
+                    results.add(keys.get(ix));
+                }
+            }
+        }
+    }
+
+    private class NotFind implements ObjectChunkFilter<CharSequence> {
+        @Override
+        public void filter(
+                ObjectChunk<CharSequence, ? extends Values> values,
+                LongChunk<OrderedRowKeys> keys,
+                WritableLongChunk<OrderedRowKeys> results) {
+            results.setSize(0);
+            for (int ix = 0; ix < values.size(); ++ix) {
+                if (!find(values.get(ix))) {
+                    results.add(keys.get(ix));
+                }
+            }
+        }
+    }
+
+    private class NotFindPatternInverted implements ObjectChunkFilter<CharSequence> {
+        @Override
+        public void filter(
+                ObjectChunk<CharSequence, ? extends Values> values,
+                LongChunk<OrderedRowKeys> keys,
+                WritableLongChunk<OrderedRowKeys> results) {
+            results.setSize(0);
+            for (int ix = 0; ix < values.size(); ++ix) {
+                if (!findPatternInverted(values.get(ix))) {
                     results.add(keys.get(ix));
                 }
             }
