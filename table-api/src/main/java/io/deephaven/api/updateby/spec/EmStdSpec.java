@@ -42,11 +42,11 @@ public abstract class EmStdSpec extends UpdateBySpecBase {
         return of(WindowScale.ofTime(timestampCol, emaDuration));
     }
 
-    public static EmStdSpec ofTicks(OperationControl control, long tickWindow) {
+    public static EmStdSpec ofTicks(OperationControl control, double tickWindow) {
         return of(control, WindowScale.ofTicks(tickWindow));
     }
 
-    public static EmStdSpec ofTicks(long tickWindow) {
+    public static EmStdSpec ofTicks(double tickWindow) {
         return of(WindowScale.ofTicks(tickWindow));
     }
 

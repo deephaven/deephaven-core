@@ -27,7 +27,7 @@ public class BigIntegerEmStdOperator extends BaseBigNumberEmStdOperator<BigInteg
         @Override
         public void accumulateCumulative(@NotNull final RowSequence inputKeys,
                                          @NotNull final Chunk<? extends Values>[] valueChunkArr,
-                                         @NotNull final LongChunk<? extends Values> tsChunk,
+                                         @Nullable final LongChunk<? extends Values> tsChunk,
                                          final int len) {
             setValueChunks(valueChunkArr);
 
@@ -111,15 +111,10 @@ public class BigIntegerEmStdOperator extends BaseBigNumberEmStdOperator<BigInteg
             // chunk output to column
             writeToOutputColumn(inputKeys);
         }
-
-        @Override
-        public void push(int pos, int count) {
-            throw new IllegalStateException("EMAOperator#push() is not used");
-        }
     }
 
     /**
-     * An operator that computes an EMA from a BigDecimal column using an exponential decay function.
+     * An operator that computes an EM Std from a BigDecimal column using an exponential decay function.
      *
      * @param pair the {@link MatchPair} that defines the input/output for this operation
      * @param affectingColumns the names of the columns that affect this ema

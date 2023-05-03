@@ -58,6 +58,11 @@ public abstract class BasePrimitiveEmStdOperator extends BaseDoubleUpdateByOpera
         }
 
         @Override
+        public void push(int pos, int count) {
+            throw new IllegalStateException("EmStdOperator#push() is not used");
+        }
+
+        @Override
         public void reset() {
             super.reset();
             curVariance = NULL_DOUBLE;
@@ -74,7 +79,7 @@ public abstract class BasePrimitiveEmStdOperator extends BaseDoubleUpdateByOpera
     }
 
     /**
-     * An operator that computes an EM output from an input column using an exponential decay function.
+     * An operator that computes an EM Std output from an input column using an exponential decay function.
      *
      * @param pair the {@link MatchPair} that defines the input/output for this operation
      * @param affectingColumns the names of the columns that affect this ema
@@ -113,7 +118,7 @@ public abstract class BasePrimitiveEmStdOperator extends BaseDoubleUpdateByOpera
             this.emaSource = null;
         }
 
-        opAlpha = Math.exp(-1.0 / (double) windowScaleUnits);
+        opAlpha = Math.exp(-1.0 / reverseWindowScaleUnits);
         opOneMinusAlpha = 1 - opAlpha;
     }
 

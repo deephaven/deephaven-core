@@ -89,6 +89,11 @@ public abstract class BaseBigNumberEmStdOperator<T> extends BaseObjectUpdateByOp
         }
 
         @Override
+        public void push(int pos, int count) {
+            throw new IllegalStateException("EmStdOperator#push() is not used");
+        }
+
+        @Override
         public void reset() {
             lastStamp = NULL_LONG;
             lastDt = NULL_LONG;
@@ -99,7 +104,6 @@ public abstract class BaseBigNumberEmStdOperator<T> extends BaseObjectUpdateByOp
             curVal = null;
         }
 
-
         @Override
         public void close() {
             super.close();
@@ -108,7 +112,7 @@ public abstract class BaseBigNumberEmStdOperator<T> extends BaseObjectUpdateByOp
     }
 
     /**
-     * An operator that computes an EM output from a big number column using an exponential decay function.
+     * An operator that computes an EM Std output from a big number column using an exponential decay function.
      *
      * @param pair the {@link MatchPair} that defines the input/output for this operation
      * @param affectingColumns the names of the columns that affect this ema

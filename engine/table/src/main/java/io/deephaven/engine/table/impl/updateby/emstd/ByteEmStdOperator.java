@@ -92,7 +92,7 @@ public class ByteEmStdOperator extends BasePrimitiveEmStdOperator {
                         final long dt = timestamp - lastStamp;
                         if (dt != lastDt) {
                             // Alpha is dynamic based on time, but only recalculated when needed
-                            alpha = Math.exp(-dt / (double) reverseWindowScaleUnits);
+                            alpha = Math.exp(-dt / reverseWindowScaleUnits);
                             oneMinusAlpha = 1.0 - alpha;
                             lastDt = dt;
                         }
@@ -132,11 +132,6 @@ public class ByteEmStdOperator extends BasePrimitiveEmStdOperator {
         @Override
         public boolean isValueValid(long atKey) {
             return valueSource.getByte(atKey) != nullValue;
-        }
-
-        @Override
-        public void push(int pos, int count) {
-            throw new IllegalStateException("EMAOperator#push() is not used");
         }
     }
 

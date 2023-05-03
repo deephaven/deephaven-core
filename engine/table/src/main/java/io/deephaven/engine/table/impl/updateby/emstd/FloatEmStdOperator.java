@@ -96,7 +96,7 @@ public class FloatEmStdOperator extends BasePrimitiveEmStdOperator {
                         final long dt = timestamp - lastStamp;
                         if (dt != lastDt) {
                             // Alpha is dynamic based on time, but only recalculated when needed
-                            alpha = Math.exp(-dt / (double) reverseWindowScaleUnits);
+                            alpha = Math.exp(-dt / reverseWindowScaleUnits);
                             oneMinusAlpha = 1.0 - alpha;
                             lastDt = dt;
                         }
@@ -141,11 +141,6 @@ public class FloatEmStdOperator extends BasePrimitiveEmStdOperator {
             }
             return !Float.isNaN(value) || control.onNanValueOrDefault() != BadDataBehavior.SKIP;
 
-        }
-
-        @Override
-        public void push(int pos, int count) {
-            throw new IllegalStateException("EMAOperator#push() is not used");
         }
     }
 
