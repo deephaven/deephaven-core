@@ -43,6 +43,7 @@ import io.deephaven.engine.table.impl.util.JobScheduler.IterateAction;
 import io.deephaven.engine.table.impl.util.compact.CompactKernel;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -132,25 +133,9 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
                     (issues == null ? issues = new ArrayList<>() : issues).add(String.format(
                             "right table has no column \"%s\"", Strings.of(exactMatch.right())));
                 }
-            } else if (!leftColumnDefinition.hasCompatibleDataType(rightColumnDefinition)) {
-                if (leftColumnDefinition.getComponentType() != null
-                        || rightColumnDefinition.getComponentType() != null) {
-                    (issues == null ? issues = new ArrayList<>() : issues).add(String.format(
-                            "left table column \"%s\" (data type %s, component type %s), is incompatible with right table column \"%s\" (data type %s, component type %s)",
-                            Strings.of(exactMatch.left()),
-                            leftColumnDefinition.getDataType(),
-                            leftColumnDefinition.getComponentType(),
-                            Strings.of(exactMatch.right()),
-                            rightColumnDefinition.getDataType(),
-                            rightColumnDefinition.getComponentType()));
-                } else {
-                    (issues == null ? issues = new ArrayList<>() : issues).add(String.format(
-                            "left table column \"%s\" (data type %s), is incompatible with right table column \"%s\" (data type %s)",
-                            Strings.of(exactMatch.left()),
-                            leftColumnDefinition.getDataType(),
-                            Strings.of(exactMatch.right()),
-                            rightColumnDefinition.getDataType()));
-                }
+            } else {
+                issues = validateMatchCompatibility(issues, exactMatch.left(), exactMatch.right(),
+                        leftColumnDefinition, rightColumnDefinition);
             }
         }
         if (issues != null) {
@@ -178,47 +163,66 @@ public class RangeJoinOperation implements QueryTable.MemoizableOperation<QueryT
 
         if (leftStartColumnDefinition == null) {
             (issues = new ArrayList<>()).add(String.format(
-                    "left start column %s is missing", rangeMatch.leftStartColumn().name()));
+                    "left start column %s is missing", Strings.of(rangeMatch.leftStartColumn())));
         }
         if (rightRangeColumnDefinition == null) {
             (issues == null ? issues = new ArrayList<>() : issues).add(String.format(
-                    "right range column %s is missing", rangeMatch.rightRangeColumn().name()));
+                    "right range column %s is missing", Strings.of(rangeMatch.rightRangeColumn())));
         }
         if (leftEndColumnDefinition == null) {
             (issues == null ? issues = new ArrayList<>() : issues).add(String.format(
-                    "left start column %s is missing", rangeMatch.leftEndColumn().name()));
+                    "left start column %s is missing", Strings.of(rangeMatch.leftEndColumn())));
         }
-        if (leftStartColumnDefinition != null
-                && rightRangeColumnDefinition != null
-                && !leftStartColumnDefinition.hasCompatibleDataType(rightRangeColumnDefinition)) {
-            (issues == null ? issues = new ArrayList<>() : issues).add(String.format(
-                    "incompatible columns for range start: left has (%s, %s) and right has (%s, %s)",
-                    leftStartColumnDefinition.getDataType(),
-                    leftStartColumnDefinition.getComponentType(),
-                    rightRangeColumnDefinition.getDataType(),
-                    rightRangeColumnDefinition.getComponentType()));
+        if (leftStartColumnDefinition != null && rightRangeColumnDefinition != null) {
+            issues = validateMatchCompatibility(issues, rangeMatch.leftStartColumn(), rangeMatch.rightRangeColumn(),
+                    leftStartColumnDefinition, rightRangeColumnDefinition);
         }
-        if (leftEndColumnDefinition != null
-                && rightRangeColumnDefinition != null
-                && !leftEndColumnDefinition.hasCompatibleDataType(rightRangeColumnDefinition)) {
-            (issues == null ? issues = new ArrayList<>() : issues).add(String.format(
-                    "incompatible columns for range end: left has (%s, %s) and right has (%s, %s)",
-                    leftEndColumnDefinition.getDataType(),
-                    leftEndColumnDefinition.getComponentType(),
-                    rightRangeColumnDefinition.getDataType(),
-                    rightRangeColumnDefinition.getComponentType()));
+        if (leftEndColumnDefinition != null && rightRangeColumnDefinition != null) {
+            issues = validateMatchCompatibility(issues, rangeMatch.leftEndColumn(), rangeMatch.rightRangeColumn(),
+                    leftEndColumnDefinition, rightRangeColumnDefinition);
         }
         if (issues != null) {
             throw new IllegalArgumentException(String.format(
                     "%s: Invalid range match %s: %s", description, Strings.of(rangeMatch), String.join(", ", issues)));
         }
-
+        //noinspection DataFlowIssue (if leftStartColumnDefinition were null, we'd have thrown before here)
         final Class<?> rangeValueType = leftStartColumnDefinition.getDataType();
         if (!rangeValueType.isPrimitive() && !Comparable.class.isAssignableFrom(rangeValueType)) {
             throw new IllegalArgumentException(String.format(
                     "%s: Invalid range value type %s, must be primitive or comparable", description, rangeValueType));
         }
         return rangeValueType;
+    }
+
+    private static List<String> validateMatchCompatibility(
+            @Nullable List<String> issues,
+            @NotNull final ColumnName left,
+            @NotNull final ColumnName right,
+            @NotNull final ColumnDefinition<?> leftColumnDefinition,
+            @NotNull final ColumnDefinition<?> rightColumnDefinition) {
+        if (leftColumnDefinition.hasCompatibleDataType(rightColumnDefinition)) {
+            return issues;
+        }
+        if (leftColumnDefinition.getComponentType() != null || rightColumnDefinition.getComponentType() != null) {
+            (issues == null ? issues = new ArrayList<>() : issues).add(String.format(
+                    "left table column \"%s\" (data type %s, component type %s), is incompatible with right table column \"%s\" (data type %s, component type %s)",
+                    Strings.of(left),
+                    leftColumnDefinition.getDataType().getName(),
+                    Optional.ofNullable(leftColumnDefinition.getComponentType())
+                            .map(Class::getName).orElse("null"),
+                    Strings.of(right),
+                    rightColumnDefinition.getDataType().getName(),
+                    Optional.ofNullable(rightColumnDefinition.getComponentType())
+                            .map(Class::getName).orElse("null")));
+        } else {
+            (issues == null ? issues = new ArrayList<>() : issues).add(String.format(
+                    "left table column \"%s\" (data type %s), is incompatible with right table column \"%s\" (data type %s)",
+                    Strings.of(left),
+                    leftColumnDefinition.getDataType(),
+                    Strings.of(right),
+                    rightColumnDefinition.getDataType()));
+        }
+        return issues;
     }
 
     @Override
