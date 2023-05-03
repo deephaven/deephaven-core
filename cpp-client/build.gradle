@@ -66,6 +66,7 @@ def testCppClient = Docker.registerDockerTask(project, 'testCppClient') {
             include 'cpp-tests-to-junit.sh'
             include 'deephaven/CMakeLists.txt'
             include 'deephaven/client/**'
+            include 'deephaven/dhcore/**'
             include 'tests/CMakeLists.txt'
             include 'tests/*.cc'
             include 'tests/*.h'
@@ -80,9 +81,10 @@ def testCppClient = Docker.registerDockerTask(project, 'testCppClient') {
         //
         // Build client library.
         //
-        runCommand('mkdir -p /cpp-client/deephaven/client /cpp-client/deephaven/build')
+        runCommand('mkdir -p /cpp-client/deephaven/client /cpp-client/deephaven/dhcore /cpp-client/deephaven/build')
         copyFile('deephaven/CMakeLists.txt', '/cpp-client/deephaven')
         copyFile('deephaven/client', '/cpp-client/deephaven/client/')
+        copyFile('deephaven/dhcore', '/cpp-client/deephaven/dhcore/')
         runCommand('''set -eux; \\
                       cd /cpp-client/deephaven/build; \\
                       . /cpp-client/deps/env.sh; \\
