@@ -32,14 +32,9 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
 //TODO: @SuppressWarnings("unused")
 @SuppressWarnings("RegExpRedundantEscape")
 public class DateTimeUtils {
-    //TODO: add final everywhere
     //TODO: rename class
-    //TODO: document
     //TODO: remove Joda exposure
-    //TODO: curate API
-    //TODO: review public vs private
     //TODO: test coverage
-    //TODO: variable and function naming consistency
     //TODO: review function subsections for consistency
     //TODO: review function subsections for missing functions
 
@@ -862,7 +857,7 @@ public class DateTimeUtils {
      *      nanoseconds from the Epoch converted to a {@link ZonedDateTime}.
      */
     @Nullable
-    public static ZonedDateTime epochNanosToZonedDateTime(final long nanos, ZoneId timeZone) {
+    public static ZonedDateTime epochNanosToZonedDateTime(final long nanos, final ZoneId timeZone) {
         if(timeZone == null){
             return null;
         }
@@ -959,7 +954,7 @@ public class DateTimeUtils {
      *      milliseconds from the Epoch converted to a {@link ZonedDateTime}.
      */
     @Nullable
-    public static ZonedDateTime epochMillisToZonedDateTime(final long millis, @Nullable ZoneId timeZone) {
+    public static ZonedDateTime epochMillisToZonedDateTime(final long millis, final @Nullable ZoneId timeZone) {
         if(timeZone == null){
             return null;
         }
@@ -1007,7 +1002,7 @@ public class DateTimeUtils {
      *      seconds from the Epoch converted to a {@link ZonedDateTime}.
      */
     @Nullable
-    public static ZonedDateTime epochSecondsToZonedDateTime(final long seconds, @Nullable ZoneId timeZone) {
+    public static ZonedDateTime epochSecondsToZonedDateTime(final long seconds, final @Nullable ZoneId timeZone) {
         if(timeZone == null){
             return null;
         }
@@ -1623,8 +1618,8 @@ public class DateTimeUtils {
      *      string (e.g. "10:00:00" would yield SecondOfMinute).  Precisions
      */
     //TODO: @Nullable
-    public static ChronoField parseTimePrecision(final String timeDef) {
-        Matcher dtMatcher = CAPTURING_DATETIME_PATTERN.matcher(timeDef);
+    public static ChronoField parseTimePrecision(final String s) {
+        Matcher dtMatcher = CAPTURING_DATETIME_PATTERN.matcher(s);
         if (dtMatcher.matches()) {
             DateGroupId[] parts = DateGroupId.values();
             for (int i = parts.length - 1; i >= 0; i--) {
