@@ -91,7 +91,7 @@ public class TestReinterpretedColumn extends RefreshingTableTestCase {
             longSource.set(ii, Long.valueOf(baseLongTime + tOff));
             dtSource.set(ii, DateTimeUtils.epochNanosToDateTime(baseDateTime.getNanos() + tOff));
             iSource.set(ii, DateTimeUtils.epochNanosToInstant(DateTimeUtils.epochNanos(baseInstant) + tOff));
-            zdtSource.set(ii, DateTimeUtils.makeZonedDateTime(DateTimeUtils.epochNanos(baseZDT) + tOff,
+            zdtSource.set(ii, DateTimeUtils.epochNanosToZonedDateTime(DateTimeUtils.epochNanos(baseZDT) + tOff,
                     ZoneId.of("America/New_York")));
         }
 

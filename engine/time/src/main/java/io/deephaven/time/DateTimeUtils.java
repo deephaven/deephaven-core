@@ -1778,6 +1778,170 @@ public class DateTimeUtils {
         return seconds == NULL_LONG ? null : Instant.ofEpochSecond(seconds, 0);
     }
 
+    /**
+     * Converts nanoseconds from the Epoch to a {@link ZonedDateTime}.
+     *
+     * Uses the default timezone.
+     *
+     * @param nanos nanoseconds since Epoch.
+     * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
+     *      nanoseconds from the Epoch converted to a {@link ZonedDateTime}.
+     */
+    @Nullable
+    public static ZonedDateTime epochNanosToZonedDateTime(final long nanos) {
+        return epochNanosToZonedDateTime(nanos, TimeZone.TZ_DEFAULT.getZoneId());
+    }
+
+    /**
+     * Converts nanoseconds from the Epoch to a {@link ZonedDateTime}.
+     *
+     * @param nanos nanoseconds since Epoch.
+     * @param timeZone time zone.
+     * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
+     *      nanoseconds from the Epoch converted to a {@link ZonedDateTime}.
+     */
+    @Nullable
+    public static ZonedDateTime epochNanosToZonedDateTime(final long nanos, @NotNull final TimeZone timeZone) {
+        return epochNanosToZonedDateTime(nanos, timeZone.getZoneId());
+    }
+
+    /**
+     * Converts nanoseconds from the Epoch to a {@link ZonedDateTime}.
+     *
+     * @param nanos nanoseconds since Epoch.
+     * @param timeZone time zone.
+     * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
+     *      nanoseconds from the Epoch converted to a {@link ZonedDateTime}.
+     */
+    @Nullable
+    public static ZonedDateTime epochNanosToZonedDateTime(final long nanos, ZoneId timeZone) {
+        // noinspection ConstantConditions
+        return nanos == NULL_LONG ? null : ZonedDateTime.ofInstant(epochNanosToInstant(nanos), timeZone);
+    }
+
+    /**
+     * Converts microseconds from the Epoch to a {@link ZonedDateTime}.
+     *
+     * Uses the default timezone.
+     *
+     * @param micros microseconds since Epoch.
+     * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
+     *      microseconds from the Epoch converted to a {@link ZonedDateTime}.
+     */
+    @Nullable
+    public static ZonedDateTime epochMicrosToZonedDateTime(final long micros) {
+        return epochMicrosToZonedDateTime(micros, TimeZone.TZ_DEFAULT.getZoneId());
+    }
+
+    /**
+     * Converts microseconds from the Epoch to a {@link ZonedDateTime}.
+     *
+     * @param micros micrseconds since Epoch.
+     * @param timeZone time zone.
+     * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
+     *      microseconds from the Epoch converted to a {@link ZonedDateTime}.
+     */
+    @Nullable
+    public static ZonedDateTime epochMicrosToZonedDateTime(final long micros, @NotNull final TimeZone timeZone) {
+        return epochMicrosToZonedDateTime(micros, timeZone.getZoneId());
+    }
+
+    /**
+     * Converts microseconds from the Epoch to a {@link ZonedDateTime}.
+     *
+     * @param micros microseconds since Epoch.
+     * @param timeZone time zone.
+     * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
+     *      microseconds from the Epoch converted to a {@link ZonedDateTime}.
+     */
+    @Nullable
+    public static ZonedDateTime epochMicrosToZonedDateTime(final long micros, ZoneId timeZone) {
+        // noinspection ConstantConditions
+        return micros == NULL_LONG ? null : ZonedDateTime.ofInstant(epochMicrosToInstant(micros), timeZone);
+    }
+
+    /**
+     * Converts milliseconds from the Epoch to a {@link ZonedDateTime}.
+     *
+     * Uses the default timezone.
+     *
+     * @param millis milliseconds since Epoch.
+     * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
+     *      milliseconds from the Epoch converted to a {@link ZonedDateTime}.
+     */
+    @Nullable
+    public static ZonedDateTime epochMillisToZonedDateTime(final long millis) {
+        return epochMillisToZonedDateTime(millis, TimeZone.TZ_DEFAULT.getZoneId());
+    }
+
+    /**
+     * Converts milliseconds from the Epoch to a {@link ZonedDateTime}.
+     *
+     * @param millis milliseconds since Epoch.
+     * @param timeZone time zone.
+     * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
+     *      milliseconds from the Epoch converted to a {@link ZonedDateTime}.
+     */
+    @Nullable
+    public static ZonedDateTime epochMillisToZonedDateTime(final long millis, @NotNull final TimeZone timeZone) {
+        return epochMillisToZonedDateTime(millis, timeZone.getZoneId());
+    }
+
+    /**
+     * Converts milliseconds from the Epoch to a {@link ZonedDateTime}.
+     *
+     * @param millis milliseconds since Epoch.
+     * @param timeZone time zone.
+     * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
+     *      milliseconds from the Epoch converted to a {@link ZonedDateTime}.
+     */
+    @Nullable
+    public static ZonedDateTime epochMillisToZonedDateTime(final long millis, ZoneId timeZone) {
+        // noinspection ConstantConditions
+        return millis == NULL_LONG ? null : ZonedDateTime.ofInstant(epochMillisToInstant(millis), timeZone);
+    }
+
+    /**
+     * Converts seconds from the Epoch to a {@link ZonedDateTime}.
+     *
+     * Uses the default timezone.
+     *
+     * @param seconds seconds since Epoch.
+     * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
+     *      seconds from the Epoch converted to a {@link ZonedDateTime}.
+     */
+    @Nullable
+    public static ZonedDateTime epochSecondsToZonedDateTime(final long seconds) {
+        return epochSecondsToZonedDateTime(seconds, TimeZone.TZ_DEFAULT.getZoneId());
+    }
+
+    /**
+     * Converts seconds from the Epoch to a {@link ZonedDateTime}.
+     *
+     * @param seconds seconds since Epoch.
+     * @param timeZone time zone.
+     * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
+     *      seconds from the Epoch converted to a {@link ZonedDateTime}.
+     */
+    @Nullable
+    public static ZonedDateTime epochSecondsToZonedDateTime(final long seconds, @NotNull final TimeZone timeZone) {
+        return epochSecondsToZonedDateTime(seconds, timeZone.getZoneId());
+    }
+
+    /**
+     * Converts seconds from the Epoch to a {@link ZonedDateTime}.
+     *
+     * @param seconds seconds since Epoch.
+     * @param timeZone time zone.
+     * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
+     *      seconds from the Epoch converted to a {@link ZonedDateTime}.
+     */
+    @Nullable
+    public static ZonedDateTime epochSecondsToZonedDateTime(final long seconds, ZoneId timeZone) {
+        // noinspection ConstantConditions
+        return seconds == NULL_LONG ? null : ZonedDateTime.ofInstant(epochSecondsToInstant(seconds), timeZone);
+    }
+
     // endregion
 
     // region TODO: Java Parse Times
@@ -2035,43 +2199,14 @@ public class DateTimeUtils {
     // region TODO: Java Time
 
 
-    /**
-     * Converts nanos of epoch to a {@link ZonedDateTime} using the {@link TimeZone#TZ_DEFAULT default} time zone.
-     *
-     * @param nanos nanoseconds since epoch
-     * @return a new {@link ZonedDateTime} or null if nanos was {@link QueryConstants#NULL_LONG}.
-     */
-    @Nullable
-    public static ZonedDateTime makeZonedDateTime(final long nanos) {
-        return makeZonedDateTime(nanos, TimeZone.TZ_DEFAULT.getZoneId());
-    }
 
-    /**
-     * Converts nanos of epoch to a {@link ZonedDateTime}.
-     *
-     * @param nanos nanoseconds since epoch
-     * @param timeZone the {@link TimeZone time zone}
-     *
-     * @return a new {@link ZonedDateTime} or null if nanos was {@link QueryConstants#NULL_LONG}.
-     */
-    @Nullable
-    public static ZonedDateTime makeZonedDateTime(final long nanos, @NotNull final TimeZone timeZone) {
-        return makeZonedDateTime(nanos, timeZone.getZoneId());
-    }
 
-    /**
-     * Converts nanos of epoch to a {@link ZonedDateTime}.
-     *
-     * @param nanos nanoseconds since epoch
-     * @param zone the {@link ZoneId time zone}
-     *
-     * @return a new {@link ZonedDateTime} or null if nanos was {@link QueryConstants#NULL_LONG}.
-     */
-    @Nullable
-    public static ZonedDateTime makeZonedDateTime(final long nanos, ZoneId zone) {
-        // noinspection ConstantConditions
-        return nanos == NULL_LONG ? null : ZonedDateTime.ofInstant(epochNanosToInstant(nanos), zone);
-    }
+
+
+
+
+
+
 
     /**
      * Converts a {@link DateTime} to a {@link ZonedDateTime}.

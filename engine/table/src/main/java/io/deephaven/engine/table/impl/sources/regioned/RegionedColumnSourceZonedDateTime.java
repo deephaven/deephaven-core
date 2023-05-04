@@ -56,7 +56,7 @@ final class RegionedColumnSourceZonedDateTime
         final int length = longChunk.size();
 
         for (int i = 0; i < length; ++i) {
-            objectChunk.set(size + i, DateTimeUtils.makeZonedDateTime(longChunk.get(i), zone));
+            objectChunk.set(size + i, DateTimeUtils.epochNanosToZonedDateTime(longChunk.get(i), zone));
         }
         objectChunk.setSize(size + length);
     }
@@ -64,7 +64,7 @@ final class RegionedColumnSourceZonedDateTime
     @Override
     public ZonedDateTime get(final long rowKey) {
         return rowKey == RowSequence.NULL_ROW_KEY ? null
-                : DateTimeUtils.makeZonedDateTime(getNativeSource().lookupRegion(rowKey).getLong(rowKey),
+                : DateTimeUtils.epochNanosToZonedDateTime(getNativeSource().lookupRegion(rowKey).getLong(rowKey),
                         zone);
     }
 

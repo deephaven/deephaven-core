@@ -23,7 +23,7 @@ public class LongAsZonedDateTimeColumnSource extends BoxedLongAsTimeSource<Zoned
 
     @Override
     protected ZonedDateTime makeValue(long val) {
-        return DateTimeUtils.makeZonedDateTime(val, zone);
+        return DateTimeUtils.epochNanosToZonedDateTime(val, zone);
     }
 
     @Override

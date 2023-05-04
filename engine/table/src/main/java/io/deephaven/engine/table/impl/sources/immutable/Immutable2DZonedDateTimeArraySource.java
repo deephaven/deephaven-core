@@ -34,7 +34,7 @@ public class Immutable2DZonedDateTimeArraySource extends Immutable2DNanosBasedTi
 
     @Override
     protected ZonedDateTime makeValue(long nanos) {
-        return DateTimeUtils.makeZonedDateTime(nanos, zone);
+        return DateTimeUtils.epochNanosToZonedDateTime(nanos, zone);
     }
 
     @Override
