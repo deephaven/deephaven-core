@@ -90,8 +90,8 @@ public class TestReinterpretedColumn extends RefreshingTableTestCase {
             final long tOff = ii * 60 * 1_000_000_000L;
             longSource.set(ii, Long.valueOf(baseLongTime + tOff));
             dtSource.set(ii, DateTimeUtils.epochNanosToDateTime(baseDateTime.getNanos() + tOff));
-            iSource.set(ii, DateTimeUtils.makeInstant(DateTimeUtils.toEpochNano(baseInstant) + tOff));
-            zdtSource.set(ii, DateTimeUtils.makeZonedDateTime(DateTimeUtils.toEpochNano(baseZDT) + tOff,
+            iSource.set(ii, DateTimeUtils.makeInstant(DateTimeUtils.epochNanos(baseInstant) + tOff));
+            zdtSource.set(ii, DateTimeUtils.makeZonedDateTime(DateTimeUtils.epochNanos(baseZDT) + tOff,
                     ZoneId.of("America/New_York")));
         }
 
@@ -115,8 +115,8 @@ public class TestReinterpretedColumn extends RefreshingTableTestCase {
             final long tOff = ii * 60 * 1_000_000_000L;
             longSource.set(ii, baseLongTime + tOff);
             dtSource.set(ii, baseDateTime.getNanos() + tOff);
-            iSource.set(ii, DateTimeUtils.toEpochNano(baseInstant) + tOff);
-            zdtSource.set(ii, DateTimeUtils.toEpochNano(baseZDT) + tOff);
+            iSource.set(ii, DateTimeUtils.epochNanos(baseInstant) + tOff);
+            zdtSource.set(ii, DateTimeUtils.epochNanos(baseZDT) + tOff);
         }
 
         final Map<String, ColumnSource<?>> cols = new LinkedHashMap<>();
@@ -176,8 +176,8 @@ public class TestReinterpretedColumn extends RefreshingTableTestCase {
                 assertEquals(baseLongTime + tOff, table.getColumnSource(lColName).getLong(key));
             }
             assertEquals(baseDateTime.getNanos() + tOff, table.getColumnSource(dtColName).getLong(key));
-            assertEquals(DateTimeUtils.toEpochNano(baseInstant) + tOff, table.getColumnSource(iColName).getLong(key));
-            assertEquals(DateTimeUtils.toEpochNano(baseZDT) + tOff, table.getColumnSource(zdtColName).getLong(key));
+            assertEquals(DateTimeUtils.epochNanos(baseInstant) + tOff, table.getColumnSource(iColName).getLong(key));
+            assertEquals(DateTimeUtils.epochNanos(baseZDT) + tOff, table.getColumnSource(zdtColName).getLong(key));
         }
 
         // Repeat the same comparisons, but actuate fillChunk instead
@@ -185,9 +185,9 @@ public class TestReinterpretedColumn extends RefreshingTableTestCase {
         reinterpLongChunkCheck(table.getColumnSource(dtColName), table.getRowSet(), isSorted,
                 baseDateTime.getNanos());
         reinterpLongChunkCheck(table.getColumnSource(iColName), table.getRowSet(), isSorted,
-                DateTimeUtils.toEpochNano(baseInstant));
+                DateTimeUtils.epochNanos(baseInstant));
         reinterpLongChunkCheck(table.getColumnSource(zdtColName), table.getRowSet(), isSorted,
-                DateTimeUtils.toEpochNano(baseZDT));
+                DateTimeUtils.epochNanos(baseZDT));
 
         if (!isSorted) {
             testReinterpretLong(initial.sortDescending("L"), true, withRename);
@@ -265,10 +265,10 @@ public class TestReinterpretedColumn extends RefreshingTableTestCase {
             assertEquals(baseDateTime.getNanos() + tOff,
                     (long) toNanoFunc.apply((T) table.getColumnSource(dtColName).get(key)));
             extraCheck.accept((T) table.getColumnSource(dtColName).get(key));
-            assertEquals(DateTimeUtils.toEpochNano(baseInstant) + tOff,
+            assertEquals(DateTimeUtils.epochNanos(baseInstant) + tOff,
                     (long) toNanoFunc.apply((T) table.getColumnSource(iColName).get(key)));
             extraCheck.accept((T) table.getColumnSource(iColName).get(key));
-            assertEquals(DateTimeUtils.toEpochNano(baseZDT) + tOff,
+            assertEquals(DateTimeUtils.epochNanos(baseZDT) + tOff,
                     (long) toNanoFunc.apply((T) table.getColumnSource(zdtColName).get(key)));
             extraCheck.accept((T) table.getColumnSource(zdtColName).get(key));
         }
@@ -279,9 +279,9 @@ public class TestReinterpretedColumn extends RefreshingTableTestCase {
         reinterpBasicChunkCheck(table.getColumnSource(dtColName), table.getRowSet(), toNanoFunc, isSorted,
                 baseDateTime.getNanos(), extraCheck);
         reinterpBasicChunkCheck(table.getColumnSource(iColName), table.getRowSet(), toNanoFunc, isSorted,
-                DateTimeUtils.toEpochNano(baseInstant), extraCheck);
+                DateTimeUtils.epochNanos(baseInstant), extraCheck);
         reinterpBasicChunkCheck(table.getColumnSource(zdtColName), table.getRowSet(), toNanoFunc, isSorted,
-                DateTimeUtils.toEpochNano(baseZDT), extraCheck);
+                DateTimeUtils.epochNanos(baseZDT), extraCheck);
 
         if (!isSorted) {
             doReinterpretTestBasic(initial.sortDescending("L"), expectedType, reinterpreter, equalColumn, toNanoFunc,
@@ -319,13 +319,13 @@ public class TestReinterpretedColumn extends RefreshingTableTestCase {
     @Test
     public void testReinterpretInstant() {
         doReinterpretTestBasic(
-                baseTable, Instant.class, TableTimeConversions::asInstant, "I", DateTimeUtils::toEpochNano);
+                baseTable, Instant.class, TableTimeConversions::asInstant, "I", DateTimeUtils::epochNanos);
         doReinterpretTestBasic(
-                sparseBaseTable, Instant.class, TableTimeConversions::asInstant, "I", DateTimeUtils::toEpochNano);
+                sparseBaseTable, Instant.class, TableTimeConversions::asInstant, "I", DateTimeUtils::epochNanos);
         doReinterpretTestBasic(
-                objectTable, Instant.class, TableTimeConversions::asInstant, "I", DateTimeUtils::toEpochNano);
+                objectTable, Instant.class, TableTimeConversions::asInstant, "I", DateTimeUtils::epochNanos);
         doReinterpretTestBasic(
-                sparseObjectTable, Instant.class, TableTimeConversions::asInstant, "I", DateTimeUtils::toEpochNano);
+                sparseObjectTable, Instant.class, TableTimeConversions::asInstant, "I", DateTimeUtils::epochNanos);
     }
 
     @Test
@@ -335,16 +335,16 @@ public class TestReinterpretedColumn extends RefreshingTableTestCase {
 
         doReinterpretTestBasic(baseTable, ZonedDateTime.class,
                 (t, c) -> TableTimeConversions.asZonedDateTime(t, c, "America/Chicago"),
-                null, DateTimeUtils::toEpochNano, extraCheck);
+                null, DateTimeUtils::epochNanos, extraCheck);
         doReinterpretTestBasic(sparseBaseTable, ZonedDateTime.class,
                 (t, c) -> TableTimeConversions.asZonedDateTime(t, c, "America/Chicago"),
-                null, DateTimeUtils::toEpochNano, extraCheck);
+                null, DateTimeUtils::epochNanos, extraCheck);
         doReinterpretTestBasic(objectTable, ZonedDateTime.class,
                 (t, c) -> TableTimeConversions.asZonedDateTime(t, c, "America/Chicago"),
-                null, DateTimeUtils::toEpochNano, extraCheck);
+                null, DateTimeUtils::epochNanos, extraCheck);
         doReinterpretTestBasic(sparseObjectTable, ZonedDateTime.class,
                 (t, c) -> TableTimeConversions.asZonedDateTime(t, c, "America/Chicago"),
-                null, DateTimeUtils::toEpochNano, extraCheck);
+                null, DateTimeUtils::epochNanos, extraCheck);
     }
 
     private <T> void reinterpWrappedChunkCheck(final ColumnSource<T> cs, RowSet rowSet, final boolean isSorted,

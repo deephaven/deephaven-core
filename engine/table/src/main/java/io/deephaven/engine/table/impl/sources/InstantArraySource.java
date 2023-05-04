@@ -30,7 +30,7 @@ public class InstantArraySource extends NanosBasedTimeArraySource<Instant>
 
     @Override
     protected long toNanos(Instant value) {
-        return DateTimeUtils.toEpochNano(value);
+        return DateTimeUtils.epochNanos(value);
     }
 
     @Override

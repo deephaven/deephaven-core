@@ -35,7 +35,7 @@ public class ImmutableInstantArraySource extends ImmutableNanosBasedTimeArraySou
 
     @Override
     protected long toNanos(Instant value) {
-        return DateTimeUtils.toEpochNano(value);
+        return DateTimeUtils.epochNanos(value);
     }
 
     @Override

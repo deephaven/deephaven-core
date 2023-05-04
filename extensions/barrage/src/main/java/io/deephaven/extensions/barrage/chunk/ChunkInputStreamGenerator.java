@@ -108,7 +108,7 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
                     ObjectChunk<Instant, Values> objChunk = chunk.asObjectChunk();
                     WritableLongChunk<Values> outChunk = WritableLongChunk.makeWritableChunk(objChunk.size());
                     for (int i = 0; i < objChunk.size(); ++i) {
-                        outChunk.set(i, DateTimeUtils.toEpochNano(objChunk.get(i)));
+                        outChunk.set(i, DateTimeUtils.epochNanos(objChunk.get(i)));
                     }
                     if (chunk instanceof PoolableChunk) {
                         ((PoolableChunk) chunk).close();
@@ -120,7 +120,7 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
                     ObjectChunk<ZonedDateTime, Values> objChunk = chunk.asObjectChunk();
                     WritableLongChunk<Values> outChunk = WritableLongChunk.makeWritableChunk(objChunk.size());
                     for (int i = 0; i < objChunk.size(); ++i) {
-                        outChunk.set(i, DateTimeUtils.toEpochNano(objChunk.get(i)));
+                        outChunk.set(i, DateTimeUtils.epochNanos(objChunk.get(i)));
                     }
                     if (chunk instanceof PoolableChunk) {
                         ((PoolableChunk) chunk).close();

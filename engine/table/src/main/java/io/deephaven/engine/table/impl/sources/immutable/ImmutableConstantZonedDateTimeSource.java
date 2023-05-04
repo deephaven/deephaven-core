@@ -33,7 +33,7 @@ public class ImmutableConstantZonedDateTimeSource extends ImmutableConstantNanos
 
     @Override
     protected long toNanos(ZonedDateTime value) {
-        return DateTimeUtils.toEpochNano(value);
+        return DateTimeUtils.epochNanos(value);
     }
 
     @Override

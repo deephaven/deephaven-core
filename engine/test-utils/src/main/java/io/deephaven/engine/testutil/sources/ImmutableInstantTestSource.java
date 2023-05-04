@@ -11,7 +11,6 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
-import io.deephaven.time.DateTime;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
@@ -66,7 +65,7 @@ public class ImmutableInstantTestSource extends AbstractColumnSource<Instant>
             final ObjectChunk<Instant, Values> dtc = data.asObjectChunk();
             for (int ii = 0; ii < result.length; ++ii) {
                 final Instant dt = dtc.get(ii);
-                result[ii] = dt == null ? QueryConstants.NULL_LONG : DateTimeUtils.toEpochNano(dt);
+                result[ii] = dt == null ? QueryConstants.NULL_LONG : DateTimeUtils.epochNanos(dt);
             }
         }
         return LongChunk.chunkWrap(result);

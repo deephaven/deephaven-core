@@ -1689,7 +1689,8 @@ public class DateTimeUtils {
     // ##############################################################################
 
     //TODO: clean up java time
-    // region TODO: Java Time
+
+    // region TODO: Java Time Conversions
 
     private static long safeComputeNanos(long epochSecond, long nanoOfSecond) {
         if (epochSecond >= MAX_CONVERTIBLE_SECONDS) {
@@ -1699,6 +1700,64 @@ public class DateTimeUtils {
 
         return epochSecond * 1_000_000_000L + nanoOfSecond;
     }
+
+    /**
+     * Returns nanoseconds from the Epoch for an {@link Instant} value.
+     *
+     * @param dateTime {@link Instant} to compute the Epoch offset for.
+     * @return nanoseconds since Epoch, or a NULL_LONG value if the {@link Instant} is null.
+     */
+    public static long epochNanos(@Nullable final Instant dateTime) {
+        if (dateTime == null) {
+            return NULL_LONG;
+        }
+
+        return safeComputeNanos(dateTime.getEpochSecond(), dateTime.getNano());
+    }
+
+    /**
+     * Returns nanoseconds from the Epoch for a {@link ZonedDateTime} value.
+     *
+     * @param dateTime {@link ZonedDateTime} to compute the Epoch offset for.
+     * @return nanoseconds since Epoch, or a NULL_LONG value if the {@link ZonedDateTime} is null.
+     */
+    public static long epochNanos(@Nullable final ZonedDateTime dateTime) {
+        if (dateTime == null) {
+            return NULL_LONG;
+        }
+
+        return safeComputeNanos(dateTime.toEpochSecond(), dateTime.getNano());
+    }
+
+    // endregion
+
+    // region TODO: Java Parse Times
+
+    /**
+     * Returns a {@link ChronoField} indicating the level of precision in a time or datetime string.
+     *
+     * @param s time string.
+     * @return null if the time string cannot be parsed; otherwise, a {@link ChronoField} for the finest units in the
+     *      string (e.g. "10:00:00" would yield SecondOfMinute).  Precisions
+     */
+    public static ChronoField parseTimePrecision(String timeDef) {
+        Matcher dtMatcher = CAPTURING_DATETIME_PATTERN.matcher(timeDef);
+        if (dtMatcher.matches()) {
+            DateGroupId[] parts = DateGroupId.values();
+            for (int i = parts.length - 1; i >= 0; i--) {
+                String part = dtMatcher.group(parts[i].id);
+                if (part != null && !part.isEmpty()) {
+                    return parts[i].field;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    // end region
+
+    // region TODO: Java Time
 
     /**
      * Returns nanoseconds since Epoch for an {@link Instant} value.
@@ -1711,36 +1770,6 @@ public class DateTimeUtils {
             return NULL_LONG;
         }
         return Math.addExact(TimeUnit.SECONDS.toNanos(instant.getEpochSecond()), instant.getNano());
-    }
-
-    /**
-     * Convert the specified instant to nanoseconds since epoch, or {@link QueryConstants#NULL_LONG null}.
-     *
-     * @param value the instant to convert
-     *
-     * @return nanoseconds since epoch or {@link QueryConstants#NULL_LONG null}
-     */
-    public static long toEpochNano(@Nullable final Instant value) {
-        if (value == null) {
-            return NULL_LONG;
-        }
-
-        return safeComputeNanos(value.getEpochSecond(), value.getNano());
-    }
-
-    /**
-     * Convert the specified {@link ZonedDateTime} to nanoseconds since epoch, or {@link QueryConstants#NULL_LONG null}.
-     *
-     * @param value the instant to convert
-     *
-     * @return nanoseconds since epoch or {@link QueryConstants#NULL_LONG null}
-     */
-    public static long toEpochNano(@Nullable final ZonedDateTime value) {
-        if (value == null) {
-            return NULL_LONG;
-        }
-
-        return safeComputeNanos(value.toEpochSecond(), value.getNano());
     }
 
     /**
@@ -2032,33 +2061,15 @@ public class DateTimeUtils {
         }
     }
 
-    /**
-     * Returns a {@link ChronoField} indicating the level of precision in a time or datetime string.
-     *
-     * @param s time string.
-     * @return null if the time string cannot be parsed; otherwise, a {@link ChronoField} for the finest units in the
-     *      string (e.g. "10:00:00" would yield SecondOfMinute).  Precisions
-     */
-    public static ChronoField parseTimePrecision(String timeDef) {
-        Matcher dtMatcher = CAPTURING_DATETIME_PATTERN.matcher(timeDef);
-        if (dtMatcher.matches()) {
-            DateGroupId[] parts = DateGroupId.values();
-            for (int i = parts.length - 1; i >= 0; i--) {
-                String part = dtMatcher.group(parts[i].id);
-                if (part != null && !part.isEmpty()) {
-                    return parts[i].field;
-                }
-            }
-        }
 
-        return null;
-    }
 
     // endregion
 
 
 
 
+
+    //TODO: RENAME: toEpochNano : epochNanos
     //TODO: RENAME: getFinestDefinedUnit : parseTimePrecision
     //TODO: RENAME: convertExpression : replace TimeLiteralReplacedExpression.convertExpression
     //TODO: RENAME: autoEpochToTime : epochAutoToDateTime

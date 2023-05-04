@@ -31,7 +31,7 @@ public class Immutable2DInstantArraySource extends Immutable2DNanosBasedTimeArra
 
     @Override
     protected long toNanos(Instant value) {
-        return DateTimeUtils.toEpochNano(value);
+        return DateTimeUtils.epochNanos(value);
     }
 
     @Override

@@ -68,7 +68,7 @@ public class InstantTestSource extends AbstractColumnSource<Instant>
         final long[] result = new long[data.length];
         for (int ii = 0; ii < result.length; ++ii) {
             final Instant dt = data[ii];
-            result[ii] = dt == null ? QueryConstants.NULL_LONG : DateTimeUtils.toEpochNano(dt);
+            result[ii] = dt == null ? QueryConstants.NULL_LONG : DateTimeUtils.epochNanos(dt);
         }
         return LongChunk.chunkWrap(result);
     }
@@ -84,7 +84,7 @@ public class InstantTestSource extends AbstractColumnSource<Instant>
             final ObjectChunk<Instant, Values> dtc = data.asObjectChunk();
             for (int ii = 0; ii < result.length; ++ii) {
                 final Instant dt = dtc.get(ii);
-                result[ii] = dt == null ? QueryConstants.NULL_LONG : DateTimeUtils.toEpochNano(dt);
+                result[ii] = dt == null ? QueryConstants.NULL_LONG : DateTimeUtils.epochNanos(dt);
             }
         }
         return LongChunk.chunkWrap(result);

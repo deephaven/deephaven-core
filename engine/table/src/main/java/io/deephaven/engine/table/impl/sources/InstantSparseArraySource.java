@@ -31,6 +31,6 @@ public class InstantSparseArraySource extends NanosBasedTimeSparseArraySource<In
 
     @Override
     protected long toNanos(Instant value) {
-        return DateTimeUtils.toEpochNano(value);
+        return DateTimeUtils.epochNanos(value);
     }
 }

@@ -31,7 +31,7 @@ public class ImmutableConstantInstantSource extends ImmutableConstantNanosBasedT
 
     @Override
     protected long toNanos(Instant value) {
-        return DateTimeUtils.toEpochNano(value);
+        return DateTimeUtils.epochNanos(value);
     }
 
     @Override
