@@ -38,7 +38,11 @@ public class Strings {
         return rawString.value();
     }
 
-    public static String of(RawString rawString, boolean encapsulate, boolean invert) {
+    public static String of(RawString rawString, boolean invert) {
+        return of(rawString, false, invert);
+    }
+
+    private static String of(RawString rawString, boolean encapsulate, boolean invert) {
         final String inner = of(rawString);
         if (invert) {
             return "!" + encapsulate(inner);
@@ -59,20 +63,14 @@ public class Strings {
         return in.toString();
     }
 
-    public static String of(FilterComparison comparison, boolean encapsulate) {
+    private static String of(FilterComparison comparison, boolean encapsulate) {
         final String inner = of(comparison);
         return encapsulate ? encapsulate(inner) : inner;
     }
 
-    public static String of(FilterIn in, boolean encapsulate, boolean invert) {
+    public static String of(FilterIn in, boolean invert) {
         final String inner = of(in);
-        if (invert) {
-            return "!" + encapsulate(inner);
-        }
-        if (encapsulate) {
-            return encapsulate(inner);
-        }
-        return inner;
+        return (invert ? "!" : "") + inner;
     }
 
     public static String of(FilterIsNull isNull) {
@@ -87,7 +85,7 @@ public class Strings {
         return filterOr.filters().stream().map(Strings::ofEncapsulated).collect(Collectors.joining(" || "));
     }
 
-    public static String of(FilterOr filterOr, boolean encapsulate) {
+    private static String of(FilterOr filterOr, boolean encapsulate) {
         final String inner = of(filterOr);
         return encapsulate ? encapsulate(inner) : inner;
     }
@@ -96,7 +94,7 @@ public class Strings {
         return filterAnd.filters().stream().map(Strings::ofEncapsulated).collect(Collectors.joining(" && "));
     }
 
-    public static String of(FilterAnd filterAnd, boolean encapsulate) {
+    private static String of(FilterAnd filterAnd, boolean encapsulate) {
         final String inner = of(filterAnd);
         return encapsulate ? encapsulate(inner) : inner;
     }
@@ -105,9 +103,9 @@ public class Strings {
         return pattern.toString();
     }
 
-    public static String of(FilterPattern pattern, boolean encapsulate) {
+    public static String of(FilterPattern pattern, boolean invert) {
         final String inner = of(pattern);
-        return encapsulate ? encapsulate(inner) : inner;
+        return (invert ? "!" : "") + inner;
     }
 
     public static String of(Pair pair) {
@@ -298,7 +296,7 @@ public class Strings {
 
         @Override
         public String visit(FilterIn in) {
-            return of(in, encapsulate, invert);
+            return of(in, invert);
         }
 
         @Override
@@ -318,7 +316,7 @@ public class Strings {
 
         @Override
         public String visit(FilterPattern pattern) {
-            return invert ? of(pattern.invert(), encapsulate) : of(pattern, encapsulate);
+            return of(pattern, invert);
         }
 
         @Override

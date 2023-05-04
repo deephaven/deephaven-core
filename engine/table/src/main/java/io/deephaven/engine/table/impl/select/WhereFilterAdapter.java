@@ -142,7 +142,7 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
 
     public static WhereFilter of(RawString rawString, boolean inverted) {
         // TODO(deephaven-core#3740): Remove engine crutch on io.deephaven.api.Strings
-        return WhereFilterFactory.getExpression(Strings.of(rawString, false, inverted));
+        return WhereFilterFactory.getExpression(Strings.of(rawString, inverted));
     }
 
     private final boolean inverted;

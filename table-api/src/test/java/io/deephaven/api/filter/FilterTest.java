@@ -8,8 +8,13 @@ import io.deephaven.api.RawString;
 import io.deephaven.api.expression.Function;
 import io.deephaven.api.expression.Method;
 import io.deephaven.api.filter.Filter.Visitor;
+import io.deephaven.api.filter.FilterPattern.Mode;
 import io.deephaven.api.literal.Literal;
 import org.junit.jupiter.api.Test;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.regex.Pattern;
 
 import static io.deephaven.api.Strings.of;
 import static io.deephaven.api.filter.Filter.and;
@@ -53,94 +58,122 @@ public class FilterTest {
 
     @Test
     void filterIsNull() {
-        toString(isNull(FOO), "isNull(Foo)");
-        toString(not(isNull(FOO)), "!isNull(Foo)");
+        stringsOf(isNull(FOO), "isNull(Foo)");
+        stringsOf(not(isNull(FOO)), "!isNull(Foo)");
     }
 
     @Test
     void filterIsNotNull() {
-        toString(isNotNull(FOO), "!isNull(Foo)");
-        toString(not(isNotNull(FOO)), "isNull(Foo)");
+        stringsOf(isNotNull(FOO), "!isNull(Foo)");
+        stringsOf(not(isNotNull(FOO)), "isNull(Foo)");
     }
 
     @Test
     void filterNot() {
-        toString(not(isNull(FOO)), "!isNull(Foo)");
+        stringsOf(not(isNull(FOO)), "!isNull(Foo)");
     }
 
     @Test
     void filterAnd() {
-        toString(and(isNotNull(FOO), isNotNull(BAR)), "!isNull(Foo) && !isNull(Bar)");
-        toString(not(and(isNotNull(FOO), isNotNull(BAR))), "isNull(Foo) || isNull(Bar)");
+        stringsOf(and(isNotNull(FOO), isNotNull(BAR)), "!isNull(Foo) && !isNull(Bar)");
+        stringsOf(not(and(isNotNull(FOO), isNotNull(BAR))), "isNull(Foo) || isNull(Bar)");
     }
 
     @Test
     void filterOr() {
-        toString(or(isNull(FOO), gt(FOO, BAR)), "isNull(Foo) || (Foo > Bar)");
-        toString(not(or(isNull(FOO), gt(FOO, BAR))), "!isNull(Foo) && (Foo <= Bar)");
+        stringsOf(or(isNull(FOO), gt(FOO, BAR)), "isNull(Foo) || (Foo > Bar)");
+        stringsOf(not(or(isNull(FOO), gt(FOO, BAR))), "!isNull(Foo) && (Foo <= Bar)");
     }
 
     @Test
     void filterOfTrue() {
-        toString(ofTrue(), "true");
-        toString(not(ofTrue()), "false");
+        stringsOf(ofTrue(), "true");
+        stringsOf(not(ofTrue()), "false");
     }
 
     @Test
     void filterOfFalse() {
-        toString(ofFalse(), "false");
-        toString(not(ofFalse()), "true");
+        stringsOf(ofFalse(), "false");
+        stringsOf(not(ofFalse()), "true");
     }
 
     @Test
     void filterIsTrue() {
-        toString(isTrue(FOO), "Foo == true");
-        toString(not(isTrue(FOO)), "Foo != true");
+        stringsOf(isTrue(FOO), "Foo == true");
+        stringsOf(not(isTrue(FOO)), "Foo != true");
     }
 
     @Test
     void filterIsFalse() {
-        toString(isFalse(FOO), "Foo == false");
-        toString(not(isFalse(FOO)), "Foo != false");
+        stringsOf(isFalse(FOO), "Foo == false");
+        stringsOf(not(isFalse(FOO)), "Foo != false");
     }
 
     @Test
     void filterEqPrecedence() {
-        toString(eq(or(isTrue(FOO), eq(BAR, BAZ)), and(isTrue(FOO), neq(BAR, BAZ))),
+        stringsOf(eq(or(isTrue(FOO), eq(BAR, BAZ)), and(isTrue(FOO), neq(BAR, BAZ))),
                 "((Foo == true) || (Bar == Baz)) == ((Foo == true) && (Bar != Baz))");
-        toString(not(eq(or(isTrue(FOO), eq(BAR, BAZ)), and(isTrue(FOO), neq(BAR, BAZ)))),
+        stringsOf(not(eq(or(isTrue(FOO), eq(BAR, BAZ)), and(isTrue(FOO), neq(BAR, BAZ)))),
                 "((Foo == true) || (Bar == Baz)) != ((Foo == true) && (Bar != Baz))");
     }
 
     @Test
     void filterFunction() {
-        toString(Function.of("MyFunction1"), "MyFunction1()");
-        toString(Function.of("MyFunction2", FOO), "MyFunction2(Foo)");
-        toString(Function.of("MyFunction3", FOO, BAR), "MyFunction3(Foo, Bar)");
+        stringsOf(Function.of("MyFunction1"), "MyFunction1()");
+        stringsOf(Function.of("MyFunction2", FOO), "MyFunction2(Foo)");
+        stringsOf(Function.of("MyFunction3", FOO, BAR), "MyFunction3(Foo, Bar)");
 
-        toString(not(Function.of("MyFunction1")), "!MyFunction1()");
-        toString(not(Function.of("MyFunction2", FOO)), "!MyFunction2(Foo)");
-        toString(not(Function.of("MyFunction3", FOO, BAR)), "!MyFunction3(Foo, Bar)");
+        stringsOf(not(Function.of("MyFunction1")), "!MyFunction1()");
+        stringsOf(not(Function.of("MyFunction2", FOO)), "!MyFunction2(Foo)");
+        stringsOf(not(Function.of("MyFunction3", FOO, BAR)), "!MyFunction3(Foo, Bar)");
     }
 
     @Test
     void filterMethod() {
-        toString(Method.of(FOO, "MyFunction1"), "Foo.MyFunction1()");
-        toString(Method.of(FOO, "MyFunction2", BAR), "Foo.MyFunction2(Bar)");
-        toString(Method.of(FOO, "MyFunction3", BAR, BAZ), "Foo.MyFunction3(Bar, Baz)");
+        stringsOf(Method.of(FOO, "MyFunction1"), "Foo.MyFunction1()");
+        stringsOf(Method.of(FOO, "MyFunction2", BAR), "Foo.MyFunction2(Bar)");
+        stringsOf(Method.of(FOO, "MyFunction3", BAR, BAZ), "Foo.MyFunction3(Bar, Baz)");
 
-        toString(not(Method.of(FOO, "MyFunction1")), "!Foo.MyFunction1()");
-        toString(not(Method.of(FOO, "MyFunction2", BAR)), "!Foo.MyFunction2(Bar)");
-        toString(not(Method.of(FOO, "MyFunction3", BAR, BAZ)), "!Foo.MyFunction3(Bar, Baz)");
+        stringsOf(not(Method.of(FOO, "MyFunction1")), "!Foo.MyFunction1()");
+        stringsOf(not(Method.of(FOO, "MyFunction2", BAR)), "!Foo.MyFunction2(Bar)");
+        stringsOf(not(Method.of(FOO, "MyFunction3", BAR, BAZ)), "!Foo.MyFunction3(Bar, Baz)");
+    }
+
+    @Test
+    void filterPattern() {
+        stringsOf(FilterPattern.of(FOO, Pattern.compile("myregex"), Mode.FIND, false),
+                "FilterPattern(ColumnName(Foo), myregex, 0, FIND, false)");
+        stringsOf(FilterPattern.of(FOO, Pattern.compile("myregex"), Mode.FIND, true),
+                "FilterPattern(ColumnName(Foo), myregex, 0, FIND, true)");
+
+        stringsOf(not(FilterPattern.of(FOO, Pattern.compile("myregex"), Mode.FIND, false)),
+                "!FilterPattern(ColumnName(Foo), myregex, 0, FIND, false)");
+        stringsOf(not(FilterPattern.of(FOO, Pattern.compile("myregex"), Mode.FIND, true)),
+                "!FilterPattern(ColumnName(Foo), myregex, 0, FIND, true)");
+    }
+
+    @Test
+    void filterIn() {
+        stringsOf(FilterIn.of(FOO, Literal.of(40), Literal.of(42)),
+                "FilterIn{expression=ColumnName(Foo), values=[LiteralInt{value=40}, LiteralInt{value=42}]}");
+        stringsOf(not(FilterIn.of(FOO, Literal.of(40), Literal.of(42))),
+                "!FilterIn{expression=ColumnName(Foo), values=[LiteralInt{value=40}, LiteralInt{value=42}]}");
     }
 
     @Test
     void filterRawString() {
-        toString(RawString.of("this is a raw string"), "this is a raw string");
-        toString(Filter.not(RawString.of("this is a raw string")), "!(this is a raw string)");
+        stringsOf(RawString.of("this is a raw string"), "this is a raw string");
+        stringsOf(Filter.not(RawString.of("this is a raw string")), "!(this is a raw string)");
     }
 
-    private static void toString(Filter filter, String expected) {
+    @Test
+    void examplesStringsOf() {
+        for (Filter filter : Examples.of()) {
+            of(filter);
+        }
+    }
+
+    private static void stringsOf(Filter filter, String expected) {
         assertThat(of(filter)).isEqualTo(expected);
         assertThat(filter.walk(FilterSpecificString.INSTANCE)).isEqualTo(expected);
     }
@@ -291,6 +324,97 @@ public class FilterTest {
         public CountingVisitor visit(RawString rawString) {
             ++count;
             return this;
+        }
+    }
+
+    public static class Examples implements Filter.Visitor<Void> {
+
+        public static List<Filter> of() {
+            Examples visitor = new Examples();
+            visitAll(visitor);
+            final List<Filter> out = new ArrayList<>(visitor.out);
+            for (Filter filter : visitor.out) {
+                out.add(Filter.not(filter));
+                out.add(Filter.not(Filter.not(filter)));
+            }
+            return visitor.out;
+        }
+
+        private final List<Filter> out = new ArrayList<>();
+
+        @Override
+        public Void visit(FilterIsNull isNull) {
+            out.add(FilterIsNull.of(FOO));
+            return null;
+        }
+
+        @Override
+        public Void visit(FilterComparison comparison) {
+            out.add(FilterComparison.eq(FOO, BAR));
+            out.add(FilterComparison.gt(FOO, BAR));
+            out.add(FilterComparison.geq(FOO, BAR));
+            out.add(FilterComparison.lt(FOO, BAR));
+            out.add(FilterComparison.leq(FOO, BAR));
+            out.add(FilterComparison.neq(FOO, BAR));
+            return null;
+        }
+
+        @Override
+        public Void visit(FilterIn in) {
+            out.add(FilterIn.of(FOO, Literal.of(40), Literal.of(42)));
+            return null;
+        }
+
+        @Override
+        public Void visit(FilterNot<?> not) {
+            // all filters not will be handled in of()
+            return null;
+        }
+
+        @Override
+        public Void visit(FilterOr ors) {
+            out.add(FilterOr.of(Filter.isTrue(FOO), Filter.isTrue(BAR)));
+            return null;
+        }
+
+        @Override
+        public Void visit(FilterAnd ands) {
+            out.add(FilterAnd.of(Filter.isTrue(FOO), Filter.isTrue(BAR)));
+            return null;
+        }
+
+        @Override
+        public Void visit(FilterPattern pattern) {
+            out.add(FilterPattern.of(FOO, Pattern.compile("somepattern"), Mode.FIND, false));
+            out.add(FilterPattern.of(FOO, Pattern.compile("somepattern"), Mode.FIND, true));
+            return null;
+        }
+
+        @Override
+        public Void visit(Function function) {
+            out.add(Function.of("my_function", FOO));
+            return null;
+        }
+
+        @Override
+        public Void visit(Method method) {
+            out.add(Method.of(FOO, "whats", BAR));
+            return null;
+        }
+
+        @Override
+        public Void visit(boolean literal) {
+            out.add(Filter.ofFalse());
+            out.add(Filter.ofTrue());
+            return null;
+        }
+
+        @Override
+        public Void visit(RawString rawString) {
+            out.add(RawString.of("Foo > Bar"));
+            out.add(RawString.of("Foo >= Bar + 42"));
+            out.add(RawString.of("aoeuaoeu"));
+            return null;
         }
     }
 }

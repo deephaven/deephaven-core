@@ -5,10 +5,16 @@ package io.deephaven.api.expression;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.RawString;
+import io.deephaven.api.Strings;
 import io.deephaven.api.expression.Expression.Visitor;
 import io.deephaven.api.filter.Filter;
+import io.deephaven.api.filter.FilterTest;
 import io.deephaven.api.literal.Literal;
+import io.deephaven.api.literal.LiteralTest;
 import org.junit.jupiter.api.Test;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import static io.deephaven.api.Strings.of;
 import static io.deephaven.api.filter.Filter.and;
@@ -48,24 +54,24 @@ public class ExpressionTest {
 
     @Test
     void columnName() {
-        toString(FOO, "Foo");
+        stringsOf(FOO, "Foo");
     }
 
     @Test
     void filter() {
-        toString(or(gt(FOO, BAR), gt(FOO, BAZ), and(isNull(FOO), isNotNull(BAR), isNotNull(BAZ))),
+        stringsOf(or(gt(FOO, BAR), gt(FOO, BAZ), and(isNull(FOO), isNotNull(BAR), isNotNull(BAZ))),
                 "(Foo > Bar) || (Foo > Baz) || (isNull(Foo) && !isNull(Bar) && !isNull(Baz))");
     }
 
     @Test
     void expressionFunction() {
-        toString(Function.of("plus", FOO, BAR), "plus(Foo, Bar)");
-        toString(Function.of("plus", FOO, Function.of("minus", BAR, BAZ)), "plus(Foo, minus(Bar, Baz))");
+        stringsOf(Function.of("plus", FOO, BAR), "plus(Foo, Bar)");
+        stringsOf(Function.of("plus", FOO, Function.of("minus", BAR, BAZ)), "plus(Foo, minus(Bar, Baz))");
     }
 
     @Test
     void expressionFunctionThatTakesFilters() {
-        toString(
+        stringsOf(
                 Function.of("some_func", gt(FOO, BAR), BAZ, ofTrue(), ofFalse(),
                         and(isNull(FOO), isNotNull(BAR), or(eq(FOO, BAR), neq(FOO, BAZ)))),
                 "some_func(Foo > Bar, Baz, true, false, isNull(Foo) && !isNull(Bar) && ((Foo == Bar) || (Foo != Baz)))");
@@ -73,25 +79,32 @@ public class ExpressionTest {
 
     @Test
     void expressionMethod() {
-        toString(Method.of(FOO, "myMethod", BAR), "Foo.myMethod(Bar)");
+        stringsOf(Method.of(FOO, "myMethod", BAR), "Foo.myMethod(Bar)");
     }
 
     @Test
     void literals() {
-        toString(Literal.of(true), "true");
-        toString(Literal.of(false), "false");
-        toString(Literal.of(42), "(int)42");
-        toString(Literal.of(42L), "42L");
-        toString(Literal.of("foo bar"), "\"foo bar\"");
-        toString(Literal.of("\"foo bar\""), "\"\\\"foo bar\\\"\"");
+        stringsOf(Literal.of(true), "true");
+        stringsOf(Literal.of(false), "false");
+        stringsOf(Literal.of(42), "(int)42");
+        stringsOf(Literal.of(42L), "42L");
+        stringsOf(Literal.of("foo bar"), "\"foo bar\"");
+        stringsOf(Literal.of("\"foo bar\""), "\"\\\"foo bar\\\"\"");
     }
 
     @Test
     void rawString() {
-        toString(RawString.of("Foo + Bar - 42"), "Foo + Bar - 42");
+        stringsOf(RawString.of("Foo + Bar - 42"), "Foo + Bar - 42");
     }
 
-    private static void toString(Expression expression, String expected) {
+    @Test
+    void examplesStringsOf() {
+        for (Expression expression : Examples.of()) {
+            Strings.of(expression);
+        }
+    }
+
+    private static void stringsOf(Expression expression, String expected) {
         assertThat(of(expression)).isEqualTo(expected);
         assertThat(expression.walk(SpecificMethod.INSTANCE)).isEqualTo(expected);
     }
@@ -181,6 +194,58 @@ public class ExpressionTest {
         public CountingVisitor visit(RawString rawString) {
             ++count;
             return this;
+        }
+    }
+
+    public static class Examples implements Expression.Visitor<Void> {
+
+        public static List<Expression> of() {
+            final Examples visitor = new Examples();
+            visitAll(visitor);
+            return visitor.out;
+        }
+
+        private final List<Expression> out = new ArrayList<>();
+
+        @Override
+        public Void visit(Literal literal) {
+            out.addAll(LiteralTest.Examples.of());
+            return null;
+        }
+
+        @Override
+        public Void visit(ColumnName columnName) {
+            out.add(FOO);
+            out.add(BAR);
+            out.add(BAZ);
+            return null;
+        }
+
+        @Override
+        public Void visit(Filter filter) {
+            out.addAll(FilterTest.Examples.of());
+            return null;
+        }
+
+        @Override
+        public Void visit(Function function) {
+            out.add(Function.of("my_function", FOO));
+            return null;
+        }
+
+        @Override
+        public Void visit(Method method) {
+            out.add(Method.of(FOO, "whats", BAR));
+            return null;
+        }
+
+        @Override
+        public Void visit(RawString rawString) {
+            out.add(RawString.of("Foo + Bar"));
+            out.add(RawString.of("Foo > Bar + 42"));
+            out.add(RawString.of("!Foo - what_isTHIS(Bar)"));
+            out.add(RawString.of("blerg9"));
+            return null;
         }
     }
 }
