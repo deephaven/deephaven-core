@@ -88,6 +88,14 @@ public class TestEmStd extends BaseUpdateByTest {
     final int DYNAMIC_UPDATE_STEPS = 20;
 
     // compare with external computations
+    private BigDecimal[] convert(double[] input) {
+        final BigDecimal[] output = new BigDecimal[input.length];
+        for (int ii = 0; ii < input.length; ii++) {
+            output[ii] = BigDecimal.valueOf(input[ii]);
+        }
+        return output;
+    }
+
     @Test
     public void testVerifyVsPandas() {
         final double[] input = new double[] {
@@ -172,7 +180,6 @@ public class TestEmStd extends BaseUpdateByTest {
                 UpdateByOperation.EmStd(10, "emstd10=value"),
                 UpdateByOperation.EmStd(50, "emstd50=value")));
 
-
         final QueryTable externalTable = TstUtils.testTable(
                 doubleCol("value", input),
                 doubleCol("emstd10", externalStd10),
@@ -180,6 +187,24 @@ public class TestEmStd extends BaseUpdateByTest {
 
         TstUtils.assertTableEquals("Tables match", externalTable, result,
                 EnumSet.of(TableDiff.DiffItems.DoublesExact));
+
+        // Repeat the test but convert to BigDecimal and make sure we are still correct.
+        final BigDecimal[] bdInput = convert(input);
+        final BigDecimal[] bdStd10 = convert(externalStd10);
+        final BigDecimal[] bdStd50 = convert(externalStd50);
+
+        // set the first output values to zero to match the null output from Deephaven
+        bdStd10[0] = bdStd50[0] = null;
+
+        final QueryTable bdTable = TstUtils.testTable(
+                col("value", bdInput));
+
+        final Table bdResult = bdTable.updateBy(List.of(
+                UpdateByOperation.EmStd(10, "emstd10=value"),
+                UpdateByOperation.EmStd(50, "emstd50=value")));
+
+        assertBDArrayEquals(bdStd10, (BigDecimal[]) bdResult.getColumn("emstd10").getDirect());
+        assertBDArrayEquals(bdStd50, (BigDecimal[]) bdResult.getColumn("emstd50").getDirect());
     }
 
     // region Zero Key Tests
