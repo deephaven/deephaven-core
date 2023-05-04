@@ -90,7 +90,7 @@ public class TimeLiteralReplacedExpression {
                 newVariables.put("_date" + dateTimeIndex, DateTime.class);
 
                 dateTimeIndex++;
-            } else if (DateTimeUtils.convertDateQuiet(s) != null) {
+            } else if (DateTimeUtils.parseDateQuiet(s) != null) {
                 matcher.appendReplacement(convertedFormula, "_localDate" + localDateIndex);
                 instanceVariablesString.append("        private java.time.LocalDate _localDate").append(localDateIndex)
                         .append("=DateTimeUtils.convertDate(\"").append(expression, matcher.start() + 1, matcher.end() - 1)

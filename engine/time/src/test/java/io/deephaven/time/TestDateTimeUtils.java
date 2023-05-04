@@ -237,55 +237,55 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
 
     public void testConvertDateQuiet() throws Exception {
         // ISO formats
-        TestCase.assertEquals(LocalDate.of(2018, 1, 1), DateTimeUtils.convertDateQuiet("2018-01-01"));
-        TestCase.assertEquals(LocalDate.of(2018, 12, 31), DateTimeUtils.convertDateQuiet("2018-12-31"));
-        TestCase.assertEquals(LocalDate.of(2018, 1, 1), DateTimeUtils.convertDateQuiet("20180101"));
-        TestCase.assertEquals(LocalDate.of(2018, 12, 31), DateTimeUtils.convertDateQuiet("20181231"));
+        TestCase.assertEquals(LocalDate.of(2018, 1, 1), DateTimeUtils.parseDateQuiet("2018-01-01"));
+        TestCase.assertEquals(LocalDate.of(2018, 12, 31), DateTimeUtils.parseDateQuiet("2018-12-31"));
+        TestCase.assertEquals(LocalDate.of(2018, 1, 1), DateTimeUtils.parseDateQuiet("20180101"));
+        TestCase.assertEquals(LocalDate.of(2018, 12, 31), DateTimeUtils.parseDateQuiet("20181231"));
 
         // extremities of the format (LocalDate can store a much larger range than this but we aren't that interested)
-        TestCase.assertEquals(LocalDate.of(0, 1, 1), DateTimeUtils.convertDateQuiet("0000-01-01"));
-        TestCase.assertEquals(LocalDate.of(9999, 12, 31), DateTimeUtils.convertDateQuiet("9999-12-31"));
+        TestCase.assertEquals(LocalDate.of(0, 1, 1), DateTimeUtils.parseDateQuiet("0000-01-01"));
+        TestCase.assertEquals(LocalDate.of(9999, 12, 31), DateTimeUtils.parseDateQuiet("9999-12-31"));
 
         // other variants
         TestCase.assertEquals(LocalDate.of(2018, 1, 1),
-                DateTimeUtils.convertDateQuiet("01/01/2018", DateTimeUtils.DateStyle.MDY));
+                DateTimeUtils.parseDateQuiet("01/01/2018", DateTimeUtils.DateStyle.MDY));
         TestCase.assertEquals(LocalDate.of(2018, 12, 31),
-                DateTimeUtils.convertDateQuiet("12/31/2018", DateTimeUtils.DateStyle.MDY));
+                DateTimeUtils.parseDateQuiet("12/31/2018", DateTimeUtils.DateStyle.MDY));
         TestCase.assertEquals(LocalDate.of(2018, 12, 31),
-                DateTimeUtils.convertDateQuiet("12/31/18", DateTimeUtils.DateStyle.MDY));
+                DateTimeUtils.parseDateQuiet("12/31/18", DateTimeUtils.DateStyle.MDY));
         TestCase.assertEquals(LocalDate.of(2024, 6, 25),
-                DateTimeUtils.convertDateQuiet("6/25/24", DateTimeUtils.DateStyle.MDY));
+                DateTimeUtils.parseDateQuiet("6/25/24", DateTimeUtils.DateStyle.MDY));
         TestCase.assertEquals(LocalDate.of(2024, 6, 2),
-                DateTimeUtils.convertDateQuiet("6/2/24", DateTimeUtils.DateStyle.MDY));
+                DateTimeUtils.parseDateQuiet("6/2/24", DateTimeUtils.DateStyle.MDY));
         TestCase.assertEquals(LocalDate.of(2024, 6, 2),
-                DateTimeUtils.convertDateQuiet("6/2/2024", DateTimeUtils.DateStyle.MDY));
+                DateTimeUtils.parseDateQuiet("6/2/2024", DateTimeUtils.DateStyle.MDY));
 
         TestCase.assertEquals(LocalDate.of(2018, 1, 1),
-                DateTimeUtils.convertDateQuiet("01/01/2018", DateTimeUtils.DateStyle.DMY));
+                DateTimeUtils.parseDateQuiet("01/01/2018", DateTimeUtils.DateStyle.DMY));
         TestCase.assertEquals(LocalDate.of(2018, 12, 31),
-                DateTimeUtils.convertDateQuiet("31/12/2018", DateTimeUtils.DateStyle.DMY));
+                DateTimeUtils.parseDateQuiet("31/12/2018", DateTimeUtils.DateStyle.DMY));
         TestCase.assertEquals(LocalDate.of(2018, 12, 31),
-                DateTimeUtils.convertDateQuiet("31/12/18", DateTimeUtils.DateStyle.DMY));
+                DateTimeUtils.parseDateQuiet("31/12/18", DateTimeUtils.DateStyle.DMY));
         TestCase.assertEquals(LocalDate.of(2024, 6, 25),
-                DateTimeUtils.convertDateQuiet("25/6/24", DateTimeUtils.DateStyle.DMY));
+                DateTimeUtils.parseDateQuiet("25/6/24", DateTimeUtils.DateStyle.DMY));
         TestCase.assertEquals(LocalDate.of(2024, 6, 2),
-                DateTimeUtils.convertDateQuiet("2/6/24", DateTimeUtils.DateStyle.DMY));
+                DateTimeUtils.parseDateQuiet("2/6/24", DateTimeUtils.DateStyle.DMY));
         TestCase.assertEquals(LocalDate.of(2024, 6, 2),
-                DateTimeUtils.convertDateQuiet("2/6/2024", DateTimeUtils.DateStyle.DMY));
+                DateTimeUtils.parseDateQuiet("2/6/2024", DateTimeUtils.DateStyle.DMY));
 
 
         TestCase.assertEquals(LocalDate.of(2018, 1, 1),
-                DateTimeUtils.convertDateQuiet("2018/01/01", DateTimeUtils.DateStyle.YMD));
+                DateTimeUtils.parseDateQuiet("2018/01/01", DateTimeUtils.DateStyle.YMD));
         TestCase.assertEquals(LocalDate.of(2018, 12, 31),
-                DateTimeUtils.convertDateQuiet("2018/12/31", DateTimeUtils.DateStyle.YMD));
+                DateTimeUtils.parseDateQuiet("2018/12/31", DateTimeUtils.DateStyle.YMD));
         TestCase.assertEquals(LocalDate.of(2018, 12, 31),
-                DateTimeUtils.convertDateQuiet("18/12/31", DateTimeUtils.DateStyle.YMD));
+                DateTimeUtils.parseDateQuiet("18/12/31", DateTimeUtils.DateStyle.YMD));
         TestCase.assertEquals(LocalDate.of(2024, 6, 25),
-                DateTimeUtils.convertDateQuiet("24/6/25", DateTimeUtils.DateStyle.YMD));
+                DateTimeUtils.parseDateQuiet("24/6/25", DateTimeUtils.DateStyle.YMD));
         TestCase.assertEquals(LocalDate.of(2024, 6, 2),
-                DateTimeUtils.convertDateQuiet("24/6/2", DateTimeUtils.DateStyle.YMD));
+                DateTimeUtils.parseDateQuiet("24/6/2", DateTimeUtils.DateStyle.YMD));
         TestCase.assertEquals(LocalDate.of(2024, 6, 2),
-                DateTimeUtils.convertDateQuiet("2024/6/2", DateTimeUtils.DateStyle.YMD));
+                DateTimeUtils.parseDateQuiet("2024/6/2", DateTimeUtils.DateStyle.YMD));
     }
 
     public void testConvertLocalTimeQuiet() throws Exception {
@@ -318,17 +318,17 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
     }
 
     public void testConvertDate() throws Exception {
-        DateTimeUtils.convertDate("2010-01-01"); // shouldn't have an exception
+        DateTimeUtils.parseDate("2010-01-01"); // shouldn't have an exception
 
         try {
-            DateTimeUtils.convertDate("2010-01-01 NY");
+            DateTimeUtils.parseDate("2010-01-01 NY");
             TestCase.fail("Should have thrown an exception");
         } catch (Exception e) {
         }
 
         TestCase.assertEquals("DateTimeUtils.convertDate(\"9999-12-31\")",
                 LocalDate.of(9999, 12, 31),
-                DateTimeUtils.convertDate("9999-12-31"));
+                DateTimeUtils.parseDate("9999-12-31"));
     }
 
     public void testParseDateTimeQuiet() throws Exception {
