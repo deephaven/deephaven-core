@@ -1107,7 +1107,7 @@ public class DateTimeUtils {
      *
      * @param s string to be converted
      * @return a {@link DateTime} represented by the input string.
-     * @throws RuntimeException if the string cannot be converted, otherwise a {@link DateTime} from the parsed String.
+     * @throws RuntimeException if the string cannot be converted, otherwise a {@link DateTime} from the parsed string.
      */
     public static DateTime parseDateTime(String s) {
         DateTime ret = parseDateTimeQuiet(s);
@@ -1878,6 +1878,8 @@ public class DateTimeUtils {
      * Converts a string into a local date.
      * The ideal date format is YYYY-MM-DD since it's the least ambiguous, but other formats are supported.
      *
+     * A local date is a date without a time or time zone.
+     *
      * The date string is formatted using the default date style.
      *
      * @param s date string.
@@ -1890,6 +1892,8 @@ public class DateTimeUtils {
     /**
      * Converts a string into a local date.
      * The ideal date format is YYYY-MM-DD since it's the least ambiguous, but other formats are supported.
+     *
+     * A local date is a date without a time or time zone.
      *
      * @param s date string.
      * @param dateStyle style the date string is formatted in.
@@ -1910,6 +1914,8 @@ public class DateTimeUtils {
      * Converts a string into a local date.
      * The ideal date format is YYYY-MM-DD since it's the least ambiguous, but other formats are supported.
      *
+     * A local date is a date without a time or time zone.
+     *
      * The date string is formatted using the default date style.
      *
      * @param s date string.
@@ -1921,6 +1927,55 @@ public class DateTimeUtils {
 
         if (ret == null) {
             throw new RuntimeException("Cannot parse date : " + s);
+        }
+
+        return ret;
+    }
+
+    /**
+     * Converts a time string in the form "hh:mm:ss[.nnnnnnnnn]" to a {@link LocalTime}.
+     *
+     * A local time is the time that would be read from a clock and does not have a date or timezone.
+     *
+     * @param s string to be converted
+     * @return a {@link LocalTime} represented by the input string, or null if the format is not recognized or an exception occurs.
+     */
+    public static LocalTime parseLocalTimeQuiet(String s) {
+        try {
+            final Matcher matcher = LOCAL_TIME_PATTERN.matcher(s);
+            if (matcher.matches()) {
+                final int hour = Integer.parseInt(matcher.group(1)); // hour is the only required field
+                final int minute = matcher.group(2) != null ? Integer.parseInt(matcher.group(2)) : 0;
+                final int second = matcher.group(3) != null ? Integer.parseInt(matcher.group(3)) : 0;
+                final int nanos;
+                if (matcher.group(4) != null) {
+                    final String fractionStr = matcher.group(5); // group 5 excludes the decimal pt
+                    nanos = Integer.parseInt(fractionStr) * (int) Math.pow(10, 9 - fractionStr.length());
+                } else {
+                    nanos = 0;
+                }
+                return LocalTime.of(hour, minute, second, nanos);
+            }
+        } catch (Exception ex) {
+            return null;
+        }
+        return null;
+    }
+
+    /**
+     * Converts a time string in the form "hh:mm:ss[.nnnnnnnnn]" to a {@link LocalTime}.
+     *
+     * A local time is the time that would be read from a clock and does not have a date or timezone.
+     *
+     * @param s string to be converted
+     * @return a {@link LocalTime} represented by the input string.
+     * @throws RuntimeException if the string cannot be converted, otherwise a {@link LocalTime} from the parsed string.
+     */
+    public static LocalTime parseLocalTime(String s) {
+        LocalTime ret = parseLocalTimeQuiet(s);
+
+        if (ret == null) {
+            throw new RuntimeException("Cannot parse local time : " + s);
         }
 
         return ret;
@@ -2048,43 +2103,14 @@ public class DateTimeUtils {
         return new DateTime(nanos + (seconds * DateTimeUtils.SECOND));
     }
 
-
-    /**
-     * Converts a time String in the form hh:mm:ss[.nnnnnnnnn] to a {@link LocalTime}.
-     *
-     * @param s The String to convert.
-     * @return null if the String cannot be parsed, otherwise a {@link LocalTime}.
-     */
-    public static LocalTime convertLocalTimeQuiet(String s) {
-        try {
-            // private static final Pattern LOCAL_TIME_PATTERN =
-            // Pattern.compile("([0-9][0-9]):?([0-9][0-9])?:?([0-9][0-9])?(\\.([0-9]{1,9}))?");
-            final Matcher matcher = LOCAL_TIME_PATTERN.matcher(s);
-            if (matcher.matches()) {
-                final int hour = Integer.parseInt(matcher.group(1)); // hour is the only required field
-                final int minute = matcher.group(2) != null ? Integer.parseInt(matcher.group(2)) : 0;
-                final int second = matcher.group(3) != null ? Integer.parseInt(matcher.group(3)) : 0;
-                final int nanos;
-                if (matcher.group(4) != null) {
-                    final String fractionStr = matcher.group(5); // group 5 excludes the decimal pt
-                    nanos = Integer.parseInt(fractionStr) * (int) Math.pow(10, 9 - fractionStr.length());
-                } else {
-                    nanos = 0;
-                }
-                return LocalTime.of(hour, minute, second, nanos);
-            }
-        } catch (Exception ex) {
-            return null;
-        }
-        return null;
-    }
-
     // endregion
 
 
 
 
 
+    //TODO: RENAME: convertLocalTimeQuiet : parseLocalTimeQuiet
+    //TODO: ADD: parseLocalTime
     //TODO: RENAME: convertDate : parseDate
     //TODO: RENAME: convertDateQuiet : parseDateQuiet
     //TODO: RENAME: toEpochNano : epochNanos

@@ -290,31 +290,31 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
 
     public void testConvertLocalTimeQuiet() throws Exception {
 
-        TestCase.assertEquals(java.time.LocalTime.of(12, 59, 59), DateTimeUtils.convertLocalTimeQuiet("L12:59:59"));
-        TestCase.assertEquals(java.time.LocalTime.of(0, 0, 0), DateTimeUtils.convertLocalTimeQuiet("L00:00:00"));
-        TestCase.assertEquals(java.time.LocalTime.of(23, 59, 59), DateTimeUtils.convertLocalTimeQuiet("L23:59:59"));
+        TestCase.assertEquals(java.time.LocalTime.of(12, 59, 59), DateTimeUtils.parseLocalTimeQuiet("L12:59:59"));
+        TestCase.assertEquals(java.time.LocalTime.of(0, 0, 0), DateTimeUtils.parseLocalTimeQuiet("L00:00:00"));
+        TestCase.assertEquals(java.time.LocalTime.of(23, 59, 59), DateTimeUtils.parseLocalTimeQuiet("L23:59:59"));
 
-        TestCase.assertEquals(java.time.LocalTime.of(12, 59, 59), DateTimeUtils.convertLocalTimeQuiet("L125959"));
-        TestCase.assertEquals(java.time.LocalTime.of(0, 0, 0), DateTimeUtils.convertLocalTimeQuiet("L000000"));
-        TestCase.assertEquals(java.time.LocalTime.of(23, 59, 59), DateTimeUtils.convertLocalTimeQuiet("L235959"));
+        TestCase.assertEquals(java.time.LocalTime.of(12, 59, 59), DateTimeUtils.parseLocalTimeQuiet("L125959"));
+        TestCase.assertEquals(java.time.LocalTime.of(0, 0, 0), DateTimeUtils.parseLocalTimeQuiet("L000000"));
+        TestCase.assertEquals(java.time.LocalTime.of(23, 59, 59), DateTimeUtils.parseLocalTimeQuiet("L235959"));
 
-        TestCase.assertEquals(java.time.LocalTime.of(12, 0, 0), DateTimeUtils.convertLocalTimeQuiet("L12"));
-        TestCase.assertEquals(java.time.LocalTime.of(12, 59, 0), DateTimeUtils.convertLocalTimeQuiet("L12:59"));
+        TestCase.assertEquals(java.time.LocalTime.of(12, 0, 0), DateTimeUtils.parseLocalTimeQuiet("L12"));
+        TestCase.assertEquals(java.time.LocalTime.of(12, 59, 0), DateTimeUtils.parseLocalTimeQuiet("L12:59"));
         TestCase.assertEquals(java.time.LocalTime.of(12, 59, 59, 123_000_000),
-                DateTimeUtils.convertLocalTimeQuiet("L12:59:59.123"));
+                DateTimeUtils.parseLocalTimeQuiet("L12:59:59.123"));
         TestCase.assertEquals(java.time.LocalTime.of(12, 59, 59, 123_456_000),
-                DateTimeUtils.convertLocalTimeQuiet("L12:59:59.123456"));
+                DateTimeUtils.parseLocalTimeQuiet("L12:59:59.123456"));
         TestCase.assertEquals(java.time.LocalTime.of(12, 59, 59, 123_456_789),
-                DateTimeUtils.convertLocalTimeQuiet("L12:59:59.123456789"));
+                DateTimeUtils.parseLocalTimeQuiet("L12:59:59.123456789"));
 
-        TestCase.assertEquals(java.time.LocalTime.of(12, 0, 0), DateTimeUtils.convertLocalTimeQuiet("L12"));
-        TestCase.assertEquals(java.time.LocalTime.of(12, 59, 0), DateTimeUtils.convertLocalTimeQuiet("L1259"));
+        TestCase.assertEquals(java.time.LocalTime.of(12, 0, 0), DateTimeUtils.parseLocalTimeQuiet("L12"));
+        TestCase.assertEquals(java.time.LocalTime.of(12, 59, 0), DateTimeUtils.parseLocalTimeQuiet("L1259"));
         TestCase.assertEquals(java.time.LocalTime.of(12, 59, 59, 123_000_000),
-                DateTimeUtils.convertLocalTimeQuiet("L125959.123"));
+                DateTimeUtils.parseLocalTimeQuiet("L125959.123"));
         TestCase.assertEquals(java.time.LocalTime.of(12, 59, 59, 123_456_000),
-                DateTimeUtils.convertLocalTimeQuiet("L125959.123456"));
+                DateTimeUtils.parseLocalTimeQuiet("L125959.123456"));
         TestCase.assertEquals(java.time.LocalTime.of(12, 59, 59, 123_456_789),
-                DateTimeUtils.convertLocalTimeQuiet("L125959.123456789"));
+                DateTimeUtils.parseLocalTimeQuiet("L125959.123456789"));
     }
 
     public void testConvertDate() throws Exception {

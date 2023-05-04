@@ -114,7 +114,7 @@ public class TimeLiteralReplacedExpression {
                 newVariables.put("_period" + periodIndex, Period.class);
 
                 periodIndex++;
-            } else if (DateTimeUtils.convertLocalTimeQuiet(s) != null) {
+            } else if (DateTimeUtils.parseLocalTimeQuiet(s) != null) {
                 matcher.appendReplacement(convertedFormula, "_localTime" + timeIndex);
                 instanceVariablesString.append("        private java.time.LocalTime _localTime").append(timeIndex)
                         .append("=DateTimeUtils.convertLocalTime(\"")
