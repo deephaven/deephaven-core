@@ -670,16 +670,16 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         final DateTime dateTime1 = DateTimeUtils.parseDateTime("2015-07-31T20:40 NY");
         final ZonedDateTime zonedDateTime1 =
                 ZonedDateTime.of(2015, 7, 31, 20, 40, 0, 0, TimeZone.TZ_NY.getTimeZone().toTimeZone().toZoneId());
-        TestCase.assertEquals(zonedDateTime1, DateTimeUtils.getZonedDateTime(dateTime1, TimeZone.TZ_NY));
+        TestCase.assertEquals(zonedDateTime1, DateTimeUtils.toZonedDateTime(dateTime1, TimeZone.TZ_NY));
         TestCase.assertEquals(dateTime1, DateTimeUtils.toDateTime(zonedDateTime1));
 
         final DateTime dateTime2 = DateTimeUtils.parseDateTime("2020-07-31T20:40 NY");
         TestCase.assertEquals(dateTime2,
-                DateTimeUtils.toDateTime(DateTimeUtils.getZonedDateTime(dateTime2, TimeZone.TZ_NY)));
+                DateTimeUtils.toDateTime(DateTimeUtils.toZonedDateTime(dateTime2, TimeZone.TZ_NY)));
 
         final DateTime dateTime3 = DateTimeUtils.parseDateTime("2050-07-31T20:40 NY");
         TestCase.assertEquals(dateTime3,
-                DateTimeUtils.toDateTime(DateTimeUtils.getZonedDateTime(dateTime3, TimeZone.TZ_NY)));
+                DateTimeUtils.toDateTime(DateTimeUtils.toZonedDateTime(dateTime3, TimeZone.TZ_NY)));
     }
 
     public void testISO8601() {

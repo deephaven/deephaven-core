@@ -517,13 +517,13 @@ public class WhereFilterFactory {
             ZonedDateTime dateUpper = null;
             try {
                 // Was it a full date?
-                dateLower = DateTimeUtils.getZonedDateTime(DateTimeUtils.parseDateTime(valString));
+                dateLower = DateTimeUtils.toZonedDateTime(DateTimeUtils.parseDateTime(valString));
             } catch (RuntimeException ignored) {
                 try {
                     // Maybe it was just a TOD?
                     long time = DateTimeUtils.parseNanos(valString);
                     dateLower =
-                            DateTimeUtils.getZonedDateTime(DateTime.nowMillis()).truncatedTo(ChronoUnit.DAYS).plus(time,
+                            DateTimeUtils.toZonedDateTime(DateTime.nowMillis()).truncatedTo(ChronoUnit.DAYS).plus(time,
                                     ChronoUnit.NANOS);
                 } catch (RuntimeException ignored1) {
                 }

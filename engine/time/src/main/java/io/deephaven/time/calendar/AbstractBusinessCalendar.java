@@ -34,7 +34,7 @@ public abstract class AbstractBusinessCalendar extends AbstractCalendar implemen
             return null;
         }
 
-        LocalDate t = DateTimeUtils.getZonedDateTime(time, timeZone()).toLocalDate().minusDays(1);
+        LocalDate t = DateTimeUtils.toZonedDateTime(time, timeZone()).toLocalDate().minusDays(1);
         while (!isBusinessDay(t)) {
             t = t.minusDays(1);
         }
@@ -124,7 +124,7 @@ public abstract class AbstractBusinessCalendar extends AbstractCalendar implemen
             return null;
         }
 
-        LocalDate t = DateTimeUtils.getZonedDateTime(time, timeZone()).toLocalDate().minusDays(1);
+        LocalDate t = DateTimeUtils.toZonedDateTime(time, timeZone()).toLocalDate().minusDays(1);
         while (isBusinessDay(t)) {
             t = t.minusDays(1);
         }
@@ -198,7 +198,7 @@ public abstract class AbstractBusinessCalendar extends AbstractCalendar implemen
             return null;
         }
 
-        LocalDate t = DateTimeUtils.getZonedDateTime(time, timeZone()).toLocalDate().plusDays(1);
+        LocalDate t = DateTimeUtils.toZonedDateTime(time, timeZone()).toLocalDate().plusDays(1);
         while (!isBusinessDay(t)) {
             t = t.plusDays(1);
         }
@@ -289,7 +289,7 @@ public abstract class AbstractBusinessCalendar extends AbstractCalendar implemen
             return null;
         }
 
-        LocalDate t = DateTimeUtils.getZonedDateTime(time, timeZone()).toLocalDate().plusDays(1);
+        LocalDate t = DateTimeUtils.toZonedDateTime(time, timeZone()).toLocalDate().plusDays(1);
         while (isBusinessDay(t)) {
             t = t.plusDays(1);
         }
@@ -362,8 +362,8 @@ public abstract class AbstractBusinessCalendar extends AbstractCalendar implemen
         if (start == null || end == null) {
             return new String[0];
         }
-        LocalDate day = DateTimeUtils.getZonedDateTime(start, timeZone()).toLocalDate();
-        LocalDate day2 = DateTimeUtils.getZonedDateTime(end, timeZone()).toLocalDate();
+        LocalDate day = DateTimeUtils.toZonedDateTime(start, timeZone()).toLocalDate();
+        LocalDate day2 = DateTimeUtils.toZonedDateTime(end, timeZone()).toLocalDate();
 
         List<String> dateList = new ArrayList<>();
         while (!day.isAfter(day2)) {
@@ -406,8 +406,8 @@ public abstract class AbstractBusinessCalendar extends AbstractCalendar implemen
         if (start == null || end == null) {
             return new String[0];
         }
-        LocalDate day = DateTimeUtils.getZonedDateTime(start, timeZone()).toLocalDate();
-        LocalDate day2 = DateTimeUtils.getZonedDateTime(end, timeZone()).toLocalDate();
+        LocalDate day = DateTimeUtils.toZonedDateTime(start, timeZone()).toLocalDate();
+        LocalDate day2 = DateTimeUtils.toZonedDateTime(end, timeZone()).toLocalDate();
 
         List<String> dateList = new ArrayList<>();
         while (!day.isAfter(day2)) {

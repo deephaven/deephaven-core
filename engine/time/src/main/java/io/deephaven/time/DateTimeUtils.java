@@ -628,6 +628,7 @@ public class DateTimeUtils {
         return (double) (millis + timeZone.getOffset(millis)) / 86400000 + 25569;
     }
 
+    //TODO: remove dateTime from name??
     /**
      * Converts a {@link DateTime} to an Excel time represented as a double.
      *
@@ -1942,6 +1943,76 @@ public class DateTimeUtils {
         return seconds == NULL_LONG ? null : ZonedDateTime.ofInstant(epochSecondsToInstant(seconds), timeZone);
     }
 
+    /**
+     * Converts a {@link DateTime} to a {@link ZonedDateTime}.
+     *
+     * Uses the default time zone.
+     *
+     * @param dateTime {@link DateTime} to convert.
+     * @return {@link ZonedDateTime} using the default time zone, or null if dateTime is null.
+     */
+    @Nullable
+    public static ZonedDateTime toZonedDateTime(final @Nullable DateTime dateTime) {
+        return toZonedDateTime(dateTime, TimeZone.TZ_DEFAULT);
+    }
+
+    /**
+     * Converts a {@link DateTime} to a {@link ZonedDateTime}.
+     *
+     * @param dateTime {@link DateTime} to convert.
+     * @param timeZone time zone.
+     * @return {@link ZonedDateTime} using the specified time zone, or null if dateTime is null.
+     */
+    @Nullable
+    public static ZonedDateTime toZonedDateTime(@Nullable final DateTime dateTime, @NotNull final TimeZone timeZone) {
+        if (dateTime == null) {
+            return null;
+        }
+
+        final ZoneId zone = timeZone.getTimeZone().toTimeZone().toZoneId();
+        return dateTime.toZonedDateTime(zone);
+    }
+
+    /**
+     * Converts a {@link DateTime} to a {@link ZonedDateTime}.
+     *
+     * @param dateTime {@link DateTime} to convert.
+     * @param timeZone time zone.
+     * @return {@link ZonedDateTime} using the specified time zone, or null if dateTime is null.
+     */
+    @Nullable
+    public static ZonedDateTime toZonedDateTime(@Nullable final DateTime dateTime, @NotNull final ZoneId timeZone) {
+        if (dateTime == null) {
+            return null;
+        }
+
+        return dateTime.toZonedDateTime(timeZone);
+    }
+
+    /**
+     * Converts a {@link ZonedDateTime} to a {@link DateTime}.
+     *
+     * @param zonedDateTime {@link ZonedDateTime} to convert.
+     * @return {@link DateTime} , or null if zonedDateTime is null.
+     * @throws DateTimeOverflowException if the resultant {@link DateTime} exceeds the supported range.
+     */
+    @Nullable
+    public static DateTime toDateTime(@Nullable final ZonedDateTime zonedDateTime) {
+        if (zonedDateTime == null) {
+            return null;
+        }
+
+        int nanos = zonedDateTime.getNano();
+        long seconds = zonedDateTime.toEpochSecond();
+
+        long limit = (Long.MAX_VALUE - nanos) / DateTimeUtils.SECOND;
+        if (seconds >= limit) {
+            throw new DateTimeOverflowException("Overflow: cannot convert " + zonedDateTime + " to new DateTime");
+        }
+
+        return new DateTime(nanos + (seconds * DateTimeUtils.SECOND));
+    }
+
     // endregion
 
     // region TODO: Java Parse Times
@@ -2196,93 +2267,8 @@ public class DateTimeUtils {
 
     // endregion
 
-    // region TODO: Java Time
 
-
-
-
-
-
-
-
-
-
-
-    /**
-     * Converts a {@link DateTime} to a {@link ZonedDateTime}.
-     *
-     * @param dateTime The a {@link DateTime} to convert.
-     * @return A {@link ZonedDateTime} using the default time zone for the session as indicated by
-     *         {@link TimeZone#TZ_DEFAULT}.
-     */
-    @Nullable
-    public static ZonedDateTime getZonedDateTime(final @Nullable DateTime dateTime) {
-        return getZonedDateTime(dateTime, TimeZone.TZ_DEFAULT);
-    }
-
-    /**
-     * Converts a {@link DateTime} to a {@link ZonedDateTime}.
-     *
-     * @param dateTime The a {@link DateTime} to convert.
-     * @param timeZone The {@link TimeZone} to use for the conversion.
-     * @return A {@link ZonedDateTime} using the specified time zone. or null if dateTime was null
-     */
-    @Nullable
-    public static ZonedDateTime getZonedDateTime(@Nullable final DateTime dateTime, @NotNull final TimeZone timeZone) {
-        if (dateTime == null) {
-            return null;
-        }
-
-        final ZoneId zone = timeZone.getTimeZone().toTimeZone().toZoneId();
-        return dateTime.toZonedDateTime(zone);
-    }
-
-    /**
-     * Converts a {@link DateTime} to a {@link ZonedDateTime}.
-     *
-     * @param dateTime The a {@link DateTime} to convert.
-     * @param timeZone The {@link ZoneId} to use for the conversion.
-     * @return A {@link ZonedDateTime} using the specified time zone. or null if dateTime was null
-     */
-    @Nullable
-    public static ZonedDateTime getZonedDateTime(@Nullable final DateTime dateTime, @NotNull final ZoneId timeZone) {
-        if (dateTime == null) {
-            return null;
-        }
-
-        return dateTime.toZonedDateTime(timeZone);
-    }
-
-    /**
-     * Converts a {@link ZonedDateTime} to a {@link DateTime}.
-     *
-     * @param zonedDateTime The a {@link ZonedDateTime} to convert.
-     * @throws DateTimeOverflowException if the input is out of the range for a {@link DateTime}, otherwise, a
-     *         {@link DateTime} version of the input.
-     */
-    @Nullable
-    public static DateTime toDateTime(@Nullable final ZonedDateTime zonedDateTime) {
-        if (zonedDateTime == null) {
-            return null;
-        }
-
-        int nanos = zonedDateTime.getNano();
-        long seconds = zonedDateTime.toEpochSecond();
-
-        long limit = (Long.MAX_VALUE - nanos) / DateTimeUtils.SECOND;
-        if (seconds >= limit) {
-            throw new DateTimeOverflowException("Overflow: cannot convert " + zonedDateTime + " to new DateTime");
-        }
-
-        return new DateTime(nanos + (seconds * DateTimeUtils.SECOND));
-    }
-
-    // endregion
-
-
-
-
-
+    //TODO: RENAME: getZonedDateTime : toZonedDateTime
     //TODO: RENAME: makeZonedDateTime : epochNanosToZonedDateTime
     //TODO: ADD: epochMicrosToZonedDateTime
     //TODO: ADD: epochMillisToZonedDateTime
