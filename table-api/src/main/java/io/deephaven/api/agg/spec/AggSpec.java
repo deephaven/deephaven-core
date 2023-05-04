@@ -127,9 +127,9 @@ public interface AggSpec {
     }
 
     /**
-     * Specifies an aggregation that freezes the first value for each group and ignores subsequent changes. When
-     * groups are removed, the corresponding output row is removedd. When groups are re-added (on a subsequent update
-     * cycle), the newly added value is then frozen.
+     * Specifies an aggregation that freezes the first value for each group and ignores subsequent changes. When groups
+     * are removed, the corresponding output row is removedd. When groups are re-added (on a subsequent update cycle),
+     * the newly added value is then frozen.
      *
      * @return {@link AggSpecFreeze#of()}
      */
@@ -138,8 +138,8 @@ public interface AggSpec {
     }
 
     /**
-     * Specifies an aggregation that outputs each group of input values as a Deephaven
-     * vector (io.deephaven.vector.Vector).
+     * Specifies an aggregation that outputs each group of input values as a Deephaven vector
+     * (io.deephaven.vector.Vector).
      *
      * @return {@link AggSpecGroup#of()}
      */
@@ -157,8 +157,8 @@ public interface AggSpec {
     }
 
     /**
-     * Specifies an aggregation that outputs the maximum value in the input column for each group.
-     * Only works for numeric or Comparable input types.
+     * Specifies an aggregation that outputs the maximum value in the input column for each group. Only works for
+     * numeric or Comparable input types.
      *
      * @return {@link AggSpecMax#of()}
      */
@@ -181,7 +181,7 @@ public interface AggSpec {
      * Only works for numeric or Comparable input types.
      *
      * @param averageEvenlyDivided Whether to average the highest low-bucket value and lowest high-bucket value, when
-     *                             the low-bucket and high-bucket are of equal size. Only applies to numeric types.
+     *        the low-bucket and high-bucket are of equal size. Only applies to numeric types.
      * @return {@link AggSpecMedian#of(boolean)} for {@code averageEvenlyDivided}
      */
     static AggSpecMedian median(boolean averageEvenlyDivided) {
@@ -199,8 +199,8 @@ public interface AggSpec {
     }
 
     /**
-     * Specifier for a column aggregation that produces a percentile value from the input column's values for each group.
-     * Only works for numeric or Comparable input types.
+     * Specifier for a column aggregation that produces a percentile value from the input column's values for each
+     * group. Only works for numeric or Comparable input types.
      *
      * @param percentile the percentile to calculate. Must be >= 0.0 and <= 1.0.
      * @return {@link AggSpecPercentile#of(double)} for {@code percentile}
@@ -210,12 +210,12 @@ public interface AggSpec {
     }
 
     /**
-     * Specifier for a column aggregation that produces a percentile value from the input column's values for each group.
-     * Only works for numeric or Comparable input types.
+     * Specifier for a column aggregation that produces a percentile value from the input column's values for each
+     * group. Only works for numeric or Comparable input types.
      *
      * @param percentile the percentile to calculate. Must be >= 0.0 and <= 1.0.
      * @param averageEvenlyDivided Whether to average the highest low-bucket value and lowest high-bucket value, when
-     *                             the low-bucket and high-bucket are of equal size. Only applies to numeric types.
+     *        the low-bucket and high-bucket are of equal size. Only applies to numeric types.
      * @return {@link AggSpecPercentile#of(double, boolean)} for {@code percentile} and {@code averageEvenlyDivided}
      */
     static AggSpecPercentile percentile(double percentile, boolean averageEvenlyDivided) {
@@ -223,7 +223,8 @@ public interface AggSpec {
     }
 
     /**
-     * Specifies an aggregation that outputs the first value in the input column for each group, after sorting the group on the sort columns.
+     * Specifies an aggregation that outputs the first value in the input column for each group, after sorting the group
+     * on the sort columns.
      *
      * @param columns the columns to sort on to determine the order within each group
      * @return {@link AggSpecSortedFirst} for the supplied sort {@code columns}
@@ -233,7 +234,8 @@ public interface AggSpec {
     }
 
     /**
-     * Specifies an aggregation that outputs the first value in the input column for each group, after sorting the group on the sort columns.
+     * Specifies an aggregation that outputs the first value in the input column for each group, after sorting the group
+     * on the sort columns.
      *
      * @param columns the columns to sort on to determine the order within each group
      * @return {@link AggSpecSortedFirst} for the supplied sort {@code columns}
@@ -247,8 +249,8 @@ public interface AggSpec {
     }
 
     /**
-     * Specifies an aggregation that outputs the last value in the input column for each group, after sorting the
-     * group on the sort columns.
+     * Specifies an aggregation that outputs the last value in the input column for each group, after sorting the group
+     * on the sort columns.
      *
      * @param columns the columns to sort on to determine the order within each group
      * @return {@link AggSpecSortedLast} for the supplied sort {@code columns}
@@ -258,8 +260,8 @@ public interface AggSpec {
     }
 
     /**
-     * Specifies an aggregation that outputs the last value in the input column for each group, after sorting the
-     * group on the sort columns.
+     * Specifies an aggregation that outputs the last value in the input column for each group, after sorting the group
+     * on the sort columns.
      *
      * @param columns the columns to sort on to determine the order within each group
      * @return {@link AggSpecSortedLast} for the supplied sort {@code columns}
@@ -273,8 +275,8 @@ public interface AggSpec {
     }
 
     /**
-     * Specifies an aggregation that outputs the standard deviation of the input column values for each group.
-     * Only works for numeric input types.
+     * Specifies an aggregation that outputs the standard deviation of the input column values for each group. Only
+     * works for numeric input types.
      *
      * @return {@link AggSpecStd#of()}
      */
@@ -283,8 +285,8 @@ public interface AggSpec {
     }
 
     /**
-     * Specifies an aggregation that outputs the sum of input values for each group. Only works with numeric
-     * input types and Boolean.
+     * Specifies an aggregation that outputs the sum of input values for each group. Only works with numeric input types
+     * and Boolean.
      *
      * @return {@link AggSpecSum#of()}
      */
@@ -293,9 +295,8 @@ public interface AggSpec {
     }
 
     /**
-     * Specifies an aggregation that outputs a T-Digest (com.tdunning.math.stats.TDigest).
-     * May be used to implement parallel percentile calculations by splitting inputs and accumulating results into
-     * a single downstream TDigest.
+     * Specifies an aggregation that outputs a T-Digest (com.tdunning.math.stats.TDigest). May be used to implement
+     * parallel percentile calculations by splitting inputs and accumulating results into a single downstream TDigest.
      * May only be used on static or add-only tables.
      *
      * @return {@link AggSpecTDigest#of()}
@@ -305,13 +306,12 @@ public interface AggSpec {
     }
 
     /**
-     * Specifies an aggregation that outputs a T-Digest (com.tdunning.math.stats.TDigest) with the specified compression.
-     * May be used to implement parallel percentile calculations by splitting inputs and accumulating results into
-     * a single downstream TDigest.
-     * May only be used on static or add-only tables.
+     * Specifies an aggregation that outputs a T-Digest (com.tdunning.math.stats.TDigest) with the specified
+     * compression. May be used to implement parallel percentile calculations by splitting inputs and accumulating
+     * results into a single downstream TDigest. May only be used on static or add-only tables.
      *
-     * @param compression T-Digest compression factor. Must be greater than or equal to 1. 1000 is extremely large.
-     * When not specified, the server will choose a compression value.
+     * @param compression T-Digest compression factor. Must be greater than or equal to 1. 1000 is extremely large. When
+     *        not specified, the server will choose a compression value.
      * @return {@link AggSpecTDigest#of(double)} for {@code compression}
      */
     static AggSpecTDigest tDigest(double compression) {
@@ -319,9 +319,8 @@ public interface AggSpec {
     }
 
     /**
-     * Create a unique aggregation for the supplied column name pairs.
-     * This will not consider null values when determining if a group has a single unique value.
-     * Non-unique groups will have null values in the output column.
+     * Create a unique aggregation for the supplied column name pairs. This will not consider null values when
+     * determining if a group has a single unique value. Non-unique groups will have null values in the output column.
      *
      * @return {@link AggSpecUnique#of()}
      */
@@ -330,9 +329,8 @@ public interface AggSpec {
     }
 
     /**
-     * Create a unique aggregation for the supplied column name pairs.
-     * This will not consider null values when determining if a group has a single unique value.
-     * Non-unique groups will have null values in the output column.
+     * Create a unique aggregation for the supplied column name pairs. This will not consider null values when
+     * determining if a group has a single unique value. Non-unique groups will have null values in the output column.
      *
      * @param includeNulls whether to consider null values toward uniqueness
      * @param nonUniqueSentinel the value to output for non-unique groups
@@ -343,9 +341,8 @@ public interface AggSpec {
     }
 
     /**
-     * Create a unique aggregation for the supplied column name pairs.
-     * This will not consider null values when determining if a group has a single unique value.
-     * Non-unique groups will have null values in the output column.
+     * Create a unique aggregation for the supplied column name pairs. This will not consider null values when
+     * determining if a group has a single unique value. Non-unique groups will have null values in the output column.
      *
      * @param includeNulls whether to consider null values toward uniqueness
      * @param nonUniqueSentinel the value to output for non-unique groups
