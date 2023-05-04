@@ -33,7 +33,6 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
 @SuppressWarnings("RegExpRedundantEscape")
 public class DateTimeUtils {
     //TODO: add final everywhere
-    //TODO: add @Nullable ar @NotNull to all inputs or outputs
     //TODO: rename class
     //TODO: document
     //TODO: remove Joda exposure
@@ -204,7 +203,7 @@ public class DateTimeUtils {
          *
          * @param message error string.
          */
-        private DateTimeOverflowException(String message) {
+        private DateTimeOverflowException(@NotNull final String message) {
             super(message);
         }
 
@@ -214,7 +213,7 @@ public class DateTimeUtils {
          * @param message error message.
          * @param cause cause of the overflow.
          */
-        private DateTimeOverflowException(String message, Throwable cause) {
+        private DateTimeOverflowException(@NotNull final String message, @NotNull final Throwable cause) {
             super(message, cause);
         }
     }
@@ -266,9 +265,9 @@ public class DateTimeUtils {
      * Set the clock used to compute the current time.  This allows a custom clock to be used instead of the current system clock.
      * This is mainly used for replay simulations.
      *
-     * @param clock clock used to compute the current time.
+     * @param clock clock used to compute the current time.  Null uses the system clock.
      */
-    public static void setClock( final Clock clock) {
+    public static void setClock( @Nullable final Clock clock) {
         DateTimeUtils.clock = clock;
     }
 
@@ -279,6 +278,7 @@ public class DateTimeUtils {
      * @see #setClock(Clock)
      * @return current clock.
      */
+    @NotNull
     public static Clock currentClock() {
         return Objects.requireNonNullElse(clock, Clock.system());
     }
@@ -295,6 +295,7 @@ public class DateTimeUtils {
      * @return the current {@link DateTime} according to the current clock.
      */
     @ScriptApi
+    @NotNull
     public static DateTime now() {
         return DateTime.of(currentClock());
     }
@@ -309,6 +310,7 @@ public class DateTimeUtils {
      * @see #nowSystemMillisResolution()
      * @return the current {@link DateTime}, with millisecond resolution, according to the current clock.
      */
+    @NotNull
     public static DateTime nowMillisResolution() {
         return DateTime.ofMillis(currentClock());
     }
@@ -321,6 +323,7 @@ public class DateTimeUtils {
      * @return the current {@link DateTime} according to the system clock.
      */
     @ScriptApi
+    @NotNull
     public static DateTime nowSystem() {
         return DateTime.now();
     }
@@ -332,6 +335,7 @@ public class DateTimeUtils {
      * @see #nowMillisResolution()
      * @return the current {@link DateTime}, with millisecond resolution, according to the system clock.
      */
+    @NotNull
     public static DateTime nowSystemMillisResolution() {
         return DateTime.nowMillis();
     }
@@ -394,6 +398,8 @@ public class DateTimeUtils {
     private static final KeyedObjectHashMap<TimeZone, CachedCurrentDate> cachedCurrentDates =
             new KeyedObjectHashMap<>(new CachedDateKey<>());
 
+    //TODO: have these return local time?
+    //TODO: use default timezone
     /**
      * Provides the current date according to the current clock.
      * Under most circumstances, this method will return the date according to current system time, but during replay simulations,
@@ -403,7 +409,8 @@ public class DateTimeUtils {
      * @see #setClock(Clock)
      * @return the current date according to the current clock formatted as "yyyy-MM-dd".
      */
-    public static String today(TimeZone timeZone) {
+    @NotNull
+    public static String today(@NotNull final TimeZone timeZone) {
         return cachedCurrentDates.putIfAbsent(timeZone, CachedCurrentDate::new).get();
     }
 
@@ -418,7 +425,7 @@ public class DateTimeUtils {
      * @return {@link QueryConstants#NULL_LONG} if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
      *      microseconds converted to nanoseconds.
      */
-    public static long microsToNanos(long micros) {
+    public static long microsToNanos(final long micros) {
         if (micros == NULL_LONG) {
             return NULL_LONG;
         }
@@ -435,7 +442,7 @@ public class DateTimeUtils {
      * @return {@link QueryConstants#NULL_LONG} if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
      *      milliseconds converted to nanoseconds.
      */
-    public static long millisToNanos(long millis) {
+    public static long millisToNanos(final long millis) {
         if (millis == NULL_LONG) {
             return NULL_LONG;
         }
@@ -452,7 +459,7 @@ public class DateTimeUtils {
      * @return {@link QueryConstants#NULL_LONG} if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
      *      seconds converted to nanoseconds.
      */
-    public static long secondsToNanos(long seconds) {
+    public static long secondsToNanos(final long seconds) {
         if (seconds == NULL_LONG) {
             return NULL_LONG;
         }
@@ -470,7 +477,7 @@ public class DateTimeUtils {
      * @return {@link QueryConstants#NULL_LONG} if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
      *      nanoseconds converted to microseconds, rounded down.
      */
-    public static long nanosToMicros(long nanos) {
+    public static long nanosToMicros(final long nanos) {
         if (nanos == NULL_LONG) {
             return NULL_LONG;
         }
@@ -484,7 +491,7 @@ public class DateTimeUtils {
      * @return {@link QueryConstants#NULL_LONG} if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
      *      nanoseconds converted to milliseconds, rounded down.
      */
-    public static long nanosToMillis(long nanos) {
+    public static long nanosToMillis(final long nanos) {
         if (nanos == NULL_LONG) {
             return NULL_LONG;
         }
@@ -499,7 +506,7 @@ public class DateTimeUtils {
      * @return {@link QueryConstants#NULL_LONG} if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
      *      nanoseconds converted to seconds, rounded down.
      */
-    public static long nanosToSeconds(long nanos) {
+    public static long nanosToSeconds(final long nanos) {
         if (nanos == NULL_LONG) {
             return NULL_LONG;
         }
@@ -514,7 +521,7 @@ public class DateTimeUtils {
      * @param dateTime {@link DateTime} to compute the Epoch offset for.
      * @return nanoseconds since Epoch, or a NULL_LONG value if the {@link DateTime} is null.
      */
-    public static long epochNanos(DateTime dateTime) {
+    public static long epochNanos(@Nullable final DateTime dateTime) {
         if (dateTime == null) {
             return NULL_LONG;
         }
@@ -528,7 +535,7 @@ public class DateTimeUtils {
      * @param dateTime {@link DateTime} to compute the Epoch offset for.
      * @return microseconds since Epoch, or a NULL_LONG value if the {@link DateTime} is null.
      */
-    public static long epochMicros(DateTime dateTime) {
+    public static long epochMicros(@Nullable final DateTime dateTime) {
         if (dateTime == null) {
             return NULL_LONG;
         }
@@ -542,7 +549,7 @@ public class DateTimeUtils {
      * @param dateTime {@link DateTime} to compute the Epoch offset for.
      * @return milliseconds since Epoch, or a NULL_LONG value if the {@link DateTime} is null.
      */
-    public static long epochMillis(DateTime dateTime) {
+    public static long epochMillis(@Nullable final DateTime dateTime) {
         if (dateTime == null) {
             return NULL_LONG;
         }
@@ -556,7 +563,7 @@ public class DateTimeUtils {
      * @param dateTime {@link DateTime} to compute the Epoch offset for.
      * @return seconds since Epoch, or a NULL_LONG value if the {@link DateTime} is null.
      */
-    public static long epochSeconds(DateTime dateTime) {
+    public static long epochSeconds(@Nullable final DateTime dateTime) {
         if (dateTime == null) {
             return NULL_LONG;
         }
@@ -572,7 +579,8 @@ public class DateTimeUtils {
      *      nanoseconds from the Epoch converted to a {@link DateTime}.
      * @throws DateTimeOverflowException if the resultant {@link DateTime} exceeds the supported range.
      */
-    public static DateTime epochNanosToDateTime(long nanos) {
+    @Nullable
+    public static DateTime epochNanosToDateTime(final long nanos) {
         return nanos == NULL_LONG ? null : new DateTime(nanos);
     }
 
@@ -584,7 +592,8 @@ public class DateTimeUtils {
      *      microseconds from the Epoch converted to a {@link DateTime}.
      * @throws DateTimeOverflowException if the resultant {@link DateTime} exceeds the supported range.
      */
-    public static DateTime epochMicrosToDateTime(long micros) {
+    @Nullable
+    public static DateTime epochMicrosToDateTime(final long micros) {
         return epochNanosToDateTime(microsToNanos(micros));
     }
 
@@ -596,7 +605,8 @@ public class DateTimeUtils {
      *      milliseconds from the Epoch converted to a {@link DateTime}.
      * @throws DateTimeOverflowException if the resultant {@link DateTime} exceeds the supported range.
      */
-    public static DateTime epochMillisToDateTime(long millis) {
+    @Nullable
+    public static DateTime epochMillisToDateTime(final long millis) {
         return epochNanosToDateTime(millisToNanos(millis));
     }
 
@@ -610,7 +620,8 @@ public class DateTimeUtils {
      *      seconds from the Epoch converted to a {@link DateTime}.
      * @throws DateTimeOverflowException if the resultant {@link DateTime} exceeds the supported range.
      */
-    public static DateTime epochSecondsToDateTime(long seconds) {
+    @Nullable
+    public static DateTime epochSecondsToDateTime(final long seconds) {
         return epochNanosToDateTime(secondsToNanos(seconds));
     }
 
@@ -621,7 +632,7 @@ public class DateTimeUtils {
      * @param timeZone {@link java.util.TimeZone} to use when interpreting the {@link DateTime}.
      * @return 0.0 if either input is null; otherwise, the input {@link DateTime} converted to an Excel time represented as a double.
      */
-    public static double dateTimeToExcel(DateTime dateTime, java.util.TimeZone timeZone) {
+    public static double dateTimeToExcel(@Nullable final DateTime dateTime, @Nullable final java.util.TimeZone timeZone) {
         if (dateTime == null || timeZone == null) {
             return 0.0d;
         }
@@ -638,7 +649,11 @@ public class DateTimeUtils {
      * @param timeZone {@link TimeZone} to use when interpreting the {@link DateTime}.
      * @return 0.0 if either input is null; otherwise, the input {@link DateTime} converted to an Excel time represented as a double.
      */
-    public static double dateTimeToExcel(DateTime dateTime, TimeZone timeZone) {
+    public static double dateTimeToExcel(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
+        if( dateTime == null || timeZone == null){
+            return 0.0;
+        }
+
         return dateTimeToExcel(dateTime, timeZone.getTimeZone().toTimeZone());
     }
 
@@ -649,7 +664,8 @@ public class DateTimeUtils {
      * @param timeZone {@link java.util.TimeZone} to use when interpreting the Excel time.
      * @return null if timeZone is null; otherwise, the input Excel time converted to a {@link DateTime}.
      */
-    public static DateTime excelToDateTime(double excel, java.util.TimeZone timeZone) {
+    @Nullable
+    public static DateTime excelToDateTime(final double excel, @Nullable final java.util.TimeZone timeZone) {
         if(timeZone == null) {
             return null;
         }
@@ -670,7 +686,12 @@ public class DateTimeUtils {
      * @param timeZone {@link java.util.TimeZone} to use when interpreting the Excel time.
      * @return null if timeZone is null; otherwise, the input Excel time converted to a {@link DateTime}.
      */
-    public static DateTime excelToDateTime(double excel, TimeZone timeZone) {
+    @Nullable
+    public static DateTime excelToDateTime(final double excel, @Nullable final TimeZone timeZone) {
+        if(timeZone == null){
+            return null;
+        }
+
         return excelToDateTime(excel, timeZone.getTimeZone().toTimeZone());
     }
 
@@ -708,11 +729,15 @@ public class DateTimeUtils {
      * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
      *      offset from the Epoch converted to a {@link DateTime}.
      */
-    public static DateTime epochAutoToDateTime(long epochOffset) {
+    @Nullable
+    public static DateTime epochAutoToDateTime(final long epochOffset) {
+        if( epochOffset == NULL_LONG ){
+            return null;
+        }
         return new DateTime(epochAutoToEpochNanos(epochOffset));
     }
 
-    private static long safeComputeNanos(long epochSecond, long nanoOfSecond) {
+    private static long safeComputeNanos(final long epochSecond, final long nanoOfSecond) {
         if (epochSecond >= MAX_CONVERTIBLE_SECONDS) {
             throw new IllegalArgumentException("Numeric overflow detected during conversion of " + epochSecond
                     + " to nanoseconds");
@@ -820,7 +845,11 @@ public class DateTimeUtils {
      *      nanoseconds from the Epoch converted to a {@link ZonedDateTime}.
      */
     @Nullable
-    public static ZonedDateTime epochNanosToZonedDateTime(final long nanos, @NotNull final TimeZone timeZone) {
+    public static ZonedDateTime epochNanosToZonedDateTime(final long nanos, @Nullable final TimeZone timeZone) {
+        if(timeZone == null){
+            return null;
+        }
+
         return epochNanosToZonedDateTime(nanos, timeZone.getZoneId());
     }
 
@@ -834,6 +863,10 @@ public class DateTimeUtils {
      */
     @Nullable
     public static ZonedDateTime epochNanosToZonedDateTime(final long nanos, ZoneId timeZone) {
+        if(timeZone == null){
+            return null;
+        }
+
         // noinspection ConstantConditions
         return nanos == NULL_LONG ? null : ZonedDateTime.ofInstant(epochNanosToInstant(nanos), timeZone);
     }
@@ -861,7 +894,10 @@ public class DateTimeUtils {
      *      microseconds from the Epoch converted to a {@link ZonedDateTime}.
      */
     @Nullable
-    public static ZonedDateTime epochMicrosToZonedDateTime(final long micros, @NotNull final TimeZone timeZone) {
+    public static ZonedDateTime epochMicrosToZonedDateTime(final long micros, @Nullable final TimeZone timeZone) {
+        if(timeZone == null){
+            return null;
+        }
         return epochMicrosToZonedDateTime(micros, timeZone.getZoneId());
     }
 
@@ -874,7 +910,11 @@ public class DateTimeUtils {
      *      microseconds from the Epoch converted to a {@link ZonedDateTime}.
      */
     @Nullable
-    public static ZonedDateTime epochMicrosToZonedDateTime(final long micros, ZoneId timeZone) {
+    public static ZonedDateTime epochMicrosToZonedDateTime(final long micros, @Nullable ZoneId timeZone) {
+        if(timeZone == null){
+            return null;
+        }
+
         // noinspection ConstantConditions
         return micros == NULL_LONG ? null : ZonedDateTime.ofInstant(epochMicrosToInstant(micros), timeZone);
     }
@@ -902,7 +942,11 @@ public class DateTimeUtils {
      *      milliseconds from the Epoch converted to a {@link ZonedDateTime}.
      */
     @Nullable
-    public static ZonedDateTime epochMillisToZonedDateTime(final long millis, @NotNull final TimeZone timeZone) {
+    public static ZonedDateTime epochMillisToZonedDateTime(final long millis, @Nullable final TimeZone timeZone) {
+        if(timeZone == null){
+            return null;
+        }
+
         return epochMillisToZonedDateTime(millis, timeZone.getZoneId());
     }
 
@@ -915,7 +959,11 @@ public class DateTimeUtils {
      *      milliseconds from the Epoch converted to a {@link ZonedDateTime}.
      */
     @Nullable
-    public static ZonedDateTime epochMillisToZonedDateTime(final long millis, ZoneId timeZone) {
+    public static ZonedDateTime epochMillisToZonedDateTime(final long millis, @Nullable ZoneId timeZone) {
+        if(timeZone == null){
+            return null;
+        }
+
         // noinspection ConstantConditions
         return millis == NULL_LONG ? null : ZonedDateTime.ofInstant(epochMillisToInstant(millis), timeZone);
     }
@@ -943,7 +991,10 @@ public class DateTimeUtils {
      *      seconds from the Epoch converted to a {@link ZonedDateTime}.
      */
     @Nullable
-    public static ZonedDateTime epochSecondsToZonedDateTime(final long seconds, @NotNull final TimeZone timeZone) {
+    public static ZonedDateTime epochSecondsToZonedDateTime(final long seconds, @Nullable final TimeZone timeZone) {
+        if(timeZone == null){
+            return null;
+        }
         return epochSecondsToZonedDateTime(seconds, timeZone.getZoneId());
     }
 
@@ -956,7 +1007,10 @@ public class DateTimeUtils {
      *      seconds from the Epoch converted to a {@link ZonedDateTime}.
      */
     @Nullable
-    public static ZonedDateTime epochSecondsToZonedDateTime(final long seconds, ZoneId timeZone) {
+    public static ZonedDateTime epochSecondsToZonedDateTime(final long seconds, @Nullable ZoneId timeZone) {
+        if(timeZone == null){
+            return null;
+        }
         // noinspection ConstantConditions
         return seconds == NULL_LONG ? null : ZonedDateTime.ofInstant(epochSecondsToInstant(seconds), timeZone);
     }
@@ -982,8 +1036,8 @@ public class DateTimeUtils {
      * @return {@link ZonedDateTime} using the specified time zone, or null if dateTime is null.
      */
     @Nullable
-    public static ZonedDateTime toZonedDateTime(@Nullable final DateTime dateTime, @NotNull final TimeZone timeZone) {
-        if (dateTime == null) {
+    public static ZonedDateTime toZonedDateTime(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
+        if (dateTime == null || timeZone == null) {
             return null;
         }
 
@@ -999,8 +1053,8 @@ public class DateTimeUtils {
      * @return {@link ZonedDateTime} using the specified time zone, or null if dateTime is null.
      */
     @Nullable
-    public static ZonedDateTime toZonedDateTime(@Nullable final DateTime dateTime, @NotNull final ZoneId timeZone) {
-        if (dateTime == null) {
+    public static ZonedDateTime toZonedDateTime(@Nullable final DateTime dateTime, @Nullable final ZoneId timeZone) {
+        if (dateTime == null || timeZone == null) {
             return null;
         }
 
@@ -1044,7 +1098,8 @@ public class DateTimeUtils {
      *      of nanoseconds.
      * @throws DateTimeOverflowException if the resultant {@link DateTime} exceeds the supported range.
      */
-    public static DateTime plus(DateTime dateTime, long nanos) {
+    @Nullable
+    public static DateTime plus(@Nullable final DateTime dateTime, final long nanos) {
         if (dateTime == null || nanos == NULL_LONG) {
             return null;
         }
@@ -1060,7 +1115,8 @@ public class DateTimeUtils {
      * @return null if either input is null or {@link QueryConstants#NULL_LONG}; otherwise the starting {@link DateTime} plus the specified time period.
      * @throws DateTimeOverflowException if the resultant {@link DateTime} exceeds the supported range.
      */
-    public static DateTime plus(DateTime dateTime, Period period) {
+    @Nullable
+    public static DateTime plus(@Nullable final DateTime dateTime, @Nullable final Period period) {
         if (dateTime == null || period == null) {
             return null;
         }
@@ -1083,7 +1139,8 @@ public class DateTimeUtils {
      *      of nanoseconds.
      * @throws DateTimeOverflowException if the resultant {@link DateTime} exceeds the supported range.
      */
-    public static DateTime minus(DateTime dateTime, long nanos) {
+    @Nullable
+    public static DateTime minus(@Nullable final DateTime dateTime, final long nanos) {
         if (dateTime == null || -nanos == NULL_LONG) {
             return null;
         }
@@ -1099,7 +1156,8 @@ public class DateTimeUtils {
      * @return null if either input is null or {@link QueryConstants#NULL_LONG}; otherwise the starting {@link DateTime} minus the specified time period.
      * @throws DateTimeOverflowException if the resultant {@link DateTime} exceeds the supported range.
      */
-    public static DateTime minus(DateTime dateTime, Period period) {
+    @Nullable
+    public static DateTime minus(@Nullable final DateTime dateTime, @Nullable final Period period) {
         if (dateTime == null || period == null) {
             return null;
         }
@@ -1121,7 +1179,7 @@ public class DateTimeUtils {
      * @return {@link QueryConstants#NULL_LONG} if either input is null; otherwise the difference in dateTime1 and dateTime2 in nanoseconds.
      * @throws DateTimeOverflowException if the datetime arithemetic overflows or underflows.
      */
-    public static long minus(DateTime dateTime1, DateTime dateTime2) {
+    public static long minus(@Nullable final DateTime dateTime1, @Nullable final DateTime dateTime2) {
         if (dateTime1 == null || dateTime2 == null) {
             return NULL_LONG;
         }
@@ -1137,7 +1195,7 @@ public class DateTimeUtils {
      * @return {@link QueryConstants#NULL_LONG} if either input is null; otherwise the difference in start and end in nanoseconds.
      * @throws DateTimeOverflowException if the datetime arithemetic overflows or underflows.
      */
-    public static long diffNanos(DateTime start, DateTime end) {
+    public static long diffNanos(@Nullable final DateTime start, @Nullable final DateTime end) {
         return minus(end, start);
     }
 
@@ -1149,7 +1207,7 @@ public class DateTimeUtils {
      * @return {@link QueryConstants#NULL_LONG} if either input is null; otherwise the difference in start and end in microseconds.
      * @throws DateTimeOverflowException if the datetime arithemetic overflows or underflows.
      */
-    public static long diffMicros(DateTime start, DateTime end) {
+    public static long diffMicros(@Nullable final DateTime start, @Nullable final DateTime end) {
         if (start == null || end == null) {
             return io.deephaven.util.QueryConstants.NULL_LONG;
         }
@@ -1165,7 +1223,7 @@ public class DateTimeUtils {
      * @return {@link QueryConstants#NULL_LONG} if either input is null; otherwise the difference in start and end in milliseconds.
      * @throws DateTimeOverflowException if the datetime arithemetic overflows or underflows.
      */
-    public static long diffMillis(DateTime start, DateTime end) {
+    public static long diffMillis(@Nullable final DateTime start, @Nullable final DateTime end) {
         if (start == null || end == null) {
             return io.deephaven.util.QueryConstants.NULL_LONG;
         }
@@ -1181,7 +1239,7 @@ public class DateTimeUtils {
      * @return {@link QueryConstants#NULL_DOUBLE} if either input is null; otherwise the difference in start and end in seconds.
      * @throws DateTimeOverflowException if the datetime arithemetic overflows or underflows.
      */
-    public static double diffSeconds(DateTime start, DateTime end) {
+    public static double diffSeconds(@Nullable final DateTime start, @Nullable final DateTime end) {
         if (start == null || end == null) {
             return io.deephaven.util.QueryConstants.NULL_DOUBLE;
         }
@@ -1197,7 +1255,7 @@ public class DateTimeUtils {
      * @return {@link QueryConstants#NULL_DOUBLE} if either input is null; otherwise the difference in start and end in minutes.
      * @throws DateTimeOverflowException if the datetime arithemetic overflows or underflows.
      */
-    public static double diffMinutes(DateTime start, DateTime end) {
+    public static double diffMinutes(@Nullable final DateTime start, @Nullable final DateTime end) {
         if (start == null || end == null) {
             return io.deephaven.util.QueryConstants.NULL_DOUBLE;
         }
@@ -1213,7 +1271,7 @@ public class DateTimeUtils {
      * @return {@link QueryConstants#NULL_DOUBLE} if either input is null; otherwise the difference in start and end in days.
      * @throws DateTimeOverflowException if the datetime arithemetic overflows or underflows.
      */
-    public static double diffDays(DateTime start, DateTime end) {
+    public static double diffDays(@Nullable final DateTime start, @Nullable final DateTime end) {
         if (start == null || end == null) {
             return io.deephaven.util.QueryConstants.NULL_DOUBLE;
         }
@@ -1229,7 +1287,7 @@ public class DateTimeUtils {
      * @return {@link QueryConstants#NULL_DOUBLE} if either input is null; otherwise the difference in start and end in years.
      * @throws DateTimeOverflowException if the datetime arithemetic overflows or underflows.
      */
-    public static double diffYears(DateTime start, DateTime end) {
+    public static double diffYears(@Nullable final DateTime start, @Nullable final DateTime end) {
         if (start == null || end == null) {
             return io.deephaven.util.QueryConstants.NULL_DOUBLE;
         }
@@ -1249,7 +1307,7 @@ public class DateTimeUtils {
      * @return true if dateTime1 is before dateTime2; otherwise, false if either value is null or if dateTime2 is equal
      *      to or before dateTime1.
      */
-    public static boolean isBefore(DateTime dateTime1, DateTime dateTime2) {
+    public static boolean isBefore(@Nullable final DateTime dateTime1, @Nullable final DateTime dateTime2) {
         if (dateTime1 == null || dateTime2 == null) {
             return false;
         }
@@ -1265,7 +1323,7 @@ public class DateTimeUtils {
      * @return true if dateTime1 is before or equal to dateTime2; otherwise, false if either value is null or if dateTime2
      *      is before dateTime1.
      */
-    public static boolean isBeforeOrEqual(DateTime dateTime1, DateTime dateTime2) {
+    public static boolean isBeforeOrEqual(@Nullable final DateTime dateTime1, @Nullable final DateTime dateTime2) {
         if (dateTime1 == null || dateTime2 == null) {
             return false;
         }
@@ -1281,7 +1339,7 @@ public class DateTimeUtils {
      * @return true if dateTime1 is after dateTime2; otherwise, false if either value is null or if dateTime2 is equal
      *      to or after dateTime1.
      */
-    public static boolean isAfter(DateTime dateTime1, DateTime dateTime2) {
+    public static boolean isAfter(@Nullable final DateTime dateTime1, @Nullable final DateTime dateTime2) {
         if (dateTime1 == null || dateTime2 == null) {
             return false;
         }
@@ -1297,7 +1355,7 @@ public class DateTimeUtils {
      * @return true if dateTime1 is after or equal to dateTime2; otherwise, false if either value is null or if dateTime2
      *      is after dateTime1.
      */
-    public static boolean isAfterOrEqual(DateTime dateTime1, DateTime dateTime2) {
+    public static boolean isAfterOrEqual(@Nullable final DateTime dateTime1, @Nullable final DateTime dateTime2) {
         if (dateTime1 == null || dateTime2 == null) {
             return false;
         }
@@ -1345,7 +1403,7 @@ public class DateTimeUtils {
      * @return the number of nanoseconds represented by the string.
      * @throws RuntimeException if the string cannot be parsed.
      */
-    public static long parseNanos(String s) {
+    public static long parseNanos(@Nullable final String s) {
         long ret = parseNanosQuiet(s);
 
         if (ret == NULL_LONG) {
@@ -1362,7 +1420,7 @@ public class DateTimeUtils {
      * @param s string to be converted.
      * @return {@link QueryConstants#NULL_LONG} if the string cannot be parsed, otherwise the number of nanoseconds represented by the string.
      */
-    public static long parseNanosQuiet(String s) {
+    public static long parseNanosQuiet(@Nullable String s) {
         try {
             if (TIME_AND_DURATION_PATTERN.matcher(s).matches()) {
                 long multiplier = 1;
@@ -1432,7 +1490,8 @@ public class DateTimeUtils {
      * @return a {@link DateTime} represented by the input string.
      * @throws RuntimeException if the string cannot be converted, otherwise a {@link DateTime} from the parsed string.
      */
-    public static DateTime parseDateTime(String s) {
+    @NotNull
+    public static DateTime parseDateTime(@Nullable final String s) {
         DateTime ret = parseDateTimeQuiet(s);
 
         if (ret == null) {
@@ -1450,7 +1509,8 @@ public class DateTimeUtils {
      * @param s string to be converted.
      * @return a {@link DateTime} represented by the input string, or null if the format is not recognized or an exception occurs.
      */
-    public static DateTime parseDateTimeQuiet(final String s) {
+    @Nullable
+    public static DateTime parseDateTimeQuiet(@Nullable final String s) {
         try {
             return DateTime.of(Instant.parse(s));
         } catch (DateTimeParseException e) {
@@ -1498,7 +1558,8 @@ public class DateTimeUtils {
      * @return time period {@link Period}.
      * @throws RuntimeException if the string cannot be parsed.
      */
-    public static Period parsePeriod(String s) {
+    @NotNull
+    public static Period parsePeriod(@Nullable final String s) {
         Period ret = parsePeriodQuiet(s);
 
         if (ret == null) {
@@ -1515,8 +1576,9 @@ public class DateTimeUtils {
      *          one minute, 1WT1H for one week plus one hour.
      * @return a {@link Period} object, or null if the string can not be parsed.
      */
-    public static Period parsePeriodQuiet(String s) {
-        if (s.length() <= 1) {
+    @Nullable
+    public static Period parsePeriodQuiet(@Nullable final String s) {
+        if (s == null || s.length() <= 1) {
             return null;
         }
 
@@ -1546,12 +1608,13 @@ public class DateTimeUtils {
         public final int id;
         public final ChronoField field;
 
-        DateGroupId(int id, ChronoField field) {
+        DateGroupId(int id, @NotNull ChronoField field) {
             this.id = id;
             this.field = field;
         }
     }
 
+    //TODO: rename this quiet and provide a loud version
     /**
      * Returns a {@link ChronoField} indicating the level of precision in a time or datetime string.
      *
@@ -1559,7 +1622,8 @@ public class DateTimeUtils {
      * @return null if the time string cannot be parsed; otherwise, a {@link ChronoField} for the finest units in the
      *      string (e.g. "10:00:00" would yield SecondOfMinute).  Precisions
      */
-    public static ChronoField parseTimePrecision(String timeDef) {
+    //TODO: @Nullable
+    public static ChronoField parseTimePrecision(final String timeDef) {
         Matcher dtMatcher = CAPTURING_DATETIME_PATTERN.matcher(timeDef);
         if (dtMatcher.matches()) {
             DateGroupId[] parts = DateGroupId.values();
@@ -1596,7 +1660,8 @@ public class DateTimeUtils {
     private static final DateStyle DEFAULT_DATE_STYLE = DateStyle
             .valueOf(Configuration.getInstance().getStringWithDefault("DateTimeUtils.dateStyle", DateStyle.MDY.name()));
 
-    private static LocalDate matchStdDate(Pattern pattern, String s) {
+    @Nullable
+    private static LocalDate matchStdDate(@NotNull final Pattern pattern, @NotNull final String s) {
         final Matcher matcher = pattern.matcher(s);
         if (matcher.matches()) {
             final int year = Integer.parseInt(matcher.group("year"));
@@ -1615,7 +1680,8 @@ public class DateTimeUtils {
      * @param dateStyle style the date string is formatted in.
      * @return local date, or null if the string can not be parsed.
      */
-    public static LocalDate parseDateQuiet(String s, DateStyle dateStyle) {
+    @Nullable
+    public static LocalDate parseDateQuiet(@Nullable final String s, @Nullable final DateStyle dateStyle) {
         try {
             LocalDate localDate = matchStdDate(STD_DATE_PATTERN, s);
             if (localDate != null) {
@@ -1683,7 +1749,8 @@ public class DateTimeUtils {
      * @param s date string.
      * @return local date parsed according to the default date style, or null if the string can not be parsed.
      */
-    public static LocalDate parseDateQuiet(String s) {
+    @Nullable
+    public static LocalDate parseDateQuiet(@Nullable final String s) {
         return parseDateQuiet(s, DEFAULT_DATE_STYLE);
     }
 
@@ -1698,7 +1765,8 @@ public class DateTimeUtils {
      * @return local date.
      * @throws RuntimeException if the string cannot be parsed.
      */
-    public static LocalDate parseDate(String s, DateStyle dateStyle) {
+    @NotNull
+    public static LocalDate parseDate(@Nullable final String s, @Nullable final DateStyle dateStyle) {
         final LocalDate ret = parseDateQuiet(s, dateStyle);
 
         if (ret == null) {
@@ -1720,7 +1788,8 @@ public class DateTimeUtils {
      * @return local date parsed according to the default date style.
      * @throws RuntimeException if the string cannot be parsed.
      */
-    public static LocalDate parseDate(String s) {
+    @NotNull
+    public static LocalDate parseDate(@Nullable final String s) {
         final LocalDate ret = parseDateQuiet(s);
 
         if (ret == null) {
@@ -1738,7 +1807,8 @@ public class DateTimeUtils {
      * @param s string to be converted
      * @return a {@link LocalTime} represented by the input string, or null if the format is not recognized or an exception occurs.
      */
-    public static LocalTime parseLocalTimeQuiet(String s) {
+    @Nullable
+    public static LocalTime parseLocalTimeQuiet(@Nullable final String s) {
         try {
             final Matcher matcher = LOCAL_TIME_PATTERN.matcher(s);
             if (matcher.matches()) {
@@ -1769,7 +1839,8 @@ public class DateTimeUtils {
      * @return a {@link LocalTime} represented by the input string.
      * @throws RuntimeException if the string cannot be converted, otherwise a {@link LocalTime} from the parsed string.
      */
-    public static LocalTime parseLocalTime(String s) {
+    @NotNull
+    public static LocalTime parseLocalTime(@Nullable final String s) {
         LocalTime ret = parseLocalTimeQuiet(s);
 
         if (ret == null) {
@@ -1791,6 +1862,7 @@ public class DateTimeUtils {
      * @return input string padded with zeros to the desired length.  If the input string is longer than the
      *      desired length, the input string is returned.
      */
+    @NotNull
     static String padZeros(@NotNull final String str, final int length) {
         if (length <= str.length()) {
             return str;
@@ -1805,7 +1877,8 @@ public class DateTimeUtils {
      * @param timeZone time zone to use when formatting the string.
      * @return null if either input is null; otherwise, the time formatted as a "yyyy-MM-ddThh:mm:ss.nnnnnnnnn TZ" string.
      */
-    public static String formatDateTime(DateTime dateTime, TimeZone timeZone) {
+    @Nullable
+    public static String formatDateTime(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
         if (dateTime == null || timeZone == null) {
             return null;
         }
@@ -1820,7 +1893,8 @@ public class DateTimeUtils {
      * @param timeZone time zone to use when formatting the string.
      * @return null if either input is null; otherwise, the time formatted as a "yyyy-MM-dd" string.
     */
-    public static String formatDate(DateTime dateTime, TimeZone timeZone) {
+    @Nullable
+    public static String formatDate(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
         if (dateTime == null || timeZone == null) {
             return null;
         }
@@ -1834,6 +1908,7 @@ public class DateTimeUtils {
      * @param nanos nanoseconds.
      * @return the nanoseconds formatted as a "dddThh:mm:ss.nnnnnnnnn" string.
      */
+    @NotNull
     public static String formatNanos(long nanos) {
         StringBuilder buf = new StringBuilder(25);
 
@@ -1883,7 +1958,7 @@ public class DateTimeUtils {
      * @return {@link QueryConstants#NULL_INT} if the input is null; otherwise, number of nanoseconds that have
      *      elapsed since the top of the millisecond.
      */
-    public static int nanosOfMilli(DateTime dateTime) {
+    public static int nanosOfMilli(@Nullable final DateTime dateTime) {
         if (dateTime == null) {
             return io.deephaven.util.QueryConstants.NULL_INT;
         }
@@ -1899,7 +1974,7 @@ public class DateTimeUtils {
      * @return {@link QueryConstants#NULL_INT} if the input is null; otherwise, number of microseconds that have
      *      elapsed since the top of the millisecond.
      */
-    public static int microsOfMilli(DateTime dateTime) {
+    public static int microsOfMilli(@Nullable final DateTime dateTime) {
         if (dateTime == null) {
             return io.deephaven.util.QueryConstants.NULL_INT;
         }
@@ -1915,7 +1990,7 @@ public class DateTimeUtils {
      * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of nanoseconds that have
      *      elapsed since the top of the second.
      */
-    public static long nanosOfSecond(DateTime dateTime, TimeZone timeZone) {
+    public static long nanosOfSecond(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
         if (dateTime == null || timeZone == null) {
             return NULL_LONG;
         }
@@ -1931,7 +2006,7 @@ public class DateTimeUtils {
      * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of microseconds that have
      *      elapsed since the top of the second.
      */
-    public static long microsOfSecond(DateTime dateTime, TimeZone timeZone) {
+    public static long microsOfSecond(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
         if (dateTime == null || timeZone == null) {
             return NULL_LONG;
         }
@@ -1947,7 +2022,7 @@ public class DateTimeUtils {
      * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of milliseconds that have
      *      elapsed since the top of the second.
      */
-    public static int millisOfSecond(DateTime dateTime, TimeZone timeZone) {
+    public static int millisOfSecond(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
         if (dateTime == null || timeZone == null) {
             return io.deephaven.util.QueryConstants.NULL_INT;
         }
@@ -1963,7 +2038,7 @@ public class DateTimeUtils {
      * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of seconds that have
      *      elapsed since the top of the minute.
      */
-    public static int secondOfMinute(DateTime dateTime, TimeZone timeZone) {
+    public static int secondOfMinute(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
         if (dateTime == null || timeZone == null) {
             return io.deephaven.util.QueryConstants.NULL_INT;
         }
@@ -1979,7 +2054,7 @@ public class DateTimeUtils {
      * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of minutes that have
      *      elapsed since the top of the hour.
      */
-    public static int minuteOfHour(DateTime dateTime, TimeZone timeZone) {
+    public static int minuteOfHour(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
         if (dateTime == null || timeZone == null) {
             return io.deephaven.util.QueryConstants.NULL_INT;
         }
@@ -1995,7 +2070,7 @@ public class DateTimeUtils {
      * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of nanoseconds that have
      *      elapsed since the top of the day.
      */
-    public static long nanosOfDay(DateTime dateTime, TimeZone timeZone) {
+    public static long nanosOfDay(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
         if (dateTime == null || timeZone == null) {
             return NULL_LONG;
         }
@@ -2011,7 +2086,7 @@ public class DateTimeUtils {
      * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of milliseconds that have
      *      elapsed since the top of the day.
      */
-    public static int millisOfDay(DateTime dateTime, TimeZone timeZone) {
+    public static int millisOfDay(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
         if (dateTime == null || timeZone == null) {
             return io.deephaven.util.QueryConstants.NULL_INT;
         }
@@ -2027,7 +2102,7 @@ public class DateTimeUtils {
      * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of seconds that have
      *      elapsed since the top of the day.
      */
-    public static int secondOfDay(DateTime dateTime, TimeZone timeZone) {
+    public static int secondOfDay(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
         if (dateTime == null || timeZone == null) {
             return io.deephaven.util.QueryConstants.NULL_INT;
         }
@@ -2043,7 +2118,7 @@ public class DateTimeUtils {
      * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of minutes that have
      *      elapsed since the top of the day.
      */
-    public static int minuteOfDay(DateTime dateTime, TimeZone timeZone) {
+    public static int minuteOfDay(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
         if (dateTime == null || timeZone == null) {
             return io.deephaven.util.QueryConstants.NULL_INT;
         }
@@ -2059,7 +2134,7 @@ public class DateTimeUtils {
      * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, number of hours that have
      *      elapsed since the top of the day.
      */
-    public static int hourOfDay(DateTime dateTime, TimeZone timeZone) {
+    public static int hourOfDay(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
         if (dateTime == null || timeZone == null) {
             return io.deephaven.util.QueryConstants.NULL_INT;
         }
@@ -2075,7 +2150,7 @@ public class DateTimeUtils {
      * @param timeZone time zone.
      * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, the day of the week.
      */
-    public static int dayOfWeek(DateTime dateTime, TimeZone timeZone) {
+    public static int dayOfWeek(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
         if (dateTime == null || timeZone == null) {
             return io.deephaven.util.QueryConstants.NULL_INT;
         }
@@ -2091,7 +2166,7 @@ public class DateTimeUtils {
      * @param timeZone time zone.
      * @return A {@link QueryConstants#NULL_INT} if either input is null; otherwise, the day of the month.
      */
-    public static int dayOfMonth(DateTime dateTime, TimeZone timeZone) {
+    public static int dayOfMonth(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
         if (dateTime == null || timeZone == null) {
             return io.deephaven.util.QueryConstants.NULL_INT;
         }
@@ -2107,7 +2182,7 @@ public class DateTimeUtils {
      * @param timeZone time zone.
      * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, the day of the year.
      */
-    public static int dayOfYear(DateTime dateTime, TimeZone timeZone) {
+    public static int dayOfYear(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
         if (dateTime == null || timeZone == null) {
             return io.deephaven.util.QueryConstants.NULL_INT;
         }
@@ -2123,7 +2198,7 @@ public class DateTimeUtils {
      * @param timeZone time zone.
      * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, the month of the year.
      */
-    public static int monthOfYear(DateTime dateTime, TimeZone timeZone) {
+    public static int monthOfYear(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
         if (dateTime == null || timeZone == null) {
             return io.deephaven.util.QueryConstants.NULL_INT;
         }
@@ -2138,7 +2213,7 @@ public class DateTimeUtils {
      * @param timeZone time zone.
      * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, the year.
      */
-    public static int year(DateTime dateTime, TimeZone timeZone) {
+    public static int year(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
         if (dateTime == null || timeZone == null) {
             return io.deephaven.util.QueryConstants.NULL_INT;
         }
@@ -2153,7 +2228,7 @@ public class DateTimeUtils {
      * @param timeZone time zone.
      * @return {@link QueryConstants#NULL_INT} if either input is null; otherwise, the year of the century (two-digit year).
      */
-    public static int yearOfCentury(DateTime dateTime, TimeZone timeZone) {
+    public static int yearOfCentury(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
         if (dateTime == null || timeZone == null) {
             return io.deephaven.util.QueryConstants.NULL_INT;
         }
@@ -2169,7 +2244,8 @@ public class DateTimeUtils {
      * @return null if either input is null; otherwise a {@link DateTime} representing the prior midnight in the
      *      specified time zone.
      */
-    public static DateTime dateTimeAtMidnight(DateTime dateTime, TimeZone timeZone) {
+    @Nullable
+    public static DateTime dateTimeAtMidnight(@Nullable final DateTime dateTime, @Nullable final TimeZone timeZone) {
         if (dateTime == null || timeZone == null) {
             return null;
         }
@@ -2191,7 +2267,8 @@ public class DateTimeUtils {
      * @param intervalNanos size of the window in nanoseconds.
      * @return null if either input is null; otherwise, a {@link DateTime} representing the start of the window.
      */
-    public static DateTime lowerBin(DateTime dateTime, long intervalNanos) {
+    @Nullable
+    public static DateTime lowerBin(@Nullable final DateTime dateTime, long intervalNanos) {
         if (dateTime == null || intervalNanos == NULL_LONG) {
             return null;
         }
@@ -2210,7 +2287,8 @@ public class DateTimeUtils {
      *        one minute.
      * @return null if either input is null; otherwise, a {@link DateTime} representing the start of the window.
      */
-    public static DateTime lowerBin(DateTime dateTime, long intervalNanos, long offset) {
+    @Nullable
+    public static DateTime lowerBin(final @Nullable DateTime dateTime, long intervalNanos, long offset) {
         if (dateTime == null || intervalNanos == NULL_LONG || offset == NULL_LONG) {
             return null;
         }
@@ -2227,7 +2305,8 @@ public class DateTimeUtils {
      * @param intervalNanos size of the window in nanoseconds.
      * @return null if either input is null; otherwise, a {@link DateTime} representing the end of the window.
      */
-    public static DateTime upperBin(DateTime dateTime, long intervalNanos) {
+    @Nullable
+    public static DateTime upperBin(final @Nullable DateTime dateTime, long intervalNanos) {
         if (dateTime == null || intervalNanos == NULL_LONG) {
             return null;
         }
@@ -2246,7 +2325,8 @@ public class DateTimeUtils {
      *        one minute.
      * @return null if either input is null; otherwise, a {@link DateTime} representing the end of the window.
      */
-    public static DateTime upperBin(DateTime dateTime, long intervalNanos, long offset) {
+    @Nullable
+    public static DateTime upperBin(@Nullable final DateTime dateTime, long intervalNanos, long offset) {
         if (dateTime == null || intervalNanos == NULL_LONG
                 || offset == NULL_LONG) {
             return null;
