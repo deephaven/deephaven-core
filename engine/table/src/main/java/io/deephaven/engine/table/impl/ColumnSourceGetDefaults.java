@@ -410,7 +410,7 @@ public final class ColumnSourceGetDefaults {
         @Nullable
         @Override
         default Instant get(long rowKey) {
-            return DateTimeUtils.makeInstant(getLong(rowKey));
+            return DateTimeUtils.epochNanosToInstant(getLong(rowKey));
         }
     }
 

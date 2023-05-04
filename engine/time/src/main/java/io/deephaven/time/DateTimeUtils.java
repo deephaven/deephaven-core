@@ -33,6 +33,7 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
 @SuppressWarnings("RegExpRedundantEscape")
 public class DateTimeUtils {
     //TODO: add final everywhere
+    //TODO: add @Nullable ar @NotNull to all inputs or outputs
     //TODO: rename class
     //TODO: document
     //TODO: remove Joda exposure
@@ -1729,6 +1730,54 @@ public class DateTimeUtils {
         return safeComputeNanos(dateTime.toEpochSecond(), dateTime.getNano());
     }
 
+    /**
+     * Converts nanoseconds from the Epoch to an {@link Instant}.
+     *
+     * @param nanos nanoseconds since Epoch.
+     * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
+     *      nanoseconds from the Epoch converted to an {@link Instant}.
+     */
+    @Nullable
+    public static Instant epochNanosToInstant(final long nanos) {
+        return nanos == NULL_LONG ? null : Instant.ofEpochSecond(nanos / 1_000_000_000L, nanos % 1_000_000_000L);
+    }
+
+    /**
+     * Converts microseconds from the Epoch to an {@link Instant}.
+     *
+     * @param micros microseconds since Epoch.
+     * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
+     *      microseconds from the Epoch converted to an {@link Instant}.
+     */
+    @Nullable
+    public static Instant epochMicrosToInstant(final long micros) {
+        return micros == NULL_LONG ? null : Instant.ofEpochSecond(micros / 1_000_000L, (micros % 1_000_000L) * 1_000L);
+    }
+
+    /**
+     * Converts milliseconds from the Epoch to an {@link Instant}.
+     *
+     * @param millis milliseconds since Epoch.
+     * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
+     *      milliseconds from the Epoch converted to an {@link Instant}.
+     */
+    @Nullable
+    public static Instant epochMillisToInstant(final long millis) {
+        return millis == NULL_LONG ? null : Instant.ofEpochSecond(millis / 1_000L, (millis % 1_000L) * 1_000_000L);
+    }
+
+    /**
+     * Converts seconds from the Epoch to an {@link Instant}.
+     *
+     * @param seconds seconds since Epoch.
+     * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
+     *      seconds from the Epoch converted to an {@link Instant}.
+     */
+    @Nullable
+    public static Instant epochSecondsToInstant(final long seconds) {
+        return seconds == NULL_LONG ? null : Instant.ofEpochSecond(seconds, 0);
+    }
+
     // endregion
 
     // region TODO: Java Parse Times
@@ -1985,16 +2034,6 @@ public class DateTimeUtils {
 
     // region TODO: Java Time
 
-    /**
-     * Convert nanos since epoch to an {@link Instant} value.
-     *
-     * @param nanos nanoseconds since epoch
-     * @return a new {@link Instant} or null if nanos was {@link QueryConstants#NULL_LONG}.
-     */
-    @Nullable
-    public static Instant makeInstant(final long nanos) {
-        return nanos == NULL_LONG ? null : Instant.ofEpochSecond(nanos / 1_000_000_000L, nanos % 1_000_000_000L);
-    }
 
     /**
      * Converts nanos of epoch to a {@link ZonedDateTime} using the {@link TimeZone#TZ_DEFAULT default} time zone.
@@ -2031,7 +2070,7 @@ public class DateTimeUtils {
     @Nullable
     public static ZonedDateTime makeZonedDateTime(final long nanos, ZoneId zone) {
         // noinspection ConstantConditions
-        return nanos == NULL_LONG ? null : ZonedDateTime.ofInstant(makeInstant(nanos), zone);
+        return nanos == NULL_LONG ? null : ZonedDateTime.ofInstant(epochNanosToInstant(nanos), zone);
     }
 
     /**
@@ -2109,6 +2148,10 @@ public class DateTimeUtils {
 
 
 
+    //TODO: RENAME makeInstant : epochNanosToInstant
+    //TODO: ADD epochMicrosToInstant
+    //TODO: ADD epochMillisToInstant
+    //TODO: ADD epochSecondsToInstant
     //TODO: RENAME: convertLocalTimeQuiet : parseLocalTimeQuiet
     //TODO: ADD: parseLocalTime
     //TODO: RENAME: convertDate : parseDate

@@ -94,7 +94,7 @@ public class ImmutableInstantTestSource extends AbstractColumnSource<Instant>
     @Override
     public Instant get(long index) {
         final Long v = longTestSource.get(index);
-        return v == null ? null : DateTimeUtils.makeInstant(v);
+        return v == null ? null : DateTimeUtils.epochNanosToInstant(v);
     }
 
     @Override
@@ -110,7 +110,7 @@ public class ImmutableInstantTestSource extends AbstractColumnSource<Instant>
     @Override
     public Instant getPrev(long index) {
         final Long v = longTestSource.getPrev(index);
-        return v == null ? null : DateTimeUtils.makeInstant(v);
+        return v == null ? null : DateTimeUtils.epochNanosToInstant(v);
     }
 
     @Override

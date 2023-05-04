@@ -259,7 +259,7 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
                 }
                 if (type == Instant.class) {
                     return FixedWidthChunkInputStreamGenerator.extractChunkFromInputStreamWithTypeConversion(
-                            Long.BYTES, options, io -> DateTimeUtils.makeInstant(io.readLong()),
+                            Long.BYTES, options, io -> DateTimeUtils.epochNanosToInstant(io.readLong()),
                             fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows
                     );
                 }

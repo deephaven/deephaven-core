@@ -166,12 +166,12 @@ public abstract class BoxedColumnSource<DATA_TYPE> extends AbstractColumnSource<
 
         @Override
         public Instant get(final long rowKey) {
-            return DateTimeUtils.makeInstant(originalSource.getLong(rowKey));
+            return DateTimeUtils.epochNanosToInstant(originalSource.getLong(rowKey));
         }
 
         @Override
         public Instant getPrev(final long rowKey) {
-            return DateTimeUtils.makeInstant(originalSource.getPrevLong(rowKey));
+            return DateTimeUtils.epochNanosToInstant(originalSource.getPrevLong(rowKey));
         }
 
         @Override
@@ -183,7 +183,7 @@ public abstract class BoxedColumnSource<DATA_TYPE> extends AbstractColumnSource<
 
             final int sourceSize = typedSource.size();
             for (int pi = 0; pi < sourceSize; ++pi) {
-                typedDestination.set(pi, DateTimeUtils.makeInstant(typedSource.get(pi)));
+                typedDestination.set(pi, DateTimeUtils.epochNanosToInstant(typedSource.get(pi)));
             }
             typedDestination.setSize(sourceSize);
         }

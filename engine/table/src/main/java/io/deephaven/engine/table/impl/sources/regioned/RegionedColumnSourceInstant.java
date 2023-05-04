@@ -46,7 +46,7 @@ final class RegionedColumnSourceInstant
         final int length = longChunk.size();
 
         for (int i = 0; i < length; ++i) {
-            objectChunk.set(size + i, DateTimeUtils.makeInstant(longChunk.get(i)));
+            objectChunk.set(size + i, DateTimeUtils.epochNanosToInstant(longChunk.get(i)));
         }
         objectChunk.setSize(size + length);
     }
@@ -54,7 +54,7 @@ final class RegionedColumnSourceInstant
     @Override
     public Instant get(final long rowKey) {
         return rowKey == RowSequence.NULL_ROW_KEY ? null
-                : DateTimeUtils.makeInstant(getNativeSource().lookupRegion(rowKey).getLong(rowKey));
+                : DateTimeUtils.epochNanosToInstant(getNativeSource().lookupRegion(rowKey).getLong(rowKey));
     }
 
     @Override

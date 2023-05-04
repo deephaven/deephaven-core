@@ -412,7 +412,7 @@ public final class MutableColumnSourceGetDefaults {
         @Nullable
         @Override
         default Instant getPrev(long rowKey) {
-            return DateTimeUtils.makeInstant(getPrevLong(rowKey));
+            return DateTimeUtils.epochNanosToInstant(getPrevLong(rowKey));
         }
     }
 

@@ -26,7 +26,7 @@ public class Immutable2DInstantArraySource extends Immutable2DNanosBasedTimeArra
 
     @Override
     protected Instant makeValue(long nanos) {
-        return DateTimeUtils.makeInstant(nanos);
+        return DateTimeUtils.epochNanosToInstant(nanos);
     }
 
     @Override
