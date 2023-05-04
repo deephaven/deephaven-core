@@ -4,7 +4,6 @@
 #include <iostream>
 #include "deephaven/client/client.h"
 #include "deephaven/client/utility/table_maker.h"
-#include "deephaven/client/utility/utility.h"
 
 using deephaven::client::NumCol;
 using deephaven::client::Client;
