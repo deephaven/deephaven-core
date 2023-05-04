@@ -1733,6 +1733,27 @@ public class DateTimeUtils {
 
     // region TODO: Java Parse Times
 
+    private enum DateGroupId {
+        // Date(1),
+        Year(2, ChronoField.YEAR),
+        Month(3, ChronoField.MONTH_OF_YEAR),
+        Day(4, ChronoField.DAY_OF_MONTH),
+        // Tod(5),
+        Hours(6, ChronoField.HOUR_OF_DAY),
+        Minutes(7, ChronoField.MINUTE_OF_HOUR),
+        Seconds(8, ChronoField.SECOND_OF_MINUTE),
+        Fraction(9, ChronoField.MILLI_OF_SECOND);
+        //TODO MICRO and NANOs are not supported! -- fix and unit test!
+
+        public final int id;
+        public final ChronoField field;
+
+        DateGroupId(int id, ChronoField field) {
+            this.id = id;
+            this.field = field;
+        }
+    }
+
     /**
      * Returns a {@link ChronoField} indicating the level of precision in a time or datetime string.
      *
@@ -1755,7 +1776,7 @@ public class DateTimeUtils {
         return null;
     }
 
-    // end region
+    // endregion
 
     // region TODO: Java Time
 
@@ -1890,25 +1911,6 @@ public class DateTimeUtils {
         return new DateTime(nanos + (seconds * DateTimeUtils.SECOND));
     }
 
-    /**
-     * Attempt to convert the given string to a LocalDate. This should <b>not</b> accept dates with times, as we want
-     * those to be interpreted as DateTime values. The ideal date format is YYYY-MM-DD since it's the least ambiguous,
-     * but this method also parses slash-delimited dates according to the system "date style".
-     *
-     * @param s the date string to convert
-     * @throws RuntimeException if the date cannot be converted, otherwise returns a {@link LocalDate}
-     */
-    @SuppressWarnings("WeakerAccess")
-    public static LocalDate convertDate(String s) {
-        final LocalDate ret = convertDateQuiet(s);
-
-        if (ret == null) {
-            throw new RuntimeException("Cannot parse date : " + s);
-        }
-
-        return ret;
-    }
-
 
     /**
      * Converts a time String in the form hh:mm:ss[.nnnnnnnnn] to a {@link LocalTime}.
@@ -1940,17 +1942,6 @@ public class DateTimeUtils {
         return null;
     }
 
-    /**
-     * Attempt to convert the given string to a LocalDate. This should <b>not</b> accept dates with times, as we want
-     * those to be interpreted as DateTime values. The ideal date format is YYYY-MM-DD since it's the least ambiguous.
-     *
-     * @param s the date string to convert
-     * @return the LocalDate formatted using the default date style.
-     */
-    public static LocalDate convertDateQuiet(String s) {
-        return convertDateQuiet(s, DATE_STYLE);
-    }
-
     private static LocalDate matchStdDate(Pattern pattern, String s) {
         final Matcher matcher = pattern.matcher(s);
         if (matcher.matches()) {
@@ -1961,6 +1952,19 @@ public class DateTimeUtils {
         }
         return null;
     }
+
+    //TODO: document
+    //TODO: add to Format Patterns?
+    /**
+     * Date formatting styles for use in conversion functions such as {@link #convertDateQuiet(String, DateStyle)}.
+     */
+    public enum DateStyle {
+        MDY, DMY, YMD
+    }
+
+    //TODO: add to Format Patterns?
+    private static final DateStyle DATE_STYLE = DateStyle
+            .valueOf(Configuration.getInstance().getStringWithDefault("DateTimeUtils.dateStyle", DateStyle.MDY.name()));
 
     /**
      * Attempt to convert the given string to a LocalDate. This should <b>not</b> accept dates with times, as we want
@@ -2027,41 +2031,35 @@ public class DateTimeUtils {
         return null;
     }
 
-    //TODO: document
-    //TODO: add to Format Patterns?
     /**
-     * Date formatting styles for use in conversion functions such as {@link #convertDateQuiet(String, DateStyle)}.
+     * Attempt to convert the given string to a LocalDate. This should <b>not</b> accept dates with times, as we want
+     * those to be interpreted as DateTime values. The ideal date format is YYYY-MM-DD since it's the least ambiguous.
+     *
+     * @param s the date string to convert
+     * @return the LocalDate formatted using the default date style.
      */
-    public enum DateStyle {
-        MDY, DMY, YMD
+    public static LocalDate convertDateQuiet(String s) {
+        return convertDateQuiet(s, DATE_STYLE);
     }
 
-    //TODO: add to Format Patterns?
-    private static final DateStyle DATE_STYLE = DateStyle
-            .valueOf(Configuration.getInstance().getStringWithDefault("DateTimeUtils.dateStyle", DateStyle.MDY.name()));
+    /**
+     * Attempt to convert the given string to a LocalDate. This should <b>not</b> accept dates with times, as we want
+     * those to be interpreted as DateTime values. The ideal date format is YYYY-MM-DD since it's the least ambiguous,
+     * but this method also parses slash-delimited dates according to the system "date style".
+     *
+     * @param s the date string to convert
+     * @throws RuntimeException if the date cannot be converted, otherwise returns a {@link LocalDate}
+     */
+    @SuppressWarnings("WeakerAccess")
+    public static LocalDate convertDate(String s) {
+        final LocalDate ret = convertDateQuiet(s);
 
-    private enum DateGroupId {
-        // Date(1),
-        Year(2, ChronoField.YEAR),
-        Month(3, ChronoField.MONTH_OF_YEAR),
-        Day(4, ChronoField.DAY_OF_MONTH),
-        // Tod(5),
-        Hours(6, ChronoField.HOUR_OF_DAY),
-        Minutes(7, ChronoField.MINUTE_OF_HOUR),
-        Seconds(8, ChronoField.SECOND_OF_MINUTE),
-        Fraction(9, ChronoField.MILLI_OF_SECOND);
-        //TODO MICRO and NANOs are not supported! -- fix and unit test!
-
-        public final int id;
-        public final ChronoField field;
-
-        DateGroupId(int id, ChronoField field) {
-            this.id = id;
-            this.field = field;
+        if (ret == null) {
+            throw new RuntimeException("Cannot parse date : " + s);
         }
+
+        return ret;
     }
-
-
 
     // endregion
 
