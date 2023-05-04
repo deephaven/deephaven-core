@@ -38,6 +38,10 @@ public class Strings {
         return rawString.value();
     }
 
+    public static String of(RawString rawString, boolean invert) {
+        return of(rawString, false, invert);
+    }
+
     private static String of(RawString rawString, boolean encapsulate, boolean invert) {
         final String inner = of(rawString);
         if (invert) {
