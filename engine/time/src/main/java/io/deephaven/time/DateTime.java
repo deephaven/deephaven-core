@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
  */
 package io.deephaven.time;
 
@@ -8,19 +8,12 @@ import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.ReflexiveUse;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
-import org.joda.time.DateTimeZone;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
 
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalTime;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
+import java.time.*;
 import java.util.Date;
 
 import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE;
@@ -46,9 +39,6 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
     //TODO: test coverage
 
     private static final long serialVersionUID = -9077991715632523353L;
-    private static final DateTimeFormatter JODA_DATE_TIME_FORMAT =
-            DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss.SSS");
-    private static final DateTimeFormatter JODA_DATE_FORMAT = DateTimeFormat.forPattern("yyyy-MM-dd");
 
     private long nanos;
 
@@ -372,7 +362,7 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
     }
 
     public int compareTo(DateTime dateTime) {
-        return (nanos < dateTime.nanos ? -1 : (nanos == dateTime.nanos ? 0 : 1));
+        return Long.compare(nanos, dateTime.nanos);
     }
     // endregion
 
@@ -395,8 +385,7 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
      */
     @NotNull
     public String toString(@NotNull final TimeZone timeZone) {
-        return JODA_DATE_TIME_FORMAT.withZone(timeZone.getTimeZone()).print(getMillis())
-                + DateTimeUtils.padZeros(String.valueOf(getNanosPartial()), 6) + " " + timeZone.toString().substring(3);
+        return DateTimeUtils.formatDateTime(this, timeZone);
     }
 
     /**
@@ -421,22 +410,8 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
         if (timeZone == null) {
             throw new IllegalArgumentException("timeZone cannot be null");
         }
-        return JODA_DATE_FORMAT.withZone(timeZone.getTimeZone()).print(getMillis());
-    }
-
-    /**
-     * Get the date represented by this DateTime in the given Joda {@code DateTimeZone} in ISO date format yyyy-mm.
-     *
-     * @param timeZone A joda DateTimeZone
-     * @return The date (yyyy-MM-dd) represented by this {@code DateTime} in the given {@code timeZone}
-     */
-    @NotNull
-    public String toDateString(@NotNull final DateTimeZone timeZone) {
-        // noinspection ConstantConditions
-        if (timeZone == null) {
-            throw new IllegalArgumentException("timeZone cannot be null");
-        }
-        return JODA_DATE_FORMAT.withZone(timeZone).print(getMillis());
+        //noinspection ConstantConditions
+        return DateTimeUtils.formatDate(this, timeZone);
     }
 
     /**

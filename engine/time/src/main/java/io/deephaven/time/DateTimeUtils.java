@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
  */
 package io.deephaven.time;
 
@@ -15,6 +15,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.joda.time.DateMidnight;
 import org.joda.time.DurationFieldType;
+import org.joda.time.format.DateTimeFormat;
 
 import java.time.*;
 import java.time.format.DateTimeFormatter;
@@ -92,6 +93,17 @@ public class DateTimeUtils {
      */
     private static final Pattern CAPTURING_DATETIME_PATTERN = Pattern.compile(
             "(([0-9][0-9][0-9][0-9])-([0-9][0-9])-([0-9][0-9])T?)?(([0-9][0-9]?)(?::([0-9][0-9])(?::([0-9][0-9]))?(?:\\.([0-9][0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[0-9]?))?)?)?( [a-zA-Z]+)?");
+
+    /**
+     * JODA date time format.
+     */
+    private static final org.joda.time.format.DateTimeFormatter JODA_DATE_TIME_FORMAT =
+            DateTimeFormat.forPattern("yyyy-MM-dd'T'HH:mm:ss.SSS");
+
+    /**
+     * JODA date format.
+     */
+    private static final org.joda.time.format.DateTimeFormatter JODA_DATE_FORMAT = DateTimeFormat.forPattern("yyyy-MM-dd");
 
     // endregion
 
@@ -1958,7 +1970,8 @@ public class DateTimeUtils {
             return null;
         }
 
-        return dateTime.toString(timeZone);
+        return JODA_DATE_TIME_FORMAT.withZone(timeZone.getTimeZone()).print(dateTime.getMillis())
+                + DateTimeUtils.padZeros(String.valueOf(dateTime.getNanosPartial()), 6) + " " + timeZone.toString().substring(3);
     }
 
     /**
@@ -1975,7 +1988,7 @@ public class DateTimeUtils {
             return null;
         }
 
-        return dateTime.toDateString(timeZone);
+        return JODA_DATE_FORMAT.withZone(timeZone.getTimeZone()).print(dateTime.getMillis());
     }
 
     /**

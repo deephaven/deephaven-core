@@ -69,15 +69,12 @@ public class TestDateTime extends BaseArrayTestCase {
         { // America/New_York
             String zoneId = "America/New_York";
             TestCase.assertEquals("2016-11-06", dateTime.toDateString(TimeZone.TZ_NY));
-            TestCase.assertEquals("2016-11-06", dateTime.toDateString(DateTimeZone.forID(zoneId)));
             TestCase.assertEquals("2016-11-06", dateTime.toDateString(zoneId));
             TestCase.assertEquals("2016-11-06", dateTime.toDateString(ZoneId.of(zoneId)));
         }
 
         { // EST - supported by joda; not java.time
             String zoneId = "EST";
-            TestCase.assertEquals("2016-11-05", dateTime.toDateString(DateTimeZone.forID(zoneId)));
-
             try {
                 TestCase.assertEquals("2016-11-05", dateTime.toDateString(zoneId));
                 TestCase.fail("Should have thrown an exception for invalid zone");
@@ -88,28 +85,24 @@ public class TestDateTime extends BaseArrayTestCase {
         { // UTC
             String zoneId = "UTC";
             TestCase.assertEquals("2016-11-06", dateTime.toDateString(TimeZone.TZ_UTC));
-            TestCase.assertEquals("2016-11-06", dateTime.toDateString(DateTimeZone.forID(zoneId)));
             TestCase.assertEquals("2016-11-06", dateTime.toDateString(zoneId));
             TestCase.assertEquals("2016-11-06", dateTime.toDateString(ZoneId.of(zoneId)));
         }
 
         { // Etc/GMT+2 - 2 hours *EAST*
             String zoneId = "Etc/GMT+2";
-            TestCase.assertEquals("2016-11-06", dateTime.toDateString(DateTimeZone.forID(zoneId)));
             TestCase.assertEquals("2016-11-06", dateTime.toDateString(zoneId));
             TestCase.assertEquals("2016-11-06", dateTime.toDateString(ZoneId.of(zoneId)));
         }
 
         { // Etc/GMT+4 -- 4 hours *WEST*
             String zoneId = "Etc/GMT+4";
-            TestCase.assertEquals("2016-11-06", dateTime.toDateString(DateTimeZone.forID(zoneId)));
             TestCase.assertEquals("2016-11-06", dateTime.toDateString(zoneId));
             TestCase.assertEquals("2016-11-06", dateTime.toDateString(ZoneId.of(zoneId)));
         }
 
         { // Etc/GMT+2 -- 5 hours *WEST*
             String zoneId = "Etc/GMT+5";
-            TestCase.assertEquals("2016-11-05", dateTime.toDateString(DateTimeZone.forID(zoneId)));
             TestCase.assertEquals("2016-11-05", dateTime.toDateString(zoneId));
             TestCase.assertEquals("2016-11-05", dateTime.toDateString(ZoneId.of(zoneId)));
         }
