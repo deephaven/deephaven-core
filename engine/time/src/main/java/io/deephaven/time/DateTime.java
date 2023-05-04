@@ -53,7 +53,7 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
     private long nanos;
 
     public static DateTime of(Instant instant) {
-        return new DateTime(DateTimeUtils.nanos(instant));
+        return new DateTime(DateTimeUtils.epochNanos(instant));
     }
 
     /**
