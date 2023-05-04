@@ -41,6 +41,8 @@ public class DateTimeUtils {
     //TODO: review public vs private
     //TODO: test coverage
     //TODO: variable and function naming consistency
+    //TODO: review function subsections for consistency
+    //TODO: review function subsections for missing functions
 
     public static final DateTime[] ZERO_LENGTH_DATETIME_ARRAY = new DateTime[0];
 
@@ -710,6 +712,325 @@ public class DateTimeUtils {
         return new DateTime(epochAutoToEpochNanos(epochOffset));
     }
 
+    private static long safeComputeNanos(long epochSecond, long nanoOfSecond) {
+        if (epochSecond >= MAX_CONVERTIBLE_SECONDS) {
+            throw new IllegalArgumentException("Numeric overflow detected during conversion of " + epochSecond
+                    + " to nanoseconds");
+        }
+
+        return epochSecond * 1_000_000_000L + nanoOfSecond;
+    }
+
+    /**
+     * Returns nanoseconds from the Epoch for an {@link Instant} value.
+     *
+     * @param dateTime {@link Instant} to compute the Epoch offset for.
+     * @return nanoseconds since Epoch, or a NULL_LONG value if the {@link Instant} is null.
+     */
+    public static long epochNanos(@Nullable final Instant dateTime) {
+        if (dateTime == null) {
+            return NULL_LONG;
+        }
+
+        return safeComputeNanos(dateTime.getEpochSecond(), dateTime.getNano());
+    }
+
+    /**
+     * Returns nanoseconds from the Epoch for a {@link ZonedDateTime} value.
+     *
+     * @param dateTime {@link ZonedDateTime} to compute the Epoch offset for.
+     * @return nanoseconds since Epoch, or a NULL_LONG value if the {@link ZonedDateTime} is null.
+     */
+    public static long epochNanos(@Nullable final ZonedDateTime dateTime) {
+        if (dateTime == null) {
+            return NULL_LONG;
+        }
+
+        return safeComputeNanos(dateTime.toEpochSecond(), dateTime.getNano());
+    }
+
+    /**
+     * Converts nanoseconds from the Epoch to an {@link Instant}.
+     *
+     * @param nanos nanoseconds since Epoch.
+     * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
+     *      nanoseconds from the Epoch converted to an {@link Instant}.
+     */
+    @Nullable
+    public static Instant epochNanosToInstant(final long nanos) {
+        return nanos == NULL_LONG ? null : Instant.ofEpochSecond(nanos / 1_000_000_000L, nanos % 1_000_000_000L);
+    }
+
+    /**
+     * Converts microseconds from the Epoch to an {@link Instant}.
+     *
+     * @param micros microseconds since Epoch.
+     * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
+     *      microseconds from the Epoch converted to an {@link Instant}.
+     */
+    @Nullable
+    public static Instant epochMicrosToInstant(final long micros) {
+        return micros == NULL_LONG ? null : Instant.ofEpochSecond(micros / 1_000_000L, (micros % 1_000_000L) * 1_000L);
+    }
+
+    /**
+     * Converts milliseconds from the Epoch to an {@link Instant}.
+     *
+     * @param millis milliseconds since Epoch.
+     * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
+     *      milliseconds from the Epoch converted to an {@link Instant}.
+     */
+    @Nullable
+    public static Instant epochMillisToInstant(final long millis) {
+        return millis == NULL_LONG ? null : Instant.ofEpochSecond(millis / 1_000L, (millis % 1_000L) * 1_000_000L);
+    }
+
+    /**
+     * Converts seconds from the Epoch to an {@link Instant}.
+     *
+     * @param seconds seconds since Epoch.
+     * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
+     *      seconds from the Epoch converted to an {@link Instant}.
+     */
+    @Nullable
+    public static Instant epochSecondsToInstant(final long seconds) {
+        return seconds == NULL_LONG ? null : Instant.ofEpochSecond(seconds, 0);
+    }
+
+    /**
+     * Converts nanoseconds from the Epoch to a {@link ZonedDateTime}.
+     *
+     * Uses the default timezone.
+     *
+     * @param nanos nanoseconds since Epoch.
+     * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
+     *      nanoseconds from the Epoch converted to a {@link ZonedDateTime}.
+     */
+    @Nullable
+    public static ZonedDateTime epochNanosToZonedDateTime(final long nanos) {
+        return epochNanosToZonedDateTime(nanos, TimeZone.TZ_DEFAULT.getZoneId());
+    }
+
+    /**
+     * Converts nanoseconds from the Epoch to a {@link ZonedDateTime}.
+     *
+     * @param nanos nanoseconds since Epoch.
+     * @param timeZone time zone.
+     * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
+     *      nanoseconds from the Epoch converted to a {@link ZonedDateTime}.
+     */
+    @Nullable
+    public static ZonedDateTime epochNanosToZonedDateTime(final long nanos, @NotNull final TimeZone timeZone) {
+        return epochNanosToZonedDateTime(nanos, timeZone.getZoneId());
+    }
+
+    /**
+     * Converts nanoseconds from the Epoch to a {@link ZonedDateTime}.
+     *
+     * @param nanos nanoseconds since Epoch.
+     * @param timeZone time zone.
+     * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
+     *      nanoseconds from the Epoch converted to a {@link ZonedDateTime}.
+     */
+    @Nullable
+    public static ZonedDateTime epochNanosToZonedDateTime(final long nanos, ZoneId timeZone) {
+        // noinspection ConstantConditions
+        return nanos == NULL_LONG ? null : ZonedDateTime.ofInstant(epochNanosToInstant(nanos), timeZone);
+    }
+
+    /**
+     * Converts microseconds from the Epoch to a {@link ZonedDateTime}.
+     *
+     * Uses the default timezone.
+     *
+     * @param micros microseconds since Epoch.
+     * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
+     *      microseconds from the Epoch converted to a {@link ZonedDateTime}.
+     */
+    @Nullable
+    public static ZonedDateTime epochMicrosToZonedDateTime(final long micros) {
+        return epochMicrosToZonedDateTime(micros, TimeZone.TZ_DEFAULT.getZoneId());
+    }
+
+    /**
+     * Converts microseconds from the Epoch to a {@link ZonedDateTime}.
+     *
+     * @param micros micrseconds since Epoch.
+     * @param timeZone time zone.
+     * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
+     *      microseconds from the Epoch converted to a {@link ZonedDateTime}.
+     */
+    @Nullable
+    public static ZonedDateTime epochMicrosToZonedDateTime(final long micros, @NotNull final TimeZone timeZone) {
+        return epochMicrosToZonedDateTime(micros, timeZone.getZoneId());
+    }
+
+    /**
+     * Converts microseconds from the Epoch to a {@link ZonedDateTime}.
+     *
+     * @param micros microseconds since Epoch.
+     * @param timeZone time zone.
+     * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
+     *      microseconds from the Epoch converted to a {@link ZonedDateTime}.
+     */
+    @Nullable
+    public static ZonedDateTime epochMicrosToZonedDateTime(final long micros, ZoneId timeZone) {
+        // noinspection ConstantConditions
+        return micros == NULL_LONG ? null : ZonedDateTime.ofInstant(epochMicrosToInstant(micros), timeZone);
+    }
+
+    /**
+     * Converts milliseconds from the Epoch to a {@link ZonedDateTime}.
+     *
+     * Uses the default timezone.
+     *
+     * @param millis milliseconds since Epoch.
+     * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
+     *      milliseconds from the Epoch converted to a {@link ZonedDateTime}.
+     */
+    @Nullable
+    public static ZonedDateTime epochMillisToZonedDateTime(final long millis) {
+        return epochMillisToZonedDateTime(millis, TimeZone.TZ_DEFAULT.getZoneId());
+    }
+
+    /**
+     * Converts milliseconds from the Epoch to a {@link ZonedDateTime}.
+     *
+     * @param millis milliseconds since Epoch.
+     * @param timeZone time zone.
+     * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
+     *      milliseconds from the Epoch converted to a {@link ZonedDateTime}.
+     */
+    @Nullable
+    public static ZonedDateTime epochMillisToZonedDateTime(final long millis, @NotNull final TimeZone timeZone) {
+        return epochMillisToZonedDateTime(millis, timeZone.getZoneId());
+    }
+
+    /**
+     * Converts milliseconds from the Epoch to a {@link ZonedDateTime}.
+     *
+     * @param millis milliseconds since Epoch.
+     * @param timeZone time zone.
+     * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
+     *      milliseconds from the Epoch converted to a {@link ZonedDateTime}.
+     */
+    @Nullable
+    public static ZonedDateTime epochMillisToZonedDateTime(final long millis, ZoneId timeZone) {
+        // noinspection ConstantConditions
+        return millis == NULL_LONG ? null : ZonedDateTime.ofInstant(epochMillisToInstant(millis), timeZone);
+    }
+
+    /**
+     * Converts seconds from the Epoch to a {@link ZonedDateTime}.
+     *
+     * Uses the default timezone.
+     *
+     * @param seconds seconds since Epoch.
+     * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
+     *      seconds from the Epoch converted to a {@link ZonedDateTime}.
+     */
+    @Nullable
+    public static ZonedDateTime epochSecondsToZonedDateTime(final long seconds) {
+        return epochSecondsToZonedDateTime(seconds, TimeZone.TZ_DEFAULT.getZoneId());
+    }
+
+    /**
+     * Converts seconds from the Epoch to a {@link ZonedDateTime}.
+     *
+     * @param seconds seconds since Epoch.
+     * @param timeZone time zone.
+     * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
+     *      seconds from the Epoch converted to a {@link ZonedDateTime}.
+     */
+    @Nullable
+    public static ZonedDateTime epochSecondsToZonedDateTime(final long seconds, @NotNull final TimeZone timeZone) {
+        return epochSecondsToZonedDateTime(seconds, timeZone.getZoneId());
+    }
+
+    /**
+     * Converts seconds from the Epoch to a {@link ZonedDateTime}.
+     *
+     * @param seconds seconds since Epoch.
+     * @param timeZone time zone.
+     * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
+     *      seconds from the Epoch converted to a {@link ZonedDateTime}.
+     */
+    @Nullable
+    public static ZonedDateTime epochSecondsToZonedDateTime(final long seconds, ZoneId timeZone) {
+        // noinspection ConstantConditions
+        return seconds == NULL_LONG ? null : ZonedDateTime.ofInstant(epochSecondsToInstant(seconds), timeZone);
+    }
+
+    /**
+     * Converts a {@link DateTime} to a {@link ZonedDateTime}.
+     *
+     * Uses the default time zone.
+     *
+     * @param dateTime {@link DateTime} to convert.
+     * @return {@link ZonedDateTime} using the default time zone, or null if dateTime is null.
+     */
+    @Nullable
+    public static ZonedDateTime toZonedDateTime(final @Nullable DateTime dateTime) {
+        return toZonedDateTime(dateTime, TimeZone.TZ_DEFAULT);
+    }
+
+    /**
+     * Converts a {@link DateTime} to a {@link ZonedDateTime}.
+     *
+     * @param dateTime {@link DateTime} to convert.
+     * @param timeZone time zone.
+     * @return {@link ZonedDateTime} using the specified time zone, or null if dateTime is null.
+     */
+    @Nullable
+    public static ZonedDateTime toZonedDateTime(@Nullable final DateTime dateTime, @NotNull final TimeZone timeZone) {
+        if (dateTime == null) {
+            return null;
+        }
+
+        final ZoneId zone = timeZone.getTimeZone().toTimeZone().toZoneId();
+        return dateTime.toZonedDateTime(zone);
+    }
+
+    /**
+     * Converts a {@link DateTime} to a {@link ZonedDateTime}.
+     *
+     * @param dateTime {@link DateTime} to convert.
+     * @param timeZone time zone.
+     * @return {@link ZonedDateTime} using the specified time zone, or null if dateTime is null.
+     */
+    @Nullable
+    public static ZonedDateTime toZonedDateTime(@Nullable final DateTime dateTime, @NotNull final ZoneId timeZone) {
+        if (dateTime == null) {
+            return null;
+        }
+
+        return dateTime.toZonedDateTime(timeZone);
+    }
+
+    /**
+     * Converts a {@link ZonedDateTime} to a {@link DateTime}.
+     *
+     * @param zonedDateTime {@link ZonedDateTime} to convert.
+     * @return {@link DateTime} , or null if zonedDateTime is null.
+     * @throws DateTimeOverflowException if the resultant {@link DateTime} exceeds the supported range.
+     */
+    @Nullable
+    public static DateTime toDateTime(@Nullable final ZonedDateTime zonedDateTime) {
+        if (zonedDateTime == null) {
+            return null;
+        }
+
+        int nanos = zonedDateTime.getNano();
+        long seconds = zonedDateTime.toEpochSecond();
+
+        long limit = (Long.MAX_VALUE - nanos) / DateTimeUtils.SECOND;
+        if (seconds >= limit) {
+            throw new DateTimeOverflowException("Overflow: cannot convert " + zonedDateTime + " to new DateTime");
+        }
+
+        return new DateTime(nanos + (seconds * DateTimeUtils.SECOND));
+    }
+
     // endregion
 
     // region Time Arithmetic
@@ -1210,6 +1531,254 @@ public class DateTimeUtils {
         return null;
     }
 
+    private enum DateGroupId {
+        // Date(1),
+        Year(2, ChronoField.YEAR),
+        Month(3, ChronoField.MONTH_OF_YEAR),
+        Day(4, ChronoField.DAY_OF_MONTH),
+        // Tod(5),
+        Hours(6, ChronoField.HOUR_OF_DAY),
+        Minutes(7, ChronoField.MINUTE_OF_HOUR),
+        Seconds(8, ChronoField.SECOND_OF_MINUTE),
+        Fraction(9, ChronoField.MILLI_OF_SECOND);
+        //TODO MICRO and NANOs are not supported! -- fix and unit test!
+
+        public final int id;
+        public final ChronoField field;
+
+        DateGroupId(int id, ChronoField field) {
+            this.id = id;
+            this.field = field;
+        }
+    }
+
+    /**
+     * Returns a {@link ChronoField} indicating the level of precision in a time or datetime string.
+     *
+     * @param s time string.
+     * @return null if the time string cannot be parsed; otherwise, a {@link ChronoField} for the finest units in the
+     *      string (e.g. "10:00:00" would yield SecondOfMinute).  Precisions
+     */
+    public static ChronoField parseTimePrecision(String timeDef) {
+        Matcher dtMatcher = CAPTURING_DATETIME_PATTERN.matcher(timeDef);
+        if (dtMatcher.matches()) {
+            DateGroupId[] parts = DateGroupId.values();
+            for (int i = parts.length - 1; i >= 0; i--) {
+                String part = dtMatcher.group(parts[i].id);
+                if (part != null && !part.isEmpty()) {
+                    return parts[i].field;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Format style for a date string.
+     */
+    public enum DateStyle {
+        /**
+         * Month, day, year date format.
+         */
+        MDY,
+        /**
+         * Day, month, year date format.
+         */
+        DMY,
+        /**
+         * Year, month, day date format.
+         */
+        YMD
+    }
+
+    //TODO: add to Format Patterns?
+    private static final DateStyle DEFAULT_DATE_STYLE = DateStyle
+            .valueOf(Configuration.getInstance().getStringWithDefault("DateTimeUtils.dateStyle", DateStyle.MDY.name()));
+
+    private static LocalDate matchStdDate(Pattern pattern, String s) {
+        final Matcher matcher = pattern.matcher(s);
+        if (matcher.matches()) {
+            final int year = Integer.parseInt(matcher.group("year"));
+            final int month = Integer.parseInt(matcher.group("month"));
+            final int dayOfMonth = Integer.parseInt(matcher.group("day"));
+            return LocalDate.of(year, month, dayOfMonth);
+        }
+        return null;
+    }
+
+    /**
+     * Converts a string into a local date.
+     * The ideal date format is YYYY-MM-DD since it's the least ambiguous, but other formats are supported.
+     *
+     * @param s date string.
+     * @param dateStyle style the date string is formatted in.
+     * @return local date, or null if the string can not be parsed.
+     */
+    public static LocalDate parseDateQuiet(String s, DateStyle dateStyle) {
+        try {
+            LocalDate localDate = matchStdDate(STD_DATE_PATTERN, s);
+            if (localDate != null) {
+                return localDate;
+            }
+            localDate = matchStdDate(STD_DATE_PATTERN2, s);
+            if (localDate != null) {
+                return localDate;
+            }
+
+            // see if we can match one of the slash-delimited styles, the interpretation of which requires knowing the
+            // system date style setting (for example Europeans often write dates as d/m/y).
+            final Matcher slashMatcher = SLASH_DATE_PATTERN.matcher(s);
+            if (slashMatcher.matches()) {
+                final String yearGroup, monthGroup, dayGroup, yearFinal2DigitsGroup;
+                // note we have nested groups which allow us to detect 2 vs 4 digit year
+                // (groups 2 and 5 are the optional last 2 digits)
+                switch (dateStyle) {
+                    case MDY:
+                        dayGroup = "part2";
+                        monthGroup = "part1";
+                        yearGroup = "part3";
+                        yearFinal2DigitsGroup = "part3sub2";
+                        break;
+                    case DMY:
+                        dayGroup = "part1";
+                        monthGroup = "part2";
+                        yearGroup = "part3";
+                        yearFinal2DigitsGroup = "part3sub2";
+                        break;
+                    case YMD:
+                        dayGroup = "part3";
+                        monthGroup = "part2";
+                        yearGroup = "part1";
+                        yearFinal2DigitsGroup = "part1sub2";
+                        break;
+                    default:
+                        throw new IllegalStateException("Unsupported DateStyle: " + DEFAULT_DATE_STYLE);
+                }
+                final int year;
+                // for 2 digit years, lean on java's standard interpretation
+                if (slashMatcher.group(yearFinal2DigitsGroup) == null) {
+                    year = Year.parse(slashMatcher.group(yearGroup), TWO_DIGIT_YR_FORMAT).getValue();
+                } else {
+                    year = Integer.parseInt(slashMatcher.group(yearGroup));
+                }
+                final int month = Integer.parseInt(slashMatcher.group(monthGroup));
+                final int dayOfMonth = Integer.parseInt(slashMatcher.group(dayGroup));
+                return LocalDate.of(year, month, dayOfMonth);
+            }
+        } catch (Exception ex) {
+            return null;
+        }
+        return null;
+    }
+
+    /**
+     * Converts a string into a local date.
+     * The ideal date format is YYYY-MM-DD since it's the least ambiguous, but other formats are supported.
+     *
+     * A local date is a date without a time or time zone.
+     *
+     * The date string is formatted using the default date style.
+     *
+     * @param s date string.
+     * @return local date parsed according to the default date style, or null if the string can not be parsed.
+     */
+    public static LocalDate parseDateQuiet(String s) {
+        return parseDateQuiet(s, DEFAULT_DATE_STYLE);
+    }
+
+    /**
+     * Converts a string into a local date.
+     * The ideal date format is YYYY-MM-DD since it's the least ambiguous, but other formats are supported.
+     *
+     * A local date is a date without a time or time zone.
+     *
+     * @param s date string.
+     * @param dateStyle style the date string is formatted in.
+     * @return local date.
+     * @throws RuntimeException if the string cannot be parsed.
+     */
+    public static LocalDate parseDate(String s, DateStyle dateStyle) {
+        final LocalDate ret = parseDateQuiet(s, dateStyle);
+
+        if (ret == null) {
+            throw new RuntimeException("Cannot parse date : " + s);
+        }
+
+        return ret;
+    }
+
+    /**
+     * Converts a string into a local date.
+     * The ideal date format is YYYY-MM-DD since it's the least ambiguous, but other formats are supported.
+     *
+     * A local date is a date without a time or time zone.
+     *
+     * The date string is formatted using the default date style.
+     *
+     * @param s date string.
+     * @return local date parsed according to the default date style.
+     * @throws RuntimeException if the string cannot be parsed.
+     */
+    public static LocalDate parseDate(String s) {
+        final LocalDate ret = parseDateQuiet(s);
+
+        if (ret == null) {
+            throw new RuntimeException("Cannot parse date : " + s);
+        }
+
+        return ret;
+    }
+
+    /**
+     * Converts a time string in the form "hh:mm:ss[.nnnnnnnnn]" to a {@link LocalTime}.
+     *
+     * A local time is the time that would be read from a clock and does not have a date or timezone.
+     *
+     * @param s string to be converted
+     * @return a {@link LocalTime} represented by the input string, or null if the format is not recognized or an exception occurs.
+     */
+    public static LocalTime parseLocalTimeQuiet(String s) {
+        try {
+            final Matcher matcher = LOCAL_TIME_PATTERN.matcher(s);
+            if (matcher.matches()) {
+                final int hour = Integer.parseInt(matcher.group(1)); // hour is the only required field
+                final int minute = matcher.group(2) != null ? Integer.parseInt(matcher.group(2)) : 0;
+                final int second = matcher.group(3) != null ? Integer.parseInt(matcher.group(3)) : 0;
+                final int nanos;
+                if (matcher.group(4) != null) {
+                    final String fractionStr = matcher.group(5); // group 5 excludes the decimal pt
+                    nanos = Integer.parseInt(fractionStr) * (int) Math.pow(10, 9 - fractionStr.length());
+                } else {
+                    nanos = 0;
+                }
+                return LocalTime.of(hour, minute, second, nanos);
+            }
+        } catch (Exception ex) {
+            return null;
+        }
+        return null;
+    }
+
+    /**
+     * Converts a time string in the form "hh:mm:ss[.nnnnnnnnn]" to a {@link LocalTime}.
+     *
+     * A local time is the time that would be read from a clock and does not have a date or timezone.
+     *
+     * @param s string to be converted
+     * @return a {@link LocalTime} represented by the input string.
+     * @throws RuntimeException if the string cannot be converted, otherwise a {@link LocalTime} from the parsed string.
+     */
+    public static LocalTime parseLocalTime(String s) {
+        LocalTime ret = parseLocalTimeQuiet(s);
+
+        if (ret == null) {
+            throw new RuntimeException("Cannot parse local time : " + s);
+        }
+
+        return ret;
+    }
+
     // endregion
 
     // region Format Times
@@ -1687,586 +2256,6 @@ public class DateTimeUtils {
     }
 
     // endregion
-
-    // ##############################################################################
-
-    //TODO: clean up java time
-
-    // region TODO: Java Time Conversions
-
-    private static long safeComputeNanos(long epochSecond, long nanoOfSecond) {
-        if (epochSecond >= MAX_CONVERTIBLE_SECONDS) {
-            throw new IllegalArgumentException("Numeric overflow detected during conversion of " + epochSecond
-                    + " to nanoseconds");
-        }
-
-        return epochSecond * 1_000_000_000L + nanoOfSecond;
-    }
-
-    /**
-     * Returns nanoseconds from the Epoch for an {@link Instant} value.
-     *
-     * @param dateTime {@link Instant} to compute the Epoch offset for.
-     * @return nanoseconds since Epoch, or a NULL_LONG value if the {@link Instant} is null.
-     */
-    public static long epochNanos(@Nullable final Instant dateTime) {
-        if (dateTime == null) {
-            return NULL_LONG;
-        }
-
-        return safeComputeNanos(dateTime.getEpochSecond(), dateTime.getNano());
-    }
-
-    /**
-     * Returns nanoseconds from the Epoch for a {@link ZonedDateTime} value.
-     *
-     * @param dateTime {@link ZonedDateTime} to compute the Epoch offset for.
-     * @return nanoseconds since Epoch, or a NULL_LONG value if the {@link ZonedDateTime} is null.
-     */
-    public static long epochNanos(@Nullable final ZonedDateTime dateTime) {
-        if (dateTime == null) {
-            return NULL_LONG;
-        }
-
-        return safeComputeNanos(dateTime.toEpochSecond(), dateTime.getNano());
-    }
-
-    /**
-     * Converts nanoseconds from the Epoch to an {@link Instant}.
-     *
-     * @param nanos nanoseconds since Epoch.
-     * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
-     *      nanoseconds from the Epoch converted to an {@link Instant}.
-     */
-    @Nullable
-    public static Instant epochNanosToInstant(final long nanos) {
-        return nanos == NULL_LONG ? null : Instant.ofEpochSecond(nanos / 1_000_000_000L, nanos % 1_000_000_000L);
-    }
-
-    /**
-     * Converts microseconds from the Epoch to an {@link Instant}.
-     *
-     * @param micros microseconds since Epoch.
-     * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
-     *      microseconds from the Epoch converted to an {@link Instant}.
-     */
-    @Nullable
-    public static Instant epochMicrosToInstant(final long micros) {
-        return micros == NULL_LONG ? null : Instant.ofEpochSecond(micros / 1_000_000L, (micros % 1_000_000L) * 1_000L);
-    }
-
-    /**
-     * Converts milliseconds from the Epoch to an {@link Instant}.
-     *
-     * @param millis milliseconds since Epoch.
-     * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
-     *      milliseconds from the Epoch converted to an {@link Instant}.
-     */
-    @Nullable
-    public static Instant epochMillisToInstant(final long millis) {
-        return millis == NULL_LONG ? null : Instant.ofEpochSecond(millis / 1_000L, (millis % 1_000L) * 1_000_000L);
-    }
-
-    /**
-     * Converts seconds from the Epoch to an {@link Instant}.
-     *
-     * @param seconds seconds since Epoch.
-     * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
-     *      seconds from the Epoch converted to an {@link Instant}.
-     */
-    @Nullable
-    public static Instant epochSecondsToInstant(final long seconds) {
-        return seconds == NULL_LONG ? null : Instant.ofEpochSecond(seconds, 0);
-    }
-
-    /**
-     * Converts nanoseconds from the Epoch to a {@link ZonedDateTime}.
-     *
-     * Uses the default timezone.
-     *
-     * @param nanos nanoseconds since Epoch.
-     * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
-     *      nanoseconds from the Epoch converted to a {@link ZonedDateTime}.
-     */
-    @Nullable
-    public static ZonedDateTime epochNanosToZonedDateTime(final long nanos) {
-        return epochNanosToZonedDateTime(nanos, TimeZone.TZ_DEFAULT.getZoneId());
-    }
-
-    /**
-     * Converts nanoseconds from the Epoch to a {@link ZonedDateTime}.
-     *
-     * @param nanos nanoseconds since Epoch.
-     * @param timeZone time zone.
-     * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
-     *      nanoseconds from the Epoch converted to a {@link ZonedDateTime}.
-     */
-    @Nullable
-    public static ZonedDateTime epochNanosToZonedDateTime(final long nanos, @NotNull final TimeZone timeZone) {
-        return epochNanosToZonedDateTime(nanos, timeZone.getZoneId());
-    }
-
-    /**
-     * Converts nanoseconds from the Epoch to a {@link ZonedDateTime}.
-     *
-     * @param nanos nanoseconds since Epoch.
-     * @param timeZone time zone.
-     * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
-     *      nanoseconds from the Epoch converted to a {@link ZonedDateTime}.
-     */
-    @Nullable
-    public static ZonedDateTime epochNanosToZonedDateTime(final long nanos, ZoneId timeZone) {
-        // noinspection ConstantConditions
-        return nanos == NULL_LONG ? null : ZonedDateTime.ofInstant(epochNanosToInstant(nanos), timeZone);
-    }
-
-    /**
-     * Converts microseconds from the Epoch to a {@link ZonedDateTime}.
-     *
-     * Uses the default timezone.
-     *
-     * @param micros microseconds since Epoch.
-     * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
-     *      microseconds from the Epoch converted to a {@link ZonedDateTime}.
-     */
-    @Nullable
-    public static ZonedDateTime epochMicrosToZonedDateTime(final long micros) {
-        return epochMicrosToZonedDateTime(micros, TimeZone.TZ_DEFAULT.getZoneId());
-    }
-
-    /**
-     * Converts microseconds from the Epoch to a {@link ZonedDateTime}.
-     *
-     * @param micros micrseconds since Epoch.
-     * @param timeZone time zone.
-     * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
-     *      microseconds from the Epoch converted to a {@link ZonedDateTime}.
-     */
-    @Nullable
-    public static ZonedDateTime epochMicrosToZonedDateTime(final long micros, @NotNull final TimeZone timeZone) {
-        return epochMicrosToZonedDateTime(micros, timeZone.getZoneId());
-    }
-
-    /**
-     * Converts microseconds from the Epoch to a {@link ZonedDateTime}.
-     *
-     * @param micros microseconds since Epoch.
-     * @param timeZone time zone.
-     * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
-     *      microseconds from the Epoch converted to a {@link ZonedDateTime}.
-     */
-    @Nullable
-    public static ZonedDateTime epochMicrosToZonedDateTime(final long micros, ZoneId timeZone) {
-        // noinspection ConstantConditions
-        return micros == NULL_LONG ? null : ZonedDateTime.ofInstant(epochMicrosToInstant(micros), timeZone);
-    }
-
-    /**
-     * Converts milliseconds from the Epoch to a {@link ZonedDateTime}.
-     *
-     * Uses the default timezone.
-     *
-     * @param millis milliseconds since Epoch.
-     * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
-     *      milliseconds from the Epoch converted to a {@link ZonedDateTime}.
-     */
-    @Nullable
-    public static ZonedDateTime epochMillisToZonedDateTime(final long millis) {
-        return epochMillisToZonedDateTime(millis, TimeZone.TZ_DEFAULT.getZoneId());
-    }
-
-    /**
-     * Converts milliseconds from the Epoch to a {@link ZonedDateTime}.
-     *
-     * @param millis milliseconds since Epoch.
-     * @param timeZone time zone.
-     * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
-     *      milliseconds from the Epoch converted to a {@link ZonedDateTime}.
-     */
-    @Nullable
-    public static ZonedDateTime epochMillisToZonedDateTime(final long millis, @NotNull final TimeZone timeZone) {
-        return epochMillisToZonedDateTime(millis, timeZone.getZoneId());
-    }
-
-    /**
-     * Converts milliseconds from the Epoch to a {@link ZonedDateTime}.
-     *
-     * @param millis milliseconds since Epoch.
-     * @param timeZone time zone.
-     * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
-     *      milliseconds from the Epoch converted to a {@link ZonedDateTime}.
-     */
-    @Nullable
-    public static ZonedDateTime epochMillisToZonedDateTime(final long millis, ZoneId timeZone) {
-        // noinspection ConstantConditions
-        return millis == NULL_LONG ? null : ZonedDateTime.ofInstant(epochMillisToInstant(millis), timeZone);
-    }
-
-    /**
-     * Converts seconds from the Epoch to a {@link ZonedDateTime}.
-     *
-     * Uses the default timezone.
-     *
-     * @param seconds seconds since Epoch.
-     * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
-     *      seconds from the Epoch converted to a {@link ZonedDateTime}.
-     */
-    @Nullable
-    public static ZonedDateTime epochSecondsToZonedDateTime(final long seconds) {
-        return epochSecondsToZonedDateTime(seconds, TimeZone.TZ_DEFAULT.getZoneId());
-    }
-
-    /**
-     * Converts seconds from the Epoch to a {@link ZonedDateTime}.
-     *
-     * @param seconds seconds since Epoch.
-     * @param timeZone time zone.
-     * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
-     *      seconds from the Epoch converted to a {@link ZonedDateTime}.
-     */
-    @Nullable
-    public static ZonedDateTime epochSecondsToZonedDateTime(final long seconds, @NotNull final TimeZone timeZone) {
-        return epochSecondsToZonedDateTime(seconds, timeZone.getZoneId());
-    }
-
-    /**
-     * Converts seconds from the Epoch to a {@link ZonedDateTime}.
-     *
-     * @param seconds seconds since Epoch.
-     * @param timeZone time zone.
-     * @return null if the input is {@link QueryConstants#NULL_LONG}; otherwise the input
-     *      seconds from the Epoch converted to a {@link ZonedDateTime}.
-     */
-    @Nullable
-    public static ZonedDateTime epochSecondsToZonedDateTime(final long seconds, ZoneId timeZone) {
-        // noinspection ConstantConditions
-        return seconds == NULL_LONG ? null : ZonedDateTime.ofInstant(epochSecondsToInstant(seconds), timeZone);
-    }
-
-    /**
-     * Converts a {@link DateTime} to a {@link ZonedDateTime}.
-     *
-     * Uses the default time zone.
-     *
-     * @param dateTime {@link DateTime} to convert.
-     * @return {@link ZonedDateTime} using the default time zone, or null if dateTime is null.
-     */
-    @Nullable
-    public static ZonedDateTime toZonedDateTime(final @Nullable DateTime dateTime) {
-        return toZonedDateTime(dateTime, TimeZone.TZ_DEFAULT);
-    }
-
-    /**
-     * Converts a {@link DateTime} to a {@link ZonedDateTime}.
-     *
-     * @param dateTime {@link DateTime} to convert.
-     * @param timeZone time zone.
-     * @return {@link ZonedDateTime} using the specified time zone, or null if dateTime is null.
-     */
-    @Nullable
-    public static ZonedDateTime toZonedDateTime(@Nullable final DateTime dateTime, @NotNull final TimeZone timeZone) {
-        if (dateTime == null) {
-            return null;
-        }
-
-        final ZoneId zone = timeZone.getTimeZone().toTimeZone().toZoneId();
-        return dateTime.toZonedDateTime(zone);
-    }
-
-    /**
-     * Converts a {@link DateTime} to a {@link ZonedDateTime}.
-     *
-     * @param dateTime {@link DateTime} to convert.
-     * @param timeZone time zone.
-     * @return {@link ZonedDateTime} using the specified time zone, or null if dateTime is null.
-     */
-    @Nullable
-    public static ZonedDateTime toZonedDateTime(@Nullable final DateTime dateTime, @NotNull final ZoneId timeZone) {
-        if (dateTime == null) {
-            return null;
-        }
-
-        return dateTime.toZonedDateTime(timeZone);
-    }
-
-    /**
-     * Converts a {@link ZonedDateTime} to a {@link DateTime}.
-     *
-     * @param zonedDateTime {@link ZonedDateTime} to convert.
-     * @return {@link DateTime} , or null if zonedDateTime is null.
-     * @throws DateTimeOverflowException if the resultant {@link DateTime} exceeds the supported range.
-     */
-    @Nullable
-    public static DateTime toDateTime(@Nullable final ZonedDateTime zonedDateTime) {
-        if (zonedDateTime == null) {
-            return null;
-        }
-
-        int nanos = zonedDateTime.getNano();
-        long seconds = zonedDateTime.toEpochSecond();
-
-        long limit = (Long.MAX_VALUE - nanos) / DateTimeUtils.SECOND;
-        if (seconds >= limit) {
-            throw new DateTimeOverflowException("Overflow: cannot convert " + zonedDateTime + " to new DateTime");
-        }
-
-        return new DateTime(nanos + (seconds * DateTimeUtils.SECOND));
-    }
-
-    // endregion
-
-    // region TODO: Java Parse Times
-
-    private enum DateGroupId {
-        // Date(1),
-        Year(2, ChronoField.YEAR),
-        Month(3, ChronoField.MONTH_OF_YEAR),
-        Day(4, ChronoField.DAY_OF_MONTH),
-        // Tod(5),
-        Hours(6, ChronoField.HOUR_OF_DAY),
-        Minutes(7, ChronoField.MINUTE_OF_HOUR),
-        Seconds(8, ChronoField.SECOND_OF_MINUTE),
-        Fraction(9, ChronoField.MILLI_OF_SECOND);
-        //TODO MICRO and NANOs are not supported! -- fix and unit test!
-
-        public final int id;
-        public final ChronoField field;
-
-        DateGroupId(int id, ChronoField field) {
-            this.id = id;
-            this.field = field;
-        }
-    }
-
-    /**
-     * Returns a {@link ChronoField} indicating the level of precision in a time or datetime string.
-     *
-     * @param s time string.
-     * @return null if the time string cannot be parsed; otherwise, a {@link ChronoField} for the finest units in the
-     *      string (e.g. "10:00:00" would yield SecondOfMinute).  Precisions
-     */
-    public static ChronoField parseTimePrecision(String timeDef) {
-        Matcher dtMatcher = CAPTURING_DATETIME_PATTERN.matcher(timeDef);
-        if (dtMatcher.matches()) {
-            DateGroupId[] parts = DateGroupId.values();
-            for (int i = parts.length - 1; i >= 0; i--) {
-                String part = dtMatcher.group(parts[i].id);
-                if (part != null && !part.isEmpty()) {
-                    return parts[i].field;
-                }
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Format style for a date string.
-     */
-    public enum DateStyle {
-        /**
-         * Month, day, year date format.
-         */
-        MDY,
-        /**
-         * Day, month, year date format.
-         */
-        DMY,
-        /**
-         * Year, month, day date format.
-         */
-        YMD
-    }
-
-    //TODO: add to Format Patterns?
-    private static final DateStyle DEFAULT_DATE_STYLE = DateStyle
-            .valueOf(Configuration.getInstance().getStringWithDefault("DateTimeUtils.dateStyle", DateStyle.MDY.name()));
-
-    private static LocalDate matchStdDate(Pattern pattern, String s) {
-        final Matcher matcher = pattern.matcher(s);
-        if (matcher.matches()) {
-            final int year = Integer.parseInt(matcher.group("year"));
-            final int month = Integer.parseInt(matcher.group("month"));
-            final int dayOfMonth = Integer.parseInt(matcher.group("day"));
-            return LocalDate.of(year, month, dayOfMonth);
-        }
-        return null;
-    }
-
-    /**
-     * Converts a string into a local date.
-     * The ideal date format is YYYY-MM-DD since it's the least ambiguous, but other formats are supported.
-     *
-     * @param s date string.
-     * @param dateStyle style the date string is formatted in.
-     * @return local date, or null if the string can not be parsed.
-     */
-    public static LocalDate parseDateQuiet(String s, DateStyle dateStyle) {
-        try {
-            LocalDate localDate = matchStdDate(STD_DATE_PATTERN, s);
-            if (localDate != null) {
-                return localDate;
-            }
-            localDate = matchStdDate(STD_DATE_PATTERN2, s);
-            if (localDate != null) {
-                return localDate;
-            }
-
-            // see if we can match one of the slash-delimited styles, the interpretation of which requires knowing the
-            // system date style setting (for example Europeans often write dates as d/m/y).
-            final Matcher slashMatcher = SLASH_DATE_PATTERN.matcher(s);
-            if (slashMatcher.matches()) {
-                final String yearGroup, monthGroup, dayGroup, yearFinal2DigitsGroup;
-                // note we have nested groups which allow us to detect 2 vs 4 digit year
-                // (groups 2 and 5 are the optional last 2 digits)
-                switch (dateStyle) {
-                    case MDY:
-                        dayGroup = "part2";
-                        monthGroup = "part1";
-                        yearGroup = "part3";
-                        yearFinal2DigitsGroup = "part3sub2";
-                        break;
-                    case DMY:
-                        dayGroup = "part1";
-                        monthGroup = "part2";
-                        yearGroup = "part3";
-                        yearFinal2DigitsGroup = "part3sub2";
-                        break;
-                    case YMD:
-                        dayGroup = "part3";
-                        monthGroup = "part2";
-                        yearGroup = "part1";
-                        yearFinal2DigitsGroup = "part1sub2";
-                        break;
-                    default:
-                        throw new IllegalStateException("Unsupported DateStyle: " + DEFAULT_DATE_STYLE);
-                }
-                final int year;
-                // for 2 digit years, lean on java's standard interpretation
-                if (slashMatcher.group(yearFinal2DigitsGroup) == null) {
-                    year = Year.parse(slashMatcher.group(yearGroup), TWO_DIGIT_YR_FORMAT).getValue();
-                } else {
-                    year = Integer.parseInt(slashMatcher.group(yearGroup));
-                }
-                final int month = Integer.parseInt(slashMatcher.group(monthGroup));
-                final int dayOfMonth = Integer.parseInt(slashMatcher.group(dayGroup));
-                return LocalDate.of(year, month, dayOfMonth);
-            }
-        } catch (Exception ex) {
-            return null;
-        }
-        return null;
-    }
-
-    /**
-     * Converts a string into a local date.
-     * The ideal date format is YYYY-MM-DD since it's the least ambiguous, but other formats are supported.
-     *
-     * A local date is a date without a time or time zone.
-     *
-     * The date string is formatted using the default date style.
-     *
-     * @param s date string.
-     * @return local date parsed according to the default date style, or null if the string can not be parsed.
-     */
-    public static LocalDate parseDateQuiet(String s) {
-        return parseDateQuiet(s, DEFAULT_DATE_STYLE);
-    }
-
-    /**
-     * Converts a string into a local date.
-     * The ideal date format is YYYY-MM-DD since it's the least ambiguous, but other formats are supported.
-     *
-     * A local date is a date without a time or time zone.
-     *
-     * @param s date string.
-     * @param dateStyle style the date string is formatted in.
-     * @return local date.
-     * @throws RuntimeException if the string cannot be parsed.
-     */
-    public static LocalDate parseDate(String s, DateStyle dateStyle) {
-        final LocalDate ret = parseDateQuiet(s, dateStyle);
-
-        if (ret == null) {
-            throw new RuntimeException("Cannot parse date : " + s);
-        }
-
-        return ret;
-    }
-
-    /**
-     * Converts a string into a local date.
-     * The ideal date format is YYYY-MM-DD since it's the least ambiguous, but other formats are supported.
-     *
-     * A local date is a date without a time or time zone.
-     *
-     * The date string is formatted using the default date style.
-     *
-     * @param s date string.
-     * @return local date parsed according to the default date style.
-     * @throws RuntimeException if the string cannot be parsed.
-     */
-    public static LocalDate parseDate(String s) {
-        final LocalDate ret = parseDateQuiet(s);
-
-        if (ret == null) {
-            throw new RuntimeException("Cannot parse date : " + s);
-        }
-
-        return ret;
-    }
-
-    /**
-     * Converts a time string in the form "hh:mm:ss[.nnnnnnnnn]" to a {@link LocalTime}.
-     *
-     * A local time is the time that would be read from a clock and does not have a date or timezone.
-     *
-     * @param s string to be converted
-     * @return a {@link LocalTime} represented by the input string, or null if the format is not recognized or an exception occurs.
-     */
-    public static LocalTime parseLocalTimeQuiet(String s) {
-        try {
-            final Matcher matcher = LOCAL_TIME_PATTERN.matcher(s);
-            if (matcher.matches()) {
-                final int hour = Integer.parseInt(matcher.group(1)); // hour is the only required field
-                final int minute = matcher.group(2) != null ? Integer.parseInt(matcher.group(2)) : 0;
-                final int second = matcher.group(3) != null ? Integer.parseInt(matcher.group(3)) : 0;
-                final int nanos;
-                if (matcher.group(4) != null) {
-                    final String fractionStr = matcher.group(5); // group 5 excludes the decimal pt
-                    nanos = Integer.parseInt(fractionStr) * (int) Math.pow(10, 9 - fractionStr.length());
-                } else {
-                    nanos = 0;
-                }
-                return LocalTime.of(hour, minute, second, nanos);
-            }
-        } catch (Exception ex) {
-            return null;
-        }
-        return null;
-    }
-
-    /**
-     * Converts a time string in the form "hh:mm:ss[.nnnnnnnnn]" to a {@link LocalTime}.
-     *
-     * A local time is the time that would be read from a clock and does not have a date or timezone.
-     *
-     * @param s string to be converted
-     * @return a {@link LocalTime} represented by the input string.
-     * @throws RuntimeException if the string cannot be converted, otherwise a {@link LocalTime} from the parsed string.
-     */
-    public static LocalTime parseLocalTime(String s) {
-        LocalTime ret = parseLocalTimeQuiet(s);
-
-        if (ret == null) {
-            throw new RuntimeException("Cannot parse local time : " + s);
-        }
-
-        return ret;
-    }
-
-    // endregion
-
 
     //TODO: RENAME: getZonedDateTime : toZonedDateTime
     //TODO: RENAME: makeZonedDateTime : epochNanosToZonedDateTime
