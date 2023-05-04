@@ -8,14 +8,14 @@ import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
 
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Spliterator;
 import java.util.function.Consumer;
 
 /**
- * Evaluates to {@code true} when any of the given {@link #filters() filters} evaluates to {@code true}.
+ * Evaluates to {@code true} when any of {@link #filters() filters} evaluates to {@code true}, and {@code false} when
+ * none of the {@link #filters() filters} evaluates to {@code true}
  */
 @Immutable
 @BuildableStyle
@@ -41,10 +41,23 @@ public abstract class FilterOr extends FilterBase implements Iterable<Filter> {
     @Parameter
     public abstract List<Filter> filters();
 
+    /**
+     * Equivalent to an {@link FilterAnd and-filter} with all {@link #filters() filters} inverted.
+     *
+     * @return the inverse filter
+     */
     @Override
-    public final <V extends Visitor> V walk(V visitor) {
-        visitor.visit(this);
-        return visitor;
+    public FilterAnd invert() {
+        final FilterAnd.Builder builder = FilterAnd.builder();
+        for (Filter filter : filters()) {
+            builder.addFilters(filter.invert());
+        }
+        return builder.build();
+    }
+
+    @Override
+    public final <T> T walk(Filter.Visitor<T> visitor) {
+        return visitor.visit(this);
     }
 
     @Override

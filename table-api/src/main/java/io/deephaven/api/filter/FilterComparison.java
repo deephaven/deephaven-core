@@ -5,52 +5,63 @@ package io.deephaven.api.filter;
 
 import io.deephaven.annotations.BuildableStyle;
 import io.deephaven.api.ColumnName;
-import io.deephaven.api.value.Value;
+import io.deephaven.api.expression.Expression;
 import org.immutables.value.Value.Immutable;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 /**
  * Evaluates to true based on the specific {@link #operator() operator} applied to the {@link #lhs() left-hand side} and
- * {@link #rhs() right-hand side}.
+ * {@link #rhs() right-hand side} {@link Expression expressions}.
  */
 @Immutable
 @BuildableStyle
-public abstract class FilterCondition extends FilterBase implements Serializable {
+public abstract class FilterComparison extends FilterBase implements Serializable {
 
     public enum Operator {
         /**
          * {@code lhs < rhs}
          */
-        LESS_THAN,
+        LESS_THAN("<"),
 
         /**
          * {@code lhs <= rhs}
          */
-        LESS_THAN_OR_EQUAL,
+        LESS_THAN_OR_EQUAL("<="),
 
         /**
          * {@code lhs > rhs}
          */
-        GREATER_THAN,
+        GREATER_THAN(">"),
 
         /**
          * {@code lhs >= rhs}
          */
-        GREATER_THAN_OR_EQUAL,
+        GREATER_THAN_OR_EQUAL(">="),
 
         /**
          * {@code lhs == rhs}
          */
-        EQUALS,
+        EQUALS("=="),
 
         /**
          * {@code lhs != rhs}
          */
-        NOT_EQUALS;
+        NOT_EQUALS("!=");
 
-        public final FilterCondition of(Value lhs, Value rhs) {
-            return FilterCondition.builder().operator(this).lhs(lhs).rhs(rhs).build();
+        private final String javaOperator;
+
+        Operator(String javaOperator) {
+            this.javaOperator = Objects.requireNonNull(javaOperator);
+        }
+
+        public String javaOperator() {
+            return javaOperator;
+        }
+
+        public FilterComparison of(Expression lhs, Expression rhs) {
+            return FilterComparison.builder().operator(this).lhs(lhs).rhs(rhs).build();
         }
 
         /**
@@ -58,7 +69,7 @@ public abstract class FilterCondition extends FilterBase implements Serializable
          *
          * @return the inverted operator
          */
-        public final Operator invert() {
+        public Operator invert() {
             switch (this) {
                 case LESS_THAN:
                     return GREATER_THAN_OR_EQUAL;
@@ -82,7 +93,7 @@ public abstract class FilterCondition extends FilterBase implements Serializable
          *
          * @return the transposed operator
          */
-        public final Operator transpose() {
+        public Operator transpose() {
             switch (this) {
                 case LESS_THAN:
                     return GREATER_THAN;
@@ -103,30 +114,30 @@ public abstract class FilterCondition extends FilterBase implements Serializable
     }
 
     public static Builder builder() {
-        return ImmutableFilterCondition.builder();
+        return ImmutableFilterComparison.builder();
     }
 
-    public static FilterCondition lt(Value lhs, Value rhs) {
+    public static FilterComparison lt(Expression lhs, Expression rhs) {
         return Operator.LESS_THAN.of(lhs, rhs);
     }
 
-    public static FilterCondition lte(Value lhs, Value rhs) {
+    public static FilterComparison leq(Expression lhs, Expression rhs) {
         return Operator.LESS_THAN_OR_EQUAL.of(lhs, rhs);
     }
 
-    public static FilterCondition gt(Value lhs, Value rhs) {
+    public static FilterComparison gt(Expression lhs, Expression rhs) {
         return Operator.GREATER_THAN.of(lhs, rhs);
     }
 
-    public static FilterCondition gte(Value lhs, Value rhs) {
+    public static FilterComparison geq(Expression lhs, Expression rhs) {
         return Operator.GREATER_THAN_OR_EQUAL.of(lhs, rhs);
     }
 
-    public static FilterCondition eq(Value lhs, Value rhs) {
+    public static FilterComparison eq(Expression lhs, Expression rhs) {
         return Operator.EQUALS.of(lhs, rhs);
     }
 
-    public static FilterCondition neq(Value lhs, Value rhs) {
+    public static FilterComparison neq(Expression lhs, Expression rhs) {
         return Operator.NOT_EQUALS.of(lhs, rhs);
     }
 
@@ -138,18 +149,18 @@ public abstract class FilterCondition extends FilterBase implements Serializable
     public abstract Operator operator();
 
     /**
-     * The left-hand side value.
+     * The left-hand side expression.
      * 
-     * @return the left-hand side value
+     * @return the left-hand side expression
      */
-    public abstract Value lhs();
+    public abstract Expression lhs();
 
     /**
-     * The right-hand side value.
+     * The right-hand side expression.
      * 
-     * @return the right-hand side value
+     * @return the right-hand side expression
      */
-    public abstract Value rhs();
+    public abstract Expression rhs();
 
     /**
      * The logically equivalent transposed filter.
@@ -162,7 +173,7 @@ public abstract class FilterCondition extends FilterBase implements Serializable
      *
      * @return the transposed filter
      */
-    public final FilterCondition transpose() {
+    public final FilterComparison transpose() {
         return operator().transpose().of(rhs(), lhs());
     }
 
@@ -176,7 +187,7 @@ public abstract class FilterCondition extends FilterBase implements Serializable
      *
      * @return the filter, potentially transposed
      */
-    public final FilterCondition maybeTranspose() {
+    public final FilterComparison maybeTranspose() {
         if (lhs() instanceof ColumnName) {
             return this;
         }
@@ -191,23 +202,23 @@ public abstract class FilterCondition extends FilterBase implements Serializable
      *
      * @return the inverted filter
      */
-    public final FilterCondition invert() {
+    @Override
+    public final FilterComparison invert() {
         return operator().invert().of(lhs(), rhs());
     }
 
     @Override
-    public final <V extends Filter.Visitor> V walk(V visitor) {
-        visitor.visit(this);
-        return visitor;
+    public final <T> T walk(Filter.Visitor<T> visitor) {
+        return visitor.visit(this);
     }
 
     public interface Builder {
         Builder operator(Operator operator);
 
-        Builder lhs(Value lhs);
+        Builder lhs(Expression lhs);
 
-        Builder rhs(Value rhs);
+        Builder rhs(Expression rhs);
 
-        FilterCondition build();
+        FilterComparison build();
     }
 }
