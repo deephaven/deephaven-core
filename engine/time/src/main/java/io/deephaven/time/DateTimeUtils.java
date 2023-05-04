@@ -2011,9 +2011,6 @@ public class DateTimeUtils {
     private static final DateStyle DATE_STYLE = DateStyle
             .valueOf(Configuration.getInstance().getStringWithDefault("DateTimeUtils.dateStyle", DateStyle.MDY.name()));
 
-    // endregion
-
-
     private enum DateGroupId {
         // Date(1),
         Year(2, ChronoField.YEAR),
@@ -2024,6 +2021,7 @@ public class DateTimeUtils {
         Minutes(7, ChronoField.MINUTE_OF_HOUR),
         Seconds(8, ChronoField.SECOND_OF_MINUTE),
         Fraction(9, ChronoField.MILLI_OF_SECOND);
+        //TODO MICRO and NANOs are not supported! -- fix and unit test!
 
         public final int id;
         public final ChronoField field;
@@ -2034,15 +2032,14 @@ public class DateTimeUtils {
         }
     }
 
-    // TODO: is this something we want to expose in queries or python?
     /**
-     * Returns a {@link ChronoField} indicating the level of precision in a String time value.
+     * Returns a {@link ChronoField} indicating the level of precision in a time or datetime string.
      *
-     * @param timeDef The time String to evaluate.
-     * @return null if the time String cannot be parsed, otherwise a {@link ChronoField} for the finest units in the
-     *         String (e.g. "10:00:00" would yield SecondOfMinute).
+     * @param s time string.
+     * @return null if the time string cannot be parsed; otherwise, a {@link ChronoField} for the finest units in the
+     *      string (e.g. "10:00:00" would yield SecondOfMinute).  Precisions
      */
-    public static ChronoField getFinestDefinedUnit(String timeDef) {
+    public static ChronoField parseTimePrecision(String timeDef) {
         Matcher dtMatcher = CAPTURING_DATETIME_PATTERN.matcher(timeDef);
         if (dtMatcher.matches()) {
             DateGroupId[] parts = DateGroupId.values();
@@ -2057,6 +2054,12 @@ public class DateTimeUtils {
         return null;
     }
 
+    // endregion
+
+
+
+
+    //TODO: RENAME: getFinestDefinedUnit : parseTimePrecision
     //TODO: RENAME: convertExpression : replace TimeLiteralReplacedExpression.convertExpression
     //TODO: RENAME: autoEpochToTime : epochAutoToDateTime
     //TODO: RENAME: autoEpochToNanos : epochAutoToEpochNanos
