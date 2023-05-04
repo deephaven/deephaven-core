@@ -21,7 +21,6 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoField;
 import java.util.Objects;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -33,6 +32,7 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
 //TODO: @SuppressWarnings("unused")
 @SuppressWarnings("RegExpRedundantEscape")
 public class DateTimeUtils {
+    //TODO: add final everywhere
     //TODO: rename class
     //TODO: document
     //TODO: remove Joda exposure
@@ -1776,22 +1776,159 @@ public class DateTimeUtils {
         return null;
     }
 
+    /**
+     * Format style for a date string.
+     */
+    public enum DateStyle {
+        /**
+         * Month, day, year date format.
+         */
+        MDY,
+        /**
+         * Day, month, year date format.
+         */
+        DMY,
+        /**
+         * Year, month, day date format.
+         */
+        YMD
+    }
+
+    //TODO: add to Format Patterns?
+    private static final DateStyle DEFAULT_DATE_STYLE = DateStyle
+            .valueOf(Configuration.getInstance().getStringWithDefault("DateTimeUtils.dateStyle", DateStyle.MDY.name()));
+
+    private static LocalDate matchStdDate(Pattern pattern, String s) {
+        final Matcher matcher = pattern.matcher(s);
+        if (matcher.matches()) {
+            final int year = Integer.parseInt(matcher.group("year"));
+            final int month = Integer.parseInt(matcher.group("month"));
+            final int dayOfMonth = Integer.parseInt(matcher.group("day"));
+            return LocalDate.of(year, month, dayOfMonth);
+        }
+        return null;
+    }
+
+    /**
+     * Converts a string into a local date.
+     * The ideal date format is YYYY-MM-DD since it's the least ambiguous, but other formats are supported.
+     *
+     * @param s date string.
+     * @param dateStyle style the date string is formatted in.
+     * @return local date, or null if the string can not be parsed.
+     */
+    public static LocalDate parseDateQuiet(String s, DateStyle dateStyle) {
+        try {
+            LocalDate localDate = matchStdDate(STD_DATE_PATTERN, s);
+            if (localDate != null) {
+                return localDate;
+            }
+            localDate = matchStdDate(STD_DATE_PATTERN2, s);
+            if (localDate != null) {
+                return localDate;
+            }
+
+            // see if we can match one of the slash-delimited styles, the interpretation of which requires knowing the
+            // system date style setting (for example Europeans often write dates as d/m/y).
+            final Matcher slashMatcher = SLASH_DATE_PATTERN.matcher(s);
+            if (slashMatcher.matches()) {
+                final String yearGroup, monthGroup, dayGroup, yearFinal2DigitsGroup;
+                // note we have nested groups which allow us to detect 2 vs 4 digit year
+                // (groups 2 and 5 are the optional last 2 digits)
+                switch (dateStyle) {
+                    case MDY:
+                        dayGroup = "part2";
+                        monthGroup = "part1";
+                        yearGroup = "part3";
+                        yearFinal2DigitsGroup = "part3sub2";
+                        break;
+                    case DMY:
+                        dayGroup = "part1";
+                        monthGroup = "part2";
+                        yearGroup = "part3";
+                        yearFinal2DigitsGroup = "part3sub2";
+                        break;
+                    case YMD:
+                        dayGroup = "part3";
+                        monthGroup = "part2";
+                        yearGroup = "part1";
+                        yearFinal2DigitsGroup = "part1sub2";
+                        break;
+                    default:
+                        throw new IllegalStateException("Unsupported DateStyle: " + DEFAULT_DATE_STYLE);
+                }
+                final int year;
+                // for 2 digit years, lean on java's standard interpretation
+                if (slashMatcher.group(yearFinal2DigitsGroup) == null) {
+                    year = Year.parse(slashMatcher.group(yearGroup), TWO_DIGIT_YR_FORMAT).getValue();
+                } else {
+                    year = Integer.parseInt(slashMatcher.group(yearGroup));
+                }
+                final int month = Integer.parseInt(slashMatcher.group(monthGroup));
+                final int dayOfMonth = Integer.parseInt(slashMatcher.group(dayGroup));
+                return LocalDate.of(year, month, dayOfMonth);
+            }
+        } catch (Exception ex) {
+            return null;
+        }
+        return null;
+    }
+
+    /**
+     * Converts a string into a local date.
+     * The ideal date format is YYYY-MM-DD since it's the least ambiguous, but other formats are supported.
+     *
+     * The date string is formatted using the default date style.
+     *
+     * @param s date string.
+     * @return local date parsed according to the default date style, or null if the string can not be parsed.
+     */
+    public static LocalDate parseDateQuiet(String s) {
+        return parseDateQuiet(s, DEFAULT_DATE_STYLE);
+    }
+
+    /**
+     * Converts a string into a local date.
+     * The ideal date format is YYYY-MM-DD since it's the least ambiguous, but other formats are supported.
+     *
+     * @param s date string.
+     * @param dateStyle style the date string is formatted in.
+     * @return local date.
+     * @throws RuntimeException if the string cannot be parsed.
+     */
+    public static LocalDate parseDate(String s, DateStyle dateStyle) {
+        final LocalDate ret = parseDateQuiet(s, dateStyle);
+
+        if (ret == null) {
+            throw new RuntimeException("Cannot parse date : " + s);
+        }
+
+        return ret;
+    }
+
+    /**
+     * Converts a string into a local date.
+     * The ideal date format is YYYY-MM-DD since it's the least ambiguous, but other formats are supported.
+     *
+     * The date string is formatted using the default date style.
+     *
+     * @param s date string.
+     * @return local date parsed according to the default date style.
+     * @throws RuntimeException if the string cannot be parsed.
+     */
+    public static LocalDate parseDate(String s) {
+        final LocalDate ret = parseDateQuiet(s);
+
+        if (ret == null) {
+            throw new RuntimeException("Cannot parse date : " + s);
+        }
+
+        return ret;
+    }
+
     // endregion
 
     // region TODO: Java Time
-
-    /**
-     * Returns nanoseconds since Epoch for an {@link Instant} value.
-     *
-     * @param instant The {@link Instant} for which the nanoseconds offset should be returned.
-     * @return A long value of nanoseconds since Epoch, or a NULL_LONG value if the {@link Instant} is null.
-     */
-    public static long nanos(Instant instant) {
-        if (instant == null) {
-            return NULL_LONG;
-        }
-        return Math.addExact(TimeUnit.SECONDS.toNanos(instant.getEpochSecond()), instant.getNano());
-    }
 
     /**
      * Convert nanos since epoch to an {@link Instant} value.
@@ -1942,131 +2079,14 @@ public class DateTimeUtils {
         return null;
     }
 
-    private static LocalDate matchStdDate(Pattern pattern, String s) {
-        final Matcher matcher = pattern.matcher(s);
-        if (matcher.matches()) {
-            final int year = Integer.parseInt(matcher.group("year"));
-            final int month = Integer.parseInt(matcher.group("month"));
-            final int dayOfMonth = Integer.parseInt(matcher.group("day"));
-            return LocalDate.of(year, month, dayOfMonth);
-        }
-        return null;
-    }
-
-    //TODO: document
-    //TODO: add to Format Patterns?
-    /**
-     * Date formatting styles for use in conversion functions such as {@link #convertDateQuiet(String, DateStyle)}.
-     */
-    public enum DateStyle {
-        MDY, DMY, YMD
-    }
-
-    //TODO: add to Format Patterns?
-    private static final DateStyle DATE_STYLE = DateStyle
-            .valueOf(Configuration.getInstance().getStringWithDefault("DateTimeUtils.dateStyle", DateStyle.MDY.name()));
-
-    /**
-     * Attempt to convert the given string to a LocalDate. This should <b>not</b> accept dates with times, as we want
-     * those to be interpreted as DateTime values. The ideal date format is YYYY-MM-DD since it's the least ambiguous.
-     *
-     * @param s the date string
-     * @param dateStyle indicates how to interpret slash-delimited dates
-     * @return the LocalDate
-     */
-    public static LocalDate convertDateQuiet(String s, DateStyle dateStyle) {
-        try {
-            LocalDate localDate = matchStdDate(STD_DATE_PATTERN, s);
-            if (localDate != null) {
-                return localDate;
-            }
-            localDate = matchStdDate(STD_DATE_PATTERN2, s);
-            if (localDate != null) {
-                return localDate;
-            }
-
-            // see if we can match one of the slash-delimited styles, the interpretation of which requires knowing the
-            // system date style setting (for example Europeans often write dates as d/m/y).
-            final Matcher slashMatcher = SLASH_DATE_PATTERN.matcher(s);
-            if (slashMatcher.matches()) {
-                final String yearGroup, monthGroup, dayGroup, yearFinal2DigitsGroup;
-                // note we have nested groups which allow us to detect 2 vs 4 digit year
-                // (groups 2 and 5 are the optional last 2 digits)
-                switch (dateStyle) {
-                    case MDY:
-                        dayGroup = "part2";
-                        monthGroup = "part1";
-                        yearGroup = "part3";
-                        yearFinal2DigitsGroup = "part3sub2";
-                        break;
-                    case DMY:
-                        dayGroup = "part1";
-                        monthGroup = "part2";
-                        yearGroup = "part3";
-                        yearFinal2DigitsGroup = "part3sub2";
-                        break;
-                    case YMD:
-                        dayGroup = "part3";
-                        monthGroup = "part2";
-                        yearGroup = "part1";
-                        yearFinal2DigitsGroup = "part1sub2";
-                        break;
-                    default:
-                        throw new IllegalStateException("Unsupported DateStyle: " + DATE_STYLE);
-                }
-                final int year;
-                // for 2 digit years, lean on java's standard interpretation
-                if (slashMatcher.group(yearFinal2DigitsGroup) == null) {
-                    year = Year.parse(slashMatcher.group(yearGroup), TWO_DIGIT_YR_FORMAT).getValue();
-                } else {
-                    year = Integer.parseInt(slashMatcher.group(yearGroup));
-                }
-                final int month = Integer.parseInt(slashMatcher.group(monthGroup));
-                final int dayOfMonth = Integer.parseInt(slashMatcher.group(dayGroup));
-                return LocalDate.of(year, month, dayOfMonth);
-            }
-        } catch (Exception ex) {
-            return null;
-        }
-        return null;
-    }
-
-    /**
-     * Attempt to convert the given string to a LocalDate. This should <b>not</b> accept dates with times, as we want
-     * those to be interpreted as DateTime values. The ideal date format is YYYY-MM-DD since it's the least ambiguous.
-     *
-     * @param s the date string to convert
-     * @return the LocalDate formatted using the default date style.
-     */
-    public static LocalDate convertDateQuiet(String s) {
-        return convertDateQuiet(s, DATE_STYLE);
-    }
-
-    /**
-     * Attempt to convert the given string to a LocalDate. This should <b>not</b> accept dates with times, as we want
-     * those to be interpreted as DateTime values. The ideal date format is YYYY-MM-DD since it's the least ambiguous,
-     * but this method also parses slash-delimited dates according to the system "date style".
-     *
-     * @param s the date string to convert
-     * @throws RuntimeException if the date cannot be converted, otherwise returns a {@link LocalDate}
-     */
-    @SuppressWarnings("WeakerAccess")
-    public static LocalDate convertDate(String s) {
-        final LocalDate ret = convertDateQuiet(s);
-
-        if (ret == null) {
-            throw new RuntimeException("Cannot parse date : " + s);
-        }
-
-        return ret;
-    }
-
     // endregion
 
 
 
 
 
+    //TODO: RENAME: convertDate : parseDate
+    //TODO: RENAME: convertDateQuiet : parseDateQuiet
     //TODO: RENAME: toEpochNano : epochNanos
     //TODO: RENAME: getFinestDefinedUnit : parseTimePrecision
     //TODO: RENAME: convertExpression : replace TimeLiteralReplacedExpression.convertExpression
